@@ -208,6 +208,8 @@
     </main>
 
     <script>
+      const authServerUrl = 'https://kuquest-dev-api.kubits.org';
+      const localAppUrl = 'http://localhost:5000';
       const signInButton = document.querySelector('#sign-in');
       const refreshButton = document.querySelector('#refresh-session');
       const signOutButton = document.querySelector('#sign-out');
@@ -255,7 +257,7 @@
         setStatus('กำลังตรวจสอบ session…');
 
         try {
-          const response = await fetch('/api/auth/get-session', {
+          const response = await fetch(`${authServerUrl}/api/auth/get-session`, {
             credentials: 'include',
           });
           const data = await readJson(response);
@@ -280,14 +282,14 @@
         setStatus('กำลังเปิด Google account selector…');
 
         try {
-          const response = await fetch('/api/auth/sign-in/social', {
+          const response = await fetch(`${authServerUrl}/api/auth/sign-in/social`, {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               provider: 'google',
-              callbackURL: `${window.location.origin}/`,
-              errorCallbackURL: `${window.location.origin}/`,
+              callbackURL: `${localAppUrl}/`,
+              errorCallbackURL: `${localAppUrl}/`,
               disableRedirect: true,
             }),
           });
@@ -307,7 +309,7 @@
         setStatus('กำลังออกจากระบบ…');
 
         try {
-          const response = await fetch('/api/auth/sign-out', {
+          const response = await fetch(`${authServerUrl}/api/auth/sign-out`, {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
