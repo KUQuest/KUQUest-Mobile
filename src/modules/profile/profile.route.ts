@@ -1,13 +1,16 @@
 import { authGuard } from '@/modules/auth';
+import { apiSuccessSchema, betterAuthSecurity, responses } from '@/shared/api-response.schema';
 import { API_V1_PREFIX } from '@/shared/api-version';
-import { betterAuthSecurity, responses } from '@/shared/api-response.schema';
 
 import { Elysia } from 'elysia';
 
-import { setAvatar } from './profile.controller';
+import { getOwnProfile, setAvatar, updateOwnProfile } from './profile.controller';
+import { rejectUnknownProfileFields } from './profile.policy';
 import {
   avatarUploadResponseSchema,
   avatarUploadSchema,
+  profileResponseSchema,
+  profileUpdateSchema,
 } from './profile.schema';
 
 export const profileRoute = new Elysia({
@@ -15,6 +18,30 @@ export const profileRoute = new Elysia({
   prefix: `${API_V1_PREFIX}/profile`,
 })
   .use(authGuard)
+  .get('', getOwnProfile, {
+    response: responses(profileResponseSchema, 401, 404),
+    detail: {
+      tags: ['Profile'],
+      summary: 'Get own profile',
+      description:
+        'Returns the profile of the authenticated student, including a temporary link to the current avatar when one is set.',
+      operationId: 'getOwnProfile',
+      security: betterAuthSecurity,
+    },
+  })
+  .patch('', updateOwnProfile, {
+    body: profileUpdateSchema,
+    transform: rejectUnknownProfileFields,
+    response: responses(apiSuccessSchema, 400, 401, 404),
+    detail: {
+      tags: ['Profile'],
+      summary: 'Update own profile',
+      description:
+        'Updates the profile of the authenticated student. Fields left out keep their current value; values cannot be cleared.',
+      operationId: 'updateOwnProfile',
+      security: betterAuthSecurity,
+    },
+  })
   .post('/avatar', setAvatar, {
     body: avatarUploadSchema,
     type: 'multipart/form-data',

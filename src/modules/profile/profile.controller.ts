@@ -1,15 +1,20 @@
-import type { AuthenticatedSession } from '@/modules/auth';
+import type { AuthedContext } from '@/modules/auth';
 import { apiError, apiSuccess } from '@/shared/api-response';
 import type { ApiResponse } from '@/shared/api-response';
 
 import type { Static } from 'elysia';
-import type { StatusMap } from 'elysia/utils';
 
-import type { avatarUploadSchema } from './profile.schema';
+import type {
+  avatarUploadSchema,
+  profileResponseSchema,
+  profileUpdateSchema,
+} from './profile.schema';
 import {
   getPreviousAvatarFile,
+  getProfile,
   markAvatarDeleted,
   replaceStudentAvatar,
+  updateProfile,
 } from './profile.service';
 import {
   AvatarTooLargeError,
@@ -18,11 +23,9 @@ import {
   UnsupportedAvatarTypeError,
 } from './profile.storage';
 
-type AvatarUploadContext = {
-  body: Static<typeof avatarUploadSchema>;
-  session: AuthenticatedSession;
-  set: { status?: number | keyof StatusMap };
-};
+type Profile = Static<typeof profileResponseSchema>['data'];
+
+type StoredProfileAvatar = NonNullable<Awaited<ReturnType<typeof getProfile>>>['avatar'];
 
 const debugAvatarUpload = (message: string, details?: unknown): void => {
   if (process.env.NODE_ENV !== 'test') {
@@ -46,11 +49,64 @@ const discardUploadedAvatar = async (
   }
 };
 
+const userNotFound = (set: AuthedContext['set']) => {
+  set.status = 404;
+
+  return apiError('USER_NOT_FOUND', 'User not found');
+};
+
+// The stored reference becomes a link only here, at the moment of answering, so nothing
+// durable ever holds a storage URL. A profile is still readable without its picture, so
+// a storage problem costs the caller the image rather than the whole response.
+const describeAvatar = (avatar: StoredProfileAvatar): Profile['avatar'] => {
+  if (!avatar) return null;
+
+  try {
+    return { fileId: avatar.fileId, url: avatarStorage.linkFor(avatar) };
+  } catch (error) {
+    console.error('Building the avatar link failed', error);
+
+    return null;
+  }
+};
+
+export const getOwnProfile = async ({
+  session,
+  set,
+}: AuthedContext): Promise<ApiResponse<Profile>> => {
+  const profile = await getProfile(session.user.id);
+
+  if (!profile) return userNotFound(set);
+
+  const { avatar, ...rest } = profile;
+
+  return apiSuccess({ ...rest, avatar: describeAvatar(avatar) });
+};
+
+export const updateOwnProfile = async ({
+  session,
+  body,
+  set,
+}: AuthedContext & { body: Static<typeof profileUpdateSchema> }): Promise<ApiResponse> => {
+  const outcome = await updateProfile(session.user.id, body);
+
+  if (outcome === 'student-not-found') return userNotFound(set);
+
+  if (outcome === 'major-not-found') {
+    set.status = 400;
+    return apiError('MAJOR_NOT_FOUND', 'Major not found');
+  }
+
+  return apiSuccess();
+};
+
 export const setAvatar = async ({
   body,
   session,
   set,
-}: AvatarUploadContext): Promise<ApiResponse<{ fileId: string }>> => {
+}: AuthedContext & { body: Static<typeof avatarUploadSchema> }): Promise<
+  ApiResponse<{ fileId: string }>
+> => {
   let storedAvatar;
 
   debugAvatarUpload('Request received', {
