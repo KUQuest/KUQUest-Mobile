@@ -6,11 +6,11 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
 
 ### Issue tracker
 
-Issues live as GitHub issues (`gh` CLI) in `KUQuest/KUQUest-Mobile`. See `docs/agents/issue-tracker.md`.
+Issues live in Linear (team **Frontend**, scoped by `Mobile` label). See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-Default five canonical labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+Default five canonical labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`), created fresh in Linear. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
