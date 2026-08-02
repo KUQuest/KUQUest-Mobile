@@ -12,7 +12,8 @@
       "@/assets/*": [
         "./assets/*"
       ]
-    }
+    },
+    "types": ["jest"]
   },
   "include": [
     "**/*.ts",
@@ -21,8 +22,7 @@
     "expo-env.d.ts"
   ],
   "exclude": [
-    "**/*.test.ts",
-    "**/*.test.tsx",
-    "example"
+    "example",
+    "node_modules"
   ]
 }
