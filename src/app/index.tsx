@@ -2,7 +2,7 @@ import * as Device from 'expo-device';
 import { Platform, StyleSheet, Pressable} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { router } from 'expo-router'; // เพิ่ม router สำหรับเปลี่ยนหน้า
+import { router } from 'expo-router'; 
 import { AnimatedIcon } from '@/components/animated-icon';
 import { HintRow } from '@/components/hint-row';
 import { ThemedText } from '@/components/themed-text';
@@ -58,7 +58,7 @@ export default function HomeScreen() {
 
         <Pressable 
           style={styles.loginButton} 
-          onPress={() => router.push('../componenets/LoginScreen')} // ใช้ router.push เพื่อเปลี่ยนหน้า
+          onPress={() => router.push('/LoginScreen')} // ใช้ router.push เพื่อเปลี่ยนหน้า
         >
           <ThemedText style={styles.loginButtonText}>
             Go to Login
