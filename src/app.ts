@@ -4,6 +4,7 @@ import { authPlugin, authTestRoute } from './modules/auth';
 import { certificateRoute } from './modules/certificate';
 import { healthRoute } from './modules/health';
 import { onboardingRoute } from './modules/onboarding';
+import { portfolioRoute } from './modules/portfolio';
 import { profileRoute } from './modules/profile';
 import { corsPlugin } from './plugins/cors';
 import { errorHandlerPlugin } from './plugins/error-handler';
@@ -28,4 +29,5 @@ export const app = new Elysia({
   .use(healthRoute)
   .use(onboardingRoute)
   .use(profileRoute)
-  .use(certificateRoute);
+  .use(certificateRoute)
+  .use(portfolioRoute)
