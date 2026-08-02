@@ -1,7 +1,8 @@
 import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { Platform, StyleSheet, Pressable} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { router } from 'expo-router'; // เพิ่ม router สำหรับเปลี่ยนหน้า
 import { AnimatedIcon } from '@/components/animated-icon';
 import { HintRow } from '@/components/hint-row';
 import { ThemedText } from '@/components/themed-text';
@@ -55,6 +56,15 @@ export default function HomeScreen() {
           />
         </ThemedView>
 
+        <Pressable 
+          style={styles.loginButton} 
+          onPress={() => router.push('../componenets/LoginScreen')} // ใช้ router.push เพื่อเปลี่ยนหน้า
+        >
+          <ThemedText style={styles.loginButtonText}>
+            Go to Login
+          </ThemedText>
+        </Pressable>
+
         {Platform.OS === 'web' && <WebBadge />}
       </SafeAreaView>
     </ThemedView>
@@ -94,5 +104,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.four,
     borderRadius: Spacing.four,
+  },
+  loginButton: {
+    backgroundColor: '#0a7ea4', // สามารถเปลี่ยนสีให้เข้ากับธีมของแอปได้
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.four,
+    borderRadius: Spacing.three,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    marginTop: Spacing.two,
+  },
+  loginButtonText: {
+    color: '#ffffff',
   },
 });
