@@ -18,7 +18,8 @@ import {Header,
         Button, 
         RegistrationHeader,
         Step,
-        StepProgress} 
+        StepProgress,
+        ProfileUpload,} 
 from '../../components/Shared';
 
 interface Step1Props {
@@ -49,6 +50,7 @@ export default function Step1({ formData = {}, setFormData = () => {}, onSubmit 
         <RegistrationHeader title="Academic Registration" />
         <Step step={1} />
         <StepProgress step={1} totalSteps={3} />
+        <ProfileUpload></ProfileUpload>
       </View>
     </SafeAreaView>
   );
