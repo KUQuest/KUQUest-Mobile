@@ -96,6 +96,11 @@ interface SelectProps {
   placeholder?: string;
 }
 
+interface TermsBoxProps {
+  label: string;
+  title?: string;
+  content: string;
+}
 
 // export const Select = ({
 //   label,
@@ -303,6 +308,21 @@ export const FormSelect = ({
           </ScrollView>
         </View>
       )}
+    </View>
+  );
+};
+
+export const TermsBox = ({ label, title, content }: TermsBoxProps) => {
+  return (
+    <View style={styles.inputContainer}>
+      <Text style={styles.label}>{label}</Text>
+      
+      <View style={styles.termsBox}>
+        <View>
+          {title && <Text style={styles.termsTitle}>{title}</Text>}
+          <Text style={styles.termsText}>{content}</Text>
+        </View>
+      </View>
     </View>
   );
 };
@@ -591,5 +611,25 @@ const styles = StyleSheet.create({
   selectedOptionText: {
     fontWeight: 'bold',
     color: '#004D25',
+  },
+  termsBox: {
+    minHeight: 100,
+    borderWidth: 1,
+    borderColor: '#C0C9BE',
+    borderRadius: 8,
+    padding: 16,
+    backgroundColor: '#F6F3F2',
+  },
+  termsTitle: {
+    fontSize: 14,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: '#404941',
+    marginBottom: 6,
+  },
+  termsText: {
+    fontSize: 14,
+    fontFamily: 'BeVietnamPro_400Regular', 
+    color: '#404941',
+    lineHeight: 20,
   },
 });

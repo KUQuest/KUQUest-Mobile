@@ -19,7 +19,8 @@ import {Header,
         StepProgress,
         ProfileUpload,
         FormInput,
-        FormSelect} 
+        FormSelect,
+        TermsBox} 
 from '../../components/Shared';
 
 interface Step1Props {
@@ -78,6 +79,8 @@ export default function Step1() { //{ formData = {}, setFormData = () => {}, onS
         )}
         <FormSelect label="Faculty" options={['Engineering', 'Business']} placeholder="Select your faculty" selectedValue={formData.faculty}onSelect={(value) => setFormData({ ...formData, faculty: value })}/>
         <FormInput label="Department" value={formData.department} placeholder="Enter your department" onChangeText={(text) => setFormData({ ...formData, department: text })}/>
+        <TermsBox label="Terms and Conditions" title="Privacy Policy" content="Privacy Policy We value your privacy. This policy explains how we collect, use, and protect your personal data in accordance with academic standards and data protection regulations. Your information is used solely for academic registration and institutional communication."
+        />
       </ScrollView>
     </SafeAreaView>
   );
