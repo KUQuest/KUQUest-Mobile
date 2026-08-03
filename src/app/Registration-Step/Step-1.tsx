@@ -12,14 +12,13 @@ import { User, Pencil } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 import {Header, 
-        ProgressBar,
-        Input, 
-        Select, 
+        ProgressBar, 
         Button, 
         RegistrationHeader,
         Step,
         StepProgress,
-        ProfileUpload,} 
+        ProfileUpload,
+        FormInput,} 
 from '../../components/Shared';
 
 interface Step1Props {
@@ -51,6 +50,8 @@ export default function Step1({ formData = {}, setFormData = () => {}, onSubmit 
         <Step step={1} />
         <StepProgress step={1} totalSteps={3} />
         <ProfileUpload></ProfileUpload>
+        <FormInput label="Full Name" value={formData.firstName} placeholder="Enter your full name" onChangeText={(text) => setFormData({ ...formData, firstName: text })} />
+        <FormInput label="Phone Number" value={formData.phoneNumber} placeholder="Enter your phone number" onChangeText={(text) => setFormData({ ...formData, phoneNumber: text })} />
       </View>
     </SafeAreaView>
   );

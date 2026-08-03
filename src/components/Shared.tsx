@@ -18,6 +18,11 @@ interface StepProgressProps {
   totalSteps?: number;
 }
 
+interface FormInputProps extends TextInputProps {
+  label: string;
+  placeholder: string;
+}
+
 // ----------------------------------------------------
 // Header Component
 // ----------------------------------------------------
@@ -55,16 +60,16 @@ interface InputProps extends TextInputProps {
   label?: string;
 }
 
-export const Input = ({ label, style, ...props }: InputProps) => (
-  <View style={styles.inputWrapper}>
-    {label && <Text style={styles.label}>{label}</Text>}
-    <TextInput
-      style={[styles.input, style]}
-      placeholderTextColor="#9CA3AF"
-      {...props}
-    />
-  </View>
-);
+// export const Input = ({ label, style, ...props }: InputProps) => (
+//   <View style={styles.inputWrapper}>
+//     {label && <Text style={styles.label}>{label}</Text>}
+//     <TextInput
+//       style={[styles.input, style]}
+//       placeholderTextColor="#9CA3AF"
+//       {...props}
+//     />
+//   </View>
+// );
 
 // ----------------------------------------------------
 // Select Component (Modal Dropdown)
@@ -82,81 +87,72 @@ interface SelectProps {
   placeholder?: string;
 }
 
-export const Select = ({
-  label,
-  options = [],
-  value,
-  onValueChange,
-  placeholder = 'เลือก...',
-}: SelectProps) => {
-  const [modalVisible, setModalVisible] = useState(false);
-  const selectedOption = options.find((o) => o.value === value);
+// export const Select = ({
+//   label,
+//   options = [],
+//   value,
+//   onValueChange,
+//   placeholder = 'เลือก...',
+// }: SelectProps) => {
+//   const [modalVisible, setModalVisible] = useState(false);
+//   const selectedOption = options.find((o) => o.value === value);
 
+//   return (
+//     <View style={styles.inputWrapper}>
+//       {label && <Text style={styles.label}>{label}</Text>}
+
+//       <TouchableOpacity
+//         style={styles.selectButton}
+//         onPress={() => setModalVisible(true)}
+//         activeOpacity={0.7}
+//       >
+//         <Text style={[styles.selectText, !selectedOption && { color: '#9CA3AF' }]}>
+//           {selectedOption ? selectedOption.label : placeholder}
+//         </Text>
+//         <Text style={{ color: '#6B7280', fontSize: 12 }}>▼</Text>
+//       </TouchableOpacity>
+
+//       {/* Modal Dropdown เลือกตัวเลือก */}
+//       <Modal visible={modalVisible} transparent animationType="fade">
+//         <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
+//           <View style={styles.modalContent}>
+//             <FlatList
+//               data={options}
+//               keyExtractor={(item) => String(item.value)}
+//               renderItem={({ item }) => (
+//                 <TouchableOpacity
+//                   style={styles.optionItem}
+//                   onPress={() => {
+//                     if (onValueChange) onValueChange(item.value);
+//                     setModalVisible(false);
+//                   }}
+//                 >
+//                   <Text
+//                     style={[
+//                       styles.optionText,
+//                       item.value === value && { color: '#014925', fontWeight: 'bold' },
+//                     ]}
+//                   >
+//                     {item.label}
+//                   </Text>
+//                 </TouchableOpacity>
+//               )}
+//             />
+//           </View>
+//         </Pressable>
+//       </Modal>
+//     </View>
+//   );
+// };
+
+export const FormInput = ({ label, placeholder, ...rest}: FormInputProps) => {
   return (
-    <View style={styles.inputWrapper}>
-      {label && <Text style={styles.label}>{label}</Text>}
-
-      <TouchableOpacity
-        style={styles.selectButton}
-        onPress={() => setModalVisible(true)}
-        activeOpacity={0.7}
-      >
-        <Text style={[styles.selectText, !selectedOption && { color: '#9CA3AF' }]}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </Text>
-        <Text style={{ color: '#6B7280', fontSize: 12 }}>▼</Text>
-      </TouchableOpacity>
-
-      {/* Modal Dropdown เลือกตัวเลือก */}
-      <Modal visible={modalVisible} transparent animationType="fade">
-        <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
-          <View style={styles.modalContent}>
-            <FlatList
-              data={options}
-              keyExtractor={(item) => String(item.value)}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.optionItem}
-                  onPress={() => {
-                    if (onValueChange) onValueChange(item.value);
-                    setModalVisible(false);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.optionText,
-                      item.value === value && { color: '#014925', fontWeight: 'bold' },
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        </Pressable>
-      </Modal>
+    <View style={styles.inputContainer}>
+      <Text style={styles.label}>{label}</Text>
+      <TextInput style={styles.input} placeholder={placeholder} placeholderTextColor="#9CA3AF" {...rest} />
     </View>
   );
 };
-
-// ----------------------------------------------------
-// Textarea Component
-// ----------------------------------------------------
-export const Textarea = ({ label, style, ...props }: InputProps) => (
-  <View style={styles.inputWrapper}>
-    {label && <Text style={styles.label}>{label}</Text>}
-    <TextInput
-      style={[styles.input, styles.textarea, style]}
-      multiline
-      numberOfLines={4}
-      textAlignVertical="top"
-      placeholderTextColor="#9CA3AF"
-      {...props}
-    />
-  </View>
-);
-
 // ----------------------------------------------------
 // Button Component
 // ----------------------------------------------------
@@ -244,11 +240,8 @@ export const ProfileUpload = () => {
     </View>
   );
 };
-// ----------------------------------------------------
-// Stylesheet (แทนที่ Tailwind CSS)
-// ----------------------------------------------------
+
 const styles = StyleSheet.create({
-  // Header
   headerContainer: {
     paddingTop: 24,
     paddingBottom: 16,
@@ -295,30 +288,27 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
 
-  // Form Inputs
-  inputWrapper: {
+  inputContainer: {
+    marginBottom: 20,
     width: '100%',
-    gap: 6,
-    marginBottom: 16,
   },
+
   label: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontFamily: 'BeVietnamPro_500Medium',
+    color: '#1B1B1B',
+    marginBottom: 8,
   },
+
   input: {
-    width: '100%',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
+    height: 50,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
-    color: '#1F2937',
-    fontSize: 14,
-  },
-  textarea: {
-    minHeight: 100,
+    borderColor: '#404941',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    backgroundColor: '#FCF9F8',
+    color: '#404941',
   },
 
   // Select Modal
@@ -443,7 +433,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
   },
   container: {
-    alignItems: 'center', // จัดให้ Profile อยู่กึ่งกลางหน้าจอ
+    alignItems: 'center',
     marginVertical: 24,
   },
   profileWrapper: {
