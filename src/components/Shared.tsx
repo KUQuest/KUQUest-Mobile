@@ -10,6 +10,7 @@ import {
   Pressable,
   TextInputProps,
   TouchableOpacityProps,
+  ScrollView,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -21,6 +22,14 @@ interface StepProgressProps {
 interface FormInputProps extends TextInputProps {
   label: string;
   placeholder: string;
+}
+
+interface FormSelectProps {
+  label: string;
+  placeholder: string;
+  options: string[];
+  selectedValue: string;
+  onSelect: (value: string) => void;
 }
 
 // ----------------------------------------------------
@@ -86,6 +95,7 @@ interface SelectProps {
   onValueChange?: (value: any) => void;
   placeholder?: string;
 }
+
 
 // export const Select = ({
 //   label,
@@ -241,6 +251,62 @@ export const ProfileUpload = () => {
   );
 };
 
+export const FormSelect = ({
+  label,
+  placeholder,
+  options,
+  selectedValue,
+  onSelect,
+}: FormSelectProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <View style={[styles.inputContainer, { zIndex: isOpen ? 1000 : 1 }]}>
+      <Text style={styles.label}>{label}</Text>
+
+      <TouchableOpacity
+        style={styles.selectBox}
+        activeOpacity={0.7}
+        onPress={() => setIsOpen(!isOpen)}
+      >
+        <Text style={[styles.selectText, !selectedValue && { color: '#9CA3AF' }]}>
+          {selectedValue || placeholder}
+        </Text>
+        
+        <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <Path d="M7 10L12 15L17 10H7Z" fill="#374151" />
+        </Svg>
+      </TouchableOpacity>
+
+      {isOpen && (
+        <View style={styles.dropdownMenu}>
+          <ScrollView nestedScrollEnabled style={{ maxHeight: 150 }}>
+            {options.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.optionItem}
+                onPress={() => {
+                  onSelect(item);
+                  setIsOpen(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.optionText,
+                    item === selectedValue && styles.selectedOptionText,
+                  ]}
+                >
+                  {item}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
   headerContainer: {
     paddingTop: 24,
@@ -324,30 +390,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  selectText: {
-    fontSize: 14,
-    color: '#1F2937',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    width: '100%',
-    maxHeight: 300,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingVertical: 8,
-  },
-  optionItem: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
+  //selectText: {
+    //fontSize: 14,
+    //color: '#1F2937',
+  //},
+  //modalOverlay: {
+    //flex: 1,
+    //backgroundColor: 'rgba(0,0,0,0.4)',
+    //justifyContent: 'center',
+    //alignItems: 'center',
+    //padding: 20,
+  //},
+  //modalContent: {
+    //width: '100%',
+    //maxHeight: 300,
+    //backgroundColor: '#FFFFFF',
+    //borderRadius: 12,
+    //paddingVertical: 8,
+  //},
+  //optionItem: {
+    //paddingHorizontal: 20,
+    //paddingVertical: 14,
+    //borderBottomWidth: 1,
+    //borderBottomColor: '#F3F4F6',
+  //},
   optionText: {
     fontSize: 14,
     color: '#1F2937',
@@ -463,5 +529,67 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 3,
     borderColor: '#FFFFFF',
+  },
+
+  selectText: {
+    fontSize: 16,
+    color: '#1B1B1B',
+    fontFamily: 'BeVietnamPro_400Regular',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    padding: 20,
+    width: '90%',
+    maxHeight: '60%',
+    backgroundColor: '#FFFFFF',
+  },
+  optionItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#C0C9BE',
+  },
+  selectBox: {
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#404941',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#FCF9F8',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  selectContainer: {
+    marginBottom: 20,
+    width: '100%',
+    position: 'relative', 
+  },
+
+  dropdownMenu: {
+    position: 'absolute',
+    top: 80,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FCF9F8',
+    borderWidth: 1,
+    borderColor: '#404941',
+    borderRadius: 8,
+    overflow: 'hidden',
+    zIndex: 9999,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  selectedOptionText: {
+    fontWeight: 'bold',
+    color: '#004D25',
   },
 });

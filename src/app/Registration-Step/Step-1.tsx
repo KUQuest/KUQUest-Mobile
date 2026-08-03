@@ -18,7 +18,8 @@ import {Header,
         Step,
         StepProgress,
         ProfileUpload,
-        FormInput,} 
+        FormInput,
+        FormSelect} 
 from '../../components/Shared';
 
 interface Step1Props {
@@ -27,32 +28,57 @@ interface Step1Props {
   onSubmit?: () => void;
 }
 
-export default function Step1({ formData = {}, setFormData = () => {}, onSubmit }: Step1Props) {
+export default function Step1() { //{ formData = {}, setFormData = () => {}, onSubmit }: Step1Props
   const [isAccepted, setIsAccepted] = useState(false);
-  const occupation = formData?.occupation || 'Student';
-
+  const [formData, setFormData] = useState({
+    firstName: '',
+    phoneNumber: '',
+    occupation: '',
+    studentId: '',
+    faculty: '',
+    department: '',
+  });
   const handleBack = () => {
     router.back();
   };
 
+  // const handleSubmit = () => {
+  //   if (onSubmit) {
+  //     onSubmit();
+  //   } else {
+  //     console.log('Submitted Data:', formData);
+  //   }
+  // };
   const handleSubmit = () => {
-    if (onSubmit) {
-      onSubmit();
-    } else {
-      console.log('Submitted Data:', formData);
-    }
+    console.log('Submitted Data:', formData);
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <RegistrationHeader title="Academic Registration" />
         <Step step={1} />
         <StepProgress step={1} totalSteps={3} />
         <ProfileUpload></ProfileUpload>
         <FormInput label="Full Name" value={formData.firstName} placeholder="Enter your full name" onChangeText={(text) => setFormData({ ...formData, firstName: text })} />
         <FormInput label="Phone Number" value={formData.phoneNumber} placeholder="Enter your phone number" onChangeText={(text) => setFormData({ ...formData, phoneNumber: text })} />
-      </View>
+        <FormSelect label="Occupation" options={['Student', 'Teacher']} placeholder="Select your occupation" selectedValue={formData.occupation} onSelect={(value) => setFormData({ ...formData, occupation: value })} />
+        {formData.occupation === 'Student' && (
+          <FormInput 
+            label="Student ID" 
+            value={formData.studentId} 
+            placeholder="67xxxxxxxx" 
+            onChangeText={(text) => setFormData({ ...formData, studentId: text })} 
+          />
+        )}
+        <FormSelect label="Faculty" options={['Engineering', 'Business']} placeholder="Select your faculty" selectedValue={formData.faculty}onSelect={(value) => setFormData({ ...formData, faculty: value })}/>
+        <FormInput label="Department" value={formData.department} placeholder="Enter your department" onChangeText={(text) => setFormData({ ...formData, department: text })}/>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -62,13 +88,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F9FA',
   },
+  scrollView: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     paddingHorizontal: 24,
     paddingTop: 12,
   },
   scrollContent: {
-    paddingBottom: 24,
+    paddingBottom: 100,
+    paddingTop:12,
+    paddingHorizontal: 24,
   },
   avatarWrapper: {
     alignItems: 'center',
