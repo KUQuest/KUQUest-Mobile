@@ -12,6 +12,11 @@ import {
   TouchableOpacityProps,
 } from 'react-native';
 
+interface StepProgressProps {
+  step: number;
+  totalSteps?: number;
+}
+
 // ----------------------------------------------------
 // Header Component
 // ----------------------------------------------------
@@ -183,6 +188,35 @@ export const Button = ({ variant = 'primary', children, style, ...props }: Butto
   );
 };
 
+export const RegistrationHeader = ({ title }: { title: string }) => (
+  <View style={styles.RegistrationHeaderContainer}>
+    <Text style={styles.RegistrationHeaderLogo}>KUQUEST</Text>
+    <Text style={styles.RegistrationHeaderText}>{title}</Text>
+  </View>
+);
+
+export const Step = ({ step }: { step: number }) => (
+  <Text style={styles.Step}>Step {step} of 3</Text>
+);
+
+export const StepProgress = ({ step, totalSteps = 3 }: StepProgressProps) => {
+  // สร้าง Array ตามจำนวน totalSteps เช่น [1, 2, 3] เพื่อนำไป map สร้างเส้น
+  const stepsArray = Array.from({ length: totalSteps }, (_, index) => index + 1);
+
+  return (
+    <View style={styles.progressContainer}>
+      {stepsArray.map((currentLineIndex) => (
+        <View
+          key={currentLineIndex}
+          style={[
+            styles.lineSegment,
+            currentLineIndex <= step ? styles.lineActive : styles.lineInactive,
+          ]}
+        />
+      ))}
+    </View>
+  );
+};
 // ----------------------------------------------------
 // Stylesheet (แทนที่ Tailwind CSS)
 // ----------------------------------------------------
@@ -211,12 +245,12 @@ const styles = StyleSheet.create({
   },
 
   // ProgressBar
-  progressContainer: {
-    width: '100%',
-    maxWidth: 200,
-    alignSelf: 'center',
-    marginBottom: 32,
-  },
+  //progressContainer: {
+    //width: '100%',
+    //maxWidth: 200,
+    //alignSelf: 'center',
+    //marginBottom: 32,
+  //},
   progressText: {
     textAlign: 'center',
     fontSize: 14,
@@ -330,5 +364,55 @@ const styles = StyleSheet.create({
   },
   textPrimary: {
     color: '#014925',
+  },
+  RegistrationHeaderContainer: {
+    paddingHorizontal: 8,
+    paddingTop: 16,
+    alignItems: 'center',
+  },
+  RegistrationHeaderLogo: {
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    fontSize: 40,
+    color: '#004D25',
+    alignSelf: 'flex-start',
+    fontFamily: 'BeVietnamPro_700Bold',
+  },
+  RegistrationHeaderText: {
+    fontSize: 24,
+    textAlign: 'center',
+    color: '#1B1B1B',
+    textTransform: 'uppercase',
+    maxWidth: 200,
+    lineHeight: 30,
+    fontFamily: 'BeVietnamPro_600SemiBold',
+    paddingTop: 16,
+  },
+  Step:{
+    fontSize: 16,
+    fontFamily: 'BeVietnamPro_400Regular',
+    textAlign: 'center',
+    color: '#404941',
+    paddingTop: 12,
+  },
+
+  progressContainer:{
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+    marginVertical: 41,
+  },
+
+  lineSegment: {
+    flex: 1, 
+    height: 4,
+    borderRadius: 2,
+  },
+  lineActive: {
+    backgroundColor: '#004D25',
+  },
+  lineInactive: {
+    backgroundColor: '#E5E7EB',
   },
 });
