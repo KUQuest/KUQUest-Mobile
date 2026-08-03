@@ -13,7 +13,8 @@
         "./assets/*"
       ]
     },
-    "types": ["jest"]
+    "types": ["jest"],
+    "skipLibCheck": true
   },
   "include": [
     "**/*.ts",
@@ -23,6 +24,7 @@
   ],
   "exclude": [
     "example",
-    "node_modules"
+    "node_modules",
+    "**/node_modules/*"
   ]
 }

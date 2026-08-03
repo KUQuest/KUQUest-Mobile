@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { StyleSheet, Text, View, Pressable, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Host, Button } from '@expo/ui';
 import { SymbolView } from 'expo-symbols';
@@ -34,6 +34,9 @@ export default function LoginScreen({
   authAdapter = authService,
   mockCredentialForTesting,
 }: LoginScreenProps) {
+  const { width } = useWindowDimensions();
+  const buttonWidth = Math.min(width - 48, 420);
+
   const [currentLocale, setCurrentLocale] = useState<SupportedLocale>(locale);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<{
@@ -52,9 +55,9 @@ export default function LoginScreen({
       setError((prev) =>
         prev
           ? {
-              ...prev,
-              message: getAuthErrorText(prev.code, nextLocale),
-            }
+            ...prev,
+            message: getAuthErrorText(prev.code, nextLocale),
+          }
           : null
       );
     }
@@ -101,148 +104,141 @@ export default function LoginScreen({
   };
 
   return (
-    <Host seedColor="#014925" style={styles.host}>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
-          <View style={styles.content}>
-            {/* Language Toggle */}
-            <Pressable
-              style={styles.langToggle}
-              onPress={handleToggleLocale}
-              accessibilityRole="button"
-              accessibilityLabel={`Switch language to ${
-                currentLocale === 'th' ? 'English' : 'Thai'
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.content}>
+          {/* Language Toggle */}
+          <Pressable
+            style={styles.langToggle}
+            onPress={handleToggleLocale}
+            accessibilityRole="button"
+            accessibilityLabel={`Switch language to ${currentLocale === 'th' ? 'English' : 'Thai'
               }`}
-              testID="language-switcher"
-            >
-              <Text style={styles.langToggleText}>
-                {currentLocale === 'th' ? 'TH / EN' : 'EN / TH'}
-              </Text>
-            </Pressable>
+            testID="language-switcher"
+          >
+            <Text style={styles.langToggleText}>
+              {currentLocale === 'th' ? 'TH / EN' : 'EN / TH'}
+            </Text>
+          </Pressable>
 
-            {/* Header Section */}
-            <View style={styles.headerSection}>
-              <Text style={styles.title}>KUQUEST</Text>
-              <Text style={styles.subtitle}>ACADEMIC VENTURE NETWORK</Text>
+          {/* Header Section */}
+          <View style={styles.headerSection}>
+            <Text style={styles.title}>KUQUEST</Text>
+            <Text style={styles.subtitle}>ACADEMIC VENTURE NETWORK</Text>
+          </View>
+
+          {/* Form / Actions Section */}
+          <View style={styles.formSection}>
+            <View
+              style={styles.noticeCard}
+              accessibilityRole="text"
+              accessibilityLabel={`${messages.noticeTextPrefix} ${messages.noticeEmailDomain} ${messages.noticeTextSuffix}`}
+            >
+              <SymbolView
+                name="graduationcap.fill"
+                size={24}
+                tintColor="#014925"
+              />
+              <Text style={styles.noticeText}>
+                {messages.noticeTextPrefix}{' '}
+                <Text style={styles.noticeTextBold}>
+                  {messages.noticeEmailDomain}
+                </Text>{' '}
+                {messages.noticeTextSuffix}
+              </Text>
             </View>
 
-            {/* Form / Actions Section */}
-            <View style={styles.formSection}>
+            {/* Error Banner */}
+            {error && (
               <View
-                style={styles.noticeCard}
-                accessibilityRole="text"
-                accessibilityLabel={`${messages.noticeTextPrefix} ${messages.noticeEmailDomain} ${messages.noticeTextSuffix}`}
+                style={styles.errorCard}
+                accessibilityRole="alert"
+                accessibilityLabel={error.message}
+                testID="error-banner"
               >
                 <SymbolView
-                  name={{
-                    ios: 'graduationcap.fill',
-                    android: 'school',
-                    web: 'school',
-                  }}
-                  size={24}
-                  tintColor="#014925"
+                  name="exclamationmark.triangle.fill"
+                  size={22}
+                  tintColor="#D32F2F"
                 />
-                <Text style={styles.noticeText}>
-                  {messages.noticeTextPrefix}{' '}
-                  <Text style={styles.noticeTextBold}>
-                    {messages.noticeEmailDomain}
-                  </Text>{' '}
-                  {messages.noticeTextSuffix}
-                </Text>
-              </View>
-
-              {/* Error Banner */}
-              {error && (
-                <View
-                  style={styles.errorCard}
-                  accessibilityRole="alert"
-                  accessibilityLabel={error.message}
-                  testID="error-banner"
-                >
-                  <SymbolView
-                    name={{
-                      ios: 'exclamationmark.triangle.fill',
-                      android: 'warning',
-                      web: 'warning',
-                    }}
-                    size={22}
-                    tintColor="#D32F2F"
-                  />
-                  <View style={styles.errorContent}>
-                    <Text style={styles.errorText} testID="error-message">
-                      {error.message}
-                    </Text>
-                    {error.lastMode && (
-                      <Pressable
-                        style={styles.retryButton}
-                        onPress={() => handleAuth(error.lastMode!)}
-                        accessibilityRole="button"
-                        accessibilityLabel={messages.retryButton}
-                        testID="retry-button"
-                      >
-                        <Text style={styles.retryButtonText}>
-                          {messages.retryButton}
-                        </Text>
-                      </Pressable>
-                    )}
-                  </View>
+                <View style={styles.errorContent}>
+                  <Text style={styles.errorText} testID="error-message">
+                    {error.message}
+                  </Text>
+                  {error.lastMode && (
+                    <Pressable
+                      style={styles.retryButton}
+                      onPress={() => handleAuth(error.lastMode!)}
+                      accessibilityRole="button"
+                      accessibilityLabel={messages.retryButton}
+                      testID="retry-button"
+                    >
+                      <Text style={styles.retryButtonText}>
+                        {messages.retryButton}
+                      </Text>
+                    </Pressable>
+                  )}
                 </View>
-              )}
+              </View>
+            )}
 
-              {/* Sign Up with Google Button */}
+            {/* Sign Up with Google Button */}
+            <Host seedColor="#004D25" matchContents style={styles.hostWrapper}>
               <Button
                 variant="filled"
                 label={isLoading ? messages.loadingAuth : messages.signUpWithGoogle}
                 onPress={() => handleAuth('signup')}
-                style={styles.button}
+                style={{ width: buttonWidth }}
                 disabled={isLoading}
                 testID="signup-button"
               />
+            </Host>
 
-              <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>{messages.orDivider}</Text>
-                <View style={styles.dividerLine} />
-              </View>
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>{messages.orDivider}</Text>
+              <View style={styles.dividerLine} />
+            </View>
 
-              {/* Sign In with Google Button */}
+            {/* Sign In with Google Button */}
+            <Host seedColor="#014925" matchContents style={styles.hostWrapper}>
               <Button
                 variant="outlined"
                 label={isLoading ? messages.loadingAuth : messages.signInWithGoogle}
                 onPress={() => handleAuth('signin')}
-                style={styles.button}
+                style={{ width: buttonWidth }}
                 disabled={isLoading}
                 testID="signin-button"
               />
-            </View>
+            </Host>
+          </View>
 
-            {/* Footer Section */}
-            <View style={styles.footerSection}>
-              <View style={styles.footerLinks}>
-                <Pressable onPress={() => {}}>
-                  <Text style={styles.footerLinkText}>
-                    {messages.termsOfService}
-                  </Text>
-                </Pressable>
-                <Pressable onPress={() => {}}>
-                  <Text style={styles.footerLinkText}>
-                    {messages.privacyPolicy}
-                  </Text>
-                </Pressable>
-                <Pressable onPress={() => {}}>
-                  <Text style={styles.footerLinkText}>
-                    {messages.contactUs}
-                  </Text>
-                </Pressable>
-              </View>
-              <Text style={styles.copyrightText}>
-                © 2024 KUQUEST. All rights reserved.
-              </Text>
+          {/* Footer Section */}
+          <View style={styles.footerSection}>
+            <View style={styles.footerLinks}>
+              <Pressable onPress={() => { }}>
+                <Text style={styles.footerLinkText}>
+                  {messages.termsOfService}
+                </Text>
+              </Pressable>
+              <Pressable onPress={() => { }}>
+                <Text style={styles.footerLinkText}>
+                  {messages.privacyPolicy}
+                </Text>
+              </Pressable>
+              <Pressable onPress={() => { }}>
+                <Text style={styles.footerLinkText}>
+                  {messages.contactUs}
+                </Text>
+              </Pressable>
             </View>
+            <Text style={styles.copyrightText}>
+              © 2024 KUQUEST. All rights reserved.
+            </Text>
           </View>
         </View>
-      </SafeAreaView>
-    </Host>
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -359,8 +355,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  button: {
+  hostWrapper: {
     width: '100%',
+    alignSelf: 'stretch',
   },
   dividerContainer: {
     flexDirection: 'row',

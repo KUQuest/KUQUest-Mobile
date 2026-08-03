@@ -1,4 +1,3 @@
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import {
   AuthAdapter,
   AuthError,
@@ -9,6 +8,15 @@ import {
   RoutingDestination,
 } from './types';
 import { SecureSessionStorage } from './secureStorage';
+
+// Safely require GoogleSignin to avoid crash in Expo Go where native module is missing
+let NativeGoogleSignin: any = null;
+try {
+  const googleSigninPkg = require('@react-native-google-signin/google-signin');
+  NativeGoogleSignin = googleSigninPkg.GoogleSignin;
+} catch {
+  // RNGoogleSignin native module is not linked in Expo Go
+}
 
 export interface MockAccountRecord {
   id: string;
@@ -137,10 +145,12 @@ export class AuthService implements AuthAdapter {
       if (revokeBackendCallback) {
         await revokeBackendCallback();
       }
-      try {
-        await GoogleSignin.signOut();
-      } catch {
-        // Ignore native google signout errors in tests/mock
+      if (NativeGoogleSignin) {
+        try {
+          await NativeGoogleSignin.signOut();
+        } catch {
+          // Ignore native google signout errors in tests/mock
+        }
       }
     } finally {
       await SecureSessionStorage.clearSession();
@@ -171,9 +181,16 @@ export class AuthService implements AuthAdapter {
       return await this.authenticateWithGoogle(mockEmailForTesting, mode, mockEmailForTesting);
     }
 
+    if (!NativeGoogleSignin) {
+      throw new AuthError(
+        'OAUTH_FAILED',
+        'Native Google Sign-In requires a Development Build (npx expo run:android) and is not supported in standard Expo Go.'
+      );
+    }
+
     try {
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      const response = await GoogleSignin.signIn();
+      await NativeGoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await NativeGoogleSignin.signIn();
       const email = response.data?.user.email || '';
       const idToken = response.data?.idToken || email;
 
