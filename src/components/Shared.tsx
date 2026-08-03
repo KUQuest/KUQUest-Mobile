@@ -176,6 +176,12 @@ interface ButtonProps extends TouchableOpacityProps {
   children: React.ReactNode;
 }
 
+interface CheckboxProps {
+  label: string;
+  isChecked: boolean;
+  onToggle: () => void;
+}
+
 export const Button = ({ variant = 'primary', children, style, ...props }: ButtonProps) => {
   const isPrimary = variant === 'primary';
 
@@ -324,6 +330,31 @@ export const TermsBox = ({ label, title, content }: TermsBoxProps) => {
         </View>
       </View>
     </View>
+  );
+};
+
+export const Checkbox = ({ label, isChecked, onToggle }: CheckboxProps) => {
+  return (
+    <TouchableOpacity 
+      style={styles.checkboxContainer} 
+      onPress={onToggle} 
+      activeOpacity={0.8}
+    >
+      <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
+        {isChecked && (
+          <Svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+            <Path 
+              d="M20 6L9 17L4 12" 
+              stroke="#FFFFFF" 
+              strokeWidth="3" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+            />
+          </Svg>
+        )}
+      </View>
+      <Text style={styles.checkboxLabel}>{label}</Text>
+    </TouchableOpacity>
   );
 };
 
@@ -631,5 +662,31 @@ const styles = StyleSheet.create({
     fontFamily: 'BeVietnamPro_400Regular', 
     color: '#404941',
     lineHeight: 20,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 44,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#C0C9BE',
+    backgroundColor: '#FCF9F8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  checkboxChecked: {
+    backgroundColor: '#014925',
+    borderColor: '#014925',
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    fontFamily: 'BeVietnamPro_400Regular', 
+    color: '#1B1B1B',
+    flex: 1,
   },
 });
