@@ -4,25 +4,20 @@ import { useEffect } from 'react';
 import { useFonts } from 'expo-font';
 
 import {
-  font42dotSans_400Regular,
-  font42dotSans_500Medium,
-  font42dotSans_600SemiBold,
-  font42dotSans_700Bold,
-} from '@expo-google-fonts/42dot-sans';
-
-import {
-  BeVietnamPro_700Bold
+  BeVietnamPro_700Bold,
+  BeVietnamPro_600SemiBold,
+  BeVietnamPro_500Medium,
+  BeVietnamPro_400Regular,
 } from '@expo-google-fonts/be-vietnam-pro';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    font42dotSans_400Regular,
-    font42dotSans_500Medium,
-    font42dotSans_600SemiBold,
-    font42dotSans_700Bold,
-    BeVietnamPro_700Bold
+    BeVietnamPro_700Bold,
+    BeVietnamPro_600SemiBold,
+    BeVietnamPro_500Medium,
+    BeVietnamPro_400Regular,
   });
   useEffect(() => {
     if (fontsLoaded) {
