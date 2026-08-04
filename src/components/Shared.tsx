@@ -5,9 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Modal,
-  FlatList,
-  Pressable,
   TextInputProps,
   TouchableOpacityProps,
   ScrollView,
@@ -32,9 +29,23 @@ interface FormSelectProps {
   onSelect: (value: string) => void;
 }
 
-// ----------------------------------------------------
-// Header Component
-// ----------------------------------------------------
+interface TermsBoxProps {
+  label: string;
+  title?: string;
+  content: string;
+}
+
+interface ButtonProps extends TouchableOpacityProps {
+  variant?: 'primary' | 'secondary';
+  children: React.ReactNode;
+}
+
+interface CheckboxProps {
+  label: string;
+  isChecked: boolean;
+  onToggle: () => void;
+}
+
 export const Header = ({ title }: { title: string }) => (
   <View style={styles.headerContainer}>
     <Text style={styles.headerLogo}>KUQUEST</Text>
@@ -42,9 +53,6 @@ export const Header = ({ title }: { title: string }) => (
   </View>
 );
 
-// ----------------------------------------------------
-// ProgressBar Component
-// ----------------------------------------------------
 export const ProgressBar = ({ step, total }: { step: number; total: number }) => (
   <View style={styles.progressContainer}>
     <Text style={styles.progressText}>Step {step} of {total}</Text>
@@ -62,125 +70,19 @@ export const ProgressBar = ({ step, total }: { step: number; total: number }) =>
   </View>
 );
 
-// ----------------------------------------------------
-// Input Component
-// ----------------------------------------------------
-interface InputProps extends TextInputProps {
-  label?: string;
-}
-
-// export const Input = ({ label, style, ...props }: InputProps) => (
-//   <View style={styles.inputWrapper}>
-//     {label && <Text style={styles.label}>{label}</Text>}
-//     <TextInput
-//       style={[styles.input, style]}
-//       placeholderTextColor="#9CA3AF"
-//       {...props}
-//     />
-//   </View>
-// );
-
-// ----------------------------------------------------
-// Select Component (Modal Dropdown)
-// ----------------------------------------------------
-interface Option {
-  label: string;
-  value: string | number;
-}
-
-interface SelectProps {
-  label?: string;
-  options: Option[];
-  value?: string | number;
-  onValueChange?: (value: any) => void;
-  placeholder?: string;
-}
-
-interface TermsBoxProps {
-  label: string;
-  title?: string;
-  content: string;
-}
-
-// export const Select = ({
-//   label,
-//   options = [],
-//   value,
-//   onValueChange,
-//   placeholder = 'เลือก...',
-// }: SelectProps) => {
-//   const [modalVisible, setModalVisible] = useState(false);
-//   const selectedOption = options.find((o) => o.value === value);
-
-//   return (
-//     <View style={styles.inputWrapper}>
-//       {label && <Text style={styles.label}>{label}</Text>}
-
-//       <TouchableOpacity
-//         style={styles.selectButton}
-//         onPress={() => setModalVisible(true)}
-//         activeOpacity={0.7}
-//       >
-//         <Text style={[styles.selectText, !selectedOption && { color: '#9CA3AF' }]}>
-//           {selectedOption ? selectedOption.label : placeholder}
-//         </Text>
-//         <Text style={{ color: '#6B7280', fontSize: 12 }}>▼</Text>
-//       </TouchableOpacity>
-
-//       {/* Modal Dropdown เลือกตัวเลือก */}
-//       <Modal visible={modalVisible} transparent animationType="fade">
-//         <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
-//           <View style={styles.modalContent}>
-//             <FlatList
-//               data={options}
-//               keyExtractor={(item) => String(item.value)}
-//               renderItem={({ item }) => (
-//                 <TouchableOpacity
-//                   style={styles.optionItem}
-//                   onPress={() => {
-//                     if (onValueChange) onValueChange(item.value);
-//                     setModalVisible(false);
-//                   }}
-//                 >
-//                   <Text
-//                     style={[
-//                       styles.optionText,
-//                       item.value === value && { color: '#014925', fontWeight: 'bold' },
-//                     ]}
-//                   >
-//                     {item.label}
-//                   </Text>
-//                 </TouchableOpacity>
-//               )}
-//             />
-//           </View>
-//         </Pressable>
-//       </Modal>
-//     </View>
-//   );
-// };
-
-export const FormInput = ({ label, placeholder, ...rest}: FormInputProps) => {
+export const FormInput = ({ label, placeholder, ...rest }: FormInputProps) => {
   return (
     <View style={styles.inputContainer}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput style={styles.input} placeholder={placeholder} placeholderTextColor="#9CA3AF" {...rest} />
+      <TextInput
+        style={styles.input}
+        placeholder={placeholder}
+        placeholderTextColor="#9CA3AF"
+        {...rest}
+      />
     </View>
   );
 };
-// ----------------------------------------------------
-// Button Component
-// ----------------------------------------------------
-interface ButtonProps extends TouchableOpacityProps {
-  variant?: 'primary' | 'secondary';
-  children: React.ReactNode;
-}
-
-interface CheckboxProps {
-  label: string;
-  isChecked: boolean;
-  onToggle: () => void;
-}
 
 export const Button = ({ variant = 'primary', children, style, ...props }: ButtonProps) => {
   const isPrimary = variant === 'primary';
@@ -218,7 +120,6 @@ export const Step = ({ step }: { step: number }) => (
 );
 
 export const StepProgress = ({ step, totalSteps = 3 }: StepProgressProps) => {
-  // สร้าง Array ตามจำนวน totalSteps เช่น [1, 2, 3] เพื่อนำไป map สร้างเส้น
   const stepsArray = Array.from({ length: totalSteps }, (_, index) => index + 1);
 
   return (
@@ -256,7 +157,6 @@ export const ProfileUpload = () => {
             />
           </Svg>
         </TouchableOpacity>
-
       </View>
     </View>
   );
@@ -382,12 +282,6 @@ const styles = StyleSheet.create({
   },
 
   // ProgressBar
-  //progressContainer: {
-    //width: '100%',
-    //maxWidth: 200,
-    //alignSelf: 'center',
-    //marginBottom: 32,
-  //},
   progressText: {
     textAlign: 'center',
     fontSize: 14,
@@ -405,18 +299,17 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
 
+  // Inputs
   inputContainer: {
     marginBottom: 20,
     width: '100%',
   },
-
   label: {
     fontSize: 12,
     fontFamily: 'BeVietnamPro_500Medium',
     color: '#1B1B1B',
     marginBottom: 8,
   },
-
   input: {
     height: 50,
     borderWidth: 1,
@@ -428,46 +321,53 @@ const styles = StyleSheet.create({
     color: '#404941',
   },
 
-  // Select Modal
-  selectButton: {
-    width: '100%',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
+  // FormSelect Elements
+  optionText: {
+    fontSize: 14,
+    color: '#1F2937',
+  },
+  selectText: {
+    fontSize: 16,
+    color: '#1B1B1B',
+    fontFamily: 'BeVietnamPro_400Regular',
+  },
+  optionItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#C0C9BE',
+  },
+  selectBox: {
+    height: 50,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
+    borderColor: '#404941',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#FCF9F8',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  //selectText: {
-    //fontSize: 14,
-    //color: '#1F2937',
-  //},
-  //modalOverlay: {
-    //flex: 1,
-    //backgroundColor: 'rgba(0,0,0,0.4)',
-    //justifyContent: 'center',
-    //alignItems: 'center',
-    //padding: 20,
-  //},
-  //modalContent: {
-    //width: '100%',
-    //maxHeight: 300,
-    //backgroundColor: '#FFFFFF',
-    //borderRadius: 12,
-    //paddingVertical: 8,
-  //},
-  //optionItem: {
-    //paddingHorizontal: 20,
-    //paddingVertical: 14,
-    //borderBottomWidth: 1,
-    //borderBottomColor: '#F3F4F6',
-  //},
-  optionText: {
-    fontSize: 14,
-    color: '#1F2937',
+  dropdownMenu: {
+    position: 'absolute',
+    top: 80,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FCF9F8',
+    borderWidth: 1,
+    borderColor: '#404941',
+    borderRadius: 8,
+    overflow: 'hidden',
+    zIndex: 9999,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  selectedOptionText: {
+    fontWeight: 'bold',
+    color: '#004D25',
   },
 
   // Buttons
@@ -499,6 +399,8 @@ const styles = StyleSheet.create({
   textPrimary: {
     color: '#014925',
   },
+
+  // Registration Specific
   RegistrationHeaderContainer: {
     paddingHorizontal: 8,
     paddingTop: 16,
@@ -522,7 +424,7 @@ const styles = StyleSheet.create({
     fontFamily: 'BeVietnamPro_600SemiBold',
     paddingTop: 16,
   },
-  Step:{
+  Step: {
     fontSize: 16,
     fontFamily: 'BeVietnamPro_400Regular',
     textAlign: 'center',
@@ -530,14 +432,13 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
 
-  progressContainer:{
+  progressContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 8,
     marginVertical: 41,
   },
-
   lineSegment: {
     flex: 1, 
     height: 4,
@@ -549,6 +450,8 @@ const styles = StyleSheet.create({
   lineInactive: {
     backgroundColor: '#E5E7EB',
   },
+
+  // Profile Upload
   container: {
     alignItems: 'center',
     marginVertical: 24,
@@ -582,67 +485,7 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
   },
 
-  selectText: {
-    fontSize: 16,
-    color: '#1B1B1B',
-    fontFamily: 'BeVietnamPro_400Regular',
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    padding: 20,
-    width: '90%',
-    maxHeight: '60%',
-    backgroundColor: '#FFFFFF',
-  },
-  optionItem: {
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#C0C9BE',
-  },
-  selectBox: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#404941',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    backgroundColor: '#FCF9F8',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  selectContainer: {
-    marginBottom: 20,
-    width: '100%',
-    position: 'relative', 
-  },
-
-  dropdownMenu: {
-    position: 'absolute',
-    top: 80,
-    left: 0,
-    right: 0,
-    backgroundColor: '#FCF9F8',
-    borderWidth: 1,
-    borderColor: '#404941',
-    borderRadius: 8,
-    overflow: 'hidden',
-    zIndex: 9999,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-  },
-  selectedOptionText: {
-    fontWeight: 'bold',
-    color: '#004D25',
-  },
+  // Terms and Conditions
   termsBox: {
     minHeight: 100,
     borderWidth: 1,
@@ -663,6 +506,8 @@ const styles = StyleSheet.create({
     color: '#404941',
     lineHeight: 20,
   },
+
+  // Checkbox
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
