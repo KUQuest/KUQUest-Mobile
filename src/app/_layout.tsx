@@ -1,34 +1,36 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { useEffect } from 'react';
+import { useFonts } from 'expo-font';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
 import {
-  useFonts,
-  BeVietnamPro_400Regular,
-  BeVietnamPro_500Medium,
-  BeVietnamPro_600SemiBold,
-  BeVietnamPro_700Bold,
+  font42dotSans_400Regular,
+  font42dotSans_500Medium,
+  font42dotSans_600SemiBold,
+  font42dotSans_700Bold,
+} from '@expo-google-fonts/42dot-sans';
+
+import {
+  BeVietnamPro_700Bold
 } from '@expo-google-fonts/be-vietnam-pro';
 
 SplashScreen.preventAutoHideAsync();
 
-export default function TabLayout() {
+export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    BeVietnamPro_400Regular,
-    BeVietnamPro_500Medium,
-    BeVietnamPro_600SemiBold,
-    BeVietnamPro_700Bold,
+    font42dotSans_400Regular,
+    font42dotSans_500Medium,
+    font42dotSans_600SemiBold,
+    font42dotSans_700Bold,
+    BeVietnamPro_700Bold
   });
-  const colorScheme = useColorScheme();
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
   if (!fontsLoaded) {
-    return null; // รอฟอนต์โหลดเสร็จก่อน
+    return null;
   }
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
-  );
+  return <Stack />;
 }

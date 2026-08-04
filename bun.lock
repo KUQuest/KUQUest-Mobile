@@ -5,6 +5,7 @@
     "": {
       "name": "expo-scaffold",
       "dependencies": {
+        "@expo-google-fonts/42dot-sans": "^0.4.0",
         "@expo-google-fonts/be-vietnam-pro": "^0.4.1",
         "@expo/ui": "~57.0.8",
         "expo": "~57.0.9",
@@ -245,6 +246,8 @@
     "@eslint/object-schema": ["@eslint/object-schema@2.1.7", "", {}, "sha512-VtAOaymWVfZcmZbp6E2mympDIHvyjXs/12LqWYjVw6qjrfF+VK+fyG33kChz3nnK+SU5/NeHOqrTEHS8sXO3OA=="],
 
     "@eslint/plugin-kit": ["@eslint/plugin-kit@0.4.1", "", { "dependencies": { "@eslint/core": "^0.17.0", "levn": "^0.4.1" } }, "sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA=="],
+
+    "@expo-google-fonts/42dot-sans": ["@expo-google-fonts/42dot-sans@0.4.0", "", {}, "sha512-lR6TO3uasU55dWknv61qMMimpz3CrDfUHcFFleQxggtFEiTSi7bATmV28jKGa0XkNXrbpBDLXN9t6OaoJfuXQQ=="],
 
     "@expo-google-fonts/be-vietnam-pro": ["@expo-google-fonts/be-vietnam-pro@0.4.1", "", {}, "sha512-4o2bsqU1zcC6NZf5FRYB+7gE49waNWYOGc5c5qLfPgrSqqr61hS2Bz4TVPgxudO038tLydSyPxV8e79g8j5DpQ=="],
 
