@@ -14,6 +14,7 @@ import Svg, { Path } from 'react-native-svg';
 interface StepProgressProps {
   step: number;
   totalSteps?: number;
+  lang?: 'en' | 'th';
 }
 
 interface FormInputProps extends TextInputProps {
@@ -46,27 +47,16 @@ interface CheckboxProps {
   onToggle: () => void;
 }
 
+interface StepActionButtonsProps {
+  onBack: () => void;
+  onNext: () => void;
+  lang?: 'en' | 'th';
+}
+
 export const Header = ({ title }: { title: string }) => (
   <View style={styles.headerContainer}>
     <Text style={styles.headerLogo}>KUQUEST</Text>
     <Text style={styles.headerTitle}>{title}</Text>
-  </View>
-);
-
-export const ProgressBar = ({ step, total }: { step: number; total: number }) => (
-  <View style={styles.progressContainer}>
-    <Text style={styles.progressText}>Step {step} of {total}</Text>
-    <View style={styles.progressTrack}>
-      {Array.from({ length: total }).map((_, i) => (
-        <View
-          key={i}
-          style={[
-            styles.progressBarSegment,
-            { backgroundColor: i < step ? '#014925' : '#E5E7EB' },
-          ]}
-        />
-      ))}
-    </View>
   </View>
 );
 
@@ -108,6 +98,34 @@ export const Button = ({ variant = 'primary', children, style, ...props }: Butto
   );
 };
 
+export const StepActionButtons = ({
+  onBack,
+  onNext,
+  lang = 'en',
+}: StepActionButtonsProps) => {
+  const backText = lang === 'th' ? 'ย้อนกลับ' : 'Back';
+  const nextText = lang === 'th' ? 'ถัดไป' : 'Continue';
+  return (
+    <View style={styles.actionButtonGroup}>
+      <Button 
+        variant="secondary" 
+        onPress={onBack} 
+        style={styles.backButton}
+      >
+        {backText}
+      </Button>
+      
+      <Button 
+        variant="primary" 
+        onPress={onNext} 
+        style={styles.nextButton}
+      >
+        {nextText}
+      </Button>
+    </View>
+  );
+};
+
 export const RegistrationHeader = ({ title }: { title: string }) => (
   <View style={styles.RegistrationHeaderContainer}>
     <Text style={styles.RegistrationHeaderLogo}>KUQUEST</Text>
@@ -115,9 +133,14 @@ export const RegistrationHeader = ({ title }: { title: string }) => (
   </View>
 );
 
-export const Step = ({ step }: { step: number }) => (
-  <Text style={styles.Step}>Step {step} of 3</Text>
-);
+export const Step = ({ step, totalSteps = 3, lang = 'en' }: StepProgressProps) => {
+  const stepText = lang === 'th'
+    ? `ขั้นตอนที่ ${step} จาก ${totalSteps}`
+    : `Step ${step} of ${totalSteps}`;
+  return (  
+    <Text style={styles.Step}>{stepText}</Text>
+  );
+};
 
 export const StepProgress = ({ step, totalSteps = 3 }: StepProgressProps) => {
   const stepsArray = Array.from({ length: totalSteps }, (_, index) => index + 1);
@@ -399,6 +422,25 @@ const styles = StyleSheet.create({
   textPrimary: {
     color: '#014925',
   },
+  actionButtonGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    gap: 16,
+    borderWidth: 2,
+    borderColor: '#E5E2E1',
+    borderRadius: 12,
+    padding: 12,
+  },
+  backButton: {
+    flex: 1,
+    width: '30%', 
+  },
+  nextButton: {
+    flex: 2,
+    width: '30%',
+  },
 
   // Registration Specific
   RegistrationHeaderContainer: {
@@ -419,7 +461,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#1B1B1B',
     textTransform: 'uppercase',
-    maxWidth: 200,
+    maxWidth: "100%",
     lineHeight: 30,
     fontFamily: 'BeVietnamPro_600SemiBold',
     paddingTop: 16,

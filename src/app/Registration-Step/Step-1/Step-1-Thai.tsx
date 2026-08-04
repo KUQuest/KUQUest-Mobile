@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { 
-  Button, 
+  StepActionButtons,
   RegistrationHeader,
   Step,
   StepProgress,
@@ -12,7 +12,7 @@ import {
   FormSelect,
   TermsBox,
   Checkbox
-} from '../../components/Shared';
+} from '../../../components/Shared';
 
 export default function Step1() {
   const [isAccepted, setIsAccepted] = useState(false);
@@ -30,17 +30,17 @@ export default function Step1() {
     setErrorMessage('');
 
     if (!formData.firstName || !formData.phoneNumber || !formData.occupation || !formData.faculty || !formData.department) {
-      setErrorMessage('* Please fill in all required fields');
+      setErrorMessage('* กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน');
       return;
     }
 
-    if (formData.occupation === 'Student' && !formData.studentId) {
-      setErrorMessage('* Please enter your student ID');
+    if (formData.occupation === 'นิสิต/นักศึกษา' && !formData.studentId) {
+      setErrorMessage('* กรุณากรอกรหัสนิสิต/นักศึกษา');
       return;
     }
 
     if (!isAccepted) {
-      setErrorMessage('* Please accept the Terms and Conditions before proceeding');
+      setErrorMessage('* กรุณายอมรับข้อตกลงและเงื่อนไขก่อนดำเนินการต่อ');
       return;
     }
     console.log('Submitted Data:', formData);
@@ -54,15 +54,15 @@ export default function Step1() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <RegistrationHeader title="Academic Registration" />
-        <Step step={1} />
+        <RegistrationHeader title="ลงทะเบียนข้อมูลทางการศึกษา" />
+        <Step step={1} lang="th"/>
         <StepProgress step={1} totalSteps={3} />
         <ProfileUpload />
         
         <FormInput 
-          label="Full Name" 
+          label="ชื่อ-นามสกุล" 
           value={formData.firstName} 
-          placeholder="Enter your full name" 
+          placeholder="กรอกชื่อ-นามสกุล" 
           onChangeText={(text) => {
             setFormData({ ...formData, firstName: text });
             setErrorMessage('');
@@ -70,9 +70,10 @@ export default function Step1() {
         />
         
         <FormInput 
-          label="Phone Number" 
+          label="เบอร์โทรศัพท์" 
           value={formData.phoneNumber} 
-          placeholder="Enter your phone number" 
+          placeholder="08X-XXX-XXXX" 
+          keyboardType="phone-pad"
           onChangeText={(text) => {
             setFormData({ ...formData, phoneNumber: text });
             setErrorMessage('');
@@ -80,9 +81,9 @@ export default function Step1() {
         />
         
         <FormSelect 
-          label="Occupation" 
-          options={['Student', 'Teacher']} 
-          placeholder="Select your occupation" 
+          label="อาชีพ" 
+          options={['นักเรียน', 'อาจารย์']} 
+          placeholder="เลือกอาชีพ" 
           selectedValue={formData.occupation} 
           onSelect={(value) => {
             setFormData({ ...formData, occupation: value });
@@ -90,11 +91,12 @@ export default function Step1() {
           }} 
         />
         
-        {formData.occupation === 'Student' && (
+        {formData.occupation === 'นักเรียน' && (
           <FormInput 
-            label="Student ID" 
+            label="รหัสนิสิต/นักศึกษา" 
             value={formData.studentId} 
-            placeholder="67xxxxxxxx" 
+            placeholder="67XXXXXXXX" 
+            keyboardType="numeric"
             onChangeText={(text) => {
               setFormData({ ...formData, studentId: text });
               setErrorMessage('');
@@ -103,9 +105,9 @@ export default function Step1() {
         )}
         
         <FormSelect 
-          label="Faculty" 
-          options={['Engineering', 'Business']} 
-          placeholder="Select your faculty" 
+          label="คณะ" 
+          options={['วิศวกรรมศาสตร์', 'บริหารธุรกิจ']} 
+          placeholder="เลือกคณะ" 
           selectedValue={formData.faculty} 
           onSelect={(value) => {
             setFormData({ ...formData, faculty: value });
@@ -114,9 +116,9 @@ export default function Step1() {
         />
         
         <FormInput 
-          label="Department" 
+          label="สาขา" 
           value={formData.department} 
-          placeholder="Enter your department" 
+          placeholder="กรอกสาขา" 
           onChangeText={(text) => {
             setFormData({ ...formData, department: text });
             setErrorMessage('');
@@ -124,13 +126,13 @@ export default function Step1() {
         />
         
         <TermsBox 
-          label="Terms and Conditions" 
-          title="Privacy Policy" 
-          content="Privacy Policy We value your privacy. This policy explains how we collect, use, and protect your personal data in accordance with academic standards and data protection regulations. Your information is used solely for academic registration and institutional communication."
+          label="ข้อกำหนดและเงื่อนไข" 
+          title="นโยบายความเป็นส่วนตัว" 
+          content="เราให้ความสำคัญกับความเป็นส่วนตัวของคุณ นโยบายนี้อธิบายถึงวิธีการที่เรารวบรวม ใช้ และปกป้องข้อมูลส่วนบุคคลของคุณตามมาตรฐานและข้อบังคับการคุ้มครองข้อมูล ข้อมูลของคุณจะถูกใช้สำหรับการลงทะเบียนและการสื่อสารภายในสถาบันเท่านั้น"
         />
         
         <Checkbox 
-          label="I accept the Terms and Conditions" 
+          label="ฉันยอมรับข้อกำหนดและเงื่อนไข" 
           isChecked={isAccepted} 
           onToggle={() => {
             setIsAccepted(!isAccepted);
@@ -138,7 +140,7 @@ export default function Step1() {
           }}
         />
         
-        <Button onPress={handleSubmit}>Continue</Button>
+        <StepActionButtons onBack={() => {console.log('ย้อนกลับ'); }} onNext={handleSubmit} lang='th'/>
         {errorMessage !== '' && (
           <Text style={styles.errorText}>{errorMessage}</Text>
         )}

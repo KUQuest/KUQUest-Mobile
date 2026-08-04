@@ -12,7 +12,7 @@ export default function AppTabs() {
       backgroundColor={colors.background}
       indicatorColor={colors.backgroundElement}
       labelStyle={{ selected: { color: colors.text } }}>
-      <NativeTabs.Trigger name="index">
+      <NativeTabs.Trigger name="LoginScreen">
         <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={require('@/assets/images/tabIcons/home.png')}
@@ -20,7 +20,7 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="Registration-Step/Step-1">
+      <NativeTabs.Trigger name="Registration-Step/Step-1/Step-1">
         <NativeTabs.Trigger.Label>Step-1</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={require('@/assets/images/tabIcons/explore.png')}
@@ -28,8 +28,8 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="LoginScreen">
-        <NativeTabs.Trigger.Label>Login</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="Registration-Step/Step-1/Step-1-Thai">
+        <NativeTabs.Trigger.Label>Step-1 (Thai)</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
