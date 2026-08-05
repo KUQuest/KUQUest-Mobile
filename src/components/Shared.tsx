@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    fontFamily: 'BeVietnamPro_500Medium',
+    fontFamily: 'NotoSansThai_500Medium',
     color: '#1B1B1B',
     marginBottom: 8,
   },
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   selectText: {
     fontSize: 16,
     color: '#1B1B1B',
-    fontFamily: 'BeVietnamPro_400Regular',
+    fontFamily: 'NotoSansThai_400Regular',
   },
   optionItem: {
     paddingVertical: 14,
@@ -463,12 +463,12 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     maxWidth: "100%",
     lineHeight: 30,
-    fontFamily: 'BeVietnamPro_600SemiBold',
+    fontFamily: 'NotoSansThai_600SemiBold',
     paddingTop: 16,
   },
   Step: {
     fontSize: 16,
-    fontFamily: 'BeVietnamPro_400Regular',
+    fontFamily: 'NotoSansThai_400Regular',
     textAlign: 'center',
     color: '#404941',
     paddingTop: 12,
@@ -538,13 +538,13 @@ const styles = StyleSheet.create({
   },
   termsTitle: {
     fontSize: 14,
-    fontFamily: 'BeVietnamPro_700Bold',
+    fontFamily: 'NotoSansThai_700Bold',
     color: '#404941',
     marginBottom: 6,
   },
   termsText: {
     fontSize: 14,
-    fontFamily: 'BeVietnamPro_400Regular', 
+    fontFamily: 'NotoSansThai_400Regular', 
     color: '#404941',
     lineHeight: 20,
   },
@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     fontSize: 14,
-    fontFamily: 'BeVietnamPro_400Regular', 
+    fontFamily: 'NotoSansThai_400Regular', 
     color: '#1B1B1B',
     flex: 1,
   },
