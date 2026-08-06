@@ -271,8 +271,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F4F1',
     borderWidth: 1,
     borderColor: '#D0E3D5',
-  },
-  langToggleText: {
+  }, langToggleText: {
+    fontFamily: 'NotoSansThai',
     fontSize: 12,
     fontWeight: '700',
     color: '#014925',
@@ -282,6 +282,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   title: {
+    fontFamily: 'NotoSansThai',
     fontSize: 44,
     fontWeight: '800',
     color: '#014925',
@@ -289,6 +290,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   subtitle: {
+    fontFamily: 'NotoSansThai',
     fontSize: 12,
     fontWeight: '600',
     color: '#666666',
@@ -314,11 +316,13 @@ const styles = StyleSheet.create({
   },
   noticeText: {
     flex: 1,
+    fontFamily: 'NotoSansThai',
     fontSize: 14,
     color: '#333333',
     lineHeight: 20,
   },
   noticeTextBold: {
+    fontFamily: 'NotoSansThai',
     fontWeight: '700',
     color: '#111111',
   },
@@ -338,6 +342,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   errorText: {
+    fontFamily: 'NotoSansThai',
     fontSize: 14,
     color: '#842029',
     lineHeight: 20,
@@ -351,6 +356,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryButtonText: {
+    fontFamily: 'NotoSansThai',
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
@@ -371,6 +377,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0E0E0',
   },
   dividerText: {
+    fontFamily: 'NotoSansThai',
     fontSize: 14,
     color: '#777777',
     fontWeight: '500',
@@ -385,11 +392,13 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   footerLinkText: {
+    fontFamily: 'NotoSansThai',
     fontSize: 13,
     fontWeight: '500',
     color: '#666666',
   },
   copyrightText: {
+    fontFamily: 'NotoSansThai',
     fontSize: 12,
     color: '#888888',
     textAlign: 'center',
