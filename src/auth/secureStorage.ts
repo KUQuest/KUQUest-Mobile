@@ -3,10 +3,14 @@ import { AuthSession } from './types';
 
 const SESSION_STORAGE_KEY = 'kuquest_auth_session_token';
 
-// In-memory fallback for unit testing / web environments where native SecureStore is unavailable
-const inMemoryStore: Record<string, string> = {};
-
 export class SecureSessionStorage {
+  // In-memory fallback for unit testing / web environments where native SecureStore is unavailable
+  private static inMemoryStore: Record<string, string> = {};
+
+  static resetInMemoryStore(): void {
+    this.inMemoryStore = {};
+  }
+
   private static async isSecureStoreAvailable(): Promise<boolean> {
     try {
       return await SecureStore.isAvailableAsync();
@@ -20,7 +24,7 @@ export class SecureSessionStorage {
     if (await this.isSecureStoreAvailable()) {
       await SecureStore.setItemAsync(SESSION_STORAGE_KEY, jsonStr);
     } else {
-      inMemoryStore[SESSION_STORAGE_KEY] = jsonStr;
+      this.inMemoryStore[SESSION_STORAGE_KEY] = jsonStr;
     }
   }
 
@@ -30,7 +34,7 @@ export class SecureSessionStorage {
       if (await this.isSecureStoreAvailable()) {
         jsonStr = await SecureStore.getItemAsync(SESSION_STORAGE_KEY);
       } else {
-        jsonStr = inMemoryStore[SESSION_STORAGE_KEY] || null;
+        jsonStr = this.inMemoryStore[SESSION_STORAGE_KEY] || null;
       }
 
       if (!jsonStr) {
@@ -56,7 +60,7 @@ export class SecureSessionStorage {
     if (await this.isSecureStoreAvailable()) {
       await SecureStore.deleteItemAsync(SESSION_STORAGE_KEY);
     } else {
-      delete inMemoryStore[SESSION_STORAGE_KEY];
+      delete this.inMemoryStore[SESSION_STORAGE_KEY];
     }
   }
 }

@@ -112,8 +112,9 @@ export default function LoginScreen({
             style={styles.langToggle}
             onPress={handleToggleLocale}
             accessibilityRole="button"
-            accessibilityLabel={`Switch language to ${currentLocale === 'th' ? 'English' : 'Thai'
-              }`}
+            accessibilityLabel={`Switch language to ${
+              currentLocale === 'th' ? 'English' : 'Thai'
+            }`}
             testID="language-switcher"
           >
             <Text style={styles.langToggleText}>
@@ -216,17 +217,17 @@ export default function LoginScreen({
           {/* Footer Section */}
           <View style={styles.footerSection}>
             <View style={styles.footerLinks}>
-              <Pressable onPress={() => { }}>
+              <Pressable>
                 <Text style={styles.footerLinkText}>
                   {messages.termsOfService}
                 </Text>
               </Pressable>
-              <Pressable onPress={() => { }}>
+              <Pressable>
                 <Text style={styles.footerLinkText}>
                   {messages.privacyPolicy}
                 </Text>
               </Pressable>
-              <Pressable onPress={() => { }}>
+              <Pressable>
                 <Text style={styles.footerLinkText}>
                   {messages.contactUs}
                 </Text>
@@ -271,7 +272,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F4F1',
     borderWidth: 1,
     borderColor: '#D0E3D5',
-  }, langToggleText: {
+  },
+  langToggleText: {
     fontFamily: 'NotoSansThai',
     fontSize: 12,
     fontWeight: '700',

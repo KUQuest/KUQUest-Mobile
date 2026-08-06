@@ -7,6 +7,7 @@ describe('AuthService & SecureSessionStorage (FE-19 Requirements)', () => {
 
   beforeEach(async () => {
     auth = new AuthService();
+    SecureSessionStorage.resetInMemoryStore();
     await SecureSessionStorage.clearSession();
   });
 

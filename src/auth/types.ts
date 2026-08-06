@@ -42,7 +42,7 @@ export interface AuthAdapter {
    * Authenticate with Google Credential/Token via Typed Adapter.
    * Does NOT guess unverified REST endpoint names.
    */
-  authenticateWithGoogle(credential: string, mode: AuthMode): Promise<AuthSession>;
+  authenticateWithGoogle(credential: string, mode: AuthMode, overrideEmail?: string): Promise<AuthSession>;
   /**
    * Retrieve active session from secure storage, returning null if expired or missing.
    */

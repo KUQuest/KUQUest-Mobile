@@ -14,6 +14,11 @@ let NativeGoogleSignin: any = null;
 try {
   const googleSigninPkg = require('@react-native-google-signin/google-signin');
   NativeGoogleSignin = googleSigninPkg.GoogleSignin;
+  
+  // Pending [BE-69] integration to provide the correct webClientId
+  NativeGoogleSignin.configure({
+    webClientId: 'PENDING_BE_69_CLIENT_ID',
+  });
 } catch {
   // RNGoogleSignin native module is not linked in Expo Go
 }
