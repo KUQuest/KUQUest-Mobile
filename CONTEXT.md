@@ -38,3 +38,12 @@ _Avoid_: Payment step, deposit screen, pay button
 A 3-tier context-aware warning modal system that escalates visual severity and interaction friction (button click for 0% penalty, slide-to-cancel for 20% penalty + Red Flag, and keyword typing confirmation for 100% penalty) based on the current lifecycle state of the quest.
 _Avoid_: Cancel alert, delete popup, warning modal
 
+### Authentication & Profiles
+
+**KU Identity**:
+A user who has passed Google OAuth with a `@ku.th` email but has not yet completed the required Onboarding steps. The account exists in the system but has restricted access (cannot use the Quest Board).
+_Avoid_: Pending account, guest, incomplete user
+
+**KU User**:
+A fully onboarded account that has completed all registration steps and is permitted to access the Quest Board to create or accept quests.
+_Avoid_: Active user, member, student
