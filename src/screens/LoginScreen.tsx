@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, Pressable, useWindowDimensions } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Host, Button } from '@expo/ui';
 import { SymbolView } from 'expo-symbols';
+import { getLocales } from 'expo-localization';
 import {
   AuthAdapter,
   AuthErrorCode,
@@ -20,8 +21,6 @@ import {
 export interface LoginScreenProps {
   onNext?: () => void;
   onNavigate?: (dest: RoutingDestination) => void;
-  locale?: SupportedLocale;
-  onLocaleChange?: (locale: SupportedLocale) => void;
   authAdapter?: AuthAdapter;
   mockCredentialForTesting?: string;
 }
@@ -29,39 +28,22 @@ export interface LoginScreenProps {
 export default function LoginScreen({
   onNext,
   onNavigate,
-  locale = 'th',
-  onLocaleChange,
   authAdapter = authService,
   mockCredentialForTesting,
 }: LoginScreenProps) {
   const { width } = useWindowDimensions();
   const buttonWidth = Math.min(width - 48, 420);
 
-  const [currentLocale, setCurrentLocale] = useState<SupportedLocale>(locale);
+  const systemLocale = getLocales()[0]?.languageCode;
+  const currentLocale: SupportedLocale = systemLocale === 'th' ? 'th' : 'en';
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<{
     code: AuthErrorCode;
-    message: string;
     lastMode?: AuthMode;
   } | null>(null);
 
   const messages = authMessages[currentLocale];
-
-  const handleToggleLocale = () => {
-    const nextLocale: SupportedLocale = currentLocale === 'th' ? 'en' : 'th';
-    setCurrentLocale(nextLocale);
-    onLocaleChange?.(nextLocale);
-    if (error) {
-      setError((prev) =>
-        prev
-          ? {
-            ...prev,
-            message: getAuthErrorText(prev.code, nextLocale),
-          }
-          : null
-      );
-    }
-  };
 
   const handleAuth = async (mode: AuthMode) => {
     if (isLoading) return;
@@ -97,7 +79,6 @@ export default function LoginScreen({
         err instanceof AuthError ? err.code : 'OAUTH_FAILED';
       setError({
         code: errorCode,
-        message: getAuthErrorText(errorCode, currentLocale),
         lastMode: mode,
       });
     }
@@ -107,21 +88,6 @@ export default function LoginScreen({
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.content}>
-          {/* Language Toggle */}
-          <Pressable
-            style={styles.langToggle}
-            onPress={handleToggleLocale}
-            accessibilityRole="button"
-            accessibilityLabel={`Switch language to ${
-              currentLocale === 'th' ? 'English' : 'Thai'
-            }`}
-            testID="language-switcher"
-          >
-            <Text style={styles.langToggleText}>
-              {currentLocale === 'th' ? 'TH / EN' : 'EN / TH'}
-            </Text>
-          </Pressable>
-
           {/* Header Section */}
           <View style={styles.headerSection}>
             <Text style={styles.title}>KUQUEST</Text>
@@ -154,7 +120,7 @@ export default function LoginScreen({
               <View
                 style={styles.errorCard}
                 accessibilityRole="alert"
-                accessibilityLabel={error.message}
+                accessibilityLabel={getAuthErrorText(error.code, currentLocale)}
                 testID="error-banner"
               >
                 <SymbolView
@@ -164,7 +130,7 @@ export default function LoginScreen({
                 />
                 <View style={styles.errorContent}>
                   <Text style={styles.errorText} testID="error-message">
-                    {error.message}
+                    {getAuthErrorText(error.code, currentLocale)}
                   </Text>
                   {error.lastMode && (
                     <Pressable

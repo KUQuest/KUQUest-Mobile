@@ -4,6 +4,10 @@ import LoginScreen from '../screens/LoginScreen';
 import { AuthService } from '../auth/AuthService';
 import { authMessages } from '../locales/authMessages';
 
+jest.mock('expo-localization', () => ({
+  getLocales: () => [{ languageCode: 'th' }],
+}));
+
 describe('LoginScreen UI & FE-19 Acceptance Criteria', () => {
   let mockAuth: AuthService;
 
@@ -21,19 +25,7 @@ describe('LoginScreen UI & FE-19 Acceptance Criteria', () => {
     expect(screen.getByText(authMessages.th.signInWithGoogle)).toBeTruthy();
   });
 
-  test('2. Can toggle language between Thai and English', async () => {
-    await render(<LoginScreen authAdapter={mockAuth} locale="th" />);
-
-    expect(screen.getByText(authMessages.th.signUpWithGoogle)).toBeTruthy();
-
-    const langButton = screen.getByTestId('language-switcher');
-    await fireEvent.press(langButton);
-
-    expect(screen.getByText(authMessages.en.signUpWithGoogle)).toBeTruthy();
-    expect(screen.getByText(authMessages.en.signInWithGoogle)).toBeTruthy();
-  });
-
-  test('3. Clicking Sign Up with Google for registered student routes to HOME destination', async () => {
+  test('2. Clicking Sign Up with Google for registered student routes to HOME destination', async () => {
     const onNavigate = jest.fn();
     await render(
       <LoginScreen
@@ -51,14 +43,13 @@ describe('LoginScreen UI & FE-19 Acceptance Criteria', () => {
     });
   });
 
-  test('4. Clicking Sign In with Google for unregistered @ku.th email shows error banner and Retry button in Thai', async () => {
+  test('3. Clicking Sign In with Google for unregistered @ku.th email shows error banner and Retry button in Thai', async () => {
     const onNavigate = jest.fn();
     await render(
       <LoginScreen
         authAdapter={mockAuth}
         onNavigate={onNavigate}
         mockCredentialForTesting="unregistered@ku.th"
-        locale="th"
       />
     );
 
@@ -75,14 +66,13 @@ describe('LoginScreen UI & FE-19 Acceptance Criteria', () => {
     });
   });
 
-  test('5. Non @ku.th email domain rejection shows INVALID_EMAIL_DOMAIN message without navigating', async () => {
+  test('4. Non @ku.th email domain rejection shows INVALID_EMAIL_DOMAIN message without navigating', async () => {
     const onNavigate = jest.fn();
     await render(
       <LoginScreen
         authAdapter={mockAuth}
         onNavigate={onNavigate}
         mockCredentialForTesting="outsider@gmail.com"
-        locale="en"
       />
     );
 
@@ -92,19 +82,18 @@ describe('LoginScreen UI & FE-19 Acceptance Criteria', () => {
     await waitFor(() => {
       expect(screen.getByTestId('error-banner')).toBeTruthy();
       expect(screen.getByTestId('error-message').props.children).toBe(
-        authMessages.en.errors.INVALID_EMAIL_DOMAIN
+        authMessages.th.errors.INVALID_EMAIL_DOMAIN
       );
     });
   });
 
-  test('6. Pressing Retry button re-attempts the authentication flow', async () => {
+  test('5. Pressing Retry button re-attempts the authentication flow', async () => {
     const onNavigate = jest.fn();
     await render(
       <LoginScreen
         authAdapter={mockAuth}
         onNavigate={onNavigate}
         mockCredentialForTesting="unregistered@ku.th"
-        locale="th"
       />
     );
 
