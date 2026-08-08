@@ -113,7 +113,7 @@ interface Step1Props {
   lang?: 'en' | 'th'
 }
 
-export default function Step1({ lang = 'th' }: Step1Props) {
+export default function Step1({ lang = 'en' }: Step1Props) {
   const t = translations[lang];
 
   const [isAccepted, setIsAccepted] = useState(false);
