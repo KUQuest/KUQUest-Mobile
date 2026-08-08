@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { 
@@ -67,6 +67,48 @@ const translations = {
   }
 };
 
+type AcademicRegistrationOptions = {
+  occupations: { id: string; name: string; requiresStudentId: boolean }[];
+  faculties: {
+    id: string;
+    name: string;
+    departments: { id: string; name: string }[];
+  }[];
+};
+
+type AcademicRegistrationStatus = {
+  firstName: string;
+  telephone: string | null;
+  occupationId: string | null;
+  studentId: string | null;
+  departmentId: string | null;
+  termsAcceptedAt: string | null;
+};
+
+type ApiResponse<T> =
+  | { success: true; data: T }
+  | { success: false; error: { message: string } };
+
+const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
+const termsVersion = '2026-01-01';
+
+const requestApi = async <T,>(path: string, init?: RequestInit): Promise<T> => {
+  if (!apiBaseUrl) throw new Error('EXPO_PUBLIC_API_URL is not configured.');
+
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    ...init,
+    credentials: 'include',
+    headers: { Accept: 'application/json', ...init?.headers },
+  });
+  const body = await response.json() as ApiResponse<T>;
+
+  if (!response.ok || !body.success) {
+    throw new Error(body.success ? 'The request failed.' : body.error.message);
+  }
+
+  return body.data;
+};
+
 interface Step1Props {
   lang?: 'en' | 'th'
 }
@@ -76,24 +118,74 @@ export default function Step1({ lang = 'th' }: Step1Props) {
 
   const [isAccepted, setIsAccepted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [registrationOptions, setRegistrationOptions] = useState<AcademicRegistrationOptions | null>(null);
   const [formData, setFormData] = useState({
     firstName: '',
-    phoneNumber: '',
-    occupation: '',
+    telephone: '',
+    occupationId: '',
     studentId: '',
-    faculty: '',
-    department: '',
+    facultyId: '',
+    departmentId: '',
   });
 
-  const handleSubmit = () => {
+  useEffect(() => {
+    let isActive = true;
+
+    const loadRegistration = async () => {
+      try {
+        const [options, status] = await Promise.all([
+          requestApi<AcademicRegistrationOptions>('/api/v1/academic-registration/options'),
+          requestApi<AcademicRegistrationStatus>('/api/v1/academic-registration/status'),
+        ]);
+        if (!isActive) return;
+
+        const faculty = options.faculties.find(({ departments }) =>
+          departments.some(({ id }) => id === status.departmentId),
+        );
+
+        setRegistrationOptions(options);
+        setFormData({
+          firstName: status.firstName,
+          telephone: status.telephone ?? '',
+          occupationId: status.occupationId ?? '',
+          studentId: status.studentId ?? '',
+          facultyId: faculty?.id ?? '',
+          departmentId: status.departmentId ?? '',
+        });
+        setIsAccepted(Boolean(status.termsAcceptedAt));
+      } catch (error) {
+        if (isActive) {
+          setErrorMessage(error instanceof Error ? error.message : 'Unable to load registration details.');
+        }
+      } finally {
+        if (isActive) setIsLoading(false);
+      }
+    };
+
+    void loadRegistration();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const selectedOccupation = registrationOptions?.occupations.find(
+    ({ id }) => id === formData.occupationId,
+  );
+  const selectedFaculty = registrationOptions?.faculties.find(({ id }) => id === formData.facultyId);
+  const selectedDepartment = selectedFaculty?.departments.find(({ id }) => id === formData.departmentId);
+
+  const handleSubmit = async () => {
     setErrorMessage('');
 
-    if (!formData.firstName || !formData.phoneNumber || !formData.occupation || !formData.faculty || !formData.department) {
+    if (!formData.firstName || !formData.telephone || !formData.occupationId || !formData.departmentId) {
       setErrorMessage(t.errRequired);
       return;
     }
 
-    if (formData.occupation === t.studentValue && !formData.studentId) {
+    if (selectedOccupation?.requiresStudentId && !formData.studentId) {
       setErrorMessage(t.errStudentId);
       return;
     }
@@ -102,7 +194,26 @@ export default function Step1({ lang = 'th' }: Step1Props) {
       setErrorMessage(t.errTerms);
       return;
     }
-    console.log('Submitted Data:', formData);
+
+    setIsSaving(true);
+    try {
+      await requestApi<undefined>('/api/v1/academic-registration', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          telephone: formData.telephone,
+          occupationId: formData.occupationId,
+          studentId: formData.studentId || undefined,
+          departmentId: formData.departmentId,
+          termsVersion,
+        }),
+      });
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to save registration details.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -116,6 +227,7 @@ export default function Step1({ lang = 'th' }: Step1Props) {
         <RegistrationHeader title={t.headerTitle} />
         <Step step={1} lang={lang} />
         <StepProgress step={1} totalSteps={3} />
+        {isLoading && <ActivityIndicator style={styles.loading} color="#208AEF" />}
         <ProfileUpload />
         
         <FormInput 
@@ -130,27 +242,28 @@ export default function Step1({ lang = 'th' }: Step1Props) {
         
         <FormInput 
           label={t.phoneLabel} 
-          value={formData.phoneNumber} 
+          value={formData.telephone}
           placeholder={t.phonePlaceholder} 
           keyboardType="phone-pad"
           onChangeText={(text) => {
-            setFormData({ ...formData, phoneNumber: text });
+            setFormData({ ...formData, telephone: text });
             setErrorMessage('');
           }} 
         />
         
         <FormSelect 
           label={t.occupationLabel} 
-          options={t.occupationOptions} 
+          options={registrationOptions?.occupations.map(({ name }) => name) ?? []}
           placeholder={t.occupationPlaceholder} 
-          selectedValue={formData.occupation} 
-          onSelect={(value) => {
-            setFormData({ ...formData, occupation: value });
+          selectedValue={selectedOccupation?.name ?? ''}
+          onSelect={(name) => {
+            const occupation = registrationOptions?.occupations.find((option) => option.name === name);
+            setFormData({ ...formData, occupationId: occupation?.id ?? '', studentId: '' });
             setErrorMessage('');
           }} 
         />
         
-        {formData.occupation === t.studentValue && (
+        {selectedOccupation?.requiresStudentId && (
           <FormInput 
             label={t.studentIdLabel} 
             value={formData.studentId} 
@@ -165,21 +278,24 @@ export default function Step1({ lang = 'th' }: Step1Props) {
         
         <FormSelect 
           label={t.facultyLabel} 
-          options={t.facultyOptions} 
+          options={registrationOptions?.faculties.map(({ name }) => name) ?? []}
           placeholder={t.facultyPlaceholder} 
-          selectedValue={formData.faculty} 
-          onSelect={(value) => {
-            setFormData({ ...formData, faculty: value });
+          selectedValue={selectedFaculty?.name ?? ''}
+          onSelect={(name) => {
+            const faculty = registrationOptions?.faculties.find((option) => option.name === name);
+            setFormData({ ...formData, facultyId: faculty?.id ?? '', departmentId: '' });
             setErrorMessage('');
           }}
         />
         
-        <FormInput 
+        <FormSelect
           label={t.departmentLabel} 
-          value={formData.department} 
           placeholder={t.departmentPlaceholder} 
-          onChangeText={(text) => {
-            setFormData({ ...formData, department: text });
+          options={selectedFaculty?.departments.map(({ name }) => name) ?? []}
+          selectedValue={selectedDepartment?.name ?? ''}
+          onSelect={(name) => {
+            const department = selectedFaculty?.departments.find((option) => option.name === name);
+            setFormData({ ...formData, departmentId: department?.id ?? '' });
             setErrorMessage('');
           }}
         />
@@ -201,6 +317,8 @@ export default function Step1({ lang = 'th' }: Step1Props) {
         
         <StepActionButtons onBack={() => {console.log('ย้อนกลับ'); }} onNext={handleSubmit} lang={lang} />
         
+        {isSaving && <ActivityIndicator style={styles.loading} color="#208AEF" />}
+
         {errorMessage !== '' && (
           <Text style={styles.errorText}>{errorMessage}</Text>
         )}
@@ -228,5 +346,8 @@ const styles = StyleSheet.create({
     marginTop: 12,
     alignSelf: 'flex-start',
     fontFamily: 'font42dotSans_600SemiBold',
+  },
+  loading: {
+    marginVertical: 12,
   },
 });
