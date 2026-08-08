@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2021",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "types": ["bun"],
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/index.ts",
+    "src/app.ts",
+    "src/config/**/*.ts",
+    "src/database/**/*.ts",
+    "src/modules/**/*.ts",
+    "src/plugins/**/*.ts",
+    "src/shared/**/*.ts",
+    "tests/**/*.ts",
+    "drizzle.config.ts",
+    "scripts/**/*.ts"
+  ]
+}

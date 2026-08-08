@@ -12,8 +12,14 @@
     }
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
+    "src/app/**/*.ts",
+    "src/app/**/*.tsx",
+    "src/components/**/*.ts",
+    "src/components/**/*.tsx",
+    "src/screens/**/*.ts",
+    "src/screens/**/*.tsx",
+    "src/__tests__/**/*.ts",
+    "src/__tests__/**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
   ],
