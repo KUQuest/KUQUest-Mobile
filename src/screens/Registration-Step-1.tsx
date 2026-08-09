@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { 
@@ -107,6 +107,10 @@ export default function Step1({ lang = 'th' }: Step1Props) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -205,6 +209,7 @@ export default function Step1({ lang = 'th' }: Step1Props) {
           <Text style={styles.errorText}>{errorMessage}</Text>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -214,6 +219,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F9FA',
   },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   scrollView: {
     flex: 1,
   },
@@ -221,6 +229,9 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
     paddingTop: 12,
     paddingHorizontal: 24,
+    width: '100%',
+    maxWidth: 640,
+    alignSelf: 'center',
   },
   errorText: {
     color: '#EF4444',
