@@ -5,6 +5,8 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Image,
+  ImageSourcePropType,
   TextInputProps,
   TouchableOpacityProps,
   ScrollView,
@@ -52,6 +54,40 @@ interface StepActionButtonsProps {
   onNext: () => void;
   lang?: 'en' | 'th';
 }
+
+interface TopBarProps {
+  onMenuPress?: () => void;
+}
+
+export interface ProfileExperience {
+  icon: string;
+  title: string;
+  meta: string;
+  description: string;
+}
+
+export interface ProfileAchievement {
+  icon: string;
+  title: string;
+  meta: string;
+}
+
+export interface ProfileData {
+  name: string;
+  faculty: string;
+  university: string;
+  skills: string[];
+  rating: string;
+  completedCases: string;
+  about: string;
+  experiences: ProfileExperience[];
+  project: { title: string; description: string };
+  achievements: ProfileAchievement[];
+  review: { score: string; count: string; name: string; date: string; comment: string };
+}
+
+
+
 
 export const Header = ({ title }: { title: string }) => (
   <View style={styles.headerContainer}>
@@ -131,6 +167,57 @@ export const RegistrationHeader = ({ title }: { title: string }) => (
     <Text style={styles.RegistrationHeaderLogo}>KUQUEST</Text>
     <Text style={styles.RegistrationHeaderText}>{title}</Text>
   </View>
+);
+
+export const TopBar = ({ onMenuPress }: TopBarProps) => (
+  <View style={styles.TopBar}>
+    <TouchableOpacity
+      accessibilityLabel="Open navigation menu"
+      accessibilityRole="button"
+      activeOpacity={0.7}
+      hitSlop={12}
+      onPress={onMenuPress}
+      style={styles.TopBarMenuButton}
+    >
+      <Svg width="18" height="12" viewBox="0 0 18 12" fill="none">
+        <Path d="M0 12V10H18V12H0ZM0 7V5H18V7H0ZM0 2V0H18V2H0Z" fill="#003417" />
+      </Svg>
+    </TouchableOpacity>
+    <Text style={styles.TopBarHeaderLogo}>KUQUEST</Text>
+  </View>
+);
+
+export const ProfileHeader = ({ data, profileImage, onEditPress }: { data: Pick<ProfileData, 'name' | 'faculty' | 'university' | 'skills'>; profileImage?: ImageSourcePropType; onEditPress?: () => void }) => (
+  <View style={profileStyles.profileHeroCard}>
+    <View style={profileStyles.profilePhotoFrame}>{profileImage ? <Image source={profileImage} style={profileStyles.profilePhoto} /> : <Text style={profileStyles.profilePhotoInitials}>JD</Text>}</View>
+    <Text style={profileStyles.profilePageName}>{data.name}</Text><Text style={profileStyles.profileFaculty}>{data.faculty}</Text><Text style={profileStyles.profileUniversity}>{data.university}</Text>
+    <View style={profileStyles.profileSkills}>{data.skills.map((skill) => <View key={skill} style={profileStyles.profileSkill}><Text style={profileStyles.profileSkillText}>{skill}</Text></View>)}</View>
+    <Button onPress={onEditPress} style={profileStyles.profileEditAction}><Text style={profileStyles.profileEditActionText}>แก้ไขโปรไฟล์</Text></Button>
+  </View>
+);
+
+export const ProfileStats = ({ rating, completedCases }: Pick<ProfileData, 'rating' | 'completedCases'>) => (
+  <View style={profileStyles.profileStatsCard}><View style={profileStyles.profileStat}><Text style={profileStyles.profileStatLabel}>คะแนนจากผู้ใช้</Text><Text style={profileStyles.profileStatValue}>{rating} ★</Text></View><View style={profileStyles.profileStatDivider} /><View style={profileStyles.profileStat}><Text style={profileStyles.profileStatLabel}>จำนวนเควสที่เคยทำ</Text><Text style={profileStyles.profileCasesValue}>{completedCases}</Text></View></View>
+);
+
+export const AboutMe = ({ about }: Pick<ProfileData, 'about'>) => (
+  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>เกี่ยวกับฉัน</Text><View style={profileStyles.profileSectionRule} /><Text style={profileStyles.profileBody}>{about}</Text></View>
+);
+
+export const WorkExperience = ({ experiences }: Pick<ProfileData, 'experiences'>) => (
+  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>ประสบการณ์</Text><View style={profileStyles.profileSectionRule} />{experiences.map((experience) => <View key={experience.title} style={profileStyles.profileExperience}><Text style={profileStyles.profileExperienceIcon}>{experience.icon}</Text><View style={profileStyles.profileExperienceContent}><Text style={profileStyles.profileExperienceTitle}>{experience.title}</Text><Text style={profileStyles.profileExperienceMeta}>{experience.meta}</Text><Text style={profileStyles.profileExperienceDescription}>{experience.description}</Text></View></View>)}</View>
+);
+
+export const MyWork = ({ project, projectImage }: Pick<ProfileData, 'project'> & { projectImage?: ImageSourcePropType }) => (
+  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>งานของฉัน</Text><View style={profileStyles.profileSectionRule} /><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={profileStyles.profileProjects}><View style={profileStyles.profileProject}>{projectImage ? <Image source={projectImage} style={profileStyles.profileProjectImage} /> : <View style={profileStyles.profileProjectPlaceholder} />}<Text style={profileStyles.profileProjectTitle}>{project.title}</Text><Text style={profileStyles.profileProjectDescription}>{project.description}</Text></View></ScrollView></View>
+);
+
+export const Achievements = ({ achievements }: Pick<ProfileData, 'achievements'>) => (
+  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>ผลงาน</Text><View style={profileStyles.profileSectionRule} />{achievements.map((achievement) => <View key={achievement.title} style={profileStyles.profileAchievement}><Text style={profileStyles.profileAchievementIcon}>{achievement.icon}</Text><View><Text style={profileStyles.profileAchievementTitle}>{achievement.title}</Text><Text style={profileStyles.profileAchievementMeta}>{achievement.meta}</Text></View></View>)}</View>
+);
+
+export const ProfileReviews = ({ review }: Pick<ProfileData, 'review'>) => (
+  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>การรีวิว</Text><View style={profileStyles.profileSectionRule} /><View style={profileStyles.profileReviewSummary}><View><Text style={profileStyles.profileReviewScore}>{review.score}</Text><Text style={profileStyles.profileReviewStars}>★★★★★</Text><Text style={profileStyles.profileReviewCount}>จากการรีวิว{`\n`}{review.count} ครั้ง</Text></View><View style={profileStyles.profileRatingBars}><View style={[profileStyles.profileRatingBar, profileStyles.profileRatingBarFull]} /><View style={[profileStyles.profileRatingBar, profileStyles.profileRatingBarShort]} /><View style={profileStyles.profileRatingBar} /></View></View><View style={profileStyles.profileReviewCard}><View style={profileStyles.profileReviewHeader}><Text style={profileStyles.profileReviewName}>{review.name}</Text><Text style={profileStyles.profileReviewDate}>{review.date}</Text></View><Text style={profileStyles.profileReviewStars}>★★★★★</Text><Text style={profileStyles.profileReviewText}>{review.comment}</Text></View></View>
 );
 
 export const Step = ({ step, totalSteps = 3, lang = 'en' }: StepProgressProps) => {
@@ -576,4 +663,171 @@ const styles = StyleSheet.create({
     color: '#1B1B1B',
     flex: 1,
   },
+
+  TopBar: {
+    height: 64,
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 40,
+    backgroundColor: '#FCF9F8',
+
+  },
+  TopBarMenuButton: {
+    width: 18,
+    height: 24,
+    justifyContent: 'center',
+  },
+  TopBarHeaderLogo: {
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    fontSize: 24,
+    color: '#004D25',
+    alignSelf: 'flex-start',
+    fontFamily: 'BeVietnamPro_700Bold',
+  },
+})
+
+const profileStyles = StyleSheet.create({
+  profilePage: {
+    flex: 1,
+    backgroundColor: '#FCF9F8'
+  },
+  profilePageContent: {
+    padding: 32,
+    gap: 32,
+    paddingBottom: 120
+  },
+  profileHeroCard: {
+    alignItems: 'center',
+    padding: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFF'
+  },
+  profilePhotoFrame: {
+    width: 128,
+    height: 128,
+    borderRadius: 64,
+    overflow: 'hidden',
+    borderWidth: 8,
+    borderColor: '#E5E2E1',
+    backgroundColor: '#DDE9D9',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  profilePhoto: {
+    width: '100%',
+    height: '100%'
+  },
+  profilePhotoInitials: {
+    color: '#004D25',
+    fontSize: 36,
+    fontFamily: 'BeVietnamPro_700Bold'
+  },
+  profilePageName: {
+    marginTop: 24,
+    color: '#1B1B1B',
+    fontSize: 40,
+    fontFamily: 'BeVietnamPro_700Bold'
+  },
+  profileFaculty: {
+    marginTop: 12,
+    color: '#404941',
+    fontSize: 22,
+    fontFamily: 'NotoSansThai_400Regular'
+  },
+  profileUniversity: {
+    color: '#758076',
+    fontSize: 18,
+    fontFamily: 'NotoSansThai_400Regular'
+  },
+  profileSkills: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 20,
+    flexWrap: 'wrap',
+    justifyContent: 'center'
+  },
+  profileSkill: {
+    backgroundColor: '#E8EEE7',
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 16
+  },
+  profileSkillText: {
+    color: '#003417',
+    fontSize: 16,
+    fontFamily: 'NotoSansThai_500Medium'
+  },
+  profileEditAction: {
+    marginTop: 32,
+    backgroundColor: '#005A2A'
+  },
+  profileEditActionText: {
+    color: '#FFF',
+    fontSize: 20,
+    fontFamily: 'NotoSansThai_600SemiBold'
+  },
+  profileStatsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    paddingVertical: 28,
+    backgroundColor: '#FFF'
+  },
+  profileStat: {
+    flex: 1,
+    alignItems: 'center'
+  },
+  profileStatLabel: {
+    color: '#404941',
+    fontSize: 16,
+    fontFamily: 'NotoSansThai_400Regular',
+    textAlign: 'center'
+  },
+  profileStatValue: {
+    color: '#005A2A',
+    fontSize: 40,
+    fontFamily: 'BeVietnamPro_700Bold',
+    marginTop: 8
+  },
+  profileCasesValue: {
+    color: '#1B1B1B',
+    fontSize: 40,
+    fontFamily: 'BeVietnamPro_700Bold',
+    marginTop: 8
+  },
+  profileStatDivider: {
+    width: 1,
+    height: 72,
+    backgroundColor: '#E5E2E1'
+  },
+  profileSection: { 
+    borderRadius: 16, 
+    padding: 24, 
+    backgroundColor: '#FFF' 
+  }, 
+  profileSectionTitle: { 
+    color: '#1B1B1B', 
+    fontSize: 32, 
+    fontFamily: 'NotoSansThai_600SemiBold' 
+  }, 
+  profileSectionRule: { 
+    height: 1, 
+    backgroundColor: '#E5E2E1', 
+    marginTop: 12, 
+    marginBottom: 20 
+  }, 
+  profileBody: { 
+    color: '#404941', 
+    fontSize: 18, 
+    lineHeight: 28, 
+    fontFamily: 'NotoSansThai_400Regular' 
+  },
+  profileExperience: { flexDirection: 'row', borderLeftWidth: 2, borderLeftColor: '#E5E2E1', paddingLeft: 20, paddingBottom: 28, gap: 16 }, profileExperienceIcon: { color: '#005A2A', fontSize: 28, fontWeight: 'bold' }, profileExperienceContent: { flex: 1 }, profileExperienceTitle: { color: '#1B1B1B', fontSize: 20, fontFamily: 'BeVietnamPro_700Bold' }, profileExperienceMeta: { color: '#404941', fontSize: 16, lineHeight: 24, fontFamily: 'NotoSansThai_400Regular' }, profileExperienceDescription: { color: '#758076', fontSize: 16, lineHeight: 24, marginTop: 8, fontFamily: 'NotoSansThai_400Regular' },
+  profileProjects: { gap: 20 }, profileProject: { width: 280 }, profileProjectImage: { width: 280, height: 170, borderRadius: 12 }, profileProjectPlaceholder: { width: 280, height: 170, borderRadius: 12, backgroundColor: '#DDE9D9' }, profileProjectTitle: { color: '#1B1B1B', fontSize: 24, marginTop: 16, fontFamily: 'BeVietnamPro_700Bold' }, profileProjectDescription: { color: '#758076', fontSize: 16, lineHeight: 24, marginTop: 8, fontFamily: 'NotoSansThai_400Regular' },
+  profileAchievement: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 }, profileAchievementIcon: { width: 64, height: 64, borderRadius: 32, textAlign: 'center', textAlignVertical: 'center', color: '#26793C', backgroundColor: '#A8F3AA', fontSize: 32 }, profileAchievementTitle: { color: '#1B1B1B', fontSize: 20, fontFamily: 'BeVietnamPro_700Bold' }, profileAchievementMeta: { color: '#758076', fontSize: 16, fontFamily: 'NotoSansThai_400Regular' },
+  profileReviewSummary: { flexDirection: 'row', gap: 24, alignItems: 'center' }, profileReviewScore: { color: '#005A2A', fontSize: 56, fontFamily: 'BeVietnamPro_700Bold' }, profileReviewStars: { color: '#005A2A', fontSize: 18 }, profileReviewCount: { color: '#758076', fontSize: 14, textAlign: 'center', fontFamily: 'NotoSansThai_400Regular' }, profileRatingBars: { flex: 1, gap: 12 }, profileRatingBar: { height: 12, borderRadius: 999, backgroundColor: '#E5E2E1' }, profileRatingBarFull: { backgroundColor: '#005A2A' }, profileRatingBarShort: { width: '18%', backgroundColor: '#005A2A' },
+  profileReviewCard: { marginTop: 24, padding: 16, borderRadius: 12, backgroundColor: '#F6F3F2' }, profileReviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, profileReviewName: { color: '#1B1B1B', fontSize: 18, fontFamily: 'BeVietnamPro_700Bold' }, profileReviewDate: { color: '#758076', fontSize: 14, fontFamily: 'NotoSansThai_400Regular' }, profileReviewText: { color: '#404941', fontSize: 16, lineHeight: 24, marginTop: 8, fontFamily: 'NotoSansThai_400Regular' },
 });
