@@ -18,6 +18,12 @@ import {
   SupportedLocale,
 } from '../locales/authMessages';
 
+interface LoginErrorState {
+  code: AuthErrorCode;
+  lastMode: AuthMode;
+  message?: string;
+}
+
 export interface LoginScreenProps {
   onNext?: () => void;
   onNavigate?: (dest: RoutingDestination) => void;
@@ -38,10 +44,7 @@ export default function LoginScreen({
   const currentLocale: SupportedLocale = systemLocale === 'th' ? 'th' : 'en';
 
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<{
-    code: AuthErrorCode;
-    lastMode?: AuthMode;
-  } | null>(null);
+  const [error, setError] = useState<LoginErrorState | null>(null);
 
   const messages = authMessages[currentLocale];
 
@@ -58,9 +61,8 @@ export default function LoginScreen({
           mode
         );
       } else if (authAdapter instanceof AuthService) {
-        // Pass a mock email to bypass NativeGoogleSignin requirement in Expo Go
-        const mockEmail = mode === 'signin' ? 'student.test@ku.th' : 'new.student@ku.th';
-        session = await authAdapter.signInWithNativeGoogle(mode, mockEmail);
+        // Use real Native Google Sign-In
+        session = await authAdapter.signInWithNativeGoogle(mode);
       } else {
         session = await authAdapter.authenticateWithGoogle(
           mode === 'signin' ? 'student.test@ku.th' : 'new.student@ku.th',
@@ -82,6 +84,7 @@ export default function LoginScreen({
       setError({
         code: errorCode,
         lastMode: mode,
+        message: err.message || JSON.stringify(err),
       });
     }
   };
@@ -134,6 +137,11 @@ export default function LoginScreen({
                   <Text style={styles.errorText} testID="error-message">
                     {getAuthErrorText(error.code, currentLocale)}
                   </Text>
+                  {error.message && (
+                    <Text style={[styles.errorText, { fontSize: 12, marginTop: 4, color: '#fca5a5' }]}>
+                      {error.message}
+                    </Text>
+                  )}
                   {error.lastMode && (
                     <Pressable
                       style={styles.retryButton}

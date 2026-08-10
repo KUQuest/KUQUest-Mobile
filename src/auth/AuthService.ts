@@ -89,15 +89,19 @@ export class AuthService implements AuthAdapter {
     if (!apiUrl) throw new AuthError('API_ERROR', 'API URL is not configured');
 
     try {
-      const response = await fetch(`${apiUrl}/auth/google`, {
+      console.log("SENDING REQUEST TO", `${apiUrl}/auth/sign-in/social`);
+      const response = await fetch(`${apiUrl}/auth/sign-in/social`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          idToken: credential,
-          mode: mode,
+          provider: 'google',
+          idToken: {
+            token: credential
+          }
         }),
       });
 
+      console.log("RESPONSE:", response.status, await response.clone().text());
       if (!response.ok) {
         if (response.status === 404) {
           throw new AuthError('ACCOUNT_NOT_FOUND');
@@ -110,7 +114,7 @@ export class AuthService implements AuthAdapter {
 
       const data = await response.json();
       const session = data as AuthSession;
-      
+
       await SecureSessionStorage.saveSession(session);
       return session;
     } catch (error) {
@@ -139,9 +143,9 @@ export class AuthService implements AuthAdapter {
         const apiUrl = process.env.EXPO_PUBLIC_API_URL;
         if (session && apiUrl) {
           try {
-            await fetch(`${apiUrl}/auth/logout`, {
+            await fetch(`${apiUrl}/auth/sign-out`, {
               method: 'POST',
-              headers: { 
+              headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${session.token}`
               },
@@ -151,7 +155,7 @@ export class AuthService implements AuthAdapter {
           }
         }
       }
-      
+
       if (NativeGoogleSignin) {
         try {
           await NativeGoogleSignin.signOut();
