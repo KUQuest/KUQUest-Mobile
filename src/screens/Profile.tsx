@@ -17,7 +17,7 @@ import {
 const profileData: ProfileData = {
   name: 'Jane Doe',
   faculty: 'Faculty of Engineering',
-  university: 'State University',
+  universityStatus: 'Student',
   skills: ['Web Dev', 'Design', 'Tutor'],
   rating: '4.9',
   completedCases: '42',

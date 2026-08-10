@@ -75,7 +75,7 @@ export interface ProfileAchievement {
 export interface ProfileData {
   name: string;
   faculty: string;
-  university: string;
+  universityStatus: string;
   skills: string[];
   rating: string;
   completedCases: string;
@@ -187,12 +187,17 @@ export const TopBar = ({ onMenuPress }: TopBarProps) => (
   </View>
 );
 
-export const ProfileHeader = ({ data, profileImage, onEditPress }: { data: Pick<ProfileData, 'name' | 'faculty' | 'university' | 'skills'>; profileImage?: ImageSourcePropType; onEditPress?: () => void }) => (
+export const ProfileHeader = ({ data, profileImage, onEditPress }: { data: Pick<ProfileData, 'name' | 'faculty' | 'universityStatus' | 'skills'>; profileImage?: ImageSourcePropType; onEditPress?: () => void }) => (
   <View style={profileStyles.profileHeroCard}>
     <View style={profileStyles.profilePhotoFrame}>{profileImage ? <Image source={profileImage} style={profileStyles.profilePhoto} /> : <Text style={profileStyles.profilePhotoInitials}>JD</Text>}</View>
-    <Text style={profileStyles.profilePageName}>{data.name}</Text><Text style={profileStyles.profileFaculty}>{data.faculty}</Text><Text style={profileStyles.profileUniversity}>{data.university}</Text>
+    <Text style={profileStyles.profilePageName}>{data.name}</Text><Text style={profileStyles.profileFaculty}>{data.faculty}</Text><Text style={profileStyles.profileUniversityStatus}>{data.universityStatus}</Text>
     <View style={profileStyles.profileSkills}>{data.skills.map((skill) => <View key={skill} style={profileStyles.profileSkill}><Text style={profileStyles.profileSkillText}>{skill}</Text></View>)}</View>
-    <Button onPress={onEditPress} style={profileStyles.profileEditAction}><Text style={profileStyles.profileEditActionText}>แก้ไขโปรไฟล์</Text></Button>
+    <Button onPress={onEditPress} style={profileStyles.profileEditAction}>
+      <Svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+        <Path d="M1.16667 9.33333H1.99792L7.7 3.63125L6.86875 2.8L1.16667 8.50208V9.33333ZM0 10.5V8.02083L7.7 0.335417C7.81667 0.228472 7.94549 0.145833 8.08646 0.0875C8.22743 0.0291667 8.37569 0 8.53125 0C8.68681 0 8.8375 0.0291667 8.98333 0.0875C9.12917 0.145833 9.25556 0.233333 9.3625 0.35L10.1646 1.16667C10.2812 1.27361 10.3663 1.4 10.4198 1.54583C10.4733 1.69167 10.5 1.8375 10.5 1.98333C10.5 2.13889 10.4733 2.28715 10.4198 2.42812C10.3663 2.5691 10.2812 2.69792 10.1646 2.81458L2.47917 10.5H0ZM7.27708 3.22292L6.86875 2.8L7.7 3.63125L7.27708 3.22292Z" fill="white" />
+      </Svg>
+      <Text style={profileStyles.profileEditActionText}>Edit Your Profile</Text> 
+    </Button>
   </View>
 );
 
@@ -672,7 +677,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 40,
     backgroundColor: '#FCF9F8',
-
+    borderColor: '#'
   },
   TopBarMenuButton: {
     width: 18,
@@ -695,13 +700,13 @@ const profileStyles = StyleSheet.create({
     backgroundColor: '#FCF9F8'
   },
   profilePageContent: {
-    padding: 32,
+    padding: 16,
     gap: 32,
     paddingBottom: 120
   },
   profileHeroCard: {
     alignItems: 'center',
-    padding: 32,
+    padding: 24,
     borderRadius: 16,
     backgroundColor: '#FFF'
   },
@@ -714,7 +719,7 @@ const profileStyles = StyleSheet.create({
     borderColor: '#E5E2E1',
     backgroundColor: '#DDE9D9',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
   profilePhoto: {
     width: '100%',
@@ -726,26 +731,26 @@ const profileStyles = StyleSheet.create({
     fontFamily: 'BeVietnamPro_700Bold'
   },
   profilePageName: {
-    marginTop: 24,
+    marginTop: 12,
     color: '#1B1B1B',
-    fontSize: 40,
+    fontSize: 28,
     fontFamily: 'BeVietnamPro_700Bold'
   },
   profileFaculty: {
-    marginTop: 12,
+    marginTop: 4,
     color: '#404941',
-    fontSize: 22,
-    fontFamily: 'NotoSansThai_400Regular'
+    fontSize: 16,
+    fontFamily: 'BeVietnamPro_400Regular'
   },
-  profileUniversity: {
+  profileUniversityStatus: {
     color: '#758076',
-    fontSize: 18,
-    fontFamily: 'NotoSansThai_400Regular'
+    fontSize: 14,
+    fontFamily: 'BeVietnamPro_400Regular'
   },
   profileSkills: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 20,
+    gap: 4,
+    marginTop: 12,
     flexWrap: 'wrap',
     justifyContent: 'center'
   },
@@ -757,16 +762,17 @@ const profileStyles = StyleSheet.create({
   },
   profileSkillText: {
     color: '#003417',
-    fontSize: 16,
-    fontFamily: 'NotoSansThai_500Medium'
+    fontSize: 12,
+    fontFamily: 'BeVietnamPro_500Medium'
   },
   profileEditAction: {
-    marginTop: 32,
+    marginTop: 24,
+    width: '100%',
     backgroundColor: '#005A2A'
   },
   profileEditActionText: {
     color: '#FFF',
-    fontSize: 20,
+    fontSize: 14,
     fontFamily: 'NotoSansThai_600SemiBold'
   },
   profileStatsCard: {

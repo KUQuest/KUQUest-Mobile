@@ -11,7 +11,10 @@ import {
 } from '@expo-google-fonts/noto-sans-thai';
 
 import {
-  BeVietnamPro_700Bold
+  BeVietnamPro_700Bold,
+  BeVietnamPro_600SemiBold,
+  BeVietnamPro_500Medium,
+  BeVietnamPro_400Regular
 } from '@expo-google-fonts/be-vietnam-pro';
 
 SplashScreen.preventAutoHideAsync();
@@ -23,6 +26,9 @@ export default function RootLayout() {
     NotoSansThai_600SemiBold,
     NotoSansThai_700Bold,
     BeVietnamPro_700Bold,
+    BeVietnamPro_600SemiBold,
+    BeVietnamPro_500Medium,
+    BeVietnamPro_400Regular
   });
   useEffect(() => {
     if (fontsLoaded) {
