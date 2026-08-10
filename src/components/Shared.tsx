@@ -210,15 +210,19 @@ export const AboutMe = ({ about }: Pick<ProfileData, 'about'>) => (
 );
 
 export const WorkExperience = ({ experiences }: Pick<ProfileData, 'experiences'>) => (
-  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>ประสบการณ์</Text><View style={profileStyles.profileSectionRule} />{experiences.map((experience) => <View key={experience.title} style={profileStyles.profileExperience}><Text style={profileStyles.profileExperienceIcon}>{experience.icon}</Text><View style={profileStyles.profileExperienceContent}><Text style={profileStyles.profileExperienceTitle}>{experience.title}</Text><Text style={profileStyles.profileExperienceMeta}>{experience.meta}</Text><Text style={profileStyles.profileExperienceDescription}>{experience.description}</Text></View></View>)}</View>
+  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>Experience</Text><View style={profileStyles.profileSectionRule} />{experiences.map((experience) => <View key={experience.title} style={profileStyles.profileExperience}><Svg width="20" height="19" viewBox="0 0 20 19" fill="none" style={profileStyles.profileExperienceIcon}>
+  <Path d="M2 19C1.45 19 0.979167 18.8042 0.5875 18.4125C0.195833 18.0208 0 17.55 0 17V6C0 5.45 0.195833 4.97917 0.5875 4.5875C0.979167 4.19583 1.45 4 2 4H6V2C6 1.45 6.19583 0.979167 6.5875 0.5875C6.97917 0.195833 7.45 0 8 0H12C12.55 0 13.0208 0.195833 13.4125 0.5875C13.8042 0.97917 14 1.45 14 2V4H18C18.55 4 19.0208 4.19583 19.4125 4.5875C19.8042 4.97917 20 5.45 20 6V17C20 17.55 19.8042 18.0208 19.4125 18.4125C19.0208 18.8042 18.55 19 18 19H2ZM2 17H18V6H2V17ZM8 4H12V2H8V4Z" fill="#004D25" />
+</Svg><View style={profileStyles.profileExperienceContent}><Text style={profileStyles.profileExperienceTitle}>{experience.title}</Text><Text style={profileStyles.profileExperienceMeta}>{experience.meta}</Text><Text style={profileStyles.profileExperienceDescription}>{experience.description}</Text></View></View>)}</View>
 );
 
 export const MyWork = ({ project, projectImage }: Pick<ProfileData, 'project'> & { projectImage?: ImageSourcePropType }) => (
-  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>งานของฉัน</Text><View style={profileStyles.profileSectionRule} /><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={profileStyles.profileProjects}><View style={profileStyles.profileProject}>{projectImage ? <Image source={projectImage} style={profileStyles.profileProjectImage} /> : <View style={profileStyles.profileProjectPlaceholder} />}<Text style={profileStyles.profileProjectTitle}>{project.title}</Text><Text style={profileStyles.profileProjectDescription}>{project.description}</Text></View></ScrollView></View>
+  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>My Work</Text><View style={profileStyles.profileSectionRule} /><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={profileStyles.profileProjects}><View style={profileStyles.profileProject}>{projectImage ? <Image source={projectImage} style={profileStyles.profileProjectImage} /> : <View style={profileStyles.profileProjectPlaceholder} />}<Text style={profileStyles.profileProjectTitle}>{project.title}</Text><Text style={profileStyles.profileProjectDescription}>{project.description}</Text></View></ScrollView></View>
 );
 
 export const Achievements = ({ achievements }: Pick<ProfileData, 'achievements'>) => (
-  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>ผลงาน</Text><View style={profileStyles.profileSectionRule} />{achievements.map((achievement) => <View key={achievement.title} style={profileStyles.profileAchievement}><Text style={profileStyles.profileAchievementIcon}>{achievement.icon}</Text><View><Text style={profileStyles.profileAchievementTitle}>{achievement.title}</Text><Text style={profileStyles.profileAchievementMeta}>{achievement.meta}</Text></View></View>)}</View>
+  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>My Achievement</Text><View style={profileStyles.profileSectionRule} />{achievements.map((achievement) => <View key={achievement.title} style={profileStyles.profileAchievement}><View style={profileStyles.profileAchievementIcon}><Svg width="16" height="21" viewBox="0 0 16 21" fill="none">
+  <Path d="M5.675 11.7L6.55 8.85L4.25 7H7.1L8 4.2L8.9 7H11.75L9.425 8.85L10.3 11.7L8 9.925L5.675 11.7ZM2 21V13.275C1.36667 12.575 0.875 11.775 0.525 10.875C0.175 9.975 0 9.01667 0 8C0 5.76667 0.775 3.875 2.325 2.325C3.875 0.775 5.76667 0 8 0C10.2333 0 12.125 0.775 13.675 2.325C15.225 3.875 16 5.76667 16 8C16 9.01667 15.825 9.975 15.475 10.875C15.125 11.775 14.6333 12.575 14 13.275V21L8 19L2 21ZM8 14C9.66667 14 11.0833 13.4167 12.25 12.25C13.4167 11.0833 14 9.66667 14 8C14 6.33333 13.4167 4.91667 12.25 3.75C11.0833 2.58333 9.66667 2 8 2C6.33333 2 4.91667 2.58333 3.75 3.75C2.58333 4.91667 2 6.33333 2 8C2 9.66667 2.58333 11.0833 3.75 12.25C4.91667 13.4167 6.33333 14 8 14ZM4 18.025L8 17L12 18.025V14.925C11.4167 15.2583 10.7875 15.5208 10.1125 15.7125C9.4375 15.9042 8.73333 16 8 16C7.26667 16 6.5625 15.9042 5.8875 15.7125C5.2125 15.5208 4.58333 15.2583 4 14.925V18.025Z" fill="#2E7238" />
+</Svg></View><View><Text style={profileStyles.profileAchievementTitle}>{achievement.title}</Text><Text style={profileStyles.profileAchievementMeta}>{achievement.meta}</Text></View></View>)}</View>
 );
 
 export const ProfileReviews = ({ review }: Pick<ProfileData, 'review'>) => (
@@ -839,26 +843,26 @@ const profileStyles = StyleSheet.create({
     paddingBottom: 28, 
     gap: 16 
   }, 
-  profileExperienceIcon: { 
-    color: '#005A2A', 
-    fontSize: 28, 
-    fontWeight: 'bold' 
+  profileExperienceIcon: {
+    marginTop: 4
   }, 
   profileExperienceContent: { 
     flex: 1 
   }, 
   profileExperienceTitle: { 
-    color: '#1B1B1B', fontSize: 20, fontFamily: 'BeVietnamPro_700Bold' 
+    color: '#1B1B1B', 
+    fontSize: 14, 
+    fontFamily: 'NotoSansThai_700Bold' 
   }, 
   profileExperienceMeta: {
     color: '#404941',
-    fontSize: 16,
+    fontSize: 14,
     lineHeight: 24,
     fontFamily: 'NotoSansThai_400Regular'
   },
   profileExperienceDescription: {
     color: '#758076',
-    fontSize: 16,
+    fontSize: 14,
     lineHeight: 24,
     marginTop: 8,
     fontFamily: 'NotoSansThai_400Regular'
@@ -882,13 +886,13 @@ const profileStyles = StyleSheet.create({
   },
   profileProjectTitle: {
     color: '#1B1B1B',
-    fontSize: 24,
+    fontSize: 18,
     marginTop: 16,
-    fontFamily: 'BeVietnamPro_700Bold'
+    fontFamily: 'NotoSansThai_700Bold'
   },
   profileProjectDescription: {
     color: '#758076',
-    fontSize: 16,
+    fontSize: 14,
     lineHeight: 24,
     marginTop: 8,
     fontFamily: 'NotoSansThai_400Regular'
@@ -897,26 +901,25 @@ const profileStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
-    marginBottom: 20
+    marginBottom: 20,
+    paddingHorizontal: 24,
   },
   profileAchievementIcon: {
-    width: 64,
-    height: 64,
+    width: 40,
+    height: 40,
     borderRadius: 32,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    color: '#26793C',
     backgroundColor: '#A8F3AA',
-    fontSize: 32
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   profileAchievementTitle: {
     color: '#1B1B1B',
-    fontSize: 20,
-    fontFamily: 'BeVietnamPro_700Bold'
+    fontSize: 14,
+    fontFamily: 'NotoSansThai_600SemiBold'
   },
   profileAchievementMeta: {
     color: '#758076',
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'NotoSansThai_400Regular'
   },
   profileReviewSummary: {
