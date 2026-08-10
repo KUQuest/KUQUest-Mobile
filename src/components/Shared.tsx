@@ -83,7 +83,7 @@ export interface ProfileData {
   experiences: ProfileExperience[];
   project: { title: string; description: string };
   achievements: ProfileAchievement[];
-  review: { score: string; count: string; name: string; date: string; comment: string };
+  review: { score: string; count: string; ratingDistribution: Record<3 | 4 | 5, number>; name: string; date: string; comment: string };
 }
 
 
@@ -179,15 +179,24 @@ export const TopBar = ({ onMenuPress }: TopBarProps) => (
       onPress={onMenuPress}
       style={styles.TopBarMenuButton}
     >
-      <Svg width="18" height="12" viewBox="0 0 18 12" fill="none">
-        <Path d="M0 12V10H18V12H0ZM0 7V5H18V7H0ZM0 2V0H18V2H0Z" fill="#003417" />
+      <Svg width="28" height="28" viewBox="0 0 25 25" fill="none">
+        <Path d="M11.2497 12.5L16.0413 17.2917L14.583 18.75L8.33301 12.5L14.583 6.25L16.0413 7.70833L11.2497 12.5Z" fill="#003417" />
       </Svg>
     </TouchableOpacity>
-    <Text style={styles.TopBarHeaderLogo}>KUQUEST</Text>
+    <Svg width="101" height="51" viewBox="0 0 101 51" fill="none">
+      <Path d="M28.4344 0.976154C29.1252 0.585543 29.7155 0.566932 30.1233 0.797501C30.5309 1.02809 30.8099 1.538 30.8099 2.31921V31.0548C30.8099 31.8351 30.5294 32.7101 30.0684 33.4919C29.6075 34.2739 28.9742 34.9492 28.2842 35.3395L2.87542 49.7069C2.18462 50.0977 1.59432 50.116 1.18653 49.8854C0.778808 49.6545 0.5 49.1448 0.5 48.3636V19.6282C0.500009 18.8479 0.780736 17.9733 1.24166 17.1914C1.70259 16.4095 2.33565 15.7341 3.02557 15.344L28.4344 0.976154Z" fill="#F7FBF0" stroke="black" />
+      <Path d="M21.5718 34.5448L16.9068 28.0375L14.2086 33.2122V38.7083L11.5186 40.2295V21.2957L14.2086 19.7746V28.9934L20.9379 15.9694L24.2619 14.0898L18.7761 24.6459L24.8307 32.7019L21.5718 34.5448Z" fill="#003200" fillOpacity="0.9" />
+      <Path d="M62.9687 0.976134C63.6597 0.585551 64.2498 0.566939 64.6576 0.797481C65.0651 1.02807 65.3441 1.53797 65.3441 2.31919V31.0548C65.3441 31.8351 65.0636 32.7101 64.6026 33.4918C64.1705 34.2251 63.587 34.8642 62.9471 35.2627L62.8186 35.3395L37.4096 49.7069C36.7189 50.0977 36.1285 50.116 35.7207 49.8854C35.3129 49.6545 35.0342 49.1448 35.0342 48.3636V19.6282C35.0342 18.8479 35.315 17.9733 35.7759 17.1914C36.2369 16.4095 36.8699 15.7341 37.5597 15.344L62.9687 0.976134Z" fill="#F7FBF0" stroke="black" />
+      <Path d="M57.872 26.9077C57.872 27.8883 57.7177 28.8701 57.409 29.8536C57.1 30.8309 56.672 31.7653 56.1249 32.6568C55.5774 33.5424 54.93 34.3556 54.1822 35.0971C53.4348 35.8386 52.6246 36.4559 51.7525 36.9492C50.8856 37.4394 50.081 37.735 49.3387 37.8362C48.6018 37.9342 47.9624 37.8483 47.4207 37.5789C46.8789 37.303 46.4534 36.8512 46.1447 36.223C45.8414 35.5859 45.6895 34.7771 45.6895 33.7965V21.2598L48.4204 19.7157V32.0962C48.4204 32.6968 48.4988 33.1977 48.6558 33.5989C48.8132 33.9942 49.0351 34.2821 49.3225 34.463C49.615 34.6406 49.9645 34.7094 50.3708 34.6697C50.7825 34.6206 51.2432 34.4521 51.7525 34.1642C52.2561 33.8794 52.7168 33.5271 53.1339 33.1074C53.5513 32.6815 53.9087 32.2127 54.2069 31.7009C54.5048 31.1894 54.7351 30.6456 54.8976 30.0694C55.06 29.4874 55.1414 28.8963 55.1414 28.2957V15.9152L57.872 14.3711V26.9077Z" fill="#006600" fillOpacity="0.9" />
+      <Path d="M97.4286 0.84838L72.0195 15.2162C70.5832 16.0282 69.4189 18.0035 69.4189 19.6279V48.3636C69.4189 49.988 70.5832 50.6463 72.0195 49.8342L97.4286 35.4663C98.8649 34.6542 100.029 32.6789 100.029 31.0545V2.31897C100.029 0.694586 98.8649 0.0361741 97.4286 0.84838Z" fill="#F7FBF0" stroke="black" />
+      <Path d="M87.2617 13.6293C87.2617 14.279 86.7959 15.069 86.2215 15.394L77.7593 20.179C76.8974 20.6663 76.1989 21.8516 76.1986 22.8261V37.625C76.1989 38.5994 76.8974 38.9944 77.7593 38.5073L90.8446 31.1079C91.7061 30.6206 92.405 29.4352 92.405 28.4608V18.8902C92.405 18.2405 92.8707 17.4502 93.4452 17.1255C94.0197 16.8005 94.4854 17.064 94.4854 17.7137V27.2843C94.4854 29.5584 92.8554 32.3238 90.8446 33.4609L77.7593 40.8603C75.7485 41.9971 74.1182 41.0753 74.1182 38.8015V24.0025C74.1182 21.7284 75.7485 18.9631 77.7593 17.8261L86.2215 13.0411C86.7959 12.7161 87.2617 12.9796 87.2617 13.6293Z" fill="#90D87E" />
+      <Path d="M78.0279 27.155L77.7051 28.4559C78.3925 28.3209 79.3216 28.5744 80.3636 29.0691C81.3832 29.5529 82.3366 30.1736 83.1513 30.6342L83.8868 29.3862L84.6225 28.1385C83.8829 27.7203 82.8312 27.0435 81.772 26.5406C80.7354 26.0488 79.5126 25.6259 78.3507 25.8541L78.0279 27.155Z" fill="#90D87E" />
+      <Path d="M82.8522 30.3178L83.4721 30.721C83.8171 30.1631 84.4336 28.9636 85.1748 27.5327C85.9456 26.0441 86.9189 24.1706 88.0375 22.1209C90.285 18.0024 93.0736 13.2592 95.9177 9.5765L95.4243 8.99041L94.9309 8.4043C91.8748 12.3618 88.9543 17.3492 86.6793 21.5177C85.5366 23.6115 84.5453 25.5206 83.7727 27.0121C82.9703 28.5612 82.4643 29.5392 82.2324 29.9142L82.8522 30.3178Z" fill="#90D87E" />
+    </Svg>
   </View>
 );
 
-export const ProfileHeader = ({ data, profileImage, onEditPress }: { data: Pick<ProfileData, 'name' | 'faculty' | 'universityStatus' | 'skills'>; profileImage?: ImageSourcePropType; onEditPress?: () => void }) => (
+export const ProfileHeader = ({ data, profileImage, onEditPress, editProfileLabel = 'Edit Your Profile' }: { data: Pick<ProfileData, 'name' | 'faculty' | 'universityStatus' | 'skills'>; profileImage?: ImageSourcePropType; onEditPress?: () => void; editProfileLabel?: string }) => (
   <View style={profileStyles.profileHeroCard}>
     <View style={profileStyles.profilePhotoFrame}>{profileImage ? <Image source={profileImage} style={profileStyles.profilePhoto} /> : <Text style={profileStyles.profilePhotoInitials}>JD</Text>}</View>
     <Text style={profileStyles.profilePageName}>{data.name}</Text><Text style={profileStyles.profileFaculty}>{data.faculty}</Text><Text style={profileStyles.profileUniversityStatus}>{data.universityStatus}</Text>
@@ -196,39 +205,74 @@ export const ProfileHeader = ({ data, profileImage, onEditPress }: { data: Pick<
       <Svg width="11" height="11" viewBox="0 0 11 11" fill="none">
         <Path d="M1.16667 9.33333H1.99792L7.7 3.63125L6.86875 2.8L1.16667 8.50208V9.33333ZM0 10.5V8.02083L7.7 0.335417C7.81667 0.228472 7.94549 0.145833 8.08646 0.0875C8.22743 0.0291667 8.37569 0 8.53125 0C8.68681 0 8.8375 0.0291667 8.98333 0.0875C9.12917 0.145833 9.25556 0.233333 9.3625 0.35L10.1646 1.16667C10.2812 1.27361 10.3663 1.4 10.4198 1.54583C10.4733 1.69167 10.5 1.8375 10.5 1.98333C10.5 2.13889 10.4733 2.28715 10.4198 2.42812C10.3663 2.5691 10.2812 2.69792 10.1646 2.81458L2.47917 10.5H0ZM7.27708 3.22292L6.86875 2.8L7.7 3.63125L7.27708 3.22292Z" fill="white" />
       </Svg>
-      <Text style={profileStyles.profileEditActionText}>Edit Your Profile</Text> 
+      <Text style={profileStyles.profileEditActionText}>{editProfileLabel}</Text> 
     </Button>
   </View>
 );
 
-export const ProfileStats = ({ rating, completedCases }: Pick<ProfileData, 'rating' | 'completedCases'>) => (
-  <View style={profileStyles.profileStatsCard}><View style={profileStyles.profileStat}><Text style={profileStyles.profileStatLabel}>คะแนนจากผู้ใช้</Text><Text style={profileStyles.profileStatValue}>{rating} ★</Text></View><View style={profileStyles.profileStatDivider} /><View style={profileStyles.profileStat}><Text style={profileStyles.profileStatLabel}>จำนวนเควสที่เคยทำ</Text><Text style={profileStyles.profileCasesValue}>{completedCases}</Text></View></View>
+export const ProfileStats = ({ rating, completedCases, ratingLabel = 'User rating', completedCasesLabel = 'Completed quests' }: Pick<ProfileData, 'rating' | 'completedCases'> & { ratingLabel?: string; completedCasesLabel?: string }) => (
+  <View style={profileStyles.profileStatsCard}><View style={profileStyles.profileStat}><Text style={profileStyles.profileStatLabel}>{ratingLabel}</Text><Text style={profileStyles.profileStatValue}>{rating} ★</Text></View><View style={profileStyles.profileStatDivider} /><View style={profileStyles.profileStat}><Text style={profileStyles.profileStatLabel}>{completedCasesLabel}</Text><Text style={profileStyles.profileCasesValue}>{completedCases}</Text></View></View>
 );
 
-export const AboutMe = ({ about }: Pick<ProfileData, 'about'>) => (
-  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>About Me</Text><View style={profileStyles.profileSectionRule} /><Text style={profileStyles.profileBody}>{about}</Text></View>
+export const AboutMe = ({ about, sectionTitle = 'About Me' }: Pick<ProfileData, 'about'> & { sectionTitle?: string }) => (
+  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>{sectionTitle}</Text><View style={profileStyles.profileSectionRule} /><Text style={profileStyles.profileBody}>{about}</Text></View>
 );
 
-export const WorkExperience = ({ experiences }: Pick<ProfileData, 'experiences'>) => (
-  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>Experience</Text><View style={profileStyles.profileSectionRule} />{experiences.map((experience) => <View key={experience.title} style={profileStyles.profileExperience}><Svg width="20" height="19" viewBox="0 0 20 19" fill="none" style={profileStyles.profileExperienceIcon}>
+export const WorkExperience = ({ experiences, sectionTitle = 'Experience' }: Pick<ProfileData, 'experiences'> & { sectionTitle?: string }) => (
+  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>{sectionTitle}</Text><View style={profileStyles.profileSectionRule} />{experiences.map((experience) => <View key={experience.title} style={profileStyles.profileExperience}><Svg width="20" height="19" viewBox="0 0 20 19" fill="none" style={profileStyles.profileExperienceIcon}>
   <Path d="M2 19C1.45 19 0.979167 18.8042 0.5875 18.4125C0.195833 18.0208 0 17.55 0 17V6C0 5.45 0.195833 4.97917 0.5875 4.5875C0.979167 4.19583 1.45 4 2 4H6V2C6 1.45 6.19583 0.979167 6.5875 0.5875C6.97917 0.195833 7.45 0 8 0H12C12.55 0 13.0208 0.195833 13.4125 0.5875C13.8042 0.97917 14 1.45 14 2V4H18C18.55 4 19.0208 4.19583 19.4125 4.5875C19.8042 4.97917 20 5.45 20 6V17C20 17.55 19.8042 18.0208 19.4125 18.4125C19.0208 18.8042 18.55 19 18 19H2ZM2 17H18V6H2V17ZM8 4H12V2H8V4Z" fill="#004D25" />
 </Svg><View style={profileStyles.profileExperienceContent}><Text style={profileStyles.profileExperienceTitle}>{experience.title}</Text><Text style={profileStyles.profileExperienceMeta}>{experience.meta}</Text><Text style={profileStyles.profileExperienceDescription}>{experience.description}</Text></View></View>)}</View>
 );
 
-export const MyWork = ({ project, projectImage }: Pick<ProfileData, 'project'> & { projectImage?: ImageSourcePropType }) => (
-  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>My Work</Text><View style={profileStyles.profileSectionRule} /><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={profileStyles.profileProjects}><View style={profileStyles.profileProject}>{projectImage ? <Image source={projectImage} style={profileStyles.profileProjectImage} /> : <View style={profileStyles.profileProjectPlaceholder} />}<Text style={profileStyles.profileProjectTitle}>{project.title}</Text><Text style={profileStyles.profileProjectDescription}>{project.description}</Text></View></ScrollView></View>
+export const MyWork = ({ project, projectImage, sectionTitle = 'My Work' }: Pick<ProfileData, 'project'> & { projectImage?: ImageSourcePropType; sectionTitle?: string }) => (
+  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>{sectionTitle}</Text><View style={profileStyles.profileSectionRule} /><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={profileStyles.profileProjects}><View style={profileStyles.profileProject}>{projectImage ? <Image source={projectImage} style={profileStyles.profileProjectImage} /> : <View style={profileStyles.profileProjectPlaceholder} />}<Text style={profileStyles.profileProjectTitle}>{project.title}</Text><Text style={profileStyles.profileProjectDescription}>{project.description}</Text></View></ScrollView></View>
 );
 
-export const Achievements = ({ achievements }: Pick<ProfileData, 'achievements'>) => (
-  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>My Achievement</Text><View style={profileStyles.profileSectionRule} />{achievements.map((achievement) => <View key={achievement.title} style={profileStyles.profileAchievement}><View style={profileStyles.profileAchievementIcon}><Svg width="16" height="21" viewBox="0 0 16 21" fill="none">
+export const Achievements = ({ achievements, sectionTitle = 'My Achievement' }: Pick<ProfileData, 'achievements'> & { sectionTitle?: string }) => (
+  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>{sectionTitle}</Text><View style={profileStyles.profileSectionRule} />{achievements.map((achievement) => <View key={achievement.title} style={profileStyles.profileAchievement}><View style={profileStyles.profileAchievementIcon}><Svg width="16" height="21" viewBox="0 0 16 21" fill="none">
   <Path d="M5.675 11.7L6.55 8.85L4.25 7H7.1L8 4.2L8.9 7H11.75L9.425 8.85L10.3 11.7L8 9.925L5.675 11.7ZM2 21V13.275C1.36667 12.575 0.875 11.775 0.525 10.875C0.175 9.975 0 9.01667 0 8C0 5.76667 0.775 3.875 2.325 2.325C3.875 0.775 5.76667 0 8 0C10.2333 0 12.125 0.775 13.675 2.325C15.225 3.875 16 5.76667 16 8C16 9.01667 15.825 9.975 15.475 10.875C15.125 11.775 14.6333 12.575 14 13.275V21L8 19L2 21ZM8 14C9.66667 14 11.0833 13.4167 12.25 12.25C13.4167 11.0833 14 9.66667 14 8C14 6.33333 13.4167 4.91667 12.25 3.75C11.0833 2.58333 9.66667 2 8 2C6.33333 2 4.91667 2.58333 3.75 3.75C2.58333 4.91667 2 6.33333 2 8C2 9.66667 2.58333 11.0833 3.75 12.25C4.91667 13.4167 6.33333 14 8 14ZM4 18.025L8 17L12 18.025V14.925C11.4167 15.2583 10.7875 15.5208 10.1125 15.7125C9.4375 15.9042 8.73333 16 8 16C7.26667 16 6.5625 15.9042 5.8875 15.7125C5.2125 15.5208 4.58333 15.2583 4 14.925V18.025Z" fill="#2E7238" />
 </Svg></View><View><Text style={profileStyles.profileAchievementTitle}>{achievement.title}</Text><Text style={profileStyles.profileAchievementMeta}>{achievement.meta}</Text></View></View>)}</View>
 );
 
-export const ProfileReviews = ({ review }: Pick<ProfileData, 'review'>) => (
-  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>การรีวิว</Text><View style={profileStyles.profileSectionRule} /><View style={profileStyles.profileReviewSummary}><View><Text style={profileStyles.profileReviewScore}>{review.score}</Text><Text style={profileStyles.profileReviewStars}>★★★★★</Text><Text style={profileStyles.profileReviewCount}>จากการรีวิว{`\n`}{review.count} ครั้ง</Text></View><View style={profileStyles.profileRatingBars}><View style={[profileStyles.profileRatingBar, profileStyles.profileRatingBarFull]} /><View style={[profileStyles.profileRatingBar, profileStyles.profileRatingBarShort]} /><View style={profileStyles.profileRatingBar} /></View></View><View style={profileStyles.profileReviewCard}><View style={profileStyles.profileReviewHeader}><Text style={profileStyles.profileReviewName}>{review.name}</Text><Text style={profileStyles.profileReviewDate}>{review.date}</Text></View><Text style={profileStyles.profileReviewStars}>★★★★★</Text><Text style={profileStyles.profileReviewText}>{review.comment}</Text></View></View>
-);
+const RatingStars = ({ score }: Pick<ProfileData['review'], 'score'>) => {
+  const fillPercentage = Math.min(100, Math.max(0, (Number(score) / 5) * 100));
 
+  return (
+    <View style={profileStyles.profileReviewStars}>
+      <Text style={profileStyles.profileReviewStarsBackground}>★★★★★</Text>
+      <View style={[profileStyles.profileReviewStarsFill, { width: `${fillPercentage}%` }]}>
+        <Text style={profileStyles.profileReviewStarsFillText}>★★★★★</Text>
+      </View>
+    </View>
+  );
+};
+
+export const ProfileReviews = ({ review, sectionTitle = 'Review', reviewCountText }: Pick<ProfileData, 'review'> & { sectionTitle?: string; reviewCountText?: string }) => {
+  const reviewTotal = Object.values(review.ratingDistribution).reduce((total, count) => total + count, 0);
+  const ratingPercentage = (score: 3 | 4 | 5): `${number}%` => reviewTotal === 0 ? '0%' : `${(review.ratingDistribution[score] / reviewTotal) * 100}%`;
+
+  return (
+    <View style={profileStyles.profileSection}>
+      <Text style={profileStyles.profileSectionTitle}>{sectionTitle}</Text>
+      <View style={profileStyles.profileSectionRule} />
+      <View style={profileStyles.profileReviewSummary}>
+        <View>
+          <Text style={profileStyles.profileReviewScore}>{review.score}</Text>
+          <RatingStars score={review.score} />
+          <Text style={profileStyles.profileReviewCount}>{reviewCountText ?? `From the last\n${review.count} reviews`}</Text>
+        </View>
+        <View style={profileStyles.profileRatingBars}>
+          {[5, 4, 3].map((score) => <View key={score} style={profileStyles.profileRatingRow}><Text style={profileStyles.profileRatingLabel}>{score}</Text><View style={profileStyles.profileRatingBarTrack}><View style={[profileStyles.profileRatingBar, { width: ratingPercentage(score as 3 | 4 | 5) }]} /></View></View>)}
+        </View>
+      </View>
+      <View style={profileStyles.profileReviewCard}>
+        <View style={profileStyles.profileReviewHeader}><Text style={profileStyles.profileReviewName}>{review.name}</Text><Text style={profileStyles.profileReviewDate}>{review.date}</Text></View>
+        <RatingStars score={review.score} />
+        <Text style={profileStyles.profileReviewText}>{review.comment}</Text>
+      </View>
+    </View>
+  );
+};
 export const Step = ({ step, totalSteps = 3, lang = 'en' }: StepProgressProps) => {
   const stepText = lang === 'th'
     ? `ขั้นตอนที่ ${step} จาก ${totalSteps}`
@@ -679,12 +723,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 40,
+    paddingLeft: 16,
+    paddingRight: 40,
     backgroundColor: '#FCF9F8',
-    borderColor: '#'
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E2E1'
   },
   TopBarMenuButton: {
-    width: 18,
+    width: 28,
     height: 24,
     justifyContent: 'center',
   },
@@ -929,33 +975,60 @@ const profileStyles = StyleSheet.create({
   },
   profileReviewScore: {
     color: '#005A2A',
-    fontSize: 56,
+    fontSize: 40,
     fontFamily: 'BeVietnamPro_700Bold'
   },
   profileReviewStars: {
+    width: 90,
+    height: 22,
+    position: 'relative',
+    overflow: 'hidden'
+  },
+  profileReviewStarsBackground: {
+    color: '#E5E2E1',
+    fontSize: 18
+  },
+  profileReviewStarsFill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    overflow: 'hidden'
+  },
+  profileReviewStarsFillText: {
     color: '#005A2A',
     fontSize: 18
   },
   profileReviewCount: {
     color: '#758076',
-    fontSize: 14,
+    fontSize: 12,
     textAlign: 'center',
-    fontFamily: 'NotoSansThai_400Regular'
+    fontFamily: 'NotoSansThai_500Medium'
   },
   profileRatingBars: {
     flex: 1,
     gap: 12
   },
-  profileRatingBar: {
+  profileRatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8
+  },
+  profileRatingLabel: {
+    width: 12,
+    color: '#758076',
+    fontSize: 12,
+    fontFamily: 'BeVietnamPro_500Medium'
+  },
+  profileRatingBarTrack: {
+    flex: 1,
     height: 12,
     borderRadius: 999,
-    backgroundColor: '#E5E2E1'
+    backgroundColor: '#E5E2E1',
+    overflow: 'hidden'
   },
-  profileRatingBarFull: {
-    backgroundColor: '#005A2A'
-  },
-  profileRatingBarShort: {
-    width: '18%',
+  profileRatingBar: {
+    height: '100%',
+    borderRadius: 999,
     backgroundColor: '#005A2A'
   },
   profileReviewCard: {
@@ -971,8 +1044,8 @@ const profileStyles = StyleSheet.create({
   },
   profileReviewName: {
     color: '#1B1B1B',
-    fontSize: 18,
-    fontFamily: 'BeVietnamPro_700Bold'
+    fontSize: 14,
+    fontFamily: 'NotoSansThai_600SemiBold'
   },
   profileReviewDate: {
     color: '#758076',
@@ -981,7 +1054,7 @@ const profileStyles = StyleSheet.create({
   },
   profileReviewText: {
     color: '#404941',
-    fontSize: 16,
+    fontSize: 14,
     lineHeight: 24,
     marginTop: 8,
     fontFamily: 'NotoSansThai_400Regular'
