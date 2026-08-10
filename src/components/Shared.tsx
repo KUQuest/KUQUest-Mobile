@@ -206,7 +206,7 @@ export const ProfileStats = ({ rating, completedCases }: Pick<ProfileData, 'rati
 );
 
 export const AboutMe = ({ about }: Pick<ProfileData, 'about'>) => (
-  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>เกี่ยวกับฉัน</Text><View style={profileStyles.profileSectionRule} /><Text style={profileStyles.profileBody}>{about}</Text></View>
+  <View style={profileStyles.profileSection}><Text style={profileStyles.profileSectionTitle}>About Me</Text><View style={profileStyles.profileSectionRule} /><Text style={profileStyles.profileBody}>{about}</Text></View>
 );
 
 export const WorkExperience = ({ experiences }: Pick<ProfileData, 'experiences'>) => (
@@ -779,7 +779,7 @@ const profileStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 16,
-    paddingVertical: 28,
+    paddingVertical: 24,
     backgroundColor: '#FFF'
   },
   profileStat: {
@@ -788,21 +788,21 @@ const profileStyles = StyleSheet.create({
   },
   profileStatLabel: {
     color: '#404941',
-    fontSize: 16,
-    fontFamily: 'NotoSansThai_400Regular',
+    fontSize: 12,
+    fontFamily: 'NotoSansThai_500Medium',
     textAlign: 'center'
   },
   profileStatValue: {
     color: '#005A2A',
-    fontSize: 40,
-    fontFamily: 'BeVietnamPro_700Bold',
-    marginTop: 8
+    fontSize: 24,
+    fontFamily: 'NotoSansThai_600SemiBold',
+    marginTop: 4
   },
   profileCasesValue: {
     color: '#1B1B1B',
-    fontSize: 40,
-    fontFamily: 'BeVietnamPro_700Bold',
-    marginTop: 8
+    fontSize: 24,
+    fontFamily: 'NotoSansThai_600SemiBold',
+    marginTop: 4
   },
   profileStatDivider: {
     width: 1,
@@ -816,7 +816,7 @@ const profileStyles = StyleSheet.create({
   }, 
   profileSectionTitle: { 
     color: '#1B1B1B', 
-    fontSize: 32, 
+    fontSize: 24, 
     fontFamily: 'NotoSansThai_600SemiBold' 
   }, 
   profileSectionRule: { 
@@ -827,13 +827,160 @@ const profileStyles = StyleSheet.create({
   }, 
   profileBody: { 
     color: '#404941', 
-    fontSize: 18, 
+    fontSize: 16, 
     lineHeight: 28, 
     fontFamily: 'NotoSansThai_400Regular' 
   },
-  profileExperience: { flexDirection: 'row', borderLeftWidth: 2, borderLeftColor: '#E5E2E1', paddingLeft: 20, paddingBottom: 28, gap: 16 }, profileExperienceIcon: { color: '#005A2A', fontSize: 28, fontWeight: 'bold' }, profileExperienceContent: { flex: 1 }, profileExperienceTitle: { color: '#1B1B1B', fontSize: 20, fontFamily: 'BeVietnamPro_700Bold' }, profileExperienceMeta: { color: '#404941', fontSize: 16, lineHeight: 24, fontFamily: 'NotoSansThai_400Regular' }, profileExperienceDescription: { color: '#758076', fontSize: 16, lineHeight: 24, marginTop: 8, fontFamily: 'NotoSansThai_400Regular' },
-  profileProjects: { gap: 20 }, profileProject: { width: 280 }, profileProjectImage: { width: 280, height: 170, borderRadius: 12 }, profileProjectPlaceholder: { width: 280, height: 170, borderRadius: 12, backgroundColor: '#DDE9D9' }, profileProjectTitle: { color: '#1B1B1B', fontSize: 24, marginTop: 16, fontFamily: 'BeVietnamPro_700Bold' }, profileProjectDescription: { color: '#758076', fontSize: 16, lineHeight: 24, marginTop: 8, fontFamily: 'NotoSansThai_400Regular' },
-  profileAchievement: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 }, profileAchievementIcon: { width: 64, height: 64, borderRadius: 32, textAlign: 'center', textAlignVertical: 'center', color: '#26793C', backgroundColor: '#A8F3AA', fontSize: 32 }, profileAchievementTitle: { color: '#1B1B1B', fontSize: 20, fontFamily: 'BeVietnamPro_700Bold' }, profileAchievementMeta: { color: '#758076', fontSize: 16, fontFamily: 'NotoSansThai_400Regular' },
-  profileReviewSummary: { flexDirection: 'row', gap: 24, alignItems: 'center' }, profileReviewScore: { color: '#005A2A', fontSize: 56, fontFamily: 'BeVietnamPro_700Bold' }, profileReviewStars: { color: '#005A2A', fontSize: 18 }, profileReviewCount: { color: '#758076', fontSize: 14, textAlign: 'center', fontFamily: 'NotoSansThai_400Regular' }, profileRatingBars: { flex: 1, gap: 12 }, profileRatingBar: { height: 12, borderRadius: 999, backgroundColor: '#E5E2E1' }, profileRatingBarFull: { backgroundColor: '#005A2A' }, profileRatingBarShort: { width: '18%', backgroundColor: '#005A2A' },
-  profileReviewCard: { marginTop: 24, padding: 16, borderRadius: 12, backgroundColor: '#F6F3F2' }, profileReviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, profileReviewName: { color: '#1B1B1B', fontSize: 18, fontFamily: 'BeVietnamPro_700Bold' }, profileReviewDate: { color: '#758076', fontSize: 14, fontFamily: 'NotoSansThai_400Regular' }, profileReviewText: { color: '#404941', fontSize: 16, lineHeight: 24, marginTop: 8, fontFamily: 'NotoSansThai_400Regular' },
+  profileExperience: { 
+    flexDirection: 'row',
+    borderLeftWidth: 2, 
+    borderLeftColor: '#E5E2E1', 
+    paddingLeft: 20, 
+    paddingBottom: 28, 
+    gap: 16 
+  }, 
+  profileExperienceIcon: { 
+    color: '#005A2A', 
+    fontSize: 28, 
+    fontWeight: 'bold' 
+  }, 
+  profileExperienceContent: { 
+    flex: 1 
+  }, 
+  profileExperienceTitle: { 
+    color: '#1B1B1B', fontSize: 20, fontFamily: 'BeVietnamPro_700Bold' 
+  }, 
+  profileExperienceMeta: {
+    color: '#404941',
+    fontSize: 16,
+    lineHeight: 24,
+    fontFamily: 'NotoSansThai_400Regular'
+  },
+  profileExperienceDescription: {
+    color: '#758076',
+    fontSize: 16,
+    lineHeight: 24,
+    marginTop: 8,
+    fontFamily: 'NotoSansThai_400Regular'
+  },
+  profileProjects: {
+    gap: 20
+  },
+  profileProject: {
+    width: 280
+  },
+  profileProjectImage: {
+    width: 280,
+    height: 170,
+    borderRadius: 12
+  },
+  profileProjectPlaceholder: {
+    width: 280,
+    height: 170,
+    borderRadius: 12,
+    backgroundColor: '#DDE9D9'
+  },
+  profileProjectTitle: {
+    color: '#1B1B1B',
+    fontSize: 24,
+    marginTop: 16,
+    fontFamily: 'BeVietnamPro_700Bold'
+  },
+  profileProjectDescription: {
+    color: '#758076',
+    fontSize: 16,
+    lineHeight: 24,
+    marginTop: 8,
+    fontFamily: 'NotoSansThai_400Regular'
+  },
+  profileAchievement: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 20
+  },
+  profileAchievementIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    color: '#26793C',
+    backgroundColor: '#A8F3AA',
+    fontSize: 32
+  },
+  profileAchievementTitle: {
+    color: '#1B1B1B',
+    fontSize: 20,
+    fontFamily: 'BeVietnamPro_700Bold'
+  },
+  profileAchievementMeta: {
+    color: '#758076',
+    fontSize: 16,
+    fontFamily: 'NotoSansThai_400Regular'
+  },
+  profileReviewSummary: {
+    flexDirection: 'row',
+    gap: 24,
+    alignItems: 'center'
+  },
+  profileReviewScore: {
+    color: '#005A2A',
+    fontSize: 56,
+    fontFamily: 'BeVietnamPro_700Bold'
+  },
+  profileReviewStars: {
+    color: '#005A2A',
+    fontSize: 18
+  },
+  profileReviewCount: {
+    color: '#758076',
+    fontSize: 14,
+    textAlign: 'center',
+    fontFamily: 'NotoSansThai_400Regular'
+  },
+  profileRatingBars: {
+    flex: 1,
+    gap: 12
+  },
+  profileRatingBar: {
+    height: 12,
+    borderRadius: 999,
+    backgroundColor: '#E5E2E1'
+  },
+  profileRatingBarFull: {
+    backgroundColor: '#005A2A'
+  },
+  profileRatingBarShort: {
+    width: '18%',
+    backgroundColor: '#005A2A'
+  },
+  profileReviewCard: {
+    marginTop: 24,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#F6F3F2'
+  },
+  profileReviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  profileReviewName: {
+    color: '#1B1B1B',
+    fontSize: 18,
+    fontFamily: 'BeVietnamPro_700Bold'
+  },
+  profileReviewDate: {
+    color: '#758076',
+    fontSize: 14,
+    fontFamily: 'NotoSansThai_400Regular'
+  },
+  profileReviewText: {
+    color: '#404941',
+    fontSize: 16,
+    lineHeight: 24,
+    marginTop: 8,
+    fontFamily: 'NotoSansThai_400Regular'
+  },
 });
