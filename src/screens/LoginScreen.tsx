@@ -58,10 +58,12 @@ export default function LoginScreen({
           mode
         );
       } else if (authAdapter instanceof AuthService) {
-        session = await authAdapter.signInWithNativeGoogle(mode);
+        // Pass a mock email to bypass NativeGoogleSignin requirement in Expo Go
+        const mockEmail = mode === 'signin' ? 'student.test@ku.th' : 'new.student@ku.th';
+        session = await authAdapter.signInWithNativeGoogle(mode, mockEmail);
       } else {
         session = await authAdapter.authenticateWithGoogle(
-          'student.test@ku.th',
+          mode === 'signin' ? 'student.test@ku.th' : 'new.student@ku.th',
           mode
         );
       }

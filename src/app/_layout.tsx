@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import { useFonts, NotoSansThai_400Regular, NotoSansThai_700Bold } from '@expo-google-fonts/noto-sans-thai';
+import { LocaleProvider } from '../locales/registrationOnboarding';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -11,5 +12,9 @@ export default function RootLayout() {
     return null;
   }
 
-  return <Stack />;
+  return (
+    <LocaleProvider>
+      <Stack />
+    </LocaleProvider>
+  );
 }
