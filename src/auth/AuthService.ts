@@ -14,10 +14,9 @@ let NativeGoogleSignin: any = null;
 try {
   const googleSigninPkg = require('@react-native-google-signin/google-signin');
   NativeGoogleSignin = googleSigninPkg.GoogleSignin;
-  
-  // Pending [BE-69] integration to provide the correct webClientId
+
   NativeGoogleSignin.configure({
-    webClientId: 'PENDING_BE_69_CLIENT_ID',
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
   });
 } catch {
   // RNGoogleSignin native module is not linked in Expo Go
@@ -86,52 +85,38 @@ export class AuthService implements AuthAdapter {
     mode: AuthMode,
     overrideEmail?: string
   ): Promise<AuthSession> {
-    // In pre-integration UI/Mock mode, email is extracted from credential or overrideEmail
-    const email = (overrideEmail || credential).trim().toLowerCase();
-    this.validateKuEmailDomain(email);
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+    if (!apiUrl) throw new AuthError('API_ERROR', 'API URL is not configured');
 
-    const existingAccount = this.registeredAccounts.get(email);
+    try {
+      const response = await fetch(`${apiUrl}/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idToken: credential,
+          mode: mode,
+        }),
+      });
 
-    if (mode === 'signin') {
-      // Must not create new account on sign-in
-      if (!existingAccount) {
-        throw new AuthError('ACCOUNT_NOT_FOUND');
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new AuthError('ACCOUNT_NOT_FOUND');
+        }
+        if (response.status === 409) {
+          throw new AuthError('ACCOUNT_ALREADY_EXISTS');
+        }
+        throw new AuthError('API_ERROR', await response.text());
       }
+
+      const data = await response.json();
+      const session = data as AuthSession;
+      
+      await SecureSessionStorage.saveSession(session);
+      return session;
+    } catch (error) {
+      if (error instanceof AuthError) throw error;
+      throw new AuthError('API_ERROR', (error as Error).message);
     }
-
-    let user: AuthUser;
-    if (existingAccount) {
-      // Must not duplicate account on sign-up for existing account
-      user = {
-        id: existingAccount.id,
-        email: existingAccount.email,
-        name: existingAccount.name,
-        onboardingStatus: existingAccount.onboardingStatus,
-        onboardingStep: existingAccount.onboardingStep,
-      };
-    } else {
-      // Sign up new @ku.th user
-      const newRecord: MockAccountRecord = {
-        id: `usr_${Date.now()}`,
-        email,
-        name: email.split('@')[0],
-        onboardingStatus: 'NOT_STARTED',
-        onboardingStep: 1,
-      };
-      this.registeredAccounts.set(email, newRecord);
-      user = { ...newRecord };
-    }
-
-    const now = Date.now();
-    const session: AuthSession = {
-      token: `tok_secure_${user.id}_${now}`,
-      user,
-      createdAt: now,
-      expiresAt: now + 30 * 24 * 60 * 60 * 1000, // 30 days default expiration
-    };
-
-    await SecureSessionStorage.saveSession(session);
-    return session;
   }
 
   async getSession(): Promise<AuthSession | null> {
@@ -149,7 +134,24 @@ export class AuthService implements AuthAdapter {
     try {
       if (revokeBackendCallback) {
         await revokeBackendCallback();
+      } else {
+        const session = await this.getSession();
+        const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+        if (session && apiUrl) {
+          try {
+            await fetch(`${apiUrl}/auth/logout`, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.token}`
+              },
+            });
+          } catch (e) {
+            console.warn('Backend logout failed:', e);
+          }
+        }
       }
+      
       if (NativeGoogleSignin) {
         try {
           await NativeGoogleSignin.signOut();

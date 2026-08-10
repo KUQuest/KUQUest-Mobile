@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Button } from '@expo/ui';
+import { Button, Host } from '@expo/ui';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { authService } from '../../auth/AuthService';
 
@@ -20,11 +20,13 @@ export default function HomepageStub() {
         <Text style={styles.subtitle}>Welcome to KUQuest!</Text>
         
         <View style={styles.buttonContainer}>
-          <Button 
-            variant="outlined" 
-            label="Logout" 
-            onPress={handleLogout} 
-          />
+          <Host>
+            <Button 
+              variant="outlined" 
+              label="Logout" 
+              onPress={handleLogout} 
+            />
+          </Host>
         </View>
       </View>
     </SafeAreaView>
