@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Button, Host } from '@expo/ui';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { authService } from '../../auth/AuthService';
 
@@ -20,13 +19,9 @@ export default function HomepageStub() {
         <Text style={styles.subtitle}>Welcome to KUQuest!</Text>
         
         <View style={styles.buttonContainer}>
-          <Host>
-            <Button 
-              variant="outlined" 
-              label="Logout" 
-              onPress={handleLogout} 
-            />
-          </Host>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
@@ -60,5 +55,18 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: '100%',
     maxWidth: 200,
+  },
+  logoutButton: {
+    borderWidth: 1,
+    borderColor: '#014925',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoutText: {
+    fontFamily: 'NotoSansThai-Bold',
+    fontSize: 16,
+    color: '#014925',
   }
 });
