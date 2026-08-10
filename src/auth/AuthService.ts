@@ -210,6 +210,14 @@ export class AuthService implements AuthAdapter {
       throw new AuthError('OAUTH_FAILED', error?.message);
     }
   }
+  async completeOnboarding(): Promise<void> {
+    const session = await this.getSession();
+    if (session) {
+      session.user.onboardingStatus = 'COMPLETED';
+      const { SecureSessionStorage } = await import('./secureStorage');
+      await SecureSessionStorage.saveSession(session);
+    }
+  }
 }
 
 export const authService = new AuthService();
