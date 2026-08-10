@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View, Modal, Pressable } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useLocale } from '../locales/LocaleContext';
-import { onboardingMessages } from '../locales/onboardingMessages';
+import { useLocale } from '../locales/registrationOnboarding';
+import { onboardingMessages } from '../locales/registrationOnboarding';
 import { Host, Button } from '@expo/ui';
 
 interface FileTooLargeModalProps {

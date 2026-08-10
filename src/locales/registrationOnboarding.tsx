@@ -1,3 +1,7 @@
+
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+
+
 export type SupportedLocale = 'th' | 'en';
 
 export const onboardingMessages = {
@@ -170,3 +174,105 @@ Your data will be stored securely in accordance with applicable Personal Data Pr
     requiredField: 'This field is required'
   }
 };
+
+
+export const registrationMessages = {
+  en: {
+    errRequired: '* Please fill in all required fields',
+    errStudentId: '* Please enter your student ID',
+    errTerms: '* Please accept the Terms and Conditions before proceeding',
+    headerTitle: 'Academic Registration',
+    fullNameLabel: 'Full Name',
+    fullNamePlaceholder: 'Enter your full name',
+    phoneLabel: 'Phone Number',
+    phonePlaceholder: 'Enter your phone number',
+    occupationLabel: 'Occupation',
+    occupationOptions: ['Student', 'Teacher'],
+    occupationPlaceholder: 'Select your occupation',
+    studentValue: 'Student',
+    studentIdLabel: 'Student ID',
+    studentIdPlaceholder: '67xxxxxxxx',
+    facultyLabel: 'Faculty',
+    facultyOptions: ['Engineering', 'Business'],
+    facultyPlaceholder: 'Select your faculty',
+    departmentLabel: 'Department',
+    departmentPlaceholder: 'Enter your department',
+    termsLabel: 'Terms and Conditions',
+    termsTitle: 'Privacy Policy',
+    termsContent: 'Privacy Policy We value your privacy. This policy explains how we collect, use, and protect your personal data in accordance with academic standards and data protection regulations. Your information is used solely for academic registration and institutional communication.',
+    checkboxLabel: 'I accept the Terms and Conditions',
+    step2Subtitle: 'ABOUT YOU',
+    step2Indicator: 'Step 2 of 3',
+    step2CardTitle: 'Tell us about yourself',
+    step2CardSubtitle: 'Build your professional profile to let your employers see.',
+    step2InputLabel: 'Description about yourself (Optional)',
+    step2InputPlaceholder: 'What are your skills? What kind of quests are you looking for? Share your background or experience...',
+    backButton: 'Back',
+    nextButton: 'Next',
+  },
+  th: {
+    errRequired: '* กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน',
+    errStudentId: '* กรุณากรอกรหัสนิสิต/นักศึกษา',
+    errTerms: '* กรุณายอมรับข้อตกลงและเงื่อนไขก่อนดำเนินการต่อ',
+    headerTitle: 'ลงทะเบียนข้อมูลทางการศึกษา',
+    fullNameLabel: 'ชื่อ-นามสกุล',
+    fullNamePlaceholder: 'กรอกชื่อ-นามสกุล',
+    phoneLabel: 'เบอร์โทรศัพท์',
+    phonePlaceholder: '08X-XXX-XXXX',
+    occupationLabel: 'อาชีพ',
+    occupationOptions: ['นักเรียน', 'อาจารย์'],
+    occupationPlaceholder: 'เลือกอาชีพ',
+    studentValue: 'นักเรียน',
+    studentIdLabel: 'รหัสนิสิต/นักศึกษา',
+    studentIdPlaceholder: '67XXXXXXXX',
+    facultyLabel: 'คณะ',
+    facultyOptions: ['วิศวกรรมศาสตร์', 'บริหารธุรกิจ'],
+    facultyPlaceholder: 'เลือกคณะ',
+    departmentLabel: 'สาขา',
+    departmentPlaceholder: 'กรอกสาขา',
+    termsLabel: 'ข้อกำหนดและเงื่อนไข',
+    termsTitle: 'นโยบายความเป็นส่วนตัว',
+    termsContent: 'เราให้ความสำคัญกับความเป็นส่วนตัวของคุณ นโยบายนี้อธิบายถึงวิธีการที่เรารวบรวม ใช้ และปกป้องข้อมูลส่วนบุคคลของคุณตามมาตรฐานและข้อบังคับการคุ้มครองข้อมูล ข้อมูลของคุณจะถูกใช้สำหรับการลงทะเบียนและการสื่อสารภายในสถาบันเท่านั้น',
+    checkboxLabel: 'ฉันยอมรับข้อกำหนดและเงื่อนไข',
+    step2Subtitle: 'เกี่ยวกับคุณ',
+    step2Indicator: 'ขั้นตอนที่ 2 จาก 3',
+    step2CardTitle: 'บอกเราเกี่ยวกับตัวคุณ',
+    step2CardSubtitle: 'สร้างโปรไฟล์ทางอาชีพของคุณให้นายจ้างได้เห็น',
+    step2InputLabel: 'คำอธิบายเกี่ยวกับตัวคุณ (ไม่บังคับ)',
+    step2InputPlaceholder: 'คุณมีทักษะอะไรบ้าง? เควสประเภทไหนที่คุณกำลังมองหา? แบ่งปันภูมิหลังหรือประสบการณ์ของคุณ...',
+    backButton: 'ย้อนกลับ',
+    nextButton: 'ถัดไป',
+  }
+};
+
+
+interface LocaleContextType {
+  locale: SupportedLocale;
+  toggleLocale: () => void;
+  setLocale: (locale: SupportedLocale) => void;
+}
+
+const LocaleContext = createContext<LocaleContextType | undefined>(undefined);
+
+export function LocaleProvider({ children }: { children: ReactNode }) {
+  const [locale, setLocale] = useState<SupportedLocale>('th');
+
+  const toggleLocale = () => {
+    setLocale((prev) => (prev === 'th' ? 'en' : 'th'));
+  };
+
+  return (
+    <LocaleContext.Provider value={{ locale, toggleLocale, setLocale }}>
+      {children}
+    </LocaleContext.Provider>
+  );
+}
+
+export function useLocale() {
+  const context = useContext(LocaleContext);
+  if (!context) {
+    throw new Error('useLocale must be used within a LocaleProvider');
+  }
+  return context;
+}
+

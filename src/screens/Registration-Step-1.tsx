@@ -14,7 +14,7 @@ import {
   Checkbox
 } from '../components/Shared';
 
-import { registrationMessages as translations } from '../locales/registrationMessages';
+import { registrationMessages as translations } from '../locales/registrationOnboarding';
 
 interface Step1Props {
   lang?: 'en' | 'th'

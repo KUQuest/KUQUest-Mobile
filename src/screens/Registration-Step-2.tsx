@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, ScrollView, useWindowDimensions } from 'react-n
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Host, Button, TextInput, useNativeState } from '@expo/ui';
 
-import { registrationMessages as translations } from '../locales/registrationMessages';
+import { registrationMessages as translations } from '../locales/registrationOnboarding';
 
 interface Step2Props {
   lang?: 'en' | 'th'

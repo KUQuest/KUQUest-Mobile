@@ -11,8 +11,8 @@ import { Select } from '../components/Select';
 import { Checkbox } from '../components/Checkbox';
 import { TextArea } from '../components/TextArea';
 import { FileTooLargeModal } from '../components/FileTooLargeModal';
-import { onboardingMessages, SupportedLocale } from '../locales/RegistrationMessages3';
-import { useLocale } from '../locales/LocaleContext';
+import { onboardingMessages, SupportedLocale } from '../locales/registrationOnboarding';
+import { useLocale } from '../locales/registrationOnboarding';
 import { ProfileApi } from '../api/ProfileApi';
 import { authService } from '../auth/AuthService';
 
