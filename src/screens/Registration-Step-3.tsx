@@ -38,7 +38,7 @@ export default function OnboardingScreen() {
   // Calculate button width: screen width - margins (32) - paddings (48) - gap (16) / 2
   const buttonWidth = (width - 96) / 2;
 
-  const { locale, toggleLocale } = useLocale();
+  const { locale } = useLocale();
   const msg = onboardingMessages[locale];
 
   const [form, setForm] = useState({
@@ -205,9 +205,6 @@ export default function OnboardingScreen() {
     }
   };
 
-  const handleToggleLocale = () => {
-    toggleLocale();
-  };
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -262,16 +259,6 @@ export default function OnboardingScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Language Toggle */}
-        <Pressable
-          style={styles.langToggle}
-          onPress={handleToggleLocale}
-          accessibilityRole="button"
-        >
-          <Text style={styles.langToggleText}>
-            {locale === 'th' ? 'TH / EN' : 'EN / TH'}
-          </Text>
-        </Pressable>
 
         {/* Header Section */}
         <View style={styles.headerSection}>

@@ -3,14 +3,11 @@ import { StyleSheet, Text, View, ScrollView, useWindowDimensions } from 'react-n
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Host, Button, TextInput, useNativeState } from '@expo/ui';
 
-import { registrationMessages as translations } from '../locales/registrationOnboarding';
+import { registrationMessages as translations, useLocale } from '../locales/registrationOnboarding';
 
-interface Step2Props {
-  lang?: 'en' | 'th'
-}
-
-export default function RegistrationStep2({ lang = 'th' }: Step2Props) {
-  const t = translations[lang];
+export default function RegistrationStep2() {
+  const { locale } = useLocale();
+  const t = translations[locale];
   const { width } = useWindowDimensions();
   // Calculate button width: half screen width - padding (24 * 2) - gap (16) / 2
   const buttonWidth = (width - 48 - 16) / 2;
