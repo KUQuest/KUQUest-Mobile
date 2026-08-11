@@ -9,14 +9,14 @@ export default function Index() {
   const [isReady, setIsReady] = useState(false);
   const router = useRouter();
 
-  const handleNavigate = (dest: RoutingDestination) => {
+  const handleNavigate = React.useCallback((dest: RoutingDestination) => {
     // Note: Actual route paths pending full integration and page creation
     if (dest.type === 'HOME') {
       router.replace("/(tabs)" as any);
     } else {
       router.replace(`/onboarding?step=${dest.step}` as any);
     }
-  };
+  }, [router]);
 
   useEffect(() => {
     let mounted = true;
@@ -41,7 +41,7 @@ export default function Index() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [handleNavigate]);
 
   if (!isReady) {
     return (

@@ -17,6 +17,7 @@ export default function RegistrationStep2() {
 
   const handleChangeText = useCallback((value: string) => {
     'worklet';
+    // eslint-disable-next-line react-hooks/immutability
     textValue.value = value;
   }, [textValue]);
 

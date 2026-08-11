@@ -11,8 +11,7 @@ import { Select } from '../components/Select';
 import { Checkbox } from '../components/Checkbox';
 import { TextArea } from '../components/TextArea';
 import { FileTooLargeModal } from '../components/FileTooLargeModal';
-import { onboardingMessages, SupportedLocale } from '../locales/registrationOnboarding';
-import { useLocale } from '../locales/registrationOnboarding';
+import { onboardingMessages, useLocale } from '../locales/registrationOnboarding';
 import { ProfileApi } from '../api/ProfileApi';
 import { authService } from '../auth/AuthService';
 
@@ -22,24 +21,6 @@ export default function OnboardingScreen() {
   const { mode } = useLocalSearchParams();
   const isEditMode = mode === 'edit';
   const [isLoadingProfile, setIsLoadingProfile] = useState(isEditMode);
-
-  useEffect(() => {
-    if (isEditMode) {
-      ProfileApi.getProfile().then((data: any) => {
-        setForm(data);
-        setIsLoadingProfile(false);
-      });
-    }
-  }, [isEditMode]);
-
-
-
-  const { width } = useWindowDimensions();
-  // Calculate button width: screen width - margins (32) - paddings (48) - gap (16) / 2
-  const buttonWidth = (width - 96) / 2;
-
-  const { locale } = useLocale();
-  const msg = onboardingMessages[locale];
 
   const [form, setForm] = useState({
     name: '',
@@ -58,6 +39,24 @@ export default function OnboardingScreen() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isEditMode) {
+      ProfileApi.getProfile().then((data: any) => {
+        setForm(data);
+        setIsLoadingProfile(false);
+      });
+    }
+  }, [isEditMode]);
+
+
+
+  const { width } = useWindowDimensions();
+  // Calculate button width: screen width - margins (32) - paddings (48) - gap (16) / 2
+  const buttonWidth = (width - 96) / 2;
+
+  const { locale } = useLocale();
+  const msg = onboardingMessages[locale];
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const [isModalVisible, setModalVisible] = useState(false);

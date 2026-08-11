@@ -3,7 +3,6 @@ import {
   AuthError,
   AuthMode,
   AuthSession,
-  AuthUser,
   OnboardingStatus,
   RoutingDestination,
 } from './types';
@@ -12,6 +11,7 @@ import { SecureSessionStorage } from './secureStorage';
 // Safely require GoogleSignin to avoid crash in Expo Go where native module is missing
 let NativeGoogleSignin: any = null;
 try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const googleSigninPkg = require('@react-native-google-signin/google-signin');
   NativeGoogleSignin = googleSigninPkg.GoogleSignin;
 
