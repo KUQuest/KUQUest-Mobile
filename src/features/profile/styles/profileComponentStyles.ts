@@ -6,16 +6,17 @@ import { fontFamily } from '@/theme/typography';
 const styles = StyleSheet.create({
   heroCard: {
     alignItems: 'center',
-    padding: spacing.lg,
+    alignSelf: 'stretch',
+    padding: 20,
     borderRadius: 16,
     backgroundColor: colors.white,
   },
   photoFrame: {
-    width: 128,
-    height: 128,
-    borderRadius: 64,
+    width: 112,
+    height: 112,
+    borderRadius: 56,
     overflow: 'hidden',
-    borderWidth: 8,
+    borderWidth: 6,
     borderColor: colors.borderSubtle,
     backgroundColor: colors.surfaceImage,
     alignItems: 'center',
@@ -27,16 +28,17 @@ const styles = StyleSheet.create({
   },
   initials: {
     color: colors.primaryDark,
-    fontSize: 36,
+    fontSize: 32,
     fontFamily: fontFamily.bold,
     fontWeight: '700',
   },
   name: {
     marginTop: spacing.sm + 4,
     color: colors.text,
-    fontSize: 28,
+    fontSize: 24,
     fontFamily: fontFamily.bold,
     fontWeight: '700',
+    textAlign: 'center',
   },
   meta: {
     marginTop: 4,
@@ -51,17 +53,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   editButton: {
+    minHeight: 48,
     marginTop: spacing.lg,
     backgroundColor: colors.primaryDark,
   },
   section: {
+    alignSelf: 'stretch',
     borderRadius: 16,
-    padding: spacing.lg,
+    padding: 20,
     backgroundColor: colors.white,
   },
   sectionTitle: {
     color: colors.text,
-    fontSize: 24,
+    fontSize: 20,
     fontFamily: fontFamily.semiBold,
     fontWeight: '600',
   },
@@ -75,7 +79,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontFamily: fontFamily.regular,
     fontSize: 16,
-    lineHeight: 28,
+    lineHeight: 24,
   },
   emptyText: {
     color: colors.textSubtle,

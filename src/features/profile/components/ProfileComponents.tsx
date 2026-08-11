@@ -1,7 +1,9 @@
 import React from 'react';
-import { Image, ScrollView, Text, View } from 'react-native';
+import { Image, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 
 import { Button } from '../../../components/ui/Button';
+import { getProfileLayoutMetrics } from '../../../theme/profileLayout';
+import type { ProfileLayoutMetrics } from '../../../theme/profileLayout';
 import styles from '../styles/profileComponentStyles';
 
 export interface ProfileCertificate {
@@ -50,16 +52,39 @@ export function ProfileHeader({
   editProfileLabel,
   onEditPress,
 }: ProfileHeaderProps) {
+  const { width } = useWindowDimensions();
+  const metrics = getProfileLayoutMetrics(width);
+
   return (
-    <View style={styles.heroCard}>
-      <View style={styles.photoFrame}>
+    <View style={[styles.heroCard, { padding: metrics.cardPadding }]}>
+      <View
+        style={[
+          styles.photoFrame,
+          {
+            borderRadius: metrics.photoSize / 2,
+            height: metrics.photoSize,
+            width: metrics.photoSize,
+          },
+        ]}
+      >
         {data.profileImage ? (
           <Image source={{ uri: data.profileImage }} style={styles.photo} />
         ) : (
           <Text style={styles.initials}>{getInitials(data.name)}</Text>
         )}
       </View>
-      <Text style={styles.name}>{data.name}</Text>
+      <Text
+        style={[
+          styles.name,
+          {
+            fontSize: metrics.nameFontSize,
+            lineHeight: Math.round(metrics.nameFontSize * 1.3),
+            maxWidth: '100%',
+          },
+        ]}
+      >
+        {data.name}
+      </Text>
       {data.faculty ? <Text style={styles.meta}>{data.faculty}</Text> : null}
       {data.occupation ? <Text style={styles.meta}>{data.occupation}</Text> : null}
       {data.department ? <Text style={styles.subtleMeta}>{data.department}</Text> : null}
@@ -72,15 +97,25 @@ export function ProfileHeader({
 
 interface SectionProps {
   title: string;
-  children: React.ReactNode;
+  children: (metrics: ProfileLayoutMetrics) => React.ReactNode;
 }
 
 function Section({ title, children }: SectionProps) {
+  const { width } = useWindowDimensions();
+  const metrics = getProfileLayoutMetrics(width);
+
   return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+    <View style={[styles.section, { padding: metrics.cardPadding }]}>
+      <Text
+        style={[
+          styles.sectionTitle,
+          { fontSize: metrics.sectionTitleFontSize, lineHeight: Math.round(metrics.sectionTitleFontSize * 1.3) },
+        ]}
+      >
+        {title}
+      </Text>
       <View style={styles.rule} />
-      {children}
+      {children(metrics)}
     </View>
   );
 }
@@ -88,7 +123,7 @@ function Section({ title, children }: SectionProps) {
 export function AboutMe({ about, sectionTitle, emptyText }: { about: string; sectionTitle: string; emptyText: string }) {
   return (
     <Section title={sectionTitle}>
-      <Text style={styles.body}>{about || emptyText}</Text>
+      {(metrics) => <Text style={[styles.body, { lineHeight: metrics.bodyLineHeight }]}>{about || emptyText}</Text>}
     </Section>
   );
 }
@@ -96,18 +131,18 @@ export function AboutMe({ about, sectionTitle, emptyText }: { about: string; sec
 export function Certificates({ certificates, sectionTitle, emptyText }: { certificates: ProfileCertificate[]; sectionTitle: string; emptyText: string }) {
   return (
     <Section title={sectionTitle}>
-      {certificates.length > 0 ? certificates.map((certificate) => (
-        <View key={`${certificate.title}-${certificate.link}`} style={styles.listItem}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>✓</Text>
+      {() => certificates.length > 0 ? certificates.map((certificate) => (
+          <View key={`${certificate.title}-${certificate.link}`} style={styles.listItem}>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>✓</Text>
+            </View>
+            <View style={styles.itemContent}>
+              <Text style={styles.itemTitle}>{certificate.title}</Text>
+              {certificate.detail ? <Text style={styles.itemDescription}>{certificate.detail}</Text> : null}
+              {certificate.link ? <Text style={styles.itemMeta}>{certificate.link}</Text> : null}
+            </View>
           </View>
-          <View style={styles.itemContent}>
-            <Text style={styles.itemTitle}>{certificate.title}</Text>
-            {certificate.detail ? <Text style={styles.itemDescription}>{certificate.detail}</Text> : null}
-            {certificate.link ? <Text style={styles.itemMeta}>{certificate.link}</Text> : null}
-          </View>
-        </View>
-      )) : <Text style={styles.emptyText}>{emptyText}</Text>}
+        )) : <Text style={styles.emptyText}>{emptyText}</Text>}
     </Section>
   );
 }
@@ -115,17 +150,17 @@ export function Certificates({ certificates, sectionTitle, emptyText }: { certif
 export function MyWork({ works, sectionTitle, emptyText }: { works: ProfileWork[]; sectionTitle: string; emptyText: string }) {
   return (
     <Section title={sectionTitle}>
-      {works.length > 0 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.workList}>
-          {works.map((work) => (
-            <View key={`${work.title}-${work.imageUri}`} style={styles.workCard}>
-              {work.imageUri ? <Image source={{ uri: work.imageUri }} style={styles.workImage} /> : null}
-              <Text style={styles.itemTitle}>{work.title}</Text>
-              {work.detail ? <Text style={styles.itemDescription}>{work.detail}</Text> : null}
-            </View>
-          ))}
-        </ScrollView>
-      ) : <Text style={styles.emptyText}>{emptyText}</Text>}
+      {(metrics) => works.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.workList}>
+            {works.map((work) => (
+              <View key={`${work.title}-${work.imageUri}`} style={[styles.workCard, { width: metrics.workCardWidth }]}>
+                {work.imageUri ? <Image source={{ uri: work.imageUri }} style={[styles.workImage, { width: metrics.workCardWidth }]} /> : null}
+                <Text style={styles.itemTitle}>{work.title}</Text>
+                {work.detail ? <Text style={styles.itemDescription}>{work.detail}</Text> : null}
+              </View>
+            ))}
+          </ScrollView>
+        ) : <Text style={styles.emptyText}>{emptyText}</Text>}
     </Section>
   );
 }

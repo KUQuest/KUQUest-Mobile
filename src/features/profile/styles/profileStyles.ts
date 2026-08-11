@@ -12,7 +12,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: spacing.xl,
     gap: spacing.xl,
-    paddingBottom: 120,
   },
   tabletContent: {
     alignSelf: 'center',

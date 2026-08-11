@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useFonts } from 'expo-font';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LocaleProvider } from '../locales/LocaleProvider';
 
 import {
@@ -40,8 +41,10 @@ export default function RootLayout() {
     return null;
   }
   return (
-    <LocaleProvider>
-      <Stack screenOptions={{ headerShown: false }} />
-    </LocaleProvider>
+    <SafeAreaProvider>
+      <LocaleProvider>
+        <Stack screenOptions={{ headerShown: false }} />
+      </LocaleProvider>
+    </SafeAreaProvider>
   );
 }

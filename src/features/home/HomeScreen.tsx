@@ -8,6 +8,8 @@ import { useLocale } from '../../locales/LocaleProvider';
 import { profileMessages } from '../../locales/profileMessages';
 import { AboutMe, Certificates, MyWork, ProfileHeader, type ProfileViewData } from '../profile/components/ProfileComponents';
 import { loadProfileViewData } from '../profile/loadProfileViewData';
+import { TopBar } from '../../components/ui/TopBar';
+import { spacing } from '../../theme/spacing';
 import styles from './styles/homeStyles';
 
 export default function HomeScreen() {
@@ -38,8 +40,11 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.content}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
+      <TopBar />
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: spacing.md }]}
+      >
         <View style={styles.header}>
           <Text style={styles.title}>{messages.homeTitle}</Text>
           <Text style={styles.subtitle}>{messages.homeWelcome}</Text>
