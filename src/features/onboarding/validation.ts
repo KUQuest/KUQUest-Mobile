@@ -48,14 +48,6 @@ function createProfileBasicsSchema(
     department: z.string().trim().min(1, messages.requiredField),
     acceptedTerms: z.boolean(),
   }).superRefine((form, context) => {
-    if (form.occupation === 'Student' && !form.studentId.trim()) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['studentId'],
-        message: messages.requiredField,
-      });
-    }
-
     if (!isEditMode && !form.acceptedTerms) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -121,9 +113,19 @@ function createProfileDetailsSchema(messages: OnboardingValidationMessages) {
 export function validateProfileBasics(
   form: ProfileDraft,
   isEditMode: boolean,
-  messages: OnboardingValidationMessages
+  messages: OnboardingValidationMessages,
+  requiresStudentId: boolean
 ): ValidationErrors {
-  const result = createProfileBasicsSchema(isEditMode, messages).safeParse(form);
+  const schema = createProfileBasicsSchema(isEditMode, messages).superRefine((profile, context) => {
+    if (requiresStudentId && !profile.studentId.trim()) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['studentId'],
+        message: messages.requiredField,
+      });
+    }
+  });
+  const result = schema.safeParse(form);
   return result.success ? {} : errorsFromZod(result.error);
 }
 

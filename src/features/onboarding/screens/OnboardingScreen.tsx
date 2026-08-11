@@ -74,10 +74,10 @@ export default function OnboardingScreen() {
           api.listCertificates(),
           api.listPortfolio(),
         ]);
+        const departmentId = status.departmentId ?? profile.department?.id ?? '';
         const faculty = academicOptions.faculties.find((item) =>
-          item.departments.some((department) => department.id === status.departmentId)
+          item.departments.some((department) => department.id === departmentId)
         );
-        const occupation = academicOptions.occupations.find((item) => item.id === status.occupationId);
         const name = [status.firstName || profile.firstName, status.lastName || profile.lastName]
           .filter(Boolean)
           .join(' ');
@@ -87,12 +87,10 @@ export default function OnboardingScreen() {
           setForm({
             name,
             telephone: status.telephone ?? profile.telephone ?? '',
-            occupation: occupation?.name ?? '',
+            occupation: status.occupationId ?? '',
             studentId: status.studentId ?? profile.studentId ?? '',
-            faculty: faculty?.name ?? profile.department?.faculty.name ?? '',
-            department: faculty?.departments.find((item) => item.id === status.departmentId)?.name
-              ?? profile.department?.name
-              ?? '',
+            faculty: faculty?.id ?? '',
+            department: departmentId,
             acceptedTerms: Boolean(status.termsAcceptedAt),
             description: profile.bio ?? '',
             profileImage: profile.avatar?.url ?? session.user.image ?? '',
@@ -126,17 +124,18 @@ export default function OnboardingScreen() {
 
   const occupationOptions = (options?.occupations ?? []).map((occupation) => ({
     label: occupation.name,
-    value: occupation.name,
+    value: occupation.id,
   }));
-  const selectedFaculty = options?.faculties.find((faculty) => faculty.name === form.faculty);
-  const facultyOptions = (options?.faculties ?? []).map((faculty) => ({ label: faculty.name, value: faculty.name }));
+  const selectedOccupation = options?.occupations.find((occupation) => occupation.id === form.occupation);
+  const selectedFaculty = options?.faculties.find((faculty) => faculty.id === form.faculty);
+  const facultyOptions = (options?.faculties ?? []).map((faculty) => ({ label: faculty.name, value: faculty.id }));
   const departmentOptions = (selectedFaculty?.departments ?? []).map((department) => ({
     label: department.name,
-    value: department.name,
+    value: department.id,
   }));
 
   const validate = () => {
-    const newErrors = validateProfileBasics(form, isEditMode, msg);
+    const newErrors = validateProfileBasics(form, isEditMode, msg, selectedOccupation?.requiresStudentId ?? false);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -156,8 +155,8 @@ export default function OnboardingScreen() {
       if (!session) throw new Error('No active session');
       const api = await authService.getStudentApi();
       const { firstName, lastName } = splitName(form.name);
-      const occupationId = options?.occupations.find((item) => item.name === form.occupation)?.id;
-      const departmentId = selectedFaculty?.departments.find((item) => item.name === form.department)?.id;
+      const occupationId = form.occupation;
+      const departmentId = form.department;
       if (!occupationId || !departmentId) throw new Error('Academic registration options are incomplete');
 
       const termsVersion = process.env.EXPO_PUBLIC_TERMS_VERSION;
@@ -271,9 +270,9 @@ export default function OnboardingScreen() {
             <Input label={msg.nameSurname} placeholder={msg.nameSurnamePlaceholder} value={form.name} onChangeText={(name) => setForm({ ...form, name })} error={errors.name} />
             <Input label={msg.telephone} placeholder={msg.telephonePlaceholder} value={form.telephone} onChangeText={(telephone) => setForm({ ...form, telephone })} keyboardType="phone-pad" error={errors.telephone} />
             <Select label={msg.occupation} placeholder={msg.occupationPlaceholder} options={occupationOptions} value={form.occupation} onValueChange={(occupation) => setForm({ ...form, occupation })} error={errors.occupation} />
-            {form.occupation && options?.occupations.find((item) => item.name === form.occupation)?.requiresStudentId && <Input label={msg.studentId} placeholder={msg.studentIdPlaceholder} value={form.studentId} onChangeText={(studentId) => setForm({ ...form, studentId })} error={errors.studentId} />}
-            <Select label={msg.faculty} placeholder={msg.facultyPlaceholder} options={facultyOptions} value={form.faculty} onValueChange={(faculty) => setForm({ ...form, faculty, department: '' })} error={errors.faculty} />
-            <Select label={msg.department} placeholder={msg.departmentPlaceholder} options={departmentOptions} value={form.department} onValueChange={(department) => setForm({ ...form, department })} error={errors.department} />
+            {selectedOccupation?.requiresStudentId && <Input label={msg.studentId} placeholder={msg.studentIdPlaceholder} value={form.studentId} onChangeText={(studentId) => setForm({ ...form, studentId })} error={errors.studentId} />}
+            <Select label={msg.faculty} placeholder={msg.facultyPlaceholder} options={facultyOptions} value={form.faculty} onValueChange={(faculty) => setForm({ ...form, faculty, department: '' })} error={errors.faculty} searchable searchPlaceholder={msg.searchFaculty} noResultsMessage={msg.noSearchResults} emptyMessage={msg.noSelectOptions} loadingMessage={msg.loadingOptions} clearSearchLabel={msg.clearSearch} closeLabel={msg.closeSelect} />
+            <Select label={msg.department} placeholder={form.faculty ? msg.departmentPlaceholder : msg.departmentSelectFacultyFirst} options={departmentOptions} value={form.department} onValueChange={(department) => setForm({ ...form, department })} error={errors.department} searchable disabled={!form.faculty} searchPlaceholder={msg.searchDepartment} noResultsMessage={msg.noSearchResults} emptyMessage={msg.noSelectOptions} loadingMessage={msg.loadingOptions} clearSearchLabel={msg.clearSearch} closeLabel={msg.closeSelect} />
             <Text style={styles.termsLabel}>{msg.termsAndConditions}</Text>
             <ScrollView style={styles.termsBox} contentContainerStyle={styles.termsBoxContent} nestedScrollEnabled><Text style={styles.termsTitle}>{msg.privacyPolicy}</Text><Text style={styles.termsText}>{msg.privacyPolicyText}</Text></ScrollView>
             <Checkbox label={msg.acceptTerms} checked={form.acceptedTerms} onChange={(acceptedTerms) => setForm({ ...form, acceptedTerms })} error={errors.acceptedTerms} />
