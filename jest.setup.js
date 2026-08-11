@@ -1,5 +1,7 @@
+const React = require("react");
 const { jest } = require("@jest/globals");
-const { View } = require("react-native");
+const { View, Pressable, Text } = require("react-native");
+
 
 // reanimated 4 / worklets 0.10's official jest mocks still hit native-module
 // init code outside a real app runtime (upstream immaturity, both packages
@@ -25,4 +27,63 @@ jest.mock("react-native-reanimated", () => ({
       return this;
     }
   },
+}));
+
+jest.mock('@react-native-google-signin/google-signin', () => ({
+  isSuccessResponse: (response) => response.type === 'success',
+  GoogleSignin: {
+    hasPlayServices: jest.fn().mockResolvedValue(true),
+    signIn: jest.fn().mockResolvedValue({
+      data: {
+        idToken: 'mock_id_token',
+        user: { email: 'student.test@ku.th', name: 'Test Student' },
+      },
+    }),
+    signOut: jest.fn().mockResolvedValue(undefined),
+    configure: jest.fn(),
+  },
+}));
+
+jest.mock('./src/features/auth/authClient', () => ({
+  authClient: {
+    getCookie: jest.fn().mockReturnValue(''),
+    signIn: { social: jest.fn() },
+    getSession: jest.fn().mockResolvedValue({ data: null, error: null }),
+    signOut: jest.fn().mockResolvedValue({ data: null, error: null }),
+  },
+}));
+
+jest.mock('expo-secure-store', () => {
+  const store = new Map();
+  return {
+    isAvailableAsync: jest.fn().mockResolvedValue(true),
+    setItemAsync: jest.fn(async (key, value) => {
+      store.set(key, value);
+    }),
+    getItemAsync: jest.fn(async (key) => {
+      return store.get(key) || null;
+    }),
+    deleteItemAsync: jest.fn(async (key) => {
+      store.delete(key);
+    }),
+  };
+});
+
+jest.mock('@expo/ui', () => ({
+  Host: ({ children, ...props }) => React.createElement(View, props, children),
+  Button: ({ label, onPress, testID, disabled, accessibilityLabel, style, ...props }) =>
+    React.createElement(
+      Pressable,
+      { onPress, testID, disabled, accessibilityLabel, style, ...props },
+      React.createElement(Text, null, label)
+    ),
+}));
+
+jest.mock('expo-symbols', () => ({
+  SymbolView: (props) => React.createElement(View, props),
+}));
+
+jest.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: ({ children, ...props }) => React.createElement(View, props, children),
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));

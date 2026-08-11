@@ -8,7 +8,8 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
-
+.env
+.env.example
 # Native
 .kotlin/
 *.orig.*
@@ -41,3 +42,6 @@ example
 # generated native folders
 /ios
 /android
+
+#agent
+.mattpocock-skills
