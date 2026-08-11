@@ -1,5 +1,7 @@
-# Native Google OAuth Integration with Better Auth
+# Native Google Sign-In with Better Auth Expo sessions
 
-To provide a seamless mobile experience (no embedded WebViews or external browser bounces), we decided to use the Native Google Sign-In SDK (`@react-native-google-signin/google-signin`) on the Android app, rather than the default browser-based OAuth redirect flow provided by Better Auth's `/api/auth/sign-in/social` endpoint.
+The mobile app uses `@react-native-google-signin/google-signin` to obtain a Google ID token without opening a browser. It passes that token to `authClient.signIn.social({ provider: 'google', idToken: { token } })`, allowing Better Auth to verify the token and create the session.
 
-By using the native SDK, the mobile client receives a Google `idToken` directly from the OS. This requires the backend (via ticket BE-69) to expose a specific endpoint capable of accepting and verifying this `idToken` (or access token) to issue a database-backed session, instead of relying on the standard Better Auth web callback flow. This decision creates a deviation from standard web-centric authentication but guarantees the native UX required by FE-19.
+The Expo client is configured with `expoClient()` and `expo-secure-store`. Better Auth owns session and cookie persistence; the mobile app does not persist a separate session token. Custom Student API requests read `authClient.getCookie()` and send the result in the `Cookie` header with `credentials: 'omit'`.
+
+This deliberately avoids Expo AuthSession, browser OAuth redirects, and a mobile Bearer-token authentication layer. Backend Bearer support, if required by other clients, remains a separate backend compatibility decision.

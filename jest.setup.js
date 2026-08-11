@@ -30,6 +30,7 @@ jest.mock("react-native-reanimated", () => ({
 }));
 
 jest.mock('@react-native-google-signin/google-signin', () => ({
+  isSuccessResponse: (response) => response.type === 'success',
   GoogleSignin: {
     hasPlayServices: jest.fn().mockResolvedValue(true),
     signIn: jest.fn().mockResolvedValue({
@@ -40,6 +41,15 @@ jest.mock('@react-native-google-signin/google-signin', () => ({
     }),
     signOut: jest.fn().mockResolvedValue(undefined),
     configure: jest.fn(),
+  },
+}));
+
+jest.mock('./src/features/auth/authClient', () => ({
+  authClient: {
+    getCookie: jest.fn().mockReturnValue(''),
+    signIn: { social: jest.fn() },
+    getSession: jest.fn().mockResolvedValue({ data: null, error: null }),
+    signOut: jest.fn().mockResolvedValue({ data: null, error: null }),
   },
 }));
 

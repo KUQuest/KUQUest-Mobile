@@ -41,6 +41,19 @@ This command will move the starter code to the **app-example** directory and cre
 - If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
 - Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
 
+## Native authentication configuration
+
+The app does not create local mock accounts. A development build needs these runtime variables:
+
+- `EXPO_PUBLIC_API_URL` — API origin, for example `http://localhost:5000`.
+- `EXPO_PUBLIC_TERMS_VERSION` — version recorded when the user accepts the terms.
+- `EXPO_PUBLIC_GOOGLE_CLIENT_ID` — Google web client ID used by native sign-in.
+- `EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME` — iOS URL scheme; when set, the native Google Sign-In config plugin is enabled.
+
+Native Google Sign-In passes its verified ID token to `authClient.signIn.social`. The Better Auth Expo client persists the Better Auth session and cookies in SecureStore. Protected Student API calls read `authClient.getCookie()` and send it as the `Cookie` header with `credentials: omit`.
+
+The native Google module requires a development build; Expo Go cannot provide the native sign-in implementation.
+
 ## Learn more
 
 To learn more about developing your project with Expo, look at the following resources:
