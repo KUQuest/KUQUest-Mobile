@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, Pressable, useWindowDimensions } from 'react-native';
+import { Text, View, Pressable, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Host, Button } from '@expo/ui';
 import { SymbolView } from 'expo-symbols';
@@ -7,19 +7,19 @@ import {
   AuthAdapter,
   AuthErrorCode,
   AuthError,
-  AuthMode,
   RoutingDestination,
 } from './types';
-import { authService, AuthService } from './AuthService';
+import { authService } from './AuthService';
 import {
   authMessages,
   getAuthErrorText,
 } from '../../locales/authMessages';
 import { useLocale } from '../../locales/LocaleProvider';
+import { colors } from '@/theme/colors';
+import styles from './styles/loginStyles';
 
 interface LoginErrorState {
   code: AuthErrorCode;
-  lastMode: AuthMode;
   message?: string;
 }
 
@@ -27,14 +27,12 @@ export interface LoginScreenProps {
   onNext?: () => void;
   onNavigate?: (dest: RoutingDestination) => void;
   authAdapter?: AuthAdapter;
-  mockCredentialForTesting?: string;
 }
 
 export default function LoginScreen({
   onNext,
   onNavigate,
   authAdapter = authService,
-  mockCredentialForTesting,
 }: LoginScreenProps) {
   const { width } = useWindowDimensions();
   const buttonWidth = Math.min(width - 48, 420);
@@ -46,32 +44,18 @@ export default function LoginScreen({
 
   const messages = authMessages[currentLocale];
 
-  const handleAuth = async (mode: AuthMode) => {
+  const handleAuth = async () => {
     if (isLoading) return;
     setError(null);
     setIsLoading(true);
 
     try {
-      let session;
-      if (mockCredentialForTesting) {
-        session = await authAdapter.authenticateWithGoogle(
-          mockCredentialForTesting,
-          mode
-        );
-      } else if (authAdapter instanceof AuthService) {
-        // Use real Native Google Sign-In
-        session = await authAdapter.signInWithNativeGoogle(mode);
-      } else {
-        session = await authAdapter.authenticateWithGoogle(
-          mode === 'signin' ? 'student.test@ku.th' : 'new.student@ku.th',
-          mode
-        );
-      }
+      await authAdapter.authenticate();
+      const destination = await authAdapter.getRoutingDestination();
 
       setIsLoading(false);
-      const dest = AuthService.getRoutingDestination(session);
       if (onNavigate) {
-        onNavigate(dest);
+        onNavigate(destination);
       } else if (onNext) {
         onNext();
       }
@@ -82,7 +66,6 @@ export default function LoginScreen({
       const message = err instanceof Error ? err.message : JSON.stringify(err);
       setError({
         code: errorCode,
-        lastMode: mode,
         message,
       });
     }
@@ -108,7 +91,7 @@ export default function LoginScreen({
               <SymbolView
                 name="graduationcap.fill"
                 size={24}
-                tintColor="#014925"
+                tintColor={colors.primary}
               />
               <Text style={styles.noticeText}>
                 {messages.noticeTextPrefix}{' '}
@@ -130,58 +113,37 @@ export default function LoginScreen({
                 <SymbolView
                   name="exclamationmark.triangle.fill"
                   size={22}
-                  tintColor="#D32F2F"
+                  tintColor={colors.danger}
                 />
                 <View style={styles.errorContent}>
                   <Text style={styles.errorText} testID="error-message">
                     {getAuthErrorText(error.code, currentLocale)}
                   </Text>
                   {error.message && (
-                    <Text style={[styles.errorText, { fontSize: 12, marginTop: 4, color: '#fca5a5' }]}>
+                    <Text style={[styles.errorText, { fontSize: 12, marginTop: 4, color: colors.dangerLight }]}>
                       {error.message}
                     </Text>
                   )}
-                  {error.lastMode && (
-                    <Pressable
-                      style={styles.retryButton}
-                      onPress={() => handleAuth(error.lastMode!)}
-                      accessibilityRole="button"
-                      accessibilityLabel={messages.retryButton}
-                      testID="retry-button"
-                    >
-                      <Text style={styles.retryButtonText}>
-                        {messages.retryButton}
-                      </Text>
-                    </Pressable>
-                  )}
+                  <Pressable
+                    style={styles.retryButton}
+                    onPress={handleAuth}
+                    accessibilityRole="button"
+                    accessibilityLabel={messages.retryButton}
+                    testID="retry-button"
+                  >
+                    <Text style={styles.retryButtonText}>
+                      {messages.retryButton}
+                    </Text>
+                  </Pressable>
                 </View>
               </View>
             )}
 
-            {/* Sign Up with Google Button */}
-            <Host seedColor="#004D25" matchContents style={styles.hostWrapper}>
+            <Host seedColor={colors.primary} matchContents style={styles.hostWrapper}>
               <Button
                 variant="filled"
-                label={isLoading ? messages.loadingAuth : messages.signUpWithGoogle}
-                onPress={() => handleAuth('signup')}
-                style={{ width: buttonWidth }}
-                disabled={isLoading}
-                testID="signup-button"
-              />
-            </Host>
-
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>{messages.orDivider}</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Sign In with Google Button */}
-            <Host seedColor="#014925" matchContents style={styles.hostWrapper}>
-              <Button
-                variant="outlined"
                 label={isLoading ? messages.loadingAuth : messages.signInWithGoogle}
-                onPress={() => handleAuth('signin')}
+                onPress={handleAuth}
                 style={{ width: buttonWidth }}
                 disabled={isLoading}
                 testID="signin-button"
@@ -217,167 +179,3 @@ export default function LoginScreen({
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  host: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  content: {
-    width: '100%',
-    maxWidth: 420,
-    justifyContent: 'space-between',
-    paddingVertical: 24,
-    gap: 32,
-  },
-  langToggle: {
-    alignSelf: 'flex-end',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: '#F0F4F1',
-    borderWidth: 1,
-    borderColor: '#D0E3D5',
-  },
-  langToggleText: {
-    fontFamily: 'NotoSansThai',
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#014925',
-  },
-  headerSection: {
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  title: {
-    fontFamily: 'NotoSansThai',
-    fontSize: 44,
-    fontWeight: '800',
-    color: '#014925',
-    letterSpacing: -0.5,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontFamily: 'NotoSansThai',
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#666666',
-    letterSpacing: 2.5,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    marginTop: 6,
-  },
-  formSection: {
-    width: '100%',
-    gap: 16,
-  },
-  noticeCard: {
-    backgroundColor: '#EAF6ED',
-    borderColor: '#C5E1C9',
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 4,
-  },
-  noticeText: {
-    flex: 1,
-    fontFamily: 'NotoSansThai',
-    fontSize: 14,
-    color: '#333333',
-    lineHeight: 20,
-  },
-  noticeTextBold: {
-    fontFamily: 'NotoSansThai',
-    fontWeight: '700',
-    color: '#111111',
-  },
-  errorCard: {
-    backgroundColor: '#FDECEF',
-    borderColor: '#F5C2C7',
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    marginBottom: 4,
-  },
-  errorContent: {
-    flex: 1,
-    gap: 10,
-  },
-  errorText: {
-    fontFamily: 'NotoSansThai',
-    fontSize: 14,
-    color: '#842029',
-    lineHeight: 20,
-    fontWeight: '500',
-  },
-  retryButton: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#842029',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    fontFamily: 'NotoSansThai',
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  hostWrapper: {
-    width: '100%',
-    alignSelf: 'stretch',
-  },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    marginVertical: 4,
-  },
-  dividerLine: {
-    flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: '#E0E0E0',
-  },
-  dividerText: {
-    fontFamily: 'NotoSansThai',
-    fontSize: 14,
-    color: '#777777',
-    fontWeight: '500',
-  },
-  footerSection: {
-    alignItems: 'center',
-    gap: 12,
-  },
-  footerLinks: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 20,
-  },
-  footerLinkText: {
-    fontFamily: 'NotoSansThai',
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#666666',
-  },
-  copyrightText: {
-    fontFamily: 'NotoSansThai',
-    fontSize: 12,
-    color: '#888888',
-    textAlign: 'center',
-  },
-});

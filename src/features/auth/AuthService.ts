@@ -1,242 +1,176 @@
 import {
+  GoogleSignin,
+  isSuccessResponse,
+  type SignInResponse,
+} from '@react-native-google-signin/google-signin';
+import { ApiClient, ApiError } from '../../api/ApiClient';
+import { authUserSchema } from '../../api/contracts';
+import { StudentApi } from '../../api/StudentApi';
+import {
   AuthAdapter,
   AuthError,
-  AuthMode,
   AuthSession,
-  isAuthSession,
-  OnboardingStatus,
   RoutingDestination,
 } from './types';
-import { SecureSessionStorage } from './secureStorage';
+import { authClient } from './authClient';
 
-// Safely require GoogleSignin to avoid crash in Expo Go where native module is missing
-interface NativeGoogleSigninApi {
+export interface NativeGoogleSigninApi {
   configure(options: { webClientId?: string }): void;
-  hasPlayServices(options: { showPlayServicesUpdateDialog: boolean }): Promise<void>;
-  signIn(): Promise<{ data?: { idToken?: string; user?: { email?: string } } }>;
-  signOut(): Promise<void>;
+  hasPlayServices(options: { showPlayServicesUpdateDialog: boolean }): Promise<boolean>;
+  signIn(): Promise<SignInResponse>;
+  signOut(): Promise<null>;
 }
 
-let NativeGoogleSignin: NativeGoogleSigninApi | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const googleSigninPkg = require('@react-native-google-signin/google-signin') as {
-    GoogleSignin: NativeGoogleSigninApi;
+interface BetterAuthResponse {
+  data?: unknown;
+  error?: unknown;
+}
+
+export interface BetterAuthClientApi {
+  signIn: {
+    social(input: {
+      provider: 'google';
+      idToken: { token: string };
+    }): Promise<BetterAuthResponse>;
   };
-  NativeGoogleSignin = googleSigninPkg.GoogleSignin;
-
-  NativeGoogleSignin.configure({
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
-  });
-} catch {
-  // RNGoogleSignin native module is not linked in Expo Go
+  getSession(): Promise<BetterAuthResponse>;
+  signOut(): Promise<BetterAuthResponse>;
 }
 
-export interface MockAccountRecord {
-  id: string;
-  email: string;
-  name: string;
-  onboardingStatus: OnboardingStatus;
-  onboardingStep?: number;
+export interface AuthServiceOptions {
+  apiBaseUrl?: string;
+  apiClient?: ApiClient;
+  fetchImpl?: typeof fetch;
+  studentApi?: StudentApi;
+  googleSignin?: NativeGoogleSigninApi | null;
+  authClient?: BetterAuthClientApi;
+}
+
+function getErrorMessage(error: unknown): string | undefined {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    return typeof message === 'string' ? message : undefined;
+  }
+  return undefined;
+}
+
+function getErrorCode(error: unknown): unknown {
+  if (!error || typeof error !== 'object' || !('code' in error)) return undefined;
+  return (error as { code?: unknown }).code;
+}
+
+function authDebug(message: string, details?: Record<string, unknown>): void {
+  if (__DEV__) {
+    console.log(`[auth] ${message}`, details ?? '');
+  }
+}
+
+function getSessionUser(data: unknown) {
+  const user = data && typeof data === 'object' && 'user' in data
+    ? (data as { user?: unknown }).user
+    : undefined;
+  return authUserSchema.parse(user);
 }
 
 export class AuthService implements AuthAdapter {
-  private registeredAccounts: Map<string, MockAccountRecord> = new Map([
-    [
-      'student.test@ku.th',
-      {
-        id: 'usr_01',
-        email: 'student.test@ku.th',
-        name: 'Test Student',
-        onboardingStatus: 'COMPLETED',
-      },
-    ],
-    [
-      'newcomer.test@ku.th',
-      {
-        id: 'usr_02',
-        email: 'newcomer.test@ku.th',
-        name: 'Newcomer Student',
-        onboardingStatus: 'IN_PROGRESS',
-        onboardingStep: 2,
-      },
-    ],
-  ]);
+  private readonly studentApi: StudentApi;
+  private readonly nativeGoogleSignin: NativeGoogleSigninApi | null;
+  private readonly authClient: BetterAuthClientApi;
 
-  /**
-   * Registers a mock account for testing scenarios.
-   */
-  registerMockAccount(account: MockAccountRecord): void {
-    this.registeredAccounts.set(account.email.toLowerCase(), account);
-  }
+  constructor(options: AuthServiceOptions = {}) {
+    const apiClient = options.apiClient ?? new ApiClient({
+      baseUrl: options.apiBaseUrl,
+      fetchImpl: options.fetchImpl,
+    });
+    this.studentApi = options.studentApi ?? new StudentApi(apiClient);
+    this.nativeGoogleSignin = options.googleSignin === undefined
+      ? GoogleSignin
+      : options.googleSignin;
+    this.authClient = options.authClient ?? authClient;
 
-  /**
-   * Clears mock account registry for testing reset.
-   */
-  clearMockAccounts(): void {
-    this.registeredAccounts.clear();
-  }
-
-  /**
-   * Validates email domain to ensure it ends with @ku.th.
-   */
-  private validateKuEmailDomain(email: string): void {
-    if (!email.toLowerCase().endsWith('@ku.th')) {
-      throw new AuthError('INVALID_EMAIL_DOMAIN');
-    }
-  }
-
-  private async authenticateInMemory(email: string, mode: AuthMode): Promise<AuthSession> {
-    const normalizedEmail = email.toLowerCase();
-    const existing = this.registeredAccounts.get(normalizedEmail);
-    if (!existing && mode === 'signin') {
-      throw new AuthError('ACCOUNT_NOT_FOUND');
-    }
-
-    const account = existing ?? {
-      id: `usr_${Date.now()}`,
-      email: normalizedEmail,
-      name: normalizedEmail.split('@')[0],
-      onboardingStatus: 'NOT_STARTED' as const,
-    };
-    this.registeredAccounts.set(normalizedEmail, account);
-
-    const session: AuthSession = {
-      token: `tok_secure_${Date.now()}`,
-      user: account,
-      createdAt: Date.now(),
-      expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
-    };
-    await SecureSessionStorage.saveSession(session);
-    return session;
-  }
-
-  /**
-   * Authenticate via Typed Auth Adapter without guessing unverified REST endpoints.
-   * Adheres strictly to BE-69 pre-integration contract requirements.
-   */
-  async authenticateWithGoogle(
-    credential: string,
-    mode: AuthMode,
-    overrideEmail?: string
-  ): Promise<AuthSession> {
-    const email = (overrideEmail ?? credential).trim().toLowerCase();
-    this.validateKuEmailDomain(email);
-
-    const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-    if (!apiUrl) {
-      if (process.env.NODE_ENV === 'test') {
-        return this.authenticateInMemory(email, mode);
-      }
-      throw new AuthError('API_ERROR', 'API URL is not configured');
-    }
-
-    try {
-      const response = await fetch(`${apiUrl}/auth/sign-in/social`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          provider: 'google',
-          idToken: {
-            token: credential
-          }
-        }),
+    if (this.nativeGoogleSignin) {
+      this.nativeGoogleSignin.configure({
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
       });
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new AuthError('ACCOUNT_NOT_FOUND');
-        }
-        if (response.status === 409) {
-          throw new AuthError('ACCOUNT_ALREADY_EXISTS');
-        }
-        throw new AuthError('API_ERROR', await response.text());
-      }
-
-      const data: unknown = await response.json();
-      if (!isAuthSession(data)) {
-        throw new AuthError('API_ERROR', 'Authentication response was invalid');
-      }
-      const session = data;
-
-      await SecureSessionStorage.saveSession(session);
-      return session;
-    } catch (error) {
-      if (error instanceof AuthError) throw error;
-      throw new AuthError('API_ERROR', (error as Error).message);
     }
+  }
+
+  async authenticate(): Promise<AuthSession> {
+    authDebug('authenticate started');
+    return await this.signInWithNativeGoogle();
   }
 
   async getSession(): Promise<AuthSession | null> {
-    return await SecureSessionStorage.getSession();
-  }
-
-  async clearSession(): Promise<void> {
-    await SecureSessionStorage.clearSession();
-  }
-
-  /**
-   * Sign out, ALWAYS clearing local session token even if backend revocation fails.
-   */
-  async signOut(revokeBackendCallback?: () => Promise<void>): Promise<void> {
     try {
-      if (revokeBackendCallback) {
-        await revokeBackendCallback();
-      } else {
-        const session = await this.getSession();
-        const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-        if (session && apiUrl) {
-          try {
-            await fetch(`${apiUrl}/auth/sign-out`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.token}`
-              },
-            });
-          } catch {
-            // Local session cleanup below remains authoritative.
-          }
-        }
+      const response = await this.authClient.getSession();
+      authDebug('session lookup completed', {
+        hasSession: Boolean(response.data),
+        hasError: Boolean(response.error),
+      });
+      if (response.error) {
+        const code = getErrorCode(response.error);
+        if (code === 'UNAUTHORIZED' || code === 'SESSION_EXPIRED') return null;
+        throw new AuthError(
+          'API_ERROR',
+          getErrorMessage(response.error) ?? 'Unable to load authentication session'
+        );
       }
+      if (!response.data) return null;
+      return { user: getSessionUser(response.data) };
+    } catch (error: unknown) {
+      if (error instanceof AuthError) throw error;
+      authDebug('session lookup failed', { message: getErrorMessage(error) });
+      throw new AuthError('API_ERROR', getErrorMessage(error) ?? 'Unable to load authentication session');
+    }
+  }
 
-      if (NativeGoogleSignin) {
-        try {
-          await NativeGoogleSignin.signOut();
-        } catch {
-          // Ignore native google signout errors in tests/mock
-        }
+  async getRoutingDestination(): Promise<RoutingDestination> {
+    try {
+      const status = await this.studentApi.getAcademicRegistrationStatus();
+      authDebug('registration status loaded', { completed: status.completed });
+      return status.completed
+        ? { type: 'HOME' }
+        : { type: 'ONBOARDING', step: 1 };
+    } catch (error: unknown) {
+      if (error instanceof ApiError && error.status === 401) {
+        authDebug('registration status rejected session', { status: error.status });
+        await this.authClient.signOut().catch(() => undefined);
+        throw new AuthError('SESSION_EXPIRED');
       }
+      authDebug('registration status failed', { message: getErrorMessage(error) });
+      throw new AuthError('API_ERROR', getErrorMessage(error) ?? 'Unable to load registration status');
+    }
+  }
+
+  async getStudentApi(): Promise<StudentApi> {
+    const session = await this.getSession();
+    if (!session) throw new AuthError('SESSION_EXPIRED', 'No active session');
+    return this.studentApi;
+  }
+
+  async signOut(): Promise<void> {
+    authDebug('sign-out started');
+    try {
+      await this.authClient.signOut();
+      authDebug('Better Auth sign-out completed');
+    } catch {
+      authDebug('Better Auth sign-out failed; continuing native sign-out');
+      // Native sign-out still runs when the remote Better Auth request fails.
     } finally {
-      await SecureSessionStorage.clearSession();
+      if (this.nativeGoogleSignin) {
+        try {
+          await this.nativeGoogleSignin.signOut();
+          authDebug('native Google sign-out completed');
+        } catch {
+          // Local Better Auth cleanup remains authoritative.
+        }
+      }
     }
   }
 
-  /**
-   * Determine session routing seam destination (HOME vs ONBOARDING step).
-   */
-  static getRoutingDestination(session: AuthSession): RoutingDestination {
-    if (session.user.onboardingStatus === 'COMPLETED') {
-      return { type: 'HOME' };
-    }
-    return {
-      type: 'ONBOARDING',
-      step: session.user.onboardingStep ?? 1,
-    };
-  }
-
-  /**
-   * Native Google Sign In flow (without WebView).
-   */
-  async signInWithNativeGoogle(
-    mode: AuthMode,
-    mockEmailForTesting?: string
-  ): Promise<AuthSession> {
-    if (mockEmailForTesting) {
-      return await this.authenticateWithGoogle(mockEmailForTesting, mode, mockEmailForTesting);
-    }
-
-    if (!NativeGoogleSignin) {
+  private async signInWithNativeGoogle(): Promise<AuthSession> {
+    if (!this.nativeGoogleSignin) {
       throw new AuthError(
         'OAUTH_FAILED',
         'Native Google Sign-In requires a Development Build (npx expo run:android) and is not supported in standard Expo Go.'
@@ -244,29 +178,63 @@ export class AuthService implements AuthAdapter {
     }
 
     try {
-      await NativeGoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      const response = await NativeGoogleSignin.signIn();
-      const email = response.data?.user?.email || '';
-      const idToken = response.data?.idToken || email;
-
-      return await this.authenticateWithGoogle(idToken, mode, email);
-    } catch (error: unknown) {
-      const nativeError = error as { code?: string; message?: string };
-      if (nativeError.code === 'INVALID_EMAIL_DOMAIN' || error instanceof AuthError) {
-        throw error;
+      const hasPlayServices = await this.nativeGoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
+      });
+      authDebug('Google Play Services checked', { available: hasPlayServices });
+      if (!hasPlayServices) {
+        throw new AuthError('PLAY_SERVICES_UNAVAILABLE');
       }
-      if (nativeError.code === '12501' || nativeError.message?.includes('CANCELLED')) {
+      const response = await this.nativeGoogleSignin.signIn();
+      authDebug('native Google response received', {
+        type: response.type,
+        hasIdToken: response.type === 'success' && Boolean(response.data.idToken),
+      });
+
+      if (!isSuccessResponse(response)) {
         throw new AuthError('OAUTH_CANCELLED');
       }
-      throw new AuthError('OAUTH_FAILED', nativeError.message);
-    }
-  }
-  async completeOnboarding(): Promise<void> {
-    const session = await this.getSession();
-    if (session) {
-      session.user.onboardingStatus = 'COMPLETED';
-      const { SecureSessionStorage } = await import('./secureStorage');
-      await SecureSessionStorage.saveSession(session);
+
+      const idToken = response.data.idToken;
+      if (!idToken) {
+        throw new AuthError('OAUTH_FAILED', 'Google Sign-In did not return an ID token');
+      }
+
+      const email = response.data.user.email.trim().toLowerCase();
+      authDebug('Google account received', { domain: email.split('@')[1] ?? '' });
+      if (!email.endsWith('@ku.th')) {
+        throw new AuthError('INVALID_EMAIL_DOMAIN');
+      }
+
+      authDebug('Better Auth sign-in started');
+      const result = await this.authClient.signIn.social({
+        provider: 'google',
+        idToken: { token: idToken },
+      });
+      authDebug('Better Auth sign-in completed', {
+        hasSession: Boolean(result.data),
+        hasError: Boolean(result.error),
+        errorCode: getErrorCode(result.error),
+      });
+      if (result.error) throw result.error;
+
+      return { user: getSessionUser(result.data) };
+    } catch (error: unknown) {
+      if (error instanceof AuthError) throw error;
+
+      const message = getErrorMessage(error);
+      const code = getErrorCode(error);
+      authDebug('authentication failed', { code, message });
+      if (code === '12501' || code === 'SIGN_IN_CANCELLED' || message?.includes('CANCEL')) {
+        throw new AuthError('OAUTH_CANCELLED');
+      }
+      if (code === 'PLAY_SERVICES_NOT_AVAILABLE') {
+        throw new AuthError('PLAY_SERVICES_UNAVAILABLE');
+      }
+      if (error instanceof ApiError && error.status === 401) {
+        throw new AuthError('OAUTH_FAILED', 'Google authentication was rejected');
+      }
+      throw new AuthError('OAUTH_FAILED', message);
     }
   }
 }

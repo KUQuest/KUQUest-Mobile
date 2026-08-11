@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
-import { Href, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { colors } from '@/theme/colors';
 import LoginScreen from './LoginScreen';
-import { authService, AuthService } from './AuthService';
+import { authService } from './AuthService';
 import { RoutingDestination } from './types';
 
 export default function Index() {
@@ -12,7 +12,7 @@ export default function Index() {
 
   const handleNavigate = React.useCallback((dest: RoutingDestination) => {
     if (dest.type === 'HOME') {
-      router.replace("/(tabs)" as Href);
+      router.replace('/(tabs)');
     } else {
       router.replace({ pathname: '/onboarding', params: { step: String(dest.step) } });
     }
@@ -24,7 +24,7 @@ export default function Index() {
       try {
         const session = await authService.getSession();
         if (session && mounted) {
-          handleNavigate(AuthService.getRoutingDestination(session));
+          handleNavigate(await authService.getRoutingDestination());
           return;
         }
       } catch {
