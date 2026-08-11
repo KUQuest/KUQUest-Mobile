@@ -1,0 +1,136 @@
+import { z } from 'zod';
+
+import { certificateSchema, workSchema } from '../profile/profileSchema';
+import type { ProfileDraft } from '../profile/types';
+
+export interface OnboardingValidationMessages {
+  requiredField: string;
+  invalidTelephone: string;
+  invalidDate: string;
+}
+
+export type ValidationErrors = Record<string, string>;
+
+const telephonePattern = /^0[0-9]{9}$/;
+
+function pathToErrorKey(path: (string | number)[]): string | null {
+  if (path.length === 1 && typeof path[0] === 'string') return path[0];
+
+  if (path.length === 3 && typeof path[1] === 'number' && typeof path[2] === 'string') {
+    if (path[0] === 'certificates') return `cert_${path[1]}_${path[2]}`;
+    if (path[0] === 'works') return `work_${path[1]}_${path[2]}`;
+  }
+
+  return null;
+}
+
+function errorsFromZod(error: z.ZodError): ValidationErrors {
+  return error.issues.reduce<ValidationErrors>((errors, issue) => {
+    const key = pathToErrorKey(issue.path);
+    if (key && !errors[key]) errors[key] = issue.message;
+    return errors;
+  }, {});
+}
+
+function createProfileBasicsSchema(
+  isEditMode: boolean,
+  messages: OnboardingValidationMessages
+) {
+  return z.object({
+    name: z.string().trim().min(1, messages.requiredField),
+    telephone: z.string()
+      .trim()
+      .min(1, messages.requiredField)
+      .refine((value) => telephonePattern.test(value), messages.invalidTelephone),
+    occupation: z.string().trim().min(1, messages.requiredField),
+    studentId: z.string(),
+    faculty: z.string().trim().min(1, messages.requiredField),
+    department: z.string().trim().min(1, messages.requiredField),
+    acceptedTerms: z.boolean(),
+  }).superRefine((form, context) => {
+    if (form.occupation === 'Student' && !form.studentId.trim()) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['studentId'],
+        message: messages.requiredField,
+      });
+    }
+
+    if (!isEditMode && !form.acceptedTerms) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['acceptedTerms'],
+        message: messages.requiredField,
+      });
+    }
+  });
+}
+
+function createProfileDetailsSchema(messages: OnboardingValidationMessages) {
+  return z.object({
+    certificates: z.array(certificateSchema),
+    works: z.array(workSchema),
+  }).superRefine((form, context) => {
+    form.certificates.forEach((certificate, index) => {
+      const hasContent = [certificate.name, certificate.issuer, certificate.issuedAt, certificate.imageUri]
+        .some((value) => value.trim());
+      if (!hasContent) return;
+      if (!certificate.name.trim()) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['certificates', index, 'name'],
+          message: messages.requiredField,
+        });
+      }
+      if (!certificate.issuer.trim()) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['certificates', index, 'issuer'],
+          message: messages.requiredField,
+        });
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(certificate.issuedAt.trim())) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['certificates', index, 'issuedAt'],
+          message: messages.invalidDate,
+        });
+      }
+    });
+
+    form.works.forEach((work, index) => {
+      const hasContent = [work.imageUri, work.title, work.detail].some((value) => value.trim());
+      if (hasContent && !work.title.trim()) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['works', index, 'title'],
+          message: messages.requiredField,
+        });
+      }
+      if (hasContent && !work.imageUri.trim()) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['works', index, 'imageUri'],
+          message: messages.requiredField,
+        });
+      }
+    });
+  });
+}
+
+export function validateProfileBasics(
+  form: ProfileDraft,
+  isEditMode: boolean,
+  messages: OnboardingValidationMessages
+): ValidationErrors {
+  const result = createProfileBasicsSchema(isEditMode, messages).safeParse(form);
+  return result.success ? {} : errorsFromZod(result.error);
+}
+
+export function validateProfileDetails(
+  form: Pick<ProfileDraft, 'certificates' | 'works'>,
+  messages: OnboardingValidationMessages
+): ValidationErrors {
+  const result = createProfileDetailsSchema(messages).safeParse(form);
+  return result.success ? {} : errorsFromZod(result.error);
+}

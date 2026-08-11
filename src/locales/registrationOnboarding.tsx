@@ -67,8 +67,9 @@ export const onboardingMessages = {
     step3Desc: 'ทำโปรไฟล์ของคุณให้สมบูรณ์โดยการเพิ่มรายละเอียดผลการเรียน ประสบการณ์ และผลงานที่โดดเด่นของคุณให้พาร์ทเนอร์ได้เห็น',
     certification: 'ใบรับรอง',
     certDesc: 'เพิ่มความน่าเชื่อถือด้วยหลักฐานความสำเร็จทางวิชาการและการทำงานของคุณ',
-    certLink: 'ลิงก์ใบรับรอง (ไม่บังคับ)',
-    importLink: 'เพิ่มลิงก์',
+    certName: 'ชื่อใบรับรอง',
+    certIssuer: 'ผู้ออกใบรับรอง',
+    certIssuedAt: 'วันที่ออก (YYYY-MM-DD)',
     detailProject: 'อธิบายรายละเอียดโปรเจกต์ ความสำเร็จทางวิชาการ หรือประสบการณ์ที่เกี่ยวข้อง...',
     addMoreCert: '+ เพิ่มใบรับรอง',
     experience: 'ประสบการณ์ (ไม่บังคับ)',
@@ -88,7 +89,8 @@ export const onboardingMessages = {
     submitting: 'กำลังบันทึก...',
     retrySubmitBtn: 'ลองใหม่อีกครั้ง',
     submitErrorMsg: 'ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
-    invalidUrl: 'รูปแบบ URL ไม่ถูกต้อง',
+    invalidDate: 'ใช้รูปแบบวันที่ YYYY-MM-DD',
+    invalidTelephone: 'รูปแบบเบอร์โทรศัพท์ไม่ถูกต้อง',
     requiredField: 'จำเป็นต้องระบุ'
   },
   en: {
@@ -158,8 +160,9 @@ Your data will be stored securely in accordance with applicable Personal Data Pr
     step3Desc: 'Finalize your profile by detailing your academic standing, practical experience, and showcasing your best work to potential venture partners.',
     certification: 'Certification',
     certDesc: 'Boost your credibility by providing proof of your academic and professional achievements.',
-    certLink: 'CERTIFICATES LINK (OPTIONAL)',
-    importLink: 'Import Link',
+    certName: 'Certificate name',
+    certIssuer: 'Issuer',
+    certIssuedAt: 'Issued date (YYYY-MM-DD)',
     detailProject: 'Detail your relevant project work, academic achievements, or professional background...',
     addMoreCert: '+ Add more certificate',
     experience: 'EXPERIENCE (OPTIONAL)',
@@ -179,7 +182,8 @@ Your data will be stored securely in accordance with applicable Personal Data Pr
     submitting: 'Saving...',
     retrySubmitBtn: 'Retry',
     submitErrorMsg: 'Failed to save data. Please try again.',
-    invalidUrl: 'Invalid URL format',
+    invalidDate: 'Use the YYYY-MM-DD date format',
+    invalidTelephone: 'Invalid telephone format',
     requiredField: 'This field is required'
   }
 };
