@@ -21,7 +21,7 @@ import {
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     NotoSansThai_400Regular,
     NotoSansThai_500Medium,
     NotoSansThai_600SemiBold,
@@ -32,11 +32,11 @@ export default function RootLayout() {
     BeVietnamPro_400Regular
   });
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
+    if (fontsLoaded || fontError) {
+      void SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
-  if (!fontsLoaded) {
+  }, [fontError, fontsLoaded]);
+  if (!fontsLoaded && !fontError) {
     return null;
   }
   return (
