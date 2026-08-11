@@ -1,18 +1,36 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ScrollView, View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { authService } from '../auth/AuthService';
 import { onboardingMessages } from '../../locales/registrationOnboarding';
 import { useLocale } from '../../locales/LocaleProvider';
-import { colors } from '@/theme/colors';
-import { spacing } from '@/theme/spacing';
-import { typography } from '@/theme/typography';
+import { profileMessages } from '../../locales/profileMessages';
+import { AboutMe, Certificates, MyWork, ProfileHeader, type ProfileViewData } from '../profile/components/ProfileComponents';
+import { loadProfileViewData } from '../profile/loadProfileViewData';
+import styles from './styles/homeStyles';
 
-export default function HomepageStub() {
+export default function HomeScreen() {
   const router = useRouter();
   const { locale } = useLocale();
   const messages = onboardingMessages[locale];
+  const profileText = profileMessages[locale];
+  const [profile, setProfile] = useState<ProfileViewData | null>(null);
+  const [loadError, setLoadError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void loadProfileViewData(locale)
+      .then((data) => {
+        if (active) setProfile(data);
+      })
+      .catch(() => {
+        if (active) setLoadError(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [locale]);
 
   const handleLogout = async () => {
     await authService.signOut();
@@ -21,57 +39,31 @@ export default function HomepageStub() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <Text style={styles.title}>{messages.homeTitle}</Text>
-        <Text style={styles.subtitle}>{messages.homeWelcome}</Text>
-        
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <Text style={styles.title}>{messages.homeTitle}</Text>
+          <Text style={styles.subtitle}>{messages.homeWelcome}</Text>
+        </View>
+
+        {loadError ? <Text style={styles.statusText}>{profileText.error}</Text> : null}
+        {!profile && !loadError ? <Text style={styles.statusText}>{profileText.loading}</Text> : null}
+        {profile ? <>
+          <ProfileHeader
+            data={profile}
+            editProfileLabel={messages.editProfile}
+            onEditPress={() => router.push({ pathname: '/onboarding', params: { mode: 'edit' } })}
+          />
+          <AboutMe about={profile.about} sectionTitle={profileText.about} emptyText={profileText.noDescription} />
+          <MyWork works={profile.works} sectionTitle={profileText.works} emptyText={profileText.noWorks} />
+          <Certificates certificates={profile.certificates} sectionTitle={profileText.certificates} emptyText={profileText.noCertificates} />
+        </> : null}
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Text style={styles.logoutText}>{messages.logout}</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
-  },
-  title: {
-    ...typography.heading,
-    fontWeight: 'bold',
-    color: colors.primary,
-    marginBottom: spacing.sm,
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.textMuted,
-    marginBottom: spacing.xl,
-  },
-  buttonContainer: {
-    width: '100%',
-    maxWidth: 200,
-  },
-  logoutButton: {
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: 8,
-    paddingVertical: spacing.sm + 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoutText: {
-    ...typography.body,
-    fontWeight: 'bold',
-    color: colors.primary,
-  }
-});
