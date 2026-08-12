@@ -49,12 +49,19 @@ function isLocalAsset(uri: string): boolean {
   return Boolean(uri) && !/^https?:\/\//i.test(uri);
 }
 
+function onboardingDebug(message: string, details: Record<string, unknown> = {}): void {
+  if (__DEV__) {
+    console.log(`[onboarding] ${message}`, details);
+  }
+}
+
 export default function OnboardingScreen() {
   const router = useRouter();
   const { locale } = useLocale();
   const msg = onboardingMessages[locale];
   const { mode, step } = useLocalSearchParams<{ mode?: string; step?: string | string[] }>();
   const isEditMode = mode === 'edit';
+  const routerRef = useRef(router);
   const routeStep = parseOnboardingStep(step);
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(routeStep);
   const [form, setForm] = useState<ProfileDraft>(createOnboardingForm);
@@ -131,7 +138,7 @@ export default function OnboardingScreen() {
       } catch (error) {
         if (error instanceof AuthError && error.code === 'SESSION_EXPIRED') {
           await authService.signOut().catch(() => undefined);
-          if (active) router.replace('/');
+          if (active) routerRef.current.replace('/');
           return;
         }
         if (active) setLoadError(true);
@@ -144,7 +151,7 @@ export default function OnboardingScreen() {
     return () => {
       active = false;
     };
-  }, [loadAttempt, msg.loadingProfile, msg.submitErrorMsg, router]);
+  }, [loadAttempt, msg.loadingProfile, msg.submitErrorMsg]);
 
   const occupationOptions = (options?.occupations ?? []).map((occupation) => ({
     label: occupation.name,
@@ -167,11 +174,20 @@ export default function OnboardingScreen() {
   const validateStep3 = () => {
     const newErrors = validateProfileDetails(form, msg);
     setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      onboardingDebug('save validation failed', { fields: Object.keys(newErrors) });
+    }
     return Object.keys(newErrors).length === 0;
   };
 
   const handleComplete = async () => {
+    onboardingDebug('save pressed', { currentStep, isEditMode, isSubmitting });
     if (!validateStep3()) return;
+    onboardingDebug('save started', {
+      isEditMode,
+      certificateCount: form.certificates.filter((item) => item.name || item.issuer || item.issuedAt || item.imageUri).length,
+      portfolioCount: form.works.filter((item) => item.title || item.detail || item.imageUri).length,
+    });
     setIsSubmitting(true);
     setSubmitError(null);
     try {
@@ -209,6 +225,7 @@ export default function OnboardingScreen() {
 
       for (const [index, certificate] of form.certificates.entries()) {
         if (!(certificate.name || certificate.issuer || certificate.issuedAt || certificate.imageUri)) continue;
+        onboardingDebug('saving certificate', { index, hasId: Boolean(certificate.id), hasLocalImage: isLocalAsset(certificate.imageUri) });
         const certificateData = { name: certificate.name, issuer: certificate.issuer, issuedAt: certificate.issuedAt };
         const id = certificate.id
           ? (await api.updateCertificate(certificate.id, certificateData), certificate.id)
@@ -224,6 +241,7 @@ export default function OnboardingScreen() {
 
       for (const [index, work] of form.works.entries()) {
         if (!(work.title || work.detail || work.imageUri)) continue;
+        onboardingDebug('saving portfolio item', { index, hasId: Boolean(work.id), hasLocalImage: isLocalAsset(work.imageUri), titleLength: work.title.length, detailLength: work.detail.length });
         let id = work.id;
         const pendingReplacement = isLocalAsset(work.imageUri)
           ? pendingPortfolioReplacements.current.get(work.imageUri)
@@ -272,6 +290,7 @@ export default function OnboardingScreen() {
       if (isEditMode) router.replace('/(tabs)/profile');
       else router.replace('/');
     } catch (error) {
+      onboardingDebug('edit save failed', { error: error instanceof Error ? { name: error.name, message: error.message } : String(error) });
       if (error instanceof AuthError && error.code === 'SESSION_EXPIRED') {
         await authService.signOut().catch(() => undefined);
         router.replace('/');
