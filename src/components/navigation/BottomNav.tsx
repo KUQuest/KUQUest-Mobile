@@ -16,17 +16,18 @@ import styles from './bottomNavStyles';
 type NavigationItem = {
   routeName: string;
   labelKey: 'board' | 'myQuests' | 'create' | 'chat' | 'profile';
+  shortLabelKey: 'boardShort' | 'myQuestsShort' | 'createShort' | 'chatShort' | 'profileShort';
   icon: typeof Grid2X2;
   isCreate?: boolean;
   hasUnread?: boolean;
 };
 
 export const navigationItems: readonly NavigationItem[] = [
-  { routeName: 'index', labelKey: 'board', icon: Grid2X2 },
-  { routeName: 'my-quests', labelKey: 'myQuests', icon: CheckSquare },
-  { routeName: 'create', labelKey: 'create', icon: Plus, isCreate: true },
-  { routeName: 'chat', labelKey: 'chat', icon: MessageSquare },
-  { routeName: 'profile', labelKey: 'profile', icon: CircleUserRound },
+  { routeName: 'index', labelKey: 'board', shortLabelKey: 'boardShort', icon: Grid2X2 },
+  { routeName: 'my-quests', labelKey: 'myQuests', shortLabelKey: 'myQuestsShort', icon: CheckSquare },
+  { routeName: 'create', labelKey: 'create', shortLabelKey: 'createShort', icon: Plus, isCreate: true },
+  { routeName: 'chat', labelKey: 'chat', shortLabelKey: 'chatShort', icon: MessageSquare },
+  { routeName: 'profile', labelKey: 'profile', shortLabelKey: 'profileShort', icon: CircleUserRound },
 ];
 
 type TabBarProps = Parameters<NonNullable<React.ComponentProps<typeof import('expo-router').Tabs>['tabBar']>>[0];
@@ -36,19 +37,21 @@ export function BottomNav({ state, descriptors, navigation, insets }: TabBarProp
   const metrics = getAppChromeMetrics(width, fontScale);
   const { locale } = useLocale();
   const messages = navigationMessages[locale];
+  const focusedRouteKey = state.routes[state.index]?.key;
 
   return (
     <View
       style={[styles.bar, { minHeight: metrics.navHeight, paddingBottom: insets.bottom }]}
       accessibilityRole="toolbar"
     >
-      {state.routes.map((route, index) => {
+      {state.routes.map((route) => {
         const item = navigationItems.find(({ routeName }) => routeName === route.name);
         if (!item) return null;
 
-        const isFocused = state.index === index;
+        const isFocused = route.key === focusedRouteKey;
         const options = descriptors[route.key]?.options;
         const label = messages[item.labelKey];
+        const shortLabel = messages[item.shortLabelKey];
         const Icon = item.icon;
 
         const onPress = () => {
@@ -85,15 +88,19 @@ export function BottomNav({ state, descriptors, navigation, insets }: TabBarProp
             ) : (
               <Icon color={isFocused ? colors.primary : colors.textSecondary} size={metrics.iconSize} strokeWidth={2.5} style={styles.icon} />
             )}
-            <Text
-              style={[
-                item.isCreate ? styles.createLabel : styles.label,
-                { fontSize: metrics.labelFontSize, lineHeight: metrics.labelLineHeight },
-                isFocused && !item.isCreate && styles.activeLabel,
-              ]}
-            >
-              {label}
-            </Text>
+            <View style={styles.labelSlot}>
+              <Text
+                style={[
+                  item.isCreate ? styles.createLabel : styles.label,
+                  { fontSize: metrics.labelFontSize, lineHeight: metrics.labelLineHeight },
+                  isFocused && !item.isCreate && styles.activeLabel,
+                ]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {shortLabel}
+              </Text>
+            </View>
             {item.hasUnread ? <View accessibilityLabel="Unread messages" style={styles.unreadBadge} /> : null}
           </Pressable>
         );

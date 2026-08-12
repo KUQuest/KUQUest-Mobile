@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   headerSection: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginTop: 4,
   },
   title: {
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.primary,
     letterSpacing: -0.5,
-    textAlign: 'center',
+    textAlign: 'left',
   },
   subtitle: {
     fontFamily: fontFamily.semiBold,
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textMuted,
     letterSpacing: 2.5,
-    textAlign: 'center',
+    textAlign: 'left',
     textTransform: 'uppercase',
     marginTop: 6,
   },
@@ -145,13 +145,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   footerSection: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 12,
   },
   footerLinks: {
-    flexDirection: 'row',
+    alignItems: 'flex-start',
+    flexDirection: 'column',
     justifyContent: 'center',
-    gap: 20,
+    gap: 8,
   },
   footerLinkText: {
     fontFamily: fontFamily.medium,
@@ -163,7 +164,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.regular,
     fontSize: 12,
     color: colors.textFaint,
-    textAlign: 'center',
+    textAlign: 'left',
   },
 });
 

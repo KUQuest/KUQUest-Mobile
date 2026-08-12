@@ -24,9 +24,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm + 4,
     paddingVertical: spacing.sm + 2,
     backgroundColor: colors.white,
+    minHeight: 44,
   },
   selectBoxError: {
     borderColor: colors.danger,
+  },
+  selectBoxSuccess: {
+    borderColor: colors.success,
+  },
+  selectBoxDisabled: {
+    backgroundColor: colors.surfaceMuted,
+    opacity: 0.6,
   },
   selectText: {
     fontFamily: fontFamily.regular,
@@ -42,10 +50,14 @@ const styles = StyleSheet.create({
     color: colors.danger,
     marginTop: 4,
   },
+  helperSlot: {
+    minHeight: 18,
+    marginTop: 4,
+  },
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: colors.overlay,
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -76,7 +88,16 @@ const styles = StyleSheet.create({
     color: colors.textStrong,
   },
   closeButton: {
-    padding: spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+    minWidth: 44,
+  },
+  clearButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+    minWidth: 44,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -88,6 +109,7 @@ const styles = StyleSheet.create({
     borderColor: colors.borderMuted,
     borderRadius: 8,
     backgroundColor: colors.surfaceSubtle,
+    minHeight: 44,
   },
   searchInput: {
     flex: 1,

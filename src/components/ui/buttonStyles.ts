@@ -6,6 +6,7 @@ import { fontFamily } from '@/theme/typography';
 const styles = StyleSheet.create({
   button: {
     width: '100%',
+    minHeight: 44,
     borderRadius: 999,
     paddingVertical: spacing.sm + 6,
     paddingHorizontal: spacing.md,
@@ -21,6 +22,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderWidth: 2,
     borderColor: colors.primary,
+  },
+  disabled: {
+    opacity: 0.55,
   },
   text: {
     fontFamily: fontFamily.semiBold,

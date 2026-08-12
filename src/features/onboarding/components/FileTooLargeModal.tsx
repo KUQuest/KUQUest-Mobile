@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View, Modal, Pressable } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { CircleX, RefreshCw } from 'lucide-react-native';
 import { onboardingMessages } from '../../../locales/registrationOnboarding';
 import { useLocale } from '../../../locales/LocaleProvider';
 import { colors } from '@/theme/colors';
@@ -31,7 +31,7 @@ export const FileTooLargeModal: React.FC<FileTooLargeModalProps> = ({
         <View style={styles.modalContainer}>
           
           {/* Icon */}
-          <MaterialIcons name="cancel" size={48} color={colors.dangerIcon} style={styles.icon} />
+          <CircleX size={48} color={colors.dangerIcon} strokeWidth={2} style={styles.icon} />
           
           {/* Title & Description */}
           <Text style={styles.title}>{msg.fileTooLargeTitle}</Text>
@@ -39,7 +39,7 @@ export const FileTooLargeModal: React.FC<FileTooLargeModalProps> = ({
 
           {/* Try Again Button (Custom style to match design: Dark Green filled with refresh icon) */}
           <Pressable style={styles.tryAgainButton} onPress={onTryAgain}>
-            <MaterialIcons name="refresh" size={18} color={colors.white} style={styles.btnIcon} />
+            <RefreshCw size={18} color={colors.white} strokeWidth={2} style={styles.btnIcon} />
             <Text style={styles.tryAgainText}>{msg.tryAgain}</Text>
           </Pressable>
 

@@ -3,7 +3,7 @@ import { Image, Pressable, ScrollView, Text, View, useWindowDimensions } from 'r
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Host, Button } from '@expo/ui';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Check, CircleAlert, Image as ImageIcon, Pencil, UserRound } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import styles from '@/features/onboarding/styles/registrationStyles';
@@ -259,9 +259,9 @@ export default function OnboardingScreen() {
             <View style={currentStep >= 2 ? styles.progressBarActive : styles.progressBarInactive} />
             <View style={currentStep >= 3 ? styles.progressBarActive : styles.progressBarInactive} />
           </View>
-          {currentStep === 1 && <Pressable style={styles.avatarPlaceholder} onPress={() => void handlePickImage((uri) => setForm((previous) => ({ ...previous, profileImage: uri })), [1, 1])}>
-            {form.profileImage ? <Image source={{ uri: form.profileImage }} style={styles.avatarImage} /> : <MaterialIcons name="person" size={40} color={colors.textMuted} />}
-            <View style={styles.editBadge}><MaterialIcons name="edit" size={16} color={colors.white} /></View>
+          {currentStep === 1 && <Pressable accessibilityRole="button" accessibilityLabel={msg.addImage} style={styles.avatarPlaceholder} onPress={() => void handlePickImage((uri) => setForm((previous) => ({ ...previous, profileImage: uri })), [1, 1])}>
+            {form.profileImage ? <Image source={{ uri: form.profileImage }} style={styles.avatarImage} /> : <UserRound size={40} color={colors.textMuted} strokeWidth={2} />}
+            <View style={styles.editBadge}><Pencil size={16} color={colors.white} strokeWidth={2} /></View>
           </Pressable>}
         </View>
 
@@ -286,15 +286,15 @@ export default function OnboardingScreen() {
           </>}
 
           {currentStep === 3 && <>
-            <View style={styles.step3Section}><View style={styles.sectionHeader}><View style={styles.badgeSuccess}><MaterialIcons name="check" size={12} color={colors.white} /></View><Text style={styles.sectionTitle}>{msg.certification}</Text></View><Text style={styles.sectionDesc}>{msg.certDesc}</Text>
+            <View style={styles.step3Section}><View style={styles.sectionHeader}><View style={styles.badgeSuccess}><Check size={12} color={colors.white} strokeWidth={2.5} /></View><Text style={styles.sectionTitle}>{msg.certification}</Text></View><Text style={styles.sectionDesc}>{msg.certDesc}</Text>
               {form.certificates.map((cert, index) => <View key={`cert-${cert.id ?? index}`} style={styles.itemCard}><Input label={msg.certName} placeholder={msg.certName} value={cert.name} onChangeText={(value) => handleUpdateCertificate(index, 'name', value)} error={errors[`cert_${index}_name`]} /><Input label={msg.certIssuer} placeholder={msg.certIssuer} value={cert.issuer} onChangeText={(value) => handleUpdateCertificate(index, 'issuer', value)} error={errors[`cert_${index}_issuer`]} /><Input label={msg.certIssuedAt} placeholder="YYYY-MM-DD" value={cert.issuedAt} onChangeText={(value) => handleUpdateCertificate(index, 'issuedAt', value)} error={errors[`cert_${index}_issuedAt`]} /></View>)}
               <Pressable style={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, certificates: [...previous.certificates, { name: '', issuer: '', issuedAt: '', imageUri: '' }] }))}><Text style={styles.addMoreBtnText}>{msg.addMoreCert}</Text></Pressable>
             </View>
             <View style={styles.step3Section}><Text style={styles.sectionTitleNormal}>{msg.myWorks}</Text>
-              {form.works.map((work, index) => <View key={`work-${work.id ?? index}`} style={styles.itemCard}><Pressable style={styles.imageUploadBox} onPress={() => void handlePickImage((uri) => handleUpdateWork(index, 'imageUri', uri), [4, 3])}>{work.imageUri ? <Image source={{ uri: work.imageUri }} style={styles.uploadedImage} /> : <View style={styles.imagePlaceholderContent}><MaterialIcons name="image" size={24} color={colors.textMuted} /><Text style={styles.addImgText}>{msg.addImage}</Text></View>}</Pressable><Input label="" placeholder={msg.workTitle} value={work.title} onChangeText={(title) => handleUpdateWork(index, 'title', title)} error={errors[`work_${index}_title`]} /><TextArea label="" placeholder={msg.detailProject} value={work.detail} onChangeText={(detail) => handleUpdateWork(index, 'detail', detail)} maxLength={300} /></View>)}
+              {form.works.map((work, index) => <View key={`work-${work.id ?? index}`} style={styles.itemCard}><Pressable accessibilityRole="button" accessibilityLabel={msg.addImage} style={styles.imageUploadBox} onPress={() => void handlePickImage((uri) => handleUpdateWork(index, 'imageUri', uri), [4, 3])}>{work.imageUri ? <Image source={{ uri: work.imageUri }} style={styles.uploadedImage} /> : <View style={styles.imagePlaceholderContent}><ImageIcon size={24} color={colors.textMuted} strokeWidth={2} /><Text style={styles.addImgText}>{msg.addImage}</Text></View>}</Pressable><Input label="" accessibilityLabel={msg.workTitle} placeholder={msg.workTitle} value={work.title} onChangeText={(title) => handleUpdateWork(index, 'title', title)} error={errors[`work_${index}_title`]} /><TextArea label="" accessibilityLabel={msg.detailProject} placeholder={msg.detailProject} value={work.detail} onChangeText={(detail) => handleUpdateWork(index, 'detail', detail)} maxLength={300} /></View>)}
               <Pressable style={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, works: [...previous.works, { imageUri: '', title: '', detail: '' }] }))}><Text style={styles.addMoreBtnText}>{msg.addMoreWorks}</Text></Pressable>
             </View>
-            {submitError && <View style={styles.submitErrorCard}><MaterialIcons name="error" size={20} color={colors.danger} /><Text style={styles.submitErrorText}>{submitError}</Text></View>}
+            {submitError && <View style={styles.submitErrorCard} accessibilityRole="alert"><CircleAlert size={20} color={colors.danger} strokeWidth={2} /><Text style={styles.submitErrorText}>{submitError}</Text></View>}
             <View style={styles.buttonRow}><View style={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="outlined" label={msg.back} onPress={() => setCurrentStep(2)} style={{ width: buttonWidth }} disabled={isSubmitting} /></Host></View><View style={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="filled" label={isSubmitting ? msg.submitting : submitError ? msg.retrySubmitBtn : isEditMode ? msg.saveChanges : msg.completeBtn} onPress={() => void handleComplete()} style={{ width: buttonWidth }} disabled={isSubmitting} /></Host></View></View>
           </>}
         </View>

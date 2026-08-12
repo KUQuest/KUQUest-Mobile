@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Text, View, Pressable, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Host, Button } from '@expo/ui';
-import { SymbolView } from 'expo-symbols';
+import { GraduationCap, TriangleAlert } from 'lucide-react-native';
 import {
   AuthAdapter,
   AuthErrorCode,
@@ -88,11 +88,7 @@ export default function LoginScreen({
               accessibilityRole="text"
               accessibilityLabel={`${messages.noticeTextPrefix} ${messages.noticeEmailDomain} ${messages.noticeTextSuffix}`}
             >
-              <SymbolView
-                name="graduationcap.fill"
-                size={24}
-                tintColor={colors.primary}
-              />
+              <GraduationCap color={colors.primary} size={24} strokeWidth={2} />
               <Text style={styles.noticeText}>
                 {messages.noticeTextPrefix}{' '}
                 <Text style={styles.noticeTextBold}>
@@ -110,11 +106,7 @@ export default function LoginScreen({
                 accessibilityLabel={getAuthErrorText(error.code, currentLocale)}
                 testID="error-banner"
               >
-                <SymbolView
-                  name="exclamationmark.triangle.fill"
-                  size={22}
-                  tintColor={colors.danger}
-                />
+                <TriangleAlert color={colors.danger} size={22} strokeWidth={2} />
                 <View style={styles.errorContent}>
                   <Text style={styles.errorText} testID="error-message">
                     {getAuthErrorText(error.code, currentLocale)}
@@ -153,22 +145,10 @@ export default function LoginScreen({
 
           {/* Footer Section */}
           <View style={styles.footerSection}>
-            <View style={styles.footerLinks}>
-              <Pressable>
-                <Text style={styles.footerLinkText}>
-                  {messages.termsOfService}
-                </Text>
-              </Pressable>
-              <Pressable>
-                <Text style={styles.footerLinkText}>
-                  {messages.privacyPolicy}
-                </Text>
-              </Pressable>
-              <Pressable>
-                <Text style={styles.footerLinkText}>
-                  {messages.contactUs}
-                </Text>
-              </Pressable>
+            <View style={styles.footerLinks} accessibilityRole="text">
+              <Text style={styles.footerLinkText}>{messages.termsOfService}</Text>
+              <Text style={styles.footerLinkText}>{messages.privacyPolicy}</Text>
+              <Text style={styles.footerLinkText}>{messages.contactUs}</Text>
             </View>
             <Text style={styles.copyrightText}>
               © 2024 KUQUEST. All rights reserved.

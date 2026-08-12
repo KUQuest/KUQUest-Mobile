@@ -10,6 +10,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: 44,
   },
   box: {
     width: 20,

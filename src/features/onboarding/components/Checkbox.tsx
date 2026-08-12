@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+import { Check } from 'lucide-react-native';
 import { colors } from '@/theme/colors';
 import styles from '../styles/checkboxStyles';
 
@@ -14,9 +14,15 @@ interface CheckboxProps {
 export function Checkbox({ label, checked, onChange, error }: CheckboxProps) {
   return (
     <View style={styles.container}>
-      <Pressable style={styles.row} onPress={() => onChange(!checked)}>
+      <Pressable
+        style={styles.row}
+        onPress={() => onChange(!checked)}
+        accessibilityRole="checkbox"
+        accessibilityLabel={label}
+        accessibilityState={{ checked }}
+      >
         <View style={[styles.box, checked && styles.boxChecked, error && styles.boxError]}>
-          {checked && <SymbolView name="checkmark" size={14} tintColor={colors.white} />}
+          {checked && <Check color={colors.white} size={14} strokeWidth={2.5} />}
         </View>
         <Text style={styles.label}>{label}</Text>
       </Pressable>

@@ -30,6 +30,16 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: colors.danger,
   },
+  inputFocused: {
+    borderColor: colors.primary,
+  },
+  inputSuccess: {
+    borderColor: colors.success,
+  },
+  inputDisabled: {
+    backgroundColor: colors.surfaceMuted,
+    opacity: 0.6,
+  },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

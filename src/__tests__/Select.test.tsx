@@ -1,14 +1,12 @@
 import { fireEvent, render } from '@testing-library/react-native';
-import type { ReactNode } from 'react';
+import mockReact, { type ReactNode } from 'react';
 import { Select } from '../features/onboarding/components/Select';
 
 jest.mock('react-native/Libraries/Modal/Modal', () => {
-  const React = require('react');
-
   return {
     __esModule: true,
     default: ({ visible, children }: { visible: boolean; children: ReactNode }) =>
-      visible ? React.createElement(React.Fragment, null, children) : null,
+      visible ? mockReact.createElement(mockReact.Fragment, null, children) : null,
   };
 });
 
