@@ -2,6 +2,68 @@
 @import 'tailwindcss/preflight.css' layer(base);
 @import 'tailwindcss/utilities.css';
 
+@layer theme {
+  @theme {
+    --color-ku-background: #fffcfa;
+    --color-ku-surface: #fcf9f8;
+    --color-ku-surface-muted: #f5f2f0;
+    --color-ku-surface-subtle: #f9f9f9;
+    --color-ku-surface-accent: #f0f4f1;
+    --color-ku-surface-success: #eaf6ed;
+    --color-ku-surface-danger: #fdecef;
+    --color-ku-surface-image: #dde9d9;
+    --color-ku-surface-placeholder: #e8e8e8;
+    --color-ku-surface-nav-translucent: rgb(252 249 248 / 0.92);
+    --color-ku-border-nav: rgb(64 73 65 / 0.14);
+    --color-ku-nav-icon-muted: #66716a;
+    --color-ku-primary: #014925;
+    --color-ku-primary-dark: #004d25;
+    --color-ku-primary-deep: #003417;
+    --color-ku-text: #1b1b1b;
+    --color-ku-text-strong: #111111;
+    --color-ku-text-secondary: #404941;
+    --color-ku-text-muted: #666666;
+    --color-ku-text-subtle: #5f6b62;
+    --color-ku-text-faint: #626d65;
+    --color-ku-border: #c0c9be;
+    --color-ku-border-subtle: #e5e2e1;
+    --color-ku-border-muted: #e0e0e0;
+    --color-ku-border-accent: #d0e3d5;
+    --color-ku-border-danger: #f5c2c7;
+    --color-ku-border-success: #c5e1c9;
+    --color-ku-danger: #d32f2f;
+    --color-ku-danger-dark: #842029;
+    --color-ku-danger-light: #fca5a5;
+    --color-ku-danger-icon: #c41c1c;
+    --color-ku-success: #2e7238;
+    --color-ku-success-bright: #4caf50;
+    --color-ku-success-light: #a8f3aa;
+    --color-ku-black: #122018;
+    --color-ku-white: #fffefd;
+    --color-ku-overlay: rgb(18 32 24 / 0.4);
+
+    --spacing-ku-xs: 4px;
+    --spacing-ku-sm: 8px;
+    --spacing-ku-md: 16px;
+    --spacing-ku-lg: 24px;
+    --spacing-ku-xl: 32px;
+
+    --font-ku-regular: 'NotoSansThai_400Regular';
+    --font-ku-medium: 'NotoSansThai_500Medium';
+    --font-ku-semibold: 'NotoSansThai_600SemiBold';
+    --font-ku-bold: 'NotoSansThai_700Bold';
+    --text-ku-body: 16px;
+    --text-ku-body--line-height: 24px;
+    --text-ku-body-small: 14px;
+    --text-ku-body-small--line-height: 21px;
+    --text-ku-label: 12px;
+    --text-ku-label--line-height: 18px;
+    --text-ku-heading: 24px;
+    --text-ku-heading--line-height: 29px;
+    --radius-ku-pill: 9999px;
+  }
+}
+
 /* Platform-specific font families */
 @media android {
   :root {

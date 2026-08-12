@@ -11,6 +11,7 @@ import {
   Text as RNText,
   TextInput as RNTextInput,
   TouchableHighlight as RNTouchableHighlight,
+  TouchableOpacity as RNTouchableOpacity,
   View as RNView,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -82,6 +83,13 @@ export const Pressable = (
   return useCssElementCompat(RNPressable, props, { className: 'style' });
 };
 Pressable.displayName = 'CSS(Pressable)';
+
+export const TouchableOpacity = (
+  props: React.ComponentProps<typeof RNTouchableOpacity> & { className?: string },
+) => {
+  return useCssElementCompat(RNTouchableOpacity, props, { className: 'style' });
+};
+TouchableOpacity.displayName = 'CSS(TouchableOpacity)';
 
 export const TextInput = (
   props: React.ComponentProps<typeof RNTextInput> & { className?: string },
