@@ -5,6 +5,7 @@ const { withNativewind } = require('nativewind/metro');
 const config = getDefaultConfig(__dirname);
 
 module.exports = withNativewind(config, {
-  // CSS-enabled components in src/tw provide className support explicitly.
+  // Keep className support at the explicit src/tw wrapper boundary.
+  inlineVariables: false,
   globalClassNamePolyfill: false,
 });

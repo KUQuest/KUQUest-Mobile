@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { Image, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { cn } from '@/tw/cn';
+import { Platform } from 'react-native';
+import { Image, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from '@/tw';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { CalendarDays, Check, ChevronRight, ImagePlus, MapPin, Sparkles } from 'lucide-react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { Button } from '@/components/ui/Button';
@@ -92,8 +93,8 @@ function getDatePickerValue(value: string): Date {
 
 function FieldLabel({ children, required = false }: { children: string; required?: boolean }) {
   return (
-    <Text style={styles.fieldLabel}>
-      {children}{required ? <Text style={styles.required}> *</Text> : <Text style={styles.optional}> · optional</Text>}
+    <Text className={styles.fieldLabel}>
+      {children}{required ? <Text className={styles.required}> *</Text> : <Text className={styles.optional}> · optional</Text>}
     </Text>
   );
 }
@@ -110,19 +111,19 @@ function DateField({
   onPress: () => void;
 }) {
   return (
-    <View style={styles.fieldGroup}>
+    <View className={styles.fieldGroup}>
       <FieldLabel required>{label}</FieldLabel>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${formatDate(value)}`}
         accessibilityState={{ disabled: false }}
         onPress={onPress}
-        style={[styles.dateField, error ? styles.fieldError : null]}
+        className={cn(styles.dateField, error ? styles.fieldError : null)}
       >
-        <Text style={[styles.dateText, !value && styles.placeholderText]}>{formatDate(value)}</Text>
+        <Text className={cn(styles.dateText, !value && styles.placeholderText)}>{formatDate(value)}</Text>
         <CalendarDays color={colors.textSecondary} size={19} strokeWidth={2} />
       </Pressable>
-      <Text style={styles.helperText}>{error ?? 'Use day, month, and year.'}</Text>
+      <Text className={styles.helperText}>{error ?? 'Use day, month, and year.'}</Text>
     </View>
   );
 }
@@ -139,9 +140,9 @@ function ChoiceGroup({
   onChange: (value: string) => void;
 }) {
   return (
-    <View style={styles.fieldGroup}>
+    <View className={styles.fieldGroup}>
       <FieldLabel required>{label}</FieldLabel>
-      <View style={styles.choiceGroup} accessibilityRole="radiogroup" accessibilityLabel={label}>
+      <View className={styles.choiceGroup} accessibilityRole="radiogroup" accessibilityLabel={label}>
         {options.map((option) => {
           const selected = option.value === value;
           return (
@@ -150,9 +151,9 @@ function ChoiceGroup({
               accessibilityRole="radio"
               accessibilityState={{ selected }}
               onPress={() => onChange(option.value)}
-              style={[styles.choice, selected && styles.choiceSelected]}
+              className={cn(styles.choice, selected && styles.choiceSelected)}
             >
-              <Text style={[styles.choiceText, selected && styles.choiceTextSelected]}>{option.label}</Text>
+              <Text className={cn(styles.choiceText, selected && styles.choiceTextSelected)}>{option.label}</Text>
               {selected ? <Check color={colors.primary} size={18} strokeWidth={2.5} /> : null}
             </Pressable>
           );
@@ -244,43 +245,43 @@ export default function CreateQuestScreen() {
 
   if (completed) {
     return (
-      <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
+      <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
         <TopBar onBackPress={() => setCompleted(false)} />
-        <View style={styles.successState}>
-          <View style={styles.successIcon}><Check color={colors.primary} size={32} strokeWidth={2.5} /></View>
-          <Text style={styles.successTitle}>Quest ready to post</Text>
-          <Text style={styles.successDescription}>This is a local mockup. The quest has not been sent to the API yet.</Text>
-          <Button onPress={() => { setDraft(initialDraft); setStep(1); setCompleted(false); }} style={styles.fullButton}>Create another quest</Button>
+        <View className={styles.successState}>
+          <View className={styles.successIcon}><Check color={colors.primary} size={32} strokeWidth={2.5} /></View>
+          <Text className={styles.successTitle}>Quest ready to post</Text>
+          <Text className={styles.successDescription}>This is a local mockup. The quest has not been sent to the API yet.</Text>
+          <Button onPress={() => { setDraft(initialDraft); setStep(1); setCompleted(false); }} className={styles.fullButton}>Create another quest</Button>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
+    <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
       <TopBar onBackPress={goBack} />
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerClassName={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerBlock}>
-          <Text style={styles.eyebrow}>CREATE A QUEST</Text>
-          <Text style={styles.title}>Create Quest</Text>
-          <View style={styles.progressHeader}>
-            <Text style={styles.stepText}>Step {step} of 3</Text>
-            <Text style={styles.stepName}>{step === 1 ? 'Details' : step === 2 ? 'Schedule' : 'Review'}</Text>
+        <View className={styles.headerBlock}>
+          <Text className={styles.eyebrow}>CREATE A QUEST</Text>
+          <Text className={styles.title}>Create Quest</Text>
+          <View className={styles.progressHeader}>
+            <Text className={styles.stepText}>Step {step} of 3</Text>
+            <Text className={styles.stepName}>{step === 1 ? 'Details' : step === 2 ? 'Schedule' : 'Review'}</Text>
           </View>
-          <View style={styles.progressTrack} accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: 3, now: step }}>
-            {[1, 2, 3].map((item) => <View key={item} style={[styles.progressSegment, item <= step && styles.progressSegmentActive]} />)}
+          <View className={styles.progressTrack} accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: 3, now: step }}>
+            {[1, 2, 3].map((item) => <View key={item} className={cn(styles.progressSegment, item <= step && styles.progressSegmentActive)} />)}
           </View>
         </View>
 
         {step === 1 ? (
           <View>
-            <View style={styles.sectionHeading}>
-              <View style={styles.sectionNumber}><Text style={styles.sectionNumberText}>01</Text></View>
-              <View style={styles.sectionHeadingText}><Text style={styles.sectionTitle}>Quest details</Text><Text style={styles.sectionDescription}>Give people enough context to decide if this quest is right for them.</Text></View>
+            <View className={styles.sectionHeading}>
+              <View className={styles.sectionNumber}><Text className={styles.sectionNumberText}>01</Text></View>
+              <View className={styles.sectionHeadingText}><Text className={styles.sectionTitle}>Quest details</Text><Text className={styles.sectionDescription}>Give people enough context to decide if this quest is right for them.</Text></View>
             </View>
             <Input label="Title *" placeholder="e.g. Design a poster for the faculty fair" value={draft.title} onChangeText={(value) => updateDraft('title', value)} error={errors.title} maxLength={100} />
             <Select label="Category *" options={tagOptions} value={draft.tag} onValueChange={(value) => updateDraft('tag', value)} placeholder="Choose a category" error={errors.tag} />
@@ -292,26 +293,26 @@ export default function CreateQuestScreen() {
 
         {step === 2 ? (
           <View>
-            <View style={styles.sectionHeading}>
-              <View style={styles.sectionNumber}><Text style={styles.sectionNumberText}>02</Text></View>
-              <View style={styles.sectionHeadingText}><Text style={styles.sectionTitle}>Schedule & location</Text><Text style={styles.sectionDescription}>Set a clear window for the work. You can keep the location flexible.</Text></View>
+            <View className={styles.sectionHeading}>
+              <View className={styles.sectionNumber}><Text className={styles.sectionNumberText}>02</Text></View>
+              <View className={styles.sectionHeadingText}><Text className={styles.sectionTitle}>Schedule & location</Text><Text className={styles.sectionDescription}>Set a clear window for the work. You can keep the location flexible.</Text></View>
             </View>
             <DateField label="Start date" value={draft.startDate} error={errors.startDate} onPress={() => setDateField('startDate')} />
             <DateField label="Deadline" value={draft.deadline} error={errors.deadline} onPress={() => setDateField('deadline')} />
-            <View style={styles.fieldGroup}>
+            <View className={styles.fieldGroup}>
               <FieldLabel>Location</FieldLabel>
-              <View style={styles.inputWithIcon}>
+              <View className={styles.inputWithIcon}>
                 <MapPin color={colors.textMuted} size={18} strokeWidth={2} />
-                <TextInput style={styles.iconInput} placeholder="e.g. Faculty building or online" placeholderTextColor={colors.textFaint} value={draft.location} onChangeText={(value) => updateDraft('location', value)} accessibilityLabel="Location" />
+                <TextInput className={styles.iconInput} placeholder="e.g. Faculty building or online" placeholderTextColor={colors.textFaint} value={draft.location} onChangeText={(value) => updateDraft('location', value)} accessibilityLabel="Location" />
               </View>
             </View>
-            <View style={styles.fieldGroup}>
+            <View className={styles.fieldGroup}>
               <FieldLabel>Images</FieldLabel>
-              <Pressable accessibilityRole="button" accessibilityLabel="Add up to 3 quest images" onPress={() => void pickImages()} style={styles.imagePicker}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Add up to 3 quest images" onPress={() => void pickImages()} className={styles.imagePicker}>
                 {draft.imageUris.length > 0 ? (
-                  <View style={styles.imageGrid}>{draft.imageUris.map((uri) => <Image key={uri} source={{ uri }} style={styles.previewImage} />)}</View>
+                  <View className={styles.imageGrid}>{draft.imageUris.map((uri) => <Image key={uri} source={{ uri }} className={styles.previewImage} />)}</View>
                 ) : (
-                  <><ImagePlus color={colors.primary} size={28} strokeWidth={1.8} /><Text style={styles.imageTitle}>Add images</Text><Text style={styles.helperText}>Up to 3 photos · optional</Text></>
+                  <><ImagePlus color={colors.primary} size={28} strokeWidth={1.8} /><Text className={styles.imageTitle}>Add images</Text><Text className={styles.helperText}>Up to 3 photos · optional</Text></>
                 )}
               </Pressable>
             </View>
@@ -320,32 +321,32 @@ export default function CreateQuestScreen() {
 
         {step === 3 ? (
           <View>
-            <View style={styles.sectionHeading}>
-              <View style={styles.sectionNumber}><Text style={styles.sectionNumberText}>03</Text></View>
-              <View style={styles.sectionHeadingText}><Text style={styles.sectionTitle}>Participants & reward</Text><Text style={styles.sectionDescription}>Choose how people join and what each participant receives.</Text></View>
+            <View className={styles.sectionHeading}>
+              <View className={styles.sectionNumber}><Text className={styles.sectionNumberText}>03</Text></View>
+              <View className={styles.sectionHeadingText}><Text className={styles.sectionTitle}>Participants & reward</Text><Text className={styles.sectionDescription}>Choose how people join and what each participant receives.</Text></View>
             </View>
             <ChoiceGroup label="Candidate mode" value={draft.candidateMode} options={candidateOptions} onChange={(value) => updateDraft('candidateMode', value)} />
-            <Text style={styles.choiceHint}>{draft.candidateMode === 'NO_CANDIDATE' ? 'Automatically accepts people in the order they apply.' : 'You review applicants and choose who can join.'}</Text>
+            <Text className={styles.choiceHint}>{draft.candidateMode === 'NO_CANDIDATE' ? 'Automatically accepts people in the order they apply.' : 'You review applicants and choose who can join.'}</Text>
             <ChoiceGroup label="Participation" value={draft.participation} options={participationOptions} onChange={(value) => updateDraft('participation', value)} />
             <Input label="Headcount *" placeholder="e.g. 3" value={draft.headcount} onChangeText={(value) => updateDraft('headcount', value.replace(/[^0-9]/g, ''))} error={errors.headcount} keyboardType="number-pad" />
-            <View style={styles.fieldGroup}>
+            <View className={styles.fieldGroup}>
               <FieldLabel required>Wage per person</FieldLabel>
-              <View style={styles.currencyInput}>
-                <Text style={styles.currencySymbol}>฿</Text>
-                <TextInput style={styles.currencyTextInput} placeholder="0.00" placeholderTextColor={colors.textFaint} value={draft.wage} onChangeText={(value) => updateDraft('wage', value.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" accessibilityLabel="Wage per person in Thai baht" />
-                <Text style={styles.currencyUnit}>THB</Text>
+              <View className={styles.currencyInput}>
+                <Text className={styles.currencySymbol}>฿</Text>
+                <TextInput className={styles.currencyTextInput} placeholder="0.00" placeholderTextColor={colors.textFaint} value={draft.wage} onChangeText={(value) => updateDraft('wage', value.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" accessibilityLabel="Wage per person in Thai baht" />
+                <Text className={styles.currencyUnit}>THB</Text>
               </View>
-              <Text style={errors.wage ? styles.errorText : styles.helperText}>{errors.wage ?? 'Paid to each accepted participant.'}</Text>
+              <Text className={errors.wage ? styles.errorText : styles.helperText}>{errors.wage ?? 'Paid to each accepted participant.'}</Text>
             </View>
-            <View style={styles.reviewHeading}><Sparkles color={colors.primary} size={18} strokeWidth={2} /><Text style={styles.reviewTitle}>Review before posting</Text></View>
-            <View style={styles.reviewCard}>{summary.map((item) => <View key={item.label} style={styles.summaryRow}><Text style={styles.summaryLabel}>{item.label}</Text><Text style={styles.summaryValue}>{item.value}</Text></View>)}</View>
+            <View className={styles.reviewHeading}><Sparkles color={colors.primary} size={18} strokeWidth={2} /><Text className={styles.reviewTitle}>Review before posting</Text></View>
+            <View className={styles.reviewCard}>{summary.map((item) => <View key={item.label} className={styles.summaryRow}><Text className={styles.summaryLabel}>{item.label}</Text><Text className={styles.summaryValue}>{item.value}</Text></View>)}</View>
           </View>
         ) : null}
       </ScrollView>
 
-      <View style={styles.actionBar}>
-        <Button variant="secondary" onPress={goBack} style={styles.backButton}>Back</Button>
-        <Button onPress={goNext} style={styles.nextButton}><View style={styles.buttonContent}><Text style={styles.primaryButtonText}>{step === 3 ? 'Complete' : 'Next'}</Text><ChevronRight color={colors.white} size={18} strokeWidth={2.5} /></View></Button>
+      <View className={styles.actionBar}>
+        <Button variant="secondary" onPress={goBack} className={styles.backButton}>Back</Button>
+        <Button onPress={goNext} className={styles.nextButton}><View className={styles.buttonContent}><Text className={styles.primaryButtonText}>{step === 3 ? 'Complete' : 'Next'}</Text><ChevronRight color={colors.white} size={18} strokeWidth={2.5} /></View></Button>
       </View>
 
       {dateField ? <DateTimePicker value={getDatePickerValue(draft[dateField])} mode="date" display={Platform.OS === 'ios' ? 'spinner' : 'default'} onChange={handleDateChange} minimumDate={dateField === 'deadline' && draft.startDate ? getDatePickerValue(draft.startDate) : undefined} /> : null}

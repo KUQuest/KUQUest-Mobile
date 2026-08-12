@@ -1,50 +1,10 @@
-import { StyleSheet } from 'react-native';
-import { colors } from '@/theme/colors';
-import { spacing } from '@/theme/spacing';
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    position: 'relative',
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 0,
-    elevation: 0,
-    shadowOpacity: 0,
-  },
-  profileContainer: {
-    alignItems: 'flex-start',
-    backgroundColor: colors.surface,
-    borderBottomWidth: 0,
-    elevation: 0,
-    paddingHorizontal: spacing.lg,
-    shadowOpacity: 0,
-  },
-  boardContainer: {
-    alignItems: 'flex-end',
-    paddingHorizontal: spacing.md,
-  },
-  detailContainer: {
-    alignItems: 'flex-end',
-    paddingHorizontal: spacing.md,
-  },
-  backButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backButtonPosition: {
-    left: spacing.md,
-    position: 'absolute',
-  },
-  logo: {
-    resizeMode: 'contain',
-  },
-  profileLogo: {
-    height: 36,
-    width: 80,
-  },
-});
+const styles = {
+  container: 'w-full items-end justify-center relative px-[16px] bg-ku-surface border-b-0',
+  profileContainer: 'items-start bg-ku-surface border-b-0 px-[24px]',
+  boardContainer: 'items-end px-[16px]',
+  detailContainer: 'items-end px-[16px]',
+  backButton: 'items-center justify-center',
+  backButtonPosition: 'left-[16px] absolute',
+} as const;
 
 export default styles;

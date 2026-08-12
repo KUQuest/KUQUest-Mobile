@@ -1,5 +1,7 @@
 import React from 'react';
-import { Pressable, Text, View, useWindowDimensions } from 'react-native';
+import { cn } from '@/tw/cn';
+import { useWindowDimensions } from 'react-native';
+import { Pressable, Text, View } from '@/tw';
 import {
   CheckSquare,
   CircleUserRound,
@@ -41,10 +43,10 @@ export function BottomNav({ state, descriptors, navigation, insets }: TabBarProp
 
   return (
     <View
-      style={[styles.container, { paddingBottom: Math.max(insets.bottom, 10) }]}
+      className={styles.container} style={{ paddingBottom: Math.max(insets.bottom, 10) }}
       accessibilityRole="toolbar"
     >
-      <View style={[styles.bar, { minHeight: metrics.navHeight }]}>
+      <View className={styles.bar} style={{ minHeight: metrics.navHeight }}>
         {state.routes.map((route) => {
           const item = navigationItems.find(({ routeName }) => routeName === route.name);
           if (!item) return null;
@@ -73,24 +75,17 @@ export function BottomNav({ state, descriptors, navigation, insets }: TabBarProp
               accessibilityRole={item.isCreate ? 'button' : 'tab'}
               {...(item.isCreate ? {} : { accessibilityState: { selected: isFocused } })}
               onPress={onPress}
-              style={({ pressed }) => [
-                styles.item,
-                { minHeight: metrics.navItemHeight },
-                item.isCreate && styles.createItem,
-                pressed && styles.itemPressed,
-              ]}
+              className={cn(styles.item, item.isCreate && styles.createItem)}
+              style={{ minHeight: metrics.navItemHeight }}
               testID={`tab-${item.routeName}`}
             >
               {item.isCreate ? (
                 <View
-                  style={[
-                    styles.createIcon,
-                    {
+                  className={styles.createIcon} style={{
                       height: metrics.createButtonSize,
                       marginTop: metrics.createButtonOffset,
                       width: metrics.createButtonSize,
-                    },
-                  ]}
+                    }}
                 >
                   <Icon color={colors.white} size={metrics.createIconSize} strokeWidth={2.5} />
                 </View>
@@ -102,16 +97,17 @@ export function BottomNav({ state, descriptors, navigation, insets }: TabBarProp
                 />
               )}
               <Text
-                style={[
-                  styles.label,
-                  { fontSize: metrics.labelFontSize, lineHeight: metrics.labelLineHeight },
-                  isFocused && !item.isCreate && styles.activeLabel,
-                ]}
+                className={cn(styles.label, isFocused && !item.isCreate && styles.activeLabel)}
+                style={{
+                  fontSize: metrics.labelFontSize,
+                  includeFontPadding: false,
+                  lineHeight: metrics.labelLineHeight,
+                }}
                 numberOfLines={1}
               >
                 {messages[item.shortLabelKey]}
               </Text>
-              {item.hasUnread ? <View accessibilityLabel="Unread messages" style={styles.unreadBadge} /> : null}
+              {item.hasUnread ? <View accessibilityLabel="Unread messages" className={styles.unreadBadge} /> : null}
             </Pressable>
           );
         })}

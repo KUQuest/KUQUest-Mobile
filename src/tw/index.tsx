@@ -5,6 +5,10 @@ import {
 import { Link as RouterLink } from 'expo-router';
 import React from 'react';
 import {
+  ActivityIndicator as RNActivityIndicator,
+  FlatList as RNFlatList,
+  type FlatListProps,
+  KeyboardAvoidingView as RNKeyboardAvoidingView,
   Pressable as RNPressable,
   ScrollView as RNScrollView,
   StyleSheet,
@@ -15,6 +19,7 @@ import {
   View as RNView,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
+import { SafeAreaView as RNSafeAreaView } from 'react-native-safe-area-context';
 
 type CssElement = (
   component: unknown,
@@ -36,10 +41,10 @@ export const Link = Object.assign(
   (props: React.ComponentProps<typeof RouterLink> & { className?: string }) =>
     useCssElementCompat(RouterLink, props, { className: 'style' }),
   {
-    Trigger: RouterLink.Trigger,
-    Menu: RouterLink.Menu,
-    MenuAction: RouterLink.MenuAction,
-    Preview: RouterLink.Preview,
+    Trigger: RouterLink?.Trigger,
+    Menu: RouterLink?.Menu,
+    MenuAction: RouterLink?.MenuAction,
+    Preview: RouterLink?.Preview,
   },
 );
 
@@ -91,6 +96,40 @@ export const TouchableOpacity = (
 };
 TouchableOpacity.displayName = 'CSS(TouchableOpacity)';
 
+export const ActivityIndicator = (
+  props: React.ComponentProps<typeof RNActivityIndicator> & { className?: string },
+) => {
+  return useCssElementCompat(RNActivityIndicator, props, { className: 'style' });
+};
+ActivityIndicator.displayName = 'CSS(ActivityIndicator)';
+
+export const KeyboardAvoidingView = (
+  props: React.ComponentProps<typeof RNKeyboardAvoidingView> & { className?: string },
+) => {
+  return useCssElementCompat(RNKeyboardAvoidingView, props, { className: 'style' });
+};
+KeyboardAvoidingView.displayName = 'CSS(KeyboardAvoidingView)';
+
+export const SafeAreaView = (
+  props: React.ComponentProps<typeof RNSafeAreaView> & { className?: string },
+) => {
+  return useCssElementCompat(RNSafeAreaView, props, { className: 'style' });
+};
+SafeAreaView.displayName = 'CSS(SafeAreaView)';
+
+export function FlatList<ItemT>(
+  props: FlatListProps<ItemT> & {
+    className?: string;
+    contentContainerClassName?: string;
+  },
+) {
+  return useCssElementCompat(RNFlatList, props, {
+    className: 'style',
+    contentContainerClassName: 'contentContainerStyle',
+  });
+}
+FlatList.displayName = 'CSS(FlatList)';
+
 export const TextInput = (
   props: React.ComponentProps<typeof RNTextInput> & { className?: string },
 ) => {
@@ -113,9 +152,11 @@ export const AnimatedScrollView = (
 };
 AnimatedScrollView.displayName = 'CSS(AnimatedScrollView)';
 
-function CSSTouchableHighlight(
-  props: React.ComponentProps<typeof RNTouchableHighlight>,
-) {
+type CssTouchableHighlightProps = React.ComponentProps<typeof RNTouchableHighlight> & {
+  className?: string;
+};
+
+function CSSTouchableHighlight({ className: _className, ...props }: CssTouchableHighlightProps) {
   const flattenedStyle = StyleSheet.flatten(props.style as never) as
     | Record<string, unknown>
     | undefined;
@@ -130,9 +171,7 @@ function CSSTouchableHighlight(
   );
 }
 
-export const TouchableHighlight = (
-  props: React.ComponentProps<typeof RNTouchableHighlight>,
-) => {
+export const TouchableHighlight = (props: CssTouchableHighlightProps) => {
   return useCssElementCompat(CSSTouchableHighlight, props, {
     className: 'style',
   });

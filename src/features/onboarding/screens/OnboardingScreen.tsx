@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Image, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { cn } from '@/tw/cn';
+import { Alert, Platform, useWindowDimensions } from 'react-native';
+import { Image, Pressable, SafeAreaView, ScrollView, Text, View } from '@/tw';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Host, Button } from '@expo/ui';
 import { CalendarDays, Check, CircleAlert, Image as ImageIcon, Pencil, Trash2, UserRound } from 'lucide-react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import styles from '@/features/onboarding/styles/registrationStyles';
 import { colors } from '@/theme/colors';
@@ -334,17 +335,17 @@ export default function OnboardingScreen() {
   };
 
   if (isLoadingProfile) {
-    return <SafeAreaView style={[styles.safeArea, { justifyContent: 'center', alignItems: 'center' }]}><Text style={styles.loadingText}>{msg.loadingProfile}</Text></SafeAreaView>;
+    return <SafeAreaView className={cn(styles.safeArea, 'items-center justify-center')}><Text className={styles.loadingText}>{msg.loadingProfile}</Text></SafeAreaView>;
   }
 
   if (loadError) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loadErrorCard} accessibilityRole="alert">
+      <SafeAreaView className={styles.safeArea}>
+        <View className={styles.loadErrorCard} accessibilityRole="alert">
           <CircleAlert size={24} color={colors.danger} strokeWidth={2} />
-          <Text style={styles.submitErrorText}>{msg.loadError}</Text>
-          <Pressable accessibilityRole="button" style={styles.addMoreBtn} onPress={() => setLoadAttempt((attempt) => attempt + 1)}>
-            <Text style={styles.addMoreBtnText}>{msg.retrySubmitBtn}</Text>
+          <Text className={styles.submitErrorText}>{msg.loadError}</Text>
+          <Pressable accessibilityRole="button" className={styles.addMoreBtn} onPress={() => setLoadAttempt((attempt) => attempt + 1)}>
+            <Text className={styles.addMoreBtnText}>{msg.retrySubmitBtn}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -352,26 +353,26 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.headerSection}>
-          <Text style={styles.title}>{msg.title}</Text>
-          <Text style={styles.stepTitle}>{isEditMode ? msg.editProfile : currentStep === 1 ? msg.stepTitle : currentStep === 2 ? msg.step2Title : msg.step3Title}</Text>
-          {!isEditMode && <Text style={styles.stepIndicator}>{currentStep === 1 ? msg.stepIndicator : currentStep === 2 ? msg.step2Indicator : msg.step3Indicator}</Text>}
-          <View style={styles.progressContainer} accessibilityLabel={msg.progressLabel(currentStep)}>
+    <SafeAreaView className={styles.safeArea}>
+      <ScrollView contentContainerClassName={styles.scrollContent}>
+        <View className={styles.headerSection}>
+          <Text className={styles.title}>{msg.title}</Text>
+          <Text className={styles.stepTitle}>{isEditMode ? msg.editProfile : currentStep === 1 ? msg.stepTitle : currentStep === 2 ? msg.step2Title : msg.step3Title}</Text>
+          {!isEditMode && <Text className={styles.stepIndicator}>{currentStep === 1 ? msg.stepIndicator : currentStep === 2 ? msg.step2Indicator : msg.step3Indicator}</Text>}
+          <View className={styles.progressContainer} accessibilityLabel={msg.progressLabel(currentStep)}>
             {[1, 2, 3].map((progressStep) => (
-              <View key={progressStep} style={currentStep >= progressStep ? styles.progressBarActive : styles.progressBarInactive} />
+              <View key={progressStep} className={currentStep >= progressStep ? styles.progressBarActive : styles.progressBarInactive} />
             ))}
           </View>
-          {currentStep === 1 && <Pressable accessibilityRole="button" accessibilityLabel={msg.addImage} style={styles.avatarPlaceholder} onPress={() => void handlePickImage((uri) => setForm((previous) => ({ ...previous, profileImage: uri })), [1, 1])}>
-            {form.profileImage ? <Image source={{ uri: form.profileImage }} style={styles.avatarImage} /> : <UserRound size={40} color={colors.textMuted} strokeWidth={2} />}
-            <View style={styles.editBadge}><Pencil size={16} color={colors.white} strokeWidth={2} /></View>
+          {currentStep === 1 && <Pressable accessibilityRole="button" accessibilityLabel={msg.addImage} className={styles.avatarPlaceholder} onPress={() => void handlePickImage((uri) => setForm((previous) => ({ ...previous, profileImage: uri })), [1, 1])}>
+            {form.profileImage ? <Image source={{ uri: form.profileImage }} className={styles.avatarImage} /> : <UserRound size={40} color={colors.textMuted} strokeWidth={2} />}
+            <View className={styles.editBadge}><Pencil size={16} color={colors.white} strokeWidth={2} /></View>
           </Pressable>}
         </View>
 
-        {submitError && currentStep !== 3 ? <View style={styles.submitErrorCard} accessibilityRole="alert"><CircleAlert size={20} color={colors.danger} strokeWidth={2} /><Text style={styles.submitErrorText}>{submitError}</Text></View> : null}
+        {submitError && currentStep !== 3 ? <View className={styles.submitErrorCard} accessibilityRole="alert"><CircleAlert size={20} color={colors.danger} strokeWidth={2} /><Text className={styles.submitErrorText}>{submitError}</Text></View> : null}
 
-        <View style={styles.formSection}>
+        <View className={styles.formSection}>
           {currentStep === 1 && <>
             <Input label={msg.nameSurname} placeholder={msg.nameSurnamePlaceholder} value={form.name} onChangeText={(name) => setForm({ ...form, name })} error={errors.name} />
             <Input label={msg.telephone} placeholder={msg.telephonePlaceholder} value={form.telephone} onChangeText={(telephone) => setForm({ ...form, telephone })} keyboardType="phone-pad" error={errors.telephone} />
@@ -379,70 +380,70 @@ export default function OnboardingScreen() {
             {selectedOccupation?.requiresStudentId && <Input label={msg.studentId} placeholder={msg.studentIdPlaceholder} value={form.studentId} onChangeText={(studentId) => setForm({ ...form, studentId })} error={errors.studentId} />}
             <Select label={msg.faculty} placeholder={msg.facultyPlaceholder} options={facultyOptions} value={form.faculty} onValueChange={(faculty) => setForm({ ...form, faculty, department: '' })} error={errors.faculty} searchable searchPlaceholder={msg.searchFaculty} noResultsMessage={msg.noSearchResults} emptyMessage={msg.noSelectOptions} loadingMessage={msg.loadingOptions} clearSearchLabel={msg.clearSearch} closeLabel={msg.closeSelect} />
             <Select label={msg.department} placeholder={form.faculty ? msg.departmentPlaceholder : msg.departmentSelectFacultyFirst} options={departmentOptions} value={form.department} onValueChange={(department) => setForm({ ...form, department })} error={errors.department} searchable disabled={!form.faculty} searchPlaceholder={msg.searchDepartment} noResultsMessage={msg.noSearchResults} emptyMessage={msg.noSelectOptions} loadingMessage={msg.loadingOptions} clearSearchLabel={msg.clearSearch} closeLabel={msg.closeSelect} />
-            <Text style={styles.termsLabel}>{msg.termsAndConditions}</Text>
-            <ScrollView style={styles.termsBox} contentContainerStyle={styles.termsBoxContent} nestedScrollEnabled><Text style={styles.termsTitle}>{msg.privacyPolicy}</Text><Text style={styles.termsText}>{msg.privacyPolicyText}</Text></ScrollView>
+            <Text className={styles.termsLabel}>{msg.termsAndConditions}</Text>
+            <ScrollView className={styles.termsBox} contentContainerClassName={styles.termsBoxContent} nestedScrollEnabled><Text className={styles.termsTitle}>{msg.privacyPolicy}</Text><Text className={styles.termsText}>{msg.privacyPolicyText}</Text></ScrollView>
             <Checkbox label={msg.acceptTerms} checked={form.acceptedTerms} onChange={(acceptedTerms) => setForm({ ...form, acceptedTerms })} error={errors.acceptedTerms} />
-            <View style={styles.buttonRow}><View style={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="outlined" label={msg.back} onPress={() => isEditMode ? router.back() : void authService.signOut().then(() => router.replace('/'))} style={{ width: buttonWidth }} /></Host></View><View style={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="filled" label={msg.next} onPress={() => { if (validate()) setCurrentStep(2); }} style={{ width: buttonWidth }} /></Host></View></View>
+            <View className={styles.buttonRow}><View className={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="outlined" label={msg.back} onPress={() => isEditMode ? router.back() : void authService.signOut().then(() => router.replace('/'))} style={{ width: buttonWidth }} /></Host></View><View className={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="filled" label={msg.next} onPress={() => { if (validate()) setCurrentStep(2); }} style={{ width: buttonWidth }} /></Host></View></View>
           </>}
 
           {currentStep === 2 && <>
-            <View style={styles.step2Card}><Text style={styles.step2CardTitle}>{msg.aboutYourself}</Text><Text style={styles.step2CardSubtitle}>{msg.aboutYourselfSub}</Text><TextArea label={msg.descriptionLabel} placeholder={msg.descriptionPlaceholder} value={form.description} onChangeText={(description) => setForm({ ...form, description })} maxLength={1000} /></View>
-            <View style={styles.skipButtonContainer}><Pressable onPress={() => setCurrentStep(3)} style={styles.skipButton}><Text style={styles.skipButtonText}>{msg.skip}</Text></Pressable></View>
-            <View style={styles.buttonRow}><View style={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="outlined" label={msg.back} onPress={() => setCurrentStep(1)} style={{ width: buttonWidth }} /></Host></View><View style={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="filled" label={msg.next} onPress={() => setCurrentStep(3)} style={{ width: buttonWidth }} /></Host></View></View>
+            <View className={styles.step2Card}><Text className={styles.step2CardTitle}>{msg.aboutYourself}</Text><Text className={styles.step2CardSubtitle}>{msg.aboutYourselfSub}</Text><TextArea label={msg.descriptionLabel} placeholder={msg.descriptionPlaceholder} value={form.description} onChangeText={(description) => setForm({ ...form, description })} maxLength={1000} /></View>
+            <View className={styles.skipButtonContainer}><Pressable onPress={() => setCurrentStep(3)} className={styles.skipButton}><Text className={styles.skipButtonText}>{msg.skip}</Text></Pressable></View>
+            <View className={styles.buttonRow}><View className={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="outlined" label={msg.back} onPress={() => setCurrentStep(1)} style={{ width: buttonWidth }} /></Host></View><View className={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="filled" label={msg.next} onPress={() => setCurrentStep(3)} style={{ width: buttonWidth }} /></Host></View></View>
           </>}
 
           {currentStep === 3 && <>
-            <Text style={styles.sectionDesc}>{msg.step3Desc}</Text>
-            <View style={styles.step3Section}><View style={styles.sectionHeader}><View style={styles.badgeSuccess}><Check size={12} color={colors.white} strokeWidth={2.5} /></View><Text style={styles.sectionTitle}>{msg.certification}</Text></View><Text style={styles.sectionDesc}>{msg.certDesc}</Text>
-              {form.certificates.map((cert, index) => <View key={`cert-${cert.id ?? index}`} style={styles.itemCard}>
-                <View style={styles.itemCardHeader}>
-                  <Text style={styles.itemLabel}>{msg.certification}</Text>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`${msg.removeItem} ${index + 1}`} onPress={() => removeCertificate(index)} style={styles.removeButton}>
+            <Text className={styles.sectionDesc}>{msg.step3Desc}</Text>
+            <View className={styles.step3Section}><View className={styles.sectionHeader}><View className={styles.badgeSuccess}><Check size={12} color={colors.white} strokeWidth={2.5} /></View><Text className={styles.sectionTitle}>{msg.certification}</Text></View><Text className={styles.sectionDesc}>{msg.certDesc}</Text>
+              {form.certificates.map((cert, index) => <View key={`cert-${cert.id ?? index}`} className={styles.itemCard}>
+                <View className={styles.itemCardHeader}>
+                  <Text className={styles.itemLabel}>{msg.certification}</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={`${msg.removeItem} ${index + 1}`} onPress={() => removeCertificate(index)} className={styles.removeButton}>
                     <Trash2 size={18} color={colors.danger} strokeWidth={2} />
                   </Pressable>
                 </View>
-                <Pressable accessibilityRole="button" accessibilityLabel={msg.addImage} style={[styles.imageUploadBox, styles.certificateImageBox]} onPress={() => void handlePickImage((uri) => handleUpdateCertificate(index, 'imageUri', uri), [4, 3])}>
-                  {cert.imageUri ? <Image source={{ uri: cert.imageUri }} style={styles.uploadedImage} /> : <View style={styles.imagePlaceholderContent}><ImageIcon size={24} color={colors.textMuted} strokeWidth={2} /><Text style={styles.addImgText}>{msg.addImage}</Text></View>}
+                <Pressable accessibilityRole="button" accessibilityLabel={msg.addImage} className={cn(styles.imageUploadBox, styles.certificateImageBox)} onPress={() => void handlePickImage((uri) => handleUpdateCertificate(index, 'imageUri', uri), [4, 3])}>
+                  {cert.imageUri ? <Image source={{ uri: cert.imageUri }} className={styles.uploadedImage} /> : <View className={styles.imagePlaceholderContent}><ImageIcon size={24} color={colors.textMuted} strokeWidth={2} /><Text className={styles.addImgText}>{msg.addImage}</Text></View>}
                 </Pressable>
                 <Input label={msg.certName} placeholder={msg.certName} value={cert.name} onChangeText={(value) => handleUpdateCertificate(index, 'name', value)} error={errors[`cert_${index}_name`]} />
                 <Input label={msg.certIssuer} placeholder={msg.certIssuer} value={cert.issuer} onChangeText={(value) => handleUpdateCertificate(index, 'issuer', value)} error={errors[`cert_${index}_issuer`]} />
-                <View style={styles.dateInputWrapper}>
-                  <Text style={styles.dateInputLabel}>{msg.certIssuedAt}</Text>
-                  <Pressable accessibilityRole="button" accessibilityLabel={cert.issuedAt || msg.certIssuedAt} accessibilityState={{ expanded: datePickerTarget?.index === index }} style={[styles.dateInputBox, errors[`cert_${index}_issuedAt`] ? styles.dateInputError : null]} onPress={() => openDatePicker(index, cert.issuedAt)}>
-                    <Text style={cert.issuedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{cert.issuedAt || 'YYYY-MM-DD'}</Text>
+                <View className={styles.dateInputWrapper}>
+                  <Text className={styles.dateInputLabel}>{msg.certIssuedAt}</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={cert.issuedAt || msg.certIssuedAt} accessibilityState={{ expanded: datePickerTarget?.index === index }} className={cn(styles.dateInputBox, errors[`cert_${index}_issuedAt`] ? styles.dateInputError : null)} onPress={() => openDatePicker(index, cert.issuedAt)}>
+                    <Text className={cert.issuedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{cert.issuedAt || 'YYYY-MM-DD'}</Text>
                     <CalendarDays size={18} color={colors.textMuted} strokeWidth={2} />
                   </Pressable>
-                  {errors[`cert_${index}_issuedAt`] ? <Text style={styles.fieldErrorText}>{errors[`cert_${index}_issuedAt`]}</Text> : null}
+                  {errors[`cert_${index}_issuedAt`] ? <Text className={styles.fieldErrorText}>{errors[`cert_${index}_issuedAt`]}</Text> : null}
                 </View>
               </View>)}
-              <Pressable style={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, certificates: [...previous.certificates, createEmptyCertificate()] }))}><Text style={styles.addMoreBtnText}>{msg.addMoreCert}</Text></Pressable>
+              <Pressable className={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, certificates: [...previous.certificates, createEmptyCertificate()] }))}><Text className={styles.addMoreBtnText}>{msg.addMoreCert}</Text></Pressable>
             </View>
-            <View style={styles.step3Section}><Text style={styles.sectionTitleNormal}>{msg.experience}</Text>
-              {form.experiences.map((experience, index) => <View key={`experience-${experience.id ?? index}`} style={styles.itemCard}>
-                <View style={styles.itemCardHeader}><Text style={styles.itemLabel}>{msg.experience}</Text><Pressable accessibilityRole="button" accessibilityLabel={`${msg.removeItem} ${index + 1}`} onPress={() => removeExperience(index)} style={styles.removeButton}><Trash2 size={18} color={colors.danger} strokeWidth={2} /></Pressable></View>
+            <View className={styles.step3Section}><Text className={styles.sectionTitleNormal}>{msg.experience}</Text>
+              {form.experiences.map((experience, index) => <View key={`experience-${experience.id ?? index}`} className={styles.itemCard}>
+                <View className={styles.itemCardHeader}><Text className={styles.itemLabel}>{msg.experience}</Text><Pressable accessibilityRole="button" accessibilityLabel={`${msg.removeItem} ${index + 1}`} onPress={() => removeExperience(index)} className={styles.removeButton}><Trash2 size={18} color={colors.danger} strokeWidth={2} /></Pressable></View>
                 <Input label={msg.jobTitle} placeholder={msg.jobTitle} value={experience.title} onChangeText={(value) => handleUpdateExperience(index, 'title', value)} error={errors[`experience_${index}_title`]} />
                 <Select label={msg.employmentType} placeholder={msg.employmentTypePlaceholder} options={msg.employmentTypes} value={experience.employmentType} onValueChange={(value) => handleUpdateExperience(index, 'employmentType', value)} error={errors[`experience_${index}_employmentType`]} />
                 <Input label={msg.organization} placeholder={msg.organization} value={experience.organization} onChangeText={(value) => handleUpdateExperience(index, 'organization', value)} />
                 <TextArea label={msg.descriptionLabel} placeholder={msg.descriptionPlaceholder} value={experience.description} onChangeText={(value) => handleUpdateExperience(index, 'description', value)} maxLength={1000} />
-                <View style={styles.dateInputWrapper}><Text style={styles.dateInputLabel}>{msg.startMonthYear}</Text><Pressable accessibilityRole="button" accessibilityLabel={formatMonthYear(experience.startedAt, locale) || msg.startMonthYear} style={[styles.dateInputBox, errors[`experience_${index}_startedAt`] ? styles.dateInputError : null]} onPress={() => openExperienceDatePicker(index, 'startedAt', experience.startedAt)}><Text style={experience.startedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{formatMonthYear(experience.startedAt, locale) || msg.startMonthYear}</Text><CalendarDays size={18} color={colors.textMuted} strokeWidth={2} /></Pressable>{errors[`experience_${index}_startedAt`] ? <Text style={styles.fieldErrorText}>{errors[`experience_${index}_startedAt`]}</Text> : null}</View>
-                <View style={styles.dateInputWrapper}><Text style={styles.dateInputLabel}>{msg.endMonthYear}</Text><Pressable accessibilityRole="button" accessibilityLabel={formatMonthYear(experience.endedAt, locale) || msg.present} style={[styles.dateInputBox, errors[`experience_${index}_endedAt`] ? styles.dateInputError : null]} onPress={() => openExperienceDatePicker(index, 'endedAt', experience.endedAt)}><Text style={experience.endedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{formatMonthYear(experience.endedAt, locale) || msg.present}</Text><CalendarDays size={18} color={colors.textMuted} strokeWidth={2} /></Pressable>{experience.endedAt ? <Pressable accessibilityRole="button" accessibilityLabel={msg.present} onPress={() => handleUpdateExperience(index, 'endedAt', '')}><Text style={styles.addImgText}>{msg.present}</Text></Pressable> : null}{errors[`experience_${index}_endedAt`] ? <Text style={styles.fieldErrorText}>{errors[`experience_${index}_endedAt`]}</Text> : null}</View>
+                <View className={styles.dateInputWrapper}><Text className={styles.dateInputLabel}>{msg.startMonthYear}</Text><Pressable accessibilityRole="button" accessibilityLabel={formatMonthYear(experience.startedAt, locale) || msg.startMonthYear} className={cn(styles.dateInputBox, errors[`experience_${index}_startedAt`] ? styles.dateInputError : null)} onPress={() => openExperienceDatePicker(index, 'startedAt', experience.startedAt)}><Text className={experience.startedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{formatMonthYear(experience.startedAt, locale) || msg.startMonthYear}</Text><CalendarDays size={18} color={colors.textMuted} strokeWidth={2} /></Pressable>{errors[`experience_${index}_startedAt`] ? <Text className={styles.fieldErrorText}>{errors[`experience_${index}_startedAt`]}</Text> : null}</View>
+                <View className={styles.dateInputWrapper}><Text className={styles.dateInputLabel}>{msg.endMonthYear}</Text><Pressable accessibilityRole="button" accessibilityLabel={formatMonthYear(experience.endedAt, locale) || msg.present} className={cn(styles.dateInputBox, errors[`experience_${index}_endedAt`] ? styles.dateInputError : null)} onPress={() => openExperienceDatePicker(index, 'endedAt', experience.endedAt)}><Text className={experience.endedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{formatMonthYear(experience.endedAt, locale) || msg.present}</Text><CalendarDays size={18} color={colors.textMuted} strokeWidth={2} /></Pressable>{experience.endedAt ? <Pressable accessibilityRole="button" accessibilityLabel={msg.present} onPress={() => handleUpdateExperience(index, 'endedAt', '')}><Text className={styles.addImgText}>{msg.present}</Text></Pressable> : null}{errors[`experience_${index}_endedAt`] ? <Text className={styles.fieldErrorText}>{errors[`experience_${index}_endedAt`]}</Text> : null}</View>
               </View>)}
-              <Pressable style={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, experiences: [...previous.experiences, createEmptyExperience()] }))}><Text style={styles.addMoreBtnText}>{msg.addMoreExp}</Text></Pressable>
+              <Pressable className={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, experiences: [...previous.experiences, createEmptyExperience()] }))}><Text className={styles.addMoreBtnText}>{msg.addMoreExp}</Text></Pressable>
             </View>
-            <View style={styles.step3Section}><Text style={styles.sectionTitleNormal}>{msg.myWorks}</Text>
-              {form.works.map((work, index) => <View key={`work-${work.id ?? index}`} style={styles.itemCard}>
-                <View style={styles.itemCardHeader}>
-                  <Text style={styles.itemLabel}>{msg.myWorks}</Text>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`${msg.removeItem} ${index + 1}`} onPress={() => removeWork(index)} style={styles.removeButton}>
+            <View className={styles.step3Section}><Text className={styles.sectionTitleNormal}>{msg.myWorks}</Text>
+              {form.works.map((work, index) => <View key={`work-${work.id ?? index}`} className={styles.itemCard}>
+                <View className={styles.itemCardHeader}>
+                  <Text className={styles.itemLabel}>{msg.myWorks}</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={`${msg.removeItem} ${index + 1}`} onPress={() => removeWork(index)} className={styles.removeButton}>
                     <Trash2 size={18} color={colors.danger} strokeWidth={2} />
                   </Pressable>
                 </View>
-                <Pressable accessibilityRole="button" accessibilityLabel={msg.addImage} style={styles.imageUploadBox} onPress={() => void handlePickImage((uri) => handleUpdateWork(index, 'imageUri', uri), [4, 3])}>{work.imageUri ? <Image source={{ uri: work.imageUri }} style={styles.uploadedImage} /> : <View style={styles.imagePlaceholderContent}><ImageIcon size={24} color={colors.textMuted} strokeWidth={2} /><Text style={styles.addImgText}>{msg.addImage}</Text></View>}</Pressable><Input label="" accessibilityLabel={msg.workTitle} placeholder={msg.workTitle} value={work.title} onChangeText={(title) => handleUpdateWork(index, 'title', title)} error={errors[`work_${index}_title`]} /><TextArea label="" accessibilityLabel={msg.detailProject} placeholder={msg.detailProject} value={work.detail} onChangeText={(detail) => handleUpdateWork(index, 'detail', detail)} maxLength={1000} />
+                <Pressable accessibilityRole="button" accessibilityLabel={msg.addImage} className={styles.imageUploadBox} onPress={() => void handlePickImage((uri) => handleUpdateWork(index, 'imageUri', uri), [4, 3])}>{work.imageUri ? <Image source={{ uri: work.imageUri }} className={styles.uploadedImage} /> : <View className={styles.imagePlaceholderContent}><ImageIcon size={24} color={colors.textMuted} strokeWidth={2} /><Text className={styles.addImgText}>{msg.addImage}</Text></View>}</Pressable><Input label="" accessibilityLabel={msg.workTitle} placeholder={msg.workTitle} value={work.title} onChangeText={(title) => handleUpdateWork(index, 'title', title)} error={errors[`work_${index}_title`]} /><TextArea label="" accessibilityLabel={msg.detailProject} placeholder={msg.detailProject} value={work.detail} onChangeText={(detail) => handleUpdateWork(index, 'detail', detail)} maxLength={1000} />
               </View>)}
-              <Pressable style={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, works: [...previous.works, createEmptyWork()] }))}><Text style={styles.addMoreBtnText}>{msg.addMoreWorks}</Text></Pressable>
+              <Pressable className={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, works: [...previous.works, createEmptyWork()] }))}><Text className={styles.addMoreBtnText}>{msg.addMoreWorks}</Text></Pressable>
             </View>
-            {submitError && <View style={styles.submitErrorCard} accessibilityRole="alert"><CircleAlert size={20} color={colors.danger} strokeWidth={2} /><Text style={styles.submitErrorText}>{submitError}</Text></View>}
-            <View style={styles.buttonRow}><View style={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="outlined" label={msg.back} onPress={() => setCurrentStep(2)} style={{ width: buttonWidth }} disabled={isSubmitting} /></Host></View><View style={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="filled" label={isSubmitting ? msg.submitting : submitError ? msg.retrySubmitBtn : isEditMode ? msg.saveChanges : msg.completeBtn} onPress={() => void handleComplete()} style={{ width: buttonWidth }} disabled={isSubmitting} /></Host></View></View>
+            {submitError && <View className={styles.submitErrorCard} accessibilityRole="alert"><CircleAlert size={20} color={colors.danger} strokeWidth={2} /><Text className={styles.submitErrorText}>{submitError}</Text></View>}
+            <View className={styles.buttonRow}><View className={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="outlined" label={msg.back} onPress={() => setCurrentStep(2)} style={{ width: buttonWidth }} disabled={isSubmitting} /></Host></View><View className={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="filled" label={isSubmitting ? msg.submitting : submitError ? msg.retrySubmitBtn : isEditMode ? msg.saveChanges : msg.completeBtn} onPress={() => void handleComplete()} style={{ width: buttonWidth }} disabled={isSubmitting} /></Host></View></View>
           </>}
         </View>
       </ScrollView>

@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
+import { cn } from '@/tw/cn';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Check, X } from 'lucide-react-native';
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Modal } from 'react-native';
+import { Pressable, SafeAreaView, ScrollView, Text, View } from '@/tw';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { authService } from '../auth/AuthService';
 import { TopBar } from '@/components/ui/TopBar';
@@ -53,22 +55,22 @@ function proofLabel(quest: QuestBoardQuest, messages: QuestBoardMessages): strin
 }
 
 function NotFoundState({ title, description, actionLabel, onAction }: { title: string; description: string; actionLabel: string; onAction: () => void }) {
-  return <View accessibilityRole="alert" style={styles.section}><Text style={styles.sectionTitle}>{title}</Text><Text style={styles.body}>{description}</Text><Pressable accessibilityRole="button" onPress={onAction} style={styles.primaryAction}><Text style={styles.primaryActionText}>{actionLabel}</Text></Pressable></View>;
+  return <View accessibilityRole="alert" className={styles.section}><Text className={styles.sectionTitle}>{title}</Text><Text className={styles.body}>{description}</Text><Pressable accessibilityRole="button" onPress={onAction} className={styles.primaryAction}><Text className={styles.primaryActionText}>{actionLabel}</Text></Pressable></View>;
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {
-  return <View style={styles.requirementRow}><Text style={styles.requirementLabel}>{label}</Text><Text style={styles.requirementValue}>{value}</Text></View>;
+  return <View className={styles.requirementRow}><Text className={styles.requirementLabel}>{label}</Text><Text className={styles.requirementValue}>{value}</Text></View>;
 }
 
 function ConfirmationSheet({ locale, messages, quest, onCancel, onConfirm }: { locale: 'en' | 'th'; messages: QuestBoardMessages; quest: QuestBoardQuest; onCancel: () => void; onConfirm: () => void }) {
   return (
     <Modal animationType="slide" onRequestClose={onCancel} transparent visible>
-      <Pressable onPress={onCancel} style={styles.modalBackdrop}>
-        <Pressable onPress={() => undefined} style={styles.confirmSheet}>
-          <View style={styles.confirmHeader}><Text style={styles.confirmTitle}>{messages.confirmApplicationTitle}</Text><Pressable accessibilityLabel={messages.notYet} accessibilityRole="button" onPress={onCancel}><X color={colors.textStrong} size={24} /></Pressable></View>
-          <Text style={styles.confirmDescription}>{messages.confirmApplicationDescription}</Text>
-          <View style={styles.confirmSummary}><Text style={styles.confirmSummaryText}>{quest.title}</Text><Text style={styles.confirmSummaryText}>{`฿${quest.rewardPerPerson.toLocaleString('en-US')} ${messages.perPerson}`}</Text><Text style={styles.confirmSummaryText}>{`${messages.deadline}: ${formatDeadline(quest.deadline, locale)}`}</Text></View>
-          <View style={styles.confirmActions}><Pressable accessibilityRole="button" onPress={onCancel} style={styles.cancelAction}><Text style={styles.cancelActionText}>{messages.notYet}</Text></Pressable><Pressable accessibilityRole="button" onPress={onConfirm} style={styles.confirmAction} testID="confirm-quest-application"><Text style={styles.confirmActionText}>{messages.confirmApplication}</Text></Pressable></View>
+      <Pressable onPress={onCancel} className={styles.modalBackdrop}>
+        <Pressable onPress={() => undefined} className={styles.confirmSheet}>
+          <View className={styles.confirmHeader}><Text className={styles.confirmTitle}>{messages.confirmApplicationTitle}</Text><Pressable accessibilityLabel={messages.notYet} accessibilityRole="button" onPress={onCancel}><X color={colors.textStrong} size={24} /></Pressable></View>
+          <Text className={styles.confirmDescription}>{messages.confirmApplicationDescription}</Text>
+          <View className={styles.confirmSummary}><Text className={styles.confirmSummaryText}>{quest.title}</Text><Text className={styles.confirmSummaryText}>{`฿${quest.rewardPerPerson.toLocaleString('en-US')} ${messages.perPerson}`}</Text><Text className={styles.confirmSummaryText}>{`${messages.deadline}: ${formatDeadline(quest.deadline, locale)}`}</Text></View>
+          <View className={styles.confirmActions}><Pressable accessibilityRole="button" onPress={onCancel} className={styles.cancelAction}><Text className={styles.cancelActionText}>{messages.notYet}</Text></Pressable><Pressable accessibilityRole="button" onPress={onConfirm} className={styles.confirmAction} testID="confirm-quest-application"><Text className={styles.confirmActionText}>{messages.confirmApplication}</Text></Pressable></View>
         </Pressable>
       </Pressable>
     </Modal>
@@ -134,7 +136,7 @@ export default function QuestDetailScreen({ now = FIXTURE_NOW, previewState, que
 
   if (!quest) {
     return (
-      <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
+      <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
         <TopBar onBackPress={() => router.back()} variant="detail" />
         <NotFoundState title={messages.questNotFound} description={messages.questNotFoundDescription} actionLabel={messages.back} onAction={() => router.back()} />
       </SafeAreaView>
@@ -142,16 +144,16 @@ export default function QuestDetailScreen({ now = FIXTURE_NOW, previewState, que
   }
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
+    <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
       <TopBar onBackPress={() => router.back()} variant="detail" />
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}><Text style={styles.category}>{categoryLabel(quest, messages)}</Text><Text accessibilityRole="header" style={styles.title}>{quest.title}</Text><Text style={styles.creator}>{`${messages.creator} ${quest.creator.name}${quest.creator.faculty ? ` · ${quest.creator.faculty}` : ''}`}</Text></View>
-        <View style={styles.heroCard}><View style={styles.heroPrimary}><Text style={styles.heroLabel}>{messages.reward}</Text><Text style={styles.heroValue}>{`฿${quest.rewardPerPerson.toLocaleString('en-US')} ${messages.perPerson}`}</Text></View><View style={styles.heroDetails}><View style={styles.heroItem}><Text style={styles.heroLabel}>{messages.deadline}</Text><Text style={styles.heroValue}>{formatDeadline(quest.deadline, locale)}</Text><Text style={styles.heroDetail}>{locationLabel(quest, messages)}</Text></View><View style={[styles.heroItem, styles.heroItemDivider]}><Text style={styles.heroLabel}>{messages.spots}</Text><Text style={styles.heroValue}>{`${quest.acceptedParticipants}/${quest.headcount}`}</Text><Text style={styles.heroDetail}>{quest.participationMode === 'team' ? messages.team : messages.singlePerson}</Text></View></View></View>
-        <View style={styles.section}><Text style={styles.sectionTitle}>{messages.description}</Text><Text style={styles.body}>{quest.description}</Text></View>
-        <View style={styles.section}><Text style={styles.sectionTitle}>{messages.requirements}</Text><View style={styles.requirementCard}><DetailRow label={messages.completionCriteria} value={quest.completionCriteria} /><DetailRow label={messages.proofRequired} value={proofLabel(quest, messages)} /><DetailRow label={messages.candidateMode} value={quest.candidateMode === 'NO_CANDIDATE' ? messages.firstCome : messages.reviewCandidates} /><DetailRow label={messages.participation} value={quest.participationMode === 'team' ? messages.team : messages.singlePerson} /><DetailRow label={messages.location} value={locationLabel(quest, messages)} /></View></View>
-        {statusTitle ? <View accessibilityRole="alert" style={[styles.statusCard, availability !== 'available' && previewApplicationStatus === 'none' && styles.statusCardBlocked]}><Check color={availability === 'available' ? colors.primary : colors.textMuted} size={25} strokeWidth={2.4} /><Text style={styles.statusTitle}>{statusTitle}</Text><Text style={styles.statusDescription}>{previewApplicationStatus === 'accepted' || previewApplicationStatus === 'pending' ? messages.viewMyQuests : messages.unavailableApplication}</Text></View> : null}
+      <ScrollView contentContainerClassName={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View className={styles.header}><Text className={styles.category}>{categoryLabel(quest, messages)}</Text><Text accessibilityRole="header" className={styles.title}>{quest.title}</Text><Text className={styles.creator}>{`${messages.creator} ${quest.creator.name}${quest.creator.faculty ? ` · ${quest.creator.faculty}` : ''}`}</Text></View>
+        <View className={styles.heroCard}><View className={styles.heroPrimary}><Text className={styles.heroLabel}>{messages.reward}</Text><Text className={styles.heroValue}>{`฿${quest.rewardPerPerson.toLocaleString('en-US')} ${messages.perPerson}`}</Text></View><View className={styles.heroDetails}><View className={styles.heroItem}><Text className={styles.heroLabel}>{messages.deadline}</Text><Text className={styles.heroValue}>{formatDeadline(quest.deadline, locale)}</Text><Text className={styles.heroDetail}>{locationLabel(quest, messages)}</Text></View><View className={cn(styles.heroItem, styles.heroItemDivider)}><Text className={styles.heroLabel}>{messages.spots}</Text><Text className={styles.heroValue}>{`${quest.acceptedParticipants}/${quest.headcount}`}</Text><Text className={styles.heroDetail}>{quest.participationMode === 'team' ? messages.team : messages.singlePerson}</Text></View></View></View>
+        <View className={styles.section}><Text className={styles.sectionTitle}>{messages.description}</Text><Text className={styles.body}>{quest.description}</Text></View>
+        <View className={styles.section}><Text className={styles.sectionTitle}>{messages.requirements}</Text><View className={styles.requirementCard}><DetailRow label={messages.completionCriteria} value={quest.completionCriteria} /><DetailRow label={messages.proofRequired} value={proofLabel(quest, messages)} /><DetailRow label={messages.candidateMode} value={quest.candidateMode === 'NO_CANDIDATE' ? messages.firstCome : messages.reviewCandidates} /><DetailRow label={messages.participation} value={quest.participationMode === 'team' ? messages.team : messages.singlePerson} /><DetailRow label={messages.location} value={locationLabel(quest, messages)} /></View></View>
+        {statusTitle ? <View accessibilityRole="alert" className={cn(styles.statusCard, availability !== 'available' && previewApplicationStatus === 'none' && styles.statusCardBlocked)}><Check color={availability === 'available' ? colors.primary : colors.textMuted} size={25} strokeWidth={2.4} /><Text className={styles.statusTitle}>{statusTitle}</Text><Text className={styles.statusDescription}>{previewApplicationStatus === 'accepted' || previewApplicationStatus === 'pending' ? messages.viewMyQuests : messages.unavailableApplication}</Text></View> : null}
       </ScrollView>
-      {canApply ? <View style={[styles.actionBar, { paddingBottom: Math.max(spacing.md, insets.bottom + spacing.sm) }]}><Pressable accessibilityRole="button" onPress={() => setManualConfirmationOpen(true)} style={styles.primaryAction} testID="quest-apply-button"><Text style={styles.primaryActionText}>{messages.applyNow}</Text></Pressable></View> : null}
+      {canApply ? <View className={styles.actionBar} style={{ paddingBottom: Math.max(spacing.md, insets.bottom + spacing.sm) }}><Pressable accessibilityRole="button" onPress={() => setManualConfirmationOpen(true)} className={styles.primaryAction} testID="quest-apply-button"><Text className={styles.primaryActionText}>{messages.applyNow}</Text></Pressable></View> : null}
       {confirmationOpen ? <ConfirmationSheet locale={locale} messages={messages} onCancel={() => { setManualConfirmationOpen(false); setDismissedIntent(routeIntentKey); }} onConfirm={confirmApplication} quest={quest} /> : null}
     </SafeAreaView>
   );

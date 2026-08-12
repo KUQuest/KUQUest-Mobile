@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TextInputProps } from 'react-native';
+import { cn } from '@/tw/cn';
+import { TextInputProps } from 'react-native';
+import { Text, TextInput, View } from '@/tw';
 import { colors } from '@/theme/colors';
 import styles from '../styles/textAreaStyles';
 
@@ -15,17 +17,10 @@ export function TextArea({ label, error, maxLength, value, success = false, styl
   const [focused, setFocused] = useState(false);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+    <View className={styles.container}>
+      <Text className={styles.label}>{label}</Text>
       <TextInput
-        style={[
-          styles.input,
-          error ? styles.inputError : null,
-          success ? styles.inputSuccess : null,
-          focused ? styles.inputFocused : null,
-          !editable ? styles.inputDisabled : null,
-          style,
-        ]}
+        className={cn(styles.input, error ? styles.inputError : null, success ? styles.inputSuccess : null, focused ? styles.inputFocused : null, !editable ? styles.inputDisabled : null)} style={style}
         placeholderTextColor={colors.textFaint}
         multiline
         textAlignVertical="top"
@@ -44,14 +39,14 @@ export function TextArea({ label, error, maxLength, value, success = false, styl
         }}
         {...props}
       />
-      <View style={styles.footerRow}>
+      <View className={styles.footerRow}>
         {error ? (
-          <Text style={styles.errorText}>{error}</Text>
+          <Text className={styles.errorText}>{error}</Text>
         ) : (
-          <View style={{ flex: 1 }} />
+          <View className="flex-1" />
         )}
         {maxLength !== undefined && (
-          <Text style={styles.counterText}>
+          <Text className={styles.counterText}>
             {value.length} / {maxLength}
           </Text>
         )}

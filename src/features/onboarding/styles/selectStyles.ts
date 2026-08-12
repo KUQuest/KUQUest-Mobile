@@ -1,149 +1,28 @@
-import { StyleSheet } from 'react-native';
-import { colors } from '@/theme/colors';
-import { spacing } from '@/theme/spacing';
-import { fontFamily } from '@/theme/typography';
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: spacing.md,
-    width: '100%',
-  },
-  label: {
-    fontFamily: fontFamily.bold,
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginBottom: 6,
-  },
-  selectBox: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    borderRadius: 8,
-    paddingHorizontal: spacing.sm + 4,
-    paddingVertical: spacing.sm + 2,
-    backgroundColor: colors.white,
-    minHeight: 44,
-  },
-  selectBoxError: {
-    borderColor: colors.danger,
-  },
-  selectBoxSuccess: {
-    borderColor: colors.success,
-  },
-  selectBoxDisabled: {
-    backgroundColor: colors.surfaceMuted,
-    opacity: 0.6,
-  },
-  selectText: {
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    color: colors.textStrong,
-  },
-  placeholderText: {
-    color: colors.textFaint,
-  },
-  errorText: {
-    fontFamily: fontFamily.regular,
-    fontSize: 12,
-    color: colors.danger,
-    marginTop: 4,
-  },
-  helperSlot: {
-    minHeight: 18,
-    marginTop: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: colors.overlay,
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    width: '100%',
-  },
-  modalDismissArea: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.white,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderMuted,
-  },
-  modalTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 16,
-    color: colors.textStrong,
-  },
-  closeButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-    minWidth: 44,
-  },
-  clearButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-    minWidth: 44,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: spacing.md,
-    marginVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    borderRadius: 8,
-    backgroundColor: colors.surfaceSubtle,
-    minHeight: 44,
-  },
-  searchInput: {
-    flex: 1,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    color: colors.textStrong,
-  },
-  optionItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.surfaceMuted,
-  },
-  optionText: {
-    fontFamily: fontFamily.regular,
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
-  optionTextSelected: {
-    fontFamily: fontFamily.bold,
-    color: colors.primary,
-  },
-  emptyText: {
-    padding: spacing.lg,
-    textAlign: 'center',
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    color: colors.textMuted,
-  },
-});
+const styles = {
+  container: 'mb-[16px] w-full',
+  label: 'font-ku-bold text-[12px] text-ku-text-secondary mb-[6px]',
+  selectBox: 'flex-row justify-between items-center border border-ku-border-muted rounded-[8px] px-[12px] py-[10px] bg-ku-white min-h-[44px]',
+  selectBoxError: 'border-ku-danger',
+  selectBoxSuccess: 'border-ku-success',
+  selectBoxDisabled: 'bg-ku-surface-muted opacity-[0.6]',
+  selectText: 'font-ku-regular text-[14px] text-ku-text-strong',
+  placeholderText: 'text-ku-text-faint',
+  errorText: 'font-ku-regular text-[12px] text-ku-danger mt-[4px]',
+  helperSlot: 'min-h-[18px] mt-[4px]',
+  modalOverlay: 'flex-1 justify-end bg-ku-overlay',
+  keyboardAvoidingView: 'flex-1 justify-end w-full',
+  modalDismissArea: 'flex-1 justify-end',
+  modalContent: 'bg-ku-white rounded-tl-[16px] rounded-tr-[16px] max-h-[80%]',
+  modalHeader: 'flex-row justify-between items-center p-[16px] border-b border-b-ku-border-muted',
+  modalTitle: 'font-ku-bold text-[16px] text-ku-text-strong',
+  closeButton: 'items-center justify-center min-h-[44px] min-w-[44px]',
+  clearButton: 'items-center justify-center min-h-[44px] min-w-[44px]',
+  searchContainer: 'flex-row items-center mx-[16px] my-[8px] px-[8px] border border-ku-border-muted rounded-[8px] bg-ku-surface-subtle min-h-[44px]',
+  searchInput: 'flex-1 px-[8px] py-[8px] font-ku-regular text-[14px] text-ku-text-strong',
+  optionItem: 'flex-row justify-between items-center py-[14px] px-[16px] border-b border-b-ku-surface-muted',
+  optionText: 'font-ku-regular text-[16px] text-ku-text-secondary',
+  optionTextSelected: 'font-ku-bold text-ku-primary',
+  emptyText: 'p-[24px] text-center font-ku-regular text-[14px] text-ku-text-muted',
+} as const;
 
 export default styles;

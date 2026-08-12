@@ -1,11 +1,9 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CheckSquare, Grid2X2, MessageSquare, Plus, type LucideIcon } from 'lucide-react-native';
 
+import { Pressable, SafeAreaView, Text, View } from '@/tw';
 import { useLocale } from '@/locales/LocaleProvider';
 import { navigationMessages } from '@/locales/navigationMessages';
 import { colors } from '@/theme/colors';
-import { typography } from '@/theme/typography';
 import { TopBar } from './TopBar';
 
 interface FeaturePlaceholderProps {
@@ -27,65 +25,16 @@ export function FeaturePlaceholder({ titleKey, actionLabel, onAction }: FeatureP
   const { descriptionKey, icon: Icon } = featureConfig[titleKey];
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
+    <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-ku-background">
       <TopBar />
-      <View style={styles.content}>
-        <View style={styles.iconFrame}>
+      <View className="flex-1 justify-start p-[24px] pt-[56px]">
+        <View className="items-center bg-ku-surface-accent border-ku-border-accent rounded-[24px] border h-[64px] justify-center mb-[20px] w-[64px]">
           <Icon color={colors.primary} size={32} strokeWidth={2} />
         </View>
-        <Text style={styles.title}>{messages[titleKey]}</Text>
-        <Text style={styles.description}>{messages[descriptionKey]}</Text>
-        {actionLabel && onAction ? <Pressable accessibilityRole="button" style={styles.action} onPress={onAction}><Text style={styles.actionText}>{actionLabel}</Text></Pressable> : null}
+        <Text className="font-ku-bold text-ku-primary text-[24px] text-left">{messages[titleKey]}</Text>
+        <Text className="font-ku-regular text-ku-text-secondary mt-[8px] max-w-[360px] text-[16px] text-left leading-[24px]">{messages[descriptionKey]}</Text>
+        {actionLabel && onAction ? <Pressable accessibilityRole="button" className="self-start bg-ku-primary rounded-ku-pill mt-[24px] min-h-[44px] justify-center px-[24px]" onPress={onAction}><Text className="text-ku-white font-semibold">{actionLabel}</Text></Pressable> : null}
       </View>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: colors.background,
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'flex-start',
-    padding: 24,
-    paddingTop: 56,
-  },
-  iconFrame: {
-    alignItems: 'center',
-    backgroundColor: colors.surfaceAccent,
-    borderColor: colors.borderAccent,
-    borderRadius: 24,
-    borderWidth: 1,
-    height: 64,
-    justifyContent: 'center',
-    marginBottom: 20,
-    width: 64,
-  },
-  title: {
-    ...typography.heading,
-    color: colors.primary,
-    textAlign: 'left',
-  },
-  description: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginTop: 8,
-    maxWidth: 360,
-    textAlign: 'left',
-  },
-  action: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.primary,
-    borderRadius: 999,
-    marginTop: 24,
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  actionText: {
-    color: colors.white,
-    fontWeight: '600',
-  },
-});

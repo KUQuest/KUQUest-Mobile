@@ -1,48 +1,11 @@
-import { StyleSheet } from 'react-native';
-import { colors } from '@/theme/colors';
-import { spacing } from '@/theme/spacing';
-import { fontFamily } from '@/theme/typography';
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: spacing.md,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 44,
-  },
-  box: {
-    width: 20,
-    height: 20,
-    borderWidth: 1.5,
-    borderColor: colors.borderMuted,
-    borderRadius: 4,
-    marginRight: spacing.sm + 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.white,
-  },
-  boxChecked: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  boxError: {
-    borderColor: colors.danger,
-  },
-  label: {
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    color: colors.textSecondary,
-    flex: 1,
-  },
-  errorText: {
-    fontFamily: fontFamily.regular,
-    fontSize: 12,
-    color: colors.danger,
-    marginTop: 4,
-    marginLeft: 30,
-  },
-});
+const styles = {
+  container: 'mb-[16px]',
+  row: 'flex-row items-center min-h-[44px]',
+  box: 'w-[20px] h-[20px] border-[1.5px] border-ku-border-muted rounded-[4px] mr-[10px] justify-center items-center bg-ku-white',
+  boxChecked: 'bg-ku-primary border-ku-primary',
+  boxError: 'border-ku-danger',
+  label: 'font-ku-regular text-[14px] text-ku-text-secondary flex-1',
+  errorText: 'font-ku-regular text-[12px] text-ku-danger mt-[4px] ml-[30px]',
+} as const;
 
 export default styles;

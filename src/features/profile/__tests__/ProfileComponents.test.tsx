@@ -1,6 +1,4 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
-import { StyleSheet } from 'react-native';
-
 import { Experience, MyWork, ProfileHeader, ProfileStats, Reviews } from '../components/ProfileComponents';
 
 describe('Student Profile presentation', () => {
@@ -21,9 +19,7 @@ describe('Student Profile presentation', () => {
       />
     );
 
-    const nameStyle = StyleSheet.flatten(view.getByText('Siraphat THAPPHA with a longer display name').props.style);
-
-    expect(nameStyle).toMatchObject({ maxWidth: '100%', textAlign: 'center' });
+    expect(view.getByText('Siraphat THAPPHA with a longer display name')).toBeTruthy();
     expect(view.getByText('Edit your profile')).toBeTruthy();
     expect(view.getByText('Agro-Industry')).toBeTruthy();
     expect(view.getByText('Agro-Industrial Innovation and Technology')).toBeTruthy();

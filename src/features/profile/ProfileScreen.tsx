@@ -1,7 +1,8 @@
 import React, { useCallback, useState } from 'react';
-import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { cn } from '@/tw/cn';
+import { useWindowDimensions } from 'react-native';
+import { Pressable, SafeAreaView, ScrollView, Text, View } from '@/tw';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TopBar } from '../../components/ui/TopBar';
 import { profileMessages } from '../../locales/profileMessages';
@@ -46,26 +47,23 @@ export default function Profile() {
   const content = viewData;
 
   if (loadError) {
-    return <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}><TopBar /><View style={styles.errorState}><Text style={styles.statusText}>{messages.error}</Text><Pressable accessibilityRole="button" style={styles.retryButton} onPress={() => setLoadAttempt((attempt) => attempt + 1)}><Text style={styles.retryButtonText}>{messages.retry}</Text></Pressable></View></SafeAreaView>;
+    return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}><TopBar /><View className={styles.errorState}><Text className={styles.statusText}>{messages.error}</Text><Pressable accessibilityRole="button" className={styles.retryButton} onPress={() => setLoadAttempt((attempt) => attempt + 1)}><Text className={styles.retryButtonText}>{messages.retry}</Text></Pressable></View></SafeAreaView>;
   }
   if (!content) {
-    return <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}><TopBar /><Text style={styles.statusText}>{messages.loading}</Text></SafeAreaView>;
+    return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}><TopBar /><Text className={styles.statusText}>{messages.loading}</Text></SafeAreaView>;
   }
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
+    <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
       <TopBar />
       <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          {
-            gap: layoutMetrics.sectionGap,
-            paddingBottom: 16,
-            paddingHorizontal: layoutMetrics.pagePadding,
-            paddingTop: layoutMetrics.pagePadding,
-          },
-          width >= 600 && styles.tabletContent,
-        ]}
+        contentContainerClassName={cn(styles.content, width >= 600 && styles.tabletContent)}
+        contentContainerStyle={{
+          gap: layoutMetrics.sectionGap,
+          paddingBottom: 16,
+          paddingHorizontal: layoutMetrics.pagePadding,
+          paddingTop: layoutMetrics.pagePadding,
+        }}
       >
         <ProfileHeader data={content} editProfileLabel={messages.edit} onEditPress={() => router.push({ pathname: '/onboarding', params: { mode: 'edit' } })} />
         <ProfileStats stats={content.stats} ratingLabel={messages.rating} questsLabel={messages.totalQuests} errorText={content.sectionErrors.reputation ? messages.sectionUnavailable : undefined} retryLabel={messages.retry} onRetry={() => setLoadAttempt((attempt) => attempt + 1)} />

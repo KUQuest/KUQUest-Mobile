@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from '@/tw';
 import { useRouter } from "expo-router";
 import { colors } from '@/theme/colors';
 import LoginScreen from './LoginScreen';
@@ -43,57 +43,18 @@ export default function Index() {
   }, [attempt, handleNavigate]);
 
   if (status === 'loading') {
-    return <View style={styles.loading}><ActivityIndicator size="large" color={colors.primary} /></View>;
+    return <View className="flex-1 justify-center items-center bg-ku-background"><ActivityIndicator size="large" color={colors.primary} /></View>;
   }
   if (status === 'error') {
     return (
-      <View style={styles.error} accessibilityRole="alert">
-        <Text style={styles.errorTitle}>{messages.sessionLoadTitle}</Text>
-        <Text style={styles.errorText}>{messages.sessionLoadDescription}</Text>
-        <Pressable accessibilityRole="button" style={styles.retry} onPress={() => { setStatus('loading'); setAttempt((value) => value + 1); }}>
-          <Text style={styles.retryText}>{messages.retryButton}</Text>
+      <View className="flex-1 justify-center items-center p-[24px] bg-ku-background" accessibilityRole="alert">
+        <Text className="text-ku-text-strong text-[18px] font-bold text-center">{messages.sessionLoadTitle}</Text>
+        <Text className="text-ku-text-secondary mt-[8px] text-center">{messages.sessionLoadDescription}</Text>
+        <Pressable accessibilityRole="button" className="mt-[20px] rounded-ku-pill bg-ku-primary min-h-[44px] px-[24px] justify-center" onPress={() => { setStatus('loading'); setAttempt((value) => value + 1); }}>
+          <Text className="text-ku-white font-semibold">{messages.retryButton}</Text>
         </Pressable>
       </View>
     );
   }
   return <LoginScreen onNavigate={handleNavigate} />;
 }
-
-const styles = {
-  loading: {
-    flex: 1,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    backgroundColor: colors.background,
-  },
-  error: {
-    flex: 1,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    padding: 24,
-    backgroundColor: colors.background,
-  },
-  errorTitle: {
-    color: colors.textStrong,
-    fontSize: 18,
-    fontWeight: '700' as const,
-    textAlign: 'center' as const,
-  },
-  errorText: {
-    color: colors.textSecondary,
-    marginTop: 8,
-    textAlign: 'center' as const,
-  },
-  retry: {
-    marginTop: 20,
-    borderRadius: 999,
-    backgroundColor: colors.primary,
-    minHeight: 44,
-    paddingHorizontal: 24,
-    justifyContent: 'center' as const,
-  },
-  retryText: {
-    color: colors.white,
-    fontWeight: '600' as const,
-  },
-};

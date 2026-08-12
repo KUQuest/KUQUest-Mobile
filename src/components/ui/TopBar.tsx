@@ -1,7 +1,8 @@
 import React from 'react';
-import { Image } from 'expo-image';
+import { cn } from '@/tw/cn';
+import { Image, TouchableOpacity, View } from '@/tw';
 import { ChevronLeft } from 'lucide-react-native';
-import { TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { useWindowDimensions } from 'react-native';
 import { colors } from '@/theme/colors';
 import { getAppChromeMetrics } from '@/theme/layout';
 import styles from './topBarStyles';
@@ -17,13 +18,7 @@ export function TopBar({ onBackPress, variant = 'default' }: TopBarProps) {
 
   return (
     <View
-      style={[
-        styles.container,
-        variant === 'profile' && styles.profileContainer,
-        variant === 'board' && styles.boardContainer,
-        variant === 'detail' && styles.detailContainer,
-        { height: variant === 'profile' ? 48 : metrics.headerHeight },
-      ]}
+      className={cn(styles.container, variant === 'profile' && styles.profileContainer, variant === 'board' && styles.boardContainer, variant === 'detail' && styles.detailContainer)} style={{ height: variant === 'profile' ? 48 : metrics.headerHeight }}
     >
       {onBackPress ? (
         <TouchableOpacity
@@ -31,7 +26,7 @@ export function TopBar({ onBackPress, variant = 'default' }: TopBarProps) {
           accessibilityRole="button"
           hitSlop={8}
           onPress={onBackPress}
-          style={[styles.backButton, styles.backButtonPosition, { height: metrics.backButtonSize, width: metrics.backButtonSize }]}
+          className={cn(styles.backButton, styles.backButtonPosition)} style={{ height: metrics.backButtonSize, width: metrics.backButtonSize }}
           testID="header-back-button"
         >
           <ChevronLeft color={colors.primaryDeep} size={metrics.iconSize} strokeWidth={2.5} />
@@ -41,7 +36,7 @@ export function TopBar({ onBackPress, variant = 'default' }: TopBarProps) {
         accessibilityLabel="KUQuest"
         contentFit="contain"
         source={require('../../../topbar-logo.svg')}
-        style={[styles.logo, { height: metrics.logoHeight, width: metrics.logoWidth }]}
+        style={{ height: metrics.logoHeight, width: metrics.logoWidth }}
       />
     </View>
   );
