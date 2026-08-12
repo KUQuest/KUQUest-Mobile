@@ -22,7 +22,7 @@ jest.mock('react-native/Libraries/Modal/Modal', () => {
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ replace: jest.fn(), back: jest.fn() }),
-  useLocalSearchParams: () => ({}),
+  useLocalSearchParams: () => mockRouteParams,
 }));
 
 jest.mock('expo-localization', () => ({
@@ -46,6 +46,8 @@ const mockedAuthService = authService as unknown as {
   getStudentApi: jest.Mock;
   signOut: jest.Mock;
 };
+
+let mockRouteParams: { mode?: string } = {};
 
 const options = {
   occupations: [{ id: 'occupation-student', name: 'Student', requiresStudentId: true }],
@@ -90,8 +92,10 @@ function createApi(overrides: Record<string, unknown> = {}) {
     }),
     listCertificates: jest.fn().mockResolvedValue([]),
     listPortfolio: jest.fn().mockResolvedValue([]),
+    listExperience: jest.fn().mockResolvedValue([]),
     updateAcademicRegistration: jest.fn().mockResolvedValue(undefined),
     updateProfile: jest.fn().mockResolvedValue(undefined),
+    updateExperience: jest.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -106,6 +110,7 @@ function prepareAuth(api: ReturnType<typeof createApi>) {
 describe('OnboardingScreen Academic Registration selections', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRouteParams = {};
     process.env.EXPO_PUBLIC_TERMS_VERSION = '2026-08-11';
   });
 
@@ -180,5 +185,30 @@ describe('OnboardingScreen Academic Registration selections', () => {
         departmentId: 'department-software',
       }));
     });
+  });
+
+  test('edits an existing Experience without repeating Academic Registration writes', async () => {
+    mockRouteParams = { mode: 'edit' };
+    const api = createApi({
+      getAcademicRegistrationStatus: jest.fn().mockResolvedValue({
+        firstName: 'KU', lastName: 'Student', telephone: '0812345678', occupationId: 'occupation-student', studentId: '6712345678', departmentId: 'department-software', termsAcceptedAt: '2026-08-11T00:00:00.000Z', termsVersion: '2026-08-11', completed: true,
+      }),
+      getProfile: jest.fn().mockResolvedValue({
+        email: 'student@ku.th', firstName: 'KU', lastName: 'Student', bio: null, telephone: '0812345678', studentId: '6712345678', academicYear: 3, department: { id: 'department-software', name: 'Software Engineering', faculty: { name: 'Faculty of Engineering' } }, avatar: null,
+      }),
+      listExperience: jest.fn().mockResolvedValue([{ id: 'experience-id', title: 'Tutor', employmentType: 'Part-time', organization: 'KU', description: 'Helps students', startedAt: '2024-01-01', endedAt: null }]),
+      updateExperience: jest.fn().mockResolvedValue(undefined),
+    });
+    prepareAuth(api);
+    await render(<OnboardingScreen />);
+
+    await waitFor(() => expect(screen.getByText('Faculty of Engineering')).toBeTruthy());
+    await fireEvent.press(screen.getByText('Next'));
+    await fireEvent.press(screen.getByText('Next'));
+    await fireEvent.changeText(screen.getByLabelText('Job title'), 'Lead Tutor');
+    await fireEvent.press(screen.getByText('Save Changes'));
+
+    await waitFor(() => expect(api.updateExperience).toHaveBeenCalledWith('experience-id', expect.objectContaining({ title: 'Lead Tutor' })));
+    expect(api.updateAcademicRegistration).not.toHaveBeenCalled();
   });
 });

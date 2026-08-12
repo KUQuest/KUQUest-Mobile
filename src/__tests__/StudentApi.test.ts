@@ -159,6 +159,36 @@ describe('StudentApi', () => {
     );
   });
 
+  test('updates and deletes an existing Experience without creating a duplicate', async () => {
+    fetchMock
+      .mockResolvedValueOnce(response({ success: true, data: { experience: { id: 'experience-id', title: 'Lead Tutor', employmentType: 'Part-time', startedAt: '2024-06-01', endedAt: null } } }))
+      .mockResolvedValueOnce(response({ success: true }));
+
+    await api.updateExperience('experience-id', { title: 'Lead Tutor', endedAt: null });
+    await api.deleteExperience('experience-id');
+
+    expect(fetchMock.mock.calls[0][0]).toBe('https://api.example.test/api/v1/profile/experience/experience-id');
+    expect(fetchMock.mock.calls[0][1]).toEqual(expect.objectContaining({
+      method: 'PATCH',
+      body: JSON.stringify({ title: 'Lead Tutor', endedAt: null }),
+    }));
+    expect(fetchMock.mock.calls[1][1]).toEqual(expect.objectContaining({ method: 'DELETE' }));
+  });
+
+  test('creates Portfolio Work without an image when the optional image is absent', async () => {
+    fetchMock.mockResolvedValue(response({ success: true, data: { id: 'work-id' } }));
+
+    await api.createPortfolio({ title: 'Text-only project', description: 'Details', imageUris: [] });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.example.test/api/v1/profile/portfolio',
+      expect.objectContaining({ method: 'POST', body: expect.any(FormData) })
+    );
+    const formData = (fetchMock.mock.calls[0][1] as RequestInit).body as FormData;
+    expect(formData.get('title')).toBe('Text-only project');
+    expect(formData.get('images')).toBeNull();
+  });
+
   test('loads reputation and review data with the selected review filter', async () => {
     fetchMock
       .mockResolvedValueOnce(response({
