@@ -41,70 +41,81 @@ export function BottomNav({ state, descriptors, navigation, insets }: TabBarProp
 
   return (
     <View
-      style={[styles.bar, { minHeight: metrics.navHeight, paddingBottom: insets.bottom }]}
+      style={[styles.container, { paddingBottom: Math.max(insets.bottom, 10) }]}
       accessibilityRole="toolbar"
     >
-      {state.routes.map((route) => {
-        const item = navigationItems.find(({ routeName }) => routeName === route.name);
-        if (!item) return null;
+      <View style={[styles.bar, { minHeight: metrics.navHeight }]}>
+        {state.routes.map((route) => {
+          const item = navigationItems.find(({ routeName }) => routeName === route.name);
+          if (!item) return null;
 
-        const isFocused = route.key === focusedRouteKey;
-        const options = descriptors[route.key]?.options;
-        const label = messages[item.labelKey];
-        const shortLabel = messages[item.shortLabelKey];
-        const Icon = item.icon;
+          const isFocused = route.key === focusedRouteKey;
+          const options = descriptors[route.key]?.options;
+          const label = messages[item.labelKey];
+          const Icon = item.icon;
 
-        const onPress = () => {
-          const event = navigation.emit({
-            type: 'tabPress',
-            target: route.key,
-            canPreventDefault: true,
-          });
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
 
-          if ((item.isCreate || !isFocused) && !event.defaultPrevented) {
-            navigation.navigate(route.name, route.params);
-          }
-        };
+            if ((item.isCreate || !isFocused) && !event.defaultPrevented) {
+              navigation.navigate(route.name, route.params);
+            }
+          };
 
-        return (
-          <Pressable
-            key={route.key}
-            accessibilityLabel={options?.tabBarAccessibilityLabel ?? label}
-            accessibilityRole={item.isCreate ? 'button' : 'tab'}
-            {...(item.isCreate ? {} : { accessibilityState: { selected: isFocused } })}
-            onPress={onPress}
-            style={[
-              styles.item,
-              { minHeight: metrics.navItemHeight },
-              isFocused && !item.isCreate && styles.activeItem,
-              item.isCreate && styles.createItem,
-            ]}
-            testID={`tab-${item.routeName}`}
-          >
-            {item.isCreate ? (
-              <View style={[styles.createIcon, { height: metrics.createButtonSize, marginTop: metrics.createButtonOffset, width: metrics.createButtonSize }]}>
-                <Icon color={colors.white} size={metrics.createIconSize} strokeWidth={2.5} />
-              </View>
-            ) : (
-              <Icon color={isFocused ? colors.primary : colors.textSecondary} size={metrics.iconSize} strokeWidth={2.5} style={styles.icon} />
-            )}
-            <View style={styles.labelSlot}>
+          return (
+            <Pressable
+              key={route.key}
+              accessibilityLabel={options?.tabBarAccessibilityLabel ?? label}
+              accessibilityRole={item.isCreate ? 'button' : 'tab'}
+              {...(item.isCreate ? {} : { accessibilityState: { selected: isFocused } })}
+              onPress={onPress}
+              style={({ pressed }) => [
+                styles.item,
+                { minHeight: metrics.navItemHeight },
+                item.isCreate && styles.createItem,
+                pressed && styles.itemPressed,
+              ]}
+              testID={`tab-${item.routeName}`}
+            >
+              {item.isCreate ? (
+                <View
+                  style={[
+                    styles.createIcon,
+                    {
+                      height: metrics.createButtonSize,
+                      marginTop: metrics.createButtonOffset,
+                      width: metrics.createButtonSize,
+                    },
+                  ]}
+                >
+                  <Icon color={colors.white} size={metrics.createIconSize} strokeWidth={2.5} />
+                </View>
+              ) : (
+                <Icon
+                  color={isFocused ? colors.successBright : colors.navIconMuted}
+                  size={metrics.iconSize}
+                  strokeWidth={2.5}
+                />
+              )}
               <Text
                 style={[
-                  item.isCreate ? styles.createLabel : styles.label,
+                  styles.label,
                   { fontSize: metrics.labelFontSize, lineHeight: metrics.labelLineHeight },
                   isFocused && !item.isCreate && styles.activeLabel,
                 ]}
                 numberOfLines={1}
-                ellipsizeMode="tail"
               >
-                {shortLabel}
+                {messages[item.shortLabelKey]}
               </Text>
-            </View>
-            {item.hasUnread ? <View accessibilityLabel="Unread messages" style={styles.unreadBadge} /> : null}
-          </Pressable>
-        );
-      })}
+              {item.hasUnread ? <View accessibilityLabel="Unread messages" style={styles.unreadBadge} /> : null}
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }

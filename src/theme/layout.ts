@@ -19,12 +19,12 @@ export function getAppChromeMetrics(width: number, fontScale = 1): AppChromeMetr
       logoWidth: 112,
       logoHeight: 56,
       backButtonSize: 44,
-      navHeight: 72,
-      navItemHeight: 60,
-      createButtonSize: 56,
-      createButtonOffset: -20,
-      iconSize: 26,
-      createIconSize: 34,
+      navHeight: 64,
+      navItemHeight: 56,
+      createButtonSize: 38,
+      createButtonOffset: -12,
+      iconSize: 22,
+      createIconSize: 26,
       labelFontSize: 11,
       labelLineHeight: 14,
     } : {
@@ -32,12 +32,12 @@ export function getAppChromeMetrics(width: number, fontScale = 1): AppChromeMetr
     logoWidth: 128,
     logoHeight: 64,
     backButtonSize: 48,
-    navHeight: 84,
-    navItemHeight: 68,
-    createButtonSize: 64,
-    createButtonOffset: -24,
-    iconSize: 30,
-    createIconSize: 38,
+    navHeight: 68,
+    navItemHeight: 60,
+    createButtonSize: 42,
+    createButtonOffset: -16,
+    iconSize: 24,
+    createIconSize: 28,
     labelFontSize: 12,
     labelLineHeight: 16,
   };
@@ -50,7 +50,7 @@ export function getAppChromeMetrics(width: number, fontScale = 1): AppChromeMetr
   );
   const navItemHeight = Math.max(
     baseMetrics.navItemHeight,
-    baseMetrics.iconSize + labelLineHeight + 16,
+    baseMetrics.iconSize + labelLineHeight + 8,
   );
 
   return {
