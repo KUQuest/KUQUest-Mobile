@@ -79,6 +79,37 @@ jest.mock('@expo/ui', () => ({
     ),
 }));
 
+jest.mock('lucide-react-native', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  const Icon = (props) => React.createElement(View, props);
+
+  return {
+    Check: Icon,
+    CheckSquare: Icon,
+    BriefcaseBusiness: Icon,
+    CalendarDays: Icon,
+    ChevronDown: Icon,
+    CircleAlert: Icon,
+    CircleUserRound: Icon,
+    CircleX: Icon,
+    Grid2X2: Icon,
+    Image: Icon,
+    ImageIcon: Icon,
+    LayoutDashboard: Icon,
+    MessageSquare: Icon,
+    Pencil: Icon,
+    Plus: Icon,
+    RefreshCw: Icon,
+    Search: Icon,
+    TriangleAlert: Icon,
+    Trash2: Icon,
+    UserRound: Icon,
+    X: Icon,
+    GraduationCap: Icon,
+  };
+});
+
 jest.mock('expo-symbols', () => ({
   SymbolView: (props) => React.createElement(View, props),
 }));

@@ -1,5 +1,5 @@
 export const colors = {
-  background: '#FFFFFF',
+  background: '#FFFCFA',
   surface: '#FCF9F8',
   surfaceMuted: '#F5F2F0',
   surfaceSubtle: '#F9F9F9',
@@ -15,8 +15,8 @@ export const colors = {
   textStrong: '#111111',
   textSecondary: '#404941',
   textMuted: '#666666',
-  textSubtle: '#758076',
-  textFaint: '#888888',
+  textSubtle: '#5F6B62',
+  textFaint: '#626D65',
   border: '#C0C9BE',
   borderSubtle: '#E5E2E1',
   borderMuted: '#E0E0E0',
@@ -30,6 +30,7 @@ export const colors = {
   success: '#2E7238',
   successBright: '#4CAF50',
   successLight: '#A8F3AA',
-  black: '#000000',
-  white: '#FFFFFF',
+  black: '#122018',
+  white: '#FFFEFD',
+  overlay: 'rgba(18, 32, 24, 0.4)',
 } as const;

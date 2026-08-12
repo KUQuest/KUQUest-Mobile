@@ -13,7 +13,6 @@ const styles = StyleSheet.create({
     width: '100%',
     padding: spacing.md,
     gap: spacing.lg,
-    paddingBottom: 120,
   },
   header: {
     alignItems: 'center',

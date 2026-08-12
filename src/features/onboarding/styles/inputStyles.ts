@@ -24,14 +24,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm + 4,
     paddingVertical: spacing.sm + 2,
     backgroundColor: colors.white,
+    minHeight: 44,
   },
   inputError: {
     borderColor: colors.danger,
+  },
+  inputFocused: {
+    borderColor: colors.primary,
+  },
+  inputSuccess: {
+    borderColor: colors.success,
+  },
+  inputDisabled: {
+    backgroundColor: colors.surfaceMuted,
+    opacity: 0.6,
   },
   errorText: {
     fontFamily: fontFamily.regular,
     fontSize: 12,
     color: colors.danger,
+    marginTop: 4,
+  },
+  helperSlot: {
+    minHeight: 18,
     marginTop: 4,
   },
 });

@@ -16,6 +16,7 @@ interface ButtonProps extends TouchableOpacityProps {
 
 export function Button({ variant = 'primary', children, style, ...props }: ButtonProps) {
   const isPrimary = variant === 'primary';
+  const isDisabled = Boolean(props.disabled);
 
   return (
     <TouchableOpacity
@@ -23,8 +24,11 @@ export function Button({ variant = 'primary', children, style, ...props }: Butto
       style={[
         styles.button,
         isPrimary ? styles.primary : styles.secondary,
+        isDisabled && styles.disabled,
         style,
       ]}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled }}
       {...props}
     >
       {typeof children === 'string' ? (

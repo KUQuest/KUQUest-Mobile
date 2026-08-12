@@ -1,7 +1,7 @@
 import { profileDraftSchema } from './profileSchema';
 import type { ProfileDraft } from './profileSchema';
 
-export type { Certificate, ProfileDraft, Work } from './profileSchema';
+export type { Certificate, Experience, ProfileDraft, Work } from './profileSchema';
 
 export interface ProfileIdentity {
   name: string;
@@ -21,6 +21,7 @@ export function createEmptyProfile(identity?: ProfileIdentity): ProfileDraft {
     profileImage: identity?.avatarUrl ?? '',
     certificates: [],
     works: [],
+    experiences: [],
   };
 }
 

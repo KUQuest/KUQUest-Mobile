@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, TextInputProps } from 'react-native';
 import { colors } from '@/theme/colors';
 import styles from '../styles/textAreaStyles';
@@ -8,9 +8,12 @@ interface TextAreaProps extends TextInputProps {
   error?: string;
   maxLength?: number;
   value: string;
+  success?: boolean;
 }
 
-export function TextArea({ label, error, maxLength, value, style, ...props }: TextAreaProps) {
+export function TextArea({ label, error, maxLength, value, success = false, style, accessibilityLabel, editable = true, onFocus, onBlur, ...props }: TextAreaProps) {
+  const [focused, setFocused] = useState(false);
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
@@ -18,6 +21,9 @@ export function TextArea({ label, error, maxLength, value, style, ...props }: Te
         style={[
           styles.input,
           error ? styles.inputError : null,
+          success ? styles.inputSuccess : null,
+          focused ? styles.inputFocused : null,
+          !editable ? styles.inputDisabled : null,
           style,
         ]}
         placeholderTextColor={colors.textFaint}
@@ -25,6 +31,17 @@ export function TextArea({ label, error, maxLength, value, style, ...props }: Te
         textAlignVertical="top"
         maxLength={maxLength}
         value={value}
+        accessibilityLabel={accessibilityLabel ?? label}
+        accessibilityState={{ disabled: !editable }}
+        editable={editable}
+        onFocus={(event) => {
+          setFocused(true);
+          onFocus?.(event);
+        }}
+        onBlur={(event) => {
+          setFocused(false);
+          onBlur?.(event);
+        }}
         {...props}
       />
       <View style={styles.footerRow}>

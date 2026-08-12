@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, Modal, FlatList, TextInput, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+import { Check, ChevronDown, CircleX, Search, X } from 'lucide-react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import styles from '../styles/selectStyles';
@@ -26,6 +26,7 @@ interface SelectProps {
   clearSearchLabel?: string;
   closeLabel?: string;
   disabled?: boolean;
+  success?: boolean;
 }
 
 export function Select({
@@ -44,6 +45,7 @@ export function Select({
   clearSearchLabel = 'Clear search',
   closeLabel = 'Close',
   disabled = false,
+  success = false,
 }: SelectProps) {
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,19 +65,20 @@ export function Select({
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
       <Pressable
-        style={[styles.selectBox, error ? styles.selectBoxError : null]}
+        style={[styles.selectBox, error ? styles.selectBoxError : null, success ? styles.selectBoxSuccess : null, disabled ? styles.selectBoxDisabled : null]}
         onPress={() => setModalVisible(true)}
         disabled={disabled}
         accessibilityRole="button"
         accessibilityLabel={selectedOption?.label ?? placeholder ?? label}
+        accessibilityState={{ disabled, expanded: modalVisible }}
         testID="select-trigger"
       >
         <Text style={[styles.selectText, !selectedOption && styles.placeholderText]}>
           {selectedOption ? selectedOption.label : placeholder || 'Select...'}
         </Text>
-        <SymbolView name="chevron.down" size={16} tintColor={colors.textMuted} />
+        <ChevronDown color={colors.textMuted} size={18} strokeWidth={2} />
       </Pressable>
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      <View style={styles.helperSlot}>{error ? <Text style={styles.errorText}>{error}</Text> : null}</View>
 
       <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={closeModal}>
         <SafeAreaProvider>
@@ -86,12 +89,12 @@ export function Select({
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>{label}</Text>
                   <Pressable onPress={closeModal} style={styles.closeButton} accessibilityRole="button" accessibilityLabel={closeLabel} testID="close-select-button">
-                    <SymbolView name="xmark" size={20} tintColor={colors.textSecondary} />
+                    <X color={colors.textSecondary} size={20} strokeWidth={2} />
                   </Pressable>
                 </View>
                 {searchable ? (
                   <View style={styles.searchContainer}>
-                    <SymbolView name="magnifyingglass" size={18} tintColor={colors.textMuted} />
+                    <Search color={colors.textMuted} size={18} strokeWidth={2} />
                     <TextInput
                       autoFocus
                       value={searchQuery}
@@ -104,8 +107,8 @@ export function Select({
                       testID="select-search-input"
                     />
                     {searchQuery ? (
-                      <Pressable onPress={() => setSearchQuery('')} accessibilityRole="button" accessibilityLabel={clearSearchLabel} testID="clear-search-button">
-                        <SymbolView name="xmark.circle.fill" size={18} tintColor={colors.textMuted} />
+                      <Pressable style={styles.clearButton} onPress={() => setSearchQuery('')} accessibilityRole="button" accessibilityLabel={clearSearchLabel} testID="clear-search-button">
+                        <CircleX color={colors.textMuted} size={18} strokeWidth={2} />
                       </Pressable>
                     ) : null}
                   </View>
@@ -128,7 +131,7 @@ export function Select({
                         {item.label}
                       </Text>
                       {item.value === value && (
-                        <SymbolView name="checkmark" size={18} tintColor={colors.primary} />
+                        <Check color={colors.primary} size={18} strokeWidth={2.5} />
                       )}
                     </Pressable>
                   )}

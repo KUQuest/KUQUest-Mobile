@@ -1,18 +1,26 @@
-import { ApiClient } from './ApiClient';
+import { ApiClient, ApiError } from './ApiClient';
+import { File } from 'expo-file-system';
 import {
   academicRegistrationOptionsResponseSchema,
   academicRegistrationStatusResponseSchema,
   certificateResponseSchema,
   certificateCreateResponseSchema,
+  experienceMutationResponseSchema,
+  experienceResponseSchema,
   portfolioResponseSchema,
   portfolioCreateResponseSchema,
   profileResponseSchema,
+  reputationResponseSchema,
+  reviewsResponseSchema,
   successResponseSchema,
   type AcademicRegistrationOptions,
   type AcademicRegistrationStatus,
   type CertificateEntry,
+  type ExperienceEntry,
   type PortfolioEntry,
   type ProfileResponse,
+  type ProfileReview,
+  type Reputation,
 } from './contracts';
 
 export interface AcademicRegistrationUpdate {
@@ -45,6 +53,15 @@ export interface CertificateCreate {
   issuedAt: string;
 }
 
+export interface ExperienceCreate {
+  title: string;
+  employmentType: string;
+  organization?: string;
+  description?: string;
+  startedAt: string;
+  endedAt?: string | null;
+}
+
 export interface UploadAsset {
   uri: string;
   name?: string;
@@ -52,11 +69,8 @@ export interface UploadAsset {
 }
 
 function appendFile(formData: FormData, field: string, asset: UploadAsset): void {
-  formData.append(field, {
-    uri: asset.uri,
-    name: asset.name ?? `${field}.jpg`,
-    type: asset.type ?? 'image/jpeg',
-  } as unknown as Blob);
+  const file = new File(asset.uri);
+  formData.append(field, file, asset.name ?? file.name ?? `${field}.jpg`);
 }
 
 function fileNameFromUri(uri: string, fallback: string): string {
@@ -64,8 +78,39 @@ function fileNameFromUri(uri: string, fallback: string): string {
   return lastSegment || fallback;
 }
 
+function studentApiDebug(message: string, details: Record<string, unknown> = {}): void {
+  if (__DEV__) {
+    console.log(`[student-api] ${message}`, details);
+  }
+}
+
+function getErrorDetails(error: unknown): Record<string, unknown> {
+  if (error instanceof ApiError) {
+    return { name: error.name, status: error.status, code: error.code, message: error.message };
+  }
+  if (error instanceof Error) {
+    const issues = 'issues' in error && Array.isArray(error.issues)
+      ? error.issues.map((issue: { path?: unknown; message?: unknown }) => ({ path: issue.path, message: issue.message }))
+      : undefined;
+    return { name: error.name, message: error.message, ...(issues ? { issues } : {}) };
+  }
+  return { message: String(error) };
+}
+
 export class StudentApi {
   constructor(private readonly client: ApiClient) {}
+
+  private async trace<T>(operation: string, details: Record<string, unknown>, action: () => Promise<T>): Promise<T> {
+    studentApiDebug(`${operation} started`, details);
+    try {
+      const result = await action();
+      studentApiDebug(`${operation} succeeded`, details);
+      return result;
+    } catch (error) {
+      studentApiDebug(`${operation} failed`, { ...details, error: getErrorDetails(error) });
+      throw error;
+    }
+  }
 
   async getAcademicRegistrationOptions(): Promise<AcademicRegistrationOptions> {
     const body = await this.client.request<unknown>('/api/v1/academic-registration/options');
@@ -78,8 +123,18 @@ export class StudentApi {
   }
 
   async updateAcademicRegistration(update: AcademicRegistrationUpdate): Promise<void> {
-    const body = await this.client.requestJson<unknown>('/api/v1/academic-registration', update, { method: 'PATCH' });
-    successResponseSchema.parse(body);
+    return this.trace('academic registration update', {
+      hasFirstName: Boolean(update.firstName),
+      hasLastName: Boolean(update.lastName),
+      hasTelephone: Boolean(update.telephone),
+      hasOccupationId: Boolean(update.occupationId),
+      hasStudentId: Boolean(update.studentId),
+      hasDepartmentId: Boolean(update.departmentId),
+      hasTermsVersion: Boolean(update.termsVersion),
+    }, async () => {
+      const body = await this.client.requestJson<unknown>('/api/v1/academic-registration', update, { method: 'PATCH' });
+      successResponseSchema.parse(body);
+    });
   }
 
   async getProfile(): Promise<ProfileResponse> {
@@ -88,19 +143,64 @@ export class StudentApi {
   }
 
   async updateProfile(update: ProfileUpdate): Promise<void> {
-    const body = await this.client.requestJson<unknown>('/api/v1/profile', update, { method: 'PATCH' });
+    return this.trace('profile update', {
+      hasFirstName: Boolean(update.firstName),
+      hasLastName: Boolean(update.lastName),
+      hasBio: Boolean(update.bio),
+      hasTelephone: Boolean(update.telephone),
+      hasDepartmentId: Boolean(update.departmentId),
+    }, async () => {
+      const body = await this.client.requestJson<unknown>('/api/v1/profile', update, { method: 'PATCH' });
+      successResponseSchema.parse(body);
+    });
+  }
+
+  async listExperience(): Promise<ExperienceEntry[]> {
+    const body = await this.client.request<unknown>('/api/v1/profile/experience');
+    return experienceResponseSchema.parse(body).data;
+  }
+
+  async createExperience(entry: ExperienceCreate): Promise<ExperienceEntry | undefined> {
+    const body = await this.client.requestJson<unknown>('/api/v1/profile/experience', entry, { method: 'POST' });
+    return experienceMutationResponseSchema.parse(body).data?.experience;
+  }
+
+  async updateExperience(id: string, update: Partial<ExperienceCreate>): Promise<ExperienceEntry | undefined> {
+    const body = await this.client.requestJson<unknown>(`/api/v1/profile/experience/${id}`, update, { method: 'PATCH' });
+    return experienceMutationResponseSchema.parse(body).data?.experience;
+  }
+
+  async deleteExperience(id: string): Promise<void> {
+    const body = await this.client.request<unknown>(`/api/v1/profile/experience/${id}`, { method: 'DELETE' });
     successResponseSchema.parse(body);
   }
 
+  async getReputation(): Promise<Reputation> {
+    const body = await this.client.request<unknown>('/api/v1/profile/reputation');
+    return reputationResponseSchema.parse(body).data;
+  }
+
+  async listReviews(rating: 'all' | 5 | 4 | 3 | 2 = 'all'): Promise<{ items: ProfileReview[]; total: number }> {
+    const query = rating === 'all' ? '' : `?rating=${rating}`;
+    const body = await this.client.request<unknown>(`/api/v1/profile/reviews${query}`);
+    const parsed = reviewsResponseSchema.parse(body).data;
+    return { items: parsed.items, total: parsed.total };
+  }
+
   async uploadAvatar(asset: UploadAsset): Promise<string> {
-    const formData = new FormData();
-    appendFile(formData, 'avatar', asset);
-    const body = await this.client.requestForm<{ success: true; data: { fileId: string } }>(
-      '/api/v1/profile/avatar',
-      formData,
-      { method: 'POST' }
-    );
-    return body.data.fileId;
+    return this.trace('avatar upload', {
+      fileName: asset.name ?? fileNameFromUri(asset.uri, 'avatar.jpg'),
+      mimeType: asset.type ?? 'image/jpeg',
+    }, async () => {
+      const formData = new FormData();
+      appendFile(formData, 'avatar', asset);
+      const body = await this.client.requestForm<{ success: true; data: { fileId: string } }>(
+        '/api/v1/profile/avatar',
+        formData,
+        { method: 'POST' }
+      );
+      return body.data.fileId;
+    });
   }
 
   async listPortfolio(): Promise<PortfolioEntry[]> {
@@ -109,25 +209,40 @@ export class StudentApi {
   }
 
   async createPortfolio(entry: PortfolioCreate): Promise<string> {
-    const formData = new FormData();
-    formData.append('title', entry.title);
-    if (entry.description) formData.append('description', entry.description);
-    entry.imageUris.forEach((uri, index) => appendFile(formData, 'images', {
-      uri,
-      name: fileNameFromUri(uri, `portfolio-${index}.jpg`),
-    }));
-    const body = await this.client.requestForm<unknown>('/api/v1/profile/portfolio', formData, { method: 'POST' });
-    return portfolioCreateResponseSchema.parse(body).data.id;
+    return this.trace('portfolio create', {
+      titleLength: entry.title.length,
+      descriptionLength: entry.description?.length ?? 0,
+      imageCount: entry.imageUris.length,
+      localImageCount: entry.imageUris.filter((uri) => !/^https?:\/\//i.test(uri)).length,
+    }, async () => {
+      const formData = new FormData();
+      formData.append('title', entry.title);
+      if (entry.description) formData.append('description', entry.description);
+      entry.imageUris.forEach((uri, index) => appendFile(formData, 'images', {
+        uri,
+        name: fileNameFromUri(uri, `portfolio-${index}.jpg`),
+      }));
+      const body = await this.client.requestForm<unknown>('/api/v1/profile/portfolio', formData, { method: 'POST' });
+      return portfolioCreateResponseSchema.parse(body).data.id;
+    });
   }
 
   async updatePortfolio(id: string, update: { title?: string; description?: string }): Promise<void> {
-    const body = await this.client.requestJson<unknown>(`/api/v1/profile/portfolio/${id}`, update, { method: 'PATCH' });
-    successResponseSchema.parse(body);
+    return this.trace('portfolio update', {
+      id,
+      titleLength: update.title?.length ?? 0,
+      descriptionLength: update.description?.length ?? 0,
+    }, async () => {
+      const body = await this.client.requestJson<unknown>(`/api/v1/profile/portfolio/${id}`, update, { method: 'PATCH' });
+      successResponseSchema.parse(body);
+    });
   }
 
   async deletePortfolio(id: string): Promise<void> {
-    const body = await this.client.request<unknown>(`/api/v1/profile/portfolio/${id}`, { method: 'DELETE' });
-    successResponseSchema.parse(body);
+    return this.trace('portfolio delete', { id }, async () => {
+      const body = await this.client.request<unknown>(`/api/v1/profile/portfolio/${id}`, { method: 'DELETE' });
+      successResponseSchema.parse(body);
+    });
   }
 
   async listCertificates(): Promise<CertificateEntry[]> {
@@ -136,18 +251,44 @@ export class StudentApi {
   }
 
   async createCertificate(entry: CertificateCreate): Promise<string> {
-    const body = await this.client.requestJson<unknown>('/api/v1/profile/certificates', entry, { method: 'POST' });
-    return certificateCreateResponseSchema.parse(body).data.certificate.id;
+    return this.trace('certificate create', {
+      nameLength: entry.name.length,
+      issuerLength: entry.issuer.length,
+      issuedAt: entry.issuedAt,
+    }, async () => {
+      const body = await this.client.requestJson<unknown>('/api/v1/profile/certificates', entry, { method: 'POST' });
+      return certificateCreateResponseSchema.parse(body).data.certificate.id;
+    });
   }
 
   async updateCertificate(id: string, update: CertificateCreate): Promise<void> {
-    const body = await this.client.requestJson<unknown>(`/api/v1/profile/certificates/${id}`, update, { method: 'PATCH' });
-    successResponseSchema.parse(body);
+    return this.trace('certificate update', {
+      id,
+      nameLength: update.name.length,
+      issuerLength: update.issuer.length,
+      issuedAt: update.issuedAt,
+    }, async () => {
+      const body = await this.client.requestJson<unknown>(`/api/v1/profile/certificates/${id}`, update, { method: 'PATCH' });
+      successResponseSchema.parse(body);
+    });
+  }
+
+  async deleteCertificate(id: string): Promise<void> {
+    return this.trace('certificate delete', { id }, async () => {
+      const body = await this.client.request<unknown>(`/api/v1/profile/certificates/${id}`, { method: 'DELETE' });
+      successResponseSchema.parse(body);
+    });
   }
 
   async uploadCertificateImage(id: string, asset: UploadAsset): Promise<void> {
-    const formData = new FormData();
-    appendFile(formData, 'image', asset);
-    await this.client.requestForm<unknown>(`/api/v1/profile/certificates/${id}/image`, formData, { method: 'POST' });
+    return this.trace('certificate image upload', {
+      id,
+      fileName: asset.name ?? fileNameFromUri(asset.uri, 'certificate.jpg'),
+      mimeType: asset.type ?? 'image/jpeg',
+    }, async () => {
+      const formData = new FormData();
+      appendFile(formData, 'image', asset);
+      await this.client.requestForm<unknown>(`/api/v1/profile/certificates/${id}/image`, formData, { method: 'POST' });
+    });
   }
 }

@@ -27,9 +27,19 @@ describe('onboarding validation', () => {
     expect(errors).toEqual({ telephone: messages.invalidTelephone });
   });
 
+  test('requires a first and last name for the API payload', () => {
+    const errors = validateProfileBasics({ ...createValidProfile(), name: 'Student' }, false, messages, true);
+    expect(errors).toEqual({ name: messages.invalidName });
+  });
+
   test('requires a student ID and terms acceptance for a new student', () => {
     const errors = validateProfileBasics({ ...createValidProfile(), studentId: '', acceptedTerms: false }, false, messages, true);
-    expect(errors).toEqual({ studentId: messages.requiredField, acceptedTerms: messages.requiredField });
+    expect(errors).toEqual({ studentId: messages.invalidStudentId, acceptedTerms: messages.requiredField });
+  });
+
+  test('rejects student IDs that do not match the ten-digit API contract', () => {
+    const errors = validateProfileBasics({ ...createValidProfile(), studentId: '671234567' }, false, messages, true);
+    expect(errors).toEqual({ studentId: messages.invalidStudentId });
   });
 
   test('validates started certificate and portfolio rows against API fields', () => {
@@ -43,5 +53,15 @@ describe('onboarding validation', () => {
       cert_0_issuedAt: messages.invalidDate,
       work_0_imageUri: messages.requiredField,
     });
+  });
+
+  test('requires employment type for an experience row', () => {
+    const errors = validateProfileDetails({
+      certificates: [],
+      works: [],
+      experiences: [{ title: 'Tutor', employmentType: '', organization: '', description: '', startedAt: '2024-01-01', endedAt: '' }],
+    }, messages);
+
+    expect(errors).toEqual({ experience_0_employmentType: messages.requiredField });
   });
 });

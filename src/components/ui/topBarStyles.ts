@@ -1,37 +1,41 @@
 import { StyleSheet } from 'react-native';
 import { colors } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
-import { fontFamily } from '@/theme/typography';
 
 const styles = StyleSheet.create({
   container: {
-    height: 64,
     width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    position: 'relative',
+    paddingHorizontal: spacing.xl,
     backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderSubtle,
+    borderBottomWidth: 0,
+    elevation: 0,
+    shadowOpacity: 0,
+  },
+  profileContainer: {
+    alignItems: 'flex-start',
+    backgroundColor: colors.surface,
+    borderBottomWidth: 0,
+    elevation: 0,
+    paddingHorizontal: spacing.lg,
+    shadowOpacity: 0,
   },
   backButton: {
-    width: 28,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  backIcon: {
-    color: colors.primaryDeep,
-    fontSize: 36,
-    lineHeight: 36,
+  backButtonPosition: {
+    left: spacing.md,
+    position: 'absolute',
   },
   logo: {
-    color: colors.primaryDark,
-    fontSize: 24,
-    fontFamily: fontFamily.bold,
-    fontWeight: '700',
+    resizeMode: 'contain',
   },
-  spacer: {
-    width: 28,
+  profileLogo: {
+    height: 36,
+    width: 80,
   },
 });
 

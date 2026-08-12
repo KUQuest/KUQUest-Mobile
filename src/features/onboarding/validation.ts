@@ -1,11 +1,13 @@
 import { z } from 'zod';
 
-import { certificateSchema, workSchema } from '../profile/profileSchema';
+import { certificateSchema, experienceSchema, workSchema } from '../profile/profileSchema';
 import type { ProfileDraft } from '../profile/types';
 
 export interface OnboardingValidationMessages {
   requiredField: string;
+  invalidName: string;
   invalidTelephone: string;
+  invalidStudentId: string;
   invalidDate: string;
 }
 
@@ -19,6 +21,7 @@ function pathToErrorKey(path: (string | number)[]): string | null {
   if (path.length === 3 && typeof path[1] === 'number' && typeof path[2] === 'string') {
     if (path[0] === 'certificates') return `cert_${path[1]}_${path[2]}`;
     if (path[0] === 'works') return `work_${path[1]}_${path[2]}`;
+    if (path[0] === 'experiences') return `experience_${path[1]}_${path[2]}`;
   }
 
   return null;
@@ -34,10 +37,11 @@ function errorsFromZod(error: z.ZodError): ValidationErrors {
 
 function createProfileBasicsSchema(
   isEditMode: boolean,
-  messages: OnboardingValidationMessages
+  messages: OnboardingValidationMessages,
+  requiresStudentId: boolean
 ) {
   return z.object({
-    name: z.string().trim().min(1, messages.requiredField),
+    name: z.string().trim().min(1, messages.requiredField).refine((value) => value.split(/\s+/).length >= 2, messages.invalidName),
     telephone: z.string()
       .trim()
       .min(1, messages.requiredField)
@@ -55,6 +59,14 @@ function createProfileBasicsSchema(
         message: messages.requiredField,
       });
     }
+
+    if (requiresStudentId && !/^\d{10}$/.test(form.studentId.trim())) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['studentId'],
+        message: messages.invalidStudentId,
+      });
+    }
   });
 }
 
@@ -62,6 +74,7 @@ function createProfileDetailsSchema(messages: OnboardingValidationMessages) {
   return z.object({
     certificates: z.array(certificateSchema),
     works: z.array(workSchema),
+    experiences: z.array(experienceSchema).default([]),
   }).superRefine((form, context) => {
     form.certificates.forEach((certificate, index) => {
       const hasContent = [certificate.name, certificate.issuer, certificate.issuedAt, certificate.imageUri]
@@ -107,6 +120,27 @@ function createProfileDetailsSchema(messages: OnboardingValidationMessages) {
         });
       }
     });
+
+    (form.experiences ?? []).forEach((experience, index) => {
+      const hasContent = [experience.title, experience.employmentType, experience.organization, experience.description, experience.startedAt, experience.endedAt]
+        .some((value) => value.trim());
+      if (!hasContent) return;
+      if (!experience.title.trim()) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ['experiences', index, 'title'], message: messages.requiredField });
+      }
+      if (!experience.employmentType.trim()) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ['experiences', index, 'employmentType'], message: messages.requiredField });
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(experience.startedAt.trim())) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ['experiences', index, 'startedAt'], message: messages.invalidDate });
+      }
+      if (experience.endedAt.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(experience.endedAt.trim())) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ['experiences', index, 'endedAt'], message: messages.invalidDate });
+      }
+      if (experience.startedAt && experience.endedAt && experience.endedAt < experience.startedAt) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ['experiences', index, 'endedAt'], message: messages.invalidDate });
+      }
+    });
   });
 }
 
@@ -116,21 +150,13 @@ export function validateProfileBasics(
   messages: OnboardingValidationMessages,
   requiresStudentId: boolean
 ): ValidationErrors {
-  const schema = createProfileBasicsSchema(isEditMode, messages).superRefine((profile, context) => {
-    if (requiresStudentId && !profile.studentId.trim()) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['studentId'],
-        message: messages.requiredField,
-      });
-    }
-  });
+  const schema = createProfileBasicsSchema(isEditMode, messages, requiresStudentId);
   const result = schema.safeParse(form);
   return result.success ? {} : errorsFromZod(result.error);
 }
 
 export function validateProfileDetails(
-  form: Pick<ProfileDraft, 'certificates' | 'works'>,
+  form: Pick<ProfileDraft, 'certificates' | 'works'> & Partial<Pick<ProfileDraft, 'experiences'>>,
   messages: OnboardingValidationMessages
 ): ValidationErrors {
   const result = createProfileDetailsSchema(messages).safeParse(form);

@@ -18,11 +18,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   content: {
+    flex: 1,
     width: '100%',
     maxWidth: 420,
-    justifyContent: 'space-between',
-    paddingVertical: spacing.lg,
-    gap: spacing.xl,
+    justifyContent: 'flex-start',
+    paddingVertical: spacing.md,
   },
   langToggle: {
     alignSelf: 'flex-end',
@@ -40,8 +40,8 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   headerSection: {
-    alignItems: 'center',
-    marginTop: 4,
+    alignItems: 'flex-start',
+    marginTop: spacing.sm,
   },
   title: {
     fontFamily: fontFamily.bold,
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.primary,
     letterSpacing: -0.5,
-    textAlign: 'center',
+    textAlign: 'left',
   },
   subtitle: {
     fontFamily: fontFamily.semiBold,
@@ -57,13 +57,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textMuted,
     letterSpacing: 2.5,
-    textAlign: 'center',
+    textAlign: 'left',
     textTransform: 'uppercase',
     marginTop: 6,
   },
   formSection: {
     width: '100%',
     gap: spacing.md,
+    marginTop: 64,
   },
   noticeCard: {
     backgroundColor: colors.surfaceSuccess,
@@ -145,13 +146,16 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   footerSection: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 12,
+    marginBottom: spacing.sm,
+    marginTop: 'auto',
   },
   footerLinks: {
-    flexDirection: 'row',
+    alignItems: 'flex-start',
+    flexDirection: 'column',
     justifyContent: 'center',
-    gap: 20,
+    gap: 8,
   },
   footerLinkText: {
     fontFamily: fontFamily.medium,
@@ -163,7 +167,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.regular,
     fontSize: 12,
     color: colors.textFaint,
-    textAlign: 'center',
+    textAlign: 'left',
   },
 });
 

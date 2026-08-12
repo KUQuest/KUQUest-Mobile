@@ -15,15 +15,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
     alignItems: 'center',
-    backgroundColor: colors.background,
-    margin: spacing.md,
-    borderRadius: 16,
-    // Add shadow
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
   },
   langToggle: {
     alignSelf: 'flex-end',
@@ -206,6 +200,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   skipButton: {
+    minHeight: 44,
+    minWidth: 44,
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
@@ -267,6 +263,17 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  itemCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  removeButton: {
+    minHeight: 44,
+    minWidth: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   itemLabel: {
     fontFamily: fontFamily.bold,
     fontSize: 10,
@@ -300,6 +307,7 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
     borderRadius: 24,
     paddingVertical: 10,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
@@ -335,6 +343,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
+  dateInputError: {
+    borderColor: colors.danger,
+    borderWidth: 1,
+  },
   fieldErrorText: {
     fontFamily: fontFamily.regular,
     fontSize: 12,
@@ -363,6 +375,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSubtle,
     overflow: 'hidden',
   },
+  certificateImageBox: {
+    height: 96,
+  },
   imagePlaceholderContent: {
     alignItems: 'center',
   },
@@ -376,6 +391,16 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+  },
+  loadErrorCard: {
+    margin: spacing.lg,
+    padding: spacing.lg,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.borderDanger,
+    backgroundColor: colors.surfaceDanger,
+    alignItems: 'center',
+    gap: spacing.md,
   },
 });
 

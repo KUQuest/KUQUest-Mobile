@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import React from 'react';
+import mockReact from 'react';
 
 import OnboardingScreen from '../features/onboarding/screens/OnboardingScreen';
 import { authService } from '../features/auth/AuthService';
@@ -13,12 +13,10 @@ jest.mock('../features/auth/AuthService', () => ({
 }));
 
 jest.mock('react-native/Libraries/Modal/Modal', () => {
-  const React = require('react');
-
   return {
     __esModule: true,
-    default: ({ visible, children }: { visible: boolean; children: React.ReactNode }) =>
-      visible ? React.createElement(React.Fragment, null, children) : null,
+    default: ({ visible, children }: { visible: boolean; children: mockReact.ReactNode }) =>
+      visible ? mockReact.createElement(mockReact.Fragment, null, children) : null,
   };
 });
 
