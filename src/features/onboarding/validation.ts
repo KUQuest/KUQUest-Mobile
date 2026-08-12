@@ -112,13 +112,6 @@ function createProfileDetailsSchema(messages: OnboardingValidationMessages) {
           message: messages.requiredField,
         });
       }
-      if (hasContent && !work.imageUri.trim()) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['works', index, 'imageUri'],
-          message: messages.requiredField,
-        });
-      }
     });
 
     (form.experiences ?? []).forEach((experience, index) => {

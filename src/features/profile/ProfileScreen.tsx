@@ -68,12 +68,12 @@ export default function Profile() {
         ]}
       >
         <ProfileHeader data={content} editProfileLabel={messages.edit} onEditPress={() => router.push({ pathname: '/onboarding', params: { mode: 'edit' } })} />
-        <ProfileStats stats={content.stats} ratingLabel={messages.rating} questsLabel={messages.totalQuests} />
+        <ProfileStats stats={content.stats} ratingLabel={messages.rating} questsLabel={messages.totalQuests} errorText={content.sectionErrors.reputation ? messages.sectionUnavailable : undefined} retryLabel={messages.retry} onRetry={() => setLoadAttempt((attempt) => attempt + 1)} />
         <AboutMe about={content.about} sectionTitle={messages.about} emptyText={messages.noDescription} />
-        <Experience experiences={content.experiences} sectionTitle={messages.experience} emptyText={messages.noExperience} presentLabel={messages.present} locale={locale} />
-        <MyWork works={content.works} sectionTitle={messages.works} emptyText={messages.noWorks} noImageText={messages.noImage} />
-        <Certificates certificates={content.certificates} sectionTitle={messages.certificates} emptyText={messages.noCertificates} previewUnavailableText={messages.previewUnavailable} closeLabel={messages.closePreview} unavailableText={messages.imageUnavailable} />
-        <Reviews reviews={content.reviews} stats={content.stats} sectionTitle={messages.reviews} emptyText={messages.noReviews} allLabel={messages.allReviews} reviewCountLabel={messages.reviewsCount} locale={locale} />
+        <Experience experiences={content.experiences} sectionTitle={messages.experience} emptyText={messages.noExperience} presentLabel={messages.present} locale={locale} errorText={content.sectionErrors.experience ? messages.sectionUnavailable : undefined} retryLabel={messages.retry} onRetry={() => setLoadAttempt((attempt) => attempt + 1)} />
+        <MyWork works={content.works} sectionTitle={messages.works} emptyText={messages.noWorks} noImageText={messages.noImage} errorText={content.sectionErrors.works ? messages.sectionUnavailable : undefined} retryLabel={messages.retry} onRetry={() => setLoadAttempt((attempt) => attempt + 1)} />
+        <Certificates certificates={content.certificates} sectionTitle={messages.certificates} emptyText={messages.noCertificates} previewUnavailableText={messages.previewUnavailable} closeLabel={messages.closePreview} unavailableText={messages.imageUnavailable} errorText={content.sectionErrors.certificates ? messages.sectionUnavailable : undefined} retryLabel={messages.retry} onRetry={() => setLoadAttempt((attempt) => attempt + 1)} />
+        <Reviews reviews={content.reviews} stats={content.stats} sectionTitle={messages.reviews} emptyText={messages.noReviews} allLabel={messages.allReviews} reviewCountLabel={messages.reviewsCount} locale={locale} errorText={content.sectionErrors.reviews ? messages.sectionUnavailable : undefined} retryLabel={messages.retry} onRetry={() => setLoadAttempt((attempt) => attempt + 1)} />
       </ScrollView>
     </SafeAreaView>
   );
