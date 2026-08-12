@@ -263,6 +263,17 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  itemCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  removeButton: {
+    minHeight: 44,
+    minWidth: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   itemLabel: {
     fontFamily: fontFamily.bold,
     fontSize: 10,
@@ -332,6 +343,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
+  dateInputError: {
+    borderColor: colors.danger,
+    borderWidth: 1,
+  },
   fieldErrorText: {
     fontFamily: fontFamily.regular,
     fontSize: 12,
@@ -360,6 +375,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSubtle,
     overflow: 'hidden',
   },
+  certificateImageBox: {
+    height: 96,
+  },
   imagePlaceholderContent: {
     alignItems: 'center',
   },
@@ -373,6 +391,16 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+  },
+  loadErrorCard: {
+    margin: spacing.lg,
+    padding: spacing.lg,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.borderDanger,
+    backgroundColor: colors.surfaceDanger,
+    alignItems: 'center',
+    gap: spacing.md,
   },
 });
 

@@ -101,6 +101,17 @@ describe('StudentApi', () => {
     );
   });
 
+  test('deletes a persisted certificate through the documented endpoint', async () => {
+    fetchMock.mockResolvedValue(response({ success: true }));
+
+    await api.deleteCertificate('certificate-id');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.example.test/api/v1/profile/certificates/certificate-id',
+      expect.objectContaining({ method: 'DELETE' })
+    );
+  });
+
   test('maps API errors to ApiError with the documented error payload', async () => {
     fetchMock.mockResolvedValue(response({
       success: false,

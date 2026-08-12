@@ -88,7 +88,7 @@ export function ProfileHeader({
       {data.faculty ? <Text style={styles.meta}>{data.faculty}</Text> : null}
       {data.occupation ? <Text style={styles.meta}>{data.occupation}</Text> : null}
       {data.department ? <Text style={styles.subtleMeta}>{data.department}</Text> : null}
-      <Button onPress={onEditPress} style={styles.editButton}>
+      <Button onPress={onEditPress} variant="secondary" style={styles.editButton}>
         {editProfileLabel}
       </Button>
     </View>
@@ -139,8 +139,8 @@ export function Certificates({ certificates, sectionTitle, emptyText }: { certif
             <View style={styles.itemContent}>
               <Text style={styles.itemTitle}>{certificate.title}</Text>
               {certificate.detail ? <Text style={styles.itemDescription}>{certificate.detail}</Text> : null}
-              {certificate.link ? <Text style={styles.itemMeta}>{certificate.link}</Text> : null}
             </View>
+            {certificate.link ? <Image accessibilityLabel={`${certificate.title} image`} source={{ uri: certificate.link }} style={styles.certificateImage} /> : null}
           </View>
         )) : <Text style={styles.emptyText}>{emptyText}</Text>}
     </Section>

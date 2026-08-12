@@ -3,6 +3,7 @@ import { SupportedLocale } from './LocaleProvider';
 export interface ProfileMessages {
   loading: string;
   error: string;
+  retry: string;
   edit: string;
   about: string;
   certificates: string;
@@ -19,6 +20,7 @@ export const profileMessages: Record<SupportedLocale, ProfileMessages> = {
   en: {
     loading: 'Loading profile...',
     error: 'Unable to load your profile.',
+    retry: 'Try again',
     edit: 'Edit your profile',
     about: 'About me',
     certificates: 'Certificates',
@@ -33,6 +35,7 @@ export const profileMessages: Record<SupportedLocale, ProfileMessages> = {
   th: {
     loading: 'กำลังโหลดโปรไฟล์...',
     error: 'ไม่สามารถโหลดโปรไฟล์ของคุณได้',
+    retry: 'ลองใหม่อีกครั้ง',
     edit: 'แก้ไขโปรไฟล์',
     about: 'เกี่ยวกับฉัน',
     certificates: 'ใบรับรอง',

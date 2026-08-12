@@ -145,6 +145,11 @@ export class StudentApi {
     successResponseSchema.parse(body);
   }
 
+  async deleteCertificate(id: string): Promise<void> {
+    const body = await this.client.request<unknown>(`/api/v1/profile/certificates/${id}`, { method: 'DELETE' });
+    successResponseSchema.parse(body);
+  }
+
   async uploadCertificateImage(id: string, asset: UploadAsset): Promise<void> {
     const formData = new FormData();
     appendFile(formData, 'image', asset);

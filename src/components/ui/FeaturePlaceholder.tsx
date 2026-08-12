@@ -1,5 +1,5 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CheckSquare, Grid2X2, MessageSquare, Plus, type LucideIcon } from 'lucide-react-native';
 
 import { useLocale } from '@/locales/LocaleProvider';
@@ -10,6 +10,8 @@ import { TopBar } from './TopBar';
 
 interface FeaturePlaceholderProps {
   titleKey: 'boardTitle' | 'myQuestsTitle' | 'createTitle' | 'chatTitle';
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
 const featureConfig: Record<FeaturePlaceholderProps['titleKey'], { descriptionKey: 'boardDescription' | 'myQuestsDescription' | 'createDescription' | 'chatDescription'; icon: LucideIcon }> = {
@@ -19,7 +21,7 @@ const featureConfig: Record<FeaturePlaceholderProps['titleKey'], { descriptionKe
   chatTitle: { descriptionKey: 'chatDescription', icon: MessageSquare },
 };
 
-export function FeaturePlaceholder({ titleKey }: FeaturePlaceholderProps) {
+export function FeaturePlaceholder({ titleKey, actionLabel, onAction }: FeaturePlaceholderProps) {
   const { locale } = useLocale();
   const messages = navigationMessages[locale];
   const { descriptionKey, icon: Icon } = featureConfig[titleKey];
@@ -33,6 +35,7 @@ export function FeaturePlaceholder({ titleKey }: FeaturePlaceholderProps) {
         </View>
         <Text style={styles.title}>{messages[titleKey]}</Text>
         <Text style={styles.description}>{messages[descriptionKey]}</Text>
+        {actionLabel && onAction ? <Pressable accessibilityRole="button" style={styles.action} onPress={onAction}><Text style={styles.actionText}>{actionLabel}</Text></Pressable> : null}
       </View>
     </SafeAreaView>
   );
@@ -71,5 +74,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
     maxWidth: 360,
     textAlign: 'left',
+  },
+  action: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primary,
+    borderRadius: 999,
+    marginTop: 24,
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  actionText: {
+    color: colors.white,
+    fontWeight: '600',
   },
 });

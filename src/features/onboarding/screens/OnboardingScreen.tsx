@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Image, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Host, Button } from '@expo/ui';
-import { Check, CircleAlert, Image as ImageIcon, Pencil, UserRound } from 'lucide-react-native';
+import { CalendarDays, Check, CircleAlert, Image as ImageIcon, Pencil, Trash2, UserRound } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import styles from '@/features/onboarding/styles/registrationStyles';
@@ -18,7 +19,7 @@ import { useLocale } from '../../../locales/LocaleProvider';
 import { createEmptyProfile } from '../../profile/types';
 import type { Certificate, ProfileDraft, Work } from '../../profile/types';
 import { authService } from '../../auth/AuthService';
-import type { OnboardingStep } from '../../auth/types';
+import { AuthError, type OnboardingStep } from '../../auth/types';
 import type { AcademicRegistrationOptions } from '../../../api/contracts';
 import { parseOnboardingStep } from '../steps';
 import { validateProfileBasics, validateProfileDetails } from '../validation';
@@ -26,9 +27,17 @@ import { validateProfileBasics, validateProfileDetails } from '../validation';
 function createOnboardingForm(): ProfileDraft {
   return {
     ...createEmptyProfile(),
-    certificates: [{ name: '', issuer: '', issuedAt: '', imageUri: '' }],
-    works: [{ imageUri: '', title: '', detail: '' }],
+    certificates: [createEmptyCertificate()],
+    works: [createEmptyWork()],
   };
+}
+
+function createEmptyCertificate(): Certificate {
+  return { name: '', issuer: '', issuedAt: '', imageUri: '' };
+}
+
+function createEmptyWork(): Work {
+  return { imageUri: '', title: '', detail: '' };
 }
 
 function splitName(name: string): { firstName: string; lastName: string } {
@@ -51,11 +60,19 @@ export default function OnboardingScreen() {
   const [form, setForm] = useState<ProfileDraft>(createOnboardingForm);
   const [options, setOptions] = useState<AcademicRegistrationOptions | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isModalVisible, setModalVisible] = useState(false);
   const [retryAction, setRetryAction] = useState<(() => void) | null>(null);
+  const [datePickerTarget, setDatePickerTarget] = useState<{ index: number; value: string } | null>(null);
+  const [today] = useState(() => new Date());
+  const persistedPortfolioImages = useRef(new Set<string>());
+  const pendingPortfolioReplacements = useRef(new Map<string, { oldId: string; newId: string }>());
+  const pendingCertificateDeletes = useRef(new Set<string>());
+  const pendingPortfolioDeletes = useRef(new Set<string>());
   const { width } = useWindowDimensions();
   const buttonWidth = (width - 96) / 2;
 
@@ -63,6 +80,8 @@ export default function OnboardingScreen() {
     let active = true;
 
     async function load() {
+      setLoadError(false);
+      setIsLoadingProfile(true);
       try {
         const session = await authService.getSession();
         if (!session) throw new Error('No active session');
@@ -94,23 +113,28 @@ export default function OnboardingScreen() {
             acceptedTerms: Boolean(status.termsAcceptedAt),
             description: profile.bio ?? '',
             profileImage: profile.avatar?.url ?? session.user.image ?? '',
-            certificates: certificates.map((certificate) => ({
+            certificates: certificates.length > 0 ? certificates.map((certificate) => ({
               id: certificate.id,
               name: certificate.name,
               issuer: certificate.issuer,
               issuedAt: certificate.issuedAt,
               imageUri: certificate.image?.url ?? '',
-            })),
-            works: portfolio.map((entry) => ({
+            })) : [createEmptyCertificate()],
+            works: portfolio.length > 0 ? portfolio.map((entry) => ({
               id: entry.id,
               title: entry.title,
               detail: entry.description ?? '',
               imageUri: entry.images[0]?.url ?? '',
-            })),
+            })) : [createEmptyWork()],
           });
         }
-      } catch {
-        if (active) setSubmitError(msg.submitErrorMsg || msg.loadingProfile);
+      } catch (error) {
+        if (error instanceof AuthError && error.code === 'SESSION_EXPIRED') {
+          await authService.signOut().catch(() => undefined);
+          if (active) router.replace('/');
+          return;
+        }
+        if (active) setLoadError(true);
       } finally {
         if (active) setIsLoadingProfile(false);
       }
@@ -120,7 +144,7 @@ export default function OnboardingScreen() {
     return () => {
       active = false;
     };
-  }, [msg.loadingProfile, msg.submitErrorMsg]);
+  }, [loadAttempt, msg.loadingProfile, msg.submitErrorMsg, router]);
 
   const occupationOptions = (options?.occupations ?? []).map((occupation) => ({
     label: occupation.name,
@@ -160,7 +184,7 @@ export default function OnboardingScreen() {
       if (!occupationId || !departmentId) throw new Error('Academic registration options are incomplete');
 
       const termsVersion = process.env.EXPO_PUBLIC_TERMS_VERSION;
-      if (form.acceptedTerms && !termsVersion) throw new Error('EXPO_PUBLIC_TERMS_VERSION is required');
+      if (!isEditMode && form.acceptedTerms && !termsVersion) throw new Error('EXPO_PUBLIC_TERMS_VERSION is required');
 
       await api.updateAcademicRegistration({
         firstName,
@@ -169,7 +193,7 @@ export default function OnboardingScreen() {
         occupationId,
         studentId: form.studentId || undefined,
         departmentId,
-        termsVersion: form.acceptedTerms ? termsVersion : undefined,
+        termsVersion: form.acceptedTerms && termsVersion ? termsVersion : undefined,
       });
       await api.updateProfile({
         firstName,
@@ -183,27 +207,76 @@ export default function OnboardingScreen() {
         await api.uploadAvatar({ uri: form.profileImage });
       }
 
-      for (const certificate of form.certificates.filter((item) => item.name || item.issuer || item.issuedAt)) {
+      for (const [index, certificate] of form.certificates.entries()) {
+        if (!(certificate.name || certificate.issuer || certificate.issuedAt || certificate.imageUri)) continue;
         const certificateData = { name: certificate.name, issuer: certificate.issuer, issuedAt: certificate.issuedAt };
         const id = certificate.id
           ? (await api.updateCertificate(certificate.id, certificateData), certificate.id)
           : await api.createCertificate(certificateData);
+        if (!certificate.id) {
+          setForm((previous) => ({
+            ...previous,
+            certificates: previous.certificates.map((item, itemIndex) => itemIndex === index ? { ...item, id } : item),
+          }));
+        }
         if (isLocalAsset(certificate.imageUri)) await api.uploadCertificateImage(id, { uri: certificate.imageUri });
       }
 
-      for (const work of form.works.filter((item) => item.title || item.detail || item.imageUri)) {
-        const id = work.id
-          ? (await api.updatePortfolio(work.id, { title: work.title, description: work.detail }), work.id)
-          : await api.createPortfolio({ title: work.title, description: work.detail, imageUris: [work.imageUri] });
-        if (work.id && isLocalAsset(work.imageUri)) {
-          await api.createPortfolio({ title: work.title, description: work.detail, imageUris: [work.imageUri] });
-          await api.deletePortfolio(id);
+      for (const [index, work] of form.works.entries()) {
+        if (!(work.title || work.detail || work.imageUri)) continue;
+        let id = work.id;
+        const pendingReplacement = isLocalAsset(work.imageUri)
+          ? pendingPortfolioReplacements.current.get(work.imageUri)
+          : undefined;
+        if (pendingReplacement) {
+          await api.deletePortfolio(pendingReplacement.oldId);
+          pendingPortfolioReplacements.current.delete(work.imageUri);
+          persistedPortfolioImages.current.add(work.imageUri);
+          id = pendingReplacement.newId;
         }
+        const hasNewImage = isLocalAsset(work.imageUri) && !persistedPortfolioImages.current.has(work.imageUri);
+        if (!pendingReplacement && id && hasNewImage) {
+          const replacementId = await api.createPortfolio({ title: work.title.trim(), description: work.detail.trim() || undefined, imageUris: [work.imageUri] });
+          pendingPortfolioReplacements.current.set(work.imageUri, { oldId: id, newId: replacementId });
+          id = replacementId;
+          setForm((previous) => ({
+            ...previous,
+            works: previous.works.map((item, itemIndex) => itemIndex === index ? { ...item, id: replacementId } : item),
+          }));
+          await api.deletePortfolio(work.id ?? '');
+          pendingPortfolioReplacements.current.delete(work.imageUri);
+          persistedPortfolioImages.current.add(work.imageUri);
+        } else if (id) {
+          await api.updatePortfolio(id, { title: work.title.trim(), ...(work.detail.trim() ? { description: work.detail.trim() } : {}) });
+        } else {
+          id = await api.createPortfolio({ title: work.title.trim(), description: work.detail.trim() || undefined, imageUris: [work.imageUri] });
+          if (isLocalAsset(work.imageUri)) persistedPortfolioImages.current.add(work.imageUri);
+        }
+        if (id && (!work.id || id !== work.id)) {
+          setForm((previous) => ({
+            ...previous,
+            works: previous.works.map((item, itemIndex) => itemIndex === index ? { ...item, id } : item),
+          }));
+        }
+      }
+
+      for (const id of pendingCertificateDeletes.current) {
+        await api.deleteCertificate(id);
+        pendingCertificateDeletes.current.delete(id);
+      }
+      for (const id of pendingPortfolioDeletes.current) {
+        await api.deletePortfolio(id);
+        pendingPortfolioDeletes.current.delete(id);
       }
 
       if (isEditMode) router.replace('/(tabs)/profile');
       else router.replace('/');
     } catch (error) {
+      if (error instanceof AuthError && error.code === 'SESSION_EXPIRED') {
+        await authService.signOut().catch(() => undefined);
+        router.replace('/');
+        return;
+      }
       setSubmitError(error instanceof Error && error.message.includes('EXPO_PUBLIC_TERMS_VERSION')
         ? error.message
         : msg.submitErrorMsg || 'Failed to save data. Please try again.');
@@ -213,20 +286,41 @@ export default function OnboardingScreen() {
   };
 
   const handlePickImage = async (onSelected: (uri: string) => void, aspect: [number, number]) => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect,
-      quality: 0.5,
-    });
-    if (result.canceled || !result.assets?.[0]) return;
-    const asset = result.assets[0];
-    if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-      setRetryAction(() => () => void handlePickImage(onSelected, aspect));
-      setModalVisible(true);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect,
+        quality: 0.5,
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+      const asset = result.assets[0];
+      if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
+        setRetryAction(() => () => void handlePickImage(onSelected, aspect));
+        setModalVisible(true);
+        return;
+      }
+      onSelected(asset.uri);
+    } catch {
+      setSubmitError(msg.submitErrorMsg);
+    }
+  };
+
+  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (event.type === 'dismissed' || !selectedDate || !datePickerTarget) {
+      setDatePickerTarget(null);
       return;
     }
-    onSelected(asset.uri);
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(selectedDate.getDate()).padStart(2, '0');
+    handleUpdateCertificate(datePickerTarget.index, 'issuedAt', `${year}-${month}-${day}`);
+    setDatePickerTarget(null);
+  };
+
+  const openDatePicker = (index: number, value: string) => {
+    const parsed = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00`) : new Date();
+    setDatePickerTarget({ index, value: Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString() });
   };
 
   const handleUpdateCertificate = (index: number, field: keyof Certificate, value: string) => {
@@ -242,8 +336,56 @@ export default function OnboardingScreen() {
     }));
   };
 
+  const removeCertificate = async (index: number) => {
+    const certificate = form.certificates[index];
+    try {
+      if (certificate?.id) {
+        pendingCertificateDeletes.current.add(certificate.id);
+      }
+      setForm((previous) => ({
+        ...previous,
+        certificates: previous.certificates.length === 1
+          ? [createEmptyCertificate()]
+          : previous.certificates.filter((_, itemIndex) => itemIndex !== index),
+      }));
+    } catch {
+      setSubmitError(msg.submitErrorMsg);
+    }
+  };
+
+  const removeWork = async (index: number) => {
+    const work = form.works[index];
+    try {
+      if (work?.id) {
+        pendingPortfolioDeletes.current.add(work.id);
+      }
+      setForm((previous) => ({
+        ...previous,
+        works: previous.works.length === 1
+          ? [createEmptyWork()]
+          : previous.works.filter((_, itemIndex) => itemIndex !== index),
+      }));
+    } catch {
+      setSubmitError(msg.submitErrorMsg);
+    }
+  };
+
   if (isLoadingProfile) {
     return <SafeAreaView style={[styles.safeArea, { justifyContent: 'center', alignItems: 'center' }]}><Text style={styles.loadingText}>{msg.loadingProfile}</Text></SafeAreaView>;
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadErrorCard} accessibilityRole="alert">
+          <CircleAlert size={24} color={colors.danger} strokeWidth={2} />
+          <Text style={styles.submitErrorText}>{msg.loadError}</Text>
+          <Pressable accessibilityRole="button" style={styles.addMoreBtn} onPress={() => setLoadAttempt((attempt) => attempt + 1)}>
+            <Text style={styles.addMoreBtnText}>{msg.retrySubmitBtn}</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
@@ -253,17 +395,18 @@ export default function OnboardingScreen() {
           <Text style={styles.title}>{msg.title}</Text>
           <Text style={styles.stepTitle}>{isEditMode ? msg.editProfile : currentStep === 1 ? msg.stepTitle : currentStep === 2 ? msg.step2Title : msg.step3Title}</Text>
           {!isEditMode && <Text style={styles.stepIndicator}>{currentStep === 1 ? msg.stepIndicator : currentStep === 2 ? msg.step2Indicator : msg.step3Indicator}</Text>}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBarActive} />
-            <View style={currentStep >= 2 ? styles.progressBarActive : styles.progressBarInactive} />
-            <View style={currentStep >= 2 ? styles.progressBarActive : styles.progressBarInactive} />
-            <View style={currentStep >= 3 ? styles.progressBarActive : styles.progressBarInactive} />
+          <View style={styles.progressContainer} accessibilityLabel={msg.progressLabel(currentStep)}>
+            {[1, 2, 3].map((progressStep) => (
+              <View key={progressStep} style={currentStep >= progressStep ? styles.progressBarActive : styles.progressBarInactive} />
+            ))}
           </View>
           {currentStep === 1 && <Pressable accessibilityRole="button" accessibilityLabel={msg.addImage} style={styles.avatarPlaceholder} onPress={() => void handlePickImage((uri) => setForm((previous) => ({ ...previous, profileImage: uri })), [1, 1])}>
             {form.profileImage ? <Image source={{ uri: form.profileImage }} style={styles.avatarImage} /> : <UserRound size={40} color={colors.textMuted} strokeWidth={2} />}
             <View style={styles.editBadge}><Pencil size={16} color={colors.white} strokeWidth={2} /></View>
           </Pressable>}
         </View>
+
+        {submitError && currentStep !== 3 ? <View style={styles.submitErrorCard} accessibilityRole="alert"><CircleAlert size={20} color={colors.danger} strokeWidth={2} /><Text style={styles.submitErrorText}>{submitError}</Text></View> : null}
 
         <View style={styles.formSection}>
           {currentStep === 1 && <>
@@ -280,25 +423,55 @@ export default function OnboardingScreen() {
           </>}
 
           {currentStep === 2 && <>
-            <View style={styles.step2Card}><Text style={styles.step2CardTitle}>{msg.aboutYourself}</Text><Text style={styles.step2CardSubtitle}>{msg.aboutYourselfSub}</Text><TextArea label={msg.descriptionLabel} placeholder={msg.descriptionPlaceholder} value={form.description} onChangeText={(description) => setForm({ ...form, description })} maxLength={500} /></View>
+            <View style={styles.step2Card}><Text style={styles.step2CardTitle}>{msg.aboutYourself}</Text><Text style={styles.step2CardSubtitle}>{msg.aboutYourselfSub}</Text><TextArea label={msg.descriptionLabel} placeholder={msg.descriptionPlaceholder} value={form.description} onChangeText={(description) => setForm({ ...form, description })} maxLength={1000} /></View>
             <View style={styles.skipButtonContainer}><Pressable onPress={() => setCurrentStep(3)} style={styles.skipButton}><Text style={styles.skipButtonText}>{msg.skip}</Text></Pressable></View>
             <View style={styles.buttonRow}><View style={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="outlined" label={msg.back} onPress={() => setCurrentStep(1)} style={{ width: buttonWidth }} /></Host></View><View style={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="filled" label={msg.next} onPress={() => setCurrentStep(3)} style={{ width: buttonWidth }} /></Host></View></View>
           </>}
 
           {currentStep === 3 && <>
+            <Text style={styles.sectionDesc}>{msg.step3Desc}</Text>
             <View style={styles.step3Section}><View style={styles.sectionHeader}><View style={styles.badgeSuccess}><Check size={12} color={colors.white} strokeWidth={2.5} /></View><Text style={styles.sectionTitle}>{msg.certification}</Text></View><Text style={styles.sectionDesc}>{msg.certDesc}</Text>
-              {form.certificates.map((cert, index) => <View key={`cert-${cert.id ?? index}`} style={styles.itemCard}><Input label={msg.certName} placeholder={msg.certName} value={cert.name} onChangeText={(value) => handleUpdateCertificate(index, 'name', value)} error={errors[`cert_${index}_name`]} /><Input label={msg.certIssuer} placeholder={msg.certIssuer} value={cert.issuer} onChangeText={(value) => handleUpdateCertificate(index, 'issuer', value)} error={errors[`cert_${index}_issuer`]} /><Input label={msg.certIssuedAt} placeholder="YYYY-MM-DD" value={cert.issuedAt} onChangeText={(value) => handleUpdateCertificate(index, 'issuedAt', value)} error={errors[`cert_${index}_issuedAt`]} /></View>)}
-              <Pressable style={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, certificates: [...previous.certificates, { name: '', issuer: '', issuedAt: '', imageUri: '' }] }))}><Text style={styles.addMoreBtnText}>{msg.addMoreCert}</Text></Pressable>
+              {form.certificates.map((cert, index) => <View key={`cert-${cert.id ?? index}`} style={styles.itemCard}>
+                <View style={styles.itemCardHeader}>
+                  <Text style={styles.itemLabel}>{msg.certification}</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={`${msg.removeItem} ${index + 1}`} onPress={() => removeCertificate(index)} style={styles.removeButton}>
+                    <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                  </Pressable>
+                </View>
+                <Pressable accessibilityRole="button" accessibilityLabel={msg.addImage} style={[styles.imageUploadBox, styles.certificateImageBox]} onPress={() => void handlePickImage((uri) => handleUpdateCertificate(index, 'imageUri', uri), [4, 3])}>
+                  {cert.imageUri ? <Image source={{ uri: cert.imageUri }} style={styles.uploadedImage} /> : <View style={styles.imagePlaceholderContent}><ImageIcon size={24} color={colors.textMuted} strokeWidth={2} /><Text style={styles.addImgText}>{msg.addImage}</Text></View>}
+                </Pressable>
+                <Input label={msg.certName} placeholder={msg.certName} value={cert.name} onChangeText={(value) => handleUpdateCertificate(index, 'name', value)} error={errors[`cert_${index}_name`]} />
+                <Input label={msg.certIssuer} placeholder={msg.certIssuer} value={cert.issuer} onChangeText={(value) => handleUpdateCertificate(index, 'issuer', value)} error={errors[`cert_${index}_issuer`]} />
+                <View style={styles.dateInputWrapper}>
+                  <Text style={styles.dateInputLabel}>{msg.certIssuedAt}</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={cert.issuedAt || msg.certIssuedAt} accessibilityState={{ expanded: datePickerTarget?.index === index }} style={[styles.dateInputBox, errors[`cert_${index}_issuedAt`] ? styles.dateInputError : null]} onPress={() => openDatePicker(index, cert.issuedAt)}>
+                    <Text style={cert.issuedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{cert.issuedAt || 'YYYY-MM-DD'}</Text>
+                    <CalendarDays size={18} color={colors.textMuted} strokeWidth={2} />
+                  </Pressable>
+                  {errors[`cert_${index}_issuedAt`] ? <Text style={styles.fieldErrorText}>{errors[`cert_${index}_issuedAt`]}</Text> : null}
+                </View>
+              </View>)}
+              <Pressable style={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, certificates: [...previous.certificates, createEmptyCertificate()] }))}><Text style={styles.addMoreBtnText}>{msg.addMoreCert}</Text></Pressable>
             </View>
             <View style={styles.step3Section}><Text style={styles.sectionTitleNormal}>{msg.myWorks}</Text>
-              {form.works.map((work, index) => <View key={`work-${work.id ?? index}`} style={styles.itemCard}><Pressable accessibilityRole="button" accessibilityLabel={msg.addImage} style={styles.imageUploadBox} onPress={() => void handlePickImage((uri) => handleUpdateWork(index, 'imageUri', uri), [4, 3])}>{work.imageUri ? <Image source={{ uri: work.imageUri }} style={styles.uploadedImage} /> : <View style={styles.imagePlaceholderContent}><ImageIcon size={24} color={colors.textMuted} strokeWidth={2} /><Text style={styles.addImgText}>{msg.addImage}</Text></View>}</Pressable><Input label="" accessibilityLabel={msg.workTitle} placeholder={msg.workTitle} value={work.title} onChangeText={(title) => handleUpdateWork(index, 'title', title)} error={errors[`work_${index}_title`]} /><TextArea label="" accessibilityLabel={msg.detailProject} placeholder={msg.detailProject} value={work.detail} onChangeText={(detail) => handleUpdateWork(index, 'detail', detail)} maxLength={300} /></View>)}
-              <Pressable style={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, works: [...previous.works, { imageUri: '', title: '', detail: '' }] }))}><Text style={styles.addMoreBtnText}>{msg.addMoreWorks}</Text></Pressable>
+              {form.works.map((work, index) => <View key={`work-${work.id ?? index}`} style={styles.itemCard}>
+                <View style={styles.itemCardHeader}>
+                  <Text style={styles.itemLabel}>{msg.myWorks}</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={`${msg.removeItem} ${index + 1}`} onPress={() => removeWork(index)} style={styles.removeButton}>
+                    <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                  </Pressable>
+                </View>
+                <Pressable accessibilityRole="button" accessibilityLabel={msg.addImage} style={styles.imageUploadBox} onPress={() => void handlePickImage((uri) => handleUpdateWork(index, 'imageUri', uri), [4, 3])}>{work.imageUri ? <Image source={{ uri: work.imageUri }} style={styles.uploadedImage} /> : <View style={styles.imagePlaceholderContent}><ImageIcon size={24} color={colors.textMuted} strokeWidth={2} /><Text style={styles.addImgText}>{msg.addImage}</Text></View>}</Pressable><Input label="" accessibilityLabel={msg.workTitle} placeholder={msg.workTitle} value={work.title} onChangeText={(title) => handleUpdateWork(index, 'title', title)} error={errors[`work_${index}_title`]} /><TextArea label="" accessibilityLabel={msg.detailProject} placeholder={msg.detailProject} value={work.detail} onChangeText={(detail) => handleUpdateWork(index, 'detail', detail)} maxLength={1000} />
+              </View>)}
+              <Pressable style={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, works: [...previous.works, createEmptyWork()] }))}><Text style={styles.addMoreBtnText}>{msg.addMoreWorks}</Text></Pressable>
             </View>
             {submitError && <View style={styles.submitErrorCard} accessibilityRole="alert"><CircleAlert size={20} color={colors.danger} strokeWidth={2} /><Text style={styles.submitErrorText}>{submitError}</Text></View>}
             <View style={styles.buttonRow}><View style={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="outlined" label={msg.back} onPress={() => setCurrentStep(2)} style={{ width: buttonWidth }} disabled={isSubmitting} /></Host></View><View style={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="filled" label={isSubmitting ? msg.submitting : submitError ? msg.retrySubmitBtn : isEditMode ? msg.saveChanges : msg.completeBtn} onPress={() => void handleComplete()} style={{ width: buttonWidth }} disabled={isSubmitting} /></Host></View></View>
           </>}
         </View>
       </ScrollView>
+      {datePickerTarget ? <DateTimePicker value={new Date(datePickerTarget.value)} mode="date" display={Platform.OS === 'ios' ? 'spinner' : 'default'} onChange={handleDateChange} maximumDate={today} /> : null}
       <FileTooLargeModal visible={isModalVisible} onBack={() => setModalVisible(false)} onTryAgain={() => { setModalVisible(false); retryAction?.(); }} />
     </SafeAreaView>
   );

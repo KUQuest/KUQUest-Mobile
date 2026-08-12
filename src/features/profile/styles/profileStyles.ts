@@ -23,6 +23,23 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
+  errorState: {
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  retryButton: {
+    minHeight: 44,
+    minWidth: 140,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+  },
+  retryButtonText: {
+    color: colors.white,
+    fontWeight: '600',
+  },
 });
 
 export default styles;

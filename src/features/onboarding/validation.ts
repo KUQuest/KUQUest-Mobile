@@ -5,7 +5,9 @@ import type { ProfileDraft } from '../profile/types';
 
 export interface OnboardingValidationMessages {
   requiredField: string;
+  invalidName: string;
   invalidTelephone: string;
+  invalidStudentId: string;
   invalidDate: string;
 }
 
@@ -34,10 +36,11 @@ function errorsFromZod(error: z.ZodError): ValidationErrors {
 
 function createProfileBasicsSchema(
   isEditMode: boolean,
-  messages: OnboardingValidationMessages
+  messages: OnboardingValidationMessages,
+  requiresStudentId: boolean
 ) {
   return z.object({
-    name: z.string().trim().min(1, messages.requiredField),
+    name: z.string().trim().min(1, messages.requiredField).refine((value) => value.split(/\s+/).length >= 2, messages.invalidName),
     telephone: z.string()
       .trim()
       .min(1, messages.requiredField)
@@ -53,6 +56,14 @@ function createProfileBasicsSchema(
         code: z.ZodIssueCode.custom,
         path: ['acceptedTerms'],
         message: messages.requiredField,
+      });
+    }
+
+    if (requiresStudentId && !/^\d{10}$/.test(form.studentId.trim())) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['studentId'],
+        message: messages.invalidStudentId,
       });
     }
   });
@@ -116,15 +127,7 @@ export function validateProfileBasics(
   messages: OnboardingValidationMessages,
   requiresStudentId: boolean
 ): ValidationErrors {
-  const schema = createProfileBasicsSchema(isEditMode, messages).superRefine((profile, context) => {
-    if (requiresStudentId && !profile.studentId.trim()) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['studentId'],
-        message: messages.requiredField,
-      });
-    }
-  });
+  const schema = createProfileBasicsSchema(isEditMode, messages, requiresStudentId);
   const result = schema.safeParse(form);
   return result.success ? {} : errorsFromZod(result.error);
 }

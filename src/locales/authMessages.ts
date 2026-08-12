@@ -3,6 +3,8 @@ import { SupportedLocale } from './LocaleProvider';
 
 export interface AuthMessages {
   signInWithGoogle: string;
+  sessionLoadTitle: string;
+  sessionLoadDescription: string;
   subtitle: string;
   noticeTextPrefix: string;
   noticeEmailDomain: string;
@@ -17,7 +19,9 @@ export interface AuthMessages {
 
 export const authMessages: Record<SupportedLocale, AuthMessages> = {
   en: {
-    signInWithGoogle: 'Sign In with Google',
+    signInWithGoogle: 'Continue with Google',
+    sessionLoadTitle: 'Unable to load your session',
+    sessionLoadDescription: 'Check your connection and try again.',
     subtitle: 'ACADEMIC VENTURE NETWORK',
     noticeTextPrefix: 'Please sign in with your',
     noticeEmailDomain: '@ku.th',
@@ -37,7 +41,9 @@ export const authMessages: Record<SupportedLocale, AuthMessages> = {
     },
   },
   th: {
-    signInWithGoogle: 'เข้าสู่ระบบด้วย Google',
+    signInWithGoogle: 'ดำเนินการต่อด้วย Google',
+    sessionLoadTitle: 'ไม่สามารถโหลดเซสชันของคุณได้',
+    sessionLoadDescription: 'โปรดตรวจสอบการเชื่อมต่อแล้วลองใหม่อีกครั้ง',
     subtitle: 'เครือข่ายนวัตกรรมทางวิชาการ',
     noticeTextPrefix: 'กรุณาเข้าสู่ระบบด้วยอีเมลนิสิต',
     noticeEmailDomain: '@ku.th',

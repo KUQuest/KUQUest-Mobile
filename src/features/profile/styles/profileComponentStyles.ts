@@ -10,6 +10,8 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 16,
     backgroundColor: colors.white,
+    borderColor: colors.borderSubtle,
+    borderWidth: 1,
   },
   photoFrame: {
     width: 112,
@@ -53,15 +55,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   editButton: {
-    minHeight: 48,
-    marginTop: spacing.lg,
-    backgroundColor: colors.primaryDark,
+    minHeight: 44,
+    marginTop: spacing.md,
+    maxWidth: 320,
+    width: '88%',
   },
   section: {
     alignSelf: 'stretch',
     borderRadius: 16,
     padding: 20,
     backgroundColor: colors.white,
+    borderColor: colors.borderSubtle,
+    borderWidth: 1,
   },
   sectionTitle: {
     color: colors.text,
@@ -82,7 +87,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   emptyText: {
-    color: colors.textSubtle,
+    color: colors.textMuted,
     fontFamily: fontFamily.regular,
     fontSize: 14,
   },
@@ -147,6 +152,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
     marginTop: 6,
+  },
+  certificateImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceImage,
   },
   workList: {
     gap: spacing.md + 4,
