@@ -5,15 +5,22 @@ import {
   academicRegistrationStatusResponseSchema,
   certificateResponseSchema,
   certificateCreateResponseSchema,
+  experienceMutationResponseSchema,
+  experienceResponseSchema,
   portfolioResponseSchema,
   portfolioCreateResponseSchema,
   profileResponseSchema,
+  reputationResponseSchema,
+  reviewsResponseSchema,
   successResponseSchema,
   type AcademicRegistrationOptions,
   type AcademicRegistrationStatus,
   type CertificateEntry,
+  type ExperienceEntry,
   type PortfolioEntry,
   type ProfileResponse,
+  type ProfileReview,
+  type Reputation,
 } from './contracts';
 
 export interface AcademicRegistrationUpdate {
@@ -44,6 +51,14 @@ export interface CertificateCreate {
   name: string;
   issuer: string;
   issuedAt: string;
+}
+
+export interface ExperienceCreate {
+  title: string;
+  organization?: string;
+  description?: string;
+  startedAt: string;
+  endedAt?: string | null;
 }
 
 export interface UploadAsset {
@@ -137,6 +152,38 @@ export class StudentApi {
       const body = await this.client.requestJson<unknown>('/api/v1/profile', update, { method: 'PATCH' });
       successResponseSchema.parse(body);
     });
+  }
+
+  async listExperience(): Promise<ExperienceEntry[]> {
+    const body = await this.client.request<unknown>('/api/v1/profile/experience');
+    return experienceResponseSchema.parse(body).data;
+  }
+
+  async createExperience(entry: ExperienceCreate): Promise<ExperienceEntry | undefined> {
+    const body = await this.client.requestJson<unknown>('/api/v1/profile/experience', entry, { method: 'POST' });
+    return experienceMutationResponseSchema.parse(body).data?.experience;
+  }
+
+  async updateExperience(id: string, update: Partial<ExperienceCreate>): Promise<ExperienceEntry | undefined> {
+    const body = await this.client.requestJson<unknown>(`/api/v1/profile/experience/${id}`, update, { method: 'PATCH' });
+    return experienceMutationResponseSchema.parse(body).data?.experience;
+  }
+
+  async deleteExperience(id: string): Promise<void> {
+    const body = await this.client.request<unknown>(`/api/v1/profile/experience/${id}`, { method: 'DELETE' });
+    successResponseSchema.parse(body);
+  }
+
+  async getReputation(): Promise<Reputation> {
+    const body = await this.client.request<unknown>('/api/v1/profile/reputation');
+    return reputationResponseSchema.parse(body).data;
+  }
+
+  async listReviews(rating: 'all' | 5 | 4 | 3 | 2 = 'all'): Promise<{ items: ProfileReview[]; total: number }> {
+    const query = rating === 'all' ? '' : `?rating=${rating}`;
+    const body = await this.client.request<unknown>(`/api/v1/profile/reviews${query}`);
+    const parsed = reviewsResponseSchema.parse(body).data;
+    return { items: parsed.items, total: parsed.total };
   }
 
   async uploadAvatar(asset: UploadAsset): Promise<string> {

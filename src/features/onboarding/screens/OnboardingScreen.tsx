@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Image, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Alert, Image, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
@@ -17,9 +17,10 @@ import { FileTooLargeModal } from '../components/FileTooLargeModal';
 import { onboardingMessages } from '../../../locales/registrationOnboarding';
 import { useLocale } from '../../../locales/LocaleProvider';
 import { createEmptyProfile } from '../../profile/types';
-import type { Certificate, ProfileDraft, Work } from '../../profile/types';
+import type { Certificate, Experience, ProfileDraft, Work } from '../../profile/types';
 import { authService } from '../../auth/AuthService';
 import { AuthError, type OnboardingStep } from '../../auth/types';
+import { ApiError } from '../../../api/ApiClient';
 import type { AcademicRegistrationOptions } from '../../../api/contracts';
 import { parseOnboardingStep } from '../steps';
 import { validateProfileBasics, validateProfileDetails } from '../validation';
@@ -29,6 +30,7 @@ function createOnboardingForm(): ProfileDraft {
     ...createEmptyProfile(),
     certificates: [createEmptyCertificate()],
     works: [createEmptyWork()],
+    experiences: [createEmptyExperience()],
   };
 }
 
@@ -40,6 +42,10 @@ function createEmptyWork(): Work {
   return { imageUri: '', title: '', detail: '' };
 }
 
+function createEmptyExperience(): Experience {
+  return { title: '', organization: '', description: '', startedAt: '', endedAt: '' };
+}
+
 function splitName(name: string): { firstName: string; lastName: string } {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   return { firstName: parts.shift() ?? '', lastName: parts.join(' ') };
@@ -47,6 +53,12 @@ function splitName(name: string): { firstName: string; lastName: string } {
 
 function isLocalAsset(uri: string): boolean {
   return Boolean(uri) && !/^https?:\/\//i.test(uri);
+}
+
+function formatMonthYear(value: string, locale: 'en' | 'th'): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-US', { year: 'numeric', month: 'short' }).format(date);
 }
 
 function onboardingDebug(message: string, details: Record<string, unknown> = {}): void {
@@ -74,12 +86,13 @@ export default function OnboardingScreen() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isModalVisible, setModalVisible] = useState(false);
   const [retryAction, setRetryAction] = useState<(() => void) | null>(null);
-  const [datePickerTarget, setDatePickerTarget] = useState<{ index: number; value: string } | null>(null);
+  const [datePickerTarget, setDatePickerTarget] = useState<{ index: number; value: string; kind: 'certificate' | 'experience'; field?: 'startedAt' | 'endedAt' } | null>(null);
   const [today] = useState(() => new Date());
   const persistedPortfolioImages = useRef(new Set<string>());
   const pendingPortfolioReplacements = useRef(new Map<string, { oldId: string; newId: string }>());
   const pendingCertificateDeletes = useRef(new Set<string>());
   const pendingPortfolioDeletes = useRef(new Set<string>());
+  const pendingExperienceDeletes = useRef(new Set<string>());
   const { width } = useWindowDimensions();
   const buttonWidth = (width - 96) / 2;
 
@@ -93,12 +106,19 @@ export default function OnboardingScreen() {
         const session = await authService.getSession();
         if (!session) throw new Error('No active session');
         const api = await authService.getStudentApi();
-        const [academicOptions, status, profile, certificates, portfolio] = await Promise.all([
+        const experiencesPromise = typeof api.listExperience === 'function'
+          ? api.listExperience().catch((error) => {
+            if (error instanceof ApiError && error.status === 404) return [];
+            throw error;
+          })
+          : Promise.resolve([]);
+        const [academicOptions, status, profile, certificates, portfolio, experiences] = await Promise.all([
           api.getAcademicRegistrationOptions(),
           api.getAcademicRegistrationStatus(),
           api.getProfile(),
           api.listCertificates(),
           api.listPortfolio(),
+          experiencesPromise,
         ]);
         const departmentId = status.departmentId ?? profile.department?.id ?? '';
         const faculty = academicOptions.faculties.find((item) =>
@@ -133,6 +153,14 @@ export default function OnboardingScreen() {
               detail: entry.description ?? '',
               imageUri: entry.images[0]?.url ?? '',
             })) : [createEmptyWork()],
+            experiences: experiences.length > 0 ? experiences.map((entry) => ({
+              id: entry.id,
+              title: entry.title,
+              organization: entry.organization ?? '',
+              description: entry.description ?? '',
+              startedAt: entry.startedAt,
+              endedAt: entry.endedAt ?? '',
+            })) : [createEmptyExperience()],
           });
         }
       } catch (error) {
@@ -187,6 +215,7 @@ export default function OnboardingScreen() {
       isEditMode,
       certificateCount: form.certificates.filter((item) => item.name || item.issuer || item.issuedAt || item.imageUri).length,
       portfolioCount: form.works.filter((item) => item.title || item.detail || item.imageUri).length,
+      experienceCount: form.experiences.filter((item) => item.title || item.organization || item.description || item.startedAt || item.endedAt).length,
     });
     setIsSubmitting(true);
     setSubmitError(null);
@@ -278,6 +307,26 @@ export default function OnboardingScreen() {
         }
       }
 
+      for (const [index, experience] of form.experiences.entries()) {
+        if (!(experience.title || experience.organization || experience.description || experience.startedAt || experience.endedAt)) continue;
+        const experienceData = {
+          title: experience.title.trim(),
+          ...(experience.organization.trim() ? { organization: experience.organization.trim() } : {}),
+          ...(experience.description.trim() ? { description: experience.description.trim() } : {}),
+          startedAt: experience.startedAt,
+          endedAt: experience.endedAt.trim() || null,
+        };
+        const saved = experience.id
+          ? await api.updateExperience(experience.id, experienceData)
+          : await api.createExperience(experienceData);
+        if (!experience.id && saved?.id) {
+          setForm((previous) => ({
+            ...previous,
+            experiences: previous.experiences.map((item, itemIndex) => itemIndex === index ? { ...item, id: saved.id } : item),
+          }));
+        }
+      }
+
       for (const id of pendingCertificateDeletes.current) {
         await api.deleteCertificate(id);
         pendingCertificateDeletes.current.delete(id);
@@ -285,6 +334,10 @@ export default function OnboardingScreen() {
       for (const id of pendingPortfolioDeletes.current) {
         await api.deletePortfolio(id);
         pendingPortfolioDeletes.current.delete(id);
+      }
+      for (const id of pendingExperienceDeletes.current) {
+        await api.deleteExperience(id);
+        pendingExperienceDeletes.current.delete(id);
       }
 
       if (isEditMode) router.replace('/(tabs)/profile');
@@ -333,13 +386,20 @@ export default function OnboardingScreen() {
     const year = selectedDate.getFullYear();
     const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
     const day = String(selectedDate.getDate()).padStart(2, '0');
-    handleUpdateCertificate(datePickerTarget.index, 'issuedAt', `${year}-${month}-${day}`);
+    const date = datePickerTarget.kind === 'experience' ? `${year}-${month}-01` : `${year}-${month}-${day}`;
+    if (datePickerTarget.kind === 'certificate') handleUpdateCertificate(datePickerTarget.index, 'issuedAt', date);
+    else if (datePickerTarget.field) handleUpdateExperience(datePickerTarget.index, datePickerTarget.field, date);
     setDatePickerTarget(null);
   };
 
   const openDatePicker = (index: number, value: string) => {
     const parsed = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00`) : new Date();
-    setDatePickerTarget({ index, value: Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString() });
+    setDatePickerTarget({ index, value: Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString(), kind: 'certificate' });
+  };
+
+  const openExperienceDatePicker = (index: number, field: 'startedAt' | 'endedAt', value: string) => {
+    const parsed = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00`) : new Date();
+    setDatePickerTarget({ index, field, value: Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString(), kind: 'experience' });
   };
 
   const handleUpdateCertificate = (index: number, field: keyof Certificate, value: string) => {
@@ -353,6 +413,33 @@ export default function OnboardingScreen() {
       ...previous,
       works: previous.works.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item),
     }));
+  };
+  const handleUpdateExperience = (index: number, field: keyof Experience, value: string) => {
+    setForm((previous) => ({
+      ...previous,
+      experiences: previous.experiences.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item),
+    }));
+  };
+
+  const removeExperienceNow = (index: number) => {
+    const experience = form.experiences[index];
+    if (experience?.id) pendingExperienceDeletes.current.add(experience.id);
+    setForm((previous) => ({
+      ...previous,
+      experiences: previous.experiences.length === 1 ? [createEmptyExperience()] : previous.experiences.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
+
+  const removeExperience = (index: number) => {
+    const experience = form.experiences[index];
+    if (!experience?.id) {
+      removeExperienceNow(index);
+      return;
+    }
+    Alert.alert(msg.confirmDeleteTitle, msg.confirmDeleteMessage, [
+      { text: msg.cancel, style: 'cancel' },
+      { text: msg.confirm, style: 'destructive', onPress: () => removeExperienceNow(index) },
+    ]);
   };
 
   const removeCertificate = async (index: number) => {
@@ -472,6 +559,17 @@ export default function OnboardingScreen() {
                 </View>
               </View>)}
               <Pressable style={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, certificates: [...previous.certificates, createEmptyCertificate()] }))}><Text style={styles.addMoreBtnText}>{msg.addMoreCert}</Text></Pressable>
+            </View>
+            <View style={styles.step3Section}><Text style={styles.sectionTitleNormal}>{msg.experience}</Text>
+              {form.experiences.map((experience, index) => <View key={`experience-${experience.id ?? index}`} style={styles.itemCard}>
+                <View style={styles.itemCardHeader}><Text style={styles.itemLabel}>{msg.experience}</Text><Pressable accessibilityRole="button" accessibilityLabel={`${msg.removeItem} ${index + 1}`} onPress={() => removeExperience(index)} style={styles.removeButton}><Trash2 size={18} color={colors.danger} strokeWidth={2} /></Pressable></View>
+                <Input label={msg.jobTitle} placeholder={msg.jobTitle} value={experience.title} onChangeText={(value) => handleUpdateExperience(index, 'title', value)} error={errors[`experience_${index}_title`]} />
+                <Input label={msg.organization} placeholder={msg.organization} value={experience.organization} onChangeText={(value) => handleUpdateExperience(index, 'organization', value)} />
+                <TextArea label={msg.descriptionLabel} placeholder={msg.descriptionPlaceholder} value={experience.description} onChangeText={(value) => handleUpdateExperience(index, 'description', value)} maxLength={1000} />
+                <View style={styles.dateInputWrapper}><Text style={styles.dateInputLabel}>{msg.startMonthYear}</Text><Pressable accessibilityRole="button" accessibilityLabel={formatMonthYear(experience.startedAt, locale) || msg.startMonthYear} style={[styles.dateInputBox, errors[`experience_${index}_startedAt`] ? styles.dateInputError : null]} onPress={() => openExperienceDatePicker(index, 'startedAt', experience.startedAt)}><Text style={experience.startedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{formatMonthYear(experience.startedAt, locale) || msg.startMonthYear}</Text><CalendarDays size={18} color={colors.textMuted} strokeWidth={2} /></Pressable>{errors[`experience_${index}_startedAt`] ? <Text style={styles.fieldErrorText}>{errors[`experience_${index}_startedAt`]}</Text> : null}</View>
+                <View style={styles.dateInputWrapper}><Text style={styles.dateInputLabel}>{msg.endMonthYear}</Text><Pressable accessibilityRole="button" accessibilityLabel={formatMonthYear(experience.endedAt, locale) || msg.present} style={[styles.dateInputBox, errors[`experience_${index}_endedAt`] ? styles.dateInputError : null]} onPress={() => openExperienceDatePicker(index, 'endedAt', experience.endedAt)}><Text style={experience.endedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{formatMonthYear(experience.endedAt, locale) || msg.present}</Text><CalendarDays size={18} color={colors.textMuted} strokeWidth={2} /></Pressable>{experience.endedAt ? <Pressable accessibilityRole="button" onPress={() => handleUpdateExperience(index, 'endedAt', '')}><Text style={styles.addImgText}>{msg.present}</Text></Pressable> : null}{errors[`experience_${index}_endedAt`] ? <Text style={styles.fieldErrorText}>{errors[`experience_${index}_endedAt`]}</Text> : null}</View>
+              </View>)}
+              <Pressable style={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, experiences: [...previous.experiences, createEmptyExperience()] }))}><Text style={styles.addMoreBtnText}>{msg.addMoreExp}</Text></Pressable>
             </View>
             <View style={styles.step3Section}><Text style={styles.sectionTitleNormal}>{msg.myWorks}</Text>
               {form.works.map((work, index) => <View key={`work-${work.id ?? index}`} style={styles.itemCard}>

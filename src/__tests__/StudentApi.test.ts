@@ -127,6 +127,37 @@ describe('StudentApi', () => {
     );
   });
 
+  test('loads Experience through the profile endpoint', async () => {
+    fetchMock.mockResolvedValue(response({
+      success: true,
+      data: [{ id: 'experience-id', title: 'Tutor', organization: 'KU', description: null, startedAt: '2024-06-01', endedAt: null }],
+    }));
+
+    await expect(api.listExperience()).resolves.toEqual([
+      expect.objectContaining({ id: 'experience-id', title: 'Tutor' }),
+    ]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.example.test/api/v1/profile/experience',
+      expect.objectContaining({ method: 'GET' })
+    );
+  });
+
+  test('loads reputation and review data with the selected review filter', async () => {
+    fetchMock
+      .mockResolvedValueOnce(response({
+        success: true,
+        data: { totalQuests: 3, rating: { average: 4.5, count: 2, distribution: { '5': 1, '4': 1, '3': 0, '2': 0, '1': 0 } } },
+      }))
+      .mockResolvedValueOnce(response({
+        success: true,
+        data: { items: [], total: 0, nextCursor: null },
+      }));
+
+    await expect(api.getReputation()).resolves.toMatchObject({ totalQuests: 3 });
+    await expect(api.listReviews(4)).resolves.toEqual({ items: [], total: 0 });
+    expect(fetchMock.mock.calls[1][0]).toBe('https://api.example.test/api/v1/profile/reviews?rating=4');
+  });
+
   test('uploads certificate images as supported FormData file parts', async () => {
     fetchMock.mockResolvedValue(response({ success: true }));
 

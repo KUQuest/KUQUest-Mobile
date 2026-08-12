@@ -54,6 +54,24 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.regular,
     fontSize: 14,
   },
+  tagList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  tag: {
+    borderRadius: 999,
+    backgroundColor: colors.surfaceAccent,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.xs,
+  },
+  tagText: {
+    color: colors.primaryDark,
+    fontFamily: fontFamily.semiBold,
+    fontSize: 12,
+  },
   editButton: {
     minHeight: 44,
     marginTop: spacing.md,
@@ -67,6 +85,79 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderColor: colors.borderSubtle,
     borderWidth: 1,
+  },
+  statsCard: {
+    alignSelf: 'stretch',
+    borderRadius: 16,
+    padding: spacing.md,
+    backgroundColor: colors.white,
+    borderColor: colors.borderSubtle,
+    borderWidth: 1,
+  },
+  statsTopRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statValue: {
+    color: colors.primaryDark,
+    fontFamily: fontFamily.bold,
+    fontSize: 26,
+    fontWeight: '700',
+  },
+  statLabel: {
+    color: colors.textSecondary,
+    fontFamily: fontFamily.semiBold,
+    fontSize: 13,
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  statDetail: {
+    color: colors.textMuted,
+    fontFamily: fontFamily.regular,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  statDivider: {
+    backgroundColor: colors.borderSubtle,
+    height: 52,
+    width: 1,
+  },
+  ratingDistribution: {
+    marginTop: spacing.md,
+  },
+  ratingDistributionRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  ratingDistributionLabel: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    width: 12,
+  },
+  ratingDistributionTrack: {
+    backgroundColor: colors.borderSubtle,
+    borderRadius: 999,
+    flex: 1,
+    height: 6,
+    overflow: 'hidden',
+  },
+  ratingDistributionFill: {
+    backgroundColor: colors.primary,
+    borderRadius: 999,
+    height: '100%',
+  },
+  ratingDistributionCount: {
+    color: colors.textMuted,
+    fontSize: 12,
+    textAlign: 'right',
+    width: 22,
   },
   sectionTitle: {
     color: colors.text,
@@ -159,6 +250,40 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: colors.surfaceImage,
   },
+  previewOverlay: {
+    alignItems: 'center',
+    backgroundColor: colors.overlay,
+    flex: 1,
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  previewCard: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    maxHeight: '90%',
+    padding: spacing.md,
+    width: '100%',
+  },
+  previewClose: {
+    alignSelf: 'flex-end',
+    minHeight: 44,
+    minWidth: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewImage: {
+    height: 360,
+    maxWidth: '100%',
+    width: '100%',
+  },
+  previewTitle: {
+    color: colors.text,
+    fontFamily: fontFamily.semiBold,
+    fontSize: 16,
+    marginTop: spacing.sm,
+    textAlign: 'center',
+  },
   workList: {
     gap: spacing.md + 4,
   },
@@ -170,6 +295,67 @@ const styles = StyleSheet.create({
     height: 160,
     borderRadius: 12,
     marginBottom: spacing.sm + 4,
+  },
+  imageFallback: {
+    alignItems: 'center',
+    backgroundColor: colors.surfacePlaceholder,
+    justifyContent: 'center',
+  },
+  imageFallbackText: {
+    color: colors.textMuted,
+    fontFamily: fontFamily.regular,
+    fontSize: 13,
+  },
+  filterList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  filterChip: {
+    borderColor: colors.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  filterChipSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterChipText: {
+    color: colors.textSecondary,
+    fontFamily: fontFamily.semiBold,
+    fontSize: 13,
+  },
+  filterChipTextSelected: {
+    color: colors.white,
+  },
+  reviewCard: {
+    borderTopColor: colors.borderSubtle,
+    borderTopWidth: 1,
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  reviewAvatar: {
+    backgroundColor: colors.surfaceImage,
+    borderRadius: 18,
+    height: 36,
+    width: 36,
+  },
+  reviewHeaderText: {
+    flex: 1,
+  },
+  reviewRating: {
+    color: colors.primaryDark,
+    fontSize: 14,
+    marginTop: 3,
   },
 });
 

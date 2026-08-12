@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TopBar } from '../../components/ui/TopBar';
 import { profileMessages } from '../../locales/profileMessages';
 import { useLocale } from '../../locales/LocaleProvider';
 import styles from './styles/profileStyles';
-import { AboutMe, Certificates, MyWork, ProfileHeader, ProfileViewData } from './components/ProfileComponents';
+import { AboutMe, Certificates, Experience, MyWork, ProfileHeader, ProfileStats, Reviews, ProfileViewData } from './components/ProfileComponents';
 import { loadProfileViewData } from './loadProfileViewData';
 import { getProfileLayoutMetrics } from '../../theme/profileLayout';
 import { authService } from '../auth/AuthService';
@@ -23,9 +23,9 @@ export default function Profile() {
   const [loadError, setLoadError] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     let active = true;
-    async function loadProfile() {
+    async function loadProfile(_attempt: number) {
       setLoadError(false);
       try {
         const data = await loadProfileViewData(locale);
@@ -39,9 +39,9 @@ export default function Profile() {
         if (active) setLoadError(true);
       }
     }
-    void loadProfile();
+    void loadProfile(loadAttempt);
     return () => { active = false; };
-  }, [locale, loadAttempt, router]);
+  }, [locale, loadAttempt, router]));
 
   const content = viewData;
 
@@ -68,9 +68,12 @@ export default function Profile() {
         ]}
       >
         <ProfileHeader data={content} editProfileLabel={messages.edit} onEditPress={() => router.push({ pathname: '/onboarding', params: { mode: 'edit' } })} />
+        <ProfileStats stats={content.stats} ratingLabel={messages.rating} questsLabel={messages.totalQuests} reviewCountLabel={messages.reviewsCount} emptyText={messages.noRating} />
         <AboutMe about={content.about} sectionTitle={messages.about} emptyText={messages.noDescription} />
-        <MyWork works={content.works} sectionTitle={messages.works} emptyText={messages.noWorks} />
-        <Certificates certificates={content.certificates} sectionTitle={messages.certificates} emptyText={messages.noCertificates} />
+        <Experience experiences={content.experiences} sectionTitle={messages.experience} emptyText={messages.noExperience} presentLabel={messages.present} locale={locale} />
+        <MyWork works={content.works} sectionTitle={messages.works} emptyText={messages.noWorks} noImageText={messages.noImage} />
+        <Certificates certificates={content.certificates} sectionTitle={messages.certificates} emptyText={messages.noCertificates} previewUnavailableText={messages.previewUnavailable} closeLabel={messages.closePreview} unavailableText={messages.imageUnavailable} />
+        <Reviews reviews={content.reviews} sectionTitle={messages.reviews} emptyText={messages.noReviews} allLabel={messages.allReviews} locale={locale} />
       </ScrollView>
     </SafeAreaView>
   );

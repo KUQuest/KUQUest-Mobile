@@ -62,6 +62,9 @@ export const profileResponseSchema = z.object({
     telephone: z.string().nullable(),
     studentId: z.string().nullable(),
     academicYear: z.union([z.string(), z.number()]).nullable(),
+    university: z.string().nullable().optional(),
+    occupation: z.object({ id: z.string(), name: z.string() }).nullable().optional(),
+    tags: z.array(z.object({ id: z.string(), name: z.string(), questCount: z.number().int().nonnegative().optional() })).optional(),
     department: z.object({
       id: z.string(),
       name: z.string(),
@@ -71,6 +74,66 @@ export const profileResponseSchema = z.object({
       fileId: z.string(),
       url: z.string().url(),
     }).nullable(),
+  }),
+});
+
+const experienceSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  organization: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  startedAt: z.string(),
+  endedAt: z.string().nullable().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+});
+
+export const experienceResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.array(experienceSchema),
+});
+
+export const experienceMutationResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({ experience: experienceSchema }).optional(),
+});
+
+export const reputationResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    totalQuests: z.number().int().nonnegative(),
+    rating: z.object({
+      average: z.number().min(0).max(5).nullable(),
+      count: z.number().int().nonnegative(),
+      distribution: z.object({
+        '5': z.number().int().nonnegative(),
+        '4': z.number().int().nonnegative(),
+        '3': z.number().int().nonnegative(),
+        '2': z.number().int().nonnegative(),
+        '1': z.number().int().nonnegative(),
+      }),
+    }),
+  }),
+});
+
+const reviewSchema = z.object({
+  id: z.string(),
+  reviewer: z.object({
+    displayName: z.string(),
+    avatar: z.object({ url: z.string().url() }).nullable().optional(),
+  }),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string(),
+  createdAt: z.string(),
+  quest: z.object({ id: z.string(), title: z.string() }).nullable().optional(),
+});
+
+export const reviewsResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    items: z.array(reviewSchema),
+    total: z.number().int().nonnegative(),
+    nextCursor: z.string().nullable().optional(),
   }),
 });
 
@@ -120,5 +183,8 @@ export type AuthUser = z.infer<typeof authUserSchema>;
 export type AcademicRegistrationOptions = z.infer<typeof academicRegistrationOptionsResponseSchema>['data'];
 export type AcademicRegistrationStatus = z.infer<typeof academicRegistrationStatusResponseSchema>['data'];
 export type ProfileResponse = z.infer<typeof profileResponseSchema>['data'];
+export type ExperienceEntry = z.infer<typeof experienceSchema>;
+export type Reputation = z.infer<typeof reputationResponseSchema>['data'];
+export type ProfileReview = z.infer<typeof reviewSchema>;
 export type PortfolioEntry = z.infer<typeof portfolioResponseSchema>['data'][number];
 export type CertificateEntry = z.infer<typeof certificateResponseSchema>['data']['certificates'][number];
