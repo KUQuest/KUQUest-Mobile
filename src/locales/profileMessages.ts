@@ -25,6 +25,7 @@ export interface ProfileMessages {
   noDescription: string;
   noCertificates: string;
   noWorks: string;
+  sectionUnavailable: string;
   certificate: string;
   student: string;
   professor: string;
@@ -56,6 +57,7 @@ export const profileMessages: Record<SupportedLocale, ProfileMessages> = {
     noDescription: 'No description added yet.',
     noCertificates: 'No certificates added yet.',
     noWorks: 'No work samples added yet.',
+    sectionUnavailable: 'This section is temporarily unavailable.',
     certificate: 'Certificate',
     student: 'Student',
     professor: 'Professor',
@@ -85,6 +87,7 @@ export const profileMessages: Record<SupportedLocale, ProfileMessages> = {
     noDescription: 'ยังไม่มีคำอธิบาย',
     noCertificates: 'ยังไม่มีใบรับรอง',
     noWorks: 'ยังไม่มีผลงาน',
+    sectionUnavailable: 'ส่วนนี้ไม่พร้อมใช้งานชั่วคราว',
     certificate: 'ใบรับรอง',
     student: 'นักศึกษา',
     professor: 'อาจารย์',

@@ -135,6 +135,33 @@ const styles = StyleSheet.create({
     height: 48,
     width: 1,
   },
+  sectionNotice: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceDanger,
+    borderColor: colors.borderDanger,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    padding: spacing.sm,
+  },
+  sectionNoticeText: {
+    color: colors.dangerDark,
+    fontFamily: fontFamily.regular,
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  sectionRetry: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  sectionRetryText: {
+    color: colors.primaryDark,
+    fontFamily: fontFamily.semiBold,
+    fontSize: 13,
+    textDecorationLine: 'underline',
+  },
   ratingDistribution: {
     flex: 1,
     marginTop: spacing.md,

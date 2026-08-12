@@ -1,6 +1,8 @@
 import type { ProfileExperience, ProfileReview, ProfileStatsData, ProfileTag } from './components/ProfileComponents';
 
-export const isProfileDemoEnabled = process.env.EXPO_PUBLIC_PROFILE_DEMO === 'true';
+export function isProfileDemoEnabled(): boolean {
+  return process.env.EXPO_PUBLIC_PROFILE_DEMO === 'true';
+}
 
 export const demoProfileTags: ProfileTag[] = [
   { id: 'demo-web-dev', name: 'Web Dev', questCount: 8 },

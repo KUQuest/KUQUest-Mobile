@@ -225,28 +225,28 @@ export default function OnboardingScreen() {
       if (!session) throw new Error('No active session');
       const api = await authService.getStudentApi();
       const { firstName, lastName } = splitName(form.name);
-      const occupationId = form.occupation;
       const departmentId = form.department;
-      if (!occupationId || !departmentId) throw new Error('Academic registration options are incomplete');
-
-      const termsVersion = process.env.EXPO_PUBLIC_TERMS_VERSION;
-      if (!isEditMode && form.acceptedTerms && !termsVersion) throw new Error('EXPO_PUBLIC_TERMS_VERSION is required');
-
-      await api.updateAcademicRegistration({
-        firstName,
-        lastName,
-        telephone: form.telephone,
-        occupationId,
-        studentId: form.studentId || undefined,
-        departmentId,
-        termsVersion: form.acceptedTerms && termsVersion ? termsVersion : undefined,
-      });
+      if (!isEditMode) {
+        const occupationId = form.occupation;
+        if (!occupationId || !departmentId) throw new Error('Academic registration options are incomplete');
+        const termsVersion = process.env.EXPO_PUBLIC_TERMS_VERSION;
+        if (form.acceptedTerms && !termsVersion) throw new Error('EXPO_PUBLIC_TERMS_VERSION is required');
+        await api.updateAcademicRegistration({
+          firstName,
+          lastName,
+          telephone: form.telephone,
+          occupationId,
+          studentId: form.studentId || undefined,
+          departmentId,
+          termsVersion: form.acceptedTerms && termsVersion ? termsVersion : undefined,
+        });
+      }
       await api.updateProfile({
         firstName,
         lastName,
         ...(form.description.trim() ? { bio: form.description.trim() } : {}),
         telephone: form.telephone,
-        departmentId,
+        ...(departmentId ? { departmentId } : {}),
       });
 
       if (isLocalAsset(form.profileImage)) {
@@ -297,7 +297,7 @@ export default function OnboardingScreen() {
         } else if (id) {
           await api.updatePortfolio(id, { title: work.title.trim(), ...(work.detail.trim() ? { description: work.detail.trim() } : {}) });
         } else {
-          id = await api.createPortfolio({ title: work.title.trim(), description: work.detail.trim() || undefined, imageUris: [work.imageUri] });
+          id = await api.createPortfolio({ title: work.title.trim(), description: work.detail.trim() || undefined, imageUris: work.imageUri ? [work.imageUri] : [] });
           if (isLocalAsset(work.imageUri)) persistedPortfolioImages.current.add(work.imageUri);
         }
         if (id && (!work.id || id !== work.id)) {
@@ -570,7 +570,7 @@ export default function OnboardingScreen() {
                 <Input label={msg.organization} placeholder={msg.organization} value={experience.organization} onChangeText={(value) => handleUpdateExperience(index, 'organization', value)} />
                 <TextArea label={msg.descriptionLabel} placeholder={msg.descriptionPlaceholder} value={experience.description} onChangeText={(value) => handleUpdateExperience(index, 'description', value)} maxLength={1000} />
                 <View style={styles.dateInputWrapper}><Text style={styles.dateInputLabel}>{msg.startMonthYear}</Text><Pressable accessibilityRole="button" accessibilityLabel={formatMonthYear(experience.startedAt, locale) || msg.startMonthYear} style={[styles.dateInputBox, errors[`experience_${index}_startedAt`] ? styles.dateInputError : null]} onPress={() => openExperienceDatePicker(index, 'startedAt', experience.startedAt)}><Text style={experience.startedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{formatMonthYear(experience.startedAt, locale) || msg.startMonthYear}</Text><CalendarDays size={18} color={colors.textMuted} strokeWidth={2} /></Pressable>{errors[`experience_${index}_startedAt`] ? <Text style={styles.fieldErrorText}>{errors[`experience_${index}_startedAt`]}</Text> : null}</View>
-                <View style={styles.dateInputWrapper}><Text style={styles.dateInputLabel}>{msg.endMonthYear}</Text><Pressable accessibilityRole="button" accessibilityLabel={formatMonthYear(experience.endedAt, locale) || msg.present} style={[styles.dateInputBox, errors[`experience_${index}_endedAt`] ? styles.dateInputError : null]} onPress={() => openExperienceDatePicker(index, 'endedAt', experience.endedAt)}><Text style={experience.endedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{formatMonthYear(experience.endedAt, locale) || msg.present}</Text><CalendarDays size={18} color={colors.textMuted} strokeWidth={2} /></Pressable>{experience.endedAt ? <Pressable accessibilityRole="button" onPress={() => handleUpdateExperience(index, 'endedAt', '')}><Text style={styles.addImgText}>{msg.present}</Text></Pressable> : null}{errors[`experience_${index}_endedAt`] ? <Text style={styles.fieldErrorText}>{errors[`experience_${index}_endedAt`]}</Text> : null}</View>
+                <View style={styles.dateInputWrapper}><Text style={styles.dateInputLabel}>{msg.endMonthYear}</Text><Pressable accessibilityRole="button" accessibilityLabel={formatMonthYear(experience.endedAt, locale) || msg.present} style={[styles.dateInputBox, errors[`experience_${index}_endedAt`] ? styles.dateInputError : null]} onPress={() => openExperienceDatePicker(index, 'endedAt', experience.endedAt)}><Text style={experience.endedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{formatMonthYear(experience.endedAt, locale) || msg.present}</Text><CalendarDays size={18} color={colors.textMuted} strokeWidth={2} /></Pressable>{experience.endedAt ? <Pressable accessibilityRole="button" accessibilityLabel={msg.present} onPress={() => handleUpdateExperience(index, 'endedAt', '')}><Text style={styles.addImgText}>{msg.present}</Text></Pressable> : null}{errors[`experience_${index}_endedAt`] ? <Text style={styles.fieldErrorText}>{errors[`experience_${index}_endedAt`]}</Text> : null}</View>
               </View>)}
               <Pressable style={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, experiences: [...previous.experiences, createEmptyExperience()] }))}><Text style={styles.addMoreBtnText}>{msg.addMoreExp}</Text></Pressable>
             </View>

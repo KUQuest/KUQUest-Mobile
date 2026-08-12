@@ -42,7 +42,7 @@ describe('onboarding validation', () => {
     expect(errors).toEqual({ studentId: messages.invalidStudentId });
   });
 
-  test('validates started certificate and portfolio rows against API fields', () => {
+  test('validates started certificate rows while allowing optional Portfolio Work images', () => {
     const errors = validateProfileDetails({
       certificates: [{ name: '', issuer: 'KU', issuedAt: '2024/01/01', imageUri: '' }],
       works: [{ imageUri: '', title: 'A project', detail: '' }],
@@ -51,7 +51,6 @@ describe('onboarding validation', () => {
     expect(errors).toEqual({
       cert_0_name: messages.requiredField,
       cert_0_issuedAt: messages.invalidDate,
-      work_0_imageUri: messages.requiredField,
     });
   });
 
@@ -63,5 +62,15 @@ describe('onboarding validation', () => {
     }, messages);
 
     expect(errors).toEqual({ experience_0_employmentType: messages.requiredField });
+  });
+
+  test('rejects an Experience end month before its start month', () => {
+    const errors = validateProfileDetails({
+      certificates: [],
+      works: [],
+      experiences: [{ title: 'Tutor', employmentType: 'Part-time', organization: '', description: '', startedAt: '2024-06-01', endedAt: '2024-05-01' }],
+    }, messages);
+
+    expect(errors).toEqual({ experience_0_endedAt: messages.invalidDate });
   });
 });
