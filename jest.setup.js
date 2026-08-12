@@ -87,6 +87,7 @@ jest.mock('lucide-react-native', () => {
   return {
     Check: Icon,
     CheckSquare: Icon,
+    BriefcaseBusiness: Icon,
     CalendarDays: Icon,
     ChevronDown: Icon,
     CircleAlert: Icon,
@@ -95,6 +96,7 @@ jest.mock('lucide-react-native', () => {
     Grid2X2: Icon,
     Image: Icon,
     ImageIcon: Icon,
+    LayoutDashboard: Icon,
     MessageSquare: Icon,
     Pencil: Icon,
     Plus: Icon,

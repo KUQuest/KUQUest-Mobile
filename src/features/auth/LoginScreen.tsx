@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Text, View, Pressable, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Host, Button } from '@expo/ui';
 import { GraduationCap, TriangleAlert } from 'lucide-react-native';
 import {
@@ -73,6 +74,7 @@ export default function LoginScreen({
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <StatusBar style="dark" />
       <View style={styles.container}>
         <View style={styles.content}>
           {/* Header Section */}

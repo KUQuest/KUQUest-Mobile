@@ -122,11 +122,14 @@ function createProfileDetailsSchema(messages: OnboardingValidationMessages) {
     });
 
     (form.experiences ?? []).forEach((experience, index) => {
-      const hasContent = [experience.title, experience.organization, experience.description, experience.startedAt, experience.endedAt]
+      const hasContent = [experience.title, experience.employmentType, experience.organization, experience.description, experience.startedAt, experience.endedAt]
         .some((value) => value.trim());
       if (!hasContent) return;
       if (!experience.title.trim()) {
         context.addIssue({ code: z.ZodIssueCode.custom, path: ['experiences', index, 'title'], message: messages.requiredField });
+      }
+      if (!experience.employmentType.trim()) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ['experiences', index, 'employmentType'], message: messages.requiredField });
       }
       if (!/^\d{4}-\d{2}-\d{2}$/.test(experience.startedAt.trim())) {
         context.addIssue({ code: z.ZodIssueCode.custom, path: ['experiences', index, 'startedAt'], message: messages.invalidDate });

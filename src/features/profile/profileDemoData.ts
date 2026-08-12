@@ -19,6 +19,7 @@ export const demoExperiences: ProfileExperience[] = [
   {
     id: 'demo-experience-2',
     title: 'Frontend Developer Intern',
+    employmentType: 'Internship',
     organization: 'Tech Startup Inc.',
     description: 'Developed responsive UI components using React and Tailwind CSS.',
     startedAt: '2023-06-01',
@@ -27,6 +28,7 @@ export const demoExperiences: ProfileExperience[] = [
   {
     id: 'demo-experience-1',
     title: 'Senior Peer Tutor',
+    employmentType: 'Part-time',
     organization: 'University Academic Center',
     description: 'Assisted over 100 students in foundational programming courses.',
     startedAt: '2022-06-01',

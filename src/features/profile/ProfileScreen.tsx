@@ -68,12 +68,12 @@ export default function Profile() {
         ]}
       >
         <ProfileHeader data={content} editProfileLabel={messages.edit} onEditPress={() => router.push({ pathname: '/onboarding', params: { mode: 'edit' } })} />
-        <ProfileStats stats={content.stats} ratingLabel={messages.rating} questsLabel={messages.totalQuests} reviewCountLabel={messages.reviewsCount} emptyText={messages.noRating} />
+        <ProfileStats stats={content.stats} ratingLabel={messages.rating} questsLabel={messages.totalQuests} />
         <AboutMe about={content.about} sectionTitle={messages.about} emptyText={messages.noDescription} />
         <Experience experiences={content.experiences} sectionTitle={messages.experience} emptyText={messages.noExperience} presentLabel={messages.present} locale={locale} />
         <MyWork works={content.works} sectionTitle={messages.works} emptyText={messages.noWorks} noImageText={messages.noImage} />
         <Certificates certificates={content.certificates} sectionTitle={messages.certificates} emptyText={messages.noCertificates} previewUnavailableText={messages.previewUnavailable} closeLabel={messages.closePreview} unavailableText={messages.imageUnavailable} />
-        <Reviews reviews={content.reviews} sectionTitle={messages.reviews} emptyText={messages.noReviews} allLabel={messages.allReviews} locale={locale} />
+        <Reviews reviews={content.reviews} stats={content.stats} sectionTitle={messages.reviews} emptyText={messages.noReviews} allLabel={messages.allReviews} reviewCountLabel={messages.reviewsCount} locale={locale} />
       </ScrollView>
     </SafeAreaView>
   );

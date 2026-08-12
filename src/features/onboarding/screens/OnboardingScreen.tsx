@@ -43,7 +43,7 @@ function createEmptyWork(): Work {
 }
 
 function createEmptyExperience(): Experience {
-  return { title: '', organization: '', description: '', startedAt: '', endedAt: '' };
+  return { title: '', employmentType: '', organization: '', description: '', startedAt: '', endedAt: '' };
 }
 
 function splitName(name: string): { firstName: string; lastName: string } {
@@ -156,6 +156,7 @@ export default function OnboardingScreen() {
             experiences: experiences.length > 0 ? experiences.map((entry) => ({
               id: entry.id,
               title: entry.title,
+              employmentType: entry.employmentType,
               organization: entry.organization ?? '',
               description: entry.description ?? '',
               startedAt: entry.startedAt,
@@ -215,7 +216,7 @@ export default function OnboardingScreen() {
       isEditMode,
       certificateCount: form.certificates.filter((item) => item.name || item.issuer || item.issuedAt || item.imageUri).length,
       portfolioCount: form.works.filter((item) => item.title || item.detail || item.imageUri).length,
-      experienceCount: form.experiences.filter((item) => item.title || item.organization || item.description || item.startedAt || item.endedAt).length,
+      experienceCount: form.experiences.filter((item) => item.title || item.employmentType || item.organization || item.description || item.startedAt || item.endedAt).length,
     });
     setIsSubmitting(true);
     setSubmitError(null);
@@ -308,9 +309,10 @@ export default function OnboardingScreen() {
       }
 
       for (const [index, experience] of form.experiences.entries()) {
-        if (!(experience.title || experience.organization || experience.description || experience.startedAt || experience.endedAt)) continue;
+        if (!(experience.title || experience.employmentType || experience.organization || experience.description || experience.startedAt || experience.endedAt)) continue;
         const experienceData = {
           title: experience.title.trim(),
+          employmentType: experience.employmentType.trim(),
           ...(experience.organization.trim() ? { organization: experience.organization.trim() } : {}),
           ...(experience.description.trim() ? { description: experience.description.trim() } : {}),
           startedAt: experience.startedAt,
@@ -564,6 +566,7 @@ export default function OnboardingScreen() {
               {form.experiences.map((experience, index) => <View key={`experience-${experience.id ?? index}`} style={styles.itemCard}>
                 <View style={styles.itemCardHeader}><Text style={styles.itemLabel}>{msg.experience}</Text><Pressable accessibilityRole="button" accessibilityLabel={`${msg.removeItem} ${index + 1}`} onPress={() => removeExperience(index)} style={styles.removeButton}><Trash2 size={18} color={colors.danger} strokeWidth={2} /></Pressable></View>
                 <Input label={msg.jobTitle} placeholder={msg.jobTitle} value={experience.title} onChangeText={(value) => handleUpdateExperience(index, 'title', value)} error={errors[`experience_${index}_title`]} />
+                <Select label={msg.employmentType} placeholder={msg.employmentTypePlaceholder} options={msg.employmentTypes} value={experience.employmentType} onValueChange={(value) => handleUpdateExperience(index, 'employmentType', value)} error={errors[`experience_${index}_employmentType`]} />
                 <Input label={msg.organization} placeholder={msg.organization} value={experience.organization} onChangeText={(value) => handleUpdateExperience(index, 'organization', value)} />
                 <TextArea label={msg.descriptionLabel} placeholder={msg.descriptionPlaceholder} value={experience.description} onChangeText={(value) => handleUpdateExperience(index, 'description', value)} maxLength={1000} />
                 <View style={styles.dateInputWrapper}><Text style={styles.dateInputLabel}>{msg.startMonthYear}</Text><Pressable accessibilityRole="button" accessibilityLabel={formatMonthYear(experience.startedAt, locale) || msg.startMonthYear} style={[styles.dateInputBox, errors[`experience_${index}_startedAt`] ? styles.dateInputError : null]} onPress={() => openExperienceDatePicker(index, 'startedAt', experience.startedAt)}><Text style={experience.startedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{formatMonthYear(experience.startedAt, locale) || msg.startMonthYear}</Text><CalendarDays size={18} color={colors.textMuted} strokeWidth={2} /></Pressable>{errors[`experience_${index}_startedAt`] ? <Text style={styles.fieldErrorText}>{errors[`experience_${index}_startedAt`]}</Text> : null}</View>

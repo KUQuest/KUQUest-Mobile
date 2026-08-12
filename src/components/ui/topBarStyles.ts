@@ -5,25 +5,37 @@ import { spacing } from '@/theme/spacing';
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    position: 'relative',
+    paddingHorizontal: spacing.xl,
     backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderSubtle,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 3,
+    borderBottomWidth: 0,
+    elevation: 0,
+    shadowOpacity: 0,
+  },
+  profileContainer: {
+    alignItems: 'flex-start',
+    backgroundColor: colors.surface,
+    borderBottomWidth: 0,
+    elevation: 0,
+    paddingHorizontal: spacing.lg,
+    shadowOpacity: 0,
   },
   backButton: {
     alignItems: 'center',
     justifyContent: 'center',
   },
+  backButtonPosition: {
+    left: spacing.md,
+    position: 'absolute',
+  },
   logo: {
     resizeMode: 'contain',
+  },
+  profileLogo: {
+    height: 36,
+    width: 80,
   },
 });
 

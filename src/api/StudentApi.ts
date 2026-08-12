@@ -55,6 +55,7 @@ export interface CertificateCreate {
 
 export interface ExperienceCreate {
   title: string;
+  employmentType: string;
   organization?: string;
   description?: string;
   startedAt: string;

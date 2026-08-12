@@ -18,11 +18,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   content: {
+    flex: 1,
     width: '100%',
     maxWidth: 420,
-    justifyContent: 'space-between',
-    paddingVertical: spacing.lg,
-    gap: spacing.xl,
+    justifyContent: 'flex-start',
+    paddingVertical: spacing.md,
   },
   langToggle: {
     alignSelf: 'flex-end',
@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
   },
   headerSection: {
     alignItems: 'flex-start',
-    marginTop: 4,
+    marginTop: spacing.sm,
   },
   title: {
     fontFamily: fontFamily.bold,
@@ -64,6 +64,7 @@ const styles = StyleSheet.create({
   formSection: {
     width: '100%',
     gap: spacing.md,
+    marginTop: 64,
   },
   noticeCard: {
     backgroundColor: colors.surfaceSuccess,
@@ -147,6 +148,8 @@ const styles = StyleSheet.create({
   footerSection: {
     alignItems: 'flex-start',
     gap: 12,
+    marginBottom: spacing.sm,
+    marginTop: 'auto',
   },
   footerLinks: {
     alignItems: 'flex-start',

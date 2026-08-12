@@ -18,6 +18,7 @@ export const workSchema = z.object({
 export const experienceSchema = z.object({
   id: z.string().optional(),
   title: z.string(),
+  employmentType: z.string(),
   organization: z.string(),
   description: z.string(),
   startedAt: z.string(),

@@ -3,7 +3,7 @@ import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import {
   CheckSquare,
   CircleUserRound,
-  Grid2X2,
+  LayoutDashboard,
   MessageSquare,
   Plus,
 } from 'lucide-react-native';
@@ -17,13 +17,13 @@ type NavigationItem = {
   routeName: string;
   labelKey: 'board' | 'myQuests' | 'create' | 'chat' | 'profile';
   shortLabelKey: 'boardShort' | 'myQuestsShort' | 'createShort' | 'chatShort' | 'profileShort';
-  icon: typeof Grid2X2;
+  icon: typeof LayoutDashboard;
   isCreate?: boolean;
   hasUnread?: boolean;
 };
 
 export const navigationItems: readonly NavigationItem[] = [
-  { routeName: 'index', labelKey: 'board', shortLabelKey: 'boardShort', icon: Grid2X2 },
+  { routeName: 'index', labelKey: 'board', shortLabelKey: 'boardShort', icon: LayoutDashboard },
   { routeName: 'my-quests', labelKey: 'myQuests', shortLabelKey: 'myQuestsShort', icon: CheckSquare },
   { routeName: 'create', labelKey: 'create', shortLabelKey: 'createShort', icon: Plus, isCreate: true },
   { routeName: 'chat', labelKey: 'chat', shortLabelKey: 'chatShort', icon: MessageSquare },

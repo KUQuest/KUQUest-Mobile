@@ -130,7 +130,7 @@ describe('StudentApi', () => {
   test('loads Experience through the profile endpoint', async () => {
     fetchMock.mockResolvedValue(response({
       success: true,
-      data: [{ id: 'experience-id', title: 'Tutor', organization: 'KU', description: null, startedAt: '2024-06-01', endedAt: null }],
+      data: [{ id: 'experience-id', title: 'Tutor', employmentType: 'Part-time', organization: 'KU', description: null, startedAt: '2024-06-01', endedAt: null }],
     }));
 
     await expect(api.listExperience()).resolves.toEqual([
@@ -139,6 +139,23 @@ describe('StudentApi', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       'https://api.example.test/api/v1/profile/experience',
       expect.objectContaining({ method: 'GET' })
+    );
+  });
+
+  test('creates Experience with the backend-required employment type', async () => {
+    fetchMock.mockResolvedValue(response({
+      success: true,
+      data: { experience: { id: 'experience-id', title: 'Tutor', employmentType: 'Part-time', startedAt: '2024-06-01' } },
+    }));
+
+    await api.createExperience({ title: 'Tutor', employmentType: 'Part-time', startedAt: '2024-06-01' });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.example.test/api/v1/profile/experience',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ title: 'Tutor', employmentType: 'Part-time', startedAt: '2024-06-01' }),
+      })
     );
   });
 

@@ -8,31 +8,32 @@ import styles from './topBarStyles';
 
 interface TopBarProps {
   onBackPress?: () => void;
+  variant?: 'default' | 'profile';
 }
 
-export function TopBar({ onBackPress }: TopBarProps) {
+export function TopBar({ onBackPress, variant = 'default' }: TopBarProps) {
   const { width, fontScale } = useWindowDimensions();
   const metrics = getAppChromeMetrics(width, fontScale);
 
   return (
-    <View style={[styles.container, { height: metrics.headerHeight }]}>
+    <View style={[styles.container, variant === 'profile' && styles.profileContainer, { height: variant === 'profile' ? 48 : metrics.headerHeight }]}>
       {onBackPress ? (
         <TouchableOpacity
           accessibilityLabel="Go back"
           accessibilityRole="button"
           hitSlop={8}
           onPress={onBackPress}
-          style={[styles.backButton, { height: metrics.backButtonSize, width: metrics.backButtonSize }]}
+          style={[styles.backButton, styles.backButtonPosition, { height: metrics.backButtonSize, width: metrics.backButtonSize }]}
           testID="header-back-button"
         >
           <ChevronLeft color={colors.primaryDeep} size={metrics.iconSize} strokeWidth={2.5} />
         </TouchableOpacity>
-      ) : <View style={[styles.backButton, { height: metrics.backButtonSize, width: metrics.backButtonSize }]} />}
+      ) : null}
       <Image
         accessibilityLabel="KUQuest"
         contentFit="contain"
-        source={require('../../../logo.svg')}
-        style={[styles.logo, { height: metrics.logoHeight, width: metrics.logoWidth }]}
+        source={require('../../../topbar-logo.svg')}
+        style={[styles.logo, { height: 65, width: 121 }]}
       />
     </View>
   );

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Image, Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
-import { Award, X } from 'lucide-react-native';
+import { Award, BriefcaseBusiness, Pencil, X } from 'lucide-react-native';
 
 import { Button } from '../../../components/ui/Button';
 import { getProfileLayoutMetrics } from '../../../theme/profileLayout';
@@ -32,6 +32,7 @@ export interface ProfileWork {
 export interface ProfileExperience {
   id?: string;
   title: string;
+  employmentType: string;
   organization: string;
   description: string;
   startedAt: string;
@@ -100,11 +101,12 @@ export function ProfileHeader({ data, editProfileLabel, onEditPress }: ProfileHe
       </View>
       <Text style={[styles.name, { fontSize: metrics.nameFontSize, lineHeight: Math.round(metrics.nameFontSize * 1.3), maxWidth: '100%' }]}>{data.name}</Text>
       {data.faculty ? <Text style={styles.meta}>{data.faculty}</Text> : null}
-      {data.university ? <Text style={styles.subtleMeta}>{data.university}</Text> : null}
-      {data.occupation ? <Text style={styles.subtleMeta}>{data.occupation}</Text> : null}
       {data.department ? <Text style={styles.subtleMeta}>{data.department}</Text> : null}
       {(data.tags ?? []).length > 0 ? <View style={styles.tagList} accessibilityLabel="Profile skills">{(data.tags ?? []).map((tag) => <View key={tag.id ?? tag.name} style={styles.tag}><Text style={styles.tagText}>{tag.name}</Text></View>)}</View> : null}
-      <Button onPress={onEditPress} variant="secondary" style={styles.editButton}>{editProfileLabel}</Button>
+      <Button onPress={onEditPress} variant="primary" style={styles.editButton}>
+        <Pencil color={colors.white} size={14} strokeWidth={2.5} />
+        <Text style={styles.editButtonText}>{editProfileLabel}</Text>
+      </Button>
     </View>
   );
 }
@@ -127,15 +129,14 @@ function Section({ title, children }: SectionProps) {
   );
 }
 
-export function ProfileStats({ stats, ratingLabel, questsLabel, reviewCountLabel, emptyText }: { stats: ProfileStatsData; ratingLabel: string; questsLabel: string; reviewCountLabel: string; emptyText: string }) {
+export function ProfileStats({ stats, ratingLabel, questsLabel }: { stats: ProfileStatsData; ratingLabel: string; questsLabel: string }) {
   return (
     <View style={styles.statsCard} accessibilityLabel="Profile statistics">
       <View style={styles.statsTopRow}>
-      <View style={styles.statItem}><Text style={styles.statValue}>{stats.ratingAverage === null ? '—' : stats.ratingAverage.toFixed(1)}</Text><Text style={styles.statLabel}>{ratingLabel}</Text>{stats.ratingCount > 0 ? <Text style={styles.statDetail}>{stats.ratingCount} {reviewCountLabel}</Text> : <Text style={styles.statDetail}>{emptyText}</Text>}</View>
+      <View style={styles.statItem}><View style={styles.statValueRow}><Text style={styles.statValue}>{stats.ratingAverage === null ? '—' : stats.ratingAverage.toFixed(1)}</Text>{stats.ratingAverage !== null ? <Text style={styles.statStar}>★</Text> : null}</View><Text style={styles.statLabel}>{ratingLabel}</Text></View>
       <View style={styles.statDivider} />
       <View style={styles.statItem}><Text style={styles.statValue}>{stats.totalQuests === null ? '—' : stats.totalQuests}</Text><Text style={styles.statLabel}>{questsLabel}</Text></View>
       </View>
-      <View style={styles.ratingDistribution} accessibilityLabel="Rating distribution">{([5, 4, 3, 2, 1] as const).map((rating) => <View key={rating} style={styles.ratingDistributionRow}><Text style={styles.ratingDistributionLabel}>{rating}</Text><View style={styles.ratingDistributionTrack}><View style={[styles.ratingDistributionFill, { width: `${stats.ratingCount ? (stats.distribution[rating] / stats.ratingCount) * 100 : 0}%` }]} /></View><Text style={styles.ratingDistributionCount}>{stats.distribution[rating]}</Text></View>)}</View>
     </View>
   );
 }
@@ -162,13 +163,19 @@ function CertificateImage({ title, uri, unavailableText }: { title: string; uri:
   return <Image accessibilityLabel={`${title} certificate`} source={{ uri }} onError={() => setFailed(true)} style={styles.previewImage} resizeMode="contain" />;
 }
 
+function ReviewAvatar({ name, uri }: { name: string; uri: string }) {
+  if (uri) return <Image accessibilityLabel={`${name} avatar`} source={{ uri }} style={styles.reviewAvatar} />;
+  return <View accessibilityLabel={`${name} avatar`} style={styles.reviewAvatarFallback}><Text style={styles.reviewAvatarInitials}>{getInitials(name)}</Text></View>;
+}
+
 export function Experience({ experiences, sectionTitle, emptyText, presentLabel, locale }: { experiences: ProfileExperience[]; sectionTitle: string; emptyText: string; presentLabel: string; locale?: SupportedLocale }) {
   return (
     <Section title={sectionTitle}>
       {() => experiences.length > 0 ? experiences.map((experience) => <View key={experience.id ?? `${experience.title}-${experience.startedAt}`} style={styles.experience}>
-        <View style={styles.timelineDot} />
+        <View style={styles.timelineIcon}><BriefcaseBusiness color={colors.primaryDark} size={16} strokeWidth={2} /></View>
         <View style={styles.experienceContent}>
           <Text style={styles.itemTitle}>{experience.title}</Text>
+          {experience.employmentType ? <Text style={styles.itemMeta}>{experience.employmentType}</Text> : null}
           {experience.organization ? <Text style={styles.itemMeta}>{experience.organization}</Text> : null}
           <Text style={styles.itemMeta}>{formatMonth(experience.startedAt, locale)} – {experience.endedAt ? formatMonth(experience.endedAt, locale) : presentLabel}</Text>
           {experience.description ? <Text style={styles.itemDescription}>{experience.description}</Text> : null}
@@ -207,13 +214,30 @@ export function MyWork({ works, sectionTitle, emptyText, noImageText }: { works:
   return <Section title={sectionTitle}>{(metrics) => works.length > 0 ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.workList}>{works.map((work) => <View key={work.id ?? `${work.title}-${work.imageUri}`} style={[styles.workCard, { width: metrics.workCardWidth }]}><WorkImage title={work.title} uri={work.imageUri} width={metrics.workCardWidth} noImageText={noImageText} /><Text style={styles.itemTitle}>{work.title}</Text>{work.detail ? <Text style={styles.itemDescription}>{work.detail}</Text> : null}</View>)}</ScrollView> : <Text style={styles.emptyText}>{emptyText}</Text>}</Section>;
 }
 
-export function Reviews({ reviews, sectionTitle, emptyText, allLabel, locale }: { reviews: ProfileReview[]; sectionTitle: string; emptyText: string; allLabel: string; locale?: SupportedLocale }) {
+function formatReviewDate(value: string, locale: SupportedLocale = 'en'): string {
+  if (locale === 'th') return formatMonth(value, locale);
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const days = Math.max(0, Math.floor((Date.now() - date.getTime()) / 86_400_000));
+  if (days >= 7) {
+    const weeks = Math.floor(days / 7);
+    return `${weeks} week${weeks === 1 ? '' : 's'} ago`;
+  }
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+}
+
+export function Reviews({ reviews, stats, sectionTitle, emptyText, allLabel, reviewCountLabel, locale }: { reviews: ProfileReview[]; stats: ProfileStatsData; sectionTitle: string; emptyText: string; allLabel: string; reviewCountLabel: string; locale?: SupportedLocale }) {
   const [filter, setFilter] = useState<'all' | 5 | 4 | 3 | 2>('all');
   const filters: ('all' | 5 | 4 | 3 | 2)[] = ['all', 5, 4, 3, 2];
   const visibleReviews = useMemo(() => filter === 'all' ? reviews : reviews.filter((review) => review.rating === filter), [filter, reviews]);
+  const maxDistribution = Math.max(...([5, 4, 3, 2, 1] as const).map((rating) => stats.distribution[rating]), 1);
 
   return <Section title={sectionTitle}>{() => <>
+    <View style={styles.reviewSummary} accessibilityLabel="Rating summary">
+      <View style={styles.reviewScore}><View style={styles.reviewScoreRow}><Text style={styles.reviewScoreValue}>{stats.ratingAverage === null ? '—' : stats.ratingAverage.toFixed(1)}</Text><Text style={styles.reviewScoreStar}>★</Text></View><Text style={styles.reviewScoreStars}>{'★'.repeat(Math.round(stats.ratingAverage ?? 0))}</Text><Text style={styles.reviewCount}>{stats.ratingCount} {reviewCountLabel}</Text></View>
+      <View style={styles.ratingDistribution} accessibilityLabel="Rating distribution">{([5, 4, 3, 2, 1] as const).map((rating) => <View key={rating} style={styles.ratingDistributionRow}><Text style={styles.ratingDistributionLabel}>{rating}</Text><View style={styles.ratingDistributionTrack}><View style={[styles.ratingDistributionFill, { width: `${(stats.distribution[rating] / maxDistribution) * 100}%` }]} /></View><Text style={styles.ratingDistributionCount}>{stats.distribution[rating]}</Text></View>)}</View>
+    </View>
     <View style={styles.filterList}>{filters.map((value) => <Pressable key={value} accessibilityRole="button" accessibilityLabel={value === 'all' ? allLabel : `${value} stars`} accessibilityState={{ selected: filter === value }} onPress={() => setFilter(value)} style={[styles.filterChip, filter === value && styles.filterChipSelected]}><Text style={[styles.filterChipText, filter === value && styles.filterChipTextSelected]}>{value === 'all' ? allLabel : `${value} ★`}</Text></Pressable>)}</View>
-    {visibleReviews.length > 0 ? visibleReviews.map((review) => <View key={review.id} style={styles.reviewCard}><View style={styles.reviewHeader}>{review.reviewerAvatar ? <Image accessibilityLabel={`${review.reviewerName} avatar`} source={{ uri: review.reviewerAvatar }} style={styles.reviewAvatar} /> : null}<View style={styles.reviewHeaderText}><Text style={styles.itemTitle}>{review.reviewerName}</Text><Text style={styles.itemMeta}>{formatMonth(review.createdAt, locale)}</Text></View></View><Text style={styles.reviewRating}>{'★'.repeat(review.rating)}</Text><Text style={styles.itemDescription}>{review.comment}</Text>{review.questTitle ? <Text style={styles.itemMeta}>{review.questTitle}</Text> : null}</View>) : <Text style={styles.emptyText}>{emptyText}</Text>}
+    {visibleReviews.length > 0 ? visibleReviews.map((review) => <View key={review.id} style={styles.reviewCard}><View style={styles.reviewHeader}><ReviewAvatar name={review.reviewerName} uri={review.reviewerAvatar} /><View style={styles.reviewHeaderText}><Text style={styles.itemTitle}>{review.reviewerName}</Text><Text style={styles.itemMeta}>{formatReviewDate(review.createdAt, locale)}</Text></View></View><Text style={styles.reviewRating}>{'★'.repeat(review.rating)}</Text><Text style={styles.itemDescription}>{review.comment}</Text></View>) : <Text style={styles.emptyText}>{emptyText}</Text>}
   </>}</Section>;
 }

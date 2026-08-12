@@ -54,4 +54,14 @@ describe('onboarding validation', () => {
       work_0_imageUri: messages.requiredField,
     });
   });
+
+  test('requires employment type for an experience row', () => {
+    const errors = validateProfileDetails({
+      certificates: [],
+      works: [],
+      experiences: [{ title: 'Tutor', employmentType: '', organization: '', description: '', startedAt: '2024-01-01', endedAt: '' }],
+    }, messages);
+
+    expect(errors).toEqual({ experience_0_employmentType: messages.requiredField });
+  });
 });

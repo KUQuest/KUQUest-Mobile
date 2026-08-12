@@ -80,6 +80,7 @@ export const profileResponseSchema = z.object({
 const experienceSchema = z.object({
   id: z.string(),
   title: z.string(),
+  employmentType: z.string(),
   organization: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   startedAt: z.string(),

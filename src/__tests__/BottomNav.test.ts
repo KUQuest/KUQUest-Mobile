@@ -10,7 +10,7 @@ jest.mock('expo-localization', () => ({
 jest.mock('lucide-react-native', () => ({
   CheckSquare: () => null,
   CircleUserRound: () => null,
-  Grid2X2: () => null,
+  LayoutDashboard: () => null,
   MessageSquare: () => null,
   Plus: () => null,
 }));
@@ -80,5 +80,20 @@ describe('authenticated primary navigation', () => {
     await fireEvent.press(view.getByTestId('tab-create'));
 
     expect(navigate).toHaveBeenCalledWith('create', undefined);
+  });
+
+  it('marks the profile tab selected when the profile route is focused', async () => {
+    const routes = navigationItems.map((item) => ({ key: `${item.routeName}-key`, name: item.routeName }));
+    const view = await render(
+      React.createElement(BottomNav, {
+        state: { index: 4, routes } as never,
+        descriptors: Object.fromEntries(routes.map((route) => [route.key, { options: {} }])) as never,
+        navigation: { emit: jest.fn(() => ({ defaultPrevented: false })), navigate: jest.fn() } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
+    );
+
+    expect(view.getByTestId('tab-profile').props.accessibilityState).toEqual({ selected: true });
+    expect(view.getByTestId('tab-index').props.accessibilityState).toEqual({ selected: false });
   });
 });

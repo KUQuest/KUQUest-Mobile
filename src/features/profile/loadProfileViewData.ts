@@ -39,12 +39,17 @@ export async function loadProfileViewData(locale: SupportedLocale): Promise<Prof
     .map((experience) => ({
       id: experience.id,
       title: experience.title,
+      employmentType: experience.employmentType,
       organization: experience.organization ?? '',
       description: experience.description ?? '',
       startedAt: experience.startedAt,
       endedAt: experience.endedAt ?? null,
     }))
-    .sort((left, right) => right.startedAt.localeCompare(left.startedAt));
+    .sort((left, right) => {
+      if (left.endedAt === null && right.endedAt !== null) return -1;
+      if (left.endedAt !== null && right.endedAt === null) return 1;
+      return right.startedAt.localeCompare(left.startedAt);
+    });
   const apiReviews: ProfileReview[] = (reviewsResult?.items ?? []).map((review) => ({
     id: review.id,
     reviewerName: review.reviewer.displayName,
@@ -69,9 +74,9 @@ export async function loadProfileViewData(locale: SupportedLocale): Promise<Prof
     stats: reputationResult
       ? { totalQuests: reputationResult.totalQuests, ratingAverage: reputationResult.rating.average, ratingCount: reputationResult.rating.count, distribution: reputationResult.rating.distribution }
       : (isProfileDemoEnabled ? demoProfileStats : { totalQuests: null, ratingAverage: null, ratingCount: 0, distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } }),
-    experiences: experiencesResult !== undefined
-      ? apiExperiences
-      : (isProfileDemoEnabled ? demoExperiences : []),
+    experiences: isProfileDemoEnabled && apiExperiences.length === 0
+      ? demoExperiences
+      : (experiencesResult !== undefined ? apiExperiences : []),
     certificates: certificates.map((certificate) => ({
       title: certificate.name,
       detail: `${certificate.issuer} · ${formatDate(certificate.issuedAt, locale)}`,
