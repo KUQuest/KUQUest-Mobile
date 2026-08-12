@@ -9,6 +9,13 @@ export default function TabsLayout() {
       tabBar={(props) => <BottomNav {...props} />}
       screenOptions={{
         headerShown: false,
+        tabBarStyle: {
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          elevation: 0,
+          position: 'absolute',
+          shadowOpacity: 0,
+        },
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Quest Board' }} />

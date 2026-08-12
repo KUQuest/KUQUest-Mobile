@@ -6,7 +6,7 @@ import { fontFamily } from '@/theme/typography';
 const styles = StyleSheet.create({
   container: {
     alignItems: 'stretch',
-    backgroundColor: 'transparent',
+    backgroundColor: colors.background,
     paddingHorizontal: 10,
     paddingTop: 6,
   },

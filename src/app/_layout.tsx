@@ -1,9 +1,11 @@
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LocaleProvider } from '../locales/LocaleProvider';
+import { colors } from '../theme/colors';
 
 import {
   NotoSansThai_400Regular,
@@ -20,6 +22,7 @@ import {
 } from '@expo-google-fonts/be-vietnam-pro';
 
 SplashScreen.preventAutoHideAsync();
+void SystemUI.setBackgroundColorAsync(colors.background);
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
