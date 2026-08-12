@@ -4,8 +4,8 @@ describe('app chrome sizing', () => {
   it('uses compact dimensions on the connected phone width', () => {
     expect(getAppChromeMetrics(384)).toEqual({
       headerHeight: 68,
-      logoWidth: 112,
-      logoHeight: 56,
+      logoWidth: 96,
+      logoHeight: 48,
       backButtonSize: 44,
       navHeight: 64,
       navItemHeight: 56,
@@ -21,8 +21,8 @@ describe('app chrome sizing', () => {
   it('keeps the larger reference dimensions for wider phone layouts', () => {
     expect(getAppChromeMetrics(430)).toEqual({
       headerHeight: 80,
-      logoWidth: 128,
-      logoHeight: 64,
+      logoWidth: 108,
+      logoHeight: 54,
       backButtonSize: 48,
       navHeight: 68,
       navItemHeight: 60,

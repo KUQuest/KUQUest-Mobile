@@ -8,7 +8,8 @@
     "scheme": "kuquestmobile",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.anonymous.KUQUestMobile"
     },
     "android": {
       "adaptiveIcon": {
@@ -39,8 +40,14 @@
         "expo-localization",
         {
           "supportedLocales": {
-            "ios": ["en", "th"],
-            "android": ["en", "th"]
+            "ios": [
+              "en",
+              "th"
+            ],
+            "android": [
+              "en",
+              "th"
+            ]
           }
         }
       ],

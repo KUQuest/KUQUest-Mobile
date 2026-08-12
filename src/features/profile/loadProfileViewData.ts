@@ -2,15 +2,10 @@ import { ApiError } from '../../api/ApiClient';
 import { authService } from '../auth/AuthService';
 import { AuthError } from '../auth/types';
 import type { SupportedLocale } from '../../locales/LocaleProvider';
-import type { ProfileExperience, ProfileReview, ProfileSectionErrors, ProfileViewData } from './components/ProfileComponents';
+import type { ProfileSectionErrors, ProfileViewData } from './components/ProfileComponents';
 import { demoExperiences, demoProfileStats, demoProfileTags, demoReviews, isProfileDemoEnabled } from './profileDemoData';
+import { mapApiCertificateToView, mapApiExperienceToView, mapApiPortfolioToView, mapApiReviewToView } from './profileMappers';
 import { selectTopProfileTags, sortExperiences, type OptionalReadResult } from './profileViewData';
-
-function formatDate(value: string, locale: SupportedLocale): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-US', { year: 'numeric', month: 'short' }).format(date);
-}
 
 async function readOptional<T>(request: () => Promise<T>): Promise<OptionalReadResult<T>> {
   try {
@@ -59,24 +54,8 @@ export async function loadProfileViewData(locale: SupportedLocale): Promise<Prof
   const status = getValue(statusResult);
   const options = getValue(optionsResult);
   const occupation = options?.occupations.find((item) => item.id === status?.occupationId)?.name ?? '';
-  const apiExperiences: ProfileExperience[] = (getValue(experiencesResult) ?? []).map((experience) => ({
-    id: experience.id,
-    title: experience.title,
-    employmentType: experience.employmentType,
-    organization: experience.organization ?? '',
-    description: experience.description ?? '',
-    startedAt: experience.startedAt,
-    endedAt: experience.endedAt ?? null,
-  }));
-  const apiReviews: ProfileReview[] = (getValue(reviewsResult)?.items ?? []).map((review) => ({
-    id: review.id,
-    reviewerName: review.reviewer.displayName,
-    reviewerAvatar: review.reviewer.avatar?.url ?? '',
-    rating: review.rating,
-    comment: review.comment,
-    createdAt: review.createdAt,
-    questTitle: review.quest?.title ?? '',
-  }));
+  const apiExperiences = (getValue(experiencesResult) ?? []).map(mapApiExperienceToView);
+  const apiReviews = (getValue(reviewsResult)?.items ?? []).map(mapApiReviewToView);
 
   const sectionErrors: ProfileSectionErrors = {
     ...(hasReadError(experiencesResult) ? { experience: true } : {}),
@@ -111,18 +90,8 @@ export async function loadProfileViewData(locale: SupportedLocale): Promise<Prof
     experiences: experiencesResult.kind === 'unsupported' && demoEnabled
       ? demoExperiences
       : sortExperiences(apiExperiences),
-    certificates: certificates.map((certificate) => ({
-      id: certificate.id,
-      title: certificate.name,
-      detail: `${certificate.issuer} · ${formatDate(certificate.issuedAt, locale)}`,
-      link: certificate.image?.url ?? '',
-    })),
-    works: portfolio.map((entry) => ({
-      id: entry.id,
-      title: entry.title,
-      detail: entry.description ?? '',
-      imageUri: entry.images[0]?.url ?? '',
-    })),
+    certificates: certificates.map((certificate) => mapApiCertificateToView(certificate, locale)),
+    works: portfolio.map(mapApiPortfolioToView),
     reviews: reviews
       ? apiReviews
       : (reviewsResult.kind === 'unsupported' && demoEnabled ? demoReviews : []),

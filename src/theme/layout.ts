@@ -16,8 +16,8 @@ export interface AppChromeMetrics {
 export function getAppChromeMetrics(width: number, fontScale = 1): AppChromeMetrics {
   const baseMetrics: AppChromeMetrics = width < 400 ? {
       headerHeight: 68,
-      logoWidth: 112,
-      logoHeight: 56,
+      logoWidth: 96,
+      logoHeight: 48,
       backButtonSize: 44,
       navHeight: 64,
       navItemHeight: 56,
@@ -29,8 +29,8 @@ export function getAppChromeMetrics(width: number, fontScale = 1): AppChromeMetr
       labelLineHeight: 14,
     } : {
     headerHeight: 80,
-    logoWidth: 128,
-    logoHeight: 64,
+      logoWidth: 108,
+      logoHeight: 54,
     backButtonSize: 48,
     navHeight: 68,
     navItemHeight: 60,

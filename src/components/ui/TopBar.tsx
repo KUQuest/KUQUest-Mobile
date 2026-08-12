@@ -8,7 +8,7 @@ import styles from './topBarStyles';
 
 interface TopBarProps {
   onBackPress?: () => void;
-  variant?: 'default' | 'profile';
+  variant?: 'default' | 'profile' | 'board' | 'detail';
 }
 
 export function TopBar({ onBackPress, variant = 'default' }: TopBarProps) {
@@ -16,7 +16,15 @@ export function TopBar({ onBackPress, variant = 'default' }: TopBarProps) {
   const metrics = getAppChromeMetrics(width, fontScale);
 
   return (
-    <View style={[styles.container, variant === 'profile' && styles.profileContainer, { height: variant === 'profile' ? 48 : metrics.headerHeight }]}>
+    <View
+      style={[
+        styles.container,
+        variant === 'profile' && styles.profileContainer,
+        variant === 'board' && styles.boardContainer,
+        variant === 'detail' && styles.detailContainer,
+        { height: variant === 'profile' ? 48 : metrics.headerHeight },
+      ]}
+    >
       {onBackPress ? (
         <TouchableOpacity
           accessibilityLabel="Go back"
@@ -33,7 +41,7 @@ export function TopBar({ onBackPress, variant = 'default' }: TopBarProps) {
         accessibilityLabel="KUQuest"
         contentFit="contain"
         source={require('../../../topbar-logo.svg')}
-        style={[styles.logo, { height: 65, width: 121 }]}
+        style={[styles.logo, { height: metrics.logoHeight, width: metrics.logoWidth }]}
       />
     </View>
   );

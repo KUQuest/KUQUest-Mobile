@@ -1,8 +1,4 @@
-import {
-  GoogleSignin,
-  isSuccessResponse,
-  type SignInResponse,
-} from '@react-native-google-signin/google-signin';
+import type { SignInResponse } from '@react-native-google-signin/google-signin';
 import { ApiClient, ApiError } from '../../api/ApiClient';
 import { authUserSchema } from '../../api/contracts';
 import { StudentApi } from '../../api/StudentApi';
@@ -13,13 +9,9 @@ import {
   RoutingDestination,
 } from './types';
 import { authClient } from './authClient';
+import { loadNativeGoogleSignin, type NativeGoogleSigninApi, type NativeGoogleSigninSuccessResponse } from './nativeGoogleSignin';
 
-export interface NativeGoogleSigninApi {
-  configure(options: { webClientId?: string }): void;
-  hasPlayServices(options: { showPlayServicesUpdateDialog: boolean }): Promise<boolean>;
-  signIn(): Promise<SignInResponse>;
-  signOut(): Promise<null>;
-}
+export type { NativeGoogleSigninApi } from './nativeGoogleSignin';
 
 interface BetterAuthResponse {
   data?: unknown;
@@ -76,6 +68,7 @@ function getSessionUser(data: unknown) {
 export class AuthService implements AuthAdapter {
   private readonly studentApi: StudentApi;
   private readonly nativeGoogleSignin: NativeGoogleSigninApi | null;
+  private readonly isSuccessResponse: (response: SignInResponse) => response is NativeGoogleSigninSuccessResponse;
   private readonly authClient: BetterAuthClientApi;
 
   constructor(options: AuthServiceOptions = {}) {
@@ -84,9 +77,13 @@ export class AuthService implements AuthAdapter {
       fetchImpl: options.fetchImpl,
     });
     this.studentApi = options.studentApi ?? new StudentApi(apiClient);
+    const nativeGoogleSigninModule = options.googleSignin === undefined
+      ? loadNativeGoogleSignin()
+      : null;
     this.nativeGoogleSignin = options.googleSignin === undefined
-      ? GoogleSignin
+      ? nativeGoogleSigninModule?.GoogleSignin ?? null
       : options.googleSignin;
+    this.isSuccessResponse = nativeGoogleSigninModule?.isSuccessResponse ?? ((response): response is NativeGoogleSigninSuccessResponse => response.type === 'success');
     this.authClient = options.authClient ?? authClient;
 
     if (this.nativeGoogleSignin) {
@@ -191,7 +188,7 @@ export class AuthService implements AuthAdapter {
         hasIdToken: response.type === 'success' && Boolean(response.data.idToken),
       });
 
-      if (!isSuccessResponse(response)) {
+      if (!this.isSuccessResponse(response)) {
         throw new AuthError('OAUTH_CANCELLED');
       }
 

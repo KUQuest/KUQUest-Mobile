@@ -2,6 +2,8 @@
 
 Issues for this repo live in Linear, team **Frontend** (id `9367dd84-2109-48f2-8d4d-dda8072dd699`), scoped by the `Mobile` label. Projects are shared cross-team (Frontend/Backend/Tester-QA) and split by `Mobile`/`Web` label, not by repo — always filter/tag `Mobile` when creating or listing issues for this repo.
 
+Mobile implementation issues must follow the [Mobile implementation template](linear-mobile-implementation-template.md), copied from the KUQuest API Server's shared ticket design.
+
 ## Conventions
 
 - **Create an issue**: `save_issue` with `team: "Frontend"`, label `Mobile`, plus any relevant project (see project list below).

@@ -22,6 +22,8 @@ import { authService } from '../../auth/AuthService';
 import { AuthError, type OnboardingStep } from '../../auth/types';
 import { ApiError } from '../../../api/ApiClient';
 import type { AcademicRegistrationOptions } from '../../../api/contracts';
+import { mapProfileRecordsToDraft } from '../../profile/profileMappers';
+import { ProfilePersistenceCoordinator, ProfilePersistenceError } from '../profilePersistenceCoordinator';
 import { parseOnboardingStep } from '../steps';
 import { validateProfileBasics, validateProfileDetails } from '../validation';
 
@@ -44,15 +46,6 @@ function createEmptyWork(): Work {
 
 function createEmptyExperience(): Experience {
   return { title: '', employmentType: '', organization: '', description: '', startedAt: '', endedAt: '' };
-}
-
-function splitName(name: string): { firstName: string; lastName: string } {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  return { firstName: parts.shift() ?? '', lastName: parts.join(' ') };
-}
-
-function isLocalAsset(uri: string): boolean {
-  return Boolean(uri) && !/^https?:\/\//i.test(uri);
 }
 
 function formatMonthYear(value: string, locale: 'en' | 'th'): string {
@@ -88,11 +81,7 @@ export default function OnboardingScreen() {
   const [retryAction, setRetryAction] = useState<(() => void) | null>(null);
   const [datePickerTarget, setDatePickerTarget] = useState<{ index: number; value: string; kind: 'certificate' | 'experience'; field?: 'startedAt' | 'endedAt' } | null>(null);
   const [today] = useState(() => new Date());
-  const persistedPortfolioImages = useRef(new Set<string>());
-  const pendingPortfolioReplacements = useRef(new Map<string, { oldId: string; newId: string }>());
-  const pendingCertificateDeletes = useRef(new Set<string>());
-  const pendingPortfolioDeletes = useRef(new Set<string>());
-  const pendingExperienceDeletes = useRef(new Set<string>());
+  const persistenceCoordinator = useRef(new ProfilePersistenceCoordinator());
   const { width } = useWindowDimensions();
   const buttonWidth = (width - 96) / 2;
 
@@ -120,48 +109,24 @@ export default function OnboardingScreen() {
           api.listPortfolio(),
           experiencesPromise,
         ]);
-        const departmentId = status.departmentId ?? profile.department?.id ?? '';
-        const faculty = academicOptions.faculties.find((item) =>
-          item.departments.some((department) => department.id === departmentId)
-        );
-        const name = [status.firstName || profile.firstName, status.lastName || profile.lastName]
-          .filter(Boolean)
-          .join(' ');
+        const mappedForm = mapProfileRecordsToDraft({
+          profile,
+          status,
+          options: academicOptions,
+          certificates,
+          portfolio,
+          experiences,
+          fallbackName: session.user.name,
+          fallbackImage: session.user.image ?? '',
+        });
 
         if (active) {
           setOptions(academicOptions);
           setForm({
-            name,
-            telephone: status.telephone ?? profile.telephone ?? '',
-            occupation: status.occupationId ?? '',
-            studentId: status.studentId ?? profile.studentId ?? '',
-            faculty: faculty?.id ?? '',
-            department: departmentId,
-            acceptedTerms: Boolean(status.termsAcceptedAt),
-            description: profile.bio ?? '',
-            profileImage: profile.avatar?.url ?? session.user.image ?? '',
-            certificates: certificates.length > 0 ? certificates.map((certificate) => ({
-              id: certificate.id,
-              name: certificate.name,
-              issuer: certificate.issuer,
-              issuedAt: certificate.issuedAt,
-              imageUri: certificate.image?.url ?? '',
-            })) : [createEmptyCertificate()],
-            works: portfolio.length > 0 ? portfolio.map((entry) => ({
-              id: entry.id,
-              title: entry.title,
-              detail: entry.description ?? '',
-              imageUri: entry.images[0]?.url ?? '',
-            })) : [createEmptyWork()],
-            experiences: experiences.length > 0 ? experiences.map((entry) => ({
-              id: entry.id,
-              title: entry.title,
-              employmentType: entry.employmentType,
-              organization: entry.organization ?? '',
-              description: entry.description ?? '',
-              startedAt: entry.startedAt,
-              endedAt: entry.endedAt ?? '',
-            })) : [createEmptyExperience()],
+            ...mappedForm,
+            certificates: mappedForm.certificates.length > 0 ? mappedForm.certificates : [createEmptyCertificate()],
+            works: mappedForm.works.length > 0 ? mappedForm.works : [createEmptyWork()],
+            experiences: mappedForm.experiences.length > 0 ? mappedForm.experiences : [createEmptyExperience()],
           });
         }
       } catch (error) {
@@ -210,150 +175,40 @@ export default function OnboardingScreen() {
   };
 
   const handleComplete = async () => {
-    onboardingDebug('save pressed', { currentStep, isEditMode, isSubmitting });
     if (!validateStep3()) return;
-    onboardingDebug('save started', {
-      isEditMode,
-      certificateCount: form.certificates.filter((item) => item.name || item.issuer || item.issuedAt || item.imageUri).length,
-      portfolioCount: form.works.filter((item) => item.title || item.detail || item.imageUri).length,
-      experienceCount: form.experiences.filter((item) => item.title || item.employmentType || item.organization || item.description || item.startedAt || item.endedAt).length,
-    });
     setIsSubmitting(true);
     setSubmitError(null);
     try {
       const session = await authService.getSession();
       if (!session) throw new Error('No active session');
       const api = await authService.getStudentApi();
-      const { firstName, lastName } = splitName(form.name);
-      const departmentId = form.department;
-      if (!isEditMode) {
-        const occupationId = form.occupation;
-        if (!occupationId || !departmentId) throw new Error('Academic registration options are incomplete');
-        const termsVersion = process.env.EXPO_PUBLIC_TERMS_VERSION;
-        if (form.acceptedTerms && !termsVersion) throw new Error('EXPO_PUBLIC_TERMS_VERSION is required');
-        await api.updateAcademicRegistration({
-          firstName,
-          lastName,
-          telephone: form.telephone,
-          occupationId,
-          studentId: form.studentId || undefined,
-          departmentId,
-          termsVersion: form.acceptedTerms && termsVersion ? termsVersion : undefined,
-        });
-      }
-      await api.updateProfile({
-        firstName,
-        lastName,
-        ...(form.description.trim() ? { bio: form.description.trim() } : {}),
-        telephone: form.telephone,
-        ...(departmentId ? { departmentId } : {}),
-      });
-
-      if (isLocalAsset(form.profileImage)) {
-        await api.uploadAvatar({ uri: form.profileImage });
-      }
-
-      for (const [index, certificate] of form.certificates.entries()) {
-        if (!(certificate.name || certificate.issuer || certificate.issuedAt || certificate.imageUri)) continue;
-        onboardingDebug('saving certificate', { index, hasId: Boolean(certificate.id), hasLocalImage: isLocalAsset(certificate.imageUri) });
-        const certificateData = { name: certificate.name, issuer: certificate.issuer, issuedAt: certificate.issuedAt };
-        const id = certificate.id
-          ? (await api.updateCertificate(certificate.id, certificateData), certificate.id)
-          : await api.createCertificate(certificateData);
-        if (!certificate.id) {
-          setForm((previous) => ({
-            ...previous,
-            certificates: previous.certificates.map((item, itemIndex) => itemIndex === index ? { ...item, id } : item),
-          }));
-        }
-        if (isLocalAsset(certificate.imageUri)) await api.uploadCertificateImage(id, { uri: certificate.imageUri });
-      }
-
-      for (const [index, work] of form.works.entries()) {
-        if (!(work.title || work.detail || work.imageUri)) continue;
-        onboardingDebug('saving portfolio item', { index, hasId: Boolean(work.id), hasLocalImage: isLocalAsset(work.imageUri), titleLength: work.title.length, detailLength: work.detail.length });
-        let id = work.id;
-        const pendingReplacement = isLocalAsset(work.imageUri)
-          ? pendingPortfolioReplacements.current.get(work.imageUri)
-          : undefined;
-        if (pendingReplacement) {
-          await api.deletePortfolio(pendingReplacement.oldId);
-          pendingPortfolioReplacements.current.delete(work.imageUri);
-          persistedPortfolioImages.current.add(work.imageUri);
-          id = pendingReplacement.newId;
-        }
-        const hasNewImage = isLocalAsset(work.imageUri) && !persistedPortfolioImages.current.has(work.imageUri);
-        if (!pendingReplacement && id && hasNewImage) {
-          const replacementId = await api.createPortfolio({ title: work.title.trim(), description: work.detail.trim() || undefined, imageUris: [work.imageUri] });
-          pendingPortfolioReplacements.current.set(work.imageUri, { oldId: id, newId: replacementId });
-          id = replacementId;
-          setForm((previous) => ({
-            ...previous,
-            works: previous.works.map((item, itemIndex) => itemIndex === index ? { ...item, id: replacementId } : item),
-          }));
-          await api.deletePortfolio(work.id ?? '');
-          pendingPortfolioReplacements.current.delete(work.imageUri);
-          persistedPortfolioImages.current.add(work.imageUri);
-        } else if (id) {
-          await api.updatePortfolio(id, { title: work.title.trim(), ...(work.detail.trim() ? { description: work.detail.trim() } : {}) });
-        } else {
-          id = await api.createPortfolio({ title: work.title.trim(), description: work.detail.trim() || undefined, imageUris: work.imageUri ? [work.imageUri] : [] });
-          if (isLocalAsset(work.imageUri)) persistedPortfolioImages.current.add(work.imageUri);
-        }
-        if (id && (!work.id || id !== work.id)) {
-          setForm((previous) => ({
-            ...previous,
-            works: previous.works.map((item, itemIndex) => itemIndex === index ? { ...item, id } : item),
-          }));
-        }
-      }
-
-      for (const [index, experience] of form.experiences.entries()) {
-        if (!(experience.title || experience.employmentType || experience.organization || experience.description || experience.startedAt || experience.endedAt)) continue;
-        const experienceData = {
-          title: experience.title.trim(),
-          employmentType: experience.employmentType.trim(),
-          ...(experience.organization.trim() ? { organization: experience.organization.trim() } : {}),
-          ...(experience.description.trim() ? { description: experience.description.trim() } : {}),
-          startedAt: experience.startedAt,
-          endedAt: experience.endedAt.trim() || null,
-        };
-        const saved = experience.id
-          ? await api.updateExperience(experience.id, experienceData)
-          : await api.createExperience(experienceData);
-        if (!experience.id && saved?.id) {
-          setForm((previous) => ({
-            ...previous,
-            experiences: previous.experiences.map((item, itemIndex) => itemIndex === index ? { ...item, id: saved.id } : item),
-          }));
-        }
-      }
-
-      for (const id of pendingCertificateDeletes.current) {
-        await api.deleteCertificate(id);
-        pendingCertificateDeletes.current.delete(id);
-      }
-      for (const id of pendingPortfolioDeletes.current) {
-        await api.deletePortfolio(id);
-        pendingPortfolioDeletes.current.delete(id);
-      }
-      for (const id of pendingExperienceDeletes.current) {
-        await api.deleteExperience(id);
-        pendingExperienceDeletes.current.delete(id);
-      }
-
+      const result = await persistenceCoordinator.current.save(
+        api,
+        form,
+        isEditMode,
+        process.env.EXPO_PUBLIC_TERMS_VERSION,
+      );
+      setForm(result.draft);
       if (isEditMode) router.replace('/(tabs)/profile');
       else router.replace('/');
     } catch (error) {
-      onboardingDebug('edit save failed', { error: error instanceof Error ? { name: error.name, message: error.message } : String(error) });
       if (error instanceof AuthError && error.code === 'SESSION_EXPIRED') {
         await authService.signOut().catch(() => undefined);
         router.replace('/');
         return;
       }
-      setSubmitError(error instanceof Error && error.message.includes('EXPO_PUBLIC_TERMS_VERSION')
-        ? error.message
-        : msg.submitErrorMsg || 'Failed to save data. Please try again.');
+      if (error instanceof ProfilePersistenceError) {
+        setForm(error.draft);
+        if (error.partial) {
+          setSubmitError(`${msg.submitErrorMsg} ${msg.partialSaveMsg}`);
+        } else {
+          setSubmitError(msg.submitErrorMsg || 'Failed to save data. Please try again.');
+        }
+      } else {
+        setSubmitError(error instanceof Error && error.message.includes('EXPO_PUBLIC_TERMS_VERSION')
+          ? error.message
+          : msg.submitErrorMsg || 'Failed to save data. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -425,7 +280,7 @@ export default function OnboardingScreen() {
 
   const removeExperienceNow = (index: number) => {
     const experience = form.experiences[index];
-    if (experience?.id) pendingExperienceDeletes.current.add(experience.id);
+    if (experience?.id) persistenceCoordinator.current.markExperienceDeleted(experience.id);
     setForm((previous) => ({
       ...previous,
       experiences: previous.experiences.length === 1 ? [createEmptyExperience()] : previous.experiences.filter((_, itemIndex) => itemIndex !== index),
@@ -448,7 +303,7 @@ export default function OnboardingScreen() {
     const certificate = form.certificates[index];
     try {
       if (certificate?.id) {
-        pendingCertificateDeletes.current.add(certificate.id);
+        persistenceCoordinator.current.markCertificateDeleted(certificate.id);
       }
       setForm((previous) => ({
         ...previous,
@@ -465,7 +320,7 @@ export default function OnboardingScreen() {
     const work = form.works[index];
     try {
       if (work?.id) {
-        pendingPortfolioDeletes.current.add(work.id);
+        persistenceCoordinator.current.markPortfolioDeleted(work.id);
       }
       setForm((previous) => ({
         ...previous,

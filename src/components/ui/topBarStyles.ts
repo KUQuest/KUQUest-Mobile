@@ -5,10 +5,10 @@ import { spacing } from '@/theme/spacing';
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    alignItems: 'flex-start',
+    alignItems: 'flex-end',
     justifyContent: 'center',
     position: 'relative',
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.md,
     backgroundColor: colors.surface,
     borderBottomWidth: 0,
     elevation: 0,
@@ -21,6 +21,14 @@ const styles = StyleSheet.create({
     elevation: 0,
     paddingHorizontal: spacing.lg,
     shadowOpacity: 0,
+  },
+  boardContainer: {
+    alignItems: 'flex-end',
+    paddingHorizontal: spacing.md,
+  },
+  detailContainer: {
+    alignItems: 'flex-end',
+    paddingHorizontal: spacing.md,
   },
   backButton: {
     alignItems: 'center',
