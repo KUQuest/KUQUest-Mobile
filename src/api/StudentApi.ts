@@ -1,4 +1,5 @@
 import { ApiClient, ApiError } from './ApiClient';
+import { File } from 'expo-file-system';
 import {
   academicRegistrationOptionsResponseSchema,
   academicRegistrationStatusResponseSchema,
@@ -52,11 +53,8 @@ export interface UploadAsset {
 }
 
 function appendFile(formData: FormData, field: string, asset: UploadAsset): void {
-  formData.append(field, {
-    uri: asset.uri,
-    name: asset.name ?? `${field}.jpg`,
-    type: asset.type ?? 'image/jpeg',
-  } as unknown as Blob);
+  const file = new File(asset.uri);
+  formData.append(field, file, asset.name ?? file.name ?? `${field}.jpg`);
 }
 
 function fileNameFromUri(uri: string, fallback: string): string {

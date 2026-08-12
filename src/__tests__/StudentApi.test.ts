@@ -1,6 +1,21 @@
 import { ApiClient, ApiError } from '../api/ApiClient';
 import { StudentApi } from '../api/StudentApi';
 
+jest.mock('expo-file-system', () => ({
+  File: class MockFile extends Blob {
+    readonly uri: string;
+
+    constructor(uri: string) {
+      super([], { type: 'image/jpeg' });
+      this.uri = uri;
+    }
+
+    get name(): string {
+      return this.uri.split('/').pop() || 'file.jpg';
+    }
+  },
+}));
+
 function response(body: unknown, status = 200): Response {
   return {
     ok: status >= 200 && status < 300,
@@ -110,6 +125,16 @@ describe('StudentApi', () => {
       'https://api.example.test/api/v1/profile/certificates/certificate-id',
       expect.objectContaining({ method: 'DELETE' })
     );
+  });
+
+  test('uploads certificate images as supported FormData file parts', async () => {
+    fetchMock.mockResolvedValue(response({ success: true }));
+
+    await api.uploadCertificateImage('certificate-id', { uri: 'file:///tmp/certificate.jpeg' });
+
+    const request = fetchMock.mock.calls[0][1] as RequestInit;
+    const formData = request.body as FormData;
+    expect(formData.get('image')).toBeInstanceOf(Blob);
   });
 
   test('maps API errors to ApiError with the documented error payload', async () => {
