@@ -71,7 +71,7 @@ export default function Profile() {
         contentContainerStyle={{ gap: layoutMetrics.sectionGap, paddingBottom: 96, paddingHorizontal: layoutMetrics.pagePadding, paddingTop: layoutMetrics.sectionGap }}
         showsVerticalScrollIndicator={false}
       >
-        <ProfileHeader data={content} editProfileLabel={messages.edit} onEditPress={() => router.push({ pathname: '/onboarding', params: { mode: 'edit' } })} />
+        <ProfileHeader data={content} editProfileLabel={messages.edit} onEditPress={() => router.push('/profile/edit')} />
         <ProfileStats stats={content.stats} ratingLabel={messages.rating} questsLabel={messages.totalQuests} reviewsLabel={messages.reviews} errorText={content.sectionErrors.reputation ? messages.sectionUnavailable : undefined} retryLabel={messages.retry} onRetry={() => setLoadAttempt((attempt) => attempt + 1)} />
         <ProfileTabs activeTab={activeTab} labels={tabLabels} onChange={setActiveTab} />
         {activeTab === tabOrder[0] ? <AboutMe about={content.about} sectionTitle={messages.about} emptyText={messages.noDescription} /> : null}

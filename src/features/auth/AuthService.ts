@@ -1,6 +1,7 @@
 import type { SignInResponse } from '@react-native-google-signin/google-signin';
 import { ApiClient, ApiError } from '../../api/ApiClient';
 import { authUserSchema } from '../../api/contracts';
+import { ProfileApi } from '../../api/ProfileApi';
 import { StudentApi } from '../../api/StudentApi';
 import {
   AuthAdapter,
@@ -34,6 +35,7 @@ export interface AuthServiceOptions {
   apiClient?: ApiClient;
   fetchImpl?: typeof fetch;
   studentApi?: StudentApi;
+  profileApi?: ProfileApi;
   googleSignin?: NativeGoogleSigninApi | null;
   authClient?: BetterAuthClientApi;
 }
@@ -67,6 +69,7 @@ function getSessionUser(data: unknown) {
 
 export class AuthService implements AuthAdapter {
   private readonly studentApi: StudentApi;
+  private readonly profileApi: ProfileApi;
   private readonly nativeGoogleSignin: NativeGoogleSigninApi | null;
   private readonly isSuccessResponse: (response: SignInResponse) => response is NativeGoogleSigninSuccessResponse;
   private readonly authClient: BetterAuthClientApi;
@@ -77,6 +80,7 @@ export class AuthService implements AuthAdapter {
       fetchImpl: options.fetchImpl,
     });
     this.studentApi = options.studentApi ?? new StudentApi(apiClient);
+    this.profileApi = options.profileApi ?? new ProfileApi(this.studentApi);
     const nativeGoogleSigninModule = options.googleSignin === undefined
       ? loadNativeGoogleSignin()
       : null;
@@ -144,6 +148,12 @@ export class AuthService implements AuthAdapter {
     const session = await this.getSession();
     if (!session) throw new AuthError('SESSION_EXPIRED', 'No active session');
     return this.studentApi;
+  }
+
+  async getProfileApi(): Promise<ProfileApi> {
+    const session = await this.getSession();
+    if (!session) throw new AuthError('SESSION_EXPIRED', 'No active session');
+    return this.profileApi;
   }
 
   async signOut(): Promise<void> {

@@ -36,7 +36,9 @@ export interface AcademicRegistrationUpdate {
 export interface ProfileUpdate {
   firstName?: string;
   lastName?: string;
-  bio?: string;
+  bio?: string | null;
+  occupationId?: string;
+  tagIds?: string[];
   telephone?: string;
   departmentId?: string;
 }
@@ -56,8 +58,8 @@ export interface CertificateCreate {
 export interface ExperienceCreate {
   title: string;
   employmentType: string;
-  organization?: string;
-  description?: string;
+  organization?: string | null;
+  description?: string | null;
   startedAt: string;
   endedAt?: string | null;
 }
@@ -142,11 +144,24 @@ export class StudentApi {
     return profileResponseSchema.parse(body).data;
   }
 
+  async listProfileTagOptions(): Promise<{ id: string; name: string }[]> {
+    try {
+      const body = await this.client.request<unknown>('/api/v1/profile/tags/options');
+      if (!body || typeof body !== 'object' || !('data' in body) || !Array.isArray(body.data)) return [];
+      return body.data.filter((item): item is { id: string; name: string } => Boolean(item && typeof item === 'object' && 'id' in item && typeof item.id === 'string' && 'name' in item && typeof item.name === 'string'));
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) return [];
+      throw error;
+    }
+  }
+
   async updateProfile(update: ProfileUpdate): Promise<void> {
     return this.trace('profile update', {
       hasFirstName: Boolean(update.firstName),
       hasLastName: Boolean(update.lastName),
-      hasBio: Boolean(update.bio),
+      hasBio: update.bio !== undefined,
+      hasOccupationId: Boolean(update.occupationId),
+      hasTagIds: Boolean(update.tagIds),
       hasTelephone: Boolean(update.telephone),
       hasDepartmentId: Boolean(update.departmentId),
     }, async () => {
@@ -227,7 +242,7 @@ export class StudentApi {
     });
   }
 
-  async updatePortfolio(id: string, update: { title?: string; description?: string }): Promise<void> {
+  async updatePortfolio(id: string, update: { title?: string; description?: string | null }): Promise<void> {
     return this.trace('portfolio update', {
       id,
       titleLength: update.title?.length ?? 0,
@@ -236,6 +251,24 @@ export class StudentApi {
       const body = await this.client.requestJson<unknown>(`/api/v1/profile/portfolio/${id}`, update, { method: 'PATCH' });
       successResponseSchema.parse(body);
     });
+  }
+
+  async uploadPortfolioImage(id: string, asset: UploadAsset): Promise<void> {
+    return this.trace('portfolio image upload', {
+      id,
+      fileName: asset.name ?? fileNameFromUri(asset.uri, 'portfolio.jpg'),
+      mimeType: asset.type ?? 'image/jpeg',
+    }, async () => {
+      const formData = new FormData();
+      appendFile(formData, 'image', asset);
+      const body = await this.client.requestForm<unknown>(`/api/v1/profile/portfolio/${id}/image`, formData, { method: 'POST' });
+      successResponseSchema.parse(body);
+    });
+  }
+
+  async deletePortfolioImage(id: string): Promise<void> {
+    const body = await this.client.request<unknown>(`/api/v1/profile/portfolio/${id}/image`, { method: 'DELETE' });
+    successResponseSchema.parse(body);
   }
 
   async deletePortfolio(id: string): Promise<void> {
@@ -288,7 +321,13 @@ export class StudentApi {
     }, async () => {
       const formData = new FormData();
       appendFile(formData, 'image', asset);
-      await this.client.requestForm<unknown>(`/api/v1/profile/certificates/${id}/image`, formData, { method: 'POST' });
+      const body = await this.client.requestForm<unknown>(`/api/v1/profile/certificates/${id}/image`, formData, { method: 'POST' });
+      successResponseSchema.parse(body);
     });
+  }
+
+  async deleteCertificateImage(id: string): Promise<void> {
+    const body = await this.client.request<unknown>(`/api/v1/profile/certificates/${id}/image`, { method: 'DELETE' });
+    successResponseSchema.parse(body);
   }
 }
