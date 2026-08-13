@@ -1,6 +1,7 @@
 import { fireEvent, render } from '@testing-library/react-native';
 import React from 'react';
 import { BottomNav, navigationItems } from '../BottomNav';
+import styles from '../bottomNavStyles';
 import { navigationMessages } from '../../../locales/navigationMessages';
 
 jest.mock('expo-localization', () => ({
@@ -45,6 +46,12 @@ describe('authenticated primary navigation', () => {
       chat: 'แชต',
       profile: 'โปรไฟล์นักศึกษา',
     });
+  });
+
+  it('floats above the screen instead of occupying a visible host strip', () => {
+    expect(styles.container).toEqual(expect.stringContaining('absolute'));
+    expect(styles.container).toEqual(expect.stringContaining('bottom-0'));
+    expect(styles.container).not.toEqual(expect.stringContaining('bg-'));
   });
 
   it('exposes destinations as tabs and Create as an action', async () => {
