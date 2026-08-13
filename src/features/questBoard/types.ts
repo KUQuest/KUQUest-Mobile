@@ -29,14 +29,17 @@ export interface QuestBoardQuest {
   ownerStudentId: string;
 }
 
-export type RewardRange = 'under-500' | '500-1000' | 'over-1000';
 export type DeadlineFilter = 'today' | 'within-3-days' | 'within-7-days';
+export type StartTimeBucket = 'morning' | 'afternoon' | 'evening';
 
 export interface QuestBoardFilter {
   query: string;
   categories: QuestCategory[];
-  rewardRange: RewardRange | null;
+  tags: string[];
+  rewardMin: number | null;
+  rewardMax: number | null;
   deadline: DeadlineFilter | null;
+  startTimeBuckets: StartTimeBucket[];
   locationModes: QuestLocationMode[];
 }
 
@@ -48,7 +51,10 @@ export interface QuestBoardQueryOptions {
 export const emptyQuestBoardFilter: QuestBoardFilter = {
   query: '',
   categories: [],
-  rewardRange: null,
+  tags: [],
+  rewardMin: null,
+  rewardMax: null,
   deadline: null,
+  startTimeBuckets: [],
   locationModes: [],
 };

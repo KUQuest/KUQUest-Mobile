@@ -41,11 +41,41 @@ export function getVisibleQuests(quests: QuestBoardQuest[], options: QuestBoardQ
   });
 }
 
-function matchesRewardRange(quest: QuestBoardQuest, range: QuestBoardFilter['rewardRange']): boolean {
-  if (!range) return true;
-  if (range === 'under-500') return quest.rewardPerPerson < 500;
-  if (range === '500-1000') return quest.rewardPerPerson >= 500 && quest.rewardPerPerson <= 1000;
-  return quest.rewardPerPerson > 1000;
+export function getQuestBoardTags(quests: QuestBoardQuest[]): string[] {
+  const tags = new Map<string, string>();
+  quests.flatMap((quest) => quest.tags).forEach((tag) => {
+    const normalizedTag = tag.toLocaleLowerCase();
+    if (!tags.has(normalizedTag)) tags.set(normalizedTag, tag);
+  });
+  return [...tags.values()].sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
+}
+
+export function getStartTimeBucket(timeRange: string | undefined): QuestBoardFilter['startTimeBuckets'][number] | null {
+  const startTime = timeRange?.match(/^(\d{2}):(\d{2})/);
+  if (!startTime) return null;
+
+  const hour = Number(startTime[1]);
+  const minute = Number(startTime[2]);
+  if (hour > 23 || minute > 59) return null;
+  if (hour < 12) return 'morning';
+  if (hour < 17) return 'afternoon';
+  return 'evening';
+}
+
+function matchesTags(quest: QuestBoardQuest, tags: string[]): boolean {
+  if (tags.length === 0) return true;
+  const normalizedTags = quest.tags.map((tag) => tag.toLocaleLowerCase());
+  return tags.some((tag) => normalizedTags.includes(tag.toLocaleLowerCase()));
+}
+
+function matchesRewardBounds(quest: QuestBoardQuest, minimum: number | null, maximum: number | null): boolean {
+  return (minimum === null || quest.rewardPerPerson >= minimum)
+    && (maximum === null || quest.rewardPerPerson <= maximum);
+}
+
+function matchesStartTimeBucket(quest: QuestBoardQuest, buckets: QuestBoardFilter['startTimeBuckets']): boolean {
+  const bucket = getStartTimeBucket(quest.timeRange);
+  return buckets.length === 0 || (bucket !== null && buckets.includes(bucket));
 }
 
 function matchesDeadline(quest: QuestBoardQuest, deadline: DeadlineFilter | null, now: Date): boolean {
@@ -73,8 +103,10 @@ export function applyQuestBoardFilters(
     const matchesCategory = filter.categories.length === 0 || filter.categories.includes(quest.category);
     return matchesQuery
       && matchesCategory
-      && matchesRewardRange(quest, filter.rewardRange)
+      && matchesTags(quest, filter.tags)
+      && matchesRewardBounds(quest, filter.rewardMin, filter.rewardMax)
       && matchesDeadline(quest, filter.deadline, now)
+      && matchesStartTimeBucket(quest, filter.startTimeBuckets)
       && matchesLocationMode(quest, filter.locationModes);
   });
 }

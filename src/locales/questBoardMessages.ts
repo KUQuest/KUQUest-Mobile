@@ -14,8 +14,18 @@ export interface QuestBoardMessages {
   selectedFilters: (count: number) => string;
   close: string;
   categories: string;
+  tags: string;
   reward: string;
+  rewardMin: string;
+  rewardMax: string;
+  rewardInvalid: string;
+  rewardSummary: (minimum: number | null, maximum: number | null) => string;
+  noLimit: string;
   deadline: string;
+  startTime: string;
+  morning: string;
+  afternoon: string;
+  evening: string;
   schedule: string;
   modeLabel: string;
   selectionLabel: string;
@@ -42,9 +52,6 @@ export interface QuestBoardMessages {
   stateClosed: string;
   online: string;
   onCampus: string;
-  under500: string;
-  between500And1000: string;
-  over1000: string;
   today: string;
   within3Days: string;
   within7Days: string;
@@ -105,8 +112,18 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     selectedFilters: (count) => count === 0 ? 'No filters selected' : `${count} filter${count === 1 ? '' : 's'} selected`,
     close: 'Close',
     categories: 'Category',
+    tags: 'Tags',
     reward: 'Reward',
+    rewardMin: 'Min reward',
+    rewardMax: 'Max reward',
+    rewardInvalid: 'Enter valid non-negative whole-baht bounds with minimum no greater than maximum.',
+    rewardSummary: (minimum, maximum) => minimum !== null && maximum !== null ? `฿${minimum}–฿${maximum}` : minimum !== null ? `From ฿${minimum}` : `Up to ฿${maximum}`,
+    noLimit: 'No limit',
     deadline: 'Deadline',
+    startTime: 'Start time',
+    morning: 'Morning',
+    afternoon: 'Afternoon',
+    evening: 'Evening',
     schedule: 'Schedule',
     modeLabel: 'Mode',
     selectionLabel: 'Selection',
@@ -133,9 +150,6 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     stateClosed: 'Applications closed',
     online: 'Online',
     onCampus: 'On campus',
-    under500: 'Under ฿500',
-    between500And1000: '฿500–฿1,000',
-    over1000: 'Over ฿1,000',
     today: 'Today',
     within3Days: 'Within 3 days',
     within7Days: 'Within 7 days',
@@ -194,8 +208,18 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     selectedFilters: (count) => count === 0 ? 'ยังไม่ได้เลือกตัวกรอง' : `เลือกตัวกรองแล้ว ${count} รายการ`,
     close: 'ปิด',
     categories: 'หมวดหมู่',
+    tags: 'แท็ก',
     reward: 'ค่าตอบแทน',
+    rewardMin: 'ค่าตอบแทนขั้นต่ำ',
+    rewardMax: 'ค่าตอบแทนสูงสุด',
+    rewardInvalid: 'กรอกค่าตอบแทนเป็นจำนวนเต็มที่ไม่ติดลบ และค่าขั้นต่ำต้องไม่มากกว่าค่าสูงสุด',
+    rewardSummary: (minimum, maximum) => minimum !== null && maximum !== null ? `฿${minimum}–฿${maximum}` : minimum !== null ? `ตั้งแต่ ฿${minimum}` : `ไม่เกิน ฿${maximum}`,
+    noLimit: 'ไม่จำกัด',
     deadline: 'กำหนดส่ง',
+    startTime: 'เวลาเริ่มต้น',
+    morning: 'ช่วงเช้า',
+    afternoon: 'ช่วงบ่าย',
+    evening: 'ช่วงเย็น',
     schedule: 'เวลา',
     modeLabel: 'รูปแบบการเข้าร่วม',
     selectionLabel: 'การคัดเลือก',
@@ -222,9 +246,6 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     stateClosed: 'ปิดรับสมัครแล้ว',
     online: 'ออนไลน์',
     onCampus: 'ในมหาวิทยาลัย',
-    under500: 'ต่ำกว่า ฿500',
-    between500And1000: '฿500–฿1,000',
-    over1000: 'มากกว่า ฿1,000',
     today: 'วันนี้',
     within3Days: 'ภายใน 3 วัน',
     within7Days: 'ภายใน 7 วัน',

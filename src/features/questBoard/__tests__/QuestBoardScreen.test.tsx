@@ -85,6 +85,82 @@ describe('Quest Board screen', () => {
     });
   });
 
+  it('discards an unfinished filter draft when the modal is closed', async () => {
+    const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} currentStudentId="student-demo" />);
+
+    await fireEvent.press(view.getByTestId('open-quest-filters'));
+    await fireEvent.press(view.getByTestId('quest-filter-category-technology'));
+    await fireEvent.press(view.getByTestId('close-quest-filters'));
+    await fireEvent.press(view.getByTestId('open-quest-filters'));
+
+    expect(view.getByTestId('quest-filter-category-technology').props.accessibilityState).toEqual({ checked: false });
+  });
+
+  it('discards a filter draft when the backdrop is pressed', async () => {
+    const view = await render(<QuestBoardScreen />);
+
+    await fireEvent.press(view.getByTestId('open-quest-filters'));
+    await fireEvent.press(view.getByTestId('quest-filter-category-technology'));
+    await fireEvent.press(view.getByTestId('quest-filter-backdrop'));
+    await fireEvent.press(view.getByTestId('open-quest-filters'));
+
+    expect(view.getByTestId('quest-filter-category-technology').props.accessibilityState).toEqual({ checked: false });
+  });
+
+  it('keeps the filter modal open when Clear all is pressed', async () => {
+    const view = await render(<QuestBoardScreen />);
+
+    await fireEvent.press(view.getByTestId('open-quest-filters'));
+    await fireEvent.press(view.getByTestId('quest-filter-category-technology'));
+    await fireEvent.press(view.getByText('Clear all'));
+
+    expect(view.getByText('Filter Quests')).toBeTruthy();
+    expect(view.getByTestId('quest-filter-category-technology').props.accessibilityState).toEqual({ checked: false });
+  });
+
+  it('filters by reward bounds, tags, and start-time buckets', async () => {
+    const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} currentStudentId="student-demo" />);
+
+    await fireEvent.press(view.getByTestId('open-quest-filters'));
+    await fireEvent.changeText(view.getByTestId('quest-filter-reward-min'), '700');
+    await fireEvent.changeText(view.getByTestId('quest-filter-reward-max'), '800');
+    await fireEvent.press(view.getByTestId('quest-filter-tag-Study support'));
+    await fireEvent.press(view.getByTestId('quest-filter-start-time-afternoon'));
+    await fireEvent.press(view.getByTestId('apply-quest-filters'));
+
+    await waitFor(() => {
+      expect(view.getByText('Tutor a first-year student')).toBeTruthy();
+      expect(view.queryByText('Design a faculty event poster')).toBeNull();
+      expect(view.getByTestId('active-quest-filter-tag-Study support')).toBeTruthy();
+      expect(view.getByTestId('active-quest-filter-reward')).toBeTruthy();
+      expect(view.getByTestId('active-quest-filter-start-time-afternoon')).toBeTruthy();
+    });
+  });
+
+  it('preserves Quest Board Search when filters are cleared', async () => {
+    const view = await render(<QuestBoardScreen />);
+
+    await fireEvent.changeText(view.getByTestId('quest-board-search'), 'campus food');
+    await fireEvent.press(view.getByTestId('open-quest-filters'));
+    await fireEvent.press(view.getByText('Clear all'));
+    await fireEvent.press(view.getByTestId('apply-quest-filters'));
+
+    expect(view.getByTestId('quest-board-search').props.value).toBe('campus food');
+    expect(view.getByText('Map the campus food spots')).toBeTruthy();
+    expect(view.queryByText('Design a faculty event poster')).toBeNull();
+  });
+
+  it('keeps Apply disabled for invalid reward bounds', async () => {
+    const view = await render(<QuestBoardScreen />);
+
+    await fireEvent.press(view.getByTestId('open-quest-filters'));
+    await fireEvent.changeText(view.getByTestId('quest-filter-reward-min'), '900');
+    await fireEvent.changeText(view.getByTestId('quest-filter-reward-max'), '800');
+
+    expect(view.getByTestId('quest-filter-reward-error')).toBeTruthy();
+    expect(view.getByTestId('apply-quest-filters').props.accessibilityState).toMatchObject({ disabled: true });
+  });
+
   it('changes deterministic sort order from the sort sheet', async () => {
     const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} currentStudentId="student-demo" />);
 

@@ -1,7 +1,9 @@
 import {
   applyQuestBoardFilters,
   getQuestAvailability,
+  getStartTimeBucket,
   getVisibleQuests,
+  getQuestBoardTags,
   sortQuests,
 } from '../questBoardViewData';
 import type { QuestBoardFilter, QuestBoardQuest } from '../types';
@@ -20,6 +22,7 @@ const quests: QuestBoardQuest[] = [
     acceptedParticipants: 1,
     startDate: '2026-08-14',
     deadline: '2026-08-16',
+    timeRange: '17:00–20:00',
     postedAt: '2026-08-10T09:00:00.000Z',
     location: 'On campus',
     locationMode: 'on-campus',
@@ -42,6 +45,7 @@ const quests: QuestBoardQuest[] = [
     acceptedParticipants: 0,
     startDate: '2026-08-13',
     deadline: '2026-08-13',
+    timeRange: '09:00–12:00',
     postedAt: '2026-08-11T09:00:00.000Z',
     location: 'Online',
     locationMode: 'online',
@@ -64,6 +68,7 @@ const quests: QuestBoardQuest[] = [
     acceptedParticipants: 1,
     startDate: '2026-08-15',
     deadline: '2026-08-20',
+    timeRange: '10:00–13:00',
     postedAt: '2026-08-09T09:00:00.000Z',
     location: 'On campus',
     locationMode: 'on-campus',
@@ -86,6 +91,7 @@ const quests: QuestBoardQuest[] = [
     acceptedParticipants: 0,
     startDate: '2026-08-14',
     deadline: '2026-08-20',
+    timeRange: '18:00–21:00',
     postedAt: '2026-08-12T09:00:00.000Z',
     location: 'Online',
     locationMode: 'online',
@@ -105,16 +111,44 @@ describe('Quest Board view data', () => {
     ]);
   });
 
-  it('filters by search text, categories, reward range, deadline, and participation mode', () => {
+  it('filters by search text, categories, tags, reward bounds, deadline, start time, and location', () => {
     const filter: QuestBoardFilter = {
       query: 'poster',
       categories: ['design'],
-      rewardRange: '500-1000',
+      tags: ['design & creative'],
+      rewardMin: 700,
+      rewardMax: 700,
       deadline: 'within-7-days',
+      startTimeBuckets: ['evening'],
       locationModes: ['on-campus'],
     };
 
     expect(applyQuestBoardFilters(quests, filter, { currentStudentId: 'current-student', now: new Date('2026-08-12T09:00:00.000Z') }).map((quest) => quest.id)).toEqual(['design-match']);
+  });
+
+  it('derives sorted tags and classifies start-time buckets', () => {
+    expect(getQuestBoardTags(quests.filter((quest) => quest.id !== 'campus-full'))).toEqual(['Campus life', 'Design & creative', 'Technology']);
+    expect(getStartTimeBucket('11:59–12:30')).toBe('morning');
+    expect(getStartTimeBucket('12:00–18:00')).toBe('afternoon');
+    expect(getStartTimeBucket('16:59–17:30')).toBe('afternoon');
+    expect(getStartTimeBucket('17:00–20:00')).toBe('evening');
+    expect(getStartTimeBucket(undefined)).toBeNull();
+    expect(getStartTimeBucket('not a schedule')).toBeNull();
+  });
+
+  it('uses inclusive reward bounds and OR semantics within tag and start-time facets', () => {
+    const filter: QuestBoardFilter = {
+      query: '',
+      categories: [],
+      tags: ['Technology', 'Design & creative'],
+      rewardMin: 450,
+      rewardMax: 800,
+      deadline: null,
+      startTimeBuckets: ['morning', 'evening'],
+      locationModes: [],
+    };
+
+    expect(applyQuestBoardFilters(quests, filter, { now: new Date('2026-08-12T09:00:00.000Z') }).map((quest) => quest.id)).toEqual(['design-match', 'tech-soon']);
   });
 
   it('uses deterministic recommended and secondary sort order', () => {
