@@ -3,7 +3,7 @@ import { authService } from '../auth/AuthService';
 import { AuthError } from '../auth/types';
 import type { SupportedLocale } from '../../locales/LocaleProvider';
 import type { ProfileSectionErrors, ProfileViewData } from './components/ProfileComponents';
-import { demoExperiences, demoProfileStats, demoProfileTags, demoReviews, isProfileDemoEnabled } from './profileDemoData';
+import { demoCertificates, demoExperiences, demoProfileIdentity, demoProfileImage, demoProfileStats, demoProfileTags, demoReviews, demoWorks, isProfileDemoEnabled } from './profileDemoData';
 import { mapApiCertificateToView, mapApiExperienceToView, mapApiPortfolioToView, mapApiReviewToView } from './profileMappers';
 import { selectTopProfileTags, sortExperiences, type OptionalReadResult } from './profileViewData';
 
@@ -67,34 +67,38 @@ export async function loadProfileViewData(locale: SupportedLocale): Promise<Prof
   const certificates = getValue(certificatesResult) ?? [];
   const portfolio = getValue(portfolioResult) ?? [];
   const reputation = getValue(reputationResult);
-  const reviews = getValue(reviewsResult);
-
   return {
-    name: [profile.firstName, profile.lastName].filter(Boolean).join(' ') || session.user.name,
-    faculty: profile.department?.faculty.name ?? '',
+    name: demoEnabled && !profile.firstName && !profile.lastName
+      ? demoProfileIdentity.name
+      : ([profile.firstName, profile.lastName].filter(Boolean).join(' ') || session.user.name),
+    faculty: profile.department?.faculty.name ?? (demoEnabled ? demoProfileIdentity.faculty : ''),
     university: profile.university === undefined
       ? (demoEnabled ? 'State University' : '')
       : (profile.university ?? ''),
-    occupation: profile.occupation?.name || occupation,
+    occupation: profile.occupation?.name || occupation || (demoEnabled ? demoProfileIdentity.occupation : ''),
     academicYear: profile.academicYear === null ? '' : String(profile.academicYear ?? ''),
-    department: profile.department?.name ?? '',
+    department: profile.department?.name ?? (demoEnabled ? demoProfileIdentity.department : ''),
     tags: selectTopProfileTags(profile.tags
       ?? (profile.tags === undefined && demoEnabled ? demoProfileTags : [])),
-    profileImage: profile.avatar?.url ?? session.user.image ?? '',
-    about: profile.bio ?? '',
+    profileImage: profile.avatar?.url ?? session.user.image ?? (demoEnabled ? demoProfileImage : ''),
+    about: profile.bio ?? (demoEnabled ? demoProfileIdentity.about : ''),
     stats: reputation
       ? { totalQuests: reputation.totalQuests, ratingAverage: reputation.rating.average, ratingCount: reputation.rating.count, distribution: reputation.rating.distribution }
       : (reputationResult.kind === 'unsupported' && demoEnabled
         ? demoProfileStats
         : { totalQuests: null, ratingAverage: null, ratingCount: 0, distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } }),
-    experiences: experiencesResult.kind === 'unsupported' && demoEnabled
-      ? demoExperiences
-      : sortExperiences(apiExperiences),
-    certificates: certificates.map((certificate) => mapApiCertificateToView(certificate, locale)),
-    works: portfolio.map(mapApiPortfolioToView),
-    reviews: reviews
+    experiences: apiExperiences.length > 0
+      ? sortExperiences(apiExperiences)
+      : (demoEnabled && experiencesResult.kind !== 'error' ? demoExperiences : []),
+    certificates: certificates.length > 0
+      ? certificates.map((certificate) => mapApiCertificateToView(certificate, locale))
+      : (demoEnabled && certificatesResult.kind !== 'error' ? demoCertificates : []),
+    works: portfolio.length > 0
+      ? portfolio.map(mapApiPortfolioToView)
+      : (demoEnabled && portfolioResult.kind !== 'error' ? demoWorks : []),
+    reviews: apiReviews.length > 0
       ? apiReviews
-      : (reviewsResult.kind === 'unsupported' && demoEnabled ? demoReviews : []),
+      : (demoEnabled && reviewsResult.kind !== 'error' ? demoReviews : []),
     sectionErrors,
   };
 }

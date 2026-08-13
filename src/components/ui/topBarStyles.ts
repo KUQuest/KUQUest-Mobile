@@ -3,6 +3,7 @@ const styles = {
   profileContainer: 'items-start bg-ku-surface border-b-0 px-[24px]',
   boardContainer: 'items-end px-[16px]',
   detailContainer: 'items-end px-[16px]',
+  title: 'self-center text-ku-text text-[18px] font-ku-semibold',
   backButton: 'items-center justify-center',
   backButtonPosition: 'left-[16px] absolute',
 } as const;

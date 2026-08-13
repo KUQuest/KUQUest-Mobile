@@ -83,9 +83,11 @@ describe('loadProfileViewData', () => {
     expect(data.sectionErrors).toEqual({});
   });
 
-  test('uses fixtures only for unsupported sections when explicit demo mode is enabled', async () => {
+  test('uses mockup-like media and sections only for unsupported endpoints in explicit demo mode', async () => {
     process.env.EXPO_PUBLIC_PROFILE_DEMO = 'true';
     const api = createApi({
+      listCertificates: jest.fn().mockRejectedValue(new ApiError(404, 'NOT_FOUND', 'Unsupported')),
+      listPortfolio: jest.fn().mockRejectedValue(new ApiError(404, 'NOT_FOUND', 'Unsupported')),
       listExperience: jest.fn().mockRejectedValue(new ApiError(404, 'NOT_FOUND', 'Unsupported')),
       getReputation: jest.fn().mockRejectedValue(new ApiError(404, 'NOT_FOUND', 'Unsupported')),
       listReviews: jest.fn().mockRejectedValue(new ApiError(404, 'NOT_FOUND', 'Unsupported')),
@@ -94,6 +96,9 @@ describe('loadProfileViewData', () => {
 
     const data = await loadProfileViewData('en');
 
+    expect(data.profileImage).toBeTruthy();
+    expect(data.certificates.length).toBeGreaterThan(0);
+    expect(data.works.length).toBeGreaterThan(0);
     expect(data.experiences.length).toBeGreaterThan(0);
     expect(data.reviews.length).toBeGreaterThan(0);
     expect(data.stats.totalQuests).toBe(42);

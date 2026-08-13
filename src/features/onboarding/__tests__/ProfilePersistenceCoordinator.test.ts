@@ -13,6 +13,35 @@ function createDraft() {
 }
 
 describe('ProfilePersistenceCoordinator', () => {
+  it('persists Academic Registration fields when editing a Student Profile', async () => {
+    const api = {
+      updateAcademicRegistration: jest.fn().mockResolvedValue(undefined),
+      updateProfile: jest.fn().mockResolvedValue(undefined),
+      uploadAvatar: jest.fn().mockResolvedValue('avatar-id'),
+      createCertificate: jest.fn(),
+      updateCertificate: jest.fn(),
+      uploadCertificateImage: jest.fn(),
+      createPortfolio: jest.fn(),
+      updatePortfolio: jest.fn(),
+      deletePortfolio: jest.fn(),
+      createExperience: jest.fn(),
+      updateExperience: jest.fn(),
+      deleteCertificate: jest.fn(),
+      deleteExperience: jest.fn(),
+    } as unknown as StudentApi;
+
+    await new ProfilePersistenceCoordinator().save(api, {
+      ...createDraft(),
+      studentId: '6712345678',
+    }, true, '2026-08-11');
+
+    expect(api.updateAcademicRegistration).toHaveBeenCalledWith(expect.objectContaining({
+      occupationId: 'student',
+      studentId: '6712345678',
+      departmentId: 'department-software',
+    }));
+  });
+
   it('returns the partial draft and does not recreate a certificate on retry', async () => {
     const uploadCertificateImage = jest.fn()
       .mockRejectedValueOnce(new Error('temporary upload failure'))

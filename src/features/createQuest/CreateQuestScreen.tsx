@@ -246,7 +246,7 @@ export default function CreateQuestScreen() {
   if (completed) {
     return (
       <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
-        <TopBar onBackPress={() => setCompleted(false)} />
+        <TopBar onBackPress={() => setCompleted(false)} title="Create Quest" />
         <View className={styles.successState}>
           <View className={styles.successIcon}><Check color={colors.primary} size={32} strokeWidth={2.5} /></View>
           <Text className={styles.successTitle}>Quest ready to post</Text>
@@ -259,7 +259,7 @@ export default function CreateQuestScreen() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
-      <TopBar onBackPress={goBack} />
+      <TopBar onBackPress={goBack} title="Create Quest" />
       <ScrollView
         contentContainerClassName={styles.scrollContent}
         keyboardShouldPersistTaps="handled"

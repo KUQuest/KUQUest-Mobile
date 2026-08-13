@@ -6,31 +6,31 @@ export interface ProfileLayoutMetrics {
   nameFontSize: number;
   sectionTitleFontSize: number;
   bodyLineHeight: number;
-  workCardWidth: number;
+  gridColumns: 1 | 2;
 }
 
 export function getProfileLayoutMetrics(width: number): ProfileLayoutMetrics {
-  if (width < 400) {
+  if (width < 360) {
     return {
       pagePadding: 16,
-      sectionGap: 16,
-      cardPadding: 20,
-      photoSize: 96,
-      nameFontSize: 22,
+      sectionGap: 12,
+      cardPadding: 16,
+      photoSize: 88,
+      nameFontSize: 20,
       sectionTitleFontSize: 18,
       bodyLineHeight: 22,
-      workCardWidth: 200,
+      gridColumns: 1,
     };
   }
 
   return {
-    pagePadding: 24,
-    sectionGap: 20,
-    cardPadding: 24,
-    photoSize: 104,
-    nameFontSize: 24,
+    pagePadding: 20,
+    sectionGap: 16,
+    cardPadding: 20,
+    photoSize: 96,
+    nameFontSize: 22,
     sectionTitleFontSize: 20,
     bodyLineHeight: 24,
-    workCardWidth: 220,
+    gridColumns: 2,
   };
 }

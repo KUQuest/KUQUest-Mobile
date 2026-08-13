@@ -137,7 +137,7 @@ export default function QuestDetailScreen({ now = FIXTURE_NOW, previewState, que
   if (!quest) {
     return (
       <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
-        <TopBar onBackPress={() => router.back()} variant="detail" />
+        <TopBar onBackPress={() => router.back()} title={messages.details} variant="detail" />
         <NotFoundState title={messages.questNotFound} description={messages.questNotFoundDescription} actionLabel={messages.back} onAction={() => router.back()} />
       </SafeAreaView>
     );
@@ -145,7 +145,7 @@ export default function QuestDetailScreen({ now = FIXTURE_NOW, previewState, que
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
-      <TopBar onBackPress={() => router.back()} variant="detail" />
+      <TopBar onBackPress={() => router.back()} title={messages.details} variant="detail" />
       <ScrollView contentContainerClassName={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View className={styles.header}><Text className={styles.category}>{categoryLabel(quest, messages)}</Text><Text accessibilityRole="header" className={styles.title}>{quest.title}</Text><Text className={styles.creator}>{`${messages.creator} ${quest.creator.name}${quest.creator.faculty ? ` · ${quest.creator.faculty}` : ''}`}</Text></View>
         <View className={styles.heroCard}><View className={styles.heroPrimary}><Text className={styles.heroLabel}>{messages.reward}</Text><Text className={styles.heroValue}>{`฿${quest.rewardPerPerson.toLocaleString('en-US')} ${messages.perPerson}`}</Text></View><View className={styles.heroDetails}><View className={styles.heroItem}><Text className={styles.heroLabel}>{messages.deadline}</Text><Text className={styles.heroValue}>{formatDeadline(quest.deadline, locale)}</Text><Text className={styles.heroDetail}>{locationLabel(quest, messages)}</Text></View><View className={cn(styles.heroItem, styles.heroItemDivider)}><Text className={styles.heroLabel}>{messages.spots}</Text><Text className={styles.heroValue}>{`${quest.acceptedParticipants}/${quest.headcount}`}</Text><Text className={styles.heroDetail}>{quest.participationMode === 'team' ? messages.team : messages.singlePerson}</Text></View></View></View>

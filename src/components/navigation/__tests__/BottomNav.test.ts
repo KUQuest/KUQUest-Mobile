@@ -101,6 +101,7 @@ describe('authenticated primary navigation', () => {
     );
 
     expect(view.getByTestId('tab-profile').props.accessibilityState).toEqual({ selected: true });
+    expect(view.getByLabelText('Student Profile selected')).toBeTruthy();
     expect(view.getByTestId('tab-index').props.accessibilityState).toEqual({ selected: false });
   });
 });

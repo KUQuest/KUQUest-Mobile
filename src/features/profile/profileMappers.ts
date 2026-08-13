@@ -52,7 +52,8 @@ export function mapApiCertificateToView(certificate: CertificateEntry, locale: S
   return {
     id: certificate.id,
     title: certificate.name,
-    detail: `${certificate.issuer} · ${formatDate(certificate.issuedAt, locale)}`,
+    issuer: certificate.issuer,
+    issuedYear: formatDate(certificate.issuedAt, locale).split(' ').pop() ?? certificate.issuedAt,
     link: certificate.image?.url ?? '',
   };
 }

@@ -6,6 +6,7 @@ const styles = {
   label: 'text-ku-text-secondary text-[10px] font-ku-semibold leading-[12px] mt-[2px] text-center max-w-full',
   createItem: 'px-[4px]',
   createIcon: 'shadow-[0px_3px_4px_rgb(18_32_24_/0.18)] items-center bg-ku-primary border-ku-surface border-2 rounded-ku-pill justify-center',
+  activeIndicator: 'bg-ku-success-bright rounded-ku-pill h-[3px] mt-[3px] w-[24px]',
   unreadBadge: 'bg-ku-danger-icon border-ku-surface rounded-[7px] border-2 h-[14px] absolute right-[24px] top-[9px] w-[14px]',
 } as const;
 

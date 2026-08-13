@@ -1,5 +1,5 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
-import { Experience, MyWork, ProfileHeader, ProfileStats, Reviews } from '../components/ProfileComponents';
+import { Certificates, Experience, MyWork, ProfileHeader, ProfileStats, Reviews } from '../components/ProfileComponents';
 
 describe('Student Profile presentation', () => {
   it('keeps a long Student name readable and the edit action available', async () => {
@@ -10,8 +10,6 @@ describe('Student Profile presentation', () => {
           faculty: 'Agro-Industry',
           name: 'Siraphat THAPPHA with a longer display name',
           occupation: 'Teacher',
-          university: 'State University',
-          academicYear: '3',
           profileImage: '',
         }}
         editProfileLabel="Edit your profile"
@@ -23,12 +21,12 @@ describe('Student Profile presentation', () => {
     expect(view.getByText('Edit your profile')).toBeTruthy();
     expect(view.getByText('Agro-Industry')).toBeTruthy();
     expect(view.getByText('Agro-Industrial Innovation and Technology')).toBeTruthy();
-    expect(view.getByText('State University · Teacher · 3')).toBeTruthy();
+    expect(view.getByText('Teacher')).toBeTruthy();
   });
 
   it('renders profile statistics and filters Reviews by star rating', async () => {
     const view = await render(<>
-      <ProfileStats stats={{ totalQuests: 42, ratingAverage: 4.9, ratingCount: 2, distribution: { 5: 1, 4: 1, 3: 0, 2: 0, 1: 0 } }} ratingLabel="User Rating" questsLabel="Total Quests" />
+      <ProfileStats stats={{ totalQuests: 42, ratingAverage: 4.9, ratingCount: 2, distribution: { 5: 1, 4: 1, 3: 0, 2: 0, 1: 0 } }} ratingLabel="User Rating" questsLabel="Total Quests" reviewsLabel="Reviews" />
       <Reviews
         reviews={[
           { id: 'review-5', reviewerName: 'Alex', reviewerAvatar: '', rating: 5, comment: 'Excellent', createdAt: '2026-07-01', questTitle: '' },
@@ -44,6 +42,7 @@ describe('Student Profile presentation', () => {
 
     expect(view.getAllByText('4.9')).toHaveLength(2);
     expect(view.getByText('42')).toBeTruthy();
+    expect(view.getAllByText('Reviews').length).toBeGreaterThan(0);
     expect(view.getByText('Excellent')).toBeTruthy();
     expect(view.getByText('Good')).toBeTruthy();
     expect(view.getByText('Design review')).toBeTruthy();
@@ -52,6 +51,16 @@ describe('Student Profile presentation', () => {
       expect(view.getByText('Excellent')).toBeTruthy();
       expect(view.queryByText('Good')).toBeNull();
     });
+  });
+
+  it('renders Certificate cards with issuer, year, and preview interaction', async () => {
+    const view = await render(<Certificates certificates={[{ id: 'certificate-1', title: 'React Patterns', issuer: 'Frontend Masters', issuedYear: '2023', link: 'https://example.test/certificate.png' }]} sectionTitle="Certificates" emptyText="No certificates" previewUnavailableText="Image unavailable" closeLabel="Close preview" unavailableText="Certificate unavailable" />);
+
+    expect(view.getByText('React Patterns')).toBeTruthy();
+    expect(view.getByText('Frontend Masters')).toBeTruthy();
+    expect(view.getByText('2023')).toBeTruthy();
+    fireEvent.press(view.getByRole('button', { name: 'React Patterns preview' }));
+    await waitFor(() => expect(view.getAllByLabelText('Close preview').length).toBeGreaterThan(0));
   });
 
   it('renders the employment type for each experience', async () => {

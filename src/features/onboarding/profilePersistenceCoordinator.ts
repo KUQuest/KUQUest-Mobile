@@ -72,19 +72,17 @@ export class ProfilePersistenceCoordinator {
     this.draft = cloneDraft(form);
     this.completedSteps = [];
 
-    if (!isEditMode) {
-      if (!this.draft.occupation || !this.draft.department) throw new Error('Academic registration options are incomplete');
-      if (this.draft.acceptedTerms && !termsVersion) throw new Error('EXPO_PUBLIC_TERMS_VERSION is required');
-      await this.runStep('academic-registration', () => api.updateAcademicRegistration({
-        firstName: this.firstName,
-        lastName: this.lastName,
-        telephone: this.draft.telephone,
-        occupationId: this.draft.occupation,
-        studentId: this.draft.studentId || undefined,
-        departmentId: this.draft.department,
-        termsVersion: this.draft.acceptedTerms && termsVersion ? termsVersion : undefined,
-      }));
-    }
+    if (!this.draft.occupation || !this.draft.department) throw new Error('Academic registration options are incomplete');
+    if (!isEditMode && this.draft.acceptedTerms && !termsVersion) throw new Error('EXPO_PUBLIC_TERMS_VERSION is required');
+    await this.runStep('academic-registration', () => api.updateAcademicRegistration({
+      firstName: this.firstName,
+      lastName: this.lastName,
+      telephone: this.draft.telephone,
+      occupationId: this.draft.occupation,
+      studentId: this.draft.studentId || undefined,
+      departmentId: this.draft.department,
+      termsVersion: !isEditMode && this.draft.acceptedTerms && termsVersion ? termsVersion : undefined,
+    }));
 
     await this.runStep('profile', () => api.updateProfile({
       firstName: this.firstName,

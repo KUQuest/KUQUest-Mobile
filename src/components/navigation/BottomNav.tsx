@@ -107,6 +107,7 @@ export function BottomNav({ state, descriptors, navigation, insets }: TabBarProp
               >
                 {messages[item.shortLabelKey]}
               </Text>
+              {!item.isCreate && isFocused ? <View accessibilityLabel={`${label} selected`} className={styles.activeIndicator} /> : null}
               {item.hasUnread ? <View accessibilityLabel="Unread messages" className={styles.unreadBadge} /> : null}
             </Pressable>
           );

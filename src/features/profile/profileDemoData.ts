@@ -1,8 +1,20 @@
-import type { ProfileExperience, ProfileReview, ProfileStatsData, ProfileTag } from './components/ProfileComponents';
+import type { ProfileCertificate, ProfileExperience, ProfileReview, ProfileStatsData, ProfileTag, ProfileWork } from './components/ProfileComponents';
+
+const demoAvatar = require('../../../assets/images/profile/demo-avatar.svg');
 
 export function isProfileDemoEnabled(): boolean {
   return process.env.EXPO_PUBLIC_PROFILE_DEMO === 'true';
 }
+
+export const demoProfileImage = demoAvatar;
+
+export const demoProfileIdentity = {
+  name: 'Siraphat THAPPHA',
+  faculty: 'Engineering',
+  occupation: 'Student',
+  department: 'Software and Knowledge Engineering',
+  about: 'A KU student building useful digital experiences and helping other students learn.',
+};
 
 export const demoProfileTags: ProfileTag[] = [
   { id: 'demo-web-dev', name: 'Web Dev', questCount: 8 },
@@ -16,6 +28,20 @@ export const demoProfileStats: ProfileStatsData = {
   ratingCount: 15,
   distribution: { 5: 12, 4: 2, 3: 1, 2: 0, 1: 0 },
 };
+
+const demoCertificateImage = require('../../../assets/images/profile/demo-certificate.svg');
+
+export const demoCertificates: ProfileCertificate[] = [
+  { id: 'demo-certificate-react', title: 'Advanced React Patterns', issuer: 'Frontend Masters', issuedYear: '2023', link: '', imageSource: demoCertificateImage },
+  { id: 'demo-certificate-design', title: 'UI/UX Design Specialization', issuer: 'Coursera', issuedYear: '2022', link: '', imageSource: demoCertificateImage },
+  { id: 'demo-certificate-python', title: 'Python for Data Science', issuer: 'IBM', issuedYear: '2023', link: '', imageSource: demoCertificateImage },
+  { id: 'demo-certificate-google', title: 'Google UX Design', issuer: 'Google/Coursera', issuedYear: '2024', link: '', imageSource: demoCertificateImage },
+];
+
+export const demoWorks: ProfileWork[] = [
+  { id: 'demo-work-portfolio', title: 'Student Quest Portfolio', detail: 'A responsive project showcase built for KU students.', imageUri: '', imageSource: demoCertificateImage },
+  { id: 'demo-work-dashboard', title: 'Campus Dashboard', detail: 'A dashboard for discovering useful campus services.', imageUri: '', imageSource: demoCertificateImage },
+];
 
 export const demoExperiences: ProfileExperience[] = [
   {

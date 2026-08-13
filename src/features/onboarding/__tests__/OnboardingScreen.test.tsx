@@ -209,6 +209,10 @@ describe('OnboardingScreen Academic Registration selections', () => {
     await fireEvent.press(screen.getByText('Save Changes'));
 
     await waitFor(() => expect(api.updateExperience).toHaveBeenCalledWith('experience-id', expect.objectContaining({ title: 'Lead Tutor' })));
-    expect(api.updateAcademicRegistration).not.toHaveBeenCalled();
+    expect(api.updateAcademicRegistration).toHaveBeenCalledWith(expect.objectContaining({
+      occupationId: 'occupation-student',
+      studentId: '6712345678',
+      departmentId: 'department-software',
+    }));
   });
 });
