@@ -1,21 +1,9 @@
-import type { ProfileExperience, ProfileTag } from './components/ProfileComponents';
+import type { ProfileExperience } from './components/ProfileComponents';
 
 export type OptionalReadResult<T> =
   | { kind: 'value'; value: T }
   | { kind: 'unsupported' }
   | { kind: 'error'; error: unknown };
-
-export function selectTopProfileTags(tags: ProfileTag[]): ProfileTag[] {
-  return tags
-    .map((tag, index) => ({ tag, index }))
-    .sort((left, right) => {
-      const leftCount = left.tag.questCount ?? -1;
-      const rightCount = right.tag.questCount ?? -1;
-      return rightCount - leftCount || left.index - right.index;
-    })
-    .slice(0, 3)
-    .map(({ tag }) => tag);
-}
 
 export function sortExperiences(experiences: ProfileExperience[]): ProfileExperience[] {
   return experiences

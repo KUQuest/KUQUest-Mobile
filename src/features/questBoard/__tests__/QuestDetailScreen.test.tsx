@@ -27,32 +27,56 @@ describe('Quest Detail screen', () => {
   });
 
   it('requires confirmation and shows an immediate Accepted outcome for first-come Quests', async () => {
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="react-bug-fix" />);
+    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="print-documents" />);
 
-    expect(view.getByText('Fix a small React bug')).toBeTruthy();
-    expect(view.getByText('Apply now')).toBeTruthy();
+    expect(view.getByText('Photocopy course documents')).toBeTruthy();
+    expect(view.getByText('Join Quest')).toBeTruthy();
+    expect(view.getByText('15 Aug 2026')).toBeTruthy();
+    expect(view.getAllByText('On campus').length).toBeGreaterThan(0);
 
     await fireEvent.press(view.getByTestId('quest-apply-button'));
-    expect(view.getByText('Confirm your application')).toBeTruthy();
-    expect(view.getAllByText('฿450 / person')).toHaveLength(2);
+    expect(view.getByText('Confirm your participation')).toBeTruthy();
+    expect(view.getAllByText('฿80 / person')).toHaveLength(2);
 
     await fireEvent.press(view.getByTestId('confirm-quest-application'));
 
-    await waitFor(() => expect(view.getByText('Application accepted')).toBeTruthy());
-    expect(view.queryByText('Apply now')).toBeNull();
+    await waitFor(() => expect(view.getByText('Participation confirmed')).toBeTruthy());
+    expect(view.getByTestId('view-my-quests')).toBeTruthy();
+    expect(view.queryByText('Join Quest')).toBeNull();
+  });
+
+  it('renders up to three Quest reference images in Detail', async () => {
+    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="move-boxes" />);
+
+    expect(view.getByLabelText('3 photos')).toBeTruthy();
+    expect(view.getByLabelText('Quest image 1')).toBeTruthy();
+    expect(view.getByLabelText('Quest image 3')).toBeTruthy();
   });
 
   it('shows Application pending for reviewed-candidate Quests', async () => {
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="design-faculty-poster" />);
+    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="move-boxes" />);
 
     await fireEvent.press(view.getByTestId('quest-apply-button'));
     await fireEvent.press(view.getByTestId('confirm-quest-application'));
 
     await waitFor(() => expect(view.getByText('Application pending')).toBeTruthy());
+    expect(view.getByText('The Quest owner will review your application.')).toBeTruthy();
+    expect(view.getByTestId('view-my-quests')).toBeTruthy();
+  });
+
+  it('navigates accepted participants to My Quests', async () => {
+    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="print-documents" />);
+
+    await fireEvent.press(view.getByTestId('quest-apply-button'));
+    await fireEvent.press(view.getByTestId('confirm-quest-application'));
+    await waitFor(() => expect(view.getByTestId('view-my-quests')).toBeTruthy());
+    await fireEvent.press(view.getByTestId('view-my-quests'));
+
+    expect(mockRouter.push).toHaveBeenCalledWith('/my-quests');
   });
 
   it('opens confirmation when entered through Take Quest', async () => {
-    mockRouteParams.id = 'design-faculty-poster';
+    mockRouteParams.id = 'move-boxes';
     mockRouteParams.intent = 'apply';
 
     const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} />);
@@ -62,9 +86,11 @@ describe('Quest Detail screen', () => {
   });
 
   it('explains unavailable application states in Detail', async () => {
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} previewState="full" questId="react-bug-fix" />);
+    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} previewState="full" questId="print-documents" />);
 
     expect(view.getByText('Quest full')).toBeTruthy();
+    expect(view.getByText('This Quest is no longer accepting applications.')).toBeTruthy();
+    expect(view.queryByTestId('view-my-quests')).toBeNull();
     expect(view.queryByTestId('quest-apply-button')).toBeNull();
   });
 
@@ -74,6 +100,6 @@ describe('Quest Detail screen', () => {
     const view = await render(<QuestDetailScreen />);
 
     expect(view.getByText('Quest not found')).toBeTruthy();
-    expect(view.queryByText('Design a faculty event poster')).toBeNull();
+    expect(view.queryByText('Help move boxes to the dorm')).toBeNull();
   });
 });

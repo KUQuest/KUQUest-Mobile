@@ -38,7 +38,6 @@ export interface ProfileUpdate {
   lastName?: string;
   bio?: string | null;
   occupationId?: string;
-  tagIds?: string[];
   telephone?: string;
   departmentId?: string;
 }
@@ -68,6 +67,14 @@ export interface UploadAsset {
   uri: string;
   name?: string;
   type?: string;
+}
+
+export interface MutationOptions {
+  idempotencyKey?: string;
+}
+
+function mutationHeaders(options?: MutationOptions): Record<string, string> | undefined {
+  return options?.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined;
 }
 
 function appendFile(formData: FormData, field: string, asset: UploadAsset): void {
@@ -124,7 +131,7 @@ export class StudentApi {
     return academicRegistrationStatusResponseSchema.parse(body).data;
   }
 
-  async updateAcademicRegistration(update: AcademicRegistrationUpdate): Promise<void> {
+  async updateAcademicRegistration(update: AcademicRegistrationUpdate, options?: MutationOptions): Promise<void> {
     return this.trace('academic registration update', {
       hasFirstName: Boolean(update.firstName),
       hasLastName: Boolean(update.lastName),
@@ -134,7 +141,7 @@ export class StudentApi {
       hasDepartmentId: Boolean(update.departmentId),
       hasTermsVersion: Boolean(update.termsVersion),
     }, async () => {
-      const body = await this.client.requestJson<unknown>('/api/v1/academic-registration', update, { method: 'PATCH' });
+      const body = await this.client.requestJson<unknown>('/api/v1/academic-registration', update, { method: 'PATCH', headers: mutationHeaders(options) });
       successResponseSchema.parse(body);
     });
   }
@@ -144,28 +151,16 @@ export class StudentApi {
     return profileResponseSchema.parse(body).data;
   }
 
-  async listProfileTagOptions(): Promise<{ id: string; name: string }[]> {
-    try {
-      const body = await this.client.request<unknown>('/api/v1/profile/tags/options');
-      if (!body || typeof body !== 'object' || !('data' in body) || !Array.isArray(body.data)) return [];
-      return body.data.filter((item): item is { id: string; name: string } => Boolean(item && typeof item === 'object' && 'id' in item && typeof item.id === 'string' && 'name' in item && typeof item.name === 'string'));
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 404) return [];
-      throw error;
-    }
-  }
-
-  async updateProfile(update: ProfileUpdate): Promise<void> {
+  async updateProfile(update: ProfileUpdate, options?: MutationOptions): Promise<void> {
     return this.trace('profile update', {
       hasFirstName: Boolean(update.firstName),
       hasLastName: Boolean(update.lastName),
       hasBio: update.bio !== undefined,
       hasOccupationId: Boolean(update.occupationId),
-      hasTagIds: Boolean(update.tagIds),
       hasTelephone: Boolean(update.telephone),
       hasDepartmentId: Boolean(update.departmentId),
     }, async () => {
-      const body = await this.client.requestJson<unknown>('/api/v1/profile', update, { method: 'PATCH' });
+      const body = await this.client.requestJson<unknown>('/api/v1/profile', update, { method: 'PATCH', headers: mutationHeaders(options) });
       successResponseSchema.parse(body);
     });
   }
@@ -175,13 +170,13 @@ export class StudentApi {
     return experienceResponseSchema.parse(body).data;
   }
 
-  async createExperience(entry: ExperienceCreate): Promise<ExperienceEntry | undefined> {
-    const body = await this.client.requestJson<unknown>('/api/v1/profile/experience', entry, { method: 'POST' });
+  async createExperience(entry: ExperienceCreate, options?: MutationOptions): Promise<ExperienceEntry | undefined> {
+    const body = await this.client.requestJson<unknown>('/api/v1/profile/experience', entry, { method: 'POST', headers: mutationHeaders(options) });
     return experienceMutationResponseSchema.parse(body).data?.experience;
   }
 
-  async updateExperience(id: string, update: Partial<ExperienceCreate>): Promise<ExperienceEntry | undefined> {
-    const body = await this.client.requestJson<unknown>(`/api/v1/profile/experience/${id}`, update, { method: 'PATCH' });
+  async updateExperience(id: string, update: Partial<ExperienceCreate>, options?: MutationOptions): Promise<ExperienceEntry | undefined> {
+    const body = await this.client.requestJson<unknown>(`/api/v1/profile/experience/${id}`, update, { method: 'PATCH', headers: mutationHeaders(options) });
     return experienceMutationResponseSchema.parse(body).data?.experience;
   }
 
@@ -195,14 +190,14 @@ export class StudentApi {
     return reputationResponseSchema.parse(body).data;
   }
 
-  async listReviews(rating: 'all' | 5 | 4 | 3 | 2 = 'all'): Promise<{ items: ProfileReview[]; total: number }> {
+  async listReviews(rating: 'all' | 5 | 4 | 3 | 2 | 1 = 'all'): Promise<{ items: ProfileReview[]; total: number }> {
     const query = rating === 'all' ? '' : `?rating=${rating}`;
     const body = await this.client.request<unknown>(`/api/v1/profile/reviews${query}`);
     const parsed = reviewsResponseSchema.parse(body).data;
     return { items: parsed.items, total: parsed.total };
   }
 
-  async uploadAvatar(asset: UploadAsset): Promise<string> {
+  async uploadAvatar(asset: UploadAsset, options?: MutationOptions): Promise<string> {
     return this.trace('avatar upload', {
       fileName: asset.name ?? fileNameFromUri(asset.uri, 'avatar.jpg'),
       mimeType: asset.type ?? 'image/jpeg',
@@ -212,7 +207,7 @@ export class StudentApi {
       const body = await this.client.requestForm<{ success: true; data: { fileId: string } }>(
         '/api/v1/profile/avatar',
         formData,
-        { method: 'POST' }
+        { method: 'POST', headers: mutationHeaders(options) }
       );
       return body.data.fileId;
     });
@@ -223,7 +218,7 @@ export class StudentApi {
     return portfolioResponseSchema.parse(body).data;
   }
 
-  async createPortfolio(entry: PortfolioCreate): Promise<string> {
+  async createPortfolio(entry: PortfolioCreate, options?: MutationOptions): Promise<string> {
     return this.trace('portfolio create', {
       titleLength: entry.title.length,
       descriptionLength: entry.description?.length ?? 0,
@@ -237,23 +232,23 @@ export class StudentApi {
         uri,
         name: fileNameFromUri(uri, `portfolio-${index}.jpg`),
       }));
-      const body = await this.client.requestForm<unknown>('/api/v1/profile/portfolio', formData, { method: 'POST' });
+      const body = await this.client.requestForm<unknown>('/api/v1/profile/portfolio', formData, { method: 'POST', headers: mutationHeaders(options) });
       return portfolioCreateResponseSchema.parse(body).data.id;
     });
   }
 
-  async updatePortfolio(id: string, update: { title?: string; description?: string | null }): Promise<void> {
+  async updatePortfolio(id: string, update: { title?: string; description?: string | null }, options?: MutationOptions): Promise<void> {
     return this.trace('portfolio update', {
       id,
       titleLength: update.title?.length ?? 0,
       descriptionLength: update.description?.length ?? 0,
     }, async () => {
-      const body = await this.client.requestJson<unknown>(`/api/v1/profile/portfolio/${id}`, update, { method: 'PATCH' });
+      const body = await this.client.requestJson<unknown>(`/api/v1/profile/portfolio/${id}`, update, { method: 'PATCH', headers: mutationHeaders(options) });
       successResponseSchema.parse(body);
     });
   }
 
-  async uploadPortfolioImage(id: string, asset: UploadAsset): Promise<void> {
+  async uploadPortfolioImage(id: string, asset: UploadAsset, options?: MutationOptions): Promise<void> {
     return this.trace('portfolio image upload', {
       id,
       fileName: asset.name ?? fileNameFromUri(asset.uri, 'portfolio.jpg'),
@@ -261,7 +256,7 @@ export class StudentApi {
     }, async () => {
       const formData = new FormData();
       appendFile(formData, 'image', asset);
-      const body = await this.client.requestForm<unknown>(`/api/v1/profile/portfolio/${id}/image`, formData, { method: 'POST' });
+      const body = await this.client.requestForm<unknown>(`/api/v1/profile/portfolio/${id}/image`, formData, { method: 'POST', headers: mutationHeaders(options) });
       successResponseSchema.parse(body);
     });
   }
@@ -283,25 +278,25 @@ export class StudentApi {
     return certificateResponseSchema.parse(body).data.certificates;
   }
 
-  async createCertificate(entry: CertificateCreate): Promise<string> {
+  async createCertificate(entry: CertificateCreate, options?: MutationOptions): Promise<string> {
     return this.trace('certificate create', {
       nameLength: entry.name.length,
       issuerLength: entry.issuer.length,
       issuedAt: entry.issuedAt,
     }, async () => {
-      const body = await this.client.requestJson<unknown>('/api/v1/profile/certificates', entry, { method: 'POST' });
+      const body = await this.client.requestJson<unknown>('/api/v1/profile/certificates', entry, { method: 'POST', headers: mutationHeaders(options) });
       return certificateCreateResponseSchema.parse(body).data.certificate.id;
     });
   }
 
-  async updateCertificate(id: string, update: CertificateCreate): Promise<void> {
+  async updateCertificate(id: string, update: CertificateCreate, options?: MutationOptions): Promise<void> {
     return this.trace('certificate update', {
       id,
       nameLength: update.name.length,
       issuerLength: update.issuer.length,
       issuedAt: update.issuedAt,
     }, async () => {
-      const body = await this.client.requestJson<unknown>(`/api/v1/profile/certificates/${id}`, update, { method: 'PATCH' });
+      const body = await this.client.requestJson<unknown>(`/api/v1/profile/certificates/${id}`, update, { method: 'PATCH', headers: mutationHeaders(options) });
       successResponseSchema.parse(body);
     });
   }
@@ -313,7 +308,7 @@ export class StudentApi {
     });
   }
 
-  async uploadCertificateImage(id: string, asset: UploadAsset): Promise<void> {
+  async uploadCertificateImage(id: string, asset: UploadAsset, options?: MutationOptions): Promise<void> {
     return this.trace('certificate image upload', {
       id,
       fileName: asset.name ?? fileNameFromUri(asset.uri, 'certificate.jpg'),
@@ -321,7 +316,7 @@ export class StudentApi {
     }, async () => {
       const formData = new FormData();
       appendFile(formData, 'image', asset);
-      const body = await this.client.requestForm<unknown>(`/api/v1/profile/certificates/${id}/image`, formData, { method: 'POST' });
+      const body = await this.client.requestForm<unknown>(`/api/v1/profile/certificates/${id}/image`, formData, { method: 'POST', headers: mutationHeaders(options) });
       successResponseSchema.parse(body);
     });
   }

@@ -43,10 +43,18 @@ export function BottomNav({ state, descriptors, navigation, insets }: TabBarProp
 
   return (
     <View
-      className={styles.container} style={{ paddingBottom: Math.max(insets.bottom, 10) }}
+      className={cn(styles.container, metrics.isTablet && styles.tabletContainer)} style={{
+        height: metrics.isTablet ? '100%' : undefined,
+        paddingTop: metrics.isTablet ? Math.max(insets.top, 16) : undefined,
+        paddingBottom: metrics.isTablet ? Math.max(insets.bottom, 16) : Math.max(insets.bottom, 10),
+        paddingLeft: metrics.isTablet ? Math.max(insets.left, 8) : undefined,
+        paddingRight: metrics.isTablet ? Math.max(insets.right, 8) : undefined,
+        position: metrics.isTablet ? 'relative' : 'absolute',
+        width: metrics.isTablet ? metrics.tabletNavWidth : undefined,
+      }}
       accessibilityRole="toolbar"
     >
-      <View className={styles.bar} style={{ minHeight: metrics.navHeight }}>
+      <View className={cn(styles.bar, metrics.isTablet && styles.tabletBar)} style={{ minHeight: metrics.isTablet ? undefined : metrics.navHeight }}>
         {state.routes.map((route) => {
           const item = navigationItems.find(({ routeName }) => routeName === route.name);
           if (!item) return null;
@@ -75,7 +83,13 @@ export function BottomNav({ state, descriptors, navigation, insets }: TabBarProp
               accessibilityRole={item.isCreate ? 'button' : 'tab'}
               {...(item.isCreate ? {} : { accessibilityState: { selected: isFocused } })}
               onPress={onPress}
-              className={cn(styles.item, item.isCreate && styles.createItem)}
+              className={cn(
+                styles.item,
+                metrics.isTablet && styles.tabletItem,
+                !item.isCreate && isFocused && styles.activeItem,
+                item.isCreate && styles.createItem,
+                metrics.isTablet && item.isCreate && styles.tabletCreateItem,
+              )}
               style={{ minHeight: metrics.navItemHeight }}
               testID={`tab-${item.routeName}`}
             >
@@ -83,7 +97,7 @@ export function BottomNav({ state, descriptors, navigation, insets }: TabBarProp
                 <View
                   className={styles.createIcon} style={{
                       height: metrics.createButtonSize,
-                      marginTop: metrics.createButtonOffset,
+                      marginTop: metrics.isTablet ? 0 : metrics.createButtonOffset,
                       width: metrics.createButtonSize,
                     }}
                 >
@@ -91,23 +105,25 @@ export function BottomNav({ state, descriptors, navigation, insets }: TabBarProp
                 </View>
               ) : (
                 <Icon
-                  color={isFocused ? colors.successBright : colors.navIconMuted}
+                  color={isFocused ? colors.primaryDeep : colors.navIconMuted}
                   size={metrics.iconSize}
                   strokeWidth={2.5}
                 />
               )}
-              <Text
-                className={cn(styles.label, isFocused && !item.isCreate && styles.activeLabel)}
-                style={{
-                  fontSize: metrics.labelFontSize,
-                  includeFontPadding: false,
-                  lineHeight: metrics.labelLineHeight,
-                }}
-                numberOfLines={1}
-              >
-                {messages[item.shortLabelKey]}
-              </Text>
-              {!item.isCreate && isFocused ? <View accessibilityLabel={`${label} selected`} className={styles.activeIndicator} /> : null}
+              {!item.isCreate ? (
+                <Text
+                  className={cn(styles.label, isFocused && styles.activeLabel)}
+                  style={{
+                    fontSize: metrics.labelFontSize,
+                    includeFontPadding: false,
+                    lineHeight: metrics.labelLineHeight,
+                    color: isFocused ? colors.primaryDeep : undefined,
+                  }}
+                >
+                  {messages[item.shortLabelKey]}
+                </Text>
+              ) : null}
+              {!item.isCreate && isFocused ? <View accessibilityLabel={`${label} selected`} className={styles.activeIndicator} style={{ backgroundColor: colors.primaryDeep }} /> : null}
               {item.hasUnread ? <View accessibilityLabel="Unread messages" className={styles.unreadBadge} /> : null}
             </Pressable>
           );

@@ -1,5 +1,5 @@
-import { FeaturePlaceholder } from '@/components/ui/FeaturePlaceholder';
+import MyQuestsScreen from '@/features/myQuests/MyQuestsScreen';
 
-export default function MyQuestsScreen() {
-  return <FeaturePlaceholder titleKey="myQuestsTitle" />;
+export default function MyQuestsRoute() {
+  return <MyQuestsScreen />;
 }

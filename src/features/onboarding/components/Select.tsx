@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { cn } from '@/tw/cn';
-import { Keyboard, Modal, Platform } from 'react-native';
+import { Keyboard, Modal, Platform, Pressable as RNPressable } from 'react-native';
 import { FlatList, KeyboardAvoidingView, Pressable, SafeAreaView, Text, TextInput, View } from '@/tw';
 import { Check, ChevronDown, CircleX, Search, X } from 'lucide-react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -31,7 +31,7 @@ interface SelectProps {
   success?: boolean;
 }
 
-export function Select({
+export const Select = React.forwardRef<React.ComponentRef<typeof RNPressable>, SelectProps>(function Select({
   label,
   options,
   value,
@@ -48,7 +48,7 @@ export function Select({
   closeLabel = 'Close',
   disabled = false,
   success = false,
-}: SelectProps) {
+}, ref) {
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const selectedOption = options.find((opt) => opt.value === value);
@@ -67,11 +67,12 @@ export function Select({
     <View className={styles.container}>
       <Text className={styles.label}>{label}</Text>
       <Pressable
+        ref={ref}
         className={cn(styles.selectBox, error ? styles.selectBoxError : null, success ? styles.selectBoxSuccess : null, disabled ? styles.selectBoxDisabled : null)}
         onPress={() => setModalVisible(true)}
         disabled={disabled}
         accessibilityRole="button"
-        accessibilityLabel={selectedOption?.label ?? placeholder ?? label}
+        accessibilityLabel={`${label}: ${selectedOption?.label ?? placeholder ?? 'Not selected'}`}
         accessibilityState={{ disabled, expanded: modalVisible }}
         testID="select-trigger"
       >
@@ -80,7 +81,7 @@ export function Select({
         </Text>
         <ChevronDown color={colors.textMuted} size={18} strokeWidth={2} />
       </Pressable>
-      <View className={styles.helperSlot}>{error ? <Text className={styles.errorText}>{error}</Text> : null}</View>
+      <View className={styles.helperSlot}>{error ? <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" className={styles.errorText}>{error}</Text> : null}</View>
 
       <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={closeModal}>
         <SafeAreaProvider>
@@ -88,6 +89,7 @@ export function Select({
             <Pressable className={styles.modalDismissArea} onPress={closeModal}>
               <KeyboardAvoidingView className={styles.keyboardAvoidingView} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
                 <Pressable className={styles.modalContent} onPress={(event) => event.stopPropagation()}>
+                <View className={styles.modalHandle} />
                 <View className={styles.modalHeader}>
                   <Text className={styles.modalTitle}>{label}</Text>
                   <Pressable onPress={closeModal} className={styles.closeButton} accessibilityRole="button" accessibilityLabel={closeLabel} testID="close-select-button">
@@ -127,6 +129,7 @@ export function Select({
                         closeModal();
                       }}
                       accessibilityRole="radio"
+                      accessibilityLabel={`${label}: ${item.label}`}
                       accessibilityState={{ selected: item.value === value }}
                     >
                       <Text className={cn(styles.optionText, item.value === value && styles.optionTextSelected)}>
@@ -151,4 +154,5 @@ export function Select({
       </Modal>
     </View>
   );
-}
+});
+Select.displayName = 'Select';

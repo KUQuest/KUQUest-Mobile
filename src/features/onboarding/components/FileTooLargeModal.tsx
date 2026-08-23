@@ -41,7 +41,7 @@ export const FileTooLargeModal: React.FC<FileTooLargeModalProps> = ({
           <Text className={styles.description}>{msg.fileTooLargeDesc}</Text>
 
           {/* Try Again Button (Custom style to match design: Dark Green filled with refresh icon) */}
-          <Pressable className={styles.tryAgainButton} onPress={onTryAgain}>
+          <Pressable accessibilityRole="button" className={styles.tryAgainButton} onPress={onTryAgain}>
             <View className={styles.btnIcon}>
               <RefreshCw size={18} color={colors.white} strokeWidth={2} />
             </View>
@@ -49,7 +49,7 @@ export const FileTooLargeModal: React.FC<FileTooLargeModalProps> = ({
           </Pressable>
 
           {/* Back Button (Custom style to match design: Outline dark green) */}
-          <Pressable className={styles.backButton} onPress={onBack}>
+          <Pressable accessibilityRole="button" className={styles.backButton} onPress={onBack}>
             <Text className={styles.backText}>{msg.backBtn}</Text>
           </Pressable>
           

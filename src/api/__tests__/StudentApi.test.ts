@@ -116,6 +116,17 @@ describe('StudentApi', () => {
     );
   });
 
+  test('forwards a stable idempotency key for profile mutations', async () => {
+    fetchMock.mockResolvedValue(response({ success: true }));
+
+    await api.updateProfile({ bio: null }, { idempotencyKey: 'profile-bio-clear-1' });
+
+    const request = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(request.headers).toEqual(expect.objectContaining({
+      'Idempotency-Key': 'profile-bio-clear-1',
+    }));
+  });
+
   test('deletes a persisted certificate through the documented endpoint', async () => {
     fetchMock.mockResolvedValue(response({ success: true }));
 
@@ -201,8 +212,8 @@ describe('StudentApi', () => {
       }));
 
     await expect(api.getReputation()).resolves.toMatchObject({ totalQuests: 3 });
-    await expect(api.listReviews(4)).resolves.toEqual({ items: [], total: 0 });
-    expect(fetchMock.mock.calls[1][0]).toBe('https://api.example.test/api/v1/profile/reviews?rating=4');
+    await expect(api.listReviews(1)).resolves.toEqual({ items: [], total: 0 });
+    expect(fetchMock.mock.calls[1][0]).toBe('https://api.example.test/api/v1/profile/reviews?rating=1');
   });
 
   test('uploads certificate images as supported FormData file parts', async () => {

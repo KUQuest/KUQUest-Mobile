@@ -1,6 +1,20 @@
-# Expo HAS CHANGED
+# KUQuest Mobile Agent Guide
 
-Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any code.
+```
+use bun by deafault
+```
+
+## Platform focus
+
+This repository is an Expo app for native Android and iOS. Treat Android and iOS behavior as the product target and keep implementation, testing, and run instructions focused on mobile.
+
+Web support and web-specific optimization are out of scope unless the user explicitly asks for them. Keep responses focused on the requested mobile behavior rather than explaining development-server internals.
+
+Native Google Sign-In requires an installed development build; use the mobile development-build scripts in `package.json` rather than Expo Go when validating the app.
+
+## Expo version
+
+Expo has changed. Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing code.
 
 ## Agent skills
 

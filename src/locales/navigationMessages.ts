@@ -21,6 +21,7 @@ export interface NavigationMessages {
   chatDescription: string;
   placeholderDescription: string;
   logout: string;
+  back: string;
 }
 
 export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
@@ -45,6 +46,7 @@ export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
     chatDescription: 'Conversations related to your Quests will appear here.',
     placeholderDescription: 'This area is ready for its feature content.',
     logout: 'Log out',
+    back: 'Go back',
   },
   th: {
     board: 'กระดานเควสต์',
@@ -67,5 +69,6 @@ export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
     chatDescription: 'บทสนทนาที่เกี่ยวข้องกับเควสต์ของคุณจะแสดงที่นี่',
     placeholderDescription: 'พื้นที่นี้พร้อมสำหรับเนื้อหาของฟีเจอร์แล้ว',
     logout: 'ออกจากระบบ',
+    back: 'ย้อนกลับ',
   },
 };

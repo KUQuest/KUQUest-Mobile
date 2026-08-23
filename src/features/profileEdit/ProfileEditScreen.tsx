@@ -143,11 +143,11 @@ function ImagePickerField({ label, uri, placeholder, removeLabel, onChange, onEr
   };
 
   return <View className="gap-ku-sm">
-    <Text className="font-ku-semibold text-ku-text-secondary text-[12px]">{label}</Text>
-    <Pressable accessibilityRole="button" accessibilityLabel={uri ? label : placeholder} className={styles.imagePicker} onPress={() => void chooseImage()}>
-      {uri && failedUri !== uri ? <Image source={{ uri }} onError={() => setFailedUri(uri)} className={styles.imagePreview} contentFit="cover" /> : <View className="items-center gap-[4px]"><ImageIcon color={colors.textMuted} size={24} /><Text className={styles.imagePickerText}>{placeholder}</Text></View>}
+    <Text className="font-ku-semibold text-ku-text-secondary text-ku-label">{label}</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={uri ? label : placeholder} className={styles.imagePicker} style={{ aspectRatio: 4 / 3 }} onPress={() => void chooseImage()}>
+      {uri && failedUri !== uri ? <Image source={{ uri }} onError={() => setFailedUri(uri)} className={styles.imagePreview} contentFit="cover" /> : <View className="flex-1 items-center justify-center gap-[4px]"><ImageIcon color={colors.textMuted} size={24} /><Text className={styles.imagePickerText}>{placeholder}</Text></View>}
     </Pressable>
-    {uri ? <Pressable accessibilityRole="button" accessibilityLabel={removeLabel} className="min-h-[48px] self-start justify-center" onPress={() => onChange('')}><Text className="font-ku-semibold text-ku-primary text-[13px]">{removeLabel}</Text></Pressable> : null}
+    {uri ? <Pressable accessibilityRole="button" accessibilityLabel={removeLabel} className="min-h-[48px] self-start justify-center" onPress={() => onChange('')}><Text className="font-ku-semibold text-ku-primary text-ku-meta">{removeLabel}</Text></Pressable> : null}
   </View>;
 }
 
@@ -163,12 +163,12 @@ function DateField({ label, value, placeholder, onChange, error, clearLabel, onC
   };
   const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00`) : new Date();
   return <View className={styles.dateField}>
-    <Text className="font-ku-semibold text-ku-text-secondary text-[12px] mb-[6px]">{label}</Text>
-    <Pressable accessibilityRole="button" accessibilityLabel={value || placeholder} accessibilityState={{ expanded: open }} className={styles.dateButton} onPress={() => setOpen(true)}>
+    <Text className="font-ku-semibold text-ku-text-secondary text-ku-label mb-[6px]">{label}</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={`${label}: ${value || placeholder}`} accessibilityState={{ expanded: open }} className={styles.dateButton} onPress={() => setOpen(true)}>
       <Text className={value ? styles.dateText : styles.datePlaceholder}>{value || placeholder}</Text>
       <CalendarDays color={colors.textMuted} size={18} />
     </Pressable>
-    {error ? <Text accessibilityRole="alert" className="font-ku-regular text-ku-danger text-[12px] mt-[4px]">{error}</Text> : null}
+    {error ? <Text accessibilityRole="alert" className="font-ku-regular text-ku-danger text-ku-label mt-[4px]">{error}</Text> : null}
     {value && onClear && clearLabel ? <Pressable accessibilityRole="button" accessibilityLabel={clearLabel} className={styles.clearDate} onPress={onClear}><Text className={styles.clearDateText}>{clearLabel}</Text></Pressable> : null}
     {open ? <DateTimePicker value={date} mode="date" display={Platform.OS === 'ios' ? 'spinner' : 'default'} maximumDate={new Date()} onChange={handleChange} /> : null}
   </View>;
@@ -180,14 +180,14 @@ function HubContent({ data }: { data: ProfileEditData }) {
   const messages = profileEditMessages[locale];
   const sections = [
     { key: 'basics' as const, title: messages.basics, summary: messages.basicsSummary },
-    { key: 'experience' as const, title: messages.experience, summary: messages.experienceSummary(data.experiences.length) },
-    { key: 'portfolio' as const, title: messages.portfolio, summary: messages.portfolioSummary(data.portfolio.length) },
-    { key: 'certificates' as const, title: messages.certificates, summary: messages.certificatesSummary(data.certificates.length) },
+    { key: 'experience' as const, title: messages.experience, summary: data.sectionErrors.experience ? messages.unavailable : messages.experienceSummary(data.experiences.length) },
+    { key: 'portfolio' as const, title: messages.portfolio, summary: data.sectionErrors.portfolio ? messages.unavailable : messages.portfolioSummary(data.portfolio.length) },
+    { key: 'certificates' as const, title: messages.certificates, summary: data.sectionErrors.certificates ? messages.unavailable : messages.certificatesSummary(data.certificates.length) },
   ];
 
   return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
     <ScrollView contentContainerClassName={styles.scrollContent} showsVerticalScrollIndicator={false}>
-      <ScreenHeader title={messages.title} backLabel={messages.cancel} onBack={() => router.back()} />
+      <ScreenHeader title={messages.title} backLabel={messages.back} onBack={() => router.back()} />
       <Text className={styles.intro}>{messages.basicsSummary}</Text>
       <View className={styles.sectionList}>{sections.map((section) => <Pressable key={section.key} testID={`profile-edit-section-${section.key}`} accessibilityRole="button" className={styles.sectionRow} onPress={() => router.push(`/profile/edit/${section.key}`)}>
         <View className={styles.sectionRowContent}><Text className={styles.sectionRowTitle}>{section.title}</Text><Text className={styles.sectionRowSummary}>{section.summary}</Text></View>
@@ -227,8 +227,16 @@ function BasicsEditor({ data, onBack }: { data: ProfileEditData; onBack: () => v
     try {
       const api = await authService.getProfileApi();
       const { firstName, lastName } = splitDisplayName(form.name);
-      await api.updateBasics({ firstName, lastName, bio: form.bio.trim() ? form.bio.trim() : null, occupationId: data.occupations.length > 0 ? form.occupationId || undefined : undefined, tagIds: data.tagOptions.length > 0 ? form.tagIds : undefined });
-      if (isLocalAsset(form.profileImage)) await api.uploadAvatar({ uri: form.profileImage });
+      await api.updateBasics({ firstName, lastName, bio: form.bio.trim() || null, occupationId: data.occupations.length > 0 ? form.occupationId || undefined : undefined });
+      if (isLocalAsset(form.profileImage)) {
+        try {
+          await api.uploadAvatar({ uri: form.profileImage });
+        } catch (error) {
+          if (await redirectIfSessionExpired(error, router)) return;
+          setSaveError(messages.avatarUploadError);
+          return;
+        }
+      }
       allowNavigation();
       router.back();
     } catch (error) {
@@ -239,15 +247,20 @@ function BasicsEditor({ data, onBack }: { data: ProfileEditData; onBack: () => v
     }
   };
   const profileName = form.name || data.profile.firstName;
+  const profileImageSource = form.profileImage
+    ? form.profileImageCacheKey
+      ? { uri: form.profileImage, cacheKey: form.profileImageCacheKey }
+      : { uri: form.profileImage }
+    : undefined;
 
   return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
-    <KeyboardAvoidingView className={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView className={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerClassName={styles.formContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <ScreenHeader title={messages.basicsSection} backLabel={messages.cancel} onBack={leave} />
+        <ScreenHeader title={messages.basicsSection} backLabel={messages.back} onBack={leave} />
         <View className={styles.formGroup}>
           <Text className={styles.formGroupTitle}>{messages.basics}</Text>
           <View className={styles.avatarPicker}>
-            {form.profileImage && !avatarImageFailed ? <Image source={{ uri: form.profileImage }} onError={() => setAvatarImageFailed(true)} className={styles.avatar} contentFit="cover" /> : <View className={styles.avatarFallback}><Text className={styles.avatarInitials}>{getInitials(profileName)}</Text></View>}
+            {profileImageSource && !avatarImageFailed ? <Image source={profileImageSource} onError={() => setAvatarImageFailed(true)} className={styles.avatar} contentFit="cover" /> : <View className={styles.avatarFallback}><Text className={styles.avatarInitials}>{getInitials(profileName)}</Text></View>}
             <Pressable accessibilityRole="button" accessibilityLabel={messages.changeAvatar} className={styles.avatarButton} onPress={() => {
               void ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 }).then((result) => {
                 const asset = result.assets?.[0];
@@ -257,20 +270,15 @@ function BasicsEditor({ data, onBack }: { data: ProfileEditData; onBack: () => v
                   return;
                 }
                 setAvatarImageFailed(false);
-                setField('profileImage', asset.uri);
+                setDirty(true);
+                setForm((current) => ({ ...current, profileImage: asset.uri, profileImageCacheKey: undefined }));
               }).catch(() => setSaveError(messages.filePickerError));
             }}><Pencil color={colors.primary} size={15} /><Text className={styles.avatarButtonText}>{messages.changeAvatar}</Text></Pressable>
+            <Text accessibilityRole={avatarImageFailed ? 'alert' : undefined} className={avatarImageFailed ? styles.avatarError : styles.avatarHelp}>{avatarImageFailed ? messages.avatarPreviewError : messages.avatarHelp}</Text>
           </View>
-          <Input label={messages.name} placeholder={messages.namePlaceholder} value={form.name} onChangeText={(value) => setField('name', value)} error={errors.name} autoCapitalize="words" />
-          <Select label={messages.occupation} placeholder={messages.occupationPlaceholder} options={data.occupations.map((occupation) => ({ label: occupation.name, value: occupation.id }))} value={form.occupationId} onValueChange={(value) => setField('occupationId', value)} />
+          <Input label={messages.name} placeholder={messages.namePlaceholder} value={form.name} onChangeText={(value) => setField('name', value)} error={errors.name} maxLength={201} autoCapitalize="words" />
+          {data.occupations.length > 0 ? <Select label={messages.occupation} placeholder={messages.occupationPlaceholder} options={data.occupations.map((occupation) => ({ label: occupation.name, value: occupation.id }))} value={form.occupationId} onValueChange={(value) => setField('occupationId', value)} /> : null}
           <TextArea label={messages.bio} placeholder={messages.bioPlaceholder} value={form.bio} onChangeText={(value) => setField('bio', value)} maxLength={1000} />
-          <View className="gap-ku-sm">
-            <Text className="font-ku-semibold text-ku-text-secondary text-[12px]">{messages.tags}</Text>
-            {data.tagOptions.length > 0 ? <View className={styles.tagsList}>{data.tagOptions.map((tag) => {
-              const selected = form.tagIds.includes(tag.id);
-              return <Pressable key={tag.id} accessibilityRole="button" accessibilityState={{ selected }} className={selected ? `${styles.tag} ${styles.tagSelected}` : styles.tag} onPress={() => setField('tagIds', selected ? form.tagIds.filter((id) => id !== tag.id) : [...form.tagIds, tag.id])}><Text className={selected ? `${styles.tagText} ${styles.tagTextSelected}` : styles.tagText}>{tag.name}</Text></Pressable>;
-            })}</View> : <Text className="font-ku-regular text-ku-text-muted text-[13px]">{messages.tagsUnavailable}</Text>}
-          </View>
         </View>
         {saveError ? <View className={styles.errorCard} accessibilityRole="alert"><Text className={styles.errorText}>{saveError}</Text></View> : null}
       </ScrollView>
@@ -289,13 +297,13 @@ function SectionListScreen({ section, data, onBack }: { section: Exclude<EditSec
 
   return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
     <ScrollView contentContainerClassName={styles.scrollContent} showsVerticalScrollIndicator={false}>
-      <ScreenHeader title={title} backLabel={messages.cancel} onBack={onBack} />
-      {items.length === 0 ? <View className={styles.emptyState}><Text className={styles.emptyText}>{messages.noItems}</Text></View> : <View className={styles.sectionList}>{items.map((item) => section === 'experience'
+      <ScreenHeader title={title} backLabel={messages.back} onBack={onBack} />
+      {data.sectionErrors[section] ? <ErrorState message={messages.sectionLoadError} retry={() => router.replace(`/profile/edit/${section}`)} retryLabel={messages.retry} /> : items.length === 0 ? <View className={styles.emptyState}><Text className={styles.emptyText}>{messages.noItems}</Text></View> : <View className={styles.sectionList}>{items.map((item) => section === 'experience'
         ? <ExperienceRow key={(item as ExperienceEntry).id} entry={item as ExperienceEntry} presentLabel={messages.present} onPress={() => openItem((item as ExperienceEntry).id)} />
         : section === 'portfolio'
           ? <PortfolioRow key={(item as PortfolioEntry).id} entry={item as PortfolioEntry} noImageLabel={messages.noImage} onPress={() => openItem((item as PortfolioEntry).id)} />
           : <CertificateRow key={(item as CertificateEntry).id} entry={item as CertificateEntry} noImageLabel={messages.noImage} onPress={() => openItem((item as CertificateEntry).id)} />)}</View>}
-      <Pressable accessibilityRole="button" className={styles.addButton} onPress={() => openItem()}><Plus color={colors.primary} size={18} /><Text className={styles.addButtonText}>{messages.add}</Text></Pressable>
+      {data.sectionErrors[section] ? null : <Button variant="secondary" className={styles.addButton} onPress={() => openItem()} accessibilityLabel={messages.add}><Plus color={colors.primary} size={18} /><Text className={styles.addButtonText}>{messages.add}</Text></Button>}
     </ScrollView>
   </SafeAreaView>;
 }
@@ -334,8 +342,8 @@ function ProfileEditDataLoader({ children, onBack }: { children: (data: ProfileE
     });
     return () => { active = false; };
   }, [attempt, router]));
-  if (error) return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}><ScrollView contentContainerClassName={styles.scrollContent}><ScreenHeader title={messages.title} backLabel={messages.cancel} onBack={onBack} /><ErrorState message={messages.loadError} retry={() => setAttempt((value) => value + 1)} retryLabel={messages.retry} /></ScrollView></SafeAreaView>;
-  if (!data) return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}><ScrollView contentContainerClassName={styles.scrollContent}><ScreenHeader title={messages.title} backLabel={messages.cancel} onBack={onBack} /><LoadingState message={messages.loading} /></ScrollView></SafeAreaView>;
+  if (error) return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}><ScrollView contentContainerClassName={styles.scrollContent}><ScreenHeader title={messages.title} backLabel={messages.back} onBack={onBack} /><ErrorState message={messages.loadError} retry={() => setAttempt((value) => value + 1)} retryLabel={messages.retry} /></ScrollView></SafeAreaView>;
+  if (!data) return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}><ScrollView contentContainerClassName={styles.scrollContent}><ScreenHeader title={messages.title} backLabel={messages.back} onBack={onBack} /><LoadingState message={messages.loading} /></ScrollView></SafeAreaView>;
   return <>{children(data)}</>;
 }
 
@@ -392,7 +400,7 @@ function ExperienceEditor({ entry, onBack }: { entry?: ExperienceEntry; onBack: 
     ]);
   };
 
-  return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}><KeyboardAvoidingView className={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView contentContainerClassName={styles.formContent} keyboardShouldPersistTaps="handled"><ScreenHeader title={entry ? messages.edit : messages.add} backLabel={messages.cancel} onBack={leave} action={entry ? <Pressable accessibilityRole="button" accessibilityLabel={messages.remove} accessibilityState={{ disabled: saving || deleting }} disabled={saving || deleting} className={styles.headerAction} onPress={remove}><Trash2 color={colors.danger} size={20} /></Pressable> : undefined} /><View className={styles.formGroup}><Text className={styles.formGroupTitle}>{messages.experienceSection}</Text><Input label={messages.titleLabel} placeholder={messages.titlePlaceholder} value={form.title} onChangeText={(value) => setField('title', value)} error={errors.title} /><Select label={messages.employmentType} placeholder={messages.employmentTypePlaceholder} options={employmentTypes} value={form.employmentType} onValueChange={(value) => setField('employmentType', value)} error={errors.employmentType} /><Input label={messages.organization} placeholder={messages.organizationPlaceholder} value={form.organization} onChangeText={(value) => setField('organization', value)} /><TextArea label={messages.detail} placeholder={messages.detailPlaceholder} value={form.description} onChangeText={(value) => setField('description', value)} maxLength={1000} /><View className={styles.dateRow}><DateField label={messages.startDate} placeholder="YYYY-MM-DD" value={form.startedAt} onChange={(value) => setField('startedAt', value)} error={errors.startedAt} /><DateField label={messages.endDate} placeholder={messages.present} value={form.endedAt} onChange={(value) => setField('endedAt', value)} onClear={() => setField('endedAt', '')} clearLabel={messages.present} error={errors.endedAt} /></View></View>{saveError ? <View className={styles.errorCard} accessibilityRole="alert"><Text className={styles.errorText}>{saveError}</Text></View> : null}</ScrollView><SaveBar label={saving ? messages.saving : messages.save} disabled={saving || deleting} onPress={() => void save()} /></KeyboardAvoidingView></SafeAreaView>;
+  return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}><KeyboardAvoidingView className={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}><ScrollView contentContainerClassName={styles.formContent} keyboardShouldPersistTaps="handled"><ScreenHeader title={entry ? messages.experienceEditTitle : messages.experienceAddTitle} backLabel={messages.back} onBack={leave} action={entry ? <Pressable accessibilityRole="button" accessibilityLabel={messages.remove} accessibilityState={{ disabled: saving || deleting }} disabled={saving || deleting} className={styles.headerAction} onPress={remove}><Trash2 color={colors.danger} size={20} /></Pressable> : undefined} /><View className={styles.formGroup}><Text className={styles.formGroupTitle}>{messages.experienceSection}</Text><Text className={styles.formGroupHint}>{messages.experienceFormHint}</Text><Input label={messages.experienceTitleLabel} placeholder={messages.experienceTitlePlaceholder} value={form.title} onChangeText={(value) => setField('title', value)} error={errors.title} maxLength={120} /><Select label={messages.employmentType} placeholder={messages.employmentTypePlaceholder} options={employmentTypes} value={form.employmentType} onValueChange={(value) => setField('employmentType', value)} error={errors.employmentType} closeLabel={messages.closeEmploymentType} /><Input label={messages.organizationOptional} placeholder={messages.organizationPlaceholder} value={form.organization} onChangeText={(value) => setField('organization', value)} maxLength={120} /><TextArea label={messages.detailOptional} placeholder={messages.detailPlaceholder} value={form.description} onChangeText={(value) => setField('description', value)} maxLength={1000} /><View className={styles.dateRow}><DateField label={messages.startDate} placeholder={messages.startDatePlaceholder} value={form.startedAt} onChange={(value) => setField('startedAt', value)} error={errors.startedAt} /><DateField label={messages.endDateOptional} placeholder={messages.ongoingDatePlaceholder} value={form.endedAt} onChange={(value) => setField('endedAt', value)} onClear={() => setField('endedAt', '')} clearLabel={messages.markOngoing} error={errors.endedAt} /></View></View>{saveError ? <View className={styles.errorCard} accessibilityRole="alert"><Text className={styles.errorText}>{saveError}</Text></View> : null}</ScrollView><SaveBar label={saving ? messages.saving : messages.save} disabled={saving || deleting} onPress={() => void save()} /></KeyboardAvoidingView></SafeAreaView>;
 }
 
 function PortfolioEditor({ entry, onBack }: { entry?: PortfolioEntry; onBack: () => void }) {
@@ -451,7 +459,7 @@ function PortfolioEditor({ entry, onBack }: { entry?: PortfolioEntry; onBack: ()
     ]);
   };
   const setImage = (uri: string) => { setDirty(true); setForm((current) => ({ ...current, imageUri: uri })); };
-  return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}><KeyboardAvoidingView className={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView contentContainerClassName={styles.formContent} keyboardShouldPersistTaps="handled"><ScreenHeader title={entry ? messages.edit : messages.add} backLabel={messages.cancel} onBack={leave} action={entry ? <Pressable accessibilityRole="button" accessibilityLabel={messages.remove} accessibilityState={{ disabled: saving || deleting }} disabled={saving || deleting} className={styles.headerAction} onPress={remove}><Trash2 color={colors.danger} size={20} /></Pressable> : undefined} /><View className={styles.formGroup}><Text className={styles.formGroupTitle}>{messages.portfolioSection}</Text><ImagePickerField label={messages.avatar} uri={form.imageUri} placeholder={messages.addImage} removeLabel={messages.removeImage} onChange={setImage} onError={setSaveErrorMessage(setSaveError)} /><Input label={messages.titleLabel} placeholder={messages.titlePlaceholder} value={form.title} onChangeText={(value) => setField('title', value)} error={errors.title} /><TextArea label={messages.detail} placeholder={messages.detailPlaceholder} value={form.description} onChangeText={(value) => setField('description', value)} maxLength={1000} /></View>{saveError ? <View className={styles.errorCard} accessibilityRole="alert"><Text className={styles.errorText}>{saveError}</Text></View> : null}</ScrollView><SaveBar label={saving ? messages.saving : messages.save} disabled={saving || deleting} onPress={() => void save()} /></KeyboardAvoidingView></SafeAreaView>;
+  return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}><KeyboardAvoidingView className={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}><ScrollView contentContainerClassName={styles.formContent} keyboardShouldPersistTaps="handled"><ScreenHeader title={entry ? messages.edit : messages.add} backLabel={messages.back} onBack={leave} action={entry ? <Pressable accessibilityRole="button" accessibilityLabel={messages.remove} accessibilityState={{ disabled: saving || deleting }} disabled={saving || deleting} className={styles.headerAction} onPress={remove}><Trash2 color={colors.danger} size={20} /></Pressable> : undefined} /><View className={styles.formGroup}><Text className={styles.formGroupTitle}>{messages.portfolioSection}</Text><ImagePickerField label={messages.image} uri={form.imageUri} placeholder={messages.addImage} removeLabel={messages.removeImage} onChange={setImage} onError={setSaveErrorMessage(setSaveError)} /><Input label={messages.titleLabel} placeholder={messages.titlePlaceholder} value={form.title} onChangeText={(value) => setField('title', value)} error={errors.title} maxLength={120} /><TextArea label={messages.detail} placeholder={messages.detailPlaceholder} value={form.description} onChangeText={(value) => setField('description', value)} maxLength={1000} /></View>{saveError ? <View className={styles.errorCard} accessibilityRole="alert"><Text className={styles.errorText}>{saveError}</Text></View> : null}</ScrollView><SaveBar label={saving ? messages.saving : messages.save} disabled={saving || deleting} onPress={() => void save()} /></KeyboardAvoidingView></SafeAreaView>;
 }
 
 function setSaveErrorMessage(setter: (value: string | null) => void) {
@@ -518,7 +526,7 @@ function CertificateEditor({ entry, onBack }: { entry?: CertificateEntry; onBack
       } },
     ]);
   };
-  return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}><KeyboardAvoidingView className={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView contentContainerClassName={styles.formContent} keyboardShouldPersistTaps="handled"><ScreenHeader title={entry ? messages.edit : messages.add} backLabel={messages.cancel} onBack={leave} action={entry ? <Pressable accessibilityRole="button" accessibilityLabel={messages.remove} accessibilityState={{ disabled: saving || deleting }} disabled={saving || deleting} className={styles.headerAction} onPress={remove}><Trash2 color={colors.danger} size={20} /></Pressable> : undefined} /><View className={styles.formGroup}><Text className={styles.formGroupTitle}>{messages.certificatesSection}</Text><ImagePickerField label={messages.avatar} uri={form.imageUri} placeholder={messages.addImage} removeLabel={messages.removeImage} onChange={(uri) => { setDirty(true); setForm((current) => ({ ...current, imageUri: uri })); }} onError={setSaveErrorMessage(setSaveError)} /><Input label={messages.titleLabel} placeholder={messages.titlePlaceholder} value={form.name} onChangeText={(value) => setField('name', value)} error={errors.name} /><Input label={messages.issuer} placeholder={messages.issuerPlaceholder} value={form.issuer} onChangeText={(value) => setField('issuer', value)} error={errors.issuer} /><DateField label={messages.issuedAt} placeholder="YYYY-MM-DD" value={form.issuedAt} onChange={(value) => setField('issuedAt', value)} error={errors.issuedAt} /></View>{saveError ? <View className={styles.errorCard} accessibilityRole="alert"><Text className={styles.errorText}>{saveError}</Text></View> : null}</ScrollView><SaveBar label={saving ? messages.saving : messages.save} disabled={saving || deleting} onPress={() => void save()} /></KeyboardAvoidingView></SafeAreaView>;
+  return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}><KeyboardAvoidingView className={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}><ScrollView contentContainerClassName={styles.formContent} keyboardShouldPersistTaps="handled"><ScreenHeader title={entry ? messages.edit : messages.add} backLabel={messages.back} onBack={leave} action={entry ? <Pressable accessibilityRole="button" accessibilityLabel={messages.remove} accessibilityState={{ disabled: saving || deleting }} disabled={saving || deleting} className={styles.headerAction} onPress={remove}><Trash2 color={colors.danger} size={20} /></Pressable> : undefined} /><View className={styles.formGroup}><Text className={styles.formGroupTitle}>{messages.certificatesSection}</Text><ImagePickerField label={messages.image} uri={form.imageUri} placeholder={messages.addImage} removeLabel={messages.removeImage} onChange={(uri) => { setDirty(true); setForm((current) => ({ ...current, imageUri: uri })); }} onError={setSaveErrorMessage(setSaveError)} /><Input label={messages.titleLabel} placeholder={messages.titlePlaceholder} value={form.name} onChangeText={(value) => setField('name', value)} error={errors.name} /><Input label={messages.issuer} placeholder={messages.issuerPlaceholder} value={form.issuer} onChangeText={(value) => setField('issuer', value)} error={errors.issuer} /><DateField label={messages.issuedAt} placeholder="YYYY-MM-DD" value={form.issuedAt} onChange={(value) => setField('issuedAt', value)} error={errors.issuedAt} /></View>{saveError ? <View className={styles.errorCard} accessibilityRole="alert"><Text className={styles.errorText}>{saveError}</Text></View> : null}</ScrollView><SaveBar label={saving ? messages.saving : messages.save} disabled={saving || deleting} onPress={() => void save()} /></KeyboardAvoidingView></SafeAreaView>;
 }
 
 export default function ProfileEditSectionScreen() {

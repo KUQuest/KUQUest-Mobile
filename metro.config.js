@@ -5,7 +5,7 @@ const { withNativewind } = require('nativewind/metro');
 const config = getDefaultConfig(__dirname);
 
 module.exports = withNativewind(config, {
-  // Keep className support at the explicit src/tw wrapper boundary.
-  inlineVariables: false,
+  // Inline static theme values so native text styles resolve to numeric values.
+  inlineVariables: true,
   globalClassNamePolyfill: false,
 });

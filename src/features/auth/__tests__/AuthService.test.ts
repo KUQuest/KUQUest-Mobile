@@ -3,6 +3,7 @@ import {
   type BetterAuthClientApi,
   type NativeGoogleSigninApi,
 } from "../AuthService";
+import * as SecureStore from "expo-secure-store";
 import { ApiClient } from "../../../api/ApiClient";
 import { AuthError, type AuthSession } from "../types";
 import type { SignInResponse } from "@react-native-google-signin/google-signin";
@@ -256,5 +257,19 @@ describe("AuthService", () => {
     await expect(auth.signOut()).resolves.toBeUndefined();
     expect(betterAuth.signOut).toHaveBeenCalledTimes(1);
     expect(googleSignin.signOut).toHaveBeenCalledTimes(1);
+    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith("kuquest_cookie");
+    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith("kuquest_session_data");
+  });
+
+  test("does not hang when a sign-out provider never responds", async () => {
+    jest.useFakeTimers();
+    betterAuth.signOut.mockReturnValue(new Promise(() => undefined));
+    googleSignin.signOut.mockReturnValue(new Promise(() => undefined));
+
+    const signOut = auth.signOut();
+    await jest.advanceTimersByTimeAsync(2000);
+
+    await expect(signOut).resolves.toBeUndefined();
+    jest.useRealTimers();
   });
 });

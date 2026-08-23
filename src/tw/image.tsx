@@ -17,14 +17,14 @@ function CSSImage({ className: _className, style, ...props }: CssImageProps) {
     | Record<string, unknown>
     | undefined;
   const { objectFit, objectPosition, ...nativeStyle } = flattenedStyle || {};
+  const contentFit = objectFit ?? props.contentFit;
+  const contentPosition = objectPosition ?? props.contentPosition;
 
   return (
     <RNImage
       {...props}
-      contentFit={objectFit as React.ComponentProps<typeof RNImage>['contentFit']}
-      contentPosition={
-        objectPosition as React.ComponentProps<typeof RNImage>['contentPosition']
-      }
+      contentFit={contentFit as React.ComponentProps<typeof RNImage>['contentFit']}
+      contentPosition={contentPosition as React.ComponentProps<typeof RNImage>['contentPosition']}
       source={
         typeof props.source === 'string' ? { uri: props.source } : props.source
       }

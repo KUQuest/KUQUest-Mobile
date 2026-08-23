@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { cn } from '@/tw/cn';
-import { useWindowDimensions } from 'react-native';
+import { useColorScheme, useWindowDimensions } from 'react-native';
 import { Pressable, SafeAreaView, Text, View } from '@/tw';
 import { StatusBar } from 'expo-status-bar';
 import { Host, Button } from '@expo/ui';
@@ -37,6 +37,7 @@ export default function LoginScreen({
   authAdapter = authService,
 }: LoginScreenProps) {
   const { width } = useWindowDimensions();
+  const colorScheme = useColorScheme();
   const buttonWidth = Math.min(width - 48, 420);
 
   const { locale: currentLocale } = useLocale();
@@ -75,7 +76,7 @@ export default function LoginScreen({
 
   return (
     <SafeAreaView className={styles.safeArea}>
-      <StatusBar style="dark" />
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       <View className={styles.container}>
         <View className={styles.content}>
           {/* Header Section */}
@@ -115,7 +116,7 @@ export default function LoginScreen({
                     {getAuthErrorText(error.code, currentLocale)}
                   </Text>
                   {error.message && (
-                    <Text className={cn(styles.errorText, 'text-[12px] mt-[4px] text-ku-danger-light')}>
+                    <Text className={cn(styles.errorText, 'text-ku-label mt-[4px] text-ku-danger-light')}>
                       {error.message}
                     </Text>
                   )}

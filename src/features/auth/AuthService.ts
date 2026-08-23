@@ -1,4 +1,5 @@
 import type { SignInResponse } from '@react-native-google-signin/google-signin';
+import * as SecureStore from 'expo-secure-store';
 import { ApiClient, ApiError } from '../../api/ApiClient';
 import { authUserSchema } from '../../api/contracts';
 import { ProfileApi } from '../../api/ProfileApi';
@@ -9,26 +10,12 @@ import {
   AuthSession,
   RoutingDestination,
 } from './types';
-import { authClient } from './authClient';
+import { authClient, type BetterAuthClientApi } from './authClient';
+import { AUTH_COOKIE_STORAGE_KEY, AUTH_SESSION_CACHE_STORAGE_KEY } from './authStorage';
 import { loadNativeGoogleSignin, type NativeGoogleSigninApi, type NativeGoogleSigninSuccessResponse } from './nativeGoogleSignin';
 
+export type { BetterAuthClientApi } from './authClient';
 export type { NativeGoogleSigninApi } from './nativeGoogleSignin';
-
-interface BetterAuthResponse {
-  data?: unknown;
-  error?: unknown;
-}
-
-export interface BetterAuthClientApi {
-  signIn: {
-    social(input: {
-      provider: 'google';
-      idToken: { token: string };
-    }): Promise<BetterAuthResponse>;
-  };
-  getSession(): Promise<BetterAuthResponse>;
-  signOut(): Promise<BetterAuthResponse>;
-}
 
 export interface AuthServiceOptions {
   apiBaseUrl?: string;
@@ -52,6 +39,24 @@ function getErrorMessage(error: unknown): string | undefined {
 function getErrorCode(error: unknown): unknown {
   if (!error || typeof error !== 'object' || !('code' in error)) return undefined;
   return (error as { code?: unknown }).code;
+}
+
+const SIGN_OUT_TIMEOUT_MS = 2000;
+
+async function settleWithin<T>(promise: Promise<T>, timeoutMs: number): Promise<T | undefined> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<undefined>((resolve) => {
+        timeout = setTimeout(() => resolve(undefined), timeoutMs);
+      }),
+    ]);
+  } catch {
+    return undefined;
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
 }
 
 function authDebug(message: string, details?: Record<string, unknown>): void {
@@ -158,22 +163,17 @@ export class AuthService implements AuthAdapter {
 
   async signOut(): Promise<void> {
     authDebug('sign-out started');
-    try {
-      await this.authClient.signOut();
-      authDebug('Better Auth sign-out completed');
-    } catch {
-      authDebug('Better Auth sign-out failed; continuing native sign-out');
-      // Native sign-out still runs when the remote Better Auth request fails.
-    } finally {
-      if (this.nativeGoogleSignin) {
-        try {
-          await this.nativeGoogleSignin.signOut();
-          authDebug('native Google sign-out completed');
-        } catch {
-          // Local Better Auth cleanup remains authoritative.
-        }
-      }
-    }
+    const remoteSignOut = settleWithin(this.authClient.signOut(), SIGN_OUT_TIMEOUT_MS);
+    const nativeSignOut = this.nativeGoogleSignin
+      ? settleWithin(this.nativeGoogleSignin.signOut(), SIGN_OUT_TIMEOUT_MS)
+      : Promise.resolve(undefined);
+
+    await Promise.all([remoteSignOut, nativeSignOut]);
+    await Promise.all([
+      SecureStore.deleteItemAsync(AUTH_COOKIE_STORAGE_KEY),
+      SecureStore.deleteItemAsync(AUTH_SESSION_CACHE_STORAGE_KEY),
+    ]);
+    authDebug('sign-out cleanup finished');
   }
 
   private async signInWithNativeGoogle(): Promise<AuthSession> {

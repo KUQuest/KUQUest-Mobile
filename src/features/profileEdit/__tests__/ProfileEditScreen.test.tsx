@@ -45,7 +45,7 @@ const editData = {
   experiences: [],
   portfolio: [],
   certificates: [],
-  tagOptions: [{ id: 'design', name: 'Design' }],
+  sectionErrors: {},
 };
 
 describe('Edit Profile hub', () => {
@@ -70,7 +70,19 @@ describe('Edit Profile hub', () => {
   it('offers a native Back action from the hub', async () => {
     const view = await render(<EditProfileHubScreen />);
     await waitFor(() => expect(view.getByText('Edit Profile')).toBeTruthy());
-    fireEvent.press(view.getByRole('button', { name: 'Cancel' }));
+    fireEvent.press(view.getByRole('button', { name: 'Back' }));
+  });
+
+  it('shows a recoverable section error without offering Add', async () => {
+    mockRouteParams.section = 'portfolio';
+    mockedGetProfileApi.mockResolvedValue({
+      getEditData: jest.fn().mockResolvedValue({ ...editData, sectionErrors: { portfolio: true } }),
+    } as never);
+    const view = await render(<ProfileEditSectionScreen />);
+
+    await waitFor(() => expect(view.getByText('This section is temporarily unavailable.')).toBeTruthy());
+    expect(view.queryByText('Add')).toBeNull();
+    expect(view.getByText('Try again')).toBeTruthy();
   });
 
   it('opens a focused new Experience editor from Add', async () => {
@@ -78,7 +90,10 @@ describe('Edit Profile hub', () => {
     mockRouteParams.itemId = 'new';
     const view = await render(<ProfileEditSectionScreen />);
 
-    await waitFor(() => expect(view.getByLabelText('Title')).toBeTruthy());
+    await waitFor(() => expect(view.getByLabelText('Role or experience title')).toBeTruthy());
+    expect(view.getByText('Add a role, project, or activity to show your background on your public profile.')).toBeTruthy();
+    expect(view.getByText('Organization (optional)')).toBeTruthy();
+    expect(view.getByText('Description (optional)')).toBeTruthy();
     expect(view.getByText('Save changes')).toBeTruthy();
   });
 
@@ -99,6 +114,7 @@ describe('Edit Profile hub', () => {
     const view = await render(<ProfileEditSectionScreen />);
 
     await waitFor(() => expect(view.getByLabelText('Display name')).toBeTruthy());
+    expect(view.getByText('JPG, PNG, or WebP · max 5 MB')).toBeTruthy();
     await fireEvent.changeText(view.getByLabelText('Display name'), 'Ada Lovelace');
     await waitFor(() => expect(view.getByLabelText('Display name').props.value).toBe('Ada Lovelace'));
     await fireEvent.press(view.getByText('Save changes'));
@@ -108,9 +124,21 @@ describe('Edit Profile hub', () => {
       lastName: 'Lovelace',
       bio: 'A bio',
       occupationId: 'occupation-id',
-      tagIds: ['design'],
     }));
     expect(view.queryByLabelText('Telephone')).toBeNull();
     expect(view.queryByLabelText('Student ID')).toBeNull();
+  });
+
+  it('sends null when a Student clears their bio', async () => {
+    mockRouteParams.section = 'basics';
+    const updateBasics = jest.fn().mockResolvedValue(editData.profile);
+    mockedGetProfileApi.mockResolvedValue({ getEditData: jest.fn().mockResolvedValue(editData), updateBasics, uploadAvatar: jest.fn() } as never);
+    const view = await render(<ProfileEditSectionScreen />);
+
+    await waitFor(() => expect(view.getByLabelText('About you')).toBeTruthy());
+    await fireEvent.changeText(view.getByLabelText('About you'), '');
+    await fireEvent.press(view.getByText('Save changes'));
+
+    await waitFor(() => expect(updateBasics).toHaveBeenCalledWith(expect.objectContaining({ bio: null })));
   });
 });

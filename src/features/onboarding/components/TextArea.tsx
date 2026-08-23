@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { cn } from '@/tw/cn';
-import { TextInputProps } from 'react-native';
+import { TextInput as RNTextInput, TextInputProps } from 'react-native';
 import { Text, TextInput, View } from '@/tw';
 import { colors } from '@/theme/colors';
 import styles from '../styles/textAreaStyles';
@@ -13,13 +13,14 @@ interface TextAreaProps extends TextInputProps {
   success?: boolean;
 }
 
-export function TextArea({ label, error, maxLength, value, success = false, style, accessibilityLabel, editable = true, onFocus, onBlur, ...props }: TextAreaProps) {
+export const TextArea = React.forwardRef<React.ComponentRef<typeof RNTextInput>, TextAreaProps>(function TextArea({ label, error, maxLength, value, success = false, style, accessibilityLabel, editable = true, onFocus, onBlur, ...props }, ref) {
   const [focused, setFocused] = useState(false);
 
   return (
     <View className={styles.container}>
       <Text className={styles.label}>{label}</Text>
       <TextInput
+        ref={ref}
         className={cn(styles.input, error ? styles.inputError : null, success ? styles.inputSuccess : null, focused ? styles.inputFocused : null, !editable ? styles.inputDisabled : null)} style={style}
         placeholderTextColor={colors.textFaint}
         multiline
@@ -41,7 +42,7 @@ export function TextArea({ label, error, maxLength, value, success = false, styl
       />
       <View className={styles.footerRow}>
         {error ? (
-          <Text className={styles.errorText}>{error}</Text>
+          <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" className={styles.errorText}>{error}</Text>
         ) : (
           <View className="flex-1" />
         )}
@@ -53,4 +54,5 @@ export function TextArea({ label, error, maxLength, value, success = false, styl
       </View>
     </View>
   );
-}
+});
+TextArea.displayName = 'TextArea';

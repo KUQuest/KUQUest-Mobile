@@ -8,10 +8,8 @@ import type {
 } from './contracts';
 import type { StudentApi, ProfileUpdate, UploadAsset, CertificateCreate, ExperienceCreate, PortfolioCreate } from './StudentApi';
 
-export interface ProfileTagOption {
-  id: string;
-  name: string;
-}
+export type ProfileEditSection = 'experience' | 'portfolio' | 'certificates';
+export type ProfileEditSectionErrors = Partial<Record<ProfileEditSection, true>>;
 
 export interface ProfileEditData {
   profile: ProfileResponse;
@@ -19,45 +17,57 @@ export interface ProfileEditData {
   experiences: ExperienceEntry[];
   portfolio: PortfolioEntry[];
   certificates: CertificateEntry[];
-  tagOptions: ProfileTagOption[];
+  sectionErrors: ProfileEditSectionErrors;
 }
 
-export type ProfileBasicsUpdate = Pick<ProfileUpdate, 'firstName' | 'lastName' | 'bio' | 'occupationId' | 'tagIds'>;
+export type ProfileBasicsUpdate = Pick<ProfileUpdate, 'firstName' | 'lastName' | 'bio' | 'occupationId'>;
+
+type CollectionResult<T> = { items: T[]; failed: boolean };
+
+async function readCollection<T>(request: () => Promise<T[]>): Promise<CollectionResult<T>> {
+  try {
+    return { items: await request(), failed: false };
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) throw error;
+    return { items: [], failed: true };
+  }
+}
 
 export class ProfileApi {
   constructor(private readonly studentApi: StudentApi) {}
 
   async getEditData(): Promise<ProfileEditData> {
-    const [profile, options, experiences, portfolio, certificates, tagOptions] = await Promise.all([
+    const [profile, options, experiences, portfolio, certificates] = await Promise.all([
       this.studentApi.getProfile(),
       this.studentApi.getAcademicRegistrationOptions().catch((error) => {
-        if (error instanceof ApiError && error.status === 404) return { occupations: [], faculties: [] };
+        if (error instanceof ApiError && error.status === 404) {
+          return { occupations: [], faculties: [] };
+        }
         throw error;
       }),
-      this.studentApi.listExperience(),
-      this.studentApi.listPortfolio(),
-      this.studentApi.listCertificates(),
-      typeof this.studentApi.listProfileTagOptions === 'function'
-        ? this.studentApi.listProfileTagOptions()
-        : Promise.resolve([]),
+      readCollection(() => this.studentApi.listExperience()),
+      readCollection(() => this.studentApi.listPortfolio()),
+      readCollection(() => this.studentApi.listCertificates()),
     ]);
+
+    const sectionErrors: ProfileEditSectionErrors = {
+      ...(experiences.failed ? { experience: true } : {}),
+      ...(portfolio.failed ? { portfolio: true } : {}),
+      ...(certificates.failed ? { certificates: true } : {}),
+    };
 
     return {
       profile,
       occupations: options.occupations,
-      experiences,
-      portfolio,
-      certificates,
-      tagOptions,
+      experiences: experiences.items,
+      portfolio: portfolio.items,
+      certificates: certificates.items,
+      sectionErrors,
     };
   }
 
   async updateBasics(update: ProfileBasicsUpdate): Promise<ProfileResponse> {
-    const { occupationId, ...profileUpdate } = update;
-    await this.studentApi.updateProfile(profileUpdate);
-    if (occupationId !== undefined) {
-      await this.studentApi.updateAcademicRegistration({ occupationId });
-    }
+    await this.studentApi.updateProfile(update);
     return this.studentApi.getProfile();
   }
 

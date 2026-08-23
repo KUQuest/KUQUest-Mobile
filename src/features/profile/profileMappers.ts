@@ -64,6 +64,10 @@ export function mapApiPortfolioToView(entry: PortfolioEntry): ProfileWork {
     title: entry.title,
     detail: entry.description ?? '',
     imageUri: entry.images[0]?.url ?? '',
+    imageUris: entry.images
+      .slice()
+      .sort((left, right) => Number(left.position) - Number(right.position))
+      .map((image) => image.url),
   };
 }
 

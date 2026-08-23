@@ -108,6 +108,24 @@ describe('Select', () => {
     expect(view.getByText('Student')).toBeTruthy();
   });
 
+  test('includes the field context in selected and option accessibility labels', async () => {
+    const view = await render(
+      <Select
+        label="Quest Tag"
+        options={[{ label: 'Technology', value: 'technology' }]}
+        value="technology"
+        onValueChange={jest.fn()}
+        placeholder="Choose a Quest Tag"
+      />
+    );
+
+    expect(view.getByTestId('select-trigger').props.accessibilityLabel).toBe('Quest Tag: Technology');
+
+    await fireEvent.press(view.getByTestId('select-trigger'));
+    const technologyOptions = view.getAllByText('Technology');
+    expect(technologyOptions[1].parent?.props.accessibilityLabel).toBe('Quest Tag: Technology');
+  });
+
   test('does not open when disabled', async () => {
     const view = await render(
       <Select

@@ -9,6 +9,7 @@ export interface QuestApplicationStore {
   getStatus(questId: string): QuestApplicationStatus;
   setStatus(questId: string, status: Exclude<QuestApplicationStatus, 'none'>): void;
   clear(): void;
+  subscribe(listener: () => void): () => void;
 }
 
 const storesByStudent = new Map<string, QuestApplicationStore>();
@@ -22,11 +23,28 @@ export function getQuestApplicationOutcome(quest: QuestBoardQuest, now = new Dat
 
 export function createQuestApplicationStore(studentId: string): QuestApplicationStore {
   const statuses = new Map<string, QuestApplicationStatus>();
+  const listeners = new Set<() => void>();
+  const notify = () => listeners.forEach((listener) => listener());
+
   return {
     studentId,
     getStatus: (questId) => statuses.get(questId) ?? 'none',
-    setStatus: (questId, status) => statuses.set(questId, status),
-    clear: () => statuses.clear(),
+    setStatus: (questId, status) => {
+      if (statuses.get(questId) === status) return;
+      statuses.set(questId, status);
+      notify();
+    },
+    clear: () => {
+      if (statuses.size === 0) return;
+      statuses.clear();
+      notify();
+    },
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
   };
 }
 

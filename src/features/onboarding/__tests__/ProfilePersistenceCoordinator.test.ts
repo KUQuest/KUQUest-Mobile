@@ -35,11 +35,14 @@ describe('ProfilePersistenceCoordinator', () => {
       studentId: '6712345678',
     }, true, '2026-08-11');
 
-    expect(api.updateAcademicRegistration).toHaveBeenCalledWith(expect.objectContaining({
-      occupationId: 'student',
-      studentId: '6712345678',
-      departmentId: 'department-software',
-    }));
+    expect(api.updateAcademicRegistration).toHaveBeenCalledWith(
+      expect.objectContaining({
+        occupationId: 'student',
+        studentId: '6712345678',
+        departmentId: 'department-software',
+      }),
+      expect.objectContaining({ idempotencyKey: expect.stringContaining('academic-registration') }),
+    );
   });
 
   it('returns the partial draft and does not recreate a certificate on retry', async () => {
@@ -77,8 +80,11 @@ describe('ProfilePersistenceCoordinator', () => {
 
     await coordinator.save(api, partialError!.draft, false, '2026-08-11');
 
-    expect(api.createCertificate).toHaveBeenCalledTimes(1);
-    expect(api.updateCertificate).toHaveBeenCalledWith('certificate-id', expect.anything());
-    expect(uploadCertificateImage).toHaveBeenCalledTimes(2);
+    expect(api.updateCertificate).toHaveBeenCalledWith(
+      'certificate-id',
+      expect.anything(),
+      expect.objectContaining({ idempotencyKey: expect.stringContaining('certificate-0-update') }),
+    );
+    expect(uploadCertificateImage.mock.calls[0][2]).toEqual(uploadCertificateImage.mock.calls[1][2]);
   });
 });

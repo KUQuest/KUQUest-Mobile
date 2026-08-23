@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/tw/cn';
-import { Alert, Platform, useWindowDimensions } from 'react-native';
-import { Image, Pressable, SafeAreaView, ScrollView, Text, View } from '@/tw';
+import { Alert, Platform } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Pressable, SafeAreaView, ScrollView, Text, View } from '@/tw';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
@@ -31,9 +31,6 @@ import { validateProfileBasics, validateProfileDetails } from '../validation';
 function createOnboardingForm(): ProfileDraft {
   return {
     ...createEmptyProfile(),
-    certificates: [createEmptyCertificate()],
-    works: [createEmptyWork()],
-    experiences: [createEmptyExperience()],
   };
 }
 
@@ -53,6 +50,12 @@ function formatMonthYear(value: string, locale: 'en' | 'th'): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';
   const date = new Date(`${value}T12:00:00`);
   return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-US', { year: 'numeric', month: 'short' }).format(date);
+}
+
+function formatDate(value: string, locale: 'en' | 'th'): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(date);
 }
 
 function onboardingDebug(message: string, details: Record<string, unknown> = {}): void {
@@ -83,8 +86,7 @@ export default function OnboardingScreen() {
   const [datePickerTarget, setDatePickerTarget] = useState<{ index: number; value: string; kind: 'certificate' | 'experience'; field?: 'startedAt' | 'endedAt' } | null>(null);
   const [today] = useState(() => new Date());
   const persistenceCoordinator = useRef(new ProfilePersistenceCoordinator());
-  const { width } = useWindowDimensions();
-  const buttonWidth = (width - 96) / 2;
+  const demoBypassEnabled = __DEV__ && process.env.EXPO_PUBLIC_PROFILE_DEMO === 'true';
 
   useEffect(() => {
     let active = true;
@@ -93,6 +95,17 @@ export default function OnboardingScreen() {
       setLoadError(false);
       setIsLoadingProfile(true);
       try {
+        if (demoBypassEnabled) {
+          if (active) {
+            setOptions({
+              occupations: [{ id: 'student', name: locale === 'th' ? 'นิสิต' : 'Student', requiresStudentId: true }],
+              faculties: [{ id: 'engineering', name: locale === 'th' ? 'วิศวกรรมศาสตร์' : 'Engineering', departments: [{ id: 'sake', name: 'Software and Knowledge Engineering' }] }],
+            });
+            setForm(createOnboardingForm());
+          }
+          return;
+        }
+
         const session = await authService.getSession();
         if (!session) throw new Error('No active session');
         const api = await authService.getStudentApi();
@@ -123,12 +136,7 @@ export default function OnboardingScreen() {
 
         if (active) {
           setOptions(academicOptions);
-          setForm({
-            ...mappedForm,
-            certificates: mappedForm.certificates.length > 0 ? mappedForm.certificates : [createEmptyCertificate()],
-            works: mappedForm.works.length > 0 ? mappedForm.works : [createEmptyWork()],
-            experiences: mappedForm.experiences.length > 0 ? mappedForm.experiences : [createEmptyExperience()],
-          });
+          setForm(mappedForm);
         }
       } catch (error) {
         if (error instanceof AuthError && error.code === 'SESSION_EXPIRED') {
@@ -146,7 +154,7 @@ export default function OnboardingScreen() {
     return () => {
       active = false;
     };
-  }, [loadAttempt, msg.loadingProfile, msg.submitErrorMsg]);
+  }, [demoBypassEnabled, loadAttempt, locale, msg.loadingProfile, msg.submitErrorMsg]);
 
   const occupationOptions = (options?.occupations ?? []).map((occupation) => ({
     label: occupation.name,
@@ -180,6 +188,11 @@ export default function OnboardingScreen() {
     setIsSubmitting(true);
     setSubmitError(null);
     try {
+      if (demoBypassEnabled) {
+        router.replace(isEditMode ? '/(tabs)/profile' : '/(tabs)');
+        return;
+      }
+
       const session = await authService.getSession();
       if (!session) throw new Error('No active session');
       const api = await authService.getStudentApi();
@@ -334,8 +347,19 @@ export default function OnboardingScreen() {
     }
   };
 
+  const leaveRegistration = () => {
+    if (isEditMode) {
+      router.back();
+      return;
+    }
+    Alert.alert(msg.cancelRegistrationTitle, msg.cancelRegistrationMessage, [
+      { text: msg.cancel, style: 'cancel' },
+      { text: msg.cancelRegistration, style: 'destructive', onPress: () => void authService.signOut().then(() => router.replace('/')) },
+    ]);
+  };
+
   if (isLoadingProfile) {
-    return <SafeAreaView className={cn(styles.safeArea, 'items-center justify-center')}><Text className={styles.loadingText}>{msg.loadingProfile}</Text></SafeAreaView>;
+    return <SafeAreaView className={cn(styles.safeArea, 'items-center justify-center')}><View className={styles.loadingState}><ActivityIndicator size="small" color={colors.primary} /><Text className={styles.loadingText}>{msg.loadingProfile}</Text></View></SafeAreaView>;
   }
 
   if (loadError) {
@@ -353,8 +377,9 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <SafeAreaView className={styles.safeArea}>
-      <ScrollView contentContainerClassName={styles.scrollContent}>
+    <SafeAreaView edges={['top', 'left', 'right', 'bottom']} className={styles.safeArea}>
+      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView contentContainerClassName={styles.scrollContent} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View className={styles.headerSection}>
           <Text className={styles.title}>{msg.title}</Text>
           <Text className={styles.stepTitle}>{isEditMode ? msg.editProfile : currentStep === 1 ? msg.stepTitle : currentStep === 2 ? msg.step2Title : msg.step3Title}</Text>
@@ -383,13 +408,11 @@ export default function OnboardingScreen() {
             <Text className={styles.termsLabel}>{msg.termsAndConditions}</Text>
             <ScrollView className={styles.termsBox} contentContainerClassName={styles.termsBoxContent} nestedScrollEnabled><Text className={styles.termsTitle}>{msg.privacyPolicy}</Text><Text className={styles.termsText}>{msg.privacyPolicyText}</Text></ScrollView>
             <Checkbox label={msg.acceptTerms} checked={form.acceptedTerms} onChange={(acceptedTerms) => setForm({ ...form, acceptedTerms })} error={errors.acceptedTerms} />
-            <View className={styles.buttonRow}><View className={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="outlined" label={msg.back} onPress={() => isEditMode ? router.back() : void authService.signOut().then(() => router.replace('/'))} style={{ width: buttonWidth }} /></Host></View><View className={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="filled" label={msg.next} onPress={() => { if (validate()) setCurrentStep(2); }} style={{ width: buttonWidth }} /></Host></View></View>
           </>}
 
           {currentStep === 2 && <>
             <View className={styles.step2Card}><Text className={styles.step2CardTitle}>{msg.aboutYourself}</Text><Text className={styles.step2CardSubtitle}>{msg.aboutYourselfSub}</Text><TextArea label={msg.descriptionLabel} placeholder={msg.descriptionPlaceholder} value={form.description} onChangeText={(description) => setForm({ ...form, description })} maxLength={1000} /></View>
             <View className={styles.skipButtonContainer}><Pressable onPress={() => setCurrentStep(3)} className={styles.skipButton}><Text className={styles.skipButtonText}>{msg.skip}</Text></Pressable></View>
-            <View className={styles.buttonRow}><View className={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="outlined" label={msg.back} onPress={() => setCurrentStep(1)} style={{ width: buttonWidth }} /></Host></View><View className={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="filled" label={msg.next} onPress={() => setCurrentStep(3)} style={{ width: buttonWidth }} /></Host></View></View>
           </>}
 
           {currentStep === 3 && <>
@@ -409,13 +432,14 @@ export default function OnboardingScreen() {
                 <Input label={msg.certIssuer} placeholder={msg.certIssuer} value={cert.issuer} onChangeText={(value) => handleUpdateCertificate(index, 'issuer', value)} error={errors[`cert_${index}_issuer`]} />
                 <View className={styles.dateInputWrapper}>
                   <Text className={styles.dateInputLabel}>{msg.certIssuedAt}</Text>
-                  <Pressable accessibilityRole="button" accessibilityLabel={cert.issuedAt || msg.certIssuedAt} accessibilityState={{ expanded: datePickerTarget?.index === index }} className={cn(styles.dateInputBox, errors[`cert_${index}_issuedAt`] ? styles.dateInputError : null)} onPress={() => openDatePicker(index, cert.issuedAt)}>
-                    <Text className={cert.issuedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{cert.issuedAt || 'YYYY-MM-DD'}</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={`${msg.certIssuedAt}: ${formatDate(cert.issuedAt, locale) || msg.selectDate}`} accessibilityState={{ expanded: datePickerTarget?.index === index }} className={cn(styles.dateInputBox, errors[`cert_${index}_issuedAt`] ? styles.dateInputError : null)} onPress={() => openDatePicker(index, cert.issuedAt)}>
+                    <Text className={cert.issuedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{formatDate(cert.issuedAt, locale) || msg.selectDate}</Text>
                     <CalendarDays size={18} color={colors.textMuted} strokeWidth={2} />
                   </Pressable>
                   {errors[`cert_${index}_issuedAt`] ? <Text className={styles.fieldErrorText}>{errors[`cert_${index}_issuedAt`]}</Text> : null}
                 </View>
               </View>)}
+              {form.certificates.length === 0 ? <View className={styles.emptySection}><Text className={styles.emptySectionText}>{msg.optionalEmpty}</Text></View> : null}
               <Pressable className={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, certificates: [...previous.certificates, createEmptyCertificate()] }))}><Text className={styles.addMoreBtnText}>{msg.addMoreCert}</Text></Pressable>
             </View>
             <View className={styles.step3Section}><Text className={styles.sectionTitleNormal}>{msg.experience}</Text>
@@ -428,6 +452,7 @@ export default function OnboardingScreen() {
                 <View className={styles.dateInputWrapper}><Text className={styles.dateInputLabel}>{msg.startMonthYear}</Text><Pressable accessibilityRole="button" accessibilityLabel={formatMonthYear(experience.startedAt, locale) || msg.startMonthYear} className={cn(styles.dateInputBox, errors[`experience_${index}_startedAt`] ? styles.dateInputError : null)} onPress={() => openExperienceDatePicker(index, 'startedAt', experience.startedAt)}><Text className={experience.startedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{formatMonthYear(experience.startedAt, locale) || msg.startMonthYear}</Text><CalendarDays size={18} color={colors.textMuted} strokeWidth={2} /></Pressable>{errors[`experience_${index}_startedAt`] ? <Text className={styles.fieldErrorText}>{errors[`experience_${index}_startedAt`]}</Text> : null}</View>
                 <View className={styles.dateInputWrapper}><Text className={styles.dateInputLabel}>{msg.endMonthYear}</Text><Pressable accessibilityRole="button" accessibilityLabel={formatMonthYear(experience.endedAt, locale) || msg.present} className={cn(styles.dateInputBox, errors[`experience_${index}_endedAt`] ? styles.dateInputError : null)} onPress={() => openExperienceDatePicker(index, 'endedAt', experience.endedAt)}><Text className={experience.endedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{formatMonthYear(experience.endedAt, locale) || msg.present}</Text><CalendarDays size={18} color={colors.textMuted} strokeWidth={2} /></Pressable>{experience.endedAt ? <Pressable accessibilityRole="button" accessibilityLabel={msg.present} onPress={() => handleUpdateExperience(index, 'endedAt', '')}><Text className={styles.addImgText}>{msg.present}</Text></Pressable> : null}{errors[`experience_${index}_endedAt`] ? <Text className={styles.fieldErrorText}>{errors[`experience_${index}_endedAt`]}</Text> : null}</View>
               </View>)}
+              {form.experiences.length === 0 ? <View className={styles.emptySection}><Text className={styles.emptySectionText}>{msg.optionalEmpty}</Text></View> : null}
               <Pressable className={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, experiences: [...previous.experiences, createEmptyExperience()] }))}><Text className={styles.addMoreBtnText}>{msg.addMoreExp}</Text></Pressable>
             </View>
             <View className={styles.step3Section}><Text className={styles.sectionTitleNormal}>{msg.myWorks}</Text>
@@ -438,15 +463,52 @@ export default function OnboardingScreen() {
                     <Trash2 size={18} color={colors.danger} strokeWidth={2} />
                   </Pressable>
                 </View>
-                <Pressable accessibilityRole="button" accessibilityLabel={msg.addImage} className={styles.imageUploadBox} onPress={() => void handlePickImage((uri) => handleUpdateWork(index, 'imageUri', uri), [4, 3])}>{work.imageUri ? <Image source={{ uri: work.imageUri }} className={styles.uploadedImage} /> : <View className={styles.imagePlaceholderContent}><ImageIcon size={24} color={colors.textMuted} strokeWidth={2} /><Text className={styles.addImgText}>{msg.addImage}</Text></View>}</Pressable><Input label="" accessibilityLabel={msg.workTitle} placeholder={msg.workTitle} value={work.title} onChangeText={(title) => handleUpdateWork(index, 'title', title)} error={errors[`work_${index}_title`]} /><TextArea label="" accessibilityLabel={msg.detailProject} placeholder={msg.detailProject} value={work.detail} onChangeText={(detail) => handleUpdateWork(index, 'detail', detail)} maxLength={1000} />
+                <Pressable accessibilityRole="button" accessibilityLabel={msg.addImage} className={styles.imageUploadBox} onPress={() => void handlePickImage((uri) => handleUpdateWork(index, 'imageUri', uri), [4, 3])}>{work.imageUri ? <Image source={{ uri: work.imageUri }} className={styles.uploadedImage} /> : <View className={styles.imagePlaceholderContent}><ImageIcon size={24} color={colors.textMuted} strokeWidth={2} /><Text className={styles.addImgText}>{msg.addImage}</Text></View>}</Pressable><Input label={msg.workTitle} placeholder={msg.workTitle} value={work.title} onChangeText={(title) => handleUpdateWork(index, 'title', title)} error={errors[`work_${index}_title`]} /><TextArea label={msg.workDetailLabel} accessibilityLabel={msg.workDetailLabel} placeholder={msg.detailProject} value={work.detail} onChangeText={(detail) => handleUpdateWork(index, 'detail', detail)} maxLength={1000} />
               </View>)}
+              {form.works.length === 0 ? <View className={styles.emptySection}><Text className={styles.emptySectionText}>{msg.optionalEmpty}</Text></View> : null}
               <Pressable className={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, works: [...previous.works, createEmptyWork()] }))}><Text className={styles.addMoreBtnText}>{msg.addMoreWorks}</Text></Pressable>
             </View>
             {submitError && <View className={styles.submitErrorCard} accessibilityRole="alert"><CircleAlert size={20} color={colors.danger} strokeWidth={2} /><Text className={styles.submitErrorText}>{submitError}</Text></View>}
-            <View className={styles.buttonRow}><View className={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="outlined" label={msg.back} onPress={() => setCurrentStep(2)} style={{ width: buttonWidth }} disabled={isSubmitting} /></Host></View><View className={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="filled" label={isSubmitting ? msg.submitting : submitError ? msg.retrySubmitBtn : isEditMode ? msg.saveChanges : msg.completeBtn} onPress={() => void handleComplete()} style={{ width: buttonWidth }} disabled={isSubmitting} /></Host></View></View>
           </>}
         </View>
       </ScrollView>
+      <View className={styles.actionBar}>
+        <View className={styles.actionButton}>
+          <Host seedColor={colors.primary} matchContents>
+            <Button
+              variant="outlined"
+              label={currentStep === 1 && !isEditMode ? msg.cancelRegistration : msg.back}
+              onPress={() => {
+                if (currentStep === 1) {
+                  leaveRegistration();
+                } else {
+                  setCurrentStep((stepValue) => (stepValue - 1) as OnboardingStep);
+                }
+              }}
+              disabled={isSubmitting}
+            />
+          </Host>
+        </View>
+        <View className={styles.actionButton}>
+          <Host seedColor={colors.primary} matchContents>
+            <Button
+              variant="filled"
+              label={currentStep === 1 ? msg.next : currentStep === 2 ? msg.next : isSubmitting ? msg.submitting : submitError ? msg.retrySubmitBtn : isEditMode ? msg.saveChanges : msg.completeBtn}
+              onPress={() => {
+                if (currentStep === 1) {
+                  if (validate()) setCurrentStep(2);
+                } else if (currentStep === 2) {
+                  setCurrentStep(3);
+                } else {
+                  void handleComplete();
+                }
+              }}
+              disabled={isSubmitting}
+            />
+          </Host>
+        </View>
+      </View>
+      </KeyboardAvoidingView>
       {datePickerTarget ? <DateTimePicker value={new Date(datePickerTarget.value)} mode="date" display={Platform.OS === 'ios' ? 'spinner' : 'default'} onChange={handleDateChange} maximumDate={today} /> : null}
       <FileTooLargeModal visible={isModalVisible} onBack={() => setModalVisible(false)} onTryAgain={() => { setModalVisible(false); retryAction?.(); }} />
     </SafeAreaView>

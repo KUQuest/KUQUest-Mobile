@@ -5,7 +5,9 @@ export type FormErrors = Record<string, string>;
 export function validateBasics(name: string, required: string, invalidName: string): FormErrors {
   const trimmed = name.trim();
   if (!trimmed) return { name: required };
-  if (trimmed.split(/\s+/).length < 2) return { name: invalidName };
+  const parts = trimmed.split(/\s+/);
+  const lastName = parts.slice(1).join(' ');
+  if (parts.length < 2 || parts[0].length > 100 || lastName.length > 100) return { name: invalidName };
   return {};
 }
 

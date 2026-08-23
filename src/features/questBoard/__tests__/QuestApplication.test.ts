@@ -8,7 +8,6 @@ import type { QuestBoardQuest } from '../types';
 const baseQuest: QuestBoardQuest = {
   id: 'quest-1',
   title: 'Build a prototype',
-  category: 'technology',
   tags: ['Technology'],
   description: 'Build a prototype.',
   completionCriteria: 'A working prototype.',
@@ -40,6 +39,20 @@ describe('Quest application outcomes', () => {
   it('blocks applications for full or closed Quests', () => {
     expect(getQuestApplicationOutcome({ ...baseQuest, acceptedParticipants: 2 }, new Date('2026-08-12T09:00:00.000Z'))).toBe('full');
     expect(getQuestApplicationOutcome({ ...baseQuest, deadline: '2026-08-11' }, new Date('2026-08-12T09:00:00.000Z'))).toBe('closed');
+  });
+
+  it('notifies the Quest Board when an application status changes', () => {
+    resetQuestApplicationStatuses();
+    const store = getQuestApplicationStore('student-one');
+    const listener = jest.fn();
+    const unsubscribe = store.subscribe(listener);
+
+    store.setStatus(baseQuest.id, 'pending');
+    store.setStatus(baseQuest.id, 'pending');
+    unsubscribe();
+    store.setStatus(baseQuest.id, 'accepted');
+
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 
   it('isolates application state by Student session', () => {

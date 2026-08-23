@@ -69,24 +69,26 @@ export const Text = (
 };
 Text.displayName = 'CSS(Text)';
 
-export const ScrollView = (
-  props: React.ComponentProps<typeof RNScrollView> & {
+export const ScrollView = React.forwardRef<
+  React.ComponentRef<typeof RNScrollView>,
+  React.ComponentProps<typeof RNScrollView> & {
     className?: string;
     contentContainerClassName?: string;
-  },
-) => {
-  return useCssElementCompat(RNScrollView, props, {
+  }
+>((props, ref) => {
+  return useCssElementCompat(RNScrollView, { ...props, ref }, {
     className: 'style',
     contentContainerClassName: 'contentContainerStyle',
   });
-};
+});
 ScrollView.displayName = 'CSS(ScrollView)';
 
-export const Pressable = (
-  props: React.ComponentProps<typeof RNPressable> & { className?: string },
-) => {
-  return useCssElementCompat(RNPressable, props, { className: 'style' });
-};
+export const Pressable = React.forwardRef<
+  React.ComponentRef<typeof RNPressable>,
+  React.ComponentProps<typeof RNPressable> & { className?: string }
+>((props, ref) => {
+  return useCssElementCompat(RNPressable, { ...props, ref }, { className: 'style' });
+});
 Pressable.displayName = 'CSS(Pressable)';
 
 export const TouchableOpacity = (
@@ -130,11 +132,12 @@ export function FlatList<ItemT>(
 }
 FlatList.displayName = 'CSS(FlatList)';
 
-export const TextInput = (
-  props: React.ComponentProps<typeof RNTextInput> & { className?: string },
-) => {
-  return useCssElementCompat(RNTextInput, props, { className: 'style' });
-};
+export const TextInput = React.forwardRef<
+  React.ComponentRef<typeof RNTextInput>,
+  React.ComponentProps<typeof RNTextInput> & { className?: string }
+>((props, ref) => {
+  return useCssElementCompat(RNTextInput, { ...props, ref }, { className: 'style' });
+});
 TextInput.displayName = 'CSS(TextInput)';
 
 export const AnimatedScrollView = (

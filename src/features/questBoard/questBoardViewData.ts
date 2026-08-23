@@ -7,6 +7,7 @@ import type {
   QuestBoardSort,
   QuestLocationMode,
 } from './types';
+import { MAX_QUEST_IMAGES } from './types';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -39,6 +40,10 @@ export function getVisibleQuests(quests: QuestBoardQuest[], options: QuestBoardQ
     if (options.currentStudentId && quest.ownerStudentId === options.currentStudentId) return false;
     return getQuestAvailability(quest, now) === 'available';
   });
+}
+
+export function getQuestImageCount(quest: QuestBoardQuest): number {
+  return Math.min(quest.imageUris?.length ?? 0, MAX_QUEST_IMAGES);
 }
 
 export function getQuestBoardTags(quests: QuestBoardQuest[]): string[] {
@@ -98,11 +103,15 @@ export function applyQuestBoardFilters(
   const now = options.now ?? new Date();
   const query = filter.query.trim().toLocaleLowerCase();
   return getVisibleQuests(quests, options).filter((quest) => {
-    const searchableText = [quest.title, quest.category, ...quest.tags].join(' ').toLocaleLowerCase();
+    const searchableText = [
+      quest.title,
+      ...quest.tags,
+      quest.description,
+      quest.location,
+      quest.creator.name,
+    ].join(' ').toLocaleLowerCase();
     const matchesQuery = !query || searchableText.includes(query);
-    const matchesCategory = filter.categories.length === 0 || filter.categories.includes(quest.category);
     return matchesQuery
-      && matchesCategory
       && matchesTags(quest, filter.tags)
       && matchesRewardBounds(quest, filter.rewardMin, filter.rewardMax)
       && matchesDeadline(quest, filter.deadline, now)
@@ -113,12 +122,6 @@ export function applyQuestBoardFilters(
 
 export function sortQuests(quests: QuestBoardQuest[], sort: QuestBoardSort): QuestBoardQuest[] {
   return [...quests].sort((left, right) => {
-    if (sort === 'recommended') {
-      const interestDifference = Number(right.studentInterestMatch) - Number(left.studentInterestMatch);
-      if (interestDifference) return interestDifference;
-      const deadlineDifference = parseDate(left.deadline).getTime() - parseDate(right.deadline).getTime();
-      return deadlineDifference || comparePostedAt(left, right);
-    }
     if (sort === 'newest') return comparePostedAt(left, right);
     if (sort === 'deadline-soonest') {
       const deadlineDifference = parseDate(left.deadline).getTime() - parseDate(right.deadline).getTime();

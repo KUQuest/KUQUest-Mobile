@@ -1,4 +1,6 @@
 export interface AppChromeMetrics {
+  isTablet: boolean;
+  tabletNavWidth: number;
   headerHeight: number;
   logoWidth: number;
   logoHeight: number;
@@ -13,16 +15,32 @@ export interface AppChromeMetrics {
   labelLineHeight: number;
 }
 
+export interface CreateQuestLayoutMetrics {
+  isExpanded: boolean;
+  horizontalPadding: number;
+  contentMaxWidth: number;
+}
+
+export function getCreateQuestLayoutMetrics(width: number): CreateQuestLayoutMetrics {
+  const isExpanded = width >= 768;
+  return {
+    isExpanded,
+    horizontalPadding: width < 360 ? 16 : isExpanded ? 32 : 24,
+    contentMaxWidth: isExpanded ? 640 : width,
+  };
+}
+
 export function getAppChromeMetrics(width: number, fontScale = 1): AppChromeMetrics {
-  const baseMetrics: AppChromeMetrics = width < 400 ? {
+  const isTablet = width >= 768;
+  const baseMetrics = width < 400 ? {
       headerHeight: 68,
       logoWidth: 96,
       logoHeight: 48,
-      backButtonSize: 44,
+      backButtonSize: 48,
       navHeight: 64,
       navItemHeight: 56,
       createButtonSize: 38,
-      createButtonOffset: -12,
+      createButtonOffset: -20,
       iconSize: 22,
       createIconSize: 26,
       labelFontSize: 11,
@@ -35,7 +53,7 @@ export function getAppChromeMetrics(width: number, fontScale = 1): AppChromeMetr
     navHeight: 68,
     navItemHeight: 60,
     createButtonSize: 42,
-    createButtonOffset: -16,
+    createButtonOffset: -24,
     iconSize: 24,
     createIconSize: 28,
     labelFontSize: 12,
@@ -50,10 +68,12 @@ export function getAppChromeMetrics(width: number, fontScale = 1): AppChromeMetr
   );
   const navItemHeight = Math.max(
     baseMetrics.navItemHeight,
-    baseMetrics.iconSize + labelLineHeight + 8,
+    baseMetrics.iconSize + (labelLineHeight * 2) + 8,
   );
 
   return {
+    isTablet,
+    tabletNavWidth: isTablet ? 88 : 0,
     ...baseMetrics,
     labelFontSize,
     labelLineHeight,

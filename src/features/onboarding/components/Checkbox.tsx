@@ -27,7 +27,7 @@ export function Checkbox({ label, checked, onChange, error }: CheckboxProps) {
         </View>
         <Text className={styles.label}>{label}</Text>
       </Pressable>
-      {error ? <Text className={styles.errorText}>{error}</Text> : null}
+      {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" className={styles.errorText}>{error}</Text> : null}
     </View>
   );
 }

@@ -37,14 +37,30 @@ describe('ProfileApi', () => {
       experiences: [],
       portfolio: [],
       certificates: [],
-      tagOptions: [],
+      sectionErrors: {},
     });
   });
 
-  test('saves a focused basics edit without sending protected academic fields', async () => {
+  test('keeps unrelated editor sections available when one collection fails', async () => {
+    const studentApi = {
+      getProfile: jest.fn().mockResolvedValue(createProfile()),
+      getAcademicRegistrationOptions: jest.fn().mockResolvedValue({ occupations: [], faculties: [] }),
+      listExperience: jest.fn().mockRejectedValue(new Error('Experience unavailable')),
+      listPortfolio: jest.fn().mockResolvedValue([]),
+      listCertificates: jest.fn().mockResolvedValue([]),
+    } as unknown as StudentApi;
+
+    await expect(new ProfileApi(studentApi).getEditData()).resolves.toMatchObject({
+      experiences: [],
+      portfolio: [],
+      certificates: [],
+      sectionErrors: { experience: true },
+    });
+  });
+
+  test('saves a focused basics edit through the public profile endpoint', async () => {
     const studentApi = {
       updateProfile: jest.fn().mockResolvedValue(undefined),
-      updateAcademicRegistration: jest.fn().mockResolvedValue(undefined),
       getProfile: jest.fn().mockResolvedValue(createProfile()),
     } as unknown as StudentApi;
     const api = new ProfileApi(studentApi);
@@ -54,20 +70,37 @@ describe('ProfileApi', () => {
       lastName: 'Lovelace',
       bio: 'Updated',
       occupationId: 'occupation-id',
-      tagIds: ['design'],
     })).resolves.toEqual(createProfile());
 
     expect(studentApi.updateProfile).toHaveBeenCalledWith({
       firstName: 'Ada',
       lastName: 'Lovelace',
       bio: 'Updated',
-      tagIds: ['design'],
+      occupationId: 'occupation-id',
     });
-    expect(studentApi.updateAcademicRegistration).toHaveBeenCalledWith({ occupationId: 'occupation-id' });
-    expect(studentApi.updateProfile).not.toHaveBeenCalledWith(expect.objectContaining({
-      telephone: expect.anything(),
-      departmentId: expect.anything(),
-      studentId: expect.anything(),
-    }));
   });
+
+  test('sends null when a Student clears their bio', async () => {
+    const studentApi = {
+      updateProfile: jest.fn().mockResolvedValue(undefined),
+      getProfile: jest.fn().mockResolvedValue(createProfile()),
+    } as unknown as StudentApi;
+
+    await new ProfileApi(studentApi).updateBasics({ bio: null });
+
+    expect(studentApi.updateProfile).toHaveBeenCalledWith({ bio: null });
+  });
+
+  test('rethrows non-404 occupation option failures', async () => {
+    const studentApi = {
+      getProfile: jest.fn().mockResolvedValue(createProfile()),
+      getAcademicRegistrationOptions: jest.fn().mockRejectedValue(new Error('temporary failure')),
+      listExperience: jest.fn().mockResolvedValue([]),
+      listPortfolio: jest.fn().mockResolvedValue([]),
+      listCertificates: jest.fn().mockResolvedValue([]),
+    } as unknown as StudentApi;
+
+    await expect(new ProfileApi(studentApi).getEditData()).rejects.toThrow('temporary failure');
+  });
+
 });

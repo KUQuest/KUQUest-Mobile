@@ -129,12 +129,12 @@ describe('OnboardingScreen Academic Registration selections', () => {
 
     await fireEvent.press(triggers()[2]);
     await fireEvent.press(screen.getByText('Software Engineering'));
-    expect(triggers()[2].props.accessibilityLabel).toBe('Software Engineering');
+    expect(triggers()[2].props.accessibilityLabel).toBe('Department: Software Engineering');
 
     await fireEvent.press(triggers()[1]);
     await fireEvent.press(screen.getByText('Faculty of Science'));
 
-    expect(triggers()[2].props.accessibilityLabel).toBe('Enter your Department');
+    expect(triggers()[2].props.accessibilityLabel).toBe('Department: Enter your Department');
     expect(triggers()[2].props.accessibilityState.disabled).toBe(false);
 
     await fireEvent.press(triggers()[2]);
@@ -180,10 +180,13 @@ describe('OnboardingScreen Academic Registration selections', () => {
     await fireEvent.press(screen.getByText('Complete'));
 
     await waitFor(() => {
-      expect(api.updateAcademicRegistration).toHaveBeenCalledWith(expect.objectContaining({
-        occupationId: 'occupation-student',
-        departmentId: 'department-software',
-      }));
+      expect(api.updateAcademicRegistration).toHaveBeenCalledWith(
+        expect.objectContaining({
+          occupationId: 'occupation-student',
+          departmentId: 'department-software',
+        }),
+        expect.objectContaining({ idempotencyKey: expect.stringContaining('academic-registration') }),
+      );
     });
   });
 
@@ -208,11 +211,18 @@ describe('OnboardingScreen Academic Registration selections', () => {
     await fireEvent.changeText(screen.getByLabelText('Job title'), 'Lead Tutor');
     await fireEvent.press(screen.getByText('Save Changes'));
 
-    await waitFor(() => expect(api.updateExperience).toHaveBeenCalledWith('experience-id', expect.objectContaining({ title: 'Lead Tutor' })));
-    expect(api.updateAcademicRegistration).toHaveBeenCalledWith(expect.objectContaining({
-      occupationId: 'occupation-student',
-      studentId: '6712345678',
-      departmentId: 'department-software',
-    }));
+    await waitFor(() => expect(api.updateExperience).toHaveBeenCalledWith(
+      'experience-id',
+      expect.objectContaining({ title: 'Lead Tutor' }),
+      expect.objectContaining({ idempotencyKey: expect.stringContaining('experience-0-update') }),
+    ));
+    expect(api.updateAcademicRegistration).toHaveBeenCalledWith(
+      expect.objectContaining({
+        occupationId: 'occupation-student',
+        studentId: '6712345678',
+        departmentId: 'department-software',
+      }),
+      expect.objectContaining({ idempotencyKey: expect.stringContaining('academic-registration') }),
+    );
   });
 });

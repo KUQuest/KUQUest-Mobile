@@ -4,15 +4,17 @@ import {
   getStartTimeBucket,
   getVisibleQuests,
   getQuestBoardTags,
+  getQuestImageCount,
   sortQuests,
 } from '../questBoardViewData';
-import type { QuestBoardFilter, QuestBoardQuest } from '../types';
+import { emptyQuestBoardFilter, type QuestBoardFilter, type QuestBoardQuest } from '../types';
+import { getLocalizedQuest, getLocalizedTag } from '../questTranslations';
+import { questFixtures } from '../questFixtures';
 
 const quests: QuestBoardQuest[] = [
   {
     id: 'design-match',
     title: 'Design a faculty event poster',
-    category: 'design',
     tags: ['Design & creative', 'Campus life'],
     description: 'Create a poster for the faculty event.',
     completionCriteria: 'A final PNG poster is approved.',
@@ -35,7 +37,6 @@ const quests: QuestBoardQuest[] = [
   {
     id: 'tech-soon',
     title: 'Fix a small React bug',
-    category: 'technology',
     tags: ['Technology'],
     description: 'Resolve a small UI issue.',
     completionCriteria: 'The fix passes review.',
@@ -58,7 +59,6 @@ const quests: QuestBoardQuest[] = [
   {
     id: 'campus-full',
     title: 'Welcome desk helper',
-    category: 'campus-life',
     tags: ['Campus life'],
     description: 'Help visitors find their way.',
     completionCriteria: 'Attend the full shift.',
@@ -81,7 +81,6 @@ const quests: QuestBoardQuest[] = [
   {
     id: 'own-quest',
     title: 'My own quest',
-    category: 'technology',
     tags: ['Technology'],
     description: 'Created by the current Student.',
     completionCriteria: 'Complete it.',
@@ -111,11 +110,10 @@ describe('Quest Board view data', () => {
     ]);
   });
 
-  it('filters by search text, categories, tags, reward bounds, deadline, start time, and location', () => {
+  it('filters by search text, tags, reward bounds, deadline, start time, and location', () => {
     const filter: QuestBoardFilter = {
       query: 'poster',
-      categories: ['design'],
-      tags: ['design & creative'],
+      tags: ['Design & creative'],
       rewardMin: 700,
       rewardMax: 700,
       deadline: 'within-7-days',
@@ -136,10 +134,20 @@ describe('Quest Board view data', () => {
     expect(getStartTimeBucket('not a schedule')).toBeNull();
   });
 
+  it('searches creator, description, and location text', () => {
+    const options = { now: new Date('2026-08-12T09:00:00.000Z') };
+    expect(applyQuestBoardFilters(quests, { ...emptyQuestBoardFilter, query: 'nicha' }, options).map((quest) => quest.id)).toEqual(['design-match']);
+    expect(applyQuestBoardFilters(quests, { ...emptyQuestBoardFilter, query: 'on campus' }, options).map((quest) => quest.id)).toEqual(['design-match']);
+  });
+
+  it('caps displayed image metadata at the three-image Quest limit', () => {
+    expect(getQuestImageCount({ ...quests[0], imageUris: ['one', 'two', 'three', 'four'] })).toBe(3);
+    expect(getQuestImageCount(quests[0])).toBe(0);
+  });
+
   it('uses inclusive reward bounds and OR semantics within tag and start-time facets', () => {
     const filter: QuestBoardFilter = {
       query: '',
-      categories: [],
       tags: ['Technology', 'Design & creative'],
       rewardMin: 450,
       rewardMax: 800,
@@ -151,10 +159,9 @@ describe('Quest Board view data', () => {
     expect(applyQuestBoardFilters(quests, filter, { now: new Date('2026-08-12T09:00:00.000Z') }).map((quest) => quest.id)).toEqual(['design-match', 'tech-soon']);
   });
 
-  it('uses deterministic recommended and secondary sort order', () => {
+  it('uses deterministic secondary sort order', () => {
     const discoverable = getVisibleQuests(quests, { currentStudentId: 'current-student', now: new Date('2026-08-12T09:00:00.000Z') });
 
-    expect(sortQuests(discoverable, 'recommended').map((quest) => quest.id)).toEqual(['design-match', 'tech-soon']);
     expect(sortQuests(discoverable, 'reward-highest').map((quest) => quest.id)).toEqual(['design-match', 'tech-soon']);
     expect(sortQuests(discoverable, 'deadline-soonest').map((quest) => quest.id)).toEqual(['tech-soon', 'design-match']);
   });
@@ -163,5 +170,23 @@ describe('Quest Board view data', () => {
     expect(getQuestAvailability(quests[2], new Date('2026-08-12T09:00:00.000Z'))).toBe('full');
     expect(getQuestAvailability(quests[1], new Date('2026-08-14T09:00:00.000Z'))).toBe('closed');
     expect(getQuestAvailability(quests[0], new Date('2026-08-12T09:00:00.000Z'))).toBe('available');
+  });
+
+  it('localizes Quest content and tags for Thai without changing English', () => {
+    expect(getLocalizedTag('moving', 'th')).toBe('ยกของ');
+    expect(getLocalizedQuest({ ...quests[0], id: 'move-boxes', tags: ['moving'] }, 'th')).toMatchObject({
+      title: 'ช่วยยกกล่องไปหอพัก',
+      tags: ['ยกของ'],
+      description: 'ช่วยขนกล่องที่ติดป้ายจากลานจอดรถไปยังหอพัก 13',
+    });
+    expect(getLocalizedQuest(quests[0], 'en')).toBe(quests[0]);
+  });
+
+  it('localizes every Quest fixture for Thai', () => {
+    questFixtures.forEach((quest) => {
+      const localized = getLocalizedQuest(quest, 'th');
+      expect(localized).not.toBe(quest);
+      expect(localized.tags).not.toEqual(quest.tags);
+    });
   });
 });

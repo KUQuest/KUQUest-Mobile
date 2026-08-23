@@ -4,10 +4,13 @@ export interface ProfileEditMessages {
   title: string;
   save: string;
   saving: string;
+  back: string;
   cancel: string;
   retry: string;
   loading: string;
   loadError: string;
+  sectionLoadError: string;
+  unavailable: string;
   saveError: string;
   unsavedTitle: string;
   unsavedMessage: string;
@@ -33,12 +36,26 @@ export interface ProfileEditMessages {
   bioPlaceholder: string;
   occupation: string;
   occupationPlaceholder: string;
-  tags: string;
-  tagsUnavailable: string;
   avatar: string;
+  image: string;
   changeAvatar: string;
+  avatarHelp: string;
+  avatarPreviewError: string;
+  avatarUploadError: string;
   titleLabel: string;
   titlePlaceholder: string;
+  experienceAddTitle: string;
+  experienceEditTitle: string;
+  experienceFormHint: string;
+  experienceTitleLabel: string;
+  experienceTitlePlaceholder: string;
+  organizationOptional: string;
+  detailOptional: string;
+  startDatePlaceholder: string;
+  endDateOptional: string;
+  ongoingDatePlaceholder: string;
+  markOngoing: string;
+  closeEmploymentType: string;
   detail: string;
   detailPlaceholder: string;
   issuer: string;
@@ -74,11 +91,14 @@ export const profileEditMessages: Record<SupportedLocale, ProfileEditMessages> =
     title: 'Edit Profile',
     save: 'Save changes',
     saving: 'Saving...',
+    back: 'Back',
     cancel: 'Cancel',
     retry: 'Try again',
     loading: 'Loading profile editor...',
     loadError: 'Unable to load profile editing data.',
-    saveError: 'Unable to save these changes.',
+    sectionLoadError: 'This section is temporarily unavailable.',
+    unavailable: 'Unavailable',
+    saveError: 'We could not save your profile. Your changes are still here. Try again.',
     unsavedTitle: 'Discard changes?',
     unsavedMessage: 'Your changes have not been saved.',
     leave: 'Discard',
@@ -86,6 +106,18 @@ export const profileEditMessages: Record<SupportedLocale, ProfileEditMessages> =
     basics: 'Profile basics',
     basicsSummary: 'Name, avatar, occupation, and bio',
     experience: 'Experience',
+    experienceAddTitle: 'Add Experience',
+    experienceEditTitle: 'Edit Experience',
+    experienceFormHint: 'Add a role, project, or activity to show your background on your public profile.',
+    experienceTitleLabel: 'Role or experience title',
+    experienceTitlePlaceholder: 'e.g. Teaching assistant or project lead',
+    organizationOptional: 'Organization (optional)',
+    detailOptional: 'Description (optional)',
+    startDatePlaceholder: 'Select start date',
+    endDateOptional: 'End date (optional)',
+    ongoingDatePlaceholder: 'Leave blank if ongoing',
+    markOngoing: 'Mark as ongoing',
+    closeEmploymentType: 'Close employment type options',
     experienceSummary: (count) => `${count} ${count === 1 ? 'entry' : 'entries'}`,
     portfolio: 'Portfolio Work',
     portfolioSummary: (count) => `${count} ${count === 1 ? 'project' : 'projects'}`,
@@ -103,10 +135,12 @@ export const profileEditMessages: Record<SupportedLocale, ProfileEditMessages> =
     bioPlaceholder: 'Share your background, skills, or the Quests you are looking for...',
     occupation: 'Occupation',
     occupationPlaceholder: 'Select your occupation',
-    tags: 'Profile tags',
-    tagsUnavailable: 'Profile tags are managed by KUQuest.',
     avatar: 'Profile image',
-    changeAvatar: 'Choose image',
+    image: 'Image',
+    changeAvatar: 'Change profile photo',
+    avatarHelp: 'JPG, PNG, or WebP · max 5 MB',
+    avatarPreviewError: 'We could not load this photo. Choose a new one to replace it.',
+    avatarUploadError: 'Your profile details were saved, but the photo could not be uploaded. Try saving the photo again.',
     titleLabel: 'Title',
     titlePlaceholder: 'Enter a title',
     detail: 'Description',
@@ -130,7 +164,7 @@ export const profileEditMessages: Record<SupportedLocale, ProfileEditMessages> =
     invalidDate: 'Use a valid date in YYYY-MM-DD format.',
     invalidExperienceDates: 'The end date must be after the start date.',
     fileTooLarge: 'Choose an image smaller than 5 MB.',
-    filePickerError: 'Unable to choose that image.',
+    filePickerError: 'We could not choose that image. Try another photo.',
     sessionExpired: 'Your session has expired. Please sign in again.',
     conflict: 'This profile changed elsewhere. Reload before saving again.',
     basicsSection: 'Profile basics',
@@ -142,11 +176,14 @@ export const profileEditMessages: Record<SupportedLocale, ProfileEditMessages> =
     title: 'แก้ไขโปรไฟล์',
     save: 'บันทึกการเปลี่ยนแปลง',
     saving: 'กำลังบันทึก...',
+    back: 'ย้อนกลับ',
     cancel: 'ยกเลิก',
     retry: 'ลองใหม่อีกครั้ง',
     loading: 'กำลังโหลดข้อมูลโปรไฟล์...',
     loadError: 'ไม่สามารถโหลดข้อมูลสำหรับแก้ไขโปรไฟล์ได้',
-    saveError: 'ไม่สามารถบันทึกการเปลี่ยนแปลงได้',
+    sectionLoadError: 'ส่วนนี้ไม่พร้อมใช้งานชั่วคราว',
+    unavailable: 'ไม่พร้อมใช้งาน',
+    saveError: 'ไม่สามารถบันทึกโปรไฟล์ได้ การเปลี่ยนแปลงของคุณยังอยู่ กรุณาลองอีกครั้ง',
     unsavedTitle: 'ละทิ้งการเปลี่ยนแปลงหรือไม่',
     unsavedMessage: 'การเปลี่ยนแปลงของคุณยังไม่ได้บันทึก',
     leave: 'ละทิ้ง',
@@ -154,6 +191,18 @@ export const profileEditMessages: Record<SupportedLocale, ProfileEditMessages> =
     basics: 'ข้อมูลโปรไฟล์',
     basicsSummary: 'ชื่อ รูปโปรไฟล์ อาชีพ และคำแนะนำตัว',
     experience: 'ประสบการณ์',
+    experienceAddTitle: 'เพิ่มประสบการณ์',
+    experienceEditTitle: 'แก้ไขประสบการณ์',
+    experienceFormHint: 'เพิ่มตำแหน่ง โครงการ หรือกิจกรรม เพื่อแสดงประสบการณ์ของคุณบนโปรไฟล์สาธารณะ',
+    experienceTitleLabel: 'ตำแหน่งหรือชื่อประสบการณ์',
+    experienceTitlePlaceholder: 'เช่น ผู้ช่วยสอน หรือหัวหน้าโครงการ',
+    organizationOptional: 'องค์กร (ไม่บังคับ)',
+    detailOptional: 'คำอธิบาย (ไม่บังคับ)',
+    startDatePlaceholder: 'เลือกวันที่เริ่มต้น',
+    endDateOptional: 'วันที่สิ้นสุด (ไม่บังคับ)',
+    ongoingDatePlaceholder: 'เว้นว่างหากยังทำอยู่',
+    markOngoing: 'ระบุว่ายังทำอยู่',
+    closeEmploymentType: 'ปิดตัวเลือกประเภทการจ้างงาน',
     experienceSummary: (count) => `${count} รายการ`,
     portfolio: 'ผลงานของฉัน',
     portfolioSummary: (count) => `${count} ผลงาน`,
@@ -171,10 +220,12 @@ export const profileEditMessages: Record<SupportedLocale, ProfileEditMessages> =
     bioPlaceholder: 'แชร์ประวัติ ทักษะ หรือเควสที่คุณกำลังมองหา...',
     occupation: 'อาชีพ',
     occupationPlaceholder: 'เลือกอาชีพ',
-    tags: 'แท็กโปรไฟล์',
-    tagsUnavailable: 'แท็กโปรไฟล์ถูกจัดการโดย KUQuest',
     avatar: 'รูปโปรไฟล์',
-    changeAvatar: 'เลือกรูปภาพ',
+    image: 'รูปภาพ',
+    changeAvatar: 'เปลี่ยนรูปโปรไฟล์',
+    avatarHelp: 'JPG, PNG หรือ WebP · ขนาดไม่เกิน 5 MB',
+    avatarPreviewError: 'ไม่สามารถโหลดรูปนี้ได้ กรุณาเลือกรูปใหม่เพื่อแทนที่รูปเดิม',
+    avatarUploadError: 'บันทึกข้อมูลโปรไฟล์แล้ว แต่ไม่สามารถอัปโหลดรูปได้ กรุณากดบันทึกอีกครั้ง',
     titleLabel: 'ชื่อเรื่อง',
     titlePlaceholder: 'กรอกชื่อเรื่อง',
     detail: 'คำอธิบาย',
@@ -198,7 +249,7 @@ export const profileEditMessages: Record<SupportedLocale, ProfileEditMessages> =
     invalidDate: 'ใช้รูปแบบวันที่ YYYY-MM-DD ที่ถูกต้อง',
     invalidExperienceDates: 'วันที่สิ้นสุดต้องอยู่หลังวันที่เริ่มต้น',
     fileTooLarge: 'เลือกรูปภาพที่มีขนาดไม่เกิน 5 MB',
-    filePickerError: 'ไม่สามารถเลือกรูปภาพนี้ได้',
+    filePickerError: 'ไม่สามารถเลือกรูปนี้ได้ กรุณาลองเลือกรูปอื่น',
     sessionExpired: 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง',
     conflict: 'โปรไฟล์นี้ถูกเปลี่ยนแปลงจากที่อื่น กรุณาโหลดใหม่ก่อนบันทึก',
     basicsSection: 'ข้อมูลโปรไฟล์',

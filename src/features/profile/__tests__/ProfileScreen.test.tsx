@@ -51,14 +51,52 @@ describe('Student Profile screen', () => {
     const view = await render(<ProfileScreen />);
 
     await waitFor(() => expect(view.getByTestId('profile-tab-about')).toBeTruthy());
+    expect(view.queryByText('Student Profile')).toBeNull();
+    expect(view.getByText('Profile Rating')).toBeTruthy();
+    expect(view.getByTestId('profile-stats')).toBeTruthy();
+    expect(view.getByText('Most frequent Quest categories')).toBeTruthy();
+    expect(view.getByTestId('profile-content-scroll').props.stickyHeaderIndices).toEqual([2]);
     expect(view.getByText('A profile description')).toBeTruthy();
     expect(view.queryByText('Advanced React Patterns')).toBeNull();
 
-    fireEvent.press(view.getByTestId('profile-tab-certificates'));
+    await fireEvent.press(view.getByTestId('profile-tab-portfolio'));
 
     await waitFor(() => expect(view.getByText('Advanced React Patterns')).toBeTruthy());
+    expect(view.getByText('View certificate preview')).toBeTruthy();
     expect(view.getByText('Frontend Masters')).toBeTruthy();
     expect(view.queryByText('A profile description')).toBeNull();
-    expect(view.getByTestId('profile-tab-certificates').props.accessibilityState).toEqual({ selected: true });
+    expect(view.getByTestId('profile-tab-portfolio').props.accessibilityState).toEqual({ selected: true });
+    expect(view.getByTestId('profile-section-Experience').props.style).toEqual(expect.objectContaining({ marginBottom: 8 }));
+    expect(view.getByTestId('profile-section-Portfolio Work').props.style).toEqual(expect.objectContaining({ marginBottom: 8 }));
+    expect(view.queryByTestId('profile-tab-experience')).toBeNull();
+    expect(view.queryByTestId('profile-tab-works')).toBeNull();
+    expect(view.queryByTestId('profile-tab-certificates')).toBeNull();
+
+    await fireEvent.press(view.getByTestId('profile-tab-reviews'));
+    await waitFor(() => expect(view.getByTestId('profile-reviews-list')).toBeTruthy());
+    expect(view.getByTestId('profile-review-summary')).toBeTruthy();
   });
+
+  it('preserves the profile scroll position when opening Reviews', async () => {
+    const view = await render(<ProfileScreen />);
+
+    await waitFor(() => expect(view.getByTestId('profile-tab-about')).toBeTruthy());
+    await fireEvent.scroll(view.getByTestId('profile-content-scroll'), { nativeEvent: { contentOffset: { x: 0, y: 180 } } });
+    await fireEvent.press(view.getByTestId('profile-tab-reviews'));
+
+    await waitFor(() => expect(view.getByTestId('profile-reviews-list')).toBeTruthy());
+    expect(view.getByTestId('profile-reviews-list').props.contentOffset).toEqual({ x: 0, y: 180 });
+    expect(view.getByTestId('profile-reviews-list').props.contentContainerStyle).toEqual(expect.objectContaining({ paddingTop: 16 }));
+    expect(view.getByTestId('profile-section-Reviews').props.style).toEqual(expect.objectContaining({ marginTop: 16 }));
+  });
+
+  it('offers a Settings recovery action when About is empty', async () => {
+    mockedLoadProfileViewData.mockResolvedValue({ ...profileData, about: '' });
+
+    const view = await render(<ProfileScreen />);
+
+    await waitFor(() => expect(view.getByTestId('profile-tab-about')).toBeTruthy());
+    expect(view.getByText('Manage in Settings')).toBeTruthy();
+  });
+
 });

@@ -1,5 +1,5 @@
 import type { CertificateEntry, ExperienceEntry, PortfolioEntry, ProfileResponse } from '../../api/contracts';
-import type { ProfileTagOption } from '../../api/ProfileApi';
+import type { ProfileEditSectionErrors } from '../../api/ProfileApi';
 
 export type EditSection = 'basics' | 'experience' | 'portfolio' | 'certificates';
 
@@ -9,15 +9,15 @@ export interface ProfileEditRouteData {
   experiences: ExperienceEntry[];
   portfolio: PortfolioEntry[];
   certificates: CertificateEntry[];
-  tagOptions: ProfileTagOption[];
+  sectionErrors: ProfileEditSectionErrors;
 }
 
 export interface BasicsForm {
   name: string;
   bio: string;
   occupationId: string;
-  tagIds: string[];
   profileImage: string;
+  profileImageCacheKey?: string;
 }
 
 export interface ExperienceForm {
@@ -47,8 +47,8 @@ export function toBasicsForm(profile: ProfileResponse): BasicsForm {
     name: [profile.firstName, profile.lastName].filter(Boolean).join(' '),
     bio: profile.bio ?? '',
     occupationId: profile.occupation?.id ?? '',
-    tagIds: profile.tags?.map((tag) => tag.id) ?? [],
     profileImage: profile.avatar?.url ?? '',
+    profileImageCacheKey: profile.avatar?.fileId,
   };
 }
 

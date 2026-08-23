@@ -19,7 +19,7 @@ export function Button({ variant = 'primary', children, className, style, ...pro
     <TouchableOpacity
       activeOpacity={0.8}
       className={cn(
-        'w-full min-h-[44px] flex-row items-center justify-center gap-ku-sm rounded-ku-pill px-ku-md py-[14px]',
+        'w-full min-h-[48px] flex-row items-center justify-center gap-ku-sm rounded-ku-pill px-ku-md py-[14px]',
         isPrimary ? 'bg-ku-primary' : 'border-2 border-ku-primary bg-transparent',
         isDisabled && 'opacity-[0.55]',
         className,

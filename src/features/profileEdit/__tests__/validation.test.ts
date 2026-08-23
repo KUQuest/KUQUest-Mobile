@@ -7,9 +7,11 @@ const messages = {
 };
 
 describe('Profile edit validation', () => {
-  test('requires a full display name', () => {
+  test('requires a full display name within backend field limits', () => {
     expect(validateBasics('Ada', 'Required', 'Full name')).toEqual({ name: 'Full name' });
     expect(validateBasics('Ada Lovelace', 'Required', 'Full name')).toEqual({});
+    expect(validateBasics(`${'A'.repeat(101)} Lovelace`, 'Required', 'Full name')).toEqual({ name: 'Full name' });
+    expect(validateBasics(`Ada ${'L'.repeat(101)}`, 'Required', 'Full name')).toEqual({ name: 'Full name' });
   });
 
   test('validates an Experience entry and date order', () => {

@@ -54,6 +54,11 @@ describe('authenticated primary navigation', () => {
     expect(styles.container).not.toEqual(expect.stringContaining('bg-'));
   });
 
+  it('centers the tablet rail actions as one balanced vertical group', () => {
+    expect(styles.tabletBar).toEqual(expect.stringContaining('justify-center'));
+    expect(styles.tabletBar).toEqual(expect.stringContaining('gap-[8px]'));
+  });
+
   it('exposes destinations as tabs and Create as an action', async () => {
     const routes = navigationItems.map((item) => ({ key: `${item.routeName}-key`, name: item.routeName }));
     const view = await render(
@@ -70,6 +75,7 @@ describe('authenticated primary navigation', () => {
     expect(view.getByTestId('tab-profile').props.accessibilityState).toEqual({ selected: false });
     expect(view.getByTestId('tab-create').props.accessibilityRole).toBe('button');
     expect(view.getByTestId('tab-create').props.accessibilityState.selected).toBeUndefined();
+    expect(view.queryByText('Create')).toBeNull();
   });
 
   it('launches Create when it is already the current route', async () => {

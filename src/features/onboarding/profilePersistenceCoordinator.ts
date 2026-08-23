@@ -1,4 +1,4 @@
-import type { StudentApi } from '../../api/StudentApi';
+import type { MutationOptions, StudentApi } from '../../api/StudentApi';
 import type { ProfileDraft } from '../profile/types';
 
 export interface ProfilePersistenceResult {
@@ -38,6 +38,16 @@ function isLocalAsset(uri: string): boolean {
   return Boolean(uri) && !/^https?:\/\//i.test(uri);
 }
 
+function mutationHash(value: unknown): string {
+  const source = JSON.stringify(value);
+  let hash = 2166136261;
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
 function cloneDraft(draft: ProfileDraft): ProfileDraft {
   return {
     ...draft,
@@ -68,13 +78,17 @@ export class ProfilePersistenceCoordinator {
     this.deletedExperiences.add(id);
   }
 
+  private mutationOptions(name: string, value: unknown): MutationOptions {
+    return { idempotencyKey: `kuquest-profile-${name}-${mutationHash(value)}` };
+  }
+
   async save(api: StudentApi, form: ProfileDraft, isEditMode: boolean, termsVersion?: string): Promise<ProfilePersistenceResult> {
     this.draft = cloneDraft(form);
     this.completedSteps = [];
 
     if (!this.draft.occupation || !this.draft.department) throw new Error('Academic registration options are incomplete');
     if (!isEditMode && this.draft.acceptedTerms && !termsVersion) throw new Error('EXPO_PUBLIC_TERMS_VERSION is required');
-    await this.runStep('academic-registration', () => api.updateAcademicRegistration({
+    const academicRegistration = {
       firstName: this.firstName,
       lastName: this.lastName,
       telephone: this.draft.telephone,
@@ -82,20 +96,29 @@ export class ProfilePersistenceCoordinator {
       studentId: this.draft.studentId || undefined,
       departmentId: this.draft.department,
       termsVersion: !isEditMode && this.draft.acceptedTerms && termsVersion ? termsVersion : undefined,
-    }));
+    };
+    await this.runStep('academic-registration', () => api.updateAcademicRegistration(
+      academicRegistration,
+      this.mutationOptions('academic-registration', academicRegistration),
+    ));
 
-    await this.runStep('profile', () => api.updateProfile({
+    const profile = {
       firstName: this.firstName,
       lastName: this.lastName,
       ...(this.draft.description.trim() ? { bio: this.draft.description.trim() } : {}),
       telephone: this.draft.telephone,
       ...(this.draft.department ? { departmentId: this.draft.department } : {}),
-    }));
+    };
+    await this.runStep('profile', () => api.updateProfile(
+      profile,
+      this.mutationOptions('profile', profile),
+    ));
 
     const profileImage = this.draft.profileImage;
     if (isLocalAsset(profileImage) && !this.uploadedAssets.has(`avatar:${profileImage}`)) {
+      const asset = { uri: profileImage };
       await this.runStep('avatar', async () => {
-        await api.uploadAvatar({ uri: profileImage });
+        await api.uploadAvatar(asset, this.mutationOptions('avatar', asset));
         this.uploadedAssets.add(`avatar:${profileImage}`);
       });
     }
@@ -141,16 +164,28 @@ export class ProfilePersistenceCoordinator {
       let id = certificate.id;
       if (id) {
         const existingId = id;
-        await this.runStep(`certificate:${index}:update`, () => api.updateCertificate(existingId, certificateData));
+        await this.runStep(`certificate:${index}:update`, () => api.updateCertificate(
+          existingId,
+          certificateData,
+          this.mutationOptions(`certificate-${index}-update`, { id: existingId, certificateData }),
+        ));
       } else {
-        id = await this.runStepWithResult(`certificate:${index}:create`, () => api.createCertificate(certificateData));
+        id = await this.runStepWithResult(`certificate:${index}:create`, () => api.createCertificate(
+          certificateData,
+          this.mutationOptions(`certificate-${index}-create`, certificateData),
+        ));
         this.updateCertificateId(index, id);
       }
       if (!id) continue;
       const certificateId = id;
       const imageKey = `certificate:${certificateId}:${certificate.imageUri}`;
       if (isLocalAsset(certificate.imageUri) && !this.uploadedAssets.has(imageKey)) {
-        await this.runStep(`certificate:${index}:image`, () => api.uploadCertificateImage(certificateId, { uri: certificate.imageUri }).then(() => {
+        const asset = { uri: certificate.imageUri };
+        await this.runStep(`certificate:${index}:image`, () => api.uploadCertificateImage(
+          certificateId,
+          asset,
+          this.mutationOptions(`certificate-${index}-image`, { certificateId, asset }),
+        ).then(() => {
           this.uploadedAssets.add(imageKey);
         }));
       }
@@ -171,27 +206,40 @@ export class ProfilePersistenceCoordinator {
 
       const hasNewImage = isLocalAsset(currentWork.imageUri) && !this.uploadedAssets.has(`portfolio:${currentWork.imageUri}`);
       if (currentWork.id && hasNewImage) {
-        const replacementId = await this.runStepWithResult(`portfolio:${index}:replace-create`, () => api.createPortfolio({
+        const portfolioData = {
           title: currentWork.title.trim(),
           description: currentWork.detail.trim() || undefined,
           imageUris: [currentWork.imageUri],
-        }));
+        };
+        const replacementId = await this.runStepWithResult(`portfolio:${index}:replace-create`, () => api.createPortfolio(
+          portfolioData,
+          this.mutationOptions(`portfolio-${index}-replace-create`, portfolioData),
+        ));
         this.portfolioReplacements.set(currentWork.imageUri, { oldId: currentWork.id, newId: replacementId });
         this.updatePortfolioId(index, replacementId);
         await this.runStep(`portfolio:${index}:replace-delete`, () => api.deletePortfolio(currentWork.id as string));
         this.portfolioReplacements.delete(currentWork.imageUri);
         this.uploadedAssets.add(`portfolio:${currentWork.imageUri}`);
       } else if (currentWork.id) {
-        await this.runStep(`portfolio:${index}:update`, () => api.updatePortfolio(currentWork.id as string, {
+        const portfolioData = {
           title: currentWork.title.trim(),
           ...(currentWork.detail.trim() ? { description: currentWork.detail.trim() } : {}),
-        }));
+        };
+        await this.runStep(`portfolio:${index}:update`, () => api.updatePortfolio(
+          currentWork.id as string,
+          portfolioData,
+          this.mutationOptions(`portfolio-${index}-update`, { id: currentWork.id, portfolioData }),
+        ));
       } else {
-        const id = await this.runStepWithResult(`portfolio:${index}:create`, () => api.createPortfolio({
+        const portfolioData = {
           title: currentWork.title.trim(),
           description: currentWork.detail.trim() || undefined,
           imageUris: currentWork.imageUri ? [currentWork.imageUri] : [],
-        }));
+        };
+        const id = await this.runStepWithResult(`portfolio:${index}:create`, () => api.createPortfolio(
+          portfolioData,
+          this.mutationOptions(`portfolio-${index}-create`, portfolioData),
+        ));
         this.updatePortfolioId(index, id);
         if (isLocalAsset(currentWork.imageUri)) this.uploadedAssets.add(`portfolio:${currentWork.imageUri}`);
       }
@@ -210,9 +258,16 @@ export class ProfilePersistenceCoordinator {
         endedAt: experience.endedAt.trim() || null,
       };
       if (experience.id) {
-        await this.runStep(`experience:${index}:update`, () => api.updateExperience(experience.id as string, experienceData).then(() => undefined));
+        await this.runStep(`experience:${index}:update`, () => api.updateExperience(
+          experience.id as string,
+          experienceData,
+          this.mutationOptions(`experience-${index}-update`, { id: experience.id, experienceData }),
+        ).then(() => undefined));
       } else {
-        const saved = await this.runStepWithResult(`experience:${index}:create`, () => api.createExperience(experienceData));
+        const saved = await this.runStepWithResult(`experience:${index}:create`, () => api.createExperience(
+          experienceData,
+          this.mutationOptions(`experience-${index}-create`, experienceData),
+        ));
         if (saved?.id) this.updateExperienceId(index, saved.id);
       }
     }
