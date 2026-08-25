@@ -6,8 +6,8 @@ const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 
-const APP_PACKAGE = 'com.anonymous.KUQUestMobile';
-const APP_SCHEME = 'kuquestmobile';
+const APP_PACKAGE = 'com.kuquest.mobile.debug';
+const APP_SCHEME = 'kuquestmobile-debug';
 const VERSION = '1.0.0';
 
 function printHelp() {

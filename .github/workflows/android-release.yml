@@ -1,0 +1,171 @@
+name: Android Production Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-production-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify production release request
+    runs-on: ubuntu-latest
+    outputs:
+      source_sha: ${{ steps.release.outputs.source_sha }}
+      app_version: ${{ steps.release.outputs.app_version }}
+      version_code: ${{ steps.release.outputs.version_code }}
+      release_exists: ${{ steps.release.outputs.release_exists }}
+      apk_name: ${{ steps.release.outputs.apk_name }}
+    steps:
+      - name: Checkout tagged commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate tag, version, main ancestry, and release state
+        id: release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            printf 'Production tags must match vMAJOR.MINOR.PATCH; received %s\n' "$RELEASE_TAG" >&2
+            exit 78
+          fi
+
+          app_version=$(node -p 'require("./app.json").expo.version')
+          version_code=$(node -p 'require("./app.json").expo.android.versionCode')
+          if [[ "$RELEASE_TAG" != "v$app_version" ]]; then
+            printf 'Tag %s does not match app.json version %s\n' "$RELEASE_TAG" "$app_version" >&2
+            exit 78
+          fi
+          if [[ ! "$version_code" =~ ^[1-9][0-9]*$ ]] || (( version_code > 2100000000 )); then
+            printf 'app.json expo.android.versionCode must be an integer from 1 through 2100000000\n' >&2
+            exit 78
+          fi
+
+          tag_sha=$(git rev-parse --verify --end-of-options "${RELEASE_TAG}^{commit}")
+          if [[ "$tag_sha" != "$SOURCE_SHA" ]]; then
+            printf 'Tag %s resolves to %s, not workflow commit %s\n' "$RELEASE_TAG" "$tag_sha" "$SOURCE_SHA" >&2
+            exit 78
+          fi
+          if ! git merge-base --is-ancestor "$SOURCE_SHA" origin/main; then
+            printf 'Production commit %s is not contained in origin/main\n' "$SOURCE_SHA" >&2
+            exit 78
+          fi
+
+          apk_name="KUQuest-v${app_version}.apk"
+          checksum_name="${apk_name}.sha256"
+          release_error=$(mktemp)
+          trap 'rm -f "$release_error"; [[ -z "${release_dir:-}" ]] || rm -rf "$release_dir"' EXIT
+          if release_json=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" 2>"$release_error"); then
+            if [[ $(jq -r '.tag_name' <<< "$release_json") != "$RELEASE_TAG" ]] ||
+               [[ $(jq -r '.target_commitish' <<< "$release_json") != "$SOURCE_SHA" ]] ||
+               [[ $(jq -r '.draft' <<< "$release_json") != false ]] ||
+               [[ $(jq -r '.prerelease' <<< "$release_json") != false ]] ||
+               [[ $(jq '.assets | length' <<< "$release_json") -ne 2 ]] ||
+               [[ $(jq --arg name "$apk_name" '[.assets[] | select(.name == $name and .size > 0)] | length' <<< "$release_json") -ne 1 ]] ||
+               [[ $(jq --arg name "$checksum_name" '[.assets[] | select(.name == $name and .size > 0)] | length' <<< "$release_json") -ne 1 ]]; then
+              printf 'Existing release %s does not match the immutable expected state\n' "$RELEASE_TAG" >&2
+              exit 5
+            fi
+            release_dir=$(mktemp -d)
+            gh release download "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --dir "$release_dir" \
+              --pattern "$apk_name" \
+              --pattern "$checksum_name"
+            (cd "$release_dir" && sha256sum --check "$checksum_name")
+            release_exists=true
+            {
+              printf '## Production release already verified\n\n'
+              printf -- '- Release: `%s`\n' "$RELEASE_TAG"
+              printf -- '- Commit: `%s`\n' "$SOURCE_SHA"
+              printf -- '- APK and SHA-256 checksum are intact; no rebuild or overwrite was performed.\n'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            release_failure=$(<"$release_error")
+            if [[ "$release_failure" != *"HTTP 404"* ]]; then
+              printf '%s\n' "$release_failure" >&2
+              exit 75
+            fi
+            release_exists=false
+          fi
+
+          printf 'source_sha=%s\n' "$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          printf 'app_version=%s\n' "$app_version" >> "$GITHUB_OUTPUT"
+          printf 'version_code=%s\n' "$version_code" >> "$GITHUB_OUTPUT"
+          printf 'release_exists=%s\n' "$release_exists" >> "$GITHUB_OUTPUT"
+          printf 'apk_name=%s\n' "$apk_name" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build production APK
+    needs: verify
+    if: needs.verify.outputs.release_exists == 'false'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/android-apk-build.yml
+    # Required for environment-scoped secrets (actions/runner#4453).
+    secrets: inherit
+    with:
+      source_sha: ${{ needs.verify.outputs.source_sha }}
+      variant: production
+      version_code: ${{ needs.verify.outputs.version_code }}
+      environment_name: production
+      retention_days: 1
+
+  publish:
+    name: Publish immutable GitHub Release
+    needs: [verify, build]
+    if: needs.verify.outputs.release_exists == 'false' && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Download signed APK artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: ${{ needs.build.outputs.artifact_name }}
+          path: release
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          SOURCE_SHA: ${{ needs.verify.outputs.source_sha }}
+          APK_NAME: ${{ needs.build.outputs.apk_name }}
+        run: |
+          set -euo pipefail
+          apk_path="release/$APK_NAME"
+          checksum_path="${apk_path}.sha256"
+          [[ -s "$apk_path" && -s "$checksum_path" ]] || {
+            printf 'Downloaded production artifact is incomplete\n' >&2
+            exit 1
+          }
+          (cd release && sha256sum --check "${APK_NAME}.sha256")
+          gh release create "$RELEASE_TAG" \
+            "$apk_path" \
+            "$checksum_path" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$SOURCE_SHA" \
+            --verify-tag \
+            --title "KUQuest $RELEASE_TAG" \
+            --generate-notes
+          {
+            printf '## Production APK published\n\n'
+            printf -- '- Release: [%s](https://github.com/%s/releases/tag/%s)\n' "$RELEASE_TAG" "$GITHUB_REPOSITORY" "$RELEASE_TAG"
+            printf -- '- Commit: `%s`\n' "$SOURCE_SHA"
+            printf -- '- APK: `%s`\n' "$APK_NAME"
+          } >> "$GITHUB_STEP_SUMMARY"

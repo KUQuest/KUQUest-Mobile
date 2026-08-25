@@ -36,7 +36,7 @@ describe('switch-demo-account', () => {
   test('builds a filename-only handoff link', () => {
     const link = buildSessionImportLink('.kuquest-session-abc');
 
-    expect(link).toBe('kuquestmobile://dev/import-session?file=.kuquest-session-abc');
+    expect(link).toBe('kuquestmobile-debug://dev/import-session?file=.kuquest-session-abc');
     expect(link).not.toContain('session_token');
   });
 });

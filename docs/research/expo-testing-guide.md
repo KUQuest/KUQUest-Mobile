@@ -222,7 +222,7 @@ Start with flows for:
 Example flow shape:
 
 ```yaml
-appId: com.anonymous.KUQUestMobile
+appId: com.kuquest.mobile.staging
 ---
 - launchApp
 - assertVisible: "KUQUEST"
