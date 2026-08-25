@@ -116,6 +116,8 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/android-apk-build.yml
+    # Required for environment-scoped secrets (actions/runner#4453).
+    secrets: inherit
     with:
       source_sha: ${{ needs.verify.outputs.source_sha }}
       variant: production
