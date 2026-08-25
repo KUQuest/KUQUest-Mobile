@@ -8,7 +8,6 @@ export interface AppChromeMetrics {
   navHeight: number;
   navItemHeight: number;
   createButtonSize: number;
-  createButtonOffset: number;
   iconSize: number;
   createIconSize: number;
   labelFontSize: number;
@@ -40,7 +39,6 @@ export function getAppChromeMetrics(width: number, fontScale = 1): AppChromeMetr
       navHeight: 64,
       navItemHeight: 56,
       createButtonSize: 38,
-      createButtonOffset: -20,
       iconSize: 22,
       createIconSize: 26,
       labelFontSize: 11,
@@ -53,7 +51,6 @@ export function getAppChromeMetrics(width: number, fontScale = 1): AppChromeMetr
     navHeight: 68,
     navItemHeight: 60,
     createButtonSize: 42,
-    createButtonOffset: -24,
     iconSize: 24,
     createIconSize: 28,
     labelFontSize: 12,

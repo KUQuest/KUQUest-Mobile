@@ -4,6 +4,7 @@ const styles = {
   bar: 'shadow-[0px_4px_4px_rgb(18_32_24_/0.06)] items-center bg-ku-surface-nav-translucent border-ku-border-nav rounded-[28px] border flex-row px-[6px] pt-[4px]',
   tabletBar: 'flex-1 flex-col items-stretch justify-center gap-[8px] px-[4px] py-[8px] pt-[8px]',
   item: 'items-center flex-1 justify-center min-w-[48px] min-h-[48px] px-[2px] active:opacity-[0.62]',
+  iconSlot: 'items-center justify-center',
   activeItem: 'bg-ku-surface-accent rounded-[18px] mx-[2px] my-[4px]',
   tabletItem: 'flex-none min-h-[64px] w-full',
   activeLabel: 'text-ku-primary-deep font-ku-bold',

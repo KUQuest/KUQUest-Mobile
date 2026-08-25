@@ -93,36 +93,42 @@ export function BottomNav({ state, descriptors, navigation, insets }: TabBarProp
               style={{ minHeight: metrics.navItemHeight }}
               testID={`tab-${item.routeName}`}
             >
-              {item.isCreate ? (
-                <View
-                  className={styles.createIcon} style={{
+              <View
+                className={styles.iconSlot}
+                style={{
+                  height: metrics.createButtonSize,
+                  width: metrics.createButtonSize,
+                }}
+              >
+                {item.isCreate ? (
+                  <View
+                    className={styles.createIcon}
+                    style={{
                       height: metrics.createButtonSize,
-                      marginTop: metrics.isTablet ? 0 : metrics.createButtonOffset,
                       width: metrics.createButtonSize,
                     }}
-                >
-                  <Icon color={colors.white} size={metrics.createIconSize} strokeWidth={2.5} />
-                </View>
-              ) : (
-                <Icon
-                  color={isFocused ? colors.primaryDeep : colors.navIconMuted}
-                  size={metrics.iconSize}
-                  strokeWidth={2.5}
-                />
-              )}
-              {!item.isCreate ? (
-                <Text
-                  className={cn(styles.label, isFocused && styles.activeLabel)}
-                  style={{
-                    fontSize: metrics.labelFontSize,
-                    includeFontPadding: false,
-                    lineHeight: metrics.labelLineHeight,
-                    color: isFocused ? colors.primaryDeep : undefined,
-                  }}
-                >
-                  {messages[item.shortLabelKey]}
-                </Text>
-              ) : null}
+                  >
+                    <Icon color={colors.white} size={metrics.createIconSize} strokeWidth={2.5} />
+                  </View>
+                ) : (
+                  <Icon
+                    color={isFocused ? colors.primaryDeep : colors.navIconMuted}
+                    size={metrics.iconSize}
+                    strokeWidth={2.5}
+                  />
+                )}
+              </View>
+              <Text
+                className={cn(styles.label, isFocused && styles.activeLabel)}
+                style={{
+                  fontSize: metrics.labelFontSize,
+                  includeFontPadding: false,
+                  lineHeight: metrics.labelLineHeight,
+                  color: isFocused ? colors.primaryDeep : undefined,
+                }}
+              >
+                {messages[item.shortLabelKey]}
+              </Text>
               {!item.isCreate && isFocused ? <View accessibilityLabel={`${label} selected`} className={styles.activeIndicator} style={{ backgroundColor: colors.primaryDeep }} /> : null}
               {item.hasUnread ? <View accessibilityLabel="Unread messages" className={styles.unreadBadge} /> : null}
             </Pressable>
