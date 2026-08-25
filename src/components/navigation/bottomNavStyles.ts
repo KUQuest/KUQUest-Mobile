@@ -21,7 +21,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     minWidth: 48,
-    minHeight: 44,
+    minHeight: 48,
     paddingHorizontal: 4,
   },
   activeItem: {
@@ -53,6 +53,13 @@ const styles = StyleSheet.create({
   activeLabel: {
     color: colors.primary,
     fontFamily: fontFamily.bold,
+  },
+  activeIndicator: {
+    backgroundColor: colors.primary,
+    borderRadius: 2,
+    height: 3,
+    marginTop: 3,
+    width: 24,
   },
   createItem: {
     paddingTop: 0,

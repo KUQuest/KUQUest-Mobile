@@ -75,14 +75,14 @@ export function BottomNav({ state, descriptors, navigation, insets }: TabBarProp
             onPress={onPress}
             style={[
               styles.item,
-              { minHeight: metrics.navItemHeight },
+              { minHeight: Math.max(48, metrics.navItemHeight) },
               isFocused && !item.isCreate && styles.activeItem,
               item.isCreate && styles.createItem,
             ]}
             testID={`tab-${item.routeName}`}
           >
             {item.isCreate ? (
-              <View style={[styles.createIcon, { height: metrics.createButtonSize, marginTop: metrics.createButtonOffset, width: metrics.createButtonSize }]}>
+              <View style={[styles.createIcon, { height: metrics.createButtonSize, marginTop: metrics.createButtonOffset, width: metrics.createButtonSize }]}> 
                 <Icon color={colors.white} size={metrics.createIconSize} strokeWidth={2.5} />
               </View>
             ) : (
@@ -100,6 +100,7 @@ export function BottomNav({ state, descriptors, navigation, insets }: TabBarProp
               >
                 {shortLabel}
               </Text>
+              {!item.isCreate && isFocused ? <View accessibilityLabel={`${label} selected`} style={styles.activeIndicator} /> : null}
             </View>
             {item.hasUnread ? <View accessibilityLabel="Unread messages" style={styles.unreadBadge} /> : null}
           </Pressable>
