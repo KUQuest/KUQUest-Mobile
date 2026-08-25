@@ -1,6 +1,6 @@
 # Expo SDK 57 testing guide
 
-Research date: 2026-08-11
+Research date: 2026-08-13
 
 This guide answers how KUQUest-Mobile should use unit tests, fixtures, component/integration tests, and end-to-end tests. “Fixtures” here means controlled test data and route fixtures, not mock data embedded in production code.
 
@@ -23,12 +23,38 @@ The project already has the core JavaScript test setup recommended by Expo:
 - `jest-expo` preset in `package.json`.
 - `@testing-library/react-native` for rendered component tests.
 - `jest.setup.js` for native-module test doubles.
-- Tests in `src/__tests__`.
+- Tests remain outside `src/app`, with feature-owned tests in feature `__tests__` directories and cross-feature tests in `src/__tests__`.
 - Existing coverage of auth, login UI, profile persistence, and onboarding-step parsing.
+- `react-test-renderer` is still listed as a dev dependency, although Expo’s current guide says it is deprecated for React 19 and should be replaced by React Native Testing Library for new tests.
 
 The current gap is E2E coverage: there is no `.maestro/` directory or EAS test workflow yet. There is also no shared fixture directory; most test data is currently created inside individual test files.
 
-Expo’s Jest guide recommends `jest-expo` because it mocks the native portion of the Expo SDK and supplies the base Jest configuration. It also recommends React Native Testing Library for component tests and notes that `react-test-renderer` is deprecated for React 19 projects. See [Expo: Unit testing with Jest](https://docs.expo.dev/develop/unit-testing/).
+Expo’s Jest guide recommends `jest-expo` because it mocks the native portion of the Expo SDK and supplies the base Jest configuration. It also recommends React Native Testing Library for component tests. See [Expo: Unit testing with Jest](https://docs.expo.dev/develop/unit-testing/).
+
+## Test folder structure
+
+Expo does not require one universal test-folder layout. Its Jest guide presents a root `__tests__` directory as a common pattern and also documents multiple area-specific `__tests__` directories as a valid alternative. Expo Router adds one hard rule: test files must not live inside `src/app`, because every file there is treated as a route or layout. See [Expo: Structure your tests](https://docs.expo.dev/develop/unit-testing/#structure-your-tests) and [Expo Router: Testing configuration](https://docs.expo.dev/router/reference/testing/#configuration).
+
+For this existing repository, use this policy:
+
+```text
+src/
+  app/                         # routes and layouts only
+  __tests__/                   # existing cross-feature and router tests
+  test/
+    fixtures/                  # shared deterministic test data
+  features/
+    auth/
+      __tests__/               # new auth-specific tests, if useful
+```
+
+- Keep the remaining cross-feature tests in `src/__tests__/`; a wholesale move is not needed.
+- Put new tests beside a feature in `__tests__/` when ownership is obvious, or keep them in `src/__tests__/` when they cross feature boundaries.
+- Never put tests under `src/app`.
+- Use one naming convention: `*.test.ts` or `*.test.tsx` for this repository.
+- Keep fixtures under `src/test/fixtures/`, not in production fallback paths.
+
+This is a repository convention, not an Expo requirement. The important boundary is that route files remain separate from test files.
 
 ## 1. Unit tests
 
@@ -60,6 +86,20 @@ Run the existing suite with:
 bun run test -- --runInBand
 ```
 
+For a focused test file:
+
+```bash
+bun run test -- src/features/auth/__tests__/AuthService.test.ts
+```
+
+For the full tester gate used before review:
+
+```bash
+bun run typecheck
+bun run lint
+bun run test -- --runInBand
+```
+
 For CI and coverage:
 
 ```bash
@@ -83,8 +123,13 @@ src/
       profile.ts
       router.ts
   __tests__/
-    AuthService.test.ts
-    ProfileRepository.test.ts
+    AppChromeMetrics.test.ts
+    ProfileLayoutMetrics.test.ts
+  features/
+    auth/
+      __tests__/
+        AuthService.test.ts
+        LoginScreen.test.tsx
 ```
 
 Prefer factories with overrides over one giant mutable fixture:
@@ -177,7 +222,7 @@ Start with flows for:
 Example flow shape:
 
 ```yaml
-appId: com.anonymous.KUQUestMobile
+appId: com.kuquest.mobile.staging
 ---
 - launchApp
 - assertVisible: "KUQUEST"
