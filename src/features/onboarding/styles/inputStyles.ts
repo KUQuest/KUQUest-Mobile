@@ -20,11 +20,11 @@ const styles = StyleSheet.create({
     color: colors.textStrong,
     borderWidth: 1,
     borderColor: colors.borderMuted,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: spacing.sm + 4,
     paddingVertical: spacing.sm + 2,
     backgroundColor: colors.white,
-    minHeight: 44,
+    minHeight: 48,
   },
   inputError: {
     borderColor: colors.danger,
@@ -43,10 +43,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.regular,
     fontSize: 12,
     color: colors.danger,
-    marginTop: 4,
-  },
-  helperSlot: {
-    minHeight: 18,
     marginTop: 4,
   },
 });

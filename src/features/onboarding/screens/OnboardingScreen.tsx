@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Image, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Alert, BackHandler, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { Host, Button } from '@expo/ui';
-import { CalendarDays, Check, CircleAlert, Image as ImageIcon, Pencil, Trash2, UserRound } from 'lucide-react-native';
+import DateTimePicker, { type DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
+import { Button } from '@/components/ui/Button';
+import Animated, * as Reanimated from 'react-native-reanimated';
+import { CalendarDays, CircleAlert, Image as ImageIcon, Pencil, Trash2, UserRound, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import styles from '@/features/onboarding/styles/registrationStyles';
@@ -28,9 +29,6 @@ import { validateProfileBasics, validateProfileDetails } from '../validation';
 function createOnboardingForm(): ProfileDraft {
   return {
     ...createEmptyProfile(),
-    certificates: [createEmptyCertificate()],
-    works: [createEmptyWork()],
-    experiences: [createEmptyExperience()],
   };
 }
 
@@ -67,7 +65,63 @@ function onboardingDebug(message: string, details: Record<string, unknown> = {})
   }
 }
 
+function formatDate(value: string, locale: 'en' | 'th'): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(date);
+}
+function getOnboardingTransition(kind: 'in' | 'out', reduceMotion: boolean) {
+  if (reduceMotion) return undefined;
+  const transition = kind === 'in' ? Reanimated.FadeIn : Reanimated.FadeOut;
+  if (!transition || typeof transition.duration !== 'function') return undefined;
+  return transition.duration(220);
+}
+const MotionView = Animated.createAnimatedComponent ? Animated.createAnimatedComponent(View) : Animated.View;
+
+function useReducedMotionPreference(): boolean {
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (mounted) setReduceMotion(enabled);
+    });
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => {
+      mounted = false;
+      subscription.remove();
+    };
+  }, []);
+
+  return reduceMotion;
+}
+
+function removeIndexedErrors(errors: Record<string, string>, prefix: string, removedIndex: number): Record<string, string> {
+  const prefixWithSeparator = `${prefix}_`;
+  return Object.entries(errors).reduce<Record<string, string>>((next, [key, value]) => {
+    if (!key.startsWith(prefixWithSeparator)) {
+      next[key] = value;
+      return next;
+    }
+
+    const remainder = key.slice(prefixWithSeparator.length);
+    const separatorIndex = remainder.indexOf('_');
+    const itemIndex = Number.parseInt(remainder.slice(0, separatorIndex), 10);
+    if (!Number.isInteger(itemIndex) || separatorIndex === -1) {
+      next[key] = value;
+      return next;
+    }
+    if (itemIndex < removedIndex) {
+      next[key] = value;
+    } else if (itemIndex > removedIndex) {
+      next[`${prefix}_${itemIndex - 1}_${remainder.slice(separatorIndex + 1)}`] = value;
+    }
+    return next;
+  }, {});
+}
+
 export default function OnboardingScreen() {
+
   const router = useRouter();
   const { locale } = useLocale();
   const msg = onboardingMessages[locale];
@@ -85,6 +139,7 @@ export default function OnboardingScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isModalVisible, setModalVisible] = useState(false);
+  const [isPolicyVisible, setPolicyVisible] = useState(false);
   const [retryAction, setRetryAction] = useState<(() => void) | null>(null);
   const [datePickerTarget, setDatePickerTarget] = useState<{ index: number; value: string; kind: 'certificate' | 'experience'; field?: 'startedAt' | 'endedAt' } | null>(null);
   const [today] = useState(() => new Date());
@@ -93,8 +148,34 @@ export default function OnboardingScreen() {
   const pendingCertificateDeletes = useRef(new Set<string>());
   const pendingPortfolioDeletes = useRef(new Set<string>());
   const pendingExperienceDeletes = useRef(new Set<string>());
-  const { width } = useWindowDimensions();
-  const buttonWidth = (width - 96) / 2;
+  const reduceMotion = useReducedMotionPreference();
+  const leaveRegistration = useCallback(() => {
+    if (isEditMode) {
+      router.back();
+      return;
+    }
+    Alert.alert(msg.cancelRegistrationTitle, msg.cancelRegistrationMessage, [
+      { text: msg.cancel, style: 'cancel' },
+      { text: msg.cancelRegistration, style: 'destructive', onPress: () => void authService.signOut().then(() => router.replace('/')) },
+    ]);
+  }, [isEditMode, msg.cancel, msg.cancelRegistration, msg.cancelRegistrationMessage, msg.cancelRegistrationTitle, router]);
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (isLoadingProfile || isSubmitting) return true;
+      if (isEditMode) {
+        router.back();
+        return true;
+      }
+      if (currentStep > 1) {
+        setCurrentStep((currentStep - 1) as OnboardingStep);
+        return true;
+      }
+      leaveRegistration();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [currentStep, isEditMode, isLoadingProfile, isSubmitting, leaveRegistration, router]);
 
   useEffect(() => {
     let active = true;
@@ -140,20 +221,20 @@ export default function OnboardingScreen() {
             acceptedTerms: Boolean(status.termsAcceptedAt),
             description: profile.bio ?? '',
             profileImage: profile.avatar?.url ?? session.user.image ?? '',
-            certificates: certificates.length > 0 ? certificates.map((certificate) => ({
+            certificates: certificates.map((certificate) => ({
               id: certificate.id,
               name: certificate.name,
               issuer: certificate.issuer,
               issuedAt: certificate.issuedAt,
               imageUri: certificate.image?.url ?? '',
-            })) : [createEmptyCertificate()],
-            works: portfolio.length > 0 ? portfolio.map((entry) => ({
+            })),
+            works: portfolio.map((entry) => ({
               id: entry.id,
               title: entry.title,
               detail: entry.description ?? '',
               imageUri: entry.images[0]?.url ?? '',
-            })) : [createEmptyWork()],
-            experiences: experiences.length > 0 ? experiences.map((entry) => ({
+            })),
+            experiences: experiences.map((entry) => ({
               id: entry.id,
               title: entry.title,
               employmentType: entry.employmentType,
@@ -161,7 +242,7 @@ export default function OnboardingScreen() {
               description: entry.description ?? '',
               startedAt: entry.startedAt,
               endedAt: entry.endedAt ?? '',
-            })) : [createEmptyExperience()],
+            })),
           });
         }
       } catch (error) {
@@ -193,6 +274,44 @@ export default function OnboardingScreen() {
     label: department.name,
     value: department.id,
   }));
+  const clearErrors = (...keys: string[]) => {
+    setErrors((previous) => {
+      let changed = false;
+      const next = { ...previous };
+      keys.forEach((key) => {
+        if (key in next) {
+          delete next[key];
+          changed = true;
+        }
+      });
+      return changed ? next : previous;
+    });
+  };
+
+  const clearRemovedItemErrors = (prefix: string, index: number) => {
+    setErrors((previous) => removeIndexedErrors(previous, prefix, index));
+  };
+
+  const handleOccupationChange = (occupation: string) => {
+    const requiresStudentId = options?.occupations.find((item) => item.id === occupation)?.requiresStudentId ?? false;
+    setForm((previous) => ({
+      ...previous,
+      occupation,
+      ...(requiresStudentId ? {} : { studentId: '' }),
+    }));
+    clearErrors('occupation', 'studentId');
+  };
+
+  const handleFacultyChange = (faculty: string) => {
+    setForm((previous) => ({ ...previous, faculty, department: '' }));
+    clearErrors('faculty', 'department');
+  };
+
+  const handleDepartmentChange = (department: string) => {
+    setForm((previous) => ({ ...previous, department }));
+    clearErrors('department');
+  };
+
 
   const validate = () => {
     const newErrors = validateProfileBasics(form, isEditMode, msg, selectedOccupation?.requiresStudentId ?? false);
@@ -380,9 +499,8 @@ export default function OnboardingScreen() {
     }
   };
 
-  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (event.type === 'dismissed' || !selectedDate || !datePickerTarget) {
-      setDatePickerTarget(null);
+  const handleDateChange = (_event: DateTimePickerChangeEvent, selectedDate: Date) => {
+    if (!datePickerTarget) {
       return;
     }
     const year = selectedDate.getFullYear();
@@ -409,26 +527,30 @@ export default function OnboardingScreen() {
       ...previous,
       certificates: previous.certificates.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item),
     }));
+    clearErrors(`cert_${index}_${String(field)}`);
   };
   const handleUpdateWork = (index: number, field: keyof Work, value: string) => {
     setForm((previous) => ({
       ...previous,
       works: previous.works.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item),
     }));
+    clearErrors(`work_${index}_${String(field)}`);
   };
   const handleUpdateExperience = (index: number, field: keyof Experience, value: string) => {
     setForm((previous) => ({
       ...previous,
       experiences: previous.experiences.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item),
     }));
+    clearErrors(`experience_${index}_${String(field)}`);
   };
 
   const removeExperienceNow = (index: number) => {
     const experience = form.experiences[index];
     if (experience?.id) pendingExperienceDeletes.current.add(experience.id);
+    clearRemovedItemErrors('experience', index);
     setForm((previous) => ({
       ...previous,
-      experiences: previous.experiences.length === 1 ? [createEmptyExperience()] : previous.experiences.filter((_, itemIndex) => itemIndex !== index),
+      experiences: previous.experiences.filter((_, itemIndex) => itemIndex !== index),
     }));
   };
 
@@ -444,39 +566,38 @@ export default function OnboardingScreen() {
     ]);
   };
 
-  const removeCertificate = async (index: number) => {
+  const removeCertificate = (index: number) => {
     const certificate = form.certificates[index];
     try {
       if (certificate?.id) {
         pendingCertificateDeletes.current.add(certificate.id);
       }
+      clearRemovedItemErrors('cert', index);
       setForm((previous) => ({
         ...previous,
-        certificates: previous.certificates.length === 1
-          ? [createEmptyCertificate()]
-          : previous.certificates.filter((_, itemIndex) => itemIndex !== index),
+        certificates: previous.certificates.filter((_, itemIndex) => itemIndex !== index),
       }));
     } catch {
       setSubmitError(msg.submitErrorMsg);
     }
   };
 
-  const removeWork = async (index: number) => {
+  const removeWork = (index: number) => {
     const work = form.works[index];
     try {
       if (work?.id) {
         pendingPortfolioDeletes.current.add(work.id);
       }
+      clearRemovedItemErrors('work', index);
       setForm((previous) => ({
         ...previous,
-        works: previous.works.length === 1
-          ? [createEmptyWork()]
-          : previous.works.filter((_, itemIndex) => itemIndex !== index),
+        works: previous.works.filter((_, itemIndex) => itemIndex !== index),
       }));
     } catch {
       setSubmitError(msg.submitErrorMsg);
     }
   };
+
 
   if (isLoadingProfile) {
     return <SafeAreaView style={[styles.safeArea, { justifyContent: 'center', alignItems: 'center' }]}><Text style={styles.loadingText}>{msg.loadingProfile}</Text></SafeAreaView>;
@@ -498,11 +619,12 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={styles.headerSection}>
           <Text style={styles.title}>{msg.title}</Text>
           <Text style={styles.stepTitle}>{isEditMode ? msg.editProfile : currentStep === 1 ? msg.stepTitle : currentStep === 2 ? msg.step2Title : msg.step3Title}</Text>
-          {!isEditMode && <Text style={styles.stepIndicator}>{currentStep === 1 ? msg.stepIndicator : currentStep === 2 ? msg.step2Indicator : msg.step3Indicator}</Text>}
+          <Text style={styles.stepIndicator}>{currentStep === 1 ? msg.stepIndicator : currentStep === 2 ? msg.step2Indicator : msg.step3Indicator}</Text>
           <View style={styles.progressContainer} accessibilityLabel={msg.progressLabel(currentStep)}>
             {[1, 2, 3].map((progressStep) => (
               <View key={progressStep} style={currentStep >= progressStep ? styles.progressBarActive : styles.progressBarInactive} />
@@ -516,83 +638,284 @@ export default function OnboardingScreen() {
 
         {submitError && currentStep !== 3 ? <View style={styles.submitErrorCard} accessibilityRole="alert"><CircleAlert size={20} color={colors.danger} strokeWidth={2} /><Text style={styles.submitErrorText}>{submitError}</Text></View> : null}
 
-        <View style={styles.formSection}>
+        <MotionView
+          key={`step-content-${currentStep}`}
+          entering={getOnboardingTransition('in', reduceMotion)}
+          style={styles.formSection}
+        >
           {currentStep === 1 && <>
-            <Input label={msg.nameSurname} placeholder={msg.nameSurnamePlaceholder} value={form.name} onChangeText={(name) => setForm({ ...form, name })} error={errors.name} />
-            <Input label={msg.telephone} placeholder={msg.telephonePlaceholder} value={form.telephone} onChangeText={(telephone) => setForm({ ...form, telephone })} keyboardType="phone-pad" error={errors.telephone} />
-            <Select label={msg.occupation} placeholder={msg.occupationPlaceholder} options={occupationOptions} value={form.occupation} onValueChange={(occupation) => setForm({ ...form, occupation })} error={errors.occupation} />
-            {selectedOccupation?.requiresStudentId && <Input label={msg.studentId} placeholder={msg.studentIdPlaceholder} value={form.studentId} onChangeText={(studentId) => setForm({ ...form, studentId })} error={errors.studentId} />}
-            <Select label={msg.faculty} placeholder={msg.facultyPlaceholder} options={facultyOptions} value={form.faculty} onValueChange={(faculty) => setForm({ ...form, faculty, department: '' })} error={errors.faculty} searchable searchPlaceholder={msg.searchFaculty} noResultsMessage={msg.noSearchResults} emptyMessage={msg.noSelectOptions} loadingMessage={msg.loadingOptions} clearSearchLabel={msg.clearSearch} closeLabel={msg.closeSelect} />
-            <Select label={msg.department} placeholder={form.faculty ? msg.departmentPlaceholder : msg.departmentSelectFacultyFirst} options={departmentOptions} value={form.department} onValueChange={(department) => setForm({ ...form, department })} error={errors.department} searchable disabled={!form.faculty} searchPlaceholder={msg.searchDepartment} noResultsMessage={msg.noSearchResults} emptyMessage={msg.noSelectOptions} loadingMessage={msg.loadingOptions} clearSearchLabel={msg.clearSearch} closeLabel={msg.closeSelect} />
+            <Input
+              label={msg.nameSurname}
+              placeholder={msg.nameSurnamePlaceholder}
+              value={form.name}
+              onChangeText={(name) => {
+                setForm((previous) => ({ ...previous, name }));
+                clearErrors('name');
+              }}
+              error={errors.name}
+            />
+            <Input
+              label={msg.telephone}
+              placeholder={msg.telephonePlaceholder}
+              value={form.telephone}
+              onChangeText={(telephone) => {
+                setForm((previous) => ({ ...previous, telephone }));
+                clearErrors('telephone');
+              }}
+              keyboardType="phone-pad"
+              error={errors.telephone}
+            />
+            <Select
+              label={msg.occupation}
+              placeholder={msg.occupationPlaceholder}
+              options={occupationOptions}
+              value={form.occupation}
+              onValueChange={handleOccupationChange}
+              error={errors.occupation}
+              closeLabel={msg.closeSelect}
+            />
+            {selectedOccupation?.requiresStudentId && <Input
+              label={msg.studentId}
+              placeholder={msg.studentIdPlaceholder}
+              value={form.studentId}
+              onChangeText={(studentId) => {
+                setForm((previous) => ({ ...previous, studentId }));
+                clearErrors('studentId');
+              }}
+              error={errors.studentId}
+            />}
+            <Select
+              label={msg.faculty}
+              placeholder={msg.facultyPlaceholder}
+              options={facultyOptions}
+              value={form.faculty}
+              onValueChange={handleFacultyChange}
+              error={errors.faculty}
+              searchable
+              searchPlaceholder={msg.searchFaculty}
+              noResultsMessage={msg.noSearchResults}
+              emptyMessage={msg.noSelectOptions}
+              loadingMessage={msg.loadingOptions}
+              clearSearchLabel={msg.clearSearch}
+              closeLabel={msg.closeSelect}
+            />
+            <Select
+              label={msg.department}
+              placeholder={form.faculty ? msg.departmentPlaceholder : msg.departmentSelectFacultyFirst}
+              options={departmentOptions}
+              value={form.department}
+              onValueChange={handleDepartmentChange}
+              error={errors.department}
+              searchable
+              disabled={!form.faculty}
+              searchPlaceholder={msg.searchDepartment}
+              noResultsMessage={msg.noSearchResults}
+              emptyMessage={msg.noSelectOptions}
+              loadingMessage={msg.loadingOptions}
+              clearSearchLabel={msg.clearSearch}
+              closeLabel={msg.closeSelect}
+            />
             <Text style={styles.termsLabel}>{msg.termsAndConditions}</Text>
-            <ScrollView style={styles.termsBox} contentContainerStyle={styles.termsBoxContent} nestedScrollEnabled><Text style={styles.termsTitle}>{msg.privacyPolicy}</Text><Text style={styles.termsText}>{msg.privacyPolicyText}</Text></ScrollView>
-            <Checkbox label={msg.acceptTerms} checked={form.acceptedTerms} onChange={(acceptedTerms) => setForm({ ...form, acceptedTerms })} error={errors.acceptedTerms} />
-            <View style={styles.buttonRow}><View style={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="outlined" label={msg.back} onPress={() => isEditMode ? router.back() : void authService.signOut().then(() => router.replace('/'))} style={{ width: buttonWidth }} /></Host></View><View style={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="filled" label={msg.next} onPress={() => { if (validate()) setCurrentStep(2); }} style={{ width: buttonWidth }} /></Host></View></View>
+            <View style={styles.policySummary}>
+              <Text style={styles.policySummaryTitle}>{msg.privacyPolicy}</Text>
+              <Text style={styles.policySummaryText}>{msg.privacySummary}</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={msg.readFullPolicy}
+                style={styles.policyReadAction}
+                onPress={() => setPolicyVisible(true)}
+              >
+                <Text style={styles.policyReadActionText}>{msg.readFullPolicy}</Text>
+              </Pressable>
+            </View>
+            <Checkbox
+              label={msg.acceptTerms}
+              checked={form.acceptedTerms}
+              onChange={(acceptedTerms) => {
+                setForm((previous) => ({ ...previous, acceptedTerms }));
+                clearErrors('acceptedTerms');
+              }}
+              error={errors.acceptedTerms}
+            />
           </>}
 
           {currentStep === 2 && <>
-            <View style={styles.step2Card}><Text style={styles.step2CardTitle}>{msg.aboutYourself}</Text><Text style={styles.step2CardSubtitle}>{msg.aboutYourselfSub}</Text><TextArea label={msg.descriptionLabel} placeholder={msg.descriptionPlaceholder} value={form.description} onChangeText={(description) => setForm({ ...form, description })} maxLength={1000} /></View>
-            <View style={styles.skipButtonContainer}><Pressable onPress={() => setCurrentStep(3)} style={styles.skipButton}><Text style={styles.skipButtonText}>{msg.skip}</Text></Pressable></View>
-            <View style={styles.buttonRow}><View style={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="outlined" label={msg.back} onPress={() => setCurrentStep(1)} style={{ width: buttonWidth }} /></Host></View><View style={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="filled" label={msg.next} onPress={() => setCurrentStep(3)} style={{ width: buttonWidth }} /></Host></View></View>
+            <View style={styles.step2Intro}>
+              <Text style={styles.step2CardTitle}>{msg.aboutYourself}</Text>
+              <Text style={styles.step2CardSubtitle}>{msg.aboutYourselfSub}</Text>
+            </View>
+            <TextArea
+              label={msg.descriptionLabel}
+              placeholder={msg.descriptionPlaceholder}
+              value={form.description}
+              onChangeText={(description) => {
+                setForm((previous) => ({ ...previous, description }));
+                clearErrors('description');
+              }}
+              maxLength={1000}
+            />
           </>}
 
           {currentStep === 3 && <>
             <Text style={styles.sectionDesc}>{msg.step3Desc}</Text>
-            <View style={styles.step3Section}><View style={styles.sectionHeader}><View style={styles.badgeSuccess}><Check size={12} color={colors.white} strokeWidth={2.5} /></View><Text style={styles.sectionTitle}>{msg.certification}</Text></View><Text style={styles.sectionDesc}>{msg.certDesc}</Text>
-              {form.certificates.map((cert, index) => <View key={`cert-${cert.id ?? index}`} style={styles.itemCard}>
+            <View style={styles.step3Section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>{msg.certification}</Text>
+              </View>
+              <Text style={styles.sectionDesc}>{msg.certDesc}</Text>
+              {form.certificates.map((cert, index) => <MotionView
+                key={`cert-${cert.id ?? index}`}
+                entering={getOnboardingTransition('in', reduceMotion)}
+                exiting={getOnboardingTransition('out', reduceMotion)}
+                style={styles.itemCard}
+              >
                 <View style={styles.itemCardHeader}>
                   <Text style={styles.itemLabel}>{msg.certification}</Text>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`${msg.removeItem} ${index + 1}`} onPress={() => removeCertificate(index)} style={styles.removeButton}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={msg.removeCertificate(index + 1)}
+                    onPress={() => removeCertificate(index)}
+                    style={styles.removeButton}
+                  >
                     <Trash2 size={18} color={colors.danger} strokeWidth={2} />
                   </Pressable>
                 </View>
-                <Pressable accessibilityRole="button" accessibilityLabel={msg.addImage} style={[styles.imageUploadBox, styles.certificateImageBox]} onPress={() => void handlePickImage((uri) => handleUpdateCertificate(index, 'imageUri', uri), [4, 3])}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={msg.addImage}
+                  style={[styles.imageUploadBox, styles.certificateImageBox]}
+                  onPress={() => void handlePickImage((uri) => handleUpdateCertificate(index, 'imageUri', uri), [4, 3])}
+                >
                   {cert.imageUri ? <Image source={{ uri: cert.imageUri }} style={styles.uploadedImage} /> : <View style={styles.imagePlaceholderContent}><ImageIcon size={24} color={colors.textMuted} strokeWidth={2} /><Text style={styles.addImgText}>{msg.addImage}</Text></View>}
                 </Pressable>
                 <Input label={msg.certName} placeholder={msg.certName} value={cert.name} onChangeText={(value) => handleUpdateCertificate(index, 'name', value)} error={errors[`cert_${index}_name`]} />
                 <Input label={msg.certIssuer} placeholder={msg.certIssuer} value={cert.issuer} onChangeText={(value) => handleUpdateCertificate(index, 'issuer', value)} error={errors[`cert_${index}_issuer`]} />
                 <View style={styles.dateInputWrapper}>
                   <Text style={styles.dateInputLabel}>{msg.certIssuedAt}</Text>
-                  <Pressable accessibilityRole="button" accessibilityLabel={cert.issuedAt || msg.certIssuedAt} accessibilityState={{ expanded: datePickerTarget?.index === index }} style={[styles.dateInputBox, errors[`cert_${index}_issuedAt`] ? styles.dateInputError : null]} onPress={() => openDatePicker(index, cert.issuedAt)}>
-                    <Text style={cert.issuedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{cert.issuedAt || 'YYYY-MM-DD'}</Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${msg.certIssuedAt}: ${formatDate(cert.issuedAt, locale) || msg.selectDate}`}
+                    accessibilityState={{ expanded: datePickerTarget?.index === index }}
+                    style={[styles.dateInputBox, errors[`cert_${index}_issuedAt`] ? styles.dateInputError : null]}
+                    onPress={() => openDatePicker(index, cert.issuedAt)}
+                  >
+                    <Text style={cert.issuedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{formatDate(cert.issuedAt, locale) || msg.selectDate}</Text>
                     <CalendarDays size={18} color={colors.textMuted} strokeWidth={2} />
                   </Pressable>
                   {errors[`cert_${index}_issuedAt`] ? <Text style={styles.fieldErrorText}>{errors[`cert_${index}_issuedAt`]}</Text> : null}
                 </View>
-              </View>)}
-              <Pressable style={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, certificates: [...previous.certificates, createEmptyCertificate()] }))}><Text style={styles.addMoreBtnText}>{msg.addMoreCert}</Text></Pressable>
+              </MotionView>)}
+              {form.certificates.length === 0 ? <View style={styles.emptySection}><Text style={styles.emptySectionText}>{msg.optionalEmpty}</Text></View> : null}
+              <Pressable accessibilityRole="button" accessibilityLabel={msg.addMoreCert} style={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, certificates: [...previous.certificates, createEmptyCertificate()] }))}><Text style={styles.addMoreBtnText}>{msg.addMoreCert}</Text></Pressable>
             </View>
-            <View style={styles.step3Section}><Text style={styles.sectionTitleNormal}>{msg.experience}</Text>
-              {form.experiences.map((experience, index) => <View key={`experience-${experience.id ?? index}`} style={styles.itemCard}>
-                <View style={styles.itemCardHeader}><Text style={styles.itemLabel}>{msg.experience}</Text><Pressable accessibilityRole="button" accessibilityLabel={`${msg.removeItem} ${index + 1}`} onPress={() => removeExperience(index)} style={styles.removeButton}><Trash2 size={18} color={colors.danger} strokeWidth={2} /></Pressable></View>
-                <Input label={msg.jobTitle} placeholder={msg.jobTitle} value={experience.title} onChangeText={(value) => handleUpdateExperience(index, 'title', value)} error={errors[`experience_${index}_title`]} />
-                <Select label={msg.employmentType} placeholder={msg.employmentTypePlaceholder} options={msg.employmentTypes} value={experience.employmentType} onValueChange={(value) => handleUpdateExperience(index, 'employmentType', value)} error={errors[`experience_${index}_employmentType`]} />
-                <Input label={msg.organization} placeholder={msg.organization} value={experience.organization} onChangeText={(value) => handleUpdateExperience(index, 'organization', value)} />
-                <TextArea label={msg.descriptionLabel} placeholder={msg.descriptionPlaceholder} value={experience.description} onChangeText={(value) => handleUpdateExperience(index, 'description', value)} maxLength={1000} />
-                <View style={styles.dateInputWrapper}><Text style={styles.dateInputLabel}>{msg.startMonthYear}</Text><Pressable accessibilityRole="button" accessibilityLabel={formatMonthYear(experience.startedAt, locale) || msg.startMonthYear} style={[styles.dateInputBox, errors[`experience_${index}_startedAt`] ? styles.dateInputError : null]} onPress={() => openExperienceDatePicker(index, 'startedAt', experience.startedAt)}><Text style={experience.startedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{formatMonthYear(experience.startedAt, locale) || msg.startMonthYear}</Text><CalendarDays size={18} color={colors.textMuted} strokeWidth={2} /></Pressable>{errors[`experience_${index}_startedAt`] ? <Text style={styles.fieldErrorText}>{errors[`experience_${index}_startedAt`]}</Text> : null}</View>
-                <View style={styles.dateInputWrapper}><Text style={styles.dateInputLabel}>{msg.endMonthYear}</Text><Pressable accessibilityRole="button" accessibilityLabel={formatMonthYear(experience.endedAt, locale) || msg.present} style={[styles.dateInputBox, errors[`experience_${index}_endedAt`] ? styles.dateInputError : null]} onPress={() => openExperienceDatePicker(index, 'endedAt', experience.endedAt)}><Text style={experience.endedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{formatMonthYear(experience.endedAt, locale) || msg.present}</Text><CalendarDays size={18} color={colors.textMuted} strokeWidth={2} /></Pressable>{experience.endedAt ? <Pressable accessibilityRole="button" accessibilityLabel={msg.present} onPress={() => handleUpdateExperience(index, 'endedAt', '')}><Text style={styles.addImgText}>{msg.present}</Text></Pressable> : null}{errors[`experience_${index}_endedAt`] ? <Text style={styles.fieldErrorText}>{errors[`experience_${index}_endedAt`]}</Text> : null}</View>
-              </View>)}
-              <Pressable style={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, experiences: [...previous.experiences, createEmptyExperience()] }))}><Text style={styles.addMoreBtnText}>{msg.addMoreExp}</Text></Pressable>
-            </View>
-            <View style={styles.step3Section}><Text style={styles.sectionTitleNormal}>{msg.myWorks}</Text>
-              {form.works.map((work, index) => <View key={`work-${work.id ?? index}`} style={styles.itemCard}>
+            <View style={styles.step3Section}>
+              <Text style={styles.sectionTitleNormal}>{msg.experience}</Text>
+              {form.experiences.map((experience, index) => <MotionView
+                key={`experience-${experience.id ?? index}`}
+                entering={getOnboardingTransition('in', reduceMotion)}
+                exiting={getOnboardingTransition('out', reduceMotion)}
+                style={styles.itemCard}
+              >
                 <View style={styles.itemCardHeader}>
-                  <Text style={styles.itemLabel}>{msg.myWorks}</Text>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`${msg.removeItem} ${index + 1}`} onPress={() => removeWork(index)} style={styles.removeButton}>
+                  <Text style={styles.itemLabel}>{msg.experience}</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={msg.removeExperience(index + 1)} onPress={() => removeExperience(index)} style={styles.removeButton}>
                     <Trash2 size={18} color={colors.danger} strokeWidth={2} />
                   </Pressable>
                 </View>
-                <Pressable accessibilityRole="button" accessibilityLabel={msg.addImage} style={styles.imageUploadBox} onPress={() => void handlePickImage((uri) => handleUpdateWork(index, 'imageUri', uri), [4, 3])}>{work.imageUri ? <Image source={{ uri: work.imageUri }} style={styles.uploadedImage} /> : <View style={styles.imagePlaceholderContent}><ImageIcon size={24} color={colors.textMuted} strokeWidth={2} /><Text style={styles.addImgText}>{msg.addImage}</Text></View>}</Pressable><Input label="" accessibilityLabel={msg.workTitle} placeholder={msg.workTitle} value={work.title} onChangeText={(title) => handleUpdateWork(index, 'title', title)} error={errors[`work_${index}_title`]} /><TextArea label="" accessibilityLabel={msg.detailProject} placeholder={msg.detailProject} value={work.detail} onChangeText={(detail) => handleUpdateWork(index, 'detail', detail)} maxLength={1000} />
-              </View>)}
-              <Pressable style={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, works: [...previous.works, createEmptyWork()] }))}><Text style={styles.addMoreBtnText}>{msg.addMoreWorks}</Text></Pressable>
+                <Input label={msg.jobTitle} placeholder={msg.jobTitle} value={experience.title} onChangeText={(value) => handleUpdateExperience(index, 'title', value)} error={errors[`experience_${index}_title`]} />
+                <Select label={msg.employmentType} placeholder={msg.employmentTypePlaceholder} options={msg.employmentTypes} value={experience.employmentType} onValueChange={(value) => handleUpdateExperience(index, 'employmentType', value)} error={errors[`experience_${index}_employmentType`]} closeLabel={msg.closeSelect} />
+                <Input label={msg.organization} placeholder={msg.organization} value={experience.organization} onChangeText={(value) => handleUpdateExperience(index, 'organization', value)} />
+                <TextArea label={msg.experienceDescriptionLabel} placeholder={msg.experienceDescriptionPlaceholder} value={experience.description} onChangeText={(value) => handleUpdateExperience(index, 'description', value)} maxLength={1000} />
+                <View style={styles.dateInputWrapper}><Text style={styles.dateInputLabel}>{msg.startMonthYear}</Text><Pressable accessibilityRole="button" accessibilityLabel={formatMonthYear(experience.startedAt, locale) || msg.startMonthYear} style={[styles.dateInputBox, errors[`experience_${index}_startedAt`] ? styles.dateInputError : null]} onPress={() => openExperienceDatePicker(index, 'startedAt', experience.startedAt)}><Text style={experience.startedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{formatMonthYear(experience.startedAt, locale) || msg.startMonthYear}</Text><CalendarDays size={18} color={colors.textMuted} strokeWidth={2} /></Pressable>{errors[`experience_${index}_startedAt`] ? <Text style={styles.fieldErrorText}>{errors[`experience_${index}_startedAt`]}</Text> : null}</View>
+                <View style={styles.dateInputWrapper}><Text style={styles.dateInputLabel}>{msg.endMonthYear}</Text><Pressable accessibilityRole="button" accessibilityLabel={formatMonthYear(experience.endedAt, locale) || msg.present} style={[styles.dateInputBox, errors[`experience_${index}_endedAt`] ? styles.dateInputError : null]} onPress={() => openExperienceDatePicker(index, 'endedAt', experience.endedAt)}><Text style={experience.endedAt ? styles.dateInputTextActive : styles.dateInputTextPlaceholder}>{formatMonthYear(experience.endedAt, locale) || msg.present}</Text><CalendarDays size={18} color={colors.textMuted} strokeWidth={2} /></Pressable>{experience.endedAt ? <Pressable accessibilityRole="button" accessibilityLabel={msg.present} onPress={() => handleUpdateExperience(index, 'endedAt', '')}><Text style={styles.addImgText}>{msg.present}</Text></Pressable> : null}{errors[`experience_${index}_endedAt`] ? <Text style={styles.fieldErrorText}>{errors[`experience_${index}_endedAt`]}</Text> : null}</View>
+              </MotionView>)}
+              {form.experiences.length === 0 ? <View style={styles.emptySection}><Text style={styles.emptySectionText}>{msg.optionalEmpty}</Text></View> : null}
+              <Pressable accessibilityRole="button" accessibilityLabel={msg.addMoreExp} style={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, experiences: [...previous.experiences, createEmptyExperience()] }))}><Text style={styles.addMoreBtnText}>{msg.addMoreExp}</Text></Pressable>
+            </View>
+            <View style={styles.step3Section}>
+              <Text style={styles.sectionTitleNormal}>{msg.myWorks}</Text>
+              {form.works.map((work, index) => <MotionView
+                key={`work-${work.id ?? index}`}
+                entering={getOnboardingTransition('in', reduceMotion)}
+                exiting={getOnboardingTransition('out', reduceMotion)}
+                style={styles.itemCard}
+              >
+                <View style={styles.itemCardHeader}>
+                  <Text style={styles.itemLabel}>{msg.myWorks}</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={msg.removeWork(index + 1)} onPress={() => removeWork(index)} style={styles.removeButton}>
+                    <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                  </Pressable>
+                </View>
+                <Pressable accessibilityRole="button" accessibilityLabel={msg.addImage} style={styles.imageUploadBox} onPress={() => void handlePickImage((uri) => handleUpdateWork(index, 'imageUri', uri), [4, 3])}>{work.imageUri ? <Image source={{ uri: work.imageUri }} style={styles.uploadedImage} /> : <View style={styles.imagePlaceholderContent}><ImageIcon size={24} color={colors.textMuted} strokeWidth={2} /><Text style={styles.addImgText}>{msg.addImage}</Text></View>}</Pressable>
+                <Input label={msg.workTitle} placeholder={msg.workTitle} value={work.title} onChangeText={(title) => handleUpdateWork(index, 'title', title)} error={errors[`work_${index}_title`]} />
+                <TextArea label={msg.workDetailLabel} accessibilityLabel={msg.workDetailLabel} placeholder={msg.detailProject} value={work.detail} onChangeText={(detail) => handleUpdateWork(index, 'detail', detail)} maxLength={1000} />
+              </MotionView>)}
+              {form.works.length === 0 ? <View style={styles.emptySection}><Text style={styles.emptySectionText}>{msg.optionalEmpty}</Text></View> : null}
+              <Pressable accessibilityRole="button" accessibilityLabel={msg.addMoreWorks} style={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, works: [...previous.works, createEmptyWork()] }))}><Text style={styles.addMoreBtnText}>{msg.addMoreWorks}</Text></Pressable>
             </View>
             {submitError && <View style={styles.submitErrorCard} accessibilityRole="alert"><CircleAlert size={20} color={colors.danger} strokeWidth={2} /><Text style={styles.submitErrorText}>{submitError}</Text></View>}
-            <View style={styles.buttonRow}><View style={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="outlined" label={msg.back} onPress={() => setCurrentStep(2)} style={{ width: buttonWidth }} disabled={isSubmitting} /></Host></View><View style={styles.halfBtn}><Host seedColor={colors.primary} matchContents><Button variant="filled" label={isSubmitting ? msg.submitting : submitError ? msg.retrySubmitBtn : isEditMode ? msg.saveChanges : msg.completeBtn} onPress={() => void handleComplete()} style={{ width: buttonWidth }} disabled={isSubmitting} /></Host></View></View>
           </>}
-        </View>
+        </MotionView>
       </ScrollView>
-      {datePickerTarget ? <DateTimePicker value={new Date(datePickerTarget.value)} mode="date" display={Platform.OS === 'ios' ? 'spinner' : 'default'} onChange={handleDateChange} maximumDate={today} /> : null}
+      <View style={styles.actionBar}>
+        {isSubmitting ? <Text accessibilityLiveRegion="polite" style={styles.savingStatus}>{msg.savingStatus}</Text> : null}
+        <View style={styles.actionButtons}>
+          <View style={styles.actionButton}>
+            <Button
+              variant="secondary"
+              accessibilityLabel={currentStep === 1 && !isEditMode ? msg.cancelRegistration : msg.back}
+              onPress={() => {
+                if (currentStep === 1) {
+                  leaveRegistration();
+                } else {
+                  setCurrentStep((stepValue) => (stepValue - 1) as OnboardingStep);
+                }
+              }}
+              disabled={isSubmitting}
+            >
+              {currentStep === 1 && !isEditMode ? msg.cancelRegistration : msg.back}
+            </Button>
+          </View>
+          <View style={styles.actionButton}>
+            <Button
+              accessibilityLabel={currentStep === 1 || currentStep === 2 ? msg.next : isSubmitting ? msg.submitting : submitError ? msg.retrySubmitBtn : isEditMode ? msg.saveChanges : msg.completeBtn}
+              onPress={() => {
+                if (currentStep === 1) {
+                  if (validate()) setCurrentStep(2);
+                } else if (currentStep === 2) {
+                  setCurrentStep(3);
+                } else {
+                  void handleComplete();
+                }
+              }}
+              disabled={isSubmitting}
+            >
+              {currentStep === 1 || currentStep === 2 ? msg.next : isSubmitting ? msg.submitting : submitError ? msg.retrySubmitBtn : isEditMode ? msg.saveChanges : msg.completeBtn}
+            </Button>
+          </View>
+        </View>
+      </View>
+      </KeyboardAvoidingView>
+      {datePickerTarget ? <DateTimePicker value={new Date(datePickerTarget.value)} mode="date" display={Platform.OS === 'ios' ? 'spinner' : 'default'} onValueChange={handleDateChange} onDismiss={() => setDatePickerTarget(null)} maximumDate={today} /> : null}
       <FileTooLargeModal visible={isModalVisible} onBack={() => setModalVisible(false)} onTryAgain={() => { setModalVisible(false); retryAction?.(); }} />
+      <Modal visible={isPolicyVisible} transparent animationType={reduceMotion ? 'none' : 'slide'} onRequestClose={() => setPolicyVisible(false)}>
+        <View style={styles.policyModalOverlay}>
+          <View accessibilityViewIsModal style={styles.policyModalContent}>
+            <View style={styles.policyModalHeader}>
+              <Text accessibilityRole="header" style={styles.policyModalTitle}>{msg.privacyPolicy}</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel={msg.closePolicy} style={styles.policyModalClose} onPress={() => setPolicyVisible(false)}>
+                <X color={colors.textSecondary} size={22} strokeWidth={2} />
+              </Pressable>
+            </View>
+            <ScrollView style={styles.policyModalScroll} contentContainerStyle={styles.policyModalScrollContent} showsVerticalScrollIndicator={false}>
+              <Text style={styles.policyModalText}>{msg.privacyPolicyText}</Text>
+            </ScrollView>
+            <View style={styles.policyModalFooter}>
+              <Button onPress={() => setPolicyVisible(false)} accessibilityLabel={msg.closePolicy}>{msg.closePolicy}</Button>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

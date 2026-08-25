@@ -38,7 +38,7 @@ export function Input({ label, error, success = false, style, accessibilityLabel
         }}
         {...props}
       />
-      <View style={styles.helperSlot}>{error ? <Text style={styles.errorText}>{error}</Text> : null}</View>
+      {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.errorText}>{error}</Text> : null}
     </View>
   );
 }

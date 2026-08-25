@@ -78,7 +78,7 @@ export function Select({
         </Text>
         <ChevronDown color={colors.textMuted} size={18} strokeWidth={2} />
       </Pressable>
-      <View style={styles.helperSlot}>{error ? <Text style={styles.errorText}>{error}</Text> : null}</View>
+      {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.errorText}>{error}</Text> : null}
 
       <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={closeModal}>
         <SafeAreaProvider>
@@ -86,6 +86,7 @@ export function Select({
             <Pressable style={styles.modalDismissArea} onPress={closeModal}>
               <KeyboardAvoidingView style={styles.keyboardAvoidingView} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
                 <Pressable style={styles.modalContent} onPress={(event) => event.stopPropagation()}>
+                <View style={styles.modalHandle} />
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>{label}</Text>
                   <Pressable onPress={closeModal} style={styles.closeButton} accessibilityRole="button" accessibilityLabel={closeLabel} testID="close-select-button">
