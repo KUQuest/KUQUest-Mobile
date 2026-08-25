@@ -135,7 +135,7 @@ jobs:
           EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
           EXPO_PUBLIC_TERMS_VERSION: ${{ vars.EXPO_PUBLIC_TERMS_VERSION }}
           EXPO_PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.EXPO_PUBLIC_GOOGLE_CLIENT_ID }}
-        run: bunx expo prebuild --clean --platform android --no-install
+        run: bun x expo prebuild --clean --platform android --no-install
 
       - name: Assemble signed release APK
         working-directory: android
