@@ -7,7 +7,7 @@ node_modules/
 .expo/
 dist/
 web-build/
-expo-env.d.ts
+expo-env.d.ts is committed so CI typecheck resolves expo/types ambient declarations without running expo start.
 .env
 .env.example
 # Native
