@@ -8,7 +8,6 @@ const styles = {
   selectText: 'font-ku-regular text-ku-body-small text-ku-text-strong',
   placeholderText: 'text-ku-text-faint',
   errorText: 'font-ku-regular text-ku-label text-ku-danger mt-[4px]',
-  helperSlot: 'min-h-[18px] mt-[4px]',
   modalOverlay: 'flex-1 justify-end bg-ku-overlay',
   keyboardAvoidingView: 'flex-1 justify-end w-full',
   modalDismissArea: 'flex-1 justify-end',

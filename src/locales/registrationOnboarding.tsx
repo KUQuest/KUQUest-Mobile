@@ -42,6 +42,9 @@ export const onboardingMessages = {
     departmentSelectFacultyFirst: 'เลือกคณะก่อน',
     termsAndConditions: 'ข้อกำหนดและเงื่อนไข',
     privacyPolicy: 'นโยบายความเป็นส่วนตัว',
+    privacySummary: 'เราเก็บและใช้ข้อมูลที่จำเป็นเพื่อให้ KUQuest ทำงานได้อย่างปลอดภัย และปกป้องข้อมูลของคุณตามกฎหมายคุ้มครองข้อมูลส่วนบุคคล',
+    readFullPolicy: 'อ่านนโยบายความเป็นส่วนตัวฉบับเต็ม',
+    closePolicy: 'ปิดนโยบายความเป็นส่วนตัว',
     privacyPolicyText: `แอปพลิเคชัน KUQuest ให้ความสำคัญกับการคุ้มครองข้อมูลส่วนบุคคลของคุณ เพื่อมอบประสบการณ์การใช้งานที่ดีที่สุด เรามีความจำเป็นต้องเก็บรวบรวมและใช้ข้อมูลบางส่วน เช่น:
 
     ข้อมูลบัญชีผู้ใช้: ชื่อ, อีเมล, รูปโปรไฟล์
@@ -96,6 +99,8 @@ export const onboardingMessages = {
       { label: 'อาสาสมัคร', value: 'Volunteer' },
     ],
     organization: 'องค์กร (ไม่บังคับ)',
+    experienceDescriptionLabel: 'รายละเอียดประสบการณ์ (ไม่บังคับ)',
+    experienceDescriptionPlaceholder: 'อธิบายหน้าที่ ความสำเร็จ หรือทักษะที่ได้จากประสบการณ์นี้...',
     startMonthYear: 'เดือน/ปีเริ่มต้น',
     endMonthYear: 'เดือน/ปีสิ้นสุด',
     present: 'ปัจจุบัน',
@@ -121,8 +126,12 @@ export const onboardingMessages = {
     tryAgain: 'ลองอีกครั้ง',
     backBtn: 'ย้อนกลับ',
     submitting: 'กำลังบันทึก...',
+    savingStatus: 'กำลังบันทึกข้อมูลการลงทะเบียน',
     retrySubmitBtn: 'ลองใหม่อีกครั้ง',
     removeItem: 'ลบรายการ',
+    removeCertificate: (index: number) => `ลบใบรับรองรายการที่ ${index}`,
+    removeExperience: (index: number) => `ลบประสบการณ์รายการที่ ${index}`,
+    removeWork: (index: number) => `ลบผลงานรายการที่ ${index}`,
     submitErrorMsg: 'ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
     partialSaveMsg: 'บางรายการถูกบันทึกแล้ว กดลองใหม่เพื่อทำรายการต่อ',
     invalidDate: 'กรุณาเลือกวันที่ที่ถูกต้อง',
@@ -172,6 +181,9 @@ export const onboardingMessages = {
     departmentSelectFacultyFirst: 'Select a faculty first',
     termsAndConditions: 'Terms and Conditions',
     privacyPolicy: 'Privacy Policy',
+    privacySummary: 'We collect and use only the information needed to keep KUQuest useful and secure, protecting your data under applicable privacy laws.',
+    readFullPolicy: 'Read the full privacy policy',
+    closePolicy: 'Close privacy policy',
     privacyPolicyText: `KUQuest values your privacy. To deliver the best possible experience, we need to collect and process certain personal information, such as:
 
     Account Information: Name, Email address, Profile picture
@@ -226,6 +238,8 @@ Your data will be stored securely in accordance with applicable Personal Data Pr
       { label: 'Volunteer', value: 'Volunteer' },
     ],
     organization: 'Organization (Optional)',
+    experienceDescriptionLabel: 'Experience description (Optional)',
+    experienceDescriptionPlaceholder: 'Describe your responsibilities, achievements, or skills gained from this experience...',
     startMonthYear: 'Start month/year',
     endMonthYear: 'End month/year',
     present: 'Present',
@@ -251,8 +265,12 @@ Your data will be stored securely in accordance with applicable Personal Data Pr
     tryAgain: 'Try again',
     backBtn: 'Back',
     submitting: 'Saving...',
+    savingStatus: 'Saving your registration',
     retrySubmitBtn: 'Retry',
     removeItem: 'Remove item',
+    removeCertificate: (index: number) => `Remove certificate ${index}`,
+    removeExperience: (index: number) => `Remove experience ${index}`,
+    removeWork: (index: number) => `Remove work ${index}`,
     submitErrorMsg: 'Failed to save data. Please try again.',
     partialSaveMsg: 'Some changes were saved. Retry to finish saving.',
     invalidDate: 'Select a valid date',

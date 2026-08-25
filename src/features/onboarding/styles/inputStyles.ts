@@ -7,7 +7,6 @@ const styles = {
   inputSuccess: 'border-ku-success',
   inputDisabled: 'bg-ku-surface-muted opacity-[0.6]',
   errorText: 'font-ku-regular text-ku-label text-ku-danger mt-[4px]',
-  helperSlot: 'min-h-[18px] mt-[4px]',
 } as const;
 
 export default styles;

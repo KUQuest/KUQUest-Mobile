@@ -34,7 +34,7 @@ export const Input = React.forwardRef<React.ComponentRef<typeof RNTextInput>, In
         }}
         {...props}
       />
-      <View className={styles.helperSlot}>{error ? <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" className={styles.errorText}>{error}</Text> : null}</View>
+      {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" className={styles.errorText}>{error}</Text> : null}
     </View>
   );
 });

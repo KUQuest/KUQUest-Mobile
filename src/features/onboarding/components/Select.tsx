@@ -81,7 +81,7 @@ export const Select = React.forwardRef<React.ComponentRef<typeof RNPressable>, S
         </Text>
         <ChevronDown color={colors.textMuted} size={18} strokeWidth={2} />
       </Pressable>
-      <View className={styles.helperSlot}>{error ? <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" className={styles.errorText}>{error}</Text> : null}</View>
+      {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" className={styles.errorText}>{error}</Text> : null}
 
       <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={closeModal}>
         <SafeAreaProvider>

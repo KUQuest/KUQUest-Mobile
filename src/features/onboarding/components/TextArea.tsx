@@ -40,18 +40,20 @@ export const TextArea = React.forwardRef<React.ComponentRef<typeof RNTextInput>,
         }}
         {...props}
       />
-      <View className={styles.footerRow}>
-        {error ? (
-          <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" className={styles.errorText}>{error}</Text>
-        ) : (
-          <View className="flex-1" />
-        )}
-        {maxLength !== undefined && (
-          <Text className={styles.counterText}>
-            {value.length} / {maxLength}
-          </Text>
-        )}
-      </View>
+      {(error || maxLength !== undefined) ? (
+        <View className={styles.footerRow}>
+          {error ? (
+            <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" className={styles.errorText}>{error}</Text>
+          ) : (
+            <View className="flex-1" />
+          )}
+          {maxLength !== undefined && (
+            <Text className={styles.counterText}>
+              {value.length} / {maxLength}
+            </Text>
+          )}
+        </View>
+      ) : null}
     </View>
   );
 });
