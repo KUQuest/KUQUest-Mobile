@@ -63,6 +63,7 @@ describe('authenticated primary navigation', () => {
     expect(view.getByTestId('tab-profile').props.accessibilityState).toEqual({ selected: false });
     expect(view.getByTestId('tab-create').props.accessibilityRole).toBe('button');
     expect(view.getByTestId('tab-create').props.accessibilityState.selected).toBeUndefined();
+    expect(view.getByText(navigationMessages.en.createShort)).toBeTruthy();
   });
 
   it('launches Create when it is already the current route', async () => {
@@ -94,6 +95,7 @@ describe('authenticated primary navigation', () => {
     );
 
     expect(view.getByTestId('tab-profile').props.accessibilityState).toEqual({ selected: true });
+    expect(view.getByLabelText('Student Profile selected')).toBeTruthy();
     expect(view.getByTestId('tab-index').props.accessibilityState).toEqual({ selected: false });
   });
 });

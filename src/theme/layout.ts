@@ -6,8 +6,8 @@ export interface AppChromeMetrics {
   navHeight: number;
   navItemHeight: number;
   createButtonSize: number;
-  createButtonOffset: number;
   iconSize: number;
+  createButtonOffset: number;
   createIconSize: number;
   labelFontSize: number;
   labelLineHeight: number;
@@ -16,28 +16,28 @@ export interface AppChromeMetrics {
 export function getAppChromeMetrics(width: number, fontScale = 1): AppChromeMetrics {
   const baseMetrics: AppChromeMetrics = width < 400 ? {
       headerHeight: 68,
-      logoWidth: 112,
-      logoHeight: 56,
-      backButtonSize: 44,
-      navHeight: 72,
-      navItemHeight: 60,
-      createButtonSize: 56,
+      logoWidth: 96,
+      logoHeight: 48,
+      backButtonSize: 48,
+      navHeight: 66,
+      navItemHeight: 58,
+      createButtonSize: 38,
       createButtonOffset: -20,
-      iconSize: 26,
-      createIconSize: 34,
+      iconSize: 22,
+      createIconSize: 26,
       labelFontSize: 11,
       labelLineHeight: 14,
     } : {
     headerHeight: 80,
-    logoWidth: 128,
-    logoHeight: 64,
+    logoWidth: 108,
+    logoHeight: 54,
     backButtonSize: 48,
-    navHeight: 84,
-    navItemHeight: 68,
-    createButtonSize: 64,
+    navHeight: 72,
+    navItemHeight: 64,
+    createButtonSize: 42,
     createButtonOffset: -24,
-    iconSize: 30,
-    createIconSize: 38,
+    iconSize: 24,
+    createIconSize: 28,
     labelFontSize: 12,
     labelLineHeight: 16,
   };
