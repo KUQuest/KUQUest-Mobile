@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Text, View, Pressable, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { cn } from '@/tw/cn';
+import { useColorScheme, useWindowDimensions } from 'react-native';
+import { Pressable, SafeAreaView, Text, View } from '@/tw';
 import { StatusBar } from 'expo-status-bar';
 import { Host, Button } from '@expo/ui';
 import { GraduationCap, TriangleAlert } from 'lucide-react-native';
@@ -36,6 +37,7 @@ export default function LoginScreen({
   authAdapter = authService,
 }: LoginScreenProps) {
   const { width } = useWindowDimensions();
+  const colorScheme = useColorScheme();
   const buttonWidth = Math.min(width - 48, 420);
 
   const { locale: currentLocale } = useLocale();
@@ -73,27 +75,27 @@ export default function LoginScreen({
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
-      <View style={styles.container}>
-        <View style={styles.content}>
+    <SafeAreaView className={styles.safeArea}>
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      <View className={styles.container}>
+        <View className={styles.content}>
           {/* Header Section */}
-          <View style={styles.headerSection}>
-            <Text style={styles.title}>KUQUEST</Text>
-            <Text style={styles.subtitle}>{messages.subtitle}</Text>
+          <View className={styles.headerSection}>
+            <Text className={styles.title}>KUQUEST</Text>
+            <Text className={styles.subtitle}>{messages.subtitle}</Text>
           </View>
 
           {/* Form / Actions Section */}
-          <View style={styles.formSection}>
+          <View className={styles.formSection}>
             <View
-              style={styles.noticeCard}
+              className={styles.noticeCard}
               accessibilityRole="text"
               accessibilityLabel={`${messages.noticeTextPrefix} ${messages.noticeEmailDomain} ${messages.noticeTextSuffix}`}
             >
               <GraduationCap color={colors.primary} size={24} strokeWidth={2} />
-              <Text style={styles.noticeText}>
+              <Text className={styles.noticeText}>
                 {messages.noticeTextPrefix}{' '}
-                <Text style={styles.noticeTextBold}>
+                <Text className={styles.noticeTextBold}>
                   {messages.noticeEmailDomain}
                 </Text>{' '}
                 {messages.noticeTextSuffix}
@@ -103,29 +105,29 @@ export default function LoginScreen({
             {/* Error Banner */}
             {error && (
               <View
-                style={styles.errorCard}
+                className={styles.errorCard}
                 accessibilityRole="alert"
                 accessibilityLabel={getAuthErrorText(error.code, currentLocale)}
                 testID="error-banner"
               >
                 <TriangleAlert color={colors.danger} size={22} strokeWidth={2} />
-                <View style={styles.errorContent}>
-                  <Text style={styles.errorText} testID="error-message">
+                <View className={styles.errorContent}>
+                  <Text className={styles.errorText} testID="error-message">
                     {getAuthErrorText(error.code, currentLocale)}
                   </Text>
                   {error.message && (
-                    <Text style={[styles.errorText, { fontSize: 12, marginTop: 4, color: colors.dangerLight }]}>
+                    <Text className={cn(styles.errorText, 'text-ku-label mt-[4px] text-ku-danger-light')}>
                       {error.message}
                     </Text>
                   )}
                   <Pressable
-                    style={styles.retryButton}
+                    className={styles.retryButton}
                     onPress={handleAuth}
                     accessibilityRole="button"
                     accessibilityLabel={messages.retryButton}
                     testID="retry-button"
                   >
-                    <Text style={styles.retryButtonText}>
+                    <Text className={styles.retryButtonText}>
                       {messages.retryButton}
                     </Text>
                   </Pressable>
@@ -133,26 +135,28 @@ export default function LoginScreen({
               </View>
             )}
 
-            <Host seedColor={colors.primary} matchContents style={styles.hostWrapper}>
-              <Button
-                variant="filled"
-                label={isLoading ? messages.loadingAuth : messages.signInWithGoogle}
-                onPress={handleAuth}
-                style={{ width: buttonWidth }}
-                disabled={isLoading}
-                testID="signin-button"
-              />
-            </Host>
+            <View className={styles.hostWrapper}>
+              <Host seedColor={colors.primary} matchContents>
+                <Button
+                  variant="filled"
+                  label={isLoading ? messages.loadingAuth : messages.signInWithGoogle}
+                  onPress={handleAuth}
+                  style={{ width: buttonWidth }}
+                  disabled={isLoading}
+                  testID="signin-button"
+                />
+              </Host>
+            </View>
           </View>
 
           {/* Footer Section */}
-          <View style={styles.footerSection}>
-            <View style={styles.footerLinks} accessibilityRole="text">
-              <Text style={styles.footerLinkText}>{messages.termsOfService}</Text>
-              <Text style={styles.footerLinkText}>{messages.privacyPolicy}</Text>
-              <Text style={styles.footerLinkText}>{messages.contactUs}</Text>
+          <View className={styles.footerSection}>
+            <View className={styles.footerLinks} accessibilityRole="text">
+              <Text className={styles.footerLinkText}>{messages.termsOfService}</Text>
+              <Text className={styles.footerLinkText}>{messages.privacyPolicy}</Text>
+              <Text className={styles.footerLinkText}>{messages.contactUs}</Text>
             </View>
-            <Text style={styles.copyrightText}>
+            <Text className={styles.copyrightText}>
               © 2024 KUQUEST. All rights reserved.
             </Text>
           </View>

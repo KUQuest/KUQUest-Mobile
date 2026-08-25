@@ -1,0 +1,156 @@
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tailwindcss/utilities.css';
+
+@layer theme {
+  @theme {
+    --color-ku-background: #fffcfa;
+    --color-ku-surface: #fcf9f8;
+    --color-ku-surface-muted: #f5f2f0;
+    --color-ku-surface-subtle: #f9f9f9;
+    --color-ku-surface-accent: #f0f4f1;
+    --color-ku-surface-success: #eaf6ed;
+    --color-ku-surface-danger: #fdecef;
+    --color-ku-surface-image: #dde9d9;
+    --color-ku-surface-placeholder: #e8e8e8;
+    --color-ku-surface-nav-translucent: rgb(252 249 248 / 0.92);
+    --color-ku-border-nav: rgb(64 73 65 / 0.14);
+    --color-ku-nav-icon-muted: #66716a;
+    --color-ku-primary: #014925;
+    --color-ku-primary-dark: #004d25;
+    --color-ku-primary-deep: #003417;
+    --color-ku-text: #1b1b1b;
+    --color-ku-text-strong: #111111;
+    --color-ku-text-secondary: #404941;
+    --color-ku-text-muted: #666666;
+    --color-ku-text-subtle: #5f6b62;
+    --color-ku-text-faint: #626d65;
+    --color-ku-border: #c0c9be;
+    --color-ku-border-subtle: #e5e2e1;
+    --color-ku-border-muted: #e0e0e0;
+    --color-ku-border-accent: #d0e3d5;
+    --color-ku-border-danger: #f5c2c7;
+    --color-ku-border-success: #c5e1c9;
+    --color-ku-danger: #d32f2f;
+    --color-ku-danger-dark: #842029;
+    --color-ku-danger-light: #fca5a5;
+    --color-ku-danger-icon: #c41c1c;
+    --color-ku-success: #2e7238;
+    --color-ku-success-bright: #4caf50;
+    --color-ku-success-light: #a8f3aa;
+    --color-ku-black: #122018;
+    --color-ku-white: #fffefd;
+    --color-ku-card: #fffefd;
+    --color-ku-overlay: rgb(18 32 24 / 0.4);
+
+    --spacing-ku-xs: 4px;
+    --spacing-ku-sm: 8px;
+    --spacing-ku-md: 16px;
+    --spacing-ku-lg: 24px;
+    --spacing-ku-xl: 32px;
+
+    --font-ku-regular: 'NotoSansThai_400Regular';
+    --font-ku-medium: 'NotoSansThai_500Medium';
+    --font-ku-semibold: 'NotoSansThai_600SemiBold';
+    --font-ku-bold: 'NotoSansThai_700Bold';
+    --text-ku-display: 44px;
+    --text-ku-display--line-height: 1.181818;
+    --text-ku-display-small: 32px;
+    --text-ku-display-small--line-height: 1.25;
+    --text-ku-headline: 30px;
+    --text-ku-headline--line-height: 1.266667;
+    --text-ku-title-large: 28px;
+    --text-ku-title-large--line-height: 1.285714;
+    --text-ku-title: 24px;
+    --text-ku-title--line-height: 1.208333;
+    --text-ku-title-small: 22px;
+    --text-ku-title-small--line-height: 1.272727;
+    --text-ku-section: 20px;
+    --text-ku-section--line-height: 1.3;
+    --text-ku-emphasis-large: 19px;
+    --text-ku-emphasis-large--line-height: 1.263158;
+    --text-ku-subtitle: 18px;
+    --text-ku-subtitle--line-height: 1.333333;
+    --text-ku-emphasis: 17px;
+    --text-ku-emphasis--line-height: 1.352941;
+    --text-ku-body: 16px;
+    --text-ku-body--line-height: 1.5;
+    --text-ku-control: 15px;
+    --text-ku-control--line-height: 1.466667;
+    --text-ku-body-small: 14px;
+    --text-ku-body-small--line-height: 1.5;
+    --text-ku-meta: 13px;
+    --text-ku-meta--line-height: 1.461538;
+    --text-ku-label: 12px;
+    --text-ku-label--line-height: 1.5;
+    --text-ku-caption: 11px;
+    --text-ku-caption--line-height: 1.454545;
+    --text-ku-nav: 10px;
+    --text-ku-nav--line-height: 1.2;
+    --text-ku-heading: 24px;
+    --text-ku-heading--line-height: 1.208333;
+    --radius-ku-pill: 9999px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-ku-background: #101713;
+    --color-ku-surface: #17211b;
+    --color-ku-surface-muted: #202b24;
+    --color-ku-surface-subtle: #1c2520;
+    --color-ku-surface-accent: #1e3a29;
+    --color-ku-surface-success: #173522;
+    --color-ku-surface-danger: #3d1e23;
+    --color-ku-surface-image: #2f4934;
+    --color-ku-surface-placeholder: #303735;
+    --color-ku-surface-nav-translucent: rgb(23 33 27 / 0.94);
+    --color-ku-border-nav: rgb(213 231 216 / 0.16);
+    --color-ku-nav-icon-muted: #a3b1a6;
+    --color-ku-primary: #0a7b43;
+    --color-ku-primary-dark: #0f9d54;
+    --color-ku-primary-deep: #a6e6af;
+    --color-ku-text: #e6efe8;
+    --color-ku-text-strong: #f3f8f3;
+    --color-ku-text-secondary: #c4d1c7;
+    --color-ku-text-muted: #a3b1a6;
+    --color-ku-text-subtle: #aebdb1;
+    --color-ku-text-faint: #97a69a;
+    --color-ku-border: #526258;
+    --color-ku-border-subtle: #344139;
+    --color-ku-border-muted: #445047;
+    --color-ku-border-accent: #3b6b49;
+    --color-ku-border-danger: #87515a;
+    --color-ku-border-success: #4a8057;
+    --color-ku-danger: #ff7b7b;
+    --color-ku-danger-dark: #ffb4b8;
+    --color-ku-danger-light: #8b454b;
+    --color-ku-danger-icon: #ff8a8a;
+    --color-ku-success: #8bd391;
+    --color-ku-success-bright: #8be091;
+    --color-ku-success-light: #b5f3b8;
+    --color-ku-black: #0b100d;
+    --color-ku-white: #f7fbf7;
+    --color-ku-card: #1c2821;
+    --color-ku-overlay: rgb(0 0 0 / 0.64);
+  }
+}
+
+/* Platform-specific font families */
+@media android {
+  :root {
+    --font-mono: monospace;
+    --font-rounded: normal;
+    --font-serif: serif;
+    --font-sans: normal;
+  }
+}
+
+@media ios {
+  :root {
+    --font-mono: ui-monospace;
+    --font-serif: ui-serif;
+    --font-sans: system-ui;
+    --font-rounded: ui-rounded;
+  }
+}

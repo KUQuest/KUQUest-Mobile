@@ -1,6 +1,8 @@
-import React, { useMemo, useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
-import { Award, BriefcaseBusiness, Pencil, X } from 'lucide-react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { cn } from '@/tw/cn';
+import { AccessibilityInfo, Modal, useWindowDimensions, type ImageSourcePropType, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { FlatList, Image, Pressable, ScrollView, Text, View } from '@/tw';
+import { BriefcaseBusiness, Building2, Code2, GraduationCap, MessageSquare, Pencil, Settings2, Star, UserRound, X } from 'lucide-react-native';
 
 import { Button } from '../../../components/ui/Button';
 import { getProfileLayoutMetrics } from '../../../theme/profileLayout';
@@ -18,8 +20,10 @@ export interface ProfileTag {
 export interface ProfileCertificate {
   id?: string;
   title: string;
-  detail: string;
+  issuer: string;
+  issuedYear: string;
   link: string;
+  imageSource?: ImageSourcePropType;
 }
 
 export interface ProfileWork {
@@ -27,6 +31,8 @@ export interface ProfileWork {
   title: string;
   detail: string;
   imageUri: string;
+  imageUris?: string[];
+  imageSource?: ImageSourcePropType;
 }
 
 export interface ProfileExperience {
@@ -56,6 +62,11 @@ export interface ProfileReview {
   questTitle: string;
 }
 
+export interface ProfileImageSource {
+  uri: string;
+  cacheKey?: string;
+}
+
 export interface ProfileViewData {
   name: string;
   faculty: string;
@@ -64,7 +75,7 @@ export interface ProfileViewData {
   academicYear: string;
   department: string;
   tags: ProfileTag[];
-  profileImage: string;
+  profileImage: string | ImageSourcePropType | ProfileImageSource;
   about: string;
   stats: ProfileStatsData;
   experiences: ProfileExperience[];
@@ -74,8 +85,57 @@ export interface ProfileViewData {
   sectionErrors: ProfileSectionErrors;
 }
 
-export type ProfileSection = 'experience' | 'works' | 'certificates' | 'reputation' | 'reviews';
+export type ProfileTab = 'about' | 'portfolio' | 'reviews';
+export type ProfileSection = 'experience' | 'works' | 'certificates' | 'reviews' | 'reputation';
 export type ProfileSectionErrors = Partial<Record<ProfileSection, true>>;
+
+export interface ProfileAccessibilityLabels {
+  profileImageLabel: (name: string) => string;
+  questCategoriesLabel: string;
+  sectionsLabel: string;
+  statisticsLabel: string;
+  ratingSummaryLabel: string;
+  ratingDistributionLabel: string;
+  reviewRatingLabel: (rating: number) => string;
+  certificatePreviewLabel: (title: string) => string;
+  certificateImageLabel: (title: string) => string;
+  workImageLabel: (title: string) => string;
+  reviewerAvatarLabel: (name: string) => string;
+  reviewFilterLabel: (rating: number) => string;
+}
+
+const defaultAccessibilityLabels: ProfileAccessibilityLabels = {
+  profileImageLabel: (name) => `${name} profile image`,
+  questCategoriesLabel: 'Most frequent Quest categories',
+  sectionsLabel: 'Profile sections',
+  statisticsLabel: 'Profile statistics',
+  ratingSummaryLabel: 'Rating summary',
+  ratingDistributionLabel: 'Rating distribution',
+  reviewRatingLabel: (rating) => `${rating} out of 5 stars`,
+  certificatePreviewLabel: (title) => `${title} preview`,
+  certificateImageLabel: (title) => `${title} certificate`,
+  workImageLabel: (title) => `${title} image`,
+  reviewerAvatarLabel: (name) => `${name} avatar`,
+  reviewFilterLabel: (rating) => `${rating} stars`,
+};
+
+function useReducedMotionPreference(): boolean {
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (mounted) setReduceMotion(enabled);
+    });
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => {
+      mounted = false;
+      subscription.remove();
+    };
+  }, []);
+
+  return reduceMotion;
+}
 
 interface SectionNoticeProps {
   errorText?: string;
@@ -84,9 +144,12 @@ interface SectionNoticeProps {
 }
 
 interface ProfileHeaderProps {
-  data: Pick<ProfileViewData, 'name' | 'faculty' | 'university' | 'occupation' | 'academicYear' | 'department' | 'profileImage'> & Partial<Pick<ProfileViewData, 'tags'>>;
-  editProfileLabel: string;
-  onEditPress: () => void;
+  data: Pick<ProfileViewData, 'name' | 'faculty' | 'occupation' | 'department' | 'profileImage'> & Partial<Pick<ProfileViewData, 'tags'>>;
+  settingsLabel?: string;
+  onSettingsPress?: () => void;
+  editProfileLabel?: string;
+  onEditPress?: () => void;
+  accessibilityLabels?: Pick<ProfileAccessibilityLabels, 'profileImageLabel' | 'questCategoriesLabel'>;
 }
 
 function getInitials(name: string): string {
@@ -101,24 +164,45 @@ function getInitials(name: string): string {
   return initials.toUpperCase() || '?';
 }
 
-export function ProfileHeader({ data, editProfileLabel, onEditPress }: ProfileHeaderProps) {
-  const { width } = useWindowDimensions();
-  const metrics = getProfileLayoutMetrics(width);
+function ProfileMeta({ icon: Icon, children }: { icon: typeof GraduationCap; children: string }) {
+  return <View className={styles.metaRow}><Icon color={colors.textSecondary} size={16} strokeWidth={2} /><Text className={styles.meta} maxFontSizeMultiplier={2}>{children}</Text></View>;
+}
+
+export function ProfileHeader({ data, settingsLabel, onSettingsPress, editProfileLabel, onEditPress, accessibilityLabels }: ProfileHeaderProps) {
+  const { width, fontScale } = useWindowDimensions();
+  const metrics = getProfileLayoutMetrics(width, fontScale);
+  const labels = { ...defaultAccessibilityLabels, ...accessibilityLabels };
+  const [failedProfileImage, setFailedProfileImage] = useState<ProfileViewData['profileImage'] | null>(null);
+  const profileImage = imageSource(data.profileImage);
+  const profileImageFailed = failedProfileImage === data.profileImage;
 
   return (
-    <View testID="profile-header" style={[styles.heroCard, { padding: metrics.cardPadding }]}>
-      <View style={[styles.photoFrame, { borderRadius: metrics.photoSize / 2, height: metrics.photoSize, width: metrics.photoSize }]}>
-        {data.profileImage ? <Image accessibilityLabel={`${data.name} profile image`} source={{ uri: data.profileImage }} style={styles.photo} /> : <Text style={styles.initials}>{getInitials(data.name)}</Text>}
+    <View testID="profile-header" className={styles.heroCard} style={{ padding: metrics.cardPadding }}>
+      {settingsLabel && onSettingsPress ? <View className={styles.profileSettingsRow}>
+        <Pressable accessibilityLabel={settingsLabel} accessibilityRole="button" className={styles.profileSettingsButton} onPress={onSettingsPress} testID="open-settings">
+          <Settings2 color={colors.primary} size={20} strokeWidth={2.2} />
+          <Text className={styles.profileSettingsText} maxFontSizeMultiplier={2}>{settingsLabel}</Text>
+        </Pressable>
+      </View> : null}
+      <View className={styles.headerRow}>
+        <View className={styles.photoFrame} style={{ borderRadius: metrics.photoSize / 2, height: metrics.photoSize, width: metrics.photoSize }}>
+          {profileImage && !profileImageFailed ? <Image accessibilityLabel={labels.profileImageLabel(data.name)} source={profileImage} onError={() => setFailedProfileImage(data.profileImage)} className={styles.photo} /> : <Text accessibilityLabel={labels.profileImageLabel(data.name)} className={styles.initials}>{getInitials(data.name)}</Text>}
+        </View>
+        <View className={styles.identityContent}>
+          <Text className={styles.name} maxFontSizeMultiplier={2} style={{ fontSize: metrics.nameFontSize, lineHeight: Math.round(metrics.nameFontSize * 1.25) }}>{data.name}</Text>
+          {data.occupation ? <ProfileMeta icon={GraduationCap}>{data.occupation}</ProfileMeta> : null}
+          {data.faculty ? <ProfileMeta icon={Building2}>{data.faculty}</ProfileMeta> : null}
+          {data.department ? <ProfileMeta icon={Code2}>{data.department}</ProfileMeta> : null}
+        </View>
       </View>
-      <Text style={[styles.name, { fontSize: metrics.nameFontSize, lineHeight: Math.round(metrics.nameFontSize * 1.3), maxWidth: '100%' }]}>{data.name}</Text>
-      {[data.university, data.occupation, data.academicYear].filter(Boolean).length > 0 ? <Text style={styles.meta}>{[data.university, data.occupation, data.academicYear].filter(Boolean).join(' · ')}</Text> : null}
-      {data.faculty ? <Text style={styles.meta}>{data.faculty}</Text> : null}
-      {data.department ? <Text style={styles.subtleMeta}>{data.department}</Text> : null}
-      {(data.tags ?? []).length > 0 ? <View style={styles.tagList} accessibilityLabel="Profile skills">{(data.tags ?? []).map((tag) => <View key={tag.id ?? tag.name} style={styles.tag}><Text style={styles.tagText}>{tag.name}</Text></View>)}</View> : null}
-      <Button onPress={onEditPress} variant="primary" style={styles.editButton}>
-        <Pencil color={colors.white} size={14} strokeWidth={2.5} />
-        <Text style={styles.editButtonText}>{editProfileLabel}</Text>
-      </Button>
+      {(data.tags ?? []).length > 0 ? <View className={styles.tagGroup}>
+        <Text accessibilityRole="header" className={styles.tagGroupLabel} maxFontSizeMultiplier={2}>{labels.questCategoriesLabel}</Text>
+        <View className={styles.tagList}>{(data.tags ?? []).map((tag) => <View key={tag.id ?? tag.name} className={styles.tag}><Text className={styles.tagText} maxFontSizeMultiplier={2}>{tag.name}</Text></View>)}</View>
+      </View> : null}
+      {editProfileLabel && onEditPress ? <Button onPress={onEditPress} variant="primary" className={styles.editButton} accessibilityLabel={editProfileLabel}>
+        <Pencil color={colors.white} size={16} strokeWidth={2.5} />
+        <Text className={styles.editButtonText}>{editProfileLabel}</Text>
+      </Button> : null}
     </View>
   );
 }
@@ -126,41 +210,63 @@ export function ProfileHeader({ data, editProfileLabel, onEditPress }: ProfileHe
 interface SectionProps {
   title: string;
   children: (metrics: ProfileLayoutMetrics) => React.ReactNode;
+  bottomMargin?: number;
 }
 
-function Section({ title, children, errorText, retryLabel, onRetry }: SectionProps & SectionNoticeProps) {
-  const { width } = useWindowDimensions();
-  const metrics = getProfileLayoutMetrics(width);
+function EmptyState({ message, actionLabel, onAction }: { message: string; actionLabel?: string; onAction?: () => void }) {
+  return <View className={styles.emptyState}><Text className={styles.emptyText} maxFontSizeMultiplier={2}>{message}</Text>{actionLabel && onAction ? <Pressable accessibilityRole="button" className={styles.emptyAction} onPress={onAction}><Text className={styles.emptyActionText}>{actionLabel}</Text></Pressable> : null}</View>;
+}
+
+function Section({ title, children, bottomMargin = 0, errorText, retryLabel, onRetry }: SectionProps & SectionNoticeProps) {
+  const { width, fontScale } = useWindowDimensions();
+  const metrics = getProfileLayoutMetrics(width, fontScale);
 
   return (
-    <View testID={`profile-section-${title}`} style={[styles.section, { padding: metrics.cardPadding }]}>
-      <Text accessibilityRole="header" style={[styles.sectionTitle, { fontSize: metrics.sectionTitleFontSize, lineHeight: Math.round(metrics.sectionTitleFontSize * 1.3) }]}>{title}</Text>
-      <View style={styles.rule} />
+    <View testID={`profile-section-${title}`} className={styles.section} style={{ marginBottom: bottomMargin, padding: metrics.cardPadding }}>
+      <Text accessibilityRole="header" className={styles.sectionTitle} maxFontSizeMultiplier={2} style={{ fontSize: metrics.sectionTitleFontSize, lineHeight: Math.round(metrics.sectionTitleFontSize * 1.3) }}>{title}</Text>
+      <View className={styles.rule} />
       {errorText ? <SectionNotice errorText={errorText} retryLabel={retryLabel} onRetry={onRetry} /> : null}
-      {children(metrics)}
+      {errorText ? null : children(metrics)}
     </View>
   );
 }
 
 function SectionNotice({ errorText, retryLabel, onRetry }: SectionNoticeProps) {
-  return <View accessibilityRole="alert" style={styles.sectionNotice}><Text style={styles.sectionNoticeText}>{errorText}</Text>{onRetry ? <Pressable accessibilityRole="button" accessibilityLabel={retryLabel} onPress={onRetry} style={styles.sectionRetry}><Text style={styles.sectionRetryText}>{retryLabel}</Text></Pressable> : null}</View>;
+  return <View accessibilityRole="alert" className={styles.sectionNotice}><Text className={styles.sectionNoticeText}>{errorText}</Text>{onRetry ? <Pressable accessibilityRole="button" accessibilityLabel={retryLabel} onPress={onRetry} className={styles.sectionRetry}><Text className={styles.sectionRetryText}>{retryLabel}</Text></Pressable> : null}</View>;
 }
 
-export function ProfileStats({ stats, ratingLabel, questsLabel, errorText, retryLabel, onRetry }: { stats: ProfileStatsData; ratingLabel: string; questsLabel: string } & SectionNoticeProps) {
+export function ProfileTabs({ activeTab, labels, onChange, accessibilityLabel = defaultAccessibilityLabels.sectionsLabel }: { activeTab: ProfileTab; labels: Record<ProfileTab, string>; onChange: (tab: ProfileTab) => void; accessibilityLabel?: string }) {
+  const { fontScale } = useWindowDimensions();
+  const tabScale = Math.max(1, fontScale);
+  const tabWidth = Math.ceil(70 * tabScale);
+  const tabHeight = Math.ceil(72 * tabScale);
+  const tabs: { key: ProfileTab; icon: typeof UserRound }[] = [
+    { key: 'about', icon: UserRound },
+    { key: 'portfolio', icon: BriefcaseBusiness },
+    { key: 'reviews', icon: MessageSquare },
+  ];
+
+  return <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityLabel={accessibilityLabel} contentContainerClassName={styles.tabList} contentContainerStyle={{ flexGrow: 1 }} className={styles.tabsScroll}>{tabs.map(({ key, icon: Icon }) => <Pressable key={key} testID={`profile-tab-${key}`} accessibilityRole="tab" accessibilityLabel={labels[key]} accessibilityState={{ selected: activeTab === key }} onPress={() => onChange(key)} className={cn(styles.tab, activeTab === key && styles.tabSelected)} style={{ flex: 1, minWidth: tabWidth, minHeight: tabHeight }}><Icon color={activeTab === key ? colors.primary : colors.textSecondary} size={22} strokeWidth={2} /><Text maxFontSizeMultiplier={2} className={cn(styles.tabText, activeTab === key && styles.tabTextSelected)} style={{ lineHeight: Math.ceil(14 * tabScale) }}>{labels[key]}</Text></Pressable>)}</ScrollView>;
+}
+
+export function ProfileStats({ stats, ratingLabel, questsLabel, reviewsLabel = 'Reviews', noRatingLabel = 'No ratings yet', accessibilityLabel = defaultAccessibilityLabels.statisticsLabel, errorText, retryLabel, onRetry }: { stats: ProfileStatsData; ratingLabel: string; questsLabel: string; reviewsLabel?: string; noRatingLabel?: string; accessibilityLabel?: string } & SectionNoticeProps) {
+  const ratingText = stats.ratingAverage === null ? noRatingLabel : stats.ratingAverage.toFixed(1);
   return (
-    <View testID="profile-stats" style={styles.statsCard} accessibilityLabel="Profile statistics">
-      <View style={styles.statsTopRow}>
-      <View style={styles.statItem}><View style={styles.statValueRow}><Text style={styles.statValue}>{stats.ratingAverage === null ? '—' : stats.ratingAverage.toFixed(1)}</Text>{stats.ratingAverage !== null ? <Text style={styles.statStar}>★</Text> : null}</View><Text style={styles.statLabel}>{ratingLabel}</Text></View>
-      <View style={styles.statDivider} />
-      <View style={styles.statItem}><Text style={styles.statValue}>{stats.totalQuests === null ? '—' : stats.totalQuests}</Text><Text style={styles.statLabel}>{questsLabel}</Text></View>
-      </View>
+    <View testID="profile-stats" className={styles.statsCard} accessibilityLabel={accessibilityLabel}>
+      {errorText ? null : <View className={styles.statsTopRow}>
+        <View className={styles.statItem}><View className={styles.statValueRow}><Text accessibilityLabel={`${ratingLabel}: ${ratingText}`} maxFontSizeMultiplier={2} className={cn(styles.statValue, stats.ratingAverage === null && styles.statEmptyValue)}>{ratingText}</Text>{stats.ratingAverage !== null ? <Text accessible={false} className={styles.statStar}>★</Text> : null}</View><Text className={styles.statLabel} maxFontSizeMultiplier={2}>{ratingLabel}</Text></View>
+        <View className={styles.statDivider} />
+        <View className={styles.statItem}><Text accessibilityLabel={`${questsLabel}: ${stats.totalQuests === null ? '—' : stats.totalQuests}`} maxFontSizeMultiplier={2} className={styles.statValue}>{stats.totalQuests === null ? '—' : stats.totalQuests}</Text><Text className={styles.statLabel} maxFontSizeMultiplier={2}>{questsLabel}</Text></View>
+        <View className={styles.statDivider} />
+        <View className={styles.statItem}><Text accessibilityLabel={`${reviewsLabel}: ${stats.ratingCount}`} maxFontSizeMultiplier={2} className={styles.statValue}>{stats.ratingCount}</Text><Text className={styles.statLabel} maxFontSizeMultiplier={2}>{reviewsLabel}</Text></View>
+      </View>}
       {errorText ? <SectionNotice errorText={errorText} retryLabel={retryLabel} onRetry={onRetry} /> : null}
     </View>
   );
 }
 
-export function AboutMe({ about, sectionTitle, emptyText }: { about: string; sectionTitle: string; emptyText: string }) {
-  return <Section title={sectionTitle}>{(metrics) => <Text style={[styles.body, { lineHeight: metrics.bodyLineHeight }]}>{about || emptyText}</Text>}</Section>;
+export function AboutMe({ about, sectionTitle, emptyText, emptyActionLabel, onEditPress }: { about: string; sectionTitle: string; emptyText: string; emptyActionLabel?: string; onEditPress?: () => void }) {
+  return <Section title={sectionTitle}>{(metrics) => about ? <Text className={styles.body} maxFontSizeMultiplier={2} style={{ lineHeight: metrics.bodyLineHeight }}>{about}</Text> : <EmptyState message={emptyText} actionLabel={emptyActionLabel} onAction={onEditPress} />}</Section>;
 }
 
 function formatMonth(value: string, locale: SupportedLocale = 'en'): string {
@@ -169,93 +275,187 @@ function formatMonth(value: string, locale: SupportedLocale = 'en'): string {
   return new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-US', { year: 'numeric', month: 'short' }).format(date);
 }
 
-function WorkImage({ title, uri, width, noImageText }: { title: string; uri: string; width: number; noImageText: string }) {
+function imageSource(uri: string | ImageSourcePropType | ProfileImageSource, source?: ImageSourcePropType): ImageSourcePropType | ProfileImageSource | undefined {
+  if (source) return source;
+  if (typeof uri === 'string') return uri ? { uri } : undefined;
+  return uri;
+}
+
+function WorkImage({ title, uri, source, noImageText, imageLabel }: { title: string; uri: string; source?: ImageSourcePropType; noImageText: string; imageLabel: string }) {
   const [failed, setFailed] = useState(false);
-  if (!uri || failed) return <View style={[styles.workImage, styles.imageFallback, { width }]}><Text style={styles.imageFallbackText}>{noImageText}</Text></View>;
-  return <Image accessibilityLabel={`${title} image`} source={{ uri }} onError={() => setFailed(true)} style={[styles.workImage, { width }]} />;
+  if (!imageSource(uri, source) || failed) return <View className={cn(styles.workImage, styles.imageFallback)} style={{ aspectRatio: 4 / 3 }}><Text className={styles.imageFallbackText}>{noImageText}</Text></View>;
+  return <Image accessibilityLabel={imageLabel} source={imageSource(uri, source)} onError={() => setFailed(true)} className={styles.workImage} style={{ aspectRatio: 4 / 3 }} contentFit="cover" />;
 }
 
-function CertificateImage({ title, uri, unavailableText }: { title: string; uri: string; unavailableText: string }) {
+function CertificateImage({ uri, source, unavailableText, imageLabel, previewHeight, onFailed }: { uri: string; source?: ImageSourcePropType; unavailableText: string; imageLabel: string; previewHeight: number; onFailed: () => void }) {
   const [failed, setFailed] = useState(false);
-  if (failed) return <Text style={styles.emptyText}>{unavailableText}</Text>;
-  return <Image accessibilityLabel={`${title} certificate`} source={{ uri }} onError={() => setFailed(true)} style={styles.previewImage} resizeMode="contain" />;
+  const resolvedSource = imageSource(uri, source);
+  if (!resolvedSource || failed) return <Text className={styles.emptyText}>{unavailableText}</Text>;
+  return <Image testID="certificate-preview-image" accessibilityLabel={imageLabel} source={resolvedSource} onError={() => { setFailed(true); onFailed(); }} className={styles.previewImage} style={{ height: previewHeight, width: '100%' }} contentFit="contain" />;
 }
 
-function ReviewAvatar({ name, uri }: { name: string; uri: string }) {
-  if (uri) return <Image accessibilityLabel={`${name} avatar`} source={{ uri }} style={styles.reviewAvatar} />;
-  return <View accessibilityLabel={`${name} avatar`} style={styles.reviewAvatarFallback}><Text style={styles.reviewAvatarInitials}>{getInitials(name)}</Text></View>;
+function ReviewAvatar({ name, uri, accessibilityLabel }: { name: string; uri: string; accessibilityLabel: string }) {
+  const [failed, setFailed] = useState(false);
+  if (uri && !failed) return <Image accessibilityLabel={accessibilityLabel} source={{ uri }} onError={() => setFailed(true)} className={styles.reviewAvatar} />;
+  return <View accessibilityLabel={accessibilityLabel} className={styles.reviewAvatarFallback}><Text className={styles.reviewAvatarInitials}>{getInitials(name)}</Text></View>;
 }
 
-export function Experience({ experiences, sectionTitle, emptyText, presentLabel, locale, errorText, retryLabel, onRetry }: { experiences: ProfileExperience[]; sectionTitle: string; emptyText: string; presentLabel: string; locale?: SupportedLocale } & SectionNoticeProps) {
+export function Experience({ experiences, sectionTitle, emptyText, presentLabel, locale, emptyActionLabel, onEditPress, sectionBottomMargin, errorText, retryLabel, onRetry }: { experiences: ProfileExperience[]; sectionTitle: string; emptyText: string; presentLabel: string; locale?: SupportedLocale; emptyActionLabel?: string; onEditPress?: () => void; sectionBottomMargin?: number } & SectionNoticeProps) {
   return (
-    <Section title={sectionTitle} errorText={errorText} retryLabel={retryLabel} onRetry={onRetry}>
-      {() => experiences.length > 0 ? experiences.map((experience) => <View key={experience.id ?? `${experience.title}-${experience.startedAt}`} style={styles.experience}>
-        <View style={styles.timelineIcon}><BriefcaseBusiness color={colors.primaryDark} size={16} strokeWidth={2} /></View>
-        <View style={styles.experienceContent}>
-          <Text style={styles.itemTitle}>{experience.title}</Text>
-          {experience.employmentType ? <Text style={styles.itemMeta}>{experience.employmentType}</Text> : null}
-          {experience.organization ? <Text style={styles.itemMeta}>{experience.organization}</Text> : null}
-          <Text style={styles.itemMeta}>{formatMonth(experience.startedAt, locale)} – {experience.endedAt ? formatMonth(experience.endedAt, locale) : presentLabel}</Text>
-          {experience.description ? <Text style={styles.itemDescription}>{experience.description}</Text> : null}
+    <Section title={sectionTitle} bottomMargin={sectionBottomMargin} errorText={errorText} retryLabel={retryLabel} onRetry={onRetry}>
+      {() => experiences.length > 0 ? experiences.map((experience) => <View key={experience.id ?? `${experience.title}-${experience.startedAt}`} className={styles.experience}>
+        <View className={styles.timelineIcon}><BriefcaseBusiness color={colors.primaryDark} size={16} strokeWidth={2} /></View>
+        <View className={styles.experienceContent}>
+          <Text className={styles.itemTitle} maxFontSizeMultiplier={2}>{experience.title}</Text>
+          {experience.employmentType ? <Text className={styles.itemMeta} maxFontSizeMultiplier={2}>{experience.employmentType}</Text> : null}
+          {experience.organization ? <Text className={styles.itemMeta} maxFontSizeMultiplier={2}>{experience.organization}</Text> : null}
+          <Text className={styles.itemMeta} maxFontSizeMultiplier={2}>{formatMonth(experience.startedAt, locale)} – {experience.endedAt ? formatMonth(experience.endedAt, locale) : presentLabel}</Text>
+          {experience.description ? <Text className={styles.itemDescription} maxFontSizeMultiplier={2}>{experience.description}</Text> : null}
         </View>
-      </View>) : <Text style={styles.emptyText}>{emptyText}</Text>}
+      </View>) : <EmptyState message={emptyText} actionLabel={emptyActionLabel} onAction={onEditPress} />}
     </Section>
   );
 }
 
-export function Certificates({ certificates, sectionTitle, emptyText, previewUnavailableText, closeLabel, unavailableText, errorText, retryLabel, onRetry }: { certificates: ProfileCertificate[]; sectionTitle: string; emptyText: string; previewUnavailableText: string; closeLabel: string; unavailableText: string } & SectionNoticeProps) {
+function GridRows<T>({ items, renderItem }: { items: T[]; renderItem: (item: T) => React.ReactNode }) {
+  const { width, fontScale } = useWindowDimensions();
+  const columns = getProfileLayoutMetrics(width, fontScale).gridColumns;
+  const rows: T[][] = [];
+  for (let index = 0; index < items.length; index += columns) rows.push(items.slice(index, index + columns));
+  return <View className={styles.grid}>{rows.map((row, rowIndex) => <View key={rowIndex} className={styles.gridRow}>{row.map((item) => renderItem(item))}{columns === 2 && row.length === 1 ? <View className={styles.gridSpacer} /> : null}</View>)}</View>;
+}
+
+function CertificateThumbnail({ certificate, unavailableText, imageLabel, failed, onFailed }: { certificate: ProfileCertificate; unavailableText: string; imageLabel: string; failed: boolean; onFailed: () => void }) {
+  const source = imageSource(certificate.link, certificate.imageSource);
+  if (!source || failed) return <Text className={styles.imageFallbackText}>{unavailableText}</Text>;
+  return <Image accessibilityLabel={imageLabel} source={source} onError={onFailed} className={styles.certificateImage} contentFit="cover" />;
+}
+
+export function Certificates({ certificates, sectionTitle, emptyText, previewUnavailableText, closeLabel, unavailableText, previewLabel = 'View certificate preview', emptyActionLabel, onEditPress, accessibilityLabels, errorText, retryLabel, onRetry }: { certificates: ProfileCertificate[]; sectionTitle: string; emptyText: string; previewUnavailableText: string; closeLabel: string; unavailableText: string; previewLabel?: string; emptyActionLabel?: string; onEditPress?: () => void; accessibilityLabels?: Pick<ProfileAccessibilityLabels, 'certificatePreviewLabel' | 'certificateImageLabel'> } & SectionNoticeProps) {
+  const { height } = useWindowDimensions();
   const [preview, setPreview] = useState<ProfileCertificate | null>(null);
+  const [failedCertificateIds, setFailedCertificateIds] = useState<Set<string>>(() => new Set());
+  const labels = { ...defaultAccessibilityLabels, ...accessibilityLabels };
+  const reduceMotion = useReducedMotionPreference();
+  const previewHeight = Math.min(520, Math.max(280, Math.round(height * 0.58)));
 
   return <>
     <Section title={sectionTitle} errorText={errorText} retryLabel={retryLabel} onRetry={onRetry}>
-      {() => certificates.length > 0 ? certificates.map((certificate) => {
-        const content = <View style={styles.itemContent}><Text style={styles.itemTitle}>{certificate.title}</Text>{certificate.detail ? <Text style={styles.itemDescription}>{certificate.detail}</Text> : null}</View>;
-        return <View key={certificate.id ?? `${certificate.title}-${certificate.link}`} style={styles.listItem}>
-          <Pressable accessibilityRole="button" accessibilityLabel={certificate.link ? `${certificate.title} preview` : `${certificate.title} ${previewUnavailableText}`} disabled={!certificate.link} onPress={() => setPreview(certificate)} style={styles.badge}><Award color={colors.primaryDark} size={20} strokeWidth={2} /></Pressable>
-          {content}
-        </View>;
-      }) : <Text style={styles.emptyText}>{emptyText}</Text>}
+      {() => certificates.length > 0 ? <GridRows items={certificates} renderItem={(certificate) => {
+        const certificateKey = certificate.id ?? `${certificate.title}-${certificate.link}`;
+        const hasPreview = Boolean(imageSource(certificate.link, certificate.imageSource)) && !failedCertificateIds.has(certificateKey);
+        return <Pressable key={certificateKey} accessibilityRole="button" accessibilityLabel={hasPreview ? labels.certificatePreviewLabel(certificate.title) : `${certificate.title} ${previewUnavailableText}`} disabled={!hasPreview} onPress={() => setPreview(certificate)} className={styles.certificateCard}>
+          <View className={styles.certificateImageFrame} style={{ aspectRatio: 4 / 3 }}><CertificateThumbnail certificate={certificate} unavailableText={previewUnavailableText} imageLabel={labels.certificateImageLabel(certificate.title)} failed={failedCertificateIds.has(certificateKey)} onFailed={() => setFailedCertificateIds((current) => new Set(current).add(certificateKey))} /></View>
+          <Text className={styles.itemTitle} numberOfLines={2}>{certificate.title}</Text>{hasPreview ? <Text className={styles.previewHint}>{previewLabel}</Text> : null}<Text className={styles.certificateIssuer}>{certificate.issuer}</Text><Text className={styles.itemMeta}>{certificate.issuedYear}</Text>
+        </Pressable>;
+      }} /> : <EmptyState message={emptyText} actionLabel={emptyActionLabel} onAction={onEditPress} />}
     </Section>
-    <Modal visible={Boolean(preview)} transparent animationType="fade" onRequestClose={() => setPreview(null)}>
-      <Pressable accessibilityRole="button" accessibilityLabel={closeLabel} style={styles.previewOverlay} onPress={() => setPreview(null)}>
-        <Pressable style={styles.previewCard} onPress={(event) => event.stopPropagation()}>
-          <Pressable accessibilityRole="button" accessibilityLabel={closeLabel} style={styles.previewClose} onPress={() => setPreview(null)}><X color={colors.text} size={24} /></Pressable>
-          {preview?.link ? <CertificateImage title={preview.title} uri={preview.link} unavailableText={unavailableText} /> : null}
-          <Text style={styles.previewTitle}>{preview?.title}</Text>
+    <Modal visible={Boolean(preview)} transparent animationType={reduceMotion ? 'none' : 'fade'} onRequestClose={() => setPreview(null)}>
+      <Pressable accessible={false} className={styles.previewOverlay} onPress={() => setPreview(null)}>
+        <Pressable accessible={false} accessibilityViewIsModal className={styles.previewCard} onPress={(event) => event.stopPropagation()}>
+          <Pressable accessibilityRole="button" accessibilityLabel={closeLabel} className={styles.previewClose} onPress={() => setPreview(null)}><X color={colors.text} size={24} /></Pressable>
+          {preview ? <ScrollView className={styles.previewScroll} style={{ height: previewHeight, width: '100%' }} showsVerticalScrollIndicator={false}><CertificateImage uri={preview.link} source={preview.imageSource} unavailableText={unavailableText} imageLabel={labels.certificateImageLabel(preview.title)} previewHeight={previewHeight} onFailed={() => {
+            const certificateKey = preview.id ?? `${preview.title}-${preview.link}`;
+            setFailedCertificateIds((current) => new Set(current).add(certificateKey));
+          }} /></ScrollView> : null}
+          <Text className={styles.previewTitle}>{preview?.title}</Text>
         </Pressable>
       </Pressable>
     </Modal>
   </>;
 }
 
-export function MyWork({ works, sectionTitle, emptyText, noImageText, errorText, retryLabel, onRetry }: { works: ProfileWork[]; sectionTitle: string; emptyText: string; noImageText: string } & SectionNoticeProps) {
-  return <Section title={sectionTitle} errorText={errorText} retryLabel={retryLabel} onRetry={onRetry}>{(metrics) => works.length > 0 ? <ScrollView accessibilityLabel={sectionTitle} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.workList}>{works.map((work) => <View key={work.id ?? `${work.title}-${work.imageUri}`} style={[styles.workCard, { width: metrics.workCardWidth }]}><WorkImage title={work.title} uri={work.imageUri} width={metrics.workCardWidth} noImageText={noImageText} /><Text style={styles.itemTitle}>{work.title}</Text>{work.detail ? <Text style={styles.itemDescription}>{work.detail}</Text> : null}</View>)}</ScrollView> : <Text style={styles.emptyText}>{emptyText}</Text>}</Section>;
+export function MyWork({ works, sectionTitle, emptyText, noImageText, viewLabel, closeLabel, emptyActionLabel, onEditPress, accessibilityLabels, sectionBottomMargin, errorText, retryLabel, onRetry }: { works: ProfileWork[]; sectionTitle: string; emptyText: string; noImageText: string; viewLabel: string; closeLabel: string; emptyActionLabel?: string; onEditPress?: () => void; accessibilityLabels?: Pick<ProfileAccessibilityLabels, 'workImageLabel'>; sectionBottomMargin?: number } & SectionNoticeProps) {
+  const { width, height } = useWindowDimensions();
+  const labels = { ...defaultAccessibilityLabels, ...accessibilityLabels };
+  const [selectedWork, setSelectedWork] = useState<ProfileWork | null>(null);
+  const reduceMotion = useReducedMotionPreference();
+  const galleryImageWidth = Math.min(width - 40, 360);
+  const galleryImageHeight = Math.min(320, Math.max(220, Math.round(height * 0.4)));
+  const workImages = selectedWork
+    ? (selectedWork.imageUris?.length ? selectedWork.imageUris : selectedWork.imageUri ? [selectedWork.imageUri] : selectedWork.imageSource ? [selectedWork.imageSource] : [])
+    : [];
+
+  return <>
+    <Section title={sectionTitle} bottomMargin={sectionBottomMargin} errorText={errorText} retryLabel={retryLabel} onRetry={onRetry}>{() => works.length > 0 ? <GridRows items={works} renderItem={(work) => <Pressable key={work.id ?? `${work.title}-${work.imageUri}`} accessibilityRole="button" accessibilityLabel={`${work.title}: ${viewLabel}`} onPress={() => setSelectedWork(work)} className={styles.workCard}><WorkImage title={work.title} uri={work.imageUri} source={work.imageSource} noImageText={noImageText} imageLabel={labels.workImageLabel(work.title)} /><Text className={styles.itemTitle} numberOfLines={2} maxFontSizeMultiplier={2}>{work.title}</Text>{work.detail ? <Text className={styles.itemDescription} numberOfLines={3} maxFontSizeMultiplier={2}>{work.detail}</Text> : null}<Text className={styles.previewHint}>{viewLabel}</Text></Pressable>} /> : <EmptyState message={emptyText} actionLabel={emptyActionLabel} onAction={onEditPress} />}</Section>
+    <Modal visible={Boolean(selectedWork)} transparent animationType={reduceMotion ? 'none' : 'fade'} onRequestClose={() => setSelectedWork(null)}>
+      <Pressable accessible={false} className={styles.previewOverlay} onPress={() => setSelectedWork(null)}>
+        <Pressable accessible={false} accessibilityViewIsModal className={styles.workDetailSheet} onPress={(event) => event.stopPropagation()}>
+          <Pressable accessibilityRole="button" accessibilityLabel={closeLabel} className={styles.previewClose} onPress={() => setSelectedWork(null)}><X color={colors.text} size={24} /></Pressable>
+          <ScrollView showsVerticalScrollIndicator={false} className={styles.workDetailScroll} contentContainerClassName={styles.workDetailContent}>
+            <Text accessibilityRole="header" className={styles.workDetailTitle}>{selectedWork?.title}</Text>
+            {workImages.length > 0 ? <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} className={styles.workGallery}>{workImages.map((image, index) => <Image key={index} accessibilityLabel={`${labels.workImageLabel(selectedWork?.title ?? '')} ${index + 1}`} source={imageSource(image)} className={styles.workGalleryImage} style={{ height: galleryImageHeight, width: galleryImageWidth }} contentFit="contain" />)}</ScrollView> : <View className={cn(styles.workGalleryImage, styles.imageFallback)} style={{ height: galleryImageHeight, width: galleryImageWidth }}><Text className={styles.imageFallbackText}>{noImageText}</Text></View>}
+            {selectedWork?.detail ? <Text className={styles.workDetailDescription}>{selectedWork.detail}</Text> : null}
+          </ScrollView>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  </>;
 }
 
 function formatReviewDate(value: string, locale: SupportedLocale = 'en'): string {
-  if (locale === 'th') return formatMonth(value, locale);
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  const days = Math.max(0, Math.floor((Date.now() - date.getTime()) / 86_400_000));
-  if (days >= 7) {
-    const weeks = Math.floor(days / 7);
-    return `${weeks} week${weeks === 1 ? '' : 's'} ago`;
-  }
-  return `${days} day${days === 1 ? '' : 's'} ago`;
+  return new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
 }
 
-export function Reviews({ reviews, stats, sectionTitle, emptyText, allLabel, reviewCountLabel, locale, errorText, retryLabel, onRetry }: { reviews: ProfileReview[]; stats: ProfileStatsData; sectionTitle: string; emptyText: string; allLabel: string; reviewCountLabel: string; locale?: SupportedLocale } & SectionNoticeProps) {
-  const [filter, setFilter] = useState<'all' | 5 | 4 | 3 | 2>('all');
-  const filters: ('all' | 5 | 4 | 3 | 2)[] = ['all', 5, 4, 3, 2];
-  const visibleReviews = useMemo(() => filter === 'all' ? reviews : reviews.filter((review) => review.rating === filter), [filter, reviews]);
-  const maxDistribution = Math.max(...([5, 4, 3, 2, 1] as const).map((rating) => stats.distribution[rating]), 1);
-
-  return <Section title={sectionTitle} errorText={errorText} retryLabel={retryLabel} onRetry={onRetry}>{() => <>
-    <View style={styles.reviewSummary} accessibilityLabel="Rating summary">
-      <View style={styles.reviewScore}><View style={styles.reviewScoreRow}><Text style={styles.reviewScoreValue}>{stats.ratingAverage === null ? '—' : stats.ratingAverage.toFixed(1)}</Text>{stats.ratingAverage !== null ? <Text style={styles.reviewScoreStar}>★</Text> : null}</View>{stats.ratingAverage !== null ? <Text style={styles.reviewScoreStars}>{'★'.repeat(Math.round(stats.ratingAverage))}</Text> : null}<Text style={styles.reviewCount}>{stats.ratingCount} {reviewCountLabel}</Text></View>
-      <View style={styles.ratingDistribution} accessibilityLabel="Rating distribution">{([5, 4, 3, 2, 1] as const).map((rating) => <View key={rating} style={styles.ratingDistributionRow}><Text style={styles.ratingDistributionLabel}>{rating}</Text><View style={styles.ratingDistributionTrack}><View style={[styles.ratingDistributionFill, { width: `${(stats.distribution[rating] / maxDistribution) * 100}%` }]} /></View><Text style={styles.ratingDistributionCount}>{stats.distribution[rating]}</Text></View>)}</View>
+function ReviewCard({ review, locale, reviewerAvatarLabel, reviewRatingLabel }: { review: ProfileReview; locale?: SupportedLocale; reviewerAvatarLabel: (name: string) => string; reviewRatingLabel: (rating: number) => string }) {
+  return <View className={styles.reviewCard}>
+    <View className={styles.reviewHeader}>
+      <ReviewAvatar name={review.reviewerName} uri={review.reviewerAvatar} accessibilityLabel={reviewerAvatarLabel(review.reviewerName)} />
+      <View className={styles.reviewHeaderText}>
+        <Text className={styles.itemTitle}>{review.reviewerName}</Text>
+        <Text className={styles.itemMeta}>{formatReviewDate(review.createdAt, locale)}</Text>
+      </View>
     </View>
-    <View style={styles.filterList}>{filters.map((value) => <Pressable testID={`review-filter-${value}`} key={value} accessibilityRole="button" accessibilityLabel={value === 'all' ? allLabel : `${value} stars`} accessibilityState={{ selected: filter === value }} onPress={() => setFilter(value)} style={[styles.filterChip, filter === value && styles.filterChipSelected]}><Text style={[styles.filterChipText, filter === value && styles.filterChipTextSelected]}>{value === 'all' ? allLabel : `${value} ★`}</Text></Pressable>)}</View>
-    {visibleReviews.length > 0 ? visibleReviews.map((review) => <View key={review.id} style={styles.reviewCard}><View style={styles.reviewHeader}><ReviewAvatar name={review.reviewerName} uri={review.reviewerAvatar} /><View style={styles.reviewHeaderText}><Text style={styles.itemTitle}>{review.reviewerName}</Text><Text style={styles.itemMeta}>{formatReviewDate(review.createdAt, locale)}</Text></View></View><Text style={styles.reviewRating}>{'★'.repeat(review.rating)}</Text><Text style={styles.itemDescription}>{review.comment}</Text>{review.questTitle ? <Text style={styles.itemMeta}>{review.questTitle}</Text> : null}</View>) : <Text style={styles.emptyText}>{emptyText}</Text>}
-  </>}</Section>;
+    <View accessibilityLabel={reviewRatingLabel(review.rating)} className={styles.reviewRating}>{[1, 2, 3, 4, 5].map((star) => <Star accessible={false} key={star} color={star <= review.rating ? colors.primaryDark : colors.borderSubtle} fill={star <= review.rating ? colors.primaryDark : 'transparent'} size={14} strokeWidth={1.8} />)}</View>
+    <Text className={styles.itemDescription}>{review.comment}</Text>
+    {review.questTitle ? <Text className={styles.itemMeta}>{review.questTitle}</Text> : null}
+  </View>;
+}
+
+export function Reviews({ reviews, stats, sectionTitle, emptyText, noMatchingReviewsText = 'No reviews match this rating.', showAllLabel = 'Show all reviews', allLabel, eligibleReviewsLabel, filteredReviewsLabel, reviewCountLabel, totalQuestsLabel, noRatingLabel = 'No ratings yet', ratingErrorText, accessibilityLabels, locale, listHeader, bottomPadding = 96, initialScrollOffset = 0, onScroll, errorText, retryLabel, onRetry }: { reviews: ProfileReview[]; stats: ProfileStatsData; sectionTitle: string; emptyText: string; noMatchingReviewsText?: string; showAllLabel?: string; allLabel: string; eligibleReviewsLabel: (count: number) => string; filteredReviewsLabel: (count: number, rating: number) => string; reviewCountLabel: string; totalQuestsLabel?: string; noRatingLabel?: string; ratingErrorText?: string; accessibilityLabels?: Pick<ProfileAccessibilityLabels, 'ratingSummaryLabel' | 'ratingDistributionLabel' | 'reviewerAvatarLabel' | 'reviewFilterLabel' | 'reviewRatingLabel'>; locale?: SupportedLocale; listHeader?: React.ReactElement | null; bottomPadding?: number; initialScrollOffset?: number; onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void } & SectionNoticeProps) {
+  const { width, fontScale } = useWindowDimensions();
+  const metrics = getProfileLayoutMetrics(width, fontScale);
+  const [filter, setFilter] = useState<1 | 2 | 3 | 4 | 5 | null>(null);
+  const labels = { ...defaultAccessibilityLabels, ...accessibilityLabels };
+  const visibleReviews = useMemo(() => filter === null ? reviews : reviews.filter((review) => review.rating === filter), [filter, reviews]);
+  const maxDistribution = Math.max(...([5, 4, 3, 2, 1] as const).map((rating) => stats.distribution[rating]), 1);
+  const distribution = <View className={styles.ratingDistribution} accessibilityLabel={labels.ratingDistributionLabel}>{([5, 4, 3, 2, 1] as const).map((rating) => <Pressable testID={`review-filter-${rating}`} key={rating} accessibilityRole="button" accessibilityLabel={`${labels.reviewFilterLabel(rating)}: ${stats.distribution[rating]} ${reviewCountLabel}`} accessibilityState={{ selected: filter === rating }} onPress={() => setFilter((current) => current === rating ? null : rating)} className={cn(styles.ratingDistributionRow, filter === rating && styles.ratingDistributionRowSelected)}><Text className={styles.ratingDistributionLabel}>{rating}</Text><View className={styles.ratingDistributionTrack}><View className={styles.ratingDistributionFill} style={{ width: `${(stats.distribution[rating] / maxDistribution) * 100}%` }} /></View><Text className={styles.ratingDistributionCount}>{stats.distribution[rating]}</Text></Pressable>)}</View>;
+  const reviewCountText = filter === null ? eligibleReviewsLabel(stats.ratingCount) : filteredReviewsLabel(visibleReviews.length, filter);
+  const reviewSummary = <View accessibilityLabel={labels.ratingSummaryLabel} className={styles.reviewSummary} testID="profile-review-summary">
+    <View className={styles.reviewScore}>
+      {stats.ratingAverage === null ? <Text className={styles.reviewScoreEmpty}>{noRatingLabel}</Text> : <Text className={styles.reviewScoreValue}>{stats.ratingAverage.toFixed(1)}</Text>}
+      <View accessible={false} className={styles.reviewScoreStars}>{[1, 2, 3, 4, 5].map((star) => <Star key={star} color={stats.ratingAverage !== null && star <= Math.round(stats.ratingAverage) ? colors.primaryDark : colors.borderSubtle} fill={stats.ratingAverage !== null && star <= Math.round(stats.ratingAverage) ? colors.primaryDark : 'transparent'} size={16} strokeWidth={1.8} />)}</View>
+      <Text accessibilityLiveRegion="polite" className={styles.reviewCount}>{reviewCountText}</Text>
+      {totalQuestsLabel ? <Text className={styles.reviewTotalQuests}>{`${totalQuestsLabel}: ${stats.totalQuests ?? '—'}`}</Text> : null}
+    </View>
+    <View className={styles.reviewDistribution}>{distribution}</View>
+  </View>;
+  const emptyState = filter === null ? <Text className={styles.emptyText}>{emptyText}</Text> : <EmptyState message={noMatchingReviewsText} actionLabel={showAllLabel} onAction={() => setFilter(null)} />;
+  const sectionHeader = <>
+    {listHeader}
+    <View testID={`profile-section-${sectionTitle}`} className={styles.section} style={{ marginTop: metrics.sectionGap, padding: metrics.cardPadding }}>
+      <Text accessibilityRole="header" className={styles.sectionTitle} maxFontSizeMultiplier={2} style={{ fontSize: metrics.sectionTitleFontSize, lineHeight: Math.round(metrics.sectionTitleFontSize * 1.3) }}>{sectionTitle}</Text>
+      <View className={styles.rule} />
+      {errorText ? <SectionNotice errorText={errorText} retryLabel={retryLabel} onRetry={onRetry} /> : <>
+        {ratingErrorText ? <SectionNotice errorText={ratingErrorText} retryLabel={retryLabel} onRetry={onRetry} /> : <>{reviewSummary}{filter !== null ? <Pressable accessibilityRole="button" accessibilityLabel={showAllLabel} onPress={() => setFilter(null)} className={styles.showAllReviews}><Text className={styles.showAllReviewsText}>{showAllLabel}</Text></Pressable> : null}</>}
+      </>}
+    </View>
+  </>;
+
+  return <FlatList
+    testID="profile-reviews-list"
+    data={errorText ? [] : visibleReviews}
+    keyExtractor={(review) => review.id}
+    contentContainerClassName={styles.profileListContent}
+    contentContainerStyle={{ paddingBottom: bottomPadding, paddingHorizontal: metrics.pagePadding, paddingTop: metrics.sectionGap }}
+    contentOffset={{ x: 0, y: initialScrollOffset }}
+    onScroll={onScroll}
+    scrollEventThrottle={16}
+    ListHeaderComponent={sectionHeader}
+    ListEmptyComponent={errorText ? null : emptyState}
+    renderItem={({ item }) => <ReviewCard review={item} locale={locale} reviewerAvatarLabel={labels.reviewerAvatarLabel} reviewRatingLabel={labels.reviewRatingLabel} />}
+    showsVerticalScrollIndicator={false}
+  />;
 }

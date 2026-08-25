@@ -10,7 +10,9 @@
     "@expo/vector-icons": "^15.0.2",
     "@react-native-community/datetimepicker": "9.1.0",
     "@react-native-google-signin/google-signin": "^16.1.4",
+    "@tailwindcss/postcss": "^4.3.3",
     "better-auth": "1.6.26",
+    "clsx": "^2.1.1",
     "expo": "~57.0.9",
     "expo-build-properties": "~57.0.10",
     "expo-constants": "~57.0.8",
@@ -30,9 +32,11 @@
     "expo-symbols": "~57.0.1",
     "expo-system-ui": "~57.0.2",
     "lucide-react-native": "^1.28.0",
+    "nativewind": "5.0.0-preview.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.2",
+    "react-native-css": "^3.0.1",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "~5.7.0",
@@ -40,6 +44,8 @@
     "react-native-svg": "15.15.4",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.10.1",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -48,16 +54,22 @@
     "@types/react": "~19.2.2",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~57.0.1",
+    "expo-mcp": "~0.2.1",
     "jest": "^29.7.0",
     "jest-expo": "57.0.2",
     "react-test-renderer": "^19.2.8",
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "start": "expo start",
+    "start": "npm run update-api-env && expo start",
+    "update-api-env": "node ./scripts/update-api-env.js",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo run:android",
+    "android": "node ./scripts/run-development-build.js android",
     "ios": "expo run:ios",
+    "dev:android": "node ./scripts/run-development-build.js android",
+    "dev:ios": "node ./scripts/run-development-build.js ios",
+    "dev:start": "npm run update-api-env && expo start --dev-client",
+    "demo:android:account": "node ./scripts/switch-demo-account.js",
     "build:apk": "eas build --platform android --profile preview",
     "web": "expo start --web",
     "lint": "expo lint",
@@ -65,6 +77,9 @@
     "test": "jest"
   },
   "private": true,
+  "resolutions": {
+    "lightningcss": "1.30.1"
+  },
   "jest": {
     "preset": "jest-expo",
     "setupFilesAfterEnv": [

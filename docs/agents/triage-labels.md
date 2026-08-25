@@ -10,6 +10,6 @@ The skills speak in terms of five canonical triage roles. This file maps those r
 | `ready-for-human`           | `ready-for-human`                | Requires human implementation            |
 | `wontfix`                   | `wontfix`                        | Will not be actioned                     |
 
-These labels don't exist yet in Linear team Frontend — create via `create_issue_label` on first use.
+These labels already exist in Linear team Frontend; use the existing labels rather than creating duplicates.
 
 Edit the right-hand column to match whatever vocabulary you actually use.

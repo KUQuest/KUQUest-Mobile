@@ -54,6 +54,19 @@ Native Google Sign-In passes its verified ID token to `authClient.signIn.social`
 
 The native Google module requires a development build; Expo Go cannot provide the native sign-in implementation.
 
+To rebuild and install a development client with the native Google module included, run:
+
+```bash
+npm run dev:android
+# or
+npm run dev:ios
+
+# start Metro for the installed development client
+npm run dev:start
+```
+
+After the native dependency or app config changes, restart Metro and open the installed development client—not Expo Go.
+
 ## Learn more
 
 To learn more about developing your project with Expo, look at the following resources:

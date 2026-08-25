@@ -1,10 +1,8 @@
-import {
-  GoogleSignin,
-  isSuccessResponse,
-  type SignInResponse,
-} from '@react-native-google-signin/google-signin';
+import type { SignInResponse } from '@react-native-google-signin/google-signin';
+import * as SecureStore from 'expo-secure-store';
 import { ApiClient, ApiError } from '../../api/ApiClient';
 import { authUserSchema } from '../../api/contracts';
+import { ProfileApi } from '../../api/ProfileApi';
 import { StudentApi } from '../../api/StudentApi';
 import {
   AuthAdapter,
@@ -12,36 +10,19 @@ import {
   AuthSession,
   RoutingDestination,
 } from './types';
-import { authClient } from './authClient';
+import { authClient, type BetterAuthClientApi } from './authClient';
+import { AUTH_COOKIE_STORAGE_KEY, AUTH_SESSION_CACHE_STORAGE_KEY } from './authStorage';
+import { loadNativeGoogleSignin, type NativeGoogleSigninApi, type NativeGoogleSigninSuccessResponse } from './nativeGoogleSignin';
 
-export interface NativeGoogleSigninApi {
-  configure(options: { webClientId?: string }): void;
-  hasPlayServices(options: { showPlayServicesUpdateDialog: boolean }): Promise<boolean>;
-  signIn(): Promise<SignInResponse>;
-  signOut(): Promise<null>;
-}
-
-interface BetterAuthResponse {
-  data?: unknown;
-  error?: unknown;
-}
-
-export interface BetterAuthClientApi {
-  signIn: {
-    social(input: {
-      provider: 'google';
-      idToken: { token: string };
-    }): Promise<BetterAuthResponse>;
-  };
-  getSession(): Promise<BetterAuthResponse>;
-  signOut(): Promise<BetterAuthResponse>;
-}
+export type { BetterAuthClientApi } from './authClient';
+export type { NativeGoogleSigninApi } from './nativeGoogleSignin';
 
 export interface AuthServiceOptions {
   apiBaseUrl?: string;
   apiClient?: ApiClient;
   fetchImpl?: typeof fetch;
   studentApi?: StudentApi;
+  profileApi?: ProfileApi;
   googleSignin?: NativeGoogleSigninApi | null;
   authClient?: BetterAuthClientApi;
 }
@@ -60,6 +41,24 @@ function getErrorCode(error: unknown): unknown {
   return (error as { code?: unknown }).code;
 }
 
+const SIGN_OUT_TIMEOUT_MS = 2000;
+
+async function settleWithin<T>(promise: Promise<T>, timeoutMs: number): Promise<T | undefined> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<undefined>((resolve) => {
+        timeout = setTimeout(() => resolve(undefined), timeoutMs);
+      }),
+    ]);
+  } catch {
+    return undefined;
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
 function authDebug(message: string, details?: Record<string, unknown>): void {
   if (__DEV__) {
     console.log(`[auth] ${message}`, details ?? '');
@@ -75,7 +74,9 @@ function getSessionUser(data: unknown) {
 
 export class AuthService implements AuthAdapter {
   private readonly studentApi: StudentApi;
+  private readonly profileApi: ProfileApi;
   private readonly nativeGoogleSignin: NativeGoogleSigninApi | null;
+  private readonly isSuccessResponse: (response: SignInResponse) => response is NativeGoogleSigninSuccessResponse;
   private readonly authClient: BetterAuthClientApi;
 
   constructor(options: AuthServiceOptions = {}) {
@@ -84,9 +85,14 @@ export class AuthService implements AuthAdapter {
       fetchImpl: options.fetchImpl,
     });
     this.studentApi = options.studentApi ?? new StudentApi(apiClient);
+    this.profileApi = options.profileApi ?? new ProfileApi(this.studentApi);
+    const nativeGoogleSigninModule = options.googleSignin === undefined
+      ? loadNativeGoogleSignin()
+      : null;
     this.nativeGoogleSignin = options.googleSignin === undefined
-      ? GoogleSignin
+      ? nativeGoogleSigninModule?.GoogleSignin ?? null
       : options.googleSignin;
+    this.isSuccessResponse = nativeGoogleSigninModule?.isSuccessResponse ?? ((response): response is NativeGoogleSigninSuccessResponse => response.type === 'success');
     this.authClient = options.authClient ?? authClient;
 
     if (this.nativeGoogleSignin) {
@@ -149,24 +155,25 @@ export class AuthService implements AuthAdapter {
     return this.studentApi;
   }
 
+  async getProfileApi(): Promise<ProfileApi> {
+    const session = await this.getSession();
+    if (!session) throw new AuthError('SESSION_EXPIRED', 'No active session');
+    return this.profileApi;
+  }
+
   async signOut(): Promise<void> {
     authDebug('sign-out started');
-    try {
-      await this.authClient.signOut();
-      authDebug('Better Auth sign-out completed');
-    } catch {
-      authDebug('Better Auth sign-out failed; continuing native sign-out');
-      // Native sign-out still runs when the remote Better Auth request fails.
-    } finally {
-      if (this.nativeGoogleSignin) {
-        try {
-          await this.nativeGoogleSignin.signOut();
-          authDebug('native Google sign-out completed');
-        } catch {
-          // Local Better Auth cleanup remains authoritative.
-        }
-      }
-    }
+    const remoteSignOut = settleWithin(this.authClient.signOut(), SIGN_OUT_TIMEOUT_MS);
+    const nativeSignOut = this.nativeGoogleSignin
+      ? settleWithin(this.nativeGoogleSignin.signOut(), SIGN_OUT_TIMEOUT_MS)
+      : Promise.resolve(undefined);
+
+    await Promise.all([remoteSignOut, nativeSignOut]);
+    await Promise.all([
+      SecureStore.deleteItemAsync(AUTH_COOKIE_STORAGE_KEY),
+      SecureStore.deleteItemAsync(AUTH_SESSION_CACHE_STORAGE_KEY),
+    ]);
+    authDebug('sign-out cleanup finished');
   }
 
   private async signInWithNativeGoogle(): Promise<AuthSession> {
@@ -191,7 +198,7 @@ export class AuthService implements AuthAdapter {
         hasIdToken: response.type === 'success' && Boolean(response.data.idToken),
       });
 
-      if (!isSuccessResponse(response)) {
+      if (!this.isSuccessResponse(response)) {
         throw new AuthError('OAUTH_CANCELLED');
       }
 

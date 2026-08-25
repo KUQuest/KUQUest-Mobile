@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, Modal, FlatList, TextInput, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
+import { cn } from '@/tw/cn';
+import { Keyboard, Modal, Platform, Pressable as RNPressable } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Pressable, SafeAreaView, Text, TextInput, View } from '@/tw';
 import { Check, ChevronDown, CircleX, Search, X } from 'lucide-react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import styles from '../styles/selectStyles';
 
@@ -29,7 +31,7 @@ interface SelectProps {
   success?: boolean;
 }
 
-export function Select({
+export const Select = React.forwardRef<React.ComponentRef<typeof RNPressable>, SelectProps>(function Select({
   label,
   options,
   value,
@@ -46,7 +48,7 @@ export function Select({
   closeLabel = 'Close',
   disabled = false,
   success = false,
-}: SelectProps) {
+}, ref) {
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const selectedOption = options.find((opt) => opt.value === value);
@@ -62,39 +64,40 @@ export function Select({
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+    <View className={styles.container}>
+      <Text className={styles.label}>{label}</Text>
       <Pressable
-        style={[styles.selectBox, error ? styles.selectBoxError : null, success ? styles.selectBoxSuccess : null, disabled ? styles.selectBoxDisabled : null]}
+        ref={ref}
+        className={cn(styles.selectBox, error ? styles.selectBoxError : null, success ? styles.selectBoxSuccess : null, disabled ? styles.selectBoxDisabled : null)}
         onPress={() => setModalVisible(true)}
         disabled={disabled}
         accessibilityRole="button"
-        accessibilityLabel={selectedOption?.label ?? placeholder ?? label}
+        accessibilityLabel={`${label}: ${selectedOption?.label ?? placeholder ?? 'Not selected'}`}
         accessibilityState={{ disabled, expanded: modalVisible }}
         testID="select-trigger"
       >
-        <Text style={[styles.selectText, !selectedOption && styles.placeholderText]}>
+        <Text className={cn(styles.selectText, !selectedOption && styles.placeholderText)}>
           {selectedOption ? selectedOption.label : placeholder || 'Select...'}
         </Text>
         <ChevronDown color={colors.textMuted} size={18} strokeWidth={2} />
       </Pressable>
-      {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.errorText}>{error}</Text> : null}
+      {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" className={styles.errorText}>{error}</Text> : null}
 
       <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={closeModal}>
         <SafeAreaProvider>
-          <SafeAreaView style={styles.modalOverlay} edges={['bottom']}>
-            <Pressable style={styles.modalDismissArea} onPress={closeModal}>
-              <KeyboardAvoidingView style={styles.keyboardAvoidingView} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-                <Pressable style={styles.modalContent} onPress={(event) => event.stopPropagation()}>
-                <View style={styles.modalHandle} />
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>{label}</Text>
-                  <Pressable onPress={closeModal} style={styles.closeButton} accessibilityRole="button" accessibilityLabel={closeLabel} testID="close-select-button">
+          <SafeAreaView className={styles.modalOverlay} edges={['bottom']}>
+            <Pressable className={styles.modalDismissArea} onPress={closeModal}>
+              <KeyboardAvoidingView className={styles.keyboardAvoidingView} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                <Pressable className={styles.modalContent} onPress={(event) => event.stopPropagation()}>
+                <View className={styles.modalHandle} />
+                <View className={styles.modalHeader}>
+                  <Text className={styles.modalTitle}>{label}</Text>
+                  <Pressable onPress={closeModal} className={styles.closeButton} accessibilityRole="button" accessibilityLabel={closeLabel} testID="close-select-button">
                     <X color={colors.textSecondary} size={20} strokeWidth={2} />
                   </Pressable>
                 </View>
                 {searchable ? (
-                  <View style={styles.searchContainer}>
+                  <View className={styles.searchContainer}>
                     <Search color={colors.textMuted} size={18} strokeWidth={2} />
                     <TextInput
                       autoFocus
@@ -102,13 +105,13 @@ export function Select({
                       onChangeText={setSearchQuery}
                       placeholder={searchPlaceholder}
                       placeholderTextColor={colors.textFaint}
-                      style={styles.searchInput}
+                      className={styles.searchInput}
                       accessibilityRole="search"
                       accessibilityLabel={searchPlaceholder ?? label}
                       testID="select-search-input"
                     />
                     {searchQuery ? (
-                      <Pressable style={styles.clearButton} onPress={() => setSearchQuery('')} accessibilityRole="button" accessibilityLabel={clearSearchLabel} testID="clear-search-button">
+                      <Pressable className={styles.clearButton} onPress={() => setSearchQuery('')} accessibilityRole="button" accessibilityLabel={clearSearchLabel} testID="clear-search-button">
                         <CircleX color={colors.textMuted} size={18} strokeWidth={2} />
                       </Pressable>
                     ) : null}
@@ -120,15 +123,16 @@ export function Select({
                   keyboardShouldPersistTaps="handled"
                   renderItem={({ item }) => (
                     <Pressable
-                      style={styles.optionItem}
+                      className={styles.optionItem}
                       onPress={() => {
                         onValueChange(item.value);
                         closeModal();
                       }}
                       accessibilityRole="radio"
+                      accessibilityLabel={`${label}: ${item.label}`}
                       accessibilityState={{ selected: item.value === value }}
                     >
-                      <Text style={[styles.optionText, item.value === value && styles.optionTextSelected]}>
+                      <Text className={cn(styles.optionText, item.value === value && styles.optionTextSelected)}>
                         {item.label}
                       </Text>
                       {item.value === value && (
@@ -137,7 +141,7 @@ export function Select({
                     </Pressable>
                   )}
                   ListEmptyComponent={
-                    <Text style={styles.emptyText}>
+                    <Text className={styles.emptyText}>
                       {loading ? loadingMessage : normalizedQuery ? noResultsMessage : emptyMessage}
                     </Text>
                   }
@@ -150,4 +154,5 @@ export function Select({
       </Modal>
     </View>
   );
-}
+});
+Select.displayName = 'Select';

@@ -71,6 +71,7 @@ jest.mock('expo-secure-store', () => {
 
 jest.mock('@expo/ui', () => ({
   Host: ({ children, ...props }) => React.createElement(View, props, children),
+  Switch: ({ value, onValueChange, testID, disabled, ...props }) => React.createElement(Pressable, { accessibilityRole: 'switch', accessibilityState: { checked: value, disabled }, onPress: () => onValueChange(!value), testID, disabled, ...props }),
   Button: ({ label, onPress, testID, disabled, accessibilityLabel, style, ...props }) =>
     React.createElement(
       Pressable,
@@ -86,27 +87,50 @@ jest.mock('lucide-react-native', () => {
 
   return {
     Check: Icon,
+    Bell: Icon,
     CheckSquare: Icon,
     BriefcaseBusiness: Icon,
     CalendarDays: Icon,
+    CalendarClock: Icon,
+    ArrowDownUp: Icon,
+    AlertCircle: Icon,
     ChevronDown: Icon,
+    ChevronLeft: Icon,
+    ChevronRight: Icon,
+    ArrowLeft: Icon,
+    Clock3: Icon,
     CircleAlert: Icon,
     CircleUserRound: Icon,
+    ClipboardCheck: Icon,
+    CircleHelp: Icon,
+    FileText: Icon,
+    Globe2: Icon,
+    LockKeyhole: Icon,
+    Moon: Icon,
     CircleX: Icon,
     Grid2X2: Icon,
     Image: Icon,
     ImageIcon: Icon,
+    Info: Icon,
     LayoutDashboard: Icon,
+    MapPin: Icon,
     MessageSquare: Icon,
     Pencil: Icon,
     Plus: Icon,
+    Settings2: Icon,
+    Star: Icon,
     RefreshCw: Icon,
     Search: Icon,
+    SlidersHorizontal: Icon,
     TriangleAlert: Icon,
     Trash2: Icon,
     UserRound: Icon,
+    Users: Icon,
     X: Icon,
     GraduationCap: Icon,
+    Award: Icon,
+    Building2: Icon,
+    Code2: Icon,
   };
 });
 

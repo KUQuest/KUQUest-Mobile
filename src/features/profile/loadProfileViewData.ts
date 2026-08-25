@@ -2,15 +2,12 @@ import { ApiError } from '../../api/ApiClient';
 import { authService } from '../auth/AuthService';
 import { AuthError } from '../auth/types';
 import type { SupportedLocale } from '../../locales/LocaleProvider';
-import type { ProfileExperience, ProfileReview, ProfileSectionErrors, ProfileViewData } from './components/ProfileComponents';
-import { demoExperiences, demoProfileStats, demoProfileTags, demoReviews, isProfileDemoEnabled } from './profileDemoData';
-import { selectTopProfileTags, sortExperiences, type OptionalReadResult } from './profileViewData';
+import type { ProfileSectionErrors, ProfileViewData } from './components/ProfileComponents';
+import { demoCertificates, demoExperiences, demoProfileIdentity, demoProfileImage, demoProfileStats, demoProfileTags, demoReviews, demoWorks, isProfileDemoEnabled } from './profileDemoData';
+import { mapApiCertificateToView, mapApiExperienceToView, mapApiPortfolioToView, mapApiReviewToView } from './profileMappers';
+import { sortExperiences, type OptionalReadResult } from './profileViewData';
 
-function formatDate(value: string, locale: SupportedLocale): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-US', { year: 'numeric', month: 'short' }).format(date);
-}
+const PROFILE_TAG_LIMIT = 3;
 
 async function readOptional<T>(request: () => Promise<T>): Promise<OptionalReadResult<T>> {
   try {
@@ -39,8 +36,30 @@ function hasReadError(result: OptionalReadResult<unknown>): boolean {
   return result.kind === 'error';
 }
 
+function getDemoProfileViewData(): ProfileViewData {
+  return {
+    name: demoProfileIdentity.name,
+    faculty: demoProfileIdentity.faculty,
+    university: 'State University',
+    occupation: demoProfileIdentity.occupation,
+    academicYear: '',
+    department: demoProfileIdentity.department,
+    tags: demoProfileTags.slice(0, PROFILE_TAG_LIMIT),
+    profileImage: demoProfileImage,
+    about: demoProfileIdentity.about,
+    stats: demoProfileStats,
+    experiences: demoExperiences,
+    certificates: demoCertificates,
+    works: demoWorks,
+    reviews: demoReviews,
+    sectionErrors: {},
+  };
+}
+
 export async function loadProfileViewData(locale: SupportedLocale): Promise<ProfileViewData> {
   const demoEnabled = isProfileDemoEnabled();
+  if (demoEnabled) return getDemoProfileViewData();
+
   const session = await authService.getSession();
   if (!session) throw new AuthError('SESSION_EXPIRED', 'No active session');
 
@@ -59,24 +78,8 @@ export async function loadProfileViewData(locale: SupportedLocale): Promise<Prof
   const status = getValue(statusResult);
   const options = getValue(optionsResult);
   const occupation = options?.occupations.find((item) => item.id === status?.occupationId)?.name ?? '';
-  const apiExperiences: ProfileExperience[] = (getValue(experiencesResult) ?? []).map((experience) => ({
-    id: experience.id,
-    title: experience.title,
-    employmentType: experience.employmentType,
-    organization: experience.organization ?? '',
-    description: experience.description ?? '',
-    startedAt: experience.startedAt,
-    endedAt: experience.endedAt ?? null,
-  }));
-  const apiReviews: ProfileReview[] = (getValue(reviewsResult)?.items ?? []).map((review) => ({
-    id: review.id,
-    reviewerName: review.reviewer.displayName,
-    reviewerAvatar: review.reviewer.avatar?.url ?? '',
-    rating: review.rating,
-    comment: review.comment,
-    createdAt: review.createdAt,
-    questTitle: review.quest?.title ?? '',
-  }));
+  const apiExperiences = (getValue(experiencesResult) ?? []).map(mapApiExperienceToView);
+  const apiReviews = (getValue(reviewsResult)?.items ?? []).map(mapApiReviewToView);
 
   const sectionErrors: ProfileSectionErrors = {
     ...(hasReadError(experiencesResult) ? { experience: true } : {}),
@@ -85,47 +88,35 @@ export async function loadProfileViewData(locale: SupportedLocale): Promise<Prof
     ...(hasReadError(reputationResult) ? { reputation: true } : {}),
     ...(hasReadError(reviewsResult) ? { reviews: true } : {}),
   };
-  const certificates = getValue(certificatesResult) ?? [];
+  const apiCertificates = getValue(certificatesResult) ?? [];
   const portfolio = getValue(portfolioResult) ?? [];
   const reputation = getValue(reputationResult);
-  const reviews = getValue(reviewsResult);
-
+  const profileTags = profile.tags ?? [];
   return {
     name: [profile.firstName, profile.lastName].filter(Boolean).join(' ') || session.user.name,
     faculty: profile.department?.faculty.name ?? '',
-    university: profile.university === undefined
-      ? (demoEnabled ? 'State University' : '')
-      : (profile.university ?? ''),
-    occupation: profile.occupation?.name || occupation,
+    university: profile.university === undefined ? '' : (profile.university ?? ''),
+    occupation: profile.occupation?.name || occupation || '',
     academicYear: profile.academicYear === null ? '' : String(profile.academicYear ?? ''),
     department: profile.department?.name ?? '',
-    tags: selectTopProfileTags(profile.tags
-      ?? (profile.tags === undefined && demoEnabled ? demoProfileTags : [])),
-    profileImage: profile.avatar?.url ?? session.user.image ?? '',
+    tags: profileTags.slice(0, PROFILE_TAG_LIMIT),
+    profileImage: profile.avatar
+      ? { uri: profile.avatar.url, cacheKey: profile.avatar.fileId }
+      : session.user.image ?? '',
     about: profile.bio ?? '',
     stats: reputation
       ? { totalQuests: reputation.totalQuests, ratingAverage: reputation.rating.average, ratingCount: reputation.rating.count, distribution: reputation.rating.distribution }
-      : (reputationResult.kind === 'unsupported' && demoEnabled
-        ? demoProfileStats
-        : { totalQuests: null, ratingAverage: null, ratingCount: 0, distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } }),
-    experiences: experiencesResult.kind === 'unsupported' && demoEnabled
-      ? demoExperiences
-      : sortExperiences(apiExperiences),
-    certificates: certificates.map((certificate) => ({
-      id: certificate.id,
-      title: certificate.name,
-      detail: `${certificate.issuer} · ${formatDate(certificate.issuedAt, locale)}`,
-      link: certificate.image?.url ?? '',
-    })),
-    works: portfolio.map((entry) => ({
-      id: entry.id,
-      title: entry.title,
-      detail: entry.description ?? '',
-      imageUri: entry.images[0]?.url ?? '',
-    })),
-    reviews: reviews
+      : { totalQuests: null, ratingAverage: null, ratingCount: 0, distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } },
+    experiences: apiExperiences.length > 0
+      ? sortExperiences(apiExperiences)
+      : [],
+    certificates: apiCertificates.map((certificate) => mapApiCertificateToView(certificate, locale)),
+    works: portfolio.length > 0
+      ? portfolio.map(mapApiPortfolioToView)
+      : [],
+    reviews: apiReviews.length > 0
       ? apiReviews
-      : (reviewsResult.kind === 'unsupported' && demoEnabled ? demoReviews : []),
+      : [],
     sectionErrors,
   };
 }

@@ -1,50 +1,12 @@
-import { StyleSheet } from 'react-native';
-import { colors } from '@/theme/colors';
-import { spacing } from '@/theme/spacing';
-import { fontFamily } from '@/theme/typography';
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: spacing.md,
-    width: '100%',
-  },
-  label: {
-    fontFamily: fontFamily.bold,
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginBottom: 6,
-  },
-  input: {
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    color: colors.textStrong,
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    borderRadius: 10,
-    paddingHorizontal: spacing.sm + 4,
-    paddingVertical: spacing.sm + 2,
-    backgroundColor: colors.white,
-    minHeight: 48,
-  },
-  inputError: {
-    borderColor: colors.danger,
-  },
-  inputFocused: {
-    borderColor: colors.primary,
-  },
-  inputSuccess: {
-    borderColor: colors.success,
-  },
-  inputDisabled: {
-    backgroundColor: colors.surfaceMuted,
-    opacity: 0.6,
-  },
-  errorText: {
-    fontFamily: fontFamily.regular,
-    fontSize: 12,
-    color: colors.danger,
-    marginTop: 4,
-  },
-});
+const styles = {
+  container: 'mb-[16px] w-full',
+  label: 'font-ku-bold text-ku-label text-ku-text-secondary mb-[6px]',
+  input: 'font-ku-regular text-ku-body-small text-ku-text-strong border border-ku-border-muted rounded-[10px] px-[12px] py-[10px] bg-ku-card min-h-[48px]',
+  inputError: 'border-ku-danger',
+  inputFocused: 'border-ku-primary',
+  inputSuccess: 'border-ku-success',
+  inputDisabled: 'bg-ku-surface-muted opacity-[0.6]',
+  errorText: 'font-ku-regular text-ku-label text-ku-danger mt-[4px]',
+} as const;
 
 export default styles;

@@ -1,63 +1,14 @@
-import { StyleSheet } from 'react-native';
-import { colors } from '@/theme/colors';
-import { spacing } from '@/theme/spacing';
-import { fontFamily } from '@/theme/typography';
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: spacing.md,
-    width: '100%',
-  },
-  label: {
-    fontFamily: fontFamily.bold,
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginBottom: 6,
-  },
-  input: {
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    color: colors.textStrong,
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    borderRadius: 8,
-    paddingHorizontal: spacing.sm + 4,
-    paddingTop: spacing.sm + 4,
-    paddingBottom: spacing.sm + 4,
-    backgroundColor: colors.white,
-    minHeight: 120,
-  },
-  inputError: {
-    borderColor: colors.danger,
-  },
-  inputFocused: {
-    borderColor: colors.primary,
-  },
-  inputSuccess: {
-    borderColor: colors.success,
-  },
-  inputDisabled: {
-    backgroundColor: colors.surfaceMuted,
-    opacity: 0.6,
-  },
-  footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  errorText: {
-    fontFamily: fontFamily.regular,
-    fontSize: 12,
-    color: colors.danger,
-    flex: 1,
-  },
-  counterText: {
-    fontFamily: fontFamily.regular,
-    fontSize: 11,
-    color: colors.textFaint,
-    textAlign: 'right',
-  },
-});
+const styles = {
+  container: 'mb-[16px] w-full',
+  label: 'font-ku-bold text-ku-label text-ku-text-secondary mb-[6px]',
+  input: 'font-ku-regular text-ku-body-small text-ku-text-strong border border-ku-border-muted rounded-[10px] px-[12px] pt-[12px] pb-[12px] bg-ku-card min-h-[120px]',
+  inputError: 'border-ku-danger',
+  inputFocused: 'border-ku-primary',
+  inputSuccess: 'border-ku-success',
+  inputDisabled: 'bg-ku-surface-muted opacity-[0.6]',
+  footerRow: 'flex-row justify-between items-center mt-[4px]',
+  errorText: 'font-ku-regular text-ku-label text-ku-danger flex-1',
+  counterText: 'font-ku-regular text-ku-caption text-ku-text-faint text-right',
+} as const;
 
 export default styles;

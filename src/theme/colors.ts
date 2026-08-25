@@ -1,4 +1,6 @@
-export const colors = {
+import { Appearance } from 'react-native';
+
+export const lightColors = {
   background: '#FFFCFA',
   surface: '#FCF9F8',
   surfaceMuted: '#F5F2F0',
@@ -8,6 +10,9 @@ export const colors = {
   surfaceDanger: '#FDECEF',
   surfaceImage: '#DDE9D9',
   surfacePlaceholder: '#E8E8E8',
+  surfaceNavTranslucent: 'rgba(252, 249, 248, 0.92)',
+  borderNav: 'rgba(64, 73, 65, 0.14)',
+  navIconMuted: '#66716A',
   primary: '#014925',
   primaryDark: '#004D25',
   primaryDeep: '#003417',
@@ -34,3 +39,54 @@ export const colors = {
   white: '#FFFEFD',
   overlay: 'rgba(18, 32, 24, 0.4)',
 } as const;
+
+export const darkColors = {
+  background: '#101713',
+  surface: '#17211B',
+  surfaceMuted: '#202B24',
+  surfaceSubtle: '#1C2520',
+  surfaceAccent: '#1E3A29',
+  surfaceSuccess: '#173522',
+  surfaceDanger: '#3D1E23',
+  surfaceImage: '#2F4934',
+  surfacePlaceholder: '#303735',
+  surfaceNavTranslucent: 'rgba(23, 33, 27, 0.94)',
+  borderNav: 'rgba(213, 231, 216, 0.16)',
+  navIconMuted: '#A3B1A6',
+  primary: '#0A7B43',
+  primaryDark: '#0F9D54',
+  primaryDeep: '#A6E6AF',
+  text: '#E6EFE8',
+  textStrong: '#F3F8F3',
+  textSecondary: '#C4D1C7',
+  textMuted: '#A3B1A6',
+  textSubtle: '#AEBDB1',
+  textFaint: '#97A69A',
+  border: '#526258',
+  borderSubtle: '#344139',
+  borderMuted: '#445047',
+  borderAccent: '#3B6B49',
+  borderDanger: '#87515A',
+  borderSuccess: '#4A8057',
+  danger: '#FF7B7B',
+  dangerDark: '#FFB4B8',
+  dangerLight: '#8B454B',
+  dangerIcon: '#FF8A8A',
+  success: '#8BD391',
+  successBright: '#8BE091',
+  successLight: '#B5F3B8',
+  black: '#0B100D',
+  white: '#F7FBF7',
+  overlay: 'rgba(0, 0, 0, 0.64)',
+} as const;
+
+export type ThemeColors = typeof lightColors;
+
+// Existing consumers can keep reading `colors.foo`; the proxy resolves the
+// current native appearance without requiring every caller to add a hook.
+export const colors = new Proxy(lightColors, {
+  get(_target, property: keyof ThemeColors) {
+    const palette = Appearance.getColorScheme() === 'dark' ? darkColors : lightColors;
+    return palette[property];
+  },
+}) as ThemeColors;

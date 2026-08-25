@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TextInputProps } from 'react-native';
+import { cn } from '@/tw/cn';
+import { TextInput as RNTextInput, TextInputProps } from 'react-native';
+import { Text, TextInput, View } from '@/tw';
 import { colors } from '@/theme/colors';
 import styles from '../styles/inputStyles';
 
@@ -9,21 +11,15 @@ interface InputProps extends TextInputProps {
   success?: boolean;
 }
 
-export function Input({ label, error, success = false, style, accessibilityLabel, editable = true, onFocus, onBlur, ...props }: InputProps) {
+export const Input = React.forwardRef<React.ComponentRef<typeof RNTextInput>, InputProps>(function Input({ label, error, success = false, style, accessibilityLabel, editable = true, onFocus, onBlur, ...props }, ref) {
   const [focused, setFocused] = useState(false);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+    <View className={styles.container}>
+      <Text className={styles.label}>{label}</Text>
       <TextInput
-        style={[
-          styles.input,
-          error ? styles.inputError : null,
-          success ? styles.inputSuccess : null,
-          focused ? styles.inputFocused : null,
-          !editable ? styles.inputDisabled : null,
-          style,
-        ]}
+        ref={ref}
+        className={cn(styles.input, error ? styles.inputError : null, success ? styles.inputSuccess : null, focused ? styles.inputFocused : null, !editable ? styles.inputDisabled : null)} style={style}
         placeholderTextColor={colors.textFaint}
         accessibilityLabel={accessibilityLabel ?? label}
         accessibilityState={{ disabled: !editable }}
@@ -38,7 +34,8 @@ export function Input({ label, error, success = false, style, accessibilityLabel
         }}
         {...props}
       />
-      {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.errorText}>{error}</Text> : null}
+      {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" className={styles.errorText}>{error}</Text> : null}
     </View>
   );
-}
+});
+Input.displayName = 'Input';
