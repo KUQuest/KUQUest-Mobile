@@ -1,0 +1,77 @@
+name: Android Staging
+
+on:
+  workflow_run:
+    workflows: [Mobile CI]
+    types: [completed]
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit or ref contained in develop
+        required: false
+        default: develop
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-staging
+  cancel-in-progress: true
+
+jobs:
+  resolve:
+    name: Resolve trusted staging commit
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    outputs:
+      source_sha: ${{ steps.source.outputs.source_sha }}
+    steps:
+      - name: Checkout develop history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: develop
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve and validate source commit
+        id: source
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          WORKFLOW_RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          REQUESTED_REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == workflow_run ]]; then
+            source_sha="$WORKFLOW_RUN_SHA"
+          else
+            requested_ref=${REQUESTED_REF:-develop}
+            source_sha=$(git rev-parse --verify --end-of-options "${requested_ref}^{commit}")
+          fi
+          if [[ ! "$source_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            printf 'Resolved staging source is not a full commit SHA: %s\n' "$source_sha" >&2
+            exit 78
+          fi
+          if ! git merge-base --is-ancestor "$source_sha" origin/develop; then
+            printf 'Staging source %s is not contained in origin/develop\n' "$source_sha" >&2
+            exit 78
+          fi
+          printf 'source_sha=%s\n' "$source_sha" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build staging APK
+    needs: resolve
+    permissions:
+      contents: read
+    uses: ./.github/workflows/android-apk-build.yml
+    with:
+      source_sha: ${{ needs.resolve.outputs.source_sha }}
+      variant: staging
+      version_code: ${{ github.run_number }}
+      environment_name: staging
+      retention_days: 7

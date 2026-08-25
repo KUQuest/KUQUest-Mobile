@@ -1,0 +1,214 @@
+name: Android APK Build
+
+on:
+  workflow_call:
+    inputs:
+      source_sha:
+        description: Exact commit to build
+        required: true
+        type: string
+      variant:
+        description: App variant (staging or production)
+        required: true
+        type: string
+      version_code:
+        description: Android versionCode for this build
+        required: true
+        type: string
+      environment_name:
+        description: GitHub Environment containing build configuration and signing credentials
+        required: true
+        type: string
+      retention_days:
+        description: Build artifact retention
+        required: true
+        type: number
+    outputs:
+      apk_name:
+        description: Packaged APK file name
+        value: ${{ jobs.build.outputs.apk_name }}
+      artifact_name:
+        description: GitHub Actions artifact name
+        value: ${{ jobs.build.outputs.artifact_name }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ inputs.variant }} APK
+    runs-on: [self-hosted, linux, x64, android]
+    environment:
+      name: ${{ inputs.environment_name }}
+    outputs:
+      apk_name: ${{ steps.package.outputs.apk_name }}
+      artifact_name: ${{ steps.package.outputs.artifact_name }}
+    env:
+      ANDROID_HOME: /opt/android-sdk
+      ANDROID_SDK_ROOT: /opt/android-sdk
+      JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+    steps:
+      - name: Checkout exact source commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.source_sha }}
+          clean: true
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify runner toolchain
+        run: ./scripts/provision-android-runner.sh --check
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Configure Gradle cache
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+        with:
+          cache-cleanup: on-success
+
+      - name: Validate build configuration
+        shell: bash
+        env:
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_TERMS_VERSION: ${{ vars.EXPO_PUBLIC_TERMS_VERSION }}
+          EXPO_PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.EXPO_PUBLIC_GOOGLE_CLIENT_ID }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          BUILD_VARIANT: ${{ inputs.variant }}
+          BUILD_VERSION_CODE: ${{ inputs.version_code }}
+        run: |
+          set -euo pipefail
+          missing=()
+          for name in \
+            EXPO_PUBLIC_API_URL \
+            EXPO_PUBLIC_TERMS_VERSION \
+            EXPO_PUBLIC_GOOGLE_CLIENT_ID \
+            ANDROID_KEYSTORE_BASE64 \
+            ANDROID_KEYSTORE_PASSWORD \
+            ANDROID_KEY_ALIAS \
+            ANDROID_KEY_PASSWORD
+          do
+            [[ -n "${!name:-}" ]] || missing+=("$name")
+          done
+          if (( ${#missing[@]} > 0 )); then
+            printf 'Missing GitHub Environment values: %s\n' "${missing[*]}" >&2
+            exit 78
+          fi
+          if [[ ! "$EXPO_PUBLIC_API_URL" =~ ^https://[^[:space:]]+$ ]]; then
+            printf 'EXPO_PUBLIC_API_URL must be an HTTPS URL; received %s\n' "$EXPO_PUBLIC_API_URL" >&2
+            exit 78
+          fi
+          if [[ "$BUILD_VARIANT" != staging && "$BUILD_VARIANT" != production ]]; then
+            printf 'Unsupported build variant: %s\n' "$BUILD_VARIANT" >&2
+            exit 78
+          fi
+          if [[ ! "$BUILD_VERSION_CODE" =~ ^[1-9][0-9]*$ ]] || (( BUILD_VERSION_CODE > 2100000000 )); then
+            printf 'version_code must be an integer from 1 through 2100000000\n' >&2
+            exit 78
+          fi
+
+      - name: Decode signing keystore
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          keystore="$RUNNER_TEMP/kuquest-${GITHUB_RUN_ID}-${GITHUB_JOB}.jks"
+          umask 077
+          if ! printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore"; then
+            rm -f "$keystore"
+            printf 'ANDROID_KEYSTORE_BASE64 is not valid base64\n' >&2
+            exit 78
+          fi
+          [[ -s "$keystore" ]] || { printf 'Decoded Android keystore is empty\n' >&2; exit 78; }
+          printf 'KUQUEST_ANDROID_KEYSTORE_FILE=%s\n' "$keystore" >> "$GITHUB_ENV"
+
+      - name: Generate native Android project
+        env:
+          APP_VARIANT: ${{ inputs.variant }}
+          ANDROID_VERSION_CODE: ${{ inputs.version_code }}
+          EXPO_NO_DOTENV: "1"
+          NODE_ENV: production
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_TERMS_VERSION: ${{ vars.EXPO_PUBLIC_TERMS_VERSION }}
+          EXPO_PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.EXPO_PUBLIC_GOOGLE_CLIENT_ID }}
+        run: bunx expo prebuild --clean --platform android --no-install
+
+      - name: Assemble signed release APK
+        working-directory: android
+        env:
+          EXPO_NO_DOTENV: "1"
+          NODE_ENV: production
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_TERMS_VERSION: ${{ vars.EXPO_PUBLIC_TERMS_VERSION }}
+          EXPO_PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.EXPO_PUBLIC_GOOGLE_CLIENT_ID }}
+          KUQUEST_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KUQUEST_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KUQUEST_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon app:assembleRelease
+
+      - name: Package APK and checksum
+        id: package
+        shell: bash
+        env:
+          BUILD_VARIANT: ${{ inputs.variant }}
+          BUILD_VERSION_CODE: ${{ inputs.version_code }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -euo pipefail
+          source_apk=android/app/build/outputs/apk/release/app-release.apk
+          [[ -s "$source_apk" ]] || { printf 'Gradle did not produce %s\n' "$source_apk" >&2; exit 1; }
+          app_version=$(bun -e 'console.log(require("./app.json").expo.version)')
+          short_sha=${SOURCE_SHA:0:7}
+          if [[ "$BUILD_VARIANT" == staging ]]; then
+            apk_name="KUQuest-Staging-v${app_version}-build.${BUILD_VERSION_CODE}-${short_sha}.apk"
+          else
+            apk_name="KUQuest-v${app_version}.apk"
+          fi
+          artifact_name=${apk_name%.apk}
+          mkdir -p dist/android
+          cp "$source_apk" "dist/android/$apk_name"
+          (
+            cd dist/android
+            sha256sum "$apk_name" > "$apk_name.sha256"
+          )
+          printf 'apk_name=%s\n' "$apk_name" >> "$GITHUB_OUTPUT"
+          printf 'artifact_name=%s\n' "$artifact_name" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ steps.package.outputs.artifact_name }}
+          path: |
+            dist/android/${{ steps.package.outputs.apk_name }}
+            dist/android/${{ steps.package.outputs.apk_name }}.sha256
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention_days }}
+          compression-level: 0
+
+      - name: Publish build summary
+        env:
+          APK_NAME: ${{ steps.package.outputs.apk_name }}
+          ARTIFACT_NAME: ${{ steps.package.outputs.artifact_name }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          BUILD_VARIANT: ${{ inputs.variant }}
+          BUILD_VERSION_CODE: ${{ inputs.version_code }}
+        run: |
+          {
+            printf '## Android %s APK\n\n' "$BUILD_VARIANT"
+            printf -- '- Artifact: `%s`\n' "$ARTIFACT_NAME"
+            printf -- '- APK: `%s`\n' "$APK_NAME"
+            printf -- '- Commit: `%s`\n' "$SOURCE_SHA"
+            printf -- '- Android versionCode: `%s`\n' "$BUILD_VERSION_CODE"
+            printf -- '- Download: [workflow run](https://github.com/%s/actions/runs/%s)\n' "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove workspace build and signing material
+        if: always()
+        shell: bash
+        run: |
+          rm -f "${KUQUEST_ANDROID_KEYSTORE_FILE:-}"
+          rm -rf "$GITHUB_WORKSPACE/android" "$GITHUB_WORKSPACE/dist/android"

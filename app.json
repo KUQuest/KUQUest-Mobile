@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "KUQUest-Mobile",
+    "name": "KUQuest",
     "slug": "KUQUest-Mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,7 +8,8 @@
     "scheme": "kuquestmobile",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.kuquest.mobile"
     },
     "android": {
       "adaptiveIcon": {
@@ -18,7 +19,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.KUQUestMobile"
+      "package": "com.kuquest.mobile",
+      "versionCode": 1
     },
     "web": {
       "output": "static",
@@ -39,8 +41,14 @@
         "expo-localization",
         {
           "supportedLocales": {
-            "ios": ["en", "th"],
-            "android": ["en", "th"]
+            "ios": [
+              "en",
+              "th"
+            ],
+            "android": [
+              "en",
+              "th"
+            ]
           }
         }
       ],
