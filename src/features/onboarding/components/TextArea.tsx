@@ -44,18 +44,20 @@ export function TextArea({ label, error, maxLength, value, success = false, styl
         }}
         {...props}
       />
-      <View style={styles.footerRow}>
-        {error ? (
-          <Text style={styles.errorText}>{error}</Text>
-        ) : (
-          <View style={{ flex: 1 }} />
-        )}
-        {maxLength !== undefined && (
-          <Text style={styles.counterText}>
-            {value.length} / {maxLength}
-          </Text>
-        )}
-      </View>
+      {(error || maxLength !== undefined) ? (
+        <View style={styles.footerRow}>
+          {error ? (
+            <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.errorText}>{error}</Text>
+          ) : (
+            <View style={{ flex: 1 }} />
+          )}
+          {maxLength !== undefined && (
+            <Text style={styles.counterText}>
+              {value.length} / {maxLength}
+            </Text>
+          )}
+        </View>
+      ) : null}
     </View>
   );
 }
