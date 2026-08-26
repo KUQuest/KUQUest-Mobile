@@ -32,6 +32,15 @@ type SaveErrorIntent = { state: CompletionState; completesFlow: boolean };
 type Focusable = React.ComponentRef<typeof RNTextInput> | React.ComponentRef<typeof RNPressable>;
 type ChoiceVariant = 'format' | 'acceptance';
 type ChoiceOption = { value: string; label: string; description: string; icon: LucideIcon };
+type ReviewActionButtonProps = {
+  label: string;
+  variant: 'primary' | 'secondary';
+  accessibilityLabel: string;
+  disabled: boolean;
+  stacked: boolean;
+  testID: string;
+  onPress: () => void;
+};
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 const QUEST_DETAIL_FIELDS = new Set(['title', 'tag', 'description', 'conditions']);
@@ -284,6 +293,28 @@ function ChoiceGroup({
   );
 }
 
+function ReviewActionButton({ label, variant, accessibilityLabel, disabled, stacked, testID, onPress }: ReviewActionButtonProps) {
+  const isSecondary = variant === 'secondary';
+  const layoutStyle = stacked
+    ? { flexBasis: 'auto' as const, flexGrow: 0, flexShrink: 0, width: '100%' as const }
+    : { flexBasis: 0, flexGrow: 1, flexShrink: 1, minWidth: 0, width: 'auto' as const };
+
+  return (
+    <Pressable
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      className={cn(styles.reviewActionButton, stacked && styles.reviewActionButtonStacked, isSecondary ? styles.reviewActionButtonSecondary : styles.reviewActionButtonPrimary)}
+      disabled={disabled}
+      onPress={onPress}
+      style={[layoutStyle, { opacity: disabled ? 0.55 : 1 }]}
+      testID={testID}
+    >
+      <Text className={cn(styles.reviewActionText, isSecondary ? styles.reviewActionTextSecondary : styles.reviewActionTextPrimary)}>{label}</Text>
+    </Pressable>
+  );
+}
+
 function ModeSummary({
   messages,
   participation,
@@ -386,11 +417,6 @@ export default function CreateQuestScreen() {
     { label: locale === 'th' ? 'การสอนพิเศษ' : 'Tutoring', shortLabel: locale === 'th' ? 'ติว' : 'Tutoring', value: 'tutoring' },
     { label: locale === 'th' ? 'ชีวิตในมหาวิทยาลัย' : 'Campus life', shortLabel: locale === 'th' ? 'ชีวิตมหาวิทยาลัย' : 'Campus life', value: 'campus-life' },
   ], [locale]);
-  const proofOptions = useMemo(() => [
-    { label: messages.required, value: 'required' },
-    { label: messages.optional, value: 'optional' },
-    { label: messages.notNeeded, value: 'none' },
-  ], [messages]);
   const candidateOptions = useMemo(() => [
     { value: 'FIRST_COME_FIRST_SERVED' as const, label: messages.instantAccept, description: messages.instantAcceptDescription, icon: Clock3 },
     { value: 'CANDIDATE' as const, label: messages.selectCandidate, description: messages.selectCandidateDescription, icon: UserRoundCheck },
@@ -412,7 +438,10 @@ export default function CreateQuestScreen() {
         setSavingAction(null);
         return false;
       }
-      await persistQuestDraft(draftStorageKey, draftToSave, step, state);
+      await persistQuestDraft(draftStorageKey, {
+        ...draftToSave,
+        headcount: getHeadcountForParticipation(draftToSave.participation, draftToSave.headcount),
+      }, step, state);
       if (requestId !== saveRequestRef.current) return false;
       setSaveState('saved');
       setSaveErrorIntent(null);
@@ -447,7 +476,10 @@ export default function CreateQuestScreen() {
     void loadQuestDraft(draftStorageKey).then((snapshot) => {
       if (!active) return;
       if (snapshot) {
-        setDraft(snapshot.draft);
+        setDraft({
+          ...snapshot.draft,
+          headcount: getHeadcountForParticipation(snapshot.draft.participation, snapshot.draft.headcount),
+        });
         setStep(snapshot.step);
         if (snapshot.state === 'OPEN') setCompletedState('OPEN');
       }
@@ -576,7 +608,7 @@ export default function CreateQuestScreen() {
       const endDateTime = getDateTimeValue(draft.deadline, draft.endTime);
       if (startDateTime !== null && endDateTime !== null && endDateTime <= startDateTime) nextErrors.endTime = messages.timeOrderError;
       if (draft.locationMode === 'ON_CAMPUS' && !draft.location.trim()) nextErrors.location = messages.locationError;
-      if (!draft.headcount.trim() || Number(draft.headcount) < 1) nextErrors.headcount = messages.headcountError;
+      if (draft.participation === 'GROUP' && (!draft.headcount.trim() || Number(draft.headcount) < 1)) nextErrors.headcount = messages.headcountError;
       const rewardError = getRewardValidationError(draft.wage, {
         empty: messages.rewardEmptyError,
         format: messages.rewardFormatError,
@@ -774,21 +806,18 @@ export default function CreateQuestScreen() {
     if (draft.participation === 'SINGLE') return draft.candidateMode === 'FIRST_COME_FIRST_SERVED' ? messages.singleFirstComeHint : messages.singleCandidateHint;
     return draft.candidateMode === 'FIRST_COME_FIRST_SERVED' ? messages.groupFirstComeHint : messages.groupCandidateHint;
   }, [draft.candidateMode, draft.participation, messages]);
+  const proofRequired = draft.proofRequired !== 'none';
 
   const summary = useMemo(() => [
     { label: messages.summary.title, value: draft.title || '—' },
-    { label: messages.summary.questTag, value: tagOptions.find((option) => option.value === draft.tag)?.label ?? messages.notSelected },
     { label: messages.summary.description, value: draft.description || '—' },
     { label: messages.summary.completionCriteria, value: draft.conditions || '—' },
-    { label: messages.summary.proof, value: proofOptions.find((option) => option.value === draft.proofRequired)?.label ?? messages.notSelected },
+    { label: messages.summary.proof, value: proofRequired ? messages.required : messages.notNeeded },
     { label: messages.summary.schedule, value: draft.startDate && draft.deadline && draft.startTime && draft.endTime ? `${formatDate(draft.startDate, locale, messages.notSelected)} · ${draft.startTime}–${draft.endTime} → ${formatDate(draft.deadline, locale, messages.notSelected)}` : messages.notSelected },
     { label: messages.summary.location, value: draft.locationMode === 'ONLINE' ? messages.online : draft.location || messages.notSelected },
     { label: messages.summary.images, value: draft.imageUris.length ? messages.selectedImages(draft.imageUris.length) : messages.noImages },
-    { label: messages.summary.candidateMode, value: candidateOptions.find((option) => option.value === draft.candidateMode)?.label ?? messages.notSelected },
-    { label: messages.summary.participation, value: participationOptions.find((option) => option.value === draft.participation)?.label ?? messages.notSelected },
-    { label: messages.summary.headcount, value: draft.headcount || messages.notSelected },
     { label: messages.summary.reward, value: draft.wage ? `฿ ${draft.wage} / ${locale === 'th' ? 'คน' : 'person'}` : messages.notSelected },
-  ], [candidateOptions, draft, locale, messages, participationOptions, proofOptions, tagOptions]);
+  ], [draft, locale, messages, proofRequired]);
 
   const selectedQuestTag = tagOptions.find((option) => option.value === draft.tag)?.shortLabel ?? messages.notSelected;
   const selectedTeamSize = draft.participation === 'SINGLE'
@@ -805,7 +834,7 @@ export default function CreateQuestScreen() {
     : messages.logisticsSummary;
   const useStackedChoices = width < 430 || fontScale >= 1.15;
   const useWideSummary = layout.isExpanded || width >= 430;
-  const useStackedActions = width < 340 || fontScale >= 1.35;
+  const useStackedActions = width < 340 || fontScale >= 1.15;
 
   if (!draftHydrated && !completedState) {
     return (
@@ -851,9 +880,6 @@ export default function CreateQuestScreen() {
 
   const isSaving = saveState === 'saving';
   const nextLabel = step === 2 ? messages.reviewQuest : messages.next;
-  const actionButtonStyle = useStackedActions
-    ? { flexBasis: 'auto' as const, flexGrow: 0, flexShrink: 0, width: '100%' as const }
-    : { flexBasis: 0, flexGrow: 1, flexShrink: 1, width: 0 };
   const schedulePickerDate = scheduleField === 'start' ? draft.startDate : draft.deadline;
   const schedulePickerTime = scheduleField === 'start' ? draft.startTime : draft.endTime;
   const schedulePickerValue = getSchedulePickerValue(Platform.OS, getDateTimePickerValue(schedulePickerDate, schedulePickerTime), iosPickerValue);
@@ -903,16 +929,30 @@ export default function CreateQuestScreen() {
                     </View>
                   </View>
                   <Input ref={titleRef} label={`${messages.titleLabel} *`} placeholder={messages.titlePlaceholder} value={draft.title} onChangeText={(value) => updateDraft('title', value)} error={errors.title} maxLength={100} />
-                  <Select ref={tagRef} label={`${messages.questTag} *`} options={tagOptions} value={draft.tag} onValueChange={(value) => updateDraft('tag', value)} placeholder={messages.chooseQuestTag} error={errors.tag} />
+                  <Select ref={tagRef} label={`${messages.questTag} *`} options={tagOptions} value={draft.tag} onValueChange={(value) => updateDraft('tag', value)} placeholder={messages.chooseQuestTag} error={errors.tag} searchable searchPlaceholder={messages.searchQuestTags} noResultsMessage={messages.noMatchingQuestTags} clearSearchLabel={messages.clearSearch} closeLabel={messages.close} />
                   <TextArea ref={descriptionRef} label={`${messages.description} *`} placeholder={messages.descriptionPlaceholder} value={draft.description} onChangeText={(value) => updateDraft('description', value)} error={errors.description} maxLength={300} />
                   <TextArea ref={conditionsRef} label={`${messages.completionCriteria} *`} placeholder={messages.completionCriteriaPlaceholder} value={draft.conditions} onChangeText={(value) => updateDraft('conditions', value)} error={errors.conditions} maxLength={300} />
-                  <Select label={`${messages.proofOfCompletion} · ${messages.optional}`} options={proofOptions} value={draft.proofRequired} onValueChange={(value) => updateDraft('proofRequired', value)} placeholder={messages.proofPlaceholder} />
+                  <View className={styles.fieldGroup}>
+                    <Pressable
+                      accessibilityLabel={messages.proofRequiredToggle}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: proofRequired }}
+                      className={styles.proofToggle}
+                      onPress={() => updateDraft('proofRequired', proofRequired ? 'none' : 'required')}
+                      testID="create-quest-proof-toggle"
+                    >
+                      <View className={cn(styles.checkbox, proofRequired && styles.checkboxChecked)}>
+                        {proofRequired ? <Check color={colors.white} size={15} strokeWidth={3} /> : null}
+                      </View>
+                      <Text className={styles.proofToggleLabel}>{messages.proofRequiredToggle}</Text>
+                    </Pressable>
+                    <Text className={styles.proofDescription}>{proofRequired ? messages.proofRequiredDescription : messages.proofNotNeededDescription}</Text>
+                  </View>
                 </View>
               ) : null}
 
               {step === 2 ? (
                 <>
-                  <QuestSetupOverview messages={messages} questTag={selectedQuestTag} teamSize={selectedTeamSize} acceptanceMethod={selectedAcceptanceMethod} wide={useWideSummary} />
                   <View className={styles.sectionCard}>
                     <View className={styles.subsectionHeading}>
                       <Text accessibilityRole="header" className={styles.sectionTitle}>{`1. ${messages.chooseWorkFormat}`}</Text>
@@ -935,8 +975,8 @@ export default function CreateQuestScreen() {
                       <Text className={styles.sectionDescription}>{messages.participantsRewardDescription}</Text>
                       {draft.participation === 'SINGLE' ? (
                         <View className={styles.fieldGroup}>
-                          <FieldLabel required optionalLabel={messages.optional}>{messages.headcount}</FieldLabel>
-                          <View accessible accessibilityLabel={`${messages.headcount}: 1`} className={styles.readOnlyField}>
+                          <FieldLabel optionalLabel="">{messages.headcount}</FieldLabel>
+                          <View accessible accessibilityLabel={`${messages.headcount}: 1`} accessibilityState={{ disabled: true }} className={styles.readOnlyField} style={{ alignItems: 'flex-start', justifyContent: 'center' }}>
                             <Text className={styles.readOnlyValue}>1</Text>
                           </View>
                           <Text className={styles.singleHeadcountHint}>{messages.singleHeadcountHint}</Text>
@@ -992,15 +1032,18 @@ export default function CreateQuestScreen() {
               ) : null}
 
               {step === 3 ? (
-                <View className={styles.sectionCard}>
-                  <View className={styles.sectionHeading}>
-                    <View className={styles.sectionHeadingText}>
-                      <Text accessibilityRole="header" className={styles.sectionTitle}>{messages.review}</Text>
-                      <Text className={styles.sectionDescription}>{messages.questSummaryLabel}</Text>
+                <>
+                  <QuestSetupOverview messages={messages} questTag={selectedQuestTag} teamSize={selectedTeamSize} acceptanceMethod={selectedAcceptanceMethod} wide={useWideSummary} />
+                  <View className={styles.sectionCard}>
+                    <View className={styles.sectionHeading}>
+                      <View className={styles.sectionHeadingText}>
+                        <Text accessibilityRole="header" className={styles.sectionTitle}>{messages.review}</Text>
+                        <Text className={styles.sectionDescription}>{messages.questSummaryLabel}</Text>
+                      </View>
                     </View>
+                    <View className={styles.summaryCard}>{summary.map((item) => <View key={item.label} className={styles.summaryRow}><Text className={styles.summaryLabel}>{item.label}</Text><Text className={styles.summaryValue}>{item.value}</Text></View>)}</View>
                   </View>
-                  <View className={styles.summaryCard}>{summary.map((item) => <View key={item.label} className={styles.summaryRow}><Text className={styles.summaryLabel}>{item.label}</Text><Text className={styles.summaryValue}>{item.value}</Text></View>)}</View>
-                </View>
+                </>
               ) : null}
             </View>
           </ScrollView>
@@ -1010,23 +1053,30 @@ export default function CreateQuestScreen() {
             flexDirection: useStackedActions ? 'column' : 'row',
             paddingBottom: Math.max(spacing.sm, insets.bottom + spacing.xs),
           }}>
-            {step > 1 && step < 3 ? (
-              <Button variant="secondary" disabled={isSaving} onPress={goBack} className={cn(styles.backActionButton, useStackedActions && styles.backActionButtonStacked)} style={actionButtonStyle} accessibilityLabel={messages.back}>
-                <View className={styles.buttonContent}><ArrowLeft color={colors.primary} size={20} strokeWidth={2.5} /><Text className={styles.secondaryButtonText}>{messages.back}</Text></View>
-              </Button>
-            ) : null}
             {step < 3 ? (
-              <Button disabled={isSaving} onPress={goNext} className={step > 1 ? cn(styles.nextButton, useStackedActions && styles.nextButtonStacked) : styles.nextButtonFull} style={step > 1 ? actionButtonStyle : undefined} accessibilityLabel={nextLabel}>
+              <Button disabled={isSaving} onPress={goNext} className={styles.nextButtonFull} accessibilityLabel={nextLabel}>
                 <View className={styles.buttonContent}><Text className={styles.primaryButtonText}>{nextLabel}</Text><ChevronRight color={colors.white} size={20} strokeWidth={2.5} /></View>
               </Button>
             ) : (
               <>
-                <Button variant="secondary" disabled={isSaving} onPress={() => void finishQuest('DRAFT')} className={cn(styles.finalActionButton, useStackedActions && styles.finalActionButtonStacked)} style={actionButtonStyle} accessibilityLabel={savingAction === 'DRAFT' ? messages.savingDraft : messages.saveDraft}>
-                  {savingAction === 'DRAFT' ? messages.savingDraft : messages.saveDraft}
-                </Button>
-                <Button disabled={isSaving} onPress={() => void finishQuest('OPEN')} className={cn(styles.finalActionButton, useStackedActions && styles.finalActionButtonStacked)} style={actionButtonStyle} accessibilityLabel={savingAction === 'OPEN' ? messages.savingPreview : messages.savePreview}>
-                  {savingAction === 'OPEN' ? messages.savingPreview : messages.savePreview}
-                </Button>
+                <ReviewActionButton
+                  accessibilityLabel={savingAction === 'DRAFT' ? messages.savingDraft : messages.saveDraft}
+                  disabled={isSaving}
+                  label={savingAction === 'DRAFT' ? messages.savingDraft : messages.saveDraft}
+                  onPress={() => void finishQuest('DRAFT')}
+                  stacked={useStackedActions}
+                  testID="create-quest-save-draft"
+                  variant="secondary"
+                />
+                <ReviewActionButton
+                  accessibilityLabel={savingAction === 'OPEN' ? messages.savingPreview : messages.savePreview}
+                  disabled={isSaving}
+                  label={savingAction === 'OPEN' ? messages.savingPreview : messages.savePreview}
+                  onPress={() => void finishQuest('OPEN')}
+                  stacked={useStackedActions}
+                  testID="create-quest-save-preview"
+                  variant="primary"
+                />
               </>
             )}
           </View>

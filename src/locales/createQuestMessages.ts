@@ -46,12 +46,18 @@ export interface CreateQuestMessages {
   titlePlaceholder: string;
   questTag: string;
   chooseQuestTag: string;
+  searchQuestTags: string;
+  noMatchingQuestTags: string;
+  clearSearch: string;
+  close: string;
   description: string;
   descriptionPlaceholder: string;
   completionCriteria: string;
   completionCriteriaPlaceholder: string;
   proofOfCompletion: string;
-  proofPlaceholder: string;
+  proofRequiredDescription: string;
+  proofNotNeededDescription: string;
+  proofRequiredToggle: string;
   required: string;
   optional: string;
   notNeeded: string;
@@ -160,7 +166,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
   en: {
     title: 'Create Quest',
     step: (current, total) => `Step ${current} of ${total}`,
-    headerSubtitle: 'Choose how people join your Quest',
+    headerSubtitle: 'Set up your Quest step by step',
     helpLabel: 'Quest creation help',
     helpTitle: 'Create a Quest',
     helpDescription: 'Complete each step to define the Quest, choose whether one person or multiple people can join, select how applicants are accepted, and review the details before saving.',
@@ -203,12 +209,18 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     titlePlaceholder: 'e.g. Design a poster for the faculty fair',
     questTag: 'Quest Tag',
     chooseQuestTag: 'Choose a Quest Tag',
+    searchQuestTags: 'Search Quest Tags',
+    noMatchingQuestTags: 'No matching Quest Tags',
+    clearSearch: 'Clear search',
+    close: 'Close',
     description: 'Description',
     descriptionPlaceholder: 'What needs to be done and what should the result look like?',
     completionCriteria: 'Completion criteria',
     completionCriteriaPlaceholder: 'How will you know the Quest is complete?',
     proofOfCompletion: 'Proof of completion',
-    proofPlaceholder: 'Choose proof requirement',
+    proofRequiredDescription: 'Participants must submit proof of completion when the Quest is done.',
+    proofNotNeededDescription: 'No proof of completion is needed.',
+    proofRequiredToggle: 'Require proof of completion',
     required: 'Required',
     optional: 'Optional',
     notNeeded: 'Not needed',
@@ -306,7 +318,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
   th: {
     title: 'สร้างเควสต์',
     step: (current, total) => `ขั้นตอนที่ ${current} จาก ${total}`,
-    headerSubtitle: 'เลือกรูปแบบการเข้าร่วมเควสต์',
+    headerSubtitle: 'สร้างเควสต์ทีละขั้นตอน',
     helpLabel: 'ความช่วยเหลือในการสร้างเควสต์',
     helpTitle: 'สร้างเควสต์',
     helpDescription: 'ทำตามแต่ละขั้นตอนเพื่อกำหนดรายละเอียด เลือกจำนวนผู้เข้าร่วม เลือกวิธีรับผู้สมัคร และตรวจสอบข้อมูลก่อนบันทึก',
@@ -349,12 +361,18 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     titlePlaceholder: 'เช่น ออกแบบโปสเตอร์สำหรับงานคณะ',
     questTag: 'แท็กเควสต์',
     chooseQuestTag: 'เลือกแท็กเควสต์',
+    searchQuestTags: 'ค้นหาแท็กเควสต์',
+    noMatchingQuestTags: 'ไม่พบแท็กเควสต์ที่ตรงกัน',
+    clearSearch: 'ล้างการค้นหา',
+    close: 'ปิด',
     description: 'รายละเอียดงาน',
     descriptionPlaceholder: 'ต้องทำอะไร และผลลัพธ์ควรเป็นอย่างไร',
     completionCriteria: 'เกณฑ์การเสร็จงาน',
     completionCriteriaPlaceholder: 'จะรู้ได้อย่างไรว่าเควสต์เสร็จสมบูรณ์',
     proofOfCompletion: 'หลักฐานการเสร็จงาน',
-    proofPlaceholder: 'เลือกข้อกำหนดหลักฐาน',
+    proofRequiredDescription: 'ผู้เข้าร่วมต้องส่งหลักฐานการเสร็จงานเมื่อทำเควสต์เสร็จ',
+    proofNotNeededDescription: 'ไม่จำเป็นต้องส่งหลักฐานการเสร็จงาน',
+    proofRequiredToggle: 'ต้องการหลักฐานการเสร็จงาน',
     required: 'จำเป็น',
     optional: 'ไม่บังคับ',
     notNeeded: 'ไม่ต้องมี',
