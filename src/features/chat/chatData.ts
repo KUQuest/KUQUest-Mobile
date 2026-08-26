@@ -29,7 +29,37 @@ export interface ChatConversation {
   messages: ChatMessage[];
 }
 
+function groupChatConversation(id: string, questTitle: LocalizedText, latestMessage: LocalizedText): ChatConversation {
+  return {
+    id,
+    questTitle,
+    participantName: 'Quest team',
+    participantRole: 'member',
+    initials: 'QT',
+    avatarColor: '#EAF6ED',
+    latestMessage,
+    latestTime: 'Now',
+    unreadCount: 0,
+    messages: [{ id: `${id}-welcome`, sender: 'other', text: latestMessage, time: 'Now' }],
+  };
+}
+
 export const mockChatConversations: ChatConversation[] = [
+  groupChatConversation(
+    'quest-move-boxes-group',
+    { en: 'Help move boxes to the dorm', th: 'ช่วยยกกล่องไปหอพัก' },
+    { en: 'Welcome to the Quest team chat.', th: 'ยินดีต้อนรับสู่แชตกลุ่มของเควสต์' },
+  ),
+  groupChatConversation(
+    'quest-clean-fan-group',
+    { en: 'Clean a dorm fan', th: 'ล้างพัดลมหอพัก' },
+    { en: 'Use this chat to coordinate with the Quest team.', th: 'ใช้แชตนี้ประสานงานกับทีมเควสต์ได้เลย' },
+  ),
+  groupChatConversation(
+    'quest-buy-lunch-group',
+    { en: 'Buy lunch from the canteen', th: 'ซื้อข้าวจากโรงอาหาร' },
+    { en: 'The Quest team chat is ready.', th: 'แชตกลุ่มของเควสต์พร้อมใช้งานแล้ว' },
+  ),
   {
     id: 'campus-survey-crew',
     questTitle: { en: 'Campus Survey Crew', th: 'ทีมเก็บข้อมูลภาคสนาม' },
