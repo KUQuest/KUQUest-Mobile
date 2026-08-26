@@ -7,7 +7,9 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   Check,
+  ChevronDown,
   ChevronRight,
+  ChevronUp,
   CircleHelp,
   CircleUserRound,
   CircleX,
@@ -62,6 +64,11 @@ type SummaryMetric = {
   detail: string;
 };
 
+type RoleOptionCopy = {
+  label: string;
+  description: string;
+};
+
 type RoleCopy<T extends string> = {
   title: string;
   subtitle: string;
@@ -76,7 +83,11 @@ type RoleCopy<T extends string> = {
 
 type LocaleContent = {
   roleViewLabel: string;
+  questNavLabel: string;
+  roleSelectorLabel: string;
+  statusSelectorLabel: string;
   roleLabels: Record<Role, string>;
+  roleOptions: Record<Role, RoleOptionCopy>;
   back: string;
   help: string;
   teamSize: string;
@@ -101,7 +112,14 @@ const imageUris = {
 const content: Record<SupportedLocale, LocaleContent> = {
   th: {
     roleViewLabel: 'มุมมองเควสต์',
+    questNavLabel: 'MyQuest',
+    roleSelectorLabel: 'เลือกมุมมองเควสต์',
+    statusSelectorLabel: 'เลือกสถานะเควสต์',
     roleLabels: { worker: 'เควสต์ที่ฉันเข้าร่วม', hirer: 'เควสต์ที่ฉันโพสต์' },
+    roleOptions: {
+      worker: { label: 'เข้าร่วมเควสต์', description: 'ดูเควสต์ที่คุณเข้าร่วม' },
+      hirer: { label: 'โพสต์เควสต์', description: 'จัดการเควสต์ที่คุณโพสต์' },
+    },
     back: 'ย้อนกลับ',
     help: 'ช่วยเหลือ',
     teamSize: 'ทีม',
@@ -200,7 +218,14 @@ const content: Record<SupportedLocale, LocaleContent> = {
   },
   en: {
     roleViewLabel: 'Quest view',
+    questNavLabel: 'MyQuest',
+    roleSelectorLabel: 'Choose a Quest view',
+    statusSelectorLabel: 'Quest status',
     roleLabels: { worker: 'Quests I joined', hirer: 'Quests I posted' },
+    roleOptions: {
+      worker: { label: 'Join Quest', description: 'View Quests you joined' },
+      hirer: { label: 'Post Quest', description: 'Manage Quests you posted' },
+    },
     back: 'Go back',
     help: 'Help',
     teamSize: 'Team size',
@@ -468,6 +493,20 @@ function EmptyState({ copy }: { copy: RoleCopy<WorkerTab> | RoleCopy<HirerTab> }
   );
 }
 
+function RoleMenu({ copy, role, onSelect }: { copy: LocaleContent; role: Role; onSelect: (nextRole: Role) => void }) {
+  return (
+    <View accessibilityLabel={copy.roleSelectorLabel} accessibilityRole="menu" className={styles.roleMenu}>
+      <Text className={styles.roleMenuTitle}>{copy.roleSelectorLabel}</Text>
+      {(['worker', 'hirer'] as const).map((option) => {
+        const selected = role === option;
+        const RoleIcon = option === 'worker' ? UsersRound : BriefcaseBusiness;
+        const optionCopy = copy.roleOptions[option];
+        return <Pressable accessibilityLabel={`${optionCopy.label}. ${optionCopy.description}`} accessibilityRole="menuitem" accessibilityState={{ selected }} className={cn(styles.roleMenuOption, selected && styles.roleMenuOptionActive)} key={option} onPress={() => onSelect(option)} testID={`my-quests-role-${option}`}><View className={styles.roleMenuIcon}><RoleIcon color={colors.primary} size={20} strokeWidth={2.1} /></View><View className={styles.roleMenuCopy}><Text className={cn(styles.roleMenuOptionText, selected && styles.roleMenuOptionTextActive)}>{optionCopy.label}</Text><Text className={styles.roleMenuOptionDescription}>{optionCopy.description}</Text></View>{selected ? <View className={styles.roleMenuCheck}><Check color={colors.white} size={14} strokeWidth={3} /></View> : null}</Pressable>;
+      })}
+    </View>
+  );
+}
+
 function SummaryStrip({ metrics }: { metrics: SummaryMetric[] }) {
   const icons: Record<SummaryMetric['icon'], LucideIcon> = { applications: BriefcaseBusiness, accepted: UsersRound, history: Clock3 };
   return (
@@ -500,6 +539,7 @@ export default function MyQuestsScreen() {
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
   const copy = content[locale];
   const [role, setRole] = useState<Role>('worker');
+  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [workerTab, setWorkerTab] = useState<WorkerTab>('pending');
   const [hirerTab, setHirerTab] = useState<HirerTab>('active');
   const roleCopy = role === 'worker' ? copy.worker : copy.hirer;
@@ -510,6 +550,7 @@ export default function MyQuestsScreen() {
 
   const selectRole = (nextRole: Role) => {
     setRole(nextRole);
+    setRoleMenuOpen(false);
     AccessibilityInfo.announceForAccessibility(copy.roleLabels[nextRole]);
   };
 
@@ -529,27 +570,24 @@ export default function MyQuestsScreen() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
-      <View className={styles.hero}>
+      <View className={cn(styles.hero, roleMenuOpen && styles.heroMenuOpen)}>
         <View className={styles.headerRow}>
           <Pressable accessibilityLabel={copy.back} accessibilityRole="button" className={styles.heroIconButton} onPress={() => router.back()} testID="my-quests-back-button"><ArrowLeft color={colors.primary} size={24} strokeWidth={2.2} /></Pressable>
-          <View className={styles.headerSpacer} />
+          <Pressable accessibilityLabel={`${copy.roleViewLabel}: ${copy.questNavLabel}`} accessibilityRole="button" accessibilityState={{ expanded: roleMenuOpen }} className={cn(styles.roleNavButton, roleMenuOpen && styles.roleNavButtonOpen)} onPress={() => setRoleMenuOpen((isOpen) => !isOpen)} testID="my-quests-role-trigger"><Text className={styles.roleNavText}>{copy.questNavLabel}</Text>{roleMenuOpen ? <ChevronUp color={colors.primary} size={18} strokeWidth={2.4} /> : <ChevronDown color={colors.primary} size={18} strokeWidth={2.4} />}</Pressable>
           <Pressable accessibilityLabel={copy.help} accessibilityRole="button" className={styles.heroIconButton} onPress={() => router.push('/settings')} testID="my-quests-help-button"><CircleHelp color={colors.primary} size={24} strokeWidth={2.1} /></Pressable>
         </View>
-        <Text accessibilityRole="header" className={styles.heroTitle}>{roleCopy.title}</Text>
+        {roleMenuOpen ? <RoleMenu copy={copy} onSelect={selectRole} role={role} /> : null}
         <Text className={styles.heroSubtitle}>{roleCopy.subtitle}</Text>
-        <View accessibilityLabel={copy.roleViewLabel} accessibilityRole="tablist" className={styles.roleSwitch}>
-          {(['worker', 'hirer'] as const).map((option) => {
-            const selected = role === option;
-            return <Pressable accessibilityLabel={copy.roleLabels[option]} accessibilityRole="tab" accessibilityState={{ selected }} key={option} onPress={() => selectRole(option)} className={cn(styles.roleOption, selected && styles.roleOptionActive)} testID={`my-quests-role-${option}`}><Text className={cn(styles.roleOptionText, selected && styles.roleOptionTextActive)} numberOfLines={1} style={{ color: selected ? colors.primary : colors.textSecondary }}>{copy.roleLabels[option]}</Text></Pressable>;
-          })}
-        </View>
-        <View accessibilityLabel={`${roleCopy.title} tabs`} accessibilityRole="tablist" className={styles.statusTabs}>
-          {tabOptions.map((tab) => {
-            const selected = selectedTab === tab;
-            const tabLabel = role === 'worker' ? copy.worker.tabs[tab as WorkerTab] : copy.hirer.tabs[tab as HirerTab];
-            const tabItems = role === 'worker' ? copy.worker.items[tab as WorkerTab] : copy.hirer.items[tab as HirerTab];
-            return <Pressable accessibilityLabel={`${tabLabel} (${tabItems.length})`} accessibilityRole="tab" accessibilityState={{ selected }} key={tab} onPress={() => selectTab(tab)} className={cn(styles.statusTab, selected && styles.statusTabActive)} testID={`my-quests-status-${tab}`}><Text className={cn(styles.statusTabText, selected && styles.statusTabTextActive)} numberOfLines={1} style={{ color: selected ? colors.primary : colors.textSecondary }}>{tabLabel}</Text><View className={cn(styles.statusCount, selected && styles.statusCountActive)}><Text className={cn(styles.statusCountText, selected && styles.statusCountTextActive)} style={{ color: selected ? colors.white : colors.textMuted }}>{tabItems.length}</Text></View></Pressable>;
-          })}
+        <View className={styles.selectorSectionStatus}>
+          <Text className={styles.selectorLabel}>{copy.statusSelectorLabel}</Text>
+          <View accessibilityLabel={`${roleCopy.title} tabs`} accessibilityRole="tablist" className={styles.statusTabs}>
+            {tabOptions.map((tab) => {
+              const selected = selectedTab === tab;
+              const tabLabel = role === 'worker' ? copy.worker.tabs[tab as WorkerTab] : copy.hirer.tabs[tab as HirerTab];
+              const tabItems = role === 'worker' ? copy.worker.items[tab as WorkerTab] : copy.hirer.items[tab as HirerTab];
+              return <Pressable accessibilityLabel={`${tabLabel} (${tabItems.length})`} accessibilityRole="tab" accessibilityState={{ selected }} key={tab} onPress={() => selectTab(tab)} className={cn(styles.statusTab, selected && styles.statusTabActive)} testID={`my-quests-status-${tab}`}><Text className={cn(styles.statusTabText, selected && styles.statusTabTextActive)} numberOfLines={1} style={{ color: selected ? colors.primary : colors.textSecondary }}>{tabLabel}</Text><View className={cn(styles.statusCount, selected && styles.statusCountActive)}><Text className={cn(styles.statusCountText, selected && styles.statusCountTextActive)} style={{ color: selected ? colors.white : colors.textMuted }}>{tabItems.length}</Text></View></Pressable>;
+            })}
+          </View>
         </View>
       </View>
 
