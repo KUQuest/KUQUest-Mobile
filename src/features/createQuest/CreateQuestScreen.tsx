@@ -1,22 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, ActivityIndicator, Alert, findNodeHandle, InteractionManager, Modal, Platform, Pressable as RNPressable, TextInput as RNTextInput, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Alert, findNodeHandle, Modal, Platform, Pressable as RNPressable, TextInput as RNTextInput, useWindowDimensions } from 'react-native';
 import { cn } from '@/tw/cn';
 import { Image, KeyboardAvoidingView, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from '@/tw';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
-import { CalendarClock, Check, ChevronRight, ImagePlus, MapPin, Sparkles, X } from 'lucide-react-native';
+import { ArrowLeft, CalendarClock, Check, ChevronDown, ChevronRight, CircleAlert, CircleHelp, Clock3, ImagePlus, Mail, MapPin, Tag, UserRound, UserRoundCheck, UsersRound, X, type LucideIcon } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/features/onboarding/components/Input';
 import { Select } from '@/features/onboarding/components/Select';
 import { TextArea } from '@/features/onboarding/components/TextArea';
-import { TopBar } from '@/components/ui/TopBar';
 import { useLocale } from '@/locales/LocaleProvider';
 import { createQuestMessages } from '@/locales/createQuestMessages';
 import { colors } from '@/theme/colors';
-import { getAppChromeMetrics, getCreateQuestLayoutMetrics } from '@/theme/layout';
+import { getCreateQuestLayoutMetrics } from '@/theme/layout';
 import { spacing } from '@/theme/spacing';
 import styles from './createQuestStyles';
 import { getHeadcountForParticipation, getRewardValidationError, getSchedulePickerValue, getScheduleTimeValue, initialDraft, isQuestDraftDirty, type QuestDraft } from './createQuestModel';
@@ -28,9 +28,14 @@ type ScheduleField = 'start' | 'end';
 type PickerMode = 'date' | 'time';
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 type CompletionState = 'DRAFT' | 'OPEN';
+type SaveErrorIntent = { state: CompletionState; completesFlow: boolean };
 type Focusable = React.ComponentRef<typeof RNTextInput> | React.ComponentRef<typeof RNPressable>;
+type ChoiceVariant = 'format' | 'acceptance';
+type ChoiceOption = { value: string; label: string; description: string; icon: LucideIcon };
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+const QUEST_DETAIL_FIELDS = new Set(['title', 'tag', 'description', 'conditions']);
+const LOGISTICS_FIELDS = new Set(['startDate', 'deadline', 'startTime', 'endTime', 'location']);
 
 function formatDate(value: string, locale: 'en' | 'th', emptyLabel: string): string {
   if (!value) return emptyLabel;
@@ -118,42 +123,218 @@ function DateTimeField({
   );
 }
 
+function CreateQuestHeader({
+  messages,
+  step,
+  onBackPress,
+  onHelpPress,
+  onStepPress,
+}: {
+  messages: typeof createQuestMessages.en;
+  step: Step;
+  onBackPress: () => void;
+  onHelpPress: () => void;
+  onStepPress: (step: Step) => void;
+}) {
+  const stepLabels = [messages.missionInfo, messages.teamSetup, messages.review];
+
+  return (
+    <View className={styles.hero}>
+      <View className={styles.heroTop}>
+        <Pressable
+          accessibilityLabel={messages.back}
+          accessibilityRole="button"
+          className={styles.heroButton}
+          onPress={onBackPress}
+          style={{ borderColor: 'rgba(255,255,255,0.42)' }}
+          testID="create-quest-header-back"
+        >
+          <ArrowLeft color={colors.white} size={28} strokeWidth={2.4} />
+        </Pressable>
+        <View className={styles.heroTitleGroup}>
+          <Text accessibilityRole="header" className={styles.heroTitle}>{messages.title}</Text>
+          <Text className={styles.heroSubtitle}>{messages.headerSubtitle}</Text>
+        </View>
+        <Pressable
+          accessibilityLabel={messages.helpLabel}
+          accessibilityRole="button"
+          className={styles.heroButton}
+          onPress={onHelpPress}
+          style={{ borderColor: 'rgba(255,255,255,0.42)' }}
+          testID="create-quest-help"
+        >
+          <CircleHelp color={colors.white} size={30} strokeWidth={2.2} />
+        </Pressable>
+      </View>
+
+      <View accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: 3, now: step }} className={styles.progressTrack}>
+        {[1, 2, 3].map((item, index) => (
+          <React.Fragment key={item}>
+            <Pressable
+              accessibilityLabel={`${messages.step(item, 3)}: ${stepLabels[index]}`}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: item > step, selected: item === step }}
+              className={styles.progressNodePressable}
+              disabled={item > step}
+              onPress={() => onStepPress(item as Step)}
+            >
+              <View className={styles.progressNode} style={{ backgroundColor: item <= step ? colors.successBright : 'rgba(255,255,255,0.34)' }}>
+                {item < step ? <Check color={colors.white} size={26} strokeWidth={2.8} /> : <Text className={styles.progressNodeText}>{item}</Text>}
+              </View>
+            </Pressable>
+            {index < 2 ? <View className={styles.progressConnector} style={{ backgroundColor: item < step ? colors.successBright : 'rgba(255,255,255,0.3)' }} /> : null}
+          </React.Fragment>
+        ))}
+      </View>
+      <View className={styles.stepLabels}>
+        {stepLabels.map((label, index) => <Text key={label} className={cn(styles.stepLabel, index + 1 === step && styles.stepLabelActive)} style={{ color: index + 1 === step ? colors.white : index + 1 < step ? 'rgba(255,255,255,0.86)' : 'rgba(255,255,255,0.62)' }}>{label}</Text>)}
+      </View>
+    </View>
+  );
+}
+
+function SetupMetric({ icon: Icon, label, value, testID, wide }: { icon: LucideIcon; label: string; value: string; testID: string; wide: boolean }) {
+  return (
+    <View accessible accessibilityLabel={`${label}: ${value}`} className={cn(styles.setupMetric, wide && styles.setupMetricWide)} testID={testID}>
+      <View className={styles.setupMetricIcon}>
+        <Icon color={colors.primary} size={22} strokeWidth={2.1} />
+      </View>
+      <View className={cn(styles.setupMetricCopy, wide && styles.setupMetricCopyWide)}>
+        <Text className={cn(styles.setupMetricLabel, wide && styles.setupMetricLabelWide)}>{label}</Text>
+        <Text className={cn(styles.setupMetricValue, wide && styles.setupMetricValueWide)}>{value}</Text>
+      </View>
+    </View>
+  );
+}
+
+function QuestSetupOverview({
+  messages,
+  questTag,
+  teamSize,
+  acceptanceMethod,
+  wide,
+}: {
+  messages: typeof createQuestMessages.en;
+  questTag: string;
+  teamSize: string;
+  acceptanceMethod: string;
+  wide: boolean;
+}) {
+  return (
+    <View className={styles.setupCard}>
+      <Text className={styles.setupTitle}>{messages.questSetup}</Text>
+      <View className={styles.setupMetrics}>
+        <SetupMetric icon={Tag} label={messages.questTag} value={questTag} testID="create-quest-summary-type" wide={wide} />
+        <View className={cn(styles.setupMetricDivider, wide && styles.setupMetricDividerWide)} />
+        <SetupMetric icon={UsersRound} label={messages.teamSize} value={teamSize} testID="create-quest-summary-size" wide={wide} />
+        <View className={cn(styles.setupMetricDivider, wide && styles.setupMetricDividerWide)} />
+        <SetupMetric icon={Mail} label={messages.acceptanceMethod} value={acceptanceMethod} testID="create-quest-summary-applicants" wide={wide} />
+      </View>
+      <View className={styles.setupDivider} />
+      <Text className={styles.setupHint}>{messages.setupHint}</Text>
+    </View>
+  );
+}
+
 function ChoiceGroup({
   label,
   value,
   options,
-  optionalLabel,
+  variant,
+  stacked,
   onChange,
-  required = false,
 }: {
   label: string;
   value: string;
-  options: { value: string; label: string }[];
-  optionalLabel: string;
+  options: ChoiceOption[];
+  variant: ChoiceVariant;
+  stacked: boolean;
   onChange: (value: string) => void;
-  required?: boolean;
 }) {
   return (
-    <View className={styles.fieldGroup}>
-      <FieldLabel required={required} optionalLabel={optionalLabel}>{label}</FieldLabel>
-      <View className={styles.choiceGroup} accessibilityRole="radiogroup" accessibilityLabel={label}>
-        {options.map((option) => {
-          const selected = option.value === value;
-          return (
-            <Pressable
-              key={option.value}
-              accessibilityRole="radio"
-              accessibilityLabel={`${label}: ${option.label}`}
-              accessibilityState={{ selected }}
-              onPress={() => onChange(option.value)}
-              className={cn(styles.choice, selected && styles.choiceSelected)}
-            >
+    <View
+      className={cn(styles.choiceGroup, variant === 'format' ? stacked ? styles.choiceGroupFormatStacked : styles.choiceGroupFormat : styles.choiceGroupAcceptance)}
+      accessibilityRole="radiogroup"
+      accessibilityLabel={label}
+      style={variant === 'format' && stacked ? { flexDirection: 'column' } : undefined}
+    >
+      {options.map((option) => {
+        const selected = option.value === value;
+        const Icon = option.icon;
+        return (
+          <Pressable
+            key={option.value}
+            accessibilityRole="radio"
+            accessibilityLabel={`${label}: ${option.label}. ${option.description}`}
+            accessibilityState={{ selected }}
+            onPress={() => onChange(option.value)}
+            className={cn(styles.choice, variant === 'format' ? stacked ? styles.choiceFormatStacked : styles.choiceFormat : styles.choiceAcceptance, selected && styles.choiceSelected)}
+            testID={`create-quest-choice-${option.value.toLowerCase()}`}
+          >
+            <View className={styles.choiceIcon}><Icon color={colors.primary} size={variant === 'format' ? 27 : 26} strokeWidth={2.1} /></View>
+            <View className={styles.choiceCopy}>
               <Text className={cn(styles.choiceText, selected && styles.choiceTextSelected)}>{option.label}</Text>
-              {selected ? <Check color={colors.primary} size={18} strokeWidth={2.5} /> : null}
-            </Pressable>
-          );
-        })}
+              <Text className={styles.choiceDescription}>{option.description}</Text>
+            </View>
+            <View className={cn(styles.radio, selected && styles.radioSelected)}>{selected ? <View className={styles.radioDot} /> : null}</View>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+function ModeSummary({
+  messages,
+  participation,
+  candidateMode,
+  combinationHint,
+}: {
+  messages: typeof createQuestMessages.en;
+  participation: QuestDraft['participation'];
+  candidateMode: QuestDraft['candidateMode'];
+  combinationHint: string;
+}) {
+  const participationLabel = participation === 'SINGLE' ? messages.singleFormat : messages.teamFormat;
+  const candidateLabel = candidateMode === 'FIRST_COME_FIRST_SERVED' ? messages.instantAccept : messages.selectCandidate;
+
+  return (
+    <View accessibilityLiveRegion="polite" className={styles.modeSummary}>
+      <View className={styles.modeIcon}>
+        {participation === 'SINGLE' ? <UserRoundCheck color={colors.primary} size={30} strokeWidth={2.1} /> : <UsersRound color={colors.primary} size={32} strokeWidth={2.1} />}
       </View>
+      <View className={styles.modeCopy}>
+        <Text className={styles.modeTitle}>{messages.selectedMode}: <Text className={styles.modeValue}>{participationLabel} + {candidateLabel}</Text></Text>
+        <Text className={styles.modeDescription}>{combinationHint}</Text>
+      </View>
+    </View>
+  );
+}
+
+function LogisticsSection({
+  messages,
+  expanded,
+  summary,
+  onPress,
+  children,
+}: {
+  messages: typeof createQuestMessages.en;
+  expanded: boolean;
+  summary: string;
+  onPress: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <View className={styles.sectionCard}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${messages.logistics}: ${expanded ? messages.logisticsDescription : summary}`} accessibilityState={{ expanded }} className={styles.collapsibleHeader} onPress={onPress} testID="create-quest-logistics-toggle">
+        <View className={styles.collapsibleHeaderCopy}>
+          <Text accessibilityRole="header" className={styles.sectionTitle}>{messages.logistics}</Text>
+          <Text className={styles.sectionDescription}>{messages.logisticsDescription}</Text>
+          {!expanded ? <Text className={styles.collapsibleSummary}>{summary}</Text> : null}
+        </View>
+        <ChevronDown color={colors.primary} size={22} strokeWidth={2.2} style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }} />
+      </Pressable>
+      {expanded ? <View className={styles.collapsibleContent}>{children}</View> : null}
     </View>
   );
 }
@@ -164,7 +345,6 @@ export default function CreateQuestScreen() {
   const messages = createQuestMessages[locale];
   const { width, fontScale } = useWindowDimensions();
   const layout = getCreateQuestLayoutMetrics(width);
-  const chrome = getAppChromeMetrics(width, fontScale);
   const insets = useSafeAreaInsets();
   const skipPersistRef = useRef(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -183,7 +363,10 @@ export default function CreateQuestScreen() {
   const [draft, setDraft] = useState<QuestDraft>(initialDraft);
   const [draftHydrated, setDraftHydrated] = useState(false);
   const [draftStorageKey, setDraftStorageKey] = useState<string | null>(null);
+  const [draftLoadAttempt, setDraftLoadAttempt] = useState(0);
+  const [draftLoadError, setDraftLoadError] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>('idle');
+  const [saveErrorIntent, setSaveErrorIntent] = useState<SaveErrorIntent | null>(null);
 
   const [savingAction, setSavingAction] = useState<CompletionState | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -193,12 +376,15 @@ export default function CreateQuestScreen() {
   const [pickerMode, setPickerMode] = useState<PickerMode>('date');
   const [iosPickerValue, setIosPickerValue] = useState<Date | null>(null);
   const [completedState, setCompletedState] = useState<CompletionState | null>(null);
+  const [logisticsExpanded, setLogisticsExpanded] = useState(false);
+  const [pendingInvalidField, setPendingInvalidField] = useState<string | null>(null);
+  const focusedInvalidFieldRef = useRef<string | null>(null);
 
   const tagOptions = useMemo(() => [
-    { label: locale === 'th' ? 'การออกแบบและงานสร้างสรรค์' : 'Design & creative', value: 'design' },
-    { label: locale === 'th' ? 'เทคโนโลยี' : 'Technology', value: 'technology' },
-    { label: locale === 'th' ? 'การสอนพิเศษ' : 'Tutoring', value: 'tutoring' },
-    { label: locale === 'th' ? 'ชีวิตในมหาวิทยาลัย' : 'Campus life', value: 'campus-life' },
+    { label: locale === 'th' ? 'การออกแบบและงานสร้างสรรค์' : 'Design & creative', shortLabel: locale === 'th' ? 'การออกแบบ' : 'Design', value: 'design' },
+    { label: locale === 'th' ? 'เทคโนโลยี' : 'Technology', shortLabel: locale === 'th' ? 'เทคโนโลยี' : 'Technology', value: 'technology' },
+    { label: locale === 'th' ? 'การสอนพิเศษ' : 'Tutoring', shortLabel: locale === 'th' ? 'ติว' : 'Tutoring', value: 'tutoring' },
+    { label: locale === 'th' ? 'ชีวิตในมหาวิทยาลัย' : 'Campus life', shortLabel: locale === 'th' ? 'ชีวิตมหาวิทยาลัย' : 'Campus life', value: 'campus-life' },
   ], [locale]);
   const proofOptions = useMemo(() => [
     { label: messages.required, value: 'required' },
@@ -206,32 +392,36 @@ export default function CreateQuestScreen() {
     { label: messages.notNeeded, value: 'none' },
   ], [messages]);
   const candidateOptions = useMemo(() => [
-    { value: 'FIRST_COME_FIRST_SERVED' as const, label: messages.firstCome },
-    { value: 'CANDIDATE' as const, label: messages.reviewCandidates },
+    { value: 'FIRST_COME_FIRST_SERVED' as const, label: messages.instantAccept, description: messages.instantAcceptDescription, icon: Clock3 },
+    { value: 'CANDIDATE' as const, label: messages.selectCandidate, description: messages.selectCandidateDescription, icon: UserRoundCheck },
   ], [messages]);
   const participationOptions = useMemo(() => [
-    { value: 'SINGLE' as const, label: messages.singlePerson },
-    { value: 'GROUP' as const, label: messages.team },
+    { value: 'SINGLE' as const, label: messages.singleFormat, description: messages.singleFormatDescription, icon: UserRound },
+    { value: 'GROUP' as const, label: messages.teamFormat, description: messages.teamFormatDescription, icon: UsersRound },
   ], [messages]);
 
-  const saveDraft = useCallback(async (draftToSave: QuestDraft, state: CompletionState = 'DRAFT'): Promise<boolean> => {
+  const saveDraft = useCallback(async (draftToSave: QuestDraft, state: CompletionState = 'DRAFT', completesFlow = false): Promise<boolean> => {
     const requestId = ++saveRequestRef.current;
     setSaveState('saving');
     setSavingAction(state);
+    setSaveErrorIntent(null);
     try {
       if (!draftStorageKey) {
         setSaveState('error');
+        setSaveErrorIntent({ state, completesFlow });
         setSavingAction(null);
         return false;
       }
       await persistQuestDraft(draftStorageKey, draftToSave, step, state);
       if (requestId !== saveRequestRef.current) return false;
       setSaveState('saved');
+      setSaveErrorIntent(null);
       setSavingAction(null);
       return true;
     } catch {
       if (requestId !== saveRequestRef.current) return false;
       setSaveState('error');
+      setSaveErrorIntent({ state, completesFlow });
       setSavingAction(null);
       return false;
     }
@@ -241,11 +431,15 @@ export default function CreateQuestScreen() {
     let active = true;
     void getQuestDraftStorageKey().then((storageKey) => {
       if (active) setDraftStorageKey(storageKey);
+    }).catch(() => {
+      if (!active) return;
+      setDraftLoadError(true);
+      setDraftHydrated(false);
     });
     return () => {
       active = false;
     };
-  }, []);
+  }, [draftLoadAttempt]);
 
   useEffect(() => {
     if (!draftStorageKey) return undefined;
@@ -260,14 +454,14 @@ export default function CreateQuestScreen() {
       setDraftHydrated(true);
     }).catch(() => {
       if (!active) return;
-      setSaveState('error');
-      setDraftHydrated(true);
+      setDraftLoadError(true);
+      setDraftHydrated(false);
     });
 
     return () => {
       active = false;
     };
-  }, [draftStorageKey]);
+  }, [draftLoadAttempt, draftStorageKey]);
 
   useEffect(() => {
     if (!draftHydrated || !draftStorageKey || skipPersistRef.current) {
@@ -288,7 +482,9 @@ export default function CreateQuestScreen() {
   const updateDraft = <K extends keyof QuestDraft>(field: K, value: QuestDraft[K]) => {
     setDraft((current) => ({ ...current, [field]: value }));
     setSaveState('idle');
+    setSaveErrorIntent(null);
     setValidationSummary(null);
+    setPendingInvalidField(null);
     setErrors((current) => {
       if (!current[field]) return current;
       const next = { ...current };
@@ -304,8 +500,10 @@ export default function CreateQuestScreen() {
       headcount: getHeadcountForParticipation(value, current.headcount),
     }));
     setSaveState('idle');
+    setSaveErrorIntent(null);
     setSavingAction(null);
     setValidationSummary(null);
+    setPendingInvalidField(null);
     setErrors((current) => {
       const next = { ...current };
       delete next.headcount;
@@ -313,7 +511,7 @@ export default function CreateQuestScreen() {
     });
   };
 
-  const focusRefs: Record<string, React.RefObject<Focusable | null>> = {
+  const focusRefs = useMemo<Record<string, React.RefObject<Focusable | null>>>(() => ({
     title: titleRef,
     tag: tagRef,
     description: descriptionRef,
@@ -325,10 +523,10 @@ export default function CreateQuestScreen() {
     location: locationRef,
     headcount: headcountRef,
     wage: rewardRef,
-  };
+  }), []);
 
-  const focusInvalidField = (field: string) => {
-    InteractionManager.runAfterInteractions(() => {
+  const focusInvalidField = useCallback((field: string) => {
+    const focus = () => {
       const target = focusRefs[field]?.current;
       if (!target) return;
       const reactTag = findNodeHandle(target);
@@ -340,8 +538,23 @@ export default function CreateQuestScreen() {
       } else {
         scrollRef.current?.scrollTo({ y: 0, animated: true });
       }
-    });
-  };
+    };
+    if (typeof globalThis.requestIdleCallback === 'function') {
+      globalThis.requestIdleCallback(focus, { timeout: 250 });
+    } else {
+      setTimeout(focus, 0);
+    }
+  }, [focusRefs]);
+
+  useEffect(() => {
+    if (!pendingInvalidField) return;
+    const targetStep = QUEST_DETAIL_FIELDS.has(pendingInvalidField) ? 1 : 2;
+    if (step !== targetStep) return;
+    if (LOGISTICS_FIELDS.has(pendingInvalidField) && !logisticsExpanded) return;
+    if (focusedInvalidFieldRef.current === pendingInvalidField) return;
+    focusedInvalidFieldRef.current = pendingInvalidField;
+    focusInvalidField(pendingInvalidField);
+  }, [focusInvalidField, logisticsExpanded, pendingInvalidField, step]);
 
   const validateStep = (currentStep: Step): boolean => {
     const nextErrors: Record<string, string> = {};
@@ -363,8 +576,6 @@ export default function CreateQuestScreen() {
       const endDateTime = getDateTimeValue(draft.deadline, draft.endTime);
       if (startDateTime !== null && endDateTime !== null && endDateTime <= startDateTime) nextErrors.endTime = messages.timeOrderError;
       if (draft.locationMode === 'ON_CAMPUS' && !draft.location.trim()) nextErrors.location = messages.locationError;
-    }
-    if (currentStep === 3) {
       if (!draft.headcount.trim() || Number(draft.headcount) < 1) nextErrors.headcount = messages.headcountError;
       const rewardError = getRewardValidationError(draft.wage, {
         empty: messages.rewardEmptyError,
@@ -393,7 +604,13 @@ export default function CreateQuestScreen() {
       const firstError = `${fieldLabels[firstErrorKey] ?? messages.title}: ${nextErrors[firstErrorKey]}`;
       setValidationSummary(firstError);
       AccessibilityInfo.announceForAccessibility(firstError);
-      focusInvalidField(firstErrorKey);
+      if (currentStep === 2 && LOGISTICS_FIELDS.has(firstErrorKey)) setLogisticsExpanded(true);
+      if (currentStep !== step) {
+        setStep(currentStep);
+        scrollRef.current?.scrollTo({ y: 0, animated: false });
+      }
+      focusedInvalidFieldRef.current = null;
+      setPendingInvalidField(firstErrorKey);
     } else {
       setValidationSummary(null);
     }
@@ -411,20 +628,37 @@ export default function CreateQuestScreen() {
 
   const goToStep = (target: Step) => {
     if (target >= step) return;
+    setPendingInvalidField(null);
     setStep(target);
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   };
 
   const finishQuest = async (state: CompletionState) => {
-    if (!validateStep(3)) return;
+    if (!validateStep(2)) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    const saved = await saveDraft(draft, state);
+    const saved = await saveDraft(draft, state, true);
     if (saved) setCompletedState(state);
+  };
+
+  const retrySave = () => {
+    const intent = saveErrorIntent;
+    void saveDraft(draft, intent?.state ?? 'DRAFT', intent?.completesFlow ?? false).then((saved) => {
+      if (saved && intent?.completesFlow) setCompletedState(intent.state);
+    });
+  };
+
+  const retryDraftLoad = () => {
+    setDraftLoadError(false);
+    setDraftHydrated(false);
+    setDraftLoadAttempt((current) => current + 1);
   };
 
   const leaveCreateFlow = () => router.replace('/(tabs)');
 
+  const showHelp = () => Alert.alert(messages.helpTitle, messages.helpDescription);
+
   const goBack = () => {
+    setPendingInvalidField(null);
     if (step === 1) {
       if (isQuestDraftDirty(draft)) {
         Alert.alert(messages.discardTitle, messages.discardDescription, [
@@ -528,7 +762,10 @@ export default function CreateQuestScreen() {
     setValidationSummary(null);
     setImageError(undefined);
     setSaveState('idle');
+    setSaveErrorIntent(null);
     setSavingAction(null);
+    setLogisticsExpanded(false);
+    setPendingInvalidField(null);
     setStep(1);
     setCompletedState(null);
   };
@@ -553,13 +790,41 @@ export default function CreateQuestScreen() {
     { label: messages.summary.reward, value: draft.wage ? `฿ ${draft.wage} / ${locale === 'th' ? 'คน' : 'person'}` : messages.notSelected },
   ], [candidateOptions, draft, locale, messages, participationOptions, proofOptions, tagOptions]);
 
+  const selectedQuestTag = tagOptions.find((option) => option.value === draft.tag)?.shortLabel ?? messages.notSelected;
+  const selectedTeamSize = draft.participation === 'SINGLE'
+    ? messages.teamSizeValue('1')
+    : draft.headcount
+      ? messages.teamSizeValue(draft.headcount)
+      : messages.notSelected;
+  const selectedAcceptanceMethod = draft.candidateMode === 'CANDIDATE' ? messages.selectCandidate : messages.instantAccept;
+  const logisticsSummary = draft.startDate && draft.deadline && draft.startTime && draft.endTime
+    ? messages.logisticsSummaryComplete(
+        `${formatDate(draft.startDate, locale, messages.notSelected)} · ${draft.startTime}–${draft.endTime}`,
+        draft.locationMode === 'ONLINE' ? messages.online : draft.location || messages.notSelected,
+      )
+    : messages.logisticsSummary;
+  const useStackedChoices = width < 430 || fontScale >= 1.15;
+  const useWideSummary = layout.isExpanded || width >= 430;
+  const useStackedActions = width < 340 || fontScale >= 1.35;
+
   if (!draftHydrated && !completedState) {
     return (
       <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
-        <TopBar onBackPress={goBack} backLabel={messages.back} title={messages.title} />
-        <View accessibilityRole="progressbar" className={styles.loadingState}>
-          <ActivityIndicator color={colors.primary} size="small" />
-          <Text className={styles.loadingText}>{messages.loadingDraft}</Text>
+        <StatusBar style="light" />
+        <CreateQuestHeader messages={messages} step={1} onBackPress={goBack} onHelpPress={showHelp} onStepPress={goToStep} />
+        <View className={styles.surface}>
+          {draftLoadError ? (
+            <View className={styles.loadErrorState}>
+              <View className={styles.loadErrorIcon}><CircleAlert color={colors.dangerDark} size={26} strokeWidth={2.2} /></View>
+              <Text accessibilityRole="alert" className={styles.loadErrorText}>{messages.loadDraftError}</Text>
+              <Button onPress={retryDraftLoad} className={styles.fullButton}>{messages.retryLoadDraft}</Button>
+            </View>
+          ) : (
+            <View accessibilityRole="progressbar" className={styles.loadingState}>
+              <ActivityIndicator color={colors.primary} size="small" />
+              <Text className={styles.loadingText}>{messages.loadingDraft}</Text>
+            </View>
+          )}
         </View>
       </SafeAreaView>
     );
@@ -569,23 +834,26 @@ export default function CreateQuestScreen() {
     const published = completedState === 'OPEN';
     return (
       <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
-        <TopBar onBackPress={() => setCompletedState(null)} backLabel={messages.back} title={messages.title} />
-        <View className={styles.successState}>
-          <View className={styles.successIcon}><Check color={colors.primary} size={32} strokeWidth={2.5} /></View>
-          <Text accessibilityRole="header" className={styles.successTitle}>{published ? messages.publishedQuestTitle : messages.savedDraftTitle}</Text>
-          <Text className={styles.successDescription}>{published ? messages.publishedQuestDescription : messages.savedDraftDescription}</Text>
-          <Button onPress={() => void resetDraft()} className={styles.fullButton}>{messages.createAnotherDraft}</Button>
-          <Button variant="secondary" onPress={leaveCreateFlow} className={styles.fullButton}>{messages.viewQuestBoard}</Button>
+        <StatusBar style="light" />
+        <CreateQuestHeader messages={messages} step={3} onBackPress={() => setCompletedState(null)} onHelpPress={showHelp} onStepPress={goToStep} />
+        <View className={styles.surface}>
+          <View className={styles.successState}>
+            <View className={styles.successIcon}><Check color={colors.primary} size={32} strokeWidth={2.5} /></View>
+            <Text accessibilityRole="header" className={styles.successTitle}>{published ? messages.publishedQuestTitle : messages.savedDraftTitle}</Text>
+            <Text className={styles.successDescription}>{published ? messages.publishedQuestDescription : messages.savedDraftDescription}</Text>
+            <Button onPress={() => void resetDraft()} className={styles.fullButton}>{messages.createAnotherDraft}</Button>
+            <Button variant="secondary" onPress={leaveCreateFlow} className={styles.fullButton}>{messages.viewQuestBoard}</Button>
+          </View>
         </View>
       </SafeAreaView>
     );
   }
 
-  const stepName = step === 1 ? messages.details : step === 2 ? messages.schedule : messages.questSummary;
-  const stepLabels = [messages.details, messages.schedule, messages.questSummary];
-  const sectionTitle = step === 1 ? messages.questDetails : step === 2 ? messages.scheduleLocation : messages.participantsReward;
-  const sectionDescription = step === 1 ? messages.questDetailsDescription : step === 2 ? messages.scheduleLocationDescription : messages.participantsRewardDescription;
   const isSaving = saveState === 'saving';
+  const nextLabel = step === 2 ? messages.reviewQuest : messages.next;
+  const actionButtonStyle = useStackedActions
+    ? { flexBasis: 'auto' as const, flexGrow: 0, flexShrink: 0, width: '100%' as const }
+    : { flexBasis: 0, flexGrow: 1, flexShrink: 1, width: 0 };
   const schedulePickerDate = scheduleField === 'start' ? draft.startDate : draft.deadline;
   const schedulePickerTime = scheduleField === 'start' ? draft.startTime : draft.endTime;
   const schedulePickerValue = getSchedulePickerValue(Platform.OS, getDateTimePickerValue(schedulePickerDate, schedulePickerTime), iosPickerValue);
@@ -597,141 +865,173 @@ export default function CreateQuestScreen() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
-      <TopBar onBackPress={goBack} backLabel={messages.back} title={messages.title} />
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView
-          ref={scrollRef}
-          contentContainerStyle={{ paddingBottom: 180, paddingHorizontal: layout.horizontalPadding }}
-          keyboardDismissMode="on-drag"
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={{ alignSelf: 'center', width: layout.isExpanded ? layout.contentMaxWidth : '100%' }}>
-            {validationSummary ? (
-              <View accessibilityRole="alert" accessibilityLiveRegion="assertive" className={styles.validationSummary}>
-                <Text className={styles.validationSummaryText}>{validationSummary}</Text>
-              </View>
-            ) : null}
-            <View className={styles.headerBlock}>
-              <View className={styles.progressHeader}>
-                <Text className={styles.stepText}>{messages.step(step, 3)}</Text>
-                <Text className={styles.stepName}>{stepName}</Text>
-              </View>
-              <View className={styles.progressTrack} accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: 3, now: step }}>
-                {[1, 2, 3].map((item) => <Pressable key={item} accessibilityRole="button" accessibilityLabel={messages.step(item, 3)} accessibilityState={{ disabled: item >= step }} disabled={item >= step} onPress={() => goToStep(item as Step)} className={styles.progressSegment}><View className={cn(styles.progressSegmentBar, item <= step && styles.progressSegmentActive)} /></Pressable>)}
-              </View>
-              <View className={styles.stepLabels} accessible={false}>
-                {stepLabels.map((label, index) => <Text key={label} className={cn(styles.stepLabel, index + 1 === step && styles.stepLabelActive)}>{label}</Text>)}
-              </View>
-              {saveState === 'saving' || saveState === 'saved' ? <View accessibilityLiveRegion="polite" className={styles.autosaveStatus}><Text className={styles.autosaveText}>{saveState === 'saving' ? messages.autosaveSaving : messages.autosaveSaved}</Text></View> : null}
-            </View>
-
-            <View>
-              <View className={styles.sectionHeading}>
-                <View className={styles.sectionHeadingText}>
-                  <Text accessibilityRole="header" className={styles.sectionTitle}>{sectionTitle}</Text>
-                  <Text className={styles.sectionDescription}>{sectionDescription}</Text>
+      <StatusBar style="light" />
+      <CreateQuestHeader messages={messages} step={step} onBackPress={goBack} onHelpPress={showHelp} onStepPress={goToStep} />
+      <View className={styles.surface}>
+        <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <ScrollView
+            ref={scrollRef}
+            className="flex-1"
+            contentContainerStyle={{ paddingBottom: spacing.xl, paddingHorizontal: layout.horizontalPadding, paddingTop: spacing.lg }}
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={{ alignSelf: 'center', width: layout.isExpanded ? layout.contentMaxWidth : '100%' }}>
+              {validationSummary ? (
+                <View accessibilityRole="alert" accessibilityLiveRegion="assertive" className={styles.validationSummary}>
+                  <Text className={styles.validationSummaryText}>{validationSummary}</Text>
                 </View>
-              </View>
+              ) : null}
+              {saveState === 'saving' ? <View accessibilityLiveRegion="polite" className={styles.autosaveStatus}><Text className={styles.autosaveText}>{messages.autosaveSaving}</Text></View> : null}
+              {saveState === 'error' ? (
+                <View accessibilityRole="alert" accessibilityLiveRegion="assertive" className={styles.saveErrorCard} testID="create-quest-save-error">
+                  <CircleAlert color={colors.dangerDark} size={22} strokeWidth={2.2} />
+                  <View className={styles.saveErrorCopy}><Text className={styles.saveErrorText}>{messages.saveError}</Text></View>
+                  <Pressable accessibilityRole="button" accessibilityLabel={messages.retrySave} onPress={retrySave} className={styles.retryButton} testID="create-quest-retry-save">
+                    <Text className={styles.retryButtonText}>{messages.retrySave}</Text>
+                  </Pressable>
+                </View>
+              ) : null}
 
               {step === 1 ? (
-                <>
+                <View className={styles.sectionCard}>
+                  <View className={styles.sectionHeading}>
+                    <View className={styles.sectionHeadingText}>
+                      <Text accessibilityRole="header" className={styles.sectionTitle}>{messages.questDetails}</Text>
+                      <Text className={styles.sectionDescription}>{messages.questDetailsDescription}</Text>
+                    </View>
+                  </View>
                   <Input ref={titleRef} label={`${messages.titleLabel} *`} placeholder={messages.titlePlaceholder} value={draft.title} onChangeText={(value) => updateDraft('title', value)} error={errors.title} maxLength={100} />
                   <Select ref={tagRef} label={`${messages.questTag} *`} options={tagOptions} value={draft.tag} onValueChange={(value) => updateDraft('tag', value)} placeholder={messages.chooseQuestTag} error={errors.tag} />
                   <TextArea ref={descriptionRef} label={`${messages.description} *`} placeholder={messages.descriptionPlaceholder} value={draft.description} onChangeText={(value) => updateDraft('description', value)} error={errors.description} maxLength={300} />
                   <TextArea ref={conditionsRef} label={`${messages.completionCriteria} *`} placeholder={messages.completionCriteriaPlaceholder} value={draft.conditions} onChangeText={(value) => updateDraft('conditions', value)} error={errors.conditions} maxLength={300} />
                   <Select label={`${messages.proofOfCompletion} · ${messages.optional}`} options={proofOptions} value={draft.proofRequired} onValueChange={(value) => updateDraft('proofRequired', value)} placeholder={messages.proofPlaceholder} />
-                </>
+                </View>
               ) : null}
 
               {step === 2 ? (
                 <>
-                  <DateTimeField emptyLabel={messages.notSelected} label={messages.startDateTime} value={formatDateTime(draft.startDate, draft.startTime, locale, messages.notSelected)} hasValue={Boolean(draft.startDate && TIME_PATTERN.test(draft.startTime))} error={errors.startDate ?? errors.startTime} helper={messages.dateTimeHelper} fieldRef={startDateRef} testID="create-quest-start-datetime" onPress={() => openSchedulePicker('start')} />
-                  <DateTimeField emptyLabel={messages.notSelected} label={messages.deadlineDateTime} value={formatDateTime(draft.deadline, draft.endTime, locale, messages.notSelected)} hasValue={Boolean(draft.deadline && TIME_PATTERN.test(draft.endTime))} error={errors.deadline ?? errors.endTime} helper={messages.dateTimeHelper} fieldRef={deadlineRef} testID="create-quest-deadline-datetime" onPress={() => openSchedulePicker('end')} />
-                  <View className={styles.fieldGroup}>
-                    <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: draft.locationMode === 'ONLINE' }} accessibilityLabel={messages.onlineQuest} onPress={() => updateDraft('locationMode', draft.locationMode === 'ONLINE' ? 'ON_CAMPUS' : 'ONLINE')} className={styles.onlineToggle}>
-                      <View className={cn(styles.checkbox, draft.locationMode === 'ONLINE' && styles.checkboxChecked)}>{draft.locationMode === 'ONLINE' ? <Check color={colors.white} size={15} strokeWidth={3} /> : null}</View>
-                      <View className={styles.onlineToggleCopy}><Text className={styles.onlineToggleTitle}>{messages.onlineQuest}</Text><Text className={styles.onlineToggleHint}>{messages.onlineQuestHint}</Text></View>
-                    </Pressable>
-                    {draft.locationMode === 'ON_CAMPUS' ? <><FieldLabel required optionalLabel="">{messages.location}</FieldLabel><View className={cn(styles.inputWithIcon, errors.location && styles.fieldError)}><MapPin color={colors.textMuted} size={18} strokeWidth={2} /><TextInput ref={locationRef} className={styles.iconInput} placeholder={messages.locationPlaceholder} placeholderTextColor={colors.textFaint} value={draft.location} onChangeText={(value) => updateDraft('location', value)} accessibilityLabel={messages.location} testID="create-quest-location" /></View>{errors.location ? <Text className={styles.errorText}>{errors.location}</Text> : null}</> : null}
-                  </View>
-                  <View className={styles.fieldGroup}>
-                    <FieldLabel optionalLabel={messages.optional}>{messages.images}</FieldLabel>
-                    {draft.imageUris.length > 0 ? (
-                      <View className={styles.imagePicker} accessible={false}>
-                        <View className={styles.imageGrid}>
-                          {draft.imageUris.map((uri, index) => (
-                            <View key={`${uri}-${index}`} className={styles.imagePreviewContainer}>
-                              <Image accessibilityLabel={messages.questImage(index + 1)} cachePolicy="memory-disk" onError={() => setImageError(messages.imageError)} source={{ uri }} className={styles.previewImage} />
-                              <Pressable accessibilityRole="button" accessibilityLabel={messages.removeImage(index + 1)} hitSlop={8} onPress={() => removeImage(index)} className={styles.removeImageButton}>
-                                <X color={colors.white} size={15} strokeWidth={2.5} />
-                              </Pressable>
-                            </View>
-                          ))}
-                        </View>
-                        <Pressable accessibilityRole="button" accessibilityLabel={messages.changeImages} onPress={() => void pickImages()} className={styles.changeImagesButton}><Text className={styles.imageTitle}>{messages.changeImages}</Text></Pressable>
+                  <QuestSetupOverview messages={messages} questTag={selectedQuestTag} teamSize={selectedTeamSize} acceptanceMethod={selectedAcceptanceMethod} wide={useWideSummary} />
+                  <View className={styles.sectionCard}>
+                    <View className={styles.subsectionHeading}>
+                      <Text accessibilityRole="header" className={styles.sectionTitle}>{`1. ${messages.chooseWorkFormat}`}</Text>
+                      <Text className={styles.sectionDescription}>{messages.chooseWorkFormatDescription}</Text>
+                    </View>
+                    <ChoiceGroup label={messages.participation} value={draft.participation} options={participationOptions} variant="format" stacked={useStackedChoices} onChange={(value) => updateParticipation(value as QuestDraft['participation'])} />
+
+                    <View className={styles.subsectionBlock}>
+                      <View className={styles.subsectionHeading}>
+                        <Text accessibilityRole="header" className={styles.sectionTitle}>{`2. ${messages.chooseAcceptanceMethod}`}</Text>
+                        <Text className={styles.sectionDescription}>{messages.chooseAcceptanceMethodDescription}</Text>
                       </View>
-                    ) : (
-                      <Pressable accessibilityRole="button" accessibilityLabel={messages.addImages} onPress={() => void pickImages()} className={styles.imagePicker}><ImagePlus color={colors.primary} size={28} strokeWidth={1.8} /><Text className={styles.imageTitle}>{messages.addImages}</Text><Text className={styles.helperText}>{messages.imagesOptional}</Text></Pressable>
-                    )}
-                    {imageError ? <Text accessibilityRole="alert" className={styles.errorText}>{imageError}</Text> : null}
+                      <ChoiceGroup label={messages.candidateMode} value={draft.candidateMode} options={candidateOptions} variant="acceptance" stacked={false} onChange={(value) => updateDraft('candidateMode', value as QuestDraft['candidateMode'])} />
+                    </View>
+
+                    <ModeSummary messages={messages} participation={draft.participation} candidateMode={draft.candidateMode} combinationHint={combinationHint} />
+
+                    <View className={styles.additionalSettings}>
+                      <Text accessibilityRole="header" className={styles.additionalSettingsTitle}>{messages.capacityAndReward}</Text>
+                      <Text className={styles.sectionDescription}>{messages.participantsRewardDescription}</Text>
+                      {draft.participation === 'SINGLE' ? (
+                        <View className={styles.fieldGroup}>
+                          <FieldLabel required optionalLabel={messages.optional}>{messages.headcount}</FieldLabel>
+                          <View accessible accessibilityLabel={`${messages.headcount}: 1`} className={styles.readOnlyField}>
+                            <Text className={styles.readOnlyValue}>1</Text>
+                          </View>
+                          <Text className={styles.singleHeadcountHint}>{messages.singleHeadcountHint}</Text>
+                        </View>
+                      ) : (
+                        <Input ref={headcountRef} label={`${messages.headcount} *`} placeholder={messages.headcountPlaceholder} value={draft.headcount} onChangeText={(value) => updateDraft('headcount', value.replace(/[^0-9]/g, ''))} error={errors.headcount} keyboardType="number-pad" />
+                      )}
+                      <View className={styles.fieldGroup}>
+                        <FieldLabel required optionalLabel={messages.optional}>{messages.rewardPerPerson}</FieldLabel>
+                        <View className={cn(styles.currencyInput, errors.wage ? styles.fieldError : null)}>
+                          <Text className={styles.currencySymbol}>฿</Text>
+                          <TextInput ref={rewardRef} className={styles.currencyTextInput} placeholder={messages.rewardPlaceholder} placeholderTextColor={colors.textFaint} value={draft.wage} onChangeText={(value) => updateDraft('wage', value.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" accessibilityLabel={`${messages.rewardPerPerson} (THB)`} />
+                          <Text className={styles.currencyUnit}>THB</Text>
+                        </View>
+                        <Text accessibilityLiveRegion={errors.wage ? 'assertive' : 'none'} className={errors.wage ? styles.errorText : styles.helperText}>{errors.wage ?? messages.rewardHelper}</Text>
+                      </View>
+                    </View>
                   </View>
+
+                  <LogisticsSection messages={messages} expanded={logisticsExpanded} summary={logisticsSummary} onPress={() => setLogisticsExpanded((current) => !current)}>
+                    <DateTimeField emptyLabel={messages.notSelected} label={messages.startDateTime} value={formatDateTime(draft.startDate, draft.startTime, locale, messages.notSelected)} hasValue={Boolean(draft.startDate && TIME_PATTERN.test(draft.startTime))} error={errors.startDate ?? errors.startTime} helper={messages.dateTimeHelper} fieldRef={startDateRef} testID="create-quest-start-datetime" onPress={() => openSchedulePicker('start')} />
+                    <DateTimeField emptyLabel={messages.notSelected} label={messages.deadlineDateTime} value={formatDateTime(draft.deadline, draft.endTime, locale, messages.notSelected)} hasValue={Boolean(draft.deadline && TIME_PATTERN.test(draft.endTime))} error={errors.deadline ?? errors.endTime} helper={messages.dateTimeHelper} fieldRef={deadlineRef} testID="create-quest-deadline-datetime" onPress={() => openSchedulePicker('end')} />
+                    <View className={styles.fieldGroup}>
+                      <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: draft.locationMode === 'ONLINE' }} accessibilityLabel={messages.onlineQuest} onPress={() => updateDraft('locationMode', draft.locationMode === 'ONLINE' ? 'ON_CAMPUS' : 'ONLINE')} className={styles.onlineToggle}>
+                        <View className={cn(styles.checkbox, draft.locationMode === 'ONLINE' && styles.checkboxChecked)}>{draft.locationMode === 'ONLINE' ? <Check color={colors.white} size={15} strokeWidth={3} /> : null}</View>
+                        <View className={styles.onlineToggleCopy}><Text className={styles.onlineToggleTitle}>{messages.onlineQuest}</Text><Text className={styles.onlineToggleHint}>{messages.onlineQuestHint}</Text></View>
+                      </Pressable>
+                      {draft.locationMode === 'ON_CAMPUS' ? <><FieldLabel required optionalLabel="">{messages.location}</FieldLabel><View className={cn(styles.inputWithIcon, errors.location && styles.fieldError)}><MapPin color={colors.textMuted} size={18} strokeWidth={2} /><TextInput ref={locationRef} className={styles.iconInput} placeholder={messages.locationPlaceholder} placeholderTextColor={colors.textFaint} value={draft.location} onChangeText={(value) => updateDraft('location', value)} accessibilityLabel={messages.location} testID="create-quest-location" /></View>{errors.location ? <Text className={styles.errorText}>{errors.location}</Text> : null}</> : null}
+                    </View>
+                    <View className={styles.fieldGroup}>
+                      <FieldLabel optionalLabel={messages.optional}>{messages.images}</FieldLabel>
+                      {draft.imageUris.length > 0 ? (
+                        <View className={styles.imagePicker} accessible={false}>
+                          <View className={styles.imageGrid}>
+                            {draft.imageUris.map((uri, index) => (
+                              <View key={`${uri}-${index}`} className={styles.imagePreviewContainer}>
+                                <Image accessibilityLabel={messages.questImage(index + 1)} cachePolicy="memory-disk" onError={() => setImageError(messages.imageError)} source={{ uri }} className={styles.previewImage} />
+                                <Pressable accessibilityRole="button" accessibilityLabel={messages.removeImage(index + 1)} hitSlop={8} onPress={() => removeImage(index)} className={styles.removeImageButton}>
+                                  <X color={colors.white} size={15} strokeWidth={2.5} />
+                                </Pressable>
+                              </View>
+                            ))}
+                          </View>
+                          <Pressable accessibilityRole="button" accessibilityLabel={messages.changeImages} onPress={() => void pickImages()} className={styles.changeImagesButton}><Text className={styles.imageTitle}>{messages.changeImages}</Text></Pressable>
+                        </View>
+                      ) : (
+                        <Pressable accessibilityRole="button" accessibilityLabel={messages.addImages} onPress={() => void pickImages()} className={styles.imagePicker}><ImagePlus color={colors.primary} size={28} strokeWidth={1.8} /><Text className={styles.imageTitle}>{messages.addImages}</Text><Text className={styles.helperText}>{messages.imagesOptional}</Text></Pressable>
+                      )}
+                      {imageError ? <Text accessibilityRole="alert" className={styles.errorText}>{imageError}</Text> : null}
+                    </View>
+                  </LogisticsSection>
                 </>
               ) : null}
 
               {step === 3 ? (
-                <>
-                  <ChoiceGroup label={messages.participation} value={draft.participation} options={participationOptions} optionalLabel={messages.optional} onChange={(value) => updateParticipation(value as QuestDraft['participation'])} />
-                  <ChoiceGroup label={messages.candidateMode} value={draft.candidateMode} options={candidateOptions} optionalLabel={messages.optional} onChange={(value) => updateDraft('candidateMode', value as QuestDraft['candidateMode'])} />
-                  <Text className={styles.choiceHint}>{combinationHint}</Text>
-                  {draft.participation === 'SINGLE' ? (
-                    <View className={styles.fieldGroup}>
-                      <FieldLabel required optionalLabel={messages.optional}>{messages.headcount}</FieldLabel>
-                      <View accessible accessibilityLabel={`${messages.headcount}: 1`} className={styles.readOnlyField}>
-                        <Text className={styles.readOnlyValue}>1</Text>
-                      </View>
-                      <Text className={styles.singleHeadcountHint}>{messages.singleHeadcountHint}</Text>
+                <View className={styles.sectionCard}>
+                  <View className={styles.sectionHeading}>
+                    <View className={styles.sectionHeadingText}>
+                      <Text accessibilityRole="header" className={styles.sectionTitle}>{messages.review}</Text>
+                      <Text className={styles.sectionDescription}>{messages.questSummaryLabel}</Text>
                     </View>
-                  ) : (
-                    <Input ref={headcountRef} label={`${messages.headcount} *`} placeholder={messages.headcountPlaceholder} value={draft.headcount} onChangeText={(value) => updateDraft('headcount', value.replace(/[^0-9]/g, ''))} error={errors.headcount} keyboardType="number-pad" />
-                  )}
-                  <View className={styles.fieldGroup}>
-                    <FieldLabel required optionalLabel={messages.optional}>{messages.rewardPerPerson}</FieldLabel>
-                    <View className={cn(styles.currencyInput, errors.wage ? styles.fieldError : null)}>
-                      <Text className={styles.currencySymbol}>฿</Text>
-                      <TextInput ref={rewardRef} className={styles.currencyTextInput} placeholder={messages.rewardPlaceholder} placeholderTextColor={colors.textFaint} value={draft.wage} onChangeText={(value) => updateDraft('wage', value.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" accessibilityLabel={`${messages.rewardPerPerson} (THB)`} />
-                      <Text className={styles.currencyUnit}>THB</Text>
-                    </View>
-                    <Text accessibilityLiveRegion={errors.wage ? 'assertive' : 'none'} className={errors.wage ? styles.errorText : styles.helperText}>{errors.wage ?? messages.rewardHelper}</Text>
                   </View>
-                  <View className={styles.summaryHeading}><Sparkles color={colors.primary} size={18} strokeWidth={2} /><Text className={styles.summaryTitle}>{messages.questSummaryLabel}</Text></View>
                   <View className={styles.summaryCard}>{summary.map((item) => <View key={item.label} className={styles.summaryRow}><Text className={styles.summaryLabel}>{item.label}</Text><Text className={styles.summaryValue}>{item.value}</Text></View>)}</View>
-                </>
+                </View>
               ) : null}
             </View>
-          </View>
-        </ScrollView>
+          </ScrollView>
 
-        <View className={styles.actionBar} style={{
-          marginBottom: chrome.isTablet ? 0 : Math.max(insets.bottom, spacing.sm) + spacing.xs,
-          paddingBottom: Math.max(spacing.sm, insets.bottom + spacing.xs),
-        }}>
-          {step < 3 ? (
-            <Button disabled={isSaving} onPress={goNext} className={styles.nextButton} accessibilityLabel={messages.next}>
-              <View className={styles.buttonContent}><Text className={styles.primaryButtonText}>{messages.next}</Text><ChevronRight color={colors.white} size={18} strokeWidth={2.5} /></View>
-            </Button>
-          ) : (
-            <>
-              <Button variant="secondary" disabled={isSaving} onPress={() => void finishQuest('DRAFT')} className={styles.finalActionButton} accessibilityLabel={savingAction === 'DRAFT' ? messages.savingDraft : messages.saveDraft}>
-                {savingAction === 'DRAFT' ? messages.savingDraft : messages.saveDraft}
+          <View className={cn(styles.actionBar, useStackedActions && styles.actionBarStacked)} style={{
+            alignItems: useStackedActions ? 'stretch' : 'center',
+            flexDirection: useStackedActions ? 'column' : 'row',
+            paddingBottom: Math.max(spacing.sm, insets.bottom + spacing.xs),
+          }}>
+            {step > 1 && step < 3 ? (
+              <Button variant="secondary" disabled={isSaving} onPress={goBack} className={cn(styles.backActionButton, useStackedActions && styles.backActionButtonStacked)} style={actionButtonStyle} accessibilityLabel={messages.back}>
+                <View className={styles.buttonContent}><ArrowLeft color={colors.primary} size={20} strokeWidth={2.5} /><Text className={styles.secondaryButtonText}>{messages.back}</Text></View>
               </Button>
-              <Button disabled={isSaving} onPress={() => void finishQuest('OPEN')} className={styles.finalActionButton} accessibilityLabel={savingAction === 'OPEN' ? messages.savingPreview : messages.savePreview}>
-                {savingAction === 'OPEN' ? messages.savingPreview : messages.savePreview}
+            ) : null}
+            {step < 3 ? (
+              <Button disabled={isSaving} onPress={goNext} className={step > 1 ? cn(styles.nextButton, useStackedActions && styles.nextButtonStacked) : styles.nextButtonFull} style={step > 1 ? actionButtonStyle : undefined} accessibilityLabel={nextLabel}>
+                <View className={styles.buttonContent}><Text className={styles.primaryButtonText}>{nextLabel}</Text><ChevronRight color={colors.white} size={20} strokeWidth={2.5} /></View>
               </Button>
-            </>
-          )}
-        </View>
-      </KeyboardAvoidingView>
+            ) : (
+              <>
+                <Button variant="secondary" disabled={isSaving} onPress={() => void finishQuest('DRAFT')} className={cn(styles.finalActionButton, useStackedActions && styles.finalActionButtonStacked)} style={actionButtonStyle} accessibilityLabel={savingAction === 'DRAFT' ? messages.savingDraft : messages.saveDraft}>
+                  {savingAction === 'DRAFT' ? messages.savingDraft : messages.saveDraft}
+                </Button>
+                <Button disabled={isSaving} onPress={() => void finishQuest('OPEN')} className={cn(styles.finalActionButton, useStackedActions && styles.finalActionButtonStacked)} style={actionButtonStyle} accessibilityLabel={savingAction === 'OPEN' ? messages.savingPreview : messages.savePreview}>
+                  {savingAction === 'OPEN' ? messages.savingPreview : messages.savePreview}
+                </Button>
+              </>
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </View>
 
       {scheduleField ? Platform.OS === 'ios' ? (
         <Modal transparent animationType="slide" onRequestClose={closeSchedulePicker} visible>

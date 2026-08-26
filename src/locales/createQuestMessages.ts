@@ -3,9 +3,39 @@ import type { SupportedLocale } from './LocaleProvider';
 export interface CreateQuestMessages {
   title: string;
   step: (current: number, total: number) => string;
+  headerSubtitle: string;
+  helpLabel: string;
+  helpTitle: string;
+  helpDescription: string;
+  missionInfo: string;
+  teamSetup: string;
+  review: string;
   details: string;
   schedule: string;
   questSummary: string;
+  questSetup: string;
+  setupHint: string;
+  teamSize: string;
+  teamSizeValue: (count: string) => string;
+  acceptanceMethod: string;
+  chooseWorkFormat: string;
+  chooseWorkFormatDescription: string;
+  chooseAcceptanceMethod: string;
+  chooseAcceptanceMethodDescription: string;
+  singleFormat: string;
+  singleFormatDescription: string;
+  teamFormat: string;
+  teamFormatDescription: string;
+  instantAccept: string;
+  instantAcceptDescription: string;
+  selectCandidate: string;
+  selectCandidateDescription: string;
+  selectedMode: string;
+  capacityAndReward: string;
+  logistics: string;
+  logisticsDescription: string;
+  logisticsSummary: string;
+  logisticsSummaryComplete: (dateTime: string, location: string) => string;
   questDetails: string;
   questDetailsDescription: string;
   scheduleLocation: string;
@@ -66,6 +96,7 @@ export interface CreateQuestMessages {
   singleHeadcountHint: string;
   back: string;
   next: string;
+  reviewQuest: string;
   saveDraft: string;
   savingDraft: string;
   publishQuest: string;
@@ -86,6 +117,10 @@ export interface CreateQuestMessages {
   keepEditing: string;
   autosaveSaving: string;
   autosaveSaved: string;
+  saveError: string;
+  retrySave: string;
+  loadDraftError: string;
+  retryLoadDraft: string;
   savePreview: string;
   savingPreview: string;
   viewQuestBoard: string;
@@ -125,15 +160,45 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
   en: {
     title: 'Create Quest',
     step: (current, total) => `Step ${current} of ${total}`,
+    headerSubtitle: 'Choose how people join your Quest',
+    helpLabel: 'Quest creation help',
+    helpTitle: 'Create a Quest',
+    helpDescription: 'Complete each step to define the Quest, choose whether one person or multiple people can join, select how applicants are accepted, and review the details before saving.',
+    missionInfo: 'Quest Info',
+    teamSetup: 'Team Setup',
+    review: 'Review',
     details: 'Details',
     schedule: 'Schedule',
     questSummary: 'Summary',
+    questSetup: 'Quest Setup',
+    setupHint: 'You can change these details anytime before publishing.',
+    teamSize: 'Team Size',
+    teamSizeValue: (count) => count === '1' ? '1 person' : `Up to ${count} people`,
+    acceptanceMethod: 'Acceptance method',
+    chooseWorkFormat: 'Choose work format',
+    chooseWorkFormatDescription: 'Select whether this Quest is for one person or a team.',
+    chooseAcceptanceMethod: 'Choose acceptance method',
+    chooseAcceptanceMethodDescription: 'Decide how applicants get accepted.',
+    singleFormat: 'Single',
+    singleFormatDescription: 'For one participant',
+    teamFormat: 'Team',
+    teamFormatDescription: 'For multiple participants',
+    instantAccept: 'Instant accept',
+    instantAcceptDescription: 'First come, first served',
+    selectCandidate: 'Select Candidate',
+    selectCandidateDescription: 'Review applicants before accepting',
+    selectedMode: 'Selected mode',
+    capacityAndReward: 'Capacity & reward',
+    logistics: 'Quest logistics',
+    logisticsDescription: 'Add when and where the work happens.',
+    logisticsSummary: 'Dates, place, and photos',
+    logisticsSummaryComplete: (dateTime, location) => `${dateTime} · ${location}`,
     questDetails: 'Quest details',
     questDetailsDescription: 'Give people enough context to decide if this Quest is right for them.',
     scheduleLocation: 'Schedule & location',
     scheduleLocationDescription: 'Choose the work dates and time. Add a location, or mark it as online.',
     participantsReward: 'Participants & reward',
-    participantsRewardDescription: 'Choose how people join and what each participant receives.',
+    participantsRewardDescription: 'Set the maximum participants and reward per person.',
     titleLabel: 'Title',
     titlePlaceholder: 'e.g. Design a poster for the faculty fair',
     questTag: 'Quest Tag',
@@ -185,9 +250,10 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     rewardPlaceholder: '0.00',
     rewardHelper: 'Paid to each accepted participant.',
     questSummaryLabel: 'Quest Summary',
-    singleHeadcountHint: 'SINGLE always has one Worker.',
+    singleHeadcountHint: 'Single format always has one participant.',
     back: 'Back',
     next: 'Next',
+    reviewQuest: 'Review Quest',
     saveDraft: 'Save draft',
     savingDraft: 'Saving draft…',
     publishQuest: 'Publish Quest',
@@ -208,6 +274,10 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     keepEditing: 'Keep editing',
     autosaveSaving: 'Saving draft…',
     autosaveSaved: 'Draft saved',
+    saveError: "We couldn't save this Quest draft on your device. Try again.",
+    retrySave: 'Try again',
+    loadDraftError: "We couldn't restore your Quest draft. Try again.",
+    retryLoadDraft: 'Try again',
     savePreview: 'Save Quest preview',
     savingPreview: 'Saving preview…',
     viewQuestBoard: 'Back to Quest Board',
@@ -229,22 +299,52 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     rewardBoundsError: (maximum) => `Reward must be between ฿0 and ฿${maximum.toLocaleString('en-US')}.`,
     summary: {
       title: 'Title', questTag: 'Quest Tag', description: 'Description', completionCriteria: 'Completion criteria',
-      proof: 'Proof', schedule: 'Schedule', location: 'Location', images: 'Images', candidateMode: 'Candidate mode',
+      proof: 'Proof', schedule: 'Schedule', location: 'Location', images: 'Images', candidateMode: 'Acceptance method',
       participation: 'Participation', headcount: 'Headcount', reward: 'Reward',
     },
   },
   th: {
     title: 'สร้างเควสต์',
     step: (current, total) => `ขั้นตอนที่ ${current} จาก ${total}`,
+    headerSubtitle: 'เลือกรูปแบบการเข้าร่วมเควสต์',
+    helpLabel: 'ความช่วยเหลือในการสร้างเควสต์',
+    helpTitle: 'สร้างเควสต์',
+    helpDescription: 'ทำตามแต่ละขั้นตอนเพื่อกำหนดรายละเอียด เลือกจำนวนผู้เข้าร่วม เลือกวิธีรับผู้สมัคร และตรวจสอบข้อมูลก่อนบันทึก',
+    missionInfo: 'ข้อมูลเควสต์',
+    teamSetup: 'ตั้งค่าทีม',
+    review: 'ตรวจสอบ',
     details: 'รายละเอียด',
     schedule: 'กำหนดการ',
     questSummary: 'สรุป',
+    questSetup: 'ตั้งค่าเควสต์',
+    setupHint: 'คุณแก้ไขรายละเอียดเหล่านี้ได้ก่อนเผยแพร่',
+    teamSize: 'ขนาดทีม',
+    teamSizeValue: (count) => count === '1' ? '1 คน' : `ไม่เกิน ${count} คน`,
+    acceptanceMethod: 'วิธีรับผู้สมัคร',
+    chooseWorkFormat: 'เลือกรูปแบบการทำงาน',
+    chooseWorkFormatDescription: 'เลือกว่างานนี้สำหรับผู้เข้าร่วมคนเดียวหรือเป็นทีม',
+    chooseAcceptanceMethod: 'เลือกรูปแบบการรับผู้สมัคร',
+    chooseAcceptanceMethodDescription: 'กำหนดวิธีรับผู้สมัครเข้าร่วม',
+    singleFormat: 'บุคคลเดียว',
+    singleFormatDescription: 'สำหรับผู้เข้าร่วม 1 คน',
+    teamFormat: 'ทีม',
+    teamFormatDescription: 'สำหรับผู้เข้าร่วมหลายคน',
+    instantAccept: 'รับทันที',
+    instantAcceptDescription: 'มาก่อนได้ก่อน',
+    selectCandidate: 'เลือกผู้สมัคร',
+    selectCandidateDescription: 'ตรวจสอบผู้สมัครก่อนรับเข้าร่วม',
+    selectedMode: 'โหมดที่เลือก',
+    capacityAndReward: 'จำนวนผู้เข้าร่วมและค่าตอบแทน',
+    logistics: 'กำหนดการเควสต์',
+    logisticsDescription: 'ระบุวันเวลา สถานที่ และรูปภาพของงาน',
+    logisticsSummary: 'วันเวลา สถานที่ และรูปภาพ',
+    logisticsSummaryComplete: (dateTime, location) => `${dateTime} · ${location}`,
     questDetails: 'รายละเอียดเควสต์',
     questDetailsDescription: 'ให้ข้อมูลเพียงพอเพื่อช่วยให้ผู้สนใจตัดสินใจว่าเควสต์นี้เหมาะกับพวกเขาหรือไม่',
     scheduleLocation: 'กำหนดการและสถานที่',
     scheduleLocationDescription: 'เลือกวันและเวลาทำงาน แล้วระบุสถานที่หรือเลือกว่างานออนไลน์',
     participantsReward: 'ผู้เข้าร่วมและค่าตอบแทน',
-    participantsRewardDescription: 'เลือกรูปแบบการเข้าร่วมและสิ่งที่ผู้เข้าร่วมแต่ละคนจะได้รับ',
+    participantsRewardDescription: 'กำหนดจำนวนผู้เข้าร่วมสูงสุดและค่าตอบแทนต่อคน',
     titleLabel: 'ชื่อเควสต์',
     titlePlaceholder: 'เช่น ออกแบบโปสเตอร์สำหรับงานคณะ',
     questTag: 'แท็กเควสต์',
@@ -295,14 +395,15 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     rewardPerPerson: 'ค่าตอบแทนต่อคน',
     rewardPlaceholder: '0.00',
     rewardHelper: 'จ่ายให้ผู้เข้าร่วมแต่ละคนที่ได้รับเลือก',
-    questSummaryLabel: 'สรุป Quest',
-    singleHeadcountHint: 'SINGLE มี Worker ได้ 1 คนเสมอ',
+    questSummaryLabel: 'สรุปเควสต์',
+    singleHeadcountHint: 'รูปแบบบุคคลเดียวมีผู้เข้าร่วมได้ 1 คนเสมอ',
     back: 'ย้อนกลับ',
     next: 'ถัดไป',
+    reviewQuest: 'ตรวจสอบเควสต์',
     saveDraft: 'บันทึกฉบับร่าง',
     savingDraft: 'กำลังบันทึกฉบับร่าง…',
-    publishQuest: 'เผยแพร่ Quest',
-    publishingQuest: 'กำลังเผยแพร่ Quest…',
+    publishQuest: 'เผยแพร่เควสต์',
+    publishingQuest: 'กำลังเผยแพร่เควสต์…',
     loadingDraft: 'กำลังกู้คืนฉบับร่าง…',
     savedDraftTitle: 'บันทึกฉบับร่างเควสต์แล้ว',
     savedDraftDescription: 'ฉบับร่างถูกเก็บไว้อย่างปลอดภัยในอุปกรณ์นี้ และยังไม่แสดงบนกระดานเควสต์',
@@ -319,6 +420,10 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     keepEditing: 'แก้ไขต่อ',
     autosaveSaving: 'กำลังบันทึกฉบับร่าง…',
     autosaveSaved: 'บันทึกฉบับร่างแล้ว',
+    saveError: 'ไม่สามารถบันทึกฉบับร่างเควสต์ลงในอุปกรณ์ได้ ลองอีกครั้ง',
+    retrySave: 'ลองอีกครั้ง',
+    loadDraftError: 'ไม่สามารถกู้คืนฉบับร่างเควสต์ได้ ลองอีกครั้ง',
+    retryLoadDraft: 'ลองอีกครั้ง',
     savePreview: 'บันทึกตัวอย่างเควสต์',
     savingPreview: 'กำลังบันทึกตัวอย่าง…',
     viewQuestBoard: 'กลับไปกระดานเควสต์',
@@ -340,7 +445,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     rewardBoundsError: (maximum) => `ค่าตอบแทนต้องอยู่ระหว่าง ฿0 ถึง ฿${maximum.toLocaleString('th-TH')}`,
     summary: {
       title: 'ชื่อเควสต์', questTag: 'แท็กเควสต์', description: 'รายละเอียดงาน', completionCriteria: 'เกณฑ์การเสร็จงาน',
-      proof: 'หลักฐาน', schedule: 'กำหนดการ', location: 'สถานที่', images: 'รูปภาพ', candidateMode: 'รูปแบบการคัดเลือก',
+      proof: 'หลักฐาน', schedule: 'กำหนดการ', location: 'สถานที่', images: 'รูปภาพ', candidateMode: 'วิธีรับผู้สมัคร',
       participation: 'การเข้าร่วม', headcount: 'จำนวนผู้เข้าร่วม', reward: 'ค่าตอบแทน',
     },
   },
