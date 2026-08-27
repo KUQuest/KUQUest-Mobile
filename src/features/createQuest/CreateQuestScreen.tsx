@@ -90,6 +90,20 @@ function FieldLabel({ children, required = false, optionalLabel }: { children: s
   );
 }
 
+function SectionHeading({ icon: Icon, title, description, compact = false }: { icon: LucideIcon; title: string; description: string; compact?: boolean }) {
+  return (
+    <View className={cn(styles.sectionHeading, compact && styles.subsectionHeading)}>
+      <View className={styles.sectionIcon}>
+        <Icon color={colors.primary} size={20} strokeWidth={2.2} />
+      </View>
+      <View className={styles.sectionHeadingText}>
+        <Text accessibilityRole="header" className={styles.sectionTitle}>{title}</Text>
+        <Text className={styles.sectionDescription}>{description}</Text>
+      </View>
+    </View>
+  );
+}
+
 function DateTimeField({
   label,
   value,
@@ -231,7 +245,10 @@ function QuestSetupOverview({
 }) {
   return (
     <View className={styles.setupCard}>
-      <Text className={styles.setupTitle}>{messages.questSetup}</Text>
+      <View className={styles.setupTitleRow}>
+        <View className={styles.setupTitleIcon}><Check color={colors.primary} size={18} strokeWidth={2.6} /></View>
+        <Text className={styles.setupTitle}>{messages.questSetup}</Text>
+      </View>
       <View className={styles.setupMetrics}>
         <SetupMetric icon={Tag} label={messages.questTag} value={questTag} testID="create-quest-summary-type" wide={wide} />
         <View className={cn(styles.setupMetricDivider, wide && styles.setupMetricDividerWide)} />
@@ -358,6 +375,7 @@ function LogisticsSection({
   return (
     <View className={styles.sectionCard}>
       <Pressable accessibilityRole="button" accessibilityLabel={`${messages.logistics}: ${expanded ? messages.logisticsDescription : summary}`} accessibilityState={{ expanded }} className={styles.collapsibleHeader} onPress={onPress} testID="create-quest-logistics-toggle">
+        <View className={styles.collapsibleHeaderIcon}><CalendarClock color={colors.primary} size={20} strokeWidth={2.2} /></View>
         <View className={styles.collapsibleHeaderCopy}>
           <Text accessibilityRole="header" className={styles.sectionTitle}>{messages.logistics}</Text>
           <Text className={styles.sectionDescription}>{messages.logisticsDescription}</Text>
@@ -906,10 +924,16 @@ export default function CreateQuestScreen() {
             <View style={{ alignSelf: 'center', width: layout.isExpanded ? layout.contentMaxWidth : '100%' }}>
               {validationSummary ? (
                 <View accessibilityRole="alert" accessibilityLiveRegion="assertive" className={styles.validationSummary}>
+                  <View className={styles.validationIcon}><CircleAlert color={colors.dangerDark} size={19} strokeWidth={2.3} /></View>
                   <Text className={styles.validationSummaryText}>{validationSummary}</Text>
                 </View>
               ) : null}
-              {saveState === 'saving' ? <View accessibilityLiveRegion="polite" className={styles.autosaveStatus}><Text className={styles.autosaveText}>{messages.autosaveSaving}</Text></View> : null}
+              {saveState === 'saving' || saveState === 'saved' ? (
+                <View accessibilityLiveRegion="polite" className={styles.autosaveStatus}>
+                  {saveState === 'saved' ? <View className={styles.autosaveSavedIcon}><Check color={colors.success} size={12} strokeWidth={2.8} /></View> : <View className={styles.autosaveSavingDot} />}
+                  <Text className={cn(styles.autosaveText, saveState === 'saved' && styles.autosaveSavedText)}>{saveState === 'saved' ? messages.autosaveSaved : messages.autosaveSaving}</Text>
+                </View>
+              ) : null}
               {saveState === 'error' ? (
                 <View accessibilityRole="alert" accessibilityLiveRegion="assertive" className={styles.saveErrorCard} testID="create-quest-save-error">
                   <CircleAlert color={colors.dangerDark} size={22} strokeWidth={2.2} />
@@ -922,12 +946,7 @@ export default function CreateQuestScreen() {
 
               {step === 1 ? (
                 <View className={styles.sectionCard}>
-                  <View className={styles.sectionHeading}>
-                    <View className={styles.sectionHeadingText}>
-                      <Text accessibilityRole="header" className={styles.sectionTitle}>{messages.questDetails}</Text>
-                      <Text className={styles.sectionDescription}>{messages.questDetailsDescription}</Text>
-                    </View>
-                  </View>
+                  <SectionHeading icon={Tag} title={messages.questDetails} description={messages.questDetailsDescription} />
                   <Input ref={titleRef} label={`${messages.titleLabel} *`} placeholder={messages.titlePlaceholder} value={draft.title} onChangeText={(value) => updateDraft('title', value)} error={errors.title} maxLength={100} />
                   <Select ref={tagRef} label={`${messages.questTag} *`} options={tagOptions} value={draft.tag} onValueChange={(value) => updateDraft('tag', value)} placeholder={messages.chooseQuestTag} error={errors.tag} searchable searchPlaceholder={messages.searchQuestTags} noResultsMessage={messages.noMatchingQuestTags} clearSearchLabel={messages.clearSearch} closeLabel={messages.close} />
                   <TextArea ref={descriptionRef} label={`${messages.description} *`} placeholder={messages.descriptionPlaceholder} value={draft.description} onChangeText={(value) => updateDraft('description', value)} error={errors.description} maxLength={300} />
@@ -954,17 +973,11 @@ export default function CreateQuestScreen() {
               {step === 2 ? (
                 <>
                   <View className={styles.sectionCard}>
-                    <View className={styles.subsectionHeading}>
-                      <Text accessibilityRole="header" className={styles.sectionTitle}>{`1. ${messages.chooseWorkFormat}`}</Text>
-                      <Text className={styles.sectionDescription}>{messages.chooseWorkFormatDescription}</Text>
-                    </View>
+                    <SectionHeading compact icon={UsersRound} title={`1. ${messages.chooseWorkFormat}`} description={messages.chooseWorkFormatDescription} />
                     <ChoiceGroup label={messages.participation} value={draft.participation} options={participationOptions} variant="format" stacked={useStackedChoices} onChange={(value) => updateParticipation(value as QuestDraft['participation'])} />
 
                     <View className={styles.subsectionBlock}>
-                      <View className={styles.subsectionHeading}>
-                        <Text accessibilityRole="header" className={styles.sectionTitle}>{`2. ${messages.chooseAcceptanceMethod}`}</Text>
-                        <Text className={styles.sectionDescription}>{messages.chooseAcceptanceMethodDescription}</Text>
-                      </View>
+                      <SectionHeading compact icon={UserRoundCheck} title={`2. ${messages.chooseAcceptanceMethod}`} description={messages.chooseAcceptanceMethodDescription} />
                       <ChoiceGroup label={messages.candidateMode} value={draft.candidateMode} options={candidateOptions} variant="acceptance" stacked={false} onChange={(value) => updateDraft('candidateMode', value as QuestDraft['candidateMode'])} />
                     </View>
 
@@ -1035,12 +1048,7 @@ export default function CreateQuestScreen() {
                 <>
                   <QuestSetupOverview messages={messages} questTag={selectedQuestTag} teamSize={selectedTeamSize} acceptanceMethod={selectedAcceptanceMethod} wide={useWideSummary} />
                   <View className={styles.sectionCard}>
-                    <View className={styles.sectionHeading}>
-                      <View className={styles.sectionHeadingText}>
-                        <Text accessibilityRole="header" className={styles.sectionTitle}>{messages.review}</Text>
-                        <Text className={styles.sectionDescription}>{messages.questSummaryLabel}</Text>
-                      </View>
-                    </View>
+                    <SectionHeading icon={Check} title={messages.review} description={messages.questSummaryLabel} />
                     <View className={styles.summaryCard}>{summary.map((item) => <View key={item.label} className={styles.summaryRow}><Text className={styles.summaryLabel}>{item.label}</Text><Text className={styles.summaryValue}>{item.value}</Text></View>)}</View>
                   </View>
                 </>
