@@ -34,6 +34,12 @@ export interface QuestBoardMessages {
   afternoon: string;
   evening: string;
   schedule: string;
+  scheduleDescription: string;
+  startWork: string;
+  workWindow: string;
+  finishBy: string;
+  finishByDescription: string;
+  timeNotSpecified: string;
   location: string;
   spots: string;
   spotsSummary: (remaining: number, total: number) => string;
@@ -84,6 +90,17 @@ export interface QuestBoardMessages {
   team: string;
   applyNow: string;
   joinNow: string;
+  editPost: string;
+  leaveQuest: string;
+  leaveQuestDescription: string;
+  withdrawApplication: string;
+  withdrawApplicationDescription: string;
+  leftQuest: string;
+  leftQuestDescription: string;
+  historyQuest: string;
+  historyQuestDescription: string;
+  postOwnerView: string;
+  postOwnerViewDescription: string;
   confirmApplicationTitle: string;
   confirmParticipationTitle: string;
   confirmApplicationDescription: string;
@@ -144,6 +161,12 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     afternoon: 'Afternoon',
     evening: 'Evening',
     schedule: 'Schedule',
+    scheduleDescription: 'Plan the work window and deadline.',
+    startWork: 'Start work',
+    workWindow: 'Work window',
+    finishBy: 'Finish by',
+    finishByDescription: 'Complete the Quest by this date.',
+    timeNotSpecified: 'Time not specified',
     location: 'Where',
     spots: 'spots',
     spotsSummary: (remaining, total) => `${remaining} of ${total} spots left`,
@@ -194,6 +217,17 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     team: 'Team',
     applyNow: 'Apply now',
     joinNow: 'Join Quest',
+    editPost: 'Edit post',
+    leaveQuest: 'Leave Quest',
+    leaveQuestDescription: 'You will leave this Quest and lose your confirmed place.',
+    withdrawApplication: 'Withdraw application',
+    withdrawApplicationDescription: 'Your application will be withdrawn and you will no longer be considered.',
+    leftQuest: 'You left this Quest',
+    leftQuestDescription: 'This Quest has been removed from your active joined Quests.',
+    historyQuest: 'Quest history',
+    historyQuestDescription: 'This Quest is in your history and no longer has an active action.',
+    postOwnerView: 'Your Quest post',
+    postOwnerViewDescription: 'Manage this Quest from here. You can edit the post or review applicants from My Quests.',
     confirmApplicationTitle: 'Confirm your application',
     confirmParticipationTitle: 'Confirm your participation',
     confirmApplicationDescription: 'You are applying for this Quest. Review the reward and deadline before continuing.',
@@ -252,6 +286,12 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     afternoon: 'ช่วงบ่าย',
     evening: 'ช่วงเย็น',
     schedule: 'เวลา',
+    scheduleDescription: 'ดูช่วงเวลาทำงานและกำหนดส่งได้ที่นี่',
+    startWork: 'เริ่มงาน',
+    workWindow: 'ช่วงเวลาทำงาน',
+    finishBy: 'ส่งงานภายใน',
+    finishByDescription: 'ทำเควสต์ให้เสร็จภายในวันนี้',
+    timeNotSpecified: 'ยังไม่ระบุเวลา',
     location: 'สถานที่',
     spots: 'ที่ว่าง',
     spotsSummary: (remaining, total) => `เหลือ ${remaining} จาก ${total} ที่ว่าง`,
@@ -302,6 +342,17 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     team: 'ทีม',
     applyNow: 'สมัครเลย',
     joinNow: 'เข้าร่วมเควสต์',
+    editPost: 'แก้ไขโพสต์',
+    leaveQuest: 'ออกจากเควสต์',
+    leaveQuestDescription: 'คุณจะออกจากเควสต์นี้และเสียสิทธิ์ที่ได้รับการยืนยันแล้ว',
+    withdrawApplication: 'ถอนใบสมัคร',
+    withdrawApplicationDescription: 'ใบสมัครของคุณจะถูกถอน และจะไม่ถูกพิจารณาเข้าร่วมเควสต์นี้อีก',
+    leftQuest: 'ออกจากเควสต์แล้ว',
+    leftQuestDescription: 'เควสต์นี้ถูกนำออกจากรายการเควสต์ที่คุณเข้าร่วมแล้ว',
+    historyQuest: 'ประวัติเควสต์',
+    historyQuestDescription: 'เควสต์นี้อยู่ในประวัติของคุณและไม่มีการดำเนินการที่ใช้งานอยู่',
+    postOwnerView: 'โพสต์เควสต์ของคุณ',
+    postOwnerViewDescription: 'จัดการเควสต์นี้ได้จากหน้านี้ แก้ไขโพสต์หรือดูผู้สมัครได้จาก MyQuest',
     confirmApplicationTitle: 'ยืนยันการสมัคร',
     confirmParticipationTitle: 'ยืนยันการเข้าร่วม',
     confirmApplicationDescription: 'คุณกำลังสมัครเควสต์นี้ ตรวจสอบค่าตอบแทนและกำหนดส่งก่อนดำเนินการต่อ',

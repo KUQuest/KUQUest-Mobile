@@ -65,4 +65,16 @@ describe('Quest application outcomes', () => {
     expect(firstStudent.getStatus(baseQuest.id)).toBe('accepted');
     expect(secondStudent.getStatus(baseQuest.id)).toBe('none');
   });
+
+  it('clears one Quest application without affecting other Quests', () => {
+    resetQuestApplicationStatuses();
+    const store = getQuestApplicationStore('student-one');
+
+    store.setStatus(baseQuest.id, 'accepted');
+    store.setStatus('quest-2', 'pending');
+    store.clearStatus(baseQuest.id);
+
+    expect(store.getStatus(baseQuest.id)).toBe('none');
+    expect(store.getStatus('quest-2')).toBe('pending');
+  });
 });

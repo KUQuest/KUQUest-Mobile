@@ -8,6 +8,7 @@ export interface QuestApplicationStore {
   readonly studentId: string;
   getStatus(questId: string): QuestApplicationStatus;
   setStatus(questId: string, status: Exclude<QuestApplicationStatus, 'none'>): void;
+  clearStatus(questId: string): void;
   clear(): void;
   subscribe(listener: () => void): () => void;
 }
@@ -32,6 +33,11 @@ export function createQuestApplicationStore(studentId: string): QuestApplication
     setStatus: (questId, status) => {
       if (statuses.get(questId) === status) return;
       statuses.set(questId, status);
+      notify();
+    },
+    clearStatus: (questId) => {
+      if (!statuses.has(questId)) return;
+      statuses.delete(questId);
       notify();
     },
     clear: () => {

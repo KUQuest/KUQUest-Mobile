@@ -35,6 +35,7 @@ import styles from './myQuestStyles';
 type Role = 'worker' | 'hirer';
 type WorkerTab = 'pending' | 'accepted' | 'history';
 type HirerTab = 'active' | 'draft' | 'completed';
+type QuestDetailMode = 'join' | 'post';
 type StatusTone = 'success' | 'warning' | 'danger' | 'neutral';
 type CategoryTone = 'green' | 'blue' | 'purple';
 
@@ -729,8 +730,8 @@ export default function MyQuestsScreen() {
     onPanResponderRelease: handleStatusSwipe,
   });
 
-  const openQuest = (questId: string) => {
-    router.push({ pathname: '/quest/[id]', params: { id: questId } });
+  const openQuest = (questId: string, mode?: QuestDetailMode, joinStatus?: WorkerTab) => {
+    router.push({ pathname: '/quest/[id]', params: { id: questId, ...(mode ? { mode } : {}), ...(mode === 'join' && joinStatus ? { joinStatus } : {}) } });
   };
 
   const openGroupChat = (chatId: string) => {
@@ -742,7 +743,7 @@ export default function MyQuestsScreen() {
       setApplicantQuest(quest);
       return;
     }
-    openQuest(quest.id);
+    openQuest(quest.id, 'post');
   };
 
   return (
@@ -786,8 +787,8 @@ export default function MyQuestsScreen() {
         <View className={styles.surface}>
           <View accessibilityLabel={`${role === 'worker' ? copy.worker.tabs[workerTab] : copy.hirer.tabs[hirerTab]} Quest list`} className={styles.list}>
             {items.length > 0 ? items.map((quest) => role === 'worker'
-              ? <ApplicationQuestCard key={quest.id} copy={copy} onGroupChat={() => quest.groupChatId ? openGroupChat(quest.groupChatId) : undefined} onPress={() => openQuest(quest.id)} quest={quest} />
-              : <CreatedQuestCard key={quest.id} copy={copy} onGroupChat={() => quest.groupChatId ? openGroupChat(quest.groupChatId) : undefined} onPrimaryAction={() => openPrimaryQuestAction(quest)} onPress={() => openQuest(quest.id)} quest={quest} />)
+              ? <ApplicationQuestCard key={quest.id} copy={copy} onGroupChat={() => quest.groupChatId ? openGroupChat(quest.groupChatId) : undefined} onPress={() => openQuest(quest.id, 'join', workerTab)} quest={quest} />
+              : <CreatedQuestCard key={quest.id} copy={copy} onGroupChat={() => quest.groupChatId ? openGroupChat(quest.groupChatId) : undefined} onPrimaryAction={() => openPrimaryQuestAction(quest)} onPress={() => openQuest(quest.id, 'post')} quest={quest} />)
               : <EmptyState copy={roleCopy} />}
           </View>
           {role === 'worker' && copy.worker.summary ? <SummaryStrip metrics={copy.worker.summary} /> : null}

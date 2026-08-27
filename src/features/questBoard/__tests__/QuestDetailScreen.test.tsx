@@ -1,11 +1,12 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import mockReact, { type ReactNode } from 'react';
+import { Alert } from 'react-native';
 
 import QuestDetailScreen from '../QuestDetailScreen';
 import { resetQuestApplicationStatuses } from '../questApplication';
 
 const mockRouter = { back: jest.fn(), push: jest.fn() };
-const mockRouteParams: { id?: string; intent?: string } = {};
+const mockRouteParams: { id?: string; intent?: string; mode?: string; joinStatus?: string } = {};
 
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
@@ -24,6 +25,8 @@ describe('Quest Detail screen', () => {
     mockRouter.back.mockClear();
     delete mockRouteParams.id;
     delete mockRouteParams.intent;
+    delete mockRouteParams.mode;
+    delete mockRouteParams.joinStatus;
   });
 
   it('requires confirmation and shows an immediate Accepted outcome for first-come Quests', async () => {
@@ -32,6 +35,11 @@ describe('Quest Detail screen', () => {
     expect(view.getByText('Photocopy course documents')).toBeTruthy();
     expect(view.getByText('Join Quest')).toBeTruthy();
     expect(view.getByText('15 Aug 2026')).toBeTruthy();
+    expect(view.getByTestId('quest-schedule-timeline')).toBeTruthy();
+    expect(view.getByText('Start work')).toBeTruthy();
+    expect(view.getByText('Work window')).toBeTruthy();
+    expect(view.getByText('Finish by')).toBeTruthy();
+    expect(view.getByText('12:00–13:00')).toBeTruthy();
     expect(view.getAllByText('On campus').length).toBeGreaterThan(0);
 
     await fireEvent.press(view.getByTestId('quest-apply-button'));
@@ -62,6 +70,38 @@ describe('Quest Detail screen', () => {
     await waitFor(() => expect(view.getByText('Application pending')).toBeTruthy());
     expect(view.getByText('The Quest owner will review your application.')).toBeTruthy();
     expect(view.getByTestId('view-my-quests')).toBeTruthy();
+  });
+
+  it('shows a Leave action for a joined Quest and removes the active state after confirmation', async () => {
+    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="print-documents" mode="join" joinStatus="accepted" />);
+
+    expect(view.getByText('Participation confirmed')).toBeTruthy();
+    expect(view.getByTestId('quest-leave-button')).toBeTruthy();
+    expect(view.queryByTestId('quest-apply-button')).toBeNull();
+
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    await fireEvent.press(view.getByTestId('quest-leave-button'));
+    expect(alertSpy).toHaveBeenCalledWith('Leave Quest', 'You will leave this Quest and lose your confirmed place.', expect.any(Array));
+    const leaveConfirmation = alertSpy.mock.calls[0][2]?.find((button) => button.text === 'Leave Quest');
+    await act(async () => {
+      leaveConfirmation?.onPress?.();
+    });
+
+    await waitFor(() => expect(view.getByText('You left this Quest')).toBeTruthy());
+    expect(view.queryByTestId('quest-leave-button')).toBeNull();
+    alertSpy.mockRestore();
+  });
+
+  it('shows Edit post for the owner view and opens the create flow with the Quest id', async () => {
+    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="clean-fan" mode="post" />);
+
+    expect(view.getByText('Your Quest post')).toBeTruthy();
+    expect(view.getByTestId('quest-edit-post-button')).toBeTruthy();
+    expect(view.queryByTestId('quest-apply-button')).toBeNull();
+    expect(view.queryByTestId('quest-leave-button')).toBeNull();
+
+    await fireEvent.press(view.getByTestId('quest-edit-post-button'));
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/create', params: { editQuestId: 'clean-fan' } });
   });
 
   it('navigates accepted participants to My Quests', async () => {

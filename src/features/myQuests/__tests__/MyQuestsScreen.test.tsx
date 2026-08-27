@@ -83,7 +83,7 @@ describe('MyQuestsScreen', () => {
 
     await fireEvent.press(view.getByTestId('my-quest-action-move-boxes'));
 
-    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/quest/[id]', params: { id: 'move-boxes' } });
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/quest/[id]', params: { id: 'move-boxes', mode: 'join', joinStatus: 'pending' } });
     expect(view.getByTestId('my-quest-action-move-boxes').props.accessibilityLabel).toContain('ช่วยยกกล่องไปหอพัก');
   });
 
@@ -97,6 +97,16 @@ describe('MyQuestsScreen', () => {
     await fireEvent.press(view.getByTestId('my-quests-role-hirer'));
     await fireEvent.press(view.getByTestId('my-quest-group-chat-clean-fan'));
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/chat/[id]', params: { id: 'quest-clean-fan-group' } });
+  });
+
+  it('opens posted Quest Detail in owner mode from the Edit action', async () => {
+    const view = await render(<MyQuestsScreen />);
+
+    await fireEvent.press(view.getByTestId('my-quests-role-trigger'));
+    await fireEvent.press(view.getByTestId('my-quests-role-hirer'));
+    await fireEvent.press(view.getByTestId('my-quest-action-clean-fan-secondary'));
+
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/quest/[id]', params: { id: 'clean-fan', mode: 'post' } });
   });
 
   it('shows candidate and no-candidate applicant states for posted Quests', async () => {

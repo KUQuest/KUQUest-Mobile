@@ -108,6 +108,7 @@ jest.mock('lucide-react-native', () => {
     FileText: Icon,
     Globe2: Icon,
     LockKeyhole: Icon,
+    LogOut: Icon,
     Moon: Icon,
     CircleX: Icon,
     Grid2X2: Icon,
