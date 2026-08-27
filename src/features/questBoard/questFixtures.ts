@@ -1,6 +1,14 @@
 import type { QuestBoardQuest } from './types';
 
-export const questFixtures: QuestBoardQuest[] = [
+const questImageByTag: Record<string, string> = {
+  moving: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=960&q=85',
+  cleaning: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=960&q=85',
+  printing: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=960&q=85',
+  delivery: 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=960&q=85',
+  exercise: 'https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=960&q=85',
+};
+
+export const questFixtures: QuestBoardQuest[] = ([
   {
     id: 'move-boxes', title: 'Help move boxes to the dorm', tags: ['moving'],
     description: 'Help carry labelled boxes from the parking area to Dorm 13.',
@@ -142,4 +150,7 @@ export const questFixtures: QuestBoardQuest[] = [
     rewardPerPerson: 50, headcount: 4, acceptedParticipants: 0, startDate: '2026-08-24', deadline: '2026-08-28', timeRange: '17:00–18:00', postedAt: '2026-08-12T11:30:00.000Z',
     location: 'ลานกิจกรรมกลางแจ้ง', locationMode: 'on-campus', participationMode: 'team', candidateMode: 'NO_CANDIDATE', creator: { name: 'Nan B.', faculty: 'Education' }, studentInterestMatch: false, ownerStudentId: 'student-creator-20',
   },
-];
+] satisfies QuestBoardQuest[]).map((quest) => {
+  const imageUri = questImageByTag[quest.tags[0] ?? ''];
+  return quest.imageUris?.length || !imageUri ? quest : { ...quest, imageUris: [imageUri] };
+});

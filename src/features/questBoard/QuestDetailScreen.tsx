@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { cn } from '@/tw/cn';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Check, CircleAlert, ImageOff, MapPin, X } from 'lucide-react-native';
+import { BriefcaseBusiness, CalendarDays, Check, CircleAlert, CircleUserRound, ClipboardCheck, ImageOff, MapPin, UsersRound, X, type LucideIcon } from 'lucide-react-native';
 import { AccessibilityInfo, Modal } from 'react-native';
 import { Image, Pressable, SafeAreaView, ScrollView, Text, View } from '@/tw';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -72,19 +72,20 @@ function NotFoundState({ title, description, actionLabel, onAction }: { title: s
   return <View accessibilityRole="alert" className={styles.section}><Text className={styles.sectionTitle}>{title}</Text><Text className={styles.body}>{description}</Text><Pressable accessibilityRole="button" onPress={onAction} className={styles.primaryAction}><Text className={styles.primaryActionText}>{actionLabel}</Text></Pressable></View>;
 }
 
-function DetailRow({ label, value, description }: { label: string; value: string; description?: string }) {
-  return <View className={styles.requirementRow}><Text className={styles.requirementLabel}>{label}</Text><Text className={styles.requirementValue}>{value}</Text>{description ? <Text className={styles.requirementDescription}>{description}</Text> : null}</View>;
+function DetailRow({ icon: Icon, label, value, description }: { icon: LucideIcon; label: string; value: string; description?: string }) {
+  return <View className={styles.requirementRow}><View className={styles.requirementIcon}><Icon color={colors.primary} size={20} strokeWidth={2} /></View><View className={styles.requirementCopy}><Text className={styles.requirementLabel}>{label}</Text><Text className={styles.requirementValue}>{value}</Text>{description ? <Text className={styles.requirementDescription}>{description}</Text> : null}</View></View>;
 }
 
-function QuestImage({ uri, index, messages }: { uri: string; index: number; messages: QuestBoardMessages }) {
+function QuestImage({ uri, index, messages, featured = false }: { uri: string; index: number; messages: QuestBoardMessages; featured?: boolean }) {
   const [failed, setFailed] = useState(false);
   const label = messages.questImageLabel(index);
+  const imageClassName = cn(styles.questImage, featured ? styles.questImageFeatured : styles.questImageThumbnail);
 
   if (failed) {
-    return <View accessibilityLabel={`${label}. ${messages.imageUnavailable}`} className={styles.questImageFallback}><ImageOff color={colors.textMuted} size={24} strokeWidth={1.8} /><Text className={styles.questImageFallbackText}>{messages.imageUnavailable}</Text></View>;
+    return <View accessibilityLabel={`${label}. ${messages.imageUnavailable}`} className={cn(styles.questImageFallback, featured ? styles.questImageFallbackFeatured : styles.questImageFallbackThumbnail)}><ImageOff color={colors.textMuted} size={24} strokeWidth={1.8} /><Text className={styles.questImageFallbackText}>{messages.imageUnavailable}</Text></View>;
   }
 
-  return <Image accessibilityLabel={label} cachePolicy="memory-disk" contentFit="cover" onError={() => setFailed(true)} source={{ uri }} className={styles.questImage} />;
+  return <Image accessibilityLabel={label} cachePolicy="memory-disk" contentFit="cover" onError={() => setFailed(true)} source={{ uri }} className={imageClassName} />;
 }
 
 function ConfirmationSheet({ locale, messages, quest, onCancel, onConfirm }: { locale: 'en' | 'th'; messages: QuestBoardMessages; quest: QuestBoardQuest; onCancel: () => void; onConfirm: () => void }) {
@@ -195,26 +196,27 @@ export default function QuestDetailScreen({ now = FIXTURE_NOW, previewState, que
     <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
       <TopBar backLabel={messages.back} onBackPress={() => router.back()} title={messages.details} variant="detail" />
       <ScrollView contentContainerClassName={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View className={styles.header}><View accessibilityLabel={messages.tags} className={styles.tagRow}>{quest.tags.map((tag) => <Text key={tag} className={styles.tag}>{tag}</Text>)}</View><Text accessibilityRole="header" className={styles.title}>{quest.title}</Text><Text className={styles.creator}>{`${messages.creator} ${quest.creator.name}${quest.creator.faculty ? ` · ${quest.creator.faculty}` : ''}`}</Text></View>
-        {imageUris.length > 0 ? <View accessibilityLabel={messages.imageCount(imageUris.length)} className={styles.imageGallery}>{imageUris.map((uri, index) => <QuestImage key={`${uri}-${index}`} index={index + 1} messages={messages} uri={uri} />)}</View> : null}
+        <View className={styles.header}><View accessibilityLabel={messages.tags} className={styles.tagRow}>{quest.tags.map((tag) => <Text key={tag} className={styles.tag}>{tag}</Text>)}</View><Text accessibilityRole="header" className={styles.title}>{quest.title}</Text><View className={styles.creatorRow}><View className={styles.creatorAvatar}><CircleUserRound color={colors.primary} size={17} strokeWidth={2} /></View><View className={styles.creatorCopy}><Text className={styles.creatorLabel}>{messages.creator}</Text><Text className={styles.creatorValue} numberOfLines={1}>{`${quest.creator.name}${quest.creator.faculty ? ` · ${quest.creator.faculty}` : ''}`}</Text></View></View></View>
+        {imageUris.length > 0 ? <View accessibilityLabel={messages.imageCount(imageUris.length)} className={styles.imageGallery}><QuestImage featured index={1} messages={messages} uri={imageUris[0]} />{imageUris.length > 1 ? <View className={styles.imageThumbnailRow}>{imageUris.slice(1).map((uri, index) => <QuestImage key={`${uri}-${index + 1}`} index={index + 2} messages={messages} uri={uri} />)}</View> : null}</View> : null}
         <View className={styles.heroCard}>
-          <View className={styles.heroPrimary}><Text className={styles.heroLabel}>{messages.reward}</Text><Text className={styles.heroValue}>{`${formatReward(quest.rewardPerPerson, locale)} ${messages.perPerson}`}</Text></View>
+          <View className={styles.heroPrimary}><View><Text className={styles.heroLabel}>{messages.reward}</Text><Text className={styles.heroRewardValue}>{`${formatReward(quest.rewardPerPerson, locale)} ${messages.perPerson}`}</Text></View><View className={styles.heroSpots}><Text className={styles.heroSpotsLabel}>{messages.spots}</Text><Text className={styles.heroSpotsValue}>{`${quest.acceptedParticipants}/${quest.headcount}`}</Text></View></View>
           <View className={styles.heroDetails}>
-            <View className={styles.heroItem}>
+            <View className={styles.heroItem}><View className={styles.heroItemIcon}><CalendarDays color={colors.primary} size={17} strokeWidth={2} /></View><View className={styles.heroItemCopy}>
               <Text className={styles.heroLabel}>{messages.schedule}</Text>
               <Text className={styles.heroValue}>{formatDeadline(quest.startDate, locale)}</Text>
               {quest.timeRange ? <Text className={styles.heroDetail}>{quest.timeRange}</Text> : null}
               <Text className={styles.heroDetail}>{`${messages.deadline}: ${formatDeadline(quest.deadline, locale)}`}</Text>
             </View>
-            <View className={cn(styles.heroItem, styles.heroItemDivider)}><Text className={styles.heroLabel}>{messages.spots}</Text><Text className={styles.heroValue}>{`${quest.acceptedParticipants}/${quest.headcount}`}</Text><Text className={styles.heroDetail}>{quest.participationMode === 'team' ? messages.team : messages.singlePerson}</Text></View>
+            </View>
+            <View className={cn(styles.heroItem, styles.heroItemDivider)}><View className={styles.heroItemIcon}><UsersRound color={colors.primary} size={17} strokeWidth={2} /></View><View className={styles.heroItemCopy}><Text className={styles.heroLabel}>{messages.participation}</Text><Text className={styles.heroValue}>{quest.participationMode === 'team' ? messages.team : messages.singlePerson}</Text><Text className={styles.heroDetail}>{quest.candidateMode === 'NO_CANDIDATE' ? messages.firstCome : messages.reviewCandidates}</Text></View></View>
           </View>
           <View className={styles.heroLocation}>
             <MapPin color={colors.primary} size={20} strokeWidth={2} />
             <View className={styles.heroLocationCopy}><Text className={styles.heroLabel}>{messages.location}</Text><Text className={styles.heroLocationValue}>{quest.location}</Text><Text className={styles.heroDetail}>{locationLabel(quest, messages)}</Text></View>
           </View>
         </View>
-        <View className={styles.section}><Text className={styles.sectionTitle}>{messages.description}</Text><Text className={styles.body}>{quest.description}</Text></View>
-        <View className={styles.section}><Text className={styles.sectionTitle}>{messages.requirements}</Text><View className={styles.requirementCard}><DetailRow label={messages.completionCriteria} value={quest.completionCriteria} /><DetailRow label={messages.proofRequired} value={proofLabel(quest, messages)} description={proofDescription(quest, messages)} /><DetailRow label={messages.candidateMode} value={quest.candidateMode === 'NO_CANDIDATE' ? messages.firstCome : messages.reviewCandidates} description={candidateDescription(quest, messages)} /><DetailRow label={messages.participation} value={quest.participationMode === 'team' ? messages.team : messages.singlePerson} /></View></View>
+        <View className={styles.section}><Text className={styles.sectionTitle}>{messages.description}</Text><View className={styles.descriptionCard}><Text className={styles.body}>{quest.description}</Text></View></View>
+        <View className={styles.section}><Text className={styles.sectionTitle}>{messages.requirements}</Text><View className={styles.requirementCard}><DetailRow icon={ClipboardCheck} label={messages.completionCriteria} value={quest.completionCriteria} /><DetailRow icon={Check} label={messages.proofRequired} value={proofLabel(quest, messages)} description={proofDescription(quest, messages)} /><DetailRow icon={UsersRound} label={messages.candidateMode} value={quest.candidateMode === 'NO_CANDIDATE' ? messages.firstCome : messages.reviewCandidates} description={candidateDescription(quest, messages)} /><DetailRow icon={BriefcaseBusiness} label={messages.participation} value={quest.participationMode === 'team' ? messages.team : messages.singlePerson} /></View></View>
         {statusTitle ? <View accessibilityRole="alert" className={cn(styles.statusCard, statusIsUnavailable && styles.statusCardBlocked)}>{statusIsUnavailable ? <CircleAlert color={colors.textMuted} size={25} strokeWidth={2.2} /> : <Check color={colors.primary} size={25} strokeWidth={2.4} />}<Text className={styles.statusTitle}>{statusTitle}</Text><Text className={styles.statusDescription}>{statusDescription}</Text>{!statusIsUnavailable ? <Pressable accessibilityRole="button" onPress={() => router.push('/my-quests')} className={styles.statusAction} testID="view-my-quests"><Text className={styles.statusActionText}>{messages.viewMyQuests}</Text></Pressable> : null}</View> : null}
       </ScrollView>
       {canApply ? <View className={styles.actionBar} style={{ paddingBottom: Math.max(spacing.md, insets.bottom + spacing.sm) }}><Pressable accessibilityRole="button" onPress={() => setManualConfirmationOpen(true)} className={styles.primaryAction} testID="quest-apply-button"><Text className={styles.primaryActionText}>{firstCome ? messages.joinNow : messages.applyNow}</Text></Pressable></View> : null}

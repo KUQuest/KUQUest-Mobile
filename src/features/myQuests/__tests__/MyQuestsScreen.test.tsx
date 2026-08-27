@@ -1,5 +1,6 @@
 import { fireEvent, render } from '@testing-library/react-native';
 import mockReact, { type ReactNode } from 'react';
+import { Alert } from 'react-native';
 
 import MyQuestsScreen from '../MyQuestsScreen';
 
@@ -29,6 +30,7 @@ describe('MyQuestsScreen', () => {
     const view = await render(<MyQuestsScreen />);
 
     expect(view.getByText('MyQuest')).toBeTruthy();
+    expect(view.queryByTestId('my-quests-help-button')).toBeNull();
     expect(view.getByText('เลือกสถานะเควสต์')).toBeTruthy();
     expect(view.getByTestId('my-quests-status-carousel')).toBeTruthy();
     expect(view.getByTestId('my-quests-status-previous')).toBeTruthy();
@@ -107,16 +109,22 @@ describe('MyQuestsScreen', () => {
     expect(view.getByTestId('my-quests-applicant-sheet')).toBeTruthy();
     expect(view.getByText('ผู้สมัครเควสต์')).toBeTruthy();
     expect(view.getByText('พลอย ร.')).toBeTruthy();
+    expect(view.queryByTestId('my-quests-applicant-confirm')).toBeNull();
 
     await fireEvent.press(view.getByTestId('my-quests-applicant-select-ploy-r'));
     expect(view.getByTestId('my-quests-applicant-select-ploy-r').props.accessibilityState).toMatchObject({ checked: true });
-    expect(view.getByText('เลือกแล้ว 1 คน')).toBeTruthy();
+    expect(view.getAllByText('เลือกแล้ว 1 คน')).toHaveLength(2);
 
     await fireEvent.press(view.getByTestId('my-quests-applicant-profile-ploy-r'));
     expect(view.getByTestId('my-quests-applicant-profile-sheet')).toBeTruthy();
     expect(view.getByText('ชอบช่วยงานกิจกรรมและทำงานเป็นทีม')).toBeTruthy();
     await fireEvent.press(view.getByTestId('my-quests-applicant-profile-close'));
     expect(view.queryByTestId('my-quests-applicant-profile-sheet')).toBeNull();
+
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    await fireEvent.press(view.getByTestId('my-quests-applicant-confirm'));
+    expect(alertSpy).toHaveBeenCalledWith('ยืนยันเริ่มงานแล้ว', 'เริ่มงานกับผู้สมัคร 1 คนแล้ว', [{ text: 'ปิดหน้าต่างผู้สมัคร', onPress: expect.any(Function) }]);
+    alertSpy.mockRestore();
 
     await fireEvent.press(view.getByTestId('my-quests-applicant-close'));
     expect(view.queryByTestId('my-quests-applicant-sheet')).toBeNull();

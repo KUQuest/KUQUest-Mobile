@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AccessibilityInfo, Modal, PanResponder, type GestureResponderEvent, type PanResponderGestureState, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, Alert, Modal, PanResponder, type GestureResponderEvent, type PanResponderGestureState, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -25,7 +25,7 @@ import {
 } from 'lucide-react-native';
 
 import { cn } from '@/tw/cn';
-import { Image, Pressable, SafeAreaView, ScrollView, Text, View } from '@/tw';
+import { Pressable, SafeAreaView, ScrollView, Text, View } from '@/tw';
 import { useLocale, type SupportedLocale } from '@/locales/LocaleProvider';
 import { colors } from '@/theme/colors';
 import { getAppChromeMetrics } from '@/theme/layout';
@@ -65,7 +65,6 @@ type QuestSummary = {
   secondaryAction?: string;
   groupChatId?: string;
   applicants?: QuestApplicant[];
-  imageUri: string;
   host?: string;
   appliedOn?: string;
   reason?: string;
@@ -115,6 +114,10 @@ type LocaleContent = {
   applicantListTitle: string;
   selectApplicantsHint: string;
   selectedApplicants: (count: number) => string;
+  confirmStart: (count: number) => string;
+  confirmStartHint: string;
+  selectionConfirmedTitle: string;
+  selectionConfirmedDescription: (count: number) => string;
   viewProfile: string;
   profilePreviewTitle: string;
   profileAbout: string;
@@ -129,16 +132,6 @@ type LocaleContent = {
   worker: RoleCopy<WorkerTab>;
   hirer: RoleCopy<HirerTab>;
 };
-
-const imageUris = {
-  environment: 'https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=480&q=80',
-  plants: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=480&q=80',
-  education: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=480&q=80',
-  animal: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=480&q=80',
-  moving: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=480&q=80',
-  cleaning: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=480&q=80',
-  delivery: 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=480&q=80',
-} as const;
 
 const content: Record<SupportedLocale, LocaleContent> = {
   th: {
@@ -164,6 +157,10 @@ const content: Record<SupportedLocale, LocaleContent> = {
     applicantListTitle: 'รายชื่อผู้สมัคร',
     selectApplicantsHint: 'แตะเพื่อเลือกผู้สมัครที่ต้องการเข้าร่วมเควสต์',
     selectedApplicants: (count) => `เลือกแล้ว ${count} คน`,
+    confirmStart: (count) => `ยืนยันเริ่มงาน ${count} คน`,
+    confirmStartHint: 'ผู้สมัครที่เลือกจะเริ่มงานในเควสต์นี้',
+    selectionConfirmedTitle: 'ยืนยันเริ่มงานแล้ว',
+    selectionConfirmedDescription: (count) => `เริ่มงานกับผู้สมัคร ${count} คนแล้ว`,
     viewProfile: 'ดูโปรไฟล์',
     profilePreviewTitle: 'โปรไฟล์ผู้สมัคร',
     profileAbout: 'เกี่ยวกับผู้สมัคร',
@@ -184,36 +181,36 @@ const content: Record<SupportedLocale, LocaleContent> = {
           {
             id: 'move-boxes', title: 'ช่วยยกกล่องไปหอพัก', tag: 'ยกของ', categoryTone: 'green',
             date: 'วันนี้ · 17:00–19:00', location: 'หอพัก 13', description: 'ช่วยขนกล่องที่ติดป้ายไปยังหอพัก 13', detail: 'รอตรวจสอบใบสมัคร',
-            teamSize: '2 / 2', status: 'รอตรวจสอบ', statusTone: 'warning', action: 'ดูรายละเอียด', groupChatId: 'quest-move-boxes-group', host: 'นิชา ส.', appliedOn: '13 ส.ค.', imageUri: imageUris.moving,
+            teamSize: '2 / 2', status: 'รอตรวจสอบ', statusTone: 'warning', action: 'ดูรายละเอียด', groupChatId: 'quest-move-boxes-group', host: 'นิชา ส.', appliedOn: '13 ส.ค.',
           },
           {
             id: 'clean-fan', title: 'ล้างพัดลมหอพัก', tag: 'ทำความสะอาด', categoryTone: 'green',
             date: 'พรุ่งนี้ · 09:00–12:00', location: 'ใต้หอพัก 13', description: 'ทำความสะอาดพัดลมส่วนกลางก่อนช่วงเย็น', detail: 'รอเริ่มงาน',
-            teamSize: '1 / 2', status: 'รอคิว', statusTone: 'warning', action: 'ดูรายละเอียด', groupChatId: 'quest-clean-fan-group', host: 'พลอย เค.', appliedOn: '12 ส.ค.', imageUri: imageUris.cleaning,
+            teamSize: '1 / 2', status: 'รอคิว', statusTone: 'warning', action: 'ดูรายละเอียด', groupChatId: 'quest-clean-fan-group', host: 'พลอย เค.', appliedOn: '12 ส.ค.',
           },
         ],
         accepted: [
           {
             id: 'buy-lunch', title: 'ซื้อข้าวจากโรงอาหาร', tag: 'ส่งของ', categoryTone: 'green',
             date: 'วันนี้ · 10:00–13:00', location: 'โรงอาหารกลาง', description: 'ซื้ออาหารจากโรงอาหารและนำไปส่งให้ผู้ว่าจ้าง', detail: 'นัดหมายแล้ว',
-            teamSize: '1 / 1', status: 'ตอบรับแล้ว', statusTone: 'success', action: 'แชตกับผู้โพสต์', host: 'บีม ที.', appliedOn: '10 ส.ค.', imageUri: imageUris.delivery,
+            teamSize: '1 / 1', status: 'ตอบรับแล้ว', statusTone: 'success', action: 'แชตกับผู้โพสต์', host: 'บีม ที.', appliedOn: '10 ส.ค.',
           },
           {
             id: 'run-together', title: 'ไปวิ่งเป็นเพื่อน', tag: 'ออกกำลังกาย', categoryTone: 'green',
             date: '26 ส.ค. · 18:00–19:00', location: 'สนามอินทรีจันทรสถิตย์', description: 'วิ่งรอบมหาวิทยาลัยด้วยกันในช่วงเย็น', detail: 'ตอบรับเข้าร่วมแล้ว',
-            teamSize: '2 / 3', status: 'ตอบรับแล้ว', statusTone: 'success', action: 'ดูรายละเอียด', host: 'เฟิร์น ล.', appliedOn: '9 ส.ค.', imageUri: imageUris.environment,
+            teamSize: '2 / 3', status: 'ตอบรับแล้ว', statusTone: 'success', action: 'ดูรายละเอียด', host: 'เฟิร์น ล.', appliedOn: '9 ส.ค.',
           },
         ],
         history: [
           {
             id: 'print-notes', title: 'พิมพ์โน้ตการเรียน', tag: 'ถ่ายเอกสาร', categoryTone: 'blue',
             date: '22 ส.ค.', location: 'คณะวิทยาศาสตร์', description: 'พิมพ์โน้ตการเรียนสำหรับคลาสช่วงบ่าย', detail: 'ได้รับค่าตอบแทน ฿60',
-            teamSize: '1 / 1', status: 'เสร็จแล้ว', statusTone: 'success', action: 'ดูรายละเอียด', host: 'เมย์ เค.', appliedOn: '20 ส.ค.', imageUri: imageUris.education,
+            teamSize: '1 / 1', status: 'เสร็จแล้ว', statusTone: 'success', action: 'ดูรายละเอียด', host: 'เมย์ เค.', appliedOn: '20 ส.ค.',
           },
           {
             id: 'deliver-snacks', title: 'ส่งขนมให้กลุ่มอ่านหนังสือ', tag: 'ส่งของ', categoryTone: 'green',
             date: '18 ส.ค.', location: 'สำนักหอสมุด', description: 'นำขนมไปส่งให้กลุ่มอ่านหนังสือ', detail: 'ได้รับค่าตอบแทน ฿90',
-            teamSize: '1 / 1', status: 'เสร็จแล้ว', statusTone: 'success', action: 'ดูรายละเอียด', host: 'พลอย น.', appliedOn: '16 ส.ค.', imageUri: imageUris.delivery,
+            teamSize: '1 / 1', status: 'เสร็จแล้ว', statusTone: 'success', action: 'ดูรายละเอียด', host: 'พลอย น.', appliedOn: '16 ส.ค.',
           },
         ],
       },
@@ -236,7 +233,7 @@ const content: Record<SupportedLocale, LocaleContent> = {
           {
             id: 'clean-fan', title: 'ล้างพัดลมหอพัก', tag: 'ทำความสะอาด', categoryTone: 'green',
             date: 'วันนี้ · 09:00–12:00', location: 'ใต้หอพัก 13', description: 'ทำความสะอาดพัดลมส่วนกลางก่อนช่วงเย็น', detail: 'นัดเสร็จพรุ่งนี้ · 12:00',
-            teamSize: '2 คนกำลังทำงาน', status: 'กำลังทำงาน', statusTone: 'success', action: 'ดูผู้สมัคร', secondaryAction: 'แก้ไข', groupChatId: 'quest-clean-fan-group', imageUri: imageUris.cleaning,
+            teamSize: '2 คนกำลังทำงาน', status: 'กำลังทำงาน', statusTone: 'success', action: 'ดูผู้สมัคร', secondaryAction: 'แก้ไข', groupChatId: 'quest-clean-fan-group',
             applicants: [
               { id: 'ploy-r', name: 'พลอย ร.', initials: 'พร', detail: 'คณะเศรษฐศาสตร์', appliedOn: 'สมัครวันนี้', bio: 'ชอบช่วยงานกิจกรรมและทำงานเป็นทีม', skills: 'ประสานงาน · จัดกิจกรรม', avatarColor: '#DDE9D9' },
               { id: 'beam-t', name: 'บีม ที.', initials: 'บที', detail: 'คณะวิทยาศาสตร์', appliedOn: 'สมัครเมื่อวาน', bio: 'ถนัดงานที่ต้องละเอียดและสื่อสารกับทีม', skills: 'วางแผน · สื่อสาร', avatarColor: '#EAF2FC' },
@@ -245,7 +242,7 @@ const content: Record<SupportedLocale, LocaleContent> = {
           {
             id: 'buy-lunch', title: 'ซื้อข้าวจากโรงอาหาร', tag: 'ส่งของ', categoryTone: 'green',
             date: 'วันนี้ · 10:00–13:00', location: 'โรงอาหารกลาง', description: 'ซื้ออาหารจากโรงอาหารและนำไปส่งให้ผู้ว่าจ้าง', detail: 'นัดส่งวันนี้ · 12:30',
-            teamSize: '1 คนกำลังทำงาน', status: 'รอผู้สมัคร', statusTone: 'warning', action: 'ดูผู้สมัคร', secondaryAction: 'แก้ไข', groupChatId: 'quest-buy-lunch-group', imageUri: imageUris.delivery,
+            teamSize: '1 คนกำลังทำงาน', status: 'รอผู้สมัคร', statusTone: 'warning', action: 'ดูผู้สมัคร', secondaryAction: 'แก้ไข', groupChatId: 'quest-buy-lunch-group',
             applicants: [],
           },
         ],
@@ -254,12 +251,12 @@ const content: Record<SupportedLocale, LocaleContent> = {
           {
             id: 'print-event-posters', title: 'พิมพ์โปสเตอร์งานกิจกรรม', tag: 'ถ่ายเอกสาร', categoryTone: 'blue',
             date: '17 ส.ค.', location: 'ร้านถ่ายเอกสารหน้า มก.', description: 'พิมพ์และรับโปสเตอร์สำหรับงานกิจกรรมของคณะ', detail: 'รีวิวผู้ทำงานแล้ว',
-            teamSize: '1 / 1', status: 'เสร็จแล้ว', statusTone: 'success', action: 'ดูรายละเอียด', imageUri: imageUris.education,
+            teamSize: '1 / 1', status: 'เสร็จแล้ว', statusTone: 'success', action: 'ดูรายละเอียด',
           },
           {
             id: 'move-club-equipment', title: 'ช่วยย้ายอุปกรณ์ชมรม', tag: 'ยกของ', categoryTone: 'green',
             date: '10 ส.ค.', location: 'อาคารกิจกรรมนิสิต', description: 'ย้ายอุปกรณ์กิจกรรมไปยังห้องจัดงาน', detail: 'ปิดเควสต์แล้ว',
-            teamSize: '3 / 3', status: 'เสร็จแล้ว', statusTone: 'success', action: 'ดูรายละเอียด', imageUri: imageUris.moving,
+            teamSize: '3 / 3', status: 'เสร็จแล้ว', statusTone: 'success', action: 'ดูรายละเอียด',
           },
         ],
       },
@@ -292,6 +289,10 @@ const content: Record<SupportedLocale, LocaleContent> = {
     applicantListTitle: 'Candidates',
     selectApplicantsHint: 'Tap to select candidates for this Quest',
     selectedApplicants: (count) => `${count} ${count === 1 ? 'candidate' : 'candidates'} selected`,
+    confirmStart: (count) => `Confirm & start · ${count}`,
+    confirmStartHint: 'Selected candidates will start this Quest.',
+    selectionConfirmedTitle: 'Quest started',
+    selectionConfirmedDescription: (count) => `The Quest is starting with ${count} ${count === 1 ? 'candidate' : 'candidates'}.`,
     viewProfile: 'View profile',
     profilePreviewTitle: 'Candidate profile',
     profileAbout: 'About this candidate',
@@ -312,36 +313,36 @@ const content: Record<SupportedLocale, LocaleContent> = {
           {
             id: 'move-boxes', title: 'Help move boxes to the dorm', tag: 'Moving', categoryTone: 'green',
             date: 'Today · 17:00–19:00', location: 'Dorm 13', description: 'Help carry labelled boxes to Dorm 13', detail: 'Application is being reviewed',
-            teamSize: '2 / 2', status: 'Under review', statusTone: 'warning', action: 'View Detail', groupChatId: 'quest-move-boxes-group', host: 'Nicha S.', appliedOn: '13 Aug', imageUri: imageUris.moving,
+            teamSize: '2 / 2', status: 'Under review', statusTone: 'warning', action: 'View Detail', groupChatId: 'quest-move-boxes-group', host: 'Nicha S.', appliedOn: '13 Aug',
           },
           {
             id: 'clean-fan', title: 'Clean a dorm fan', tag: 'Cleaning', categoryTone: 'green',
             date: 'Tomorrow · 09:00–12:00', location: 'Under Dorm 13', description: 'Clean a shared fan before the evening', detail: 'Waiting for a place to open',
-            teamSize: '1 / 2', status: 'Waitlist', statusTone: 'warning', action: 'View Detail', groupChatId: 'quest-clean-fan-group', host: 'Ploy K.', appliedOn: '12 Aug', imageUri: imageUris.cleaning,
+            teamSize: '1 / 2', status: 'Waitlist', statusTone: 'warning', action: 'View Detail', groupChatId: 'quest-clean-fan-group', host: 'Ploy K.', appliedOn: '12 Aug',
           },
         ],
         accepted: [
           {
             id: 'buy-lunch', title: 'Buy lunch from the canteen', tag: 'Delivery', categoryTone: 'green',
             date: 'Today · 10:00–13:00', location: 'Central Canteen', description: 'Buy a meal and bring it to the requester', detail: 'Scheduled with the host',
-            teamSize: '1 / 1', status: 'Accepted', statusTone: 'success', action: 'Message Host', host: 'Beam T.', appliedOn: '10 Aug', imageUri: imageUris.delivery,
+            teamSize: '1 / 1', status: 'Accepted', statusTone: 'success', action: 'Message Host', host: 'Beam T.', appliedOn: '10 Aug',
           },
           {
             id: 'run-together', title: 'Go running together', tag: 'Exercise', categoryTone: 'green',
             date: '26 Aug · 18:00–19:00', location: 'Insee Chanthasathit Field', description: 'Join a relaxed evening run around campus', detail: 'You are on the team',
-            teamSize: '2 / 3', status: 'Accepted', statusTone: 'success', action: 'View Detail', host: 'Fern L.', appliedOn: '9 Aug', imageUri: imageUris.environment,
+            teamSize: '2 / 3', status: 'Accepted', statusTone: 'success', action: 'View Detail', host: 'Fern L.', appliedOn: '9 Aug',
           },
         ],
         history: [
           {
             id: 'print-notes', title: 'Print lecture notes', tag: 'Printing', categoryTone: 'blue',
             date: '22 Aug', location: 'Faculty of Science', description: 'Print lecture notes for an afternoon class', detail: 'Earned ฿60',
-            teamSize: '1 / 1', status: 'Completed', statusTone: 'success', action: 'View Detail', host: 'May K.', appliedOn: '20 Aug', imageUri: imageUris.education,
+            teamSize: '1 / 1', status: 'Completed', statusTone: 'success', action: 'View Detail', host: 'May K.', appliedOn: '20 Aug',
           },
           {
             id: 'deliver-snacks', title: 'Deliver snacks to a study group', tag: 'Delivery', categoryTone: 'green',
             date: '18 Aug', location: 'University Library', description: 'Deliver snacks to a study group', detail: 'Earned ฿90',
-            teamSize: '1 / 1', status: 'Completed', statusTone: 'success', action: 'View Detail', host: 'Ploy N.', appliedOn: '16 Aug', imageUri: imageUris.delivery,
+            teamSize: '1 / 1', status: 'Completed', statusTone: 'success', action: 'View Detail', host: 'Ploy N.', appliedOn: '16 Aug',
           },
         ],
       },
@@ -364,7 +365,7 @@ const content: Record<SupportedLocale, LocaleContent> = {
           {
             id: 'clean-fan', title: 'Clean a dorm fan', tag: 'Cleaning', categoryTone: 'green',
             date: 'Today · 09:00–12:00', location: 'Under Dorm 13', description: 'Clean a shared fan before the evening', detail: 'Due tomorrow · 12:00',
-            teamSize: '2 people working', status: 'Open', statusTone: 'success', action: 'View Applicants', secondaryAction: 'Edit', groupChatId: 'quest-clean-fan-group', imageUri: imageUris.cleaning,
+            teamSize: '2 people working', status: 'Open', statusTone: 'success', action: 'View Applicants', secondaryAction: 'Edit', groupChatId: 'quest-clean-fan-group',
             applicants: [
               { id: 'ploy-r', name: 'Ploy R.', initials: 'PR', detail: 'Faculty of Economics', appliedOn: 'Applied today', bio: 'Enjoys helping with campus events and team projects.', skills: 'Coordination · Event support', avatarColor: '#DDE9D9' },
               { id: 'beam-t', name: 'Beam T.', initials: 'BT', detail: 'Faculty of Science', appliedOn: 'Applied yesterday', bio: 'Detail-oriented and comfortable coordinating with a team.', skills: 'Planning · Communication', avatarColor: '#EAF2FC' },
@@ -373,7 +374,7 @@ const content: Record<SupportedLocale, LocaleContent> = {
           {
             id: 'buy-lunch', title: 'Buy lunch from the canteen', tag: 'Delivery', categoryTone: 'green',
             date: 'Today · 10:00–13:00', location: 'Central Canteen', description: 'Buy a meal and bring it to the requester', detail: 'Due today · 12:30',
-            teamSize: '1 person working', status: 'Awaiting applicants', statusTone: 'warning', action: 'View Applicants', secondaryAction: 'Edit', groupChatId: 'quest-buy-lunch-group', imageUri: imageUris.delivery,
+            teamSize: '1 person working', status: 'Awaiting applicants', statusTone: 'warning', action: 'View Applicants', secondaryAction: 'Edit', groupChatId: 'quest-buy-lunch-group',
             applicants: [],
           },
         ],
@@ -382,12 +383,12 @@ const content: Record<SupportedLocale, LocaleContent> = {
           {
             id: 'print-event-posters', title: 'Print event posters', tag: 'Printing', categoryTone: 'blue',
             date: '17 Aug', location: 'Copy shop by KU', description: 'Print and collect posters for a faculty event', detail: 'Workers reviewed',
-            teamSize: '1 / 1', status: 'Completed', statusTone: 'success', action: 'View Detail', imageUri: imageUris.education,
+            teamSize: '1 / 1', status: 'Completed', statusTone: 'success', action: 'View Detail',
           },
           {
             id: 'move-club-equipment', title: 'Move club equipment', tag: 'Moving', categoryTone: 'green',
             date: '10 Aug', location: 'Student Activity Building', description: 'Move event equipment to the activity hall', detail: 'Quest closed',
-            teamSize: '3 / 3', status: 'Completed', statusTone: 'success', action: 'View Detail', imageUri: imageUris.moving,
+            teamSize: '3 / 3', status: 'Completed', statusTone: 'success', action: 'View Detail',
           },
         ],
       },
@@ -420,22 +421,6 @@ function renderActionIcon(label: string, size: number) {
   if (/applicant|ผู้สมัคร/i.test(label)) return <UsersRound color={colors.primary} size={size} strokeWidth={2.1} />;
   if (/message|chat|แชต|ข้อความ/i.test(label)) return <MessageSquare color={colors.primary} size={size} strokeWidth={2.1} />;
   return <ChevronRight color={colors.primary} size={size} strokeWidth={2.1} />;
-}
-
-function QuestThumbnail({ quest }: { quest: QuestSummary }) {
-  const [failed, setFailed] = useState(false);
-  const palette = categoryPalette[quest.categoryTone];
-  return (
-    <View accessibilityLabel={`${quest.title} image`} className={styles.thumbnail}>
-      {quest.imageUri && !failed ? (
-        <Image accessibilityLabel={`${quest.title} image`} cachePolicy="memory-disk" contentFit="cover" onError={() => setFailed(true)} source={{ uri: quest.imageUri }} className={styles.thumbnailImage} />
-      ) : (
-        <View className={styles.thumbnailFallback} style={{ backgroundColor: palette.backgroundColor }}>
-          <BriefcaseBusiness color={palette.foreground} size={30} strokeWidth={1.8} />
-        </View>
-      )}
-    </View>
-  );
 }
 
 function CategoryTag({ quest }: { quest: QuestSummary }) {
@@ -496,20 +481,15 @@ function ActionButton({ label, onPress, testID, compact = false, full = false, h
 function CreatedQuestCard({ quest, copy, onPress, onPrimaryAction, onGroupChat }: { quest: QuestSummary; copy: LocaleContent; onPress: () => void; onPrimaryAction: () => void; onGroupChat: () => void }) {
   return (
     <View className={styles.card}>
-      <View className={styles.cardRow}>
-        <QuestThumbnail quest={quest} />
-        <View className={styles.cardBody}>
-          <View className={styles.cardHeadingRow}>
-            <View className={styles.cardHeadingCopy}>
-              <CategoryTag quest={quest} />
-              <Text className={styles.cardTitle} numberOfLines={2}>{quest.title}</Text>
-            </View>
-            <StatusPill status={quest.status} tone={quest.statusTone} />
-          </View>
-          <QuestMeta quest={quest} />
-          <Text className={styles.cardDescription} numberOfLines={2}>{quest.description}</Text>
+      <View className={styles.cardHeadingRow}>
+        <View className={styles.cardHeadingCopy}>
+          <CategoryTag quest={quest} />
+          <Text className={styles.cardTitle} numberOfLines={2}>{quest.title}</Text>
         </View>
+        <StatusPill status={quest.status} tone={quest.statusTone} />
       </View>
+      <QuestMeta quest={quest} />
+      <Text className={styles.cardDescription} numberOfLines={2}>{quest.description}</Text>
       <TeamRow copy={copy} quest={quest} />
       <View className={styles.actionsRow}>
         {quest.secondaryAction ? <ActionButton label={quest.secondaryAction} onPress={onPress} testID={`my-quest-action-${quest.id}-secondary`} /> : null}
@@ -526,27 +506,30 @@ function ApplicationQuestCard({ quest, copy, onPress, onGroupChat }: { quest: Qu
   const questAccessibilityLabel = [quest.title, quest.status, quest.date, quest.location, quest.detail, quest.action].join('. ');
   return (
     <View className={styles.applicationCard}>
-      <View className={styles.applicationRow}>
-        <QuestThumbnail quest={quest} />
-        <View className={styles.applicationMain}>
+      <View className={styles.cardHeadingRow}>
+        <View className={styles.cardHeadingCopy}>
           <CategoryTag quest={quest} />
           <Text className={styles.applicationTitle} numberOfLines={2}>{quest.title}</Text>
-          <QuestMeta quest={quest} />
-          <View className={styles.hostRow}>
-            <View className={styles.hostIcon}><CircleUserRound color={colors.primary} size={15} strokeWidth={2} /></View>
-            <Text className={styles.hostText} numberOfLines={1}>{quest.host ?? quest.detail}</Text>
-          </View>
-          <Text className={styles.applicationDescription} numberOfLines={2}>{quest.description}</Text>
         </View>
-        <View className={styles.applicationSide}>
-          <StatusPill status={quest.status} tone={quest.statusTone} stretch />
+        <StatusPill status={quest.status} tone={quest.statusTone} />
+      </View>
+      <QuestMeta quest={quest} />
+      <Text className={styles.applicationDescription} numberOfLines={2}>{quest.description}</Text>
+      <View className={styles.hostRow}>
+        <View className={styles.hostIcon}><CircleUserRound color={colors.primary} size={15} strokeWidth={2} /></View>
+        <Text className={styles.hostText} numberOfLines={1}>{quest.host ?? quest.detail}</Text>
+      </View>
+      <View className={styles.applicationFacts}>
+        <View className={styles.applicationFact}>
           <Text className={styles.sideLabel}>{sideDetailLabel}</Text>
           <Text className={styles.sideValue} numberOfLines={2}>{sideDetail ?? quest.detail}</Text>
-          {!quest.reason ? <><Text className={styles.sideLabel}>{copy.teamSize}</Text><View className={styles.sideTeam}><UsersRound color={colors.primary} size={14} strokeWidth={2} /><Text className={styles.sideValue} numberOfLines={1}>{quest.teamSize}</Text></View></> : null}
-          <ActionButton accessibilityLabel={questAccessibilityLabel} compact full label={quest.action} onPress={onPress} testID={`my-quest-action-${quest.id}`} />
-          {quest.groupChatId ? <ActionButton accessibilityLabel={`${copy.groupChat}: ${quest.title}`} compact full highlighted label={copy.groupChat} onPress={onGroupChat} testID={`my-quest-group-chat-${quest.id}`} /> : null}
         </View>
+        {!quest.reason ? <View className={styles.applicationFact}><Text className={styles.sideLabel}>{copy.teamSize}</Text><View className={styles.sideTeam}><UsersRound color={colors.primary} size={14} strokeWidth={2} /><Text className={styles.sideValue} numberOfLines={1}>{quest.teamSize}</Text></View></View> : null}
       </View>
+      <View className={styles.actionsRow}>
+        <ActionButton accessibilityLabel={questAccessibilityLabel} full label={quest.action} onPress={onPress} testID={`my-quest-action-${quest.id}`} />
+      </View>
+      {quest.groupChatId ? <View className={styles.groupChatRow}><ActionButton accessibilityLabel={`${copy.groupChat}: ${quest.title}`} highlighted full label={copy.groupChat} onPress={onGroupChat} testID={`my-quest-group-chat-${quest.id}`} /></View> : null}
     </View>
   );
 }
@@ -636,6 +619,11 @@ function ApplicantSheet({ quest, copy, bottomInset, onClose }: { quest: QuestSum
       return next;
     });
   };
+  const confirmSelection = () => {
+    const selectedCount = selectedApplicantIds.size;
+    if (selectedCount === 0) return;
+    Alert.alert(copy.selectionConfirmedTitle, copy.selectionConfirmedDescription(selectedCount), [{ text: copy.closeApplicants, onPress: onClose }]);
+  };
   return (
     <Modal animationType="slide" onRequestClose={onClose} transparent visible>
       <View className={styles.applicantModalOverlay}>
@@ -653,9 +641,10 @@ function ApplicantSheet({ quest, copy, bottomInset, onClose }: { quest: QuestSum
             <View className={styles.applicantContextIcon}><UsersRound color={colors.primary} size={21} strokeWidth={2.1} /></View>
             <View className={styles.applicantContextCopy}><Text className={styles.applicantContextLabel}>{copy.applicantCount(applicants.length)}</Text><Text className={styles.applicantContextTitle} numberOfLines={1}>{quest.detail}</Text></View>
           </View>
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName={styles.applicantModalScroll}>
+          <ScrollView className={styles.applicantModalScroll} contentContainerClassName={styles.applicantModalContent} showsVerticalScrollIndicator={false}>
             {applicants.length > 0 ? <><View className={styles.applicantSectionHeader}><Text className={styles.applicantSectionLabel}>{copy.applicantListTitle}</Text>{selectedApplicantIds.size > 0 ? <Text className={styles.selectedApplicantsText}>{copy.selectedApplicants(selectedApplicantIds.size)}</Text> : null}</View><Text className={styles.selectApplicantsHint}>{copy.selectApplicantsHint}</Text><View className={styles.applicantList}>{applicants.map((applicant) => <ApplicantRow applicant={applicant} copy={copy} key={applicant.id} onToggle={() => toggleApplicant(applicant.id)} onViewProfile={() => setProfileApplicant(applicant)} selected={selectedApplicantIds.has(applicant.id)} />)}</View></> : <View accessibilityLabel={copy.noApplicantsTitle} className={styles.noApplicantsState} testID="my-quests-no-applicants"><View className={styles.noApplicantsIcon}><UsersRound color={colors.primary} size={26} strokeWidth={1.9} /></View><Text className={styles.noApplicantsTitle}>{copy.noApplicantsTitle}</Text><Text className={styles.noApplicantsDescription}>{copy.noApplicantsDescription}</Text></View>}
           </ScrollView>
+          {selectedApplicantIds.size > 0 ? <View className={styles.applicantConfirmFooter}><View className={styles.applicantConfirmCopy}><Text className={styles.applicantConfirmCount}>{copy.selectedApplicants(selectedApplicantIds.size)}</Text><Text className={styles.applicantConfirmHint}>{copy.confirmStartHint}</Text></View><Pressable accessibilityLabel={copy.confirmStart(selectedApplicantIds.size)} accessibilityRole="button" className={styles.applicantConfirmButton} onPress={confirmSelection} testID="my-quests-applicant-confirm"><Check color={colors.white} size={17} strokeWidth={2.8} /><Text className={styles.applicantConfirmButtonText}>{copy.confirmStart(selectedApplicantIds.size)}</Text></Pressable></View> : null}
         </View>
       </View>
       {profileApplicant ? <ApplicantProfileSheet applicant={profileApplicant} bottomInset={bottomInset} copy={copy} onClose={() => setProfileApplicant(null)} /> : null}
@@ -762,7 +751,7 @@ export default function MyQuestsScreen() {
         <View className={styles.headerRow}>
           <Pressable accessibilityLabel={copy.back} accessibilityRole="button" className={styles.heroIconButton} onPress={() => router.back()} testID="my-quests-back-button"><ArrowLeft color={colors.primary} size={24} strokeWidth={2.2} /></Pressable>
           <Pressable accessibilityLabel={`${copy.roleViewLabel}: ${copy.questNavLabel}`} accessibilityRole="button" accessibilityState={{ expanded: roleMenuOpen }} className={cn(styles.roleNavButton, roleMenuOpen && styles.roleNavButtonOpen)} onPress={() => setRoleMenuOpen((isOpen) => !isOpen)} testID="my-quests-role-trigger"><Text className={styles.roleNavText}>{copy.questNavLabel}</Text>{roleMenuOpen ? <ChevronUp color={colors.primary} size={18} strokeWidth={2.4} /> : <ChevronDown color={colors.primary} size={18} strokeWidth={2.4} />}</Pressable>
-          <Pressable accessibilityLabel={copy.help} accessibilityRole="button" className={styles.heroIconButton} onPress={() => router.push('/settings')} testID="my-quests-help-button"><CircleHelp color={colors.primary} size={24} strokeWidth={2.1} /></Pressable>
+          <View accessibilityElementsHidden className={styles.heroIconSpacer} importantForAccessibility="no" />
         </View>
         {roleMenuOpen ? <RoleMenu copy={copy} onSelect={selectRole} role={role} /> : null}
         <Text className={styles.heroSubtitle}>{roleCopy.subtitle}</Text>

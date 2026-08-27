@@ -1,9 +1,8 @@
 const styles = {
-  heroCard: 'self-stretch rounded-[16px] bg-ku-card border-ku-border-accent border',
-  profileSettingsRow: 'items-end w-full border-b border-ku-border-subtle mb-[16px] pb-[8px]',
-  profileSettingsButton: 'items-center flex-row gap-[8px] min-h-[48px] rounded-[10px] bg-ku-surface-muted px-[12px]',
-  profileSettingsText: 'text-ku-primary font-ku-semibold text-ku-body-small',
+  heroCard: 'self-stretch rounded-[16px] bg-ku-card border-ku-border-accent border relative',
+  profileSettingsButton: 'absolute right-[12px] top-[12px] items-center bg-ku-surface-muted rounded-ku-pill h-[44px] justify-center w-[44px] active:bg-ku-surface-accent',
   headerRow: 'flex-row items-start w-full',
+  headerRowWithSettings: 'pr-[52px]',
   identityContent: 'flex-1 ml-[16px] min-w-0',
   photoFrame: 'overflow-hidden border-[4px] border-ku-border-subtle bg-ku-surface-image items-center justify-center',
   photo: 'h-full w-full',

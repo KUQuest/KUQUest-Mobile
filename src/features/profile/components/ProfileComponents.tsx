@@ -178,13 +178,10 @@ export function ProfileHeader({ data, settingsLabel, onSettingsPress, editProfil
 
   return (
     <View testID="profile-header" className={styles.heroCard} style={{ padding: metrics.cardPadding }}>
-      {settingsLabel && onSettingsPress ? <View className={styles.profileSettingsRow}>
-        <Pressable accessibilityLabel={settingsLabel} accessibilityRole="button" className={styles.profileSettingsButton} onPress={onSettingsPress} testID="open-settings">
-          <Settings2 color={colors.primary} size={20} strokeWidth={2.2} />
-          <Text className={styles.profileSettingsText} maxFontSizeMultiplier={2}>{settingsLabel}</Text>
-        </Pressable>
-      </View> : null}
-      <View className={styles.headerRow}>
+      {settingsLabel && onSettingsPress ? <Pressable accessibilityLabel={settingsLabel} accessibilityRole="button" className={styles.profileSettingsButton} onPress={onSettingsPress} testID="open-settings">
+        <Settings2 color={colors.primary} size={20} strokeWidth={2.2} />
+      </Pressable> : null}
+      <View className={cn(styles.headerRow, settingsLabel && onSettingsPress && styles.headerRowWithSettings)}>
         <View className={styles.photoFrame} style={{ borderRadius: metrics.photoSize / 2, height: metrics.photoSize, width: metrics.photoSize }}>
           {profileImage && !profileImageFailed ? <Image accessibilityLabel={labels.profileImageLabel(data.name)} source={profileImage} onError={() => setFailedProfileImage(data.profileImage)} className={styles.photo} /> : <Text accessibilityLabel={labels.profileImageLabel(data.name)} className={styles.initials}>{getInitials(data.name)}</Text>}
         </View>
