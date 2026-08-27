@@ -111,6 +111,7 @@ type LocaleContent = {
   help: string;
   teamSize: string;
   groupChat: string;
+  messageHost: string;
   applicantsTitle: string;
   applicantCount: (count: number) => string;
   applicantListTitle: string;
@@ -154,6 +155,7 @@ const content: Record<SupportedLocale, LocaleContent> = {
     help: 'ช่วยเหลือ',
     teamSize: 'ทีม',
     groupChat: 'แชตกลุ่ม',
+    messageHost: 'ข้อความ',
     applicantsTitle: 'ผู้สมัครเควสต์',
     applicantCount: (count) => `${count} คน`,
     applicantListTitle: 'รายชื่อผู้สมัคร',
@@ -195,7 +197,7 @@ const content: Record<SupportedLocale, LocaleContent> = {
           {
             id: 'buy-lunch', title: 'ซื้อข้าวจากโรงอาหาร', tag: 'ส่งของ', categoryTone: 'green',
             date: 'วันนี้ · 10:00–13:00', location: 'โรงอาหารกลาง', description: 'ซื้ออาหารจากโรงอาหารและนำไปส่งให้ผู้ว่าจ้าง', detail: 'นัดหมายแล้ว',
-            teamSize: '1 / 1', status: 'ตอบรับแล้ว', statusTone: 'success', action: 'แชตกับผู้โพสต์', host: 'บีม ที.', appliedOn: '10 ส.ค.',
+            teamSize: '1 / 1', status: 'ตอบรับแล้ว', statusTone: 'success', action: 'ข้อความ', groupChatId: 'quest-buy-lunch-group', host: 'บีม ที.', appliedOn: '10 ส.ค.',
           },
           {
             id: 'run-together', title: 'ไปวิ่งเป็นเพื่อน', tag: 'ออกกำลังกาย', categoryTone: 'green',
@@ -286,6 +288,7 @@ const content: Record<SupportedLocale, LocaleContent> = {
     help: 'Help',
     teamSize: 'Team size',
     groupChat: 'Group chat',
+    messageHost: 'Message',
     applicantsTitle: 'Quest applicants',
     applicantCount: (count) => `${count} ${count === 1 ? 'candidate' : 'candidates'}`,
     applicantListTitle: 'Candidates',
@@ -327,7 +330,7 @@ const content: Record<SupportedLocale, LocaleContent> = {
           {
             id: 'buy-lunch', title: 'Buy lunch from the canteen', tag: 'Delivery', categoryTone: 'green',
             date: 'Today · 10:00–13:00', location: 'Central Canteen', description: 'Buy a meal and bring it to the requester', detail: 'Scheduled with the host',
-            teamSize: '1 / 1', status: 'Accepted', statusTone: 'success', action: 'Message Host', host: 'Beam T.', appliedOn: '10 Aug',
+            teamSize: '1 / 1', status: 'Accepted', statusTone: 'success', action: 'Message', groupChatId: 'quest-buy-lunch-group', host: 'Beam T.', appliedOn: '10 Aug',
           },
           {
             id: 'run-together', title: 'Go running together', tag: 'Exercise', categoryTone: 'green',
@@ -505,33 +508,38 @@ function CreatedQuestCard({ quest, copy, onPress, onPrimaryAction, onGroupChat }
 function ApplicationQuestCard({ quest, copy, onPress, onGroupChat }: { quest: QuestSummary; copy: LocaleContent; onPress: () => void; onGroupChat: () => void }) {
   const sideDetailLabel = quest.reason ? copy.reason : copy.appliedOn;
   const sideDetail = quest.reason ?? quest.appliedOn;
-  const questAccessibilityLabel = [quest.title, quest.status, quest.date, quest.location, quest.detail, quest.action].join('. ');
+  const questAccessibilityLabel = [quest.title, quest.status, quest.date, quest.location, quest.detail].join('. ');
   return (
     <View className={styles.applicationCard}>
-      <View className={styles.cardHeadingRow}>
-        <View className={styles.cardHeadingCopy}>
-          <CategoryTag quest={quest} />
-          <Text className={styles.applicationTitle} numberOfLines={2}>{quest.title}</Text>
+      <Pressable
+        accessibilityLabel={questAccessibilityLabel}
+        accessibilityRole="button"
+        className={styles.applicationCardBody}
+        onPress={onPress}
+        testID={`my-quest-card-${quest.id}`}
+      >
+        <View className={styles.cardHeadingRow}>
+          <View className={styles.cardHeadingCopy}>
+            <CategoryTag quest={quest} />
+            <Text className={styles.applicationTitle} numberOfLines={2}>{quest.title}</Text>
+          </View>
+          <StatusPill status={quest.status} tone={quest.statusTone} />
         </View>
-        <StatusPill status={quest.status} tone={quest.statusTone} />
-      </View>
-      <QuestMeta quest={quest} />
-      <Text className={styles.applicationDescription} numberOfLines={2}>{quest.description}</Text>
-      <View className={styles.hostRow}>
-        <View className={styles.hostIcon}><CircleUserRound color={colors.primary} size={15} strokeWidth={2} /></View>
-        <Text className={styles.hostText} numberOfLines={1}>{quest.host ?? quest.detail}</Text>
-      </View>
-      <View className={styles.applicationFacts}>
-        <View className={styles.applicationFact}>
-          <Text className={styles.sideLabel}>{sideDetailLabel}</Text>
-          <Text className={styles.sideValue} numberOfLines={2}>{sideDetail ?? quest.detail}</Text>
+        <QuestMeta quest={quest} />
+        <Text className={styles.applicationDescription} numberOfLines={2}>{quest.description}</Text>
+        <View className={styles.hostRow}>
+          <View className={styles.hostIcon}><CircleUserRound color={colors.primary} size={15} strokeWidth={2} /></View>
+          <Text className={styles.hostText} numberOfLines={1}>{quest.host ?? quest.detail}</Text>
         </View>
-        {!quest.reason ? <View className={styles.applicationFact}><Text className={styles.sideLabel}>{copy.teamSize}</Text><View className={styles.sideTeam}><UsersRound color={colors.primary} size={14} strokeWidth={2} /><Text className={styles.sideValue} numberOfLines={1}>{quest.teamSize}</Text></View></View> : null}
-      </View>
-      <View className={styles.actionsRow}>
-        <ActionButton accessibilityLabel={questAccessibilityLabel} full label={quest.action} onPress={onPress} testID={`my-quest-action-${quest.id}`} />
-      </View>
-      {quest.groupChatId ? <View className={styles.groupChatRow}><ActionButton accessibilityLabel={`${copy.groupChat}: ${quest.title}`} highlighted full label={copy.groupChat} onPress={onGroupChat} testID={`my-quest-group-chat-${quest.id}`} /></View> : null}
+        <View className={styles.applicationFacts}>
+          <View className={styles.applicationFact}>
+            <Text className={styles.sideLabel}>{sideDetailLabel}</Text>
+            <Text className={styles.sideValue} numberOfLines={2}>{sideDetail ?? quest.detail}</Text>
+          </View>
+          {!quest.reason ? <View className={styles.applicationFact}><Text className={styles.sideLabel}>{copy.teamSize}</Text><View className={styles.sideTeam}><UsersRound color={colors.primary} size={14} strokeWidth={2} /><Text className={styles.sideValue} numberOfLines={1}>{quest.teamSize}</Text></View></View> : null}
+        </View>
+      </Pressable>
+      {quest.groupChatId ? <View className={styles.groupChatRow}><ActionButton accessibilityLabel={`${copy.messageHost}: ${quest.host ?? quest.title}`} highlighted full label={copy.messageHost} onPress={onGroupChat} testID={`my-quest-message-${quest.id}`} /></View> : null}
     </View>
   );
 }

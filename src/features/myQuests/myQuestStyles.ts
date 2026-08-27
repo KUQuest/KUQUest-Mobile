@@ -36,6 +36,7 @@ const styles = {
   list: 'gap-[8px]',
   card: 'bg-ku-card border-ku-border-subtle rounded-[16px] border p-[10px]',
   applicationCard: 'bg-ku-card border-ku-border-subtle rounded-[16px] border p-[10px]',
+  applicationCardBody: 'rounded-[10px] active:bg-ku-surface-accent',
   cardHeadingRow: 'items-start flex-row justify-between min-w-0',
   cardHeadingCopy: 'flex-1 min-w-0 mr-[5px]',
   categoryTag: 'items-center self-start rounded-ku-pill flex-row min-h-[24px] px-[7px] py-[2px]',

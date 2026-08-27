@@ -76,27 +76,46 @@ describe('MyQuestsScreen', () => {
     expect(view.getByText('พิมพ์โน้ตการเรียน')).toBeTruthy();
   });
 
-  it('uses Quest language and opens the real Quest Detail route from an active item', async () => {
+  it('opens joined Quest Detail from the card without a View Detail action button', async () => {
     const view = await render(<MyQuestsScreen />);
 
     expect(view.getByText('MyQuest')).toBeTruthy();
+    expect(view.queryByTestId('my-quest-action-move-boxes')).toBeNull();
 
-    await fireEvent.press(view.getByTestId('my-quest-action-move-boxes'));
+    await fireEvent.press(view.getByTestId('my-quest-card-move-boxes'));
 
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/quest/[id]', params: { id: 'move-boxes', mode: 'join', joinStatus: 'pending' } });
-    expect(view.getByTestId('my-quest-action-move-boxes').props.accessibilityLabel).toContain('ช่วยยกกล่องไปหอพัก');
+    expect(view.getByTestId('my-quest-card-move-boxes').props.accessibilityLabel).toContain('ช่วยยกกล่องไปหอพัก');
   });
 
-  it('opens group chat for pending joined Quests and active posted Quests', async () => {
+  it('opens host messaging for joined Quests and group chat for active posted Quests', async () => {
     const view = await render(<MyQuestsScreen />);
 
-    await fireEvent.press(view.getByTestId('my-quest-group-chat-move-boxes'));
+    expect(view.getAllByText('ข้อความ')).toHaveLength(2);
+    await fireEvent.press(view.getByTestId('my-quest-message-move-boxes'));
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/chat/[id]', params: { id: 'quest-move-boxes-group' } });
 
     await fireEvent.press(view.getByTestId('my-quests-role-trigger'));
     await fireEvent.press(view.getByTestId('my-quests-role-hirer'));
     await fireEvent.press(view.getByTestId('my-quest-group-chat-clean-fan'));
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/chat/[id]', params: { id: 'quest-clean-fan-group' } });
+  });
+
+  it('keeps the Message action separate from card detail for an accepted Quest', async () => {
+    const view = await render(<MyQuestsScreen />);
+
+    await fireEvent.press(view.getByTestId('my-quests-status-next'));
+
+    expect(view.getByText('ข้อความ')).toBeTruthy();
+    expect(view.queryByText('แชตกับผู้โพสต์')).toBeNull();
+    expect(view.queryByText('ดูรายละเอียด')).toBeNull();
+
+    await fireEvent.press(view.getByTestId('my-quest-message-buy-lunch'));
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/chat/[id]', params: { id: 'quest-buy-lunch-group' } });
+
+    mockRouter.push.mockClear();
+    await fireEvent.press(view.getByTestId('my-quest-card-buy-lunch'));
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/quest/[id]', params: { id: 'buy-lunch', mode: 'join', joinStatus: 'accepted' } });
   });
 
   it('opens posted Quest Detail in owner mode from the Edit action', async () => {
