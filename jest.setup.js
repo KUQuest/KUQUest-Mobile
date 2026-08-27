@@ -129,6 +129,7 @@ jest.mock('lucide-react-native', () => {
     Search: Icon,
     SlidersHorizontal: Icon,
     Sparkles: Icon,
+    Settings: Icon,
     Tag: Icon,
     TriangleAlert: Icon,
     Trash2: Icon,

@@ -17,6 +17,7 @@ import { authService } from '../auth/AuthService';
 import { AuthError } from '../auth/types';
 import { colors } from '../../theme/colors';
 import { useNavigationVisibility } from '../../components/navigation/NavigationVisibilityContext';
+import { ProfileTopBar } from './components/ProfileTopBar';
 
 export default function Profile() {
   const router = useRouter();
@@ -73,14 +74,16 @@ export default function Profile() {
     reviews: messages.reviews,
   };
   const bottomPadding = (chromeMetrics.isTablet ? 0 : chromeMetrics.navHeight + insets.bottom) + spacing.lg;
+  const profileTopBarHeight = chromeMetrics.headerHeight + insets.top;
   const horizontalPadding = layoutMetrics.pagePadding;
   const portfolioSectionMargin = layoutMetrics.portfolioSectionGap - layoutMetrics.sectionGap;
   const openSettings = () => router.push('/settings');
+  const profileTopBar = <ProfileTopBar />;
   if (loadError) {
-    return <SafeAreaView edges={['left', 'right']} className={styles.safeArea}><View className={styles.errorState}><Text className={styles.statusText}>{messages.error}</Text><Pressable accessibilityRole="button" className={styles.retryButton} onPress={() => setLoadAttempt((attempt) => attempt + 1)}><Text className={styles.retryButtonText}>{messages.retry}</Text></Pressable></View></SafeAreaView>;
+    return <SafeAreaView edges={['left', 'right']} className={styles.safeArea}>{profileTopBar}<View style={{ flex: 1, paddingTop: profileTopBarHeight }}><View className={styles.errorState}><Text className={styles.statusText}>{messages.error}</Text><Pressable accessibilityRole="button" className={styles.retryButton} onPress={() => setLoadAttempt((attempt) => attempt + 1)}><Text className={styles.retryButtonText}>{messages.retry}</Text></Pressable></View></View></SafeAreaView>;
   }
   if (!content) {
-    return <SafeAreaView edges={['left', 'right']} className={styles.safeArea}><View className={styles.loadingState}><ActivityIndicator color={colors.primary} /><Text className={styles.statusText}>{messages.loading}</Text></View></SafeAreaView>;
+    return <SafeAreaView edges={['left', 'right']} className={styles.safeArea}>{profileTopBar}<View style={{ flex: 1, paddingTop: profileTopBarHeight }}><View className={styles.loadingState}><ActivityIndicator color={colors.primary} /><Text className={styles.statusText}>{messages.loading}</Text></View></View></SafeAreaView>;
   }
 
   const profileStats = <ProfileStats
@@ -94,14 +97,16 @@ export default function Profile() {
     retryLabel={messages.retry}
     onRetry={() => setLoadAttempt((attempt) => attempt + 1)}
   />;
-  const profileChrome = <View className={styles.profileChrome}>
+  const profileTabs = <ProfileTabs activeTab={activeTab} labels={tabLabels} accessibilityLabel={messages.sectionsLabel} onChange={handleTabChange} />;
+  const profileChrome = <View className={styles.profileChrome} style={{ paddingTop: profileTopBarHeight }}>
     <ProfileHeader data={content} accessibilityLabels={{ profileImageLabel: messages.profileImageLabel, questCategoriesLabel: messages.questCategoriesLabel }} />
     {profileStats}
-    <ProfileTabs activeTab={activeTab} labels={tabLabels} accessibilityLabel={messages.sectionsLabel} onChange={handleTabChange} />
+    {profileTabs}
   </View>;
 
   return (
     <SafeAreaView edges={['left', 'right']} className={styles.safeArea}>
+      {profileTopBar}
       {activeTab === 'reviews' ? (
         <Reviews
           reviews={content.reviews}
@@ -131,16 +136,15 @@ export default function Profile() {
         <ScrollView
           testID="profile-content-scroll"
           contentContainerClassName={cn(styles.content, width >= 600 && styles.tabletContent)}
-          contentContainerStyle={{ gap: layoutMetrics.sectionGap, paddingBottom: bottomPadding, paddingLeft: horizontalPadding, paddingRight: layoutMetrics.pagePadding, paddingTop: layoutMetrics.sectionGap }}
+          contentContainerStyle={{ gap: layoutMetrics.sectionGap, paddingBottom: bottomPadding, paddingLeft: horizontalPadding, paddingRight: layoutMetrics.pagePadding, paddingTop: profileTopBarHeight + layoutMetrics.sectionGap }}
           contentOffset={{ x: 0, y: initialScrollOffset }}
           onScroll={handleProfileScroll}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
-          stickyHeaderIndices={[2]}
         >
           <ProfileHeader data={content} accessibilityLabels={{ profileImageLabel: messages.profileImageLabel, questCategoriesLabel: messages.questCategoriesLabel }} />
           {profileStats}
-          <ProfileTabs activeTab={activeTab} labels={tabLabels} accessibilityLabel={messages.sectionsLabel} onChange={handleTabChange} />
+          {profileTabs}
           {activeTab === 'about' ? <AboutMe about={content.about} sectionTitle={messages.about} emptyText={messages.noDescription} emptyActionLabel={messages.manageInSettings} onEditPress={openSettings} /> : null}
           {activeTab === 'portfolio' ? <><Experience experiences={content.experiences} sectionTitle={messages.experience} emptyText={messages.noExperience} presentLabel={messages.present} locale={locale} sectionBottomMargin={portfolioSectionMargin} emptyActionLabel={messages.manageInSettings} onEditPress={openSettings} errorText={content.sectionErrors.experience ? messages.sectionUnavailable : undefined} retryLabel={messages.retry} onRetry={() => setLoadAttempt((attempt) => attempt + 1)} /><MyWork works={content.works} sectionTitle={messages.portfolioWork} emptyText={messages.noWorks} noImageText={messages.noImage} viewLabel={messages.viewWork} closeLabel={messages.closeWork} sectionBottomMargin={portfolioSectionMargin} emptyActionLabel={messages.manageInSettings} onEditPress={openSettings} accessibilityLabels={{ workImageLabel: messages.workImageLabel }} errorText={content.sectionErrors.works ? messages.sectionUnavailable : undefined} retryLabel={messages.retry} onRetry={() => setLoadAttempt((attempt) => attempt + 1)} /><Certificates certificates={content.certificates} sectionTitle={messages.certificates} emptyText={messages.noCertificates} previewUnavailableText={messages.previewUnavailable} previewLabel={messages.viewCertificate} closeLabel={messages.closePreview} unavailableText={messages.imageUnavailable} emptyActionLabel={messages.manageInSettings} onEditPress={openSettings} accessibilityLabels={{ certificatePreviewLabel: messages.certificatePreviewLabel, certificateImageLabel: messages.certificateImageLabel }} errorText={content.sectionErrors.certificates ? messages.sectionUnavailable : undefined} retryLabel={messages.retry} onRetry={() => setLoadAttempt((attempt) => attempt + 1)} /></> : null}
         </ScrollView>
