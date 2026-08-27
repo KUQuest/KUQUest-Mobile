@@ -37,7 +37,7 @@ describe('authenticated primary navigation', () => {
       myQuests: 'My Quests',
       create: 'Create',
       chat: 'Chat',
-      profile: 'Student Profile',
+      profile: 'Profile',
     });
     expect(navigationMessages.th).toMatchObject({
       board: 'กระดานเควสต์',
@@ -107,7 +107,7 @@ describe('authenticated primary navigation', () => {
     );
 
     expect(view.getByTestId('tab-profile').props.accessibilityState).toEqual({ selected: true });
-    expect(view.getByLabelText('Student Profile selected')).toBeTruthy();
+    expect(view.getByLabelText('Profile selected')).toBeTruthy();
     expect(view.getByTestId('tab-index').props.accessibilityState).toEqual({ selected: false });
   });
 });

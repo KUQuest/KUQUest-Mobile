@@ -6,6 +6,7 @@ import { AccessibilityInfo, Modal, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
+import { useNavigationVisibility } from '@/components/navigation/NavigationVisibilityContext';
 import { useLocale } from '@/locales/LocaleProvider';
 import { questBoardMessages, type QuestBoardMessages } from '@/locales/questBoardMessages';
 import { colors } from '@/theme/colors';
@@ -306,6 +307,7 @@ export default function QuestBoardScreen({ currentStudentId = DEFAULT_STUDENT_ID
   const { width, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
+  const { handleScroll } = useNavigationVisibility();
   const messages = questBoardMessages[locale];
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState<QuestBoardFilter>(emptyQuestBoardFilter);
@@ -443,6 +445,8 @@ export default function QuestBoardScreen({ currentStudentId = DEFAULT_STUDENT_ID
         ListHeaderComponent={listHeader}
         ItemSeparatorComponent={() => <View className={styles.cardSeparator} />}
         renderItem={renderQuest}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       />
       {filterOpen ? <QuestBoardFilterSheet availableTags={availableTags} filter={draftFilters} messages={messages} onApply={applyFilters} onChange={setDraftFilters} onClose={() => setFilterOpen(false)} /> : null}

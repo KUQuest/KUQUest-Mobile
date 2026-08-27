@@ -16,6 +16,7 @@ import { spacing } from '../../theme/spacing';
 import { authService } from '../auth/AuthService';
 import { AuthError } from '../auth/types';
 import { colors } from '../../theme/colors';
+import { useNavigationVisibility } from '../../components/navigation/NavigationVisibilityContext';
 
 export default function Profile() {
   const router = useRouter();
@@ -25,6 +26,7 @@ export default function Profile() {
   const layoutMetrics = getProfileLayoutMetrics(width);
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
   const messages = profileMessages[locale];
+  const { handleScroll: handleNavigationScroll } = useNavigationVisibility();
   const [viewData, setViewData] = useState<ProfileViewData | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>('about');
   const [loadError, setLoadError] = useState(false);
@@ -34,6 +36,7 @@ export default function Profile() {
 
   const handleProfileScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     profileScrollOffset.current = event.nativeEvent.contentOffset.y;
+    handleNavigationScroll(event);
   };
 
   const handleTabChange = (nextTab: ProfileTab) => {
@@ -74,10 +77,10 @@ export default function Profile() {
   const portfolioSectionMargin = layoutMetrics.portfolioSectionGap - layoutMetrics.sectionGap;
   const openSettings = () => router.push('/settings');
   if (loadError) {
-    return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}><View className={styles.errorState}><Text className={styles.statusText}>{messages.error}</Text><Pressable accessibilityRole="button" className={styles.retryButton} onPress={() => setLoadAttempt((attempt) => attempt + 1)}><Text className={styles.retryButtonText}>{messages.retry}</Text></Pressable></View></SafeAreaView>;
+    return <SafeAreaView edges={['left', 'right']} className={styles.safeArea}><View className={styles.errorState}><Text className={styles.statusText}>{messages.error}</Text><Pressable accessibilityRole="button" className={styles.retryButton} onPress={() => setLoadAttempt((attempt) => attempt + 1)}><Text className={styles.retryButtonText}>{messages.retry}</Text></Pressable></View></SafeAreaView>;
   }
   if (!content) {
-    return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}><View className={styles.loadingState}><ActivityIndicator color={colors.primary} /><Text className={styles.statusText}>{messages.loading}</Text></View></SafeAreaView>;
+    return <SafeAreaView edges={['left', 'right']} className={styles.safeArea}><View className={styles.loadingState}><ActivityIndicator color={colors.primary} /><Text className={styles.statusText}>{messages.loading}</Text></View></SafeAreaView>;
   }
 
   const profileStats = <ProfileStats
@@ -92,13 +95,13 @@ export default function Profile() {
     onRetry={() => setLoadAttempt((attempt) => attempt + 1)}
   />;
   const profileChrome = <View className={styles.profileChrome}>
-    <ProfileHeader data={content} settingsLabel={locale === 'th' ? 'การตั้งค่า' : 'Settings'} onSettingsPress={openSettings} accessibilityLabels={{ profileImageLabel: messages.profileImageLabel, questCategoriesLabel: messages.questCategoriesLabel }} />
+    <ProfileHeader data={content} accessibilityLabels={{ profileImageLabel: messages.profileImageLabel, questCategoriesLabel: messages.questCategoriesLabel }} />
     {profileStats}
     <ProfileTabs activeTab={activeTab} labels={tabLabels} accessibilityLabel={messages.sectionsLabel} onChange={handleTabChange} />
   </View>;
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
+    <SafeAreaView edges={['left', 'right']} className={styles.safeArea}>
       {activeTab === 'reviews' ? (
         <Reviews
           reviews={content.reviews}
@@ -135,7 +138,7 @@ export default function Profile() {
           showsVerticalScrollIndicator={false}
           stickyHeaderIndices={[2]}
         >
-          <ProfileHeader data={content} settingsLabel={locale === 'th' ? 'การตั้งค่า' : 'Settings'} onSettingsPress={openSettings} accessibilityLabels={{ profileImageLabel: messages.profileImageLabel, questCategoriesLabel: messages.questCategoriesLabel }} />
+          <ProfileHeader data={content} accessibilityLabels={{ profileImageLabel: messages.profileImageLabel, questCategoriesLabel: messages.questCategoriesLabel }} />
           {profileStats}
           <ProfileTabs activeTab={activeTab} labels={tabLabels} accessibilityLabel={messages.sectionsLabel} onChange={handleTabChange} />
           {activeTab === 'about' ? <AboutMe about={content.about} sectionTitle={messages.about} emptyText={messages.noDescription} emptyActionLabel={messages.manageInSettings} onEditPress={openSettings} /> : null}

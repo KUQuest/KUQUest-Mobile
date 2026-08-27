@@ -30,7 +30,7 @@ export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
     myQuests: 'My Quests',
     create: 'Create',
     chat: 'Chat',
-    profile: 'Student Profile',
+    profile: 'Profile',
     boardShort: 'Board',
     myQuestsShort: 'Quests',
     createShort: 'Create',

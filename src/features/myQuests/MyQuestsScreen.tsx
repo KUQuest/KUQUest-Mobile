@@ -25,6 +25,7 @@ import {
 } from 'lucide-react-native';
 
 import { cn } from '@/tw/cn';
+import { useNavigationVisibility } from '@/components/navigation/NavigationVisibilityContext';
 import { Pressable, SafeAreaView, ScrollView, Text, View } from '@/tw';
 import { useLocale, type SupportedLocale } from '@/locales/LocaleProvider';
 import { colors } from '@/theme/colors';
@@ -683,6 +684,7 @@ export default function MyQuestsScreen() {
   const { width, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
+  const { handleScroll } = useNavigationVisibility();
   const copy = content[locale];
   const [role, setRole] = useState<Role>('worker');
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
@@ -783,7 +785,7 @@ export default function MyQuestsScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPadding }}>
+      <ScrollView onScroll={handleScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPadding }}>
         <View className={styles.surface}>
           <View accessibilityLabel={`${role === 'worker' ? copy.worker.tabs[workerTab] : copy.hirer.tabs[hirerTab]} Quest list`} className={styles.list}>
             {items.length > 0 ? items.map((quest) => role === 'worker'

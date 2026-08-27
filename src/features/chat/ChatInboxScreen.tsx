@@ -4,6 +4,7 @@ import { MessageCircle, Search } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWindowDimensions } from 'react-native';
 
+import { useNavigationVisibility } from '@/components/navigation/NavigationVisibilityContext';
 import { ScrollView, Pressable, SafeAreaView, Text, TextInput, View } from '@/tw';
 import { useLocale } from '@/locales/LocaleProvider';
 import { chatMessages } from '@/locales/chatMessages';
@@ -59,6 +60,7 @@ export default function ChatInboxScreen() {
   const insets = useSafeAreaInsets();
   const messages = chatMessages[locale];
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
+  const { handleScroll } = useNavigationVisibility();
   const [query, setQuery] = useState('');
   const bottomPadding = (chromeMetrics.isTablet ? 0 : chromeMetrics.navHeight + insets.bottom) + spacing.lg;
   const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -73,7 +75,7 @@ export default function ChatInboxScreen() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPadding }}>
+      <ScrollView onScroll={handleScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPadding }}>
         <View className={styles.content}>
           <View className={styles.listContent}>
             <View className={styles.intro}>

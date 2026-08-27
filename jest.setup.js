@@ -16,7 +16,9 @@ jest.mock("react-native-worklets", () => ({
 
 jest.mock("react-native-reanimated", () => ({
   __esModule: true,
-  default: { View },
+  default: { View, createAnimatedComponent: (Component) => Component },
+  useAnimatedStyle: (updater) => updater(),
+  withTiming: (value) => value,
   Easing: { elastic: () => (t) => t },
   Keyframe: class Keyframe {
     constructor() {}

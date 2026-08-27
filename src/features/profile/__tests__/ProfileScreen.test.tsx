@@ -52,7 +52,7 @@ describe('Student Profile screen', () => {
 
     await waitFor(() => expect(view.getByTestId('profile-tab-about')).toBeTruthy());
     expect(view.queryByText('Student Profile')).toBeNull();
-    expect(view.getByTestId('open-settings')).toBeTruthy();
+    expect(view.queryByTestId('open-settings')).toBeNull();
     expect(view.getByText('Profile Rating')).toBeTruthy();
     expect(view.getByTestId('profile-stats')).toBeTruthy();
     expect(view.getByText('Most frequent Quest categories')).toBeTruthy();
