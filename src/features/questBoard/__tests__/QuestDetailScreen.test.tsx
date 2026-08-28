@@ -1,17 +1,18 @@
 import { act, fireEvent, render, waitFor, within } from '@testing-library/react-native';
 import mockReact, { type ReactNode } from 'react';
-import { Alert } from 'react-native';
+import { Alert, BackHandler } from 'react-native';
 
 import QuestDetailScreen from '../QuestDetailScreen';
 import { setActivePrototypePersona } from '../../../components/ui/prototypeMenuState';
 import { questFixtureAdapter } from '../questFixtureAdapter';
 
-const mockRouter = { back: jest.fn(), push: jest.fn() };
+const mockRouter = { back: jest.fn(), canGoBack: jest.fn(() => true), push: jest.fn(), replace: jest.fn() };
 const mockRouteParams: { id?: string; intent?: string; mode?: string; joinStatus?: string; studentId?: string } = {};
 
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
   useLocalSearchParams: () => mockRouteParams,
+  useFocusEffect: (effect: () => void | (() => void)) => mockReact.useEffect(effect, [effect]),
 }));
 
 jest.mock('react-native/Libraries/Modal/Modal', () => ({
@@ -24,12 +25,49 @@ describe('Quest Detail screen', () => {
   beforeEach(() => {
     questFixtureAdapter.reset();
     mockRouter.back.mockClear();
+    mockRouter.canGoBack.mockReset();
+    mockRouter.canGoBack.mockReturnValue(true);
     mockRouter.push.mockClear();
+    mockRouter.replace.mockClear();
     delete mockRouteParams.id;
     delete mockRouteParams.intent;
     delete mockRouteParams.mode;
     delete mockRouteParams.joinStatus;
     delete mockRouteParams.studentId;
+  });
+
+  it('falls back to the Quest Board when a cold deep link has no back stack', async () => {
+    mockRouter.canGoBack.mockReturnValue(false);
+    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="team-forming-demo" />);
+
+    await fireEvent.press(view.getByTestId('header-back-button'));
+
+    expect(mockRouter.replace).toHaveBeenCalledWith('/(tabs)');
+    expect(mockRouter.back).not.toHaveBeenCalled();
+  });
+
+  it('handles Android Back with the same stack-aware fallback', async () => {
+    mockRouter.canGoBack.mockReturnValue(false);
+    const addEventListener = jest.spyOn(BackHandler, 'addEventListener');
+    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="team-forming-demo" />);
+    const onBackPress = addEventListener.mock.calls.find(([eventName]) => eventName === 'hardwareBackPress')?.[1] as (() => boolean) | undefined;
+
+    expect(onBackPress).toBeDefined();
+    expect(onBackPress?.()).toBe(true);
+    expect(mockRouter.replace).toHaveBeenCalledWith('/(tabs)');
+    expect(mockRouter.back).not.toHaveBeenCalled();
+
+    view.unmount();
+    addEventListener.mockRestore();
+  });
+
+  it('uses the existing stack for normal in-app back navigation', async () => {
+    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="team-forming-demo" />);
+
+    await fireEvent.press(view.getByTestId('header-back-button'));
+
+    expect(mockRouter.back).toHaveBeenCalledTimes(1);
+    expect(mockRouter.replace).not.toHaveBeenCalled();
   });
 
   it('requires confirmation and shows an immediate Accepted outcome for first-come Quests', async () => {

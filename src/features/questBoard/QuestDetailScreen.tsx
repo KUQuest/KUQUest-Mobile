@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/tw/cn';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { BriefcaseBusiness, CalendarDays, Check, CircleAlert, CircleUserRound, ClipboardCheck, Clock3, ImageOff, LogOut, MapPin, MessageCircle, Pencil, UsersRound, X, type LucideIcon } from 'lucide-react-native';
-import { AccessibilityInfo, Alert, Modal } from 'react-native';
+import { AccessibilityInfo, Alert, BackHandler, Modal } from 'react-native';
 import { Image, Pressable, SafeAreaView, ScrollView, Text, View } from '@/tw';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -426,6 +426,23 @@ function ConfirmationSheet({ locale, messages, quest, onCancel, onConfirm }: { l
 export default function QuestDetailScreen({ now, previewState, questId, studentId, mode, joinStatus }: QuestDetailScreenProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const handleBack = React.useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/(tabs)');
+  }, [router]);
+  useFocusEffect(
+    React.useCallback(() => {
+      // Native Modal surfaces consume Android Back through onRequestClose before this focused-screen listener.
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        handleBack();
+        return true;
+      });
+      return () => subscription.remove();
+    }, [handleBack]),
+  );
   const params = useLocalSearchParams<{ id?: string | string[]; intent?: string | string[]; preview?: string | string[]; mode?: string | string[]; joinStatus?: string | string[]; studentId?: string | string[] }>();
   const { locale } = useLocale();
   const { activePersonaId, onPersonaChange, onReset } = usePrototypeMenuState();
@@ -529,8 +546,9 @@ export default function QuestDetailScreen({ now, previewState, questId, studentI
   const firstCome = quest?.candidateMode === 'NO_CANDIDATE';
   const candidateGroup = Boolean(quest && !firstCome && quest.participationMode === 'team');
   const canonicalOpen = !activePrototypeState || activePrototypeState.quest.status === QuestStatus.QUEST_OPEN;
+  const partialStartPending = activePrototypeState?.partialStartConsent?.status === QuestPartialStartConsentStatus.PARTIAL_START_PENDING;
   const applicationAction = firstCome ? 'DIRECT_JOIN' : 'APPLY';
-  const canApply = !isJoinView && !isPostView && availability === 'available' && canonicalOpen && previewApplicationStatus === 'none' && !candidateGroup && applicationStatusHydrated && Boolean(applicationState?.capabilities.availableActions.includes(applicationAction));
+  const canApply = !isJoinView && !isPostView && availability === 'available' && canonicalOpen && !partialStartPending && previewApplicationStatus === 'none' && !candidateGroup && applicationStatusHydrated && Boolean(applicationState?.capabilities.availableActions.includes(applicationAction));
   const [manualConfirmationOpen, setManualConfirmationOpen] = useState(false);
   const [leftQuest, setLeftQuest] = useState(false);
   const routeIntentKey = `${resolvedQuestId ?? ''}:${resolvedIntent ?? ''}`;
@@ -606,7 +624,9 @@ export default function QuestDetailScreen({ now, previewState, questId, studentI
       role: id === activePrototypeState.quest.hirerId ? 'HIRER' : 'WORKER',
     }));
   }, [activePrototypeState, quest?.creator.name]);
-  const partialStartSheetOpen = Boolean(activePrototypeState?.partialStartConsent) && !partialStartSheetDismissed;
+  const partialStartSheetOpen = Boolean(activePrototypeState?.partialStartConsent)
+    && activePrototypeState?.partialStartConsent?.status !== QuestPartialStartConsentStatus.PARTIAL_START_APPROVED
+    && !partialStartSheetDismissed;
 
   const confirmApplication = () => {
     if (!quest || !canApply) return;
@@ -773,7 +793,7 @@ export default function QuestDetailScreen({ now, previewState, questId, studentI
   if (questPending) {
     return (
       <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
-        <TopBar backLabel={messages.back} onBackPress={() => router.back()} rightAction={prototypeMenu} title={messages.details} variant="detail" />
+        <TopBar backLabel={messages.back} onBackPress={handleBack} rightAction={prototypeMenu} title={messages.details} variant="detail" />
         <QuestDetailSkeleton loadingLabel={messages.loading} />
       </SafeAreaView>
     );
@@ -782,15 +802,15 @@ export default function QuestDetailScreen({ now, previewState, questId, studentI
   if (!quest) {
     return (
       <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
-        <TopBar backLabel={messages.back} onBackPress={() => router.back()} rightAction={prototypeMenu} title={messages.details} variant="detail" />
-        <NotFoundState title={messages.questNotFound} description={messages.questNotFoundDescription} actionLabel={messages.back} onAction={() => router.back()} />
+        <TopBar backLabel={messages.back} onBackPress={handleBack} rightAction={prototypeMenu} title={messages.details} variant="detail" />
+        <NotFoundState title={messages.questNotFound} description={messages.questNotFoundDescription} actionLabel={messages.back} onAction={handleBack} />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
-      <TopBar backLabel={messages.back} onBackPress={() => router.back()} rightAction={prototypeMenu} title={messages.details} variant="detail" />
+      <TopBar backLabel={messages.back} onBackPress={handleBack} rightAction={prototypeMenu} title={messages.details} variant="detail" />
       <ScrollView contentContainerClassName={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View className={styles.header}><Text accessibilityRole="header" className={styles.title}>{quest.title}</Text>{activePrototypeState ? <Text accessibilityLabel={activePrototypeState.quest.status === QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT ? groupMessages.partialConsentTitle : messages.statusLabel(activePrototypeState.quest.status)} className={styles.canonicalStatus} testID="quest-canonical-status">{activePrototypeState.quest.status === QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT ? groupMessages.partialConsentTitle : messages.statusLabel(activePrototypeState.quest.status)}</Text> : null}<View className={styles.creatorRow}><View className={styles.creatorAvatar}><CircleUserRound color={colors.primary} size={17} strokeWidth={2} /></View><View className={styles.creatorCopy}><Text className={styles.creatorLabel}>{messages.creator}</Text><Text className={styles.creatorValue} numberOfLines={1}>{`${quest.creator.name}${quest.creator.faculty ? ` · ${quest.creator.faculty}` : ''}`}</Text></View></View><View accessibilityLabel={messages.tags} className={styles.tagRow}>{quest.tags.map((tag) => <Text key={tag} className={styles.tag}>{tag}</Text>)}</View></View>
         {imageUris.length > 0 ? <View accessibilityLabel={messages.imageCount(imageUris.length)} className={styles.imageGallery}><QuestImage featured index={1} messages={messages} uri={imageUris[0]} />{imageUris.length > 1 ? <View className={styles.imageThumbnailRow}>{imageUris.slice(1).map((uri, index) => <QuestImage key={`${uri}-${index + 1}`} index={index + 2} messages={messages} uri={uri} />)}</View> : null}</View> : null}

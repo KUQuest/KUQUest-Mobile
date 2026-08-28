@@ -14,8 +14,9 @@ jest.mock('../../auth/AuthService', () => ({
 }));
 
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ back: jest.fn(), push: jest.fn() }),
+  useRouter: () => ({ back: jest.fn(), canGoBack: jest.fn(() => true), push: jest.fn(), replace: jest.fn() }),
   useLocalSearchParams: () => ({}),
+  useFocusEffect: jest.fn(),
 }));
 
 jest.mock('../../../locales/LocaleProvider', () => ({
@@ -81,7 +82,7 @@ describe('QuestDetailScreen loading state', () => {
       const view = await render(<QuestDetailScreen questId={questId} />);
 
       expect(view.queryByTestId('quest-detail-loading-skeleton')).toBeNull();
-      expect(view.getByText(title)).toBeTruthy();
+      expect(view.getAllByText(title).length).toBeGreaterThan(0);
     }
 
     expect(mockGetSession).not.toHaveBeenCalled();

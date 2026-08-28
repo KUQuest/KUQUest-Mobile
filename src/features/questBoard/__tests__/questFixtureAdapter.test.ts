@@ -147,8 +147,40 @@ describe('Quest fixture adapter', () => {
     expect(stored?.assignments[0]?.startedAt).toBeUndefined();
   });
 
-  it('opens canonical partial-start consent with a frozen direct-group roster', () => {
+  it('enters the partial-start demo directly with a frozen pending roster and voter capabilities', () => {
     const created = createQuestFixtureAdapter({ now: fixedNow });
+    const demoWorker = created.getState('partial-group-start-demo', DEFAULT_PROTOTYPE_VIEWER_ID, fixedNow);
+    const demoWorkerB = created.getState('partial-group-start-demo', 'demo-worker-2', fixedNow);
+    const demoHirer = created.getState('partial-group-start-demo', 'demo-hirer', fixedNow);
+    const nonVoter = created.getState('partial-group-start-demo', 'demo-worker-3', fixedNow);
+
+    expect(demoWorker?.quest.status).toBe(QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT);
+    expect(demoWorker?.actualHeadcount).toBe(2);
+    expect(demoWorker?.assignments).toHaveLength(2);
+    expect(demoWorker?.partialStartConsent).toMatchObject({
+      status: QuestPartialStartConsentStatus.PARTIAL_START_PENDING,
+      requestedAt: '2026-08-12T09:00:00.000Z',
+      responseDeadlineAt: '2026-08-12T09:05:00.000Z',
+      frozenWorkerIds: [DEFAULT_PROTOTYPE_VIEWER_ID, 'demo-worker-2'],
+      requiredVoterIds: ['demo-hirer', DEFAULT_PROTOTYPE_VIEWER_ID, 'demo-worker-2'],
+    });
+    expect(getConsentRemainingMs(demoWorker?.partialStartConsent, fixedNow)).toBe(PARTIAL_GROUP_START_CONSENT_WINDOW_MS);
+    expect(demoWorker?.capabilities.availableActions).toContain('VOTE_PARTIAL_GROUP_START_CONSENT');
+    expect(demoWorker?.capabilities.availableActions).not.toContain('DIRECT_JOIN');
+    expect(demoWorker?.conversation).toMatchObject({ canRead: true, canWrite: true, readOnly: false });
+    expect(demoWorkerB?.capabilities.availableActions).toContain('VOTE_PARTIAL_GROUP_START_CONSENT');
+    expect(demoHirer?.capabilities.availableActions).toContain('VOTE_PARTIAL_GROUP_START_CONSENT');
+    expect(demoHirer?.capabilities.availableActions).not.toContain('DIRECT_JOIN');
+    expect(nonVoter?.capabilities.availableActions).not.toContain('VOTE_PARTIAL_GROUP_START_CONSENT');
+
+    const forbiddenVote = created.votePartialGroupStartConsent('partial-group-start-demo', 'demo-worker-3', false, fixedNow);
+    expect(forbiddenVote.ok).toBe(false);
+    if (!forbiddenVote.ok) expect(forbiddenVote.error.code).toBe('FORBIDDEN');
+
+    const demoLateJoin = created.joinDirect('partial-group-start-demo', 'demo-worker-3', fixedNow);
+    expect(demoLateJoin.ok).toBe(false);
+    if (!demoLateJoin.ok) expect(demoLateJoin.error.code).toBe('INVALID_STATUS');
+
     const joined = created.joinDirect('clean-fan', 'demo-worker-3', fixedNow);
     expect(joined.ok).toBe(true);
 
@@ -172,6 +204,49 @@ describe('Quest fixture adapter', () => {
       expect(lateJoin.state.quest.status).toBe(QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT);
       expect(lateJoin.state.assignments).toHaveLength(1);
       expect(lateJoin.state.partialStartConsent?.frozenWorkerIds).toEqual(['demo-worker-3']);
+    }
+  });
+
+  it('starts the seeded partial Group after the Hirer and both joined Workers approve', () => {
+    const created = createQuestFixtureAdapter({ now: fixedNow });
+
+    const firstWorkerVote = created.votePartialGroupStartConsent('partial-group-start-demo', DEFAULT_PROTOTYPE_VIEWER_ID, true, fixedNow);
+    expect(firstWorkerVote.ok).toBe(true);
+    if (!firstWorkerVote.ok) return;
+    expect(firstWorkerVote.state.quest.status).toBe(QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT);
+    expect(firstWorkerVote.state.partialStartConsent?.approvedVoterCount).toBe(1);
+    expect(firstWorkerVote.state.capabilities.availableActions).not.toContain('VOTE_PARTIAL_GROUP_START_CONSENT');
+    expect(created.getState('partial-group-start-demo', 'demo-worker-2', fixedNow)?.capabilities.availableActions).toContain('VOTE_PARTIAL_GROUP_START_CONSENT');
+
+    const hirerVote = created.votePartialGroupStartConsent('partial-group-start-demo', 'demo-hirer', true, fixedNow);
+    expect(hirerVote.ok).toBe(true);
+    if (!hirerVote.ok) return;
+    expect(hirerVote.state.quest.status).toBe(QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT);
+    expect(hirerVote.state.partialStartConsent?.approvedVoterCount).toBe(2);
+
+    const finalWorkerVote = created.votePartialGroupStartConsent('partial-group-start-demo', 'demo-worker-2', true, fixedNow);
+    expect(finalWorkerVote.ok).toBe(true);
+    if (finalWorkerVote.ok) {
+      expect(finalWorkerVote.state.quest.status).toBe(QuestStatus.QUEST_IN_PROGRESS);
+      expect(finalWorkerVote.state.partialStartConsent?.status).toBe(QuestPartialStartConsentStatus.PARTIAL_START_APPROVED);
+      expect(finalWorkerVote.state.partialStartConsent?.approvedVoterCount).toBe(3);
+      expect(finalWorkerVote.state.actualHeadcount).toBe(2);
+      expect(finalWorkerVote.state.assignments).toHaveLength(2);
+      expect(finalWorkerVote.state.assignments.every((item) => item.startedAt === finalWorkerVote.state.quest.startAt)).toBe(true);
+      expect(finalWorkerVote.state.settlement).toMatchObject({
+        requestedHeadcount: 3,
+        actualHeadcount: 2,
+        rewardSatangPerWorker: 18000,
+        reservedRewardSatang: 54000,
+        settledRewardSatang: 36000,
+        refundSatang: 18000,
+        fullRefund: false,
+      });
+      expect(finalWorkerVote.state.capabilities.availableActions).toContain('CONFIRM_COMPLETION');
+      expect(finalWorkerVote.state.capabilities.availableActions).not.toContain('VOTE_PARTIAL_GROUP_START_CONSENT');
+      expect(finalWorkerVote.state.conversation).toMatchObject({ canRead: true, canWrite: true, readOnly: false });
+      expect(created.getState('partial-group-start-demo', 'demo-hirer', fixedNow)?.quest.status).toBe(QuestStatus.QUEST_IN_PROGRESS);
+      expect(created.getConversationCapability('partial-group-start-demo', 'demo-worker-2', fixedNow)).toMatchObject({ canRead: true, canWrite: true, readOnly: false });
     }
   });
 

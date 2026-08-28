@@ -81,11 +81,11 @@ describe('adapter-owned fixture chat data', () => {
     expect(disputed?.status).toBe(QuestStatus.QUEST_DISPUTED);
     expect(disputed?.capability).toMatchObject({ canRead: true, canWrite: true, readOnly: false });
 
-    const pending = created.getConversation('conversation-fixture-partial-group-start-demo', 'partial-worker-a', fixedNow);
+    const pending = created.getConversation('conversation-fixture-partial-group-start-demo', 'student-demo', fixedNow);
     expect(pending).toBeTruthy();
-    const pendingAtStart = created.getConversation('conversation-fixture-partial-group-start-demo', 'partial-worker-a', new Date('2026-08-26T10:00:00.000Z'));
-    expect(pendingAtStart?.capability).toMatchObject({ canRead: true, canWrite: true, readOnly: false });
-    const afterDeadline = created.getConversation('conversation-fixture-partial-group-start-demo', 'partial-worker-a', new Date('2026-08-26T10:05:00.000Z'));
+    const pendingAtEntry = created.getConversation('conversation-fixture-partial-group-start-demo', 'student-demo', new Date('2026-08-12T09:00:00.000Z'));
+    expect(pendingAtEntry?.capability).toMatchObject({ canRead: true, canWrite: true, readOnly: false });
+    const afterDeadline = created.getConversation('conversation-fixture-partial-group-start-demo', 'student-demo', new Date('2026-08-12T09:05:00.000Z'));
     expect(afterDeadline?.capability).toMatchObject({ canRead: true, canWrite: false, readOnly: true, readOnlyReason: 'TERMINAL' });
   });
 

@@ -733,11 +733,12 @@ function addScenarioStates(seeds: FixtureSeed[], byId: Map<string, FixtureSeed>)
   const partial = byId.get('partial-group-start-demo');
   if (partial) {
     partial.state.assignments.push(
-      assignment(partial.state.quest, 'partial-worker-a', 'DIRECT_JOIN'),
-      assignment(partial.state.quest, 'partial-worker-b', 'DIRECT_JOIN', QuestAssignmentStatus.ASSIGNMENT_ACTIVE, 'partial-worker-b'),
+      assignment(partial.state.quest, DEFAULT_PROTOTYPE_VIEWER_ID, 'DIRECT_JOIN'),
+      assignment(partial.state.quest, 'demo-worker-2', 'DIRECT_JOIN', QuestAssignmentStatus.ASSIGNMENT_ACTIVE, 'demo-worker-2'),
     );
-    ensureConversation(partial.state, [partial.state.quest.hirerId, 'partial-worker-a', 'partial-worker-b']);
-    partial.state.actualHeadcount = 2;
+    ensureConversation(partial.state, [partial.state.quest.hirerId, DEFAULT_PROTOTYPE_VIEWER_ID, 'demo-worker-2']);
+    // The hidden demo enters at the fixture clock so its five-minute window is immediately visible.
+    openPartialStartConsent(partial.state, PROTOTYPE_NOW);
   }
 
   // Keep the generated scenario records in the same seed list as ordinary fixtures.
@@ -1001,7 +1002,7 @@ function normalizeInvitationStatuses(state: QuestDetailState, now: Date): void {
   });
 }
 
-function openPartialStartConsent(state: QuestDetailState): void {
+function openPartialStartConsent(state: QuestDetailState, requestedAt = state.quest.startAt): void {
   const frozenWorkerIds = unique(state.assignments
     .filter((item) => item.status !== QuestAssignmentStatus.ASSIGNMENT_CANCELLED)
     .map((item) => item.workerId));
@@ -1010,7 +1011,6 @@ function openPartialStartConsent(state: QuestDetailState): void {
     else transitionToInProgress(state);
     return;
   }
-  const requestedAt = state.quest.startAt;
   state.actualHeadcount = frozenWorkerIds.length;
   state.quest.status = QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT;
   state.partialStartConsent = {
@@ -2124,10 +2124,7 @@ export function createQuestFixtureAdapter(options: QuestFixtureAdapterOptions = 
         cancelPartialStart(next, QuestPartialStartConsentStatus.PARTIAL_START_REJECTED);
       } else if (next.partialStartConsent.approvedVoterCount >= next.partialStartConsent.requiredVoterIds.length) {
         next.partialStartConsent.status = QuestPartialStartConsentStatus.PARTIAL_START_APPROVED;
-        setActualHeadcount(next, next.partialStartConsent.frozenWorkerIds.length);
-        next.settlement = settlementFor(next, next.actualHeadcount ?? 0);
-        next.quest.status = QuestStatus.QUEST_IN_PROGRESS;
-        activeAssignments(next).forEach((item) => { item.startedAt = item.startedAt ?? next.quest.startAt; });
+        transitionToInProgress(next);
       }
       commit(next);
       return success(next, voterId, currentTime);

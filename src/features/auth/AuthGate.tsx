@@ -8,6 +8,8 @@ import { RoutingDestination } from './types';
 import { authMessages } from '../../locales/authMessages';
 import { useLocale } from '../../locales/LocaleProvider';
 import { enableOfflinePrototypeDemo, isPrototypeDemoEnabled } from './demoMode';
+import { getInitialPrototypeDeepLink, subscribeToPrototypeDeepLinks } from './demoDeepLink';
+import type { PrototypeScenarioRoute } from '@/components/ui/prototypeMenuData';
 
 type DemoLaunchTarget = 'login' | 'register' | 'home';
 
@@ -34,20 +36,24 @@ export default function Index() {
   const [attempt, setAttempt] = useState(0);
   const [demoLaunchTarget, setDemoLaunchTarget] = useState<DemoLaunchTarget | null>(null);
   const [demoLaunchAvailable, setDemoLaunchAvailable] = useState(() => isPrototypeDemoEnabled());
+  const [initialDemoRoute, setInitialDemoRoute] = useState<PrototypeScenarioRoute | undefined>();
+  const [initialDemoRouteResolved, setInitialDemoRouteResolved] = useState(() => !__DEV__);
   const router = useRouter();
   const { locale } = useLocale();
   const messages = authMessages[locale];
 
   const chooseDemoLaunchTarget = React.useCallback((target: DemoLaunchTarget) => {
+    const requestedRoute = initialDemoRoute;
+    setInitialDemoRoute(undefined);
     setDemoLaunchTarget(target);
     if (target === 'login') {
       setStatus('unauthenticated');
     } else if (target === 'register') {
       router.replace({ pathname: '/onboarding', params: { step: '1' } });
     } else {
-      router.replace('/(tabs)');
+      router.replace(requestedRoute ?? '/(tabs)');
     }
-  }, [router]);
+  }, [initialDemoRoute, router]);
 
   const handleNavigate = React.useCallback((dest: RoutingDestination) => {
     if (dest.type === 'HOME') {
@@ -58,7 +64,28 @@ export default function Index() {
   }, [router]);
 
   useEffect(() => {
+    if (!__DEV__) return undefined;
     let mounted = true;
+    const unsubscribe = subscribeToPrototypeDeepLinks((route) => {
+      if (!mounted) return;
+      setInitialDemoRoute(route);
+    });
+    void getInitialPrototypeDeepLink().then((route) => {
+      if (!mounted) return;
+      if (route) setInitialDemoRoute(route);
+      setInitialDemoRouteResolved(true);
+    });
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    if (__DEV__ && !initialDemoRouteResolved) {
+      return () => { mounted = false; };
+    }
     if (demoLaunchAvailable || isPrototypeDemoEnabled()) {
       return () => { mounted = false; };
     }
@@ -81,6 +108,10 @@ export default function Index() {
       }
 
       if (session && mounted) {
+        if (initialDemoRoute) {
+          router.replace(initialDemoRoute);
+          return;
+        }
         try {
           handleNavigate(await authService.getRoutingDestination());
         } catch {
@@ -92,9 +123,13 @@ export default function Index() {
     }
     void checkSession();
     return () => { mounted = false; };
-  }, [attempt, demoLaunchAvailable, handleNavigate]);
+  }, [attempt, demoLaunchAvailable, handleNavigate, initialDemoRoute, initialDemoRouteResolved, router]);
 
-  if ((demoLaunchAvailable || isPrototypeDemoEnabled()) && demoLaunchTarget === null) {
+  const demoLaunchOverlayVisible = (demoLaunchAvailable || isPrototypeDemoEnabled()) && demoLaunchTarget === null;
+  if (demoLaunchOverlayVisible && !initialDemoRouteResolved) {
+    return <View className="flex-1 justify-center items-center bg-ku-background"><ActivityIndicator size="large" color={colors.primary} /></View>;
+  }
+  if (demoLaunchOverlayVisible) {
     return <DemoLaunchOverlay onSelect={chooseDemoLaunchTarget} />;
   }
 

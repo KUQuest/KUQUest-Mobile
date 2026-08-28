@@ -1,14 +1,16 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import mockReact, { type ReactNode } from 'react';
 
+import { setActivePrototypePersona } from '../../../components/ui/prototypeMenuState';
 import QuestDetailScreen from '../QuestDetailScreen';
 import { questFixtureAdapter } from '../questFixtureAdapter';
 
-const mockRouter = { back: jest.fn(), push: jest.fn() };
+const mockRouter = { back: jest.fn(), canGoBack: jest.fn(() => true), push: jest.fn(), replace: jest.fn() };
 
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
   useLocalSearchParams: () => ({}),
+  useFocusEffect: (effect: () => void | (() => void)) => mockReact.useEffect(effect, [effect]),
 }));
 
 jest.mock('react-native/Libraries/Modal/Modal', () => ({
@@ -19,9 +21,13 @@ jest.mock('react-native/Libraries/Modal/Modal', () => ({
 
 describe('Quest prototype detail panels', () => {
   beforeEach(() => {
+    setActivePrototypePersona('student-demo');
     questFixtureAdapter.reset();
     mockRouter.back.mockClear();
+    mockRouter.canGoBack.mockReset();
+    mockRouter.canGoBack.mockReturnValue(true);
     mockRouter.push.mockClear();
+    mockRouter.replace.mockClear();
   });
 
   it('renders the server edit-consent countdown and applies a Worker vote', async () => {
@@ -82,29 +88,69 @@ describe('Quest prototype detail panels', () => {
     expect(view.getAllByText('Rejected').length).toBeGreaterThan(0);
   });
 
-  it('opens partial Group start consent at the start boundary and records the current Worker vote', async () => {
-    const now = new Date('2026-08-26T10:00:00.000Z');
-    const view = await render(<QuestDetailScreen now={now} questId="partial-group-start-demo" studentId="partial-worker-a" />);
+  it('opens the partial Group start consent demo for the default Worker persona without a Join CTA', async () => {
+    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="partial-group-start-demo" />);
 
+    expect(view.getByTestId('quest-canonical-status')).toBeTruthy();
     expect(view.getByTestId('partial-group-start-consent-sheet')).toBeTruthy();
+    expect(view.getByTestId('partial-group-start-countdown')).toBeTruthy();
+    expect(view.getByText('05:00')).toBeTruthy();
+    expect(view.getByTestId('partial-group-start-approve')).toBeTruthy();
+    expect(view.getByTestId('partial-group-start-reject')).toBeTruthy();
+    expect(view.queryByTestId('quest-apply-button')).toBeNull();
+    expect(view.queryByText('Join Quest')).toBeNull();
     expect(view.getByText('The existing Quest chat stays writable while this vote is pending.')).toBeTruthy();
     await fireEvent.press(view.getByTestId('partial-group-start-approve'));
     await waitFor(() => expect(view.getAllByText('1 of 3 approved').length).toBeGreaterThan(0));
   });
 
+  it('closes the consent sheet and shows In progress after every required voter approves', async () => {
+    const now = new Date('2026-08-12T09:00:00.000Z');
+    const view = await render(<QuestDetailScreen now={now} questId="partial-group-start-demo" />);
+
+    await fireEvent.press(view.getByTestId('partial-group-start-approve'));
+    await fireEvent.press(view.getByTestId('quest-detail-prototype-menu-trigger'));
+    await fireEvent.press(view.getByTestId('quest-detail-prototype-menu-persona-demo-hirer'));
+    await waitFor(() => expect(view.getByTestId('partial-group-start-approve')).toBeTruthy());
+    await fireEvent.press(view.getByTestId('partial-group-start-approve'));
+    await fireEvent.press(view.getByTestId('quest-detail-prototype-menu-trigger'));
+    await fireEvent.press(view.getByTestId('quest-detail-prototype-menu-persona-demo-worker-2'));
+    await waitFor(() => expect(view.getByTestId('partial-group-start-approve')).toBeTruthy());
+    await fireEvent.press(view.getByTestId('partial-group-start-approve'));
+
+    await waitFor(() => {
+      expect(view.getByTestId('quest-canonical-status')).toHaveTextContent('In progress');
+      expect(view.queryByTestId('partial-group-start-consent-sheet')).toBeNull();
+      expect(view.queryByTestId('partial-group-start-countdown')).toBeNull();
+    });
+    expect(questFixtureAdapter.getState('partial-group-start-demo', 'demo-worker-2', now)?.quest.status).toBe('QUEST_IN_PROGRESS');
+  });
+
+  it('shows both consent actions to the Hirer and cancels on rejection', async () => {
+    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="partial-group-start-demo" studentId="demo-hirer" />);
+
+    expect(view.getByTestId('partial-group-start-approve')).toBeTruthy();
+    expect(view.getByTestId('partial-group-start-reject')).toBeTruthy();
+    await fireEvent.press(view.getByTestId('partial-group-start-reject'));
+    await waitFor(() => expect(view.getByTestId('partial-group-start-cancelled')).toBeTruthy());
+    expect(view.getAllByText(/Reserved rewards are fully refunded/).length).toBeGreaterThan(0);
+    expect(view.queryByTestId('partial-group-start-approve')).toBeNull();
+    expect(view.queryByTestId('partial-group-start-reject')).toBeNull();
+  });
+
   it('projects a timed-out partial start when the detail clock advances', async () => {
-    const start = new Date('2026-08-26T10:00:00.000Z');
-    const view = await render(<QuestDetailScreen now={start} questId="partial-group-start-demo" studentId="partial-worker-a" />);
+    const start = new Date('2026-08-12T09:00:00.000Z');
+    const view = await render(<QuestDetailScreen now={start} questId="partial-group-start-demo" studentId="student-demo" />);
 
     await act(async () => {
-      view.rerender(<QuestDetailScreen now={new Date('2026-08-26T10:05:00.000Z')} questId="partial-group-start-demo" studentId="partial-worker-a" />);
+      view.rerender(<QuestDetailScreen now={new Date('2026-08-12T09:05:00.000Z')} questId="partial-group-start-demo" studentId="student-demo" />);
     });
     await waitFor(() => expect(view.getByTestId('partial-group-start-cancelled')).toBeTruthy());
     expect(view.getAllByText(/five-minute consent window ended/).length).toBeGreaterThan(0);
   });
 
   it('keeps the consent sheet open with a read-only terminal status after rejection', async () => {
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-26T10:00:00.000Z')} questId="partial-group-start-demo" studentId="partial-worker-a" />);
+    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="partial-group-start-demo" studentId="student-demo" />);
 
     await fireEvent.press(view.getByTestId('partial-group-start-reject'));
     await waitFor(() => expect(view.getByTestId('partial-group-start-cancelled')).toBeTruthy());
