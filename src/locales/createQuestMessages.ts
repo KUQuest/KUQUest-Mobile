@@ -130,6 +130,14 @@ export interface CreateQuestMessages {
   savePreview: string;
   savingPreview: string;
   viewQuestBoard: string;
+  publishCheckTitle: string;
+  publishCheckReady: string;
+  publishCheckBlocked: string;
+  publishCheckWarning: string;
+  rewardPool: string;
+  platformFee: string;
+  escrowTotal: string;
+  escrowDescription: string;
   imageError: string;
   titleError: string;
   questTagError: string;
@@ -273,8 +281,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     loadingDraft: 'Restoring your draft…',
     savedDraftTitle: 'Quest draft saved locally',
     savedDraftDescription: 'Your draft is stored securely on this device and is not visible on the Quest Board yet.',
-    publishedQuestTitle: 'Quest preview saved locally',
-    publishedQuestDescription: 'This development preview is stored on this device only. It has not been funded, sent to the API, or published to the Quest Board.',
+    publishedQuestTitle: 'Quest published',
+    publishedQuestDescription: 'Your Quest is now available in the demo Quest state and will appear in My Quests for the Hirer.',
     createAnotherDraft: 'Create another draft',
     notSelected: 'Not selected',
     onlineOrAgreed: 'Online or to be agreed',
@@ -293,6 +301,14 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     savePreview: 'Save Quest preview',
     savingPreview: 'Saving preview…',
     viewQuestBoard: 'Back to Quest Board',
+    publishCheckTitle: 'Publish check & Escrow',
+    publishCheckReady: 'Ready to publish',
+    publishCheckBlocked: 'Resolve the publish blockers before publishing.',
+    publishCheckWarning: 'Images are optional; this warning does not block publishing.',
+    rewardPool: 'Reward pool',
+    platformFee: 'Platform Fee',
+    escrowTotal: 'Total Escrow required',
+    escrowDescription: 'The server reserves the reward pool plus the per-Worker Platform Fee.',
     imageError: 'We could not add images. Check photo permissions and try again.',
     titleError: 'Add a short title so people know what they will do.',
     questTagError: 'Choose the Quest Tag that best matches this Quest.',
@@ -425,8 +441,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     loadingDraft: 'กำลังกู้คืนฉบับร่าง…',
     savedDraftTitle: 'บันทึกฉบับร่างเควสต์แล้ว',
     savedDraftDescription: 'ฉบับร่างถูกเก็บไว้อย่างปลอดภัยในอุปกรณ์นี้ และยังไม่แสดงบนกระดานเควสต์',
-    publishedQuestTitle: 'บันทึกตัวอย่างเควสต์ในเครื่องแล้ว',
-    publishedQuestDescription: 'ตัวอย่างสำหรับ development นี้เก็บไว้ในอุปกรณ์เท่านั้น ยังไม่ได้เติมเงิน ส่งไปยัง API หรือเผยแพร่บนกระดานเควสต์',
+    publishedQuestTitle: 'เผยแพร่เควสต์แล้ว',
+    publishedQuestDescription: 'เควสต์ของคุณอยู่ในสถานะตัวอย่างที่เผยแพร่แล้ว และจะแสดงใน My Quests ของผู้ว่าจ้าง',
     createAnotherDraft: 'สร้างฉบับร่างใหม่',
     notSelected: 'ยังไม่ได้เลือก',
     onlineOrAgreed: 'ออนไลน์หรือรอตกลงกัน',
@@ -445,6 +461,14 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     savePreview: 'บันทึกตัวอย่างเควสต์',
     savingPreview: 'กำลังบันทึกตัวอย่าง…',
     viewQuestBoard: 'กลับไปกระดานเควสต์',
+    publishCheckTitle: 'ตรวจสอบการเผยแพร่และ Escrow',
+    publishCheckReady: 'พร้อมเผยแพร่',
+    publishCheckBlocked: 'แก้ไขข้อขัดข้องก่อนเผยแพร่เควสต์',
+    publishCheckWarning: 'รูปภาพเป็นข้อมูลเสริม คำเตือนนี้ไม่ขัดขวางการเผยแพร่',
+    rewardPool: 'รวมค่าตอบแทน',
+    platformFee: 'ค่าธรรมเนียมแพลตฟอร์ม',
+    escrowTotal: 'Escrow ที่ต้องสำรองทั้งหมด',
+    escrowDescription: 'ระบบจะสำรองค่าตอบแทนรวมกับค่าธรรมเนียมต่อผู้เข้าร่วมตามผลจากเซิร์ฟเวอร์',
     imageError: 'ไม่สามารถเพิ่มรูปภาพได้ ตรวจสอบสิทธิ์การเข้าถึงรูปภาพแล้วลองอีกครั้ง',
     titleError: 'เพิ่มชื่อสั้น ๆ เพื่อให้ผู้สนใจเข้าใจว่าจะต้องทำอะไร',
     questTagError: 'เลือกแท็กเควสต์ที่ตรงกับเควสต์นี้ที่สุด',

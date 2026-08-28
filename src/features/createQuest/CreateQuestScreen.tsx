@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, ActivityIndicator, Alert, findNodeHandle, Modal, Platform, Pressable as RNPressable, TextInput as RNTextInput, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, Alert, findNodeHandle, Modal, Platform, Pressable as RNPressable, TextInput as RNTextInput, useWindowDimensions } from 'react-native';
 import { cn } from '@/tw/cn';
 import { Image, KeyboardAvoidingView, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from '@/tw';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
 import { Button } from '@/components/ui/Button';
+import { LoadingSkeleton, SkeletonBlock } from '@/components/ui/LoadingSkeleton';
 import { Input } from '@/features/onboarding/components/Input';
 import { Select } from '@/features/onboarding/components/Select';
 import { TextArea } from '@/features/onboarding/components/TextArea';
@@ -19,9 +20,10 @@ import { colors } from '@/theme/colors';
 import { getCreateQuestLayoutMetrics } from '@/theme/layout';
 import { spacing } from '@/theme/spacing';
 import styles from './createQuestStyles';
-import { getHeadcountForParticipation, getRewardValidationError, getSchedulePickerValue, getScheduleTimeValue, initialDraft, isQuestDraftDirty, type QuestDraft } from './createQuestModel';
+import { formatDraftReward, getHeadcountForParticipation, getQuestPublishCheck, getRewardValidationError, getSchedulePickerValue, getScheduleTimeValue, initialDraft, isQuestDraftDirty, mockQuestDraft, toQuestDraftPayload, type QuestDraft } from './createQuestModel';
 import { deleteQuestDraft, getQuestDraftStorageKey, loadQuestDraft, persistQuestDraft } from './createQuestPersistence';
-import { MAX_QUEST_IMAGES } from '../questBoard/types';
+import { questFixtureAdapter } from '../questBoard/questFixtureAdapter';
+import { MAX_QUEST_IMAGES, formatSatang, type QuestPublishCheck } from '../questBoard/types';
 
 type Step = 1 | 2 | 3;
 type ScheduleField = 'start' | 'end';
@@ -216,6 +218,44 @@ function CreateQuestHeader({
   );
 }
 
+function CreateQuestSkeleton({ step, loadingLabel, horizontalPadding, contentMaxWidth, stackedActions }: { step: Step; loadingLabel: string; horizontalPadding: number; contentMaxWidth: number | '100%'; stackedActions: boolean }) {
+  const field = (key: string, height = 48) => <View key={key} style={{ gap: 4 }}><SkeletonBlock height={14} width="42%" borderRadius={4} /><SkeletonBlock height={height} borderRadius={10} /></View>;
+  const body = step === 1 ? <View className={styles.sectionCard} style={{ gap: spacing.md }}>
+    <View style={{ alignItems: 'center', flexDirection: 'row', gap: spacing.sm }}><SkeletonBlock height={36} width={36} borderRadius={10} /><View style={{ flex: 1, gap: spacing.xs }}><SkeletonBlock height={22} width="48%" borderRadius={5} /><SkeletonBlock height={15} width="72%" borderRadius={4} /></View></View>
+    {['title', 'tag'].map((key) => field(key))}
+    {field('description', 112)}
+    {field('conditions', 112)}
+    <SkeletonBlock height={48} borderRadius={12} />
+  </View> : step === 2 ? <>
+    <View className={styles.sectionCard} style={{ gap: spacing.md }}>
+      <View style={{ alignItems: 'center', flexDirection: 'row', gap: spacing.sm }}><SkeletonBlock height={36} width={36} borderRadius={10} /><View style={{ flex: 1, gap: spacing.xs }}><SkeletonBlock height={22} width="58%" borderRadius={5} /><SkeletonBlock height={15} width="82%" borderRadius={4} /></View></View>
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}><SkeletonBlock height={104} borderRadius={14} style={{ flex: 1 }} /><SkeletonBlock height={104} borderRadius={14} style={{ flex: 1 }} /></View>
+      <SkeletonBlock height={1} borderRadius={0} style={{ marginVertical: spacing.sm }} />
+      <View style={{ alignItems: 'center', flexDirection: 'row', gap: spacing.sm }}><SkeletonBlock height={36} width={36} borderRadius={10} /><View style={{ flex: 1, gap: spacing.xs }}><SkeletonBlock height={22} width="64%" borderRadius={5} /><SkeletonBlock height={15} width="76%" borderRadius={4} /></View></View>
+      <SkeletonBlock height={88} borderRadius={14} />
+      <SkeletonBlock height={68} borderRadius={14} />
+      {field('headcount')}
+      {field('reward')}
+    </View>
+    <View className={styles.sectionCard} style={{ gap: spacing.md }}><View style={{ alignItems: 'center', flexDirection: 'row', gap: spacing.sm }}><SkeletonBlock height={36} width={36} borderRadius={10} /><View style={{ flex: 1, gap: spacing.xs }}><SkeletonBlock height={22} width="42%" borderRadius={5} /><SkeletonBlock height={15} width="72%" borderRadius={4} /></View><SkeletonBlock height={22} width={22} borderRadius={11} /></View><SkeletonBlock height={48} borderRadius={12} /><SkeletonBlock height={48} borderRadius={12} /><SkeletonBlock height={64} borderRadius={12} /><SkeletonBlock variant="image" height={128} borderRadius={12} /></View>
+  </> : <>
+    <View className={styles.setupCard} style={{ gap: spacing.md }}><SkeletonBlock height={22} width="46%" borderRadius={5} /><View style={{ flexDirection: 'row', gap: spacing.sm }}><SkeletonBlock height={58} borderRadius={8} style={{ flex: 1 }} /><SkeletonBlock height={58} borderRadius={8} style={{ flex: 1 }} /><SkeletonBlock height={58} borderRadius={8} style={{ flex: 1 }} /></View><SkeletonBlock height={16} width="84%" borderRadius={4} /></View>
+    <View className={styles.sectionCard} style={{ gap: spacing.md }}><View style={{ alignItems: 'center', flexDirection: 'row', gap: spacing.sm }}><SkeletonBlock height={36} width={36} borderRadius={10} /><View style={{ flex: 1, gap: spacing.xs }}><SkeletonBlock height={22} width="36%" borderRadius={5} /><SkeletonBlock height={15} width="74%" borderRadius={4} /></View></View><View style={{ gap: spacing.sm }}>{[1, 2, 3, 4, 5, 6].map((item) => <View key={item} style={{ flexDirection: 'row', gap: spacing.sm }}><SkeletonBlock height={15} width="28%" borderRadius={4} /><SkeletonBlock height={15} width="56%" borderRadius={4} /></View>)}</View><SkeletonBlock height={142} borderRadius={14} /></View>
+  </>;
+
+  return <LoadingSkeleton loadingLabel={loadingLabel} style={{ flex: 1 }} contentStyle={{ flex: 1 }} testID="create-quest-loading-skeleton">
+    <View style={{ flex: 1 }}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: spacing.xl, paddingHorizontal: horizontalPadding, paddingTop: spacing.lg }} showsVerticalScrollIndicator={false}>
+        <View style={{ alignSelf: 'center', gap: spacing.sm, width: contentMaxWidth }}>{body}</View>
+      </ScrollView>
+      <View className={cn(styles.loadingActionBar, stackedActions && styles.actionBarStacked)} style={{ flexDirection: stackedActions ? 'column' : 'row' }}>
+        <SkeletonBlock height={56} borderRadius={14} style={{ flex: 1, width: stackedActions ? '100%' : undefined }} testID="create-quest-loading-action" />
+        {step === 3 ? <SkeletonBlock height={56} borderRadius={14} style={{ flex: 1, width: stackedActions ? '100%' : undefined }} /> : null}
+      </View>
+    </View>
+  </LoadingSkeleton>;
+}
+
 function SetupMetric({ icon: Icon, label, value, testID, wide }: { icon: LucideIcon; label: string; value: string; testID: string; wide: boolean }) {
   return (
     <View accessible accessibilityLabel={`${label}: ${value}`} className={cn(styles.setupMetric, wide && styles.setupMetricWide)} testID={testID}>
@@ -388,13 +428,18 @@ function LogisticsSection({
   );
 }
 
-export default function CreateQuestScreen() {
+export interface CreateQuestScreenProps {
+  editQuestId?: string;
+}
+
+export default function CreateQuestScreen({ editQuestId }: CreateQuestScreenProps = {}) {
   const router = useRouter();
   const { locale } = useLocale();
   const messages = createQuestMessages[locale];
   const { width, fontScale } = useWindowDimensions();
   const layout = getCreateQuestLayoutMetrics(width);
   const insets = useSafeAreaInsets();
+  const draftChangedRef = useRef(false);
   const skipPersistRef = useRef(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveRequestRef = useRef(0);
@@ -408,15 +453,14 @@ export default function CreateQuestScreen() {
   const locationRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
   const headcountRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
   const rewardRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
-  const [step, setStep] = useState<Step>(1);
-  const [draft, setDraft] = useState<QuestDraft>(initialDraft);
+  const [step, setStep] = useState<Step>(() => editQuestId ? 2 : 1);
+  const [draft, setDraft] = useState<QuestDraft>(() => editQuestId ? { ...mockQuestDraft, imageUris: [...mockQuestDraft.imageUris] } : initialDraft);
   const [draftHydrated, setDraftHydrated] = useState(false);
   const [draftStorageKey, setDraftStorageKey] = useState<string | null>(null);
   const [draftLoadAttempt, setDraftLoadAttempt] = useState(0);
   const [draftLoadError, setDraftLoadError] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [saveErrorIntent, setSaveErrorIntent] = useState<SaveErrorIntent | null>(null);
-
   const [savingAction, setSavingAction] = useState<CompletionState | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [validationSummary, setValidationSummary] = useState<string | null>(null);
@@ -425,9 +469,11 @@ export default function CreateQuestScreen() {
   const [pickerMode, setPickerMode] = useState<PickerMode>('date');
   const [iosPickerValue, setIosPickerValue] = useState<Date | null>(null);
   const [completedState, setCompletedState] = useState<CompletionState | null>(null);
+  const [publishCheck, setPublishCheck] = useState<QuestPublishCheck | null>(null);
   const [logisticsExpanded, setLogisticsExpanded] = useState(false);
   const [pendingInvalidField, setPendingInvalidField] = useState<string | null>(null);
   const focusedInvalidFieldRef = useRef<string | null>(null);
+  const publishedQuestRef = useRef<{ questId: string; storageKey: string; editQuestId?: string } | null>(null);
 
   const tagOptions = useMemo(() => [
     { label: locale === 'th' ? 'การออกแบบและงานสร้างสรรค์' : 'Design & creative', shortLabel: locale === 'th' ? 'การออกแบบ' : 'Design', value: 'design' },
@@ -456,10 +502,15 @@ export default function CreateQuestScreen() {
         setSavingAction(null);
         return false;
       }
-      await persistQuestDraft(draftStorageKey, {
+      const normalizedDraft = {
         ...draftToSave,
         headcount: getHeadcountForParticipation(draftToSave.participation, draftToSave.headcount),
-      }, step, state);
+      };
+      if (editQuestId) {
+        await persistQuestDraft(draftStorageKey, normalizedDraft, step, state, editQuestId);
+      } else {
+        await persistQuestDraft(draftStorageKey, normalizedDraft, step, state);
+      }
       if (requestId !== saveRequestRef.current) return false;
       setSaveState('saved');
       setSaveErrorIntent(null);
@@ -472,67 +523,128 @@ export default function CreateQuestScreen() {
       setSavingAction(null);
       return false;
     }
-  }, [draftStorageKey, step]);
+  }, [draftStorageKey, editQuestId, step]);
 
-  useEffect(() => {
-    let active = true;
-    void getQuestDraftStorageKey().then((storageKey) => {
-      if (active) setDraftStorageKey(storageKey);
-    }).catch(() => {
-      if (!active) return;
-      setDraftLoadError(true);
-      setDraftHydrated(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, [draftLoadAttempt]);
-
-  useEffect(() => {
-    if (!draftStorageKey) return undefined;
-    let active = true;
-    void loadQuestDraft(draftStorageKey).then((snapshot) => {
-      if (!active) return;
-      if (snapshot) {
-        setDraft({
-          ...snapshot.draft,
-          headcount: getHeadcountForParticipation(snapshot.draft.participation, snapshot.draft.headcount),
-        });
-        setStep(snapshot.step);
-        if (snapshot.state === 'OPEN') setCompletedState('OPEN');
+  const publishQuest = useCallback(async (draftToPublish: QuestDraft): Promise<boolean> => {
+    const requestId = ++saveRequestRef.current;
+    setSaveState('saving');
+    setSavingAction('OPEN');
+    setSaveErrorIntent(null);
+    try {
+      if (!draftStorageKey) {
+        setSaveState('error');
+        setSaveErrorIntent({ state: 'OPEN', completesFlow: true });
+        setSavingAction(null);
+        return false;
       }
-      setDraftHydrated(true);
-    }).catch(() => {
-      if (!active) return;
-      setDraftLoadError(true);
+
+      let publishedQuestId = publishedQuestRef.current?.questId;
+      if (!publishedQuestId || publishedQuestRef.current?.storageKey !== draftStorageKey || publishedQuestRef.current?.editQuestId !== editQuestId) {
+        const normalizedDraft = {
+          ...draftToPublish,
+          headcount: getHeadcountForParticipation(draftToPublish.participation, draftToPublish.headcount),
+        };
+        const result = questFixtureAdapter.createAndPublishQuest(toQuestDraftPayload(normalizedDraft), 'demo-hirer');
+        if (!result.ok) {
+          setSaveState('error');
+          setSaveErrorIntent({ state: 'OPEN', completesFlow: true });
+          setSavingAction(null);
+          return false;
+        }
+        publishedQuestId = result.state.quest.id;
+        publishedQuestRef.current = { questId: publishedQuestId, storageKey: draftStorageKey, editQuestId };
+      }
+
+      if (editQuestId) await deleteQuestDraft(draftStorageKey, editQuestId);
+      else await deleteQuestDraft(draftStorageKey);
+      if (requestId !== saveRequestRef.current) return false;
+      publishedQuestRef.current = null;
+      setSaveState('saved');
+      setSaveErrorIntent(null);
+      setSavingAction(null);
+      return true;
+    } catch {
+      if (requestId !== saveRequestRef.current) return false;
+      setSaveState('error');
+      setSaveErrorIntent({ state: 'OPEN', completesFlow: true });
+      setSavingAction(null);
+      return false;
+    }
+  }, [draftStorageKey, editQuestId]);
+
+  useEffect(() => {
+    let active = true;
+    publishedQuestRef.current = null;
+    draftChangedRef.current = false;
+    skipPersistRef.current = true;
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+
+    void (async () => {
       setDraftHydrated(false);
-    });
+      setDraftLoadError(false);
+      setDraftStorageKey(null);
+      try {
+        const storageKey = await getQuestDraftStorageKey();
+        const snapshot = editQuestId
+          ? await loadQuestDraft(storageKey, editQuestId)
+          : await loadQuestDraft(storageKey);
+        if (!active) return;
+
+        setDraftStorageKey(storageKey);
+        if (snapshot && !draftChangedRef.current) {
+          setDraft({
+            ...snapshot.draft,
+            headcount: getHeadcountForParticipation(snapshot.draft.participation, snapshot.draft.headcount),
+          });
+          setStep(snapshot.step);
+          setCompletedState(snapshot.state === 'OPEN' ? 'OPEN' : null);
+        }
+        setDraftHydrated(true);
+      } catch {
+        if (!active) return;
+        skipPersistRef.current = false;
+        setDraftLoadError(true);
+        setDraftHydrated(false);
+      }
+    })();
 
     return () => {
       active = false;
     };
-  }, [draftLoadAttempt, draftStorageKey]);
+  }, [draftLoadAttempt, editQuestId]);
 
   useEffect(() => {
-    if (!draftHydrated || !draftStorageKey || skipPersistRef.current) {
+    if (!draftHydrated || !draftStorageKey || completedState) return undefined;
+    if (skipPersistRef.current) {
       skipPersistRef.current = false;
-      return;
+      return undefined;
     }
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null;
       void saveDraft(draft);
     }, 400);
 
     return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
     };
-  }, [draft, draftHydrated, draftStorageKey, saveDraft, step]);
+  }, [completedState, draft, draftHydrated, draftStorageKey, saveDraft, step]);
 
   const updateDraft = <K extends keyof QuestDraft>(field: K, value: QuestDraft[K]) => {
+    draftChangedRef.current = true;
+    skipPersistRef.current = false;
+    publishedQuestRef.current = null;
     setDraft((current) => ({ ...current, [field]: value }));
     setSaveState('idle');
     setSaveErrorIntent(null);
+    setPublishCheck(null);
     setValidationSummary(null);
     setPendingInvalidField(null);
     setErrors((current) => {
@@ -544,6 +656,9 @@ export default function CreateQuestScreen() {
   };
 
   const updateParticipation = (value: QuestDraft['participation']) => {
+    draftChangedRef.current = true;
+    skipPersistRef.current = false;
+    publishedQuestRef.current = null;
     setDraft((current) => ({
       ...current,
       participation: value,
@@ -552,6 +667,7 @@ export default function CreateQuestScreen() {
     setSaveState('idle');
     setSaveErrorIntent(null);
     setSavingAction(null);
+    setPublishCheck(null);
     setValidationSummary(null);
     setPendingInvalidField(null);
     setErrors((current) => {
@@ -685,27 +801,49 @@ export default function CreateQuestScreen() {
 
   const finishQuest = async (state: CompletionState) => {
     if (!validateStep(2)) return;
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    const saved = await saveDraft(draft, state, true);
-    if (saved) setCompletedState(state);
+    const check = getQuestPublishCheck(draft);
+    setPublishCheck(check);
+    if (state === 'OPEN' && !check.canPublish) {
+      const firstBlocker = check.blockers[0];
+      if (firstBlocker) setValidationSummary(messages.publishCheckBlocked);
+      return;
+    }
+
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    if (state === 'OPEN') {
+      const published = await publishQuest(draft);
+      if (published) setCompletedState('OPEN');
+      return;
+    }
+    const saved = await saveDraft(draft, 'DRAFT', true);
+    if (saved) setCompletedState('DRAFT');
   };
 
   const retrySave = () => {
     const intent = saveErrorIntent;
-    void saveDraft(draft, intent?.state ?? 'DRAFT', intent?.completesFlow ?? false).then((saved) => {
-      if (saved && intent?.completesFlow) setCompletedState(intent.state);
+    if (intent?.state === 'OPEN') {
+      void publishQuest(draft).then((published) => {
+        if (published && intent.completesFlow) setCompletedState('OPEN');
+      });
+      return;
+    }
+    void saveDraft(draft, 'DRAFT', intent?.completesFlow ?? false).then((saved) => {
+      if (saved && intent?.completesFlow) setCompletedState('DRAFT');
     });
-  };
-
-  const retryDraftLoad = () => {
-    setDraftLoadError(false);
-    setDraftHydrated(false);
-    setDraftLoadAttempt((current) => current + 1);
   };
 
   const leaveCreateFlow = () => router.replace('/(tabs)');
 
   const showHelp = () => Alert.alert(messages.helpTitle, messages.helpDescription);
+
+  const retryDraftLoad = () => {
+    setDraftLoadError(false);
+    setDraftHydrated(false);
+    setDraftLoadAttempt((attempt) => attempt + 1);
+  };
 
   const goBack = () => {
     setPendingInvalidField(null);
@@ -800,10 +938,21 @@ export default function CreateQuestScreen() {
 
   const resetDraft = async () => {
     saveRequestRef.current += 1;
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    publishedQuestRef.current = null;
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
     skipPersistRef.current = true;
+    draftChangedRef.current = false;
     try {
-      if (draftStorageKey) await deleteQuestDraft(draftStorageKey);
+      if (draftStorageKey) {
+        if (editQuestId) {
+          await deleteQuestDraft(draftStorageKey, editQuestId);
+        } else {
+          await deleteQuestDraft(draftStorageKey);
+        }
+      }
     } catch {
       setSaveState('error');
     }
@@ -814,6 +963,7 @@ export default function CreateQuestScreen() {
     setSaveState('idle');
     setSaveErrorIntent(null);
     setSavingAction(null);
+    setPublishCheck(null);
     setLogisticsExpanded(false);
     setPendingInvalidField(null);
     setStep(1);
@@ -826,6 +976,7 @@ export default function CreateQuestScreen() {
   }, [draft.candidateMode, draft.participation, messages]);
   const proofRequired = draft.proofRequired !== 'none';
 
+  const reviewPublishCheck = useMemo(() => publishCheck ?? getQuestPublishCheck(draft), [draft, publishCheck]);
   const summary = useMemo(() => [
     { label: messages.summary.title, value: draft.title || '—' },
     { label: messages.summary.description, value: draft.description || '—' },
@@ -834,7 +985,7 @@ export default function CreateQuestScreen() {
     { label: messages.summary.schedule, value: draft.startDate && draft.deadline && draft.startTime && draft.endTime ? `${formatDate(draft.startDate, locale, messages.notSelected)} · ${draft.startTime}–${draft.endTime} → ${formatDate(draft.deadline, locale, messages.notSelected)}` : messages.notSelected },
     { label: messages.summary.location, value: draft.locationMode === 'ONLINE' ? messages.online : draft.location || messages.notSelected },
     { label: messages.summary.images, value: draft.imageUris.length ? messages.selectedImages(draft.imageUris.length) : messages.noImages },
-    { label: messages.summary.reward, value: draft.wage ? `฿ ${draft.wage} / ${locale === 'th' ? 'คน' : 'person'}` : messages.notSelected },
+    { label: messages.summary.reward, value: draft.wage ? `${formatDraftReward(draft, locale)} / ${locale === 'th' ? 'คน' : 'person'}` : messages.notSelected },
   ], [draft, locale, messages, proofRequired]);
 
   const selectedQuestTag = tagOptions.find((option) => option.value === draft.tag)?.shortLabel ?? messages.notSelected;
@@ -854,24 +1005,17 @@ export default function CreateQuestScreen() {
   const useWideSummary = layout.isExpanded || width >= 430;
   const useStackedActions = width < 340 || fontScale >= 1.15;
 
-  if (!draftHydrated && !completedState) {
+  if (!draftHydrated && saveState !== 'error') {
     return (
       <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
         <StatusBar style="light" />
-        <CreateQuestHeader messages={messages} step={1} onBackPress={goBack} onHelpPress={showHelp} onStepPress={goToStep} />
+        <CreateQuestHeader messages={messages} step={step} onBackPress={goBack} onHelpPress={showHelp} onStepPress={goToStep} />
         <View className={styles.surface}>
-          {draftLoadError ? (
-            <View className={styles.loadErrorState}>
-              <View className={styles.loadErrorIcon}><CircleAlert color={colors.dangerDark} size={26} strokeWidth={2.2} /></View>
-              <Text accessibilityRole="alert" className={styles.loadErrorText}>{messages.loadDraftError}</Text>
-              <Button onPress={retryDraftLoad} className={styles.fullButton}>{messages.retryLoadDraft}</Button>
-            </View>
-          ) : (
-            <View accessibilityRole="progressbar" className={styles.loadingState}>
-              <ActivityIndicator color={colors.primary} size="small" />
-              <Text className={styles.loadingText}>{messages.loadingDraft}</Text>
-            </View>
-          )}
+          {draftLoadError ? <View className={styles.loadErrorState}>
+            <View className={styles.loadErrorIcon}><CircleAlert color={colors.dangerDark} size={26} strokeWidth={2.2} /></View>
+            <Text accessibilityRole="alert" className={styles.loadErrorText}>{messages.loadDraftError}</Text>
+            <Button onPress={retryDraftLoad} className={styles.fullButton}>{messages.retryLoadDraft}</Button>
+          </View> : <CreateQuestSkeleton horizontalPadding={layout.horizontalPadding} contentMaxWidth={layout.isExpanded ? layout.contentMaxWidth : '100%'} loadingLabel={messages.loadingDraft} stackedActions={useStackedActions} step={step} />}
         </View>
       </SafeAreaView>
     );
@@ -943,7 +1087,6 @@ export default function CreateQuestScreen() {
                   </Pressable>
                 </View>
               ) : null}
-
               {step === 1 ? (
                 <View className={styles.sectionCard}>
                   <SectionHeading icon={Tag} title={messages.questDetails} description={messages.questDetailsDescription} />
@@ -1050,6 +1193,17 @@ export default function CreateQuestScreen() {
                   <View className={styles.sectionCard}>
                     <SectionHeading icon={Check} title={messages.review} description={messages.questSummaryLabel} />
                     <View className={styles.summaryCard}>{summary.map((item) => <View key={item.label} className={styles.summaryRow}><Text className={styles.summaryLabel}>{item.label}</Text><Text className={styles.summaryValue}>{item.value}</Text></View>)}</View>
+                    <View accessibilityRole={reviewPublishCheck.canPublish ? undefined : 'alert'} accessibilityLiveRegion={reviewPublishCheck.canPublish ? 'polite' : 'assertive'} className={cn(styles.publishCheckCard, !reviewPublishCheck.canPublish && styles.publishCheckCardBlocked)} testID="create-quest-publish-check">
+                      <Text className={styles.publishCheckTitle}>{messages.publishCheckTitle}</Text>
+                      <Text className={cn(styles.publishCheckStatus, !reviewPublishCheck.canPublish && styles.publishCheckStatusBlocked)}>{reviewPublishCheck.canPublish ? messages.publishCheckReady : messages.publishCheckBlocked}</Text>
+                      <View className={styles.escrowRows}>
+                        <View className={styles.escrowRow}><Text className={styles.escrowLabel}>{messages.rewardPool}</Text><Text className={styles.escrowValue}>{formatDraftReward(draft, locale)} × {reviewPublishCheck.escrow.headcount} = {formatSatang(reviewPublishCheck.escrow.rewardPoolSatang, locale)}</Text></View>
+                        <View className={styles.escrowRow}><Text className={styles.escrowLabel}>{messages.platformFee}</Text><Text className={styles.escrowValue}>{formatSatang(reviewPublishCheck.escrow.platformFeeSatang, locale)}</Text></View>
+                        <View className={styles.escrowRow}><Text className={styles.escrowLabel}>{messages.escrowTotal}</Text><Text className={styles.escrowValue}>{formatSatang(reviewPublishCheck.escrow.totalRequiredSatang, locale)}</Text></View>
+                      </View>
+                      <Text className={styles.publishCheckNote}>{messages.escrowDescription}</Text>
+                      {reviewPublishCheck.warnings.length > 0 ? <Text className={styles.publishCheckNote}>{messages.publishCheckWarning}</Text> : null}
+                    </View>
                   </View>
                 </>
               ) : null}
@@ -1077,9 +1231,9 @@ export default function CreateQuestScreen() {
                   variant="secondary"
                 />
                 <ReviewActionButton
-                  accessibilityLabel={savingAction === 'OPEN' ? messages.savingPreview : messages.savePreview}
+                  accessibilityLabel={savingAction === 'OPEN' ? messages.publishingQuest : messages.publishQuest}
                   disabled={isSaving}
-                  label={savingAction === 'OPEN' ? messages.savingPreview : messages.savePreview}
+                  label={savingAction === 'OPEN' ? messages.publishingQuest : messages.publishQuest}
                   onPress={() => void finishQuest('OPEN')}
                   stacked={useStackedActions}
                   testID="create-quest-save-preview"

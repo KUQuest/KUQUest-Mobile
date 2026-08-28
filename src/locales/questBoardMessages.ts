@@ -72,6 +72,10 @@ export interface QuestBoardMessages {
   details: string;
   viewDetails: string;
   creator: string;
+  messageOwner: string;
+  messageOwnerShort: string;
+  messageOwnerLoading: string;
+  messageOwnerError: string;
   requirements: string;
   description: string;
   completionCriteria: string;
@@ -124,6 +128,45 @@ export interface QuestBoardMessages {
   unavailableApplication: string;
   questNotFound: string;
   questNotFoundDescription: string;
+  statusLabel: (status: string) => string;
+  consentBannerTitle: string;
+  consentBannerDescription: (approved: number, required: number) => string;
+  consentCountdown: string;
+  approveEdit: string;
+  rejectEdit: string;
+  teamBannerTitle: string;
+  teamLeader: string;
+  teamMemberCount: (members: number, required: number) => string;
+  createTeam: string;
+  inviteWorker: string;
+  submitTeam: string;
+  acceptInvitation: string;
+  declineInvitation: string;
+  revokeInvitation: string;
+  applicationBannerTitle: string;
+  applicationCount: (count: number) => string;
+  selectCandidate: string;
+  proofBannerTitle: string;
+  proofPending: string;
+  proofRejected: string;
+  reworkRemaining: (remaining: number, limit: number) => string;
+  submitProof: string;
+  confirmCompletion: string;
+  submitRework: string;
+  approveProof: string;
+  rejectProof: string;
+  disputeBannerTitle: string;
+  disputeDescription: string;
+  openDispute: string;
+  resolveDispute: string;
+  completeQuest: string;
+  cancelQuest: string;
+  publishQuest: string;
+  escrowRewardPool: string;
+  escrowPlatformFee: string;
+  escrowTotal: string;
+  terminalBannerTitle: string;
+  terminalDescription: string;
 }
 
 export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
@@ -199,6 +242,10 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     details: 'Quest details',
     viewDetails: 'View details',
     creator: 'Posted by',
+    messageOwner: 'Message Quest owner',
+    messageOwnerShort: 'Message owner',
+    messageOwnerLoading: 'Opening chat…',
+    messageOwnerError: 'We could not open a chat with the Quest owner. Try again.',
     requirements: 'Requirements',
     description: 'Description',
     completionCriteria: 'Completion criteria',
@@ -251,6 +298,56 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     unavailableApplication: 'This Quest is no longer accepting applications.',
     questNotFound: 'Quest not found',
     questNotFoundDescription: 'This Quest does not exist or is no longer available.',
+    statusLabel: (status) => ({
+      QUEST_DRAFT: 'Draft', QUEST_OPEN: 'Open', QUEST_AWAITING_CONSENT: 'Awaiting Worker consent', QUEST_ASSIGNED: 'Assigned',
+      QUEST_IN_PROGRESS: 'In progress', QUEST_SUBMITTED: 'Proof submitted', QUEST_APPROVED: 'Approved', QUEST_REWORK: 'Rework requested',
+      QUEST_COMPLETED: 'Completed', QUEST_CANCELLED: 'Cancelled', QUEST_DISPUTED: 'Disputed', QUEST_HIDDEN: 'Hidden',
+      TEAM_FORMING: 'Forming', TEAM_SUBMITTED: 'Submitted', TEAM_SELECTED: 'Selected', TEAM_REJECTED: 'Rejected',
+      INVITATION_PENDING: 'Invitation pending', INVITATION_ACCEPTED: 'Invitation accepted', INVITATION_DECLINED: 'Invitation declined', INVITATION_EXPIRED: 'Invitation expired', INVITATION_REVOKED: 'Invitation revoked',
+      APPLICATION_APPLIED: 'Applied', APPLICATION_SELECTED: 'Selected', APPLICATION_REJECTED: 'Rejected', APPLICATION_WITHDRAWN: 'Withdrawn',
+      ASSIGNMENT_ACTIVE: 'Active', ASSIGNMENT_COMPLETED: 'Completed', ASSIGNMENT_INCOMPLETE: 'Incomplete', ASSIGNMENT_CANCELLED: 'Cancelled',
+      PROOF_PENDING: 'Proof pending', PROOF_APPROVED: 'Proof approved', PROOF_REJECTED: 'Proof rejected', PROOF_AUTO_APPROVED: 'Proof auto-approved',
+      EDIT_REQUEST_PENDING: 'Consent pending', EDIT_REQUEST_APPROVED: 'Edit approved', EDIT_REQUEST_REJECTED: 'Edit rejected',
+      EDIT_RESPONSE_APPROVED: 'Approved', EDIT_RESPONSE_REJECTED: 'Rejected',
+    }[status] ?? status),
+    consentBannerTitle: 'Worker consent required',
+    consentBannerDescription: (approved, required) => `${approved} of ${required} Workers approved the proposed edit.`,
+    consentCountdown: 'Consent time remaining',
+    approveEdit: 'Approve edit',
+    rejectEdit: 'Reject edit',
+    teamBannerTitle: 'Candidate Team',
+    teamLeader: 'Team Leader',
+    teamMemberCount: (members, required) => `${members}/${required} members`,
+    createTeam: 'Form a Team',
+    inviteWorker: 'Invite Worker',
+    submitTeam: 'Submit Team',
+    acceptInvitation: 'Accept invitation',
+    declineInvitation: 'Decline invitation',
+    revokeInvitation: 'Revoke invitation',
+    applicationBannerTitle: 'Candidate applications',
+    applicationCount: (count) => `${count} application${count === 1 ? '' : 's'}`,
+    selectCandidate: 'Select Candidate',
+    proofBannerTitle: 'Proof and review',
+    proofPending: 'Proof is waiting for Hirer review.',
+    proofRejected: 'Proof needs rework.',
+    reworkRemaining: (remaining, limit) => `${remaining} of ${limit} rework attempts remaining`,
+    submitProof: 'Submit proof',
+    confirmCompletion: 'Confirm completion',
+    submitRework: 'Submit rework',
+    approveProof: 'Approve proof',
+    rejectProof: 'Request rework',
+    disputeBannerTitle: 'Quest dispute',
+    disputeDescription: 'This Quest is waiting for an authorized dispute resolution.',
+    openDispute: 'Open dispute',
+    resolveDispute: 'Resolve dispute',
+    completeQuest: 'Complete Quest',
+    cancelQuest: 'Cancel Quest',
+    publishQuest: 'Publish Quest',
+    escrowRewardPool: 'Reward pool',
+    escrowPlatformFee: 'Platform Fee',
+    escrowTotal: 'Total Escrow required',
+    terminalBannerTitle: 'Quest closed',
+    terminalDescription: 'This Quest is terminal. It cannot be reopened or accepted again.',
   },
   th: {
     title: 'กระดานเควสต์',
@@ -324,6 +421,10 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     details: 'รายละเอียดเควสต์',
     viewDetails: 'ดูรายละเอียด',
     creator: 'โพสต์โดย',
+    messageOwner: 'แชทถามรายละเอียดกับผู้ว่าจ้าง',
+    messageOwnerShort: 'แชทผู้ว่าจ้าง',
+    messageOwnerLoading: 'กำลังเปิดแชท…',
+    messageOwnerError: 'ไม่สามารถเปิดแชทกับผู้ว่าจ้างได้ ลองอีกครั้ง',
     requirements: 'รายละเอียดที่ต้องทำ',
     description: 'คำอธิบาย',
     completionCriteria: 'เกณฑ์การเสร็จงาน',
@@ -376,5 +477,55 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     unavailableApplication: 'เควสต์นี้ไม่เปิดรับสมัครแล้ว',
     questNotFound: 'ไม่พบเควสต์',
     questNotFoundDescription: 'ไม่มีเควสต์นี้หรือไม่พร้อมให้ดูรายละเอียดแล้ว',
+    statusLabel: (status) => ({
+      QUEST_DRAFT: 'ฉบับร่าง', QUEST_OPEN: 'เปิดรับผู้เข้าร่วม', QUEST_AWAITING_CONSENT: 'รอความยินยอมจากผู้ทำงาน', QUEST_ASSIGNED: 'มอบหมายแล้ว',
+      QUEST_IN_PROGRESS: 'กำลังทำงาน', QUEST_SUBMITTED: 'ส่งหลักฐานแล้ว', QUEST_APPROVED: 'อนุมัติแล้ว', QUEST_REWORK: 'ขอแก้ไขหลักฐาน',
+      QUEST_COMPLETED: 'เสร็จสิ้น', QUEST_CANCELLED: 'ยกเลิกแล้ว', QUEST_DISPUTED: 'อยู่ระหว่างข้อพิพาท', QUEST_HIDDEN: 'ซ่อนอยู่',
+      TEAM_FORMING: 'กำลังรวมทีม', TEAM_SUBMITTED: 'ส่งทีมแล้ว', TEAM_SELECTED: 'เลือกทีมแล้ว', TEAM_REJECTED: 'ไม่ผ่านการเลือก',
+      INVITATION_PENDING: 'รอตอบรับคำเชิญ', INVITATION_ACCEPTED: 'ตอบรับคำเชิญแล้ว', INVITATION_DECLINED: 'ปฏิเสธคำเชิญแล้ว', INVITATION_EXPIRED: 'คำเชิญหมดอายุ', INVITATION_REVOKED: 'เพิกถอนคำเชิญแล้ว',
+      APPLICATION_APPLIED: 'สมัครแล้ว', APPLICATION_SELECTED: 'ได้รับเลือก', APPLICATION_REJECTED: 'ไม่ผ่านการเลือก', APPLICATION_WITHDRAWN: 'ถอนใบสมัครแล้ว',
+      ASSIGNMENT_ACTIVE: 'กำลังทำงาน', ASSIGNMENT_COMPLETED: 'เสร็จสิ้น', ASSIGNMENT_INCOMPLETE: 'ไม่สมบูรณ์', ASSIGNMENT_CANCELLED: 'ยกเลิกแล้ว',
+      PROOF_PENDING: 'รอตรวจสอบหลักฐาน', PROOF_APPROVED: 'อนุมัติหลักฐานแล้ว', PROOF_REJECTED: 'หลักฐานถูกปฏิเสธ', PROOF_AUTO_APPROVED: 'อนุมัติหลักฐานอัตโนมัติ',
+      EDIT_REQUEST_PENDING: 'รอความยินยอม', EDIT_REQUEST_APPROVED: 'อนุมัติการแก้ไขแล้ว', EDIT_REQUEST_REJECTED: 'ปฏิเสธการแก้ไขแล้ว',
+      EDIT_RESPONSE_APPROVED: 'อนุมัติแล้ว', EDIT_RESPONSE_REJECTED: 'ปฏิเสธแล้ว',
+    }[status] ?? status),
+    consentBannerTitle: 'ต้องขอความยินยอมจากผู้ทำงาน',
+    consentBannerDescription: (approved, required) => `ผู้ทำงานอนุมัติการแก้ไขแล้ว ${approved} จาก ${required} คน`,
+    consentCountdown: 'เวลาที่เหลือสำหรับการยินยอม',
+    approveEdit: 'อนุมัติการแก้ไข',
+    rejectEdit: 'ปฏิเสธการแก้ไข',
+    teamBannerTitle: 'ทีมผู้สมัคร',
+    teamLeader: 'หัวหน้าทีม',
+    teamMemberCount: (members, required) => `${members}/${required} คน`,
+    createTeam: 'สร้างทีม',
+    inviteWorker: 'เชิญผู้ทำงาน',
+    submitTeam: 'ส่งทีมเพื่อพิจารณา',
+    acceptInvitation: 'ตอบรับคำเชิญ',
+    declineInvitation: 'ปฏิเสธคำเชิญ',
+    revokeInvitation: 'เพิกถอนคำเชิญ',
+    applicationBannerTitle: 'ใบสมัครผู้สมัคร',
+    applicationCount: (count) => `${count} ใบสมัคร`,
+    selectCandidate: 'เลือกผู้สมัคร',
+    proofBannerTitle: 'หลักฐานและการตรวจสอบ',
+    proofPending: 'หลักฐานกำลังรอผู้ว่าจ้างตรวจสอบ',
+    proofRejected: 'หลักฐานต้องแก้ไขใหม่',
+    reworkRemaining: (remaining, limit) => `เหลือสิทธิ์แก้ไข ${remaining} จาก ${limit} ครั้ง`,
+    submitProof: 'ส่งหลักฐาน',
+    confirmCompletion: 'ยืนยันการเสร็จสิ้น',
+    submitRework: 'ส่งหลักฐานที่แก้ไข',
+    approveProof: 'อนุมัติหลักฐาน',
+    rejectProof: 'ขอให้แก้ไขใหม่',
+    disputeBannerTitle: 'ข้อพิพาทเควสต์',
+    disputeDescription: 'เควสต์นี้รอการแก้ไขข้อพิพาทจากผู้มีอำนาจ',
+    openDispute: 'เปิดข้อพิพาท',
+    resolveDispute: 'แก้ไขข้อพิพาท',
+    completeQuest: 'ทำเควสต์ให้เสร็จสิ้น',
+    cancelQuest: 'ยกเลิกเควสต์',
+    publishQuest: 'เผยแพร่เควสต์',
+    escrowRewardPool: 'เงินรางวัลรวม',
+    escrowPlatformFee: 'ค่าธรรมเนียมแพลตฟอร์ม',
+    escrowTotal: 'ยอด Escrow ที่ต้องใช้',
+    terminalBannerTitle: 'ปิดเควสต์แล้ว',
+    terminalDescription: 'เควสต์นี้อยู่ในสถานะสิ้นสุด ไม่สามารถเปิดใหม่หรือรับผู้เข้าร่วมเพิ่มได้',
   },
 };

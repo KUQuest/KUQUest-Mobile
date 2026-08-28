@@ -41,6 +41,48 @@ function getErrorCode(error: unknown): unknown {
   return (error as { code?: unknown }).code;
 }
 
+function getHttpStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== 'object') return undefined;
+  for (const key of ['status', 'statusCode', 'httpStatus'] as const) {
+    const value = (error as Record<string, unknown>)[key];
+    if (typeof value === 'number') return value;
+  }
+  return undefined;
+}
+
+const NETWORK_ERROR_CODES = new Set([
+  'NETWORK_ERROR',
+  'FETCH_ERROR',
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'ENETUNREACH',
+  'ETIMEDOUT',
+]);
+const NETWORK_ERROR_MESSAGE = /network request failed|network error|failed to fetch|fetch failed|connection (?:refused|reset|timed out)|econnrefused|econnreset|enetunreach|etimedout|offline|unreachable|unable to (?:connect|reach)|service unavailable|backend unavailable|timed out|timeout/i;
+
+/**
+ * A session lookup may use the offline prototype only for transport failures.
+ * HTTP responses (including authenticated 401/403/5xx responses) remain real
+ * auth errors and must continue through the normal retry/error surface.
+ */
+export function isAuthNetworkError(error: unknown): boolean {
+  const source = error instanceof AuthError && error.cause !== undefined ? error.cause : error;
+  const candidates = source === error ? [error] : [source, error];
+
+  for (const candidate of candidates) {
+    const status = getHttpStatus(candidate);
+    if (status !== undefined && status > 0) return false;
+
+    const code = getErrorCode(candidate);
+    if (typeof code === 'string' && NETWORK_ERROR_CODES.has(code.toUpperCase())) return true;
+
+    const message = getErrorMessage(candidate);
+    if (message && NETWORK_ERROR_MESSAGE.test(message)) return true;
+  }
+
+  return false;
+}
+
 const SIGN_OUT_TIMEOUT_MS = 2000;
 
 async function settleWithin<T>(promise: Promise<T>, timeoutMs: number): Promise<T | undefined> {
@@ -119,7 +161,8 @@ export class AuthService implements AuthAdapter {
         if (code === 'UNAUTHORIZED' || code === 'SESSION_EXPIRED') return null;
         throw new AuthError(
           'API_ERROR',
-          getErrorMessage(response.error) ?? 'Unable to load authentication session'
+          getErrorMessage(response.error) ?? 'Unable to load authentication session',
+          { cause: response.error },
         );
       }
       if (!response.data) return null;
@@ -127,7 +170,11 @@ export class AuthService implements AuthAdapter {
     } catch (error: unknown) {
       if (error instanceof AuthError) throw error;
       authDebug('session lookup failed', { message: getErrorMessage(error) });
-      throw new AuthError('API_ERROR', getErrorMessage(error) ?? 'Unable to load authentication session');
+      throw new AuthError(
+        'API_ERROR',
+        getErrorMessage(error) ?? 'Unable to load authentication session',
+        { cause: error },
+      );
     }
   }
 

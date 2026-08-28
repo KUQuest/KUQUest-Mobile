@@ -1,196 +1,61 @@
-import type { SupportedLocale } from '../../locales/LocaleProvider';
+import type { WorkConversationCapability } from '../questBoard/types';
+import type { ChatRouteParams } from './chatTypes';
 
-export type LocalizedText = Record<SupportedLocale, string>;
+export type {
+  ChatAttachment,
+  ChatConversation,
+  ChatMessage,
+  ChatRouteParams,
+  LocalizedText,
+} from './chatTypes';
 
-export interface ChatAttachment {
-  name: string;
-  meta: string;
-  kind: 'pdf' | 'image';
+function deniedConversationCapability(conversationId: string): WorkConversationCapability {
+  return { conversationId, canRead: false, canWrite: false, readOnly: true, readOnlyReason: 'NOT_A_MEMBER' };
 }
 
-export interface ChatMessage {
-  id: string;
-  sender: 'me' | 'other';
-  text?: LocalizedText;
-  time: string;
-  attachment?: ChatAttachment;
-}
-
-export interface ChatConversation {
-  id: string;
-  questTitle: LocalizedText;
-  participantName: string;
-  participantRole: 'owner' | 'member';
-  initials: string;
-  avatarColor: string;
-  latestMessage: LocalizedText;
-  latestTime: string;
-  unreadCount: number;
-  messages: ChatMessage[];
-}
-
-function groupChatConversation(id: string, questTitle: LocalizedText, latestMessage: LocalizedText): ChatConversation {
+function routeCapabilityFor(conversationId: string, capability: WorkConversationCapability | undefined): WorkConversationCapability {
+  if (!capability || capability.conversationId !== conversationId || !capability.canRead) return deniedConversationCapability(conversationId);
+  const readOnly = capability.readOnly || !capability.canWrite || Boolean(capability.readOnlyReason);
   return {
-    id,
-    questTitle,
-    participantName: 'Quest team',
-    participantRole: 'member',
-    initials: 'QT',
-    avatarColor: '#EAF6ED',
-    latestMessage,
-    latestTime: 'Now',
-    unreadCount: 0,
-    messages: [{ id: `${id}-welcome`, sender: 'other', text: latestMessage, time: 'Now' }],
+    ...capability,
+    conversationId,
+    canRead: true,
+    canWrite: !readOnly,
+    readOnly,
   };
 }
 
-export const mockChatConversations: ChatConversation[] = [
-  groupChatConversation(
-    'quest-move-boxes-group',
-    { en: 'Help move boxes to the dorm', th: 'ช่วยยกกล่องไปหอพัก' },
-    { en: 'Welcome to the Quest team chat.', th: 'ยินดีต้อนรับสู่แชตกลุ่มของเควสต์' },
-  ),
-  groupChatConversation(
-    'quest-clean-fan-group',
-    { en: 'Clean a dorm fan', th: 'ล้างพัดลมหอพัก' },
-    { en: 'Use this chat to coordinate with the Quest team.', th: 'ใช้แชตนี้ประสานงานกับทีมเควสต์ได้เลย' },
-  ),
-  groupChatConversation(
-    'quest-buy-lunch-group',
-    { en: 'Buy lunch from the canteen', th: 'ซื้อข้าวจากโรงอาหาร' },
-    { en: 'The Quest team chat is ready.', th: 'แชตกลุ่มของเควสต์พร้อมใช้งานแล้ว' },
-  ),
-  {
-    id: 'campus-survey-crew',
-    questTitle: { en: 'Campus Survey Crew', th: 'ทีมเก็บข้อมูลภาคสนาม' },
-    participantName: 'Ethan Smith',
-    participantRole: 'owner',
-    initials: 'ES',
-    avatarColor: '#DDE9D9',
-    latestMessage: {
-      en: 'Thanks — I’ll share it with the rest of the Quest team.',
-      th: 'ขอบคุณ เดี๋ยวฉันแชร์ให้ทีมเควสต์ที่เหลือ',
-    },
-    latestTime: '10:42',
-    unreadCount: 2,
-    messages: [
-      {
-        id: 'campus-1',
-        sender: 'other',
-        text: {
-          en: 'Hi! Are we still meeting at the Faculty of Economics at 10:00?',
-          th: 'สวัสดี เรายังนัดเจอกันที่คณะเศรษฐศาสตร์ตอน 10 โมงเหมือนเดิมไหม',
-        },
-        time: '10:18',
-      },
-      {
-        id: 'campus-2',
-        sender: 'me',
-        text: {
-          en: 'Yes, I’ll bring the printed consent forms.',
-          th: 'ใช่ เดี๋ยวฉันนำแบบฟอร์มยินยอมฉบับพิมพ์ไปให้',
-        },
-        time: '10:21',
-      },
-      {
-        id: 'campus-3',
-        sender: 'other',
-        text: {
-          en: 'Could you send the final schedule to the team?',
-          th: 'ช่วยส่งกำหนดการฉบับสุดท้ายให้ทีมได้ไหม',
-        },
-        time: '10:32',
-      },
-      {
-        id: 'campus-4',
-        sender: 'me',
-        time: '10:35',
-        attachment: { name: 'fieldwork-schedule.pdf', meta: 'PDF · 248 KB', kind: 'pdf' },
-      },
-      {
-        id: 'campus-5',
-        sender: 'other',
-        text: {
-          en: 'Thanks — I’ll share it with the rest of the Quest team.',
-          th: 'ขอบคุณ เดี๋ยวฉันแชร์ให้ทีมเควสต์ที่เหลือ',
-        },
-        time: '10:42',
-      },
-    ],
-  },
-  {
-    id: 'open-day-media',
-    questTitle: { en: 'Open Day Media Team', th: 'ทีมสื่อประชาสัมพันธ์วันเปิดบ้าน' },
-    participantName: 'Nina K.',
-    participantRole: 'member',
-    initials: 'NK',
-    avatarColor: '#EAF6ED',
-    latestMessage: {
-      en: 'The poster looks good. I’ll upload the final version.',
-      th: 'โปสเตอร์ดูดีแล้ว เดี๋ยวฉันอัปโหลดฉบับสุดท้าย',
-    },
-    latestTime: 'Yesterday',
-    unreadCount: 0,
-    messages: [
-      {
-        id: 'open-day-1',
-        sender: 'other',
-        text: {
-          en: 'The poster looks good. I’ll upload the final version.',
-          th: 'โปสเตอร์ดูดีแล้ว เดี๋ยวฉันอัปโหลดฉบับสุดท้าย',
-        },
-        time: 'Yesterday',
-      },
-      {
-        id: 'open-day-2',
-        sender: 'me',
-        text: {
-          en: 'Great. Please keep the venue details unchanged.',
-          th: 'เยี่ยมเลย รบกวนคงรายละเอียดสถานที่ไว้เหมือนเดิมนะ',
-        },
-        time: 'Yesterday',
-      },
-      {
-        id: 'open-day-3',
-        sender: 'other',
-        time: 'Yesterday',
-        attachment: { name: 'open-day-poster.png', meta: 'PNG · 1.4 MB', kind: 'image' },
-      },
-    ],
-  },
-  {
-    id: 'faculty-research-assistant',
-    questTitle: { en: 'Faculty Research Assistant', th: 'ผู้ช่วยงานวิจัยประจำคณะ' },
-    participantName: 'Ploy Rattanaporn',
-    participantRole: 'owner',
-    initials: 'PR',
-    avatarColor: '#F0F4F1',
-    latestMessage: {
-      en: 'I’ve attached the consent form for your review.',
-      th: 'ฉันแนบแบบฟอร์มยินยอมสำหรับตรวจสอบไว้แล้ว',
-    },
-    latestTime: 'Mon',
-    unreadCount: 0,
-    messages: [
-      {
-        id: 'research-1',
-        sender: 'other',
-        text: {
-          en: 'I’ve attached the consent form for your review.',
-          th: 'ฉันแนบแบบฟอร์มยินยอมสำหรับตรวจสอบไว้แล้ว',
-        },
-        time: 'Mon',
-      },
-      {
-        id: 'research-2',
-        sender: 'other',
-        time: 'Mon',
-        attachment: { name: 'participant-consent.pdf', meta: 'PDF · 326 KB', kind: 'pdf' },
-      },
-    ],
-  },
-];
-
-export function getChatConversation(id: string | undefined): ChatConversation | undefined {
-  return mockChatConversations.find((conversation) => conversation.id === id);
+/**
+ * Keep the server conversation id and its viewer capability together when a
+ * chat route is opened. Route params are strings because Expo Router serializes
+ * them into the URL; missing capabilities are explicitly denied.
+ */
+export function getChatRouteParams({
+  conversationId,
+  questId,
+  viewerId,
+  capability,
+  ownerName,
+  questTitle,
+}: {
+  conversationId: string;
+  questId?: string;
+  viewerId: string;
+  capability?: WorkConversationCapability;
+  ownerName?: string;
+  questTitle?: string;
+}): ChatRouteParams {
+  const routeCapability = routeCapabilityFor(conversationId, capability);
+  return {
+    id: conversationId,
+    conversationId,
+    ...(questId ? { questId } : {}),
+    viewerId,
+    canRead: routeCapability.canRead ? 'true' : 'false',
+    canWrite: routeCapability.canWrite ? 'true' : 'false',
+    readOnly: routeCapability.readOnly ? 'true' : 'false',
+    ...(routeCapability.readOnlyReason ? { readOnlyReason: routeCapability.readOnlyReason } : {}),
+    ...(ownerName ? { ownerName } : {}),
+    ...(questTitle ? { questTitle } : {}),
+  };
 }

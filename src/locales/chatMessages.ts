@@ -6,6 +6,9 @@ export interface ChatMessages {
   searchConversations: string;
   recentConversations: string;
   conversationCount: (count: number) => string;
+  loading: string;
+  loadError: string;
+  retry: string;
   noConversations: string;
   noSearchResults: string;
   questOwner: string;
@@ -24,6 +27,7 @@ export interface ChatMessages {
   noFileResults: string;
   today: string;
   typeMessage: string;
+  typeOwnerMessage: string;
   send: string;
   addAttachment: string;
   takePhoto: string;
@@ -37,6 +41,9 @@ export interface ChatMessages {
   moreOptions: string;
   attachment: string;
   unreadCount: (count: number) => string;
+  conversationReadOnly: string;
+  conversationReadOnlyTerminal: string;
+  conversationNotWritable: string;
 }
 
 export const chatMessages: Record<SupportedLocale, ChatMessages> = {
@@ -46,6 +53,9 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     searchConversations: 'Search conversations',
     recentConversations: 'Recent conversations',
     conversationCount: (count) => `${count} conversations`,
+    loading: 'Loading conversations',
+    loadError: 'We could not load your conversations.',
+    retry: 'Try again',
     noConversations: 'Your Quest conversations will appear here.',
     noSearchResults: 'No conversations match your search.',
     questOwner: 'Quest owner',
@@ -64,6 +74,7 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     noFileResults: 'No files match your search.',
     today: 'Today',
     typeMessage: 'Message the Quest team…',
+    typeOwnerMessage: 'Message the Quest owner…',
     send: 'Send message',
     addAttachment: 'Add attachment',
     takePhoto: 'Take photo',
@@ -77,6 +88,9 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     moreOptions: 'More conversation options',
     attachment: 'Attachment',
     unreadCount: (count) => `${count} unread messages`,
+    conversationReadOnly: 'This conversation is read-only.',
+    conversationReadOnlyTerminal: 'This Quest is complete or cancelled. You can still read the conversation, but new messages are disabled.',
+    conversationNotWritable: 'The server has disabled writing for this conversation.',
   },
   th: {
     title: 'แชต',
@@ -84,6 +98,9 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     searchConversations: 'ค้นหาบทสนทนา',
     recentConversations: 'บทสนทนาล่าสุด',
     conversationCount: (count) => `${count} บทสนทนา`,
+    loading: 'กำลังโหลดบทสนทนา',
+    loadError: 'ไม่สามารถโหลดบทสนทนาของคุณได้',
+    retry: 'ลองอีกครั้ง',
     noConversations: 'บทสนทนาที่เกี่ยวข้องกับเควสต์จะแสดงที่นี่',
     noSearchResults: 'ไม่พบบทสนทนาที่ตรงกับการค้นหา',
     questOwner: 'เจ้าของเควสต์',
@@ -102,6 +119,7 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     noFileResults: 'ไม่พบไฟล์ที่ตรงกับการค้นหา',
     today: 'วันนี้',
     typeMessage: 'ส่งข้อความถึงทีมเควสต์…',
+    typeOwnerMessage: 'ส่งข้อความถึงผู้ว่าจ้าง…',
     send: 'ส่งข้อความ',
     addAttachment: 'เพิ่มไฟล์แนบ',
     takePhoto: 'ถ่ายรูป',
@@ -115,5 +133,8 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     moreOptions: 'ตัวเลือกเพิ่มเติมของบทสนทนา',
     attachment: 'ไฟล์แนบ',
     unreadCount: (count) => `มี ${count} ข้อความที่ยังไม่ได้อ่าน`,
+    conversationReadOnly: 'บทสนทนานี้อ่านได้อย่างเดียว',
+    conversationReadOnlyTerminal: 'เควสต์นี้เสร็จสิ้นหรือยกเลิกแล้ว คุณยังอ่านประวัติได้แต่ส่งข้อความใหม่ไม่ได้',
+    conversationNotWritable: 'เซิร์ฟเวอร์ปิดการส่งข้อความในบทสนทนานี้',
   },
 };

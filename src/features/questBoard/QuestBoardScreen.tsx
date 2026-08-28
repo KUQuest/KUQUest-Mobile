@@ -7,6 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { useNavigationVisibility } from '@/components/navigation/NavigationVisibilityContext';
+import { PrototypeMenu } from '@/components/ui/PrototypeMenu';
+import { usePrototypeMenuState } from '@/components/ui/prototypeMenuState';
+import { LoadingSkeleton, SkeletonBlock } from '@/components/ui/LoadingSkeleton';
 import { useLocale } from '@/locales/LocaleProvider';
 import { questBoardMessages, type QuestBoardMessages } from '@/locales/questBoardMessages';
 import { colors } from '@/theme/colors';
@@ -24,7 +27,10 @@ import {
   createQuestBoardModel,
   type BoardPreviewState,
 } from './questBoardHarness';
+import { getQuestRewardSatang, questFixtureAdapter, toBoardQuest } from './questFixtureAdapter';
+import type { PrototypeScenarioRoute } from '@/components/ui/prototypeMenuData';
 
+import { formatSatang } from './types';
 import {
   emptyQuestBoardFilter,
   type DeadlineFilter,
@@ -44,7 +50,6 @@ export interface QuestBoardScreenProps {
   now?: Date;
 }
 
-const DEFAULT_STUDENT_ID = 'student-demo';
 const FIXTURE_NOW = new Date('2026-08-12T09:00:00.000Z');
 
 const deadlineOptions: { value: DeadlineFilter; labelKey: 'today' | 'within3Days' | 'within7Days' }[] = [
@@ -69,10 +74,6 @@ function announce(message: string): void {
   AccessibilityInfo.announceForAccessibility(message);
 }
 
-function formatReward(amount: number, locale: 'en' | 'th'): string {
-  return `฿${amount.toLocaleString(locale === 'th' ? 'th-TH' : 'en-US')}`;
-}
-
 function formatDeadline(value: string, locale: 'en' | 'th'): string {
   if (locale === 'th') {
     return new Intl.DateTimeFormat('th-TH-u-ca-buddhist', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(new Date(`${value}T12:00:00`));
@@ -82,7 +83,7 @@ function formatDeadline(value: string, locale: 'en' | 'th'): string {
 
 function participationLabel(quest: QuestBoardQuest, messages: QuestBoardMessages): string {
   const participation = quest.participationMode === 'team' ? messages.team : messages.singlePerson;
-  const mode = quest.candidateMode === 'REVIEW' ? messages.applyForReview : messages.firstCome;
+  const mode = quest.candidateMode === 'CANDIDATE' ? messages.applyForReview : messages.firstCome;
   return `${participation} · ${mode}`;
 }
 
@@ -90,7 +91,7 @@ function questCardAccessibilityLabel(quest: QuestBoardQuest, locale: 'en' | 'th'
   const messages = questBoardMessages[locale];
   return [
     quest.title,
-    `${messages.reward}: ${formatReward(quest.rewardPerPerson, locale)} ${messages.perPerson}`,
+    `${messages.reward}: ${formatSatang(getQuestRewardSatang(quest), locale)} ${messages.perPerson}`,
     participationLabel(quest, messages),
     messages.participantsSummary(quest.acceptedParticipants, quest.headcount),
     `${messages.schedule}: ${quest.timeRange ? `${quest.timeRange} · ` : ''}${formatDeadline(quest.startDate, locale)}`,
@@ -120,7 +121,7 @@ function QuestCard({ quest, locale, onDetail }: { quest: QuestBoardQuest; locale
             {tags.map((tag) => <View key={tag} className={styles.cardCategory} testID={`quest-card-tags-${quest.id}`}><BriefcaseBusiness color={colors.primary} size={16} strokeWidth={2.1} /><Text className={styles.cardCategoryText}>{tag}</Text></View>)}
           </View>
           <View className={styles.rewardBlock}>
-            <Text className={styles.rewardAmount}>{formatReward(quest.rewardPerPerson, locale)}</Text>
+            <Text className={styles.rewardAmount}>{formatSatang(getQuestRewardSatang(quest), locale)}</Text>
             <Text className={styles.rewardUnit}>{messages.perPerson}</Text>
           </View>
         </View>
@@ -204,6 +205,35 @@ function StateView({ title, description, actionLabel, onAction, error = false }:
       <Text className={styles.stateDescription}>{description}</Text>
       {actionLabel && onAction ? <Pressable accessibilityRole="button" onPress={onAction} className={styles.stateAction}><Text className={styles.stateActionText}>{actionLabel}</Text></Pressable> : null}
     </View>
+  );
+}
+
+function QuestBoardSkeleton({ loadingLabel }: { loadingLabel: string }) {
+  return (
+    <LoadingSkeleton loadingLabel={loadingLabel} style={{ width: '100%' }} contentStyle={{ gap: spacing.sm }} testID="quest-board-loading-skeleton">
+      {[1, 2, 3].map((item) => (
+        <View key={item} className={styles.skeletonCard} testID={`quest-skeleton-${item}`}>
+          <View style={{ flexDirection: 'row', gap: spacing.sm, justifyContent: 'space-between' }}>
+            <View style={{ flex: 1, gap: spacing.sm }}>
+              <SkeletonBlock height={20} width="78%" borderRadius={5} />
+              <SkeletonBlock height={28} width="38%" borderRadius={16} />
+            </View>
+            <SkeletonBlock height={58} width={88} borderRadius={14} />
+          </View>
+          <SkeletonBlock height={34} width="94%" borderRadius={5} style={{ marginTop: spacing.md }} />
+          <SkeletonBlock height={1} borderRadius={0} style={{ marginBottom: spacing.sm, marginTop: spacing.md }} />
+          {[1, 2, 3, 4].map((row) => (
+            <View key={row} style={{ alignItems: 'center', flexDirection: 'row', gap: spacing.sm, marginTop: row === 1 ? 0 : spacing.xs, minHeight: 36 }}>
+              <SkeletonBlock height={36} width={36} borderRadius={11} />
+              <SkeletonBlock height={16} width={row === 2 ? '64%' : row === 4 ? '78%' : '52%'} borderRadius={4} style={{ flex: row === 2 ? 0 : 1 }} />
+              {row === 2 ? <SkeletonBlock height={30} width={48} borderRadius={12} /> : null}
+            </View>
+          ))}
+          <SkeletonBlock height={1} borderRadius={0} style={{ marginTop: spacing.sm }} />
+          <View style={{ alignItems: 'flex-end', marginTop: spacing.sm }}><SkeletonBlock height={20} width={20} borderRadius={10} /></View>
+        </View>
+      ))}
+    </LoadingSkeleton>
   );
 }
 
@@ -301,14 +331,17 @@ function QuestBoardSortSheet({ sort, messages, onSelect, onClose }: { sort: Ques
   );
 }
 
-export default function QuestBoardScreen({ currentStudentId = DEFAULT_STUDENT_ID, initialPreviewState = 'populated', now = FIXTURE_NOW }: QuestBoardScreenProps) {
+export default function QuestBoardScreen({ currentStudentId, initialPreviewState = 'populated', now }: QuestBoardScreenProps) {
   const router = useRouter();
   const { locale } = useLocale();
+  const { activePersonaId, onPersonaChange, onReset } = usePrototypeMenuState();
+  const resolvedStudentId = currentStudentId?.trim() || activePersonaId;
   const { width, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
   const { handleScroll } = useNavigationVisibility();
   const messages = questBoardMessages[locale];
+  const effectiveNow = now ?? FIXTURE_NOW;
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState<QuestBoardFilter>(emptyQuestBoardFilter);
   const [draftFilters, setDraftFilters] = useState<QuestBoardFilter>(emptyQuestBoardFilter);
@@ -318,6 +351,9 @@ export default function QuestBoardScreen({ currentStudentId = DEFAULT_STUDENT_ID
   const [sortOpen, setSortOpen] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [retrying, setRetrying] = useState(false);
+  const [adapterRevision, setAdapterRevision] = useState(0);
+
+  useEffect(() => questFixtureAdapter.subscribe(() => setAdapterRevision((revision) => revision + 1)), []);
 
   useEffect(() => {
     if (!retrying || previewState !== 'loading') return undefined;
@@ -328,14 +364,23 @@ export default function QuestBoardScreen({ currentStudentId = DEFAULT_STUDENT_ID
     return () => clearTimeout(timeout);
   }, [previewState, retrying]);
 
-  const boardModel = useMemo(() => createQuestBoardModel(previewState), [previewState]);
+  const boardModel = useMemo(() => {
+    void adapterRevision;
+    if (previewState === 'populated' || previewState === 'application-pending' || previewState === 'application-accepted') {
+      return { kind: 'ready' as const, quests: questFixtureAdapter.listBoardQuests(resolvedStudentId, effectiveNow).map((quest) => {
+        const canonicalState = questFixtureAdapter.getState(quest.id, resolvedStudentId, effectiveNow);
+        return canonicalState ? toBoardQuest(canonicalState) : quest;
+      }) };
+    }
+    return createQuestBoardModel(previewState);
+  }, [adapterRevision, effectiveNow, previewState, resolvedStudentId]);
   const localizedQuests = useMemo(() => boardModel.kind === 'ready'
     ? boardModel.quests.map((quest) => getLocalizedQuest(quest, locale))
     : [], [boardModel, locale]);
-  const availableTags = useMemo(() => getQuestBoardTags(getVisibleQuests(localizedQuests, { currentStudentId, now })), [currentStudentId, localizedQuests, now]);
+  const availableTags = useMemo(() => getQuestBoardTags(getVisibleQuests(localizedQuests, { currentStudentId: resolvedStudentId, now: effectiveNow })), [effectiveNow, localizedQuests, resolvedStudentId]);
   const visibleQuests = useMemo(() => boardModel.kind === 'ready'
-    ? sortQuests(applyQuestBoardFilters(localizedQuests, { ...filters, query }, { currentStudentId, now }), sort)
-    : [], [boardModel.kind, currentStudentId, filters, localizedQuests, now, query, sort]);
+    ? sortQuests(applyQuestBoardFilters(localizedQuests, { ...filters, query }, { currentStudentId: resolvedStudentId, now: effectiveNow }), sort)
+    : [], [boardModel.kind, effectiveNow, filters, localizedQuests, query, resolvedStudentId, sort]);
   const openFilters = () => {
     setDraftFilters(cloneFilter(filters));
     setFilterOpen(true);
@@ -407,11 +452,27 @@ export default function QuestBoardScreen({ currentStudentId = DEFAULT_STUDENT_ID
     <QuestCard locale={locale} onDetail={() => openQuest(item)} quest={item} />
   ), [locale, openQuest]);
 
+  const openPrototypeScenario = (route: PrototypeScenarioRoute) => {
+    router.push(route);
+  };
+
   const listHeader = (
     <>
       <View className={styles.boardIntro}>
-        <Text accessibilityRole="header" className={styles.boardTitle}>{messages.title}</Text>
-        <Text className={styles.boardSubtitle}>{messages.subtitle}</Text>
+        <View className={styles.boardIntroRow}>
+          <View className={styles.boardIntroCopy}>
+            <Text accessibilityRole="header" className={styles.boardTitle}>{messages.title}</Text>
+            <Text className={styles.boardSubtitle}>{messages.subtitle}</Text>
+          </View>
+          <PrototypeMenu
+            activePersonaId={activePersonaId}
+            compact
+            onPersonaChange={onPersonaChange}
+            onReset={onReset}
+            onScenarioPress={openPrototypeScenario}
+            testID="quest-board-prototype-menu"
+          />
+        </View>
       </View>
       <View className={styles.searchField}><Search color={colors.textMuted} size={23} strokeWidth={2} /><TextInput accessibilityLabel={messages.searchPlaceholder} accessibilityRole="search" autoCapitalize="none" onChangeText={setQuery} placeholder={messages.searchPlaceholder} placeholderTextColor={colors.textMuted} className={styles.searchInput} testID="quest-board-search" value={query} />{query ? <Pressable accessibilityLabel={messages.clearSearch} accessibilityRole="button" onPress={() => setQuery('')} className={styles.iconButton} testID="clear-quest-search"><X color={colors.textMuted} size={20} /></Pressable> : null}</View>
       <View className={styles.toolbar}><Pressable accessibilityLabel={`${messages.filter}${hasActiveFilters ? `, ${messages.selectedFilters(activeFilterCount)}` : ''}`} accessibilityRole="button" accessibilityState={{ expanded: filterOpen }} onPress={openFilters} className={cn(styles.toolbarButton, hasActiveFilters && styles.toolbarButtonActive)} testID="open-quest-filters"><SlidersHorizontal color={hasActiveFilters ? colors.white : colors.textStrong} size={22} strokeWidth={2.3} /><Text className={cn(styles.toolbarText, hasActiveFilters && styles.toolbarTextActive)}>{messages.filter}</Text>{activeFilterCount > 0 ? <View className={styles.filterCount}><Text className={styles.filterCountText}>{activeFilterCount}</Text></View> : null}</Pressable><Pressable accessibilityLabel={`${messages.sort}: ${sortLabel}`} accessibilityRole="button" accessibilityState={{ expanded: sortOpen }} onPress={() => setSortOpen(true)} className={cn(styles.toolbarButton, styles.toolbarButtonRight)} testID="open-quest-sort"><ArrowDownUp color={colors.textStrong} size={22} strokeWidth={2.3} /><Text className={styles.toolbarText}>{messages.sort}: {sortLabel}</Text></Pressable></View>
@@ -421,7 +482,7 @@ export default function QuestBoardScreen({ currentStudentId = DEFAULT_STUDENT_ID
   );
 
   const emptyState = boardModel.kind === 'loading'
-    ? <View accessibilityRole="progressbar" accessibilityState={{ busy: true }} accessibilityLabel={messages.loading} className={styles.cards}>{[1, 2, 3].map((item) => <View key={item} testID={`quest-skeleton-${item}`} className={styles.skeleton} />)}</View>
+    ? <QuestBoardSkeleton loadingLabel={messages.loading} />
     : boardModel.kind === 'error'
       ? <StateView error title={messages.errorTitle} description={messages.errorDescription} actionLabel={messages.retry} onAction={retryBoard} />
       : boardModel.kind === 'empty'

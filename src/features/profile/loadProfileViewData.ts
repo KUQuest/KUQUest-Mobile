@@ -3,7 +3,8 @@ import { authService } from '../auth/AuthService';
 import { AuthError } from '../auth/types';
 import type { SupportedLocale } from '../../locales/LocaleProvider';
 import type { ProfileSectionErrors, ProfileViewData } from './components/ProfileComponents';
-import { demoCertificates, demoExperiences, demoProfileIdentity, demoProfileImage, demoProfileStats, demoProfileTags, demoReviews, demoWorks, isProfileDemoEnabled } from './profileDemoData';
+import { getActivePrototypePersonaId } from '../../components/ui/prototypeMenuState';
+import { getDemoProfileViewData, isProfileDemoEnabled } from './profileDemoData';
 import { mapApiCertificateToView, mapApiExperienceToView, mapApiPortfolioToView, mapApiReviewToView } from './profileMappers';
 import { sortExperiences, type OptionalReadResult } from './profileViewData';
 
@@ -36,29 +37,12 @@ function hasReadError(result: OptionalReadResult<unknown>): boolean {
   return result.kind === 'error';
 }
 
-function getDemoProfileViewData(): ProfileViewData {
-  return {
-    name: demoProfileIdentity.name,
-    faculty: demoProfileIdentity.faculty,
-    university: 'State University',
-    occupation: demoProfileIdentity.occupation,
-    academicYear: '',
-    department: demoProfileIdentity.department,
-    tags: demoProfileTags.slice(0, PROFILE_TAG_LIMIT),
-    profileImage: demoProfileImage,
-    about: demoProfileIdentity.about,
-    stats: demoProfileStats,
-    experiences: demoExperiences,
-    certificates: demoCertificates,
-    works: demoWorks,
-    reviews: demoReviews,
-    sectionErrors: {},
-  };
-}
-
-export async function loadProfileViewData(locale: SupportedLocale): Promise<ProfileViewData> {
+export async function loadProfileViewData(locale: SupportedLocale, personaId = getActivePrototypePersonaId()): Promise<ProfileViewData> {
   const demoEnabled = isProfileDemoEnabled();
-  if (demoEnabled) return getDemoProfileViewData();
+  if (demoEnabled) {
+    const data = getDemoProfileViewData(personaId);
+    return { ...data, tags: data.tags.slice(0, PROFILE_TAG_LIMIT) };
+  }
 
   const session = await authService.getSession();
   if (!session) throw new AuthError('SESSION_EXPIRED', 'No active session');

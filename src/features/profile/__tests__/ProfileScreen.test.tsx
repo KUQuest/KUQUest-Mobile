@@ -48,6 +48,21 @@ describe('Student Profile screen', () => {
     mockedLoadProfileViewData.mockResolvedValue(profileData);
   });
 
+  it('shows the page skeleton until profile data settles', async () => {
+    let resolveProfile!: (value: typeof profileData) => void;
+    mockedLoadProfileViewData.mockReturnValueOnce(new Promise<typeof profileData>((resolve) => {
+      resolveProfile = resolve;
+    }));
+
+    const view = await render(<ProfileScreen />);
+
+    expect(view.getByLabelText('Loading profile...')).toBeTruthy();
+    expect(view.queryByTestId('profile-header')).toBeNull();
+
+    resolveProfile(profileData);
+    await waitFor(() => expect(view.getByTestId('profile-header')).toBeTruthy());
+  });
+
   it('opens About by default and switches to the selected profile section', async () => {
     const view = await render(<ProfileScreen />);
 

@@ -2,6 +2,7 @@ import { fireEvent, render, waitFor, within } from '@testing-library/react-nativ
 import mockReact, { type ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 import CreateQuestScreen from '../CreateQuestScreen';
+import { questFixtureAdapter } from '../../questBoard/questFixtureAdapter';
 
 jest.mock('react-native/Libraries/Modal/Modal', () => {
   return {
@@ -19,6 +20,14 @@ jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
 const mockRouter = { replace: jest.fn() };
 const mockLoadQuestDraft = jest.fn();
 const mockPersistQuestDraft = jest.fn();
+const mockDeleteQuestDraft = jest.fn();
+
+jest.mock('../createQuestPersistence', () => ({
+  getQuestDraftStorageKey: jest.fn().mockResolvedValue('test-key'),
+  loadQuestDraft: (...args: unknown[]) => mockLoadQuestDraft(...args),
+  persistQuestDraft: (...args: unknown[]) => mockPersistQuestDraft(...args),
+  deleteQuestDraft: (...args: unknown[]) => mockDeleteQuestDraft(...args),
+}));
 
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
@@ -32,48 +41,65 @@ jest.mock('../../../locales/LocaleProvider', () => ({
   useLocale: () => ({ locale: 'th' }),
 }));
 
-jest.mock('../createQuestPersistence', () => ({
-  getQuestDraftStorageKey: jest.fn().mockResolvedValue('test-key'),
-  loadQuestDraft: (...args: unknown[]) => mockLoadQuestDraft(...args),
-  persistQuestDraft: (...args: unknown[]) => mockPersistQuestDraft(...args),
-  deleteQuestDraft: jest.fn().mockResolvedValue(undefined),
-}));
-
-function createSnapshot({ step = 2, state = 'DRAFT', draftOverrides = {} }: { step?: 1 | 2 | 3; state?: 'DRAFT' | 'OPEN'; draftOverrides?: Record<string, unknown> } = {}) {
-  return {
-    draft: {
-      ...jest.requireActual('../createQuestModel').initialDraft,
-      title: 'ล้างพัดลมหอพัก',
-      tag: 'design',
-      description: 'ล้างพัดลมส่วนกลาง',
-      conditions: 'พัดลมสะอาดและใช้งานได้',
-      startDate: '2099-08-26',
-      deadline: '2099-08-27',
-      startTime: '09:00',
-      endTime: '12:00',
-      location: 'หอพัก 13',
-      participation: 'GROUP',
-      candidateMode: 'CANDIDATE',
-      headcount: '5',
-      wage: '150',
-      ...draftOverrides,
-    },
-    step,
-    state,
-  };
+async function fillQuestDetails(view: Awaited<ReturnType<typeof render>>) {
+  await fireEvent.changeText(view.getByLabelText('ชื่อเควสต์ *'), 'ล้างพัดลมหอพัก');
+  await fireEvent.press(view.getByLabelText('แท็กเควสต์ *: เลือกแท็กเควสต์'));
+  await fireEvent.press(view.getByLabelText('แท็กเควสต์ *: การออกแบบและงานสร้างสรรค์'));
+  await fireEvent.changeText(view.getByLabelText('รายละเอียดงาน *'), 'ล้างพัดลมส่วนกลาง');
+  await fireEvent.changeText(view.getByLabelText('เกณฑ์การเสร็จงาน *'), 'พัดลมสะอาดและใช้งานได้');
 }
 
 describe('CreateQuestScreen', () => {
   beforeEach(() => {
+    questFixtureAdapter.reset();
     mockRouter.replace.mockClear();
     mockLoadQuestDraft.mockReset();
-    mockLoadQuestDraft.mockResolvedValue(createSnapshot());
+    mockLoadQuestDraft.mockResolvedValue(null);
     mockPersistQuestDraft.mockReset();
     mockPersistQuestDraft.mockResolvedValue(undefined);
+    mockDeleteQuestDraft.mockReset();
+    mockDeleteQuestDraft.mockResolvedValue(undefined);
   });
 
-  it('renders the Team Setup reference structure and updates the summary when a format changes', async () => {
+  it('keeps the page skeleton visible until draft hydration settles', async () => {
+    let resolveDraft!: (value: null) => void;
+    mockLoadQuestDraft.mockReturnValueOnce(new Promise<null>((resolve) => {
+      resolveDraft = resolve;
+    }));
+
     const view = await render(<CreateQuestScreen />);
+
+    expect(view.getByTestId('create-quest-loading-skeleton')).toBeTruthy();
+    expect(view.getByLabelText('กำลังกู้คืนฉบับร่าง…')).toBeTruthy();
+    expect(view.queryByLabelText('ชื่อเควสต์ *')).toBeNull();
+
+    resolveDraft(null);
+    await waitFor(() => expect(view.getByLabelText('ชื่อเควสต์ *')).toBeTruthy());
+  });
+
+  it('restores the persisted draft and step on mount', async () => {
+    mockLoadQuestDraft.mockResolvedValueOnce({
+      draft: {
+        ...jest.requireActual('../createQuestModel').initialDraft,
+        title: 'Restored quest',
+        tag: 'design',
+        description: 'Restored description',
+        conditions: 'Restored criteria',
+      },
+      step: 2,
+      state: 'DRAFT',
+    });
+
+    const view = await render(<CreateQuestScreen />);
+
+    await waitFor(() => expect(view.getByText('ตั้งค่าทีม')).toBeTruthy());
+    await fireEvent.press(view.getByLabelText('ขั้นตอนที่ 1 จาก 3: ข้อมูลเควสต์'));
+    expect(view.getByLabelText('ชื่อเควสต์ *').props.value).toBe('Restored quest');
+    expect(mockLoadQuestDraft).toHaveBeenCalledWith('test-key');
+  });
+
+  it('opens the mock draft in Team Setup for edit flows and updates the summary', async () => {
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
 
     expect(view.getByText('ตั้งค่าทีม')).toBeTruthy();
     expect(view.getByLabelText('ขั้นตอนที่ 2 จาก 3: ตั้งค่าทีม')).toBeTruthy();
@@ -85,7 +111,6 @@ describe('CreateQuestScreen', () => {
     expect(view.queryByTestId('create-quest-start-datetime')).toBeNull();
 
     await fireEvent.press(view.getByTestId('create-quest-choice-single'));
-
     await fireEvent.press(view.getByText('ตรวจสอบเควสต์'));
 
     await waitFor(() => expect(view.getByText('ตั้งค่าเควสต์')).toBeTruthy());
@@ -99,11 +124,9 @@ describe('CreateQuestScreen', () => {
   });
 
   it('allows Quest Tags to be searched before selecting one', async () => {
-    mockLoadQuestDraft.mockResolvedValueOnce(createSnapshot({ step: 1 }));
     const view = await render(<CreateQuestScreen />);
 
-    const tagTrigger = await waitFor(() => view.getByLabelText('แท็กเควสต์ *: การออกแบบและงานสร้างสรรค์'));
-    await fireEvent.press(tagTrigger);
+    await fireEvent.press(view.getByLabelText('แท็กเควสต์ *: เลือกแท็กเควสต์'));
 
     const searchInput = view.getByTestId('select-search-input');
     expect(searchInput.props.placeholder).toBe('ค้นหาแท็กเควสต์');
@@ -117,12 +140,10 @@ describe('CreateQuestScreen', () => {
     expect(view.getByLabelText('แท็กเควสต์ *: เทคโนโลยี')).toBeTruthy();
   });
 
-  it('keeps Single headcount fixed at one and valid when the stored capacity is stale', async () => {
-    mockLoadQuestDraft.mockResolvedValueOnce(createSnapshot({ draftOverrides: { participation: 'SINGLE', headcount: '' } }));
-    const view = await render(<CreateQuestScreen />);
+  it('keeps Single headcount fixed at one in the mock draft', async () => {
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
 
-    await waitFor(() => expect(view.getByText('ตรวจสอบเควสต์')).toBeTruthy());
-
+    await fireEvent.press(view.getByTestId('create-quest-choice-single'));
     expect(view.getByLabelText('จำนวนผู้เข้าร่วม: 1').props.accessibilityState).toEqual({ disabled: true });
     expect(view.queryByText('จำนวนผู้เข้าร่วม *')).toBeNull();
 
@@ -130,16 +151,11 @@ describe('CreateQuestScreen', () => {
 
     await waitFor(() => expect(view.getByText('ตั้งค่าเควสต์')).toBeTruthy());
     expect(within(view.getByTestId('create-quest-summary-size')).getByText('1 คน')).toBeTruthy();
-
-    mockPersistQuestDraft.mockClear();
-    await fireEvent.press(view.getByLabelText('บันทึกฉบับร่าง'));
-    await waitFor(() => expect(mockPersistQuestDraft).toHaveBeenCalledWith('test-key', expect.objectContaining({ participation: 'SINGLE', headcount: '1' }), 3, 'DRAFT'));
   });
 
   it('reveals the logistics fields when the collapsed section is opened', async () => {
-    const view = await render(<CreateQuestScreen />);
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
 
-    await waitFor(() => expect(view.getByTestId('create-quest-logistics-toggle')).toBeTruthy());
     await fireEvent.press(view.getByTestId('create-quest-logistics-toggle'));
 
     expect(view.getByTestId('create-quest-start-datetime')).toBeTruthy();
@@ -147,9 +163,9 @@ describe('CreateQuestScreen', () => {
   });
 
   it('aligns the fixed Single headcount value like the other form fields', async () => {
-    mockLoadQuestDraft.mockResolvedValueOnce(createSnapshot({ step: 2, draftOverrides: { participation: 'SINGLE' } }));
-    const view = await render(<CreateQuestScreen />);
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
 
+    await fireEvent.press(view.getByTestId('create-quest-choice-single'));
     const headcountField = await waitFor(() => view.getByLabelText('จำนวนผู้เข้าร่วม: 1'));
 
     expect(StyleSheet.flatten(headcountField.props.style)).toEqual(expect.objectContaining({
@@ -159,7 +175,6 @@ describe('CreateQuestScreen', () => {
   });
 
   it('uses a checkbox for proof and explains the selected requirement below', async () => {
-    mockLoadQuestDraft.mockResolvedValueOnce(createSnapshot({ step: 1 }));
     const view = await render(<CreateQuestScreen />);
 
     const proofToggle = await waitFor(() => view.getByTestId('create-quest-proof-toggle'));
@@ -175,22 +190,24 @@ describe('CreateQuestScreen', () => {
     expect(view.getByTestId('create-quest-proof-toggle').props.accessibilityState).toEqual({ checked: true });
   });
 
-  it('returns from Review to the first invalid field and expands logistics', async () => {
-    mockLoadQuestDraft.mockResolvedValueOnce(createSnapshot({ step: 3, draftOverrides: { startDate: '', deadline: '', startTime: '', endTime: '', location: '' } }));
+  it('returns to the first invalid logistics field and expands the section', async () => {
     const view = await render(<CreateQuestScreen />);
 
-    await waitFor(() => expect(view.getByText('บันทึกฉบับร่าง')).toBeTruthy());
-    await fireEvent.press(view.getByText('บันทึกฉบับร่าง'));
+    await fillQuestDetails(view);
+    await fireEvent.press(view.getByLabelText('ถัดไป'));
+    await waitFor(() => expect(view.getByText('ตั้งค่าทีม')).toBeTruthy());
+
+    await fireEvent.press(view.getByLabelText('ตรวจสอบเควสต์'));
 
     await waitFor(() => expect(view.getByTestId('create-quest-start-datetime')).toBeTruthy());
     expect(view.getByText(/วันที่เริ่มต้น:/)).toBeTruthy();
   });
 
   it('keeps both Review actions wide enough to remain visible', async () => {
-    mockLoadQuestDraft.mockResolvedValueOnce(createSnapshot({ step: 3 }));
-    const view = await render(<CreateQuestScreen />);
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
 
-    await waitFor(() => expect(view.getByText('บันทึกฉบับร่าง')).toBeTruthy());
+    await fireEvent.press(view.getByText('ตรวจสอบเควสต์'));
+    await waitFor(() => expect(view.getByTestId('create-quest-save-draft')).toBeTruthy());
 
     const draftButtonStyle = StyleSheet.flatten(view.getByTestId('create-quest-save-draft').props.style);
     const previewButtonStyle = StyleSheet.flatten(view.getByTestId('create-quest-save-preview').props.style);
@@ -201,44 +218,84 @@ describe('CreateQuestScreen', () => {
   });
 
   it('saves a Review draft through the first action', async () => {
-    mockLoadQuestDraft.mockResolvedValueOnce(createSnapshot({ step: 3 }));
-    const view = await render(<CreateQuestScreen />);
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
 
-    await waitFor(() => expect(view.getByText('บันทึกฉบับร่าง')).toBeTruthy());
+    await fireEvent.press(view.getByText('ตรวจสอบเควสต์'));
+    await waitFor(() => expect(view.getByTestId('create-quest-save-draft')).toBeTruthy());
     await fireEvent.press(view.getByLabelText('บันทึกฉบับร่าง'));
 
-    await waitFor(() => expect(mockPersistQuestDraft).toHaveBeenCalledWith('test-key', expect.objectContaining({ title: 'ล้างพัดลมหอพัก' }), 3, 'DRAFT'));
-    expect(view.getByText('บันทึกฉบับร่างเควสต์แล้ว')).toBeTruthy();
+    await waitFor(() => expect(view.getByText('บันทึกฉบับร่างเควสต์แล้ว')).toBeTruthy());
+    expect(mockPersistQuestDraft).toHaveBeenCalledWith('test-key', expect.objectContaining({ title: 'Draft campus photo session' }), 3, 'DRAFT', 'mock-draft');
   });
 
-  it('saves a Review preview through the second action', async () => {
-    mockLoadQuestDraft.mockResolvedValueOnce(createSnapshot({ step: 3 }));
-    const view = await render(<CreateQuestScreen />);
+  it('publishes a valid Review Quest through the adapter and clears its SecureStore draft', async () => {
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
 
-    await waitFor(() => expect(view.getByText('บันทึกตัวอย่างเควสต์')).toBeTruthy());
-    await fireEvent.press(view.getByLabelText('บันทึกตัวอย่างเควสต์'));
-
-    await waitFor(() => expect(mockPersistQuestDraft).toHaveBeenCalledWith('test-key', expect.objectContaining({ title: 'ล้างพัดลมหอพัก' }), 3, 'OPEN'));
-    expect(view.getByText('บันทึกตัวอย่างเควสต์ในเครื่องแล้ว')).toBeTruthy();
-  });
-
-  it('shows a retry action when saving fails', async () => {
-    const view = await render(<CreateQuestScreen />);
-
-    await waitFor(() => expect(view.getByText('ตั้งค่าทีม')).toBeTruthy());
-    await fireEvent.press(view.getByTestId('create-quest-logistics-toggle'));
     await fireEvent.press(view.getByText('ตรวจสอบเควสต์'));
-    await waitFor(() => expect(view.getByText('บันทึกตัวอย่างเควสต์')).toBeTruthy());
+    await waitFor(() => expect(view.getByTestId('create-quest-save-preview')).toBeTruthy());
+    await fireEvent.press(view.getByLabelText('เผยแพร่เควสต์'));
 
-    mockPersistQuestDraft.mockRejectedValueOnce(new Error('storage unavailable'));
-    await fireEvent.press(view.getByText('บันทึกตัวอย่างเควสต์'));
+    await waitFor(() => expect(view.getByText('เผยแพร่เควสต์แล้ว')).toBeTruthy());
+    expect(mockPersistQuestDraft).not.toHaveBeenCalledWith(expect.anything(), expect.anything(), 3, 'OPEN', expect.anything());
+    expect(mockDeleteQuestDraft).toHaveBeenCalledWith('test-key', 'mock-draft');
+    expect(questFixtureAdapter.listStates('demo-hirer').some((state) => state.quest.title === 'Draft campus photo session' && state.quest.status === 'QUEST_OPEN')).toBe(true);
+  });
+
+  it('keeps the published Quest in adapter state after the create flow completes', async () => {
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
+
+    await fireEvent.press(view.getByText('ตรวจสอบเควสต์'));
+    await waitFor(() => expect(view.getByTestId('create-quest-save-preview')).toBeTruthy());
+    await fireEvent.press(view.getByLabelText('เผยแพร่เควสต์'));
+
+    await waitFor(() => expect(view.getByText('เผยแพร่เควสต์แล้ว')).toBeTruthy());
+    expect(view.getByText('เควสต์ของคุณอยู่ในสถานะตัวอย่างที่เผยแพร่แล้ว และจะแสดงใน My Quests ของผู้ว่าจ้าง')).toBeTruthy();
+    expect(mockDeleteQuestDraft).toHaveBeenCalledWith('test-key', 'mock-draft');
+  });
+
+  it('shows a retry action when published Quest draft cleanup fails', async () => {
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
+
+    await fireEvent.press(view.getByText('ตรวจสอบเควสต์'));
+    await waitFor(() => expect(view.getByTestId('create-quest-save-preview')).toBeTruthy());
+
+    mockDeleteQuestDraft.mockRejectedValueOnce(new Error('storage unavailable'));
+    await fireEvent.press(view.getByTestId('create-quest-save-preview'));
 
     await waitFor(() => expect(view.getByTestId('create-quest-save-error')).toBeTruthy());
     expect(view.getByText('ลองอีกครั้ง')).toBeTruthy();
 
+    mockDeleteQuestDraft.mockResolvedValueOnce(undefined);
+    await fireEvent.press(view.getByTestId('create-quest-retry-save'));
+
+    await waitFor(() => expect(view.getByText('เผยแพร่เควสต์แล้ว')).toBeTruthy());
+    expect(questFixtureAdapter.listStates('demo-hirer').filter((state) => state.quest.title === 'Draft campus photo session')).toHaveLength(1);
+  });
+
+  it('autosaves edits and exposes a retry when persistence fails', async () => {
+    const view = await render(<CreateQuestScreen />);
+
+    await waitFor(() => expect(view.getByLabelText('ชื่อเควสต์ *')).toBeTruthy());
+    mockPersistQuestDraft.mockRejectedValueOnce(new Error('storage unavailable'));
+    await fireEvent.changeText(view.getByLabelText('ชื่อเควสต์ *'), 'บันทึกอัตโนมัติ');
+
+    await waitFor(() => expect(view.getByTestId('create-quest-save-error')).toBeTruthy());
+    expect(mockPersistQuestDraft).toHaveBeenCalledWith('test-key', expect.objectContaining({ title: 'บันทึกอัตโนมัติ' }), 1, 'DRAFT');
+
     mockPersistQuestDraft.mockResolvedValueOnce(undefined);
     await fireEvent.press(view.getByTestId('create-quest-retry-save'));
 
-    await waitFor(() => expect(view.getByText('บันทึกตัวอย่างเควสต์ในเครื่องแล้ว')).toBeTruthy());
+    await waitFor(() => expect(view.getByText('บันทึกฉบับร่างแล้ว')).toBeTruthy());
+  });
+
+  it('starts a fresh blank form after the draft screen is unmounted', async () => {
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
+
+    await fireEvent.press(view.getByLabelText('ขั้นตอนที่ 1 จาก 3: ข้อมูลเควสต์'));
+    expect(view.getByLabelText('ชื่อเควสต์ *').props.value).toBe('Draft campus photo session');
+    view.unmount();
+
+    const freshView = await render(<CreateQuestScreen />);
+    await waitFor(() => expect(freshView.getByLabelText('ชื่อเควสต์ *').props.value).toBe(''));
   });
 });

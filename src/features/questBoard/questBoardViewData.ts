@@ -7,7 +7,7 @@ import type {
   QuestBoardSort,
   QuestLocationMode,
 } from './types';
-import { MAX_QUEST_IMAGES } from './types';
+import { MAX_QUEST_IMAGES, QuestStatus } from './types';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -37,6 +37,8 @@ export function getQuestAvailability(quest: QuestBoardQuest, now = new Date()): 
 export function getVisibleQuests(quests: QuestBoardQuest[], options: QuestBoardQueryOptions = {}): QuestBoardQuest[] {
   const now = options.now ?? new Date();
   return quests.filter((quest) => {
+    if (quest.prototypeOnly) return false;
+    if (quest.status !== undefined && quest.status !== QuestStatus.QUEST_OPEN) return false;
     if (options.currentStudentId && quest.ownerStudentId === options.currentStudentId) return false;
     return getQuestAvailability(quest, now) === 'available';
   });

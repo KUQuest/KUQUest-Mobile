@@ -7,7 +7,7 @@ import {
   getQuestImageCount,
   sortQuests,
 } from '../questBoardViewData';
-import { emptyQuestBoardFilter, type QuestBoardFilter, type QuestBoardQuest } from '../types';
+import { emptyQuestBoardFilter, QuestStatus, type QuestBoardFilter, type QuestBoardQuest } from '../types';
 import { getLocalizedQuest, getLocalizedTag } from '../questTranslations';
 import { questFixtures } from '../questFixtures';
 
@@ -29,7 +29,7 @@ const quests: QuestBoardQuest[] = [
     location: 'On campus',
     locationMode: 'on-campus',
     participationMode: 'single',
-    candidateMode: 'REVIEW',
+    candidateMode: 'CANDIDATE',
     creator: { name: 'Nicha', faculty: 'Architecture' },
     studentInterestMatch: true,
     ownerStudentId: 'creator-1',
@@ -95,7 +95,7 @@ const quests: QuestBoardQuest[] = [
     location: 'Online',
     locationMode: 'online',
     participationMode: 'single',
-    candidateMode: 'REVIEW',
+    candidateMode: 'CANDIDATE',
     creator: { name: 'Current Student', faculty: 'Engineering' },
     studentInterestMatch: true,
     ownerStudentId: 'current-student',
@@ -108,6 +108,13 @@ describe('Quest Board view data', () => {
       'design-match',
       'tech-soon',
     ]);
+  });
+
+  it('shows only OPEN raw Quest statuses when the status projection is present', () => {
+    const openQuest = { ...quests[0], status: QuestStatus.QUEST_OPEN };
+    const assignedQuest = { ...quests[1], status: QuestStatus.QUEST_ASSIGNED };
+
+    expect(getVisibleQuests([openQuest, assignedQuest], { now: new Date('2026-08-12T09:00:00.000Z') }).map((quest) => quest.id)).toEqual(['design-match']);
   });
 
   it('filters by search text, tags, reward bounds, deadline, start time, and location', () => {

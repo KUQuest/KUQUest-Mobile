@@ -56,6 +56,22 @@ describe('Edit Profile hub', () => {
     mockedGetProfileApi.mockResolvedValue({ getEditData: jest.fn().mockResolvedValue(editData) } as never);
   });
 
+  it('shows the hub skeleton until edit data settles', async () => {
+    let resolveData!: (value: typeof editData) => void;
+    const getEditData = jest.fn().mockReturnValue(new Promise<typeof editData>((resolve) => {
+      resolveData = resolve;
+    }));
+    mockedGetProfileApi.mockResolvedValue({ getEditData } as never);
+
+    const view = await render(<EditProfileHubScreen />);
+
+    expect(view.getByLabelText('Loading profile editor...')).toBeTruthy();
+    expect(view.queryByTestId('profile-edit-section-basics')).toBeNull();
+
+    resolveData(editData);
+    await waitFor(() => expect(view.getByTestId('profile-edit-section-basics')).toBeTruthy());
+  });
+
   it('shows focused public profile editing sections and their empty summaries', async () => {
     const view = await render(<EditProfileHubScreen />);
 
@@ -95,6 +111,51 @@ describe('Edit Profile hub', () => {
     expect(view.getByText('Organization (optional)')).toBeTruthy();
     expect(view.getByText('Description (optional)')).toBeTruthy();
     expect(view.getByText('Save changes')).toBeTruthy();
+  });
+
+  it('uses an editor-shaped skeleton for a new certificate route', async () => {
+    mockRouteParams.section = 'certificates';
+    mockRouteParams.itemId = 'new';
+    let resolveData!: (value: typeof editData) => void;
+    mockedGetProfileApi.mockResolvedValue({
+      getEditData: jest.fn().mockReturnValue(new Promise<typeof editData>((resolve) => {
+        resolveData = resolve;
+      })),
+    } as never);
+
+    const view = await render(<ProfileEditSectionScreen />);
+
+    expect(view.getByTestId('profile-edit-loading-skeleton-certificates-editor')).toBeTruthy();
+    expect(view.getByTestId('profile-edit-skeleton-certificate-image')).toBeTruthy();
+    expect(view.getByTestId('profile-edit-skeleton-certificate-fields')).toBeTruthy();
+    expect(view.getByTestId('profile-edit-skeleton-certificate-name')).toBeTruthy();
+    expect(view.getByTestId('profile-edit-skeleton-certificate-issuer')).toBeTruthy();
+    expect(view.getByTestId('profile-edit-skeleton-certificate-issued-at')).toBeTruthy();
+    expect(view.getByTestId('profile-edit-loading-save')).toBeTruthy();
+    expect(view.queryByTestId('profile-edit-loading-skeleton-certificates-list')).toBeNull();
+
+    resolveData(editData);
+    await waitFor(() => expect(view.getByLabelText('Title')).toBeTruthy());
+  });
+
+  it('uses the same editor skeleton while an existing certificate loads', async () => {
+    mockRouteParams.section = 'certificates';
+    mockRouteParams.itemId = 'certificate-1';
+    let resolveData!: (value: typeof editData) => void;
+    mockedGetProfileApi.mockResolvedValue({
+      getEditData: jest.fn().mockReturnValue(new Promise<typeof editData>((resolve) => {
+        resolveData = resolve;
+      })),
+    } as never);
+
+    const view = await render(<ProfileEditSectionScreen />);
+
+    expect(view.getByTestId('profile-edit-loading-skeleton-certificates-editor')).toBeTruthy();
+    expect(view.getByTestId('profile-edit-skeleton-certificate-fields')).toBeTruthy();
+    expect(view.getByTestId('profile-edit-loading-save')).toBeTruthy();
+
+    resolveData(editData);
+    await waitFor(() => expect(view.getByText('Certificates')).toBeTruthy());
   });
 
   it('does not create a new item when an existing route id is stale', async () => {

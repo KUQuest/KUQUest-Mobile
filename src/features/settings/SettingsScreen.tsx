@@ -7,6 +7,7 @@ import { Pressable, SafeAreaView, Text, View } from '@/tw';
 import { useLocale } from '@/locales/LocaleProvider';
 import { settingsMessages } from '@/locales/settingsMessages';
 import { authService } from '@/features/auth/AuthService';
+import { isPrototypeDemoEnabled } from '@/features/auth/demoMode';
 import { colors } from '@/theme/colors';
 import styles from './styles/settingsStyles';
 
@@ -60,7 +61,7 @@ export default function SettingsScreen() {
   const messages = settingsMessages[locale];
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [switchingAccount, setSwitchingAccount] = useState(false);
-  const devOverlayEnabled = __DEV__ && process.env.EXPO_PUBLIC_PROFILE_DEMO === 'true';
+  const devOverlayEnabled = isPrototypeDemoEnabled();
 
   const switchAccount = () => {
     if (switchingAccount) return;

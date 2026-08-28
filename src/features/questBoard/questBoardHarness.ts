@@ -1,4 +1,5 @@
 import { questFixtures } from './questFixtures';
+import { questFixtureAdapter, toBoardQuest } from './questFixtureAdapter';
 import { findQuestByRouteId } from './questRoute';
 import type { QuestBoardQuest } from './types';
 
@@ -76,12 +77,15 @@ export function createQuestBoardModel(previewState: BoardPreviewState): QuestBoa
   if (previewState === 'full' || previewState === 'closed') {
     return { kind: 'unavailable', availability: previewState, quest: createUnavailableQuest(previewState) };
   }
-  return { kind: 'ready', quests: questFixtures };
+  return { kind: 'ready', quests: questFixtures.filter((quest) => !quest.prototypeOnly) };
 }
 
 export function getQuestDetailFixture(routeId: string | undefined, previewState?: BoardPreviewState): QuestBoardQuest | undefined {
   const quest = findQuestByRouteId(questFixtures, routeId);
-  if (!quest) return undefined;
+  if (!quest) {
+    const canonicalState = routeId ? questFixtureAdapter.getState(routeId) : null;
+    return canonicalState ? toBoardQuest(canonicalState) : undefined;
+  }
   if (previewState === 'full' || previewState === 'application-accepted') return { ...quest, acceptedParticipants: quest.headcount };
   if (previewState === 'closed') return { ...quest, deadline: '2026-08-11' };
   return quest;

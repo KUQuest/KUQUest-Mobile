@@ -1,6 +1,4 @@
 const styles = {
-  loadingState: 'flex-row items-center gap-[10px] px-[24px] py-[16px] rounded-[16px] bg-ku-surface-accent',
-  loadingText: 'font-ku-regular text-ku-primary',
   safeArea: 'flex-1 bg-ku-background',
   scrollContent: 'px-[20px] pt-[24px] pb-[136px] items-center w-full max-w-[720px] self-center',
   headerSection: 'items-start mb-[20px] w-full',

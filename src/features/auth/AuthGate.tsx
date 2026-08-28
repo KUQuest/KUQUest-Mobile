@@ -3,10 +3,11 @@ import { ActivityIndicator, Pressable, Text, View } from '@/tw';
 import { useRouter } from "expo-router";
 import { colors } from '@/theme/colors';
 import LoginScreen from './LoginScreen';
-import { authService } from './AuthService';
+import { authService, isAuthNetworkError } from './AuthService';
 import { RoutingDestination } from './types';
 import { authMessages } from '../../locales/authMessages';
 import { useLocale } from '../../locales/LocaleProvider';
+import { enableOfflinePrototypeDemo, isPrototypeDemoEnabled } from './demoMode';
 
 type DemoLaunchTarget = 'login' | 'register' | 'home';
 
@@ -32,10 +33,10 @@ export default function Index() {
   const [status, setStatus] = useState<'loading' | 'unauthenticated' | 'error'>('loading');
   const [attempt, setAttempt] = useState(0);
   const [demoLaunchTarget, setDemoLaunchTarget] = useState<DemoLaunchTarget | null>(null);
+  const [demoLaunchAvailable, setDemoLaunchAvailable] = useState(() => isPrototypeDemoEnabled());
   const router = useRouter();
   const { locale } = useLocale();
   const messages = authMessages[locale];
-  const demoBypassEnabled = __DEV__ && process.env.EXPO_PUBLIC_PROFILE_DEMO === 'true';
 
   const chooseDemoLaunchTarget = React.useCallback((target: DemoLaunchTarget) => {
     setDemoLaunchTarget(target);
@@ -58,28 +59,42 @@ export default function Index() {
 
   useEffect(() => {
     let mounted = true;
-    if (demoBypassEnabled) {
+    if (demoLaunchAvailable || isPrototypeDemoEnabled()) {
       return () => { mounted = false; };
     }
 
     async function checkSession() {
+      let session;
       try {
-        const session = await authService.getSession();
-        if (session && mounted) {
-          handleNavigate(await authService.getRoutingDestination());
+        session = await authService.getSession();
+      } catch (error) {
+        if (__DEV__ && isAuthNetworkError(error)) {
+          enableOfflinePrototypeDemo();
+          if (mounted) {
+            setDemoLaunchAvailable(true);
+            setStatus('unauthenticated');
+          }
           return;
         }
-      } catch {
         if (mounted) setStatus('error');
+        return;
+      }
+
+      if (session && mounted) {
+        try {
+          handleNavigate(await authService.getRoutingDestination());
+        } catch {
+          if (mounted) setStatus('error');
+        }
         return;
       }
       if (mounted) setStatus('unauthenticated');
     }
-    checkSession();
+    void checkSession();
     return () => { mounted = false; };
-  }, [attempt, demoBypassEnabled, handleNavigate]);
+  }, [attempt, demoLaunchAvailable, handleNavigate]);
 
-  if (demoBypassEnabled && demoLaunchTarget === null) {
+  if ((demoLaunchAvailable || isPrototypeDemoEnabled()) && demoLaunchTarget === null) {
     return <DemoLaunchOverlay onSelect={chooseDemoLaunchTarget} />;
   }
 

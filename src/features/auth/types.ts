@@ -14,13 +14,21 @@ export type AuthErrorCode =
   | 'API_ERROR'
   | 'SESSION_EXPIRED';
 
+export interface AuthErrorOptions {
+  cause?: unknown;
+}
+
 export class AuthError extends Error {
+  readonly cause?: unknown;
+
   constructor(
     public code: AuthErrorCode,
-    message?: string
+    message?: string,
+    options?: AuthErrorOptions,
   ) {
     super(message || code);
     this.name = 'AuthError';
+    if (options && 'cause' in options) this.cause = options.cause;
   }
 }
 

@@ -1,12 +1,13 @@
-import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor, within } from '@testing-library/react-native';
 import mockReact, { type ReactNode } from 'react';
 import { Alert } from 'react-native';
 
 import QuestDetailScreen from '../QuestDetailScreen';
-import { resetQuestApplicationStatuses } from '../questApplication';
+import { setActivePrototypePersona } from '../../../components/ui/prototypeMenuState';
+import { questFixtureAdapter } from '../questFixtureAdapter';
 
 const mockRouter = { back: jest.fn(), push: jest.fn() };
-const mockRouteParams: { id?: string; intent?: string; mode?: string; joinStatus?: string } = {};
+const mockRouteParams: { id?: string; intent?: string; mode?: string; joinStatus?: string; studentId?: string } = {};
 
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
@@ -21,12 +22,14 @@ jest.mock('react-native/Libraries/Modal/Modal', () => ({
 
 describe('Quest Detail screen', () => {
   beforeEach(() => {
-    resetQuestApplicationStatuses();
+    questFixtureAdapter.reset();
     mockRouter.back.mockClear();
+    mockRouter.push.mockClear();
     delete mockRouteParams.id;
     delete mockRouteParams.intent;
     delete mockRouteParams.mode;
     delete mockRouteParams.joinStatus;
+    delete mockRouteParams.studentId;
   });
 
   it('requires confirmation and shows an immediate Accepted outcome for first-come Quests', async () => {
@@ -104,6 +107,76 @@ describe('Quest Detail screen', () => {
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/create', params: { editQuestId: 'clean-fan' } });
   });
 
+  it('opens a direct chat with the Quest owner using the server capability context', async () => {
+    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="print-documents" />);
+
+    const initialActionBar = within(view.getByTestId('quest-action-bar'));
+    expect(initialActionBar.queryByTestId('quest-message-owner-button')).toBeNull();
+    await fireEvent.press(initialActionBar.getByTestId('quest-apply-button'));
+    await fireEvent.press(view.getByTestId('confirm-quest-application'));
+    await waitFor(() => expect(view.getByText('Participation confirmed')).toBeTruthy());
+
+    await fireEvent.press(view.getByTestId('quest-message-owner-button'));
+
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/chat/[id]',
+      params: {
+        id: 'conversation-fixture-print-documents',
+        conversationId: 'conversation-fixture-print-documents',
+        questId: 'print-documents',
+        viewerId: 'student-demo',
+        canRead: 'true',
+        canWrite: 'true',
+        readOnly: 'false',
+        ownerName: 'Mild P.',
+        questTitle: 'Photocopy course documents',
+      },
+    });
+  });
+
+  it('passes terminal read-only capability when opening a completed Quest chat', async () => {
+    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="clean-study-table" studentId="demo-worker-3" mode="join" joinStatus="history" />);
+
+    await fireEvent.press(view.getByTestId('quest-message-owner-button'));
+
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/chat/[id]',
+      params: {
+        id: 'conversation-fixture-clean-study-table',
+        conversationId: 'conversation-fixture-clean-study-table',
+        questId: 'clean-study-table',
+        viewerId: 'demo-worker-3',
+        canRead: 'true',
+        canWrite: 'false',
+        readOnly: 'true',
+        readOnlyReason: 'TERMINAL',
+        ownerName: 'Pim C.',
+        questTitle: 'Clean a study table',
+      },
+    });
+  });
+
+  it('passes writable capability when opening an authorized disputed Quest chat', async () => {
+    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="clean-fridge" studentId="demo-worker-3" mode="join" joinStatus="accepted" />);
+
+    await fireEvent.press(view.getByTestId('quest-message-owner-button'));
+
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/chat/[id]',
+      params: {
+        id: 'conversation-fixture-clean-fridge',
+        conversationId: 'conversation-fixture-clean-fridge',
+        questId: 'clean-fridge',
+        viewerId: 'demo-worker-3',
+        canRead: 'true',
+        canWrite: 'true',
+        readOnly: 'false',
+        ownerName: 'Game T.',
+        questTitle: 'Clean a dorm fridge',
+      },
+    });
+  });
+
   it('navigates accepted participants to My Quests', async () => {
     const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="print-documents" />);
 
@@ -141,5 +214,40 @@ describe('Quest Detail screen', () => {
 
     expect(view.getByText('Quest not found')).toBeTruthy();
     expect(view.queryByText('Help move boxes to the dorm')).toBeNull();
+  });
+
+  it('uses the active persona from the Prototype menu for capability surfaces', async () => {
+    setActivePrototypePersona('student-demo');
+    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="single-candidate-demo" />);
+
+    expect(view.getByTestId('quest-detail-prototype-menu-trigger')).toBeTruthy();
+    expect(view.queryByTestId('quest-candidate-review-entry')).toBeNull();
+
+    await fireEvent.press(view.getByTestId('quest-detail-prototype-menu-trigger'));
+    expect(view.getByRole('button', { name: 'Single candidate (/quest/single-candidate-demo)' }).props.accessibilityState).toMatchObject({ selected: true });
+    await fireEvent.press(view.getByTestId('quest-detail-prototype-menu-persona-demo-hirer'));
+
+    await waitFor(() => expect(view.getByTestId('quest-candidate-review-entry')).toBeTruthy());
+  });
+
+  it('confirms an individual Candidate rejection without changing the open Quest', async () => {
+    setActivePrototypePersona('demo-hirer');
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="single-candidate-demo" />);
+
+    await fireEvent.press(view.getByTestId('quest-open-candidate-review-sheet'));
+    await fireEvent.press(view.getByTestId('candidate-review-reject-fixture-application-single-candidate-demo-single-applicant-b'));
+
+    expect(alertSpy).toHaveBeenCalledWith('Reject', expect.stringContaining('Select a campus helper'), expect.any(Array));
+    const confirmationButtons = alertSpy.mock.calls[0]?.[2];
+    const rejectButton = confirmationButtons?.find((button) => button.text === 'Reject');
+    await act(async () => {
+      rejectButton?.onPress?.();
+    });
+
+    await waitFor(() => expect(questFixtureAdapter.getState('single-candidate-demo', 'demo-hirer')?.applications.find((item) => item.applicantId === 'single-applicant-b')?.status).toBe('APPLICATION_REJECTED'));
+    expect(questFixtureAdapter.getState('single-candidate-demo', 'demo-hirer')?.quest.status).toBe('QUEST_OPEN');
+    expect(view.getByText('Rejected')).toBeTruthy();
+    alertSpy.mockRestore();
   });
 });

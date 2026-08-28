@@ -29,7 +29,6 @@ export interface BetterAuthClientApi {
 const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL;
 
 const expoAuthPlugin = expoClient({
-  scheme: 'kuquestmobile',
   storagePrefix: AUTH_STORAGE_PREFIX,
   storage: SecureStore,
 });

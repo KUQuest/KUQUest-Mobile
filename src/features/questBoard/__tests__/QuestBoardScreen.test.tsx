@@ -2,6 +2,8 @@ import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import mockReact, { type ReactNode } from 'react';
 
 import QuestBoardScreen from '../QuestBoardScreen';
+import { setActivePrototypePersona } from '../../../components/ui/prototypeMenuState';
+import { questFixtureAdapter } from '../questFixtureAdapter';
 import { questFixtures } from '../questFixtures';
 
 const mockRouter = { push: jest.fn() };
@@ -19,9 +21,9 @@ jest.mock('react-native/Libraries/Modal/Modal', () => ({
 describe('Quest Board screen', () => {
   it('provides fixtures for all Single/Group and First-come/Candidate combinations', () => {
     expect(new Set(questFixtures.map((quest) => `${quest.participationMode}:${quest.candidateMode}`))).toEqual(new Set([
-      'single:REVIEW',
+      'single:CANDIDATE',
       'single:NO_CANDIDATE',
-      'team:REVIEW',
+      'team:CANDIDATE',
       'team:NO_CANDIDATE',
     ]));
     expect(questFixtures.every((quest) => quest.tags.length <= 1)).toBe(true);
@@ -40,7 +42,7 @@ describe('Quest Board screen', () => {
     expect(view.getByText('Help move boxes to the dorm')).toBeTruthy();
     expect(view.getByText('Clean a dorm fan')).toBeTruthy();
     expect(view.getByText('Photocopy course documents')).toBeTruthy();
-    expect(view.getByText('Buy lunch from the canteen')).toBeTruthy();
+    expect(view.getByText('Deliver drinks to the library')).toBeTruthy();
     expect(view.getByText('Go running together')).toBeTruthy();
     expect(view.queryByText('Welcome desk helper')).toBeNull();
     expect(view.getByTestId('quest-card-tags-move-boxes')).toBeTruthy();
@@ -76,10 +78,10 @@ describe('Quest Board screen', () => {
   it('filters immediately from search and shows a recoverable no-match state', async () => {
     const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} currentStudentId="student-demo" />);
 
-    await fireEvent.changeText(view.getByTestId('quest-board-search'), 'buy lunch');
+    await fireEvent.changeText(view.getByTestId('quest-board-search'), 'deliver drinks');
 
     await waitFor(() => {
-      expect(view.getByText('Buy lunch from the canteen')).toBeTruthy();
+      expect(view.getByText('Deliver drinks to the library')).toBeTruthy();
       expect(view.queryByText('Help move boxes to the dorm')).toBeNull();
     });
 
@@ -168,13 +170,13 @@ describe('Quest Board screen', () => {
   it('preserves Quest Board Search when filters are cleared', async () => {
     const view = await render(<QuestBoardScreen />);
 
-    await fireEvent.changeText(view.getByTestId('quest-board-search'), 'buy lunch');
+    await fireEvent.changeText(view.getByTestId('quest-board-search'), 'deliver drinks');
     await fireEvent.press(view.getByTestId('open-quest-filters'));
     await fireEvent.press(view.getByText('Clear all'));
     await fireEvent.press(view.getByTestId('apply-quest-filters'));
 
-    expect(view.getByTestId('quest-board-search').props.value).toBe('buy lunch');
-    expect(view.getByText('Buy lunch from the canteen')).toBeTruthy();
+    expect(view.getByTestId('quest-board-search').props.value).toBe('deliver drinks');
+    expect(view.getByText('Deliver drinks to the library')).toBeTruthy();
     expect(view.queryByText('Help move boxes to the dorm')).toBeNull();
   });
 
@@ -204,7 +206,7 @@ describe('Quest Board screen', () => {
 
     await waitFor(() => {
       expect(view.getByText('Clean a dorm fan')).toBeTruthy();
-      expect(view.getByText('Buy lunch from the canteen')).toBeTruthy();
+      expect(view.getByText('Deliver drinks to the library')).toBeTruthy();
       expect(view.queryByText('Photocopy course documents')).toBeNull();
     });
   });
@@ -263,5 +265,26 @@ describe('Quest Board screen', () => {
     await fireEvent.press(view.getByTestId('quest-detail-move-boxes'));
 
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/quest/[id]', params: { id: 'move-boxes', preview: 'application-pending' } });
+  });
+
+  it('exposes the dev-only prototype menu without adding scenarios to Board discovery', async () => {
+    setActivePrototypePersona('student-demo');
+    const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} />);
+
+    expect(view.getByTestId('quest-board-prototype-menu-trigger')).toBeTruthy();
+    expect(view.queryByText('Form a campus event team')).toBeNull();
+
+    await fireEvent.press(view.getByTestId('quest-board-prototype-menu-trigger'));
+    await fireEvent.press(view.getByTestId('quest-board-prototype-menu-persona-demo-worker-2'));
+    await fireEvent.press(view.getByTestId('quest-board-prototype-menu-trigger'));
+    await fireEvent.press(view.getByTestId('quest-board-prototype-menu-scenario-single-candidate-demo'));
+
+    expect(mockRouter.push).toHaveBeenCalledWith('/quest/single-candidate-demo');
+
+    const resetSpy = jest.spyOn(questFixtureAdapter, 'reset');
+    await fireEvent.press(view.getByTestId('quest-board-prototype-menu-trigger'));
+    await fireEvent.press(view.getByTestId('quest-board-prototype-menu-reset-all'));
+    expect(resetSpy).toHaveBeenCalledTimes(1);
+    resetSpy.mockRestore();
   });
 });
