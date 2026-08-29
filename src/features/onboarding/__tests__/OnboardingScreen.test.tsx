@@ -184,7 +184,7 @@ describe('OnboardingScreen Academic Registration selections', () => {
     await fireEvent.press(triggers()[1]);
     await fireEvent.press(screen.getByText('Faculty of Science'));
 
-    expect(triggers()[2].props.accessibilityLabel).toBe('Department: Enter your Department');
+    expect(triggers()[2].props.accessibilityLabel).toBe('Department: Enter your department');
     expect(triggers()[2].props.accessibilityState.disabled).toBe(false);
 
     await fireEvent.press(triggers()[2]);
@@ -330,7 +330,7 @@ describe('OnboardingScreen Academic Registration selections', () => {
     await render(<OnboardingScreen />);
     await waitFor(() => expect(screen.getByText('Step 3 of 3')).toBeTruthy());
 
-    await fireEvent.press(screen.getByText('+ Add more certificate'));
+    await fireEvent.press(screen.getByText('+ Add another certificate'));
     expect(screen.getByLabelText('Remove certificate 1')).toBeTruthy();
     await fireEvent.press(screen.getByLabelText('Remove certificate 1'));
     expect(screen.queryByLabelText('Remove certificate 1')).toBeNull();
