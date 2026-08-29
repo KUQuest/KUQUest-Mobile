@@ -432,7 +432,7 @@ export default function OnboardingScreen() {
   };
 
   const handleDateChange = (event: DateTimePickerChangeEvent, selectedDate?: Date) => {
-    if (event.type === 'dismissed' || !selectedDate || !datePickerTarget) {
+    if (!selectedDate || !datePickerTarget) {
       setDatePickerTarget(null);
       return;
     }
