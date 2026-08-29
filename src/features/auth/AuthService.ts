@@ -231,6 +231,8 @@ export class AuthService implements AuthAdapter {
       );
     }
 
+    let googleAccountChosen = false;
+
     try {
       const hasPlayServices = await this.nativeGoogleSignin.hasPlayServices({
         showPlayServicesUpdateDialog: true,
@@ -240,6 +242,7 @@ export class AuthService implements AuthAdapter {
         throw new AuthError('PLAY_SERVICES_UNAVAILABLE');
       }
       const response = await this.nativeGoogleSignin.signIn();
+      googleAccountChosen = this.isSuccessResponse(response);
       authDebug('native Google response received', {
         type: response.type,
         hasIdToken: response.type === 'success' && Boolean(response.data.idToken),
@@ -274,6 +277,11 @@ export class AuthService implements AuthAdapter {
 
       return { user: getSessionUser(result.data) };
     } catch (error: unknown) {
+      // Google keeps the chosen account signed in to this app, so a failure
+      // after the account picker leaves it cached and silently reused on the
+      // next attempt. Clear it so the picker comes back.
+      if (googleAccountChosen) await this.clearGoogleAccount(this.nativeGoogleSignin);
+
       if (error instanceof AuthError) throw error;
 
       const message = getErrorMessage(error);
@@ -290,6 +298,11 @@ export class AuthService implements AuthAdapter {
       }
       throw new AuthError('OAUTH_FAILED', message);
     }
+  }
+
+  private async clearGoogleAccount(googleSignin: NativeGoogleSigninApi): Promise<void> {
+    authDebug('clearing the chosen Google account');
+    await settleWithin(googleSignin.signOut(), SIGN_OUT_TIMEOUT_MS);
   }
 }
 
