@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/tw/cn';
 import { AccessibilityInfo, Modal, useWindowDimensions, type ImageSourcePropType, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { FlatList, Image, Pressable, ScrollView, Text, View } from '@/tw';
-import { BriefcaseBusiness, Building2, Code2, GraduationCap, MessageSquare, Pencil, Settings2, Star, UserRound, X } from 'lucide-react-native';
+import { BriefcaseBusiness, Building2, Code2, GraduationCap, MessageSquare, Pencil, Star, UserRound, X } from 'lucide-react-native';
 
 import { Button } from '../../../components/ui/Button';
 import { getProfileLayoutMetrics } from '../../../theme/profileLayout';
@@ -145,8 +145,6 @@ interface SectionNoticeProps {
 
 interface ProfileHeaderProps {
   data: Pick<ProfileViewData, 'name' | 'faculty' | 'occupation' | 'department' | 'profileImage'> & Partial<Pick<ProfileViewData, 'tags'>>;
-  settingsLabel?: string;
-  onSettingsPress?: () => void;
   editProfileLabel?: string;
   onEditPress?: () => void;
   accessibilityLabels?: Pick<ProfileAccessibilityLabels, 'profileImageLabel' | 'questCategoriesLabel'>;
@@ -168,7 +166,7 @@ function ProfileMeta({ icon: Icon, children }: { icon: typeof GraduationCap; chi
   return <View className={styles.metaRow}><Icon color={colors.textSecondary} size={16} strokeWidth={2} /><Text className={styles.meta} maxFontSizeMultiplier={2}>{children}</Text></View>;
 }
 
-export function ProfileHeader({ data, settingsLabel, onSettingsPress, editProfileLabel, onEditPress, accessibilityLabels }: ProfileHeaderProps) {
+export function ProfileHeader({ data, editProfileLabel, onEditPress, accessibilityLabels }: ProfileHeaderProps) {
   const { width, fontScale } = useWindowDimensions();
   const metrics = getProfileLayoutMetrics(width, fontScale);
   const labels = { ...defaultAccessibilityLabels, ...accessibilityLabels };
@@ -178,12 +176,6 @@ export function ProfileHeader({ data, settingsLabel, onSettingsPress, editProfil
 
   return (
     <View testID="profile-header" className={styles.heroCard} style={{ padding: metrics.cardPadding }}>
-      {settingsLabel && onSettingsPress ? <View className={styles.profileSettingsRow}>
-        <Pressable accessibilityLabel={settingsLabel} accessibilityRole="button" className={styles.profileSettingsButton} onPress={onSettingsPress} testID="open-settings">
-          <Settings2 color={colors.primary} size={20} strokeWidth={2.2} />
-          <Text className={styles.profileSettingsText} maxFontSizeMultiplier={2}>{settingsLabel}</Text>
-        </Pressable>
-      </View> : null}
       <View className={styles.headerRow}>
         <View className={styles.photoFrame} style={{ borderRadius: metrics.photoSize / 2, height: metrics.photoSize, width: metrics.photoSize }}>
           {profileImage && !profileImageFailed ? <Image accessibilityLabel={labels.profileImageLabel(data.name)} source={profileImage} onError={() => setFailedProfileImage(data.profileImage)} className={styles.photo} /> : <Text accessibilityLabel={labels.profileImageLabel(data.name)} className={styles.initials}>{getInitials(data.name)}</Text>}

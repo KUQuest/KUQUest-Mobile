@@ -1,13 +1,21 @@
 import type { QuestBoardQuest } from './types';
 
-export const questFixtures: QuestBoardQuest[] = [
+const questImageByTag: Record<string, string> = {
+  moving: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=960&q=85',
+  cleaning: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=960&q=85',
+  printing: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=960&q=85',
+  delivery: 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=960&q=85',
+  exercise: 'https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=960&q=85',
+};
+
+export const questFixtures: QuestBoardQuest[] = ([
   {
     id: 'move-boxes', title: 'Help move boxes to the dorm', tags: ['moving'],
     description: 'Help carry labelled boxes from the parking area to Dorm 13.',
     completionCriteria: 'All boxes are delivered safely to the assigned room.', proofRequired: 'optional',
-    rewardPerPerson: 300, headcount: 2, acceptedParticipants: 0,
+    rewardPerPerson: 300, headcount: 1, acceptedParticipants: 0,
     startDate: '2026-08-14', deadline: '2026-08-16', timeRange: '17:00–19:00', postedAt: '2026-08-13T15:00:00.000Z',
-    location: 'หอพัก 13', locationMode: 'on-campus', participationMode: 'single', candidateMode: 'REVIEW',
+    location: 'หอพัก 13', locationMode: 'on-campus', participationMode: 'single', candidateMode: 'CANDIDATE',
     creator: { name: 'Nicha S.', faculty: 'Architecture' },
     imageUris: [
       'https://placehold.co/800x500/E2EEE4/014925/png?text=Boxes+1',
@@ -40,7 +48,7 @@ export const questFixtures: QuestBoardQuest[] = [
     completionCriteria: 'The requested meal is delivered complete and on time.', proofRequired: 'none',
     rewardPerPerson: 100, headcount: 1, acceptedParticipants: 0,
     startDate: '2026-08-13', deadline: '2026-08-20', timeRange: '10:00–13:00', postedAt: '2026-08-13T12:00:00.000Z',
-    location: 'โรงอาหารกลาง', locationMode: 'on-campus', participationMode: 'single', candidateMode: 'REVIEW',
+    location: 'โรงอาหารกลาง', locationMode: 'on-campus', participationMode: 'single', candidateMode: 'CANDIDATE',
     creator: { name: 'Beam T.', faculty: 'Education' }, studentInterestMatch: false, ownerStudentId: 'student-creator-4',
   },
   {
@@ -49,7 +57,7 @@ export const questFixtures: QuestBoardQuest[] = [
     completionCriteria: 'Complete the agreed route together.', proofRequired: 'none',
     rewardPerPerson: 120, headcount: 3, acceptedParticipants: 1,
     startDate: '2026-08-17', deadline: '2026-08-26', timeRange: '18:00–19:00', postedAt: '2026-08-13T11:00:00.000Z',
-    location: 'สนามอินทรีจันทรสถิตย์', locationMode: 'on-campus', participationMode: 'team', candidateMode: 'REVIEW',
+    location: 'สนามอินทรีจันทรสถิตย์', locationMode: 'on-campus', participationMode: 'team', candidateMode: 'CANDIDATE',
     creator: { name: 'Fern L.', faculty: 'Engineering' }, studentInterestMatch: false, ownerStudentId: 'student-creator-5',
   },
   {
@@ -62,7 +70,7 @@ export const questFixtures: QuestBoardQuest[] = [
     id: 'move-club-equipment', title: 'Move club equipment', tags: ['moving'],
     description: 'Move event equipment from the storage room to the activity hall.', completionCriteria: 'All listed equipment is set up in the hall.', proofRequired: 'required',
     rewardPerPerson: 250, headcount: 3, acceptedParticipants: 0, startDate: '2026-08-18', deadline: '2026-08-20', timeRange: '13:00–16:00', postedAt: '2026-08-12T08:15:00.000Z',
-    location: 'อาคารกิจกรรมนิสิต', locationMode: 'on-campus', participationMode: 'team', candidateMode: 'REVIEW', creator: { name: 'Non P.', faculty: 'Student Affairs' }, studentInterestMatch: false, ownerStudentId: 'student-creator-7',
+    location: 'อาคารกิจกรรมนิสิต', locationMode: 'on-campus', participationMode: 'team', candidateMode: 'CANDIDATE', creator: { name: 'Non P.', faculty: 'Student Affairs' }, studentInterestMatch: false, ownerStudentId: 'student-creator-7',
   },
   {
     id: 'clean-study-table', title: 'Clean a study table', tags: ['cleaning'],
@@ -74,7 +82,7 @@ export const questFixtures: QuestBoardQuest[] = [
     id: 'clean-bike', title: 'Clean a bicycle', tags: ['cleaning'],
     description: 'Wash a bicycle and wipe it dry near the dorm.', completionCriteria: 'The bicycle is clean and dry.', proofRequired: 'optional',
     rewardPerPerson: 120, headcount: 1, acceptedParticipants: 0, startDate: '2026-08-16', deadline: '2026-08-19', timeRange: '16:00–17:00', postedAt: '2026-08-12T08:45:00.000Z',
-    location: 'ลานจอดจักรยานหอพัก 13', locationMode: 'on-campus', participationMode: 'single', candidateMode: 'REVIEW', creator: { name: 'Fah W.', faculty: 'Agriculture' }, studentInterestMatch: true, ownerStudentId: 'student-creator-9',
+    location: 'ลานจอดจักรยานหอพัก 13', locationMode: 'on-campus', participationMode: 'single', candidateMode: 'CANDIDATE', creator: { name: 'Fah W.', faculty: 'Agriculture' }, studentInterestMatch: true, ownerStudentId: 'student-creator-9',
   },
   {
     id: 'print-presentation', title: 'Print presentation slides', tags: ['printing'],
@@ -86,7 +94,7 @@ export const questFixtures: QuestBoardQuest[] = [
     id: 'print-event-posters', title: 'Print event posters', tags: ['printing'],
     description: 'Print and collect posters for a faculty event.', completionCriteria: 'Ten clear posters are delivered to the organiser.', proofRequired: 'required',
     rewardPerPerson: 180, headcount: 1, acceptedParticipants: 0, startDate: '2026-08-17', deadline: '2026-08-21', timeRange: '11:00–12:00', postedAt: '2026-08-12T09:15:00.000Z',
-    location: 'ร้านถ่ายเอกสารหน้า มก.', locationMode: 'on-campus', participationMode: 'single', candidateMode: 'REVIEW', creator: { name: 'Ton K.', faculty: 'Science' }, studentInterestMatch: true, ownerStudentId: 'student-creator-11',
+    location: 'ร้านถ่ายเอกสารหน้า มก.', locationMode: 'on-campus', participationMode: 'single', candidateMode: 'CANDIDATE', creator: { name: 'Ton K.', faculty: 'Science' }, studentInterestMatch: true, ownerStudentId: 'student-creator-11',
   },
   {
     id: 'deliver-snacks', title: 'Deliver snacks to a study group', tags: ['delivery'],
@@ -98,7 +106,7 @@ export const questFixtures: QuestBoardQuest[] = [
     id: 'deliver-parcel', title: 'Deliver a parcel to the dorm', tags: ['delivery'],
     description: 'Collect a parcel at the campus post point and bring it to Dorm 11.', completionCriteria: 'The parcel is delivered to the requester.', proofRequired: 'optional',
     rewardPerPerson: 110, headcount: 1, acceptedParticipants: 0, startDate: '2026-08-18', deadline: '2026-08-22', timeRange: '13:00–14:00', postedAt: '2026-08-12T09:45:00.000Z',
-    location: 'หอพัก 11', locationMode: 'on-campus', participationMode: 'single', candidateMode: 'REVIEW', creator: { name: 'Beam T.', faculty: 'Education' }, studentInterestMatch: true, ownerStudentId: 'student-creator-13',
+    location: 'หอพัก 11', locationMode: 'on-campus', participationMode: 'single', candidateMode: 'CANDIDATE', creator: { name: 'Beam T.', faculty: 'Education' }, studentInterestMatch: true, ownerStudentId: 'student-creator-13',
   },
   {
     id: 'walk-together', title: 'Go for a walk together', tags: ['exercise'],
@@ -110,7 +118,7 @@ export const questFixtures: QuestBoardQuest[] = [
     id: 'play-badminton', title: 'Play badminton together', tags: ['exercise'],
     description: 'Join a friendly badminton session after class.', completionCriteria: 'Attend and play for the agreed session.', proofRequired: 'none',
     rewardPerPerson: 80, headcount: 3, acceptedParticipants: 0, startDate: '2026-08-19', deadline: '2026-08-23', timeRange: '18:00–20:00', postedAt: '2026-08-12T10:15:00.000Z',
-    location: 'สนามแบดมินตัน มก.', locationMode: 'on-campus', participationMode: 'team', candidateMode: 'REVIEW', creator: { name: 'Karn P.', faculty: 'Sports Science' }, studentInterestMatch: true, ownerStudentId: 'student-creator-15',
+    location: 'สนามแบดมินตัน มก.', locationMode: 'on-campus', participationMode: 'team', candidateMode: 'CANDIDATE', creator: { name: 'Karn P.', faculty: 'Sports Science' }, studentInterestMatch: true, ownerStudentId: 'student-creator-15',
   },
   {
     id: 'move-plants', title: 'Move plants to a new room', tags: ['moving'],
@@ -122,7 +130,7 @@ export const questFixtures: QuestBoardQuest[] = [
     id: 'clean-fridge', title: 'Clean a dorm fridge', tags: ['cleaning'],
     description: 'Clean the inside of a small refrigerator in a dorm room.', completionCriteria: 'The refrigerator is clean and dry.', proofRequired: 'optional',
     rewardPerPerson: 140, headcount: 1, acceptedParticipants: 0, startDate: '2026-08-21', deadline: '2026-08-25', timeRange: '14:00–15:00', postedAt: '2026-08-12T10:45:00.000Z',
-    location: 'หอพัก 10', locationMode: 'on-campus', participationMode: 'single', candidateMode: 'REVIEW', creator: { name: 'Game T.', faculty: 'Veterinary Medicine' }, studentInterestMatch: true, ownerStudentId: 'student-creator-17',
+    location: 'หอพัก 10', locationMode: 'on-campus', participationMode: 'single', candidateMode: 'CANDIDATE', creator: { name: 'Game T.', faculty: 'Veterinary Medicine' }, studentInterestMatch: true, ownerStudentId: 'student-creator-17',
   },
   {
     id: 'print-notes', title: 'Print lecture notes', tags: ['printing'],
@@ -134,7 +142,7 @@ export const questFixtures: QuestBoardQuest[] = [
     id: 'deliver-drinks', title: 'Deliver drinks to the library', tags: ['delivery'],
     description: 'Buy drinks and bring them to a group studying at the library.', completionCriteria: 'All drinks are delivered to the correct table.', proofRequired: 'none',
     rewardPerPerson: 80, headcount: 1, acceptedParticipants: 0, startDate: '2026-08-23', deadline: '2026-08-27', timeRange: '15:00–16:00', postedAt: '2026-08-12T11:15:00.000Z',
-    location: 'สำนักหอสมุด', locationMode: 'on-campus', participationMode: 'single', candidateMode: 'REVIEW', creator: { name: 'Ice N.', faculty: 'Business Administration' }, studentInterestMatch: true, ownerStudentId: 'student-creator-19',
+    location: 'สำนักหอสมุด', locationMode: 'on-campus', participationMode: 'single', candidateMode: 'CANDIDATE', creator: { name: 'Ice N.', faculty: 'Business Administration' }, studentInterestMatch: true, ownerStudentId: 'student-creator-19',
   },
   {
     id: 'stretch-together', title: 'Stretch together after class', tags: ['exercise'],
@@ -142,4 +150,36 @@ export const questFixtures: QuestBoardQuest[] = [
     rewardPerPerson: 50, headcount: 4, acceptedParticipants: 0, startDate: '2026-08-24', deadline: '2026-08-28', timeRange: '17:00–18:00', postedAt: '2026-08-12T11:30:00.000Z',
     location: 'ลานกิจกรรมกลางแจ้ง', locationMode: 'on-campus', participationMode: 'team', candidateMode: 'NO_CANDIDATE', creator: { name: 'Nan B.', faculty: 'Education' }, studentInterestMatch: false, ownerStudentId: 'student-creator-20',
   },
-];
+  // Route/test-only scenario data. The adapter seeds these records, while normal discovery filters them out.
+  {
+    id: 'team-forming-demo', title: 'Form a campus event team', tags: ['campus-life'],
+    description: 'Join a small team to support a campus event.', completionCriteria: 'The event support checklist is complete.', proofRequired: 'optional',
+    rewardPerPerson: 200, rewardSatang: 20000, headcount: 3, acceptedParticipants: 0, startDate: '2026-08-20', deadline: '2026-08-21', timeRange: '10:00–12:00', postedAt: '2026-08-12T09:00:00.000Z',
+    location: 'Student activity building', locationMode: 'on-campus', participationMode: 'team', candidateMode: 'CANDIDATE', creator: { name: 'Demo Hirer' }, studentInterestMatch: false, ownerStudentId: 'demo-hirer',
+    prototypeOnly: true, prototypeScenario: 'team-forming-demo',
+  },
+  {
+    id: 'team-selection-demo', title: 'Choose a campus event team', tags: ['campus-life'],
+    description: 'The Hirer reviews independent team proposals for a campus event.', completionCriteria: 'The event support checklist is complete.', proofRequired: 'optional',
+    rewardPerPerson: 200, rewardSatang: 20000, headcount: 3, acceptedParticipants: 0, startDate: '2026-08-22', deadline: '2026-08-23', timeRange: '10:00–12:00', postedAt: '2026-08-12T09:05:00.000Z',
+    location: 'Student activity building', locationMode: 'on-campus', participationMode: 'team', candidateMode: 'CANDIDATE', creator: { name: 'Demo Hirer' }, studentInterestMatch: false, ownerStudentId: 'demo-hirer',
+    prototypeOnly: true, prototypeScenario: 'team-selection-demo',
+  },
+  {
+    id: 'single-candidate-demo', title: 'Select a campus helper', tags: ['campus-life'],
+    description: 'Review several individual proposals for a campus helper Quest.', completionCriteria: 'The campus helper checklist is complete.', proofRequired: 'optional',
+    rewardPerPerson: 250, rewardSatang: 25000, headcount: 1, acceptedParticipants: 0, startDate: '2026-08-24', deadline: '2026-08-25', timeRange: '10:00–12:00', postedAt: '2026-08-12T09:10:00.000Z',
+    location: 'Student activity building', locationMode: 'on-campus', participationMode: 'single', candidateMode: 'CANDIDATE', creator: { name: 'Demo Hirer' }, studentInterestMatch: false, ownerStudentId: 'demo-hirer',
+    prototypeOnly: true, prototypeScenario: 'single-candidate-demo',
+  },
+  {
+    id: 'partial-group-start-demo', title: 'Start a partial campus crew', tags: ['campus-life'],
+    description: 'A direct Group Quest demonstrating the partial-start consent gate.', completionCriteria: 'The campus support checklist is complete.', proofRequired: 'none',
+    rewardPerPerson: 180, rewardSatang: 18000, headcount: 3, acceptedParticipants: 2, startDate: '2026-08-26', deadline: '2026-08-27', timeRange: '10:00–12:00', postedAt: '2026-08-12T09:15:00.000Z',
+    location: 'Student activity building', locationMode: 'on-campus', participationMode: 'team', candidateMode: 'NO_CANDIDATE', creator: { name: 'Demo Hirer' }, studentInterestMatch: false, ownerStudentId: 'demo-hirer',
+    prototypeOnly: true, prototypeScenario: 'partial-group-start-demo',
+  },
+] satisfies QuestBoardQuest[]).map((quest) => {
+  const imageUri = questImageByTag[quest.tags[0] ?? ''];
+  return quest.imageUris?.length || !imageUri ? quest : { ...quest, imageUris: [imageUri] };
+});

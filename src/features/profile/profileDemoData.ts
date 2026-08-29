@@ -1,9 +1,12 @@
-import type { ProfileCertificate, ProfileExperience, ProfileReview, ProfileStatsData, ProfileTag, ProfileWork } from './components/ProfileComponents';
+import type { ProfileCertificate, ProfileExperience, ProfileReview, ProfileStatsData, ProfileTag, ProfileViewData, ProfileWork } from './components/ProfileComponents';
+import { isPrototypeDemoEnabled } from '../auth/demoMode';
+import { getActivePrototypePersonaId } from '../../components/ui/prototypeMenuState';
+import type { PrototypePersonaId } from '../../components/ui/prototypeMenuData';
 
 const demoAvatar = require('../../../assets/images/profile/demo-avatar.svg');
 
 export function isProfileDemoEnabled(): boolean {
-  return __DEV__ && process.env.EXPO_PUBLIC_PROFILE_DEMO === 'true';
+  return isPrototypeDemoEnabled();
 }
 
 export const demoProfileImage = demoAvatar;
@@ -11,6 +14,7 @@ export const demoProfileImage = demoAvatar;
 export const demoProfileIdentity = {
   name: 'Siraphat THAPPHA',
   faculty: 'Engineering',
+  university: 'State University',
   occupation: 'Student',
   department: 'Software and Knowledge Engineering',
   about: 'A KU student building useful digital experiences, mentoring peers, and contributing to campus communities. I enjoy turning complex ideas into clear, accessible interfaces and collaborating with teams from concept to delivery. Outside coursework, I explore design systems, front-end engineering, and practical tools that make student life easier.',
@@ -101,3 +105,91 @@ export const demoReviews: ProfileReview[] = [
   { id: 'demo-review-14', reviewerName: 'Game T.', reviewerAvatar: '', rating: 4, comment: 'Strong work overall and very responsive.', createdAt: '2026-02-08T00:00:00Z', questTitle: 'Event registration page' },
   { id: 'demo-review-15', reviewerName: 'Dao L.', reviewerAvatar: '', rating: 3, comment: 'The task was completed, with room for clearer progress updates.', createdAt: '2026-01-25T00:00:00Z', questTitle: 'Campus guide update' },
 ];
+
+type DemoPersonaProfile = Readonly<{
+  identity: typeof demoProfileIdentity;
+  tags: readonly ProfileTag[];
+  stats: ProfileStatsData;
+}>;
+
+/** Display data for the same four identities used by the prototype adapter. */
+export const demoProfilePersonas: Record<PrototypePersonaId, DemoPersonaProfile> = {
+  'demo-hirer': {
+    identity: {
+      name: 'Demo Hirer',
+      faculty: 'Business Administration',
+      university: 'State University',
+      occupation: 'Staff',
+      department: 'Student Affairs',
+      about: 'I create and fund Quests for KU Account Holders, then coordinate the work from selection through completion.',
+    },
+    tags: [
+      { id: 'demo-campus-events', name: 'Campus events', questCount: 4 },
+      { id: 'demo-research', name: 'Research', questCount: 3 },
+      { id: 'demo-operations', name: 'Operations', questCount: 2 },
+    ],
+    stats: { totalQuests: 12, ratingAverage: 4.8, ratingCount: 9, distribution: { 5: 7, 4: 2, 3: 0, 2: 0, 1: 0 } },
+  },
+  'student-demo': {
+    identity: demoProfileIdentity,
+    tags: demoProfileTags,
+    stats: demoProfileStats,
+  },
+  'demo-worker-2': {
+    identity: {
+      name: 'Demo Worker 2',
+      faculty: 'Science',
+      university: 'State University',
+      occupation: 'Student',
+      department: 'Applied Science',
+      about: 'I enjoy practical campus work, clear communication, and helping Quest teams deliver reliable results.',
+    },
+    tags: [
+      { id: 'demo-media', name: 'Media', questCount: 3 },
+      { id: 'demo-campus-life-worker', name: 'Campus life', questCount: 2 },
+      { id: 'demo-event-support', name: 'Event support', questCount: 2 },
+    ],
+    stats: { totalQuests: 8, ratingAverage: 4.7, ratingCount: 6, distribution: { 5: 4, 4: 2, 3: 0, 2: 0, 1: 0 } },
+  },
+  'demo-worker-3': {
+    identity: {
+      name: 'Demo Worker 3',
+      faculty: 'Humanities',
+      university: 'State University',
+      occupation: 'Student',
+      department: 'Digital Media',
+      about: 'I lead collaborative Quest teams, keep rosters organized, and turn shared plans into finished work.',
+    },
+    tags: [
+      { id: 'demo-teamwork', name: 'Teamwork', questCount: 5 },
+      { id: 'demo-digital-media', name: 'Digital media', questCount: 4 },
+      { id: 'demo-projects', name: 'Projects', questCount: 3 },
+    ],
+    stats: { totalQuests: 15, ratingAverage: 4.9, ratingCount: 11, distribution: { 5: 9, 4: 2, 3: 0, 2: 0, 1: 0 } },
+  },
+};
+
+function cloneStats(stats: ProfileStatsData): ProfileStatsData {
+  return { ...stats, distribution: { ...stats.distribution } };
+}
+
+export function getDemoProfileViewData(personaId: PrototypePersonaId = getActivePrototypePersonaId()): ProfileViewData {
+  const persona = demoProfilePersonas[personaId];
+  return {
+    name: persona.identity.name,
+    faculty: persona.identity.faculty,
+    university: persona.identity.university,
+    occupation: persona.identity.occupation,
+    academicYear: '',
+    department: persona.identity.department,
+    tags: persona.tags.map((tag) => ({ ...tag })),
+    profileImage: demoProfileImage,
+    about: persona.identity.about,
+    stats: cloneStats(persona.stats),
+    experiences: demoExperiences.map((experience) => ({ ...experience })),
+    certificates: demoCertificates.map((certificate) => ({ ...certificate })),
+    works: demoWorks.map((work) => ({ ...work, imageUris: work.imageUris ? [...work.imageUris] : undefined })),
+    reviews: demoReviews.map((review) => ({ ...review })),
+    sectionErrors: {},
+  };
+}

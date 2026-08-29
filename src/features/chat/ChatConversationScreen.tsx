@@ -1,15 +1,18 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera, ChevronLeft, ClipboardCheck, Download, FileText, ImagePlus, MoreHorizontal, Paperclip, Search, Send, X } from 'lucide-react-native';
 
 import { KeyboardAvoidingView, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from '@/tw';
+import { LoadingSkeleton, SkeletonBlock } from '@/components/ui/LoadingSkeleton';
+import { questFixtureAdapter } from '@/features/questBoard/questFixtureAdapter';
 import { useLocale } from '@/locales/LocaleProvider';
 import { chatMessages, type ChatMessages } from '@/locales/chatMessages';
 import { colors } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
-import { getChatConversation, type ChatAttachment, type ChatMessage } from './chatData';
+import type { ChatAttachment, ChatConversation, ChatMessage, ChatRouteParams } from './chatTypes';
+import type { ConversationReadOnlyReason, WorkConversationCapability } from '@/features/questBoard/types';
 import styles from './chatStyles';
 import { cn } from '@/tw/cn';
 
@@ -40,7 +43,7 @@ function AttachmentRow({ attachment, mine, messages, onPress }: { attachment: Ch
   );
 }
 
-function MessageBubble({ message, conversation, locale, messages, onFilePress }: { message: ChatMessage; conversation: NonNullable<ReturnType<typeof getChatConversation>>; locale: 'en' | 'th'; messages: ChatMessages; onFilePress: (attachment: ChatAttachment) => void }) {
+function MessageBubble({ message, conversation, locale, messages, onFilePress }: { message: ChatMessage; conversation: ChatConversation; locale: 'en' | 'th'; messages: ChatMessages; onFilePress: (attachment: ChatAttachment) => void }) {
   const mine = message.sender === 'me';
   const text = message.text ? localizedText(message.text, locale) : undefined;
   return (
@@ -55,26 +58,258 @@ function MessageBubble({ message, conversation, locale, messages, onFilePress }:
   );
 }
 
+function ChatConversationSkeleton({ loadingLabel, backLabel, onBack }: { loadingLabel: string; backLabel: string; onBack: () => void }) {
+  return (
+    <SafeAreaView edges={['top', 'left', 'right', 'bottom']} className={styles.safeArea}>
+      <View className={styles.detailHeader}>
+        <View className={styles.brandRow}>
+          <Pressable accessibilityLabel={backLabel} accessibilityRole="button" className={styles.backButton} onPress={onBack} testID="chat-loading-back-button">
+            <ChevronLeft color={colors.primaryDeep} size={24} strokeWidth={2.5} />
+          </Pressable>
+        </View>
+        <View className={styles.identityRow}>
+          <SkeletonBlock variant="image" height={48} width={48} borderRadius={24} />
+          <View style={{ flex: 1, gap: spacing.xs, marginLeft: spacing.sm }}>
+            <SkeletonBlock height={18} width="78%" borderRadius={4} />
+            <SkeletonBlock height={15} width="56%" borderRadius={4} />
+          </View>
+          <View style={{ flexDirection: 'row', gap: spacing.xs, marginLeft: spacing.sm }}>
+            {[1, 2, 3].map((item) => <SkeletonBlock key={item} height={36} width={36} borderRadius={18} />)}
+          </View>
+        </View>
+      </View>
+      <LoadingSkeleton loadingLabel={loadingLabel} style={{ flex: 1 }} contentStyle={{ flex: 1 }} testID="chat-conversation-loading-skeleton">
+        <View style={{ flex: 1 }}>
+          <View className={styles.contextCard}>
+            <SkeletonBlock variant="image" height={40} width={40} borderRadius={12} />
+            <View style={{ flex: 1, gap: spacing.xs, marginLeft: spacing.sm }}>
+              <SkeletonBlock height={14} width="42%" borderRadius={4} />
+              <SkeletonBlock height={17} width="74%" borderRadius={4} />
+            </View>
+            <SkeletonBlock height={16} width={74} borderRadius={4} style={{ marginLeft: spacing.sm }} />
+          </View>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1, gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}>
+            <View style={{ alignItems: 'center' }}><SkeletonBlock height={22} width={58} borderRadius={12} /></View>
+            {[1, 2, 3, 4].map((item) => <View key={item} style={{ alignItems: item % 2 === 0 ? 'flex-end' : 'flex-start', flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
+              {item % 2 === 1 ? <SkeletonBlock variant="image" height={36} width={36} borderRadius={18} /> : null}
+              <View style={{ gap: spacing.xs, maxWidth: '78%' }}>
+                <SkeletonBlock height={item % 2 === 0 ? 42 : 34} width={item % 2 === 0 ? 178 : 142} borderRadius={18} />
+                <SkeletonBlock height={13} width={42} borderRadius={4} style={{ alignSelf: item % 2 === 0 ? 'flex-end' : 'flex-start' }} />
+              </View>
+            </View>)}
+          </ScrollView>
+          <View className={styles.composerWrap}>
+            <SkeletonBlock height={56} borderRadius={28} />
+          </View>
+        </View>
+      </LoadingSkeleton>
+    </SafeAreaView>
+  );
+}
+
+type ChatRouteSearchParams = Partial<Record<keyof ChatRouteParams, string | string[]>>;
+
+type RouteCapabilityParams = {
+  conversationId?: string;
+  canRead?: boolean;
+  canWrite?: boolean;
+  readOnly?: boolean;
+  readOnlyReason?: ConversationReadOnlyReason;
+};
+
+type ConversationLoadState = {
+  key: string;
+  status: 'pending' | 'settled' | 'error';
+  conversation: ChatConversation | null;
+  messages: ChatMessage[];
+};
+
+function getSingleRouteParam(value: unknown): string | undefined {
+  if (typeof value === 'string' && value) return value;
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  if (Array.isArray(value)) return getSingleRouteParam(value[0]);
+  return undefined;
+}
+
+function getBooleanRouteParam(value: unknown): boolean | undefined {
+  if (typeof value === 'boolean') return value;
+  if (Array.isArray(value)) return getBooleanRouteParam(value[0]);
+  const normalized = getSingleRouteParam(value)?.toLowerCase();
+  if (normalized === 'true' || normalized === '1') return true;
+  if (normalized === 'false' || normalized === '0') return false;
+  return undefined;
+}
+
+function getReadOnlyReason(value: unknown): ConversationReadOnlyReason | undefined {
+  const reason = getSingleRouteParam(value);
+  return reason === 'TERMINAL' || reason === 'INACTIVE_WORKER' || reason === 'NOT_A_MEMBER' || reason === 'NOT_STARTED' ? reason : undefined;
+}
+
+function getRouteCapability(params: RouteCapabilityParams, conversationId: string | undefined, viewerId: string | undefined): WorkConversationCapability | undefined {
+  const { canRead, canWrite } = params;
+  if (!conversationId || !params.conversationId || params.conversationId !== conversationId || !viewerId || canRead === undefined || canWrite === undefined) return undefined;
+  const readOnly = (params.readOnly ?? !canWrite) || Boolean(params.readOnlyReason);
+  return {
+    conversationId,
+    canRead,
+    canWrite: canRead && canWrite && !readOnly,
+    readOnly,
+    ...(params.readOnlyReason ? { readOnlyReason: params.readOnlyReason } : {}),
+  };
+}
+
+function applyRouteCapability(conversation: ChatConversation, routeCapability: WorkConversationCapability | undefined, routeQuestId: string | undefined): ChatConversation {
+  const adapterCapability = conversation.capability ?? {
+    conversationId: conversation.id,
+    canRead: true,
+    canWrite: false,
+    readOnly: true,
+  };
+  const routeQuestMatches = conversation.questId ? routeQuestId === conversation.questId : !routeQuestId;
+  const routeContextMatches = Boolean(
+    routeCapability
+      && routeCapability.conversationId === conversation.id
+      && routeCapability.canRead
+      && routeCapability.canWrite
+      && !routeCapability.readOnly
+      && routeQuestMatches,
+  );
+  if (routeContextMatches) return { ...conversation, capability: adapterCapability };
+  return {
+    ...conversation,
+    capability: {
+      ...adapterCapability,
+      conversationId: conversation.id,
+      canWrite: false,
+      readOnly: true,
+      ...(adapterCapability.readOnlyReason || routeCapability?.readOnlyReason
+        ? { readOnlyReason: adapterCapability.readOnlyReason ?? routeCapability?.readOnlyReason }
+        : {}),
+    },
+  };
+}
+
 export default function ChatConversationScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ id?: string }>();
+  const params = useLocalSearchParams<ChatRouteSearchParams>();
   const { locale } = useLocale();
   const insets = useSafeAreaInsets();
   const messages = chatMessages[locale];
-  const conversation = getChatConversation(typeof params.id === 'string' ? params.id : undefined);
-  const [conversationMessages, setConversationMessages] = useState<ChatMessage[]>(conversation?.messages ?? []);
+  const conversationId = getSingleRouteParam(params.id);
+  const questId = getSingleRouteParam(params.questId);
+  const viewerId = getSingleRouteParam(params.viewerId);
+  const routeConversationId = getSingleRouteParam(params.conversationId);
+  const routeCanRead = getBooleanRouteParam(params.canRead);
+  const routeCanWrite = getBooleanRouteParam(params.canWrite);
+  const routeReadOnly = getBooleanRouteParam(params.readOnly);
+  const routeReadOnlyReason = getReadOnlyReason(params.readOnlyReason);
+  const routeCapability = useMemo(
+    () => getRouteCapability({
+      conversationId: routeConversationId,
+      canRead: routeCanRead,
+      canWrite: routeCanWrite,
+      readOnly: routeReadOnly,
+      readOnlyReason: routeReadOnlyReason,
+    }, conversationId, viewerId),
+    [conversationId, routeCanRead, routeCanWrite, routeConversationId, routeReadOnly, routeReadOnlyReason, viewerId],
+  );
+  const conversationRouteKey = `${conversationId ?? ''}:${viewerId ?? ''}`;
+  const [conversationLoadAttempt, setConversationLoadAttempt] = useState(0);
+  const [loadState, setLoadState] = useState<ConversationLoadState>(() => ({
+    key: conversationRouteKey,
+    status: conversationId && viewerId ? 'pending' : 'settled',
+    conversation: null,
+    messages: [],
+  }));
+  const loadStateForRoute = loadState.key === conversationRouteKey
+    ? loadState
+    : { key: conversationRouteKey, status: conversationId && viewerId ? 'pending' as const : 'settled' as const, conversation: null, messages: [] };
+
+  useEffect(() => {
+    let active = true;
+    const loadConversation = () => {
+      if (!conversationId || !viewerId) {
+        if (active) setLoadState({ key: conversationRouteKey, status: 'settled', conversation: null, messages: [] });
+        return;
+      }
+      try {
+        const nextConversation = questFixtureAdapter.getConversation(conversationId, viewerId);
+        if (!nextConversation) {
+          if (active) setLoadState({ key: conversationRouteKey, status: 'settled', conversation: null, messages: [] });
+          return;
+        }
+        const nextMessages = questFixtureAdapter.getConversationMessages(conversationId, viewerId);
+        if (active) setLoadState({
+          key: conversationRouteKey,
+          status: 'settled',
+          conversation: applyRouteCapability(nextConversation, routeCapability, questId),
+          messages: nextMessages,
+        });
+      } catch {
+        if (active) setLoadState({ key: conversationRouteKey, status: 'error', conversation: null, messages: [] });
+      }
+    };
+    loadConversation();
+    const unsubscribe = questFixtureAdapter.subscribe(loadConversation);
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [conversationId, conversationLoadAttempt, conversationRouteKey, questId, routeCapability, viewerId]);
+
+  useEffect(() => {
+    if (!conversationId || !viewerId) return;
+    try {
+      questFixtureAdapter.markConversationRead(conversationId, viewerId);
+    } catch {
+      // A failed read cursor must not prevent the conversation from rendering.
+    }
+  }, [conversationId, viewerId]);
+
+  const conversation = loadStateForRoute.conversation;
+  const conversationMessages = loadStateForRoute.messages;
   const [draft, setDraft] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchScope, setSearchScope] = useState<'messages' | 'files'>('messages');
   const [searchQuery, setSearchQuery] = useState('');
 
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
-  const searchedMessages = useMemo(() => conversationMessages.filter((message) => {
+  const displayedMessages = useMemo(() => conversationMessages, [conversationMessages]);
+  const searchedMessages = useMemo(() => displayedMessages.filter((message) => {
     if (!normalizedQuery) return true;
     const text = message.text ? localizedText(message.text, locale) : '';
     return `${text} ${message.attachment?.name ?? ''}`.toLocaleLowerCase().includes(normalizedQuery);
-  }), [conversationMessages, locale, normalizedQuery]);
-  const files = useMemo(() => conversationMessages.flatMap((message) => message.attachment ? [{ ...message.attachment, time: message.time }] : []).filter((file) => !normalizedQuery || `${file.name} ${file.meta}`.toLocaleLowerCase().includes(normalizedQuery)), [conversationMessages, normalizedQuery]);
+  }), [displayedMessages, locale, normalizedQuery]);
+  const files = useMemo(() => displayedMessages.flatMap((message) => message.attachment ? [{ ...message.attachment, time: message.time }] : []).filter((file) => !normalizedQuery || `${file.name} ${file.meta}`.toLocaleLowerCase().includes(normalizedQuery)), [displayedMessages, normalizedQuery]);
+  const conversationPending = Boolean(conversationId && viewerId) && loadStateForRoute.status === 'pending';
+  const conversationLoadFailed = Boolean(conversationId && viewerId) && loadStateForRoute.status === 'error';
+
+  if (conversationPending) {
+    return <ChatConversationSkeleton loadingLabel={messages.loading} backLabel={messages.backToChat} onBack={() => router.back()} />;
+  }
+
+  if (conversationLoadFailed) {
+    return (
+      <SafeAreaView edges={['top', 'left', 'right', 'bottom']} className={styles.safeArea}>
+        <View className={styles.detailHeader}>
+          <View className={styles.brandRow}>
+            <Pressable accessibilityLabel={messages.backToChat} accessibilityRole="button" className={styles.backButton} onPress={() => router.back()}>
+              <ChevronLeft color={colors.primaryDeep} size={24} strokeWidth={2.5} />
+            </Pressable>
+          </View>
+        </View>
+        <View accessibilityRole="alert" className={styles.emptyState}>
+          <Text className={styles.emptyTitle}>{messages.loadError}</Text>
+          <Pressable accessibilityRole="button" className={styles.loadErrorAction} onPress={() => {
+            setLoadState({ key: conversationRouteKey, status: 'pending', conversation: null, messages: [] });
+            setConversationLoadAttempt((attempt) => attempt + 1);
+          }}>
+            <Text className={styles.loadErrorActionText}>{messages.retry}</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!conversation) {
     return (
@@ -90,16 +325,26 @@ export default function ChatConversationScreen() {
   }
 
   const role = conversation.participantRole === 'owner' ? messages.questOwner : messages.questMember;
-  const openAttachmentMenu = () => Alert.alert(messages.addAttachment, messages.mockAttachmentDescription, [
+  const canWrite = Boolean(conversation.capability?.canRead && conversation.capability.canWrite && !conversation.capability.readOnly);
+  const readOnlyDescription = conversation.capability?.readOnlyReason === 'TERMINAL'
+    ? messages.conversationReadOnlyTerminal
+    : messages.conversationNotWritable;
+  const messagePlaceholder = conversation.participantRole === 'owner' ? messages.typeOwnerMessage : messages.typeMessage;
+  const openAttachmentMenu = () => {
+    if (!canWrite) return;
+    return Alert.alert(messages.addAttachment, messages.mockAttachmentDescription, [
     { text: messages.takePhoto, onPress: () => undefined },
     { text: messages.choosePhoto, onPress: () => undefined },
     { text: messages.chooseFile, onPress: () => undefined },
     { text: messages.cancel, style: 'cancel' },
   ]);
+  };
   const sendMessage = () => {
+    if (!canWrite || !viewerId) return;
     const value = draft.trim();
     if (!value) return;
-    setConversationMessages((current) => [...current, { id: `local-${Date.now()}`, sender: 'me', text: { en: value, th: value }, time: 'Now' }]);
+    const result = questFixtureAdapter.sendMessage(conversation.id, viewerId, value);
+    if (!result.ok) return;
     setDraft('');
   };
   const openFile = (attachment: ChatAttachment) => Alert.alert(messages.openFile, `${attachment.name}\n${attachment.meta}`);
@@ -141,6 +386,7 @@ export default function ChatConversationScreen() {
           </View>
           <View className={styles.contextAction}><Text className={styles.contextActionText}>{messages.viewQuest}</Text></View>
         </Pressable>
+        {!canWrite ? <View accessibilityRole="alert" className={styles.readOnlyBanner} testID="conversation-read-only-banner"><Text className={styles.readOnlyBannerTitle}>{messages.conversationReadOnly}</Text><Text className={styles.readOnlyBannerText}>{readOnlyDescription}</Text></View> : null}
 
         {searchOpen ? (
           <View className={styles.searchPanel}>
@@ -182,18 +428,18 @@ export default function ChatConversationScreen() {
           )}
         </ScrollView>
 
-        {!searchOpen ? <View className={styles.composerWrap} style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
+        {!searchOpen && canWrite ? <View className={styles.composerWrap} style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
           <View className={styles.composer}>
             <Pressable accessibilityLabel={messages.addAttachment} accessibilityRole="button" className={styles.composerButton} onPress={openAttachmentMenu}>
               <Paperclip color={colors.primary} size={21} strokeWidth={2.2} />
             </Pressable>
             <TextInput
-              accessibilityLabel={messages.typeMessage}
+              accessibilityLabel={messagePlaceholder}
               className={styles.composerInput}
               multiline
               onChangeText={setDraft}
               onSubmitEditing={sendMessage}
-              placeholder={messages.typeMessage}
+              placeholder={messagePlaceholder}
               placeholderTextColor={colors.textFaint}
               returnKeyType="send"
               value={draft}

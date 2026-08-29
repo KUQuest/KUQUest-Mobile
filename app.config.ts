@@ -58,8 +58,13 @@ export default function configureApp({ config }: ConfigContext): ExpoConfig {
   const isDevelopmentBuild = variant === 'debug';
   const developmentBuildProperties = [
     'expo-build-properties',
-    { android: { usesCleartextTraffic: isDevelopmentBuild } },
-  ] as [string, { android: { usesCleartextTraffic: boolean } }];
+    {
+      android: {
+        usesCleartextTraffic: isDevelopmentBuild,
+        ...(isDevelopmentBuild ? { buildArchs: ['arm64-v8a', 'x86_64'] } : {}),
+      },
+    },
+  ] as [string, { android: { usesCleartextTraffic: boolean; buildArchs?: string[] } }];
 
   return {
     ...baseConfig,

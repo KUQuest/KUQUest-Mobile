@@ -3,10 +3,13 @@ import { ActivityIndicator, Pressable, Text, View } from '@/tw';
 import { useRouter } from "expo-router";
 import { colors } from '@/theme/colors';
 import LoginScreen from './LoginScreen';
-import { authService } from './AuthService';
+import { authService, isAuthNetworkError } from './AuthService';
 import { RoutingDestination } from './types';
 import { authMessages } from '../../locales/authMessages';
 import { useLocale } from '../../locales/LocaleProvider';
+import { enableOfflinePrototypeDemo, isPrototypeDemoEnabled } from './demoMode';
+import { getInitialPrototypeDeepLink, subscribeToPrototypeDeepLinks } from './demoDeepLink';
+import type { PrototypeScenarioRoute } from '@/components/ui/prototypeMenuData';
 
 type DemoLaunchTarget = 'login' | 'register' | 'home';
 
@@ -32,21 +35,25 @@ export default function Index() {
   const [status, setStatus] = useState<'loading' | 'unauthenticated' | 'error'>('loading');
   const [attempt, setAttempt] = useState(0);
   const [demoLaunchTarget, setDemoLaunchTarget] = useState<DemoLaunchTarget | null>(null);
+  const [demoLaunchAvailable, setDemoLaunchAvailable] = useState(() => isPrototypeDemoEnabled());
+  const [initialDemoRoute, setInitialDemoRoute] = useState<PrototypeScenarioRoute | undefined>();
+  const [initialDemoRouteResolved, setInitialDemoRouteResolved] = useState(() => !__DEV__);
   const router = useRouter();
   const { locale } = useLocale();
   const messages = authMessages[locale];
-  const demoBypassEnabled = __DEV__ && process.env.EXPO_PUBLIC_PROFILE_DEMO === 'true';
 
   const chooseDemoLaunchTarget = React.useCallback((target: DemoLaunchTarget) => {
+    const requestedRoute = initialDemoRoute;
+    setInitialDemoRoute(undefined);
     setDemoLaunchTarget(target);
     if (target === 'login') {
       setStatus('unauthenticated');
     } else if (target === 'register') {
       router.replace({ pathname: '/onboarding', params: { step: '1' } });
     } else {
-      router.replace('/(tabs)');
+      router.replace(requestedRoute ?? '/(tabs)');
     }
-  }, [router]);
+  }, [initialDemoRoute, router]);
 
   const handleNavigate = React.useCallback((dest: RoutingDestination) => {
     if (dest.type === 'HOME') {
@@ -57,29 +64,72 @@ export default function Index() {
   }, [router]);
 
   useEffect(() => {
+    if (!__DEV__) return undefined;
     let mounted = true;
-    if (demoBypassEnabled) {
+    const unsubscribe = subscribeToPrototypeDeepLinks((route) => {
+      if (!mounted) return;
+      setInitialDemoRoute(route);
+    });
+    void getInitialPrototypeDeepLink().then((route) => {
+      if (!mounted) return;
+      if (route) setInitialDemoRoute(route);
+      setInitialDemoRouteResolved(true);
+    });
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    if (__DEV__ && !initialDemoRouteResolved) {
+      return () => { mounted = false; };
+    }
+    if (demoLaunchAvailable || isPrototypeDemoEnabled()) {
       return () => { mounted = false; };
     }
 
     async function checkSession() {
+      let session;
       try {
-        const session = await authService.getSession();
-        if (session && mounted) {
-          handleNavigate(await authService.getRoutingDestination());
+        session = await authService.getSession();
+      } catch (error) {
+        if (__DEV__ && isAuthNetworkError(error)) {
+          enableOfflinePrototypeDemo();
+          if (mounted) {
+            setDemoLaunchAvailable(true);
+            setStatus('unauthenticated');
+          }
           return;
         }
-      } catch {
         if (mounted) setStatus('error');
+        return;
+      }
+
+      if (session && mounted) {
+        if (initialDemoRoute) {
+          router.replace(initialDemoRoute);
+          return;
+        }
+        try {
+          handleNavigate(await authService.getRoutingDestination());
+        } catch {
+          if (mounted) setStatus('error');
+        }
         return;
       }
       if (mounted) setStatus('unauthenticated');
     }
-    checkSession();
+    void checkSession();
     return () => { mounted = false; };
-  }, [attempt, demoBypassEnabled, handleNavigate]);
+  }, [attempt, demoLaunchAvailable, handleNavigate, initialDemoRoute, initialDemoRouteResolved, router]);
 
-  if (demoBypassEnabled && demoLaunchTarget === null) {
+  const demoLaunchOverlayVisible = (demoLaunchAvailable || isPrototypeDemoEnabled()) && demoLaunchTarget === null;
+  if (demoLaunchOverlayVisible && !initialDemoRouteResolved) {
+    return <View className="flex-1 justify-center items-center bg-ku-background"><ActivityIndicator size="large" color={colors.primary} /></View>;
+  }
+  if (demoLaunchOverlayVisible) {
     return <DemoLaunchOverlay onSelect={chooseDemoLaunchTarget} />;
   }
 

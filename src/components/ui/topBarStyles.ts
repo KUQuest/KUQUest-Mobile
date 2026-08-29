@@ -6,6 +6,7 @@ const styles = {
   title: 'self-center text-ku-text text-ku-subtitle font-ku-semibold',
   backButton: 'items-center justify-center',
   backButtonPosition: 'left-[16px] absolute',
+  rightAction: 'absolute bottom-0 items-center justify-center right-[8px] top-0',
 } as const;
 
 export default styles;

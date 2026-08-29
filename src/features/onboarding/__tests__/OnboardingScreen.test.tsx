@@ -146,6 +146,24 @@ describe('OnboardingScreen Academic Registration selections', () => {
     process.env.EXPO_PUBLIC_TERMS_VERSION = '2026-08-11';
   });
 
+  test('shows the page skeleton until registration data settles', async () => {
+    let resolveOptions!: (value: typeof options) => void;
+    const api = createApi({
+      getAcademicRegistrationOptions: jest.fn().mockReturnValue(new Promise<typeof options>((resolve) => {
+        resolveOptions = resolve;
+      })),
+    });
+    prepareAuth(api);
+
+    const view = await render(<OnboardingScreen />);
+
+    expect(view.getByLabelText('Loading profile...')).toBeTruthy();
+    expect(view.queryByLabelText('Name-Surname')).toBeNull();
+
+    resolveOptions(options);
+    await waitFor(() => expect(view.getByLabelText('Name-Surname')).toBeTruthy());
+  });
+
   test('keeps Department disabled until Faculty is selected and clears it when Faculty changes', async () => {
     const api = createApi();
     prepareAuth(api);

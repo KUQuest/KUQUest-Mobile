@@ -3,6 +3,7 @@ import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import ProfileScreen from '../ProfileScreen';
 import { loadProfileViewData } from '../loadProfileViewData';
+import { NavigationVisibilityProvider } from '../../../components/navigation/NavigationVisibilityContext';
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
@@ -47,15 +48,32 @@ describe('Student Profile screen', () => {
     mockedLoadProfileViewData.mockResolvedValue(profileData);
   });
 
+  it('shows the page skeleton until profile data settles', async () => {
+    let resolveProfile!: (value: typeof profileData) => void;
+    mockedLoadProfileViewData.mockReturnValueOnce(new Promise<typeof profileData>((resolve) => {
+      resolveProfile = resolve;
+    }));
+
+    const view = await render(<ProfileScreen />);
+
+    expect(view.getByLabelText('Loading profile...')).toBeTruthy();
+    expect(view.queryByTestId('profile-header')).toBeNull();
+
+    resolveProfile(profileData);
+    await waitFor(() => expect(view.getByTestId('profile-header')).toBeTruthy());
+  });
+
   it('opens About by default and switches to the selected profile section', async () => {
     const view = await render(<ProfileScreen />);
 
     await waitFor(() => expect(view.getByTestId('profile-tab-about')).toBeTruthy());
     expect(view.queryByText('Student Profile')).toBeNull();
+    expect(view.getByText('Profile')).toBeTruthy();
+    expect(view.getByTestId('open-settings')).toBeTruthy();
     expect(view.getByText('Profile Rating')).toBeTruthy();
     expect(view.getByTestId('profile-stats')).toBeTruthy();
     expect(view.getByText('Most frequent Quest categories')).toBeTruthy();
-    expect(view.getByTestId('profile-content-scroll').props.stickyHeaderIndices).toEqual([2]);
+    expect(view.getByTestId('profile-content-scroll').props.stickyHeaderIndices).toBeUndefined();
     expect(view.getByText('A profile description')).toBeTruthy();
     expect(view.queryByText('Advanced React Patterns')).toBeNull();
 
@@ -75,6 +93,7 @@ describe('Student Profile screen', () => {
     await fireEvent.press(view.getByTestId('profile-tab-reviews'));
     await waitFor(() => expect(view.getByTestId('profile-reviews-list')).toBeTruthy());
     expect(view.getByTestId('profile-review-summary')).toBeTruthy();
+    expect(view.getByTestId('profile-reviews-list').props.stickyHeaderIndices).toEqual([]);
   });
 
   it('preserves the profile scroll position when opening Reviews', async () => {
@@ -97,6 +116,27 @@ describe('Student Profile screen', () => {
 
     await waitFor(() => expect(view.getByTestId('profile-tab-about')).toBeTruthy());
     expect(view.getByText('Manage in Settings')).toBeTruthy();
+  });
+
+  it('hides the transparent profile top bar with navigation while scrolling down', async () => {
+    const view = await render(
+      <NavigationVisibilityProvider>
+        <ProfileScreen />
+      </NavigationVisibilityProvider>,
+    );
+
+    await waitFor(() => expect(view.getByTestId('profile-content-scroll')).toBeTruthy());
+    const scrollView = view.getByTestId('profile-content-scroll');
+    const getTopBar = () => view.getByTestId('profile-top-bar', { includeHiddenElements: true });
+
+    await fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { x: 0, y: 0 } } });
+    await fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { x: 0, y: 12 } } });
+
+    await waitFor(() => expect(getTopBar().props.pointerEvents).toBe('none'));
+    expect(getTopBar().props.accessibilityElementsHidden).toBe(true);
+
+    await fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { x: 0, y: 0 } } });
+    await waitFor(() => expect(getTopBar().props.pointerEvents).toBe('box-none'));
   });
 
 });

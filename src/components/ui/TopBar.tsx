@@ -12,11 +12,12 @@ import styles from './topBarStyles';
 interface TopBarProps {
   onBackPress?: () => void;
   backLabel?: string;
+  rightAction?: React.ReactNode;
   title?: string;
   variant?: 'default' | 'profile' | 'board' | 'detail';
 }
 
-export function TopBar({ onBackPress, backLabel, title, variant = 'default' }: TopBarProps) {
+export function TopBar({ onBackPress, backLabel, rightAction, title, variant = 'default' }: TopBarProps) {
   const { width, fontScale } = useWindowDimensions();
   const { locale } = useLocale();
   const resolvedBackLabel = backLabel ?? navigationMessages[locale].back;
@@ -47,6 +48,7 @@ export function TopBar({ onBackPress, backLabel, title, variant = 'default' }: T
         source={require('../../../topbar-logo.svg')}
         style={{ height: isProfile ? metrics.logoHeight : 32, width: isProfile ? metrics.logoWidth : 60 }}
       />}
+      {rightAction ? <View className={styles.rightAction}>{rightAction}</View> : null}
     </View>
   );
 }

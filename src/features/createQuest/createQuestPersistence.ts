@@ -16,7 +16,7 @@ export async function getQuestDraftStorageKey(): Promise<string> {
   }
 }
 
-export async function loadQuestDraft(storageKey: string): Promise<QuestDraftSnapshot | null> {
+export async function loadQuestDraft(storageKey: string, _legacyQuestId?: string): Promise<QuestDraftSnapshot | null> {
   const storedDraft = await SecureStore.getItemAsync(storageKey);
   return storedDraft ? parseStoredQuestSnapshot(storedDraft) : null;
 }
@@ -26,10 +26,11 @@ export async function persistQuestDraft(
   draft: QuestDraft,
   step: QuestDraftStep,
   state: QuestDraftState = 'DRAFT',
+  _legacyQuestId?: string,
 ): Promise<void> {
   await SecureStore.setItemAsync(storageKey, JSON.stringify({ draft, step, state }));
 }
 
-export async function deleteQuestDraft(storageKey: string): Promise<void> {
+export async function deleteQuestDraft(storageKey: string, _legacyQuestId?: string): Promise<void> {
   await SecureStore.deleteItemAsync(storageKey);
 }

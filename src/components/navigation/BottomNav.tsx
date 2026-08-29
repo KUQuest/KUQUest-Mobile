@@ -1,7 +1,9 @@
 import React from 'react';
 import { cn } from '@/tw/cn';
 import { useWindowDimensions } from 'react-native';
+import { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { Pressable, Text, View } from '@/tw';
+import { Animated } from '@/tw/animated';
 import {
   CheckSquare,
   CircleUserRound,
@@ -13,6 +15,7 @@ import { useLocale } from '@/locales/LocaleProvider';
 import { navigationMessages } from '@/locales/navigationMessages';
 import { colors } from '@/theme/colors';
 import { getAppChromeMetrics } from '@/theme/layout';
+import { useNavigationVisibility } from './NavigationVisibilityContext';
 import styles from './bottomNavStyles';
 
 type NavigationItem = {
@@ -40,10 +43,22 @@ export function BottomNav({ state, descriptors, navigation, insets }: TabBarProp
   const { locale } = useLocale();
   const messages = navigationMessages[locale];
   const focusedRouteKey = state.routes[state.index]?.key;
+  const { navigationVisible, showNavigation } = useNavigationVisibility();
+  const shouldHide = !metrics.isTablet && !navigationVisible;
+  const hiddenTranslateY = metrics.navHeight + Math.max(insets.bottom, 10) + 24;
+  const navigationAnimationStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(shouldHide ? 0 : 1, { duration: 180 }),
+    transform: [{ translateY: withTiming(shouldHide ? hiddenTranslateY : 0, { duration: 220 }) }],
+  }), [hiddenTranslateY, shouldHide]);
+
+  React.useEffect(() => {
+    showNavigation();
+  }, [focusedRouteKey, showNavigation]);
 
   return (
-    <View
-      className={cn(styles.container, metrics.isTablet && styles.tabletContainer)} style={{
+    <Animated.View
+      className={cn(styles.container, metrics.isTablet && styles.tabletContainer)}
+      style={[{
         height: metrics.isTablet ? '100%' : undefined,
         paddingTop: metrics.isTablet ? Math.max(insets.top, 16) : undefined,
         paddingBottom: metrics.isTablet ? Math.max(insets.bottom, 16) : Math.max(insets.bottom, 10),
@@ -51,7 +66,10 @@ export function BottomNav({ state, descriptors, navigation, insets }: TabBarProp
         paddingRight: metrics.isTablet ? Math.max(insets.right, 8) : undefined,
         position: metrics.isTablet ? 'relative' : 'absolute',
         width: metrics.isTablet ? metrics.tabletNavWidth : undefined,
-      }}
+      }, navigationAnimationStyle]}
+      pointerEvents={shouldHide ? 'none' : 'auto'}
+      accessibilityElementsHidden={shouldHide}
+      importantForAccessibility={shouldHide ? 'no-hide-descendants' : 'auto'}
       accessibilityRole="toolbar"
     >
       <View className={cn(styles.bar, metrics.isTablet && styles.tabletBar)} style={{ minHeight: metrics.isTablet ? undefined : metrics.navHeight }}>
@@ -65,6 +83,7 @@ export function BottomNav({ state, descriptors, navigation, insets }: TabBarProp
           const Icon = item.icon;
 
           const onPress = () => {
+            showNavigation();
             const event = navigation.emit({
               type: 'tabPress',
               target: route.key,
@@ -135,6 +154,6 @@ export function BottomNav({ state, descriptors, navigation, insets }: TabBarProp
           );
         })}
       </View>
-    </View>
+    </Animated.View>
   );
 }

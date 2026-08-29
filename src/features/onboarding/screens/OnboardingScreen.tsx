@@ -1,16 +1,18 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/tw/cn';
 import { AccessibilityInfo, Alert, BackHandler, Modal, Platform } from 'react-native';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Pressable, SafeAreaView, ScrollView, Text, View } from '@/tw';
+import { Image, KeyboardAvoidingView, Pressable, SafeAreaView, ScrollView, Text, View } from '@/tw';
 import Animated, * as Reanimated from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker, { type DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 import { Button } from '@/components/ui/Button';
+import { LoadingSkeleton, SkeletonBlock } from '@/components/ui/LoadingSkeleton';
 import { CalendarDays, CircleAlert, Image as ImageIcon, Pencil, Trash2, UserRound, X } from 'lucide-react-native';
 
 import styles from '@/features/onboarding/styles/registrationStyles';
 import { colors } from '@/theme/colors';
+import { spacing } from '@/theme/spacing';
 import { Input } from '../components/Input';
 import { Select } from '../components/Select';
 import { Checkbox } from '../components/Checkbox';
@@ -21,6 +23,7 @@ import { useLocale } from '../../../locales/LocaleProvider';
 import { createEmptyProfile } from '../../profile/types';
 import type { Certificate, Experience, ProfileDraft, Work } from '../../profile/types';
 import { authService } from '../../auth/AuthService';
+import { isPrototypeDemoEnabled } from '../../auth/demoMode';
 import { AuthError, type OnboardingStep } from '../../auth/types';
 import { ApiError } from '../../../api/ApiClient';
 import type { AcademicRegistrationOptions } from '../../../api/contracts';
@@ -90,6 +93,64 @@ function useReducedMotionPreference(): boolean {
   return reduceMotion;
 }
 
+function OnboardingSkeleton({ currentStep, loadingLabel }: { currentStep: OnboardingStep; loadingLabel: string }) {
+  const field = (key: string, height = 52) => (
+    <View key={key} style={{ gap: spacing.xs }}>
+      <SkeletonBlock height={14} width="42%" borderRadius={4} />
+      <SkeletonBlock height={height} borderRadius={10} />
+    </View>
+  );
+
+  return (
+    <SafeAreaView edges={['top', 'left', 'right', 'bottom']} className={styles.safeArea}>
+      <LoadingSkeleton loadingLabel={loadingLabel} style={{ flex: 1 }} contentStyle={{ flex: 1 }} testID="onboarding-loading-skeleton">
+        <KeyboardAvoidingView className="flex-1">
+          <ScrollView contentContainerClassName={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <View className={styles.headerSection} style={{ gap: spacing.xs }}>
+              <SkeletonBlock height={34} width="48%" borderRadius={6} />
+              <SkeletonBlock height={28} width="66%" borderRadius={6} />
+              <SkeletonBlock height={20} width="34%" borderRadius={4} />
+              <View style={{ flexDirection: 'row', gap: 6, marginTop: spacing.sm, width: '100%' }}>
+                {[1, 2, 3].map((item) => <SkeletonBlock key={item} height={6} borderRadius={4} style={{ flex: 1 }} testID={`onboarding-skeleton-progress-${item}`} />)}
+              </View>
+              {currentStep === 1 ? <SkeletonBlock variant="image" height={80} width={80} borderRadius={40} style={{ marginTop: spacing.sm }} testID="onboarding-skeleton-avatar" /> : null}
+            </View>
+            <View className={styles.formSection} style={{ gap: spacing.md }}>
+              {currentStep === 1 ? <>
+                {['name', 'telephone', 'occupation', 'faculty', 'department'].map((key) => field(key))}
+                <View style={{ gap: spacing.xs }}>
+                  <SkeletonBlock height={14} width="48%" borderRadius={4} />
+                  <SkeletonBlock height={84} borderRadius={12} />
+                </View>
+                <SkeletonBlock height={48} borderRadius={10} />
+              </> : currentStep === 2 ? <>
+                <View style={{ gap: spacing.xs }}>
+                  <SkeletonBlock height={24} width="54%" borderRadius={5} />
+                  <SkeletonBlock height={18} width="82%" borderRadius={4} />
+                </View>
+                {field('description', 168)}
+              </> : <>
+                <SkeletonBlock height={20} width="76%" borderRadius={5} />
+                {[1, 2].map((item) => <View key={item} style={{ gap: spacing.md, paddingBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderSubtle }}>
+                  <SkeletonBlock height={16} width="38%" borderRadius={4} />
+                  <SkeletonBlock variant="image" height={104} borderRadius={12} />
+                  {['title', 'issuer', 'date'].map((key) => field(`${item}-${key}`, 48))}
+                </View>)}
+              </>}
+            </View>
+          </ScrollView>
+          <View className={styles.actionBar}>
+            <View className={styles.actionButtons}>
+              <SkeletonBlock height={48} borderRadius={24} style={{ flex: 1 }} testID="onboarding-skeleton-back" />
+              <SkeletonBlock height={48} borderRadius={24} style={{ flex: 1 }} testID="onboarding-skeleton-next" />
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </LoadingSkeleton>
+    </SafeAreaView>
+  );
+}
+
 function removeIndexedErrors(errors: Record<string, string>, prefix: string, removedIndex: number): Record<string, string> {
   const prefixWithSeparator = `${prefix}_`;
   return Object.entries(errors).reduce<Record<string, string>>((next, [key, value]) => {
@@ -138,8 +199,9 @@ export default function OnboardingScreen() {
   const [datePickerTarget, setDatePickerTarget] = useState<{ index: number; value: string; kind: 'certificate' | 'experience'; field?: 'startedAt' | 'endedAt' } | null>(null);
   const [today] = useState(() => new Date());
   const persistenceCoordinator = useRef(new ProfilePersistenceCoordinator());
-  const demoBypassEnabled = __DEV__ && process.env.EXPO_PUBLIC_PROFILE_DEMO === 'true';
+  const demoBypassEnabled = isPrototypeDemoEnabled();
   const reduceMotion = useReducedMotionPreference();
+  const initialLoadPending = isLoadingProfile && options === null;
   const leaveRegistration = useCallback(() => {
     if (isEditMode) {
       router.back();
@@ -153,7 +215,7 @@ export default function OnboardingScreen() {
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (isLoadingProfile || isSubmitting) return true;
+      if (initialLoadPending || isSubmitting) return true;
       if (isEditMode) {
         router.back();
         return true;
@@ -166,7 +228,7 @@ export default function OnboardingScreen() {
       return true;
     });
     return () => subscription.remove();
-  }, [currentStep, isEditMode, isLoadingProfile, isSubmitting, leaveRegistration, router]);
+  }, [currentStep, initialLoadPending, isEditMode, isSubmitting, leaveRegistration, router]);
 
   useEffect(() => {
     let active = true;
@@ -467,11 +529,11 @@ export default function OnboardingScreen() {
   };
 
 
-  if (isLoadingProfile) {
-    return <SafeAreaView className={cn(styles.safeArea, 'items-center justify-center')}><View className={styles.loadingState}><ActivityIndicator size="small" color={colors.primary} /><Text className={styles.loadingText}>{msg.loadingProfile}</Text></View></SafeAreaView>;
+  if (initialLoadPending) {
+    return <OnboardingSkeleton currentStep={currentStep} loadingLabel={msg.loadingProfile} />;
   }
 
-  if (loadError) {
+  if (loadError && options === null) {
     return (
       <SafeAreaView className={styles.safeArea}>
         <View className={styles.loadErrorCard} accessibilityRole="alert">

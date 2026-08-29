@@ -7,16 +7,20 @@ import { ArrowLeft, CalendarDays, ChevronRight, Image as ImageIcon, Pencil, Plus
 
 import { ApiError } from '../../api/ApiClient';
 import type { ProfileEditData } from '../../api/ProfileApi';
+import { isProfileDemoEnabled } from '../profile/profileDemoData';
+import { getDemoProfileApi, type ProfileEditApi } from '../profile/profileDemoStore';
+import { getActivePrototypePersonaId, usePrototypeMenuState } from '../../components/ui/prototypeMenuState';
 import { authService } from '../auth/AuthService';
 import { AuthError } from '../auth/types';
 import { onboardingMessages } from '../../locales/registrationOnboarding';
 import { profileEditMessages, type ProfileEditMessages } from '../../locales/profileEditMessages';
 import { useLocale } from '../../locales/LocaleProvider';
 import { Button } from '../../components/ui/Button';
+import { LoadingSkeleton, SkeletonBlock } from '../../components/ui/LoadingSkeleton';
 import { Input } from '../onboarding/components/Input';
 import { Select } from '../onboarding/components/Select';
 import { TextArea } from '../onboarding/components/TextArea';
-import { Image, ActivityIndicator, KeyboardAvoidingView, Pressable, SafeAreaView, ScrollView, Text, View } from '../../tw';
+import { Image, KeyboardAvoidingView, Pressable, SafeAreaView, ScrollView, Text, View } from '../../tw';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import styles from './profileEditStyles';
@@ -36,6 +40,11 @@ function isLocalAsset(uri: string): boolean {
 
 function getInitials(name: string): string {
   return name.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || '?';
+}
+
+function getProfileEditApi(personaId = getActivePrototypePersonaId()): Promise<ProfileEditApi> {
+  if (isProfileDemoEnabled()) return Promise.resolve(getDemoProfileApi(personaId));
+  return authService.getProfileApi();
 }
 
 function getErrorText(error: unknown, messages: ProfileEditMessages): string {
@@ -68,11 +77,42 @@ function ErrorState({ message, retry, retryLabel }: { message: string; retry: ()
   </View>;
 }
 
-function LoadingState({ message }: { message: string }) {
-  return <View className={styles.emptyState} accessibilityLabel={message}>
-    <ActivityIndicator color={colors.primary} />
-    <Text className={styles.emptyText}>{message}</Text>
-  </View>;
+type ProfileEditLoadingVariant = 'hub' | 'basics-editor' | 'experience-list' | 'experience-editor' | 'portfolio-list' | 'portfolio-editor' | 'certificates-list' | 'certificates-editor';
+
+function SkeletonFormField({ width = '46%', height = 48, testID }: { width?: `${number}%`; height?: number; testID?: string }) {
+  return <View style={{ gap: 4 }} testID={testID}><SkeletonBlock height={14} width={width} borderRadius={4} /><SkeletonBlock height={height} borderRadius={10} /></View>;
+}
+
+function ProfileEditLoadingState({ variant, messages, onBack }: { variant: ProfileEditLoadingVariant; messages: ProfileEditMessages; onBack: () => void }) {
+  const insets = useSafeAreaInsets();
+  const isEditor = variant.endsWith('-editor');
+  const title = variant === 'hub' ? messages.title : variant === 'basics-editor' ? messages.basicsSection : variant.startsWith('experience') ? messages.experienceSection : variant.startsWith('portfolio') ? messages.portfolioSection : messages.certificatesSection;
+  const listSection = variant !== 'hub' && !isEditor;
+
+  return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}>
+    <View style={{ paddingHorizontal: 24, paddingTop: 16 }}><ScreenHeader title={title} backLabel={messages.back} onBack={onBack} /></View>
+    <LoadingSkeleton loadingLabel={messages.loading} style={{ flex: 1 }} contentStyle={{ flex: 1 }} testID={`profile-edit-loading-skeleton-${variant}`}>
+      <View style={{ flex: 1 }}>
+        <ScrollView contentContainerClassName={listSection || variant === 'hub' ? styles.scrollContent : styles.formContent} contentContainerStyle={{ paddingTop: 0 }} showsVerticalScrollIndicator={false}>
+          {variant === 'hub' ? <>
+            <SkeletonBlock height={18} width="88%" borderRadius={4} />
+            <View style={{ gap: 8, marginTop: 8 }}>
+              {[1, 2, 3, 4].map((item) => <View key={item} className={styles.sectionRow} style={{ gap: 12 }}><View style={{ flex: 1, gap: 6 }}><SkeletonBlock height={20} width="48%" borderRadius={4} /><SkeletonBlock height={14} width={item === 1 ? '84%' : '42%'} borderRadius={4} /></View><SkeletonBlock height={22} width={22} borderRadius={11} /></View>)}
+            </View>
+          </> : listSection ? <View style={{ gap: 8 }}>
+            {[1, 2, 3].map((item) => <View key={item} className={styles.itemRow} style={{ gap: 12 }}>
+              {variant === 'portfolio-list' || variant === 'certificates-list' ? <SkeletonBlock variant="image" height={64} width={64} borderRadius={10} /> : null}
+              <View style={{ flex: 1, gap: 6 }}><SkeletonBlock height={20} width="64%" borderRadius={4} /><SkeletonBlock height={15} width="48%" borderRadius={4} /><SkeletonBlock height={14} width="78%" borderRadius={4} /></View>
+              <SkeletonBlock height={18} width={18} borderRadius={9} />
+            </View>)}
+          </View> : <View className={styles.formGroup} style={{ gap: 12 }}>
+            <SkeletonBlock height={22} width="46%" borderRadius={5} />
+            {variant === 'basics-editor' ? <><SkeletonBlock variant="image" height={96} width={96} borderRadius={48} testID="profile-edit-skeleton-avatar" /><SkeletonBlock height={48} width={132} borderRadius={24} /><SkeletonFormField width="38%" /><SkeletonFormField width="44%" height={132} /></> : variant === 'experience-editor' ? <><SkeletonBlock height={18} width="82%" borderRadius={4} /><SkeletonFormField width="58%" /><SkeletonFormField width="54%" /><SkeletonFormField width="44%" height={120} /><View style={{ flexDirection: 'row', gap: 16 }}><SkeletonFormField width="64%" /><SkeletonFormField width="64%" /></View></> : variant === 'certificates-editor' ? <><SkeletonBlock variant="image" height={128} borderRadius={12} testID="profile-edit-skeleton-certificate-image" /><View style={{ gap: 12 }} testID="profile-edit-skeleton-certificate-fields"><SkeletonFormField width="72%" testID="profile-edit-skeleton-certificate-name" /><SkeletonFormField width="58%" testID="profile-edit-skeleton-certificate-issuer" /><SkeletonFormField width="42%" testID="profile-edit-skeleton-certificate-issued-at" /></View></> : <><SkeletonFormField width="32%" height={120} /><SkeletonFormField width="52%" /><SkeletonFormField width="44%" height={132} /></>}</View>}
+        </ScrollView>
+        {isEditor ? <View className={styles.saveBar} style={{ paddingBottom: Math.max(insets.bottom, 24) }}><View className={styles.saveBarInner}><SkeletonBlock height={48} borderRadius={24} testID="profile-edit-loading-save" /></View></View> : null}
+      </View>
+    </LoadingSkeleton>
+  </SafeAreaView>;
 }
 
 function SaveBar({ label, disabled, onPress }: { label: string; disabled: boolean; onPress: () => void }) {
@@ -199,7 +239,7 @@ function HubContent({ data }: { data: ProfileEditData }) {
 
 export function EditProfileHubScreen() {
   const router = useRouter();
-  return <ProfileEditDataLoader onBack={() => router.back()}>{(data) => <HubContent data={data} />}</ProfileEditDataLoader>;
+  return <ProfileEditDataLoader loadingVariant="hub" onBack={() => router.back()}>{(data) => <HubContent data={data} />}</ProfileEditDataLoader>;
 }
 
 function BasicsEditor({ data, onBack }: { data: ProfileEditData; onBack: () => void }) {
@@ -225,7 +265,7 @@ function BasicsEditor({ data, onBack }: { data: ProfileEditData; onBack: () => v
     setSaving(true);
     setSaveError(null);
     try {
-      const api = await authService.getProfileApi();
+      const api = await getProfileEditApi();
       const { firstName, lastName } = splitDisplayName(form.name);
       await api.updateBasics({ firstName, lastName, bio: form.bio.trim() || null, occupationId: data.occupations.length > 0 ? form.occupationId || undefined : undefined });
       if (isLocalAsset(form.profileImage)) {
@@ -323,10 +363,11 @@ function CertificateRow({ entry, noImageLabel, onPress }: { entry: CertificateEn
   return <Pressable accessibilityRole="button" className={styles.itemRow} onPress={onPress}>{entry.image && !imageFailed ? <Image source={{ uri: entry.image.url }} onError={() => setImageFailed(true)} className={styles.itemImage} contentFit="cover" /> : <View className={styles.itemImageFallback}><Text className={styles.itemImageFallbackText}>{noImageLabel}</Text></View>}<View className={styles.itemRowContent}><Text className={styles.itemTitle}>{entry.name}</Text><Text className={styles.itemMeta}>{entry.issuer}</Text><Text className={styles.itemDescription}>{entry.issuedAt}</Text></View><Pencil color={colors.primary} size={18} /></Pressable>;
 }
 
-function ProfileEditDataLoader({ children, onBack }: { children: (data: ProfileEditData) => React.ReactNode; onBack: () => void }) {
+function ProfileEditDataLoader({ children, loadingVariant, onBack }: { children: (data: ProfileEditData) => React.ReactNode; loadingVariant: ProfileEditLoadingVariant; onBack: () => void }) {
   const router = useRouter();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
+  const { activePersonaId } = usePrototypeMenuState();
   const [data, setData] = useState<ProfileEditData | null>(null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -334,16 +375,17 @@ function ProfileEditDataLoader({ children, onBack }: { children: (data: ProfileE
     void attempt;
     let active = true;
     setError(false);
-    void authService.getProfileApi().then((api) => api.getEditData()).then((nextData) => {
+    setData(null);
+    void getProfileEditApi(activePersonaId).then((api) => api.getEditData()).then((nextData) => {
       if (active) setData(nextData);
     }).catch(async (loadError) => {
       if (await redirectIfSessionExpired(loadError, router)) return;
       if (active) setError(true);
     });
     return () => { active = false; };
-  }, [attempt, router]));
-  if (error) return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}><ScrollView contentContainerClassName={styles.scrollContent}><ScreenHeader title={messages.title} backLabel={messages.back} onBack={onBack} /><ErrorState message={messages.loadError} retry={() => setAttempt((value) => value + 1)} retryLabel={messages.retry} /></ScrollView></SafeAreaView>;
-  if (!data) return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}><ScrollView contentContainerClassName={styles.scrollContent}><ScreenHeader title={messages.title} backLabel={messages.back} onBack={onBack} /><LoadingState message={messages.loading} /></ScrollView></SafeAreaView>;
+  }, [activePersonaId, attempt, router]));
+  if (error && !data) return <SafeAreaView edges={['top', 'left', 'right']} className={styles.safeArea}><ScrollView contentContainerClassName={styles.scrollContent}><ScreenHeader title={messages.title} backLabel={messages.back} onBack={onBack} /><ErrorState message={messages.loadError} retry={() => setAttempt((value) => value + 1)} retryLabel={messages.retry} /></ScrollView></SafeAreaView>;
+  if (!data) return <ProfileEditLoadingState messages={messages} onBack={onBack} variant={loadingVariant} />;
   return <>{children(data)}</>;
 }
 
@@ -368,7 +410,7 @@ function ExperienceEditor({ entry, onBack }: { entry?: ExperienceEntry; onBack: 
     setSaving(true);
     setSaveError(null);
     try {
-      const api = await authService.getProfileApi();
+      const api = await getProfileEditApi();
       const payload = { title: form.title.trim(), employmentType: form.employmentType, organization: form.organization.trim() || null, description: form.description.trim() || null, startedAt: form.startedAt, endedAt: form.endedAt || null };
       if (entry?.id) await api.updateExperience(entry.id, payload);
       else await api.createExperience(payload);
@@ -387,7 +429,7 @@ function ExperienceEditor({ entry, onBack }: { entry?: ExperienceEntry; onBack: 
         setDeleting(true);
         void (async () => {
           try {
-            await (await authService.getProfileApi()).deleteExperience(entry.id as string);
+            await (await getProfileEditApi()).deleteExperience(entry.id as string);
             allowNavigation();
             router.back();
           } catch (error) {
@@ -423,7 +465,7 @@ function PortfolioEditor({ entry, onBack }: { entry?: PortfolioEntry; onBack: ()
     setSaving(true);
     setSaveError(null);
     try {
-      const api = await authService.getProfileApi();
+      const api = await getProfileEditApi();
       if (entry?.id) {
         await api.updatePortfolio(entry.id, { title: form.title.trim(), description: form.description.trim() || null });
         if (isLocalAsset(form.imageUri)) await api.uploadPortfolioImage(entry.id, { uri: form.imageUri });
@@ -446,7 +488,7 @@ function PortfolioEditor({ entry, onBack }: { entry?: PortfolioEntry; onBack: ()
         setDeleting(true);
         void (async () => {
           try {
-            await (await authService.getProfileApi()).deletePortfolio(entry.id as string);
+            await (await getProfileEditApi()).deletePortfolio(entry.id as string);
             allowNavigation();
             router.back();
           } catch (error) {
@@ -487,7 +529,7 @@ function CertificateEditor({ entry, onBack }: { entry?: CertificateEntry; onBack
     setSaving(true);
     setSaveError(null);
     try {
-      const api = await authService.getProfileApi();
+      const api = await getProfileEditApi();
       const payload = { name: form.name.trim(), issuer: form.issuer.trim(), issuedAt: form.issuedAt };
       let certificateId = createdId;
       if (certificateId) {
@@ -514,7 +556,7 @@ function CertificateEditor({ entry, onBack }: { entry?: CertificateEntry; onBack
         setDeleting(true);
         void (async () => {
           try {
-            await (await authService.getProfileApi()).deleteCertificate(entry.id as string);
+            await (await getProfileEditApi()).deleteCertificate(entry.id as string);
             allowNavigation();
             router.back();
           } catch (error) {
@@ -536,7 +578,17 @@ export default function ProfileEditSectionScreen() {
   const itemId = getParam(rawItemId);
   const onBack = () => router.back();
 
-  return <ProfileEditDataLoader onBack={onBack}>{(data) => {
+  const loadingVariant: ProfileEditLoadingVariant = section === 'basics'
+    ? 'basics-editor'
+    : section === 'experience'
+      ? itemId ? 'experience-editor' : 'experience-list'
+      : section === 'portfolio'
+        ? itemId ? 'portfolio-editor' : 'portfolio-list'
+        : section === 'certificates' && itemId
+          ? 'certificates-editor'
+          : 'certificates-list';
+
+  return <ProfileEditDataLoader loadingVariant={loadingVariant} onBack={onBack}>{(data) => {
     if (section === 'basics') return <BasicsEditor data={data} onBack={onBack} />;
     if (section === 'experience') {
       const entry = data.experiences.find((item) => item.id === itemId);

@@ -57,7 +57,13 @@ if (!supportedPlatforms.has(platform)) {
   console.log(`Building the ${platform} development client with RNGoogleSignin included.`);
   console.log('Do not open this project in Expo Go; Expo Go cannot load this native module.');
 
-  const result = spawnSync('npx', [`expo`, `run:${platform}`], {
+  const extraExpoArgs = process.argv.slice(3);
+  const expoArgs = ['expo', `run:${platform}`, ...extraExpoArgs];
+  if (platform === 'android' && !extraExpoArgs.includes('--all-arch')) {
+    expoArgs.push('--all-arch');
+  }
+
+  const result = spawnSync('npx', expoArgs, {
     env: platform === 'android' ? getAndroidEnvironment() : process.env,
     stdio: 'inherit',
     shell: process.platform === 'win32',
