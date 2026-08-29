@@ -7,13 +7,13 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 1. Install dependencies
 
    ```bash
-   npm install
+   bun install
    ```
 
 2. Start the app
 
    ```bash
-   npx expo start
+   bun run start
    ```
 
 In the output, you'll find options to open the app in a
@@ -41,6 +41,27 @@ This command will move the starter code to the **app-example** directory and cre
 - If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
 - Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
 
+## Local mobile demo
+
+Set this flag in `.env.local` to use the seeded SQLite demo data instead of the remote API:
+
+```dotenv
+EXPO_PUBLIC_PROFILE_DEMO=true
+```
+
+The demo opens from the Developer mode screen and includes Quest Board, Quest details, My Quests, the Create Quest mockup, applications, and Chat. Board, My Quests, and Chat demo state is persisted locally on the device; Create Quest drafts are not saved yet and will be connected to the API later.
+
+Use a mobile development build; Expo Go is not supported for this demo because the app includes native modules:
+
+```bash
+bun run dev:android
+# or
+bun run dev:ios
+
+# start Metro for the installed development client
+bun run demo:start
+```
+
 ## Native authentication configuration
 
 The app does not create local mock accounts. A development build needs these runtime variables:
@@ -57,12 +78,12 @@ The native Google module requires a development build; Expo Go cannot provide th
 To rebuild and install a development client with the native Google module included, run:
 
 ```bash
-npm run dev:android
+bun run dev:android
 # or
-npm run dev:ios
+bun run dev:ios
 
 # start Metro for the installed development client
-npm run dev:start
+bun run dev:start
 ```
 
 After the native dependency or app config changes, restart Metro and open the installed development client—not Expo Go.
