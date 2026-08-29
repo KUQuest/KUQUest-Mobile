@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Host, Switch } from '@expo/ui';
-import { Bell, ChevronLeft, ChevronRight, CircleHelp, Code2, FileText, Globe2, Info, LockKeyhole, Moon, Pencil, UserRound } from 'lucide-react-native';
+import { Bell, ChevronLeft, ChevronRight, CircleHelp, Code2, FileText, Globe2, Info, LockKeyhole, LogOut, Moon, Pencil, UserRound } from 'lucide-react-native';
 
 import { Pressable, SafeAreaView, Text, View } from '@/tw';
 import { useLocale } from '@/locales/LocaleProvider';
@@ -61,11 +61,18 @@ export default function SettingsScreen() {
   const messages = settingsMessages[locale];
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [switchingAccount, setSwitchingAccount] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const devOverlayEnabled = isPrototypeDemoEnabled();
 
   const switchAccount = () => {
     if (switchingAccount) return;
     setSwitchingAccount(true);
+    void authService.signOut().catch(() => undefined).finally(() => router.replace('/'));
+  };
+
+  const logout = () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
     void authService.signOut().catch(() => undefined).finally(() => router.replace('/'));
   };
 
@@ -135,6 +142,18 @@ export default function SettingsScreen() {
           <Text className={styles.version}>{messages.version}</Text>
           <Text className={styles.version}>{messages.aboutDescription}</Text>
         </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ disabled: loggingOut }}
+          className="border-ku-danger items-center flex-row justify-center min-h-[52px] rounded-[16px] border px-[16px] active:bg-ku-danger/10"
+          disabled={loggingOut}
+          onPress={logout}
+          testID="settings-logout"
+        >
+          <LogOut color={colors.danger} size={20} strokeWidth={2} />
+          <Text className="text-ku-danger font-ku-semibold text-ku-control ml-[8px]">{messages.logout}</Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
