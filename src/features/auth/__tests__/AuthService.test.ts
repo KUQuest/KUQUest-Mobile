@@ -240,6 +240,81 @@ describe("AuthService", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  test("rejects an email outside the student domain", async () => {
+    googleSignin.signIn.mockResolvedValue(
+      nativeSuccess({
+        idToken: "google-id-token",
+        user: { email: "someone@gmail.com" },
+      }),
+    );
+
+    await expect(auth.authenticate()).rejects.toEqual(
+      new AuthError("INVALID_EMAIL_DOMAIN"),
+    );
+    expect(betterAuth.signIn.social).not.toHaveBeenCalled();
+  });
+
+  test("clears the chosen Google account when the email domain is rejected", async () => {
+    googleSignin.signIn.mockResolvedValue(
+      nativeSuccess({
+        idToken: "google-id-token",
+        user: { email: "someone@gmail.com" },
+      }),
+    );
+
+    await expect(auth.authenticate()).rejects.toThrow();
+    expect(googleSignin.signOut).toHaveBeenCalledTimes(1);
+  });
+
+  test("clears the chosen Google account when Better Auth rejects the sign-in", async () => {
+    googleSignin.signIn.mockResolvedValue(
+      nativeSuccess({
+        idToken: "google-id-token",
+        user: { email: "student@ku.th" },
+      }),
+    );
+    betterAuth.signIn.social.mockResolvedValue({
+      data: null,
+      error: new Error("Invalid token"),
+    });
+
+    await expect(auth.authenticate()).rejects.toThrow();
+    expect(googleSignin.signOut).toHaveBeenCalledTimes(1);
+  });
+
+  test("clears the chosen Google account when no ID token comes back", async () => {
+    googleSignin.signIn.mockResolvedValue(
+      nativeSuccess({ user: { email: "student@ku.th" } }),
+    );
+
+    await expect(auth.authenticate()).rejects.toThrow();
+    expect(googleSignin.signOut).toHaveBeenCalledTimes(1);
+  });
+
+  test("keeps the Google account when the user cancels before choosing one", async () => {
+    googleSignin.signIn.mockResolvedValue({
+      type: "cancelled",
+      data: undefined,
+    } as unknown as SignInResponse);
+
+    await expect(auth.authenticate()).rejects.toThrow();
+    expect(googleSignin.signOut).not.toHaveBeenCalled();
+  });
+
+  test("still reports the sign-in failure when clearing the account fails", async () => {
+    googleSignin.signIn.mockResolvedValue(
+      nativeSuccess({
+        idToken: "google-id-token",
+        user: { email: "someone@gmail.com" },
+      }),
+    );
+    googleSignin.signOut.mockRejectedValue(new Error("Play Services offline"));
+
+    await expect(auth.authenticate()).rejects.toEqual(
+      new AuthError("INVALID_EMAIL_DOMAIN"),
+    );
+  });
+
   test("retrieves the Better Auth session without reading a local token", async () => {
     betterAuth.getSession.mockResolvedValue({
       data: { user: createUser() },
