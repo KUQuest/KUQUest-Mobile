@@ -1,6 +1,6 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import mockReact, { type ReactNode } from 'react';
-import { Alert } from 'react-native';
+import { Alert, StyleSheet } from 'react-native';
 
 import MyQuestsScreen from '../MyQuestsScreen';
 import { setActivePrototypePersona } from '../../../components/ui/prototypeMenuState';
@@ -8,6 +8,17 @@ import { questFixtureAdapter } from '../../questBoard/questFixtureAdapter';
 
 const mockRouter = { push: jest.fn() };
 let mockLocale: 'en' | 'th' = 'th';
+let mockModalOnRequestClose: (() => void) | undefined;
+let mockModalProps: { animationType?: 'none' | 'slide' | 'fade'; statusBarTranslucent?: boolean; transparent?: boolean } | undefined;
+
+type MockModalProps = {
+  animationType?: 'none' | 'slide' | 'fade';
+  children: ReactNode;
+  onRequestClose?: () => void;
+  statusBarTranslucent?: boolean;
+  transparent?: boolean;
+  visible: boolean;
+};
 
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
@@ -20,7 +31,11 @@ jest.mock('../../../locales/LocaleProvider', () => ({
 jest.mock('react-native/Libraries/Modal/Modal', () => {
   return {
     __esModule: true,
-    default: ({ children, visible }: { children: ReactNode; visible: boolean }) => visible ? mockReact.createElement(mockReact.Fragment, null, children) : null,
+    default: ({ children, visible, onRequestClose, animationType, statusBarTranslucent, transparent }: MockModalProps) => {
+      mockModalOnRequestClose = onRequestClose;
+      mockModalProps = { animationType, statusBarTranslucent, transparent };
+      return visible ? mockReact.createElement(mockReact.Fragment, null, children) : null;
+    },
   };
 });
 
@@ -28,6 +43,8 @@ describe('MyQuestsScreen', () => {
   beforeEach(() => {
     mockRouter.push.mockClear();
     mockLocale = 'th';
+    mockModalOnRequestClose = undefined;
+    mockModalProps = undefined;
     questFixtureAdapter.reset();
   });
 
@@ -63,7 +80,7 @@ describe('MyQuestsScreen', () => {
     expect(view.getByText('Review a completed project')).toBeTruthy();
   });
 
-  it('shows Quest Funding only in the Hirer view, collapsed by default, and toggles Thai details', async () => {
+  it('opens and closes the Thai Quest Funding modal, then walks through the UI-only Top up flow', async () => {
     setActivePrototypePersona('student-demo');
     const view = await render(<MyQuestsScreen />);
 
@@ -75,19 +92,35 @@ describe('MyQuestsScreen', () => {
     const toggle = view.getByTestId('quest-funding-summary-toggle');
     expect(toggle.props.accessibilityState).toEqual({ expanded: false });
     expect(view.getByText('เงินของฉัน')).toBeTruthy();
-    expect(view.getByText('เงินที่กันไว้กับเควสต์')).toBeTruthy();
-    expect(view.getByText('฿0')).toBeTruthy();
+    expect(view.getByTestId('quest-funding-collapsed-status')).toHaveTextContent('ระบบชำระเงินยังไม่พร้อมใช้งาน');
+    expect(view.queryByText('฿0')).toBeNull();
     expect(view.queryByTestId('quest-funding-summary-details')).toBeNull();
-    expect(view.queryByText('ยังไม่มี Quest Funding ที่กำลังดำเนินการ')).toBeNull();
+    expect(view.queryByText('ต้นแบบนี้ยังไม่เชื่อมต่อระบบชำระเงิน จึงยังไม่มีข้อมูลยอดเงินที่ใช้งานได้')).toBeNull();
+    expect(toggle.props.accessibilityLabel).toBe('เงินของฉัน: ระบบชำระเงินยังไม่พร้อมใช้งาน');
 
     await fireEvent.press(toggle);
     expect(toggle.props.accessibilityState).toEqual({ expanded: true });
+    expect(mockModalProps).toEqual(expect.objectContaining({ animationType: 'fade', statusBarTranslucent: true, transparent: true }));
+    expect(view.getByTestId('quest-funding-summary-modal').props.accessibilityViewIsModal).toBe(true);
+    expect(view.getByTestId('quest-funding-summary-centered-modal')).toBeTruthy();
+    expect(StyleSheet.flatten(view.getByTestId('quest-funding-summary-modal').props.style)).toEqual(expect.objectContaining({ maxHeight: '82%', maxWidth: 560 }));
     expect(view.getByTestId('quest-funding-summary-details')).toBeTruthy();
-    expect(view.getByText('ยังไม่มี Quest Funding ที่กำลังดำเนินการ')).toBeTruthy();
+    expect(view.getByTestId('quest-funding-summary-close').props.accessibilityLabel).toBe('ปิด');
+    const statusCard = view.getByTestId('quest-funding-status-card');
+    expect(statusCard.props.children[0].props.testID).toBe('quest-funding-status');
+    const status = view.getByTestId('quest-funding-status');
+    expect(status.props.accessibilityLabel).toBe('สถานะต้นแบบ: ระบบชำระเงินยังไม่พร้อมใช้งาน. ต้นแบบนี้ยังไม่เชื่อมต่อระบบชำระเงิน จึงยังไม่มีข้อมูลยอดเงินที่ใช้งานได้');
+    expect(view.getByTestId('quest-funding-status-value')).toHaveTextContent('ระบบชำระเงินยังไม่พร้อมใช้งาน');
+    expect(StyleSheet.flatten(view.getByTestId('quest-funding-status-value').props.style)).toEqual(expect.objectContaining({ fontSize: 24, lineHeight: 30 }));
+    expect(view.getByTestId('quest-funding-status-description')).toHaveTextContent('ต้นแบบนี้ยังไม่เชื่อมต่อระบบชำระเงิน จึงยังไม่มีข้อมูลยอดเงินที่ใช้งานได้');
+    expect(view.getByText('กันเงินไว้สำหรับที่ของ Worker')).toBeTruthy();
+    expect(view.getByText('Quest Funding กันค่าตอบแทนไว้สำหรับ Worker แต่ละที่ที่ร้องขอ')).toBeTruthy();
     expect(view.getByText('การชำระเงิน')).toBeTruthy();
-    expect(view.getByText('ดูรายการ')).toBeTruthy();
+    expect(view.getByText('การชำระเงินจ่ายค่าตอบแทนตามจำนวน Worker จริง (Actual Headcount)')).toBeTruthy();
     expect(view.getByText('การคืนเงิน')).toBeTruthy();
-    expect(view.getByText('นโยบาย')).toBeTruthy();
+    expect(view.getByText('คืนเงินสำหรับที่ของ Worker ที่กันไว้แต่ไม่ได้ใช้')).toBeTruthy();
+    expect(view.queryByText('ดูรายการ')).toBeNull();
+    expect(view.queryByText('นโยบาย')).toBeNull();
     const fundingInformation = view.getByTestId('quest-funding-information');
     expect(fundingInformation.props.accessibilityRole).toBe('text');
     expect(fundingInformation.props.onPress).toBeUndefined();
@@ -99,17 +132,66 @@ describe('MyQuestsScreen', () => {
     expect(transfer).toBeTruthy();
     expect(view.getByText('เติมเงิน')).toBeTruthy();
     expect(view.getByText('โอนเงิน')).toBeTruthy();
-    expect(view.getByTestId('quest-funding-actions-unavailable')).toHaveTextContent('ยังไม่พร้อมใช้งานจนกว่าจะเชื่อมต่อระบบชำระเงิน');
-    expect(topUp.props.accessibilityLabel).toBe('เติมเงิน: ยังไม่พร้อมใช้งานจนกว่าจะเชื่อมต่อระบบชำระเงิน');
-    expect(transfer.props.accessibilityLabel).toBe('โอนเงิน: ยังไม่พร้อมใช้งานจนกว่าจะเชื่อมต่อระบบชำระเงิน');
-    expect(topUp.props.accessibilityState).toEqual(expect.objectContaining({ disabled: true }));
+    expect(view.getByTestId('quest-funding-actions-unavailable')).toHaveTextContent('การโอนเงินยังไม่พร้อมใช้งานจนกว่าจะเชื่อมต่อระบบชำระเงิน ส่วนการเติมเงินเป็นเพียงขั้นตอนต้นแบบเท่านั้น');
+    expect(view.getByTestId('quest-funding-actions-unavailable').props.accessible).toBe(true);
+    expect(topUp.props.accessibilityLabel).toBe('เติมเงิน');
+    expect(transfer.props.accessibilityLabel).toBe('โอนเงิน');
+    expect(topUp.props.disabled).not.toBe(true);
     expect(transfer.props.accessibilityState).toEqual(expect.objectContaining({ disabled: true }));
+    expect(StyleSheet.flatten(topUp.props.style)).toEqual(expect.objectContaining({ minHeight: 48 }));
+    expect(StyleSheet.flatten(transfer.props.style)).toEqual(expect.objectContaining({ minHeight: 48 }));
+
+    await fireEvent.press(view.getByTestId('quest-funding-summary-close'));
+    expect(view.queryByTestId('quest-funding-summary-details')).toBeNull();
+    expect(toggle.props.accessibilityState).toEqual({ expanded: false });
 
     await fireEvent.press(toggle);
+    expect(mockModalOnRequestClose).toEqual(expect.any(Function));
+    await act(async () => {
+      mockModalOnRequestClose?.();
+    });
     expect(view.queryByTestId('quest-funding-summary-details')).toBeNull();
+
+    await fireEvent.press(toggle);
+    await fireEvent.press(view.getByTestId('quest-funding-top-up'));
+    expect(mockModalProps).toEqual(expect.objectContaining({ animationType: 'slide', statusBarTranslucent: true, transparent: false }));
+    expect(view.queryByTestId('quest-funding-summary-details')).toBeNull();
+    expect(view.queryByTestId('quest-funding-summary-backdrop')).toBeNull();
+    expect(view.getByTestId('quest-funding-top-up-flow-modal').props.accessibilityViewIsModal).toBe(true);
+    expect(view.getByTestId('quest-funding-top-up-full-screen-modal').props.accessibilityViewIsModal).toBe(true);
+    expect(StyleSheet.flatten(view.getByTestId('quest-funding-top-up-full-screen-modal').props.style)).toEqual(expect.objectContaining({ flex: 1, paddingTop: expect.any(Number) }));
+    expect(view.getByTestId('quest-funding-top-up-flow')).toBeTruthy();
+    expect(view.getByText('ระบุจำนวนเงิน')).toBeTruthy();
+    expect(view.getByTestId('quest-funding-top-up-continue').props.accessibilityState).toEqual({ disabled: true });
+    expect(view.getByTestId('quest-funding-top-up-quick-500').props.accessibilityState).toEqual({ selected: false });
+
+    await fireEvent.press(view.getByTestId('quest-funding-top-up-quick-500'));
+    expect(view.getByTestId('quest-funding-top-up-amount').props.value).toBe('500');
+    expect(view.getByTestId('quest-funding-top-up-continue').props.accessibilityState).toEqual({ disabled: false });
+    await fireEvent.press(view.getByTestId('quest-funding-top-up-continue'));
+
+    expect(view.getByText('QR พร้อมเพย์')).toBeTruthy();
+    expect(view.getByTestId('quest-funding-top-up-promptpay')).toBeTruthy();
+    expect(view.getByTestId('quest-funding-top-up-promptpay-qr').props.accessibilityRole).toBe('image');
+    expect(view.getByTestId('quest-funding-top-up-promptpay-qr').props.accessibilityLabel).toBe('QR พร้อมเพย์. QR ต้นแบบ · สแกนไม่ได้. จำนวนเงิน (บาท): ฿500');
+    expect(view.getByText('QR ต้นแบบ · สแกนไม่ได้')).toBeTruthy();
+    expect(view.getByText('฿500')).toBeTruthy();
+    expect(view.getByTestId('quest-funding-top-up-promptpay-unavailable')).toHaveTextContent('การเติมเงินผ่านพร้อมเพย์ยังไม่พร้อมใช้งาน ไม่มีการชำระเงินจริงและยอดเงินของคุณจะไม่เปลี่ยนแปลง');
+    expect(view.queryByText('PayPal')).toBeNull();
+    expect(view.queryByText('ยืนยันด้วย PIN')).toBeNull();
+
+    await act(async () => {
+      mockModalOnRequestClose?.();
+    });
+    expect(view.getByTestId('quest-funding-top-up-amount')).toBeTruthy();
+    expect(view.queryByTestId('quest-funding-top-up-promptpay')).toBeNull();
+    await fireEvent.press(view.getByTestId('quest-funding-top-up-continue'));
+    expect(view.getByTestId('quest-funding-top-up-promptpay')).toBeTruthy();
+    await fireEvent.press(view.getByTestId('quest-funding-top-up-promptpay-close'));
+    expect(view.queryByTestId('quest-funding-top-up-flow')).toBeNull();
   });
 
-  it('localizes collapsed and expanded Quest Funding for the Hirer in English', async () => {
+  it('localizes the unavailable Quest Funding state and static details for the Hirer in English', async () => {
     mockLocale = 'en';
     setActivePrototypePersona('student-demo');
     const view = await render(<MyQuestsScreen />);
@@ -119,16 +201,26 @@ describe('MyQuestsScreen', () => {
 
     expect(view.getByTestId('quest-funding-summary')).toBeTruthy();
     expect(view.getByText('My funding')).toBeTruthy();
-    expect(view.getByText('HELD FOR QUESTS')).toBeTruthy();
-    expect(view.getByText('฿0')).toBeTruthy();
+    expect(view.getByTestId('quest-funding-collapsed-status')).toHaveTextContent('Payment service unavailable');
+    expect(view.queryByText('฿0')).toBeNull();
     expect(view.queryByText('No active Quest Funding yet')).toBeNull();
 
     await fireEvent.press(view.getByTestId('quest-funding-summary-toggle'));
-    expect(view.getByText('No active Quest Funding yet')).toBeTruthy();
+    const status = view.getByTestId('quest-funding-status');
+    expect(view.getByTestId('quest-funding-status-card').props.children[0].props.testID).toBe('quest-funding-status');
+    expect(status.props.accessibilityLabel).toBe('PROTOTYPE STATUS: Payment service unavailable. This prototype does not connect to a payment service, so a live balance is not available.');
+    expect(view.getByText('PROTOTYPE STATUS')).toBeTruthy();
+    expect(view.getAllByText('Payment service unavailable').length).toBeGreaterThanOrEqual(2);
+    expect(view.getByText('This prototype does not connect to a payment service, so a live balance is not available.')).toBeTruthy();
+    expect(StyleSheet.flatten(view.getByTestId('quest-funding-status-value').props.style)).toEqual(expect.objectContaining({ fontSize: 24, lineHeight: 30 }));
+    expect(view.getByText('RESERVED PER WORKER PLACE')).toBeTruthy();
+    expect(view.getByText('Quest Funding reserves the reward for each requested Worker place.')).toBeTruthy();
     expect(view.getByText('Settlement')).toBeTruthy();
-    expect(view.getByText('View history')).toBeTruthy();
+    expect(view.getByText('Settlement pays rewards for the Actual Headcount.')).toBeTruthy();
     expect(view.getByText('Refunds')).toBeTruthy();
-    expect(view.getByText('Policy')).toBeTruthy();
+    expect(view.getByText('Unused reserved Worker places are refunded.')).toBeTruthy();
+    expect(view.queryByText('View history')).toBeNull();
+    expect(view.queryByText('Policy')).toBeNull();
     expect(view.queryByRole('button', { name: 'View history' })).toBeNull();
     expect(view.queryByRole('button', { name: 'Policy' })).toBeNull();
     const topUp = view.getByTestId('quest-funding-top-up');
@@ -137,9 +229,24 @@ describe('MyQuestsScreen', () => {
     expect(transfer).toBeTruthy();
     expect(view.getByText('Top up')).toBeTruthy();
     expect(view.getByText('Transfer')).toBeTruthy();
-    expect(view.getByTestId('quest-funding-actions-unavailable')).toHaveTextContent('Not available until payment service is connected');
-    expect(topUp.props.accessibilityLabel).toBe('Top up: Not available until payment service is connected');
-    expect(transfer.props.accessibilityLabel).toBe('Transfer: Not available until payment service is connected');
+    expect(view.getByTestId('quest-funding-actions-unavailable')).toHaveTextContent('Transfer is unavailable until the payment service is connected. Top up is a prototype flow only.');
+    expect(view.getByTestId('quest-funding-actions-unavailable').props.accessible).toBe(true);
+    expect(topUp.props.accessibilityLabel).toBe('Top up');
+    expect(transfer.props.accessibilityLabel).toBe('Transfer');
+    expect(topUp.props.accessibilityHint).toBeUndefined();
+    expect(transfer.props.accessibilityHint).toBeUndefined();
+    expect(topUp.props.disabled).not.toBe(true);
+    expect(transfer.props.accessibilityState).toEqual(expect.objectContaining({ disabled: true }));
+
+    await fireEvent.press(topUp);
+    expect(view.getByText('Enter amount')).toBeTruthy();
+    await fireEvent.press(view.getByTestId('quest-funding-top-up-quick-100'));
+    await fireEvent.press(view.getByTestId('quest-funding-top-up-continue'));
+    expect(view.getByText('PromptPay QR')).toBeTruthy();
+    expect(view.getByText('Prototype QR · not scannable')).toBeTruthy();
+    expect(view.getByTestId('quest-funding-top-up-promptpay-unavailable')).toHaveTextContent('PromptPay top up is unavailable. No payment was made and your funding balance was not changed.');
+    await fireEvent.press(view.getByTestId('quest-funding-top-up-close'));
+    expect(view.queryByTestId('quest-funding-top-up-flow')).toBeNull();
   });
 
   it('cycles Quest status with arrows and wraps around the available statuses', async () => {
