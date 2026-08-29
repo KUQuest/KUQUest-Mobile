@@ -12,6 +12,7 @@ jest.mock('react-native/Libraries/Modal/Modal', () => {
   };
 });
 
+
 jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
   __esModule: true,
   default: () => ({ width: 390, height: 844, scale: 1, fontScale: 1 }),

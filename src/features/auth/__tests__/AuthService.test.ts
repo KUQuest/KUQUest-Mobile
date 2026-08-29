@@ -174,6 +174,41 @@ describe("AuthService", () => {
     expect(googleSignin.signIn).not.toHaveBeenCalled();
   });
 
+  test("clears a rejected Google account before retrying with a KU account", async () => {
+    const nonKuResponse = nativeSuccess({
+      idToken: "non-ku-id-token",
+      user: { email: "personal@gmail.com" },
+    });
+    const kuResponse = nativeSuccess({
+      idToken: "ku-id-token",
+      user: { email: "student@ku.th" },
+    });
+    let selectedAccount: "non-ku" | "ku" = "non-ku";
+    googleSignin.signIn.mockImplementation(async () =>
+      selectedAccount === "non-ku" ? nonKuResponse : kuResponse,
+    );
+    googleSignin.signOut.mockImplementation(async () => {
+      selectedAccount = "ku";
+      return null;
+    });
+    betterAuth.signIn.social.mockResolvedValue({
+      data: { user: createUser() },
+      error: null,
+    });
+
+    await expect(auth.authenticate()).rejects.toEqual(
+      new AuthError("INVALID_EMAIL_DOMAIN"),
+    );
+    await expect(auth.authenticate()).resolves.toEqual(createSession());
+
+    expect(googleSignin.signIn).toHaveBeenCalledTimes(2);
+    expect(googleSignin.signOut).toHaveBeenCalledTimes(1);
+    expect(betterAuth.signIn.social).toHaveBeenCalledWith({
+      provider: "google",
+      idToken: { token: "ku-id-token" },
+    });
+  });
+
   test("rejects a missing Google ID token", async () => {
     googleSignin.signIn.mockResolvedValue(
       nativeSuccess({ user: { email: "student@ku.th" } }),
