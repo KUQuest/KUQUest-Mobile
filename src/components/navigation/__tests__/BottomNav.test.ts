@@ -33,14 +33,18 @@ describe('authenticated primary navigation', () => {
 
   it('provides the approved English and Thai labels', () => {
     expect(navigationMessages.en).toMatchObject({
-      board: 'Quest Board',
+      board: 'Home',
+      boardShort: 'Home',
+      boardTitle: 'Quest Board',
       myQuests: 'My Quests',
       create: 'Create',
       chat: 'Chat',
       profile: 'Profile',
     });
     expect(navigationMessages.th).toMatchObject({
-      board: 'กระดานเควสต์',
+      board: 'หน้าหลัก',
+      boardShort: 'หน้าหลัก',
+      boardTitle: 'กระดานเควสต์',
       myQuests: 'เควสต์ของฉัน',
       create: 'สร้าง',
       chat: 'แชต',

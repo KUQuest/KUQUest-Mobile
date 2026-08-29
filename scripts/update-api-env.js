@@ -38,6 +38,11 @@ function getApiConfig(envContent) {
   };
 }
 
+function getConfiguredHost(envContent) {
+  const match = envContent.match(/^EXPO_PUBLIC_API_HOST=(.*)$/m);
+  return match?.[1]?.trim() || process.env.EXPO_PUBLIC_API_HOST;
+}
+
 async function main() {
   if (!fs.existsSync(envPath)) {
     throw new Error('.env.local was not found');
@@ -45,7 +50,8 @@ async function main() {
 
   const envContent = fs.readFileSync(envPath, 'utf8');
   const apiConfig = getApiConfig(envContent);
-  const host = await getDefaultRouteAddress().catch(() => getFallbackAddress());
+  const host = getConfiguredHost(envContent)
+    ?? await getDefaultRouteAddress().catch(() => getFallbackAddress());
 
   if (!host) {
     throw new Error('Could not detect a local IPv4 address');

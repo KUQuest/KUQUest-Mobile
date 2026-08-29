@@ -3,6 +3,33 @@ import type { SupportedLocale } from './LocaleProvider';
 export interface QuestBoardMessages {
   title: string;
   subtitle: string;
+  fundingTitle: string;
+  fundingHeld: string;
+  fundingStatusLabel: string;
+  fundingUnavailable: string;
+  fundingUnavailableDescription: string;
+  fundingReservationDescription: string;
+  fundingExpand: string;
+  fundingCollapse: string;
+  fundingTopUp: string;
+  fundingTransfer: string;
+  fundingActionsUnavailable: string;
+  topUpTitle: string;
+  topUpAmountTitle: string;
+  topUpAmountDescription: string;
+  topUpAmountLabel: string;
+  topUpQuickAmountLabel: (amount: number) => string;
+  topUpPromptPayTitle: string;
+  topUpPromptPayDescription: string;
+  topUpPromptPayPrototype: string;
+  topUpPromptPayUnavailable: string;
+  topUpClose: string;
+  topUpBack: string;
+  topUpContinue: string;
+  settlement: string;
+  settlementDescription: string;
+  refunds: string;
+  refundsDescription: string;
   searchPlaceholder: string;
   clearSearch: string;
   clearSearchAndFilters: string;
@@ -173,6 +200,33 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
   en: {
     title: 'Quest Board',
     subtitle: 'Find a Quest that fits your skills and time.',
+    fundingTitle: 'My funding',
+    fundingHeld: 'RESERVED PER WORKER PLACE',
+    fundingStatusLabel: 'PROTOTYPE STATUS',
+    fundingUnavailable: 'Payment service unavailable',
+    fundingUnavailableDescription: 'This prototype does not connect to a payment service, so a live balance is not available.',
+    fundingReservationDescription: 'Quest Funding reserves the reward for each requested Worker place.',
+    fundingExpand: 'Show funding details',
+    fundingCollapse: 'Hide funding details',
+    fundingTopUp: 'Top up',
+    fundingTransfer: 'Transfer',
+    fundingActionsUnavailable: 'Transfer is unavailable until the payment service is connected. Top up is a prototype flow only.',
+    topUpTitle: 'Top up',
+    topUpAmountTitle: 'Enter amount',
+    topUpAmountDescription: 'Choose an amount to add to your funding balance.',
+    topUpAmountLabel: 'Amount (THB)',
+    topUpQuickAmountLabel: (amount) => `Choose ฿${amount.toLocaleString('en-US')}`,
+    topUpPromptPayTitle: 'PromptPay QR',
+    topUpPromptPayDescription: 'Review this PromptPay QR preview. It is a visual prototype and is not connected to a payment service.',
+    topUpPromptPayPrototype: 'Prototype QR · not scannable',
+    topUpPromptPayUnavailable: 'PromptPay top up is unavailable. No payment was made and your funding balance was not changed.',
+    topUpClose: 'Close',
+    topUpBack: 'Back',
+    topUpContinue: 'Continue',
+    settlement: 'Settlement',
+    settlementDescription: 'Settlement pays rewards for the Actual Headcount.',
+    refunds: 'Refunds',
+    refundsDescription: 'Unused reserved Worker places are refunded.',
     searchPlaceholder: 'Search for a Quest',
     clearSearch: 'Clear Quest search',
     clearSearchAndFilters: 'Clear search and filters',
@@ -352,6 +406,33 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
   th: {
     title: 'กระดานเควสต์',
     subtitle: 'ค้นหาเควสต์ที่เหมาะกับทักษะและเวลาของคุณ',
+    fundingTitle: 'เงินของฉัน',
+    fundingHeld: 'กันเงินไว้สำหรับที่ของ Worker',
+    fundingStatusLabel: 'สถานะต้นแบบ',
+    fundingUnavailable: 'ระบบชำระเงินยังไม่พร้อมใช้งาน',
+    fundingUnavailableDescription: 'ต้นแบบนี้ยังไม่เชื่อมต่อระบบชำระเงิน จึงยังไม่มีข้อมูลยอดเงินที่ใช้งานได้',
+    fundingReservationDescription: 'Quest Funding กันค่าตอบแทนไว้สำหรับ Worker แต่ละที่ที่ร้องขอ',
+    fundingExpand: 'แสดงรายละเอียดเงิน',
+    fundingCollapse: 'ซ่อนรายละเอียดเงิน',
+    fundingTopUp: 'เติมเงิน',
+    fundingTransfer: 'โอนเงิน',
+    fundingActionsUnavailable: 'การโอนเงินยังไม่พร้อมใช้งานจนกว่าจะเชื่อมต่อระบบชำระเงิน ส่วนการเติมเงินเป็นเพียงขั้นตอนต้นแบบเท่านั้น',
+    topUpTitle: 'เติมเงิน',
+    topUpAmountTitle: 'ระบุจำนวนเงิน',
+    topUpAmountDescription: 'เลือกจำนวนเงินที่ต้องการเพิ่มในเงินทุนของคุณ',
+    topUpAmountLabel: 'จำนวนเงิน (บาท)',
+    topUpQuickAmountLabel: (amount) => `เลือก ฿${amount.toLocaleString('en-US')}`,
+    topUpPromptPayTitle: 'QR พร้อมเพย์',
+    topUpPromptPayDescription: 'ตรวจสอบ QR พร้อมเพย์ตัวอย่างนี้ QR เป็นเพียงภาพต้นแบบและยังไม่เชื่อมต่อระบบชำระเงิน',
+    topUpPromptPayPrototype: 'QR ต้นแบบ · สแกนไม่ได้',
+    topUpPromptPayUnavailable: 'การเติมเงินผ่านพร้อมเพย์ยังไม่พร้อมใช้งาน ไม่มีการชำระเงินจริงและยอดเงินของคุณจะไม่เปลี่ยนแปลง',
+    topUpClose: 'ปิด',
+    topUpBack: 'ย้อนกลับ',
+    topUpContinue: 'ดำเนินการต่อ',
+    settlement: 'การชำระเงิน',
+    settlementDescription: 'การชำระเงินจ่ายค่าตอบแทนตามจำนวน Worker จริง (Actual Headcount)',
+    refunds: 'การคืนเงิน',
+    refundsDescription: 'คืนเงินสำหรับที่ของ Worker ที่กันไว้แต่ไม่ได้ใช้',
     searchPlaceholder: 'ค้นหาเควสต์',
     clearSearch: 'ล้างการค้นหาเควสต์',
     clearSearchAndFilters: 'ล้างการค้นหาและตัวกรอง',

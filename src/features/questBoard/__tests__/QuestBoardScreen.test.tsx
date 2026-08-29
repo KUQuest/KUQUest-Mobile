@@ -7,9 +7,14 @@ import { questFixtureAdapter } from '../questFixtureAdapter';
 import { questFixtures } from '../questFixtures';
 
 const mockRouter = { push: jest.fn() };
+let mockLocale: 'en' | 'th' = 'en';
 
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
+}));
+
+jest.mock('../../../locales/LocaleProvider', () => ({
+  useLocale: () => ({ locale: mockLocale }),
 }));
 
 jest.mock('react-native/Libraries/Modal/Modal', () => ({
@@ -31,6 +36,7 @@ describe('Quest Board screen', () => {
 
   beforeEach(() => {
     mockRouter.push.mockClear();
+    mockLocale = 'en';
   });
 
   it('renders Quest cards with decision signals and one detail action', async () => {
@@ -65,6 +71,16 @@ describe('Quest Board screen', () => {
     await fireEvent.press(view.getByTestId('quest-detail-move-boxes'));
 
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/quest/[id]', params: { id: 'move-boxes' } });
+  });
+
+  it('keeps Quest Funding out of Home and focused on Quest Board discovery', async () => {
+    const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} currentStudentId="student-demo" />);
+
+    expect(view.queryByTestId('home-funding-summary')).toBeNull();
+    expect(view.queryByTestId('quest-funding-summary')).toBeNull();
+    expect(view.queryByText('My funding')).toBeNull();
+    expect(view.getByText('Quest Board')).toBeTruthy();
+    expect(view.getByText('Find a Quest that fits your skills and time.')).toBeTruthy();
   });
 
   it('opens Quest Detail as the only card action', async () => {

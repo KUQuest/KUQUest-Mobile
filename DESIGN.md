@@ -1,7 +1,7 @@
 ---
 name: KUQuest
 description: A trusted community job board for people with @ku.th accounts.
-colors:
+colors: 
   background: "#FFFCFA"
   surface: "#FCF9F8"
   surface-muted: "#F5F2F0"

@@ -211,9 +211,7 @@ export class AuthService implements AuthAdapter {
   async signOut(): Promise<void> {
     authDebug('sign-out started');
     const remoteSignOut = settleWithin(this.authClient.signOut(), SIGN_OUT_TIMEOUT_MS);
-    const nativeSignOut = this.nativeGoogleSignin
-      ? settleWithin(this.nativeGoogleSignin.signOut(), SIGN_OUT_TIMEOUT_MS)
-      : Promise.resolve(undefined);
+    const nativeSignOut = this.clearNativeGoogleAccount();
 
     await Promise.all([remoteSignOut, nativeSignOut]);
     await Promise.all([
@@ -221,6 +219,16 @@ export class AuthService implements AuthAdapter {
       SecureStore.deleteItemAsync(AUTH_SESSION_CACHE_STORAGE_KEY),
     ]);
     authDebug('sign-out cleanup finished');
+  }
+
+  private async clearNativeGoogleAccount(): Promise<void> {
+    const nativeGoogleSignin = this.nativeGoogleSignin;
+    if (!nativeGoogleSignin) return;
+
+    await settleWithin(
+      Promise.resolve().then(() => nativeGoogleSignin.signOut()),
+      SIGN_OUT_TIMEOUT_MS,
+    );
   }
 
   private async signInWithNativeGoogle(): Promise<AuthSession> {
