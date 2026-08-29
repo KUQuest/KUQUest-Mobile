@@ -176,6 +176,7 @@ function removeIndexedErrors(errors: Record<string, string>, prefix: string, rem
 }
 
 export default function OnboardingScreen() {
+  const colorScheme = useColorScheme();
 
   const router = useRouter();
   const { locale } = useLocale();
@@ -241,7 +242,7 @@ export default function OnboardingScreen() {
           if (active) {
             setOptions({
               occupations: [{ id: 'student', name: locale === 'th' ? 'นิสิต' : 'Student', requiresStudentId: true }],
-              faculties: [{ id: 'engineering', name: locale === 'th' ? 'วิศวกรรมศาสตร์' : 'Engineering', departments: [{ id: 'sake', name: 'Software and Knowledge Engineering' }] }],
+              faculties: [{ id: 'engineering', name: locale === 'th' ? 'วิศวกรรมศาสตร์' : 'Engineering', departments: [{ id: 'sake', name: locale === 'th' ? 'วิศวกรรมซอฟต์แวร์และความรู้' : 'Software and Knowledge Engineering' }] }],
             });
             setForm(createOnboardingForm());
           }
@@ -429,8 +430,9 @@ export default function OnboardingScreen() {
     }
   };
 
-  const handleDateChange = (_event: DateTimePickerChangeEvent, selectedDate: Date) => {
-    if (!datePickerTarget) {
+  const handleDateChange = (event: DateTimePickerChangeEvent, selectedDate?: Date) => {
+    if (!selectedDate || !datePickerTarget) {
+      setDatePickerTarget(null);
       return;
     }
     const year = selectedDate.getFullYear();
@@ -444,7 +446,7 @@ export default function OnboardingScreen() {
 
   const openDatePicker = (index: number, value: string) => {
     const parsed = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00`) : new Date();
-    setDatePickerTarget({ index, value: Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString(), kind: 'certificate' });
+    setDatePickerTarget({ index, value: Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString(), kind: 'certificate' });
   };
 
   const openExperienceDatePicker = (index: number, field: 'startedAt' | 'endedAt', value: string) => {
@@ -549,8 +551,9 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right', 'bottom']} className={styles.safeArea}>
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView contentContainerClassName={styles.scrollContent} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView className="flex-1" contentContainerClassName={styles.scrollContent} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View className={styles.headerSection}>
           <Text className={styles.title}>{msg.title}</Text>
           <Text className={styles.stepTitle}>{isEditMode ? msg.editProfile : currentStep === 1 ? msg.stepTitle : currentStep === 2 ? msg.step2Title : msg.step3Title}</Text>
@@ -571,7 +574,7 @@ export default function OnboardingScreen() {
         <MotionView
           key={`step-content-${currentStep}`}
           entering={getOnboardingTransition('in', reduceMotion)}
-          className={styles.formSection}
+          className={currentStep === 3 ? 'w-full' : styles.formSection}
         >
           {currentStep === 1 && <>
             <Input
@@ -697,6 +700,7 @@ export default function OnboardingScreen() {
                 key={`cert-${cert.id ?? index}`}
                 entering={getOnboardingTransition('in', reduceMotion)}
                 exiting={getOnboardingTransition('out', reduceMotion)}
+                layout={reduceMotion ? undefined : Reanimated.LinearTransition}
                 className={styles.itemCard}
               >
                 <View className={styles.itemCardHeader}>
@@ -739,11 +743,15 @@ export default function OnboardingScreen() {
               <Pressable accessibilityRole="button" accessibilityLabel={msg.addMoreCert} className={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, certificates: [...previous.certificates, createEmptyCertificate()] }))}><Text className={styles.addMoreBtnText}>{msg.addMoreCert}</Text></Pressable>
             </View>
             <View className={styles.step3Section}>
-              <Text className={styles.sectionTitleNormal}>{msg.experience}</Text>
+              <View className={styles.sectionHeader}>
+                <Text className={styles.sectionTitle}>{msg.experience}</Text>
+              </View>
+              <Text className={styles.sectionDesc}>{msg.expDesc}</Text>
               {form.experiences.map((experience, index) => <MotionView
                 key={`experience-${experience.id ?? index}`}
                 entering={getOnboardingTransition('in', reduceMotion)}
                 exiting={getOnboardingTransition('out', reduceMotion)}
+                layout={reduceMotion ? undefined : Reanimated.LinearTransition}
                 className={styles.itemCard}
               >
                 <View className={styles.itemCardHeader}>
@@ -763,11 +771,15 @@ export default function OnboardingScreen() {
               <Pressable accessibilityRole="button" accessibilityLabel={msg.addMoreExp} className={styles.addMoreBtn} onPress={() => setForm((previous) => ({ ...previous, experiences: [...previous.experiences, createEmptyExperience()] }))}><Text className={styles.addMoreBtnText}>{msg.addMoreExp}</Text></Pressable>
             </View>
             <View className={styles.step3Section}>
-              <Text className={styles.sectionTitleNormal}>{msg.myWorks}</Text>
+              <View className={styles.sectionHeader}>
+                <Text className={styles.sectionTitle}>{msg.myWorks}</Text>
+              </View>
+              <Text className={styles.sectionDesc}>{msg.workDesc}</Text>
               {form.works.map((work, index) => <MotionView
                 key={`work-${work.id ?? index}`}
                 entering={getOnboardingTransition('in', reduceMotion)}
                 exiting={getOnboardingTransition('out', reduceMotion)}
+                layout={reduceMotion ? undefined : Reanimated.LinearTransition}
                 className={styles.itemCard}
               >
                 <View className={styles.itemCardHeader}>
