@@ -27,6 +27,7 @@ export interface SettingsMessages {
   version: string;
   aboutDescription: string;
   switchingAccount: string;
+  logout: string;
   back: string;
 }
 
@@ -58,6 +59,7 @@ export const settingsMessages: Record<SupportedLocale, SettingsMessages> = {
     version: 'Version 1.0.0',
     aboutDescription: 'A trusted Quest board for the KU community',
     switchingAccount: 'Switching account...',
+    logout: 'Log out',
     back: 'Go back',
   },
   th: {
@@ -87,6 +89,7 @@ export const settingsMessages: Record<SupportedLocale, SettingsMessages> = {
     version: 'เวอร์ชัน 1.0.0',
     aboutDescription: 'กระดานเควสต์ที่ไว้วางใจได้สำหรับชุมชน KU',
     switchingAccount: 'กำลังเปลี่ยนบัญชี...',
+    logout: 'ออกจากระบบ',
     back: 'ย้อนกลับ',
   },
 };
