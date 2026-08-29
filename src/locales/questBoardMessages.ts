@@ -3,6 +3,13 @@ import type { SupportedLocale } from './LocaleProvider';
 export interface QuestBoardMessages {
   title: string;
   subtitle: string;
+  fundingTitle: string;
+  fundingHeld: string;
+  fundingEmpty: string;
+  settlement: string;
+  viewHistory: string;
+  refunds: string;
+  policy: string;
   searchPlaceholder: string;
   clearSearch: string;
   clearSearchAndFilters: string;
@@ -173,6 +180,13 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
   en: {
     title: 'Quest Board',
     subtitle: 'Find a Quest that fits your skills and time.',
+    fundingTitle: 'My funding',
+    fundingHeld: 'HELD FOR QUESTS',
+    fundingEmpty: 'No active Quest Funding yet',
+    settlement: 'Settlement',
+    viewHistory: 'View history',
+    refunds: 'Refunds',
+    policy: 'Policy',
     searchPlaceholder: 'Search for a Quest',
     clearSearch: 'Clear Quest search',
     clearSearchAndFilters: 'Clear search and filters',
@@ -352,6 +366,13 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
   th: {
     title: 'กระดานเควสต์',
     subtitle: 'ค้นหาเควสต์ที่เหมาะกับทักษะและเวลาของคุณ',
+    fundingTitle: 'เงินของฉัน',
+    fundingHeld: 'เงินที่กันไว้กับเควสต์',
+    fundingEmpty: 'ยังไม่มี Quest Funding ที่กำลังดำเนินการ',
+    settlement: 'การชำระเงิน',
+    viewHistory: 'ดูรายการ',
+    refunds: 'การคืนเงิน',
+    policy: 'นโยบาย',
     searchPlaceholder: 'ค้นหาเควสต์',
     clearSearch: 'ล้างการค้นหาเควสต์',
     clearSearchAndFilters: 'ล้างการค้นหาและตัวกรอง',

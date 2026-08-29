@@ -7,9 +7,14 @@ import { questFixtureAdapter } from '../questFixtureAdapter';
 import { questFixtures } from '../questFixtures';
 
 const mockRouter = { push: jest.fn() };
+let mockLocale: 'en' | 'th' = 'en';
 
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
+}));
+
+jest.mock('../../../locales/LocaleProvider', () => ({
+  useLocale: () => ({ locale: mockLocale }),
 }));
 
 jest.mock('react-native/Libraries/Modal/Modal', () => ({
@@ -31,6 +36,7 @@ describe('Quest Board screen', () => {
 
   beforeEach(() => {
     mockRouter.push.mockClear();
+    mockLocale = 'en';
   });
 
   it('renders Quest cards with decision signals and one detail action', async () => {
@@ -65,6 +71,34 @@ describe('Quest Board screen', () => {
     await fireEvent.press(view.getByTestId('quest-detail-move-boxes'));
 
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/quest/[id]', params: { id: 'move-boxes' } });
+  });
+
+  it('shows the Home funding summary above Quest Board results', async () => {
+    const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} currentStudentId="student-demo" />);
+
+    expect(view.getByTestId('home-funding-summary')).toBeTruthy();
+    expect(view.getByText('My funding')).toBeTruthy();
+    expect(view.getByText('HELD FOR QUESTS')).toBeTruthy();
+    expect(view.getByText('No active Quest Funding yet')).toBeTruthy();
+    expect(view.getByText('Settlement')).toBeTruthy();
+    expect(view.getByText('View history')).toBeTruthy();
+    expect(view.getByText('Refunds')).toBeTruthy();
+    expect(view.getByText('Policy')).toBeTruthy();
+    expect(view.getByText('Quest Board')).toBeTruthy();
+  });
+
+  it('localizes the Home funding summary in Thai', async () => {
+    mockLocale = 'th';
+    const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} currentStudentId="student-demo" />);
+
+    expect(view.getByText('เงินของฉัน')).toBeTruthy();
+    expect(view.getByText('เงินที่กันไว้กับเควสต์')).toBeTruthy();
+    expect(view.getByText('ยังไม่มี Quest Funding ที่กำลังดำเนินการ')).toBeTruthy();
+    expect(view.getByText('การชำระเงิน')).toBeTruthy();
+    expect(view.getByText('ดูรายการ')).toBeTruthy();
+    expect(view.getByText('การคืนเงิน')).toBeTruthy();
+    expect(view.getByText('นโยบาย')).toBeTruthy();
+    expect(view.getByText('กระดานเควสต์')).toBeTruthy();
   });
 
   it('opens Quest Detail as the only card action', async () => {

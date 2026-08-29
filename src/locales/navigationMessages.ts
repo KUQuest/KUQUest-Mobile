@@ -26,12 +26,12 @@ export interface NavigationMessages {
 
 export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
   en: {
-    board: 'Quest Board',
+    board: 'Home',
     myQuests: 'My Quests',
     create: 'Create',
     chat: 'Chat',
     profile: 'Profile',
-    boardShort: 'Board',
+    boardShort: 'Home',
     myQuestsShort: 'Quests',
     createShort: 'Create',
     chatShort: 'Chat',
@@ -49,12 +49,12 @@ export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
     back: 'Go back',
   },
   th: {
-    board: 'กระดานเควสต์',
+    board: 'หน้าหลัก',
     myQuests: 'เควสต์ของฉัน',
     create: 'สร้าง',
     chat: 'แชต',
     profile: 'โปรไฟล์นักศึกษา',
-    boardShort: 'กระดาน',
+    boardShort: 'หน้าหลัก',
     myQuestsShort: 'เควสต์',
     createShort: 'สร้าง',
     chatShort: 'แชต',
