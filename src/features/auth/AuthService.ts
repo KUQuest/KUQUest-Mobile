@@ -268,7 +268,6 @@ export class AuthService implements AuthAdapter {
       const email = response.data.user.email.trim().toLowerCase();
       authDebug('Google account received', { domain: email.split('@')[1] ?? '' });
       if (!email.endsWith('@ku.th')) {
-        await this.clearNativeGoogleAccount();
         throw new AuthError('INVALID_EMAIL_DOMAIN');
       }
 
