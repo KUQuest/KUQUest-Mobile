@@ -163,19 +163,19 @@ function QuestCard({ quest, locale, onDetail }: { quest: QuestBoardQuest; locale
 function HomeFundingSummary({ locale }: { locale: 'en' | 'th' }) {
   const messages = questBoardMessages[locale];
   return (
-    <View className="mb-[16px] overflow-hidden rounded-[20px]" style={{ backgroundColor: '#E45B3C' }} testID="home-funding-summary">
+    <View className="mb-[16px] overflow-hidden rounded-[20px]" style={{ backgroundColor: colors.primary }} testID="home-funding-summary">
       <View className="flex-row items-center justify-between px-[16px] pb-[14px] pt-[16px]">
         <View className="flex-row items-center gap-[10px]">
-          <View className="items-center justify-center rounded-[20px] border border-white/40 h-[40px] w-[40px]">
+          <View className="items-center justify-center rounded-[20px] border h-[40px] w-[40px]" style={{ borderColor: colors.white + '66' }}>
             <WalletCards color={colors.white} size={22} />
           </View>
           <Text className="text-white font-ku-bold text-ku-title">{messages.fundingTitle}</Text>
         </View>
-        <View className="items-center justify-center rounded-[20px] bg-white/15 h-[40px] w-[40px]">
+        <View className="items-center justify-center rounded-[20px] h-[40px] w-[40px]" style={{ backgroundColor: colors.white + '26' }}>
           <Bell color={colors.white} size={21} />
         </View>
       </View>
-      <View className="mx-[12px] mb-[12px] rounded-[16px] bg-white p-[16px]">
+      <View className="mx-[12px] mb-[12px] rounded-[16px] p-[16px]" style={{ backgroundColor: colors.surface }}>
         <View className="flex-row items-center justify-between">
           <View>
             <Text className="text-ku-text-secondary font-ku-medium text-ku-label">{messages.fundingHeld}</Text>
@@ -186,13 +186,13 @@ function HomeFundingSummary({ locale }: { locale: 'en' | 'th' }) {
         <Text className="text-ku-text-secondary font-ku-regular text-ku-label mt-[8px]">{messages.fundingEmpty}</Text>
       </View>
       <View className="flex-row gap-[8px] px-[12px] pb-[12px]">
-        <View className="bg-white/95 flex-1 rounded-[14px] p-[12px]">
-          <ReceiptText color="#E45B3C" size={20} />
+        <View className="flex-1 rounded-[14px] p-[12px]" style={{ backgroundColor: colors.surfaceAccent }}>
+          <ReceiptText color={colors.primary} size={20} />
           <Text className="text-ku-text-strong font-ku-semibold text-ku-label mt-[8px]">{messages.settlement}</Text>
           <Text className="text-ku-text-secondary font-ku-regular text-ku-label">{messages.viewHistory}</Text>
         </View>
-        <View className="bg-white/95 flex-1 rounded-[14px] p-[12px]">
-          <ShieldCheck color="#E45B3C" size={20} />
+        <View className="flex-1 rounded-[14px] p-[12px]" style={{ backgroundColor: colors.surfaceAccent }}>
+          <ShieldCheck color={colors.primary} size={20} />
           <Text className="text-ku-text-strong font-ku-semibold text-ku-label mt-[8px]">{messages.refunds}</Text>
           <Text className="text-ku-text-secondary font-ku-regular text-ku-label">{messages.policy}</Text>
         </View>
