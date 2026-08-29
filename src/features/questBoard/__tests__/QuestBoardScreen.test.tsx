@@ -73,32 +73,14 @@ describe('Quest Board screen', () => {
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/quest/[id]', params: { id: 'move-boxes' } });
   });
 
-  it('shows the Home funding summary above Quest Board results', async () => {
+  it('keeps Quest Funding out of Home and focused on Quest Board discovery', async () => {
     const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} currentStudentId="student-demo" />);
 
-    expect(view.getByTestId('home-funding-summary')).toBeTruthy();
-    expect(view.getByText('My funding')).toBeTruthy();
-    expect(view.getByText('HELD FOR QUESTS')).toBeTruthy();
-    expect(view.getByText('No active Quest Funding yet')).toBeTruthy();
-    expect(view.getByText('Settlement')).toBeTruthy();
-    expect(view.getByText('View history')).toBeTruthy();
-    expect(view.getByText('Refunds')).toBeTruthy();
-    expect(view.getByText('Policy')).toBeTruthy();
+    expect(view.queryByTestId('home-funding-summary')).toBeNull();
+    expect(view.queryByTestId('quest-funding-summary')).toBeNull();
+    expect(view.queryByText('My funding')).toBeNull();
     expect(view.getByText('Quest Board')).toBeTruthy();
-  });
-
-  it('localizes the Home funding summary in Thai', async () => {
-    mockLocale = 'th';
-    const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} currentStudentId="student-demo" />);
-
-    expect(view.getByText('เงินของฉัน')).toBeTruthy();
-    expect(view.getByText('เงินที่กันไว้กับเควสต์')).toBeTruthy();
-    expect(view.getByText('ยังไม่มี Quest Funding ที่กำลังดำเนินการ')).toBeTruthy();
-    expect(view.getByText('การชำระเงิน')).toBeTruthy();
-    expect(view.getByText('ดูรายการ')).toBeTruthy();
-    expect(view.getByText('การคืนเงิน')).toBeTruthy();
-    expect(view.getByText('นโยบาย')).toBeTruthy();
-    expect(view.getByText('กระดานเควสต์')).toBeTruthy();
+    expect(view.getByText('Find a Quest that fits your skills and time.')).toBeTruthy();
   });
 
   it('opens Quest Detail as the only card action', async () => {

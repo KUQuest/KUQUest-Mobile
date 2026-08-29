@@ -26,6 +26,7 @@ import {
 import { cn } from '@/tw/cn';
 import { useNavigationVisibility } from '@/components/navigation/NavigationVisibilityContext';
 import { PrototypeMenu } from '@/components/ui/PrototypeMenu';
+import { QuestFundingSummary } from '@/components/ui/QuestFundingSummary';
 import { usePrototypeMenuState } from '@/components/ui/prototypeMenuState';
 import { PROTOTYPE_PERSONAS, type PrototypePersonaId, type PrototypeScenarioRoute } from '@/components/ui/prototypeMenuData';
 import { Pressable, SafeAreaView, ScrollView, Text, View } from '@/tw';
@@ -711,6 +712,7 @@ export default function MyQuestsScreen() {
 
       <ScrollView onScroll={handleScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPadding }}>
         <View className={styles.surface}>
+          {role === 'hirer' ? <QuestFundingSummary locale={locale} /> : null}
           <View accessibilityLabel={`${role === 'worker' ? copy.worker.tabs[workerTab] : copy.hirer.tabs[hirerTab]} Quest list`} className={styles.list}>
             {items.length > 0 ? items.map((quest: QuestSummary) => role === 'worker'
               ? <ApplicationQuestCard key={quest.id} copy={copy} onGroupChat={() => quest.groupChatId ? openGroupChat(quest.groupChatId, quest.id, quest.groupChatCapability, quest.groupChatViewerId) : undefined} onPress={() => openQuest(quest.id, 'join', workerTab)} quest={quest} />

@@ -6,6 +6,11 @@ export interface QuestBoardMessages {
   fundingTitle: string;
   fundingHeld: string;
   fundingEmpty: string;
+  fundingExpand: string;
+  fundingCollapse: string;
+  fundingTopUp: string;
+  fundingTransfer: string;
+  fundingActionsUnavailable: string;
   settlement: string;
   viewHistory: string;
   refunds: string;
@@ -183,6 +188,11 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     fundingTitle: 'My funding',
     fundingHeld: 'HELD FOR QUESTS',
     fundingEmpty: 'No active Quest Funding yet',
+    fundingExpand: 'Show funding details',
+    fundingCollapse: 'Hide funding details',
+    fundingTopUp: 'Top up',
+    fundingTransfer: 'Transfer',
+    fundingActionsUnavailable: 'Not available until payment service is connected',
     settlement: 'Settlement',
     viewHistory: 'View history',
     refunds: 'Refunds',
@@ -369,6 +379,11 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     fundingTitle: 'เงินของฉัน',
     fundingHeld: 'เงินที่กันไว้กับเควสต์',
     fundingEmpty: 'ยังไม่มี Quest Funding ที่กำลังดำเนินการ',
+    fundingExpand: 'แสดงรายละเอียดเงิน',
+    fundingCollapse: 'ซ่อนรายละเอียดเงิน',
+    fundingTopUp: 'เติมเงิน',
+    fundingTransfer: 'โอนเงิน',
+    fundingActionsUnavailable: 'ยังไม่พร้อมใช้งานจนกว่าจะเชื่อมต่อระบบชำระเงิน',
     settlement: 'การชำระเงิน',
     viewHistory: 'ดูรายการ',
     refunds: 'การคืนเงิน',

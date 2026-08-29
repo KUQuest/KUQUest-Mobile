@@ -7,13 +7,14 @@ import { setActivePrototypePersona } from '../../../components/ui/prototypeMenuS
 import { questFixtureAdapter } from '../../questBoard/questFixtureAdapter';
 
 const mockRouter = { push: jest.fn() };
+let mockLocale: 'en' | 'th' = 'th';
 
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
 }));
 
 jest.mock('../../../locales/LocaleProvider', () => ({
-  useLocale: () => ({ locale: 'th' }),
+  useLocale: () => ({ locale: mockLocale }),
 }));
 
 jest.mock('react-native/Libraries/Modal/Modal', () => {
@@ -26,6 +27,7 @@ jest.mock('react-native/Libraries/Modal/Modal', () => {
 describe('MyQuestsScreen', () => {
   beforeEach(() => {
     mockRouter.push.mockClear();
+    mockLocale = 'th';
     questFixtureAdapter.reset();
   });
 
@@ -59,6 +61,85 @@ describe('MyQuestsScreen', () => {
     expect(view.getByText('ยังไม่มีเควสต์ฉบับร่าง')).toBeTruthy();
     await fireEvent.press(view.getByTestId('my-quests-status-next'));
     expect(view.getByText('Review a completed project')).toBeTruthy();
+  });
+
+  it('shows Quest Funding only in the Hirer view, collapsed by default, and toggles Thai details', async () => {
+    setActivePrototypePersona('student-demo');
+    const view = await render(<MyQuestsScreen />);
+
+    expect(view.queryByTestId('quest-funding-summary')).toBeNull();
+    await fireEvent.press(view.getByTestId('my-quests-role-trigger'));
+    await fireEvent.press(view.getByTestId('my-quests-role-hirer'));
+
+    expect(view.getByTestId('quest-funding-summary')).toBeTruthy();
+    const toggle = view.getByTestId('quest-funding-summary-toggle');
+    expect(toggle.props.accessibilityState).toEqual({ expanded: false });
+    expect(view.getByText('เงินของฉัน')).toBeTruthy();
+    expect(view.getByText('เงินที่กันไว้กับเควสต์')).toBeTruthy();
+    expect(view.getByText('฿0')).toBeTruthy();
+    expect(view.queryByTestId('quest-funding-summary-details')).toBeNull();
+    expect(view.queryByText('ยังไม่มี Quest Funding ที่กำลังดำเนินการ')).toBeNull();
+
+    await fireEvent.press(toggle);
+    expect(toggle.props.accessibilityState).toEqual({ expanded: true });
+    expect(view.getByTestId('quest-funding-summary-details')).toBeTruthy();
+    expect(view.getByText('ยังไม่มี Quest Funding ที่กำลังดำเนินการ')).toBeTruthy();
+    expect(view.getByText('การชำระเงิน')).toBeTruthy();
+    expect(view.getByText('ดูรายการ')).toBeTruthy();
+    expect(view.getByText('การคืนเงิน')).toBeTruthy();
+    expect(view.getByText('นโยบาย')).toBeTruthy();
+    const fundingInformation = view.getByTestId('quest-funding-information');
+    expect(fundingInformation.props.accessibilityRole).toBe('text');
+    expect(fundingInformation.props.onPress).toBeUndefined();
+    expect(view.getByTestId('quest-funding-settlement-info').props.onPress).toBeUndefined();
+    expect(view.getByTestId('quest-funding-refund-info').props.onPress).toBeUndefined();
+    const topUp = view.getByTestId('quest-funding-top-up');
+    const transfer = view.getByTestId('quest-funding-transfer');
+    expect(topUp).toBeTruthy();
+    expect(transfer).toBeTruthy();
+    expect(view.getByText('เติมเงิน')).toBeTruthy();
+    expect(view.getByText('โอนเงิน')).toBeTruthy();
+    expect(view.getByTestId('quest-funding-actions-unavailable')).toHaveTextContent('ยังไม่พร้อมใช้งานจนกว่าจะเชื่อมต่อระบบชำระเงิน');
+    expect(topUp.props.accessibilityLabel).toBe('เติมเงิน: ยังไม่พร้อมใช้งานจนกว่าจะเชื่อมต่อระบบชำระเงิน');
+    expect(transfer.props.accessibilityLabel).toBe('โอนเงิน: ยังไม่พร้อมใช้งานจนกว่าจะเชื่อมต่อระบบชำระเงิน');
+    expect(topUp.props.accessibilityState).toEqual(expect.objectContaining({ disabled: true }));
+    expect(transfer.props.accessibilityState).toEqual(expect.objectContaining({ disabled: true }));
+
+    await fireEvent.press(toggle);
+    expect(view.queryByTestId('quest-funding-summary-details')).toBeNull();
+  });
+
+  it('localizes collapsed and expanded Quest Funding for the Hirer in English', async () => {
+    mockLocale = 'en';
+    setActivePrototypePersona('student-demo');
+    const view = await render(<MyQuestsScreen />);
+
+    await fireEvent.press(view.getByTestId('my-quests-role-trigger'));
+    await fireEvent.press(view.getByTestId('my-quests-role-hirer'));
+
+    expect(view.getByTestId('quest-funding-summary')).toBeTruthy();
+    expect(view.getByText('My funding')).toBeTruthy();
+    expect(view.getByText('HELD FOR QUESTS')).toBeTruthy();
+    expect(view.getByText('฿0')).toBeTruthy();
+    expect(view.queryByText('No active Quest Funding yet')).toBeNull();
+
+    await fireEvent.press(view.getByTestId('quest-funding-summary-toggle'));
+    expect(view.getByText('No active Quest Funding yet')).toBeTruthy();
+    expect(view.getByText('Settlement')).toBeTruthy();
+    expect(view.getByText('View history')).toBeTruthy();
+    expect(view.getByText('Refunds')).toBeTruthy();
+    expect(view.getByText('Policy')).toBeTruthy();
+    expect(view.queryByRole('button', { name: 'View history' })).toBeNull();
+    expect(view.queryByRole('button', { name: 'Policy' })).toBeNull();
+    const topUp = view.getByTestId('quest-funding-top-up');
+    const transfer = view.getByTestId('quest-funding-transfer');
+    expect(topUp).toBeTruthy();
+    expect(transfer).toBeTruthy();
+    expect(view.getByText('Top up')).toBeTruthy();
+    expect(view.getByText('Transfer')).toBeTruthy();
+    expect(view.getByTestId('quest-funding-actions-unavailable')).toHaveTextContent('Not available until payment service is connected');
+    expect(topUp.props.accessibilityLabel).toBe('Top up: Not available until payment service is connected');
+    expect(transfer.props.accessibilityLabel).toBe('Transfer: Not available until payment service is connected');
   });
 
   it('cycles Quest status with arrows and wraps around the available statuses', async () => {

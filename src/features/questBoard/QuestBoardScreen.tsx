@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@/tw/cn';
 import { FlatList, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from '@/tw';
-import { AlertCircle, ArrowDownUp, Bell, BriefcaseBusiness, Check, ChevronRight, CircleUserRound, ClipboardCheck, Clock3, Eye, MapPin, ReceiptText, Search, ShieldCheck, SlidersHorizontal, WalletCards, X } from 'lucide-react-native';
+import { AlertCircle, ArrowDownUp, BriefcaseBusiness, Check, ChevronRight, CircleUserRound, ClipboardCheck, Clock3, MapPin, Search, SlidersHorizontal, X } from 'lucide-react-native';
 import { AccessibilityInfo, Modal, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -157,47 +157,6 @@ function QuestCard({ quest, locale, onDetail }: { quest: QuestBoardQuest; locale
         <Text className={styles.cardAccessibilityMeta} testID={`quest-card-spots-${quest.id}`}>{messages.spotsSummary(spotsRemaining, quest.headcount)}</Text>
       </View>
     </Pressable>
-  );
-}
-
-function HomeFundingSummary({ locale }: { locale: 'en' | 'th' }) {
-  const messages = questBoardMessages[locale];
-  return (
-    <View className="mb-[16px] overflow-hidden rounded-[20px]" style={{ backgroundColor: colors.primary }} testID="home-funding-summary">
-      <View className="flex-row items-center justify-between px-[16px] pb-[14px] pt-[16px]">
-        <View className="flex-row items-center gap-[10px]">
-          <View className="items-center justify-center rounded-[20px] border h-[40px] w-[40px]" style={{ borderColor: colors.white + '66' }}>
-            <WalletCards color={colors.white} size={22} />
-          </View>
-          <Text className="text-white font-ku-bold text-ku-title">{messages.fundingTitle}</Text>
-        </View>
-        <View className="items-center justify-center rounded-[20px] h-[40px] w-[40px]" style={{ backgroundColor: colors.white + '26' }}>
-          <Bell color={colors.white} size={21} />
-        </View>
-      </View>
-      <View className="mx-[12px] mb-[12px] rounded-[16px] p-[16px]" style={{ backgroundColor: colors.surface }}>
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="text-ku-text-secondary font-ku-medium text-ku-label">{messages.fundingHeld}</Text>
-            <Text className="text-ku-text-strong font-ku-bold text-[32px] mt-[4px]">฿0</Text>
-          </View>
-          <Eye color={colors.textMuted} size={23} />
-        </View>
-        <Text className="text-ku-text-secondary font-ku-regular text-ku-label mt-[8px]">{messages.fundingEmpty}</Text>
-      </View>
-      <View className="flex-row gap-[8px] px-[12px] pb-[12px]">
-        <View className="flex-1 rounded-[14px] p-[12px]" style={{ backgroundColor: colors.surfaceAccent }}>
-          <ReceiptText color={colors.primary} size={20} />
-          <Text className="text-ku-text-strong font-ku-semibold text-ku-label mt-[8px]">{messages.settlement}</Text>
-          <Text className="text-ku-text-secondary font-ku-regular text-ku-label">{messages.viewHistory}</Text>
-        </View>
-        <View className="flex-1 rounded-[14px] p-[12px]" style={{ backgroundColor: colors.surfaceAccent }}>
-          <ShieldCheck color={colors.primary} size={20} />
-          <Text className="text-ku-text-strong font-ku-semibold text-ku-label mt-[8px]">{messages.refunds}</Text>
-          <Text className="text-ku-text-secondary font-ku-regular text-ku-label">{messages.policy}</Text>
-        </View>
-      </View>
-    </View>
   );
 }
 
@@ -499,7 +458,6 @@ export default function QuestBoardScreen({ currentStudentId, initialPreviewState
 
   const listHeader = (
     <>
-      <HomeFundingSummary locale={locale} />
       <View className={styles.boardIntro}>
         <View className={styles.boardIntroRow}>
           <View className={styles.boardIntroCopy}>
