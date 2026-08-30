@@ -22,7 +22,7 @@ import { spacing } from '@/theme/spacing';
 import styles from './createQuestStyles';
 import { formatDraftReward, getHeadcountForParticipation, getQuestPublishCheck, getRewardValidationError, getSchedulePickerValue, getScheduleTimeValue, initialDraft, isQuestDraftDirty, mockQuestDraft, toQuestDraftPayload, type QuestDraft } from './createQuestModel';
 import { deleteQuestDraft, getQuestDraftStorageKey, loadQuestDraft, persistQuestDraft } from './createQuestPersistence';
-import { questFixtureAdapter } from '../questBoard/questFixtureAdapter';
+import { questWorkflow } from '../questBoard/questWorkflow';
 import { MAX_QUEST_IMAGES, formatSatang, type QuestPublishCheck } from '../questBoard/types';
 
 type Step = 1 | 2 | 3;
@@ -544,7 +544,7 @@ export default function CreateQuestScreen({ editQuestId }: CreateQuestScreenProp
           ...draftToPublish,
           headcount: getHeadcountForParticipation(draftToPublish.participation, draftToPublish.headcount),
         };
-        const result = questFixtureAdapter.createAndPublishQuest(toQuestDraftPayload(normalizedDraft), 'demo-hirer');
+        const result = questWorkflow.createAndPublishQuest(toQuestDraftPayload(normalizedDraft), 'demo-hirer');
         if (!result.ok) {
           setSaveState('error');
           setSaveErrorIntent({ state: 'OPEN', completesFlow: true });

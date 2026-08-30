@@ -27,7 +27,7 @@ import {
   createQuestBoardModel,
   type BoardPreviewState,
 } from './questBoardHarness';
-import { getQuestRewardSatang, questFixtureAdapter, toBoardQuest } from './questFixtureAdapter';
+import { getQuestRewardSatang, questWorkflow } from './questWorkflow';
 import type { PrototypeScenarioRoute } from '@/components/ui/prototypeMenuData';
 
 import { formatSatang } from './types';
@@ -353,7 +353,7 @@ export default function QuestBoardScreen({ currentStudentId, initialPreviewState
   const [retrying, setRetrying] = useState(false);
   const [adapterRevision, setAdapterRevision] = useState(0);
 
-  useEffect(() => questFixtureAdapter.subscribe(() => setAdapterRevision((revision) => revision + 1)), []);
+  useEffect(() => questWorkflow.subscribe(() => setAdapterRevision((revision) => revision + 1)), []);
 
   useEffect(() => {
     if (!retrying || previewState !== 'loading') return undefined;
@@ -367,10 +367,7 @@ export default function QuestBoardScreen({ currentStudentId, initialPreviewState
   const boardModel = useMemo(() => {
     void adapterRevision;
     if (previewState === 'populated' || previewState === 'application-pending' || previewState === 'application-accepted') {
-      return { kind: 'ready' as const, quests: questFixtureAdapter.listBoardQuests(resolvedStudentId, effectiveNow).map((quest) => {
-        const canonicalState = questFixtureAdapter.getState(quest.id, resolvedStudentId, effectiveNow);
-        return canonicalState ? toBoardQuest(canonicalState) : quest;
-      }) };
+      return { kind: 'ready' as const, quests: questWorkflow.getQuestBoardModel(resolvedStudentId, effectiveNow) };
     }
     return createQuestBoardModel(previewState);
   }, [adapterRevision, effectiveNow, previewState, resolvedStudentId]);
