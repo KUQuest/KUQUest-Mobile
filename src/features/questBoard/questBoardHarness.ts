@@ -1,5 +1,5 @@
 import { questFixtures } from './questFixtures';
-import { questFixtureAdapter, toBoardQuest } from './questFixtureAdapter';
+import { questWorkflow } from './questWorkflow';
 import { findQuestByRouteId } from './questRoute';
 import type { QuestBoardQuest } from './types';
 
@@ -83,8 +83,8 @@ export function createQuestBoardModel(previewState: BoardPreviewState): QuestBoa
 export function getQuestDetailFixture(routeId: string | undefined, previewState?: BoardPreviewState): QuestBoardQuest | undefined {
   const quest = findQuestByRouteId(questFixtures, routeId);
   if (!quest) {
-    const canonicalState = routeId ? questFixtureAdapter.getState(routeId) : null;
-    return canonicalState ? toBoardQuest(canonicalState) : undefined;
+    const canonicalQuest = routeId ? questWorkflow.getQuestBoardQuest(routeId) : null;
+    return canonicalQuest ?? undefined;
   }
   if (previewState === 'full' || previewState === 'application-accepted') return { ...quest, acceptedParticipants: quest.headcount };
   if (previewState === 'closed') return { ...quest, deadline: '2026-08-11' };

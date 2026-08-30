@@ -104,6 +104,10 @@ export function createQuestWorkflow(
     if (now) currentNow = new Date(now.getTime());
     return new Date(currentNow.getTime());
   };
+  const timeForAdapter = (now?: Date): Date | undefined => {
+    const time = at(now);
+    return now || time.getTime() !== adapter.now.getTime() ? time : undefined;
+  };
   const startRefresh = () => {
     if (listeners.size !== 1) return;
     adapterUnsubscribe = adapter.subscribe(notify);
@@ -136,12 +140,30 @@ export function createQuestWorkflow(
     getPublishCheck: (questId) => adapter.getPublishCheck(questId),
     getEscrowSummary: (rewardSatang, headcount) => adapter.getEscrowSummary(rewardSatang, headcount),
     getSettlement: (questId, now) => adapter.getSettlement(questId, at(now)),
-    getConversationCapability: (questId, viewerId, now) => adapter.getConversationCapability(questId, viewerId, at(now)),
-    listConversations: (viewerId, now) => adapter.listConversations(viewerId, at(now)),
-    getConversation: (conversationId, viewerId, now) => adapter.getConversation(conversationId, viewerId, at(now)),
-    getConversationMessages: (conversationId, viewerId, now) => adapter.getConversationMessages(conversationId, viewerId, at(now)),
-    sendMessage: (conversationId, senderId, body, now) => adapter.sendMessage(conversationId, senderId, body, at(now)),
-    markConversationRead: (conversationId, viewerId, now) => adapter.markConversationRead(conversationId, viewerId, at(now)),
+    getConversationCapability: (questId, viewerId, now) => {
+      const time = timeForAdapter(now);
+      return time ? adapter.getConversationCapability(questId, viewerId, time) : adapter.getConversationCapability(questId, viewerId);
+    },
+    listConversations: (viewerId, now) => {
+      const time = timeForAdapter(now);
+      return time ? adapter.listConversations(viewerId, time) : adapter.listConversations(viewerId);
+    },
+    getConversation: (conversationId, viewerId, now) => {
+      const time = timeForAdapter(now);
+      return time ? adapter.getConversation(conversationId, viewerId, time) : adapter.getConversation(conversationId, viewerId);
+    },
+    getConversationMessages: (conversationId, viewerId, now) => {
+      const time = timeForAdapter(now);
+      return time ? adapter.getConversationMessages(conversationId, viewerId, time) : adapter.getConversationMessages(conversationId, viewerId);
+    },
+    sendMessage: (conversationId, senderId, body, now) => {
+      const time = timeForAdapter(now);
+      return time ? adapter.sendMessage(conversationId, senderId, body, time) : adapter.sendMessage(conversationId, senderId, body);
+    },
+    markConversationRead: (conversationId, viewerId, now) => {
+      const time = timeForAdapter(now);
+      return time ? adapter.markConversationRead(conversationId, viewerId, time) : adapter.markConversationRead(conversationId, viewerId);
+    },
     searchMembers: (questId, query, leaderId, now) => adapter.searchMembers(questId, query, leaderId, at(now)),
     createAndPublishQuest: (payload, hirerId, now) => adapter.createAndPublishQuest(payload, hirerId, at(now)),
     subscribe: (listener) => {

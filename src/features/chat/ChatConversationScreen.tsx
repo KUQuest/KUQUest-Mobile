@@ -6,7 +6,7 @@ import { Camera, ChevronLeft, ClipboardCheck, Download, FileText, ImagePlus, Mor
 
 import { KeyboardAvoidingView, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from '@/tw';
 import { LoadingSkeleton, SkeletonBlock } from '@/components/ui/LoadingSkeleton';
-import { questFixtureAdapter } from '@/features/questBoard/questFixtureAdapter';
+import { questWorkflow } from '@/features/questBoard/questWorkflow';
 import { useLocale } from '@/locales/LocaleProvider';
 import { chatMessages, type ChatMessages } from '@/locales/chatMessages';
 import { colors } from '@/theme/colors';
@@ -233,12 +233,12 @@ export default function ChatConversationScreen() {
         return;
       }
       try {
-        const nextConversation = questFixtureAdapter.getConversation(conversationId, viewerId);
+        const nextConversation = questWorkflow.getConversation(conversationId, viewerId);
         if (!nextConversation) {
           if (active) setLoadState({ key: conversationRouteKey, status: 'settled', conversation: null, messages: [] });
           return;
         }
-        const nextMessages = questFixtureAdapter.getConversationMessages(conversationId, viewerId);
+        const nextMessages = questWorkflow.getConversationMessages(conversationId, viewerId);
         if (active) setLoadState({
           key: conversationRouteKey,
           status: 'settled',
@@ -250,7 +250,7 @@ export default function ChatConversationScreen() {
       }
     };
     loadConversation();
-    const unsubscribe = questFixtureAdapter.subscribe(loadConversation);
+    const unsubscribe = questWorkflow.subscribe(loadConversation);
     return () => {
       active = false;
       unsubscribe();
@@ -260,7 +260,7 @@ export default function ChatConversationScreen() {
   useEffect(() => {
     if (!conversationId || !viewerId) return;
     try {
-      questFixtureAdapter.markConversationRead(conversationId, viewerId);
+      questWorkflow.markConversationRead(conversationId, viewerId);
     } catch {
       // A failed read cursor must not prevent the conversation from rendering.
     }
@@ -343,7 +343,7 @@ export default function ChatConversationScreen() {
     if (!canWrite || !viewerId) return;
     const value = draft.trim();
     if (!value) return;
-    const result = questFixtureAdapter.sendMessage(conversation.id, viewerId, value);
+    const result = questWorkflow.sendMessage(conversation.id, viewerId, value);
     if (!result.ok) return;
     setDraft('');
   };

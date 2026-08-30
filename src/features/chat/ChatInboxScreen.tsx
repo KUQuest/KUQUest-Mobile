@@ -7,7 +7,7 @@ import { useWindowDimensions } from 'react-native';
 import { useNavigationVisibility } from '@/components/navigation/NavigationVisibilityContext';
 import { usePrototypeMenuState } from '@/components/ui/prototypeMenuState';
 import { LoadingSkeleton, SkeletonBlock } from '@/components/ui/LoadingSkeleton';
-import { DEFAULT_PROTOTYPE_VIEWER_ID, questFixtureAdapter } from '@/features/questBoard/questFixtureAdapter';
+import { DEFAULT_PROTOTYPE_VIEWER_ID, questWorkflow } from '@/features/questBoard/questWorkflow';
 import { ScrollView, Pressable, SafeAreaView, Text, TextInput, View } from '@/tw';
 import { useLocale } from '@/locales/LocaleProvider';
 import { chatMessages } from '@/locales/chatMessages';
@@ -107,14 +107,14 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
     let active = true;
     const loadConversations = () => {
       try {
-        const nextConversations = questFixtureAdapter.listConversations(resolvedViewerId);
+        const nextConversations = questWorkflow.listConversations(resolvedViewerId);
         if (active) setLoadState({ viewerId: resolvedViewerId, status: 'settled', conversations: nextConversations });
       } catch {
         if (active) setLoadState({ viewerId: resolvedViewerId, status: 'error', conversations: [] });
       }
     };
     loadConversations();
-    const unsubscribe = questFixtureAdapter.subscribe(loadConversations);
+    const unsubscribe = questWorkflow.subscribe(loadConversations);
     return () => {
       active = false;
       unsubscribe();
