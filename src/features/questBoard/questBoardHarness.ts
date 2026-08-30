@@ -1,47 +1,24 @@
-import { questFixtures } from './questFixtures';
-import { questWorkflow } from './questWorkflow';
-import { findQuestByRouteId } from './questRoute';
+import {
+  questWorkflow,
+  type QuestBoardEmptyModel,
+  type QuestBoardErrorModel,
+  type QuestBoardLoadingModel,
+  type QuestBoardPreviewState,
+  type QuestBoardReadyModel,
+  type QuestBoardSurfaceModel,
+  type QuestBoardUnavailableModel,
+} from './questWorkflow';
 import type { QuestBoardQuest } from './types';
 
-export type BoardPreviewState =
-  | 'populated'
-  | 'loading'
-  | 'empty'
-  | 'error'
-  | 'application-pending'
-  | 'application-accepted'
-  | 'full'
-  | 'closed';
-
-export interface QuestBoardReadyModel {
-  kind: 'ready';
-  quests: QuestBoardQuest[];
-}
-
-export interface QuestBoardLoadingModel {
-  kind: 'loading';
-}
-
-export interface QuestBoardEmptyModel {
-  kind: 'empty';
-}
-
-export interface QuestBoardErrorModel {
-  kind: 'error';
-}
-
-export interface QuestBoardUnavailableModel {
-  kind: 'unavailable';
-  availability: 'full' | 'closed';
-  quest: QuestBoardQuest;
-}
-
-export type QuestBoardModel =
-  | QuestBoardReadyModel
-  | QuestBoardLoadingModel
-  | QuestBoardEmptyModel
-  | QuestBoardErrorModel
-  | QuestBoardUnavailableModel;
+export type BoardPreviewState = QuestBoardPreviewState;
+export type QuestBoardModel = QuestBoardSurfaceModel;
+export type {
+  QuestBoardEmptyModel,
+  QuestBoardErrorModel,
+  QuestBoardLoadingModel,
+  QuestBoardReadyModel,
+  QuestBoardUnavailableModel,
+};
 
 export const previewOptions: {
   value: BoardPreviewState;
@@ -63,29 +40,13 @@ export function parseBoardPreviewState(value: string | string[] | undefined): Bo
   return previewOptions.find((option) => option.value === candidate)?.value;
 }
 
-function createUnavailableQuest(state: 'full' | 'closed'): QuestBoardQuest {
-  const quest = questFixtures[0];
-  return state === 'full'
-    ? { ...quest, acceptedParticipants: quest.headcount }
-    : { ...quest, deadline: '2026-08-11' };
-}
-
 export function createQuestBoardModel(previewState: BoardPreviewState): QuestBoardModel {
-  if (previewState === 'loading') return { kind: 'loading' };
-  if (previewState === 'empty') return { kind: 'empty' };
-  if (previewState === 'error') return { kind: 'error' };
-  if (previewState === 'full' || previewState === 'closed') {
-    return { kind: 'unavailable', availability: previewState, quest: createUnavailableQuest(previewState) };
-  }
-  return { kind: 'ready', quests: questFixtures.filter((quest) => !quest.prototypeOnly) };
+  return questWorkflow.getQuestBoardSurfaceModel(undefined, previewState);
 }
 
 export function getQuestDetailFixture(routeId: string | undefined, previewState?: BoardPreviewState): QuestBoardQuest | undefined {
-  const quest = findQuestByRouteId(questFixtures, routeId);
-  if (!quest) {
-    const canonicalQuest = routeId ? questWorkflow.getQuestBoardQuest(routeId) : null;
-    return canonicalQuest ?? undefined;
-  }
+  const quest = routeId ? questWorkflow.getQuestBoardQuest(routeId) : null;
+  if (!quest) return undefined;
   if (previewState === 'full' || previewState === 'application-accepted') return { ...quest, acceptedParticipants: quest.headcount };
   if (previewState === 'closed') return { ...quest, deadline: '2026-08-11' };
   return quest;

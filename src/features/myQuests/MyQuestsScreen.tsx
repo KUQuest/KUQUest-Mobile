@@ -37,7 +37,7 @@ import { spacing } from '@/theme/spacing';
 import styles from './myQuestStyles';
 import { getLocalizedQuest } from '@/features/questBoard/questTranslations';
 import { CandidateReviewSheet } from '@/features/questBoard/components';
-import { getQuestRewardSatang, questWorkflow } from '@/features/questBoard/questWorkflow';
+import { getQuestRewardSatang, questWorkflow, type QuestMyQuestProjection } from '@/features/questBoard/questWorkflow';
 import { QuestParticipation, QuestStatus, QuestTeamStatus, formatSatang, type QuestDetailState, type WorkConversationCapability } from '@/features/questBoard/types';
 import { groupQuestMessages } from '@/locales/groupQuestMessages';
 import { questBoardMessages } from '@/locales/questBoardMessages';
@@ -251,40 +251,33 @@ function prototypeStatusTone(status: QuestDetailState['quest']['status']): Statu
   return 'success';
 }
 
-function prototypeStateSummary(state: QuestDetailState, role: Role, locale: SupportedLocale, viewerId: string): QuestSummary | null {
-  const boardQuestState = questWorkflow.getQuestBoardQuest(state.quest.id, viewerId);
-  if (!boardQuestState) return null;
-  const boardQuest = getLocalizedQuest(boardQuestState, locale);
+function prototypeStateSummary(projection: QuestMyQuestProjection, role: Role, locale: SupportedLocale, viewerId: string): QuestSummary | null {
+  const { state, quest: boardQuest } = projection;
+  const localizedQuest = getLocalizedQuest(boardQuest, locale);
   const status = state.quest.status;
-  const hasAssignment = state.assignments.some((item) => item.workerId === viewerId);
-  const isTerminal = status === QuestStatus.QUEST_COMPLETED || status === QuestStatus.QUEST_CANCELLED;
-  const hasApplication = state.applications.some((item) => item.applicantId === viewerId && item.status === 'APPLICATION_APPLIED');
-  if (role === 'worker' && !hasAssignment && !hasApplication) return null;
-  if (role === 'hirer' && state.quest.hirerId !== viewerId) return null;
-  const date = `${formatQuestDate(boardQuest.startDate, locale)}${boardQuest.timeRange ? ` · ${boardQuest.timeRange}` : ''}`;
   const statusLabel = questBoardMessages[locale].statusLabel(status);
   const acceptedCount = state.team?.members.length ?? boardQuest.acceptedParticipants;
   const labels = actionLabels[locale];
-  const workerPending = role === 'worker' && !hasAssignment && hasApplication;
-  const workerHistory = role === 'worker' && hasAssignment && isTerminal;
+  const workerPending = role === 'worker' && projection.hasPendingApplication && !projection.hasAssignment;
+  const workerHistory = role === 'worker' && projection.hasAssignment && projection.isTerminal;
   const candidateQuest = role === 'hirer' && state.quest.candidateMode === 'CANDIDATE';
-  const groupChatId = state.conversation.canRead ? state.conversation.conversationId ?? undefined : undefined;
-  const groupChatCapability = groupChatId ? state.conversation : undefined;
+  const groupChatId = projection.groupChatCapability?.conversationId ?? undefined;
+  const groupChatCapability = groupChatId ? projection.groupChatCapability : undefined;
   return {
     id: boardQuest.id,
-    title: boardQuest.title,
-    tag: boardQuest.tags[0] ?? 'Quest',
-    categoryTone: getCategoryTone(boardQuest.tags[0] ?? ''),
-    date,
-    location: boardQuest.location,
-    description: boardQuest.description,
+    title: localizedQuest.title,
+    tag: localizedQuest.tags[0] ?? 'Quest',
+    categoryTone: getCategoryTone(localizedQuest.tags[0] ?? ''),
+    date: `${formatQuestDate(localizedQuest.startDate, locale)}${localizedQuest.timeRange ? ` · ${localizedQuest.timeRange}` : ''}`,
+    location: localizedQuest.location ?? '—',
+    description: localizedQuest.description,
     detail: workerHistory ? `${statusLabel} · ${formatSatang(getQuestRewardSatang(boardQuest), locale)}` : statusLabel,
     teamSize: `${acceptedCount} / ${boardQuest.headcount}`,
     status: statusLabel,
     statusTone: prototypeStatusTone(status),
     action: role === 'hirer' && status === QuestStatus.QUEST_DRAFT ? labels.edit : candidateQuest ? labels.applicants : role === 'worker' && !workerPending && groupChatId ? labels.message : labels.detail,
     actionType: role === 'hirer' && status === QuestStatus.QUEST_DRAFT ? 'edit' : candidateQuest ? 'applicants' : 'detail',
-    secondaryAction: role === 'hirer' && status !== QuestStatus.QUEST_DRAFT && !isTerminal ? labels.edit : undefined,
+    secondaryAction: role === 'hirer' && status !== QuestStatus.QUEST_DRAFT && !projection.isTerminal ? labels.edit : undefined,
     groupChatId,
     groupChatCapability,
     groupChatViewerId: viewerId,
@@ -299,18 +292,11 @@ function prototypeStateSummary(state: QuestDetailState, role: Role, locale: Supp
  * workflow result must remain an empty state rather than a fabricated skeleton.
  */
 function getWorkflowItems(role: Role, tab: WorkerTab | HirerTab, locale: SupportedLocale, viewerId: string): QuestSummary[] {
-  return questWorkflow.getMyQuestsModel(viewerId).flatMap((state) => {
-    const summary = prototypeStateSummary(state, role, locale, viewerId);
-    if (!summary) return [];
-    if (role === 'worker') {
-      const hasAssignment = state.assignments.some((item) => item.workerId === viewerId);
-      const isTerminal = state.quest.status === QuestStatus.QUEST_COMPLETED || state.quest.status === QuestStatus.QUEST_CANCELLED;
-      const isPending = state.applications.some((item) => item.applicantId === viewerId && item.status === 'APPLICATION_APPLIED') && !hasAssignment;
-      const expectedTab: WorkerTab = isPending ? 'pending' : isTerminal ? 'history' : 'accepted';
-      return tab === expectedTab ? [summary] : [];
-    }
-    const expectedTab: HirerTab = state.quest.status === QuestStatus.QUEST_DRAFT ? 'draft' : state.quest.status === QuestStatus.QUEST_COMPLETED || state.quest.status === QuestStatus.QUEST_CANCELLED ? 'completed' : 'active';
-    return tab === expectedTab ? [summary] : [];
+  return questWorkflow.getMyQuestsProjection(viewerId).flatMap((projection) => {
+    const expectedRelationship = role === 'worker' ? ['worker', 'applicant'].includes(projection.relationship) : projection.relationship === 'hirer';
+    if (!expectedRelationship || projection.tab !== tab) return [];
+    const summary = prototypeStateSummary(projection, role, locale, viewerId);
+    return summary ? [summary] : [];
   });
 }
 
@@ -622,7 +608,7 @@ export default function MyQuestsScreen() {
 
   const openGroupChat = (chatId: string, questId?: string, capability?: WorkConversationCapability, viewerId?: string) => {
     if (!questId || !viewerId || !capability?.conversationId || !capability.canRead || capability.conversationId !== chatId) return;
-    router.push({ pathname: '/chat/[id]', params: getChatRouteParams({ conversationId: capability.conversationId, questId, viewerId, capability }) });
+    router.push({ pathname: '/chat/[id]', params: getChatRouteParams({ conversationId: capability.conversationId, questId, viewerId }) });
   };
 
   const openPrimaryQuestAction = (quest: QuestSummary) => {

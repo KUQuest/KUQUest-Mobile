@@ -274,7 +274,7 @@ describe('MyQuestsScreen', () => {
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/quest/[id]', params: { id: 'worker-pending-demo', mode: 'join', joinStatus: 'pending' } });
   });
 
-  it('opens adapter-backed messaging for a joined Quest', async () => {
+  it('opens stable route identity for a joined Quest chat', async () => {
     const view = await render(<MyQuestsScreen />);
 
     await fireEvent.press(view.getByTestId('my-quests-status-next'));
@@ -287,9 +287,6 @@ describe('MyQuestsScreen', () => {
         conversationId: 'conversation-fixture-buy-lunch',
         questId: 'buy-lunch',
         viewerId: 'student-demo',
-        canRead: 'true',
-        canWrite: 'true',
-        readOnly: 'false',
       },
     });
   });

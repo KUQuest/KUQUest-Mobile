@@ -23,10 +23,7 @@ import {
   getVisibleQuests,
   sortQuests,
 } from './questBoardViewData';
-import {
-  createQuestBoardModel,
-  type BoardPreviewState,
-} from './questBoardHarness';
+import type { BoardPreviewState } from './questBoardHarness';
 import { getQuestRewardSatang, questWorkflow } from './questWorkflow';
 import type { PrototypeScenarioRoute } from '@/components/ui/prototypeMenuData';
 
@@ -47,7 +44,6 @@ export type { BoardPreviewState } from './questBoardHarness';
 export interface QuestBoardScreenProps {
   currentStudentId?: string;
   initialPreviewState?: BoardPreviewState;
-  now?: Date;
 }
 
 
@@ -330,7 +326,7 @@ function QuestBoardSortSheet({ sort, messages, onSelect, onClose }: { sort: Ques
   );
 }
 
-export default function QuestBoardScreen({ currentStudentId, initialPreviewState = 'populated', now }: QuestBoardScreenProps) {
+export default function QuestBoardScreen({ currentStudentId, initialPreviewState = 'populated' }: QuestBoardScreenProps) {
   const router = useRouter();
   const { locale } = useLocale();
   const { activePersonaId, onPersonaChange, onReset } = usePrototypeMenuState();
@@ -340,7 +336,6 @@ export default function QuestBoardScreen({ currentStudentId, initialPreviewState
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
   const { handleScroll } = useNavigationVisibility();
   const messages = questBoardMessages[locale];
-  const effectiveNow = now ?? questWorkflow.getNow();
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState<QuestBoardFilter>(emptyQuestBoardFilter);
   const [draftFilters, setDraftFilters] = useState<QuestBoardFilter>(emptyQuestBoardFilter);
@@ -350,7 +345,8 @@ export default function QuestBoardScreen({ currentStudentId, initialPreviewState
   const [sortOpen, setSortOpen] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [retrying, setRetrying] = useState(false);
-  const [workflowRevision, setWorkflowRevision] = useState(0);
+  const [, setWorkflowRevision] = useState(0);
+  const workflowNow = questWorkflow.getNow();
 
   useEffect(() => questWorkflow.subscribe(() => setWorkflowRevision((revision) => revision + 1)), []);
 
@@ -363,20 +359,14 @@ export default function QuestBoardScreen({ currentStudentId, initialPreviewState
     return () => clearTimeout(timeout);
   }, [previewState, retrying]);
 
-  const boardModel = useMemo(() => {
-    void workflowRevision;
-    if (previewState === 'populated' || previewState === 'application-pending' || previewState === 'application-accepted') {
-      return { kind: 'ready' as const, quests: questWorkflow.getQuestBoardModel(resolvedStudentId, effectiveNow) };
-    }
-    return createQuestBoardModel(previewState);
-  }, [workflowRevision, effectiveNow, previewState, resolvedStudentId]);
+  const boardModel = questWorkflow.getQuestBoardSurfaceModel(resolvedStudentId, previewState);
   const localizedQuests = useMemo(() => boardModel.kind === 'ready'
     ? boardModel.quests.map((quest) => getLocalizedQuest(quest, locale))
     : [], [boardModel, locale]);
-  const availableTags = useMemo(() => getQuestBoardTags(getVisibleQuests(localizedQuests, { currentStudentId: resolvedStudentId, now: effectiveNow })), [effectiveNow, localizedQuests, resolvedStudentId]);
+  const availableTags = useMemo(() => getQuestBoardTags(getVisibleQuests(localizedQuests, { currentStudentId: resolvedStudentId, now: workflowNow })), [resolvedStudentId, localizedQuests, workflowNow]);
   const visibleQuests = useMemo(() => boardModel.kind === 'ready'
-    ? sortQuests(applyQuestBoardFilters(localizedQuests, { ...filters, query }, { currentStudentId: resolvedStudentId, now: effectiveNow }), sort)
-    : [], [boardModel.kind, effectiveNow, filters, localizedQuests, query, resolvedStudentId, sort]);
+    ? sortQuests(applyQuestBoardFilters(localizedQuests, { ...filters, query }, { currentStudentId: resolvedStudentId, now: workflowNow }), sort)
+    : [], [boardModel.kind, filters, localizedQuests, query, resolvedStudentId, sort, workflowNow]);
   const openFilters = () => {
     setDraftFilters(cloneFilter(filters));
     setFilterOpen(true);

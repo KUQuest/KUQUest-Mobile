@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react-native';
 
 import ChatConversationScreen from '../ChatConversationScreen';
-import { questFixtureAdapter } from '../../questBoard/questFixtureAdapter';
+import { questWorkflow } from '../../questBoard/questWorkflow';
 
 const mockRouteParams: {
   id?: string;
@@ -31,7 +31,7 @@ jest.mock('../../../locales/LocaleProvider', () => ({
 
 describe('ChatConversationScreen adapter loading state', () => {
   beforeEach(() => {
-    questFixtureAdapter.reset();
+    questWorkflow.reset();
   });
 
   afterEach(() => {
@@ -39,7 +39,7 @@ describe('ChatConversationScreen adapter loading state', () => {
   });
 
   it('shows not found when the adapter has no conversation instead of using a fallback', async () => {
-    const getConversation = jest.spyOn(questFixtureAdapter, 'getConversation');
+    const getConversation = jest.spyOn(questWorkflow, 'getConversation');
 
     const view = await render(<ChatConversationScreen />);
 

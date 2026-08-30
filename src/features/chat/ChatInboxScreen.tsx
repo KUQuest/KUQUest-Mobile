@@ -178,7 +178,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
                     key={conversation.id}
                     conversation={conversation}
                     locale={locale}
-                    onPress={() => router.push({ pathname: '/chat/[id]', params: getChatRouteParams({ conversationId: conversation.id, questId: conversation.questId, viewerId: resolvedViewerId, capability: conversation.capability }) })}
+                    onPress={() => router.push({ pathname: '/chat/[id]', params: getChatRouteParams({ conversationId: conversation.id, questId: conversation.questId, viewerId: resolvedViewerId }) })}
                   />
                 ))}
               </View>

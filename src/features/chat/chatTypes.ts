@@ -1,5 +1,5 @@
 import type { SupportedLocale } from '../../locales/LocaleProvider';
-import type { ConversationReadOnlyReason, QuestStatus, WorkConversationCapability } from '../questBoard/types';
+import type { QuestStatus, WorkConversationCapability } from '../questBoard/types';
 
 export type LocalizedText = Record<SupportedLocale, string>;
 
@@ -39,10 +39,6 @@ export type ChatRouteParams = {
   conversationId: string;
   questId?: string;
   viewerId: string;
-  canRead: 'true' | 'false';
-  canWrite: 'true' | 'false';
-  readOnly: 'true' | 'false';
-  readOnlyReason?: ConversationReadOnlyReason;
   ownerName?: string;
   questTitle?: string;
 };

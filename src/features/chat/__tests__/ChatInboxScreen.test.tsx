@@ -20,7 +20,7 @@ describe('ChatInboxScreen navigation', () => {
     mockRouter.push.mockClear();
   });
 
-  it('forwards the server conversation and capability context when opening a Quest chat', async () => {
+  it('forwards stable conversation identity when opening a Quest chat', async () => {
     const view = await render(<ChatInboxScreen viewerId="student-demo" />);
 
     await fireEvent.press(view.getByTestId('chat-conversation-conversation-fixture-buy-lunch'));
@@ -32,9 +32,6 @@ describe('ChatInboxScreen navigation', () => {
         conversationId: 'conversation-fixture-buy-lunch',
         questId: 'buy-lunch',
         viewerId: 'student-demo',
-        canRead: 'true',
-        canWrite: 'true',
-        readOnly: 'false',
       },
     });
   });

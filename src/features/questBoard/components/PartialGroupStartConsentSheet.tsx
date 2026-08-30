@@ -28,7 +28,6 @@ export interface PartialGroupStartConsentSheetProps {
   actualHeadcount?: number;
   viewerId?: string;
   canRespond?: boolean;
-  now?: Date;
   surfaceState?: PartialGroupStartSurfaceState;
   loading?: boolean;
   error?: string;
@@ -89,7 +88,6 @@ export function PartialGroupStartConsentSheet({
   actualHeadcount,
   viewerId,
   canRespond = true,
-  now,
   surfaceState = 'ready',
   loading = false,
   error,
@@ -110,7 +108,7 @@ export function PartialGroupStartConsentSheet({
     return questWorkflow.subscribe(() => setWorkflowRevision((revision) => revision + 1));
   }, [consent?.id, consent?.status, visible]);
   void workflowRevision;
-  const clock = questWorkflow.getNow(now).getTime();
+  const clock = questWorkflow.getNow().getTime();
 
   const voterMap = useMemo(() => new Map(voters.map((voter) => [voter.id, voter])), [voters]);
   const requiredVoters = useMemo(() => {
