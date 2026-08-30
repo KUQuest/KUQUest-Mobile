@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Alert, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
@@ -53,8 +53,12 @@ function getErrorText(error: unknown, messages: ProfileEditMessages): string {
   return messages.saveError;
 }
 
+function isSessionExpired(error: unknown): boolean {
+  return error instanceof AuthError || error instanceof ApiError && error.status === 401;
+}
+
 async function redirectIfSessionExpired(error: unknown, router: ReturnType<typeof useRouter>): Promise<boolean> {
-  if (!(error instanceof AuthError || error instanceof ApiError && error.status === 401)) return false;
+  if (!isSessionExpired(error)) return false;
   await authService.signOut().catch(() => undefined);
   router.replace('/');
   return true;
@@ -371,15 +375,25 @@ function ProfileEditDataLoader({ children, loadingVariant, onBack }: { children:
   const [data, setData] = useState<ProfileEditData | null>(null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // The focus effect re-runs whenever the navigator hands focus back, so an
+  // unguarded redirect here would loop: redirect -> refocus -> redirect.
+  const redirectedToRoot = useRef(false);
   useFocusEffect(useCallback(() => {
     void attempt;
+    if (redirectedToRoot.current) return;
     let active = true;
     setError(false);
     setData(null);
     void getProfileEditApi(activePersonaId).then((api) => api.getEditData()).then((nextData) => {
       if (active) setData(nextData);
     }).catch(async (loadError) => {
-      if (await redirectIfSessionExpired(loadError, router)) return;
+      if (isSessionExpired(loadError)) {
+        if (active && !redirectedToRoot.current) {
+          redirectedToRoot.current = true;
+          await redirectIfSessionExpired(loadError, router);
+        }
+        return;
+      }
       if (active) setError(true);
     });
     return () => { active = false; };
