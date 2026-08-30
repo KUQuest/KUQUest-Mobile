@@ -90,4 +90,12 @@ describe('QuestWorkflow', () => {
       jest.useRealTimers();
     }
   });
+
+  it('accepts a deterministic clock seed before subscription', () => {
+    const workflow = createQuestWorkflow(questFixtureAdapter);
+    const seededNow = new Date('2026-08-14T12:00:00.000Z');
+
+    expect(workflow.getNow(seededNow)).toEqual(seededNow);
+    expect(workflow.getNow()).toEqual(seededNow);
+  });
 });

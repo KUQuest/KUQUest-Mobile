@@ -41,6 +41,8 @@ export interface QuestDetailProjection {
   isAssigned: boolean;
   hasPendingApplication: boolean;
   partialStartPending: boolean;
+  settlement: QuestSettlementSummary | null;
+  conversationCapability: WorkConversationCapability;
 }
 
 export type QuestMyQuestRelationship = 'hirer' | 'applicant' | 'worker';
@@ -98,7 +100,7 @@ export type QuestBoardSurfaceModel =
   | QuestBoardUnavailableModel;
 
 export interface QuestWorkflow {
-  getNow(): Date;
+  getNow(seed?: Date): Date;
   getQuestBoardModel(viewerId?: string): QuestBoardQuest[];
   getQuestBoardSurfaceModel(viewerId?: string, previewState?: QuestBoardPreviewState): QuestBoardSurfaceModel;
   getQuestBoardQuest(questId: string, viewerId?: string): QuestBoardQuest | null;
@@ -154,25 +156,33 @@ function createUnavailableQuest(availability: 'full' | 'closed'): QuestBoardQues
     : { ...quest, deadline: '2026-08-11' };
 }
 
+function enrichBoardQuest(quest: QuestBoardQuest): QuestBoardQuest {
+  const fixture = questFixtures.find((item) => item.id === quest.id);
+  return fixture ? { ...quest, creator: fixture.creator } : quest;
+}
+
 function createDetailProjection(state: QuestDetailState, viewerId: string, now: Date): QuestDetailProjection {
+  const quest = toQuestBoardQuest(state);
   const isAssigned = state.assignments.some((item) => item.workerId === viewerId && item.status !== 'ASSIGNMENT_CANCELLED');
   const hasPendingApplication = state.applications.some(
     (item) => item.applicantId === viewerId && item.status === CanonicalApplicationStatus.APPLICATION_APPLIED,
   );
   return {
     state,
-    quest: toBoardQuest(state),
-    availability: getQuestAvailability(toBoardQuest(state), now),
+    quest,
+    availability: getQuestAvailability(quest, now),
     applicationStatus: isAssigned ? 'accepted' : hasPendingApplication ? 'pending' : 'none',
     isOwner: state.quest.hirerId === viewerId,
     isAssigned,
     hasPendingApplication,
     partialStartPending: state.partialStartConsent?.status === 'PARTIAL_START_PENDING',
+    settlement: state.settlement ?? null,
+    conversationCapability: state.conversation,
   };
 }
 
 function createMyQuestProjection(state: QuestDetailState, viewerId: string): QuestMyQuestProjection | null {
-  const quest = toBoardQuest(state);
+  const quest = toQuestBoardQuest(state);
   const hasAssignment = state.assignments.some(
     (item) => item.workerId === viewerId && item.status !== 'ASSIGNMENT_CANCELLED',
   );
@@ -199,7 +209,7 @@ function createMyQuestProjection(state: QuestDetailState, viewerId: string): Que
 }
 
 export function toQuestBoardQuest(state: QuestDetailState): QuestBoardQuest {
-  return toBoardQuest(state);
+  return enrichBoardQuest(toBoardQuest(state));
 }
 
 export function createQuestWorkflow(
@@ -235,10 +245,13 @@ export function createQuestWorkflow(
   };
 
   return {
-    getNow: () => at(),
+    getNow: (seed) => {
+      if (seed && listeners.size === 0) currentNow = new Date(seed.getTime());
+      return new Date(currentNow.getTime());
+    },
     getQuestBoardModel: (viewerId = DEFAULT_PROTOTYPE_VIEWER_ID) => {
       const now = at();
-      return getVisibleQuests(adapter.listBoardQuests(viewerId, now), { currentStudentId: viewerId, now });
+      return getVisibleQuests(adapter.listBoardQuests(viewerId, now).map(enrichBoardQuest), { currentStudentId: viewerId, now });
     },
     getQuestBoardSurfaceModel: (viewerId = DEFAULT_PROTOTYPE_VIEWER_ID, previewState = 'populated') => {
       if (previewState === 'loading') return { kind: 'loading' };
@@ -249,14 +262,14 @@ export function createQuestWorkflow(
         return { kind: 'unavailable', availability: previewState, quest };
       }
       const now = at();
-      return { kind: 'ready', quests: getVisibleQuests(adapter.listBoardQuests(viewerId, now), { currentStudentId: viewerId, now }) };
+      return { kind: 'ready', quests: getVisibleQuests(adapter.listBoardQuests(viewerId, now).map(enrichBoardQuest), { currentStudentId: viewerId, now }) };
     },
     getQuestBoardQuest: (questId, viewerId = DEFAULT_PROTOTYPE_VIEWER_ID) => {
       const now = at();
       const boardQuest = adapter.listBoardQuests(viewerId, now).find((quest) => quest.id === questId);
-      if (boardQuest) return boardQuest;
+      if (boardQuest) return enrichBoardQuest(boardQuest);
       const state = adapter.getQuestDetail(questId, viewerId, now);
-      return state ? toBoardQuest(state) : null;
+      return state ? toQuestBoardQuest(state) : null;
     },
     getQuestDetailState: (questId, viewerId = DEFAULT_PROTOTYPE_VIEWER_ID) => adapter.getQuestDetail(questId, viewerId, at()),
     getQuestDetailProjection: (questId, viewerId = DEFAULT_PROTOTYPE_VIEWER_ID) => {

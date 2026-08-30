@@ -22,7 +22,6 @@ import styles from './questDetailStyles';
 import { getLocalizedQuest } from './questTranslations';
 import { parseBoardPreviewState, type BoardPreviewState } from './questBoardHarness';
 import { parseQuestDetailMode, parseQuestIntent, parseQuestJoinStatus, parseQuestRouteId, parseStudentId, type QuestDetailMode, type QuestJoinStatus } from './questRoute';
-import { questFixtures } from './questFixtures';
 import {
   formatSatang,
   MAX_QUEST_IMAGES,
@@ -37,7 +36,7 @@ import {
   type QuestDetailState,
 } from './types';
 import { getChatRouteParams } from '@/features/chat/chatData';
-import { DEFAULT_PROTOTYPE_VIEWER_ID, getQuestRewardSatang, questWorkflow, toQuestBoardQuest, type QuestFixtureResult, type QuestViewerApplicationStatus } from './questWorkflow';
+import { DEFAULT_PROTOTYPE_VIEWER_ID, getQuestRewardSatang, questWorkflow, type QuestFixtureResult, type QuestViewerApplicationStatus } from './questWorkflow';
 import { CandidateReviewSheet, PartialGroupStartConsentSheet, TeamAssembleSheet, type PartialGroupStartVoter, type TeamDirectoryMember } from './components';
 
 export interface QuestDetailScreenProps {
@@ -60,12 +59,9 @@ function getActionBarPaddingBottom(bottomInset: number): number {
 }
 
 
-function toDisplayQuest(state: QuestDetailState, locale: 'en' | 'th', previewState?: BoardPreviewState): QuestBoardQuest {
-  const canonicalQuest = toQuestBoardQuest(state);
+function toDisplayQuest(canonicalQuest: QuestBoardQuest, locale: 'en' | 'th', previewState?: BoardPreviewState): QuestBoardQuest {
   const localizedQuest = getLocalizedQuest(canonicalQuest, locale);
-  const fixture = questFixtures.find((item) => item.id === canonicalQuest.id);
-  const creator = fixture ? getLocalizedQuest(fixture, locale).creator : localizedQuest.creator;
-  const displayQuest = { ...localizedQuest, creator };
+  const displayQuest = { ...localizedQuest, creator: localizedQuest.creator };
   if (previewState === 'full' || previewState === 'application-accepted') return { ...displayQuest, acceptedParticipants: displayQuest.headcount };
   if (previewState === 'closed') return { ...displayQuest, deadline: '2026-08-11' };
   return displayQuest;
@@ -497,7 +493,7 @@ export default function QuestDetailScreen({ previewState, questId, studentId, mo
   const detailProjection = useMemo(() => resolvedQuestId && activePrototypeState
     ? questWorkflow.getQuestDetailProjection(resolvedQuestId, prototypeViewerId)
     : null, [activePrototypeState, prototypeViewerId, resolvedQuestId]);
-  const quest = useMemo(() => activePrototypeState ? toDisplayQuest(activePrototypeState, locale, resolvedPreview) : undefined, [activePrototypeState, locale, resolvedPreview]);
+  const quest = useMemo(() => detailProjection ? toDisplayQuest(detailProjection.quest, locale, resolvedPreview) : undefined, [detailProjection, locale, resolvedPreview]);
   useEffect(() => {
     if (!resolvedQuestId || resolvedPreview === 'loading' || !applicationSessionHydrated) return undefined;
     let active = true;
@@ -530,7 +526,7 @@ export default function QuestDetailScreen({ previewState, questId, studentId, mo
     : undefined;
   const firstCome = quest?.candidateMode === 'NO_CANDIDATE';
   const candidateGroup = Boolean(quest && !firstCome && quest.participationMode === 'team');
-  const canonicalOpen = !activePrototypeState || activePrototypeState.quest.status === QuestStatus.QUEST_OPEN;
+  const canonicalOpen = !detailProjection || detailProjection.quest.status === QuestStatus.QUEST_OPEN;
   const partialStartPending = detailProjection?.partialStartPending ?? false;
   const applicationAction = firstCome ? 'DIRECT_JOIN' : 'APPLY';
   const canApply = !isJoinView && !isPostView && availability === 'available' && canonicalOpen && !partialStartPending && previewApplicationStatus === 'none' && !candidateGroup && applicationStatusHydrated && Boolean(applicationState?.capabilities.availableActions.includes(applicationAction));
@@ -539,7 +535,7 @@ export default function QuestDetailScreen({ previewState, questId, studentId, mo
   const routeIntentKey = `${resolvedQuestId ?? ''}:${resolvedIntent ?? ''}`;
   const [dismissedIntent, setDismissedIntent] = useState<string | undefined>();
   const confirmationOpen = manualConfirmationOpen || (resolvedIntent === 'apply' && dismissedIntent !== routeIntentKey && canApply);
-  const canMessageOwner = Boolean(quest && !isPostView && quest.ownerStudentId !== applicationStudentId && activePrototypeState?.conversation.conversationId && activePrototypeState.conversation.canRead);
+  const canMessageOwner = Boolean(quest && !isPostView && quest.ownerStudentId !== applicationStudentId && detailProjection?.conversationCapability.conversationId && detailProjection.conversationCapability.canRead);
   const statusTitle = isPostView
     ? messages.postOwnerView
     : isJoinView
@@ -580,7 +576,7 @@ export default function QuestDetailScreen({ previewState, questId, studentId, mo
   const StatusIcon = statusIsUnavailable ? CircleAlert : isPostView ? BriefcaseBusiness : leftQuest ? LogOut : Check;
   const statusIconColor = statusIsUnavailable ? colors.textMuted : leftQuest ? colors.dangerDark : colors.primary;
   const groupMessages = groupQuestMessages[locale];
-  const isHirerView = Boolean(activePrototypeState && activePrototypeState.quest.hirerId === prototypeViewerId);
+  const isHirerView = detailProjection?.isOwner ?? false;
   const [teamSheetOpen, setTeamSheetOpen] = useState(false);
   const [candidateReviewSheetOpen, setCandidateReviewSheetOpen] = useState(false);
   const [partialStartSheetDismissed, setPartialStartSheetDismissed] = useState(false);
@@ -658,7 +654,7 @@ export default function QuestDetailScreen({ previewState, questId, studentId, mo
 
   const handleMessageOwner = () => {
     if (!quest || !canMessageOwner) return;
-    const capability = activePrototypeState?.conversation;
+    const capability = detailProjection?.conversationCapability;
     if (!capability?.conversationId || !capability.canRead) return;
     router.push({ pathname: '/chat/[id]', params: getChatRouteParams({ conversationId: capability.conversationId, questId: quest.id, viewerId: applicationStudentId, ownerName: quest.creator.name, questTitle: quest.title }) });
   };
@@ -852,7 +848,7 @@ export default function QuestDetailScreen({ previewState, questId, studentId, mo
         requestedHeadcount={activePrototypeState.quest.headcount}
         rewardSatangPerWorker={activePrototypeState.quest.reward.rewardSatang}
         selectedProposalId={selectedProposalId}
-        settlement={activePrototypeState.settlement}
+        settlement={detailProjection?.settlement ?? undefined}
         teams={candidateGroup ? activePrototypeState.teams.filter((team) => team.status !== QuestTeamStatus.TEAM_FORMING) : []}
         visible={candidateReviewSheetOpen}
       /> : null}
