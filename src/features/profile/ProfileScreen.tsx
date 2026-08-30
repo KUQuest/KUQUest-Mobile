@@ -16,7 +16,6 @@ import { getAppChromeMetrics } from '../../theme/layout';
 import { getProfileLayoutMetrics } from '../../theme/profileLayout';
 import { spacing } from '../../theme/spacing';
 import { colors } from '../../theme/colors';
-import { authService } from '../auth/AuthService';
 import { AuthError } from '../auth/types';
 import { useNavigationVisibility } from '../../components/navigation/NavigationVisibilityContext';
 import { usePrototypeMenuState } from '../../components/ui/prototypeMenuState';
@@ -67,6 +66,7 @@ export default function Profile() {
   const [loadError, setLoadError] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const profileScrollOffset = useRef(0);
+  const redirectedToRoot = useRef(false);
   const [initialScrollOffset, setInitialScrollOffset] = useState(0);
 
   const handleProfileScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -84,14 +84,20 @@ export default function Profile() {
   useFocusEffect(useCallback(() => {
     let active = true;
     async function loadProfile(_attempt: number) {
+      if (redirectedToRoot.current) return;
       setLoadError(false);
       try {
         const data = await loadProfileViewData(locale, activePersonaId);
         if (active) setViewData(data);
       } catch (error) {
         if (error instanceof AuthError && error.code === 'SESSION_EXPIRED') {
-          await authService.signOut().catch(() => undefined);
-          if (active) router.replace('/');
+          // There is no session left to end, so signing out here would be a
+          // round-trip that cannot clear its own trigger. Redirect once: the
+          // focus effect re-runs whenever the navigator hands focus back.
+          if (active && !redirectedToRoot.current) {
+            redirectedToRoot.current = true;
+            router.replace('/');
+          }
           return;
         }
         if (active) setLoadError(true);
