@@ -1,4 +1,5 @@
 import type { ChatConversation, ChatMessage } from '../chat/chatTypes';
+import { getQuestPublishCheck as getDraftPublishCheck, type QuestDraft } from '../createQuest/createQuestModel';
 import {
   DEFAULT_PROTOTYPE_VIEWER_ID,
   questFixtureAdapter,
@@ -52,6 +53,7 @@ export interface QuestWorkflow {
   getQuestDetailState(questId: string, viewerId?: string, now?: Date): QuestDetailState | null;
   getMyQuestsModel(viewerId?: string, now?: Date): QuestDetailState[];
   getPublishCheck(questId: string, now?: Date): QuestPublishCheck | null;
+  getDraftPublishCheck(draft: QuestDraft): QuestPublishCheck;
   getEscrowSummary(rewardSatang: number, headcount: number): ReturnType<QuestFixtureAdapter['getEscrowSummary']>;
   getSettlement(questId: string, now?: Date): QuestSettlementSummary | null;
   getConversationCapability(questId: string, viewerId?: string, now?: Date): WorkConversationCapability;
@@ -138,6 +140,7 @@ export function createQuestWorkflow(
     getQuestDetailState: (questId, viewerId = DEFAULT_PROTOTYPE_VIEWER_ID, now) => adapter.getQuestDetail(questId, viewerId, at(now)),
     getMyQuestsModel: (viewerId = DEFAULT_PROTOTYPE_VIEWER_ID, now) => adapter.listStates(viewerId, at(now)),
     getPublishCheck: (questId) => adapter.getPublishCheck(questId),
+    getDraftPublishCheck: (draft) => getDraftPublishCheck(draft),
     getEscrowSummary: (rewardSatang, headcount) => adapter.getEscrowSummary(rewardSatang, headcount),
     getSettlement: (questId, now) => adapter.getSettlement(questId, at(now)),
     getConversationCapability: (questId, viewerId, now) => {

@@ -20,7 +20,7 @@ import { colors } from '@/theme/colors';
 import { getCreateQuestLayoutMetrics } from '@/theme/layout';
 import { spacing } from '@/theme/spacing';
 import styles from './createQuestStyles';
-import { formatDraftReward, getHeadcountForParticipation, getQuestPublishCheck, getRewardValidationError, getSchedulePickerValue, getScheduleTimeValue, initialDraft, isQuestDraftDirty, mockQuestDraft, toQuestDraftPayload, type QuestDraft } from './createQuestModel';
+import { formatDraftReward, getHeadcountForParticipation, getRewardValidationError, getSchedulePickerValue, getScheduleTimeValue, initialDraft, isQuestDraftDirty, mockQuestDraft, toQuestDraftPayload, type QuestDraft } from './createQuestModel';
 import { deleteQuestDraft, getQuestDraftStorageKey, loadQuestDraft, persistQuestDraft } from './createQuestPersistence';
 import { questWorkflow } from '../questBoard/questWorkflow';
 import { MAX_QUEST_IMAGES, formatSatang, type QuestPublishCheck } from '../questBoard/types';
@@ -801,7 +801,7 @@ export default function CreateQuestScreen({ editQuestId }: CreateQuestScreenProp
 
   const finishQuest = async (state: CompletionState) => {
     if (!validateStep(2)) return;
-    const check = getQuestPublishCheck(draft);
+    const check = questWorkflow.getDraftPublishCheck(draft);
     setPublishCheck(check);
     if (state === 'OPEN' && !check.canPublish) {
       const firstBlocker = check.blockers[0];
@@ -976,7 +976,7 @@ export default function CreateQuestScreen({ editQuestId }: CreateQuestScreenProp
   }, [draft.candidateMode, draft.participation, messages]);
   const proofRequired = draft.proofRequired !== 'none';
 
-  const reviewPublishCheck = useMemo(() => publishCheck ?? getQuestPublishCheck(draft), [draft, publishCheck]);
+  const reviewPublishCheck = useMemo(() => publishCheck ?? questWorkflow.getDraftPublishCheck(draft), [draft, publishCheck]);
   const summary = useMemo(() => [
     { label: messages.summary.title, value: draft.title || '—' },
     { label: messages.summary.description, value: draft.description || '—' },
