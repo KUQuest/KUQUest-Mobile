@@ -1,4 +1,5 @@
 import type { ChatConversation, ChatMessage } from '../chat/chatTypes';
+import { getVisibleQuests } from './questBoardViewData';
 import { getQuestPublishCheck as getDraftPublishCheck, type QuestDraft } from '../createQuest/createQuestModel';
 import {
   DEFAULT_PROTOTYPE_VIEWER_ID,
@@ -103,7 +104,8 @@ export function createQuestWorkflow(
 
   const notify = () => listeners.forEach((listener) => listener());
   const at = (now?: Date): Date => {
-    if (now) currentNow = new Date(now.getTime());
+    if (now) return new Date(now.getTime());
+    if (listeners.size === 0) currentNow = new Date(adapter.now.getTime());
     return new Date(currentNow.getTime());
   };
   const timeForAdapter = (now?: Date): Date | undefined => {
@@ -112,6 +114,7 @@ export function createQuestWorkflow(
   };
   const startRefresh = () => {
     if (listeners.size !== 1) return;
+    currentNow = new Date(adapter.now.getTime());
     adapterUnsubscribe = adapter.subscribe(notify);
     const interval = options.refreshIntervalMs ?? 1000;
     refreshTimer = setInterval(() => {
@@ -129,7 +132,10 @@ export function createQuestWorkflow(
 
   return {
     getNow: () => at(),
-    getQuestBoardModel: (viewerId = DEFAULT_PROTOTYPE_VIEWER_ID, now) => adapter.listBoardQuests(viewerId, at(now)),
+    getQuestBoardModel: (viewerId = DEFAULT_PROTOTYPE_VIEWER_ID, now) => {
+      const currentTime = at(now);
+      return getVisibleQuests(adapter.listBoardQuests(viewerId, currentTime), { currentStudentId: viewerId, now: currentTime });
+    },
     getQuestBoardQuest: (questId, viewerId = DEFAULT_PROTOTYPE_VIEWER_ID, now) => {
       const currentTime = at(now);
       const boardQuest = adapter.listBoardQuests(viewerId, currentTime).find((quest) => quest.id === questId);
@@ -178,8 +184,8 @@ export function createQuestWorkflow(
       };
     },
     reset: () => {
-      adapter.reset();
       currentNow = new Date(adapter.now.getTime());
+      adapter.reset();
     },
     joinDirect: (questId, workerId, now) => adapter.joinDirect(questId, workerId, at(now)),
     applyCandidate: (questId, workerId, now) => adapter.applyCandidate(questId, workerId, at(now)),
