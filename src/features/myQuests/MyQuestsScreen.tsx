@@ -294,11 +294,11 @@ function prototypeStateSummary(state: QuestDetailState, role: Role, locale: Supp
 }
 
 /**
- * My Quests currently reads the canonical in-memory prototype adapter. There is
+ * My Quests currently reads the canonical Quest projection through Quest Workflow. There is
  * no asynchronous loader on either the demo or non-demo route, so an empty
- * adapter result must remain an empty state rather than a fabricated skeleton.
+ * workflow result must remain an empty state rather than a fabricated skeleton.
  */
-function getAdapterItems(role: Role, tab: WorkerTab | HirerTab, locale: SupportedLocale, viewerId: string): QuestSummary[] {
+function getWorkflowItems(role: Role, tab: WorkerTab | HirerTab, locale: SupportedLocale, viewerId: string): QuestSummary[] {
   return questWorkflow.getMyQuestsModel(viewerId).flatMap((state) => {
     const summary = prototypeStateSummary(state, role, locale, viewerId);
     if (!summary) return [];
@@ -516,8 +516,8 @@ export default function MyQuestsScreen() {
   const [hirerTab, setHirerTab] = useState<HirerTab>('active');
   const [candidateReviewQuestId, setCandidateReviewQuestId] = useState<string | null>(null);
   const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
-  const [adapterRevision, setAdapterRevision] = useState(0);
-  React.useEffect(() => questWorkflow.subscribe(() => setAdapterRevision((revision) => revision + 1)), []);
+  const [workflowRevision, setWorkflowRevision] = useState(0);
+  React.useEffect(() => questWorkflow.subscribe(() => setWorkflowRevision((revision) => revision + 1)), []);
   const role = roleSelection?.personaId === activePersonaId
     ? roleSelection.role
     : activePersonaId === HIRER_PERSONA_ID
@@ -535,19 +535,19 @@ export default function MyQuestsScreen() {
     ? candidateReviewState.capabilities.availableActions.includes(candidateReviewState.quest.participation === QuestParticipation.GROUP ? 'REJECT_TEAM' : 'REJECT_CANDIDATE')
     : false;
   const items = useMemo(() => {
-    void adapterRevision;
-    return getAdapterItems(role, selectedTab, locale, viewerId);
-  }, [adapterRevision, locale, role, selectedTab, viewerId]);
+    void workflowRevision;
+    return getWorkflowItems(role, selectedTab, locale, viewerId);
+  }, [workflowRevision, locale, role, selectedTab, viewerId]);
   const summary = useMemo(() => {
-    void adapterRevision;
+    void workflowRevision;
     if (role !== 'worker' || !copy.worker.summary) return null;
-    const counts = workerTabs.map((tab) => getAdapterItems('worker', tab, locale, activePersonaId).length);
+    const counts = workerTabs.map((tab) => getWorkflowItems('worker', tab, locale, activePersonaId).length);
     return copy.worker.summary.map((metric, index) => ({
       ...metric,
       value: String(index === 0 ? counts[0] : index === 1 ? counts[1] : counts.reduce((total, count) => total + count, 0)),
       detail: index === 0 ? copy.worker.tabs.pending : index === 1 ? copy.worker.tabs.accepted : copy.worker.tabs.history,
     }));
-  }, [activePersonaId, adapterRevision, copy, locale, role]);
+  }, [activePersonaId, workflowRevision, copy, locale, role]);
   const tabOptions: readonly (WorkerTab | HirerTab)[] = role === 'worker' ? workerTabs : hirerTabs;
   const bottomPadding = (chromeMetrics.isTablet ? spacing.lg : chromeMetrics.navHeight + insets.bottom) + spacing.lg;
 

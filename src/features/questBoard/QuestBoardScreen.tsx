@@ -350,9 +350,9 @@ export default function QuestBoardScreen({ currentStudentId, initialPreviewState
   const [sortOpen, setSortOpen] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [retrying, setRetrying] = useState(false);
-  const [adapterRevision, setAdapterRevision] = useState(0);
+  const [workflowRevision, setWorkflowRevision] = useState(0);
 
-  useEffect(() => questWorkflow.subscribe(() => setAdapterRevision((revision) => revision + 1)), []);
+  useEffect(() => questWorkflow.subscribe(() => setWorkflowRevision((revision) => revision + 1)), []);
 
   useEffect(() => {
     if (!retrying || previewState !== 'loading') return undefined;
@@ -364,12 +364,12 @@ export default function QuestBoardScreen({ currentStudentId, initialPreviewState
   }, [previewState, retrying]);
 
   const boardModel = useMemo(() => {
-    void adapterRevision;
+    void workflowRevision;
     if (previewState === 'populated' || previewState === 'application-pending' || previewState === 'application-accepted') {
       return { kind: 'ready' as const, quests: questWorkflow.getQuestBoardModel(resolvedStudentId, effectiveNow) };
     }
     return createQuestBoardModel(previewState);
-  }, [adapterRevision, effectiveNow, previewState, resolvedStudentId]);
+  }, [workflowRevision, effectiveNow, previewState, resolvedStudentId]);
   const localizedQuests = useMemo(() => boardModel.kind === 'ready'
     ? boardModel.quests.map((quest) => getLocalizedQuest(quest, locale))
     : [], [boardModel, locale]);
