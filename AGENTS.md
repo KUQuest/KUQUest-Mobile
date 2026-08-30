@@ -77,4 +77,4 @@ For delegated or parallel work, read `docs/agents/subagent-workflow.md` before s
 - Codex project defaults and role manifests live in `.codex/config.toml` and `.codex/agents/`.
 - Antigravity workspace agents live in `.agents/agents/<role>/agent.md`.
 - Keep one writer per file; use read-only scout/reviewer/verifier roles for independent work.
-- Codex project work uses `gpt-5.6-luna` with `max` reasoning. Antigravity manifests use its documented `pro` tier; it does not accept the Codex model ID.
+- Codex parent sessions use `gpt-5.6-luna` with `max`; role manifests use task-shaped effort, escalating to `max` only for high-risk or ambiguous work. Antigravity manifests use its documented `flash`/`pro` tiers; it does not accept the Codex model ID.
