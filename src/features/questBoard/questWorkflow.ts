@@ -5,6 +5,8 @@ import {
   DEFAULT_PROTOTYPE_VIEWER_ID,
   questFixtureAdapter,
   toBoardQuest,
+  formatConsentCountdown as adapterFormatConsentCountdown,
+  getQuestRewardSatang as adapterGetQuestRewardSatang,
   type QuestFixtureAdapter,
   type QuestFixtureCreateInput,
   type QuestFixtureResult,
@@ -13,7 +15,6 @@ import type {
   QuestBoardQuest,
   QuestDetailState,
   QuestEditConsent,
-  QuestPartialStartConsent,
   QuestPublishCheck,
   QuestSettlementSummary,
   WorkConversationCapability,
@@ -27,21 +28,8 @@ export interface QuestWorkflowOptions {
   refreshIntervalMs?: number;
 }
 
-export function getQuestRewardSatang(quest: QuestBoardQuest): number {
-  return quest.rewardSatang ?? Math.round(quest.rewardPerPerson * 100);
-}
-
-export function formatConsentCountdown(
-  consent: QuestEditConsent | QuestPartialStartConsent | undefined,
-  now = new Date(),
-): string | null {
-  if (!consent || !['EDIT_REQUEST_PENDING', 'PARTIAL_START_PENDING'].includes(consent.status)) return null;
-  const remaining = Math.max(0, new Date(consent.responseDeadlineAt).getTime() - now.getTime());
-  const totalSeconds = Math.ceil(remaining / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-}
+export const getQuestRewardSatang = adapterGetQuestRewardSatang;
+export const formatConsentCountdown = adapterFormatConsentCountdown;
 
 export function toQuestBoardQuest(state: QuestDetailState): QuestBoardQuest {
   return toBoardQuest(state);
