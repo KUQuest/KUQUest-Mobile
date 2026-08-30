@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Host, Switch } from '@expo/ui';
 import { Bell, ChevronLeft, ChevronRight, CircleHelp, Code2, FileText, Globe2, Info, LockKeyhole, LogOut, Moon, Pencil, UserRound } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Pressable, SafeAreaView, ScrollView, Text, View } from '@/tw';
 import { useLocale } from '@/locales/LocaleProvider';
@@ -9,6 +10,7 @@ import { settingsMessages } from '@/locales/settingsMessages';
 import { authService } from '@/features/auth/AuthService';
 import { isPrototypeDemoEnabled } from '@/features/auth/demoMode';
 import { colors } from '@/theme/colors';
+import { spacing } from '@/theme/spacing';
 import styles from './styles/settingsStyles';
 
 function SettingsRow({
@@ -59,6 +61,8 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { locale } = useLocale();
   const messages = settingsMessages[locale];
+  const insets = useSafeAreaInsets();
+  const bottomPadding = insets.bottom + spacing.lg;
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [switchingAccount, setSwitchingAccount] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -85,7 +89,8 @@ export default function SettingsScreen() {
         <Text accessibilityRole="header" className="text-ku-text-strong font-ku-bold text-ku-title-small ml-[4px]">{messages.title}</Text>
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: bottomPadding }} showsVerticalScrollIndicator={false} testID="settings-scroll">
+        <View className={styles.content} testID="settings-content">
         <View className={styles.section}>
           <Text className={styles.sectionTitle}>{messages.account}</Text>
           <View className={styles.sectionBody}>
@@ -154,6 +159,7 @@ export default function SettingsScreen() {
           <LogOut color={colors.danger} size={20} strokeWidth={2} />
           <Text className="text-ku-danger font-ku-semibold text-ku-control ml-[8px]">{messages.logout}</Text>
         </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

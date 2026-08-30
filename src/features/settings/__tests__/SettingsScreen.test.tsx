@@ -36,6 +36,8 @@ describe('Settings screen', () => {
     expect(view.getByText('Version 1.0.0')).toBeTruthy();
     expect(view.getByText('Edit Profile')).toBeTruthy();
     expect(view.getByTestId('settings-notifications')).toBeTruthy();
+    expect(view.getByTestId('settings-scroll').props.contentContainerStyle?.paddingBottom).toBeGreaterThanOrEqual(24);
+    expect(view.getByTestId('settings-content')).toBeTruthy();
   });
 
   it('renders a red logout button at the bottom and returns to the start screen', async () => {
