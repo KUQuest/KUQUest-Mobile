@@ -51,6 +51,17 @@ describe('Settings screen', () => {
     });
   });
 
+  it('renders a red logout button at the bottom and returns to the start screen', async () => {
+    const view = await render(<SettingsScreen />);
+
+    fireEvent.press(view.getByTestId('settings-logout'));
+
+    await waitFor(() => {
+      expect(authService.signOut).toHaveBeenCalledTimes(1);
+      expect(mockReplace).toHaveBeenCalledWith('/');
+    });
+  });
+
   it('toggles quest notifications', async () => {
     const view = await render(<SettingsScreen />);
     const toggle = view.getByTestId('settings-notifications');
