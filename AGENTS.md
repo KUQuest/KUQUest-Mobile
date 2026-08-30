@@ -69,3 +69,12 @@ Behavioral guidelines to reduce common LLM coding mistakes ([source](https://git
 - Multi-step tasks: state a brief plan, one line per step with its verify check.
 
 These guidelines are working if: fewer unnecessary changes in diffs, fewer rewrites from overcomplication, clarifying questions come before implementation rather than after mistakes.
+
+## Subagent workflow
+
+For delegated or parallel work, read `docs/agents/subagent-workflow.md` before spawning agents. It is the provider-neutral routing and handoff contract.
+
+- Codex project defaults and role manifests live in `.codex/config.toml` and `.codex/agents/`.
+- Antigravity workspace agents live in `.agents/agents/<role>/agent.md`.
+- Keep one writer per file; use read-only scout/reviewer/verifier roles for independent work.
+- Codex project work uses `gpt-5.6-luna` with `max` reasoning. Antigravity manifests use its documented `pro` tier; it does not accept the Codex model ID.
