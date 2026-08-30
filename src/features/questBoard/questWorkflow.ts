@@ -48,7 +48,7 @@ export function toQuestBoardQuest(state: QuestDetailState): QuestBoardQuest {
 }
 
 export interface QuestWorkflow {
-  getNow(): Date;
+  getNow(seed?: Date): Date;
   getQuestBoardModel(viewerId?: string, now?: Date): QuestBoardQuest[];
   getQuestBoardQuest(questId: string, viewerId?: string, now?: Date): QuestBoardQuest | null;
   getQuestDetailState(questId: string, viewerId?: string, now?: Date): QuestDetailState | null;
@@ -131,7 +131,10 @@ export function createQuestWorkflow(
   };
 
   return {
-    getNow: () => at(),
+    getNow: (seed) => {
+      if (seed && listeners.size === 0) currentNow = new Date(seed.getTime());
+      return new Date(currentNow.getTime());
+    },
     getQuestBoardModel: (viewerId = DEFAULT_PROTOTYPE_VIEWER_ID, now) => {
       const currentTime = at(now);
       return getVisibleQuests(adapter.listBoardQuests(viewerId, currentTime), { currentStudentId: viewerId, now: currentTime });

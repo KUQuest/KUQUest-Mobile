@@ -8,6 +8,7 @@ import { colors } from '@/theme/colors';
 import { QuestPartialStartConsentStatus, QuestPartialStartVoteStatus, type QuestPartialStartConsent } from '../types';
 import styles from './groupQuestStyles';
 import { QuestBottomSheet } from './QuestBottomSheet';
+import { questWorkflow } from '../questWorkflow';
 
 export interface PartialGroupStartVoter {
   id: string;
@@ -103,21 +104,13 @@ export function PartialGroupStartConsentSheet({
   const contextLocale = useLocale().locale;
   const locale = localeProp ?? contextLocale;
   const messages = getMessages(locale);
-  const nowValue = now?.getTime();
-  const consentId = consent?.id;
-  const consentDeadline = consent?.responseDeadlineAt;
-  const consentStatus = consent?.status;
-  const [clock, setClock] = useState(() => nowValue ?? Date.now());
-
+  const [workflowRevision, setWorkflowRevision] = useState(0);
   useEffect(() => {
-    if (!consentId || consentStatus !== QuestPartialStartConsentStatus.PARTIAL_START_PENDING) return undefined;
-    const initialClock = nowValue ?? Date.now();
-    const wallStart = Date.now();
-    const timer = setInterval(() => {
-      setClock(initialClock + (Date.now() - wallStart));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [consentDeadline, consentId, consentStatus, nowValue]);
+    if (!visible || consent?.status !== QuestPartialStartConsentStatus.PARTIAL_START_PENDING) return undefined;
+    return questWorkflow.subscribe(() => setWorkflowRevision((revision) => revision + 1));
+  }, [consent?.id, consent?.status, visible]);
+  void workflowRevision;
+  const clock = questWorkflow.getNow(now).getTime();
 
   const voterMap = useMemo(() => new Map(voters.map((voter) => [voter.id, voter])), [voters]);
   const requiredVoters = useMemo(() => {
