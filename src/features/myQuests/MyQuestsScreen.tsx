@@ -37,7 +37,7 @@ import { spacing } from '@/theme/spacing';
 import styles from './myQuestStyles';
 import { getLocalizedQuest } from '@/features/questBoard/questTranslations';
 import { CandidateReviewSheet } from '@/features/questBoard/components';
-import { getQuestRewardSatang, questFixtureAdapter, toBoardQuest } from '@/features/questBoard/questFixtureAdapter';
+import { getQuestRewardSatang, questWorkflow } from '@/features/questBoard/questWorkflow';
 import { QuestParticipation, QuestStatus, QuestTeamStatus, formatSatang, type QuestDetailState, type WorkConversationCapability } from '@/features/questBoard/types';
 import { groupQuestMessages } from '@/locales/groupQuestMessages';
 import { questBoardMessages } from '@/locales/questBoardMessages';
@@ -252,7 +252,9 @@ function prototypeStatusTone(status: QuestDetailState['quest']['status']): Statu
 }
 
 function prototypeStateSummary(state: QuestDetailState, role: Role, locale: SupportedLocale, viewerId: string): QuestSummary | null {
-  const boardQuest = getLocalizedQuest(toBoardQuest(state), locale);
+  const boardQuestState = questWorkflow.getQuestBoardQuest(state.quest.id, viewerId);
+  if (!boardQuestState) return null;
+  const boardQuest = getLocalizedQuest(boardQuestState, locale);
   const status = state.quest.status;
   const hasAssignment = state.assignments.some((item) => item.workerId === viewerId);
   const isTerminal = status === QuestStatus.QUEST_COMPLETED || status === QuestStatus.QUEST_CANCELLED;
@@ -297,7 +299,7 @@ function prototypeStateSummary(state: QuestDetailState, role: Role, locale: Supp
  * adapter result must remain an empty state rather than a fabricated skeleton.
  */
 function getAdapterItems(role: Role, tab: WorkerTab | HirerTab, locale: SupportedLocale, viewerId: string): QuestSummary[] {
-  return questFixtureAdapter.listStates(viewerId).flatMap((state) => {
+  return questWorkflow.getMyQuestsModel(viewerId).flatMap((state) => {
     const summary = prototypeStateSummary(state, role, locale, viewerId);
     if (!summary) return [];
     if (role === 'worker') {
@@ -515,7 +517,7 @@ export default function MyQuestsScreen() {
   const [candidateReviewQuestId, setCandidateReviewQuestId] = useState<string | null>(null);
   const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
   const [adapterRevision, setAdapterRevision] = useState(0);
-  React.useEffect(() => questFixtureAdapter.subscribe(() => setAdapterRevision((revision) => revision + 1)), []);
+  React.useEffect(() => questWorkflow.subscribe(() => setAdapterRevision((revision) => revision + 1)), []);
   const role = roleSelection?.personaId === activePersonaId
     ? roleSelection.role
     : activePersonaId === HIRER_PERSONA_ID
@@ -527,7 +529,7 @@ export default function MyQuestsScreen() {
   // behavior; a selected prototype persona is always used for the worker view.
   const viewerId = role === 'hirer' && activePersonaId !== HIRER_PERSONA_ID ? HIRER_PERSONA_ID : activePersonaId;
   const candidateReviewState = candidateReviewQuestId
-    ? questFixtureAdapter.getState(candidateReviewQuestId, viewerId)
+    ? questWorkflow.getQuestDetailState(candidateReviewQuestId, viewerId)
     : null;
   const canRejectCandidate = candidateReviewState
     ? candidateReviewState.capabilities.availableActions.includes(candidateReviewState.quest.participation === QuestParticipation.GROUP ? 'REJECT_TEAM' : 'REJECT_CANDIDATE')
@@ -643,18 +645,18 @@ export default function MyQuestsScreen() {
 
   const applyCandidateDecision = (proposalId: string, decision: CandidateDecision) => {
     if (!candidateReviewQuestId) return;
-    const state = questFixtureAdapter.getState(candidateReviewQuestId, viewerId);
+    const state = questWorkflow.getQuestDetailState(candidateReviewQuestId, viewerId);
     if (!state) return;
     const proposal = findCandidateProposal(state, proposalId);
     if (!proposal) return;
     const team = 'team' in proposal ? proposal.team : undefined;
     const result = state.quest.participation === QuestParticipation.GROUP && team
       ? decision === 'reject'
-        ? questFixtureAdapter.rejectTeam(candidateReviewQuestId, team.id, viewerId)
-        : questFixtureAdapter.selectTeam(candidateReviewQuestId, team.id, viewerId)
+        ? questWorkflow.rejectTeam(candidateReviewQuestId, team.id, viewerId)
+        : questWorkflow.selectTeam(candidateReviewQuestId, team.id, viewerId)
       : decision === 'reject'
-        ? questFixtureAdapter.rejectCandidate(candidateReviewQuestId, proposal.application.id, viewerId)
-        : questFixtureAdapter.selectCandidate(candidateReviewQuestId, proposal.application.id, viewerId);
+        ? questWorkflow.rejectCandidate(candidateReviewQuestId, proposal.application.id, viewerId)
+        : questWorkflow.selectCandidate(candidateReviewQuestId, proposal.application.id, viewerId);
     if (!result.ok) Alert.alert(questBoardMessages[locale].details, result.error.message);
   };
 
