@@ -40,7 +40,7 @@ import {
   type QuestDetailState,
 } from './types';
 import { getChatRouteParams } from '@/features/chat/chatData';
-import { DEFAULT_PROTOTYPE_VIEWER_ID, formatConsentCountdown, getQuestRewardSatang, questFixtureAdapter, toBoardQuest, type QuestFixtureResult } from './questFixtureAdapter';
+import { DEFAULT_PROTOTYPE_VIEWER_ID, formatConsentCountdown, getQuestRewardSatang, questWorkflow, toQuestBoardQuest, type QuestFixtureResult } from './questWorkflow';
 import { CandidateReviewSheet, PartialGroupStartConsentSheet, TeamAssembleSheet, type PartialGroupStartVoter, type TeamDirectoryMember } from './components';
 
 export interface QuestDetailScreenProps {
@@ -58,7 +58,6 @@ type ApplicationHydration = {
   state: QuestDetailState | null;
 };
 
-const FIXTURE_NOW = new Date('2026-08-12T09:00:00.000Z');
 
 function getActionBarPaddingBottom(bottomInset: number): number {
   return Math.max(spacing.md, bottomInset + spacing.sm);
@@ -72,7 +71,7 @@ function getDisplayApplicationStatus(state: QuestDetailState | null, viewerId: s
 }
 
 function toDisplayQuest(state: QuestDetailState, locale: 'en' | 'th', previewState?: BoardPreviewState): QuestBoardQuest {
-  const canonicalQuest = toBoardQuest(state);
+  const canonicalQuest = toQuestBoardQuest(state);
   const localizedQuest = getLocalizedQuest(canonicalQuest, locale);
   const fixture = questFixtures.find((item) => item.id === canonicalQuest.id);
   const creator = fixture ? getLocalizedQuest(fixture, locale).creator : localizedQuest.creator;
@@ -447,7 +446,7 @@ export default function QuestDetailScreen({ now, previewState, questId, studentI
   const { locale } = useLocale();
   const { activePersonaId, onPersonaChange, onReset } = usePrototypeMenuState();
   const messages = questBoardMessages[locale];
-  const effectiveNow = now ?? FIXTURE_NOW;
+  const effectiveNow = now ?? questWorkflow.getNow();
   const resolvedQuestId = parseQuestRouteId(questId ?? params.id);
   const resolvedIntent = parseQuestIntent(params.intent);
   const resolvedMode = mode ?? parseQuestDetailMode(params.mode);
@@ -479,13 +478,12 @@ export default function QuestDetailScreen({ now, previewState, questId, studentI
   const isJoinView = resolvedMode === 'join';
   const isPostView = resolvedMode === 'post';
   const basePrototypeState = useMemo(() => resolvedQuestId && resolvedPreview !== 'loading'
-    ? questFixtureAdapter.getState(resolvedQuestId, applicationStudentId, effectiveNow)
+    ? questWorkflow.getQuestDetailState(resolvedQuestId, applicationStudentId, effectiveNow)
     : null, [applicationStudentId, effectiveNow, resolvedPreview, resolvedQuestId]);
   const prototypeViewerId = isPostView ? basePrototypeState?.quest.hirerId ?? applicationStudentId : applicationStudentId;
-  const [prototypeNow, setPrototypeNow] = useState(() => effectiveNow);
   const initialPrototypeState = useMemo(() => resolvedQuestId && resolvedPreview !== 'loading'
-    ? questFixtureAdapter.getState(resolvedQuestId, prototypeViewerId, prototypeNow)
-    : null, [prototypeNow, prototypeViewerId, resolvedPreview, resolvedQuestId]);
+    ? questWorkflow.getQuestDetailState(resolvedQuestId, prototypeViewerId, effectiveNow)
+    : null, [effectiveNow, prototypeViewerId, resolvedPreview, resolvedQuestId]);
   const [prototypeState, setPrototypeState] = useState<QuestDetailState | null>(() => initialPrototypeState);
   const applicationHydrationKey = resolvedQuestId ? `${resolvedQuestId}:${applicationStudentId}` : '';
   const [applicationHydration, setApplicationHydration] = useState<ApplicationHydration>(() => ({
@@ -496,40 +494,33 @@ export default function QuestDetailScreen({ now, previewState, questId, studentI
     if (!resolvedQuestId || resolvedPreview === 'loading') return undefined;
     let active = true;
     const refresh = () => {
-      const refreshNow = prototypeNow.getTime() >= effectiveNow.getTime() ? prototypeNow : effectiveNow;
-      const next = questFixtureAdapter.getState(resolvedQuestId, prototypeViewerId, refreshNow);
+      const refreshNow = now ?? questWorkflow.getNow();
+      const next = questWorkflow.getQuestDetailState(resolvedQuestId, prototypeViewerId, refreshNow);
       if (active) setPrototypeState(next);
     };
     refresh();
-    const unsubscribe = questFixtureAdapter.subscribe(refresh);
+    const unsubscribe = questWorkflow.subscribe(refresh);
     return () => {
       active = false;
       unsubscribe();
     };
-  }, [effectiveNow, prototypeNow, prototypeViewerId, resolvedPreview, resolvedQuestId]);
+  }, [now, prototypeViewerId, resolvedPreview, resolvedQuestId]);
   const activePrototypeState = resolvedPreview === 'loading' || prototypeState?.quest.id !== resolvedQuestId ? null : prototypeState;
   const quest = useMemo(() => activePrototypeState ? toDisplayQuest(activePrototypeState, locale, resolvedPreview) : undefined, [activePrototypeState, locale, resolvedPreview]);
-  useEffect(() => {
-    const editPending = activePrototypeState?.editConsent?.status === 'EDIT_REQUEST_PENDING';
-    const partialStartPending = activePrototypeState?.partialStartConsent?.status === 'PARTIAL_START_PENDING';
-    if (!editPending && !partialStartPending) return undefined;
-    const timer = setInterval(() => setPrototypeNow((current) => new Date(current.getTime() + 1000)), 1000);
-    return () => clearInterval(timer);
-  }, [activePrototypeState?.editConsent?.responseDeadlineAt, activePrototypeState?.editConsent?.status, activePrototypeState?.partialStartConsent?.responseDeadlineAt, activePrototypeState?.partialStartConsent?.status]);
   useEffect(() => {
     if (!resolvedQuestId || resolvedPreview === 'loading' || !applicationSessionHydrated) return undefined;
     let active = true;
     const hydrate = () => {
-      const state = questFixtureAdapter.getState(resolvedQuestId, applicationStudentId, effectiveNow);
+      const state = questWorkflow.getQuestDetailState(resolvedQuestId, applicationStudentId, now ?? questWorkflow.getNow());
       if (active) setApplicationHydration({ key: applicationHydrationKey, state });
     };
     hydrate();
-    const unsubscribe = questFixtureAdapter.subscribe(hydrate);
+    const unsubscribe = questWorkflow.subscribe(hydrate);
     return () => {
       active = false;
       unsubscribe();
     };
-  }, [applicationHydrationKey, applicationSessionHydrated, applicationStudentId, effectiveNow, resolvedPreview, resolvedQuestId]);
+  }, [applicationHydrationKey, applicationSessionHydrated, applicationStudentId, now, resolvedPreview, resolvedQuestId]);
   const applicationState = applicationHydration.key === applicationHydrationKey ? applicationHydration.state : null;
   const applicationStatusHydrated = Boolean(resolvedQuestId && resolvedPreview !== 'loading' && applicationSessionHydrated && applicationHydration.key === applicationHydrationKey && applicationState);
   const applicationStatus = getDisplayApplicationStatus(applicationState, applicationStudentId);
@@ -613,8 +604,8 @@ export default function QuestDetailScreen({ now, previewState, questId, studentI
   }, [activePrototypeState, applicationStudentId, candidateGroup, isHirerView]);
   const teamDirectory = useMemo<TeamDirectoryMember[]>(() => {
     if (!resolvedQuestId || !activePrototypeState || !candidateGroup || isHirerView || teamSheetTeam?.leaderId !== applicationStudentId || teamSheetTeam.status !== QuestTeamStatus.TEAM_FORMING) return [];
-    return questFixtureAdapter.searchMembers(resolvedQuestId, teamSearchQuery, applicationStudentId, prototypeNow);
-  }, [activePrototypeState, applicationStudentId, candidateGroup, isHirerView, prototypeNow, resolvedQuestId, teamSearchQuery, teamSheetTeam]);
+    return questWorkflow.searchMembers(resolvedQuestId, teamSearchQuery, applicationStudentId, effectiveNow);
+  }, [activePrototypeState, applicationStudentId, candidateGroup, isHirerView, effectiveNow, resolvedQuestId, teamSearchQuery, teamSheetTeam]);
   const partialVoters = useMemo<PartialGroupStartVoter[]>(() => {
     const consent = activePrototypeState?.partialStartConsent;
     if (!activePrototypeState || !consent) return [];
@@ -631,8 +622,8 @@ export default function QuestDetailScreen({ now, previewState, questId, studentI
   const confirmApplication = () => {
     if (!quest || !canApply) return;
     const result: QuestFixtureResult = firstCome
-      ? questFixtureAdapter.joinDirect(quest.id, applicationStudentId, effectiveNow)
-      : questFixtureAdapter.applyCandidate(quest.id, applicationStudentId, effectiveNow);
+      ? questWorkflow.joinDirect(quest.id, applicationStudentId, effectiveNow)
+      : questWorkflow.applyCandidate(quest.id, applicationStudentId, effectiveNow);
     if (!result.ok) {
       Alert.alert(messages.details, result.error.message);
       return;
@@ -653,7 +644,7 @@ export default function QuestDetailScreen({ now, previewState, questId, studentI
         text: label,
         style: 'destructive',
         onPress: () => {
-          const result = isPending ? questFixtureAdapter.withdrawCandidate(quest.id, applicationStudentId, effectiveNow) : undefined;
+          const result = isPending ? questWorkflow.withdrawApplication(quest.id, undefined, applicationStudentId, effectiveNow) : undefined;
           if (result && !result.ok) {
             Alert.alert(messages.details, result.error.message);
             return;
@@ -686,39 +677,39 @@ export default function QuestDetailScreen({ now, previewState, questId, studentI
     setPrototypeState(result.state);
   };
   const handlePrototypeConsent = (approve: boolean) => {
-    if (resolvedQuestId) applyPrototypeResult(questFixtureAdapter.voteEditConsent(resolvedQuestId, applicationStudentId, approve, prototypeNow));
+    if (resolvedQuestId) applyPrototypeResult(questWorkflow.voteEditConsent(resolvedQuestId, applicationStudentId, approve, effectiveNow));
   };
   const handleCreateTeam = () => {
-    if (resolvedQuestId) applyPrototypeResult(questFixtureAdapter.createTeam(resolvedQuestId, applicationStudentId, undefined, prototypeNow));
+    if (resolvedQuestId) applyPrototypeResult(questWorkflow.createTeam(resolvedQuestId, applicationStudentId, undefined, effectiveNow));
   };
   const handleInviteMembers = (memberIds: string[]) => {
     memberIds.forEach((memberId) => {
-      if (resolvedQuestId) applyPrototypeResult(questFixtureAdapter.inviteWorker(resolvedQuestId, memberId, applicationStudentId, prototypeNow));
+      if (resolvedQuestId) applyPrototypeResult(questWorkflow.inviteWorker(resolvedQuestId, memberId, applicationStudentId, effectiveNow));
     });
   };
   const handleSubmitTeam = (teamId: string) => {
-    if (resolvedQuestId && teamSheetTeam?.id === teamId) applyPrototypeResult(questFixtureAdapter.submitTeam(resolvedQuestId, applicationStudentId, prototypeNow));
+    if (resolvedQuestId && teamSheetTeam?.id === teamId) applyPrototypeResult(questWorkflow.submitTeam(resolvedQuestId, applicationStudentId, effectiveNow));
   };
   const handleInvitation = (invitationId: string, accept: boolean) => {
-    if (resolvedQuestId) applyPrototypeResult(questFixtureAdapter.respondToInvitation(resolvedQuestId, invitationId, applicationStudentId, accept, prototypeNow));
+    if (resolvedQuestId) applyPrototypeResult(questWorkflow.respondToInvitation(resolvedQuestId, invitationId, applicationStudentId, accept, effectiveNow));
   };
   const handlePartialStartVote = (approve: boolean) => {
-    if (resolvedQuestId) applyPrototypeResult(questFixtureAdapter.votePartialGroupStartConsent(resolvedQuestId, prototypeViewerId, approve, prototypeNow));
+    if (resolvedQuestId) applyPrototypeResult(questWorkflow.votePartialStartConsent(resolvedQuestId, prototypeViewerId, approve, effectiveNow));
   };
   const handlePrototypeSubmitProof = () => {
-    if (resolvedQuestId) applyPrototypeResult(questFixtureAdapter.submitProof(resolvedQuestId, applicationStudentId, ['fixture://proof-image'], 'Fixture proof submitted.', prototypeNow));
+    if (resolvedQuestId) applyPrototypeResult(questWorkflow.submitProof(resolvedQuestId, applicationStudentId, ['fixture://proof-image'], 'Fixture proof submitted.', effectiveNow));
   };
   const handlePrototypeConfirmCompletion = () => {
-    if (resolvedQuestId) applyPrototypeResult(questFixtureAdapter.confirmCompletion(resolvedQuestId, applicationStudentId, prototypeNow));
+    if (resolvedQuestId) applyPrototypeResult(questWorkflow.confirmCompletion(resolvedQuestId, applicationStudentId, effectiveNow));
   };
   const handlePrototypeSubmitRework = (proofId: string) => {
-    if (resolvedQuestId) applyPrototypeResult(questFixtureAdapter.submitRework(resolvedQuestId, proofId, applicationStudentId, [], '', prototypeNow));
+    if (resolvedQuestId) applyPrototypeResult(questWorkflow.submitRework(resolvedQuestId, proofId, applicationStudentId, [], '', effectiveNow));
   };
   const handlePrototypeReviewProof = (proofId: string, approve: boolean) => {
-    if (resolvedQuestId) applyPrototypeResult(questFixtureAdapter.reviewProof(resolvedQuestId, proofId, approve, '', prototypeViewerId, prototypeNow));
+    if (resolvedQuestId) applyPrototypeResult(questWorkflow.reviewProof(resolvedQuestId, proofId, approve, '', prototypeViewerId, effectiveNow));
   };
   const handleSelectCandidate = (applicationId: string) => {
-    if (resolvedQuestId) applyPrototypeResult(questFixtureAdapter.selectCandidate(resolvedQuestId, applicationId, prototypeViewerId, prototypeNow));
+    if (resolvedQuestId) applyPrototypeResult(questWorkflow.selectCandidate(resolvedQuestId, applicationId, prototypeViewerId, effectiveNow));
   };
   const handleRejectCandidate = (proposalId: string) => {
     if (!resolvedQuestId || !quest) return;
@@ -730,27 +721,27 @@ export default function QuestDetailScreen({ now, previewState, questId, studentI
         style: 'destructive',
         onPress: () => {
           const result = candidateGroup
-            ? questFixtureAdapter.rejectTeam(resolvedQuestId, proposalId, prototypeViewerId, prototypeNow)
-            : questFixtureAdapter.rejectCandidate(resolvedQuestId, proposalId, prototypeViewerId, prototypeNow);
+            ? questWorkflow.rejectTeam(resolvedQuestId, proposalId, prototypeViewerId, effectiveNow)
+            : questWorkflow.rejectCandidate(resolvedQuestId, proposalId, prototypeViewerId, effectiveNow);
           applyPrototypeResult(result);
         },
       },
     ]);
   };
   const handlePrototypeDispute = () => {
-    if (resolvedQuestId) applyPrototypeResult(questFixtureAdapter.openDispute(resolvedQuestId, applicationStudentId, prototypeNow));
+    if (resolvedQuestId) applyPrototypeResult(questWorkflow.openDispute(resolvedQuestId, applicationStudentId, effectiveNow));
   };
   const handlePrototypeResolve = () => {
-    if (resolvedQuestId) applyPrototypeResult(questFixtureAdapter.resolveDispute(resolvedQuestId, prototypeViewerId, prototypeNow));
+    if (resolvedQuestId) applyPrototypeResult(questWorkflow.resolveDispute(resolvedQuestId, prototypeViewerId, effectiveNow));
   };
   const handlePrototypeComplete = () => {
-    if (resolvedQuestId) applyPrototypeResult(questFixtureAdapter.completeQuest(resolvedQuestId, prototypeViewerId, prototypeNow));
+    if (resolvedQuestId) applyPrototypeResult(questWorkflow.completeQuest(resolvedQuestId, prototypeViewerId, effectiveNow));
   };
   const handlePrototypeCancel = () => {
-    if (resolvedQuestId) applyPrototypeResult(questFixtureAdapter.cancelQuest(resolvedQuestId, prototypeViewerId, prototypeNow));
+    if (resolvedQuestId) applyPrototypeResult(questWorkflow.cancelQuest(resolvedQuestId, prototypeViewerId, effectiveNow));
   };
   const handlePrototypePublish = () => {
-    if (resolvedQuestId) applyPrototypeResult(questFixtureAdapter.publishQuest(resolvedQuestId, prototypeViewerId, prototypeNow));
+    if (resolvedQuestId) applyPrototypeResult(questWorkflow.publishQuest(resolvedQuestId, prototypeViewerId, effectiveNow));
   };
   const openPrototypeScenario = (route: PrototypeScenarioRoute) => {
     router.push(route);
@@ -830,7 +821,7 @@ export default function QuestDetailScreen({ now, previewState, questId, studentI
         <View className={styles.section}><Text className={styles.sectionTitle}>{messages.requirements}</Text><View className={styles.requirementCard}><DetailRow icon={ClipboardCheck} label={messages.completionCriteria} value={quest.completionCriteria} /><DetailRow icon={Check} label={messages.proofRequired} value={proofLabel(quest, messages)} description={proofDescription(quest, messages)} /><DetailRow icon={UsersRound} label={messages.candidateMode} value={quest.candidateMode === 'NO_CANDIDATE' ? messages.firstCome : messages.reviewCandidates} description={candidateDescription(quest, messages)} /><DetailRow icon={BriefcaseBusiness} label={messages.participation} value={quest.participationMode === 'team' ? messages.team : messages.singlePerson} /></View></View>
         {statusTitle ? <View accessibilityRole="alert" className={cn(styles.statusCard, statusIsUnavailable && styles.statusCardBlocked, isPostView && styles.statusCardOwner, (leftQuest || joinedStatus === 'history') && styles.statusCardMuted)}><StatusIcon color={statusIconColor} size={25} strokeWidth={2.2} /><Text className={styles.statusTitle}>{statusTitle}</Text><Text className={styles.statusDescription}>{statusDescription}</Text>{!statusIsUnavailable && !isPostView && !leftQuest ? <Pressable accessibilityRole="button" onPress={() => router.push('/my-quests')} className={styles.statusAction} testID="view-my-quests"><Text className={styles.statusActionText}>{messages.viewMyQuests}</Text></Pressable> : null}</View> : null}
         {activePrototypeState ? <GroupQuestEntrySurfaces state={activePrototypeState} viewerId={prototypeViewerId} isHirer={isHirerView} messages={groupMessages} onOpenTeam={() => setTeamSheetOpen(true)} onOpenCandidateReview={() => { setSelectedProposalId(null); setCandidateReviewSheetOpen(true); }} onOpenPartialConsent={() => setPartialStartSheetDismissed(false)} /> : null}
-        {activePrototypeState ? <PrototypeStatePanels state={activePrototypeState} now={prototypeNow} messages={messages} onConsent={handlePrototypeConsent} onSubmitProof={handlePrototypeSubmitProof} onConfirmCompletion={handlePrototypeConfirmCompletion} onSubmitRework={handlePrototypeSubmitRework} onReviewProof={handlePrototypeReviewProof} onDispute={handlePrototypeDispute} onResolve={handlePrototypeResolve} onComplete={handlePrototypeComplete} onCancel={handlePrototypeCancel} onPublish={handlePrototypePublish} /> : null}
+        {activePrototypeState ? <PrototypeStatePanels state={activePrototypeState} now={effectiveNow} messages={messages} onConsent={handlePrototypeConsent} onSubmitProof={handlePrototypeSubmitProof} onConfirmCompletion={handlePrototypeConfirmCompletion} onSubmitRework={handlePrototypeSubmitRework} onReviewProof={handlePrototypeReviewProof} onDispute={handlePrototypeDispute} onResolve={handlePrototypeResolve} onComplete={handlePrototypeComplete} onCancel={handlePrototypeCancel} onPublish={handlePrototypePublish} /> : null}
       </ScrollView>
       {activePrototypeState && candidateGroup && !isHirerView ? <TeamAssembleSheet
         bottomInset={insets.bottom}
