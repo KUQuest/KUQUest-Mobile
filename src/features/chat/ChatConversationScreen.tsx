@@ -6,13 +6,12 @@ import { Camera, ChevronLeft, ClipboardCheck, Download, FileText, ImagePlus, Mor
 
 import { KeyboardAvoidingView, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from '@/tw';
 import { LoadingSkeleton, SkeletonBlock } from '@/components/ui/LoadingSkeleton';
-import { questFixtureAdapter } from '@/features/questBoard/questFixtureAdapter';
+import { questWorkflow } from '@/features/questBoard/questWorkflow';
 import { useLocale } from '@/locales/LocaleProvider';
 import { chatMessages, type ChatMessages } from '@/locales/chatMessages';
 import { colors } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
 import type { ChatAttachment, ChatConversation, ChatMessage, ChatRouteParams } from './chatTypes';
-import type { ConversationReadOnlyReason, WorkConversationCapability } from '@/features/questBoard/types';
 import styles from './chatStyles';
 import { cn } from '@/tw/cn';
 
@@ -109,13 +108,12 @@ function ChatConversationSkeleton({ loadingLabel, backLabel, onBack }: { loading
 
 type ChatRouteSearchParams = Partial<Record<keyof ChatRouteParams, string | string[]>>;
 
-type RouteCapabilityParams = {
-  conversationId?: string;
-  canRead?: boolean;
-  canWrite?: boolean;
-  readOnly?: boolean;
-  readOnlyReason?: ConversationReadOnlyReason;
-};
+function getSingleRouteParam(value: unknown): string | undefined {
+  if (typeof value === 'string' && value) return value;
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  if (Array.isArray(value)) return getSingleRouteParam(value[0]);
+  return undefined;
+}
 
 type ConversationLoadState = {
   key: string;
@@ -124,70 +122,6 @@ type ConversationLoadState = {
   messages: ChatMessage[];
 };
 
-function getSingleRouteParam(value: unknown): string | undefined {
-  if (typeof value === 'string' && value) return value;
-  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
-  if (Array.isArray(value)) return getSingleRouteParam(value[0]);
-  return undefined;
-}
-
-function getBooleanRouteParam(value: unknown): boolean | undefined {
-  if (typeof value === 'boolean') return value;
-  if (Array.isArray(value)) return getBooleanRouteParam(value[0]);
-  const normalized = getSingleRouteParam(value)?.toLowerCase();
-  if (normalized === 'true' || normalized === '1') return true;
-  if (normalized === 'false' || normalized === '0') return false;
-  return undefined;
-}
-
-function getReadOnlyReason(value: unknown): ConversationReadOnlyReason | undefined {
-  const reason = getSingleRouteParam(value);
-  return reason === 'TERMINAL' || reason === 'INACTIVE_WORKER' || reason === 'NOT_A_MEMBER' || reason === 'NOT_STARTED' ? reason : undefined;
-}
-
-function getRouteCapability(params: RouteCapabilityParams, conversationId: string | undefined, viewerId: string | undefined): WorkConversationCapability | undefined {
-  const { canRead, canWrite } = params;
-  if (!conversationId || !params.conversationId || params.conversationId !== conversationId || !viewerId || canRead === undefined || canWrite === undefined) return undefined;
-  const readOnly = (params.readOnly ?? !canWrite) || Boolean(params.readOnlyReason);
-  return {
-    conversationId,
-    canRead,
-    canWrite: canRead && canWrite && !readOnly,
-    readOnly,
-    ...(params.readOnlyReason ? { readOnlyReason: params.readOnlyReason } : {}),
-  };
-}
-
-function applyRouteCapability(conversation: ChatConversation, routeCapability: WorkConversationCapability | undefined, routeQuestId: string | undefined): ChatConversation {
-  const adapterCapability = conversation.capability ?? {
-    conversationId: conversation.id,
-    canRead: true,
-    canWrite: false,
-    readOnly: true,
-  };
-  const routeQuestMatches = conversation.questId ? routeQuestId === conversation.questId : !routeQuestId;
-  const routeContextMatches = Boolean(
-    routeCapability
-      && routeCapability.conversationId === conversation.id
-      && routeCapability.canRead
-      && routeCapability.canWrite
-      && !routeCapability.readOnly
-      && routeQuestMatches,
-  );
-  if (routeContextMatches) return { ...conversation, capability: adapterCapability };
-  return {
-    ...conversation,
-    capability: {
-      ...adapterCapability,
-      conversationId: conversation.id,
-      canWrite: false,
-      readOnly: true,
-      ...(adapterCapability.readOnlyReason || routeCapability?.readOnlyReason
-        ? { readOnlyReason: adapterCapability.readOnlyReason ?? routeCapability?.readOnlyReason }
-        : {}),
-    },
-  };
-}
 
 export default function ChatConversationScreen() {
   const router = useRouter();
@@ -196,23 +130,7 @@ export default function ChatConversationScreen() {
   const insets = useSafeAreaInsets();
   const messages = chatMessages[locale];
   const conversationId = getSingleRouteParam(params.id);
-  const questId = getSingleRouteParam(params.questId);
   const viewerId = getSingleRouteParam(params.viewerId);
-  const routeConversationId = getSingleRouteParam(params.conversationId);
-  const routeCanRead = getBooleanRouteParam(params.canRead);
-  const routeCanWrite = getBooleanRouteParam(params.canWrite);
-  const routeReadOnly = getBooleanRouteParam(params.readOnly);
-  const routeReadOnlyReason = getReadOnlyReason(params.readOnlyReason);
-  const routeCapability = useMemo(
-    () => getRouteCapability({
-      conversationId: routeConversationId,
-      canRead: routeCanRead,
-      canWrite: routeCanWrite,
-      readOnly: routeReadOnly,
-      readOnlyReason: routeReadOnlyReason,
-    }, conversationId, viewerId),
-    [conversationId, routeCanRead, routeCanWrite, routeConversationId, routeReadOnly, routeReadOnlyReason, viewerId],
-  );
   const conversationRouteKey = `${conversationId ?? ''}:${viewerId ?? ''}`;
   const [conversationLoadAttempt, setConversationLoadAttempt] = useState(0);
   const [loadState, setLoadState] = useState<ConversationLoadState>(() => ({
@@ -233,16 +151,16 @@ export default function ChatConversationScreen() {
         return;
       }
       try {
-        const nextConversation = questFixtureAdapter.getConversation(conversationId, viewerId);
+        const nextConversation = questWorkflow.getConversation(conversationId, viewerId);
         if (!nextConversation) {
           if (active) setLoadState({ key: conversationRouteKey, status: 'settled', conversation: null, messages: [] });
           return;
         }
-        const nextMessages = questFixtureAdapter.getConversationMessages(conversationId, viewerId);
+        const nextMessages = questWorkflow.getConversationMessages(conversationId, viewerId);
         if (active) setLoadState({
           key: conversationRouteKey,
           status: 'settled',
-          conversation: applyRouteCapability(nextConversation, routeCapability, questId),
+          conversation: nextConversation,
           messages: nextMessages,
         });
       } catch {
@@ -250,17 +168,17 @@ export default function ChatConversationScreen() {
       }
     };
     loadConversation();
-    const unsubscribe = questFixtureAdapter.subscribe(loadConversation);
+    const unsubscribe = questWorkflow.subscribe(loadConversation);
     return () => {
       active = false;
       unsubscribe();
     };
-  }, [conversationId, conversationLoadAttempt, conversationRouteKey, questId, routeCapability, viewerId]);
+  }, [conversationId, conversationLoadAttempt, conversationRouteKey, viewerId]);
 
   useEffect(() => {
     if (!conversationId || !viewerId) return;
     try {
-      questFixtureAdapter.markConversationRead(conversationId, viewerId);
+      questWorkflow.markConversationRead(conversationId, viewerId);
     } catch {
       // A failed read cursor must not prevent the conversation from rendering.
     }
@@ -343,7 +261,7 @@ export default function ChatConversationScreen() {
     if (!canWrite || !viewerId) return;
     const value = draft.trim();
     if (!value) return;
-    const result = questFixtureAdapter.sendMessage(conversation.id, viewerId, value);
+    const result = questWorkflow.sendMessage(conversation.id, viewerId, value);
     if (!result.ok) return;
     setDraft('');
   };

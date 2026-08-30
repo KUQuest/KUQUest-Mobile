@@ -171,7 +171,6 @@ describe('group Quest sheets', () => {
         consent={makeConsent()}
         hirerId="hirer-1"
         locale="en"
-        now={new Date('2026-08-12T09:00:00.000Z')}
         onClose={() => undefined}
         onVote={onVote}
         requestedHeadcount={3}

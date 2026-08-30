@@ -38,7 +38,7 @@ describe('Quest Detail screen', () => {
 
   it('falls back to the Quest Board when a cold deep link has no back stack', async () => {
     mockRouter.canGoBack.mockReturnValue(false);
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="team-forming-demo" />);
+    const view = await render(<QuestDetailScreen questId="team-forming-demo" />);
 
     await fireEvent.press(view.getByTestId('header-back-button'));
 
@@ -49,7 +49,7 @@ describe('Quest Detail screen', () => {
   it('handles Android Back with the same stack-aware fallback', async () => {
     mockRouter.canGoBack.mockReturnValue(false);
     const addEventListener = jest.spyOn(BackHandler, 'addEventListener');
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="team-forming-demo" />);
+    const view = await render(<QuestDetailScreen questId="team-forming-demo" />);
     const onBackPress = addEventListener.mock.calls.find(([eventName]) => eventName === 'hardwareBackPress')?.[1] as (() => boolean) | undefined;
 
     expect(onBackPress).toBeDefined();
@@ -62,7 +62,7 @@ describe('Quest Detail screen', () => {
   });
 
   it('uses the existing stack for normal in-app back navigation', async () => {
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="team-forming-demo" />);
+    const view = await render(<QuestDetailScreen questId="team-forming-demo" />);
 
     await fireEvent.press(view.getByTestId('header-back-button'));
 
@@ -71,7 +71,7 @@ describe('Quest Detail screen', () => {
   });
 
   it('requires confirmation and shows an immediate Accepted outcome for first-come Quests', async () => {
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="print-documents" />);
+    const view = await render(<QuestDetailScreen questId="print-documents" />);
 
     expect(view.getByText('Photocopy course documents')).toBeTruthy();
     expect(view.getByText('Join Quest')).toBeTruthy();
@@ -95,7 +95,7 @@ describe('Quest Detail screen', () => {
   });
 
   it('renders up to three Quest reference images in Detail', async () => {
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="move-boxes" />);
+    const view = await render(<QuestDetailScreen questId="move-boxes" />);
 
     expect(view.getByLabelText('3 photos')).toBeTruthy();
     expect(view.getByLabelText('Quest image 1')).toBeTruthy();
@@ -103,7 +103,7 @@ describe('Quest Detail screen', () => {
   });
 
   it('shows Application pending for reviewed-candidate Quests', async () => {
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="move-boxes" />);
+    const view = await render(<QuestDetailScreen questId="move-boxes" />);
 
     await fireEvent.press(view.getByTestId('quest-apply-button'));
     await fireEvent.press(view.getByTestId('confirm-quest-application'));
@@ -114,7 +114,7 @@ describe('Quest Detail screen', () => {
   });
 
   it('shows a Leave action for a joined Quest and removes the active state after confirmation', async () => {
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="print-documents" mode="join" joinStatus="accepted" />);
+    const view = await render(<QuestDetailScreen questId="print-documents" mode="join" joinStatus="accepted" />);
 
     expect(view.getByText('Participation confirmed')).toBeTruthy();
     expect(view.getByTestId('quest-leave-button')).toBeTruthy();
@@ -134,7 +134,7 @@ describe('Quest Detail screen', () => {
   });
 
   it('shows Edit post for the owner view and opens the create flow with the Quest id', async () => {
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="clean-fan" mode="post" />);
+    const view = await render(<QuestDetailScreen questId="clean-fan" mode="post" />);
 
     expect(view.getByText('Your Quest post')).toBeTruthy();
     expect(view.getByTestId('quest-edit-post-button')).toBeTruthy();
@@ -145,8 +145,8 @@ describe('Quest Detail screen', () => {
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/create', params: { editQuestId: 'clean-fan' } });
   });
 
-  it('opens a direct chat with the Quest owner using the server capability context', async () => {
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="print-documents" />);
+  it('opens a direct chat with the Quest owner using stable route identity', async () => {
+    const view = await render(<QuestDetailScreen questId="print-documents" />);
 
     const initialActionBar = within(view.getByTestId('quest-action-bar'));
     expect(initialActionBar.queryByTestId('quest-message-owner-button')).toBeNull();
@@ -163,17 +163,14 @@ describe('Quest Detail screen', () => {
         conversationId: 'conversation-fixture-print-documents',
         questId: 'print-documents',
         viewerId: 'student-demo',
-        canRead: 'true',
-        canWrite: 'true',
-        readOnly: 'false',
         ownerName: 'Mild P.',
         questTitle: 'Photocopy course documents',
       },
     });
   });
 
-  it('passes terminal read-only capability when opening a completed Quest chat', async () => {
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="clean-study-table" studentId="demo-worker-3" mode="join" joinStatus="history" />);
+  it('opens terminal Quest chat with stable route identity', async () => {
+    const view = await render(<QuestDetailScreen questId="clean-study-table" studentId="demo-worker-3" mode="join" joinStatus="history" />);
 
     await fireEvent.press(view.getByTestId('quest-message-owner-button'));
 
@@ -184,18 +181,14 @@ describe('Quest Detail screen', () => {
         conversationId: 'conversation-fixture-clean-study-table',
         questId: 'clean-study-table',
         viewerId: 'demo-worker-3',
-        canRead: 'true',
-        canWrite: 'false',
-        readOnly: 'true',
-        readOnlyReason: 'TERMINAL',
         ownerName: 'Pim C.',
         questTitle: 'Clean a study table',
       },
     });
   });
 
-  it('passes writable capability when opening an authorized disputed Quest chat', async () => {
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="clean-fridge" studentId="demo-worker-3" mode="join" joinStatus="accepted" />);
+  it('opens authorized disputed Quest chat with stable route identity', async () => {
+    const view = await render(<QuestDetailScreen questId="clean-fridge" studentId="demo-worker-3" mode="join" joinStatus="accepted" />);
 
     await fireEvent.press(view.getByTestId('quest-message-owner-button'));
 
@@ -206,9 +199,6 @@ describe('Quest Detail screen', () => {
         conversationId: 'conversation-fixture-clean-fridge',
         questId: 'clean-fridge',
         viewerId: 'demo-worker-3',
-        canRead: 'true',
-        canWrite: 'true',
-        readOnly: 'false',
         ownerName: 'Game T.',
         questTitle: 'Clean a dorm fridge',
       },
@@ -216,7 +206,7 @@ describe('Quest Detail screen', () => {
   });
 
   it('navigates accepted participants to My Quests', async () => {
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="print-documents" />);
+    const view = await render(<QuestDetailScreen questId="print-documents" />);
 
     await fireEvent.press(view.getByTestId('quest-apply-button'));
     await fireEvent.press(view.getByTestId('confirm-quest-application'));
@@ -230,14 +220,14 @@ describe('Quest Detail screen', () => {
     mockRouteParams.id = 'move-boxes';
     mockRouteParams.intent = 'apply';
 
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} />);
+    const view = await render(<QuestDetailScreen />);
 
     await waitFor(() => expect(view.getByText('Confirm your application')).toBeTruthy());
     expect(view.getByTestId('confirm-quest-application')).toBeTruthy();
   });
 
   it('explains unavailable application states in Detail', async () => {
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} previewState="full" questId="print-documents" />);
+    const view = await render(<QuestDetailScreen previewState="full" questId="print-documents" />);
 
     expect(view.getByText('Quest full')).toBeTruthy();
     expect(view.getByText('This Quest is no longer accepting applications.')).toBeTruthy();
@@ -256,7 +246,7 @@ describe('Quest Detail screen', () => {
 
   it('uses the active persona from the Prototype menu for capability surfaces', async () => {
     setActivePrototypePersona('student-demo');
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="single-candidate-demo" />);
+    const view = await render(<QuestDetailScreen questId="single-candidate-demo" />);
 
     expect(view.getByTestId('quest-detail-prototype-menu-trigger')).toBeTruthy();
     expect(view.queryByTestId('quest-candidate-review-entry')).toBeNull();
@@ -271,7 +261,7 @@ describe('Quest Detail screen', () => {
   it('confirms an individual Candidate rejection without changing the open Quest', async () => {
     setActivePrototypePersona('demo-hirer');
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
-    const view = await render(<QuestDetailScreen now={new Date('2026-08-12T09:00:00.000Z')} questId="single-candidate-demo" />);
+    const view = await render(<QuestDetailScreen questId="single-candidate-demo" />);
 
     await fireEvent.press(view.getByTestId('quest-open-candidate-review-sheet'));
     await fireEvent.press(view.getByTestId('candidate-review-reject-fixture-application-single-candidate-demo-single-applicant-b'));

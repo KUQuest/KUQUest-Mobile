@@ -209,20 +209,23 @@ A published Quest that is still within its participation window and is eligible 
 _Avoid_: Open job, active task
 
 **Quest Board Fixture**:
-A deterministic record in the `questFixtures` catalog used to exercise the Quest Board's populated, filtered, empty, loading, failure, and hidden scenario states before live Quest APIs are connected. Fixtures are projected through the Canonical Quest Adapter rather than treated as a backend contract.
+A deterministic record in the `questFixtures` catalog used to exercise the Quest Board's populated, filtered, empty, loading, failure, and hidden scenario states before live Quest APIs are connected. Fixtures are projected through Quest Workflow and its Canonical Quest Adapter rather than treated as a backend contract.
 _Avoid_: Mock production Quest, fake Quest
 
 **Canonical Quest Adapter**:
-The `questFixtureAdapter` local prototype boundary and canonical source for Quest, Quest Team, Candidate Proposal/Quest Application, invitation, Assignment, Work Chat membership/capability/messages, consent, and requested-versus-actual headcount behavior. It replaces the legacy application stores and static domain fallbacks, which must be removed, and is authoritative for the prototype only; its fields and transitions remain provisional pending the backend contract.
+The `questFixtureAdapter` local prototype boundary and authoritative source for Quest, Quest Team, Candidate Proposal/Quest Application, invitation, Assignment, Work Chat membership/capability/messages, consent, and requested-versus-actual headcount behavior. Quest Workflow is the screen-facing facade that owns viewer-explicit projections, lifecycle time, subscriptions, and adapter delegation. The adapter replaces the legacy application stores and static domain fallbacks, which must be removed, and is authoritative for the prototype only; its fields and transitions remain provisional pending the backend contract.
+
+**Quest Workflow**:
+The `questWorkflow` screen-facing facade over the Canonical Quest Adapter. Screens and routes use its projections and actions instead of reading fixture state or capability fields directly; it keeps viewer identity and lifecycle clock decisions in one seam.
 
 **Prototype Scenario**:
 A hidden, route-addressable fixture in `questFixtures` for exercising one behavior without appearing in normal Quest Board discovery. The four scenarios are `team-forming-demo`, `team-selection-demo`, `single-candidate-demo`, and `partial-group-start-demo`.
 
 **Prototype Persona**:
-One of four deterministic scenario identities—Hirer, Applicant, Quest Team Leader, or Worker—used to exercise adapter actions against the hidden scenarios. Personas are fixture identities, not production accounts.
+One of four deterministic scenario identities—Hirer, Applicant, Quest Team Leader, or Worker—used to exercise Quest Workflow actions against the hidden scenarios. Personas are fixture identities, not production accounts.
 
 **Fixture Reset**:
-The `questFixtureAdapter.reset()` operation that restores all four scenario personas and their Teams, Proposals, invitations, Assignments, consent, settlement, chat membership, and session messages to deterministic seed state. It does not create a second draft store.
+The `questWorkflow.reset()` operation that delegates to the adapter and restores all four scenario personas and their Teams, Proposals, invitations, Assignments, consent, settlement, chat membership, and session messages to deterministic seed state. It does not create a second draft store.
 
 **Quest Draft Persistence**:
 Draft storage through SecureStore only, separate from fixture and adapter state. Drafts are not stored in `src/data/localDemo`, the Quest catalog, or adapter chat state; the `src/data/localDemo` path must be deleted rather than retained as a fallback.

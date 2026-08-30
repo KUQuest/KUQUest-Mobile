@@ -37,7 +37,7 @@ import { spacing } from '@/theme/spacing';
 import styles from './myQuestStyles';
 import { getLocalizedQuest } from '@/features/questBoard/questTranslations';
 import { CandidateReviewSheet } from '@/features/questBoard/components';
-import { getQuestRewardSatang, questFixtureAdapter, toBoardQuest } from '@/features/questBoard/questFixtureAdapter';
+import { getQuestRewardSatang, questWorkflow, type QuestMyQuestProjection } from '@/features/questBoard/questWorkflow';
 import { QuestParticipation, QuestStatus, QuestTeamStatus, formatSatang, type QuestDetailState, type WorkConversationCapability } from '@/features/questBoard/types';
 import { groupQuestMessages } from '@/locales/groupQuestMessages';
 import { questBoardMessages } from '@/locales/questBoardMessages';
@@ -251,38 +251,33 @@ function prototypeStatusTone(status: QuestDetailState['quest']['status']): Statu
   return 'success';
 }
 
-function prototypeStateSummary(state: QuestDetailState, role: Role, locale: SupportedLocale, viewerId: string): QuestSummary | null {
-  const boardQuest = getLocalizedQuest(toBoardQuest(state), locale);
+function prototypeStateSummary(projection: QuestMyQuestProjection, role: Role, locale: SupportedLocale, viewerId: string): QuestSummary | null {
+  const { state, quest: boardQuest } = projection;
+  const localizedQuest = getLocalizedQuest(boardQuest, locale);
   const status = state.quest.status;
-  const hasAssignment = state.assignments.some((item) => item.workerId === viewerId);
-  const isTerminal = status === QuestStatus.QUEST_COMPLETED || status === QuestStatus.QUEST_CANCELLED;
-  const hasApplication = state.applications.some((item) => item.applicantId === viewerId && item.status === 'APPLICATION_APPLIED');
-  if (role === 'worker' && !hasAssignment && !hasApplication) return null;
-  if (role === 'hirer' && state.quest.hirerId !== viewerId) return null;
-  const date = `${formatQuestDate(boardQuest.startDate, locale)}${boardQuest.timeRange ? ` · ${boardQuest.timeRange}` : ''}`;
   const statusLabel = questBoardMessages[locale].statusLabel(status);
   const acceptedCount = state.team?.members.length ?? boardQuest.acceptedParticipants;
   const labels = actionLabels[locale];
-  const workerPending = role === 'worker' && !hasAssignment && hasApplication;
-  const workerHistory = role === 'worker' && hasAssignment && isTerminal;
+  const workerPending = role === 'worker' && projection.hasPendingApplication && !projection.hasAssignment;
+  const workerHistory = role === 'worker' && projection.hasAssignment && projection.isTerminal;
   const candidateQuest = role === 'hirer' && state.quest.candidateMode === 'CANDIDATE';
-  const groupChatId = state.conversation.canRead ? state.conversation.conversationId ?? undefined : undefined;
-  const groupChatCapability = groupChatId ? state.conversation : undefined;
+  const groupChatId = projection.groupChatCapability?.conversationId ?? undefined;
+  const groupChatCapability = groupChatId ? projection.groupChatCapability : undefined;
   return {
     id: boardQuest.id,
-    title: boardQuest.title,
-    tag: boardQuest.tags[0] ?? 'Quest',
-    categoryTone: getCategoryTone(boardQuest.tags[0] ?? ''),
-    date,
-    location: boardQuest.location,
-    description: boardQuest.description,
+    title: localizedQuest.title,
+    tag: localizedQuest.tags[0] ?? 'Quest',
+    categoryTone: getCategoryTone(localizedQuest.tags[0] ?? ''),
+    date: `${formatQuestDate(localizedQuest.startDate, locale)}${localizedQuest.timeRange ? ` · ${localizedQuest.timeRange}` : ''}`,
+    location: localizedQuest.location ?? '—',
+    description: localizedQuest.description,
     detail: workerHistory ? `${statusLabel} · ${formatSatang(getQuestRewardSatang(boardQuest), locale)}` : statusLabel,
     teamSize: `${acceptedCount} / ${boardQuest.headcount}`,
     status: statusLabel,
     statusTone: prototypeStatusTone(status),
     action: role === 'hirer' && status === QuestStatus.QUEST_DRAFT ? labels.edit : candidateQuest ? labels.applicants : role === 'worker' && !workerPending && groupChatId ? labels.message : labels.detail,
     actionType: role === 'hirer' && status === QuestStatus.QUEST_DRAFT ? 'edit' : candidateQuest ? 'applicants' : 'detail',
-    secondaryAction: role === 'hirer' && status !== QuestStatus.QUEST_DRAFT && !isTerminal ? labels.edit : undefined,
+    secondaryAction: role === 'hirer' && status !== QuestStatus.QUEST_DRAFT && !projection.isTerminal ? labels.edit : undefined,
     groupChatId,
     groupChatCapability,
     groupChatViewerId: viewerId,
@@ -292,23 +287,16 @@ function prototypeStateSummary(state: QuestDetailState, role: Role, locale: Supp
 }
 
 /**
- * My Quests currently reads the canonical in-memory prototype adapter. There is
+ * My Quests currently reads the canonical Quest projection through Quest Workflow. There is
  * no asynchronous loader on either the demo or non-demo route, so an empty
- * adapter result must remain an empty state rather than a fabricated skeleton.
+ * workflow result must remain an empty state rather than a fabricated skeleton.
  */
-function getAdapterItems(role: Role, tab: WorkerTab | HirerTab, locale: SupportedLocale, viewerId: string): QuestSummary[] {
-  return questFixtureAdapter.listStates(viewerId).flatMap((state) => {
-    const summary = prototypeStateSummary(state, role, locale, viewerId);
-    if (!summary) return [];
-    if (role === 'worker') {
-      const hasAssignment = state.assignments.some((item) => item.workerId === viewerId);
-      const isTerminal = state.quest.status === QuestStatus.QUEST_COMPLETED || state.quest.status === QuestStatus.QUEST_CANCELLED;
-      const isPending = state.applications.some((item) => item.applicantId === viewerId && item.status === 'APPLICATION_APPLIED') && !hasAssignment;
-      const expectedTab: WorkerTab = isPending ? 'pending' : isTerminal ? 'history' : 'accepted';
-      return tab === expectedTab ? [summary] : [];
-    }
-    const expectedTab: HirerTab = state.quest.status === QuestStatus.QUEST_DRAFT ? 'draft' : state.quest.status === QuestStatus.QUEST_COMPLETED || state.quest.status === QuestStatus.QUEST_CANCELLED ? 'completed' : 'active';
-    return tab === expectedTab ? [summary] : [];
+function getWorkflowItems(role: Role, tab: WorkerTab | HirerTab, locale: SupportedLocale, viewerId: string): QuestSummary[] {
+  return questWorkflow.getMyQuestsProjection(viewerId).flatMap((projection) => {
+    const expectedRelationship = role === 'worker' ? ['worker', 'applicant'].includes(projection.relationship) : projection.relationship === 'hirer';
+    if (!expectedRelationship || projection.tab !== tab) return [];
+    const summary = prototypeStateSummary(projection, role, locale, viewerId);
+    return summary ? [summary] : [];
   });
 }
 
@@ -514,8 +502,8 @@ export default function MyQuestsScreen() {
   const [hirerTab, setHirerTab] = useState<HirerTab>('active');
   const [candidateReviewQuestId, setCandidateReviewQuestId] = useState<string | null>(null);
   const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
-  const [adapterRevision, setAdapterRevision] = useState(0);
-  React.useEffect(() => questFixtureAdapter.subscribe(() => setAdapterRevision((revision) => revision + 1)), []);
+  const [workflowRevision, setWorkflowRevision] = useState(0);
+  React.useEffect(() => questWorkflow.subscribe(() => setWorkflowRevision((revision) => revision + 1)), []);
   const role = roleSelection?.personaId === activePersonaId
     ? roleSelection.role
     : activePersonaId === HIRER_PERSONA_ID
@@ -527,25 +515,25 @@ export default function MyQuestsScreen() {
   // behavior; a selected prototype persona is always used for the worker view.
   const viewerId = role === 'hirer' && activePersonaId !== HIRER_PERSONA_ID ? HIRER_PERSONA_ID : activePersonaId;
   const candidateReviewState = candidateReviewQuestId
-    ? questFixtureAdapter.getState(candidateReviewQuestId, viewerId)
+    ? questWorkflow.getQuestDetailState(candidateReviewQuestId, viewerId)
     : null;
   const canRejectCandidate = candidateReviewState
     ? candidateReviewState.capabilities.availableActions.includes(candidateReviewState.quest.participation === QuestParticipation.GROUP ? 'REJECT_TEAM' : 'REJECT_CANDIDATE')
     : false;
   const items = useMemo(() => {
-    void adapterRevision;
-    return getAdapterItems(role, selectedTab, locale, viewerId);
-  }, [adapterRevision, locale, role, selectedTab, viewerId]);
+    void workflowRevision;
+    return getWorkflowItems(role, selectedTab, locale, viewerId);
+  }, [workflowRevision, locale, role, selectedTab, viewerId]);
   const summary = useMemo(() => {
-    void adapterRevision;
+    void workflowRevision;
     if (role !== 'worker' || !copy.worker.summary) return null;
-    const counts = workerTabs.map((tab) => getAdapterItems('worker', tab, locale, activePersonaId).length);
+    const counts = workerTabs.map((tab) => getWorkflowItems('worker', tab, locale, activePersonaId).length);
     return copy.worker.summary.map((metric, index) => ({
       ...metric,
       value: String(index === 0 ? counts[0] : index === 1 ? counts[1] : counts.reduce((total, count) => total + count, 0)),
       detail: index === 0 ? copy.worker.tabs.pending : index === 1 ? copy.worker.tabs.accepted : copy.worker.tabs.history,
     }));
-  }, [activePersonaId, adapterRevision, copy, locale, role]);
+  }, [activePersonaId, workflowRevision, copy, locale, role]);
   const tabOptions: readonly (WorkerTab | HirerTab)[] = role === 'worker' ? workerTabs : hirerTabs;
   const bottomPadding = (chromeMetrics.isTablet ? spacing.lg : chromeMetrics.navHeight + insets.bottom) + spacing.lg;
 
@@ -620,7 +608,7 @@ export default function MyQuestsScreen() {
 
   const openGroupChat = (chatId: string, questId?: string, capability?: WorkConversationCapability, viewerId?: string) => {
     if (!questId || !viewerId || !capability?.conversationId || !capability.canRead || capability.conversationId !== chatId) return;
-    router.push({ pathname: '/chat/[id]', params: getChatRouteParams({ conversationId: capability.conversationId, questId, viewerId, capability }) });
+    router.push({ pathname: '/chat/[id]', params: getChatRouteParams({ conversationId: capability.conversationId, questId, viewerId }) });
   };
 
   const openPrimaryQuestAction = (quest: QuestSummary) => {
@@ -643,18 +631,18 @@ export default function MyQuestsScreen() {
 
   const applyCandidateDecision = (proposalId: string, decision: CandidateDecision) => {
     if (!candidateReviewQuestId) return;
-    const state = questFixtureAdapter.getState(candidateReviewQuestId, viewerId);
+    const state = questWorkflow.getQuestDetailState(candidateReviewQuestId, viewerId);
     if (!state) return;
     const proposal = findCandidateProposal(state, proposalId);
     if (!proposal) return;
     const team = 'team' in proposal ? proposal.team : undefined;
     const result = state.quest.participation === QuestParticipation.GROUP && team
       ? decision === 'reject'
-        ? questFixtureAdapter.rejectTeam(candidateReviewQuestId, team.id, viewerId)
-        : questFixtureAdapter.selectTeam(candidateReviewQuestId, team.id, viewerId)
+        ? questWorkflow.rejectTeam(candidateReviewQuestId, team.id, viewerId)
+        : questWorkflow.selectTeam(candidateReviewQuestId, team.id, viewerId)
       : decision === 'reject'
-        ? questFixtureAdapter.rejectCandidate(candidateReviewQuestId, proposal.application.id, viewerId)
-        : questFixtureAdapter.selectCandidate(candidateReviewQuestId, proposal.application.id, viewerId);
+        ? questWorkflow.rejectCandidate(candidateReviewQuestId, proposal.application.id, viewerId)
+        : questWorkflow.selectCandidate(candidateReviewQuestId, proposal.application.id, viewerId);
     if (!result.ok) Alert.alert(questBoardMessages[locale].details, result.error.message);
   };
 

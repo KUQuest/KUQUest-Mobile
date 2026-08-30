@@ -94,20 +94,16 @@ describe('adapter-owned fixture chat data', () => {
     expect(questFixtureAdapter.getConversation('quest-move-boxes-group', DEFAULT_PROTOTYPE_VIEWER_ID)).toBeNull();
   });
 
-  it('denies route write capability when the server conversation id does not match', () => {
+  it('keeps capabilities off the chat route', () => {
     const params = getChatRouteParams({
       conversationId: 'conversation-server-a',
       viewerId: DEFAULT_PROTOTYPE_VIEWER_ID,
-      capability: { conversationId: 'conversation-server-b', canRead: true, canWrite: true, readOnly: false },
     });
 
-    expect(params).toMatchObject({
+    expect(params).toEqual({
       id: 'conversation-server-a',
       conversationId: 'conversation-server-a',
-      canRead: 'false',
-      canWrite: 'false',
-      readOnly: 'true',
-      readOnlyReason: 'NOT_A_MEMBER',
+      viewerId: DEFAULT_PROTOTYPE_VIEWER_ID,
     });
   });
 });

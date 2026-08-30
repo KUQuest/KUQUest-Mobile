@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { questFixtureAdapter } from '@/features/questBoard/questFixtureAdapter';
+import { questWorkflow } from '@/features/questBoard/questWorkflow';
 import {
   DEFAULT_PROTOTYPE_PERSONA_ID,
   isPrototypePersonaId,
@@ -60,7 +60,7 @@ export function setActivePrototypePersona(personaId: PrototypePersonaId): void {
 
 export function resetPrototypeFixtures(_scope: Parameters<PrototypeResetHandler>[0]): void {
   if (!__DEV__) return;
-  questFixtureAdapter.reset();
+  questWorkflow.reset();
 }
 
 export function usePrototypeMenuState(): PrototypeMenuState {

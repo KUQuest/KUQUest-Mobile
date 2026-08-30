@@ -23,11 +23,8 @@ import {
   getVisibleQuests,
   sortQuests,
 } from './questBoardViewData';
-import {
-  createQuestBoardModel,
-  type BoardPreviewState,
-} from './questBoardHarness';
-import { getQuestRewardSatang, questFixtureAdapter, toBoardQuest } from './questFixtureAdapter';
+import type { BoardPreviewState } from './questBoardHarness';
+import { getQuestRewardSatang, questWorkflow } from './questWorkflow';
 import type { PrototypeScenarioRoute } from '@/components/ui/prototypeMenuData';
 
 import { formatSatang } from './types';
@@ -47,10 +44,8 @@ export type { BoardPreviewState } from './questBoardHarness';
 export interface QuestBoardScreenProps {
   currentStudentId?: string;
   initialPreviewState?: BoardPreviewState;
-  now?: Date;
 }
 
-const FIXTURE_NOW = new Date('2026-08-12T09:00:00.000Z');
 
 const deadlineOptions: { value: DeadlineFilter; labelKey: 'today' | 'within3Days' | 'within7Days' }[] = [
   { value: 'today', labelKey: 'today' },
@@ -331,7 +326,7 @@ function QuestBoardSortSheet({ sort, messages, onSelect, onClose }: { sort: Ques
   );
 }
 
-export default function QuestBoardScreen({ currentStudentId, initialPreviewState = 'populated', now }: QuestBoardScreenProps) {
+export default function QuestBoardScreen({ currentStudentId, initialPreviewState = 'populated' }: QuestBoardScreenProps) {
   const router = useRouter();
   const { locale } = useLocale();
   const { activePersonaId, onPersonaChange, onReset } = usePrototypeMenuState();
@@ -341,7 +336,6 @@ export default function QuestBoardScreen({ currentStudentId, initialPreviewState
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
   const { handleScroll } = useNavigationVisibility();
   const messages = questBoardMessages[locale];
-  const effectiveNow = now ?? FIXTURE_NOW;
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState<QuestBoardFilter>(emptyQuestBoardFilter);
   const [draftFilters, setDraftFilters] = useState<QuestBoardFilter>(emptyQuestBoardFilter);
@@ -351,9 +345,10 @@ export default function QuestBoardScreen({ currentStudentId, initialPreviewState
   const [sortOpen, setSortOpen] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [retrying, setRetrying] = useState(false);
-  const [adapterRevision, setAdapterRevision] = useState(0);
+  const [, setWorkflowRevision] = useState(0);
+  const workflowNow = questWorkflow.getNow();
 
-  useEffect(() => questFixtureAdapter.subscribe(() => setAdapterRevision((revision) => revision + 1)), []);
+  useEffect(() => questWorkflow.subscribe(() => setWorkflowRevision((revision) => revision + 1)), []);
 
   useEffect(() => {
     if (!retrying || previewState !== 'loading') return undefined;
@@ -364,23 +359,14 @@ export default function QuestBoardScreen({ currentStudentId, initialPreviewState
     return () => clearTimeout(timeout);
   }, [previewState, retrying]);
 
-  const boardModel = useMemo(() => {
-    void adapterRevision;
-    if (previewState === 'populated' || previewState === 'application-pending' || previewState === 'application-accepted') {
-      return { kind: 'ready' as const, quests: questFixtureAdapter.listBoardQuests(resolvedStudentId, effectiveNow).map((quest) => {
-        const canonicalState = questFixtureAdapter.getState(quest.id, resolvedStudentId, effectiveNow);
-        return canonicalState ? toBoardQuest(canonicalState) : quest;
-      }) };
-    }
-    return createQuestBoardModel(previewState);
-  }, [adapterRevision, effectiveNow, previewState, resolvedStudentId]);
+  const boardModel = questWorkflow.getQuestBoardSurfaceModel(resolvedStudentId, previewState);
   const localizedQuests = useMemo(() => boardModel.kind === 'ready'
     ? boardModel.quests.map((quest) => getLocalizedQuest(quest, locale))
     : [], [boardModel, locale]);
-  const availableTags = useMemo(() => getQuestBoardTags(getVisibleQuests(localizedQuests, { currentStudentId: resolvedStudentId, now: effectiveNow })), [effectiveNow, localizedQuests, resolvedStudentId]);
+  const availableTags = useMemo(() => getQuestBoardTags(getVisibleQuests(localizedQuests, { currentStudentId: resolvedStudentId, now: workflowNow })), [resolvedStudentId, localizedQuests, workflowNow]);
   const visibleQuests = useMemo(() => boardModel.kind === 'ready'
-    ? sortQuests(applyQuestBoardFilters(localizedQuests, { ...filters, query }, { currentStudentId: resolvedStudentId, now: effectiveNow }), sort)
-    : [], [boardModel.kind, effectiveNow, filters, localizedQuests, query, resolvedStudentId, sort]);
+    ? sortQuests(applyQuestBoardFilters(localizedQuests, { ...filters, query }, { currentStudentId: resolvedStudentId, now: workflowNow }), sort)
+    : [], [boardModel.kind, filters, localizedQuests, query, resolvedStudentId, sort, workflowNow]);
   const openFilters = () => {
     setDraftFilters(cloneFilter(filters));
     setFilterOpen(true);

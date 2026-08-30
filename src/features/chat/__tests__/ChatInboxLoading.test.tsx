@@ -1,7 +1,7 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import ChatInboxScreen from '../ChatInboxScreen';
-import { questFixtureAdapter } from '../../questBoard/questFixtureAdapter';
+import { questWorkflow } from '../../questBoard/questWorkflow';
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn() }),
@@ -13,7 +13,7 @@ jest.mock('../../../locales/LocaleProvider', () => ({
 
 describe('ChatInboxScreen adapter loading state', () => {
   beforeEach(() => {
-    questFixtureAdapter.reset();
+    questWorkflow.reset();
   });
 
   afterEach(() => {
@@ -21,7 +21,7 @@ describe('ChatInboxScreen adapter loading state', () => {
   });
 
   it('shows the adapter load error and retries through listConversations', async () => {
-    const listConversations = jest.spyOn(questFixtureAdapter, 'listConversations')
+    const listConversations = jest.spyOn(questWorkflow, 'listConversations')
       .mockImplementationOnce(() => {
         throw new Error('adapter unavailable');
       });

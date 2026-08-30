@@ -57,7 +57,7 @@ describe('ChatConversationScreen', () => {
     expect(view.getByText('Could you confirm the meeting point?')).toBeTruthy();
   });
 
-  it('keeps the adapter conversation read-only when capability route context is missing', async () => {
+  it('derives writable capability from the Quest relationship when route capability is absent', async () => {
     delete mockRouteParams.conversationId;
     delete mockRouteParams.canRead;
     delete mockRouteParams.canWrite;
@@ -65,9 +65,9 @@ describe('ChatConversationScreen', () => {
 
     const view = await render(<ChatConversationScreen />);
 
-    expect(view.getByTestId('conversation-read-only-banner')).toBeTruthy();
+    expect(view.queryByTestId('conversation-read-only-banner')).toBeNull();
     expect(view.getByText('Hi! Feel free to ask about this Quest.')).toBeTruthy();
-    expect(view.queryByLabelText('Message the Quest owner…')).toBeNull();
+    expect(view.getByLabelText('Message the Quest owner…')).toBeTruthy();
   });
 
   it('keeps a terminal conversation readable but read-only', async () => {

@@ -40,7 +40,7 @@ describe('Quest Board screen', () => {
   });
 
   it('renders Quest cards with decision signals and one detail action', async () => {
-    const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} currentStudentId="student-demo" />);
+    const view = await render(<QuestBoardScreen currentStudentId="student-demo" />);
 
     expect(view.getByText('Quest Board')).toBeTruthy();
     expect(view.getByText('Find a Quest that fits your skills and time.')).toBeTruthy();
@@ -74,7 +74,7 @@ describe('Quest Board screen', () => {
   });
 
   it('keeps Quest Funding out of Home and focused on Quest Board discovery', async () => {
-    const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} currentStudentId="student-demo" />);
+    const view = await render(<QuestBoardScreen currentStudentId="student-demo" />);
 
     expect(view.queryByTestId('home-funding-summary')).toBeNull();
     expect(view.queryByTestId('quest-funding-summary')).toBeNull();
@@ -84,7 +84,7 @@ describe('Quest Board screen', () => {
   });
 
   it('opens Quest Detail as the only card action', async () => {
-    const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} currentStudentId="student-demo" />);
+    const view = await render(<QuestBoardScreen currentStudentId="student-demo" />);
 
     await fireEvent.press(view.getByTestId('quest-detail-move-boxes'));
 
@@ -92,7 +92,7 @@ describe('Quest Board screen', () => {
   });
 
   it('filters immediately from search and shows a recoverable no-match state', async () => {
-    const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} currentStudentId="student-demo" />);
+    const view = await render(<QuestBoardScreen currentStudentId="student-demo" />);
 
     await fireEvent.changeText(view.getByTestId('quest-board-search'), 'deliver drinks');
 
@@ -108,7 +108,7 @@ describe('Quest Board screen', () => {
   });
 
   it('suggests tags from search and commits them with location filters from the bottom sheet', async () => {
-    const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} currentStudentId="student-demo" />);
+    const view = await render(<QuestBoardScreen currentStudentId="student-demo" />);
 
     await fireEvent.press(view.getByTestId('open-quest-filters'));
     expect(view.getByTestId('quest-filter-sheet').props.style).toEqual(expect.objectContaining({ height: '88%', paddingBottom: expect.any(Number) }));
@@ -128,7 +128,7 @@ describe('Quest Board screen', () => {
   });
 
   it('discards an unfinished filter draft when the modal is closed', async () => {
-    const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} currentStudentId="student-demo" />);
+    const view = await render(<QuestBoardScreen currentStudentId="student-demo" />);
 
     await fireEvent.press(view.getByTestId('open-quest-filters'));
     await fireEvent.changeText(view.getByTestId('quest-filter-tag-search'), 'clean');
@@ -164,7 +164,7 @@ describe('Quest Board screen', () => {
   });
 
   it('filters by reward bounds, tags, and start-time buckets', async () => {
-    const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} currentStudentId="student-demo" />);
+    const view = await render(<QuestBoardScreen currentStudentId="student-demo" />);
 
     await fireEvent.press(view.getByTestId('open-quest-filters'));
     await fireEvent.changeText(view.getByTestId('quest-filter-reward-min'), '80');
@@ -207,7 +207,7 @@ describe('Quest Board screen', () => {
   });
 
   it('selects multiple tag suggestions with OR semantics', async () => {
-    const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} currentStudentId="student-demo" />);
+    const view = await render(<QuestBoardScreen currentStudentId="student-demo" />);
 
     await fireEvent.press(view.getByTestId('open-quest-filters'));
     await fireEvent.changeText(view.getByTestId('quest-filter-tag-search'), 'clean');
@@ -239,7 +239,7 @@ describe('Quest Board screen', () => {
   });
 
   it('changes deterministic sort order from the sort sheet', async () => {
-    const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} currentStudentId="student-demo" />);
+    const view = await render(<QuestBoardScreen currentStudentId="student-demo" />);
 
     await fireEvent.press(view.getByTestId('open-quest-sort'));
     expect(view.queryByTestId('quest-sort-recommended')).toBeNull();
@@ -268,7 +268,7 @@ describe('Quest Board screen', () => {
   });
 
   it('keeps application outcomes out of Quest cards and keeps the action in Quest Detail', async () => {
-    const pending = await render(<QuestBoardScreen initialPreviewState="application-pending" now={new Date('2026-08-12T09:00:00.000Z')} />);
+    const pending = await render(<QuestBoardScreen initialPreviewState="application-pending" />);
 
     expect(pending.queryByText('Application pending')).toBeNull();
     expect(pending.getByText('Help move boxes to the dorm')).toBeTruthy();
@@ -276,7 +276,7 @@ describe('Quest Board screen', () => {
   });
 
   it('forwards application preview scenarios into Quest Detail', async () => {
-    const view = await render(<QuestBoardScreen initialPreviewState="application-pending" now={new Date('2026-08-12T09:00:00.000Z')} />);
+    const view = await render(<QuestBoardScreen initialPreviewState="application-pending" />);
 
     await fireEvent.press(view.getByTestId('quest-detail-move-boxes'));
 
@@ -285,7 +285,7 @@ describe('Quest Board screen', () => {
 
   it('exposes the dev-only prototype menu without adding scenarios to Board discovery', async () => {
     setActivePrototypePersona('student-demo');
-    const view = await render(<QuestBoardScreen now={new Date('2026-08-12T09:00:00.000Z')} />);
+    const view = await render(<QuestBoardScreen />);
 
     expect(view.getByTestId('quest-board-prototype-menu-trigger')).toBeTruthy();
     expect(view.queryByText('Form a campus event team')).toBeNull();
