@@ -35,4 +35,22 @@ describe('QuestWorkflow', () => {
 
     unsubscribe();
   });
+
+  it('owns clock refresh while a screen is subscribed', () => {
+    jest.useFakeTimers();
+    try {
+      const workflow = createQuestWorkflow(questFixtureAdapter, { refreshIntervalMs: 1000 });
+      const listener = jest.fn();
+      const initialNow = workflow.getNow();
+      const unsubscribe = workflow.subscribe(listener);
+
+      jest.advanceTimersByTime(1000);
+
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(workflow.getNow()).toEqual(new Date(initialNow.getTime() + 1000));
+      unsubscribe();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });

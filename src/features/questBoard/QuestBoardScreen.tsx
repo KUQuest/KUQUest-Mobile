@@ -50,7 +50,6 @@ export interface QuestBoardScreenProps {
   now?: Date;
 }
 
-const FIXTURE_NOW = new Date('2026-08-12T09:00:00.000Z');
 
 const deadlineOptions: { value: DeadlineFilter; labelKey: 'today' | 'within3Days' | 'within7Days' }[] = [
   { value: 'today', labelKey: 'today' },
@@ -341,7 +340,7 @@ export default function QuestBoardScreen({ currentStudentId, initialPreviewState
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
   const { handleScroll } = useNavigationVisibility();
   const messages = questBoardMessages[locale];
-  const effectiveNow = now ?? FIXTURE_NOW;
+  const effectiveNow = now ?? questWorkflow.getNow();
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState<QuestBoardFilter>(emptyQuestBoardFilter);
   const [draftFilters, setDraftFilters] = useState<QuestBoardFilter>(emptyQuestBoardFilter);
