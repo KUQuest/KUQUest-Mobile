@@ -69,6 +69,7 @@ export interface CandidateReviewSheetProps {
   onClose: () => void;
   bottomInset?: number;
   locale?: SupportedLocale;
+  fullScreen?: boolean;
 }
 
 function formatSubmittedAt(value: string | undefined, locale: SupportedLocale): string | undefined {
@@ -296,6 +297,7 @@ export function CandidateReviewSheet({
   onRetry,
   onClose,
   bottomInset,
+  fullScreen = false,
   locale: localeProp,
 }: CandidateReviewSheetProps) {
   const contextLocale = useLocale().locale;
@@ -365,6 +367,7 @@ export function CandidateReviewSheet({
       testID="candidate-review-sheet"
       title={messages.candidateReviewTitle}
       visible={visible}
+      fullScreen={fullScreen}
     >
       {content}
     </QuestBottomSheet>

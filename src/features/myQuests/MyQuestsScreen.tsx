@@ -727,6 +727,7 @@ export default function MyQuestsScreen() {
         settlement={candidateReviewState?.settlement}
         teams={candidateReviewState?.quest.participation === QuestParticipation.GROUP ? candidateReviewState.teams.filter((team) => team.status !== QuestTeamStatus.TEAM_FORMING) : []}
         visible={Boolean(candidateReviewState)}
+        fullScreen
       /> : null}
     </SafeAreaView>
   );
