@@ -1,7 +1,7 @@
 # KUQuest Mobile Agent Guide
 
 ```
-use bun by deafault
+use bun by default
 ```
 
 ## Platform focus
@@ -16,19 +16,51 @@ Native Google Sign-In requires an installed development build; use the mobile de
 
 Expo has changed. Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing code.
 
-## Agent skills
+---
 
-### Issue tracker
+## Domain Authority & Reference Docs
 
-Issues and specs live in GitHub Issues (`gh` CLI). See `docs/agents/issue-tracker.md`.
+Always use the canonical ubiquitous language from `CONTEXT.md`.
 
-### Triage labels
+- **Glossary & Domain Language**: Root `CONTEXT.md`.
+- **Deterministic Routing Directory**: `docs/agents/routing.md` — routes directly by feature, task branch, or user persona.
+- **Mirrored Backend Rulebook (Source of Truth)**: `docs/rulebook/` (synced from `KUQuest-API-Server` at commit `1b55199d74d2e73a4a05a4662e49fb643cbee3e6`):
+  - **Quest & Work Chat**: `docs/rulebook/quest/quest-work-chat-rulebook.md` and sub-contracts.
+  - **Finance & Wallet**: `docs/rulebook/finance/finance-rulebook.md` and sub-contracts.
+  - **Admin Operations**: `docs/rulebook/admin/admin-rulebook.md` and sub-contracts.
+- **Mobile Domain Specifications**:
+  - Quest States & Lifecycle: `docs/specs/quest-state-summary.md`
+  - Group & Candidate Matrix: `docs/specs/group-quest-behavior.md`
+  - Wallet & Payments: `docs/specs/wallet-and-payments.md`
+  - Conversations & Work Chat: `docs/specs/conversation-and-work-chat.md`
+  - Proofs & Rating Reviews: `docs/specs/proof-and-rating-reviews.md`
+  - Student Profile Redesign: `docs/specs/student-profile-redesign.md`
+- **Architecture Decisions**: `docs/adr/` (e.g. `0001` through `0010`).
+- **UI Navigation & System Design**: `docs/system-design-specification.md`.
 
-Default five canonical labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+---
 
-### Domain docs
+## Clarifying Domain Context
 
-Single-context: `CONTEXT.md` + `docs/adr/` at repo root. See `docs/agents/domain.md`.
+When a request touches a Quest, Work Chat, Candidate Inquiry, Profile, or Money/Wallet flow, identify the active branch before planning or coding. Read the domain docs first. If context is missing, clarify these facts in order:
+
+1. **Actor**: `Hirer`, `Worker`, `Candidate`, `Prospective Worker`, or `Accepted Participant`.
+2. **Quest State**: One of the canonical 7 states (`QUEST_DRAFT`, `QUEST_OPEN`, `QUEST_ASSIGNED`, `QUEST_IN_PROGRESS`, `QUEST_COMPLETED`, `QUEST_CANCELLED`, `QUEST_FAILED`).
+3. **Selection Mode**: `FIRST_COME_FIRST_SERVED` (FCFS) or `CANDIDATE`. (Never use legacy `NO_CANDIDATE`).
+4. **Participation**: `SINGLE` (headcount = 1) or `GROUP` (headcount > 1, up to 20).
+5. **Submission Rules**: `proofRequired` (true/false) and `dueAt` when touching Sent Work, Proof Submission, review, deadline, or settlement.
+
+Ask one missing fact at a time when interviewing the user. State known context before asking.
+
+---
+
+## Agent Skills & Workflow
+
+### Issue tracker & Triage
+
+- Issues live in GitHub Issues (`gh` CLI). See `docs/agents/issue-tracker.md`.
+- Canonical triage labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+- Domain guidelines: `docs/agents/domain.md`.
 
 ### Workflow
 
@@ -41,40 +73,45 @@ Single-context: `CONTEXT.md` + `docs/adr/` at repo root. See `docs/agents/domain
 
 Typical chain: `grilling`/`grill-with-docs` → `to-spec`/`to-tickets` → `triage` as issues come in → `wayfinder` if scope exceeds one session.
 
-### Coding guidelines
+---
+
+## Coding Guidelines
 
 Behavioral guidelines to reduce common LLM coding mistakes ([source](https://github.com/multica-ai/andrej-karpathy-skills)). Bias toward caution over speed; use judgment on trivial tasks.
 
 **1. Think before coding** — don't assume, don't hide confusion, surface tradeoffs.
+
 - State assumptions explicitly; if uncertain, ask.
 - If multiple interpretations exist, present them — don't pick silently.
 - If a simpler approach exists, say so; push back when warranted.
 - If something is unclear, stop, name what's confusing, ask.
 
 **2. Simplicity first** — minimum code that solves the problem, nothing speculative.
+
 - No features beyond what was asked. No abstractions for single-use code. No unrequested "flexibility". No error handling for impossible scenarios.
 - 200 lines that could be 50 → rewrite it.
 - Ask: "Would a senior engineer call this overcomplicated?" If yes, simplify.
 
 **3. Surgical changes** — touch only what you must, clean up only your own mess.
+
 - Don't "improve" adjacent code, comments, or formatting. Don't refactor what isn't broken. Match existing style even if you'd do it differently.
 - Unrelated dead code: mention it, don't delete it.
 - Remove imports/variables/functions YOUR changes made unused; don't remove pre-existing dead code unless asked.
 - Test: every changed line traces directly to the user's request.
 
 **4. Goal-driven execution** — define success criteria, loop until verified.
+
 - "Add validation" → write tests for invalid inputs, then make them pass.
 - "Fix the bug" → write a test that reproduces it, then make it pass.
 - "Refactor X" → ensure tests pass before and after.
 - Multi-step tasks: state a brief plan, one line per step with its verify check.
 
-These guidelines are working if: fewer unnecessary changes in diffs, fewer rewrites from overcomplication, clarifying questions come before implementation rather than after mistakes.
+---
 
-## Subagent workflow
+## Subagent Workflow
 
-For delegated or parallel work, read `docs/agents/subagent-workflow.md` before spawning agents. It is the provider-neutral routing and handoff contract.
+For delegated or parallel work, keep one writer per file; use read-only scout/reviewer/verifier roles for independent work.
 
 - Codex project defaults and role manifests live in `.codex/config.toml` and `.codex/agents/`.
 - Antigravity workspace agents live in `.agents/agents/<role>/agent.md`.
-- Keep one writer per file; use read-only scout/reviewer/verifier roles for independent work.
-- Codex parent sessions use `gpt-5.6-luna` with `max`; role manifests use task-shaped effort, escalating to `max` only for high-risk or ambiguous work. Antigravity manifests use its documented `flash`/`pro` tiers; it does not accept the Codex model ID.
+- Codex parent sessions use `gpt-5.6-luna` with `max`; role manifests use task-shaped effort. Antigravity manifests use its documented `flash`/`pro` tiers.

@@ -1,103 +1,112 @@
-# Welcome to your Expo app 👋
+# KUQuest Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+KUQuest Mobile connects students and staff for on-campus peer tasks, powered by Expo, Native Google Sign-In, and Better Auth.
 
-## Get started
+> [!IMPORTANT]
+> Because native Google OAuth and secure session storage require custom native modules, this project runs exclusively via **Development Builds** (`--dev-client`), not standard Expo Go.
 
-1. Install dependencies
+## 1. Local Backend Connection & Environment Setup
 
-   ```bash
-   bun install
-   ```
+Create a `.env.local` file in the project root:
 
-2. Start the app
+```env
+# Backend API URL (Auto-updated to your local LAN IP on Metro start)
+EXPO_PUBLIC_API_URL=http://localhost:5000
 
-   ```bash
-   bun run start
-   ```
+# Terms of Service version required by registration
+EXPO_PUBLIC_TERMS_VERSION=v1.0
 
-In the output, you'll find options to open the app in a
+# Native Google OAuth Web Client ID
+EXPO_PUBLIC_GOOGLE_CLIENT_ID=your-google-web-client-id.apps.googleusercontent.com
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+# (Optional) iOS URL Scheme for Google Sign-In
+# EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME=com.googleusercontent.apps.your-id
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Automatic LAN IP Resolution
 
-### Other setup steps
+Mobile emulators and physical devices cannot reach `localhost` directly on your host machine. Every time Metro starts (`bun run start` or `bun run dev:start`), the built-in script `scripts/update-api-env.js` automatically resolves your machine's active local IPv4 address and updates `EXPO_PUBLIC_API_URL` in `.env.local` (e.g. `http://192.168.1.50:5000`).
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Local mobile demo
-
-Set this flag in `.env.local` to use the seeded SQLite demo data instead of the remote API:
-
-```dotenv
-EXPO_PUBLIC_PROFILE_DEMO=true
-```
-
-The demo opens from the Developer mode screen and includes Quest Board, Quest details, My Quests, the Create Quest mockup, applications, and Chat. Board, My Quests, and Chat demo state is persisted locally on the device; Create Quest drafts are not saved yet and will be connected to the API later.
-
-Use a mobile development build; Expo Go is not supported for this demo because the app includes native modules:
+To manually refresh your local API address without starting Metro:
 
 ```bash
+bun run update-api-env
+```
+
+## 2. Running the Project
+
+### Prerequisites
+
+- [Bun](https://bun.sh) (v1.2+)
+- Android Studio with an Android Emulator or Xcode with iOS Simulator
+- JDK 17 configured for Android builds
+
+### Step 1: Install Dependencies
+
+```bash
+bun install
+```
+
+### Step 2: Build & Install Native Development Client
+
+Because this project contains native modules (`@react-native-google-signin/google-signin`, `@expo/ui`, etc.), compile and install the development client once before launching Metro:
+
+```bash
+# For Android (automatically clears autolinking caches and builds for all architectures)
 bun run dev:android
-# or
-bun run dev:ios
 
-# start Metro for the installed development client
-bun run demo:start
+# For iOS
+bun run dev:ios
 ```
 
-## Native authentication configuration
+### Step 3: Start Metro Development Server
 
-The app does not create local mock accounts. A development build needs these runtime variables:
-
-- `EXPO_PUBLIC_API_URL` — API origin, for example `http://localhost:5000`.
-- `EXPO_PUBLIC_TERMS_VERSION` — version recorded when the user accepts the terms.
-- `EXPO_PUBLIC_GOOGLE_CLIENT_ID` — Google web client ID used by native sign-in.
-- `EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME` — iOS URL scheme; when set, the native Google Sign-In config plugin is enabled.
-
-Native Google Sign-In passes its verified ID token to `authClient.signIn.social`. The Better Auth Expo client persists the Better Auth session and cookies in SecureStore. Protected Student API calls read `authClient.getCookie()` and send it as the `Cookie` header with `credentials: omit`.
-
-The native Google module requires a development build; Expo Go cannot provide the native sign-in implementation.
-
-To rebuild and install a development client with the native Google module included, run:
+Once the development client is installed on your emulator or connected device, start the Metro bundler:
 
 ```bash
-bun run dev:android
-# or
-bun run dev:ios
-
-# start Metro for the installed development client
 bun run dev:start
 ```
 
-After the native dependency or app config changes, restart Metro and open the installed development client—not Expo Go.
+> [!NOTE]
+> `bun run dev:start` automatically runs `update-api-env` before launching Metro so your phone/emulator connects to your host machine's current local IP.
 
-## Learn more
+---
 
-To learn more about developing your project with Expo, look at the following resources:
+## 3. Standalone Offline Demo Mode
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+If you need to test the UI, Quest flows, or screen layouts without a running backend server, launch the app in seeded demo mode:
 
-## Join the community
+```bash
+bun run demo:start
+```
 
-Join our community of developers creating universal apps.
+- **Features**: Includes Quest Board, Quest Details, My Quests, Team Assembly, and Chat with mock data and local SQLite/memory persistence.
+- **Switch Test Accounts on Android**:
+  ```bash
+  bun run demo:android:account
+  ```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## 4. Code Quality & Testing
+
+### Verification Scripts
+
+```bash
+# Typecheck TypeScript definitions
+bun run typecheck
+
+# Run Jest unit and component test suite
+bun run test
+
+# Lint source files with Expo ESLint
+bun run lint
+```
+
+### Pre-commit Hooks
+
+The repository uses **Husky** + **lint-staged** + **Prettier**. Every `git commit` automatically:
+
+1. Runs Prettier formatting on all staged files.
+2. Runs `bun run typecheck`.
+3. Runs `bun run test`.
