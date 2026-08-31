@@ -851,6 +851,7 @@ export default function QuestDetailScreen({ previewState, questId, studentId, mo
         settlement={detailProjection?.settlement ?? undefined}
         teams={candidateGroup ? activePrototypeState.teams.filter((team) => team.status !== QuestTeamStatus.TEAM_FORMING) : []}
         visible={candidateReviewSheetOpen}
+        fullScreen
       /> : null}
       {activePrototypeState
         && activePrototypeState.quest.participation === QuestParticipation.GROUP
