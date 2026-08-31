@@ -1,51 +1,58 @@
-import { fireEvent, render } from '@testing-library/react-native';
+import { fireEvent, render } from "@testing-library/react-native";
 
-import ChatInboxScreen from '../ChatInboxScreen';
-import { setActivePrototypePersona } from '../../../components/ui/prototypeMenuState';
-import { questFixtureAdapter } from '../../questBoard/questFixtureAdapter';
+import ChatInboxScreen from "../ChatInboxScreen";
+import { setActivePrototypePersona } from "../../auth/authEnvironment";
+import { questFixtureAdapter } from "../../questBoard/questFixtureAdapter";
 
 const mockRouter = { push: jest.fn() };
 
-jest.mock('expo-router', () => ({
+jest.mock("expo-router", () => ({
   useRouter: () => mockRouter,
 }));
 
-jest.mock('../../../locales/LocaleProvider', () => ({
-  useLocale: () => ({ locale: 'en' }),
+jest.mock("../../../locales/LocaleProvider", () => ({
+  useLocale: () => ({ locale: "en" }),
 }));
 
-describe('ChatInboxScreen navigation', () => {
+describe("ChatInboxScreen navigation", () => {
   beforeEach(() => {
     questFixtureAdapter.reset();
     mockRouter.push.mockClear();
   });
 
-  it('forwards stable conversation identity when opening a Quest chat', async () => {
+  it("forwards stable conversation identity when opening a Quest chat", async () => {
     const view = await render(<ChatInboxScreen viewerId="student-demo" />);
 
-    await fireEvent.press(view.getByTestId('chat-conversation-conversation-fixture-buy-lunch'));
+    await fireEvent.press(
+      view.getByTestId("chat-conversation-conversation-fixture-buy-lunch")
+    );
 
     expect(mockRouter.push).toHaveBeenCalledWith({
-      pathname: '/chat/[id]',
+      pathname: "/chat/[id]",
       params: {
-        id: 'conversation-fixture-buy-lunch',
-        conversationId: 'conversation-fixture-buy-lunch',
-        questId: 'buy-lunch',
-        viewerId: 'student-demo',
+        id: "conversation-fixture-buy-lunch",
+        conversationId: "conversation-fixture-buy-lunch",
+        questId: "buy-lunch",
+        viewerId: "student-demo",
       },
     });
   });
 
-  it('uses the active Prototype persona when no viewer override is provided', async () => {
-    setActivePrototypePersona('demo-worker-3');
-    const conversation = questFixtureAdapter.listConversations('demo-worker-3')[0];
+  it("uses the active Prototype persona when no viewer override is provided", async () => {
+    setActivePrototypePersona("demo-worker-3");
+    const conversation =
+      questFixtureAdapter.listConversations("demo-worker-3")[0];
     expect(conversation).toBeTruthy();
 
     const view = await render(<ChatInboxScreen />);
-    await fireEvent.press(view.getByTestId(`chat-conversation-${conversation.id}`));
+    await fireEvent.press(
+      view.getByTestId(`chat-conversation-${conversation.id}`)
+    );
 
-    expect(mockRouter.push).toHaveBeenCalledWith(expect.objectContaining({
-      params: expect.objectContaining({ viewerId: 'demo-worker-3' }),
-    }));
+    expect(mockRouter.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        params: expect.objectContaining({ viewerId: "demo-worker-3" }),
+      })
+    );
   });
 });
