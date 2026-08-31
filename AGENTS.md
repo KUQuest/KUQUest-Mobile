@@ -75,6 +75,12 @@ Typical chain: `grilling`/`grill-with-docs` → `to-spec`/`to-tickets` → `tria
 
 ---
 
+## Code Style
+
+Follow `CODE_STYLES.md` at the repo root for formatting, import grouping, feature architecture, NativeWind UI conventions, and Jest testing standards.
+
+---
+
 ## Coding Guidelines
 
 Behavioral guidelines to reduce common LLM coding mistakes ([source](https://github.com/multica-ai/andrej-karpathy-skills)). Bias toward caution over speed; use judgment on trivial tasks.
