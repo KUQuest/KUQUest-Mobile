@@ -17,6 +17,7 @@ export interface QuestBottomSheetProps {
   children: React.ReactNode;
   testID: string;
   bottomInset?: number;
+  fullScreen?: boolean;
 }
 
 /**
@@ -34,27 +35,28 @@ export function QuestBottomSheet({
   children,
   testID,
   bottomInset,
+  fullScreen = false,
 }: QuestBottomSheetProps) {
   const insets = useSafeAreaInsets();
   const paddingBottom = Math.max(spacing.md, (bottomInset ?? insets.bottom) + spacing.sm);
 
   return (
-    <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
-      <View className={styles.sheetOverlay}>
-        <Pressable
+    <Modal animationType="slide" onRequestClose={onClose} transparent={!fullScreen} visible={visible}>
+      <View className={fullScreen ? styles.sheetOverlayFullScreen : styles.sheetOverlay}>
+        {fullScreen ? null : <Pressable
           accessibilityLabel={closeLabel}
           accessibilityRole="button"
           className={styles.sheetBackdrop}
           onPress={onClose}
           testID={`${testID}-backdrop`}
-        />
+        />}
         <View
           accessibilityViewIsModal
-          className={styles.sheet}
-          style={{ paddingBottom }}
+          className={fullScreen ? styles.sheetFullScreen : styles.sheet}
+          style={{ flex: fullScreen ? 1 : undefined, paddingBottom, paddingTop: fullScreen ? insets.top + spacing.sm : undefined }}
           testID={testID}
         >
-          <View className={styles.sheetHandle} />
+          {fullScreen ? null : <View className={styles.sheetHandle} />}
           <View className={styles.sheetHeader}>
             <View className={styles.sheetHeading}>
               <Text accessibilityRole="header" className={styles.sheetTitle}>{title}</Text>

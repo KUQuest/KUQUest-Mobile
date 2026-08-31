@@ -1437,6 +1437,7 @@ export default function MyQuestsScreen() {
               : []
           }
           visible={Boolean(candidateReviewState)}
+          fullScreen
         />
       ) : null}
     </SafeAreaView>

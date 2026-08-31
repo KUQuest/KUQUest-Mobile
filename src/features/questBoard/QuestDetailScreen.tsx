@@ -2310,6 +2310,7 @@ export default function QuestDetailScreen({
               : []
           }
           visible={candidateReviewSheetOpen}
+          fullScreen
         />
       ) : null}
       {activePrototypeState &&

@@ -1,7 +1,9 @@
 const styles = {
   sheetOverlay: 'bg-ku-overlay flex-1 justify-end',
+  sheetOverlayFullScreen: 'bg-ku-card flex-1',
   sheetBackdrop: 'absolute bottom-0 left-0 right-0 top-0',
   sheet: 'bg-ku-card max-h-[92%] min-h-[360px] rounded-tl-[24px] rounded-tr-[24px] px-[20px] pt-[12px]',
+  sheetFullScreen: 'bg-ku-card flex-1 px-[20px] pt-[12px]',
   sheetHandle: 'self-center bg-ku-border-accent rounded-ku-pill h-[4px] mb-[14px] w-[40px]',
   sheetHeader: 'items-start flex-row justify-between',
   sheetHeading: 'flex-1 min-w-0 pr-[12px]',
