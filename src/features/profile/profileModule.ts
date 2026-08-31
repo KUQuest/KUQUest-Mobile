@@ -12,8 +12,7 @@ import type {
 } from "../../api/StudentApi";
 import type { SupportedLocale } from "../../locales/LocaleProvider";
 import type { PrototypePersonaId } from "../../components/ui/prototypeMenuData";
-import { getActivePrototypePersonaId } from "../../components/ui/prototypeMenuState";
-import { isPrototypeDemoEnabled } from "../auth/demoMode";
+import { authEnvironment } from "../auth/authEnvironment";
 import { LiveProfileAdapter } from "./adapters/liveProfileAdapter";
 import { DemoProfileAdapter } from "./adapters/demoProfileAdapter";
 import type {
@@ -76,7 +75,7 @@ export class ProfileModule {
   }
 
   isDemoEnabled(): boolean {
-    return isPrototypeDemoEnabled();
+    return authEnvironment.isDemoEnabled();
   }
 
   async loadProfile(options?: {
@@ -84,7 +83,8 @@ export class ProfileModule {
     personaId?: PrototypePersonaId;
   }): Promise<ProfileViewData> {
     const locale = options?.locale ?? "en";
-    const personaId = options?.personaId ?? getActivePrototypePersonaId();
+    const personaId =
+      options?.personaId ?? authEnvironment.getActivePersonaId();
     return this.getAdapter().loadProfile(locale, personaId);
   }
 

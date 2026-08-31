@@ -23,9 +23,8 @@ import { Image, Pressable, SafeAreaView, ScrollView, Text, View } from "@/tw";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { authService } from "../auth/AuthService";
-import { isPrototypeDemoEnabled } from "../auth/demoMode";
+import { authEnvironment, useAuthEnvironment } from "../auth/authEnvironment";
 import { PrototypeMenu } from "@/components/ui/PrototypeMenu";
-import { usePrototypeMenuState } from "@/components/ui/prototypeMenuState";
 import {
   PROTOTYPE_SCENARIOS,
   type PrototypeScenarioRoute,
@@ -1232,7 +1231,7 @@ export default function QuestDetailScreen({
     studentId?: string | string[];
   }>();
   const { locale } = useLocale();
-  const { activePersonaId, onPersonaChange, onReset } = usePrototypeMenuState();
+  const { activePersonaId, onPersonaChange, onReset } = useAuthEnvironment();
   const messages = questBoardMessages[locale];
   const resolvedQuestId = parseQuestRouteId(questId ?? params.id);
   const resolvedIntent = parseQuestIntent(params.intent);
@@ -1241,7 +1240,7 @@ export default function QuestDetailScreen({
     joinStatus ?? parseQuestJoinStatus(params.joinStatus);
   const routeStudentId = parseStudentId(params.studentId);
   const explicitStudentId = studentId ?? routeStudentId;
-  const prototypeDemoEnabled = isPrototypeDemoEnabled();
+  const prototypeDemoEnabled = authEnvironment.isDemoEnabled();
   const [sessionStudentId, setSessionStudentId] = useState<
     string | undefined
   >();

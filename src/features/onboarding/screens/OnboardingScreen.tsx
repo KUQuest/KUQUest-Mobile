@@ -57,7 +57,7 @@ import type {
   Work,
 } from "../../profile/types";
 import { authService } from "../../auth/AuthService";
-import { isPrototypeDemoEnabled } from "../../auth/demoMode";
+import { authEnvironment } from "../../auth/authEnvironment";
 import { AuthError, type OnboardingStep } from "../../auth/types";
 import { ApiError } from "../../../api/ApiClient";
 import type { AcademicRegistrationOptions } from "../../../api/contracts";
@@ -363,7 +363,7 @@ export default function OnboardingScreen() {
   } | null>(null);
   const [today] = useState(() => new Date());
   const persistenceCoordinator = useRef(new ProfilePersistenceCoordinator());
-  const demoBypassEnabled = isPrototypeDemoEnabled();
+  const demoBypassEnabled = authEnvironment.isDemoEnabled();
   const reduceMotion = useReducedMotionPreference();
   const initialLoadPending = isLoadingProfile && options === null;
   const leaveRegistration = useCallback(() => {

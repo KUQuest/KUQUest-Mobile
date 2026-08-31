@@ -23,10 +23,7 @@ import {
 import { ApiError } from "../../api/ApiClient";
 import type { ProfileEditData } from "../../api/ProfileApi";
 import { profileModule } from "../profile/profileModule";
-import {
-  getActivePrototypePersonaId,
-  usePrototypeMenuState,
-} from "../../components/ui/prototypeMenuState";
+import { useAuthEnvironment } from "../auth/authEnvironment";
 import { authService } from "../auth/AuthService";
 import { AuthError } from "../auth/types";
 import { onboardingMessages } from "../../locales/registrationOnboarding";
@@ -1119,7 +1116,7 @@ function ProfileEditDataLoader({
   const router = useRouter();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
-  const { activePersonaId } = usePrototypeMenuState();
+  const { activePersonaId } = useAuthEnvironment();
   const [data, setData] = useState<ProfileEditData | null>(null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);

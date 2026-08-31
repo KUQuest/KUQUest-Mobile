@@ -11,7 +11,7 @@ import type {
   UploadAsset,
 } from "../../../api/StudentApi";
 import type { PrototypePersonaId } from "../../../components/ui/prototypeMenuData";
-import { getActivePrototypePersonaId } from "../../../components/ui/prototypeMenuState";
+import { authEnvironment } from "../../auth/authEnvironment";
 import { getDemoProfileViewData } from "../profileDemoData";
 import type {
   ProfileAdapter,
@@ -20,8 +20,9 @@ import type {
   ProfileViewData,
 } from "../types";
 
+const getActivePersonaId = (): PrototypePersonaId =>
+  authEnvironment.getActivePersonaId();
 const PROFILE_TAG_LIMIT = 3;
-
 type DemoProfileRecord = {
   view: ProfileViewData;
   profile: ProfileResponse;
@@ -243,7 +244,7 @@ function nextId(record: DemoProfileRecord, prefix: string): string {
 export class DemoProfileAdapter implements ProfileAdapter {
   async loadProfile(
     _locale?: string,
-    personaId: PrototypePersonaId = getActivePrototypePersonaId()
+    personaId: PrototypePersonaId = getActivePersonaId()
   ): Promise<ProfileViewData> {
     const record = getRecord(personaId);
     return {
@@ -253,7 +254,7 @@ export class DemoProfileAdapter implements ProfileAdapter {
   }
 
   async getEditData(
-    personaId: PrototypePersonaId = getActivePrototypePersonaId()
+    personaId: PrototypePersonaId = getActivePersonaId()
   ): Promise<ProfileEditData> {
     const record = getRecord(personaId);
     return {
@@ -268,7 +269,7 @@ export class DemoProfileAdapter implements ProfileAdapter {
 
   async updateBasics(
     update: ProfileBasicsUpdate,
-    personaId: PrototypePersonaId = getActivePrototypePersonaId()
+    personaId: PrototypePersonaId = getActivePersonaId()
   ): Promise<ProfileResponse> {
     const record = getRecord(personaId);
     if (update.firstName !== undefined)
@@ -292,7 +293,7 @@ export class DemoProfileAdapter implements ProfileAdapter {
 
   async uploadAvatar(
     asset: UploadAsset,
-    personaId: PrototypePersonaId = getActivePrototypePersonaId()
+    personaId: PrototypePersonaId = getActivePersonaId()
   ): Promise<string> {
     const record = getRecord(personaId);
     record.profile.avatar = {
@@ -305,7 +306,7 @@ export class DemoProfileAdapter implements ProfileAdapter {
 
   async createExperience(
     entry: ExperienceCreate,
-    personaId: PrototypePersonaId = getActivePrototypePersonaId()
+    personaId: PrototypePersonaId = getActivePersonaId()
   ): Promise<ExperienceEntry | undefined> {
     const record = getRecord(personaId);
     const experience: ExperienceEntry = {
@@ -327,7 +328,7 @@ export class DemoProfileAdapter implements ProfileAdapter {
   async updateExperience(
     id: string,
     update: Partial<ExperienceCreate>,
-    personaId: PrototypePersonaId = getActivePrototypePersonaId()
+    personaId: PrototypePersonaId = getActivePersonaId()
   ): Promise<ExperienceEntry | undefined> {
     const record = getRecord(personaId);
     const index = record.experiences.findIndex((item) => item.id === id);
@@ -344,7 +345,7 @@ export class DemoProfileAdapter implements ProfileAdapter {
 
   async deleteExperience(
     id: string,
-    personaId: PrototypePersonaId = getActivePrototypePersonaId()
+    personaId: PrototypePersonaId = getActivePersonaId()
   ): Promise<void> {
     const record = getRecord(personaId);
     record.experiences = record.experiences.filter((item) => item.id !== id);
@@ -353,7 +354,7 @@ export class DemoProfileAdapter implements ProfileAdapter {
 
   async createPortfolio(
     entry: PortfolioCreate,
-    personaId: PrototypePersonaId = getActivePrototypePersonaId()
+    personaId: PrototypePersonaId = getActivePersonaId()
   ): Promise<string> {
     const record = getRecord(personaId);
     const portfolio: PortfolioEntry = {
@@ -375,7 +376,7 @@ export class DemoProfileAdapter implements ProfileAdapter {
   async updatePortfolio(
     id: string,
     update: { title?: string; description?: string | null },
-    personaId: PrototypePersonaId = getActivePrototypePersonaId()
+    personaId: PrototypePersonaId = getActivePersonaId()
   ): Promise<void> {
     const record = getRecord(personaId);
     const item = record.portfolio.find((portfolio) => portfolio.id === id);
@@ -388,7 +389,7 @@ export class DemoProfileAdapter implements ProfileAdapter {
   async uploadPortfolioImage(
     id: string,
     asset: UploadAsset,
-    personaId: PrototypePersonaId = getActivePrototypePersonaId()
+    personaId: PrototypePersonaId = getActivePersonaId()
   ): Promise<void> {
     const record = getRecord(personaId);
     const item = record.portfolio.find((portfolio) => portfolio.id === id);
@@ -401,7 +402,7 @@ export class DemoProfileAdapter implements ProfileAdapter {
 
   async deletePortfolioImage(
     id: string,
-    personaId: PrototypePersonaId = getActivePrototypePersonaId()
+    personaId: PrototypePersonaId = getActivePersonaId()
   ): Promise<void> {
     const record = getRecord(personaId);
     const item = record.portfolio.find((portfolio) => portfolio.id === id);
@@ -412,7 +413,7 @@ export class DemoProfileAdapter implements ProfileAdapter {
 
   async deletePortfolio(
     id: string,
-    personaId: PrototypePersonaId = getActivePrototypePersonaId()
+    personaId: PrototypePersonaId = getActivePersonaId()
   ): Promise<void> {
     const record = getRecord(personaId);
     record.portfolio = record.portfolio.filter((item) => item.id !== id);
@@ -421,7 +422,7 @@ export class DemoProfileAdapter implements ProfileAdapter {
 
   async createCertificate(
     entry: CertificateCreate,
-    personaId: PrototypePersonaId = getActivePrototypePersonaId()
+    personaId: PrototypePersonaId = getActivePersonaId()
   ): Promise<string> {
     const record = getRecord(personaId);
     const certificate: CertificateEntry = {
@@ -441,7 +442,7 @@ export class DemoProfileAdapter implements ProfileAdapter {
   async updateCertificate(
     id: string,
     update: CertificateCreate,
-    personaId: PrototypePersonaId = getActivePrototypePersonaId()
+    personaId: PrototypePersonaId = getActivePersonaId()
   ): Promise<void> {
     const record = getRecord(personaId);
     const item = record.certificates.find(
@@ -458,7 +459,7 @@ export class DemoProfileAdapter implements ProfileAdapter {
   async uploadCertificateImage(
     id: string,
     asset: UploadAsset,
-    personaId: PrototypePersonaId = getActivePrototypePersonaId()
+    personaId: PrototypePersonaId = getActivePersonaId()
   ): Promise<void> {
     const record = getRecord(personaId);
     const item = record.certificates.find(
@@ -471,7 +472,7 @@ export class DemoProfileAdapter implements ProfileAdapter {
 
   async deleteCertificateImage(
     id: string,
-    personaId: PrototypePersonaId = getActivePrototypePersonaId()
+    personaId: PrototypePersonaId = getActivePersonaId()
   ): Promise<void> {
     const record = getRecord(personaId);
     const item = record.certificates.find(
@@ -484,7 +485,7 @@ export class DemoProfileAdapter implements ProfileAdapter {
 
   async deleteCertificate(
     id: string,
-    personaId: PrototypePersonaId = getActivePrototypePersonaId()
+    personaId: PrototypePersonaId = getActivePersonaId()
   ): Promise<void> {
     const record = getRecord(personaId);
     record.certificates = record.certificates.filter((item) => item.id !== id);

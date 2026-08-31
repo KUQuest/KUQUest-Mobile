@@ -36,7 +36,7 @@ import { spacing } from "../../theme/spacing";
 import { colors } from "../../theme/colors";
 import { AuthError } from "../auth/types";
 import { useNavigationVisibility } from "../../components/navigation/NavigationVisibilityContext";
-import { usePrototypeMenuState } from "../../components/ui/prototypeMenuState";
+import { useAuthEnvironment } from "../auth/authEnvironment";
 import { ProfileTopBar } from "./components/ProfileTopBar";
 
 function ProfileSkeleton({
@@ -217,7 +217,7 @@ export default function Profile() {
   const { width, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { locale } = useLocale();
-  const { activePersonaId } = usePrototypeMenuState();
+  const { activePersonaId } = useAuthEnvironment();
   const layoutMetrics = getProfileLayoutMetrics(width);
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
   const messages = profileMessages[locale];

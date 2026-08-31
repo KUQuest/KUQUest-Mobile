@@ -34,7 +34,7 @@ import { cn } from "@/tw/cn";
 import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
 import { PrototypeMenu } from "@/components/ui/PrototypeMenu";
 import { QuestFundingSummary } from "@/components/ui/QuestFundingSummary";
-import { usePrototypeMenuState } from "@/components/ui/prototypeMenuState";
+import { useAuthEnvironment } from "@/features/auth/authEnvironment";
 import {
   PROTOTYPE_PERSONAS,
   type PrototypePersonaId,
@@ -924,7 +924,7 @@ export default function MyQuestsScreen() {
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
   const { handleScroll } = useNavigationVisibility();
   const copy = content[locale];
-  const { activePersonaId, onPersonaChange, onReset } = usePrototypeMenuState();
+  const { activePersonaId, onPersonaChange, onReset } = useAuthEnvironment();
   const [roleSelection, setRoleSelection] = useState<{
     personaId: PrototypePersonaId;
     role: Role;
