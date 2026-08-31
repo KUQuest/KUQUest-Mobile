@@ -46,7 +46,7 @@ import {
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import styles from "./questDetailStyles";
-import { getLocalizedQuest } from "./questTranslations";
+import { getLocalizedQuest } from "./questFixtures";
 import {
   parseBoardPreviewState,
   type BoardPreviewState,

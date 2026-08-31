@@ -46,7 +46,7 @@ import { colors } from "@/theme/colors";
 import { getAppChromeMetrics } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 import styles from "./myQuestStyles";
-import { getLocalizedQuest } from "@/features/questBoard/questTranslations";
+import { getLocalizedQuest } from "@/features/questBoard/questFixtures";
 import { CandidateReviewSheet } from "@/features/questBoard/components";
 import {
   getQuestRewardSatang,

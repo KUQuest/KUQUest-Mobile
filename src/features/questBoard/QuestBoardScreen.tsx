@@ -49,7 +49,7 @@ import { colors } from "@/theme/colors";
 import { getAppChromeMetrics } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 import styles from "./questBoardStyles";
-import { getLocalizedQuest } from "./questTranslations";
+import { getLocalizedQuest } from "./questFixtures";
 import {
   applyQuestBoardFilters,
   getQuestBoardTags,
