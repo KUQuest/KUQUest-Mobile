@@ -879,91 +879,40 @@ export default function OnboardingScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {currentStep === 1 && <>
-            <Input
-              label={msg.nameSurname}
-              placeholder={msg.nameSurnamePlaceholder}
-              value={form.name}
-              onChangeText={(name) => {
-                setForm((previous) => ({ ...previous, name }));
-                clearErrors('name');
-              }}
-              error={errors.name}
-            />
-            <Input
-              label={msg.telephone}
-              placeholder={msg.telephonePlaceholder}
-              value={form.telephone}
-              onChangeText={(telephone) => {
-                setForm((previous) => ({ ...previous, telephone }));
-                clearErrors('telephone');
-              }}
-              keyboardType="phone-pad"
-              error={errors.telephone}
-            />
-            <Select
-              label={msg.occupation}
-              placeholder={msg.occupationPlaceholder}
-              options={occupationOptions}
-              searchable
-              dropdown
-              searchPlaceholder={msg.searchOccupation}
-              noResultsMessage={msg.noSearchResults}
-              emptyMessage={msg.noSelectOptions}
-              loadingMessage={msg.loadingOptions}
-              clearSearchLabel={msg.clearSearch}
-              value={form.occupation}
-              onValueChange={handleOccupationChange}
-              error={errors.occupation}
-              closeLabel={msg.closeSelect}
-            />
-            {selectedOccupation?.requiresStudentId && <Input
-              label={msg.studentId}
-              placeholder={msg.studentIdPlaceholder}
-              value={form.studentId}
-              onChangeText={(studentId) => {
-                setForm((previous) => ({ ...previous, studentId }));
-                clearErrors('studentId');
-              }}
-              error={errors.studentId}
-            />}
-            <Select
-              label={msg.faculty}
-              placeholder={msg.facultyPlaceholder}
-              options={facultyOptions}
-              value={form.faculty}
-              onValueChange={handleFacultyChange}
-              error={errors.faculty}
-              searchable
-              dropdown
-              searchPlaceholder={msg.searchFaculty}
-              noResultsMessage={msg.noSearchResults}
-              emptyMessage={msg.noSelectOptions}
-              loadingMessage={msg.loadingOptions}
-              clearSearchLabel={msg.clearSearch}
-              closeLabel={msg.closeSelect}
-            />
-            <Select
-              label={msg.department}
-              placeholder={form.faculty ? msg.departmentPlaceholder : msg.departmentSelectFacultyFirst}
-              options={departmentOptions}
-              value={form.department}
-              onValueChange={handleDepartmentChange}
-              error={errors.department}
-              searchable
-              dropdown
-              disabled={!form.faculty}
-              searchPlaceholder={msg.searchDepartment}
-              noResultsMessage={msg.noSearchResults}
-              emptyMessage={msg.noSelectOptions}
-              loadingMessage={msg.loadingOptions}
-              clearSearchLabel={msg.clearSearch}
-              closeLabel={msg.closeSelect}
-            />
-            <Text className={styles.termsLabel}>{msg.termsAndConditions}</Text>
-            <View className={styles.policySummary}>
-              <Text className={styles.policySummaryTitle}>{msg.privacyPolicy}</Text>
-              <Text className={styles.policySummaryText}>{msg.privacySummary}</Text>
+          <View className={styles.headerSection}>
+            <Text className={styles.title}>{msg.title}</Text>
+            <Text className={styles.stepTitle}>
+              {isEditMode
+                ? msg.editProfile
+                : currentStep === 1
+                  ? msg.stepTitle
+                  : currentStep === 2
+                    ? msg.step2Title
+                    : msg.step3Title}
+            </Text>
+            <Text className={styles.stepIndicator}>
+              {currentStep === 1
+                ? msg.stepIndicator
+                : currentStep === 2
+                  ? msg.step2Indicator
+                  : msg.step3Indicator}
+            </Text>
+            <View
+              className={styles.progressContainer}
+              accessibilityLabel={msg.progressLabel(currentStep)}
+            >
+              {[1, 2, 3].map((progressStep) => (
+                <View
+                  key={progressStep}
+                  className={
+                    currentStep >= progressStep
+                      ? styles.progressBarActive
+                      : styles.progressBarInactive
+                  }
+                />
+              ))}
+            </View>
+            {currentStep === 1 && (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={msg.addImage}
@@ -995,8 +944,8 @@ export default function OnboardingScreen() {
                   <Pencil size={16} color={colors.white} strokeWidth={2} />
                 </View>
               </Pressable>
-            </View>
-          </>}
+            )}
+          </View>
 
           {submitError && currentStep !== 3 ? (
             <View className={styles.submitErrorCard} accessibilityRole="alert">
@@ -1037,6 +986,13 @@ export default function OnboardingScreen() {
                   label={msg.occupation}
                   placeholder={msg.occupationPlaceholder}
                   options={occupationOptions}
+                  searchable
+                  dropdown
+                  searchPlaceholder={msg.searchOccupation}
+                  noResultsMessage={msg.noSearchResults}
+                  emptyMessage={msg.noSelectOptions}
+                  loadingMessage={msg.loadingOptions}
+                  clearSearchLabel={msg.clearSearch}
                   value={form.occupation}
                   onValueChange={handleOccupationChange}
                   error={errors.occupation}
@@ -1062,6 +1018,7 @@ export default function OnboardingScreen() {
                   onValueChange={handleFacultyChange}
                   error={errors.faculty}
                   searchable
+                  dropdown
                   searchPlaceholder={msg.searchFaculty}
                   noResultsMessage={msg.noSearchResults}
                   emptyMessage={msg.noSelectOptions}
@@ -1081,6 +1038,7 @@ export default function OnboardingScreen() {
                   onValueChange={handleDepartmentChange}
                   error={errors.department}
                   searchable
+                  dropdown
                   disabled={!form.faculty}
                   searchPlaceholder={msg.searchDepartment}
                   noResultsMessage={msg.noSearchResults}
