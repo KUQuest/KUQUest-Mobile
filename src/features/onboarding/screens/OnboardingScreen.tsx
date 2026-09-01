@@ -604,6 +604,7 @@ export default function OnboardingScreen() {
               placeholder={msg.occupationPlaceholder}
               options={occupationOptions}
               searchable
+              dropdown
               searchPlaceholder={msg.searchOccupation}
               noResultsMessage={msg.noSearchResults}
               emptyMessage={msg.noSelectOptions}
@@ -632,6 +633,7 @@ export default function OnboardingScreen() {
               onValueChange={handleFacultyChange}
               error={errors.faculty}
               searchable
+              dropdown
               searchPlaceholder={msg.searchFaculty}
               noResultsMessage={msg.noSearchResults}
               emptyMessage={msg.noSelectOptions}
@@ -647,6 +649,7 @@ export default function OnboardingScreen() {
               onValueChange={handleDepartmentChange}
               error={errors.department}
               searchable
+              dropdown
               disabled={!form.faculty}
               searchPlaceholder={msg.searchDepartment}
               noResultsMessage={msg.noSearchResults}
