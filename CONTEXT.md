@@ -1,271 +1,268 @@
 # KUQuest Mobile
 
-Mobile app for KU Account Holders—including Staff, Lecturers, and Students—to create and perform Quests.
+Mobile app for Kasetsart University Members—including Staff, Lecturers, and Students—to discover, create, perform, and settle Quests.
 
-## Language
+## Authority & Source of Truth
 
-**KU Account Holder**:
-A person authorized to use KUQuest through a KU affiliation as Staff, Lecturer, or Student.
-_Avoid_: User, account, customer
+The mirrored backend rulebook (`docs/rulebook/`, synced from `KUQuest-API-Server` at commit `1b55199d74d2e73a4a05a4662e49fb643cbee3e6`) is the canonical source of truth for domain rules, lifecycle transitions, state naming, money calculations, and administrative boundaries. This document defines the shared domain vocabulary for mobile implementation, engineering skills, and subagents.
 
-**Student**:
-A KU Account Holder whose KU affiliation is Student.
-_Avoid_: User, account, customer
+---
 
-**Staff**:
-A KU Account Holder whose KU affiliation is Staff.
+## Domain Language
 
-**Lecturer**:
-A KU Account Holder whose KU affiliation is Lecturer.
+### 1. Identity and Roles
+
+**Member**:
+An authenticated end user of KUQuest signed in with a Google account under the `@ku.th` email domain, represented by the `auth_user` table.
+_Avoid_: User, KU Account Holder, customer, account.
+
+**Admin**:
+A KUQuest operations operator signed in with credentials (not Google) through the Admin portal, represented by the `auth_admin` table. Operates with a single undifferentiated permission tier.
+_Avoid_: Member, User (Admins are never Members and vice versa).
 
 **Hirer**:
-A KU Account Holder who creates and funds a Quest. The role is open to Staff, Lecturers, and Students, but a Hirer cannot be a Worker on the same Quest. A KU Account Holder may be a Hirer for some Quests and a Worker for others.
+A Member who creates, publishes, and funds a Quest through Quest Escrow. The Hirer cannot be a Worker on their own Quest.
+_Avoid_: Giver, employer, client, job owner.
 
 **Worker**:
-A KU Account Holder who has been admitted or assigned to perform a Quest. In a Group Quest, each participating person is a separate Worker.
-
-**Applicant**:
-A KU Account Holder seeking selection for a Candidate Quest, either individually in SINGLE + CANDIDATE or as a member of a Quest Team in GROUP + CANDIDATE.
-_Avoid_: Worker, accepted participant
-
-**Participation**:
-A Quest setting that determines whether exactly one Worker (`SINGLE`) or multiple Workers (`GROUP`) may be admitted. `SINGLE` has Requested Headcount 1; `GROUP` may start below its Requested Headcount only after Partial-Start Consent.
-
-**Headcount**:
-The capacity quantity for a Quest. Requested Headcount is the number of Worker places the Hirer requests and funds; Actual Headcount is the number of Workers in the selected or approved roster.
-
-**Requested Headcount**:
-The number of Worker places the Hirer requests and funds before publishing. It is 1 for `SINGLE` and a maximum capacity for `GROUP`, not a minimum.
-
-**Actual Headcount**:
-The number of Workers in the roster that will start the Quest, fixed at direct admission for `SINGLE`, capacity for a full direct Group, Candidate Selection, or unanimous Partial-Start Consent. Rewards settle by Actual Headcount and unused requested places are refunded.
-
-**Mode**:
-A Quest setting that determines whether Workers join directly in arrival order (`NO_CANDIDATE`, formerly `FIRST_COME_FIRST_SERVED`, user-facing First-Come-First-Served) or are selected by the Hirer from Candidate Proposals (`CANDIDATE`).
-
-**Single Quest**:
-A Quest with `SINGLE` Participation and Requested Headcount 1. Before admission it may have no Worker; after direct admission or Selection it has exactly one Worker.
-
-**Group Quest**:
-A Quest with `GROUP` Participation. It supports multiple Workers, with capacity and rewards counted per Worker; `GROUP + CANDIDATE` uses Quest Team Proposals, while `GROUP + NO_CANDIDATE` uses direct joins and shared Work Chat without a team.
-
-**First-Come-First-Served Mode**:
-A Quest Mode in which eligible Workers join directly in arrival order (`NO_CANDIDATE`) until Requested Headcount is reached. No Proposal or Quest Team is needed.
-
-**Candidate Mode**:
-A Quest Mode in which individual KU Account Holders submit Candidate Proposals for a `SINGLE` Quest and the Hirer selects one Worker, or Quest Teams submit Proposals for a `GROUP` Quest and the Hirer selects one team.
-
-**Candidate Proposal**:
-A request for Hirer Selection: an individual Applicant's candidacy for `SINGLE + CANDIDATE`, or a submitted Quest Team roster for `GROUP + CANDIDATE`. An individual Proposal may be withdrawn before Selection and replaced by a new Proposal; a rejected Proposal cannot be resubmitted and a submitted team roster is locked.
-_Avoid_: direct join, Assignment
-
-**Selection**:
-The Hirer's one-time decision to accept one eligible Candidate Proposal. Manual rejection leaves the Quest OPEN but closes that Proposal permanently; Selection makes the chosen Applicant or team members Workers, creates their Assignments, opens their Work Chat, and auto-rejects competing submitted Proposals.
-
-**Quest Team**:
-A group of KU Account Holders formed by a Quest Team Leader to submit one Proposal for a `GROUP + CANDIDATE` Quest. Multiple teams may propose, each Worker may belong to only one team per Quest, a team may submit any non-empty roster up to Requested Headcount, has no team name, and becomes immutable when the Leader confirms submission; after Selection, every member becomes a Worker with a separate Quest Assignment.
-
-**Team Roster**:
-The accepted KU Account Holders in a Quest Team. Only accepted members count toward Actual Headcount; the Leader's Review confirmation locks the roster for Selection.
-
-**Quest Team Leader**:
-The member of a Quest Team who creates, reviews, and submits the team. A Quest Team Leader exists only for `GROUP + CANDIDATE`; `GROUP + NO_CANDIDATE` has no team or leader.
-
-**Team Invitation**:
-An invitation from a Quest Team Leader to a KU Account Holder found through KU-member search. It lasts 24 hours; a declined or expired invitation may be replaced before the team roster is submitted, but no invitation can change a locked roster.
-
-**Sign-in**:
-Single action that authenticates a KU Account Holder via Google OAuth (Better Auth), restricted to the `ku.th` email domain. There is no separate registration step — the first successful sign-in creates the KU Account Holder record automatically.
-_Avoid_: Sign-up, login, register
-
-**Onboarding**:
-Legacy name for the first-run experience after a Student's first sign-in. The canonical user-facing term is Academic Registration.
-_Avoid_: Using Onboarding for the canonical Academic Registration flow.
-
-**Academic Registration**:
-The canonical first-run flow and resulting academic record where a Student supplies the academic and contact details needed before using the main app. Only Students complete Academic Registration; it is not a separate sign-up step.
-_Avoid_: Onboarding, setup, sign-up
-
-**KU Account Holder Profile**:
-A KU Account Holder's biographical and publicly useful information, including profile text, avatar, portfolio work, certificates, and eligible Quest Reviews. The Profile is visible to all authenticated KU Account Holders. Academic Registration supplies required Student-specific academic identity fields but is a separate record.
-_Avoid_: Student Profile, account profile, registration profile
-
-**Experience**:
-A chronological record of a KU Account Holder's work, tutoring, internship, or other background entries shown on the KU Account Holder Profile. Experience is distinct from Portfolio Work, which showcases individual projects.
-_Avoid_: Work, portfolio item, job history
-
-**Portfolio Work**:
-A project or achievement showcased by a KU Account Holder as part of their KU Account Holder Profile, optionally with an image and description.
-_Avoid_: Experience, job, task
-
-**Review**:
-Reciprocal feedback between a Hirer and each Worker after an eligible completed Quest relationship, displayed as public KU Account Holder Profile information. Reviews contribute to the reviewed KU Account Holder's aggregate Profile Rating when the review is eligible.
-_Avoid_: Comment, testimonial, message
-
-**Profile Rating**:
-An aggregate score and count derived from eligible Quest Reviews and displayed on the reviewed KU Account Holder Profile.
-_Avoid_: Quest score, user score
-
-**Certificate Preview**:
-The touch interaction that opens a certificate image from its green certificate icon without replacing the certificate summary row.
-_Avoid_: Hover preview, certificate attachment
-
-**Faculty** / **Department**:
-A Department belongs to exactly one Faculty. Both are seeded server-side and picked from a fixed list during Academic Registration.
-
-**Academic Year**:
-The numeric year of study/admission entered during Academic Registration — not a calendar year.
-
-**Quest**:
-A work opportunity created and funded by a Hirer for KU Account Holders to discover, apply for, accept, and complete under the app's quest rules.
-_Avoid_: Job, task, gig
-
-**Quest Lifecycle State**:
-The current state of a Quest, which determines its visibility and whether it can accept additional Workers. The exact canonical adapter values are `QUEST_DRAFT`, `QUEST_OPEN`, `QUEST_ASSIGNED`, `QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT`, `QUEST_AWAITING_EDIT_CONSENT`, `QUEST_IN_PROGRESS`, and `QUEST_CANCELLED`; `QUEST_AWAITING_CONSENT` is a legacy generic value only.
-
-**DRAFT**:
-The initial Quest Lifecycle State (`QUEST_DRAFT`) before the Hirer publishes the Quest. A DRAFT Quest is not shown on the Quest Board.
-
-**OPEN**:
-The Quest Lifecycle State (`QUEST_OPEN`) after the Hirer publishes a Quest and before its start time, while direct capacity or Candidate Selection remains available. An OPEN Quest is shown on the Quest Board and can accept direct joins, individual Proposals, or forming/submitted team Proposals according to its combination.
-
-**ASSIGNED**:
-The Quest Lifecycle State (`QUEST_ASSIGNED`) reached before the start time when its admitted or selected roster is fixed. It is hidden from the Quest Board, cannot accept additional Workers, and becomes IN_PROGRESS at the start time; a selected Candidate team may have Actual Headcount below Requested Headcount.
-
-**AWAITING_CONSENT**:
-A legacy umbrella label for older data, formerly exposed as `QUEST_AWAITING_CONSENT`, that does not distinguish consent purpose and must not be emitted by the adapter. New data uses `QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT` for a partial direct Group start and `QUEST_AWAITING_EDIT_CONSENT` for an edit request.
-
-**QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT**:
-The canonical state at start time when a `GROUP + NO_CANDIDATE` Quest has a non-empty roster below Requested Headcount. The roster is frozen for 5 minutes while the Hirer and every joined Worker must unanimously approve; rejection or timeout produces `CANCELLED`.
-
-**QUEST_AWAITING_EDIT_CONSENT**:
-The canonical state while a Hirer-requested Quest edit awaits a 5-minute unanimous vote from every active Worker. Approval applies the changes and restores the previous state; rejection or timeout discards them and rolls back to that state.
-
-**IN_PROGRESS**:
-The Quest Lifecycle State (`QUEST_IN_PROGRESS`) in which the fixed Actual Headcount performs the Quest after the start time, either with a full roster, after Candidate Selection, or after approved Partial-Start Consent. An IN_PROGRESS Quest is hidden from the Quest Board and cannot accept additional Workers.
-
-**CANCELLED**:
-The terminal Quest Lifecycle State (`QUEST_CANCELLED`) for a Quest that will not start or has been cancelled. A pre-start cancellation has no active Assignments, gives a full refund, and makes any Work Chat read-only.
-
-**Worker Consent**:
-A Worker's approval vote in a Partial-Start Consent. It is distinct from Edit Consent and is sufficient only when the Hirer and every other joined Worker also approve.
-
-**Partial-Start Consent**:
-A 5-minute unanimous approval gate for a non-empty partial `GROUP + NO_CANDIDATE` roster at start time. The required voters are the Hirer and all joined Workers; approval starts the Quest at Actual Headcount, while rejection or timeout cancels it with a full refund.
-
-**Edit Consent**:
-A 5-minute unanimous vote by active Workers on a Hirer-requested editable Quest change. Rejection or timeout discards the changes and restores the previous lifecycle state; the Hirer does not vote in this worker-only consent.
-
-**Quest Funding**:
-The Hirer's reservation of the per-Worker reward for every Requested Headcount place before a Quest becomes Discoverable. Settlement pays Actual Headcount and refunds reserved places that were not used.
-
-**Quest Cancellation**:
-The ending of a Quest before its expected completion. A pre-start `CANCELLED` Quest receives a full refund, has no active Assignments, and cannot admit new Workers; later cancellation follows the applicable Quest cancellation policy.
-
-**Actual Settlement**:
-The reward and refund result calculated from Actual Headcount: pay one reward for each Worker in the fixed roster and return the reserved reward for each Requested Headcount place not used.
-
-**Work Chat**:
-The shared Quest conversation for the Hirer and admitted or selected Workers. Its membership and capability come from the Canonical Quest Adapter; it opens on the first direct Group join or after Candidate Selection, remains writable for active participants and while partial-start consent is pending, and becomes read-only after cancellation or another terminal state. Prototype messages are session-only and are cleared by Fixture Reset.
-
-**Quest Board**:
-The main discovery area where available Quests are presented to KU Account Holders seeking to perform them.
-_Avoid_: Home, marketplace, feed
-
-**My Quests**:
-The area where a KU Account Holder tracks Quests they created as a Hirer, applied to as an Applicant, or perform as a Worker. A Hirer's own Quests are managed here rather than displayed on that Hirer's Quest Board.
-_Avoid_: My jobs, saved quests, quest history
-
-**Quest Card**:
-A compact Quest Board summary that lets a KU Account Holder compare a Quest's title, reward, description, timing, tags, and participation mode before opening its details. A Quest Card is shown on the Quest Board only while the Quest is OPEN.
-_Avoid_: Quest preview, job card
-
-**Quest Detail**:
-The focused view for one Quest, where a KU Account Holder can review its complete requirements and lifecycle-appropriate next action before applying or participating.
-_Avoid_: Quest modal, job detail
-
-**Quest Board Filter**:
-A temporary constraint applied to Quest Board results using facets such as category, tag, reward bounds, deadline, start-time bucket, or location.
-_Avoid_: Quest search, Quest filter
-
-**Quest Tag**:
-A descriptive label attached to a Quest that helps a KU Account Holder identify its subject or context.
-_Avoid_: Category, keyword
-
-**Reward Bounds**:
-The minimum and maximum per-person reward a KU Account Holder is willing to consider for a Quest; either bound may be absent.
-_Avoid_: Wage range, salary range
-
-**Start-Time Bucket**:
-A broad time-of-day classification based on when a Quest begins: Morning, Afternoon, or Evening.
-_Avoid_: Schedule range, deadline
-
-**Quest Board Sort**:
-The ordering rule applied to visible Quest Board results, such as recommendation, recency, deadline, or reward.
-_Avoid_: Quest filter, ranking
-
-**Discoverable Quest**:
-A published Quest that is still within its participation window and is eligible to appear in the Quest Board for a KU Account Holder seeking to perform it.
-_Avoid_: Open job, active task
-
-**Quest Board Fixture**:
-A deterministic record in the `questFixtures` catalog used to exercise the Quest Board's populated, filtered, empty, loading, failure, and hidden scenario states before live Quest APIs are connected. Fixtures are projected through Quest Workflow and its Canonical Quest Adapter rather than treated as a backend contract.
-_Avoid_: Mock production Quest, fake Quest
-
-**Canonical Quest Adapter**:
-The `questFixtureAdapter` local prototype boundary and authoritative source for Quest, Quest Team, Candidate Proposal/Quest Application, invitation, Assignment, Work Chat membership/capability/messages, consent, and requested-versus-actual headcount behavior. Quest Workflow is the screen-facing facade that owns viewer-explicit projections, lifecycle time, subscriptions, and adapter delegation. The adapter replaces the legacy application stores and static domain fallbacks, which must be removed, and is authoritative for the prototype only; its fields and transitions remain provisional pending the backend contract.
-
-**Quest Workflow**:
-The `questWorkflow` screen-facing facade over the Canonical Quest Adapter. Screens and routes use its projections and actions instead of reading fixture state or capability fields directly; it keeps viewer identity and lifecycle clock decisions in one seam.
-
-**Prototype Scenario**:
-A hidden, route-addressable fixture in `questFixtures` for exercising one behavior without appearing in normal Quest Board discovery. The four scenarios are `team-forming-demo`, `team-selection-demo`, `single-candidate-demo`, and `partial-group-start-demo`.
-
-**Prototype Persona**:
-One of four deterministic scenario identities—Hirer, Applicant, Quest Team Leader, or Worker—used to exercise Quest Workflow actions against the hidden scenarios. Personas are fixture identities, not production accounts.
-
-**Fixture Reset**:
-The `questWorkflow.reset()` operation that delegates to the adapter and restores all four scenario personas and their Teams, Proposals, invitations, Assignments, consent, settlement, chat membership, and session messages to deterministic seed state. It does not create a second draft store.
-
-**Quest Draft Persistence**:
-Draft storage through SecureStore only, separate from fixture and adapter state. Drafts are not stored in `src/data/localDemo`, the Quest catalog, or adapter chat state; the `src/data/localDemo` path must be deleted rather than retained as a fallback.
-
-**Quest Review Sheet**:
-The shared existing bottom-sheet surface used to review a Quest summary and publish checks before publishing, without adding a new dependency.
-
-**Recommended Ordering**:
-The Quest Board ordering that prioritizes a KU Account Holder's declared interests, then earlier deadlines, then newer postings when the values are otherwise equal.
-_Avoid_: Random order, popularity sort
-
-**Quest Application**:
-The transport-compatible persisted record for an individual Candidate Proposal in a `SINGLE + CANDIDATE` Quest. It may be pending, withdrawn before Selection and replaced by a new Proposal, selected, or rejected; a rejected Proposal cannot be resubmitted and Applications are not used for direct joins or team Proposals.
-_Avoid_: Booking, acceptance
-
-**Application Pending**:
-The state in which an Applicant's individual Quest Application is awaiting the Hirer's Selection for a `SINGLE + CANDIDATE` Quest.
-_Avoid_: Saved Quest, accepted Quest
+A Member accepted to perform work on a Quest, holding an active or completed Assignment.
+_Avoid_: Hunter, employee, contractor, candidate.
+
+**Candidate**:
+A Member who has applied to a `CANDIDATE` Quest individually, or who belongs to a forming or submitted Candidate Team. A Candidate is not a Worker before Assignment creation.
+_Avoid_: Applicant, Worker, Accepted Participant.
+
+**Prospective Worker**:
+A Member considering participation on an open Quest who does not have an active Assignment. A Prospective Worker may open a Candidate Inquiry Conversation, apply as a Candidate, join a Candidate Team, or join directly in `FIRST_COME_FIRST_SERVED` mode.
+_Avoid_: Worker, Accepted Participant.
 
 **Accepted Participant**:
-A Worker who joined directly under `NO_CANDIDATE` or was selected by the Hirer under `CANDIDATE`. A pending Applicant or invited team member is not an Accepted Participant.
-_Avoid_: Applicant, assignee
+The current Hirer or an Active Worker on a Quest. Only Accepted Participants have current membership and write access in the Work Conversation.
+_Avoid_: Candidate, Prospective Worker, Departed Worker.
 
-**Quest Assignment**:
-The Quest relationship created for every Worker admitted by direct join or Candidate Selection. Each Worker in a selected Quest Team receives a separate Quest Assignment, Actual Headcount counts the fixed roster, and a KU Account Holder may have at most one active membership or pending Candidate Proposal for a Quest; active Assignments are removed when a partial start is cancelled.
+**Team Leader**:
+The Candidate who creates, manages, and explicitly submits a Candidate Team for a `GROUP + CANDIDATE` Quest. After Hirer selection, the Team Leader presses Start Work and submits/confirms the Team's proof of work.
+_Avoid_: Hirer, leader of an FCFS group.
 
-**CANCELLED Assignment**:
-A retained historical record for a Quest Assignment that cannot proceed because its Quest became `CANCELLED`. A Worker with a CANCELLED Assignment does not perform that Quest.
+**Candidate Team**:
+A forming or submitted group of Candidates for one `GROUP + CANDIDATE` Quest, formed using a Server-generated Join Code. Submitted at exact headcount; immutable once submitted.
+_Avoid_: Quest Team, Work Conversation, direct group.
 
-**Quest Completion**:
-The Hirer's confirmation that a specific Worker has completed their Quest Assignment. Group Workers may complete and receive confirmation independently.
+**Join Code**:
+A temporary, Server-generated code valid for 24 hours that allows an eligible Prospective Worker to join a forming Candidate Team. Regeneratable by the Team Leader.
+_Avoid_: Team invitation, permanent secret.
 
-**Quest Full**:
-The availability state in which a direct or selected roster has reached Requested Headcount and cannot admit another Worker or selected team. A partial submitted Candidate Team is still selectable and does not make the Quest full before Selection.
-_Avoid_: Closed Quest, completed Quest
+**Active Worker**:
+A Worker whose Assignment on a Quest is `ASSIGNMENT_ACTIVE`.
+_Avoid_: Candidate, Departed Worker.
 
-**Applications Closed**:
-The availability state in which a Quest's application deadline has passed and new Quest Applications or team Proposals cannot be submitted.
-_Avoid_: Expired Quest, completed Quest
+**Departed Worker**:
+A former Active Worker whose Assignment ended before Quest completion (e.g. through cancellation). Retains read-only access to messages sent up to their departure.
+_Avoid_: Active Worker, Candidate.
 
-**Ending Soon**:
-A discoverable Quest whose application deadline is within three days and therefore deserves heightened timing emphasis in the Board UI.
-_Avoid_: Urgent Quest, overdue Quest
+---
+
+### 2. Academic Registration & Profile
+
+**Academic Registration**:
+The canonical, resumable first-run step after first sign-in where a Member supplies name, Telephone, Occupation, Student ID (conditional based on Occupation), Department, and Terms acceptance, served by `/api/v1/academic-registration/*`.
+_Avoid_: Onboarding (legacy debug scaffolding term), setup, sign-up.
+
+**Occupation**:
+What a Member is at KU—exactly Staff, Lecturer, or Student—stored as `auth_user.occupationId`. Each Occupation carries a `requiresStudentId` boolean; only the Student occupation requires a Student ID.
+_Avoid_: Hardcoding Occupation name checks.
+
+**Student ID**:
+A KU-issued 10-digit identifier provided during Academic Registration when required. Distinct from internal auth UUIDs.
+_Avoid_: User ID, student number.
+
+**Faculty** / **Department**:
+A Member's academic Department belongs to a Faculty. Both are seeded server-side and selected by canonical ID.
+_Avoid_: Major, free-text faculty.
+
+**Profile**:
+Scalar fields on `auth_user` (name, bio, Telephone, Student ID, Department) served by `/api/v1/profile`. Editable fields can be replaced but never cleared.
+_Avoid_: Account, treating Profile as the whole of a Member's data.
+
+**Work Experience**:
+A chronological public record of a Member's work, internship, or tutoring roles managed via `/api/v1/profile/experience`.
+_Avoid_: Experience history, treating Experience as a scalar Profile field.
+
+**Portfolio Item**:
+A project or achievement showcased on a Member's profile with optional images and description, managed via `/api/v1/profile/portfolio`.
+_Avoid_: Experience, job.
+
+**Certificate**:
+A credential claimed by a Member (name, issuer, issue date, credential image) managed via `/api/v1/profile/certificates`.
+_Avoid_: Badge, qualification, verifyUrl (superseded).
+
+**Public Profile**:
+The read-only view of another Member (`GET /api/v1/profile/:userId`), inlining Portfolio Items, Certificates, Work Experience, Reputation, and derived Profile Tags. No opt-out.
+_Avoid_: Own Profile (different schema and permissions).
+
+**Tag**:
+A shared Quest skill label. A Member's profile Tags are derived automatically from their three most frequent Tags across successfully completed Quests.
+_Avoid_: Profile skill, category, manually assigned skill.
+
+**Red Flag**:
+A temporary administrative mark on a Member's profile after an Admin confirms a misconduct violation, temporarily blocking the Member from publishing Quests, applying as a Candidate, or joining FCFS Quests. Expires automatically after 7 days.
+_Avoid_: Ban, Suspension, Wallet Status.
+
+**Member Ban**:
+An administrative restriction blocking a Member from signing in, resulting from misconduct or review penalty ladders. Auto-freezes the Member's Wallet.
+_Avoid_: Wallet Freeze alone.
+
+---
+
+### 3. Quest Structure, Modes & Lifecycle
+
+**Quest**:
+A bounded agreement for work created and funded by a Hirer.
+
+**Selection Mode**:
+The mechanism for admitting Workers:
+
+- `FIRST_COME_FIRST_SERVED` (FCFS): Eligible Workers join directly in arrival order until headcount is reached.
+- `CANDIDATE`: Candidates apply individually or in Candidate Teams; the Hirer selects the accepted roster.
+  _Avoid_: `NO_CANDIDATE` (legacy implementation name).
+
+**Participation**:
+The headcount structure: `SINGLE` (headcount = 1) or `GROUP` (headcount > 1, up to 20).
+
+**Headcount**:
+The published number of Worker places requested and funded by the Hirer.
+
+**dueAt**:
+The mandatory deadline for required Worker actions (Asia/Bangkok time), set before publish and immutable once `QUEST_ASSIGNED`. The Server is the sole authority on timeliness.
+
+**Quest Condition**:
+The ordered set of requirements for a Quest. Must have at least one `Condition Item` (non-empty, &le;255 characters).
+
+**Quest Edit**:
+A proposed change to Quest Condition items submitted by the Hirer while the Quest is in `QUEST_ASSIGNED`. Requires unanimous acceptance by all Active Workers within **10 minutes**. Unanimous accept &rarr; `EDIT_REQUEST_APPLIED`; any decline or timeout &rarr; `EDIT_REQUEST_FAILED` (prior condition stays).
+
+**Quest Lifecycle States**:
+The canonical 7 states for a Quest:
+
+1. `QUEST_DRAFT`: Hirer prepares details and conditions; not discoverable.
+2. `QUEST_OPEN`: Published and funded in Quest Escrow; discoverable on Quest Board; accepts joins or Candidate proposals.
+3. `QUEST_ASSIGNED`: Accepted roster is fixed; Work Conversation opens; Hirer may propose Quest Edits; required starters can press Start Work.
+4. `QUEST_IN_PROGRESS`: Required Start Work actions completed; work is underway until `dueAt`.
+5. `QUEST_COMPLETED`: Required work/proof approved; rewards settled to Workers; Platform Fee retained; terminal.
+6. `QUEST_CANCELLED`: Quest cancelled before completion; funds refunded per cancellation policy; terminal.
+7. `QUEST_FAILED`: Required start work, proof, or confirmation missing at `dueAt`, or proof marked `PROOF_NOT_APPROVED`; unpaid funds held for 7 days; terminal.
+
+_Avoid_: `QUEST_AWAITING_CONSENT`, `QUEST_SUBMITTED`, `QUEST_APPROVED`, `QUEST_REWORK`, `QUEST_DISPUTED`, `QUEST_HIDDEN`, `UNFILLED`.
+
+**Assignment**:
+The canonical record of one Worker's accepted participation in a Quest (`ASSIGNMENT_ACTIVE`, `ASSIGNMENT_COMPLETED`, `ASSIGNMENT_INCOMPLETE`, `ASSIGNMENT_CANCELLED`).
+
+**Start Work**:
+The action performed by required starters between `startTime` and `dueAt` that moves the Quest from `QUEST_ASSIGNED` to `QUEST_IN_PROGRESS`.
+
+- `SINGLE` (FCFS or Candidate): The Worker.
+- `GROUP + FCFS`: Every Active Worker must start.
+- `GROUP + CANDIDATE`: Team Leader starts for the team.
+
+**Underfilled GROUP + FCFS Quest**:
+An FCFS Group Quest that reaches `startTime` with fewer Active Workers than published headcount:
+
+1. Hirer has 10 minutes to choose proceed or cancel.
+2. If proceed, each joined Active Worker has 10 minutes to consent to the new split reward and `dueAt`.
+3. Unanimous consent moves Quest to `QUEST_ASSIGNED`; any decline or timeout transitions to `QUEST_CANCELLED` with a full refund.
+
+---
+
+### 4. Proof Submission & Reviews
+
+**Proof Submission**:
+The record of completed work submitted before `dueAt` when `proofRequired=true`.
+
+- Required submitter: Worker for `SINGLE` and `GROUP + FCFS`; Team Leader for `GROUP + CANDIDATE`.
+- Attachments: 1 to 5 files (images, PDF, video &le;10 MB each) plus optional description (&le;1,000 characters). Locked on send.
+- When `proofRequired=false`: Required submitter confirms completion before `dueAt` without file uploads.
+
+**Proof Review Window**:
+The 24-hour period after proof submission where the Hirer reviews the proof (`PROOF_PENDING`, `PROOF_APPROVED`, `PROOF_NOT_APPROVED`). If no decision is made within 24 hours, the Server records `PROOF_APPROVED` automatically.
+
+**PROOF_NOT_APPROVED**:
+A Hirer's decision to reject proof (requires reason &le;1,000 chars), which immediately makes the Quest `QUEST_FAILED`, the Assignment `ASSIGNMENT_INCOMPLETE`, and creates an immutable **Admin Review Item**. There is no Rework cycle.
+
+**Review**:
+A rating and optional comment between a Hirer and a Worker after ANY Terminal Quest State (`QUEST_COMPLETED`, `QUEST_FAILED`, `QUEST_CANCELLED`).
+
+- Allowed at most once per pair per direction.
+- Author may edit for 7 days after the Quest becomes terminal. Cannot be deleted.
+- Contributes to Member Reputation.
+
+---
+
+### 5. Finance, Wallet & Escrow
+
+**Integer Satang**:
+The canonical unit for all financial calculations and balances (฿1.00 = 100 Satang). Max balance capacity is 2,000,000,000 Satang (฿20,000,000).
+
+**Wallet**:
+A Member's funds partitioned into 4 distinct compartments:
+
+1. `Spending Balance`: Funds available to commit to Quests.
+2. `Earnings Balance`: Funds earned from completed Quests; convertible or withdrawable.
+3. `Funding Reserved (Quest Escrow)`: Spending balance locked for published Quests.
+4. `Reserved for Payouts (Payout Reserve)`: Earnings balance locked for pending Payouts.
+
+**Wallet Status**:
+`ACTIVE`, `FROZEN` (administrative hold), `SUSPENDED` (policy hold), `CLOSED` (terminal).
+
+**Quest Funding Total (`questFundingTotal`)**:
+The inclusive amount the Hirer commits for one Worker slot, containing that slot's `Quest Reward` and `Platform Fee`.
+
+**Platform Fee**:
+The fee retained on successful Quest completion, calculated from net Quest Reward using active Money Policy (`ceil(Quest Reward × feeRate)` with rounding mode `UP`).
+
+**Quest Escrow**:
+The atomic lock of `questFundingTotal × headcount` from the Hirer's Spending Balance at publish.
+
+**Top-up**:
+An inbound PromptPay QR deposit crediting Spending Balance upon provider webhook confirmation (quotes valid for 5 minutes).
+
+**Earnings Conversion**:
+An instant, fee-free, and irreversible transfer from Earnings Balance to Spending Balance.
+
+**Payout**:
+An outbound transfer of Earnings Balance to a verified Thai Bank or PromptPay destination, requiring manual Admin Approval (`PENDING_ADMIN_APPROVAL`).
+
+**Cancellation Settlement**:
+
+- Cancel while `QUEST_OPEN`: 100% refund of Quest Escrow to Hirer.
+- Cancel while `QUEST_ASSIGNED`: 20% of Worker Reward pool paid to Active Workers; 80% and Platform Fee refunded to Hirer.
+- Cancel while `QUEST_IN_PROGRESS`: 100% Worker Rewards settled to Workers; Platform Fee retained; 0% refunded to Hirer.
+
+**7-Day Failure Money Hold**:
+On `QUEST_FAILED`, unpaid funds return to the Hirer but remain held in the Funding Reservation for **7 days** before releasing to Spending Balance, preserving funds for potential Dispute Case resolution.
+
+---
+
+### 6. Conversations & Work Chat
+
+**Candidate Inquiry Conversation (`CONVERSATION_CANDIDATE_INQUIRY`)**:
+A private, 1-on-1 Conversation between the Hirer and one Prospective Worker while the Quest is `QUEST_OPEN`. Disappears completely (`INQUIRY_CLOSED`) upon assignment, quest assignment, or cancellation. Prohibits KU bot System Messages.
+
+**Work Conversation (`CONVERSATION_WORK`)**:
+The single coordination Conversation for an assigned Quest, created upon first `ASSIGNMENT_ACTIVE`. Members include the Hirer and all Active Workers. Features KU bot System Messages, attachments (&le;10 MB, 15-minute temporary URLs), private Read Cursors, and rate limits (30 msg / 10 att per min). Becomes permanent read-only archive upon terminal states.
+
+**System Message**:
+An immutable workflow event message posted exclusively in Work Conversations by the KU bot.
+
+---
+
+### 7. Admin Operations & Dispute Cases
+
+**Dispute Case**:
+A case opened on a `QUEST_FAILED` Quest by the Hirer/Worker (within 1 day) or by an Admin (within 5 days) that can redirect funds from the 7-day held Funding Reservation to a Worker. Does not change `QUEST_FAILED` state.
+_Avoid_: `QUEST_DISPUTED`.
+
+**Admin Review Item**:
+An automatic audit record created when proof is marked `PROOF_NOT_APPROVED`.
+
+**Quest Hiding**:
+An Admin flag (`hiddenAt`) removing a Quest from discovery without affecting active work, deadlines, or chat.
