@@ -8,7 +8,7 @@ const styles = {
   progressContainer: 'flex-row gap-[6px] mt-[16px] w-full',
   progressBarActive: 'h-[6px] flex-1 bg-ku-primary rounded-[4px]',
   progressBarInactive: 'h-[6px] flex-1 bg-ku-border-subtle rounded-[4px]',
-  avatarPlaceholder: 'w-[80px] h-[80px] rounded-[40px] bg-ku-surface-placeholder justify-center items-center relative border border-ku-border-muted mt-[24px]',
+  avatarPlaceholder: 'w-[80px] h-[80px] rounded-[40px] bg-ku-surface-placeholder justify-center items-center self-center relative border border-ku-border-muted mt-[24px]',
   avatarImage: 'w-full h-full rounded-[40px]',
   editBadge: 'shadow-[0px_1px_1.5px_rgb(18_32_24_/0.2)] absolute -right-[4px] -bottom-[4px] bg-ku-success-bright w-[28px] h-[28px] rounded-[14px] justify-center items-center border-2 border-ku-white',
   formSection: 'w-full bg-ku-card border border-ku-border-subtle rounded-[16px] px-[16px] py-[20px]',

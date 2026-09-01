@@ -986,6 +986,13 @@ export default function OnboardingScreen() {
                   label={msg.occupation}
                   placeholder={msg.occupationPlaceholder}
                   options={occupationOptions}
+                  searchable
+                  dropdown
+                  searchPlaceholder={msg.searchOccupation}
+                  noResultsMessage={msg.noSearchResults}
+                  emptyMessage={msg.noSelectOptions}
+                  loadingMessage={msg.loadingOptions}
+                  clearSearchLabel={msg.clearSearch}
                   value={form.occupation}
                   onValueChange={handleOccupationChange}
                   error={errors.occupation}
@@ -1011,6 +1018,7 @@ export default function OnboardingScreen() {
                   onValueChange={handleFacultyChange}
                   error={errors.faculty}
                   searchable
+                  dropdown
                   searchPlaceholder={msg.searchFaculty}
                   noResultsMessage={msg.noSearchResults}
                   emptyMessage={msg.noSelectOptions}
@@ -1030,6 +1038,7 @@ export default function OnboardingScreen() {
                   onValueChange={handleDepartmentChange}
                   error={errors.department}
                   searchable
+                  dropdown
                   disabled={!form.faculty}
                   searchPlaceholder={msg.searchDepartment}
                   noResultsMessage={msg.noSearchResults}

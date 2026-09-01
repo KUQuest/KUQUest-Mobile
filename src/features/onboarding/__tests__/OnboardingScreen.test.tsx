@@ -192,6 +192,28 @@ describe('OnboardingScreen Academic Registration selections', () => {
     expect(screen.queryByText('Software Engineering')).toBeNull();
   });
 
+  test('opens searchable dropdowns for occupation, faculty, and department', async () => {
+    const api = createApi();
+    prepareAuth(api);
+    await render(<OnboardingScreen />);
+
+    await waitFor(() => expect(screen.getAllByTestId('select-trigger')).toHaveLength(3));
+    const triggers = () => screen.getAllByTestId('select-trigger');
+
+    await fireEvent.press(triggers()[0]);
+    expect(screen.getByTestId('select-search-input').props.placeholder).toBe('Search occupation');
+    expect(screen.getByTestId('select-dropdown')).toBeTruthy();
+    expect(screen.queryByTestId('close-select-button')).toBeNull();
+    await fireEvent.press(screen.getByTestId('select-dropdown-dismiss'));
+
+    await fireEvent.press(triggers()[1]);
+    expect(screen.getByTestId('select-search-input').props.placeholder).toBe('Search faculty');
+    await fireEvent.press(screen.getByText('Faculty of Engineering'));
+
+    await fireEvent.press(triggers()[2]);
+    expect(screen.getByTestId('select-search-input').props.placeholder).toBe('Search department');
+  });
+
   test('submits canonical Occupation and Department IDs', async () => {
     const api = createApi({
       getAcademicRegistrationStatus: jest.fn().mockResolvedValue({

@@ -12,7 +12,6 @@ import {
   questFixtureAdapter,
   toBoardQuest,
   type QuestFixtureAdapter,
-  type QuestFixtureCreateInput,
   type QuestActionResult,
   type QuestFixtureAction,
   type QuestFixtureResult,
