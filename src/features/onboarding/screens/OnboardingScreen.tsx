@@ -995,8 +995,8 @@ export default function OnboardingScreen() {
                   <Pencil size={16} color={colors.white} strokeWidth={2} />
                 </View>
               </Pressable>
-            )}
-          </View>
+            </View>
+          </>}
 
           {submitError && currentStep !== 3 ? (
             <View className={styles.submitErrorCard} accessibilityRole="alert">
