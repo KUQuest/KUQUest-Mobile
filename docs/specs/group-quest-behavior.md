@@ -2,7 +2,7 @@
 
 Type: Specification Reference
 Domain: Quest Participation Modes, Candidate Teams, Consent Gates, Settlement
-Authority: Aligned with the mirrored backend Quest Rulebook (`docs/rulebook/quest/`, synced from `KUQuest-API-Server` at commit `1b55199d74d2e73a4a05a4662e49fb643cbee3e6`). Defines the exact behavior for all participation and selection mode combinations.
+Authority: Aligned with the mirrored backend Quest Rulebook (`docs/rulebook/quest/`, synced from `KUQuest-API-Server` at commit `fc47a089f5ae4d40914ac771baef9f2e7a0bef63`). Defines the exact behavior for all participation and selection mode combinations.
 
 ---
 
@@ -13,10 +13,10 @@ Every Quest is defined by two axes:
 1. **Participation**: `SINGLE` (headcount = 1) or `GROUP` (headcount > 1, up to 20).
 2. **Selection Mode**: `FIRST_COME_FIRST_SERVED` (FCFS) or `CANDIDATE`.
 
-| Dimension                    | `FIRST_COME_FIRST_SERVED` (FCFS)                                                                                                                                                                      | `CANDIDATE`                                                                                                                                                                       |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`SINGLE`** (Headcount = 1) | Direct join by first eligible Member.<br>Becomes `QUEST_ASSIGNED` immediately.<br>Worker presses Start Work.                                                                                          | Individual Candidate applications.<br>Hirer selects 1 Candidate &rarr; `QUEST_ASSIGNED`.<br>Selected Worker presses Start Work.                                                   |
-| **`GROUP`** (Headcount > 1)  | Direct joins in arrival order.<br>Full roster at `startTime` &rarr; `QUEST_ASSIGNED`.<br>Underfilled at `startTime` &rarr; 10m Hirer / 10m Worker consent.<br>Every Active Worker presses Start Work. | Candidate Teams form via **Join Code**.<br>Team Leader submits exact-headcount team.<br>Hirer selects 1 Team &rarr; `QUEST_ASSIGNED`.<br>Team Leader presses Start Work for team. |
+| Dimension                    | `FIRST_COME_FIRST_SERVED` (FCFS)                                                                                                                                                                      | `CANDIDATE`                                                                                                                                                                                                                                                                       |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`SINGLE`** (Headcount = 1) | Direct join by first eligible Member.<br>Becomes `QUEST_ASSIGNED` immediately.<br>Worker presses Start Work.                                                                                          | Individual Candidate applications.<br>Hirer selects 1 Candidate &rarr; `QUEST_ASSIGNED`.<br>Selected Worker presses Start Work.                                                                                                                                                   |
+| **`GROUP`** (Headcount > 1)  | Direct joins in arrival order.<br>Full roster at `startTime` &rarr; `QUEST_ASSIGNED`.<br>Underfilled at `startTime` &rarr; 10m Hirer / 10m Worker consent.<br>Every Active Worker presses Start Work. | Candidate Teams form via **Join Code** (Team Leader enters headcount 2..published `headcount`).<br>Leader submits team with text and &ge;1 file.<br>Hirer selects 1 Team &rarr; `QUEST_ASSIGNED`.<br>Leader starts/submits; complete Worker Reward pool paid only to Team Leader. |
 
 ---
 
@@ -65,14 +65,13 @@ Every Quest is defined by two axes:
 
 ### 2.4 Quadrant 4: `GROUP + CANDIDATE`
 
-- **Roster Capacity**: Published `headcount` (2 to 20 Workers).
+- **Roster Capacity**: Published Quest `headcount` (2 to 20). Candidate Team enters Team `headcount` from 2 through published `headcount` (Team Leader counts as 1).
 - **Candidate Team Formation**:
-  - An eligible Candidate creates a forming team as **Team Leader**.
-  - Server generates a unique **Join Code** valid for 24 hours. Team Leader may regenerate the code at any time.
-  - Prospective Workers join the team using the Join Code.
+  - Before creating the team, the **Team Leader** enters a Team `headcount` (from 2 through the published Quest `headcount`).
+  - Server generates a unique **Join Code** valid for 24 hours. The Team Leader sends the code to prospective Team Members; members join only by accepting the Join Code.
   - A Candidate may belong to at most one team per Quest.
-  - Members may leave; Team Leader may remove members. If Team Leader leaves, leadership passes to the earliest joined member.
-  - **Team Submission**: At exact `headcount`, Team Leader explicitly submits the team (`TEAM_SUBMITTED`). Once submitted, the team roster is locked and immutable; Join Code becomes invalid.
+  - Forming members may leave; Team Leader may remove members. If Team Leader leaves, leadership passes to the earliest joined member. If the last member leaves, the team disbands.
+  - **Team Submission**: At the entered Team `headcount`, the Team Leader explicitly submits the team to the Hirer (`TEAM_SUBMITTED`). The submission requires text and at least one file (following Work Conversation Attachment type/size limits: images, PDF, video &le;10 MB). Once submitted, the team is locked, immutable, cannot withdraw, and the Join Code becomes invalid.
 - **Selection**:
   - Hirer sees only `TEAM_SUBMITTED` teams.
   - Hirer may manually reject a submitted team (`TEAM_REJECTED`).
@@ -81,7 +80,7 @@ Every Quest is defined by two axes:
 - **Start Work & Submission**:
   - **Team Leader presses Start Work** on behalf of the entire team between `startTime` and `dueAt` &rarr; `QUEST_IN_PROGRESS`.
   - **Team Leader submits Proof** (or confirms completion) on behalf of the team before `dueAt`.
-  - **Atomic Outcome**: Approved proof marks all members `ASSIGNMENT_COMPLETED` and settles rewards. Non-approved proof (`PROOF_NOT_APPROVED`) or missing submission at `dueAt` marks all members `ASSIGNMENT_INCOMPLETE` and moves Quest to `QUEST_FAILED`.
+  - **Atomic Outcome & Reward Settlement**: Approved proof marks all members `ASSIGNMENT_COMPLETED` and pays the complete Worker Reward pool for all published slots to the Team Leader only (other team members receive no Quest Reward). Non-approved proof (`PROOF_NOT_APPROVED`) or missing submission at `dueAt` marks all members `ASSIGNMENT_INCOMPLETE` and moves Quest to `QUEST_FAILED`.
 
 ---
 
@@ -100,11 +99,11 @@ Across all 4 combinations:
 
 ## 4. Cancellation Settlement Matrix
 
-| State at Cancellation | Hirer Refund                                  | Worker Compensation                                  | Platform Fee           |
-| --------------------- | --------------------------------------------- | ---------------------------------------------------- | ---------------------- |
-| `QUEST_OPEN`          | 100% of Quest Escrow                          | 0%                                                   | 100% refunded to Hirer |
-| `QUEST_ASSIGNED`      | 80% of Worker Reward pool + 100% Platform Fee | 20% of Worker Reward pool split among Active Workers | Refunded to Hirer      |
-| `QUEST_IN_PROGRESS`   | 0%                                            | 100% of Worker Rewards paid to Active Workers        | Retained by Platform   |
+| State at Cancellation | Hirer Refund                                  | Worker Compensation                                                                                                      | Platform Fee           |
+| --------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
+| `QUEST_OPEN`          | 100% of Quest Escrow                          | 0%                                                                                                                       | 100% refunded to Hirer |
+| `QUEST_ASSIGNED`      | 80% of Worker Reward pool + 100% Platform Fee | 20% of Worker Reward pool split among Active Workers (for `GROUP + CANDIDATE`, paid 100% to Team Leader)                 | Refunded to Hirer      |
+| `QUEST_IN_PROGRESS`   | 0%                                            | 100% of Worker Rewards paid to Active Workers (for `GROUP + CANDIDATE`, complete Worker Reward pool paid to Team Leader) | Retained by Platform   |
 
 ---
 

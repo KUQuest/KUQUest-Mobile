@@ -4,7 +4,7 @@ How the engineering skills should consume this repo's domain documentation when 
 
 ## Authority & Source of Truth
 
-The mirrored backend rulebook (`docs/rulebook/`, synced from `KUQuest-API-Server` at commit `1b55199d74d2e73a4a05a4662e49fb643cbee3e6`) is the canonical source of truth for domain rules, lifecycle transitions, state naming, money calculations, and administrative boundaries.
+The mirrored backend rulebook (`docs/rulebook/`, synced from `KUQuest-API-Server` at commit `fc47a089f5ae4d40914ac771baef9f2e7a0bef63`) is the canonical source of truth for domain rules, lifecycle transitions, state naming, money calculations, and administrative boundaries.
 
 ## Before exploring, read these
 

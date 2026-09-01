@@ -4,7 +4,7 @@ Mobile app for Kasetsart University Members—including Staff, Lecturers, and St
 
 ## Authority & Source of Truth
 
-The mirrored backend rulebook (`docs/rulebook/`, synced from `KUQuest-API-Server` at commit `1b55199d74d2e73a4a05a4662e49fb643cbee3e6`) is the canonical source of truth for domain rules, lifecycle transitions, state naming, money calculations, and administrative boundaries. This document defines the shared domain vocabulary for mobile implementation, engineering skills, and subagents.
+The mirrored backend rulebook (`docs/rulebook/`, synced from `KUQuest-API-Server` at commit `fc47a089f5ae4d40914ac771baef9f2e7a0bef63`) is the canonical source of truth for domain rules, lifecycle transitions, state naming, money calculations, and administrative boundaries. This document defines the shared domain vocabulary for mobile implementation, engineering skills, and subagents.
 
 ---
 
@@ -41,11 +41,11 @@ The current Hirer or an Active Worker on a Quest. Only Accepted Participants hav
 _Avoid_: Candidate, Prospective Worker, Departed Worker.
 
 **Team Leader**:
-The Candidate who creates, manages, and explicitly submits a Candidate Team for a `GROUP + CANDIDATE` Quest. After Hirer selection, the Team Leader presses Start Work and submits/confirms the Team's proof of work.
-_Avoid_: Hirer, leader of an FCFS group.
+The Candidate who creates and represents a Candidate `GROUP` Team. If the Hirer selects the Team, the Team Leader becomes a Worker. The Team Leader starts and submits or confirms the Team's required work.
+_Avoid_: treating a Team Leader as the Hirer or as a leader of a FCFS Group.
 
 **Candidate Team**:
-A forming or submitted group of Candidates for one `GROUP + CANDIDATE` Quest, formed using a Server-generated Join Code. Submitted at exact headcount; immutable once submitted.
+A forming or submitted group of Candidates for one `GROUP + CANDIDATE` Quest, formed using a Server-generated Join Code. Submitted at the Team Leader-entered headcount; immutable once submitted.
 _Avoid_: Quest Team, Work Conversation, direct group.
 
 **Join Code**:

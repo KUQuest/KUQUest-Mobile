@@ -2,7 +2,7 @@
 
 Type: Specification Reference
 Domain: Chat Conversations, Candidate Inquiries, Work Coordination, Attachments
-Authority: Aligned with the mirrored backend Conversation Contract (`docs/rulebook/quest/conversation-contract.md` and `quest-work-chat-rulebook.md`, synced from `KUQuest-API-Server` at commit `1b55199d74d2e73a4a05a4662e49fb643cbee3e6`).
+Authority: Aligned with the mirrored backend Conversation Contract (`docs/rulebook/quest/conversation-contract.md` and `quest-work-chat-rulebook.md`, synced from `KUQuest-API-Server` at commit `fc47a089f5ae4d40914ac771baef9f2e7a0bef63`).
 
 ---
 

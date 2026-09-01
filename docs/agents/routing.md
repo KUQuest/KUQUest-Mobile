@@ -62,7 +62,7 @@ Deterministic routing table for agents to navigate directly to mobile specificat
 ## 3. Precedence Hierarchy
 
 1. **`CONTEXT.md`**: Ubiquitous language definition. Always authoritative for domain terminology.
-2. **Mirrored Backend Rulebooks** (`docs/rulebook/`, synced from API Server at commit `1b55199`): Authoritative for target business rules, state transitions, and finance.
+2. **Mirrored Backend Rulebooks** (`docs/rulebook/`, synced from API Server at commit `fc47a08`): Authoritative for target business rules, state transitions, and finance.
 3. **Mobile Specifications** (`docs/specs/`): Authoritative for mobile-specific behaviors, UI flows, and screen contracts.
 4. **Architecture Decisions** (`docs/adr/`): Authoritative for mobile technical architecture decisions.
 5. **System Design Specification** (`docs/system-design-specification.md`): Authoritative for UI navigation, journeys, and captured prototype layouts.

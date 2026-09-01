@@ -24,7 +24,7 @@ Always use the canonical ubiquitous language from `CONTEXT.md`.
 
 - **Glossary & Domain Language**: Root `CONTEXT.md`.
 - **Deterministic Routing Directory**: `docs/agents/routing.md` — routes directly by feature, task branch, or user persona.
-- **Mirrored Backend Rulebook (Source of Truth)**: `docs/rulebook/` (synced from `KUQuest-API-Server` at commit `1b55199d74d2e73a4a05a4662e49fb643cbee3e6`):
+- **Mirrored Backend Rulebook (Source of Truth)**: `docs/rulebook/` (synced from `KUQuest-API-Server` at commit `fc47a089f5ae4d40914ac771baef9f2e7a0bef63`):
   - **Quest & Work Chat**: `docs/rulebook/quest/quest-work-chat-rulebook.md` and sub-contracts.
   - **Finance & Wallet**: `docs/rulebook/finance/finance-rulebook.md` and sub-contracts.
   - **Admin Operations**: `docs/rulebook/admin/admin-rulebook.md` and sub-contracts.

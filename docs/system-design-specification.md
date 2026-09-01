@@ -4,7 +4,7 @@
 
 ## 1. Scope
 
-This document records the mobile UI surfaces, navigation paths, user journeys, prototype states, and implementation boundaries for KUQuest Mobile. It describes the Expo/React Native mobile application grounded on the domain rules defined in `CONTEXT.md` and the mirrored backend rulebooks (`docs/rulebook/`, synced from `KUQuest-API-Server` at commit `1b55199d74d2e73a4a05a4662e49fb643cbee3e6`).
+This document records the mobile UI surfaces, navigation paths, user journeys, prototype states, and implementation boundaries for KUQuest Mobile. It describes the Expo/React Native mobile application grounded on the domain rules defined in `CONTEXT.md` and the mirrored backend rulebooks (`docs/rulebook/`, synced from `KUQuest-API-Server` at commit `fc47a089f5ae4d40914ac771baef9f2e7a0bef63`).
 
 ## 2. Platform and evidence
 
@@ -119,4 +119,4 @@ Evidence: [`profile/profile-about.png`](./sds/screenshots/profile/profile-about.
 | Conversations & Work Chat                    | [`docs/specs/conversation-and-work-chat.md`](specs/conversation-and-work-chat.md) |
 | Proof Submissions & Reviews                  | [`docs/specs/proof-and-rating-reviews.md`](specs/proof-and-rating-reviews.md)     |
 | Profile & Academic Registration              | [`docs/specs/student-profile-redesign.md`](specs/student-profile-redesign.md)     |
-| Mirrored Backend Rulebooks (Source of Truth) | [`docs/rulebook/`](rulebook/README.md) (commit `1b55199`)                         |
+| Mirrored Backend Rulebooks (Source of Truth) | [`docs/rulebook/`](rulebook/README.md) (commit `fc47a08`)                         |

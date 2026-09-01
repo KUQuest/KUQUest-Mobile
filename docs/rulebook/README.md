@@ -3,9 +3,9 @@
 Type: Upstream Domain Authority
 Source Repository: `KUQuest-API-Server` (`../../KUQuest-API-Server/`)
 Source Path: `docs/rulebook/`
-Upstream Commit: `1b55199d74d2e73a4a05a4662e49fb643cbee3e6`
-Commit Message: `1b55199 chore : update quest-scenarios`
-Captured Date: `2026-08-31`
+Upstream Commit: `fc47a089f5ae4d40914ac771baef9f2e7a0bef63`
+Commit Message: `fc47a08 docs(quest): confirm Candidate Team rules (#353)`
+Captured Date: `2026-09-01`
 
 ---
 

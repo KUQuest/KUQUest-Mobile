@@ -2,7 +2,7 @@
 
 Type: Specification Reference
 Domain: Student Wallets, Double-Entry Ledger, Quest Escrow, Top-ups, Payouts
-Authority: Aligned with the mirrored backend Finance Rulebook (`docs/rulebook/finance/finance-rulebook.md`, synced from `KUQuest-API-Server` at commit `1b55199d74d2e73a4a05a4662e49fb643cbee3e6`) and accepted financial ADRs.
+Authority: Aligned with the mirrored backend Finance Rulebook (`docs/rulebook/finance/finance-rulebook.md`, synced from `KUQuest-API-Server` at commit `fc47a089f5ae4d40914ac771baef9f2e7a0bef63`) and accepted financial ADRs.
 
 ---
 
@@ -84,13 +84,13 @@ $$\text{questFundingTotal} = \text{questReward} + \text{platformFee}$$
 
 ## 4. Settlement & Cancellation Matrix
 
-| Quest State at Event              | Hirer Spending Balance                                                                 | Worker Earnings Balance                                       | Platform Revenue      |
-| --------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------- | --------------------- |
-| **`QUEST_COMPLETED`**             | 0%                                                                                     | 100% of net `questReward` transferred immediately             | Platform Fee retained |
-| **Cancel in `QUEST_OPEN`**        | 100% of Quest Escrow refunded                                                          | 0%                                                            | 0%                    |
-| **Cancel in `QUEST_ASSIGNED`**    | 80% of Worker Reward pool + 100% Platform Fee refunded                                 | 20% of Worker Reward pool split among Active Workers          | 0%                    |
-| **Cancel in `QUEST_IN_PROGRESS`** | 0% refund                                                                              | 100% of Worker Rewards settled to Active Workers              | Platform Fee retained |
-| **`QUEST_FAILED`**                | 100% of unpaid slot funding + fee returned, **held for 7 days** in Funding Reservation | Unpaid: 0%<br>Completed group workers: retain settled rewards | 0% on failed slots    |
+| Quest State at Event              | Hirer Spending Balance                                                                 | Worker Earnings Balance                                                                                                           | Platform Revenue      |
+| --------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| **`QUEST_COMPLETED`**             | 0%                                                                                     | 100% of net `questReward` transferred immediately (for `GROUP + CANDIDATE`, complete Worker Reward pool paid to Team Leader only) | Platform Fee retained |
+| **Cancel in `QUEST_OPEN`**        | 100% of Quest Escrow refunded                                                          | 0%                                                                                                                                | 0%                    |
+| **Cancel in `QUEST_ASSIGNED`**    | 80% of Worker Reward pool + 100% Platform Fee refunded                                 | 20% of Worker Reward pool split among Active Workers (for `GROUP + CANDIDATE`, paid 100% to Team Leader)                          | 0%                    |
+| **Cancel in `QUEST_IN_PROGRESS`** | 0% refund                                                                              | 100% of Worker Rewards settled to Active Workers (for `GROUP + CANDIDATE`, complete Worker Reward pool paid to Team Leader)       | Platform Fee retained |
+| **`QUEST_FAILED`**                | 100% of unpaid slot funding + fee returned, **held for 7 days** in Funding Reservation | Unpaid: 0%<br>Completed group workers: retain settled rewards                                                                     | 0% on failed slots    |
 
 ---
 

@@ -2,7 +2,7 @@
 
 Type: Specification Reference
 Domain: Quest Lifecycle, Assignments, UI Visibility
-Authority: Aligned with the mirrored backend Quest Rulebook (`docs/rulebook/quest/`, synced from `KUQuest-API-Server` at commit `1b55199d74d2e73a4a05a4662e49fb643cbee3e6`). Defines the canonical states, transitions, and UI visibility rules for KUQuest Mobile.
+Authority: Aligned with the mirrored backend Quest Rulebook (`docs/rulebook/quest/`, synced from `KUQuest-API-Server` at commit `fc47a089f5ae4d40914ac771baef9f2e7a0bef63`). Defines the canonical states, transitions, and UI visibility rules for KUQuest Mobile.
 
 ---
 
@@ -45,18 +45,18 @@ stateDiagram-v2
 
 ## 3. Detailed State Transitions
 
-| From                | Trigger / Guard                                                                                           | To                  | Assignment & Money Result                                                                                                |
-| ------------------- | --------------------------------------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `—`                 | Hirer creates Quest.                                                                                      | `QUEST_DRAFT`       | Draft saved; no Escrow reserved.                                                                                         |
-| `QUEST_DRAFT`       | Hirer publishes with valid conditions, `dueAt > startTime > now`, and sufficient Spending Balance.        | `QUEST_OPEN`        | Reserves Quest Escrow (`questFundingTotal × headcount`) from Spending Balance.                                           |
-| `QUEST_OPEN`        | FCFS roster reaches headcount, or Hirer selects Candidate/Team, or underfilled FCFS consent succeeds.     | `QUEST_ASSIGNED`    | Selected Workers become `ASSIGNMENT_ACTIVE`; Work Conversation opens; Candidate Inquiries soft-close (`INQUIRY_CLOSED`). |
-| `QUEST_OPEN`        | Hirer cancels, or open Candidate Quest reaches `startTime` unassigned, or underfilled FCFS consent fails. | `QUEST_CANCELLED`   | 100% of Quest Escrow refunded to Hirer Spending Balance.                                                                 |
-| `QUEST_ASSIGNED`    | Required starter(s) press Start Work between `startTime` and `dueAt`.                                     | `QUEST_IN_PROGRESS` | `startedAt` set on active Assignments.                                                                                   |
-| `QUEST_ASSIGNED`    | Hirer cancels while assigned.                                                                             | `QUEST_CANCELLED`   | 20% of Worker Reward pool paid to Active Workers; 80% and Platform Fee refunded to Hirer.                                |
-| `QUEST_ASSIGNED`    | Required starter fails to press Start Work before `dueAt`.                                                | `QUEST_FAILED`      | Affected Assignments become `ASSIGNMENT_INCOMPLETE`; unpaid funds held for 7 days.                                       |
-| `QUEST_IN_PROGRESS` | Required proof approved by Hirer or 24h auto-approval; or proof-free completion confirmed.                | `QUEST_COMPLETED`   | Worker Rewards transferred to Worker Earnings Balances; Platform Fee retained.                                           |
-| `QUEST_IN_PROGRESS` | Hirer cancels while in progress.                                                                          | `QUEST_CANCELLED`   | 100% Worker Rewards paid to Active Workers; Platform Fee retained; 0% refund to Hirer.                                   |
-| `QUEST_IN_PROGRESS` | Hirer decides `PROOF_NOT_APPROVED`, or required submission missing at `dueAt`.                            | `QUEST_FAILED`      | Affected Assignments become `ASSIGNMENT_INCOMPLETE`; Admin Review Item created; unpaid funds held for 7 days.            |
+| From                | Trigger / Guard                                                                                           | To                  | Assignment & Money Result                                                                                                                                         |
+| ------------------- | --------------------------------------------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `—`                 | Hirer creates Quest.                                                                                      | `QUEST_DRAFT`       | Draft saved; no Escrow reserved.                                                                                                                                  |
+| `QUEST_DRAFT`       | Hirer publishes with valid conditions, `dueAt > startTime > now`, and sufficient Spending Balance.        | `QUEST_OPEN`        | Reserves Quest Escrow (`questFundingTotal × headcount`) from Spending Balance.                                                                                    |
+| `QUEST_OPEN`        | FCFS roster reaches headcount, or Hirer selects Candidate/Team, or underfilled FCFS consent succeeds.     | `QUEST_ASSIGNED`    | Selected Workers become `ASSIGNMENT_ACTIVE`; Work Conversation opens; Candidate Inquiries soft-close (`INQUIRY_CLOSED`).                                          |
+| `QUEST_OPEN`        | Hirer cancels, or open Candidate Quest reaches `startTime` unassigned, or underfilled FCFS consent fails. | `QUEST_CANCELLED`   | 100% of Quest Escrow refunded to Hirer Spending Balance.                                                                                                          |
+| `QUEST_ASSIGNED`    | Required starter(s) press Start Work between `startTime` and `dueAt`.                                     | `QUEST_IN_PROGRESS` | `startedAt` set on active Assignments.                                                                                                                            |
+| `QUEST_ASSIGNED`    | Hirer cancels while assigned.                                                                             | `QUEST_CANCELLED`   | 20% of Worker Reward pool paid to Active Workers (for `GROUP + CANDIDATE`, paid 100% to Team Leader); 80% and Platform Fee refunded to Hirer.                     |
+| `QUEST_ASSIGNED`    | Required starter fails to press Start Work before `dueAt`.                                                | `QUEST_FAILED`      | Affected Assignments become `ASSIGNMENT_INCOMPLETE`; unpaid funds held for 7 days.                                                                                |
+| `QUEST_IN_PROGRESS` | Required proof approved by Hirer or 24h auto-approval; or proof-free completion confirmed.                | `QUEST_COMPLETED`   | Worker Rewards transferred to Worker Earnings Balances (for `GROUP + CANDIDATE`, complete Worker Reward pool paid to Team Leader only); Platform Fee retained.    |
+| `QUEST_IN_PROGRESS` | Hirer cancels while in progress.                                                                          | `QUEST_CANCELLED`   | 100% Worker Rewards paid to Active Workers (for `GROUP + CANDIDATE`, complete Worker Reward pool paid to Team Leader); Platform Fee retained; 0% refund to Hirer. |
+| `QUEST_IN_PROGRESS` | Hirer decides `PROOF_NOT_APPROVED`, or required submission missing at `dueAt`.                            | `QUEST_FAILED`      | Affected Assignments become `ASSIGNMENT_INCOMPLETE`; Admin Review Item created; unpaid funds held for 7 days.                                                     |
 
 ---
 
