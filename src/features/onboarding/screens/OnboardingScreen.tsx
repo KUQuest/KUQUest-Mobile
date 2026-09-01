@@ -603,6 +603,12 @@ export default function OnboardingScreen() {
               label={msg.occupation}
               placeholder={msg.occupationPlaceholder}
               options={occupationOptions}
+              searchable
+              searchPlaceholder={msg.searchOccupation}
+              noResultsMessage={msg.noSearchResults}
+              emptyMessage={msg.noSelectOptions}
+              loadingMessage={msg.loadingOptions}
+              clearSearchLabel={msg.clearSearch}
               value={form.occupation}
               onValueChange={handleOccupationChange}
               error={errors.occupation}
