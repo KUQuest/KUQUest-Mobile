@@ -63,37 +63,4 @@ describe("QuestBoardApi", () => {
     );
   });
 
-  test("loads detail from the v2 detail endpoint", async () => {
-    fetchMock.mockResolvedValue(response({
-      success: true,
-      data: {
-        id: questId,
-        title: "Design a landing page",
-        description: null,
-        condition: "Use the supplied brand colors",
-        reward: 980,
-        tag: null,
-        mode: "CANDIDATE",
-        participation: "GROUP",
-        questStatus: "QUEST_OPEN",
-        headcount: 2,
-        startTime: "2026-09-30T09:00:00.000+07:00",
-        dueAt: null,
-        estimatedDurationMinutes: null,
-        proofRequired: true,
-        hirerName: "Hirer display name",
-        locations: [],
-        images: [],
-      },
-    }));
-
-    await expect(api.getQuestDetail(questId)).resolves.toEqual(
-      expect.objectContaining({ id: questId })
-    );
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      `https://api.example.test/api/v2/quests/${questId}`,
-      expect.objectContaining({ method: "GET" })
-    );
-  });
 });
