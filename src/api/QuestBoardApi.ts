@@ -23,11 +23,16 @@ function toQueryString(query: QuestBoardQuery): string {
 export class QuestBoardApi {
   constructor(private readonly client: ApiClient) {}
 
-  async listBoardQuests(query: QuestBoardQuery = {}): Promise<QuestBoardCursor> {
+  async listQuests(query: QuestBoardQuery = {}): Promise<QuestBoardCursor> {
     const body = await this.client.request<unknown>(
       `/api/v2/quests${toQueryString(query)}`
     );
 
     return questBoardResponseSchema.parse(body).data;
+  }
+
+  /** @deprecated Use listQuests for the v2 Board endpoint. */
+  async listBoardQuests(query: QuestBoardQuery = {}): Promise<QuestBoardCursor> {
+    return this.listQuests(query);
   }
 }

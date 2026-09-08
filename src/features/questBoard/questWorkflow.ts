@@ -1,5 +1,11 @@
 import type { ChatConversation, ChatMessage } from "../chat/chatTypes";
 import {
+  questBoardRepository,
+  type QuestBoardRepository,
+} from "./questBoardRepository";
+import type { ApiQuestBoardPage } from "@/api/questBoardMapper";
+import type { QuestBoardQuery } from "@/api/questBoardContracts";
+import {
   getQuestPublishCheck as getDraftPublishCheck,
   type QuestDraft,
 } from "../createQuest/createQuestModel";
@@ -112,6 +118,7 @@ export type QuestBoardSurfaceModel =
   | QuestBoardUnavailableModel;
 
 export interface QuestWorkflow {
+  listQuestBoard(query?: QuestBoardQuery): Promise<ApiQuestBoardPage>;
   getNow(seed?: Date): Date;
   getQuestBoardModel(viewerId?: string): QuestBoardQuest[];
   getQuestBoardSurfaceModel(
@@ -286,8 +293,12 @@ export function toQuestBoardQuest(state: QuestDetailState): QuestBoardQuest {
 
 export function createQuestWorkflow(
   adapter: QuestFixtureAdapter = questFixtureAdapter,
-  options: { refreshIntervalMs?: number } = {}
+  options: {
+    refreshIntervalMs?: number;
+    boardRepository?: QuestBoardRepository;
+  } = {}
 ): QuestWorkflow {
+  const boardRepository = options.boardRepository ?? questBoardRepository;
   let currentNow = new Date(adapter.now.getTime());
   let adapterUnsubscribe: (() => void) | undefined;
   let refreshTimer: ReturnType<typeof setInterval> | undefined;
@@ -317,6 +328,7 @@ export function createQuestWorkflow(
   };
 
   return {
+    listQuestBoard: (query) => boardRepository.listQuests(query),
     getNow: (seed) => {
       if (seed && listeners.size === 0) currentNow = new Date(seed.getTime());
       return new Date(currentNow.getTime());

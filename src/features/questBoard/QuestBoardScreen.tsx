@@ -48,6 +48,8 @@ import {
 import { colors } from "@/theme/colors";
 import { getAppChromeMetrics } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
+import type { ApiQuestBoardItem } from "@/api/questBoardMapper";
+import type { QuestBoardQuery } from "@/api/questBoardContracts";
 import styles from "./questBoardStyles";
 import { getLocalizedQuest } from "./questFixtures";
 import {
@@ -58,6 +60,7 @@ import {
 } from "./questBoardViewData";
 import type { BoardPreviewState } from "./questBoardHarness";
 import { getQuestRewardSatang, questWorkflow } from "./questWorkflow";
+import type { QuestBoardRepository } from "./questBoardRepository";
 import type { PrototypeScenarioRoute } from "@/components/ui/prototypeMenuData";
 
 import { formatSatang } from "./types";
@@ -76,6 +79,7 @@ export type { BoardPreviewState } from "./questBoardHarness";
 export interface QuestBoardScreenProps {
   currentStudentId?: string;
   initialPreviewState?: BoardPreviewState;
+  boardRepository?: QuestBoardRepository;
 }
 
 const deadlineOptions: {
@@ -318,6 +322,108 @@ function QuestCard({
         >
           {messages.spotsSummary(spotsRemaining, quest.headcount)}
         </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+function ApiQuestCard({
+  quest,
+  locale,
+  onDetail,
+}: {
+  quest: ApiQuestBoardItem;
+  locale: "en" | "th";
+  onDetail: () => void;
+}) {
+  const messages = questBoardMessages[locale];
+  const schedule = new Intl.DateTimeFormat(
+    locale === "th" ? "th-TH-u-ca-buddhist" : "en-GB",
+    { day: "numeric", month: "short", year: "numeric" }
+  ).format(new Date(quest.startTime));
+  const participation =
+    quest.participation === "GROUP"
+      ? messages.team
+      : messages.singlePerson;
+  const mode =
+    quest.mode === "CANDIDATE" ? messages.applyForReview : messages.firstCome;
+  const accessibilityLabel = [
+    quest.title,
+    `${messages.reward}: ฿${quest.reward}`,
+    `${participation} · ${mode}`,
+    `${messages.schedule}: ${schedule}`,
+    `${messages.location}: ${quest.location?.label ?? ""}`,
+    messages.viewDetails,
+  ]
+    .filter(Boolean)
+    .join(". ");
+
+  return (
+    <Pressable
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
+      onPress={onDetail}
+      className={styles.card}
+      testID={`quest-detail-${quest.questId}`}
+    >
+      <View accessible={false} className={styles.cardBody}>
+        <View className={styles.cardTopRow}>
+          <View className={styles.cardTitleColumn}>
+            <Text className={styles.cardTitle}>{quest.title}</Text>
+            <View className={styles.cardCategory}>
+              <BriefcaseBusiness
+                color={colors.primary}
+                size={16}
+                strokeWidth={2.1}
+              />
+              <Text className={styles.cardCategoryText}>{quest.tag.name}</Text>
+            </View>
+          </View>
+          <View className={styles.rewardBlock}>
+            <Text className={styles.rewardAmount}>฿{quest.reward}</Text>
+            <Text className={styles.rewardUnit}>{messages.perPerson}</Text>
+          </View>
+        </View>
+        <View className={styles.cardDivider} />
+        <View className={styles.infoList}>
+          <View className={styles.infoRow}>
+            <InfoIcon className={styles.infoIconMuted}>
+              <CircleUserRound
+                color={colors.textSubtle}
+                size={20}
+                strokeWidth={1.9}
+              />
+            </InfoIcon>
+            <Text className={cn(styles.infoText, styles.infoTextPrimary)}>
+              {participation} · {mode}
+            </Text>
+          </View>
+          <View className={styles.infoRow}>
+            <InfoIcon className={styles.infoIconMuted}>
+              <Clock3
+                color={colors.textSubtle}
+                size={20}
+                strokeWidth={1.9}
+              />
+            </InfoIcon>
+            <Text className={styles.infoText}>{schedule}</Text>
+          </View>
+          <View className={styles.infoRow}>
+            <InfoIcon className={styles.infoIconMuted}>
+              <MapPin
+                color={colors.textSubtle}
+                size={20}
+                strokeWidth={1.9}
+              />
+            </InfoIcon>
+            <Text className={styles.locationText} numberOfLines={2}>
+              {quest.location?.label ?? ""}
+            </Text>
+          </View>
+        </View>
+        <View className={styles.cardFooter}>
+          <ChevronRight color={colors.primaryDeep} size={20} strokeWidth={2.2} />
+        </View>
       </View>
     </Pressable>
   );
@@ -913,11 +1019,27 @@ function QuestBoardSortSheet({
 
 export default function QuestBoardScreen({
   currentStudentId,
-  initialPreviewState = "populated",
+  initialPreviewState,
+  boardRepository,
 }: QuestBoardScreenProps) {
   const router = useRouter();
   const { locale } = useLocale();
-  const { activePersonaId, onPersonaChange, onReset } = useAuthEnvironment();
+  const { isDemo, activePersonaId, onPersonaChange, onReset } =
+    useAuthEnvironment();
+  const fixtureBoard =
+    !boardRepository &&
+    (Boolean(initialPreviewState) ||
+      isDemo ||
+      process.env.NODE_ENV === "test" ||
+      (__DEV__ && !process.env.EXPO_PUBLIC_API_URL));
+  const listQuestBoard = useMemo(
+    () =>
+      boardRepository
+        ? boardRepository.listQuests.bind(boardRepository)
+        : (query: Parameters<QuestBoardRepository["listQuests"]>[0]) =>
+            questWorkflow.listQuestBoard(query),
+    [boardRepository]
+  );
   const resolvedStudentId = currentStudentId?.trim() || activePersonaId;
   const { width, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -933,21 +1055,83 @@ export default function QuestBoardScreen({
   );
   const [sort, setSort] = useState<QuestBoardSort>("newest");
   const [previewState, setPreviewState] =
-    useState<BoardPreviewState>(initialPreviewState);
+    useState<BoardPreviewState | undefined>(initialPreviewState);
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [retrying, setRetrying] = useState(false);
-  const [, setWorkflowRevision] = useState(0);
+  const [apiItems, setApiItems] = useState<ApiQuestBoardItem[]>([]);
+  const [apiCursor, setApiCursor] = useState<string | null>(null);
+  const [apiLoading, setApiLoading] = useState(!fixtureBoard);
+  const [apiLoadingMore, setApiLoadingMore] = useState(false);
+  const [apiError, setApiError] = useState<unknown>(null);
+  const [apiRetryAttempt, setApiRetryAttempt] = useState(0);
+  const [workflowRevision, setWorkflowRevision] = useState(0);
   const workflowNow = questWorkflow.getNow();
 
+  const apiQuery = useMemo<QuestBoardQuery>(() => {
+    const nextQuery: QuestBoardQuery = {};
+    if (query.trim()) nextQuery.q = query.trim();
+    if (filters.rewardMin !== null) nextQuery.minReward = filters.rewardMin;
+    if (filters.rewardMax !== null) nextQuery.maxReward = filters.rewardMax;
+    return nextQuery;
+  }, [filters.rewardMax, filters.rewardMin, query]);
+
   useEffect(
-    () =>
-      questWorkflow.subscribe(() =>
+    () => {
+      if (!fixtureBoard) return undefined;
+      return questWorkflow.subscribe(() =>
         setWorkflowRevision((revision) => revision + 1)
-      ),
-    []
+      );
+    },
+    [fixtureBoard]
   );
+
+  useEffect(() => {
+    if (fixtureBoard) return undefined;
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (!active) return;
+      setApiItems([]);
+      setApiCursor(null);
+      setApiError(null);
+      setApiLoading(true);
+    });
+    void listQuestBoard(apiQuery)
+      .then((page) => {
+        if (!active) return;
+        setApiItems(page.items);
+        setApiCursor(page.nextCursor);
+      })
+      .catch((error: unknown) => {
+        if (active) setApiError(error);
+      })
+      .finally(() => {
+        if (active) setApiLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [apiQuery, apiRetryAttempt, fixtureBoard, filters, listQuestBoard]);
+
+  const loadNextApiPage = useCallback(() => {
+    if (fixtureBoard || !apiCursor || apiLoading || apiLoadingMore) return;
+    setApiLoadingMore(true);
+    void listQuestBoard({ ...apiQuery, cursor: apiCursor })
+      .then((page) => {
+        setApiItems((items) => [...items, ...page.items]);
+        setApiCursor(page.nextCursor);
+      })
+      .catch((error: unknown) => setApiError(error))
+      .finally(() => setApiLoadingMore(false));
+  }, [
+    apiCursor,
+    apiLoading,
+    apiLoadingMore,
+    apiQuery,
+    fixtureBoard,
+    listQuestBoard,
+  ]);
 
   useEffect(() => {
     if (!retrying || previewState !== "loading") return undefined;
@@ -958,10 +1142,17 @@ export default function QuestBoardScreen({
     return () => clearTimeout(timeout);
   }, [previewState, retrying]);
 
-  const boardModel = questWorkflow.getQuestBoardSurfaceModel(
-    resolvedStudentId,
-    previewState
+  const boardModel = useMemo(
+    () =>
+      fixtureBoard
+        ? questWorkflow.getQuestBoardSurfaceModel(
+            resolvedStudentId,
+            previewState ?? "populated"
+          )
+        : ({ kind: "loading" } as const),
+    [fixtureBoard, previewState, resolvedStudentId, workflowRevision]
   );
+  const activePreviewState = previewState ?? "populated";
   const localizedQuests = useMemo(
     () =>
       boardModel.kind === "ready"
@@ -1048,6 +1239,10 @@ export default function QuestBoardScreen({
   );
 
   const retryBoard = () => {
+    if (!fixtureBoard) {
+      setApiRetryAttempt((attempt) => attempt + 1);
+      return;
+    }
     setRetryAttempt((attempt) => attempt + 1);
     setRetrying(true);
     setPreviewState("loading");
@@ -1059,9 +1254,9 @@ export default function QuestBoardScreen({
     sortOptions.find((option) => option.value === sort)?.labelKey ?? "newest";
   const sortLabel = messages[sortLabelKey];
   const noMatch =
-    previewState === "populated" ||
-    previewState === "application-pending" ||
-    previewState === "application-accepted";
+    activePreviewState === "populated" ||
+    activePreviewState === "application-pending" ||
+    activePreviewState === "application-accepted";
   const noMatchActionLabel =
     hasActiveFilters && query
       ? messages.clearSearchAndFilters
@@ -1097,7 +1292,46 @@ export default function QuestBoardScreen({
     setFilters((current) => ({ ...current, deadline: null }));
   const previousBoardKind = useRef<string | undefined>(undefined);
 
+  const apiHasNoMatches =
+    !apiLoading && !apiError && apiItems.length === 0;
+  const apiEmptyState = apiLoading ? (
+    <QuestBoardSkeleton loadingLabel={messages.loading} />
+  ) : apiError ? (
+    <StateView
+      error
+      title={messages.errorTitle}
+      description={messages.errorDescription}
+      actionLabel={messages.retry}
+      onAction={retryBoard}
+    />
+  ) : apiHasNoMatches ? (
+    <StateView
+      title={
+        query || getActiveFilterCount(filters) > 0
+          ? messages.noMatches
+          : messages.noQuests
+      }
+      description={messages.subtitle}
+      actionLabel={
+        query || getActiveFilterCount(filters) > 0
+          ? messages.clearSearchAndFilters
+          : undefined
+      }
+      onAction={
+        query || getActiveFilterCount(filters) > 0 ? clearNoMatch : undefined
+      }
+    />
+  ) : null;
+
   useEffect(() => {
+    if (!fixtureBoard) {
+      if (apiLoading) announce(messages.loading);
+      else if (apiError && apiItems.length === 0)
+        announce(`${messages.errorTitle}. ${messages.retry}`);
+      else if (!apiError && apiItems.length === 0)
+        announce(`${messages.noQuests}. ${messages.subtitle}`);
+      return;
+    }
     const previousKind = previousBoardKind.current;
     if (boardModel.kind === "loading") announce(messages.loading);
     if (boardModel.kind === "error")
@@ -1107,7 +1341,14 @@ export default function QuestBoardScreen({
     if (boardModel.kind === "ready" && previousKind === "loading")
       announce(messages.retrySuccess);
     previousBoardKind.current = boardModel.kind;
-  }, [boardModel.kind, messages]);
+  }, [
+    apiError,
+    apiItems.length,
+    apiLoading,
+    boardModel.kind,
+    fixtureBoard,
+    messages,
+  ]);
 
   useEffect(() => {
     if (
@@ -1134,6 +1375,22 @@ export default function QuestBoardScreen({
       />
     ),
     [locale, openQuest]
+  );
+
+  const renderApiQuest = useCallback(
+    ({ item }: { item: ApiQuestBoardItem }) => (
+      <ApiQuestCard
+        locale={locale}
+        onDetail={() =>
+          router.push({
+            pathname: "/quest/[id]",
+            params: { id: item.questId },
+          })
+        }
+        quest={item}
+      />
+    ),
+    [locale, router]
   );
 
   const openPrototypeScenario = (route: PrototypeScenarioRoute) => {
@@ -1383,6 +1640,12 @@ export default function QuestBoardScreen({
       />
     ) : null;
 
+  const listData = fixtureBoard ? visibleQuests : apiItems;
+  const listEmptyState = fixtureBoard ? emptyState : apiEmptyState;
+  const listRenderItem = fixtureBoard
+    ? (renderQuest as unknown as (info: { item: QuestBoardQuest }) => React.ReactElement)
+    : (renderApiQuest as unknown as (info: { item: ApiQuestBoardItem }) => React.ReactElement);
+
   return (
     <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
       <FlatList
@@ -1397,13 +1660,24 @@ export default function QuestBoardScreen({
             spacing.lg,
           paddingHorizontal: spacing.md,
         }}
-        data={boardModel.kind === "ready" ? visibleQuests : []}
-        keyExtractor={(quest) => quest.id}
+        data={listData as unknown as ApiQuestBoardItem[]}
+        keyExtractor={(quest) =>
+          fixtureBoard
+            ? (quest as unknown as QuestBoardQuest).id
+            : quest.questId
+        }
         keyboardShouldPersistTaps="handled"
-        ListEmptyComponent={emptyState}
+        ListEmptyComponent={listEmptyState}
         ListHeaderComponent={listHeader}
         ItemSeparatorComponent={() => <View className={styles.cardSeparator} />}
-        renderItem={renderQuest}
+        renderItem={listRenderItem as never}
+        onEndReached={fixtureBoard ? undefined : loadNextApiPage}
+        onEndReachedThreshold={0.4}
+        ListFooterComponent={
+          !fixtureBoard && apiLoadingMore ? (
+            <QuestBoardSkeleton loadingLabel={messages.loading} />
+          ) : null
+        }
         onScroll={handleScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
