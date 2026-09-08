@@ -3,8 +3,8 @@ import {
   questBoardRepository,
   type QuestBoardRepository,
 } from "./questBoardRepository";
-import type { ApiQuestBoardPage } from "@/api/questBoardMapper";
-import type { QuestBoardQuery } from "@/api/questBoardContracts";
+import type { ApiQuestBoardPage } from "@/api/questBoard/questBoardMapper";
+import type { QuestBoardQuery } from "@/api/questBoard/questBoardContracts";
 import {
   getQuestPublishCheck as getDraftPublishCheck,
   type QuestDraft,

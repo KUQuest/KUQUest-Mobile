@@ -5,7 +5,7 @@ import QuestBoardScreen from "../QuestBoardScreen";
 import type {
   ApiQuestBoardItem,
   ApiQuestBoardPage,
-} from "@/api/questBoardMapper";
+} from "@/api/questBoard/questBoardMapper";
 import type { QuestBoardRepository } from "../questBoardRepository";
 
 const mockPush = jest.fn();

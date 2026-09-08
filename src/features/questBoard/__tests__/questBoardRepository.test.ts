@@ -1,5 +1,5 @@
 import { ApiQuestBoardRepository } from "../questBoardRepository";
-import type { QuestBoardApi } from "@/api/QuestBoardApi";
+import type { QuestBoardApi } from "@/api/questBoard/QuestBoardApi";
 
 describe("ApiQuestBoardRepository", () => {
   test("requests through QuestBoardApi and maps the cursor page", async () => {

@@ -1,4 +1,4 @@
-import { ApiClient } from "../ApiClient";
+import { ApiClient } from "../../ApiClient";
 import { QuestBoardApi } from "../QuestBoardApi";
 
 const questId = "2ad5b944-830b-4e28-95a7-5fe2792b713a";

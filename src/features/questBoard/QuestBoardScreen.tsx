@@ -48,8 +48,8 @@ import {
 import { colors } from "@/theme/colors";
 import { getAppChromeMetrics } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
-import type { ApiQuestBoardItem } from "@/api/questBoardMapper";
-import type { QuestBoardQuery } from "@/api/questBoardContracts";
+import type { ApiQuestBoardItem } from "@/api/questBoard/questBoardMapper";
+import type { QuestBoardQuery } from "@/api/questBoard/questBoardContracts";
 import styles from "./questBoardStyles";
 import { getLocalizedQuest } from "./questFixtures";
 import {

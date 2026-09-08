@@ -1,10 +1,10 @@
 import { ApiClient } from "@/api/ApiClient";
-import { QuestBoardApi } from "@/api/QuestBoardApi";
-import type { QuestBoardQuery } from "@/api/questBoardContracts";
+import { QuestBoardApi } from "@/api/questBoard/QuestBoardApi";
+import type { QuestBoardQuery } from "@/api/questBoard/questBoardContracts";
 import {
   mapQuestBoardPage,
   type ApiQuestBoardPage,
-} from "@/api/questBoardMapper";
+} from "@/api/questBoard/questBoardMapper";
 
 export interface QuestBoardRepository {
   listQuests(query?: QuestBoardQuery): Promise<ApiQuestBoardPage>;
