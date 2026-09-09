@@ -1,6 +1,12 @@
 /* The contract exposes named values and matching string-union types. */
 /* eslint-disable @typescript-eslint/no-redeclare */
 
+import type {
+  QuestBoardMode,
+  QuestBoardParticipation,
+  QuestBoardTag,
+} from '@/api/questBoard/questBoardContracts';
+
 export const MAX_QUEST_IMAGES = 3;
 export const SATANG_PER_BAHT = 100;
 
@@ -438,7 +444,9 @@ export type StartTimeBucket = 'morning' | 'afternoon' | 'evening';
 
 export interface QuestBoardFilter {
   query: string;
-  tags: string[];
+  selectedTag: QuestBoardTag | null;
+  mode: QuestBoardMode | null;
+  participation: QuestBoardParticipation | null;
   rewardMin: number | null;
   rewardMax: number | null;
   deadline: DeadlineFilter | null;
@@ -453,7 +461,9 @@ export interface QuestBoardQueryOptions {
 
 export const emptyQuestBoardFilter: QuestBoardFilter = {
   query: '',
-  tags: [],
+  selectedTag: null,
+  mode: null,
+  participation: null,
   rewardMin: null,
   rewardMax: null,
   deadline: null,

@@ -7,6 +7,7 @@ import type {
   ApiQuestBoardPage,
 } from "@/api/questBoard/questBoardMapper";
 import type { QuestBoardRepository } from "../questBoardRepository";
+import type { TagApi } from "@/api/tag/TagApi";
 
 const mockPush = jest.fn();
 
@@ -34,8 +35,8 @@ const item: ApiQuestBoardItem = {
     id: "58818dc3-6dad-424f-8dfd-d20b6747aeb3",
     name: "Design",
   },
-  mode: "NO_CANDIDATE",
-  participation: "SOLO",
+  mode: "FIRST_COME_FIRST_SERVED",
+  participation: "SINGLE",
   headcount: 1,
   startTime: "2099-09-30T09:00:00.000+07:00",
   estimatedDurationMinutes: 120,
@@ -124,16 +125,100 @@ describe("API-backed Quest Board screen", () => {
     const listQuests = jest
       .fn()
       .mockResolvedValueOnce(page([item], "next-page"))
-      .mockResolvedValueOnce(page([]));
+      .mockResolvedValue(page([]));
     const view = await render(
       <QuestBoardScreen boardRepository={repositoryFor(listQuests)} />
     );
 
     await waitFor(() => expect(view.getByText("API Quest")).toBeTruthy());
-    fireEvent.changeText(view.getByTestId("quest-board-search"), "design");
+    await fireEvent(
+      view.getByLabelText("Quest Board results"),
+      "onEndReached"
+    );
+    await waitFor(() =>
+      expect(listQuests).toHaveBeenLastCalledWith({ cursor: "next-page" })
+    );
+    await fireEvent.changeText(view.getByTestId("quest-board-search"), "design");
 
     await waitFor(() => expect(view.getByText("No quests found")).toBeTruthy());
     expect(listQuests).toHaveBeenLastCalledWith({ q: "design" });
+  });
+
+  test("maps the selected Tag object and v2 filters to the API query", async () => {
+    const listQuests = jest.fn().mockResolvedValue(page([item]));
+    const tagCatalogApi = {
+      listTags: jest.fn().mockResolvedValue([item.tag]),
+    } as unknown as TagApi;
+    const view = await render(
+      <QuestBoardScreen
+        boardRepository={repositoryFor(listQuests)}
+        tagCatalogApi={tagCatalogApi}
+      />
+    );
+
+    await waitFor(() => expect(view.getByText("API Quest")).toBeTruthy());
+    await fireEvent.press(view.getByTestId("open-quest-filters"));
+    await waitFor(() => expect(tagCatalogApi.listTags).toHaveBeenCalledTimes(1));
+    await fireEvent.changeText(view.getByTestId("quest-filter-tag-search"), "design");
+    await waitFor(() =>
+      expect(view.getByTestId(`quest-filter-tag-${item.tag.id}`)).toBeTruthy()
+    );
+    await fireEvent.press(view.getByTestId(`quest-filter-tag-${item.tag.id}`));
+    await fireEvent.press(view.getByTestId("quest-filter-mode-candidate"));
+    await fireEvent.press(view.getByTestId("quest-filter-participation-group"));
+    await fireEvent.press(view.getByTestId("apply-quest-filters"));
+
+    await waitFor(() => expect(listQuests).toHaveBeenLastCalledWith({
+      tagId: item.tag.id,
+      mode: "CANDIDATE",
+      participation: "GROUP",
+    }));
+  });
+
+  test("suppresses duplicate pagination requests, deduplicates cards, and stops at null", async () => {
+    let resolveNext: (value: ApiQuestBoardPage) => void = () => undefined;
+    const nextPage = new Promise<ApiQuestBoardPage>((resolve) => {
+      resolveNext = resolve;
+    });
+    const duplicate = { ...item, title: "Duplicate API Quest" };
+    const next = { ...item, questId: "next-quest", title: "Next API Quest" };
+    const listQuests = jest.fn()
+      .mockResolvedValueOnce(page([item], "opaque/next=="))
+      .mockReturnValueOnce(nextPage);
+    const view = await render(
+      <QuestBoardScreen boardRepository={repositoryFor(listQuests)} />
+    );
+
+    await waitFor(() => expect(view.getByText("API Quest")).toBeTruthy());
+    const results = view.getByLabelText("Quest Board results");
+    await fireEvent(results, "onEndReached");
+    await fireEvent(results, "onEndReached");
+    expect(listQuests).toHaveBeenCalledTimes(2);
+
+    resolveNext(page([duplicate, next], null));
+    await waitFor(() => expect(view.getByText("Next API Quest")).toBeTruthy());
+    expect(view.getAllByTestId(`quest-detail-${item.questId}`)).toHaveLength(1);
+
+    await fireEvent(results, "onEndReached");
+    expect(listQuests).toHaveBeenCalledTimes(2);
+  });
+
+  test("renders API results in server order without local search or sort", async () => {
+    const second = { ...item, questId: "second-quest", title: "Second server result" };
+    const listQuests = jest.fn().mockResolvedValue(page([second, item]));
+    const view = await render(
+      <QuestBoardScreen boardRepository={repositoryFor(listQuests)} />
+    );
+
+    await waitFor(() => expect(view.getByText("Second server result")).toBeTruthy(), {
+      timeout: 5000,
+    });
+    expect(view.queryByTestId("open-quest-sort")).toBeNull();
+    await fireEvent.changeText(view.getByTestId("quest-board-search"), "not a server filter");
+
+    await waitFor(() => expect(listQuests).toHaveBeenCalledTimes(2));
+    expect(view.getByText("Second server result")).toBeTruthy();
+    expect(view.getAllByTestId("quest-detail-second-quest")).toHaveLength(1);
   });
 
   test("never substitutes fixture cards when the API request fails", async () => {
@@ -142,7 +227,9 @@ describe("API-backed Quest Board screen", () => {
     });
     const view = await render(<QuestBoardScreen boardRepository={repository} />);
 
-    await waitFor(() => expect(view.getByTestId("quest-board-prototype-menu-trigger")).toBeTruthy());
+    await waitFor(() => expect(view.getByText("Try again")).toBeTruthy(), {
+      timeout: 5000,
+    });
     expect(view.queryByText("Help move boxes to the dorm")).toBeNull();
   });
 });

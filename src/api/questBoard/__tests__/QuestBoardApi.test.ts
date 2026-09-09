@@ -34,8 +34,8 @@ describe("QuestBoardApi", () => {
           title: "Design a landing page",
           reward: 980,
           tag: { id: tagId, name: "Design" },
-          mode: "NO_CANDIDATE",
-          participation: "SOLO",
+          mode: "FIRST_COME_FIRST_SERVED",
+          participation: "SINGLE",
           headcount: 1,
           startTime: "2026-09-30T09:00:00.000+07:00",
           estimatedDurationMinutes: null,
@@ -48,18 +48,42 @@ describe("QuestBoardApi", () => {
 
     await expect(api.listBoardQuests({
       q: "design",
-      minReward: 100,
+      minQuestReward: 100,
       limit: 20,
     })).resolves.toEqual(expect.objectContaining({ nextCursor: null }));
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.example.test/api/v2/quests?q=design&minReward=100&limit=20",
+      "https://api.example.test/api/v2/quests?q=design&minQuestReward=100&limit=20",
       expect.objectContaining({
         method: "GET",
         headers: expect.objectContaining({
           Cookie: "better-auth.session_token=session-cookie",
         }),
       })
+    );
+  });
+
+  test("serializes canonical filters and preserves the opaque cursor", async () => {
+    fetchMock.mockResolvedValue(response({
+      success: true,
+      data: { items: [], nextCursor: "opaque/cursor==" },
+    }));
+
+    await api.listQuests({
+      tagId,
+      mode: "CANDIDATE",
+      participation: "GROUP",
+      minQuestReward: 100.5,
+      maxQuestReward: 700000,
+      maxDurationMinutes: 90,
+      startFrom: "2026-09-30T09:00:00.000+07:00",
+      startTo: "2026-10-01T09:00:00.000+07:00",
+      cursor: "opaque/cursor==",
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v2/quests?tagId=58818dc3-6dad-424f-8dfd-d20b6747aeb3&mode=CANDIDATE&participation=GROUP&maxDurationMinutes=90&minQuestReward=100.5&maxQuestReward=700000&startFrom=2026-09-30T09%3A00%3A00.000%2B07%3A00&startTo=2026-10-01T09%3A00%3A00.000%2B07%3A00&cursor=opaque%2Fcursor%3D%3D",
+      expect.anything(),
     );
   });
 

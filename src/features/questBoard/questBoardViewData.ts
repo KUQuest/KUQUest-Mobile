@@ -69,10 +69,27 @@ export function getStartTimeBucket(timeRange: string | undefined): QuestBoardFil
   return 'evening';
 }
 
-function matchesTags(quest: QuestBoardQuest, tags: string[]): boolean {
-  if (tags.length === 0) return true;
+function matchesTag(quest: QuestBoardQuest, tag: QuestBoardFilter['selectedTag']): boolean {
+  if (!tag) return true;
   const normalizedTags = quest.tags.map((tag) => tag.toLocaleLowerCase());
-  return tags.some((tag) => normalizedTags.includes(tag.toLocaleLowerCase()));
+  return normalizedTags.includes(tag.name.toLocaleLowerCase());
+}
+
+function matchesMode(quest: QuestBoardQuest, mode: QuestBoardFilter['mode']): boolean {
+  if (!mode) return true;
+  return mode === 'CANDIDATE'
+    ? quest.candidateMode === 'CANDIDATE'
+    : quest.candidateMode === 'NO_CANDIDATE';
+}
+
+function matchesParticipation(
+  quest: QuestBoardQuest,
+  participation: QuestBoardFilter['participation'],
+): boolean {
+  if (!participation) return true;
+  return participation === 'GROUP'
+    ? quest.participationMode === 'team'
+    : quest.participationMode === 'single';
 }
 
 function matchesRewardBounds(quest: QuestBoardQuest, minimum: number | null, maximum: number | null): boolean {
@@ -114,7 +131,9 @@ export function applyQuestBoardFilters(
     ].join(' ').toLocaleLowerCase();
     const matchesQuery = !query || searchableText.includes(query);
     return matchesQuery
-      && matchesTags(quest, filter.tags)
+      && matchesTag(quest, filter.selectedTag)
+      && matchesMode(quest, filter.mode)
+      && matchesParticipation(quest, filter.participation)
       && matchesRewardBounds(quest, filter.rewardMin, filter.rewardMax)
       && matchesDeadline(quest, filter.deadline, now)
       && matchesStartTimeBucket(quest, filter.startTimeBuckets)

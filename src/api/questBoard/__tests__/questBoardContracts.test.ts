@@ -18,8 +18,8 @@ describe("questBoardContracts", () => {
             title: "Design a landing page",
             reward: 980,
             tag: { id: tagId, name: "Design" },
-            mode: "NO_CANDIDATE",
-            participation: "SOLO",
+            mode: "FIRST_COME_FIRST_SERVED",
+            participation: "SINGLE",
             headcount: 1,
             startTime: "2026-09-30T09:00:00.000+07:00",
             estimatedDurationMinutes: 120,
@@ -69,15 +69,15 @@ describe("questBoardContracts", () => {
 
   test("coerces numeric query strings accepted by the Board endpoint", () => {
     expect(questBoardQuerySchema.parse({
-      mode: "NO_CANDIDATE",
-      participation: "SOLO",
-      minReward: "100",
-      maxReward: "700000",
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "SINGLE",
+      minQuestReward: "100.50",
+      maxQuestReward: "700000",
       maxDurationMinutes: "60",
       limit: "20",
     })).toEqual(expect.objectContaining({
-      minReward: 100,
-      maxReward: 700000,
+      minQuestReward: 100.5,
+      maxQuestReward: 700000,
       maxDurationMinutes: 60,
       limit: 20,
     }));

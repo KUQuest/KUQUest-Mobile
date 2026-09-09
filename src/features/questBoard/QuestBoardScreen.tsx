@@ -62,6 +62,8 @@ import type { BoardPreviewState } from "./questBoardHarness";
 import { getQuestRewardSatang, questWorkflow } from "./questWorkflow";
 import type { QuestBoardRepository } from "./questBoardRepository";
 import type { PrototypeScenarioRoute } from "@/components/ui/prototypeMenuData";
+import { tagApi, type TagApi } from "@/api/tag/TagApi";
+import type { QuestBoardTag } from "@/api/questBoard/questBoardContracts";
 
 import { formatSatang } from "./types";
 import {
@@ -80,6 +82,7 @@ export interface QuestBoardScreenProps {
   currentStudentId?: string;
   initialPreviewState?: BoardPreviewState;
   boardRepository?: QuestBoardRepository;
+  tagCatalogApi?: TagApi;
 }
 
 const deadlineOptions: {
@@ -431,7 +434,9 @@ function ApiQuestCard({
 
 function getActiveFilterCount(filter: QuestBoardFilter): number {
   return (
-    Number(filter.tags.length > 0) +
+    Number(filter.selectedTag !== null) +
+    Number(filter.mode !== null) +
+    Number(filter.participation !== null) +
     Number(filter.rewardMin !== null || filter.rewardMax !== null) +
     Number(filter.deadline !== null) +
     Number(filter.startTimeBuckets.length > 0) +
@@ -442,7 +447,6 @@ function getActiveFilterCount(filter: QuestBoardFilter): number {
 function cloneFilter(filter: QuestBoardFilter): QuestBoardFilter {
   return {
     ...filter,
-    tags: [...filter.tags],
     startTimeBuckets: [...filter.startTimeBuckets],
     locationModes: [...filter.locationModes],
   };
@@ -454,9 +458,11 @@ function formatBound(value: number | null): string {
 
 function parseRewardBound(value: string): number | null | undefined {
   if (value === "") return null;
-  if (!/^\d+$/.test(value)) return undefined;
+  if (!/^\d+(?:\.\d{1,2})?$/.test(value)) return undefined;
   const parsed = Number(value);
-  return Number.isSafeInteger(parsed) ? parsed : undefined;
+  return Number.isFinite(parsed) && parsed >= 0 && parsed <= 700_000
+    ? parsed
+    : undefined;
 }
 
 function Option({
@@ -615,13 +621,19 @@ function QuestBoardFilterSheet({
   filter,
   messages,
   availableTags,
+  fixtureOnly,
+  tagCatalogLoading,
+  tagCatalogError,
   onChange,
   onApply,
   onClose,
 }: {
   filter: QuestBoardFilter;
   messages: QuestBoardMessages;
-  availableTags: string[];
+  availableTags: QuestBoardTag[];
+  fixtureOnly: boolean;
+  tagCatalogLoading: boolean;
+  tagCatalogError: unknown;
   onChange: (next: QuestBoardFilter) => void;
   onApply: () => void;
   onClose: () => void;
@@ -637,16 +649,15 @@ function QuestBoardFilterSheet({
     maximum !== undefined &&
     (minimum === null || maximum === null || minimum <= maximum);
   const activeFilterCount = getActiveFilterCount(filter);
-  const displayedTags = [...new Set([...availableTags, ...filter.tags])].sort(
-    (left, right) =>
-      left.localeCompare(right, undefined, { sensitivity: "base" })
+  const displayedTags = [...availableTags].sort((left, right) =>
+    left.name.localeCompare(right.name, undefined, { sensitivity: "base" })
   );
   const normalizedTagQuery = tagQuery.trim().toLocaleLowerCase();
   const tagSuggestions = normalizedTagQuery
     ? displayedTags.filter(
         (tag) =>
-          !filter.tags.includes(tag) &&
-          tag.toLocaleLowerCase().includes(normalizedTagQuery)
+          filter.selectedTag?.id !== tag.id &&
+          tag.name.toLocaleLowerCase().includes(normalizedTagQuery)
       )
     : [];
 
@@ -661,12 +672,11 @@ function QuestBoardFilterSheet({
     }
   };
 
-  const addTag = (tag: string) => {
-    onChange({ ...filter, tags: [...filter.tags, tag] });
+  const addTag = (tag: QuestBoardTag) => {
+    onChange({ ...filter, selectedTag: tag });
     setTagQuery("");
   };
-  const removeTag = (tag: string) =>
-    onChange({ ...filter, tags: filter.tags.filter((value) => value !== tag) });
+  const removeTag = () => onChange({ ...filter, selectedTag: null });
   const toggleStartTime = (bucket: StartTimeBucket) =>
     onChange({
       ...filter,
@@ -738,21 +748,18 @@ function QuestBoardFilterSheet({
           >
             <View className={styles.sheetSection}>
               <Text className={styles.sheetSectionTitle}>{messages.tags}</Text>
-              {filter.tags.length > 0 ? (
+              {filter.selectedTag ? (
                 <View className={styles.selectedTags}>
-                  {filter.tags.map((tag) => (
-                    <Pressable
-                      accessibilityLabel={messages.removeSelectedTag(tag)}
-                      accessibilityRole="button"
-                      key={tag}
-                      onPress={() => removeTag(tag)}
-                      className={styles.selectedTag}
-                      testID={`quest-filter-selected-tag-${tag}`}
-                    >
-                      <Text className={styles.selectedTagText}>{tag}</Text>
-                      <X color={colors.primary} size={13} strokeWidth={2.5} />
-                    </Pressable>
-                  ))}
+                  <Pressable
+                    accessibilityLabel={messages.removeSelectedTag(filter.selectedTag.name)}
+                    accessibilityRole="button"
+                    onPress={removeTag}
+                    className={styles.selectedTag}
+                    testID={`quest-filter-selected-tag-${filter.selectedTag.id}`}
+                  >
+                    <Text className={styles.selectedTagText}>{filter.selectedTag.name}</Text>
+                    <X color={colors.primary} size={13} strokeWidth={2.5} />
+                  </Pressable>
                 </View>
               ) : null}
               <View className={styles.tagSearchField}>
@@ -785,11 +792,11 @@ function QuestBoardFilterSheet({
                   <View className={styles.tagSuggestions}>
                     {tagSuggestions.map((tag) => (
                       <Option
-                        key={tag}
-                        label={tag}
+                        key={tag.id}
+                        label={tag.name}
                         onPress={() => addTag(tag)}
                         selected={false}
-                        testID={`quest-filter-tag-${tag}`}
+                        testID={`quest-filter-tag-${tag.id}`}
                       />
                     ))}
                   </View>
@@ -801,7 +808,69 @@ function QuestBoardFilterSheet({
                     {messages.noMatchingTags}
                   </Text>
                 )
+              ) : tagCatalogLoading ? (
+                <Text className={styles.noTagResults}>{messages.loading}</Text>
+              ) : tagCatalogError ? (
+                <Text className={styles.noTagResults}>{messages.errorDescription}</Text>
               ) : null}
+            </View>
+            <View className={styles.sheetSection}>
+              <Text className={styles.sheetSectionTitle}>{messages.candidateMode}</Text>
+              <View className={styles.optionList}>
+                <Option
+                  accessibilityRole="radio"
+                  label={messages.firstCome}
+                  onPress={() =>
+                    onChange({
+                      ...filter,
+                      mode: filter.mode === "FIRST_COME_FIRST_SERVED" ? null : "FIRST_COME_FIRST_SERVED",
+                    })
+                  }
+                  selected={filter.mode === "FIRST_COME_FIRST_SERVED"}
+                  testID="quest-filter-mode-fcfs"
+                />
+                <Option
+                  accessibilityRole="radio"
+                  label={messages.candidate}
+                  onPress={() =>
+                    onChange({
+                      ...filter,
+                      mode: filter.mode === "CANDIDATE" ? null : "CANDIDATE",
+                    })
+                  }
+                  selected={filter.mode === "CANDIDATE"}
+                  testID="quest-filter-mode-candidate"
+                />
+              </View>
+            </View>
+            <View className={styles.sheetSection}>
+              <Text className={styles.sheetSectionTitle}>{messages.participation}</Text>
+              <View className={styles.optionList}>
+                <Option
+                  accessibilityRole="radio"
+                  label={messages.singlePerson}
+                  onPress={() =>
+                    onChange({
+                      ...filter,
+                      participation: filter.participation === "SINGLE" ? null : "SINGLE",
+                    })
+                  }
+                  selected={filter.participation === "SINGLE"}
+                  testID="quest-filter-participation-single"
+                />
+                <Option
+                  accessibilityRole="radio"
+                  label={messages.team}
+                  onPress={() =>
+                    onChange({
+                      ...filter,
+                      participation: filter.participation === "GROUP" ? null : "GROUP",
+                    })
+                  }
+                  selected={filter.participation === "GROUP"}
+                  testID="quest-filter-participation-group"
+                />
+              </View>
             </View>
             <View className={styles.sheetSection}>
               <Text className={styles.sheetSectionTitle}>
@@ -814,7 +883,7 @@ function QuestBoardFilterSheet({
                   </Text>
                   <TextInput
                     accessibilityLabel={messages.rewardMin}
-                    keyboardType="number-pad"
+                    keyboardType="decimal-pad"
                     onChangeText={(value) => {
                       setMinimumText(value);
                       updateRewardBounds(value, maximumText);
@@ -832,7 +901,7 @@ function QuestBoardFilterSheet({
                   </Text>
                   <TextInput
                     accessibilityLabel={messages.rewardMax}
-                    keyboardType="number-pad"
+                    keyboardType="decimal-pad"
                     onChangeText={(value) => {
                       setMaximumText(value);
                       updateRewardBounds(minimumText, value);
@@ -854,7 +923,7 @@ function QuestBoardFilterSheet({
                 </Text>
               ) : null}
             </View>
-            <View className={styles.sheetSection}>
+            {fixtureOnly ? <View className={styles.sheetSection}>
               <Text className={styles.sheetSectionTitle}>
                 {messages.deadline}
               </Text>
@@ -877,8 +946,8 @@ function QuestBoardFilterSheet({
                   />
                 ))}
               </View>
-            </View>
-            <View className={styles.sheetSection}>
+            </View> : null}
+            {fixtureOnly ? <View className={styles.sheetSection}>
               <Text className={styles.sheetSectionTitle}>
                 {messages.startTime}
               </Text>
@@ -893,8 +962,8 @@ function QuestBoardFilterSheet({
                   />
                 ))}
               </View>
-            </View>
-            <View className={styles.sheetSection}>
+            </View> : null}
+            {fixtureOnly ? <View className={styles.sheetSection}>
               <Text className={styles.sheetSectionTitle}>
                 {messages.location}
               </Text>
@@ -912,7 +981,7 @@ function QuestBoardFilterSheet({
                   testID="quest-filter-location-on-campus"
                 />
               </View>
-            </View>
+            </View> : null}
           </ScrollView>
           <View className={styles.sheetActions}>
             <Pressable
@@ -1021,6 +1090,7 @@ export default function QuestBoardScreen({
   currentStudentId,
   initialPreviewState,
   boardRepository,
+  tagCatalogApi,
 }: QuestBoardScreenProps) {
   const router = useRouter();
   const { locale } = useLocale();
@@ -1066,16 +1136,33 @@ export default function QuestBoardScreen({
   const [apiLoadingMore, setApiLoadingMore] = useState(false);
   const [apiError, setApiError] = useState<unknown>(null);
   const [apiRetryAttempt, setApiRetryAttempt] = useState(0);
+  const [tagCatalog, setTagCatalog] = useState<QuestBoardTag[]>([]);
+  const [tagCatalogLoading, setTagCatalogLoading] = useState(false);
+  const [tagCatalogError, setTagCatalogError] = useState<unknown>(null);
+  const tagCatalogLoadedRef = useRef(false);
+  const apiLoadingMoreRef = useRef(false);
+  const apiRequestGenerationRef = useRef(0);
   const [workflowRevision, setWorkflowRevision] = useState(0);
   const workflowNow = questWorkflow.getNow();
+  const tagCatalogClient = tagCatalogApi ?? tagApi;
 
   const apiQuery = useMemo<QuestBoardQuery>(() => {
     const nextQuery: QuestBoardQuery = {};
     if (query.trim()) nextQuery.q = query.trim();
-    if (filters.rewardMin !== null) nextQuery.minReward = filters.rewardMin;
-    if (filters.rewardMax !== null) nextQuery.maxReward = filters.rewardMax;
+    if (filters.selectedTag) nextQuery.tagId = filters.selectedTag.id;
+    if (filters.mode) nextQuery.mode = filters.mode;
+    if (filters.participation) nextQuery.participation = filters.participation;
+    if (filters.rewardMin !== null) nextQuery.minQuestReward = filters.rewardMin;
+    if (filters.rewardMax !== null) nextQuery.maxQuestReward = filters.rewardMax;
     return nextQuery;
-  }, [filters.rewardMax, filters.rewardMin, query]);
+  }, [
+    filters.mode,
+    filters.participation,
+    filters.rewardMax,
+    filters.rewardMin,
+    filters.selectedTag,
+    query,
+  ]);
 
   useEffect(
     () => {
@@ -1089,45 +1176,71 @@ export default function QuestBoardScreen({
 
   useEffect(() => {
     if (fixtureBoard) return undefined;
+    const generation = apiRequestGenerationRef.current + 1;
+    apiRequestGenerationRef.current = generation;
+    apiLoadingMoreRef.current = false;
+    setApiLoadingMore(false);
+    setApiItems([]);
+    setApiCursor(null);
+    setApiError(null);
+    setApiLoading(true);
     let active = true;
-    void Promise.resolve().then(() => {
-      if (!active) return;
-      setApiItems([]);
-      setApiCursor(null);
-      setApiError(null);
-      setApiLoading(true);
-    });
     void listQuestBoard(apiQuery)
       .then((page) => {
-        if (!active) return;
+        if (!active || apiRequestGenerationRef.current !== generation) return;
         setApiItems(page.items);
         setApiCursor(page.nextCursor);
       })
       .catch((error: unknown) => {
-        if (active) setApiError(error);
+        if (active && apiRequestGenerationRef.current === generation) {
+          setApiError(error);
+        }
       })
       .finally(() => {
-        if (active) setApiLoading(false);
+        if (active && apiRequestGenerationRef.current === generation) {
+          setApiLoading(false);
+        }
       });
     return () => {
       active = false;
     };
-  }, [apiQuery, apiRetryAttempt, fixtureBoard, filters, listQuestBoard]);
+  }, [apiQuery, apiRetryAttempt, fixtureBoard, listQuestBoard]);
 
   const loadNextApiPage = useCallback(() => {
-    if (fixtureBoard || !apiCursor || apiLoading || apiLoadingMore) return;
+    if (
+      fixtureBoard ||
+      !apiCursor ||
+      apiLoading ||
+      apiLoadingMoreRef.current
+    ) return;
+    const generation = apiRequestGenerationRef.current;
+    const cursor = apiCursor;
+    apiLoadingMoreRef.current = true;
     setApiLoadingMore(true);
-    void listQuestBoard({ ...apiQuery, cursor: apiCursor })
+    void listQuestBoard({ ...apiQuery, cursor })
       .then((page) => {
-        setApiItems((items) => [...items, ...page.items]);
+        if (apiRequestGenerationRef.current !== generation) return;
+        setApiItems((items) => {
+          const existingIds = new Set(items.map((item) => item.questId));
+          return [
+            ...items,
+            ...page.items.filter((item) => !existingIds.has(item.questId)),
+          ];
+        });
         setApiCursor(page.nextCursor);
       })
-      .catch((error: unknown) => setApiError(error))
-      .finally(() => setApiLoadingMore(false));
+      .catch((error: unknown) => {
+        if (apiRequestGenerationRef.current === generation) setApiError(error);
+      })
+      .finally(() => {
+        apiLoadingMoreRef.current = false;
+        if (apiRequestGenerationRef.current === generation) {
+          setApiLoadingMore(false);
+        }
+      });
   }, [
     apiCursor,
     apiLoading,
-    apiLoadingMore,
     apiQuery,
     fixtureBoard,
     listQuestBoard,
@@ -1160,16 +1273,30 @@ export default function QuestBoardScreen({
         : [],
     [boardModel, locale]
   );
-  const availableTags = useMemo(
+  const fixtureTagOptions = useMemo(
     () =>
       getQuestBoardTags(
         getVisibleQuests(localizedQuests, {
           currentStudentId: resolvedStudentId,
           now: workflowNow,
         })
-      ),
+      ).map((name) => ({ id: name, name })),
     [resolvedStudentId, localizedQuests, workflowNow]
   );
+  const availableTags = fixtureBoard ? fixtureTagOptions : tagCatalog;
+  const loadTagCatalog = useCallback(() => {
+    if (fixtureBoard || tagCatalogLoadedRef.current || tagCatalogLoading) return;
+    setTagCatalogLoading(true);
+    setTagCatalogError(null);
+    void tagCatalogClient
+      .listTags()
+      .then((tags) => {
+        tagCatalogLoadedRef.current = true;
+        setTagCatalog(tags);
+      })
+      .catch((error: unknown) => setTagCatalogError(error))
+      .finally(() => setTagCatalogLoading(false));
+  }, [fixtureBoard, tagCatalogClient, tagCatalogLoading]);
   const visibleQuests = useMemo(
     () =>
       boardModel.kind === "ready"
@@ -1195,6 +1322,7 @@ export default function QuestBoardScreen({
   const openFilters = () => {
     setDraftFilters(cloneFilter(filters));
     setFilterOpen(true);
+    loadTagCatalog();
   };
 
   const applyFilters = () => {
@@ -1267,11 +1395,12 @@ export default function QuestBoardScreen({
           : undefined;
   const noMatchAction =
     hasActiveFilters && !query ? clearFilters : clearNoMatch;
-  const removeTag = (tag: string) =>
-    setFilters((current) => ({
-      ...current,
-      tags: current.tags.filter((value) => value !== tag),
-    }));
+  const removeTag = () =>
+    setFilters((current) => ({ ...current, selectedTag: null }));
+  const removeMode = () =>
+    setFilters((current) => ({ ...current, mode: null }));
+  const removeParticipation = () =>
+    setFilters((current) => ({ ...current, participation: null }));
   const removeLocation = (location: QuestLocationMode) =>
     setFilters((current) => ({
       ...current,
@@ -1475,38 +1604,72 @@ export default function QuestBoardScreen({
             </View>
           ) : null}
         </Pressable>
-        <Pressable
-          accessibilityLabel={`${messages.sort}: ${sortLabel}`}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: sortOpen }}
-          onPress={() => setSortOpen(true)}
-          className={cn(styles.toolbarButton, styles.toolbarButtonRight)}
-          testID="open-quest-sort"
-        >
-          <ArrowDownUp color={colors.textStrong} size={22} strokeWidth={2.3} />
-          <Text className={styles.toolbarText}>
-            {messages.sort}: {sortLabel}
-          </Text>
-        </Pressable>
+        {fixtureBoard ? (
+          <Pressable
+            accessibilityLabel={`${messages.sort}: ${sortLabel}`}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: sortOpen }}
+            onPress={() => setSortOpen(true)}
+            className={cn(styles.toolbarButton, styles.toolbarButtonRight)}
+            testID="open-quest-sort"
+          >
+            <ArrowDownUp color={colors.textStrong} size={22} strokeWidth={2.3} />
+            <Text className={styles.toolbarText}>
+              {messages.sort}: {sortLabel}
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
       {hasActiveFilters ? (
         <View
           accessibilityLabel={messages.activeFiltersLabel}
           className={styles.activeFilters}
         >
-          {filters.tags.map((tag) => (
+          {filters.selectedTag ? (
             <Pressable
-              accessibilityLabel={messages.removeFilter(tag)}
+              accessibilityLabel={messages.removeFilter(filters.selectedTag.name)}
               accessibilityRole="button"
-              key={tag}
-              onPress={() => removeTag(tag)}
+              key={filters.selectedTag.id}
+              onPress={removeTag}
               className={styles.filterChip}
-              testID={`active-quest-filter-tag-${tag}`}
+              testID={`active-quest-filter-tag-${filters.selectedTag.id}`}
             >
-              <Text className={styles.filterChipText}>{tag}</Text>
+              <Text className={styles.filterChipText}>{filters.selectedTag.name}</Text>
               <X color={colors.primary} size={13} strokeWidth={2.5} />
             </Pressable>
-          ))}
+          ) : null}
+          {filters.mode ? (
+            <Pressable
+              accessibilityLabel={messages.removeFilter(
+                filters.mode === "CANDIDATE" ? messages.candidate : messages.firstCome
+              )}
+              accessibilityRole="button"
+              onPress={removeMode}
+              className={styles.filterChip}
+              testID="active-quest-filter-mode"
+            >
+              <Text className={styles.filterChipText}>
+                {filters.mode === "CANDIDATE" ? messages.candidate : messages.firstCome}
+              </Text>
+              <X color={colors.primary} size={13} strokeWidth={2.5} />
+            </Pressable>
+          ) : null}
+          {filters.participation ? (
+            <Pressable
+              accessibilityLabel={messages.removeFilter(
+                filters.participation === "GROUP" ? messages.team : messages.singlePerson
+              )}
+              accessibilityRole="button"
+              onPress={removeParticipation}
+              className={styles.filterChip}
+              testID="active-quest-filter-participation"
+            >
+              <Text className={styles.filterChipText}>
+                {filters.participation === "GROUP" ? messages.team : messages.singlePerson}
+              </Text>
+              <X color={colors.primary} size={13} strokeWidth={2.5} />
+            </Pressable>
+          ) : null}
           {filters.locationModes.map((location) => (
             <Pressable
               accessibilityLabel={messages.removeFilter(
@@ -1686,13 +1849,16 @@ export default function QuestBoardScreen({
         <QuestBoardFilterSheet
           availableTags={availableTags}
           filter={draftFilters}
+          fixtureOnly={fixtureBoard}
           messages={messages}
           onApply={applyFilters}
           onChange={setDraftFilters}
           onClose={() => setFilterOpen(false)}
+          tagCatalogError={tagCatalogError}
+          tagCatalogLoading={tagCatalogLoading}
         />
       ) : null}
-      {sortOpen ? (
+      {sortOpen && fixtureBoard ? (
         <QuestBoardSortSheet
           messages={messages}
           onClose={() => setSortOpen(false)}

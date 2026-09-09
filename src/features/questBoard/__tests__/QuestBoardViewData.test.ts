@@ -131,10 +131,12 @@ describe("Quest Board view data", () => {
     ).toEqual(["design-match"]);
   });
 
-  it("filters by search text, tags, reward bounds, deadline, start time, and location", () => {
+  it("filters by search text, one tag, reward bounds, deadline, start time, and location", () => {
     const filter: QuestBoardFilter = {
       query: "poster",
-      tags: ["Design & creative"],
+      selectedTag: { id: "fixture:Design & creative", name: "Design & creative" },
+      mode: null,
+      participation: null,
       rewardMin: 700,
       rewardMax: 700,
       deadline: "within-7-days",
@@ -190,10 +192,12 @@ describe("Quest Board view data", () => {
     expect(getQuestImageCount(quests[0])).toBe(0);
   });
 
-  it("uses inclusive reward bounds and OR semantics within tag and start-time facets", () => {
+  it("uses inclusive reward bounds and OR semantics within start-time facets", () => {
     const filter: QuestBoardFilter = {
       query: "",
-      tags: ["Technology", "Design & creative"],
+      selectedTag: null,
+      mode: null,
+      participation: null,
       rewardMin: 450,
       rewardMax: 800,
       deadline: null,

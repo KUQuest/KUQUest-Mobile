@@ -302,7 +302,7 @@ describe("Quest Board screen", () => {
     expect(view.queryByTestId("quest-filter-tag-quantum computing")).toBeNull();
   });
 
-  it("selects multiple tag suggestions with OR semantics", async () => {
+  it("selects one tag suggestion and replaces it when another tag is selected", async () => {
     const view = await render(
       <QuestBoardScreen currentStudentId="student-demo" />
     );
@@ -319,14 +319,14 @@ describe("Quest Board screen", () => {
     );
     await fireEvent.press(view.getByTestId("quest-filter-tag-delivery"));
 
-    expect(view.getByTestId("quest-filter-selected-tag-cleaning")).toBeTruthy();
+    expect(view.queryByTestId("quest-filter-selected-tag-cleaning")).toBeNull();
     expect(view.getByTestId("quest-filter-selected-tag-delivery")).toBeTruthy();
 
     await fireEvent.press(view.getByTestId("apply-quest-filters"));
 
     await waitFor(() => {
-      expect(view.getByText("Clean a dorm fan")).toBeTruthy();
       expect(view.getByText("Deliver drinks to the library")).toBeTruthy();
+      expect(view.queryByText("Clean a dorm fan")).toBeNull();
       expect(view.queryByText("Photocopy course documents")).toBeNull();
     });
   });

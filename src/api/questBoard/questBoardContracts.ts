@@ -7,26 +7,24 @@ const questIdSchema = z.string().uuid();
 const dateTimeSchema = z.string().datetime({ offset: true });
 const positiveIntegerSchema = z.number().int().positive();
 
-export const questBoardModeSchema = z.enum(["NO_CANDIDATE", "CANDIDATE"]);
-export const questBoardParticipationSchema = z.enum(["SOLO", "GROUP"]);
+export const questBoardModeSchema = z.enum([
+  "FIRST_COME_FIRST_SERVED",
+  "CANDIDATE",
+]);
+export const questBoardParticipationSchema = z.enum(["SINGLE", "GROUP"]);
 export const questBoardStatusSchema = z.enum([
   "QUEST_DRAFT",
   "QUEST_OPEN",
-  "QUEST_AWAITING_CONSENT",
   "QUEST_ASSIGNED",
   "QUEST_IN_PROGRESS",
-  "QUEST_SUBMITTED",
-  "QUEST_APPROVED",
-  "QUEST_REWORK",
   "QUEST_COMPLETED",
   "QUEST_CANCELLED",
-  "QUEST_DISPUTED",
   "QUEST_FAILED",
 ]);
 
 export const questBoardTagSchema = z.object({
-  id: questIdSchema,
-  name: z.string(),
+  id: z.string().min(1),
+  name: z.string().min(1),
 });
 
 export const questBoardLocationSchema = z.object({
@@ -97,17 +95,24 @@ const queryIntegerSchema = z.union([
   z.number().int(),
   z.string().regex(/^\d+$/).transform(Number),
 ]);
+const queryRewardSchema = z.union([
+  z.number().refine(
+    (value) => Number.isFinite(value) && Math.round(value * 100) === value * 100,
+    "Reward must have at most two decimal places",
+  ),
+  z.string().regex(/^\d+(?:\.\d{1,2})?$/).transform(Number),
+]).pipe(z.number().min(0).max(700_000));
 const queryDateTimeSchema = z.string().datetime({ offset: true });
 
 /** Query parameters accepted by GET /api/v2/quests. */
 export const questBoardQuerySchema = z.object({
   q: z.string().max(200).optional(),
-  tagId: questIdSchema.optional(),
+  tagId: z.string().min(1).optional(),
   mode: questBoardModeSchema.optional(),
   participation: questBoardParticipationSchema.optional(),
   maxDurationMinutes: queryIntegerSchema.pipe(positiveIntegerSchema).optional(),
-  minReward: queryIntegerSchema.pipe(z.number().int().min(1).max(700_000)).optional(),
-  maxReward: queryIntegerSchema.pipe(z.number().int().min(1).max(700_000)).optional(),
+  minQuestReward: queryRewardSchema.optional(),
+  maxQuestReward: queryRewardSchema.optional(),
   startFrom: queryDateTimeSchema.optional(),
   startTo: queryDateTimeSchema.optional(),
   limit: queryIntegerSchema.pipe(z.number().int().min(1).max(50)).optional(),
