@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { cn } from "@/tw/cn";
+import type { ApiQuestDetailItem } from "@/api/questBoard/questBoardMapper";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import {
   BriefcaseBusiness,
@@ -63,7 +64,7 @@ import {
 import {
   formatSatang,
   MAX_QUEST_IMAGES,
-  QuestCandidateMode,
+  QuestMode,
   QuestInvitationStatus,
   QuestPartialStartConsentStatus,
   QuestParticipation,
@@ -88,6 +89,10 @@ import {
   type PartialGroupStartVoter,
   type TeamDirectoryMember,
 } from "./components";
+import {
+  questDetailRepository,
+  type QuestDetailRepository,
+} from "./questBoardRepository";
 
 export interface QuestDetailScreenProps {
   previewState?: BoardPreviewState;
@@ -95,6 +100,7 @@ export interface QuestDetailScreenProps {
   studentId?: string;
   mode?: QuestDetailMode;
   joinStatus?: QuestJoinStatus;
+  detailRepository?: QuestDetailRepository;
 }
 
 type DisplayApplicationStatus = QuestViewerApplicationStatus;
@@ -164,7 +170,7 @@ function candidateDescription(
   quest: QuestBoardQuest,
   messages: QuestBoardMessages
 ): string {
-  return quest.candidateMode === "NO_CANDIDATE"
+  return quest.mode === "FIRST_COME_FIRST_SERVED"
     ? messages.firstComeDescription
     : messages.reviewCandidatesDescription;
 }
@@ -547,8 +553,8 @@ function GroupQuestEntrySurfaces({
   } = state;
   const isCandidateGroup =
     quest.participation === QuestParticipation.GROUP &&
-    quest.candidateMode === QuestCandidateMode.CANDIDATE;
-  const isCandidateQuest = quest.candidateMode === QuestCandidateMode.CANDIDATE;
+    quest.mode === QuestMode.CANDIDATE;
+  const isCandidateQuest = quest.mode === QuestMode.CANDIDATE;
   const ownTeam = teams.find(
     (team) =>
       team.members.some((member) => member.workerId === viewerId) ||
@@ -680,7 +686,7 @@ function GroupQuestEntrySurfaces({
       ) : null}
 
       {quest.participation === QuestParticipation.GROUP &&
-      quest.candidateMode === QuestCandidateMode.NO_CANDIDATE &&
+      quest.mode === QuestMode.FIRST_COME_FIRST_SERVED &&
       partialStartConsent ? (
         <View
           accessibilityRole="alert"
@@ -740,6 +746,7 @@ function PrototypeStatePanels({
   state,
   messages,
   onConsent,
+  onStartWork,
   onSubmitProof,
   onConfirmCompletion,
   onSubmitRework,
@@ -753,6 +760,7 @@ function PrototypeStatePanels({
   state: QuestDetailState;
   messages: QuestBoardMessages;
   onConsent: (approve: boolean) => void;
+  onStartWork: () => void;
   onSubmitProof: () => void;
   onConfirmCompletion: () => void;
   onSubmitRework: (proofId: string) => void;
@@ -765,6 +773,7 @@ function PrototypeStatePanels({
 }) {
   const { quest, assignments, proofs, editConsent, capabilities } = state;
   const status = quest.status;
+  const startedWorkerCount = assignments.filter((item) => item.startedAt).length;
   const publishCard =
     status === QuestStatus.QUEST_DRAFT ? (
       <View className={styles.prototypeCard} testID="quest-publish-check">
@@ -812,15 +821,14 @@ function PrototypeStatePanels({
     ) : null;
   const statusCard =
     status !== QuestStatus.QUEST_OPEN &&
-    status !== QuestStatus.QUEST_DRAFT &&
-    status !== QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT ? (
+    status !== QuestStatus.QUEST_DRAFT ? (
       <View
         accessibilityRole={
-          status === QuestStatus.QUEST_DISPUTED ? "alert" : undefined
+          status === QuestStatus.QUEST_FAILED ? "alert" : undefined
         }
         className={cn(
           styles.prototypeCard,
-          status === QuestStatus.QUEST_DISPUTED
+          status === QuestStatus.QUEST_FAILED
             ? styles.prototypeCardDanger
             : status === QuestStatus.QUEST_COMPLETED ||
                 status === QuestStatus.QUEST_CANCELLED
@@ -832,7 +840,7 @@ function PrototypeStatePanels({
         <View className={styles.prototypeHeader}>
           <CircleAlert
             color={
-              status === QuestStatus.QUEST_DISPUTED
+              status === QuestStatus.QUEST_FAILED
                 ? colors.dangerDark
                 : colors.primary
             }
@@ -849,7 +857,7 @@ function PrototypeStatePanels({
             {messages.terminalBannerTitle}: {messages.terminalDescription}
           </Text>
         ) : null}
-        {status === QuestStatus.QUEST_DISPUTED ? (
+        {status === QuestStatus.QUEST_FAILED ? (
           <Text className={styles.prototypeCopy}>
             {messages.disputeDescription}
           </Text>
@@ -860,7 +868,24 @@ function PrototypeStatePanels({
             {messages.statusLabel(status)}
           </Text>
         ) : null}
-        {status === QuestStatus.QUEST_APPROVED &&
+        {status === QuestStatus.QUEST_ASSIGNED ? (
+          <>
+            <Text className={styles.prototypeCopy} testID="quest-start-work-progress">
+              {messages.startWorkProgress(startedWorkerCount, assignments.length)}
+            </Text>
+            {capabilities.availableActions.includes("START_WORK") ? (
+              <View className={styles.prototypeActions}>
+                <PrototypeActionButton
+                  label={messages.startWork}
+                  onPress={onStartWork}
+                  primary
+                  testID="quest-start-work"
+                />
+              </View>
+            ) : null}
+          </>
+        ) : null}
+        {status === QuestStatus.QUEST_COMPLETED &&
         capabilities.availableActions.includes("COMPLETE") ? (
           <View className={styles.prototypeActions}>
             <PrototypeActionButton
@@ -886,7 +911,7 @@ function PrototypeStatePanels({
 
   const consentCard =
     editConsent?.status === "EDIT_REQUEST_PENDING" &&
-    status === QuestStatus.QUEST_AWAITING_EDIT_CONSENT ? (
+    status === QuestStatus.QUEST_ASSIGNED ? (
       <View
         accessibilityRole="alert"
         className={cn(styles.prototypeCard, styles.prototypeCardWarning)}
@@ -940,8 +965,6 @@ function PrototypeStatePanels({
     (
       [
         QuestStatus.QUEST_IN_PROGRESS,
-        QuestStatus.QUEST_SUBMITTED,
-        QuestStatus.QUEST_REWORK,
       ] as QuestDetailState["quest"]["status"][]
     ).includes(status) ? (
       <View className={styles.prototypeCard} testID="quest-proof-state">
@@ -969,7 +992,7 @@ function PrototypeStatePanels({
                     {messages.proofPending}
                   </Text>
                 ) : null}
-                {item.status === QuestProofStatus.PROOF_REJECTED ? (
+                {item.status === QuestProofStatus.PROOF_NOT_APPROVED ? (
                   <Text className={styles.prototypeCopy}>
                     {messages.proofRejected} ·{" "}
                     {messages.reworkRemaining(
@@ -978,7 +1001,7 @@ function PrototypeStatePanels({
                     )}
                   </Text>
                 ) : null}
-                {item.status === QuestProofStatus.PROOF_REJECTED &&
+                {item.status === QuestProofStatus.PROOF_NOT_APPROVED &&
                 capabilities.availableActions.includes("REWORK_PROOF") ? (
                   <View className={styles.prototypeActions}>
                     <PrototypeActionButton
@@ -1034,7 +1057,7 @@ function PrototypeStatePanels({
     ) : null;
 
   const disputeCard =
-    status === QuestStatus.QUEST_DISPUTED ? (
+    status === QuestStatus.QUEST_FAILED ? (
       <View
         className={cn(styles.prototypeCard, styles.prototypeCardDanger)}
         testID="quest-dispute-state"
@@ -1112,7 +1135,7 @@ function ConfirmationSheet({
   onConfirm: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const firstCome = quest.candidateMode === "NO_CANDIDATE";
+  const firstCome = quest.mode === "FIRST_COME_FIRST_SERVED";
   const title = firstCome
     ? messages.confirmParticipationTitle
     : messages.confirmApplicationTitle;
@@ -1193,7 +1216,301 @@ function ConfirmationSheet({
   );
 }
 
-export default function QuestDetailScreen({
+function formatApiDateTime(value: string, locale: "en" | "th"): string {
+  return new Intl.DateTimeFormat(
+    locale === "th" ? "th-TH-u-ca-buddhist" : "en-GB",
+    {
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      month: "short",
+      year: "numeric",
+    }
+  ).format(new Date(value));
+}
+
+function ApiQuestDetailScreen({
+  questId,
+  repository,
+}: {
+  questId?: string;
+  repository: QuestDetailRepository;
+}) {
+  const router = useRouter();
+  const { locale } = useLocale();
+  const messages = questBoardMessages[locale];
+  const [detailState, setDetailState] = useState<ApiQuestDetailItem | null>(
+    null
+  );
+  const [detailKeyState, setDetailKeyState] = useState<string | null>(null);
+  const [loadingState, setLoadingState] = useState(false);
+  const [errorState, setErrorState] = useState<unknown>(null);
+  const [retryAttempt, setRetryAttempt] = useState(0);
+  const requestKey = questId ? `${questId}:${retryAttempt}` : null;
+  const detailIsCurrent = requestKey !== null && detailKeyState === requestKey;
+  const detail = detailIsCurrent ? detailState : null;
+  const loading = Boolean(questId) && (!detailIsCurrent || loadingState);
+  const error = detailIsCurrent ? errorState : null;
+
+  useEffect(() => {
+    if (!questId || !requestKey) return undefined;
+
+    let active = true;
+    void repository
+      .getPublicQuestDetail(questId)
+      .then((nextDetail) => {
+        if (active) {
+          setDetailState(nextDetail);
+          setErrorState(null);
+        }
+      })
+      .catch((nextError: unknown) => {
+        if (active) setErrorState(nextError);
+      })
+      .finally(() => {
+        if (active) {
+          setDetailKeyState(requestKey);
+          setLoadingState(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [questId, repository, requestKey]);
+
+  const handleBack = React.useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace("/(tabs)");
+  }, [router]);
+
+  if (loading) {
+    return (
+      <SafeAreaView
+        edges={["top", "left", "right"]}
+        className={styles.safeArea}
+      >
+        <TopBar
+          backLabel={messages.back}
+          onBackPress={handleBack}
+          title={messages.details}
+          variant="detail"
+        />
+        <QuestDetailSkeleton loadingLabel={messages.loading} />
+      </SafeAreaView>
+    );
+  }
+
+  if (!detail) {
+    return (
+      <SafeAreaView
+        edges={["top", "left", "right"]}
+        className={styles.safeArea}
+      >
+        <TopBar
+          backLabel={messages.back}
+          onBackPress={handleBack}
+          title={messages.details}
+          variant="detail"
+        />
+        <NotFoundState
+          title={error ? messages.errorTitle : messages.questNotFound}
+          description={
+            error ? messages.errorDescription : messages.questNotFoundDescription
+          }
+          actionLabel={error ? messages.retry : messages.back}
+          onAction={
+            error
+              ? () => setRetryAttempt((attempt) => attempt + 1)
+              : handleBack
+          }
+        />
+      </SafeAreaView>
+    );
+  }
+
+  const location = detail.locations.map((item) => item.label).join(", ");
+  const condition = detail.conditionItems.map((item) => item.text).join("\n");
+  const rewardSatang = Math.round(detail.questReward * 100);
+
+  return (
+    <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
+      <TopBar
+        backLabel={messages.back}
+        onBackPress={handleBack}
+        title={messages.details}
+        variant="detail"
+      />
+      <ScrollView
+        contentContainerClassName={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View className={styles.header}>
+          <Text accessibilityRole="header" className={styles.title}>
+            {detail.title}
+          </Text>
+          <Text
+            accessibilityLabel={messages.statusLabel(detail.state)}
+            className={styles.canonicalStatus}
+            testID="api-quest-detail-server-state"
+          >
+            {messages.statusLabel(detail.state)}
+          </Text>
+          <View className={styles.creatorRow}>
+            <View className={styles.creatorAvatar}>
+              <CircleUserRound
+                color={colors.primary}
+                size={17}
+                strokeWidth={2}
+              />
+            </View>
+            <View className={styles.creatorCopy}>
+              <Text className={styles.creatorLabel}>{messages.creator}</Text>
+              <Text className={styles.creatorValue} numberOfLines={1}>
+                {detail.hirerName}
+              </Text>
+            </View>
+          </View>
+          {detail.tag ? (
+            <View accessibilityLabel={messages.tags} className={styles.tagRow}>
+              <Text className={styles.tag}>{detail.tag.name}</Text>
+            </View>
+          ) : null}
+        </View>
+        {detail.images.length > 0 ? (
+          <View
+            accessibilityLabel={messages.imageCount(detail.images.length)}
+            className={styles.imageGallery}
+          >
+            <QuestImage
+              featured
+              index={1}
+              messages={messages}
+              uri={detail.images[0].url}
+            />
+            {detail.images.length > 1 ? (
+              <View className={styles.imageThumbnailRow}>
+                {detail.images.slice(1).map((image, index) => (
+                  <QuestImage
+                    key={`${image.imageId}-${index + 1}`}
+                    index={index + 2}
+                    messages={messages}
+                    uri={image.url}
+                  />
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+        <View className={styles.heroCard}>
+          <View className={styles.heroPrimary}>
+            <View>
+              <Text className={styles.heroLabel}>{messages.reward}</Text>
+              <Text className={styles.heroRewardValue}>
+                {`${formatSatang(rewardSatang, locale)} ${messages.perPerson}`}
+              </Text>
+            </View>
+            <View className={styles.heroSpots}>
+              <Text className={styles.heroSpotsLabel}>{messages.spots}</Text>
+              <Text className={styles.heroSpotsValue}>
+                {`${detail.activeWorkerCount}/${detail.headcount}`}
+              </Text>
+            </View>
+          </View>
+          <View className={styles.heroDetails}>
+            <View className={styles.heroItem}>
+              <View className={styles.heroItemIcon}>
+                <UsersRound color={colors.primary} size={17} strokeWidth={2} />
+              </View>
+              <View className={styles.heroItemCopy}>
+                <Text className={styles.heroLabel}>{messages.participation}</Text>
+                <Text className={styles.heroValue}>
+                  {detail.participation === "GROUP"
+                    ? messages.team
+                    : messages.singlePerson}
+                </Text>
+              </View>
+            </View>
+            <View className={cn(styles.heroItem, styles.heroItemDivider)}>
+              <View className={styles.heroItemIcon}>
+                <CircleUserRound
+                  color={colors.primary}
+                  size={17}
+                  strokeWidth={2}
+                />
+              </View>
+              <View className={styles.heroItemCopy}>
+                <Text className={styles.heroLabel}>{messages.selectionMode}</Text>
+                <Text className={styles.heroValue}>
+                  {detail.mode === "FIRST_COME_FIRST_SERVED"
+                    ? messages.firstCome
+                    : messages.reviewCandidates}
+                </Text>
+              </View>
+            </View>
+          </View>
+          <View className={styles.heroLocation}>
+            <MapPin color={colors.primary} size={20} strokeWidth={2} />
+            <View className={styles.heroLocationCopy}>
+              <Text className={styles.heroLabel}>{messages.location}</Text>
+              <Text className={styles.heroLocationValue}>{location}</Text>
+            </View>
+          </View>
+        </View>
+        <View
+          accessibilityLabel={messages.schedule}
+          className={styles.scheduleCard}
+          testID="api-quest-detail-server-schedule"
+        >
+          <Text className={styles.scheduleTitle}>{messages.schedule}</Text>
+          <Text className={styles.timelineDate}>
+            {formatApiDateTime(detail.startTime, locale)}
+          </Text>
+          {detail.dueAt ? (
+            <Text className={styles.timelineDate}>
+              {`${messages.finishBy}: ${formatApiDateTime(detail.dueAt, locale)}`}
+            </Text>
+          ) : null}
+        </View>
+        <View className={styles.section}>
+          <Text className={styles.sectionTitle}>{messages.description}</Text>
+          <View className={styles.descriptionCard}>
+            <Text className={styles.body}>{detail.description ?? ""}</Text>
+          </View>
+        </View>
+        <View className={styles.section}>
+          <Text className={styles.sectionTitle}>{messages.requirements}</Text>
+          <View className={styles.requirementCard}>
+            <DetailRow
+              icon={ClipboardCheck}
+              label={messages.completionCriteria}
+              value={condition}
+            />
+            <DetailRow
+              icon={Check}
+              label={messages.proofRequired}
+              value={detail.proofRequired ? messages.required : messages.notNeeded}
+            />
+            <DetailRow
+              icon={UsersRound}
+              label={messages.selectionMode}
+              value={
+                detail.mode === "FIRST_COME_FIRST_SERVED"
+                  ? messages.firstCome
+                  : messages.reviewCandidates
+              }
+            />
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function PrototypeQuestDetailScreen({
   previewState,
   questId,
   studentId,
@@ -1424,9 +1741,9 @@ export default function QuestDetailScreen({
           ? applicationStatus
           : "accepted"))
       : undefined;
-  const firstCome = quest?.candidateMode === "NO_CANDIDATE";
+  const firstCome = quest?.mode === "FIRST_COME_FIRST_SERVED";
   const candidateGroup = Boolean(
-    quest && !firstCome && quest.participationMode === "team"
+    quest && !firstCome && quest.participation === "GROUP"
   );
   const canonicalOpen =
     !detailProjection ||
@@ -1747,6 +2064,16 @@ export default function QuestDetailScreen({
         })
       );
   };
+  const handlePrototypeStartWork = () => {
+    if (resolvedQuestId)
+      applyPrototypeResult(
+        questWorkflow.dispatch({
+          type: "START_WORK",
+          questId: resolvedQuestId,
+          workerId: prototypeViewerId,
+        })
+      );
+  };
   const handlePrototypeSubmitProof = () => {
     if (resolvedQuestId)
       applyPrototypeResult(
@@ -1990,15 +2317,18 @@ export default function QuestDetailScreen({
             <Text
               accessibilityLabel={
                 activePrototypeState.quest.status ===
-                QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT
+                  QuestStatus.QUEST_ASSIGNED &&
+                activePrototypeState.partialStartConsent?.status ===
+                  QuestPartialStartConsentStatus.PARTIAL_START_PENDING
                   ? groupMessages.partialConsentTitle
                   : messages.statusLabel(activePrototypeState.quest.status)
               }
               className={styles.canonicalStatus}
               testID="quest-canonical-status"
             >
-              {activePrototypeState.quest.status ===
-              QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT
+              {activePrototypeState.quest.status === QuestStatus.QUEST_ASSIGNED &&
+              activePrototypeState.partialStartConsent?.status ===
+                QuestPartialStartConsentStatus.PARTIAL_START_PENDING
                 ? groupMessages.partialConsentTitle
                 : messages.statusLabel(activePrototypeState.quest.status)}
             </Text>
@@ -2077,7 +2407,7 @@ export default function QuestDetailScreen({
                   {messages.participation}
                 </Text>
                 <Text className={styles.heroValue}>
-                  {quest.participationMode === "team"
+                  {quest.participation === "GROUP"
                     ? messages.team
                     : messages.singlePerson}
                 </Text>
@@ -2093,10 +2423,10 @@ export default function QuestDetailScreen({
               </View>
               <View className={styles.heroItemCopy}>
                 <Text className={styles.heroLabel}>
-                  {messages.candidateMode}
+                  {messages.selectionMode}
                 </Text>
                 <Text className={styles.heroValue}>
-                  {quest.candidateMode === "NO_CANDIDATE"
+                  {quest.mode === "FIRST_COME_FIRST_SERVED"
                     ? messages.firstCome
                     : messages.reviewCandidates}
                 </Text>
@@ -2137,9 +2467,9 @@ export default function QuestDetailScreen({
             />
             <DetailRow
               icon={UsersRound}
-              label={messages.candidateMode}
+              label={messages.selectionMode}
               value={
-                quest.candidateMode === "NO_CANDIDATE"
+                quest.mode === "FIRST_COME_FIRST_SERVED"
                   ? messages.firstCome
                   : messages.reviewCandidates
               }
@@ -2149,7 +2479,7 @@ export default function QuestDetailScreen({
               icon={BriefcaseBusiness}
               label={messages.participation}
               value={
-                quest.participationMode === "team"
+                quest.participation === "GROUP"
                   ? messages.team
                   : messages.singlePerson
               }
@@ -2205,6 +2535,7 @@ export default function QuestDetailScreen({
             state={activePrototypeState}
             messages={messages}
             onConsent={handlePrototypeConsent}
+            onStartWork={handlePrototypeStartWork}
             onSubmitProof={handlePrototypeSubmitProof}
             onConfirmCompletion={handlePrototypeConfirmCompletion}
             onSubmitRework={handlePrototypeSubmitRework}
@@ -2271,13 +2602,13 @@ export default function QuestDetailScreen({
       ) : null}
       {activePrototypeState &&
       isHirerView &&
-      quest.candidateMode === QuestCandidateMode.CANDIDATE ? (
+      quest.mode === QuestMode.CANDIDATE ? (
         <CandidateReviewSheet
           actualHeadcount={activePrototypeState.actualHeadcount}
           applications={activePrototypeState.applications}
           bottomInset={insets.bottom}
           locale={locale}
-          mode={candidateGroup ? "team" : "individual"}
+          mode={candidateGroup ? QuestParticipation.GROUP : QuestParticipation.SINGLE}
           onAcceptProposal={
             activePrototypeState.capabilities.availableActions.includes(
               "SELECT_CANDIDATE"
@@ -2315,8 +2646,8 @@ export default function QuestDetailScreen({
       ) : null}
       {activePrototypeState &&
       activePrototypeState.quest.participation === QuestParticipation.GROUP &&
-      activePrototypeState.quest.candidateMode ===
-        QuestCandidateMode.NO_CANDIDATE &&
+      activePrototypeState.quest.mode ===
+        QuestMode.FIRST_COME_FIRST_SERVED &&
       activePrototypeState.partialStartConsent ? (
         <PartialGroupStartConsentSheet
           actualHeadcount={activePrototypeState.actualHeadcount}
@@ -2426,4 +2757,29 @@ export default function QuestDetailScreen({
       ) : null}
     </SafeAreaView>
   );
+}
+
+export default function QuestDetailScreen(props: QuestDetailScreenProps) {
+  const params = useLocalSearchParams<{
+    id?: string | string[];
+    preview?: string | string[];
+  }>();
+  const { isDemo } = useAuthEnvironment();
+  const resolvedPreview =
+    props.previewState ?? parseBoardPreviewState(params.preview);
+  const resolvedQuestId = parseQuestRouteId(props.questId ?? params.id);
+  const useApiDetail =
+    Boolean(props.detailRepository) ||
+    (!isDemo && Boolean(process.env.EXPO_PUBLIC_API_URL) && !resolvedPreview);
+
+  if (useApiDetail) {
+    return (
+      <ApiQuestDetailScreen
+        questId={resolvedQuestId}
+        repository={props.detailRepository ?? questDetailRepository}
+      />
+    );
+  }
+
+  return <PrototypeQuestDetailScreen {...props} />;
 }

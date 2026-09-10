@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from '@/tw';
 import { useLocale, type SupportedLocale } from '@/locales/LocaleProvider';
 import { groupQuestMessages } from '@/locales/groupQuestMessages';
 import { colors } from '@/theme/colors';
-import { formatSatang, QuestApplicationStatus, QuestTeamStatus, type QuestApplication, type QuestSettlementSummary, type QuestTeam, type QuestTeamMember } from '../types';
+import { formatSatang, QuestApplicationStatus, QuestParticipation, QuestTeamStatus, type QuestApplication, type QuestSettlementSummary, type QuestTeam, type QuestTeamMember } from '../types';
 import styles from './groupQuestStyles';
 import { QuestBottomSheet } from './QuestBottomSheet';
 
@@ -48,7 +48,7 @@ export interface CandidateReviewSheetProps {
   teams?: readonly QuestTeam[];
   /** Optional display-ready records for callers that already have a proposal projection. */
   proposals?: readonly CandidateReviewProposal[];
-  mode?: 'individual' | 'team';
+  mode?: QuestParticipation;
   questTitle?: string;
   applicantDirectory?: readonly CandidateReviewIdentity[];
   teamMemberDirectory?: readonly CandidateReviewIdentity[];
@@ -146,7 +146,7 @@ function normalizeProposals({
 
   const applicationList = applications ?? [];
   const teamList = teams ?? [];
-  const teamMode = mode === 'team' || teamList.length > 0 || applicationList.some((application) => Boolean(application.teamId));
+  const teamMode = mode === QuestParticipation.GROUP || teamList.length > 0 || applicationList.some((application) => Boolean(application.teamId));
   if (teamMode) {
     const teamApplications = new Map(applicationList.filter((application) => application.teamId).map((application) => [application.teamId as string, application]));
     const submittedTeams = teamList.filter((team) => team.status !== QuestTeamStatus.TEAM_FORMING);
@@ -304,7 +304,7 @@ export function CandidateReviewSheet({
   const locale = localeProp ?? contextLocale;
   const messages = getMessages(locale);
   const normalizedProposals = useMemo(() => normalizeProposals({ applications, teams, proposals, mode, applicantDirectory, teamMemberDirectory, messages }), [applicantDirectory, applications, messages, mode, proposals, teamMemberDirectory, teams]);
-  const isTeamMode = normalizedProposals.some((proposal) => proposal.type === 'team') || mode === 'team';
+  const isTeamMode = normalizedProposals.some((proposal) => proposal.type === 'team') || mode === QuestParticipation.GROUP;
   const selected = normalizedProposals.find((proposal) => proposal.id === selectedProposalId || proposal.status === QuestTeamStatus.TEAM_SELECTED || proposal.status === QuestApplicationStatus.APPLICATION_SELECTED);
   const requested = settlement?.requestedHeadcount ?? requestedHeadcount ?? teams.find((team) => team.status !== QuestTeamStatus.TEAM_FORMING)?.requiredHeadcount ?? 1;
   const selectedActual = selected ? selected.type === 'team' ? selected.members.length : 1 : 0;

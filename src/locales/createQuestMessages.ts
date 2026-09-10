@@ -81,7 +81,7 @@ export interface CreateQuestMessages {
   imagesOptional: string;
   questImage: (index: number) => string;
   removeImage: (index: number) => string;
-  candidateMode: string;
+  selectionMode: string;
   firstCome: string;
   reviewCandidates: string;
   firstComeHint: string;
@@ -163,7 +163,7 @@ export interface CreateQuestMessages {
     schedule: string;
     location: string;
     images: string;
-    candidateMode: string;
+    selectionMode: string;
     participation: string;
     headcount: string;
     reward: string;
@@ -252,7 +252,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     imagesOptional: 'Up to 3 photos · optional',
     questImage: (index) => `Quest image ${index}`,
     removeImage: (index) => `Remove Quest image ${index}`,
-    candidateMode: 'Candidate mode',
+    selectionMode: 'Selection mode',
     firstCome: 'First-come, first-served',
     reviewCandidates: 'Review candidates',
     firstComeHint: 'People join directly while places are available.',
@@ -327,7 +327,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     rewardBoundsError: (maximum) => `Reward must be between ฿0 and ฿${maximum.toLocaleString('en-US')}.`,
     summary: {
       title: 'Title', questTag: 'Quest Tag', description: 'Description', completionCriteria: 'Completion criteria',
-      proof: 'Proof', schedule: 'Schedule', location: 'Location', images: 'Images', candidateMode: 'Acceptance method',
+      proof: 'Proof', schedule: 'Schedule', location: 'Location', images: 'Images', selectionMode: 'Acceptance method',
       participation: 'Participation', headcount: 'Headcount', reward: 'Reward',
     },
   },
@@ -412,7 +412,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     imagesOptional: 'ไม่เกิน 3 รูป · ไม่บังคับ',
     questImage: (index) => `รูปเควสต์ที่ ${index}`,
     removeImage: (index) => `ลบรูปเควสต์ที่ ${index}`,
-    candidateMode: 'รูปแบบการคัดเลือก',
+    selectionMode: 'รูปแบบการคัดเลือก',
     firstCome: 'มาก่อนได้ก่อน',
     reviewCandidates: 'พิจารณาผู้สมัคร',
     firstComeHint: 'ผู้สนใจเข้าร่วมได้ทันทีเมื่อยังมีที่ว่าง',
@@ -487,7 +487,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     rewardBoundsError: (maximum) => `ค่าตอบแทนต้องอยู่ระหว่าง ฿0 ถึง ฿${maximum.toLocaleString('th-TH')}`,
     summary: {
       title: 'ชื่อเควสต์', questTag: 'แท็กเควสต์', description: 'รายละเอียดงาน', completionCriteria: 'เกณฑ์การเสร็จงาน',
-      proof: 'หลักฐาน', schedule: 'กำหนดการ', location: 'สถานที่', images: 'รูปภาพ', candidateMode: 'วิธีรับผู้สมัคร',
+      proof: 'หลักฐาน', schedule: 'กำหนดการ', location: 'สถานที่', images: 'รูปภาพ', selectionMode: 'วิธีรับผู้สมัคร',
       participation: 'การเข้าร่วม', headcount: 'จำนวนผู้เข้าร่วม', reward: 'ค่าตอบแทน',
     },
   },

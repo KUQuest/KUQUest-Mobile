@@ -48,6 +48,11 @@ import {
 import { colors } from "@/theme/colors";
 import { getAppChromeMetrics } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
+import type { ApiQuestBoardItem } from "@/api/questBoard/questBoardMapper";
+import type {
+  QuestBoardQuery,
+  QuestBoardTag,
+} from "@/api/questBoard/questBoardContracts";
 import styles from "./questBoardStyles";
 import { getLocalizedQuest } from "./questFixtures";
 import {
@@ -58,8 +63,12 @@ import {
 } from "./questBoardViewData";
 import type { BoardPreviewState } from "./questBoardHarness";
 import { getQuestRewardSatang, questWorkflow } from "./questWorkflow";
+import {
+  questBoardRepository,
+  type QuestBoardRepository,
+} from "./questBoardRepository";
 import type { PrototypeScenarioRoute } from "@/components/ui/prototypeMenuData";
-
+import { tagApi, type TagApi } from "@/api/tag/TagApi";
 import { formatSatang } from "./types";
 import {
   emptyQuestBoardFilter,
@@ -76,6 +85,8 @@ export type { BoardPreviewState } from "./questBoardHarness";
 export interface QuestBoardScreenProps {
   currentStudentId?: string;
   initialPreviewState?: BoardPreviewState;
+  boardRepository?: QuestBoardRepository;
+  tagCatalogApi?: TagApi;
 }
 
 const deadlineOptions: {
@@ -128,9 +139,9 @@ function participationLabel(
   messages: QuestBoardMessages
 ): string {
   const participation =
-    quest.participationMode === "team" ? messages.team : messages.singlePerson;
+    quest.participation === "GROUP" ? messages.team : messages.singlePerson;
   const mode =
-    quest.candidateMode === "CANDIDATE"
+    quest.mode === "CANDIDATE"
       ? messages.applyForReview
       : messages.firstCome;
   return `${participation} · ${mode}`;
@@ -323,10 +334,118 @@ function QuestCard({
   );
 }
 
+function ApiQuestCard({
+  quest,
+  locale,
+  onDetail,
+}: {
+  quest: ApiQuestBoardItem;
+  locale: "en" | "th";
+  onDetail: () => void;
+}) {
+  const messages = questBoardMessages[locale];
+  const schedule = new Intl.DateTimeFormat(
+    locale === "th" ? "th-TH-u-ca-buddhist" : "en-GB",
+    { day: "numeric", month: "short", year: "numeric" }
+  ).format(new Date(quest.startTime));
+  const participation =
+    quest.participation === "GROUP"
+      ? messages.team
+      : messages.singlePerson;
+  const mode =
+    quest.mode === "CANDIDATE" ? messages.applyForReview : messages.firstCome;
+  const accessibilityLabel = [
+    quest.title,
+    `${messages.reward}: ฿${quest.questReward}`,
+    `${participation} · ${mode}`,
+    `${messages.schedule}: ${schedule}`,
+    `${messages.location}: ${quest.location ?? ""}`,
+    messages.viewDetails,
+  ]
+    .filter(Boolean)
+    .join(". ");
+
+  return (
+    <Pressable
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
+      onPress={onDetail}
+      className={styles.card}
+      testID={`quest-detail-${quest.questId}`}
+    >
+      <View accessible={false} className={styles.cardBody}>
+        <View className={styles.cardTopRow}>
+          <View className={styles.cardTitleColumn}>
+            <Text className={styles.cardTitle}>{quest.title}</Text>
+            {quest.tag ? (
+              <View className={styles.cardCategory}>
+                <BriefcaseBusiness
+                  color={colors.primary}
+                  size={16}
+                  strokeWidth={2.1}
+                />
+                <Text className={styles.cardCategoryText}>{quest.tag.name}</Text>
+              </View>
+            ) : null}
+          </View>
+          <View className={styles.rewardBlock}>
+            <Text className={styles.rewardAmount}>฿{quest.questReward}</Text>
+            <Text className={styles.rewardUnit}>{messages.perPerson}</Text>
+          </View>
+        </View>
+        <View className={styles.cardDivider} />
+        <View className={styles.infoList}>
+          <View className={styles.infoRow}>
+            <InfoIcon className={styles.infoIconMuted}>
+              <CircleUserRound
+                color={colors.textSubtle}
+                size={20}
+                strokeWidth={1.9}
+              />
+            </InfoIcon>
+            <Text className={cn(styles.infoText, styles.infoTextPrimary)}>
+              {participation} · {mode}
+            </Text>
+          </View>
+          <View className={styles.infoRow}>
+            <InfoIcon className={styles.infoIconMuted}>
+              <Clock3
+                color={colors.textSubtle}
+                size={20}
+                strokeWidth={1.9}
+              />
+            </InfoIcon>
+            <Text className={styles.infoText}>{schedule}</Text>
+          </View>
+          <View className={styles.infoRow}>
+            <InfoIcon className={styles.infoIconMuted}>
+              <MapPin
+                color={colors.textSubtle}
+                size={20}
+                strokeWidth={1.9}
+              />
+            </InfoIcon>
+            <Text className={styles.locationText} numberOfLines={2}>
+              {quest.location ?? ""}
+            </Text>
+          </View>
+        </View>
+        <View className={styles.cardFooter}>
+          <ChevronRight color={colors.primaryDeep} size={20} strokeWidth={2.2} />
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
 function getActiveFilterCount(filter: QuestBoardFilter): number {
   return (
-    Number(filter.tags.length > 0) +
+    Number(filter.selectedTag !== null) +
+    Number(filter.mode !== null) +
+    Number(filter.participation !== null) +
     Number(filter.rewardMin !== null || filter.rewardMax !== null) +
+    Number(filter.maxDurationMinutes !== null) +
+    Number(filter.startFrom !== null || filter.startTo !== null) +
     Number(filter.deadline !== null) +
     Number(filter.startTimeBuckets.length > 0) +
     Number(filter.locationModes.length > 0)
@@ -336,7 +455,6 @@ function getActiveFilterCount(filter: QuestBoardFilter): number {
 function cloneFilter(filter: QuestBoardFilter): QuestBoardFilter {
   return {
     ...filter,
-    tags: [...filter.tags],
     startTimeBuckets: [...filter.startTimeBuckets],
     locationModes: [...filter.locationModes],
   };
@@ -348,9 +466,30 @@ function formatBound(value: number | null): string {
 
 function parseRewardBound(value: string): number | null | undefined {
   if (value === "") return null;
+  if (!/^\d+(?:\.\d{1,2})?$/.test(value)) return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 && parsed <= 700_000
+    ? parsed
+    : undefined;
+}
+
+function formatOptionalValue(value: string | null): string {
+  return value ?? "";
+}
+
+function parseDuration(value: string): number | null | undefined {
+  if (value === "") return null;
   if (!/^\d+$/.test(value)) return undefined;
   const parsed = Number(value);
-  return Number.isSafeInteger(parsed) ? parsed : undefined;
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function parseScheduleBound(value: string): string | null | undefined {
+  if (value === "") return null;
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{3})?)?\+07:00$/.test(value)) {
+    return undefined;
+  }
+  return Number.isNaN(Date.parse(value)) ? undefined : value;
 }
 
 function Option({
@@ -509,13 +648,19 @@ function QuestBoardFilterSheet({
   filter,
   messages,
   availableTags,
+  fixtureOnly,
+  tagCatalogLoading,
+  tagCatalogError,
   onChange,
   onApply,
   onClose,
 }: {
   filter: QuestBoardFilter;
   messages: QuestBoardMessages;
-  availableTags: string[];
+  availableTags: QuestBoardTag[];
+  fixtureOnly: boolean;
+  tagCatalogLoading: boolean;
+  tagCatalogError: unknown;
   onChange: (next: QuestBoardFilter) => void;
   onApply: () => void;
   onClose: () => void;
@@ -523,6 +668,15 @@ function QuestBoardFilterSheet({
   const insets = useSafeAreaInsets();
   const [minimumText, setMinimumText] = useState(formatBound(filter.rewardMin));
   const [maximumText, setMaximumText] = useState(formatBound(filter.rewardMax));
+  const [durationText, setDurationText] = useState(
+    formatBound(filter.maxDurationMinutes)
+  );
+  const [startFromText, setStartFromText] = useState(
+    formatOptionalValue(filter.startFrom)
+  );
+  const [startToText, setStartToText] = useState(
+    formatOptionalValue(filter.startTo)
+  );
   const [tagQuery, setTagQuery] = useState("");
   const minimum = parseRewardBound(minimumText);
   const maximum = parseRewardBound(maximumText);
@@ -530,17 +684,26 @@ function QuestBoardFilterSheet({
     minimum !== undefined &&
     maximum !== undefined &&
     (minimum === null || maximum === null || minimum <= maximum);
+  const duration = parseDuration(durationText);
+  const startFrom = parseScheduleBound(startFromText);
+  const startTo = parseScheduleBound(startToText);
+  const scheduleBoundsValid =
+    startFrom !== undefined &&
+    startTo !== undefined &&
+    (startFrom === null ||
+      startTo === null ||
+      Date.parse(startFrom) <= Date.parse(startTo));
+  const apiFiltersValid = duration !== undefined && scheduleBoundsValid;
   const activeFilterCount = getActiveFilterCount(filter);
-  const displayedTags = [...new Set([...availableTags, ...filter.tags])].sort(
-    (left, right) =>
-      left.localeCompare(right, undefined, { sensitivity: "base" })
+  const displayedTags = [...availableTags].sort((left, right) =>
+    left.name.localeCompare(right.name, undefined, { sensitivity: "base" })
   );
   const normalizedTagQuery = tagQuery.trim().toLocaleLowerCase();
   const tagSuggestions = normalizedTagQuery
     ? displayedTags.filter(
         (tag) =>
-          !filter.tags.includes(tag) &&
-          tag.toLocaleLowerCase().includes(normalizedTagQuery)
+          filter.selectedTag?.id !== tag.id &&
+          tag.name.toLocaleLowerCase().includes(normalizedTagQuery)
       )
     : [];
 
@@ -555,12 +718,36 @@ function QuestBoardFilterSheet({
     }
   };
 
-  const addTag = (tag: string) => {
-    onChange({ ...filter, tags: [...filter.tags, tag] });
+  const addTag = (tag: QuestBoardTag) => {
+    onChange({ ...filter, selectedTag: tag });
     setTagQuery("");
   };
-  const removeTag = (tag: string) =>
-    onChange({ ...filter, tags: filter.tags.filter((value) => value !== tag) });
+
+  const updateApiFilters = (
+    nextDurationText: string,
+    nextStartFromText: string,
+    nextStartToText: string
+  ) => {
+    const nextDuration = parseDuration(nextDurationText);
+    const nextStartFrom = parseScheduleBound(nextStartFromText);
+    const nextStartTo = parseScheduleBound(nextStartToText);
+    if (
+      nextDuration !== undefined &&
+      nextStartFrom !== undefined &&
+      nextStartTo !== undefined &&
+      (nextStartFrom === null ||
+        nextStartTo === null ||
+        Date.parse(nextStartFrom) <= Date.parse(nextStartTo))
+    ) {
+      onChange({
+        ...filter,
+        maxDurationMinutes: nextDuration,
+        startFrom: nextStartFrom,
+        startTo: nextStartTo,
+      });
+    }
+  };
+  const removeTag = () => onChange({ ...filter, selectedTag: null });
   const toggleStartTime = (bucket: StartTimeBucket) =>
     onChange({
       ...filter,
@@ -578,6 +765,9 @@ function QuestBoardFilterSheet({
   const clearDraft = () => {
     setMinimumText("");
     setMaximumText("");
+    setDurationText("");
+    setStartFromText("");
+    setStartToText("");
     onChange({ ...emptyQuestBoardFilter, query: filter.query });
   };
 
@@ -632,21 +822,18 @@ function QuestBoardFilterSheet({
           >
             <View className={styles.sheetSection}>
               <Text className={styles.sheetSectionTitle}>{messages.tags}</Text>
-              {filter.tags.length > 0 ? (
+              {filter.selectedTag ? (
                 <View className={styles.selectedTags}>
-                  {filter.tags.map((tag) => (
-                    <Pressable
-                      accessibilityLabel={messages.removeSelectedTag(tag)}
-                      accessibilityRole="button"
-                      key={tag}
-                      onPress={() => removeTag(tag)}
-                      className={styles.selectedTag}
-                      testID={`quest-filter-selected-tag-${tag}`}
-                    >
-                      <Text className={styles.selectedTagText}>{tag}</Text>
-                      <X color={colors.primary} size={13} strokeWidth={2.5} />
-                    </Pressable>
-                  ))}
+                  <Pressable
+                    accessibilityLabel={messages.removeSelectedTag(filter.selectedTag.name)}
+                    accessibilityRole="button"
+                    onPress={removeTag}
+                    className={styles.selectedTag}
+                    testID={`quest-filter-selected-tag-${filter.selectedTag.id}`}
+                  >
+                    <Text className={styles.selectedTagText}>{filter.selectedTag.name}</Text>
+                    <X color={colors.primary} size={13} strokeWidth={2.5} />
+                  </Pressable>
                 </View>
               ) : null}
               <View className={styles.tagSearchField}>
@@ -679,11 +866,11 @@ function QuestBoardFilterSheet({
                   <View className={styles.tagSuggestions}>
                     {tagSuggestions.map((tag) => (
                       <Option
-                        key={tag}
-                        label={tag}
+                        key={tag.id}
+                        label={tag.name}
                         onPress={() => addTag(tag)}
                         selected={false}
-                        testID={`quest-filter-tag-${tag}`}
+                        testID={`quest-filter-tag-${tag.id}`}
                       />
                     ))}
                   </View>
@@ -695,7 +882,69 @@ function QuestBoardFilterSheet({
                     {messages.noMatchingTags}
                   </Text>
                 )
+              ) : tagCatalogLoading ? (
+                <Text className={styles.noTagResults}>{messages.loading}</Text>
+              ) : tagCatalogError ? (
+                <Text className={styles.noTagResults}>{messages.errorDescription}</Text>
               ) : null}
+            </View>
+            <View className={styles.sheetSection}>
+              <Text className={styles.sheetSectionTitle}>{messages.selectionMode}</Text>
+              <View className={styles.optionList}>
+                <Option
+                  accessibilityRole="radio"
+                  label={messages.firstCome}
+                  onPress={() =>
+                    onChange({
+                      ...filter,
+                      mode: filter.mode === "FIRST_COME_FIRST_SERVED" ? null : "FIRST_COME_FIRST_SERVED",
+                    })
+                  }
+                  selected={filter.mode === "FIRST_COME_FIRST_SERVED"}
+                  testID="quest-filter-mode-fcfs"
+                />
+                <Option
+                  accessibilityRole="radio"
+                  label={messages.candidate}
+                  onPress={() =>
+                    onChange({
+                      ...filter,
+                      mode: filter.mode === "CANDIDATE" ? null : "CANDIDATE",
+                    })
+                  }
+                  selected={filter.mode === "CANDIDATE"}
+                  testID="quest-filter-mode-candidate"
+                />
+              </View>
+            </View>
+            <View className={styles.sheetSection}>
+              <Text className={styles.sheetSectionTitle}>{messages.participation}</Text>
+              <View className={styles.optionList}>
+                <Option
+                  accessibilityRole="radio"
+                  label={messages.singlePerson}
+                  onPress={() =>
+                    onChange({
+                      ...filter,
+                      participation: filter.participation === "SINGLE" ? null : "SINGLE",
+                    })
+                  }
+                  selected={filter.participation === "SINGLE"}
+                  testID="quest-filter-participation-single"
+                />
+                <Option
+                  accessibilityRole="radio"
+                  label={messages.team}
+                  onPress={() =>
+                    onChange({
+                      ...filter,
+                      participation: filter.participation === "GROUP" ? null : "GROUP",
+                    })
+                  }
+                  selected={filter.participation === "GROUP"}
+                  testID="quest-filter-participation-group"
+                />
+              </View>
             </View>
             <View className={styles.sheetSection}>
               <Text className={styles.sheetSectionTitle}>
@@ -708,7 +957,7 @@ function QuestBoardFilterSheet({
                   </Text>
                   <TextInput
                     accessibilityLabel={messages.rewardMin}
-                    keyboardType="number-pad"
+                    keyboardType="decimal-pad"
                     onChangeText={(value) => {
                       setMinimumText(value);
                       updateRewardBounds(value, maximumText);
@@ -726,7 +975,7 @@ function QuestBoardFilterSheet({
                   </Text>
                   <TextInput
                     accessibilityLabel={messages.rewardMax}
-                    keyboardType="number-pad"
+                    keyboardType="decimal-pad"
                     onChangeText={(value) => {
                       setMaximumText(value);
                       updateRewardBounds(minimumText, value);
@@ -748,7 +997,65 @@ function QuestBoardFilterSheet({
                 </Text>
               ) : null}
             </View>
-            <View className={styles.sheetSection}>
+            {!fixtureOnly ? (
+              <>
+                <View className={styles.sheetSection}>
+                  <Text className={styles.sheetSectionTitle}>
+                    {messages.duration}
+                  </Text>
+                  <TextInput
+                    accessibilityLabel={messages.maxDuration}
+                    keyboardType="number-pad"
+                    onChangeText={(value) => {
+                      setDurationText(value);
+                      updateApiFilters(value, startFromText, startToText);
+                    }}
+                    placeholder={messages.noLimit}
+                    placeholderTextColor={colors.textFaint}
+                    value={durationText}
+                    className={styles.rewardInput}
+                    testID="quest-filter-max-duration"
+                  />
+                </View>
+                <View className={styles.sheetSection}>
+                  <Text className={styles.sheetSectionTitle}>
+                    {messages.startWindow}
+                  </Text>
+                  <TextInput
+                    accessibilityLabel={messages.startFrom}
+                    autoCapitalize="none"
+                    onChangeText={(value) => {
+                      setStartFromText(value);
+                      updateApiFilters(durationText, value, startToText);
+                    }}
+                    placeholder={messages.startFrom}
+                    placeholderTextColor={colors.textFaint}
+                    value={startFromText}
+                    className={styles.rewardInput}
+                    testID="quest-filter-start-from"
+                  />
+                  <TextInput
+                    accessibilityLabel={messages.startTo}
+                    autoCapitalize="none"
+                    onChangeText={(value) => {
+                      setStartToText(value);
+                      updateApiFilters(durationText, startFromText, value);
+                    }}
+                    placeholder={messages.startTo}
+                    placeholderTextColor={colors.textFaint}
+                    value={startToText}
+                    className={styles.rewardInput}
+                    testID="quest-filter-start-to"
+                  />
+                  {!apiFiltersValid ? (
+                    <Text className={styles.rewardError}>
+                      {messages.scheduleInvalid}
+                    </Text>
+                  ) : null}
+                </View>
+              </>
+            ) : null}
+            {fixtureOnly ? <View className={styles.sheetSection}>
               <Text className={styles.sheetSectionTitle}>
                 {messages.deadline}
               </Text>
@@ -771,8 +1078,8 @@ function QuestBoardFilterSheet({
                   />
                 ))}
               </View>
-            </View>
-            <View className={styles.sheetSection}>
+            </View> : null}
+            {fixtureOnly ? <View className={styles.sheetSection}>
               <Text className={styles.sheetSectionTitle}>
                 {messages.startTime}
               </Text>
@@ -787,8 +1094,8 @@ function QuestBoardFilterSheet({
                   />
                 ))}
               </View>
-            </View>
-            <View className={styles.sheetSection}>
+            </View> : null}
+            {fixtureOnly ? <View className={styles.sheetSection}>
               <Text className={styles.sheetSectionTitle}>
                 {messages.location}
               </Text>
@@ -806,7 +1113,7 @@ function QuestBoardFilterSheet({
                   testID="quest-filter-location-on-campus"
                 />
               </View>
-            </View>
+            </View> : null}
           </ScrollView>
           <View className={styles.sheetActions}>
             <Pressable
@@ -827,14 +1134,17 @@ function QuestBoardFilterSheet({
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              disabled={!rewardBoundsValid}
-              accessibilityState={{ disabled: !rewardBoundsValid }}
+              disabled={!rewardBoundsValid || !apiFiltersValid}
+              accessibilityState={{
+                disabled: !rewardBoundsValid || !apiFiltersValid,
+              }}
               onPress={() => {
-                if (rewardBoundsValid) onApply();
+                if (rewardBoundsValid && apiFiltersValid) onApply();
               }}
               className={cn(
                 styles.primaryAction,
-                !rewardBoundsValid && styles.primaryActionDisabled
+                (!rewardBoundsValid || !apiFiltersValid) &&
+                  styles.primaryActionDisabled
               )}
               testID="apply-quest-filters"
             >
@@ -913,11 +1223,30 @@ function QuestBoardSortSheet({
 
 export default function QuestBoardScreen({
   currentStudentId,
-  initialPreviewState = "populated",
+  initialPreviewState,
+  boardRepository,
+  tagCatalogApi,
 }: QuestBoardScreenProps) {
   const router = useRouter();
   const { locale } = useLocale();
-  const { activePersonaId, onPersonaChange, onReset } = useAuthEnvironment();
+  const { isDemo, activePersonaId, onPersonaChange, onReset } =
+    useAuthEnvironment();
+  const fixtureBoard =
+    !boardRepository &&
+    (Boolean(initialPreviewState) ||
+      isDemo ||
+      (process.env.NODE_ENV === "test" && !process.env.EXPO_PUBLIC_API_URL) ||
+      (__DEV__ && !process.env.EXPO_PUBLIC_API_URL));
+  const resolvedBoardRepository =
+    boardRepository ?? (fixtureBoard ? undefined : questBoardRepository);
+  const listQuestBoard = useMemo(
+    () =>
+      resolvedBoardRepository
+        ? resolvedBoardRepository.listQuests.bind(resolvedBoardRepository)
+        : (query: Parameters<QuestBoardRepository["listQuests"]>[0]) =>
+            questWorkflow.listQuestBoard(query),
+    [resolvedBoardRepository]
+  );
   const resolvedStudentId = currentStudentId?.trim() || activePersonaId;
   const { width, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -933,21 +1262,142 @@ export default function QuestBoardScreen({
   );
   const [sort, setSort] = useState<QuestBoardSort>("newest");
   const [previewState, setPreviewState] =
-    useState<BoardPreviewState>(initialPreviewState);
+    useState<BoardPreviewState | undefined>(initialPreviewState);
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [retrying, setRetrying] = useState(false);
+  const [apiItemsState, setApiItemsState] = useState<ApiQuestBoardItem[]>([]);
+  const [apiCursorState, setApiCursorState] = useState<string | null>(null);
+  const [apiLoadingState, setApiLoadingState] = useState(false);
+  const [apiLoadingMoreState, setApiLoadingMoreState] = useState(false);
+  const [apiErrorState, setApiErrorState] = useState<unknown>(null);
+  const [apiRequestKeyState, setApiRequestKeyState] = useState<string | null>(null);
+  const [apiRetryAttempt, setApiRetryAttempt] = useState(0);
+  const [tagCatalog, setTagCatalog] = useState<QuestBoardTag[]>([]);
+  const [tagCatalogLoading, setTagCatalogLoading] = useState(false);
+  const [tagCatalogError, setTagCatalogError] = useState<unknown>(null);
+  const tagCatalogLoadedRef = useRef(false);
+  const apiLoadingMoreRef = useRef(false);
+  const apiRequestGenerationRef = useRef(0);
   const [, setWorkflowRevision] = useState(0);
   const workflowNow = questWorkflow.getNow();
+  const tagCatalogClient = tagCatalogApi ?? tagApi;
+
+  const apiQuery = useMemo<QuestBoardQuery>(() => {
+    const nextQuery: QuestBoardQuery = {};
+    if (query.trim()) nextQuery.q = query.trim();
+    if (filters.selectedTag) nextQuery.tagId = filters.selectedTag.id;
+    if (filters.mode) nextQuery.mode = filters.mode;
+    if (filters.participation) nextQuery.participation = filters.participation;
+    if (filters.rewardMin !== null) nextQuery.minQuestReward = filters.rewardMin;
+    if (filters.rewardMax !== null) nextQuery.maxQuestReward = filters.rewardMax;
+    if (filters.maxDurationMinutes !== null) {
+      nextQuery.maxDurationMinutes = filters.maxDurationMinutes;
+    }
+    if (filters.startFrom !== null) nextQuery.startFrom = filters.startFrom;
+    if (filters.startTo !== null) nextQuery.startTo = filters.startTo;
+    return nextQuery;
+  }, [
+    filters.maxDurationMinutes,
+    filters.mode,
+    filters.participation,
+    filters.rewardMax,
+    filters.rewardMin,
+    filters.selectedTag,
+    filters.startFrom,
+    filters.startTo,
+    query,
+  ]);
+  const apiRequestKey = useMemo(
+    () => `${fixtureBoard ? "fixture" : "api"}:${apiRetryAttempt}:${JSON.stringify(apiQuery)}`,
+    [apiQuery, apiRetryAttempt, fixtureBoard]
+  );
+  const apiStateIsCurrent = apiRequestKeyState === apiRequestKey;
+  const apiItems = apiStateIsCurrent ? apiItemsState : [];
+  const apiCursor = apiStateIsCurrent ? apiCursorState : null;
+  const apiLoading = !fixtureBoard && (!apiStateIsCurrent || apiLoadingState);
+  const apiLoadingMore = apiStateIsCurrent ? apiLoadingMoreState : false;
+  const apiError = apiStateIsCurrent ? apiErrorState : null;
 
   useEffect(
-    () =>
-      questWorkflow.subscribe(() =>
+    () => {
+      if (!fixtureBoard) return undefined;
+      return questWorkflow.subscribe(() =>
         setWorkflowRevision((revision) => revision + 1)
-      ),
-    []
+      );
+    },
+    [fixtureBoard]
   );
+
+  useEffect(() => {
+    if (fixtureBoard) return undefined;
+    const generation = apiRequestGenerationRef.current + 1;
+    apiRequestGenerationRef.current = generation;
+    apiLoadingMoreRef.current = false;
+    let active = true;
+    void listQuestBoard(apiQuery)
+      .then((page) => {
+        if (!active || apiRequestGenerationRef.current !== generation) return;
+        setApiItemsState(page.items);
+        setApiCursorState(page.nextCursor);
+        setApiErrorState(null);
+      })
+      .catch((error: unknown) => {
+        if (active && apiRequestGenerationRef.current === generation) {
+          setApiErrorState(error);
+        }
+      })
+      .finally(() => {
+        if (active && apiRequestGenerationRef.current === generation) {
+          setApiRequestKeyState(apiRequestKey);
+          setApiLoadingState(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [apiQuery, apiRequestKey, fixtureBoard, listQuestBoard]);
+
+  const loadNextApiPage = useCallback(() => {
+    if (
+      fixtureBoard ||
+      !apiCursor ||
+      apiLoading ||
+      apiLoadingMoreRef.current
+    ) return;
+    const generation = apiRequestGenerationRef.current;
+    const cursor = apiCursor;
+    apiLoadingMoreRef.current = true;
+    setApiLoadingMoreState(true);
+    void listQuestBoard({ ...apiQuery, cursor })
+      .then((page) => {
+        if (apiRequestGenerationRef.current !== generation) return;
+        setApiItemsState((items) => {
+          const existingIds = new Set(items.map((item) => item.questId));
+          return [
+            ...items,
+            ...page.items.filter((item) => !existingIds.has(item.questId)),
+          ];
+        });
+        setApiCursorState(page.nextCursor);
+      })
+      .catch((error: unknown) => {
+        if (apiRequestGenerationRef.current === generation) setApiErrorState(error);
+      })
+      .finally(() => {
+        apiLoadingMoreRef.current = false;
+        if (apiRequestGenerationRef.current === generation) {
+          setApiLoadingMoreState(false);
+        }
+      });
+  }, [
+    apiCursor,
+    apiLoading,
+    apiQuery,
+    fixtureBoard,
+    listQuestBoard,
+  ]);
 
   useEffect(() => {
     if (!retrying || previewState !== "loading") return undefined;
@@ -958,10 +1408,17 @@ export default function QuestBoardScreen({
     return () => clearTimeout(timeout);
   }, [previewState, retrying]);
 
-  const boardModel = questWorkflow.getQuestBoardSurfaceModel(
-    resolvedStudentId,
-    previewState
+  const boardModel = useMemo(
+    () =>
+      fixtureBoard
+        ? questWorkflow.getQuestBoardSurfaceModel(
+            resolvedStudentId,
+            previewState ?? "populated"
+          )
+        : ({ kind: "loading" } as const),
+    [fixtureBoard, previewState, resolvedStudentId]
   );
+  const activePreviewState = previewState ?? "populated";
   const localizedQuests = useMemo(
     () =>
       boardModel.kind === "ready"
@@ -969,16 +1426,30 @@ export default function QuestBoardScreen({
         : [],
     [boardModel, locale]
   );
-  const availableTags = useMemo(
+  const fixtureTagOptions = useMemo(
     () =>
       getQuestBoardTags(
         getVisibleQuests(localizedQuests, {
           currentStudentId: resolvedStudentId,
           now: workflowNow,
         })
-      ),
+      ).map((name) => ({ id: name, name })),
     [resolvedStudentId, localizedQuests, workflowNow]
   );
+  const availableTags = fixtureBoard ? fixtureTagOptions : tagCatalog;
+  const loadTagCatalog = useCallback(() => {
+    if (fixtureBoard || tagCatalogLoadedRef.current || tagCatalogLoading) return;
+    setTagCatalogLoading(true);
+    setTagCatalogError(null);
+    void tagCatalogClient
+      .listTags()
+      .then((tags) => {
+        tagCatalogLoadedRef.current = true;
+        setTagCatalog(tags);
+      })
+      .catch((error: unknown) => setTagCatalogError(error))
+      .finally(() => setTagCatalogLoading(false));
+  }, [fixtureBoard, tagCatalogClient, tagCatalogLoading]);
   const visibleQuests = useMemo(
     () =>
       boardModel.kind === "ready"
@@ -1004,6 +1475,7 @@ export default function QuestBoardScreen({
   const openFilters = () => {
     setDraftFilters(cloneFilter(filters));
     setFilterOpen(true);
+    loadTagCatalog();
   };
 
   const applyFilters = () => {
@@ -1048,6 +1520,10 @@ export default function QuestBoardScreen({
   );
 
   const retryBoard = () => {
+    if (!fixtureBoard) {
+      setApiRetryAttempt((attempt) => attempt + 1);
+      return;
+    }
     setRetryAttempt((attempt) => attempt + 1);
     setRetrying(true);
     setPreviewState("loading");
@@ -1059,9 +1535,9 @@ export default function QuestBoardScreen({
     sortOptions.find((option) => option.value === sort)?.labelKey ?? "newest";
   const sortLabel = messages[sortLabelKey];
   const noMatch =
-    previewState === "populated" ||
-    previewState === "application-pending" ||
-    previewState === "application-accepted";
+    activePreviewState === "populated" ||
+    activePreviewState === "application-pending" ||
+    activePreviewState === "application-accepted";
   const noMatchActionLabel =
     hasActiveFilters && query
       ? messages.clearSearchAndFilters
@@ -1072,11 +1548,12 @@ export default function QuestBoardScreen({
           : undefined;
   const noMatchAction =
     hasActiveFilters && !query ? clearFilters : clearNoMatch;
-  const removeTag = (tag: string) =>
-    setFilters((current) => ({
-      ...current,
-      tags: current.tags.filter((value) => value !== tag),
-    }));
+  const removeTag = () =>
+    setFilters((current) => ({ ...current, selectedTag: null }));
+  const removeMode = () =>
+    setFilters((current) => ({ ...current, mode: null }));
+  const removeParticipation = () =>
+    setFilters((current) => ({ ...current, participation: null }));
   const removeLocation = (location: QuestLocationMode) =>
     setFilters((current) => ({
       ...current,
@@ -1097,7 +1574,46 @@ export default function QuestBoardScreen({
     setFilters((current) => ({ ...current, deadline: null }));
   const previousBoardKind = useRef<string | undefined>(undefined);
 
+  const apiHasNoMatches =
+    !apiLoading && !apiError && apiItems.length === 0;
+  const apiEmptyState = apiLoading ? (
+    <QuestBoardSkeleton loadingLabel={messages.loading} />
+  ) : apiError ? (
+    <StateView
+      error
+      title={messages.errorTitle}
+      description={messages.errorDescription}
+      actionLabel={messages.retry}
+      onAction={retryBoard}
+    />
+  ) : apiHasNoMatches ? (
+    <StateView
+      title={
+        query || getActiveFilterCount(filters) > 0
+          ? messages.noMatches
+          : messages.noQuests
+      }
+      description={messages.subtitle}
+      actionLabel={
+        query || getActiveFilterCount(filters) > 0
+          ? messages.clearSearchAndFilters
+          : undefined
+      }
+      onAction={
+        query || getActiveFilterCount(filters) > 0 ? clearNoMatch : undefined
+      }
+    />
+  ) : null;
+
   useEffect(() => {
+    if (!fixtureBoard) {
+      if (apiLoading) announce(messages.loading);
+      else if (apiError && apiItems.length === 0)
+        announce(`${messages.errorTitle}. ${messages.retry}`);
+      else if (!apiError && apiItems.length === 0)
+        announce(`${messages.noQuests}. ${messages.subtitle}`);
+      return;
+    }
     const previousKind = previousBoardKind.current;
     if (boardModel.kind === "loading") announce(messages.loading);
     if (boardModel.kind === "error")
@@ -1107,7 +1623,14 @@ export default function QuestBoardScreen({
     if (boardModel.kind === "ready" && previousKind === "loading")
       announce(messages.retrySuccess);
     previousBoardKind.current = boardModel.kind;
-  }, [boardModel.kind, messages]);
+  }, [
+    apiError,
+    apiItems.length,
+    apiLoading,
+    boardModel.kind,
+    fixtureBoard,
+    messages,
+  ]);
 
   useEffect(() => {
     if (
@@ -1134,6 +1657,22 @@ export default function QuestBoardScreen({
       />
     ),
     [locale, openQuest]
+  );
+
+  const renderApiQuest = useCallback(
+    ({ item }: { item: ApiQuestBoardItem }) => (
+      <ApiQuestCard
+        locale={locale}
+        onDetail={() =>
+          router.push({
+            pathname: "/quest/[id]",
+            params: { id: item.questId },
+          })
+        }
+        quest={item}
+      />
+    ),
+    [locale, router]
   );
 
   const openPrototypeScenario = (route: PrototypeScenarioRoute) => {
@@ -1218,38 +1757,72 @@ export default function QuestBoardScreen({
             </View>
           ) : null}
         </Pressable>
-        <Pressable
-          accessibilityLabel={`${messages.sort}: ${sortLabel}`}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: sortOpen }}
-          onPress={() => setSortOpen(true)}
-          className={cn(styles.toolbarButton, styles.toolbarButtonRight)}
-          testID="open-quest-sort"
-        >
-          <ArrowDownUp color={colors.textStrong} size={22} strokeWidth={2.3} />
-          <Text className={styles.toolbarText}>
-            {messages.sort}: {sortLabel}
-          </Text>
-        </Pressable>
+        {fixtureBoard ? (
+          <Pressable
+            accessibilityLabel={`${messages.sort}: ${sortLabel}`}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: sortOpen }}
+            onPress={() => setSortOpen(true)}
+            className={cn(styles.toolbarButton, styles.toolbarButtonRight)}
+            testID="open-quest-sort"
+          >
+            <ArrowDownUp color={colors.textStrong} size={22} strokeWidth={2.3} />
+            <Text className={styles.toolbarText}>
+              {messages.sort}: {sortLabel}
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
       {hasActiveFilters ? (
         <View
           accessibilityLabel={messages.activeFiltersLabel}
           className={styles.activeFilters}
         >
-          {filters.tags.map((tag) => (
+          {filters.selectedTag ? (
             <Pressable
-              accessibilityLabel={messages.removeFilter(tag)}
+              accessibilityLabel={messages.removeFilter(filters.selectedTag.name)}
               accessibilityRole="button"
-              key={tag}
-              onPress={() => removeTag(tag)}
+              key={filters.selectedTag.id}
+              onPress={removeTag}
               className={styles.filterChip}
-              testID={`active-quest-filter-tag-${tag}`}
+              testID={`active-quest-filter-tag-${filters.selectedTag.id}`}
             >
-              <Text className={styles.filterChipText}>{tag}</Text>
+              <Text className={styles.filterChipText}>{filters.selectedTag.name}</Text>
               <X color={colors.primary} size={13} strokeWidth={2.5} />
             </Pressable>
-          ))}
+          ) : null}
+          {filters.mode ? (
+            <Pressable
+              accessibilityLabel={messages.removeFilter(
+                filters.mode === "CANDIDATE" ? messages.candidate : messages.firstCome
+              )}
+              accessibilityRole="button"
+              onPress={removeMode}
+              className={styles.filterChip}
+              testID="active-quest-filter-mode"
+            >
+              <Text className={styles.filterChipText}>
+                {filters.mode === "CANDIDATE" ? messages.candidate : messages.firstCome}
+              </Text>
+              <X color={colors.primary} size={13} strokeWidth={2.5} />
+            </Pressable>
+          ) : null}
+          {filters.participation ? (
+            <Pressable
+              accessibilityLabel={messages.removeFilter(
+                filters.participation === "GROUP" ? messages.team : messages.singlePerson
+              )}
+              accessibilityRole="button"
+              onPress={removeParticipation}
+              className={styles.filterChip}
+              testID="active-quest-filter-participation"
+            >
+              <Text className={styles.filterChipText}>
+                {filters.participation === "GROUP" ? messages.team : messages.singlePerson}
+              </Text>
+              <X color={colors.primary} size={13} strokeWidth={2.5} />
+            </Pressable>
+          ) : null}
           {filters.locationModes.map((location) => (
             <Pressable
               accessibilityLabel={messages.removeFilter(
@@ -1383,6 +1956,12 @@ export default function QuestBoardScreen({
       />
     ) : null;
 
+  const listData = fixtureBoard ? visibleQuests : apiItems;
+  const listEmptyState = fixtureBoard ? emptyState : apiEmptyState;
+  const listRenderItem = fixtureBoard
+    ? (renderQuest as unknown as (info: { item: QuestBoardQuest }) => React.ReactElement)
+    : (renderApiQuest as unknown as (info: { item: ApiQuestBoardItem }) => React.ReactElement);
+
   return (
     <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
       <FlatList
@@ -1397,13 +1976,24 @@ export default function QuestBoardScreen({
             spacing.lg,
           paddingHorizontal: spacing.md,
         }}
-        data={boardModel.kind === "ready" ? visibleQuests : []}
-        keyExtractor={(quest) => quest.id}
+        data={listData as unknown as ApiQuestBoardItem[]}
+        keyExtractor={(quest) =>
+          fixtureBoard
+            ? (quest as unknown as QuestBoardQuest).id
+            : quest.questId
+        }
         keyboardShouldPersistTaps="handled"
-        ListEmptyComponent={emptyState}
+        ListEmptyComponent={listEmptyState}
         ListHeaderComponent={listHeader}
         ItemSeparatorComponent={() => <View className={styles.cardSeparator} />}
-        renderItem={renderQuest}
+        renderItem={listRenderItem as never}
+        onEndReached={fixtureBoard ? undefined : loadNextApiPage}
+        onEndReachedThreshold={0.4}
+        ListFooterComponent={
+          !fixtureBoard && apiLoadingMore ? (
+            <QuestBoardSkeleton loadingLabel={messages.loading} />
+          ) : null
+        }
         onScroll={handleScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
@@ -1412,13 +2002,16 @@ export default function QuestBoardScreen({
         <QuestBoardFilterSheet
           availableTags={availableTags}
           filter={draftFilters}
+          fixtureOnly={fixtureBoard}
           messages={messages}
           onApply={applyFilters}
           onChange={setDraftFilters}
           onClose={() => setFilterOpen(false)}
+          tagCatalogError={tagCatalogError}
+          tagCatalogLoading={tagCatalogLoading}
         />
       ) : null}
-      {sortOpen ? (
+      {sortOpen && fixtureBoard ? (
         <QuestBoardSortSheet
           messages={messages}
           onClose={() => setSortOpen(false)}

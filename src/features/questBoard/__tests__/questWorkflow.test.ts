@@ -170,4 +170,22 @@ describe("QuestWorkflow", () => {
     expect(workflow.getNow(seededNow)).toEqual(seededNow);
     expect(workflow.getNow()).toEqual(seededNow);
   });
+
+  it("delegates asynchronous Board reads to the configured repository", async () => {
+    const repository = {
+      listQuests: jest.fn().mockResolvedValue({
+        items: [],
+        nextCursor: "next-page",
+      }),
+    };
+    const workflow = createQuestWorkflow(questFixtureAdapter, {
+      boardRepository: repository,
+    });
+
+    await expect(workflow.listQuestBoard({ cursor: "current-page" })).resolves.toEqual({
+      items: [],
+      nextCursor: "next-page",
+    });
+    expect(repository.listQuests).toHaveBeenCalledWith({ cursor: "current-page" });
+  });
 });

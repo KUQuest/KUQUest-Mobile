@@ -36,8 +36,8 @@ const quests: QuestBoardQuest[] = [
     postedAt: "2026-08-10T09:00:00.000Z",
     location: "On campus",
     locationMode: "on-campus",
-    participationMode: "single",
-    candidateMode: "CANDIDATE",
+    participation: "SINGLE",
+    mode: "CANDIDATE",
     creator: { name: "Nicha", faculty: "Architecture" },
     studentInterestMatch: true,
     ownerStudentId: "creator-1",
@@ -58,8 +58,8 @@ const quests: QuestBoardQuest[] = [
     postedAt: "2026-08-11T09:00:00.000Z",
     location: "Online",
     locationMode: "online",
-    participationMode: "single",
-    candidateMode: "NO_CANDIDATE",
+    participation: "SINGLE",
+    mode: "FIRST_COME_FIRST_SERVED",
     creator: { name: "Ploy", faculty: "Engineering" },
     studentInterestMatch: false,
     ownerStudentId: "creator-2",
@@ -80,8 +80,8 @@ const quests: QuestBoardQuest[] = [
     postedAt: "2026-08-09T09:00:00.000Z",
     location: "On campus",
     locationMode: "on-campus",
-    participationMode: "single",
-    candidateMode: "NO_CANDIDATE",
+    participation: "SINGLE",
+    mode: "FIRST_COME_FIRST_SERVED",
     creator: { name: "Beam", faculty: "Education" },
     studentInterestMatch: false,
     ownerStudentId: "creator-3",
@@ -102,8 +102,8 @@ const quests: QuestBoardQuest[] = [
     postedAt: "2026-08-12T09:00:00.000Z",
     location: "Online",
     locationMode: "online",
-    participationMode: "single",
-    candidateMode: "CANDIDATE",
+    participation: "SINGLE",
+    mode: "CANDIDATE",
     creator: { name: "Current Student", faculty: "Engineering" },
     studentInterestMatch: true,
     ownerStudentId: "current-student",
@@ -131,12 +131,17 @@ describe("Quest Board view data", () => {
     ).toEqual(["design-match"]);
   });
 
-  it("filters by search text, tags, reward bounds, deadline, start time, and location", () => {
+  it("filters by search text, one tag, reward bounds, deadline, start time, and location", () => {
     const filter: QuestBoardFilter = {
       query: "poster",
-      tags: ["Design & creative"],
+      selectedTag: { id: "fixture:Design & creative", name: "Design & creative" },
+      mode: null,
+      participation: null,
       rewardMin: 700,
       rewardMax: 700,
+      maxDurationMinutes: null,
+      startFrom: null,
+      startTo: null,
       deadline: "within-7-days",
       startTimeBuckets: ["evening"],
       locationModes: ["on-campus"],
@@ -190,12 +195,17 @@ describe("Quest Board view data", () => {
     expect(getQuestImageCount(quests[0])).toBe(0);
   });
 
-  it("uses inclusive reward bounds and OR semantics within tag and start-time facets", () => {
+  it("uses inclusive reward bounds and OR semantics within start-time facets", () => {
     const filter: QuestBoardFilter = {
       query: "",
-      tags: ["Technology", "Design & creative"],
+      selectedTag: null,
+      mode: null,
+      participation: null,
       rewardMin: 450,
       rewardMax: 800,
+      maxDurationMinutes: null,
+      startFrom: null,
+      startTo: null,
       deadline: null,
       startTimeBuckets: ["morning", "evening"],
       locationModes: [],

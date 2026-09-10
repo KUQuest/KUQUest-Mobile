@@ -99,6 +99,7 @@ describe("QuestDetailScreen loading state", () => {
       ["team-selection-demo", "Choose a campus event team"],
       ["single-candidate-demo", "Select a campus helper"],
       ["partial-group-start-demo", "Start a partial campus crew"],
+      ["full-group-start-demo", "Start the full campus crew"],
     ] as const;
 
     for (const [questId, title] of routes) {

@@ -10,7 +10,7 @@ export type QuestDraftSnapshot = StoredQuestDraft;
 export async function getQuestDraftStorageKey(): Promise<string> {
   try {
     const session = await authService.getSession();
-    return session?.user.id ? `${CREATE_QUEST_DRAFT_KEY}:${session.user.id}` : CREATE_QUEST_DRAFT_KEY;
+    return session?.user.id ? `${CREATE_QUEST_DRAFT_KEY}-${session.user.id}` : CREATE_QUEST_DRAFT_KEY;
   } catch {
     return CREATE_QUEST_DRAFT_KEY;
   }
@@ -18,7 +18,11 @@ export async function getQuestDraftStorageKey(): Promise<string> {
 
 export async function loadQuestDraft(storageKey: string, _legacyQuestId?: string): Promise<QuestDraftSnapshot | null> {
   const storedDraft = await SecureStore.getItemAsync(storageKey);
-  return storedDraft ? parseStoredQuestSnapshot(storedDraft) : null;
+  if (storedDraft) return parseStoredQuestSnapshot(storedDraft);
+
+  if (storageKey === CREATE_QUEST_DRAFT_KEY) return null;
+  const legacyDraft = await SecureStore.getItemAsync(CREATE_QUEST_DRAFT_KEY);
+  return legacyDraft ? parseStoredQuestSnapshot(legacyDraft) : null;
 }
 
 export async function persistQuestDraft(

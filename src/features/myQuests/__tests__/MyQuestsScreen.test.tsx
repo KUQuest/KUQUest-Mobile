@@ -60,7 +60,20 @@ describe("MyQuestsScreen", () => {
     mockLocale = "th";
     mockModalOnRequestClose = undefined;
     mockModalProps = undefined;
+    delete process.env.EXPO_PUBLIC_API_URL;
     questFixtureAdapter.reset();
+  });
+
+  it("does not render fixture workflow data when the production API is configured", async () => {
+    process.env.EXPO_PUBLIC_API_URL = "https://api.example.test";
+    mockLocale = "en";
+
+    const view = await render(<MyQuestsScreen />);
+
+    expect(
+      view.getByText("My Quests is not connected to the production API")
+    ).toBeTruthy();
+    expect(view.queryByText("Join a campus event team")).toBeNull();
   });
 
   it("keeps Worker and Hirer work in one screen with separate role and status views", async () => {

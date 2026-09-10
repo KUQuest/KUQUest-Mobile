@@ -17,7 +17,7 @@ jest.mock('@/features/auth/AuthService', () => ({
 }));
 
 const mockedGetSession = authService.getSession as jest.MockedFunction<typeof authService.getSession>;
-const storageKey = `${CREATE_QUEST_DRAFT_KEY}:account-42`;
+const storageKey = `${CREATE_QUEST_DRAFT_KEY}-account-42`;
 
 const draft = {
   ...initialDraft,
@@ -49,6 +49,7 @@ describe('create quest persistence', () => {
     });
 
     await expect(getQuestDraftStorageKey()).resolves.toBe(storageKey);
+    expect(storageKey).toMatch(/^[\w.-]+$/);
   });
 
   test('falls back to the shared key when the session lookup fails', async () => {
@@ -69,6 +70,21 @@ describe('create quest persistence', () => {
     await SecureStore.setItemAsync(storageKey, '{not-json');
 
     await expect(loadQuestDraft(storageKey)).resolves.toBeNull();
+  });
+
+  test('restores a legacy shared draft when the account-scoped key is empty', async () => {
+    const legacySnapshot = JSON.stringify({ draft, step: 2, state: 'DRAFT' });
+    (SecureStore.getItemAsync as jest.Mock)
+      .mockImplementationOnce(async () => null)
+      .mockImplementationOnce(async () => legacySnapshot);
+
+    await expect(loadQuestDraft(storageKey)).resolves.toEqual({
+      draft,
+      step: 2,
+      state: 'DRAFT',
+    });
+    expect(SecureStore.getItemAsync).toHaveBeenNthCalledWith(1, storageKey);
+    expect(SecureStore.getItemAsync).toHaveBeenNthCalledWith(2, CREATE_QUEST_DRAFT_KEY);
   });
 
   test('deletes the draft from SecureStore', async () => {

@@ -13,6 +13,7 @@ import {
   Platform,
   Pressable as RNPressable,
   TextInput as RNTextInput,
+  UIManager,
   useWindowDimensions,
 } from "react-native";
 import { cn } from "@/tw/cn";
@@ -27,7 +28,7 @@ import {
   View,
 } from "@/tw";
 import DateTimePicker, {
-  type DateTimePickerEvent,
+  type DateTimePickerChangeEvent,
 } from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import {
@@ -863,18 +864,18 @@ function ReviewActionButton({
 function ModeSummary({
   messages,
   participation,
-  candidateMode,
+  mode,
   combinationHint,
 }: {
   messages: typeof createQuestMessages.en;
   participation: QuestDraft["participation"];
-  candidateMode: QuestDraft["candidateMode"];
+  mode: QuestDraft["mode"];
   combinationHint: string;
 }) {
   const participationLabel =
     participation === "SINGLE" ? messages.singleFormat : messages.teamFormat;
   const candidateLabel =
-    candidateMode === "FIRST_COME_FIRST_SERVED"
+    mode === "FIRST_COME_FIRST_SERVED"
       ? messages.instantAccept
       : messages.selectCandidate;
 
@@ -1341,19 +1342,16 @@ export default function CreateQuestScreen({
         if ("focus" in target && typeof target.focus === "function")
           target.focus();
         const scrollTag = findNodeHandle(scrollRef.current);
-        if (
-          scrollTag &&
-          "measureLayout" in target &&
-          typeof target.measureLayout === "function"
-        ) {
-          target.measureLayout(
+        if (reactTag && scrollTag) {
+          UIManager.measureLayout(
+            reactTag,
             scrollTag,
+            () => scrollRef.current?.scrollTo({ y: 0, animated: true }),
             (_x, y) =>
               scrollRef.current?.scrollTo({
                 y: Math.max(0, y - 24),
                 animated: true,
-              }),
-            () => scrollRef.current?.scrollTo({ y: 0, animated: true })
+              })
           );
         } else {
           scrollRef.current?.scrollTo({ y: 0, animated: true });
@@ -1572,15 +1570,11 @@ export default function CreateQuestScreen({
     updateDraft(timeKey, getScheduleTimeValue(value));
   };
 
-  const handleDateChange = (
-    event: DateTimePickerEvent,
-    selectedDate?: Date
+  const handleDateValueChange = (
+    _event: DateTimePickerChangeEvent,
+    selectedDate: Date
   ) => {
-    if (event.type === "dismissed") {
-      closeSchedulePicker();
-      return;
-    }
-    if (!selectedDate || !scheduleField) return;
+    if (!scheduleField) return;
 
     if (Platform.OS === "ios") {
       setIosPickerValue(selectedDate);
@@ -1669,13 +1663,13 @@ export default function CreateQuestScreen({
 
   const combinationHint = useMemo(() => {
     if (draft.participation === "SINGLE")
-      return draft.candidateMode === "FIRST_COME_FIRST_SERVED"
+      return draft.mode === "FIRST_COME_FIRST_SERVED"
         ? messages.singleFirstComeHint
         : messages.singleCandidateHint;
-    return draft.candidateMode === "FIRST_COME_FIRST_SERVED"
+    return draft.mode === "FIRST_COME_FIRST_SERVED"
       ? messages.groupFirstComeHint
       : messages.groupCandidateHint;
-  }, [draft.candidateMode, draft.participation, messages]);
+  }, [draft.mode, draft.participation, messages]);
   const proofRequired = draft.proofRequired !== "none";
 
   const reviewPublishCheck = useMemo(
@@ -1734,7 +1728,7 @@ export default function CreateQuestScreen({
         ? messages.teamSizeValue(draft.headcount)
         : messages.notSelected;
   const selectedAcceptanceMethod =
-    draft.candidateMode === "CANDIDATE"
+    draft.mode === "CANDIDATE"
       ? messages.selectCandidate
       : messages.instantAccept;
   const logisticsSummary =
@@ -2092,15 +2086,15 @@ export default function CreateQuestScreen({
                         description={messages.chooseAcceptanceMethodDescription}
                       />
                       <ChoiceGroup
-                        label={messages.candidateMode}
-                        value={draft.candidateMode}
+                        label={messages.selectionMode}
+                        value={draft.mode}
                         options={candidateOptions}
                         variant="acceptance"
                         stacked={false}
                         onChange={(value) =>
                           updateDraft(
-                            "candidateMode",
-                            value as QuestDraft["candidateMode"]
+                            "mode",
+                            value as QuestDraft["mode"]
                           )
                         }
                       />
@@ -2109,7 +2103,7 @@ export default function CreateQuestScreen({
                     <ModeSummary
                       messages={messages}
                       participation={draft.participation}
-                      candidateMode={draft.candidateMode}
+                      mode={draft.mode}
                       combinationHint={combinationHint}
                     />
 
@@ -2608,10 +2602,13 @@ export default function CreateQuestScreen({
                   </Pressable>
                 </View>
                 <DateTimePicker
+                  testID="create-quest-date-picker"
                   value={schedulePickerValue}
                   mode="datetime"
                   display="spinner"
-                  onChange={handleDateChange}
+                  onValueChange={handleDateValueChange}
+                  onDismiss={closeSchedulePicker}
+                  onNeutralButtonPress={closeSchedulePicker}
                   minimumDate={schedulePickerMinimum}
                 />
               </View>
@@ -2619,11 +2616,14 @@ export default function CreateQuestScreen({
           </Modal>
         ) : (
           <DateTimePicker
+            testID="create-quest-date-picker"
             value={schedulePickerValue}
             mode={pickerMode}
             display="default"
             is24Hour
-            onChange={handleDateChange}
+            onValueChange={handleDateValueChange}
+            onDismiss={closeSchedulePicker}
+            onNeutralButtonPress={closeSchedulePicker}
             minimumDate={
               pickerMode === "date" ? schedulePickerMinimum : undefined
             }

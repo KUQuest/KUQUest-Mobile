@@ -2,15 +2,15 @@ import {
   MAX_QUEST_IMAGES,
   formatSatang,
   parseSatangInput,
-  type QuestCandidateMode as QuestBoardCandidateMode,
   type QuestEscrowSummary,
   type QuestLocation,
   type QuestLocationMode as QuestBoardLocationMode,
-  type QuestParticipationMode as QuestBoardParticipationMode,
   type QuestPublishCheck,
+  type QuestMode,
+  type QuestParticipation,
 } from '../questBoard/types';
 
-export type QuestDraftCandidateMode = 'FIRST_COME_FIRST_SERVED' | 'CANDIDATE';
+export type QuestDraftMode = QuestMode;
 export type QuestDraftParticipation = 'SINGLE' | 'GROUP';
 export type QuestDraftProofRequirement = 'required' | 'optional' | 'none';
 export type QuestDraftLocationMode = 'ONLINE' | 'ON_CAMPUS';
@@ -50,7 +50,7 @@ export interface QuestDraft {
   locationMode: QuestDraftLocationMode;
   location: string;
   imageUris: string[];
-  candidateMode: QuestDraftCandidateMode;
+  mode: QuestDraftMode;
   participation: QuestDraftParticipation;
   headcount: string;
   wage: string;
@@ -69,7 +69,7 @@ export const initialDraft: QuestDraft = {
   locationMode: 'ON_CAMPUS',
   location: '',
   imageUris: [],
-  candidateMode: 'FIRST_COME_FIRST_SERVED',
+  mode: 'FIRST_COME_FIRST_SERVED',
   participation: 'SINGLE',
   headcount: '1',
   wage: '',
@@ -87,7 +87,7 @@ export const mockQuestDraft: QuestDraft = {
   startTime: '09:00',
   endTime: '12:00',
   location: 'Student activity building',
-  candidateMode: 'CANDIDATE',
+  mode: 'CANDIDATE',
   participation: 'GROUP',
   headcount: '2',
   wage: '250',
@@ -95,15 +95,15 @@ export const mockQuestDraft: QuestDraft = {
 
 
 export interface QuestBoardModeValues {
-  candidateMode: QuestBoardCandidateMode;
-  participationMode: QuestBoardParticipationMode;
+  mode: QuestMode;
+  participation: QuestParticipation;
   locationMode: QuestBoardLocationMode;
 }
 
-export function toQuestBoardModeValues(draft: Pick<QuestDraft, 'candidateMode' | 'participation' | 'locationMode'>): QuestBoardModeValues {
+export function toQuestBoardModeValues(draft: Pick<QuestDraft, 'mode' | 'participation' | 'locationMode'>): QuestBoardModeValues {
   return {
-    candidateMode: draft.candidateMode === 'CANDIDATE' ? 'CANDIDATE' : 'NO_CANDIDATE',
-    participationMode: draft.participation === 'GROUP' ? 'team' : 'single',
+    mode: draft.mode,
+    participation: draft.participation,
     locationMode: draft.locationMode === 'ONLINE' ? 'online' : 'on-campus',
   };
 }
@@ -132,8 +132,8 @@ export interface QuestDraftPayload {
   startTime: string;
   endTime: string;
   location: QuestLocation;
-  candidateMode: 'NO_CANDIDATE' | 'CANDIDATE';
-  participation: 'SOLO' | 'GROUP';
+  mode: QuestMode;
+  participation: QuestParticipation;
   headcount: number;
   rewardSatang: number;
   imageUris: string[];
@@ -146,6 +146,15 @@ function getValidDraftHeadcount(draft: Pick<QuestDraft, 'participation' | 'headc
 
   const headcount = Number(rawHeadcount);
   return Number.isSafeInteger(headcount) && headcount > 0 ? headcount : null;
+}
+
+function getDraftDateTime(dateValue: string, timeValue: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue) || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(timeValue)) {
+    return null;
+  }
+
+  const timestamp = Date.parse(`${dateValue}T${timeValue}:00Z`);
+  return Number.isNaN(timestamp) ? null : timestamp;
 }
 
 export function getDraftRewardSatang(draft: Pick<QuestDraft, 'wage'>): number | null {
@@ -165,8 +174,8 @@ export function toQuestDraftPayload(draft: QuestDraft): QuestDraftPayload {
     startTime: draft.startTime,
     endTime: draft.endTime,
     location: { label: draft.locationMode === 'ONLINE' ? null : draft.location.trim() || null },
-    candidateMode: draft.candidateMode === 'CANDIDATE' ? 'CANDIDATE' : 'NO_CANDIDATE',
-    participation: draft.participation === 'GROUP' ? 'GROUP' : 'SOLO',
+    mode: draft.mode,
+    participation: draft.participation,
     headcount: draft.participation === 'SINGLE' ? 1 : Number(draft.headcount),
     rewardSatang: getDraftRewardSatang(draft) ?? 0,
     imageUris: [...draft.imageUris].slice(0, MAX_QUEST_IMAGES),
@@ -197,13 +206,19 @@ export function calculateQuestEscrow(
 export function getQuestPublishCheck(draft: QuestDraft, feeRateBasisPoints = DEFAULT_PLATFORM_FEE_BASIS_POINTS): QuestPublishCheck {
   const headcount = getValidDraftHeadcount(draft);
   const payload = toQuestDraftPayload(draft);
+  const startAt = getDraftDateTime(payload.startDate, payload.startTime);
+  const endAt = getDraftDateTime(payload.startDate, payload.endTime);
+  const deadlineAt = getDraftDateTime(payload.deadline, payload.endTime);
   const blockers: string[] = [];
   const warnings: string[] = [];
   if (!payload.title) blockers.push('TITLE_REQUIRED');
+  if (!payload.tag.trim()) blockers.push('TAG_REQUIRED');
   if (!payload.description) blockers.push('DESCRIPTION_REQUIRED');
   if (!payload.conditions) blockers.push('COMPLETION_CRITERIA_REQUIRED');
   if (!payload.startDate || !payload.startTime) blockers.push('START_REQUIRED');
   if (!payload.deadline || !payload.endTime) blockers.push('DEADLINE_REQUIRED');
+  if (startAt !== null && (endAt === null || endAt <= startAt)) blockers.push('TIME_ORDER_INVALID');
+  if (startAt !== null && (deadlineAt === null || deadlineAt <= startAt)) blockers.push('DEADLINE_REQUIRED');
   if (draft.locationMode === 'ON_CAMPUS' && !payload.location.label) blockers.push('LOCATION_REQUIRED');
   if (getDraftRewardSatang(draft) === null) blockers.push('REWARD_INVALID');
   if (draft.participation === 'GROUP' && headcount === null) blockers.push('HEADCOUNT_INVALID');
@@ -245,13 +260,13 @@ export function getRewardValidationError(value: string, messages: RewardValidati
   return undefined;
 }
 
-function normalizeCandidateMode(value: string): QuestDraftCandidateMode {
-  if (value === 'CANDIDATE' || value === 'review') return 'CANDIDATE';
+function normalizeQuestMode(value: string): QuestDraftMode {
+  if (value === 'CANDIDATE') return 'CANDIDATE';
   return 'FIRST_COME_FIRST_SERVED';
 }
 
 function normalizeParticipation(value: string): QuestDraftParticipation {
-  if (value === 'GROUP' || value === 'team') return 'GROUP';
+  if (value === 'GROUP') return 'GROUP';
   return 'SINGLE';
 }
 
@@ -299,7 +314,7 @@ function parseDraftRecord(record: Record<string, unknown>): QuestDraft {
     imageUris: Array.isArray(record.imageUris)
       ? record.imageUris.filter((uri): uri is string => typeof uri === 'string').slice(0, MAX_QUEST_IMAGES)
       : [],
-    candidateMode: normalizeCandidateMode(stringValue('candidateMode', initialDraft.candidateMode)),
+    mode: normalizeQuestMode(stringValue('mode', initialDraft.mode)),
     participation,
     headcount: getHeadcountForParticipation(participation, stringValue('headcount', initialDraft.headcount)),
     wage: stringValue('wage', initialDraft.wage),
