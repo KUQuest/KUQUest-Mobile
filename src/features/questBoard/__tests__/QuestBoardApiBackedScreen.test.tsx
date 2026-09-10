@@ -72,6 +72,17 @@ describe("API-backed Quest Board screen", () => {
     await waitFor(() => expect(view.getByText("No quests available yet.")).toBeTruthy());
   });
 
+  test("starts the first API request without a client-generated cursor", async () => {
+    const listQuests = jest.fn().mockResolvedValue(page([], "opaque/server-token=="));
+    const view = await render(
+      <QuestBoardScreen boardRepository={repositoryFor(listQuests)} />
+    );
+
+    await waitFor(() => expect(view.getByText("No quests available yet.")).toBeTruthy());
+    expect(listQuests).toHaveBeenNthCalledWith(1, {});
+    expect(listQuests.mock.calls[0]?.[0]).not.toHaveProperty("cursor");
+  });
+
   test("renders an API error with a retry action", async () => {
     const repository = repositoryFor(async () => {
       throw new Error("temporarily unavailable");
@@ -168,6 +179,14 @@ describe("API-backed Quest Board screen", () => {
     await fireEvent.press(view.getByTestId("quest-filter-mode-candidate"));
     await fireEvent.press(view.getByTestId("quest-filter-participation-group"));
     await fireEvent.changeText(
+      view.getByTestId("quest-filter-reward-min"),
+      "125.50"
+    );
+    await fireEvent.changeText(
+      view.getByTestId("quest-filter-reward-max"),
+      "500"
+    );
+    await fireEvent.changeText(
       view.getByTestId("quest-filter-max-duration"),
       "90"
     );
@@ -185,6 +204,8 @@ describe("API-backed Quest Board screen", () => {
       tagId: item.tag.id,
       mode: "CANDIDATE",
       participation: "GROUP",
+      minQuestReward: 125.5,
+      maxQuestReward: 500,
       maxDurationMinutes: 90,
       startFrom: "2026-09-30T09:00:00.000+07:00",
       startTo: "2026-10-01T09:00:00.000+07:00",
@@ -206,6 +227,7 @@ describe("API-backed Quest Board screen", () => {
     );
 
     await waitFor(() => expect(view.getByText("API Quest")).toBeTruthy());
+    expect(listQuests).toHaveBeenNthCalledWith(1, {});
     const results = view.getByLabelText("Quest Board results");
     await fireEvent(results, "onEndReached");
     await fireEvent(results, "onEndReached");
@@ -229,6 +251,10 @@ describe("API-backed Quest Board screen", () => {
     await waitFor(() => expect(view.getByText("Second server result")).toBeTruthy(), {
       timeout: 5000,
     });
+    expect(view.getAllByTestId(/^quest-detail-/).map((node) => node.props.testID)).toEqual([
+      `quest-detail-${second.questId}`,
+      `quest-detail-${item.questId}`,
+    ]);
     expect(view.queryByTestId("open-quest-sort")).toBeNull();
     await fireEvent.changeText(view.getByTestId("quest-board-search"), "not a server filter");
 
