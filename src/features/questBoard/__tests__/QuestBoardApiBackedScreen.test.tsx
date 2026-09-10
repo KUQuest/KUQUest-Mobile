@@ -87,6 +87,30 @@ describe("API-backed Quest Board screen", () => {
     fixtureListQuests.mockRestore();
   });
 
+  test("production route keeps a full and expired server card visible", async () => {
+    process.env.EXPO_PUBLIC_API_URL = "https://api.example.test";
+    const serverResult: ApiQuestBoardItem = {
+      ...item,
+      title: "Full expired server Quest",
+      activeWorkerCount: item.headcount,
+      startTime: "2020-09-30T09:00:00.000+07:00",
+      dueAt: "2020-09-30T11:00:00.000+07:00",
+    };
+    const apiListQuests = jest
+      .spyOn(questBoardRepository, "listQuests")
+      .mockResolvedValue(page([serverResult]));
+    const fixtureListQuests = jest.spyOn(questWorkflow, "listQuestBoard");
+
+    const view = await render(<QuestBoardRoute />);
+
+    await waitFor(() => expect(view.getByText(serverResult.title)).toBeTruthy());
+    expect(view.queryByText("No quests available yet.")).toBeNull();
+    expect(fixtureListQuests).not.toHaveBeenCalled();
+
+    apiListQuests.mockRestore();
+    fixtureListQuests.mockRestore();
+  });
+
   test("renders loading while the first Board request is pending", async () => {
     const repository = repositoryFor(() => new Promise(() => undefined));
     const view = await render(<QuestBoardScreen boardRepository={repository} />);
