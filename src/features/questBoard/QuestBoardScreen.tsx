@@ -63,7 +63,10 @@ import {
 } from "./questBoardViewData";
 import type { BoardPreviewState } from "./questBoardHarness";
 import { getQuestRewardSatang, questWorkflow } from "./questWorkflow";
-import type { QuestBoardRepository } from "./questBoardRepository";
+import {
+  questBoardRepository,
+  type QuestBoardRepository,
+} from "./questBoardRepository";
 import type { PrototypeScenarioRoute } from "@/components/ui/prototypeMenuData";
 import { tagApi, type TagApi } from "@/api/tag/TagApi";
 import { formatSatang } from "./types";
@@ -1230,15 +1233,17 @@ export default function QuestBoardScreen({
     !boardRepository &&
     (Boolean(initialPreviewState) ||
       isDemo ||
-      process.env.NODE_ENV === "test" ||
+      (process.env.NODE_ENV === "test" && !process.env.EXPO_PUBLIC_API_URL) ||
       (__DEV__ && !process.env.EXPO_PUBLIC_API_URL));
+  const resolvedBoardRepository =
+    boardRepository ?? (fixtureBoard ? undefined : questBoardRepository);
   const listQuestBoard = useMemo(
     () =>
-      boardRepository
-        ? boardRepository.listQuests.bind(boardRepository)
+      resolvedBoardRepository
+        ? resolvedBoardRepository.listQuests.bind(resolvedBoardRepository)
         : (query: Parameters<QuestBoardRepository["listQuests"]>[0]) =>
             questWorkflow.listQuestBoard(query),
-    [boardRepository]
+    [resolvedBoardRepository]
   );
   const resolvedStudentId = currentStudentId?.trim() || activePersonaId;
   const { width, fontScale } = useWindowDimensions();

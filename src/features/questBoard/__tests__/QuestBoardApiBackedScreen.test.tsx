@@ -2,11 +2,14 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import mockReact, { type ReactNode } from "react";
 
 import QuestBoardScreen from "../QuestBoardScreen";
+import QuestBoardRoute from "@/app/(tabs)/index";
 import type {
   ApiQuestBoardItem,
   ApiQuestBoardPage,
 } from "@/api/questBoard/questBoardMapper";
 import type { QuestBoardRepository } from "../questBoardRepository";
+import { questBoardRepository } from "../questBoardRepository";
+import { questWorkflow } from "../questWorkflow";
 import type { TagApi } from "@/api/tag/TagApi";
 
 const mockPush = jest.fn();
@@ -56,7 +59,32 @@ function page(items: ApiQuestBoardItem[], nextCursor: string | null = null): Api
 }
 
 describe("API-backed Quest Board screen", () => {
-  beforeEach(() => mockPush.mockClear());
+  beforeEach(() => {
+    mockPush.mockClear();
+    delete process.env.EXPO_PUBLIC_API_URL;
+  });
+
+  afterEach(() => {
+    delete process.env.EXPO_PUBLIC_API_URL;
+  });
+
+  test("production route uses the default API repository without fixture fallback", async () => {
+    process.env.EXPO_PUBLIC_API_URL = "https://api.example.test";
+    const apiListQuests = jest
+      .spyOn(questBoardRepository, "listQuests")
+      .mockResolvedValue(page([item]));
+    const fixtureListQuests = jest.spyOn(questWorkflow, "listQuestBoard");
+
+    const view = await render(<QuestBoardRoute />);
+
+    await waitFor(() => expect(view.getByText("API Quest")).toBeTruthy());
+    expect(apiListQuests).toHaveBeenCalledWith({});
+    expect(fixtureListQuests).not.toHaveBeenCalled();
+    expect(view.queryByText("Help move boxes to the dorm")).toBeNull();
+
+    apiListQuests.mockRestore();
+    fixtureListQuests.mockRestore();
+  });
 
   test("renders loading while the first Board request is pending", async () => {
     const repository = repositoryFor(() => new Promise(() => undefined));
