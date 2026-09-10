@@ -64,6 +64,7 @@ describe('PrototypeMenu', () => {
     expect(view.getByText('/quest/team-selection-demo')).toBeTruthy();
     expect(view.getByText('/quest/single-candidate-demo')).toBeTruthy();
     expect(view.getByText('/quest/partial-group-start-demo')).toBeTruthy();
+    expect(view.getByText('/quest/full-group-start-demo')).toBeTruthy();
 
     await fireEvent.press(view.getByTestId('prototype-menu-persona-demo-worker-2'));
     await fireEvent.press(view.getByTestId('prototype-menu-scenario-single-candidate-demo'));
@@ -85,6 +86,7 @@ describe('PrototypeMenu', () => {
     expect(view.getByRole('radio', { name: 'ผู้สมัคร / หัวหน้าทีม A (student-demo)' })).toBeTruthy();
     expect(view.getByText('รีเซ็ตทุกสถานการณ์')).toBeTruthy();
     expect(view.getByText('/quest/partial-group-start-demo')).toBeTruthy();
+    expect(view.getByText('/quest/full-group-start-demo')).toBeTruthy();
   });
 
   it('is opened by a 44-point trigger and closes through the native sheet controls', async () => {

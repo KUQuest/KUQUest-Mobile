@@ -259,6 +259,7 @@ export type QuestAction =
   | 'REQUEST_EDIT'
   | 'VOTE_EDIT_CONSENT'
   | 'VOTE_PARTIAL_GROUP_START_CONSENT'
+  | 'START_WORK'
   | 'SUBMIT_PROOF'
   | 'REWORK_PROOF'
   | 'REVIEW_PROOF'
@@ -422,7 +423,7 @@ export interface QuestBoardQuest {
   ownerStudentId: string;
   /** Prototype-only scenario fixtures remain route/test addressable but hidden from discovery. */
   prototypeOnly?: boolean;
-  prototypeScenario?: 'team-forming-demo' | 'team-selection-demo' | 'single-candidate-demo' | 'partial-group-start-demo';
+  prototypeScenario?: 'team-forming-demo' | 'team-selection-demo' | 'single-candidate-demo' | 'partial-group-start-demo' | 'full-group-start-demo';
   /** Canonical state/capability fields are optional for legacy board consumers. */
   status?: QuestStatus;
   conversation?: WorkConversationCapability;

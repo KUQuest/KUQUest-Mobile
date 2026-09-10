@@ -47,6 +47,11 @@ export const PROTOTYPE_SCENARIOS = [
     route: '/quest/partial-group-start-demo',
     label: { en: 'Partial group start', th: 'เริ่มกลุ่มไม่เต็มจำนวน' },
   },
+  {
+    id: 'full-group-start-demo',
+    route: '/quest/full-group-start-demo',
+    label: { en: 'Full group start', th: 'เริ่มกลุ่มครบจำนวน' },
+  },
 ] as const;
 
 export type PrototypeScenarioId = (typeof PROTOTYPE_SCENARIOS)[number]['id'];

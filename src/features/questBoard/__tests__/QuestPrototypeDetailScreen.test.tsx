@@ -173,6 +173,61 @@ describe("Quest prototype detail panels", () => {
     );
   });
 
+  it("requires every full GROUP FCFS Worker to Start Work before showing In progress", async () => {
+    const view = await render(
+      <QuestDetailScreen questId="full-group-start-demo" />
+    );
+
+    expect(view.getByTestId("quest-canonical-status")).toHaveTextContent(
+      "Assigned"
+    );
+    expect(view.getByTestId("quest-start-work-progress")).toHaveTextContent(
+      "0 of 3 Workers started"
+    );
+    expect(view.getByTestId("quest-start-work")).toBeTruthy();
+
+    await fireEvent.press(view.getByTestId("quest-start-work"));
+    expect(view.getByTestId("quest-canonical-status")).toHaveTextContent(
+      "Assigned"
+    );
+    expect(view.getByTestId("quest-start-work-progress")).toHaveTextContent(
+      "1 of 3 Workers started"
+    );
+    expect(view.queryByTestId("quest-start-work")).toBeNull();
+
+    await fireEvent.press(view.getByTestId("quest-detail-prototype-menu-trigger"));
+    await fireEvent.press(
+      view.getByTestId("quest-detail-prototype-menu-persona-demo-worker-2")
+    );
+    await waitFor(() => expect(view.getByTestId("quest-start-work")).toBeTruthy());
+    await fireEvent.press(view.getByTestId("quest-start-work"));
+
+    expect(view.getByTestId("quest-canonical-status")).toHaveTextContent(
+      "Assigned"
+    );
+    expect(view.getByTestId("quest-start-work-progress")).toHaveTextContent(
+      "2 of 3 Workers started"
+    );
+
+    await fireEvent.press(view.getByTestId("quest-detail-prototype-menu-trigger"));
+    await fireEvent.press(
+      view.getByTestId("quest-detail-prototype-menu-persona-demo-worker-3")
+    );
+    await waitFor(() => expect(view.getByTestId("quest-start-work")).toBeTruthy());
+    await fireEvent.press(view.getByTestId("quest-start-work"));
+
+    await waitFor(() =>
+      expect(view.getByTestId("quest-canonical-status")).toHaveTextContent(
+        "In progress"
+      )
+    );
+    expect(view.queryByTestId("quest-start-work")).toBeNull();
+    expect(
+      questFixtureAdapter.getState("full-group-start-demo", "demo-worker-3")
+        ?.assignments.every((item) => item.startedAt)
+    ).toBe(true);
+  });
+
   it("closes the consent sheet and shows In progress after every required voter approves", async () => {
     const view = await render(
       <QuestDetailScreen questId="partial-group-start-demo" />

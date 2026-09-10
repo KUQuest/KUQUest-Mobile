@@ -746,6 +746,7 @@ function PrototypeStatePanels({
   state,
   messages,
   onConsent,
+  onStartWork,
   onSubmitProof,
   onConfirmCompletion,
   onSubmitRework,
@@ -759,6 +760,7 @@ function PrototypeStatePanels({
   state: QuestDetailState;
   messages: QuestBoardMessages;
   onConsent: (approve: boolean) => void;
+  onStartWork: () => void;
   onSubmitProof: () => void;
   onConfirmCompletion: () => void;
   onSubmitRework: (proofId: string) => void;
@@ -771,6 +773,7 @@ function PrototypeStatePanels({
 }) {
   const { quest, assignments, proofs, editConsent, capabilities } = state;
   const status = quest.status;
+  const startedWorkerCount = assignments.filter((item) => item.startedAt).length;
   const publishCard =
     status === QuestStatus.QUEST_DRAFT ? (
       <View className={styles.prototypeCard} testID="quest-publish-check">
@@ -864,6 +867,23 @@ function PrototypeStatePanels({
             {assignments.length} {messages.participants} ·{" "}
             {messages.statusLabel(status)}
           </Text>
+        ) : null}
+        {status === QuestStatus.QUEST_ASSIGNED ? (
+          <>
+            <Text className={styles.prototypeCopy} testID="quest-start-work-progress">
+              {messages.startWorkProgress(startedWorkerCount, assignments.length)}
+            </Text>
+            {capabilities.availableActions.includes("START_WORK") ? (
+              <View className={styles.prototypeActions}>
+                <PrototypeActionButton
+                  label={messages.startWork}
+                  onPress={onStartWork}
+                  primary
+                  testID="quest-start-work"
+                />
+              </View>
+            ) : null}
+          </>
         ) : null}
         {status === QuestStatus.QUEST_COMPLETED &&
         capabilities.availableActions.includes("COMPLETE") ? (
@@ -2040,6 +2060,16 @@ function PrototypeQuestDetailScreen({
         })
       );
   };
+  const handlePrototypeStartWork = () => {
+    if (resolvedQuestId)
+      applyPrototypeResult(
+        questWorkflow.dispatch({
+          type: "START_WORK",
+          questId: resolvedQuestId,
+          workerId: prototypeViewerId,
+        })
+      );
+  };
   const handlePrototypeSubmitProof = () => {
     if (resolvedQuestId)
       applyPrototypeResult(
@@ -2283,15 +2313,18 @@ function PrototypeQuestDetailScreen({
             <Text
               accessibilityLabel={
                 activePrototypeState.quest.status ===
-                QuestStatus.QUEST_ASSIGNED
+                  QuestStatus.QUEST_ASSIGNED &&
+                activePrototypeState.partialStartConsent?.status ===
+                  QuestPartialStartConsentStatus.PARTIAL_START_PENDING
                   ? groupMessages.partialConsentTitle
                   : messages.statusLabel(activePrototypeState.quest.status)
               }
               className={styles.canonicalStatus}
               testID="quest-canonical-status"
             >
-              {activePrototypeState.quest.status ===
-              QuestStatus.QUEST_ASSIGNED
+              {activePrototypeState.quest.status === QuestStatus.QUEST_ASSIGNED &&
+              activePrototypeState.partialStartConsent?.status ===
+                QuestPartialStartConsentStatus.PARTIAL_START_PENDING
                 ? groupMessages.partialConsentTitle
                 : messages.statusLabel(activePrototypeState.quest.status)}
             </Text>
@@ -2498,6 +2531,7 @@ function PrototypeQuestDetailScreen({
             state={activePrototypeState}
             messages={messages}
             onConsent={handlePrototypeConsent}
+            onStartWork={handlePrototypeStartWork}
             onSubmitProof={handlePrototypeSubmitProof}
             onConfirmCompletion={handlePrototypeConfirmCompletion}
             onSubmitRework={handlePrototypeSubmitRework}

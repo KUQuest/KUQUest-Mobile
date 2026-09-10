@@ -133,6 +133,7 @@ export type QuestFixtureAction =
       hirerId?: string;
     }
   | { type: "DIRECT_JOIN"; questId: string; workerId?: string }
+  | { type: "START_WORK"; questId: string; workerId?: string }
   | { type: "APPLY"; questId: string; workerId?: string }
   | {
       type: "WITHDRAW_APPLICATION";
@@ -377,6 +378,11 @@ export interface QuestFixtureAdapter {
     now?: Date
   ): QuestFixtureResult;
   directJoin(
+    questId: string,
+    workerId?: string,
+    now?: Date
+  ): QuestFixtureResult;
+  startWork(
     questId: string,
     workerId?: string,
     now?: Date
@@ -1384,6 +1390,43 @@ function addScenarioStates(
     openPartialStartConsent(partial.state, PROTOTYPE_NOW);
   }
 
+  const full = byId.get("full-group-start-demo");
+  if (full) {
+    full.state.assignments.push(
+      assignment(
+        full.state.quest,
+        DEFAULT_PROTOTYPE_VIEWER_ID,
+        "DIRECT_JOIN"
+      ),
+      assignment(
+        full.state.quest,
+        "demo-worker-2",
+        "DIRECT_JOIN",
+        QuestAssignmentStatus.ASSIGNMENT_ACTIVE,
+        "demo-worker-2"
+      ),
+      assignment(
+        full.state.quest,
+        "demo-worker-3",
+        "DIRECT_JOIN",
+        QuestAssignmentStatus.ASSIGNMENT_ACTIVE,
+        "demo-worker-3"
+      )
+    );
+    full.state.quest.status = QuestStatus.QUEST_ASSIGNED;
+    setActualHeadcount(full.state);
+    full.state.settlement = settlementFor(
+      full.state,
+      full.state.actualHeadcount ?? 0
+    );
+    ensureConversation(full.state, [
+      full.state.quest.hirerId,
+      DEFAULT_PROTOTYPE_VIEWER_ID,
+      "demo-worker-2",
+      "demo-worker-3",
+    ]);
+  }
+
   // Keep the generated scenario records in the same seed list as ordinary fixtures.
   void seeds;
 }
@@ -1872,6 +1915,19 @@ function cancelBeforeStart(
   makeReadOnly(state);
 }
 
+function isFullGroupFirstComeFirstServed(state: QuestDetailState): boolean {
+  return (
+    state.quest.participation === QuestParticipation.GROUP &&
+    state.quest.mode === QuestMode.FIRST_COME_FIRST_SERVED &&
+    countAdmitted(state) >= state.quest.headcount
+  );
+}
+
+function allActiveWorkersStarted(state: QuestDetailState): boolean {
+  const active = activeAssignments(state);
+  return active.length > 0 && active.every((item) => Boolean(item.startedAt));
+}
+
 function transitionToInProgress(state: QuestDetailState): void {
   if (countAdmitted(state) === 0) {
     cancelBeforeStart(state);
@@ -2028,6 +2084,10 @@ function projectLifecycle(state: QuestDetailState, now: Date): void {
   if (!Number.isFinite(startAt) || now.getTime() < startAt) return;
 
   if (state.quest.status === QuestStatus.QUEST_ASSIGNED) {
+    if (isFullGroupFirstComeFirstServed(state)) {
+      if (allActiveWorkersStarted(state)) transitionToInProgress(state);
+      return;
+    }
     transitionToInProgress(state);
     return;
   }
@@ -2040,7 +2100,11 @@ function projectLifecycle(state: QuestDetailState, now: Date): void {
     state.quest.mode === QuestMode.FIRST_COME_FIRST_SERVED
   ) {
     if (admitted === 0) cancelBeforeStart(state);
-    else if (admitted >= state.quest.headcount) transitionToInProgress(state);
+    else if (admitted >= state.quest.headcount) {
+      state.quest.status = QuestStatus.QUEST_ASSIGNED;
+      setActualHeadcount(state, admitted);
+      state.settlement = settlementFor(state, admitted);
+    }
     else {
       openPartialStartConsent(state);
       const openedConsent = state.partialStartConsent;
@@ -2305,7 +2369,8 @@ function eligibleCandidateApplications(
 
 function actionForViewer(
   state: QuestDetailState,
-  viewerId: string
+  viewerId: string,
+  now: Date
 ): QuestAction[] {
   const actions: QuestAction[] = [];
   const quest = state.quest;
@@ -2398,6 +2463,24 @@ function actionForViewer(
   )
     actions.push("VOTE_PARTIAL_GROUP_START_CONSENT");
 
+  const ownActiveAssignment = state.assignments.find(
+    (item) =>
+      item.workerId === viewerId &&
+      item.status === QuestAssignmentStatus.ASSIGNMENT_ACTIVE
+  );
+  const startAt = new Date(quest.startAt).getTime();
+  const dueAt = new Date(quest.deadlineAt).getTime();
+  if (
+    ownActiveAssignment &&
+    quest.status === QuestStatus.QUEST_ASSIGNED &&
+    isFullGroupFirstComeFirstServed(state) &&
+    !ownActiveAssignment.startedAt &&
+    Number.isFinite(startAt) &&
+    now.getTime() >= startAt &&
+    (!Number.isFinite(dueAt) || now.getTime() < dueAt)
+  )
+    actions.push("START_WORK");
+
   if (
     active &&
     quest.status === QuestStatus.QUEST_IN_PROGRESS &&
@@ -2477,7 +2560,7 @@ function stateForViewer(
     });
   }
   syncLegacyTeamProjection(result, viewerId);
-  actionForViewer(result, viewerId);
+  actionForViewer(result, viewerId, now);
   if (result.quest.status === QuestStatus.QUEST_DRAFT)
     result.publishCheck = calculatePublishCheck(
       result.quest,
@@ -3409,6 +3492,90 @@ export function createQuestFixtureAdapter(
         next.settlement = settlementFor(next, countAdmitted(next));
       }
       ensureConversation(next, [next.quest.hirerId, workerId]);
+      commit(next);
+      return success(next, workerId, currentTime);
+    },
+    startWork: (
+      questId,
+      workerId = DEFAULT_PROTOTYPE_VIEWER_ID,
+      now = baseNow
+    ) => {
+      const current = getInternal(questId);
+      const currentTime = at(now);
+      if (!current) return notFound();
+      const projected = currentWithProjection(current, currentTime);
+      if (
+        projected.quest.participation !== QuestParticipation.GROUP ||
+        projected.quest.mode !== QuestMode.FIRST_COME_FIRST_SERVED ||
+        !isFullGroupFirstComeFirstServed(projected)
+      )
+        return failure(
+          projected,
+          "INVALID_MODE",
+          "Only a full GROUP FCFS Quest uses individual Start Work actions.",
+          workerId,
+          currentTime
+        );
+      if (projected.quest.status !== QuestStatus.QUEST_ASSIGNED)
+        return failure(
+          projected,
+          "INVALID_STATUS",
+          "This Quest is not waiting for Workers to Start Work.",
+          workerId,
+          currentTime
+        );
+      const startAt = new Date(projected.quest.startAt).getTime();
+      const dueAt = new Date(projected.quest.deadlineAt).getTime();
+      if (
+        !Number.isFinite(startAt) ||
+        currentTime.getTime() < startAt ||
+        (Number.isFinite(dueAt) && currentTime.getTime() >= dueAt)
+      )
+        return failure(
+          projected,
+          "INVALID_STATUS",
+          "Start Work is only available during the Quest work window.",
+          workerId,
+          currentTime
+        );
+      const assignmentItem = projected.assignments.find(
+        (item) =>
+          item.workerId === workerId &&
+          item.status === QuestAssignmentStatus.ASSIGNMENT_ACTIVE
+      );
+      if (!assignmentItem)
+        return failure(
+          projected,
+          "FORBIDDEN",
+          "Only an Active Worker can Start Work.",
+          workerId,
+          currentTime
+        );
+      if (assignmentItem.startedAt)
+        return failure(
+          projected,
+          "DUPLICATE_ACTION",
+          "You have already Started Work.",
+          workerId,
+          currentTime
+        );
+
+      const next = clone(projected);
+      const nextAssignment = next.assignments.find(
+        (item) =>
+          item.workerId === workerId &&
+          item.status === QuestAssignmentStatus.ASSIGNMENT_ACTIVE
+      );
+      if (!nextAssignment)
+        return failure(
+          projected,
+          "FORBIDDEN",
+          "Only an Active Worker can Start Work.",
+          workerId,
+          currentTime
+        );
+      nextAssignment.startedAt = currentTime.toISOString();
+      if (allActiveWorkersStarted(next)) transitionToInProgress(next);
       commit(next);
       return success(next, workerId, currentTime);
     },
@@ -5063,6 +5230,8 @@ export function createQuestFixtureAdapter(
           );
         case "DIRECT_JOIN":
           return adapter.joinDirect(action.questId, action.workerId, now);
+        case "START_WORK":
+          return adapter.startWork(action.questId, action.workerId, now);
         case "APPLY":
           return adapter.applyCandidate(action.questId, action.workerId, now);
         case "WITHDRAW_APPLICATION":

@@ -69,6 +69,8 @@ export interface QuestBoardMessages {
   schedule: string;
   scheduleDescription: string;
   startWork: string;
+  startWorkRequired: string;
+  startWorkProgress: (started: number, required: number) => string;
   workWindow: string;
   finishBy: string;
   finishByDescription: string;
@@ -272,6 +274,8 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     schedule: 'Schedule',
     scheduleDescription: 'Plan the work window and deadline.',
     startWork: 'Start work',
+    startWorkRequired: 'Every Worker must start work before the Quest can begin.',
+    startWorkProgress: (started, required) => `${started} of ${required} Workers started`,
     workWindow: 'Work window',
     finishBy: 'Finish by',
     finishByDescription: 'Complete the Quest by this date.',
@@ -484,6 +488,8 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     schedule: 'เวลา',
     scheduleDescription: 'ดูช่วงเวลาทำงานและกำหนดส่งได้ที่นี่',
     startWork: 'เริ่มงาน',
+    startWorkRequired: 'ผู้ทำงานทุกคนต้องเริ่มงานก่อนเควสต์จะเริ่มได้',
+    startWorkProgress: (started, required) => `เริ่มงานแล้ว ${started} จาก ${required} คน`,
     workWindow: 'ช่วงเวลาทำงาน',
     finishBy: 'ส่งงานภายใน',
     finishByDescription: 'ทำเควสต์ให้เสร็จภายในวันนี้',

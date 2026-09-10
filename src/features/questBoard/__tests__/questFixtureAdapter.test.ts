@@ -152,7 +152,7 @@ describe('Quest fixture adapter', () => {
     const atStart = created.getState(
       'full-group-start-demo',
       DEFAULT_PROTOTYPE_VIEWER_ID,
-      new Date('2026-08-20T10:00:00.000Z')
+      new Date('2026-08-11T10:00:00.000Z')
     );
 
     expect(atStart?.quest.participation).toBe('GROUP');
@@ -161,6 +161,64 @@ describe('Quest fixture adapter', () => {
     expect(atStart?.assignments).toHaveLength(3);
     expect(atStart?.assignments.every((item) => item.startedAt === undefined)).toBe(true);
     expect(atStart?.capabilities.availableActions).toContain('START_WORK');
+  });
+
+  it('keeps a full GROUP FCFS Quest assigned while only some Workers have started', () => {
+    const created = createQuestFixtureAdapter({ now: fixedNow });
+    const startTime = new Date('2026-08-11T10:00:00.000Z');
+
+    const first = created.startWork(
+      'full-group-start-demo',
+      DEFAULT_PROTOTYPE_VIEWER_ID,
+      startTime
+    );
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+
+    expect(first.state.quest.status).toBe(QuestStatus.QUEST_ASSIGNED);
+    expect(first.state.assignments.find((item) => item.workerId === DEFAULT_PROTOTYPE_VIEWER_ID)?.startedAt).toBe(
+      startTime.toISOString()
+    );
+    expect(first.state.assignments.filter((item) => item.startedAt)).toHaveLength(1);
+    expect(first.state.capabilities.availableActions).not.toContain('START_WORK');
+    expect(
+      created.getState('full-group-start-demo', 'demo-worker-2', startTime)?.capabilities.availableActions
+    ).toContain('START_WORK');
+  });
+
+  it('enters progress only after every active Worker starts a full GROUP FCFS Quest', () => {
+    const created = createQuestFixtureAdapter({ now: fixedNow });
+    const startTime = new Date('2026-08-11T10:00:00.000Z');
+
+    const first = created.startWork(
+      'full-group-start-demo',
+      DEFAULT_PROTOTYPE_VIEWER_ID,
+      startTime
+    );
+    const second = created.startWork(
+      'full-group-start-demo',
+      'demo-worker-2',
+      new Date(startTime.getTime() + 1_000)
+    );
+
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(second.state.quest.status).toBe(QuestStatus.QUEST_ASSIGNED);
+
+    const final = created.startWork(
+      'full-group-start-demo',
+      'demo-worker-3',
+      new Date(startTime.getTime() + 2_000)
+    );
+
+    expect(final.ok).toBe(true);
+    if (final.ok) {
+      expect(final.state.quest.status).toBe(QuestStatus.QUEST_IN_PROGRESS);
+      expect(final.state.assignments).toHaveLength(3);
+      expect(final.state.assignments.every((item) => item.startedAt)).toBe(true);
+      expect(final.state.capabilities.availableActions).not.toContain('START_WORK');
+    }
   });
 
   it('enters the partial-start demo directly with a frozen pending roster and voter capabilities', () => {
