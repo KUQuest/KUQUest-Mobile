@@ -12,6 +12,12 @@ jest.mock('react-native/Libraries/Modal/Modal', () => {
   };
 });
 
+jest.mock('@react-native-community/datetimepicker', () => ({
+  __esModule: true,
+  default: (props: Record<string, unknown>) =>
+    mockReact.createElement('DateTimePickerMock', props),
+}));
+
 
 jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
   __esModule: true,
@@ -161,6 +167,19 @@ describe('CreateQuestScreen', () => {
 
     expect(view.getByTestId('create-quest-start-datetime')).toBeTruthy();
     expect(view.getByTestId('create-quest-deadline-datetime')).toBeTruthy();
+  });
+
+  it('uses the current DateTimePicker callback API', async () => {
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
+
+    await fireEvent.press(view.getByTestId('create-quest-logistics-toggle'));
+    await fireEvent.press(view.getByTestId('create-quest-start-datetime'));
+
+    const picker = view.getByTestId('create-quest-date-picker');
+    expect(picker.props.onValueChange).toEqual(expect.any(Function));
+    expect(picker.props.onDismiss).toEqual(expect.any(Function));
+    expect(picker.props.onNeutralButtonPress).toEqual(expect.any(Function));
+    expect(picker.props.onChange).toBeUndefined();
   });
 
   it('aligns the fixed Single headcount value like the other form fields', async () => {

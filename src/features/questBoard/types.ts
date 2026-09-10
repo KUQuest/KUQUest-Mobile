@@ -449,6 +449,9 @@ export interface QuestBoardFilter {
   participation: QuestBoardParticipation | null;
   rewardMin: number | null;
   rewardMax: number | null;
+  maxDurationMinutes: number | null;
+  startFrom: string | null;
+  startTo: string | null;
   deadline: DeadlineFilter | null;
   startTimeBuckets: StartTimeBucket[];
   locationModes: QuestLocationMode[];
@@ -466,6 +469,9 @@ export const emptyQuestBoardFilter: QuestBoardFilter = {
   participation: null,
   rewardMin: null,
   rewardMax: null,
+  maxDurationMinutes: null,
+  startFrom: null,
+  startTo: null,
   deadline: null,
   startTimeBuckets: [],
   locationModes: [],

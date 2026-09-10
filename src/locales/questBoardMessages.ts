@@ -55,6 +55,12 @@ export interface QuestBoardMessages {
   rewardInvalid: string;
   rewardSummary: (minimum: number | null, maximum: number | null) => string;
   noLimit: string;
+  duration: string;
+  maxDuration: string;
+  startWindow: string;
+  startFrom: string;
+  startTo: string;
+  scheduleInvalid: string;
   deadline: string;
   startTime: string;
   morning: string;
@@ -252,6 +258,12 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     rewardInvalid: 'Enter valid non-negative baht bounds with up to two decimal places; minimum must not exceed maximum.',
     rewardSummary: (minimum, maximum) => minimum !== null && maximum !== null ? `฿${minimum}–฿${maximum}` : minimum !== null ? `From ฿${minimum}` : `Up to ฿${maximum}`,
     noLimit: 'No limit',
+    duration: 'Duration',
+    maxDuration: 'Max duration (minutes)',
+    startWindow: 'Start window',
+    startFrom: 'Start from (+07:00)',
+    startTo: 'Start to (+07:00)',
+    scheduleInvalid: 'Enter valid +07:00 schedule values in ascending order.',
     deadline: 'Deadline',
     startTime: 'Start time',
     morning: 'Morning',
@@ -458,6 +470,12 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     rewardInvalid: 'กรอกค่าตอบแทนที่ไม่ติดลบได้ไม่เกินทศนิยมสองตำแหน่ง และค่าขั้นต่ำต้องไม่มากกว่าค่าสูงสุด',
     rewardSummary: (minimum, maximum) => minimum !== null && maximum !== null ? `฿${minimum}–฿${maximum}` : minimum !== null ? `ตั้งแต่ ฿${minimum}` : `ไม่เกิน ฿${maximum}`,
     noLimit: 'ไม่จำกัด',
+    duration: 'ระยะเวลา',
+    maxDuration: 'ระยะเวลาสูงสุด (นาที)',
+    startWindow: 'ช่วงเวลาเริ่มต้น',
+    startFrom: 'เริ่มตั้งแต่ (+07:00)',
+    startTo: 'เริ่มถึง (+07:00)',
+    scheduleInvalid: 'กรุณากรอกเวลา +07:00 ให้ถูกต้องและเรียงจากน้อยไปมาก',
     deadline: 'กำหนดส่ง',
     startTime: 'เวลาเริ่มต้น',
     morning: 'ช่วงเช้า',

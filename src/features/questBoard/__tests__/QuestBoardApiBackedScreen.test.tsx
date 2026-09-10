@@ -166,12 +166,27 @@ describe("API-backed Quest Board screen", () => {
     await fireEvent.press(view.getByTestId(`quest-filter-tag-${item.tag.id}`));
     await fireEvent.press(view.getByTestId("quest-filter-mode-candidate"));
     await fireEvent.press(view.getByTestId("quest-filter-participation-group"));
+    await fireEvent.changeText(
+      view.getByTestId("quest-filter-max-duration"),
+      "90"
+    );
+    await fireEvent.changeText(
+      view.getByTestId("quest-filter-start-from"),
+      "2026-09-30T09:00:00.000+07:00"
+    );
+    await fireEvent.changeText(
+      view.getByTestId("quest-filter-start-to"),
+      "2026-10-01T09:00:00.000+07:00"
+    );
     await fireEvent.press(view.getByTestId("apply-quest-filters"));
 
     await waitFor(() => expect(listQuests).toHaveBeenLastCalledWith({
       tagId: item.tag.id,
       mode: "CANDIDATE",
       participation: "GROUP",
+      maxDurationMinutes: 90,
+      startFrom: "2026-09-30T09:00:00.000+07:00",
+      startTo: "2026-10-01T09:00:00.000+07:00",
     }));
   });
 

@@ -148,6 +148,15 @@ function getValidDraftHeadcount(draft: Pick<QuestDraft, 'participation' | 'headc
   return Number.isSafeInteger(headcount) && headcount > 0 ? headcount : null;
 }
 
+function getDraftDateTime(dateValue: string, timeValue: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue) || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(timeValue)) {
+    return null;
+  }
+
+  const timestamp = Date.parse(`${dateValue}T${timeValue}:00Z`);
+  return Number.isNaN(timestamp) ? null : timestamp;
+}
+
 export function getDraftRewardSatang(draft: Pick<QuestDraft, 'wage'>): number | null {
   const value = parseSatangInput(draft.wage);
   return value !== null && value <= MAX_REWARD_THB * 100 ? value : null;
@@ -197,13 +206,19 @@ export function calculateQuestEscrow(
 export function getQuestPublishCheck(draft: QuestDraft, feeRateBasisPoints = DEFAULT_PLATFORM_FEE_BASIS_POINTS): QuestPublishCheck {
   const headcount = getValidDraftHeadcount(draft);
   const payload = toQuestDraftPayload(draft);
+  const startAt = getDraftDateTime(payload.startDate, payload.startTime);
+  const endAt = getDraftDateTime(payload.startDate, payload.endTime);
+  const deadlineAt = getDraftDateTime(payload.deadline, payload.endTime);
   const blockers: string[] = [];
   const warnings: string[] = [];
   if (!payload.title) blockers.push('TITLE_REQUIRED');
+  if (!payload.tag.trim()) blockers.push('TAG_REQUIRED');
   if (!payload.description) blockers.push('DESCRIPTION_REQUIRED');
   if (!payload.conditions) blockers.push('COMPLETION_CRITERIA_REQUIRED');
   if (!payload.startDate || !payload.startTime) blockers.push('START_REQUIRED');
   if (!payload.deadline || !payload.endTime) blockers.push('DEADLINE_REQUIRED');
+  if (startAt !== null && (endAt === null || endAt <= startAt)) blockers.push('TIME_ORDER_INVALID');
+  if (startAt !== null && (deadlineAt === null || deadlineAt <= startAt)) blockers.push('DEADLINE_REQUIRED');
   if (draft.locationMode === 'ON_CAMPUS' && !payload.location.label) blockers.push('LOCATION_REQUIRED');
   if (getDraftRewardSatang(draft) === null) blockers.push('REWARD_INVALID');
   if (draft.participation === 'GROUP' && headcount === null) blockers.push('HEADCOUNT_INVALID');

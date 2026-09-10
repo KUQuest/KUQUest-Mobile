@@ -57,6 +57,7 @@ describe('Create Quest model', () => {
     const publishableGroupDraft = {
       ...initialDraft,
       title: 'Quest',
+      tag: 'cleaning',
       description: 'Do work',
       conditions: 'Work is complete',
       startDate: '2099-08-26',
@@ -82,6 +83,20 @@ describe('Create Quest model', () => {
       expect(check.blockers).not.toContain('HEADCOUNT_INVALID');
       expect(check.canPublish).toBe(true);
       expect(check.escrow).toMatchObject({ headcount: 3, rewardPoolSatang: 75000 });
+    });
+
+    test('blocks a schedule whose end is not after its start', () => {
+      const check = getQuestPublishCheck({
+        ...publishableGroupDraft,
+        tag: 'cleaning',
+        deadline: '2099-08-26',
+        startTime: '09:00',
+        endTime: '08:00',
+        headcount: '3',
+      });
+
+      expect(check.blockers).toContain('TIME_ORDER_INVALID');
+      expect(check.canPublish).toBe(false);
     });
 
     test('keeps the SINGLE headcount invariant at one', () => {
@@ -112,7 +127,7 @@ describe('Create Quest model', () => {
     });
 
     test('allows an image-free publish with a warning when required fields are valid', () => {
-      const check = getQuestPublishCheck({ ...initialDraft, title: 'Quest', description: 'Do work', conditions: 'Work is complete', startDate: '2099-08-26', deadline: '2099-08-27', startTime: '09:00', endTime: '12:00', location: 'Activity building', wage: '250' });
+      const check = getQuestPublishCheck({ ...initialDraft, title: 'Quest', tag: 'cleaning', description: 'Do work', conditions: 'Work is complete', startDate: '2099-08-26', deadline: '2099-08-27', startTime: '09:00', endTime: '12:00', location: 'Activity building', wage: '250' });
       expect(check.canPublish).toBe(true);
       expect(check.blockers).toEqual([]);
       expect(check.warnings).toContain('NO_IMAGES');

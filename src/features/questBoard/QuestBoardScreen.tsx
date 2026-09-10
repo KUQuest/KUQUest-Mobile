@@ -438,6 +438,8 @@ function getActiveFilterCount(filter: QuestBoardFilter): number {
     Number(filter.mode !== null) +
     Number(filter.participation !== null) +
     Number(filter.rewardMin !== null || filter.rewardMax !== null) +
+    Number(filter.maxDurationMinutes !== null) +
+    Number(filter.startFrom !== null || filter.startTo !== null) +
     Number(filter.deadline !== null) +
     Number(filter.startTimeBuckets.length > 0) +
     Number(filter.locationModes.length > 0)
@@ -463,6 +465,25 @@ function parseRewardBound(value: string): number | null | undefined {
   return Number.isFinite(parsed) && parsed >= 0 && parsed <= 700_000
     ? parsed
     : undefined;
+}
+
+function formatOptionalValue(value: string | null): string {
+  return value ?? "";
+}
+
+function parseDuration(value: string): number | null | undefined {
+  if (value === "") return null;
+  if (!/^\d+$/.test(value)) return undefined;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function parseScheduleBound(value: string): string | null | undefined {
+  if (value === "") return null;
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{3})?)?\+07:00$/.test(value)) {
+    return undefined;
+  }
+  return Number.isNaN(Date.parse(value)) ? undefined : value;
 }
 
 function Option({
@@ -641,6 +662,15 @@ function QuestBoardFilterSheet({
   const insets = useSafeAreaInsets();
   const [minimumText, setMinimumText] = useState(formatBound(filter.rewardMin));
   const [maximumText, setMaximumText] = useState(formatBound(filter.rewardMax));
+  const [durationText, setDurationText] = useState(
+    formatBound(filter.maxDurationMinutes)
+  );
+  const [startFromText, setStartFromText] = useState(
+    formatOptionalValue(filter.startFrom)
+  );
+  const [startToText, setStartToText] = useState(
+    formatOptionalValue(filter.startTo)
+  );
   const [tagQuery, setTagQuery] = useState("");
   const minimum = parseRewardBound(minimumText);
   const maximum = parseRewardBound(maximumText);
@@ -648,6 +678,16 @@ function QuestBoardFilterSheet({
     minimum !== undefined &&
     maximum !== undefined &&
     (minimum === null || maximum === null || minimum <= maximum);
+  const duration = parseDuration(durationText);
+  const startFrom = parseScheduleBound(startFromText);
+  const startTo = parseScheduleBound(startToText);
+  const scheduleBoundsValid =
+    startFrom !== undefined &&
+    startTo !== undefined &&
+    (startFrom === null ||
+      startTo === null ||
+      Date.parse(startFrom) <= Date.parse(startTo));
+  const apiFiltersValid = duration !== undefined && scheduleBoundsValid;
   const activeFilterCount = getActiveFilterCount(filter);
   const displayedTags = [...availableTags].sort((left, right) =>
     left.name.localeCompare(right.name, undefined, { sensitivity: "base" })
@@ -676,6 +716,31 @@ function QuestBoardFilterSheet({
     onChange({ ...filter, selectedTag: tag });
     setTagQuery("");
   };
+
+  const updateApiFilters = (
+    nextDurationText: string,
+    nextStartFromText: string,
+    nextStartToText: string
+  ) => {
+    const nextDuration = parseDuration(nextDurationText);
+    const nextStartFrom = parseScheduleBound(nextStartFromText);
+    const nextStartTo = parseScheduleBound(nextStartToText);
+    if (
+      nextDuration !== undefined &&
+      nextStartFrom !== undefined &&
+      nextStartTo !== undefined &&
+      (nextStartFrom === null ||
+        nextStartTo === null ||
+        Date.parse(nextStartFrom) <= Date.parse(nextStartTo))
+    ) {
+      onChange({
+        ...filter,
+        maxDurationMinutes: nextDuration,
+        startFrom: nextStartFrom,
+        startTo: nextStartTo,
+      });
+    }
+  };
   const removeTag = () => onChange({ ...filter, selectedTag: null });
   const toggleStartTime = (bucket: StartTimeBucket) =>
     onChange({
@@ -694,6 +759,9 @@ function QuestBoardFilterSheet({
   const clearDraft = () => {
     setMinimumText("");
     setMaximumText("");
+    setDurationText("");
+    setStartFromText("");
+    setStartToText("");
     onChange({ ...emptyQuestBoardFilter, query: filter.query });
   };
 
@@ -923,6 +991,64 @@ function QuestBoardFilterSheet({
                 </Text>
               ) : null}
             </View>
+            {!fixtureOnly ? (
+              <>
+                <View className={styles.sheetSection}>
+                  <Text className={styles.sheetSectionTitle}>
+                    {messages.duration}
+                  </Text>
+                  <TextInput
+                    accessibilityLabel={messages.maxDuration}
+                    keyboardType="number-pad"
+                    onChangeText={(value) => {
+                      setDurationText(value);
+                      updateApiFilters(value, startFromText, startToText);
+                    }}
+                    placeholder={messages.noLimit}
+                    placeholderTextColor={colors.textFaint}
+                    value={durationText}
+                    className={styles.rewardInput}
+                    testID="quest-filter-max-duration"
+                  />
+                </View>
+                <View className={styles.sheetSection}>
+                  <Text className={styles.sheetSectionTitle}>
+                    {messages.startWindow}
+                  </Text>
+                  <TextInput
+                    accessibilityLabel={messages.startFrom}
+                    autoCapitalize="none"
+                    onChangeText={(value) => {
+                      setStartFromText(value);
+                      updateApiFilters(durationText, value, startToText);
+                    }}
+                    placeholder={messages.startFrom}
+                    placeholderTextColor={colors.textFaint}
+                    value={startFromText}
+                    className={styles.rewardInput}
+                    testID="quest-filter-start-from"
+                  />
+                  <TextInput
+                    accessibilityLabel={messages.startTo}
+                    autoCapitalize="none"
+                    onChangeText={(value) => {
+                      setStartToText(value);
+                      updateApiFilters(durationText, startFromText, value);
+                    }}
+                    placeholder={messages.startTo}
+                    placeholderTextColor={colors.textFaint}
+                    value={startToText}
+                    className={styles.rewardInput}
+                    testID="quest-filter-start-to"
+                  />
+                  {!apiFiltersValid ? (
+                    <Text className={styles.rewardError}>
+                      {messages.scheduleInvalid}
+                    </Text>
+                  ) : null}
+                </View>
+              </>
+            ) : null}
             {fixtureOnly ? <View className={styles.sheetSection}>
               <Text className={styles.sheetSectionTitle}>
                 {messages.deadline}
@@ -1002,14 +1128,17 @@ function QuestBoardFilterSheet({
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              disabled={!rewardBoundsValid}
-              accessibilityState={{ disabled: !rewardBoundsValid }}
+              disabled={!rewardBoundsValid || !apiFiltersValid}
+              accessibilityState={{
+                disabled: !rewardBoundsValid || !apiFiltersValid,
+              }}
               onPress={() => {
-                if (rewardBoundsValid) onApply();
+                if (rewardBoundsValid && apiFiltersValid) onApply();
               }}
               className={cn(
                 styles.primaryAction,
-                !rewardBoundsValid && styles.primaryActionDisabled
+                (!rewardBoundsValid || !apiFiltersValid) &&
+                  styles.primaryActionDisabled
               )}
               testID="apply-quest-filters"
             >
@@ -1154,13 +1283,21 @@ export default function QuestBoardScreen({
     if (filters.participation) nextQuery.participation = filters.participation;
     if (filters.rewardMin !== null) nextQuery.minQuestReward = filters.rewardMin;
     if (filters.rewardMax !== null) nextQuery.maxQuestReward = filters.rewardMax;
+    if (filters.maxDurationMinutes !== null) {
+      nextQuery.maxDurationMinutes = filters.maxDurationMinutes;
+    }
+    if (filters.startFrom !== null) nextQuery.startFrom = filters.startFrom;
+    if (filters.startTo !== null) nextQuery.startTo = filters.startTo;
     return nextQuery;
   }, [
+    filters.maxDurationMinutes,
     filters.mode,
     filters.participation,
     filters.rewardMax,
     filters.rewardMin,
     filters.selectedTag,
+    filters.startFrom,
+    filters.startTo,
     query,
   ]);
 
