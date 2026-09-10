@@ -135,9 +135,9 @@ function participationLabel(
   messages: QuestBoardMessages
 ): string {
   const participation =
-    quest.participationMode === "team" ? messages.team : messages.singlePerson;
+    quest.participation === "GROUP" ? messages.team : messages.singlePerson;
   const mode =
-    quest.candidateMode === "CANDIDATE"
+    quest.mode === "CANDIDATE"
       ? messages.applyForReview
       : messages.firstCome;
   return `${participation} · ${mode}`;
@@ -883,7 +883,7 @@ function QuestBoardFilterSheet({
               ) : null}
             </View>
             <View className={styles.sheetSection}>
-              <Text className={styles.sheetSectionTitle}>{messages.candidateMode}</Text>
+              <Text className={styles.sheetSectionTitle}>{messages.selectionMode}</Text>
               <View className={styles.optionList}>
                 <Option
                   accessibilityRole="radio"

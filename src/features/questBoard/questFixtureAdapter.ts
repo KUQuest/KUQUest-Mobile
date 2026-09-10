@@ -8,7 +8,7 @@ import type {
 import {
   QuestApplicationStatus,
   QuestAssignmentStatus,
-  QuestCandidateMode,
+  QuestMode,
   QuestEditRequestStatus,
   QuestEditResponseStatus,
   QuestInvitationStatus,
@@ -20,7 +20,6 @@ import {
   QuestTeamStatus,
   formatSatang,
   isValidSatang,
-  type CanonicalQuestCandidateMode,
   type QuestAction,
   type QuestApplication,
   type QuestAssignment,
@@ -117,9 +116,9 @@ export interface QuestFixtureCreateInput {
   startTime: string;
   endTime: string;
   location: QuestLocation;
-  candidateMode: CanonicalQuestCandidateMode;
-  /** `SOLO` is the create payload vocabulary; `SINGLE` is accepted for callers using the adapter vocabulary. */
-  participation: "SOLO" | "SINGLE" | "GROUP";
+  mode: QuestMode;
+  /** The create payload uses canonical participation values. */
+  participation: "SINGLE" | "GROUP";
   headcount: number;
   rewardSatang: number;
   imageUris: string[];
@@ -968,8 +967,7 @@ function createPayloadBlockers(payload: QuestFixtureCreateInput): string[] {
   const deadlineAt = parseCreateDateTime(record.deadline, record.endTime);
   const participation = record.participation;
   const headcount = record.headcount;
-  const isSingle =
-    participation === "SOLO" || participation === QuestParticipation.SINGLE;
+  const isSingle = participation === QuestParticipation.SINGLE;
 
   if (!title) blockers.push("TITLE_REQUIRED");
   if (!tag) blockers.push("TAG_REQUIRED");
@@ -999,8 +997,8 @@ function createPayloadBlockers(payload: QuestFixtureCreateInput): string[] {
   )
     blockers.push("LOCATION_REQUIRED");
   if (
-    record.candidateMode !== QuestCandidateMode.NO_CANDIDATE &&
-    record.candidateMode !== QuestCandidateMode.CANDIDATE
+    record.mode !== QuestMode.FIRST_COME_FIRST_SERVED &&
+    record.mode !== QuestMode.CANDIDATE
   )
     blockers.push("CANDIDATE_MODE_INVALID");
   if (!isSingle && participation !== QuestParticipation.GROUP)
@@ -1040,10 +1038,7 @@ function buildCreatedQuestState(
   if (!startAt || !endAt || !deadlineAt)
     return { blockers: ["START_REQUIRED", "DEADLINE_REQUIRED"] };
   const headcount =
-    payload.participation === "SOLO" ||
-    payload.participation === QuestParticipation.SINGLE
-      ? 1
-      : payload.headcount;
+    payload.participation === QuestParticipation.SINGLE ? 1 : payload.headcount;
   const locationLabel =
     payload.location.label === null ? null : payload.location.label.trim();
   const fixture: QuestBoardQuest = {
@@ -1063,8 +1058,8 @@ function buildCreatedQuestState(
     postedAt: now.toISOString(),
     location: locationLabel ?? "Online",
     locationMode: locationLabel === null ? "online" : "on-campus",
-    participationMode: payload.participation === "GROUP" ? "team" : "single",
-    candidateMode: payload.candidateMode,
+    participation: payload.participation === "GROUP" ? "GROUP" : "SINGLE",
+    mode: payload.mode,
     creator: { name: hirerId },
     imageUris: [...payload.imageUris].slice(0, 3),
     studentInterestMatch: false,
@@ -1078,12 +1073,12 @@ function buildCreatedQuestState(
   return { state };
 }
 
-function canonicalCandidateMode(
-  value: QuestBoardQuest["candidateMode"]
-): CanonicalQuestCandidateMode {
-  return value === QuestCandidateMode.NO_CANDIDATE
-    ? QuestCandidateMode.NO_CANDIDATE
-    : QuestCandidateMode.CANDIDATE;
+function canonicalQuestMode(
+  value: QuestBoardQuest["mode"]
+): QuestMode {
+  return value === QuestMode.FIRST_COME_FIRST_SERVED
+    ? QuestMode.FIRST_COME_FIRST_SERVED
+    : QuestMode.CANDIDATE;
 }
 
 function canonicalQuest(
@@ -1105,10 +1100,10 @@ function canonicalQuest(
       label: fixture.locationMode === "online" ? null : fixture.location,
     },
     participation:
-      fixture.participationMode === "team"
+      fixture.participation === "GROUP"
         ? QuestParticipation.GROUP
         : QuestParticipation.SINGLE,
-    candidateMode: canonicalCandidateMode(fixture.candidateMode),
+    mode: canonicalQuestMode(fixture.mode),
     headcount: fixture.headcount,
     tags: [...fixture.tags],
     startAt: dateTime(fixture.startDate, times.start),
@@ -1171,8 +1166,8 @@ function createDraftState(): QuestDetailState {
     postedAt: now.toISOString(),
     location: "Student activity building",
     locationMode: "on-campus",
-    participationMode: "team",
-    candidateMode: "CANDIDATE",
+    participation: "GROUP",
+    mode: "CANDIDATE",
     creator: { name: "Demo Hirer" },
     imageUris: [],
     studentInterestMatch: false,
@@ -1192,11 +1187,8 @@ function assignment(
 ): QuestAssignment {
   const startedStatuses: QuestStatusValue[] = [
     QuestStatus.QUEST_IN_PROGRESS,
-    QuestStatus.QUEST_SUBMITTED,
-    QuestStatus.QUEST_APPROVED,
-    QuestStatus.QUEST_REWORK,
     QuestStatus.QUEST_COMPLETED,
-    QuestStatus.QUEST_DISPUTED,
+    QuestStatus.QUEST_FAILED,
   ];
   return {
     id: `fixture-assignment-${quest.id}-${suffix}`,
@@ -1403,12 +1395,12 @@ function seedStates(): FixtureSeed[] {
     "print-documents": QuestStatus.QUEST_OPEN,
     "buy-lunch": QuestStatus.QUEST_ASSIGNED,
     "run-together": QuestStatus.QUEST_OPEN,
-    "move-club-equipment": QuestStatus.QUEST_REWORK,
-    "print-event-posters": QuestStatus.QUEST_SUBMITTED,
+    "move-club-equipment": QuestStatus.QUEST_IN_PROGRESS,
+    "print-event-posters": QuestStatus.QUEST_IN_PROGRESS,
     "clean-study-table": QuestStatus.QUEST_COMPLETED,
     "clean-bike": QuestStatus.QUEST_CANCELLED,
-    "clean-fridge": QuestStatus.QUEST_DISPUTED,
-    "walk-together": QuestStatus.QUEST_AWAITING_EDIT_CONSENT,
+    "clean-fridge": QuestStatus.QUEST_FAILED,
+    "walk-together": QuestStatus.QUEST_ASSIGNED,
     "play-badminton": QuestStatus.QUEST_OPEN,
   };
   const seeds = questFixtures.map((fixture) => ({
@@ -1516,7 +1508,7 @@ function seedStates(): FixtureSeed[] {
     proof(
       rework.state.quest,
       reworkTeam.id,
-      QuestProofStatus.PROOF_REJECTED,
+      QuestProofStatus.PROOF_NOT_APPROVED,
       1,
       "Please include all equipment in one clear set of photos.",
       reworkTeam.id
@@ -1583,7 +1575,7 @@ function seedStates(): FixtureSeed[] {
     proof(
       disputed.state.quest,
       "demo-worker-3",
-      QuestProofStatus.PROOF_REJECTED,
+      QuestProofStatus.PROOF_NOT_APPROVED,
       DEFAULT_REWORK_LIMIT,
       "The submitted proof did not show the completed Quest."
     )
@@ -1652,7 +1644,7 @@ function seedStates(): FixtureSeed[] {
       undefined,
       QuestApplicationStatus.APPLICATION_APPLIED,
       submittedTeam.id,
-      "team"
+      "GROUP"
     )
   );
 
@@ -1678,8 +1670,8 @@ function seedStates(): FixtureSeed[] {
     postedAt: PROTOTYPE_NOW,
     location: "Online",
     locationMode: "online",
-    participationMode: "single",
-    candidateMode: "NO_CANDIDATE",
+    participation: "SINGLE",
+    mode: "FIRST_COME_FIRST_SERVED",
     creator: { name: "Demo Hirer" },
     imageUris: [],
     studentInterestMatch: false,
@@ -1947,7 +1939,7 @@ function openPartialStartConsent(
     return;
   }
   state.actualHeadcount = frozenWorkerIds.length;
-  state.quest.status = QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT;
+  state.quest.status = QuestStatus.QUEST_ASSIGNED;
   state.partialStartConsent = {
     id: `fixture-partial-start-consent-${state.quest.id}`,
     questId: state.quest.id,
@@ -2000,15 +1992,6 @@ function applyEditChanges(
 function projectLifecycle(state: QuestDetailState, now: Date): void {
   normalizeInvitationStatuses(state, now);
 
-  // Older fixture data used one umbrella status. Keep it readable, but project
-  // edit requests into their canonical state before applying clock effects.
-  if (state.quest.status === QuestStatus.QUEST_AWAITING_CONSENT) {
-    state.quest.status =
-      state.editConsent?.status === QuestEditRequestStatus.EDIT_REQUEST_PENDING
-        ? QuestStatus.QUEST_AWAITING_EDIT_CONSENT
-        : QuestStatus.QUEST_OPEN;
-  }
-
   const editConsent = state.editConsent;
   const editDeadline = editConsent
     ? new Date(editConsent.responseDeadlineAt).getTime()
@@ -2018,7 +2001,7 @@ function projectLifecycle(state: QuestDetailState, now: Date): void {
     Number.isFinite(editDeadline) &&
     now.getTime() >= editDeadline
   ) {
-    editConsent.status = QuestEditRequestStatus.EDIT_REQUEST_REJECTED;
+    editConsent.status = QuestEditRequestStatus.EDIT_REQUEST_FAILED;
     state.quest.status = editConsent.previousStatus;
   }
 
@@ -2028,7 +2011,7 @@ function projectLifecycle(state: QuestDetailState, now: Date): void {
     : Number.NaN;
   if (
     state.quest.status ===
-      QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT &&
+      QuestStatus.QUEST_ASSIGNED &&
     partialConsent?.status ===
       QuestPartialStartConsentStatus.PARTIAL_START_PENDING
   ) {
@@ -2054,7 +2037,7 @@ function projectLifecycle(state: QuestDetailState, now: Date): void {
   const admitted = countAdmitted(state);
   if (
     state.quest.participation === QuestParticipation.GROUP &&
-    state.quest.candidateMode === QuestCandidateMode.NO_CANDIDATE
+    state.quest.mode === QuestMode.FIRST_COME_FIRST_SERVED
   ) {
     if (admitted === 0) cancelBeforeStart(state);
     else if (admitted >= state.quest.headcount) transitionToInProgress(state);
@@ -2346,13 +2329,13 @@ function actionForViewer(
     actions.push("PUBLISH");
   if (quest.status === QuestStatus.QUEST_OPEN && !isHirer) {
     if (
-      quest.candidateMode === QuestCandidateMode.NO_CANDIDATE &&
+      quest.mode === QuestMode.FIRST_COME_FIRST_SERVED &&
       !full &&
       !hasAssignment(state, viewerId)
     )
       actions.push("DIRECT_JOIN");
     if (
-      quest.candidateMode === QuestCandidateMode.CANDIDATE &&
+      quest.mode === QuestMode.CANDIDATE &&
       quest.participation === QuestParticipation.SINGLE &&
       !ownPendingApplication &&
       !ownRejectedApplication &&
@@ -2360,7 +2343,7 @@ function actionForViewer(
     )
       actions.push("APPLY");
     if (
-      quest.candidateMode === QuestCandidateMode.CANDIDATE &&
+      quest.mode === QuestMode.CANDIDATE &&
       quest.participation === QuestParticipation.GROUP &&
       !isTeamParticipant(state, viewerId)
     )
@@ -2400,7 +2383,7 @@ function actionForViewer(
   const editConsent = state.editConsent;
   if (
     active &&
-    quest.status === QuestStatus.QUEST_AWAITING_EDIT_CONSENT &&
+    quest.status === QuestStatus.QUEST_ASSIGNED &&
     editConsent?.status === QuestEditRequestStatus.EDIT_REQUEST_PENDING &&
     !editConsent.responses.some((response) => response.workerId === viewerId)
   )
@@ -2427,11 +2410,11 @@ function actionForViewer(
     quest.proofRequired === "none"
   )
     actions.push("CONFIRM_COMPLETION");
-  if (active && quest.status === QuestStatus.QUEST_REWORK)
+  if (active && quest.status === QuestStatus.QUEST_IN_PROGRESS)
     actions.push("REWORK_PROOF");
   if (
     isHirer &&
-    quest.status === QuestStatus.QUEST_SUBMITTED &&
+    quest.status === QuestStatus.QUEST_IN_PROGRESS &&
     state.proofs.some((item) => item.status === QuestProofStatus.PROOF_PENDING)
   )
     actions.push("REVIEW_PROOF");
@@ -2441,11 +2424,11 @@ function actionForViewer(
   )
     actions.push("OPEN_DISPUTE");
   if (
-    quest.status === QuestStatus.QUEST_DISPUTED &&
+    quest.status === QuestStatus.QUEST_FAILED &&
     (isHirer || viewerId === "admin-demo")
   )
     actions.push("RESOLVE_DISPUTE");
-  if (isHirer && quest.status === QuestStatus.QUEST_APPROVED)
+  if (isHirer && quest.status === QuestStatus.QUEST_COMPLETED)
     actions.push("COMPLETE");
   if (
     isHirer &&
@@ -2453,8 +2436,8 @@ function actionForViewer(
       [
         QuestStatus.QUEST_OPEN,
         QuestStatus.QUEST_ASSIGNED,
-        QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT,
-        QuestStatus.QUEST_AWAITING_EDIT_CONSENT,
+        QuestStatus.QUEST_ASSIGNED,
+        QuestStatus.QUEST_ASSIGNED,
         QuestStatus.QUEST_IN_PROGRESS,
       ] as QuestStatusValue[]
     ).includes(quest.status)
@@ -2480,7 +2463,7 @@ function stateForViewer(
   if (
     viewerId === result.quest.hirerId &&
     result.quest.participation === QuestParticipation.GROUP &&
-    result.quest.candidateMode === QuestCandidateMode.CANDIDATE
+    result.quest.mode === QuestMode.CANDIDATE
   ) {
     // A forming team is still available to its members, but is not a Hirer-selectable proposal.
     result.applications = result.applications.filter((item) => {
@@ -2721,12 +2704,12 @@ export function toBoardQuest(state: QuestDetailState): QuestBoardQuest {
     location: label,
     locationDetails: location,
     locationMode: location.label === null ? "online" : "on-campus",
-    participationMode:
-      quest.participation === QuestParticipation.GROUP ? "team" : "single",
-    candidateMode:
-      quest.candidateMode === QuestCandidateMode.CANDIDATE
+    participation:
+      quest.participation === QuestParticipation.GROUP ? "GROUP" : "SINGLE",
+    mode:
+      quest.mode === QuestMode.CANDIDATE
         ? "CANDIDATE"
-        : "NO_CANDIDATE",
+        : "FIRST_COME_FIRST_SERVED",
     creator: { name: quest.hirerId },
     imageUris: [...quest.imageUris],
     studentInterestMatch: false,
@@ -3352,7 +3335,7 @@ export function createQuestFixtureAdapter(
           workerId,
           currentTime
         );
-      if (projected.quest.candidateMode !== QuestCandidateMode.NO_CANDIDATE)
+      if (projected.quest.mode !== QuestMode.FIRST_COME_FIRST_SERVED)
         return failure(
           projected,
           "INVALID_MODE",
@@ -3452,7 +3435,7 @@ export function createQuestFixtureAdapter(
           currentTime
         );
       if (
-        projected.quest.candidateMode !== QuestCandidateMode.CANDIDATE ||
+        projected.quest.mode !== QuestMode.CANDIDATE ||
         projected.quest.participation !== QuestParticipation.SINGLE
       )
         return failure(
@@ -3584,7 +3567,7 @@ export function createQuestFixtureAdapter(
       const projected = currentWithProjection(current, currentTime);
       if (
         projected.quest.status !== QuestStatus.QUEST_OPEN ||
-        projected.quest.candidateMode !== QuestCandidateMode.CANDIDATE ||
+        projected.quest.mode !== QuestMode.CANDIDATE ||
         projected.quest.participation !== QuestParticipation.GROUP
       )
         return failure(
@@ -3643,7 +3626,7 @@ export function createQuestFixtureAdapter(
         );
       if (
         projected.quest.status !== QuestStatus.QUEST_OPEN ||
-        projected.quest.candidateMode !== QuestCandidateMode.CANDIDATE ||
+        projected.quest.mode !== QuestMode.CANDIDATE ||
         projected.quest.participation !== QuestParticipation.GROUP
       )
         return failure(
@@ -3907,7 +3890,7 @@ export function createQuestFixtureAdapter(
         );
       if (
         projected.quest.status !== QuestStatus.QUEST_OPEN ||
-        projected.quest.candidateMode !== QuestCandidateMode.CANDIDATE ||
+        projected.quest.mode !== QuestMode.CANDIDATE ||
         projected.quest.participation !== QuestParticipation.GROUP
       )
         return failure(
@@ -3988,7 +3971,7 @@ export function createQuestFixtureAdapter(
           currentTime
         );
       if (
-        projected.quest.candidateMode !== QuestCandidateMode.CANDIDATE ||
+        projected.quest.mode !== QuestMode.CANDIDATE ||
         projected.quest.participation !== QuestParticipation.SINGLE
       )
         return failure(
@@ -4052,7 +4035,7 @@ export function createQuestFixtureAdapter(
           currentTime
         );
       if (
-        projected.quest.candidateMode !== QuestCandidateMode.CANDIDATE ||
+        projected.quest.mode !== QuestMode.CANDIDATE ||
         projected.quest.participation !== QuestParticipation.GROUP
       )
         return failure(
@@ -4344,7 +4327,7 @@ export function createQuestFixtureAdapter(
         );
       const next = clone(projected);
       const previousStatus = next.quest.status;
-      next.quest.status = QuestStatus.QUEST_AWAITING_EDIT_CONSENT;
+      next.quest.status = QuestStatus.QUEST_ASSIGNED;
       next.editConsent = {
         id: `fixture-edit-consent-${next.quest.id}`,
         questId: next.quest.id,
@@ -4369,7 +4352,7 @@ export function createQuestFixtureAdapter(
       if (!current) return notFound();
       const projected = currentWithProjection(current, currentTime);
       if (
-        projected.quest.status !== QuestStatus.QUEST_AWAITING_EDIT_CONSENT ||
+        projected.quest.status !== QuestStatus.QUEST_ASSIGNED ||
         !projected.editConsent ||
         projected.editConsent.status !==
           QuestEditRequestStatus.EDIT_REQUEST_PENDING
@@ -4416,8 +4399,8 @@ export function createQuestFixtureAdapter(
       const response: QuestEditConsentResponse = {
         workerId,
         status: approve
-          ? QuestEditResponseStatus.EDIT_RESPONSE_APPROVED
-          : QuestEditResponseStatus.EDIT_RESPONSE_REJECTED,
+          ? QuestEditResponseStatus.EDIT_RESPONSE_ACCEPTED
+          : QuestEditResponseStatus.EDIT_RESPONSE_DECLINED,
         respondedAt: currentTime.toISOString(),
       };
       next.editConsent?.responses.push(response);
@@ -4430,16 +4413,16 @@ export function createQuestFixtureAdapter(
           currentTime
         );
       next.editConsent.approvedWorkerCount = next.editConsent.responses.filter(
-        (item) => item.status === QuestEditResponseStatus.EDIT_RESPONSE_APPROVED
+        (item) => item.status === QuestEditResponseStatus.EDIT_RESPONSE_ACCEPTED
       ).length;
       if (!approve) {
-        next.editConsent.status = QuestEditRequestStatus.EDIT_REQUEST_REJECTED;
+        next.editConsent.status = QuestEditRequestStatus.EDIT_REQUEST_FAILED;
         next.quest.status = next.editConsent.previousStatus;
       } else if (
         next.editConsent.approvedWorkerCount >=
         next.editConsent.requiredWorkerCount
       ) {
-        next.editConsent.status = QuestEditRequestStatus.EDIT_REQUEST_APPROVED;
+        next.editConsent.status = QuestEditRequestStatus.EDIT_REQUEST_APPLIED;
         applyEditChanges(next, next.editConsent.requestedChanges);
         next.quest.status = next.editConsent.previousStatus;
       }
@@ -4461,7 +4444,7 @@ export function createQuestFixtureAdapter(
       const consent = projected.partialStartConsent;
       if (
         projected.quest.status !==
-          QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT ||
+          QuestStatus.QUEST_ASSIGNED ||
         !consent ||
         consent.status !== QuestPartialStartConsentStatus.PARTIAL_START_PENDING
       )
@@ -4630,7 +4613,7 @@ export function createQuestFixtureAdapter(
               [
                 QuestProofStatus.PROOF_PENDING,
                 QuestProofStatus.PROOF_APPROVED,
-                QuestProofStatus.PROOF_AUTO_APPROVED,
+                QuestProofStatus.PROOF_APPROVED,
               ] as QuestProof["status"][]
             ).includes(item.status)
           )
@@ -4642,7 +4625,7 @@ export function createQuestFixtureAdapter(
           submittedOwners.has(requiredOwner)
         )
       )
-        next.quest.status = QuestStatus.QUEST_SUBMITTED;
+        next.quest.status = QuestStatus.QUEST_IN_PROGRESS;
       commit(next);
       return success(next, ownerId, currentTime);
     },
@@ -4666,7 +4649,7 @@ export function createQuestFixtureAdapter(
           hirerId,
           currentTime
         );
-      if (projected.quest.status !== QuestStatus.QUEST_SUBMITTED)
+      if (projected.quest.status !== QuestStatus.QUEST_IN_PROGRESS)
         return failure(
           projected,
           "INVALID_STATUS",
@@ -4701,17 +4684,15 @@ export function createQuestFixtureAdapter(
       if (approve) {
         nextProof.status = QuestProofStatus.PROOF_APPROVED;
         const allApproved = next.proofs.every(
-          (item) =>
-            item.status === QuestProofStatus.PROOF_APPROVED ||
-            item.status === QuestProofStatus.PROOF_AUTO_APPROVED
+          (item) => item.status === QuestProofStatus.PROOF_APPROVED
         );
-        if (allApproved) next.quest.status = QuestStatus.QUEST_APPROVED;
+        if (allApproved) next.quest.status = QuestStatus.QUEST_COMPLETED;
       } else if (nextProof.reworkCount < nextProof.reworkLimit) {
-        nextProof.status = QuestProofStatus.PROOF_REJECTED;
-        next.quest.status = QuestStatus.QUEST_REWORK;
+        nextProof.status = QuestProofStatus.PROOF_NOT_APPROVED;
+        next.quest.status = QuestStatus.QUEST_IN_PROGRESS;
       } else {
-        nextProof.status = QuestProofStatus.PROOF_REJECTED;
-        next.quest.status = QuestStatus.QUEST_DISPUTED;
+        nextProof.status = QuestProofStatus.PROOF_NOT_APPROVED;
+        next.quest.status = QuestStatus.QUEST_FAILED;
       }
       commit(next);
       return success(next, hirerId, currentTime);
@@ -4737,7 +4718,7 @@ export function createQuestFixtureAdapter(
       const currentTime = at(now);
       if (!current) return notFound();
       const projected = currentWithProjection(current, currentTime);
-      if (projected.quest.status !== QuestStatus.QUEST_REWORK)
+      if (projected.quest.status !== QuestStatus.QUEST_IN_PROGRESS)
         return failure(
           projected,
           "INVALID_STATUS",
@@ -4747,7 +4728,7 @@ export function createQuestFixtureAdapter(
         );
       const target = projected.proofs.find(
         (item) =>
-          item.id === proofId && item.status === QuestProofStatus.PROOF_REJECTED
+          item.id === proofId && item.status === QuestProofStatus.PROOF_NOT_APPROVED
       );
       if (!target)
         return failure(
@@ -4813,7 +4794,7 @@ export function createQuestFixtureAdapter(
               [
                 QuestProofStatus.PROOF_PENDING,
                 QuestProofStatus.PROOF_APPROVED,
-                QuestProofStatus.PROOF_AUTO_APPROVED,
+                QuestProofStatus.PROOF_APPROVED,
               ] as QuestProof["status"][]
             ).includes(item.status)
           )
@@ -4825,7 +4806,7 @@ export function createQuestFixtureAdapter(
           submittedOwners.has(requiredOwner)
         )
       )
-        next.quest.status = QuestStatus.QUEST_SUBMITTED;
+        next.quest.status = QuestStatus.QUEST_IN_PROGRESS;
       else next.quest.status = QuestStatus.QUEST_IN_PROGRESS;
       commit(next);
       return success(next, ownerId, currentTime);
@@ -4879,7 +4860,7 @@ export function createQuestFixtureAdapter(
               QuestAssignmentStatus.ASSIGNMENT_COMPLETED
           )
       )
-        next.quest.status = QuestStatus.QUEST_APPROVED;
+        next.quest.status = QuestStatus.QUEST_COMPLETED;
       commit(next);
       return success(next, workerId, currentTime);
     },
@@ -4896,7 +4877,7 @@ export function createQuestFixtureAdapter(
           hirerId,
           currentTime
         );
-      if (projected.quest.status !== QuestStatus.QUEST_APPROVED)
+      if (projected.quest.status !== QuestStatus.QUEST_COMPLETED)
         return failure(
           projected,
           "INVALID_STATUS",
@@ -4944,7 +4925,7 @@ export function createQuestFixtureAdapter(
           currentTime
         );
       const next = clone(projected);
-      next.quest.status = QuestStatus.QUEST_DISPUTED;
+      next.quest.status = QuestStatus.QUEST_FAILED;
       ensureConversation(next, [
         next.quest.hirerId,
         ...next.assignments.map((item) => item.workerId),
@@ -4965,7 +4946,7 @@ export function createQuestFixtureAdapter(
           actorId,
           currentTime
         );
-      if (projected.quest.status !== QuestStatus.QUEST_DISPUTED)
+      if (projected.quest.status !== QuestStatus.QUEST_FAILED)
         return failure(
           projected,
           "INVALID_STATUS",
@@ -5008,13 +4989,13 @@ export function createQuestFixtureAdapter(
         [
           QuestStatus.QUEST_OPEN,
           QuestStatus.QUEST_ASSIGNED,
-          QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT,
-          QuestStatus.QUEST_AWAITING_EDIT_CONSENT,
+          QuestStatus.QUEST_ASSIGNED,
+          QuestStatus.QUEST_ASSIGNED,
         ] as QuestStatusValue[]
       ).includes(next.quest.status);
       if (
         next.quest.status ===
-        QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT
+        QuestStatus.QUEST_ASSIGNED
       )
         cancelPartialStart(
           next,

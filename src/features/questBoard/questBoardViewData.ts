@@ -78,8 +78,8 @@ function matchesTag(quest: QuestBoardQuest, tag: QuestBoardFilter['selectedTag']
 function matchesMode(quest: QuestBoardQuest, mode: QuestBoardFilter['mode']): boolean {
   if (!mode) return true;
   return mode === 'CANDIDATE'
-    ? quest.candidateMode === 'CANDIDATE'
-    : quest.candidateMode === 'NO_CANDIDATE';
+    ? quest.mode === 'CANDIDATE'
+    : quest.mode === 'FIRST_COME_FIRST_SERVED';
 }
 
 function matchesParticipation(
@@ -88,8 +88,8 @@ function matchesParticipation(
 ): boolean {
   if (!participation) return true;
   return participation === 'GROUP'
-    ? quest.participationMode === 'team'
-    : quest.participationMode === 'single';
+    ? quest.participation === 'GROUP'
+    : quest.participation === 'SINGLE';
 }
 
 function matchesRewardBounds(quest: QuestBoardQuest, minimum: number | null, maximum: number | null): boolean {

@@ -63,7 +63,7 @@ import {
 import {
   formatSatang,
   MAX_QUEST_IMAGES,
-  QuestCandidateMode,
+  QuestMode,
   QuestInvitationStatus,
   QuestPartialStartConsentStatus,
   QuestParticipation,
@@ -164,7 +164,7 @@ function candidateDescription(
   quest: QuestBoardQuest,
   messages: QuestBoardMessages
 ): string {
-  return quest.candidateMode === "NO_CANDIDATE"
+  return quest.mode === "FIRST_COME_FIRST_SERVED"
     ? messages.firstComeDescription
     : messages.reviewCandidatesDescription;
 }
@@ -547,8 +547,8 @@ function GroupQuestEntrySurfaces({
   } = state;
   const isCandidateGroup =
     quest.participation === QuestParticipation.GROUP &&
-    quest.candidateMode === QuestCandidateMode.CANDIDATE;
-  const isCandidateQuest = quest.candidateMode === QuestCandidateMode.CANDIDATE;
+    quest.mode === QuestMode.CANDIDATE;
+  const isCandidateQuest = quest.mode === QuestMode.CANDIDATE;
   const ownTeam = teams.find(
     (team) =>
       team.members.some((member) => member.workerId === viewerId) ||
@@ -680,7 +680,7 @@ function GroupQuestEntrySurfaces({
       ) : null}
 
       {quest.participation === QuestParticipation.GROUP &&
-      quest.candidateMode === QuestCandidateMode.NO_CANDIDATE &&
+      quest.mode === QuestMode.FIRST_COME_FIRST_SERVED &&
       partialStartConsent ? (
         <View
           accessibilityRole="alert"
@@ -812,15 +812,14 @@ function PrototypeStatePanels({
     ) : null;
   const statusCard =
     status !== QuestStatus.QUEST_OPEN &&
-    status !== QuestStatus.QUEST_DRAFT &&
-    status !== QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT ? (
+    status !== QuestStatus.QUEST_DRAFT ? (
       <View
         accessibilityRole={
-          status === QuestStatus.QUEST_DISPUTED ? "alert" : undefined
+          status === QuestStatus.QUEST_FAILED ? "alert" : undefined
         }
         className={cn(
           styles.prototypeCard,
-          status === QuestStatus.QUEST_DISPUTED
+          status === QuestStatus.QUEST_FAILED
             ? styles.prototypeCardDanger
             : status === QuestStatus.QUEST_COMPLETED ||
                 status === QuestStatus.QUEST_CANCELLED
@@ -832,7 +831,7 @@ function PrototypeStatePanels({
         <View className={styles.prototypeHeader}>
           <CircleAlert
             color={
-              status === QuestStatus.QUEST_DISPUTED
+              status === QuestStatus.QUEST_FAILED
                 ? colors.dangerDark
                 : colors.primary
             }
@@ -849,7 +848,7 @@ function PrototypeStatePanels({
             {messages.terminalBannerTitle}: {messages.terminalDescription}
           </Text>
         ) : null}
-        {status === QuestStatus.QUEST_DISPUTED ? (
+        {status === QuestStatus.QUEST_FAILED ? (
           <Text className={styles.prototypeCopy}>
             {messages.disputeDescription}
           </Text>
@@ -860,7 +859,7 @@ function PrototypeStatePanels({
             {messages.statusLabel(status)}
           </Text>
         ) : null}
-        {status === QuestStatus.QUEST_APPROVED &&
+        {status === QuestStatus.QUEST_COMPLETED &&
         capabilities.availableActions.includes("COMPLETE") ? (
           <View className={styles.prototypeActions}>
             <PrototypeActionButton
@@ -886,7 +885,7 @@ function PrototypeStatePanels({
 
   const consentCard =
     editConsent?.status === "EDIT_REQUEST_PENDING" &&
-    status === QuestStatus.QUEST_AWAITING_EDIT_CONSENT ? (
+    status === QuestStatus.QUEST_ASSIGNED ? (
       <View
         accessibilityRole="alert"
         className={cn(styles.prototypeCard, styles.prototypeCardWarning)}
@@ -940,8 +939,6 @@ function PrototypeStatePanels({
     (
       [
         QuestStatus.QUEST_IN_PROGRESS,
-        QuestStatus.QUEST_SUBMITTED,
-        QuestStatus.QUEST_REWORK,
       ] as QuestDetailState["quest"]["status"][]
     ).includes(status) ? (
       <View className={styles.prototypeCard} testID="quest-proof-state">
@@ -969,7 +966,7 @@ function PrototypeStatePanels({
                     {messages.proofPending}
                   </Text>
                 ) : null}
-                {item.status === QuestProofStatus.PROOF_REJECTED ? (
+                {item.status === QuestProofStatus.PROOF_NOT_APPROVED ? (
                   <Text className={styles.prototypeCopy}>
                     {messages.proofRejected} ·{" "}
                     {messages.reworkRemaining(
@@ -978,7 +975,7 @@ function PrototypeStatePanels({
                     )}
                   </Text>
                 ) : null}
-                {item.status === QuestProofStatus.PROOF_REJECTED &&
+                {item.status === QuestProofStatus.PROOF_NOT_APPROVED &&
                 capabilities.availableActions.includes("REWORK_PROOF") ? (
                   <View className={styles.prototypeActions}>
                     <PrototypeActionButton
@@ -1034,7 +1031,7 @@ function PrototypeStatePanels({
     ) : null;
 
   const disputeCard =
-    status === QuestStatus.QUEST_DISPUTED ? (
+    status === QuestStatus.QUEST_FAILED ? (
       <View
         className={cn(styles.prototypeCard, styles.prototypeCardDanger)}
         testID="quest-dispute-state"
@@ -1112,7 +1109,7 @@ function ConfirmationSheet({
   onConfirm: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const firstCome = quest.candidateMode === "NO_CANDIDATE";
+  const firstCome = quest.mode === "FIRST_COME_FIRST_SERVED";
   const title = firstCome
     ? messages.confirmParticipationTitle
     : messages.confirmApplicationTitle;
@@ -1424,9 +1421,9 @@ export default function QuestDetailScreen({
           ? applicationStatus
           : "accepted"))
       : undefined;
-  const firstCome = quest?.candidateMode === "NO_CANDIDATE";
+  const firstCome = quest?.mode === "FIRST_COME_FIRST_SERVED";
   const candidateGroup = Boolean(
-    quest && !firstCome && quest.participationMode === "team"
+    quest && !firstCome && quest.participation === "GROUP"
   );
   const canonicalOpen =
     !detailProjection ||
@@ -1990,7 +1987,7 @@ export default function QuestDetailScreen({
             <Text
               accessibilityLabel={
                 activePrototypeState.quest.status ===
-                QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT
+                QuestStatus.QUEST_ASSIGNED
                   ? groupMessages.partialConsentTitle
                   : messages.statusLabel(activePrototypeState.quest.status)
               }
@@ -1998,7 +1995,7 @@ export default function QuestDetailScreen({
               testID="quest-canonical-status"
             >
               {activePrototypeState.quest.status ===
-              QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT
+              QuestStatus.QUEST_ASSIGNED
                 ? groupMessages.partialConsentTitle
                 : messages.statusLabel(activePrototypeState.quest.status)}
             </Text>
@@ -2077,7 +2074,7 @@ export default function QuestDetailScreen({
                   {messages.participation}
                 </Text>
                 <Text className={styles.heroValue}>
-                  {quest.participationMode === "team"
+                  {quest.participation === "GROUP"
                     ? messages.team
                     : messages.singlePerson}
                 </Text>
@@ -2093,10 +2090,10 @@ export default function QuestDetailScreen({
               </View>
               <View className={styles.heroItemCopy}>
                 <Text className={styles.heroLabel}>
-                  {messages.candidateMode}
+                  {messages.selectionMode}
                 </Text>
                 <Text className={styles.heroValue}>
-                  {quest.candidateMode === "NO_CANDIDATE"
+                  {quest.mode === "FIRST_COME_FIRST_SERVED"
                     ? messages.firstCome
                     : messages.reviewCandidates}
                 </Text>
@@ -2137,9 +2134,9 @@ export default function QuestDetailScreen({
             />
             <DetailRow
               icon={UsersRound}
-              label={messages.candidateMode}
+              label={messages.selectionMode}
               value={
-                quest.candidateMode === "NO_CANDIDATE"
+                quest.mode === "FIRST_COME_FIRST_SERVED"
                   ? messages.firstCome
                   : messages.reviewCandidates
               }
@@ -2149,7 +2146,7 @@ export default function QuestDetailScreen({
               icon={BriefcaseBusiness}
               label={messages.participation}
               value={
-                quest.participationMode === "team"
+                quest.participation === "GROUP"
                   ? messages.team
                   : messages.singlePerson
               }
@@ -2271,13 +2268,13 @@ export default function QuestDetailScreen({
       ) : null}
       {activePrototypeState &&
       isHirerView &&
-      quest.candidateMode === QuestCandidateMode.CANDIDATE ? (
+      quest.mode === QuestMode.CANDIDATE ? (
         <CandidateReviewSheet
           actualHeadcount={activePrototypeState.actualHeadcount}
           applications={activePrototypeState.applications}
           bottomInset={insets.bottom}
           locale={locale}
-          mode={candidateGroup ? "team" : "individual"}
+          mode={candidateGroup ? QuestParticipation.GROUP : QuestParticipation.SINGLE}
           onAcceptProposal={
             activePrototypeState.capabilities.availableActions.includes(
               "SELECT_CANDIDATE"
@@ -2315,8 +2312,8 @@ export default function QuestDetailScreen({
       ) : null}
       {activePrototypeState &&
       activePrototypeState.quest.participation === QuestParticipation.GROUP &&
-      activePrototypeState.quest.candidateMode ===
-        QuestCandidateMode.NO_CANDIDATE &&
+      activePrototypeState.quest.mode ===
+        QuestMode.FIRST_COME_FIRST_SERVED &&
       activePrototypeState.partialStartConsent ? (
         <PartialGroupStartConsentSheet
           actualHeadcount={activePrototypeState.actualHeadcount}

@@ -116,7 +116,7 @@ export interface QuestBoardMessages {
   required: string;
   optional: string;
   notNeeded: string;
-  candidateMode: string;
+  selectionMode: string;
   candidate: string;
   firstCome: string;
   reviewCandidates: string;
@@ -319,7 +319,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     required: 'Required',
     optional: 'Optional',
     notNeeded: 'Not needed',
-    candidateMode: 'Candidate mode',
+    selectionMode: 'Selection mode',
     candidate: 'Candidate',
     firstCome: 'First-come, first-served',
     reviewCandidates: 'Review candidates',
@@ -365,16 +365,16 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     questNotFound: 'Quest not found',
     questNotFoundDescription: 'This Quest does not exist or is no longer available.',
     statusLabel: (status) => ({
-      QUEST_DRAFT: 'Draft', QUEST_OPEN: 'Open', QUEST_AWAITING_CONSENT: 'Awaiting Worker consent', QUEST_ASSIGNED: 'Assigned',
-      QUEST_IN_PROGRESS: 'In progress', QUEST_SUBMITTED: 'Proof submitted', QUEST_APPROVED: 'Approved', QUEST_REWORK: 'Rework requested',
-      QUEST_COMPLETED: 'Completed', QUEST_CANCELLED: 'Cancelled', QUEST_DISPUTED: 'Disputed', QUEST_HIDDEN: 'Hidden',
+      QUEST_DRAFT: 'Draft', QUEST_OPEN: 'Open', QUEST_ASSIGNED: 'Assigned',
+      QUEST_IN_PROGRESS: 'In progress',
+      QUEST_COMPLETED: 'Completed', QUEST_CANCELLED: 'Cancelled', QUEST_FAILED: 'Failed',
       TEAM_FORMING: 'Forming', TEAM_SUBMITTED: 'Submitted', TEAM_SELECTED: 'Selected', TEAM_REJECTED: 'Rejected',
       INVITATION_PENDING: 'Invitation pending', INVITATION_ACCEPTED: 'Invitation accepted', INVITATION_DECLINED: 'Invitation declined', INVITATION_EXPIRED: 'Invitation expired', INVITATION_REVOKED: 'Invitation revoked',
       APPLICATION_APPLIED: 'Applied', APPLICATION_SELECTED: 'Selected', APPLICATION_REJECTED: 'Rejected', APPLICATION_WITHDRAWN: 'Withdrawn',
       ASSIGNMENT_ACTIVE: 'Active', ASSIGNMENT_COMPLETED: 'Completed', ASSIGNMENT_INCOMPLETE: 'Incomplete', ASSIGNMENT_CANCELLED: 'Cancelled',
-      PROOF_PENDING: 'Proof pending', PROOF_APPROVED: 'Proof approved', PROOF_REJECTED: 'Proof rejected', PROOF_AUTO_APPROVED: 'Proof auto-approved',
-      EDIT_REQUEST_PENDING: 'Consent pending', EDIT_REQUEST_APPROVED: 'Edit approved', EDIT_REQUEST_REJECTED: 'Edit rejected',
-      EDIT_RESPONSE_APPROVED: 'Approved', EDIT_RESPONSE_REJECTED: 'Rejected',
+      PROOF_PENDING: 'Proof pending', PROOF_APPROVED: 'Proof approved', PROOF_NOT_APPROVED: 'Proof not approved',
+      EDIT_REQUEST_PENDING: 'Consent pending', EDIT_REQUEST_FAILED: 'Edit failed', EDIT_REQUEST_APPLIED: 'Edit applied',
+      EDIT_RESPONSE_ACCEPTED: 'Approved', EDIT_RESPONSE_DECLINED: 'Rejected',
     }[status] ?? status),
     consentBannerTitle: 'Worker consent required',
     consentBannerDescription: (approved, required) => `${approved} of ${required} Workers approved the proposed edit.`,
@@ -531,7 +531,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     required: 'จำเป็นต้องมี',
     optional: 'ไม่บังคับ',
     notNeeded: 'ไม่ต้องมี',
-    candidateMode: 'รูปแบบการคัดเลือก',
+    selectionMode: 'รูปแบบการคัดเลือก',
     candidate: 'คัดเลือก',
     firstCome: 'มาก่อนได้ก่อน',
     reviewCandidates: 'ตรวจสอบผู้สมัคร',
@@ -577,16 +577,16 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     questNotFound: 'ไม่พบเควสต์',
     questNotFoundDescription: 'ไม่มีเควสต์นี้หรือไม่พร้อมให้ดูรายละเอียดแล้ว',
     statusLabel: (status) => ({
-      QUEST_DRAFT: 'ฉบับร่าง', QUEST_OPEN: 'เปิดรับผู้เข้าร่วม', QUEST_AWAITING_CONSENT: 'รอความยินยอมจากผู้ทำงาน', QUEST_ASSIGNED: 'มอบหมายแล้ว',
-      QUEST_IN_PROGRESS: 'กำลังทำงาน', QUEST_SUBMITTED: 'ส่งหลักฐานแล้ว', QUEST_APPROVED: 'อนุมัติแล้ว', QUEST_REWORK: 'ขอแก้ไขหลักฐาน',
-      QUEST_COMPLETED: 'เสร็จสิ้น', QUEST_CANCELLED: 'ยกเลิกแล้ว', QUEST_DISPUTED: 'อยู่ระหว่างข้อพิพาท', QUEST_HIDDEN: 'ซ่อนอยู่',
+      QUEST_DRAFT: 'ฉบับร่าง', QUEST_OPEN: 'เปิดรับผู้เข้าร่วม', QUEST_ASSIGNED: 'มอบหมายแล้ว',
+      QUEST_IN_PROGRESS: 'กำลังทำงาน',
+      QUEST_COMPLETED: 'เสร็จสิ้น', QUEST_CANCELLED: 'ยกเลิกแล้ว',
       TEAM_FORMING: 'กำลังรวมทีม', TEAM_SUBMITTED: 'ส่งทีมแล้ว', TEAM_SELECTED: 'เลือกทีมแล้ว', TEAM_REJECTED: 'ไม่ผ่านการเลือก',
       INVITATION_PENDING: 'รอตอบรับคำเชิญ', INVITATION_ACCEPTED: 'ตอบรับคำเชิญแล้ว', INVITATION_DECLINED: 'ปฏิเสธคำเชิญแล้ว', INVITATION_EXPIRED: 'คำเชิญหมดอายุ', INVITATION_REVOKED: 'เพิกถอนคำเชิญแล้ว',
       APPLICATION_APPLIED: 'สมัครแล้ว', APPLICATION_SELECTED: 'ได้รับเลือก', APPLICATION_REJECTED: 'ไม่ผ่านการเลือก', APPLICATION_WITHDRAWN: 'ถอนใบสมัครแล้ว',
       ASSIGNMENT_ACTIVE: 'กำลังทำงาน', ASSIGNMENT_COMPLETED: 'เสร็จสิ้น', ASSIGNMENT_INCOMPLETE: 'ไม่สมบูรณ์', ASSIGNMENT_CANCELLED: 'ยกเลิกแล้ว',
-      PROOF_PENDING: 'รอตรวจสอบหลักฐาน', PROOF_APPROVED: 'อนุมัติหลักฐานแล้ว', PROOF_REJECTED: 'หลักฐานถูกปฏิเสธ', PROOF_AUTO_APPROVED: 'อนุมัติหลักฐานอัตโนมัติ',
-      EDIT_REQUEST_PENDING: 'รอความยินยอม', EDIT_REQUEST_APPROVED: 'อนุมัติการแก้ไขแล้ว', EDIT_REQUEST_REJECTED: 'ปฏิเสธการแก้ไขแล้ว',
-      EDIT_RESPONSE_APPROVED: 'อนุมัติแล้ว', EDIT_RESPONSE_REJECTED: 'ปฏิเสธแล้ว',
+      PROOF_PENDING: 'รอตรวจสอบหลักฐาน', PROOF_APPROVED: 'อนุมัติหลักฐานแล้ว', PROOF_NOT_APPROVED: 'หลักฐานไม่ผ่านการอนุมัติ',
+      EDIT_REQUEST_PENDING: 'รอความยินยอม', EDIT_REQUEST_FAILED: 'การแก้ไขล้มเหลว', EDIT_REQUEST_APPLIED: 'ใช้การแก้ไขแล้ว',
+      EDIT_RESPONSE_ACCEPTED: 'อนุมัติแล้ว', EDIT_RESPONSE_DECLINED: 'ปฏิเสธแล้ว',
     }[status] ?? status),
     consentBannerTitle: 'ต้องขอความยินยอมจากผู้ทำงาน',
     consentBannerDescription: (approved, required) => `ผู้ทำงานอนุมัติการแก้ไขแล้ว ${approved} จาก ${required} คน`,

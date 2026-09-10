@@ -352,15 +352,12 @@ function prototypeStatusTone(
   if (status === QuestStatus.QUEST_COMPLETED) return "success";
   if (
     status === QuestStatus.QUEST_CANCELLED ||
-    status === QuestStatus.QUEST_DISPUTED
+    status === QuestStatus.QUEST_FAILED
   )
     return "danger";
   if (
-    status === QuestStatus.QUEST_AWAITING_CONSENT ||
-    status === QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT ||
-    status === QuestStatus.QUEST_AWAITING_EDIT_CONSENT ||
-    status === QuestStatus.QUEST_REWORK ||
-    status === QuestStatus.QUEST_SUBMITTED
+    status === QuestStatus.QUEST_ASSIGNED ||
+    status === QuestStatus.QUEST_IN_PROGRESS
   )
     return "warning";
   if (status === QuestStatus.QUEST_DRAFT) return "neutral";
@@ -387,7 +384,7 @@ function prototypeStateSummary(
   const workerHistory =
     role === "worker" && projection.hasAssignment && projection.isTerminal;
   const candidateQuest =
-    role === "hirer" && state.quest.candidateMode === "CANDIDATE";
+    role === "hirer" && state.quest.mode === "CANDIDATE";
   const groupChatId =
     projection.groupChatCapability?.conversationId ?? undefined;
   const groupChatCapability = groupChatId
@@ -1401,8 +1398,8 @@ export default function MyQuestsScreen() {
           mode={
             candidateReviewState?.quest.participation ===
             QuestParticipation.GROUP
-              ? "team"
-              : "individual"
+              ? QuestParticipation.GROUP
+              : QuestParticipation.SINGLE
           }
           onAcceptProposal={
             candidateReviewState?.capabilities.availableActions.includes(

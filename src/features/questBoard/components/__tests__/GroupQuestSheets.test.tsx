@@ -133,7 +133,7 @@ describe('group Quest sheets', () => {
       <CandidateReviewSheet
         applications={applications}
         locale="en"
-        mode="team"
+        mode="GROUP"
         onAccept={onAccept}
         onClose={() => undefined}
         onReject={onReject}

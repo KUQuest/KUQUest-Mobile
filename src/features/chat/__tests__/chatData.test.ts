@@ -78,7 +78,7 @@ describe('adapter-owned fixture chat data', () => {
     expect(terminalSend.ok).toBe(false);
 
     const disputed = created.getConversation('conversation-fixture-clean-fridge', 'demo-worker-3', fixedNow);
-    expect(disputed?.status).toBe(QuestStatus.QUEST_DISPUTED);
+    expect(disputed?.status).toBe(QuestStatus.QUEST_FAILED);
     expect(disputed?.capability).toMatchObject({ canRead: true, canWrite: true, readOnly: false });
 
     const pending = created.getConversation('conversation-fixture-partial-group-start-demo', 'student-demo', fixedNow);

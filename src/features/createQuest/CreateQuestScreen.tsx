@@ -864,18 +864,18 @@ function ReviewActionButton({
 function ModeSummary({
   messages,
   participation,
-  candidateMode,
+  mode,
   combinationHint,
 }: {
   messages: typeof createQuestMessages.en;
   participation: QuestDraft["participation"];
-  candidateMode: QuestDraft["candidateMode"];
+  mode: QuestDraft["mode"];
   combinationHint: string;
 }) {
   const participationLabel =
     participation === "SINGLE" ? messages.singleFormat : messages.teamFormat;
   const candidateLabel =
-    candidateMode === "FIRST_COME_FIRST_SERVED"
+    mode === "FIRST_COME_FIRST_SERVED"
       ? messages.instantAccept
       : messages.selectCandidate;
 
@@ -1663,13 +1663,13 @@ export default function CreateQuestScreen({
 
   const combinationHint = useMemo(() => {
     if (draft.participation === "SINGLE")
-      return draft.candidateMode === "FIRST_COME_FIRST_SERVED"
+      return draft.mode === "FIRST_COME_FIRST_SERVED"
         ? messages.singleFirstComeHint
         : messages.singleCandidateHint;
-    return draft.candidateMode === "FIRST_COME_FIRST_SERVED"
+    return draft.mode === "FIRST_COME_FIRST_SERVED"
       ? messages.groupFirstComeHint
       : messages.groupCandidateHint;
-  }, [draft.candidateMode, draft.participation, messages]);
+  }, [draft.mode, draft.participation, messages]);
   const proofRequired = draft.proofRequired !== "none";
 
   const reviewPublishCheck = useMemo(
@@ -1728,7 +1728,7 @@ export default function CreateQuestScreen({
         ? messages.teamSizeValue(draft.headcount)
         : messages.notSelected;
   const selectedAcceptanceMethod =
-    draft.candidateMode === "CANDIDATE"
+    draft.mode === "CANDIDATE"
       ? messages.selectCandidate
       : messages.instantAccept;
   const logisticsSummary =
@@ -2086,15 +2086,15 @@ export default function CreateQuestScreen({
                         description={messages.chooseAcceptanceMethodDescription}
                       />
                       <ChoiceGroup
-                        label={messages.candidateMode}
-                        value={draft.candidateMode}
+                        label={messages.selectionMode}
+                        value={draft.mode}
                         options={candidateOptions}
                         variant="acceptance"
                         stacked={false}
                         onChange={(value) =>
                           updateDraft(
-                            "candidateMode",
-                            value as QuestDraft["candidateMode"]
+                            "mode",
+                            value as QuestDraft["mode"]
                           )
                         }
                       />
@@ -2103,7 +2103,7 @@ export default function CreateQuestScreen({
                     <ModeSummary
                       messages={messages}
                       participation={draft.participation}
-                      candidateMode={draft.candidateMode}
+                      mode={draft.mode}
                       combinationHint={combinationHint}
                     />
 

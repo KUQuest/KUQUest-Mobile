@@ -32,7 +32,7 @@ describe('Quest fixture adapter', () => {
     startTime: '09:00',
     endTime: '12:00',
     location: { label: 'Student activity building' },
-    candidateMode: 'NO_CANDIDATE',
+    mode: 'FIRST_COME_FIRST_SERVED',
     participation: 'GROUP',
     headcount: 3,
     rewardSatang: 12550,
@@ -78,7 +78,7 @@ describe('Quest fixture adapter', () => {
       status: QuestStatus.QUEST_OPEN,
       hirerId: 'demo-hirer',
       participation: 'GROUP',
-      candidateMode: 'NO_CANDIDATE',
+      mode: 'FIRST_COME_FIRST_SERVED',
       headcount: 3,
       requestedHeadcount: 3,
       title: createPayload.title,
@@ -99,7 +99,7 @@ describe('Quest fixture adapter', () => {
   });
 
   it('keeps create and publish headcount invariants and blocks invalid payloads', () => {
-    const validSingle = questFixtureAdapter.createAndPublishQuest({ ...createPayload, participation: 'SOLO', headcount: 1 }, 'demo-hirer', fixedNow);
+    const validSingle = questFixtureAdapter.createAndPublishQuest({ ...createPayload, participation: 'SINGLE', headcount: 1 }, 'demo-hirer', fixedNow);
     expect(validSingle.ok).toBe(true);
     if (validSingle.ok) {
       expect(validSingle.state.quest.participation).toBe('SINGLE');
@@ -107,7 +107,7 @@ describe('Quest fixture adapter', () => {
     }
 
     questFixtureAdapter.reset();
-    const invalidSingle = questFixtureAdapter.createAndPublishQuest({ ...createPayload, participation: 'SOLO', headcount: 2 }, 'demo-hirer', fixedNow);
+    const invalidSingle = questFixtureAdapter.createAndPublishQuest({ ...createPayload, participation: 'SINGLE', headcount: 2 }, 'demo-hirer', fixedNow);
     expect(invalidSingle.ok).toBe(false);
     if (!invalidSingle.ok) expect(invalidSingle.error).toEqual(expect.objectContaining({ code: 'PUBLISH_BLOCKED' }));
 
@@ -154,7 +154,7 @@ describe('Quest fixture adapter', () => {
     const demoHirer = created.getState('partial-group-start-demo', 'demo-hirer', fixedNow);
     const nonVoter = created.getState('partial-group-start-demo', 'demo-worker-3', fixedNow);
 
-    expect(demoWorker?.quest.status).toBe(QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT);
+    expect(demoWorker?.quest.status).toBe(QuestStatus.QUEST_ASSIGNED);
     expect(demoWorker?.actualHeadcount).toBe(2);
     expect(demoWorker?.assignments).toHaveLength(2);
     expect(demoWorker?.partialStartConsent).toMatchObject({
@@ -185,7 +185,7 @@ describe('Quest fixture adapter', () => {
     expect(joined.ok).toBe(true);
 
     const atStart = created.getState('clean-fan', 'demo-worker-3', directGroupStart);
-    expect(atStart?.quest.status).toBe(QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT);
+    expect(atStart?.quest.status).toBe(QuestStatus.QUEST_ASSIGNED);
     expect(atStart?.actualHeadcount).toBe(1);
     expect(atStart?.partialStartConsent?.status).toBe(QuestPartialStartConsentStatus.PARTIAL_START_PENDING);
     expect(atStart?.partialStartConsent?.requiredVoterIds).toEqual(['student-creator-2', 'demo-worker-3']);
@@ -201,7 +201,7 @@ describe('Quest fixture adapter', () => {
     expect(lateJoin.ok).toBe(false);
     if (!lateJoin.ok) {
       expect(lateJoin.error.code).toBe('INVALID_STATUS');
-      expect(lateJoin.state.quest.status).toBe(QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT);
+      expect(lateJoin.state.quest.status).toBe(QuestStatus.QUEST_ASSIGNED);
       expect(lateJoin.state.assignments).toHaveLength(1);
       expect(lateJoin.state.partialStartConsent?.frozenWorkerIds).toEqual(['demo-worker-3']);
     }
@@ -213,7 +213,7 @@ describe('Quest fixture adapter', () => {
     const firstWorkerVote = created.votePartialGroupStartConsent('partial-group-start-demo', DEFAULT_PROTOTYPE_VIEWER_ID, true, fixedNow);
     expect(firstWorkerVote.ok).toBe(true);
     if (!firstWorkerVote.ok) return;
-    expect(firstWorkerVote.state.quest.status).toBe(QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT);
+    expect(firstWorkerVote.state.quest.status).toBe(QuestStatus.QUEST_ASSIGNED);
     expect(firstWorkerVote.state.partialStartConsent?.approvedVoterCount).toBe(1);
     expect(firstWorkerVote.state.capabilities.availableActions).not.toContain('VOTE_PARTIAL_GROUP_START_CONSENT');
     expect(created.getState('partial-group-start-demo', 'demo-worker-2', fixedNow)?.capabilities.availableActions).toContain('VOTE_PARTIAL_GROUP_START_CONSENT');
@@ -221,7 +221,7 @@ describe('Quest fixture adapter', () => {
     const hirerVote = created.votePartialGroupStartConsent('partial-group-start-demo', 'demo-hirer', true, fixedNow);
     expect(hirerVote.ok).toBe(true);
     if (!hirerVote.ok) return;
-    expect(hirerVote.state.quest.status).toBe(QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT);
+    expect(hirerVote.state.quest.status).toBe(QuestStatus.QUEST_ASSIGNED);
     expect(hirerVote.state.partialStartConsent?.approvedVoterCount).toBe(2);
 
     const finalWorkerVote = created.votePartialGroupStartConsent('partial-group-start-demo', 'demo-worker-2', true, fixedNow);
@@ -258,7 +258,7 @@ describe('Quest fixture adapter', () => {
     const hirerVote = created.votePartialGroupStartConsent('clean-fan', 'student-creator-2', true, directGroupStart);
     expect(hirerVote.ok).toBe(true);
     if (!hirerVote.ok) return;
-    expect(hirerVote.state.quest.status).toBe(QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT);
+    expect(hirerVote.state.quest.status).toBe(QuestStatus.QUEST_ASSIGNED);
     expect(hirerVote.state.partialStartConsent?.approvedVoterCount).toBe(1);
     expect(hirerVote.state.partialStartConsent?.responses[0]?.role).toBe('HIRER');
 
@@ -327,7 +327,7 @@ describe('Quest fixture adapter', () => {
     expect(opened.ok).toBe(true);
 
     const justBeforeTimeout = created.getState('clean-fan', 'demo-worker-3', new Date(directGroupStart.getTime() + PARTIAL_GROUP_START_CONSENT_WINDOW_MS - 1));
-    expect(justBeforeTimeout?.quest.status).toBe(QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT);
+    expect(justBeforeTimeout?.quest.status).toBe(QuestStatus.QUEST_ASSIGNED);
     expect(justBeforeTimeout?.partialStartConsent?.status).toBe(QuestPartialStartConsentStatus.PARTIAL_START_PENDING);
     const oneMillisecondRemaining = new Date(directGroupStart.getTime() + PARTIAL_GROUP_START_CONSENT_WINDOW_MS - 1);
     expect(getConsentRemainingMs(justBeforeTimeout?.partialStartConsent, oneMillisecondRemaining)).toBe(1);
@@ -342,7 +342,7 @@ describe('Quest fixture adapter', () => {
     expect(atTimeout?.conversation.readOnlyReason).toBe('TERMINAL');
 
     const stored = created.getState('clean-fan', 'demo-worker-3', fixedNow);
-    expect(stored?.quest.status).toBe(QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT);
+    expect(stored?.quest.status).toBe(QuestStatus.QUEST_ASSIGNED);
     expect(stored?.assignments).toHaveLength(1);
     expect(stored?.partialStartConsent?.status).toBe(QuestPartialStartConsentStatus.PARTIAL_START_PENDING);
   });
@@ -378,13 +378,13 @@ describe('Quest fixture adapter', () => {
     const justBeforeTimeout = created.getState('walk-together', DEFAULT_PROTOTYPE_VIEWER_ID, new Date('2026-08-12T09:04:59.999Z'));
     const atTimeout = created.getState('walk-together', DEFAULT_PROTOTYPE_VIEWER_ID, new Date('2026-08-12T09:05:00.000Z'));
 
-    expect(beforeTimeout?.quest.status).toBe(QuestStatus.QUEST_AWAITING_EDIT_CONSENT);
-    expect(justBeforeTimeout?.quest.status).toBe(QuestStatus.QUEST_AWAITING_EDIT_CONSENT);
+    expect(beforeTimeout?.quest.status).toBe(QuestStatus.QUEST_ASSIGNED);
+    expect(justBeforeTimeout?.quest.status).toBe(QuestStatus.QUEST_ASSIGNED);
     expect(justBeforeTimeout?.editConsent?.status).toBe(QuestEditRequestStatus.EDIT_REQUEST_PENDING);
     expect(beforeTimeout?.editConsent?.status).toBe(QuestEditRequestStatus.EDIT_REQUEST_PENDING);
     expect(beforeTimeout?.capabilities.availableActions).toContain('VOTE_EDIT_CONSENT');
     expect(atTimeout?.quest.status).toBe(QuestStatus.QUEST_IN_PROGRESS);
-    expect(atTimeout?.editConsent?.status).toBe(QuestEditRequestStatus.EDIT_REQUEST_REJECTED);
+    expect(atTimeout?.editConsent?.status).toBe(QuestEditRequestStatus.EDIT_REQUEST_FAILED);
     expect(atTimeout?.quest.location.label).toBe('สวนวชิรเบญจทัศ');
     expect(atTimeout?.capabilities.availableActions).not.toContain('VOTE_EDIT_CONSENT');
 
@@ -396,7 +396,7 @@ describe('Quest fixture adapter', () => {
     }
 
     const stored = created.getState('walk-together', DEFAULT_PROTOTYPE_VIEWER_ID, fixedNow);
-    expect(stored?.quest.status).toBe(QuestStatus.QUEST_AWAITING_EDIT_CONSENT);
+    expect(stored?.quest.status).toBe(QuestStatus.QUEST_ASSIGNED);
     expect(stored?.editConsent?.status).toBe(QuestEditRequestStatus.EDIT_REQUEST_PENDING);
   });
 
@@ -633,7 +633,7 @@ describe('Quest fixture adapter', () => {
     const requested = created.requestEdit('buy-lunch', { description: 'Updated lunch instructions.' }, 'student-creator-4', fixedNow);
     expect(requested.ok).toBe(true);
     if (!requested.ok) return;
-    expect(requested.state.quest.status).toBe(QuestStatus.QUEST_AWAITING_EDIT_CONSENT);
+    expect(requested.state.quest.status).toBe(QuestStatus.QUEST_ASSIGNED);
     expect(requested.state.editConsent?.status).toBe(QuestEditRequestStatus.EDIT_REQUEST_PENDING);
     expect(getConsentRemainingMs(requested.state.editConsent, fixedNow)).toBe(EDIT_CONSENT_WINDOW_MS);
     expect(formatConsentCountdown(requested.state.editConsent, fixedNow)).toBe('05:00');
@@ -643,7 +643,7 @@ describe('Quest fixture adapter', () => {
     if (voted.ok) {
       expect(voted.state.quest.status).toBe(QuestStatus.QUEST_ASSIGNED);
       expect(voted.state.quest.description).toBe('Updated lunch instructions.');
-      expect(voted.state.editConsent?.status).toBe(QuestEditRequestStatus.EDIT_REQUEST_APPROVED);
+      expect(voted.state.editConsent?.status).toBe(QuestEditRequestStatus.EDIT_REQUEST_APPLIED);
     }
   });
 
@@ -663,36 +663,36 @@ describe('Quest fixture adapter', () => {
     if (first.ok) expect(first.state.quest.status).toBe(QuestStatus.QUEST_IN_PROGRESS);
     const second = created.submitProof('direct-group-proof-demo', 'demo-worker-2', ['fixture://second'], 'Second', fixedNow);
     expect(second.ok).toBe(true);
-    if (second.ok) expect(second.state.quest.status).toBe(QuestStatus.QUEST_SUBMITTED);
+    if (second.ok) expect(second.state.quest.status).toBe(QuestStatus.QUEST_IN_PROGRESS);
   });
 
   it('supports proof submission and proof-free completion through server state', () => {
     const created = createQuestFixtureAdapter({ now: fixedNow });
     const submitted = created.submitProof('proof-in-progress-demo', DEFAULT_PROTOTYPE_VIEWER_ID, ['fixture://proof'], 'Done.', fixedNow);
     expect(submitted.ok).toBe(true);
-    if (submitted.ok) expect(submitted.state.quest.status).toBe(QuestStatus.QUEST_SUBMITTED);
+    if (submitted.ok) expect(submitted.state.quest.status).toBe(QuestStatus.QUEST_IN_PROGRESS);
 
     const proofFree = created.confirmCompletion('proof-free-in-progress-demo', DEFAULT_PROTOTYPE_VIEWER_ID, fixedNow);
     expect(proofFree.ok).toBe(true);
-    if (proofFree.ok) expect(proofFree.state.quest.status).toBe(QuestStatus.QUEST_APPROVED);
+    if (proofFree.ok) expect(proofFree.state.quest.status).toBe(QuestStatus.QUEST_COMPLETED);
   });
 
   it('moves proof through rejection, rework, review, and terminal read-only chat', () => {
     const created = createQuestFixtureAdapter({ now: fixedNow });
     const rework = created.getState('move-club-equipment', 'demo-worker-3', fixedNow);
     const proof = rework?.proofs[0];
-    expect(proof?.status).toBe(QuestProofStatus.PROOF_REJECTED);
-    expect(rework?.quest.status).toBe(QuestStatus.QUEST_REWORK);
+    expect(proof?.status).toBe(QuestProofStatus.PROOF_NOT_APPROVED);
+    expect(rework?.quest.status).toBe(QuestStatus.QUEST_IN_PROGRESS);
 
     const reworked = created.submitRework('move-club-equipment', proof?.id ?? '', 'demo-worker-3', ['fixture://new-proof'], 'Fixed.', fixedNow);
     expect(reworked.ok).toBe(true);
     if (!reworked.ok) return;
-    expect(reworked.state.quest.status).toBe(QuestStatus.QUEST_SUBMITTED);
+    expect(reworked.state.quest.status).toBe(QuestStatus.QUEST_IN_PROGRESS);
 
     const reviewed = created.approveProof('move-club-equipment', proof?.id ?? '', 'student-creator-7', fixedNow);
     expect(reviewed.ok).toBe(true);
     if (!reviewed.ok) return;
-    expect(reviewed.state.quest.status).toBe(QuestStatus.QUEST_APPROVED);
+    expect(reviewed.state.quest.status).toBe(QuestStatus.QUEST_COMPLETED);
 
     const completed = created.completeQuest('move-club-equipment', 'student-creator-7', fixedNow);
     expect(completed.ok).toBe(true);

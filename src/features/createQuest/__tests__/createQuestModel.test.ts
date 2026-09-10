@@ -26,12 +26,12 @@ describe('Create Quest model', () => {
   describe('toQuestBoardModeValues', () => {
     test('maps draft values through the canonical Quest Board vocabulary', () => {
       expect(toQuestBoardModeValues({
-        candidateMode: 'CANDIDATE',
+        mode: 'CANDIDATE',
         participation: 'GROUP',
         locationMode: 'ONLINE',
       })).toEqual({
-        candidateMode: 'CANDIDATE',
-        participationMode: 'team',
+        mode: 'CANDIDATE',
+        participation: 'GROUP',
         locationMode: 'online',
       });
     });
@@ -117,8 +117,8 @@ describe('Create Quest model', () => {
     });
 
     test('uses a label-only location and canonical mode values in the payload', () => {
-      const payload = toQuestDraftPayload({ ...initialDraft, wage: '250.50', location: 'Library entrance', locationMode: 'ON_CAMPUS', participation: 'GROUP', headcount: '3', candidateMode: 'CANDIDATE' });
-      expect(payload).toMatchObject({ rewardSatang: 25050, participation: 'GROUP', candidateMode: 'CANDIDATE', location: { label: 'Library entrance' } });
+      const payload = toQuestDraftPayload({ ...initialDraft, wage: '250.50', location: 'Library entrance', locationMode: 'ON_CAMPUS', participation: 'GROUP', headcount: '3', mode: 'CANDIDATE' });
+      expect(payload).toMatchObject({ rewardSatang: 25050, participation: 'GROUP', mode: 'CANDIDATE', location: { label: 'Library entrance' } });
       expect(Object.keys(payload.location)).toEqual(['label']);
     });
 
@@ -168,30 +168,30 @@ describe('Create Quest model', () => {
       });
     });
 
-    test('restores valid fields and limits image previews to three', () => {
+    test('restores canonical fields and limits image previews to three', () => {
       const draft = parseStoredQuestDraft(JSON.stringify({
         title: 'Design a poster',
         tag: 'design',
         imageUris: ['one', 'two', 'three', 'four'],
-        candidateMode: 'review',
-        participation: 'team',
+        mode: 'CANDIDATE',
+        participation: 'GROUP',
       }));
 
       expect(draft).toMatchObject({
         title: 'Design a poster',
         tag: 'design',
-        candidateMode: 'CANDIDATE',
+        mode: 'CANDIDATE',
         participation: 'GROUP',
       });
       expect(draft?.imageUris).toEqual(['one', 'two', 'three']);
     });
 
-    test('migrates legacy mode and participation values', () => {
+    test('normalizes canonical mode and participation values', () => {
       expect(parseStoredQuestDraft(JSON.stringify({
-        candidateMode: 'NO_CANDIDATE',
-        participation: 'single',
+        mode: 'FIRST_COME_FIRST_SERVED',
+        participation: 'SINGLE',
       }))).toMatchObject({
-        candidateMode: 'FIRST_COME_FIRST_SERVED',
+        mode: 'FIRST_COME_FIRST_SERVED',
         participation: 'SINGLE',
         headcount: '1',
       });
@@ -218,9 +218,9 @@ describe('Create Quest model', () => {
     });
 
     test('normalizes unsupported stored values and enforces single headcount', () => {
-      expect(parseStoredQuestDraft(JSON.stringify({ participation: 'SINGLE', candidateMode: 'unknown', locationMode: 'unknown', headcount: '9', imageUris: [1, 'valid', null] }))).toMatchObject({
+      expect(parseStoredQuestDraft(JSON.stringify({ participation: 'SINGLE', mode: 'unknown', locationMode: 'unknown', headcount: '9', imageUris: [1, 'valid', null] }))).toMatchObject({
         participation: 'SINGLE',
-        candidateMode: 'FIRST_COME_FIRST_SERVED',
+        mode: 'FIRST_COME_FIRST_SERVED',
         locationMode: 'ON_CAMPUS',
         headcount: '1',
         imageUris: ['valid'],

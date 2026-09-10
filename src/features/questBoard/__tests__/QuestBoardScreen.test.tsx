@@ -36,15 +36,15 @@ describe("Quest Board screen", () => {
     expect(
       new Set(
         questFixtures.map(
-          (quest) => `${quest.participationMode}:${quest.candidateMode}`
+          (quest) => `${quest.participation}:${quest.mode}`
         )
       )
     ).toEqual(
       new Set([
-        "single:CANDIDATE",
-        "single:NO_CANDIDATE",
-        "team:CANDIDATE",
-        "team:NO_CANDIDATE",
+        "SINGLE:CANDIDATE",
+        "SINGLE:FIRST_COME_FIRST_SERVED",
+        "GROUP:CANDIDATE",
+        "GROUP:FIRST_COME_FIRST_SERVED",
       ])
     );
     expect(questFixtures.every((quest) => quest.tags.length <= 1)).toBe(true);
