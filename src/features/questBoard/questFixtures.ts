@@ -752,6 +752,16 @@ export const questFixtureDefinitions: QuestFixtureDefinition[] = [
     ownerStudentId: "demo-hirer",
     prototypeOnly: true,
     prototypeScenario: "full-group-start-demo",
+    translations: {
+      th: {
+        title: "à¹€à¸£à¸´à¹ˆà¸¡à¸—à¸µà¸¡à¸¡à¸«à¸²à¸§à¸´à¸—à¸¢à¸²à¸¥à¸±à¸¢à¹ƒà¸«à¹‰à¸„à¸£à¸šà¸ˆà¸³à¸™à¸§à¸™",
+        tags: ["à¸Šà¸µà¸§à¸´à¸•à¹ƒà¸™à¸¡à¸«à¸²à¸§à¸´à¸—à¸¢à¸²à¸¥à¸±à¸¢"],
+        description: "à¸•à¸±à¸§à¸­à¸¢à¹ˆà¸²à¸‡à¹€à¸„à¸§à¸ªà¸•à¹Œà¸à¸¥à¸¸à¹ˆà¸¡à¸—à¸µà¹ˆà¸•à¹‰à¸­à¸‡à¹ƒà¸«à¹‰à¸œà¸¹à¹‰à¸—à¸³à¸‡à¸²à¸™à¸—à¸¸à¸à¸„à¸™à¹€à¸£à¸´à¹ˆà¸¡à¸‡à¸²à¸™",
+        completionCriteria: "à¸—à¸³à¸£à¸²à¸¢à¸à¸²à¸£à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¸‡à¸²à¸™à¸Šà¹ˆà¸§à¸¢à¸à¸´à¸ˆà¸à¸£à¸£à¸¡à¹ƒà¸«à¹‰à¸„à¸£à¸šà¸–à¹‰à¸§à¸™",
+        location: "à¸­à¸²à¸„à¸²à¸£à¸à¸´à¸ˆà¸à¸£à¸£à¸¡à¸™à¸´à¸ªà¸´à¸•",
+        creatorName: "à¸œà¸¹à¹‰à¸§à¹ˆà¸²à¸ˆà¹‰à¸²à¸‡à¸•à¸±à¸§à¸­à¸¢à¹ˆà¸²à¸‡",
+      },
+    },
   },
   // Route/test-only scenario data. The adapter seeds these records, while normal discovery filters them out.
   {
