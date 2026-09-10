@@ -147,6 +147,22 @@ describe('Quest fixture adapter', () => {
     expect(stored?.assignments[0]?.startedAt).toBeUndefined();
   });
 
+  it('keeps a full GROUP FCFS Quest assigned at start until Workers explicitly start', () => {
+    const created = createQuestFixtureAdapter({ now: fixedNow });
+    const atStart = created.getState(
+      'full-group-start-demo',
+      DEFAULT_PROTOTYPE_VIEWER_ID,
+      new Date('2026-08-20T10:00:00.000Z')
+    );
+
+    expect(atStart?.quest.participation).toBe('GROUP');
+    expect(atStart?.quest.mode).toBe('FIRST_COME_FIRST_SERVED');
+    expect(atStart?.quest.status).toBe(QuestStatus.QUEST_ASSIGNED);
+    expect(atStart?.assignments).toHaveLength(3);
+    expect(atStart?.assignments.every((item) => item.startedAt === undefined)).toBe(true);
+    expect(atStart?.capabilities.availableActions).toContain('START_WORK');
+  });
+
   it('enters the partial-start demo directly with a frozen pending roster and voter capabilities', () => {
     const created = createQuestFixtureAdapter({ now: fixedNow });
     const demoWorker = created.getState('partial-group-start-demo', DEFAULT_PROTOTYPE_VIEWER_ID, fixedNow);
