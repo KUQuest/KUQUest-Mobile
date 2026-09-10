@@ -5,14 +5,16 @@ import {
 } from "../questBoardMapper";
 import type { QuestBoardCard, QuestBoardDetail } from "../questBoardContracts";
 
+const cardTag = {
+  id: "58818dc3-6dad-424f-8dfd-d20b6747aeb3",
+  name: "Design",
+};
+
 const card: QuestBoardCard = {
   id: "2ad5b944-830b-4e28-95a7-5fe2792b713a",
   title: "Design a landing page",
   questReward: 980,
-  tag: {
-    id: "58818dc3-6dad-424f-8dfd-d20b6747aeb3",
-    name: "Design",
-  },
+  tag: cardTag,
   mode: "FIRST_COME_FIRST_SERVED",
   participation: "SINGLE",
   headcount: 1,
@@ -29,7 +31,7 @@ describe("questBoardMapper", () => {
       questId: card.id,
       title: "Design a landing page",
       questReward: 980,
-      tag: { id: card.tag.id, name: "Design" },
+      tag: cardTag,
       mode: "FIRST_COME_FIRST_SERVED",
       participation: "SINGLE",
       headcount: 1,
@@ -61,6 +63,17 @@ describe("questBoardMapper", () => {
       items: [expect.objectContaining({ questId: card.id })],
       nextCursor: "opaque-cursor",
     });
+  });
+
+  test("preserves nullable tag and dueAt in the production projection", () => {
+    const item = mapQuestBoardCard({
+      ...card,
+      tag: null,
+      dueAt: null,
+    });
+
+    expect(item.tag).toBeNull();
+    expect(item.dueAt).toBeNull();
   });
 
   test("maps server detail state and capacity without adding client policy", () => {

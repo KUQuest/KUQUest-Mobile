@@ -87,4 +87,32 @@ describe("questBoardContracts", () => {
       limit: 20,
     }));
   });
+
+  test("accepts nullable tag and dueAt from the v2 public response", () => {
+    const response = questBoardResponseSchema.parse({
+      success: true,
+      data: {
+        items: [{
+          id: questId,
+          title: "Untyped public Quest",
+          questReward: 980,
+          tag: null,
+          mode: "FIRST_COME_FIRST_SERVED",
+          participation: "GROUP",
+          headcount: 2,
+          activeWorkerCount: 0,
+          startTime: "2026-09-30T09:00:00.000+07:00",
+          dueAt: null,
+          hirerName: "Hirer display name",
+          location: null,
+        }],
+        nextCursor: null,
+      },
+    });
+
+    expect(response.data.items[0]).toEqual(expect.objectContaining({
+      tag: null,
+      dueAt: null,
+    }));
+  });
 });

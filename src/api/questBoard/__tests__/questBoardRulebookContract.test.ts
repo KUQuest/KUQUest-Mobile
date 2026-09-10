@@ -78,6 +78,30 @@ describe("Quest Board Rulebook transport contract", () => {
     });
   });
 
+  test("preserves nullable tag and dueAt in Board and public-detail responses", () => {
+    const nullableCard = {
+      ...groupFcfsCard,
+      tag: null,
+      dueAt: null,
+    };
+    expect(questBoardCardSchema.parse(nullableCard)).toEqual(nullableCard);
+
+    const { location, ...cardWithoutLocation } = nullableCard;
+    const nullableDetail = {
+      ...cardWithoutLocation,
+      description: null,
+      condition: {
+        items: [{ position: 0, text: "Complete the checklist." }],
+      },
+      state: "QUEST_OPEN",
+      proofRequired: false,
+      locations: [{ label: location }],
+      images: [],
+    };
+
+    expect(questBoardDetailSchema.parse(nullableDetail)).toEqual(nullableDetail);
+  });
+
   test("accepts canonical detail state without adding client lifecycle fields", () => {
     const { location, ...cardWithoutLocation } = groupFcfsCard;
     const detail = {

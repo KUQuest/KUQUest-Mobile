@@ -104,6 +104,27 @@ describe("API-backed Quest Detail screen", () => {
     expect(view.queryByText("This Quest is no longer accepting applications.")).toBeNull();
   });
 
+  test("renders nullable API tag and dueAt without inventing values", async () => {
+    const getQuestDetail = jest.fn().mockResolvedValue({
+      ...detail,
+      title: "Public Quest without tag or due date",
+      tag: null,
+      dueAt: null,
+    });
+    const view = await render(
+      <QuestDetailScreen
+        detailRepository={repositoryFor(getQuestDetail)}
+        questId={detail.questId}
+      />
+    );
+
+    await waitFor(() =>
+      expect(view.getByText("Public Quest without tag or due date")).toBeTruthy()
+    );
+    expect(view.queryByText("Design")).toBeNull();
+    expect(view.queryByText("Finish by")).toBeNull();
+  });
+
   test("keeps a full GROUP FCFS Quest assigned after its start time when the server says assigned", async () => {
     const groupDetail: ApiQuestDetailItem = {
       ...detail,

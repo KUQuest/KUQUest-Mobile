@@ -377,14 +377,16 @@ function ApiQuestCard({
         <View className={styles.cardTopRow}>
           <View className={styles.cardTitleColumn}>
             <Text className={styles.cardTitle}>{quest.title}</Text>
-            <View className={styles.cardCategory}>
-              <BriefcaseBusiness
-                color={colors.primary}
-                size={16}
-                strokeWidth={2.1}
-              />
-              <Text className={styles.cardCategoryText}>{quest.tag.name}</Text>
-            </View>
+            {quest.tag ? (
+              <View className={styles.cardCategory}>
+                <BriefcaseBusiness
+                  color={colors.primary}
+                  size={16}
+                  strokeWidth={2.1}
+                />
+                <Text className={styles.cardCategoryText}>{quest.tag.name}</Text>
+              </View>
+            ) : null}
           </View>
           <View className={styles.rewardBlock}>
             <Text className={styles.rewardAmount}>฿{quest.questReward}</Text>

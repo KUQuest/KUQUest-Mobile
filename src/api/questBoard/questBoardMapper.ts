@@ -18,13 +18,13 @@ export interface ApiQuestBoardItem {
   questId: string;
   title: string;
   questReward: number;
-  tag: QuestBoardTag;
+  tag: QuestBoardTag | null;
   mode: QuestBoardMode;
   participation: QuestBoardParticipation;
   headcount: number;
   activeWorkerCount: number;
   startTime: string;
-  dueAt: string;
+  dueAt: string | null;
   hirerName: string;
   location: string | null;
 }
@@ -39,7 +39,7 @@ export interface ApiQuestDetailItem {
   title: string;
   description: string | null;
   conditionItems: { position: number; text: string }[];
-  tag: QuestBoardTag;
+  tag: QuestBoardTag | null;
   mode: QuestBoardMode;
   participation: QuestBoardParticipation;
   state: QuestBoardStatus;
@@ -47,7 +47,7 @@ export interface ApiQuestDetailItem {
   headcount: number;
   activeWorkerCount: number;
   startTime: string;
-  dueAt: string;
+  dueAt: string | null;
   proofRequired: boolean;
   hirerName: string;
   locations: QuestBoardLocation[];

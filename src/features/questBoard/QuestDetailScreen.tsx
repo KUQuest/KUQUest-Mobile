@@ -1374,9 +1374,11 @@ function ApiQuestDetailScreen({
               </Text>
             </View>
           </View>
-          <View accessibilityLabel={messages.tags} className={styles.tagRow}>
-            <Text className={styles.tag}>{detail.tag.name}</Text>
-          </View>
+          {detail.tag ? (
+            <View accessibilityLabel={messages.tags} className={styles.tagRow}>
+              <Text className={styles.tag}>{detail.tag.name}</Text>
+            </View>
+          ) : null}
         </View>
         {detail.images.length > 0 ? (
           <View
@@ -1467,9 +1469,11 @@ function ApiQuestDetailScreen({
           <Text className={styles.timelineDate}>
             {formatApiDateTime(detail.startTime, locale)}
           </Text>
-          <Text className={styles.timelineDate}>
-            {`${messages.finishBy}: ${formatApiDateTime(detail.dueAt, locale)}`}
-          </Text>
+          {detail.dueAt ? (
+            <Text className={styles.timelineDate}>
+              {`${messages.finishBy}: ${formatApiDateTime(detail.dueAt, locale)}`}
+            </Text>
+          ) : null}
         </View>
         <View className={styles.section}>
           <Text className={styles.sectionTitle}>{messages.description}</Text>

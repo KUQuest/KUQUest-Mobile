@@ -13,6 +13,10 @@ import { questWorkflow } from "../questWorkflow";
 import type { TagApi } from "@/api/tag/TagApi";
 
 const mockPush = jest.fn();
+const itemTag = {
+  id: "58818dc3-6dad-424f-8dfd-d20b6747aeb3",
+  name: "Design",
+};
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush }),
@@ -34,10 +38,7 @@ const item: ApiQuestBoardItem = {
   questId: "2ad5b944-830b-4e28-95a7-5fe2792b713a",
   title: "API Quest",
   questReward: 980,
-  tag: {
-    id: "58818dc3-6dad-424f-8dfd-d20b6747aeb3",
-    name: "Design",
-  },
+  tag: itemTag,
   mode: "FIRST_COME_FIRST_SERVED",
   participation: "SINGLE",
   headcount: 1,
@@ -187,7 +188,7 @@ describe("API-backed Quest Board screen", () => {
   test("maps the selected Tag object and v2 filters to the API query", async () => {
     const listQuests = jest.fn().mockResolvedValue(page([item]));
     const tagCatalogApi = {
-      listTags: jest.fn().mockResolvedValue([item.tag]),
+      listTags: jest.fn().mockResolvedValue([itemTag]),
     } as unknown as TagApi;
     const view = await render(
       <QuestBoardScreen
@@ -201,9 +202,9 @@ describe("API-backed Quest Board screen", () => {
     await waitFor(() => expect(tagCatalogApi.listTags).toHaveBeenCalledTimes(1));
     await fireEvent.changeText(view.getByTestId("quest-filter-tag-search"), "design");
     await waitFor(() =>
-      expect(view.getByTestId(`quest-filter-tag-${item.tag.id}`)).toBeTruthy()
+      expect(view.getByTestId(`quest-filter-tag-${itemTag.id}`)).toBeTruthy()
     );
-    await fireEvent.press(view.getByTestId(`quest-filter-tag-${item.tag.id}`));
+    await fireEvent.press(view.getByTestId(`quest-filter-tag-${itemTag.id}`));
     await fireEvent.press(view.getByTestId("quest-filter-mode-candidate"));
     await fireEvent.press(view.getByTestId("quest-filter-participation-group"));
     await fireEvent.changeText(
@@ -229,7 +230,7 @@ describe("API-backed Quest Board screen", () => {
     await fireEvent.press(view.getByTestId("apply-quest-filters"));
 
     await waitFor(() => expect(listQuests).toHaveBeenLastCalledWith({
-      tagId: item.tag.id,
+      tagId: itemTag.id,
       mode: "CANDIDATE",
       participation: "GROUP",
       minQuestReward: 125.5,
@@ -309,6 +310,24 @@ describe("API-backed Quest Board screen", () => {
       expect(view.getByText("Server-authoritative full expired Quest")).toBeTruthy()
     );
     expect(view.queryByText("No quests available yet.")).toBeNull();
+  });
+
+  test("renders nullable API tag and dueAt without inventing values", async () => {
+    const nullableResult: ApiQuestBoardItem = {
+      ...item,
+      title: "Untyped public Quest",
+      tag: null,
+      dueAt: null,
+    };
+    const view = await render(
+      <QuestBoardScreen
+        boardRepository={repositoryFor(async () => page([nullableResult]))}
+      />
+    );
+
+    await waitFor(() => expect(view.getByText("Untyped public Quest")).toBeTruthy());
+    expect(view.queryByText("Design")).toBeNull();
+    expect(view.queryByText("No due date")).toBeNull();
   });
 
   test("never substitutes fixture cards when the API request fails", async () => {
