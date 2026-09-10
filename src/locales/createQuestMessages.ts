@@ -54,6 +54,13 @@ export interface CreateQuestMessages {
   descriptionPlaceholder: string;
   completionCriteria: string;
   completionCriteriaPlaceholder: string;
+  conditionItemsDescription: string;
+  conditionItemPlaceholder: string;
+  addCondition: string;
+  removeCondition: string;
+  moveConditionUp: string;
+  moveConditionDown: string;
+  conditionTooLongError: string;
   proofOfCompletion: string;
   proofRequiredDescription: string;
   proofNotNeededDescription: string;
@@ -96,6 +103,7 @@ export interface CreateQuestMessages {
   headcount: string;
   headcountPlaceholder: string;
   rewardPerPerson: string;
+  questFundingTotal: string;
   rewardPlaceholder: string;
   rewardHelper: string;
   questSummaryLabel: string;
@@ -127,6 +135,8 @@ export interface CreateQuestMessages {
   retrySave: string;
   loadDraftError: string;
   retryLoadDraft: string;
+  reviewDraftRequired: string;
+  reviewDraftDescription: string;
   savePreview: string;
   savingPreview: string;
   viewQuestBoard: string;
@@ -225,6 +235,13 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     descriptionPlaceholder: 'What needs to be done and what should the result look like?',
     completionCriteria: 'Completion criteria',
     completionCriteriaPlaceholder: 'How will you know the Quest is complete?',
+    conditionItemsDescription: 'Add each requirement as a separate ordered item.',
+    conditionItemPlaceholder: 'Describe one requirement for completion.',
+    addCondition: 'Add condition item',
+    removeCondition: 'Remove condition item',
+    moveConditionUp: 'Move condition item up',
+    moveConditionDown: 'Move condition item down',
+    conditionTooLongError: 'Each condition item must be 255 characters or fewer.',
     proofOfCompletion: 'Proof of completion',
     proofRequiredDescription: 'Participants must submit proof of completion when the Quest is done.',
     proofNotNeededDescription: 'No proof of completion is needed.',
@@ -267,8 +284,9 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     headcount: 'Headcount',
     headcountPlaceholder: 'e.g. 3',
     rewardPerPerson: 'Reward per person',
+    questFundingTotal: 'Quest Funding Total per person',
     rewardPlaceholder: '0.00',
-    rewardHelper: 'Paid to each accepted participant.',
+    rewardHelper: 'Complete budget per accepted participant; the server derives the Worker Reward and Platform Fee.',
     questSummaryLabel: 'Quest Summary',
     singleHeadcountHint: 'Single format always has one participant.',
     back: 'Back',
@@ -282,7 +300,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     savedDraftTitle: 'Quest draft saved locally',
     savedDraftDescription: 'Your draft is stored securely on this device and is not visible on the Quest Board yet.',
     publishedQuestTitle: 'Quest published',
-    publishedQuestDescription: 'Your Quest is now available in the demo Quest state and will appear in My Quests for the Hirer.',
+    publishedQuestDescription: 'Your Quest is now open and will appear in My Quests for the Hirer.',
     createAnotherDraft: 'Create another draft',
     notSelected: 'Not selected',
     onlineOrAgreed: 'Online or to be agreed',
@@ -298,6 +316,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     retrySave: 'Try again',
     loadDraftError: "We couldn't restore your Quest draft. Try again.",
     retryLoadDraft: 'Try again',
+    reviewDraftRequired: 'Review and save this draft again',
+    reviewDraftDescription: 'This draft uses an older or unsupported format. Review every field and save it again before publishing.',
     savePreview: 'Save Quest preview',
     savingPreview: 'Saving preview…',
     viewQuestBoard: 'Back to Quest Board',
@@ -308,7 +328,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     rewardPool: 'Reward pool',
     platformFee: 'Platform Fee',
     escrowTotal: 'Total Escrow required',
-    escrowDescription: 'The server reserves the reward pool plus the per-Worker Platform Fee.',
+    escrowDescription: 'The server validates the quote and derives the Worker Reward and Platform Fee from this inclusive budget.',
     imageError: 'We could not add images. Check photo permissions and try again.',
     titleError: 'Add a short title so people know what they will do.',
     questTagError: 'Choose the Quest Tag that best matches this Quest.',
@@ -385,6 +405,13 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     descriptionPlaceholder: 'ต้องทำอะไร และผลลัพธ์ควรเป็นอย่างไร',
     completionCriteria: 'เกณฑ์การเสร็จงาน',
     completionCriteriaPlaceholder: 'จะรู้ได้อย่างไรว่าเควสต์เสร็จสมบูรณ์',
+    conditionItemsDescription: 'เพิ่มข้อกำหนดแต่ละข้อเป็นรายการตามลำดับ',
+    conditionItemPlaceholder: 'ระบุข้อกำหนดหนึ่งข้อสำหรับการเสร็จงาน',
+    addCondition: 'เพิ่มข้อกำหนด',
+    removeCondition: 'ลบข้อกำหนด',
+    moveConditionUp: 'เลื่อนข้อกำหนดขึ้น',
+    moveConditionDown: 'เลื่อนข้อกำหนดลง',
+    conditionTooLongError: 'ข้อกำหนดแต่ละข้อต้องมีความยาวไม่เกิน 255 ตัวอักษร',
     proofOfCompletion: 'หลักฐานการเสร็จงาน',
     proofRequiredDescription: 'ผู้เข้าร่วมต้องส่งหลักฐานการเสร็จงานเมื่อทำเควสต์เสร็จ',
     proofNotNeededDescription: 'ไม่จำเป็นต้องส่งหลักฐานการเสร็จงาน',
@@ -427,8 +454,9 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     headcount: 'จำนวนผู้เข้าร่วม',
     headcountPlaceholder: 'เช่น 3',
     rewardPerPerson: 'ค่าตอบแทนต่อคน',
+    questFundingTotal: 'วงเงินเควสต์ต่อคน',
     rewardPlaceholder: '0.00',
-    rewardHelper: 'จ่ายให้ผู้เข้าร่วมแต่ละคนที่ได้รับเลือก',
+    rewardHelper: 'วงเงินเต็มต่อผู้เข้าร่วมหนึ่งคน ระบบจะคำนวณค่าตอบแทนและค่าธรรมเนียมจากเซิร์ฟเวอร์',
     questSummaryLabel: 'สรุปเควสต์',
     singleHeadcountHint: 'รูปแบบบุคคลเดียวมีผู้เข้าร่วมได้ 1 คนเสมอ',
     back: 'ย้อนกลับ',
@@ -442,7 +470,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     savedDraftTitle: 'บันทึกฉบับร่างเควสต์แล้ว',
     savedDraftDescription: 'ฉบับร่างถูกเก็บไว้อย่างปลอดภัยในอุปกรณ์นี้ และยังไม่แสดงบนกระดานเควสต์',
     publishedQuestTitle: 'เผยแพร่เควสต์แล้ว',
-    publishedQuestDescription: 'เควสต์ของคุณอยู่ในสถานะตัวอย่างที่เผยแพร่แล้ว และจะแสดงใน My Quests ของผู้ว่าจ้าง',
+    publishedQuestDescription: 'เควสต์ของคุณเปิดรับแล้ว และจะแสดงใน My Quests ของผู้ว่าจ้าง',
     createAnotherDraft: 'สร้างฉบับร่างใหม่',
     notSelected: 'ยังไม่ได้เลือก',
     onlineOrAgreed: 'ออนไลน์หรือรอตกลงกัน',
@@ -458,6 +486,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     retrySave: 'ลองอีกครั้ง',
     loadDraftError: 'ไม่สามารถกู้คืนฉบับร่างเควสต์ได้ ลองอีกครั้ง',
     retryLoadDraft: 'ลองอีกครั้ง',
+    reviewDraftRequired: 'ตรวจสอบและบันทึกฉบับร่างนี้อีกครั้ง',
+    reviewDraftDescription: 'ฉบับร่างนี้ใช้รูปแบบเก่าหรือไม่รองรับ โปรดตรวจสอบทุกช่องและบันทึกอีกครั้งก่อนเผยแพร่',
     savePreview: 'บันทึกตัวอย่างเควสต์',
     savingPreview: 'กำลังบันทึกตัวอย่าง…',
     viewQuestBoard: 'กลับไปกระดานเควสต์',
@@ -468,7 +498,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
     rewardPool: 'รวมค่าตอบแทน',
     platformFee: 'ค่าธรรมเนียมแพลตฟอร์ม',
     escrowTotal: 'Escrow ที่ต้องสำรองทั้งหมด',
-    escrowDescription: 'ระบบจะสำรองค่าตอบแทนรวมกับค่าธรรมเนียมต่อผู้เข้าร่วมตามผลจากเซิร์ฟเวอร์',
+    escrowDescription: 'เซิร์ฟเวอร์จะตรวจสอบราคาและคำนวณค่าตอบแทนกับค่าธรรมเนียมจากวงเงินเต็มนี้',
     imageError: 'ไม่สามารถเพิ่มรูปภาพได้ ตรวจสอบสิทธิ์การเข้าถึงรูปภาพแล้วลองอีกครั้ง',
     titleError: 'เพิ่มชื่อสั้น ๆ เพื่อให้ผู้สนใจเข้าใจว่าจะต้องทำอะไร',
     questTagError: 'เลือกแท็กเควสต์ที่ตรงกับเควสต์นี้ที่สุด',

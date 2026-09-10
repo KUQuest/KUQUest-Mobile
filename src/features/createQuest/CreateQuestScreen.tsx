@@ -40,10 +40,11 @@ import {
   CircleAlert,
   CircleHelp,
   Clock3,
+  ChevronUp,
   ImagePlus,
   Mail,
   MapPin,
-  Tag,
+  Tag as TagIcon,
   UserRound,
   UserRoundCheck,
   UsersRound,
@@ -64,20 +65,32 @@ import { Select } from "@/features/onboarding/components/Select";
 import { TextArea } from "@/features/onboarding/components/TextArea";
 import { useLocale } from "@/locales/LocaleProvider";
 import { createQuestMessages } from "@/locales/createQuestMessages";
+import type { CreateQuestMessages } from "@/locales/createQuestMessages";
 import { colors } from "@/theme/colors";
 import { getCreateQuestLayoutMetrics } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 import styles from "./createQuestStyles";
 import {
-  formatDraftReward,
+  addConditionItem,
+  CONDITION_ITEM_MAX_LENGTH,
+  getBangkokDateTimeParts,
+  getBangkokIsoDateTime,
+  getConditionValidationErrors,
+  formatDraftFundingTotal,
+  getFundingValidationError,
   getHeadcountForParticipation,
-  getRewardValidationError,
+  getQuestPublishCheck,
+  isBangkokIsoDateTime,
   getSchedulePickerValue,
   getScheduleTimeValue,
   initialDraft,
   isQuestDraftDirty,
+  moveConditionItem,
   mockQuestDraft,
+  removeConditionItem,
+  updateConditionItem,
   toQuestDraftPayload,
+  toQuestFixtureDraftPayload,
   type QuestDraft,
 } from "./createQuestModel";
 import {
@@ -87,6 +100,13 @@ import {
   persistQuestDraft,
 } from "./createQuestPersistence";
 import { questWorkflow } from "../questBoard/questWorkflow";
+import { useAuthEnvironment } from "../auth/authEnvironment";
+import { tagApi } from "@/api/tag/TagApi";
+import type { Tag } from "@/api/tag/tagContracts";
+import {
+  parseQuestPublishCheckData,
+  questCreateApi,
+} from "@/api/quest/QuestCreateApi";
 import {
   MAX_QUEST_IMAGES,
   formatSatang,
@@ -122,15 +142,13 @@ type ReviewActionButtonProps = {
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 const QUEST_DETAIL_FIELDS = new Set([
   "title",
-  "tag",
+  "tagId",
   "description",
-  "conditions",
+  "conditionItems",
 ]);
 const LOGISTICS_FIELDS = new Set([
-  "startDate",
-  "deadline",
   "startTime",
-  "endTime",
+  "dueAt",
   "location",
 ]);
 
@@ -150,20 +168,19 @@ function formatDate(
 }
 
 function formatDateTime(
-  dateValue: string,
-  timeValue: string,
+  value: string,
   locale: "en" | "th",
   emptyLabel: string
 ): string {
-  if (!dateValue || !TIME_PATTERN.test(timeValue)) return emptyLabel;
-  return `${formatDate(dateValue, locale, emptyLabel)} · ${timeValue}`;
+  const parts = getBangkokDateTimeParts(value);
+  if (!parts) return emptyLabel;
+  return `${formatDate(parts.date, locale, emptyLabel)} · ${parts.time}`;
 }
 
-function getDateTimeValue(dateValue: string, timeValue: string): number | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue) || !TIME_PATTERN.test(timeValue))
-    return null;
-  const date = new Date(`${dateValue}T${timeValue}:00`);
-  return Number.isNaN(date.getTime()) ? null : date.getTime();
+function getDateTimeValue(value: string): number | null {
+  if (!getBangkokDateTimeParts(value)) return null;
+  const timestamp = Date.parse(value);
+  return Number.isNaN(timestamp) ? null : timestamp;
 }
 
 function toDateValue(date: Date): string {
@@ -173,15 +190,31 @@ function toDateValue(date: Date): string {
 }
 
 function getDatePickerValue(value: string): Date {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return new Date(`${value}T12:00:00`);
+  const parts = getBangkokDateTimeParts(value);
+  if (parts) {
+    const [year, month, day] = parts.date.split("-").map(Number);
+    const [hours, minutes] = parts.time.split(":").map(Number);
+    return new Date(year, month - 1, day, hours, minutes);
+  }
   return new Date();
 }
 
 function getDateTimePickerValue(dateValue: string, timeValue: string): Date {
   const date = getDatePickerValue(dateValue);
-  const match = TIME_PATTERN.exec(timeValue);
-  if (match) date.setHours(Number(match[1]), Number(match[2]), 0, 0);
+  if (TIME_PATTERN.test(timeValue)) {
+    const [hours, minutes] = timeValue.split(":").map(Number);
+    date.setHours(hours, minutes, 0, 0);
+  }
   return date;
+}
+
+function getCreatedQuestId(data: Record<string, unknown>): string {
+  if (typeof data.id === "string" && data.id) return data.id;
+  throw new Error("The v2 create response did not include a Quest id.");
+}
+
+function createIdempotencyKey(intent: string): string {
+  return `mobile-create-quest-${intent}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 function FieldLabel({
@@ -680,7 +713,7 @@ function QuestSetupOverview({
       </View>
       <View className={styles.setupMetrics}>
         <SetupMetric
-          icon={Tag}
+          icon={TagIcon}
           label={messages.questTag}
           value={questTag}
           testID="create-quest-summary-type"
@@ -956,11 +989,106 @@ export interface CreateQuestScreenProps {
   editQuestId?: string;
 }
 
+function ConditionItemsEditor({
+  items,
+  errors,
+  messages,
+  onChange,
+  firstItemRef,
+}: {
+  items: string[];
+  errors: (string | undefined)[];
+  messages: CreateQuestMessages;
+  onChange: (items: string[]) => void;
+  firstItemRef: React.RefObject<React.ComponentRef<typeof RNTextInput> | null>;
+}) {
+  const getErrorMessage = (error: string | undefined): string | undefined => {
+    if (!error) return undefined;
+    return error === "CONDITION_TOO_LONG"
+      ? messages.conditionTooLongError
+      : messages.completionCriteriaError;
+  };
+
+  return (
+    <View className={styles.fieldGroup}>
+      <FieldLabel required optionalLabel="">
+        {messages.completionCriteria}
+      </FieldLabel>
+      <Text className={styles.helperText}>{messages.conditionItemsDescription}</Text>
+      {items.map((item, index) => (
+        <View key={`condition-${index}`} className={styles.conditionItem}>
+          <TextArea
+            ref={index === 0 ? firstItemRef : undefined}
+            accessibilityLabel={
+              index === 0
+                ? `${messages.completionCriteria} *`
+                : `${messages.completionCriteria} ${index + 1}`
+            }
+            label={`${index + 1}. ${messages.completionCriteria}`}
+            placeholder={messages.conditionItemPlaceholder}
+            value={item}
+            onChangeText={(value) =>
+              onChange(updateConditionItem(items, index, value))
+            }
+            error={getErrorMessage(errors[index])}
+            maxLength={CONDITION_ITEM_MAX_LENGTH}
+            testID={`create-quest-condition-item-${index}`}
+          />
+          <View className={styles.conditionActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={messages.moveConditionUp}
+              accessibilityState={{ disabled: index === 0 }}
+              disabled={index === 0}
+              onPress={() => onChange(moveConditionItem(items, index, "up"))}
+              testID={`create-quest-condition-up-${index}`}
+            >
+              <ChevronUp color={colors.primary} size={18} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={messages.moveConditionDown}
+              accessibilityState={{ disabled: index === items.length - 1 }}
+              disabled={index === items.length - 1}
+              onPress={() => onChange(moveConditionItem(items, index, "down"))}
+              testID={`create-quest-condition-down-${index}`}
+            >
+              <ChevronDown color={colors.primary} size={18} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={messages.removeCondition}
+              onPress={() => onChange(removeConditionItem(items, index))}
+              testID={`create-quest-condition-remove-${index}`}
+            >
+              <X color={colors.dangerDark} size={18} />
+            </Pressable>
+          </View>
+        </View>
+      ))}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={messages.addCondition}
+        className={styles.addConditionButton}
+        onPress={() => onChange(addConditionItem(items))}
+        testID="create-quest-condition-add"
+      >
+        <Text className={styles.addConditionText}>{messages.addCondition}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 export default function CreateQuestScreen({
   editQuestId,
 }: CreateQuestScreenProps = {}) {
   const router = useRouter();
   const { locale } = useLocale();
+  const { isDemo } = useAuthEnvironment();
+  const fixtureOnly =
+    isDemo ||
+    (process.env.NODE_ENV === "test" && !process.env.EXPO_PUBLIC_API_URL) ||
+    (__DEV__ && !process.env.EXPO_PUBLIC_API_URL);
   const messages = createQuestMessages[locale];
   const { width, fontScale } = useWindowDimensions();
   const layout = getCreateQuestLayoutMetrics(width);
@@ -979,9 +1107,11 @@ export default function CreateQuestScreen({
   const locationRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
   const headcountRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
   const rewardRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
-  const [step, setStep] = useState<Step>(() => (editQuestId ? 2 : 1));
+  const [step, setStep] = useState<Step>(() =>
+    fixtureOnly && editQuestId ? 2 : 1
+  );
   const [draft, setDraft] = useState<QuestDraft>(() =>
-    editQuestId
+    fixtureOnly && editQuestId
       ? { ...mockQuestDraft, imageUris: [...mockQuestDraft.imageUris] }
       : initialDraft
   );
@@ -989,6 +1119,8 @@ export default function CreateQuestScreen({
   const [draftStorageKey, setDraftStorageKey] = useState<string | null>(null);
   const [draftLoadAttempt, setDraftLoadAttempt] = useState(0);
   const [draftLoadError, setDraftLoadError] = useState(false);
+  const [draftNeedsReview, setDraftNeedsReview] = useState(false);
+  const [tagCatalog, setTagCatalog] = useState<Tag[]>([]);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [saveErrorIntent, setSaveErrorIntent] =
     useState<SaveErrorIntent | null>(null);
@@ -1016,14 +1148,39 @@ export default function CreateQuestScreen({
     null
   );
   const focusedInvalidFieldRef = useRef<string | null>(null);
+  const createIdempotencyKeyRef = useRef<string | null>(null);
+  const publishIdempotencyKeyRef = useRef<string | null>(null);
   const publishedQuestRef = useRef<{
     questId: string;
     storageKey: string;
     editQuestId?: string;
   } | null>(null);
 
-  const tagOptions = useMemo(
-    () => [
+  useEffect(() => {
+    if (fixtureOnly) return undefined;
+    let active = true;
+    void tagApi
+      .listTags()
+      .then((tags) => {
+        if (active) setTagCatalog(tags);
+      })
+      .catch(() => {
+        if (active) setTagCatalog([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [fixtureOnly]);
+
+  const tagOptions = useMemo(() => {
+    if (!fixtureOnly) {
+      return tagCatalog.map((tag) => ({
+        label: tag.name,
+        shortLabel: tag.name,
+        value: tag.id,
+      }));
+    }
+    return [
       {
         label:
           locale === "th" ? "การออกแบบและงานสร้างสรรค์" : "Design & creative",
@@ -1045,9 +1202,8 @@ export default function CreateQuestScreen({
         shortLabel: locale === "th" ? "ชีวิตมหาวิทยาลัย" : "Campus life",
         value: "campus-life",
       },
-    ],
-    [locale]
-  );
+    ];
+  }, [fixtureOnly, locale, tagCatalog]);
   const candidateOptions = useMemo(
     () => [
       {
@@ -1125,6 +1281,7 @@ export default function CreateQuestScreen({
         }
         if (requestId !== saveRequestRef.current) return false;
         setSaveState("saved");
+        setDraftNeedsReview(false);
         setSaveErrorIntent(null);
         setSavingAction(null);
         return true;
@@ -1166,18 +1323,32 @@ export default function CreateQuestScreen({
               draftToPublish.headcount
             ),
           };
-          const result = questWorkflow.dispatch({
-            type: "CREATE_AND_PUBLISH",
-            payload: toQuestDraftPayload(normalizedDraft),
-            hirerId: "demo-hirer",
-          });
-          if (!result.ok) {
-            setSaveState("error");
-            setSaveErrorIntent({ state: "OPEN", completesFlow: true });
-            setSavingAction(null);
-            return false;
+          if (fixtureOnly) {
+            const result = questWorkflow.dispatch({
+              type: "CREATE_AND_PUBLISH",
+              payload: toQuestFixtureDraftPayload(normalizedDraft),
+              hirerId: "demo-hirer",
+            });
+            if (!result.ok) {
+              setSaveState("error");
+              setSaveErrorIntent({ state: "OPEN", completesFlow: true });
+              setSavingAction(null);
+              return false;
+            }
+            publishedQuestId = result.state.quest.id;
+          } else if (editQuestId) {
+            publishedQuestId = editQuestId;
+          } else {
+            const data = await questCreateApi.createDraft(
+              toQuestDraftPayload(normalizedDraft),
+              {
+                idempotencyKey:
+                  createIdempotencyKeyRef.current ??
+                  (createIdempotencyKeyRef.current = createIdempotencyKey("draft")),
+              },
+            );
+            publishedQuestId = getCreatedQuestId(data);
           }
-          publishedQuestId = result.state.quest.id;
           publishedQuestRef.current = {
             questId: publishedQuestId,
             storageKey: draftStorageKey,
@@ -1185,10 +1356,38 @@ export default function CreateQuestScreen({
           };
         }
 
+        if (!fixtureOnly) {
+          if (!publishedQuestId) throw new Error("Quest id is unavailable.");
+          const serverCheck = await questCreateApi.getPublishCheck(publishedQuestId);
+          const serverCheckData = parseQuestPublishCheckData(serverCheck);
+          if (serverCheckData) {
+            const serverBlockers = serverCheckData.blockingReasons;
+            setPublishCheck({
+              ...getQuestPublishCheck(draftToPublish),
+              canPublish: serverBlockers.length === 0,
+              blockers: serverBlockers,
+              warnings: serverCheckData.warnings,
+            });
+            if (serverBlockers.length > 0) {
+              setValidationSummary(messages.publishCheckBlocked);
+              setSaveState("idle");
+              setSavingAction(null);
+              return false;
+            }
+          }
+          await questCreateApi.publishQuest(publishedQuestId, {
+            idempotencyKey:
+              publishIdempotencyKeyRef.current ??
+              (publishIdempotencyKeyRef.current = createIdempotencyKey("publish")),
+          });
+        }
+
         if (editQuestId) await deleteQuestDraft(draftStorageKey, editQuestId);
         else await deleteQuestDraft(draftStorageKey);
         if (requestId !== saveRequestRef.current) return false;
         publishedQuestRef.current = null;
+        createIdempotencyKeyRef.current = null;
+        publishIdempotencyKeyRef.current = null;
         setSaveState("saved");
         setSaveErrorIntent(null);
         setSavingAction(null);
@@ -1201,12 +1400,14 @@ export default function CreateQuestScreen({
         return false;
       }
     },
-    [draftStorageKey, editQuestId]
+    [draftStorageKey, editQuestId, fixtureOnly, messages]
   );
 
   useEffect(() => {
     let active = true;
     publishedQuestRef.current = null;
+    createIdempotencyKeyRef.current = null;
+    publishIdempotencyKeyRef.current = null;
     draftChangedRef.current = false;
     skipPersistRef.current = true;
     if (saveTimerRef.current) {
@@ -1226,7 +1427,10 @@ export default function CreateQuestScreen({
         if (!active) return;
 
         setDraftStorageKey(storageKey);
-        if (snapshot && !draftChangedRef.current) {
+        if (snapshot?.requiresReview) {
+          setDraftNeedsReview(true);
+        } else if (snapshot && "draft" in snapshot && !draftChangedRef.current) {
+          setDraftNeedsReview(false);
           setDraft({
             ...snapshot.draft,
             headcount: getHeadcountForParticipation(
@@ -1236,6 +1440,8 @@ export default function CreateQuestScreen({
           });
           setStep(snapshot.step);
           setCompletedState(snapshot.state === "OPEN" ? "OPEN" : null);
+        } else {
+          setDraftNeedsReview(false);
         }
         setDraftHydrated(true);
       } catch {
@@ -1279,6 +1485,8 @@ export default function CreateQuestScreen({
     draftChangedRef.current = true;
     skipPersistRef.current = false;
     publishedQuestRef.current = null;
+    createIdempotencyKeyRef.current = null;
+    publishIdempotencyKeyRef.current = null;
     setDraft((current) => ({ ...current, [field]: value }));
     setSaveState("idle");
     setSaveErrorIntent(null);
@@ -1297,6 +1505,7 @@ export default function CreateQuestScreen({
     draftChangedRef.current = true;
     skipPersistRef.current = false;
     publishedQuestRef.current = null;
+    publishIdempotencyKeyRef.current = null;
     setDraft((current) => ({
       ...current,
       participation: value,
@@ -1318,16 +1527,14 @@ export default function CreateQuestScreen({
   const focusRefs = useMemo<Record<string, React.RefObject<Focusable | null>>>(
     () => ({
       title: titleRef,
-      tag: tagRef,
+      tagId: tagRef,
       description: descriptionRef,
-      conditions: conditionsRef,
-      startDate: startDateRef,
-      deadline: deadlineRef,
+      conditionItems: conditionsRef,
       startTime: startDateRef,
-      endTime: deadlineRef,
+      dueAt: deadlineRef,
       location: locationRef,
       headcount: headcountRef,
-      wage: rewardRef,
+      questFundingTotal: rewardRef,
     }),
     []
   );
@@ -1380,45 +1587,53 @@ export default function CreateQuestScreen({
     const nextErrors: Record<string, string> = {};
     if (currentStep === 1) {
       if (!draft.title.trim()) nextErrors.title = messages.titleError;
-      if (!draft.tag) nextErrors.tag = messages.questTagError;
+      if (!draft.tagId) nextErrors.tagId = messages.questTagError;
       if (!draft.description.trim())
         nextErrors.description = messages.descriptionError;
-      if (!draft.conditions.trim())
-        nextErrors.conditions = messages.completionCriteriaError;
+      const conditionErrors = getConditionValidationErrors(draft.conditionItems);
+      if (conditionErrors.length === 0 || conditionErrors.some(Boolean)) {
+        if (conditionErrors.length === 0 || conditionErrors.every((error) => error === "CONDITION_REQUIRED")) {
+          nextErrors.conditionItems = messages.completionCriteriaError;
+        }
+        conditionErrors.forEach((error, index) => {
+          if (error) nextErrors[`conditionItem-${index}`] =
+            error === "CONDITION_TOO_LONG"
+              ? messages.conditionTooLongError
+              : messages.completionCriteriaError;
+        });
+      }
     }
     if (currentStep === 2) {
       const today = toDateValue(new Date());
-      if (!draft.startDate) nextErrors.startDate = messages.startDateError;
-      else if (draft.startDate < today)
-        nextErrors.startDate = messages.startDatePastError;
-      if (!draft.deadline) nextErrors.deadline = messages.deadlineError;
-      if (draft.startDate && draft.deadline && draft.deadline < draft.startDate)
-        nextErrors.deadline = messages.deadlineOrderError;
-      if (!draft.startTime || !TIME_PATTERN.test(draft.startTime))
+      const startParts = getBangkokDateTimeParts(draft.startTime);
+      const dueParts = getBangkokDateTimeParts(draft.dueAt);
+      if (!startParts || !isBangkokIsoDateTime(draft.startTime))
         nextErrors.startTime = messages.startTimeError;
-      if (!draft.endTime || !TIME_PATTERN.test(draft.endTime))
-        nextErrors.endTime = messages.endTimeError;
-      const startDateTime = getDateTimeValue(draft.startDate, draft.startTime);
-      const endDateTime = getDateTimeValue(draft.deadline, draft.endTime);
+      else if (startParts.date < today)
+        nextErrors.startTime = messages.startDatePastError;
+      if (!dueParts || !isBangkokIsoDateTime(draft.dueAt))
+        nextErrors.dueAt = messages.deadlineError;
+      const startDateTime = getDateTimeValue(draft.startTime);
+      const endDateTime = getDateTimeValue(draft.dueAt);
       if (
         startDateTime !== null &&
         endDateTime !== null &&
         endDateTime <= startDateTime
       )
-        nextErrors.endTime = messages.timeOrderError;
+        nextErrors.dueAt = messages.timeOrderError;
       if (draft.locationMode === "ON_CAMPUS" && !draft.location.trim())
         nextErrors.location = messages.locationError;
       if (
         draft.participation === "GROUP" &&
-        (!draft.headcount.trim() || Number(draft.headcount) < 1)
+        (!draft.headcount.trim() || Number(draft.headcount) < 2 || Number(draft.headcount) > 20 || !Number.isSafeInteger(Number(draft.headcount)))
       )
         nextErrors.headcount = messages.headcountError;
-      const rewardError = getRewardValidationError(draft.wage, {
+      const rewardError = getFundingValidationError(draft.questFundingTotal, {
         empty: messages.rewardEmptyError,
         format: messages.rewardFormatError,
         bounds: messages.rewardBoundsError,
       });
-      if (rewardError) nextErrors.wage = rewardError;
+      if (rewardError) nextErrors.questFundingTotal = rewardError;
     }
 
     setErrors(nextErrors);
@@ -1426,16 +1641,14 @@ export default function CreateQuestScreen({
     if (firstErrorKey) {
       const fieldLabels: Record<string, string> = {
         title: messages.titleLabel,
-        tag: messages.questTag,
+        tagId: messages.questTag,
         description: messages.description,
-        conditions: messages.completionCriteria,
-        startDate: messages.startDate,
-        deadline: messages.deadline,
-        startTime: messages.startTime,
-        endTime: messages.endTime,
+        conditionItems: messages.completionCriteria,
+        startTime: messages.startDateTime,
+        dueAt: messages.deadlineDateTime,
         location: messages.location,
         headcount: messages.headcount,
-        wage: messages.rewardPerPerson,
+        questFundingTotal: messages.questFundingTotal,
       };
       const firstError = `${fieldLabels[firstErrorKey] ?? messages.title}: ${nextErrors[firstErrorKey]}`;
       setValidationSummary(firstError);
@@ -1471,8 +1684,21 @@ export default function CreateQuestScreen({
   };
 
   const finishQuest = async (state: CompletionState) => {
+    if (draftNeedsReview && state === "OPEN") {
+      setValidationSummary(messages.reviewDraftDescription);
+      return;
+    }
+    if (draftNeedsReview && state === "DRAFT") {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      const saved = await saveDraft(draft, "DRAFT", true);
+      if (saved) setCompletedState("DRAFT");
+      return;
+    }
     if (!validateStep(2)) return;
-    const check = questWorkflow.getDraftPublishCheck(draft);
+    const check = getQuestPublishCheck(draft);
     setPublishCheck(check);
     if (state === "OPEN" && !check.canPublish) {
       const firstBlocker = check.blockers[0];
@@ -1547,27 +1773,24 @@ export default function CreateQuestScreen({
   };
 
   const openSchedulePicker = (field: ScheduleField) => {
-    const dateValue = field === "start" ? draft.startDate : draft.deadline;
-    const timeValue = field === "start" ? draft.startTime : draft.endTime;
+    const value = field === "start" ? draft.startTime : draft.dueAt;
     setScheduleField(field);
     setPickerMode("date");
     setIosPickerValue(
       Platform.OS === "ios"
-        ? getDateTimePickerValue(dateValue, timeValue)
+        ? getDateTimePickerValue(value, "")
         : null
     );
   };
 
   const saveScheduleValue = (field: ScheduleField, value: Date) => {
-    const dateKey = field === "start" ? "startDate" : "deadline";
-    const timeKey = field === "start" ? "startTime" : "endTime";
-    updateDraft(dateKey, toDateValue(value));
-    updateDraft(timeKey, getScheduleTimeValue(value));
+    updateDraft(field === "start" ? "startTime" : "dueAt", getBangkokIsoDateTime(value));
   };
 
   const saveScheduleTime = (field: ScheduleField, value: Date) => {
-    const timeKey = field === "start" ? "startTime" : "endTime";
-    updateDraft(timeKey, getScheduleTimeValue(value));
+    const currentValue = field === "start" ? draft.startTime : draft.dueAt;
+    const nextValue = getDateTimePickerValue(currentValue, getScheduleTimeValue(value));
+    updateDraft(field === "start" ? "startTime" : "dueAt", getBangkokIsoDateTime(nextValue));
   };
 
   const handleDateValueChange = (
@@ -1582,8 +1805,14 @@ export default function CreateQuestScreen({
     }
 
     if (pickerMode === "date") {
-      const dateKey = scheduleField === "start" ? "startDate" : "deadline";
-      updateDraft(dateKey, toDateValue(selectedDate));
+      const currentValue = scheduleField === "start" ? draft.startTime : draft.dueAt;
+      const nextValue = new Date(selectedDate);
+      const currentParts = getBangkokDateTimeParts(currentValue);
+      if (currentParts) {
+        const [hours, minutes] = currentParts.time.split(":").map(Number);
+        nextValue.setHours(hours, minutes, 0, 0);
+      }
+      updateDraft(scheduleField === "start" ? "startTime" : "dueAt", getBangkokIsoDateTime(nextValue));
       setPickerMode("time");
       return;
     }
@@ -1630,6 +1859,8 @@ export default function CreateQuestScreen({
   const resetDraft = async () => {
     saveRequestRef.current += 1;
     publishedQuestRef.current = null;
+    createIdempotencyKeyRef.current = null;
+    publishIdempotencyKeyRef.current = null;
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
@@ -1648,6 +1879,7 @@ export default function CreateQuestScreen({
       setSaveState("error");
     }
     setDraft(initialDraft);
+    setDraftNeedsReview(false);
     setErrors({});
     setValidationSummary(null);
     setImageError(undefined);
@@ -1670,19 +1902,21 @@ export default function CreateQuestScreen({
       ? messages.groupFirstComeHint
       : messages.groupCandidateHint;
   }, [draft.mode, draft.participation, messages]);
-  const proofRequired = draft.proofRequired !== "none";
+  const proofRequired = draft.proofRequired;
 
   const reviewPublishCheck = useMemo(
-    () => publishCheck ?? questWorkflow.getDraftPublishCheck(draft),
+    () => publishCheck ?? getQuestPublishCheck(draft),
     [draft, publishCheck]
   );
+  const startPartsForDisplay = getBangkokDateTimeParts(draft.startTime);
+  const duePartsForDisplay = getBangkokDateTimeParts(draft.dueAt);
   const summary = useMemo(
     () => [
       { label: messages.summary.title, value: draft.title || "—" },
       { label: messages.summary.description, value: draft.description || "—" },
       {
         label: messages.summary.completionCriteria,
-        value: draft.conditions || "—",
+        value: draft.conditionItems.filter((item) => item.trim()).join(" • ") || "—",
       },
       {
         label: messages.summary.proof,
@@ -1691,8 +1925,8 @@ export default function CreateQuestScreen({
       {
         label: messages.summary.schedule,
         value:
-          draft.startDate && draft.deadline && draft.startTime && draft.endTime
-            ? `${formatDate(draft.startDate, locale, messages.notSelected)} · ${draft.startTime}–${draft.endTime} → ${formatDate(draft.deadline, locale, messages.notSelected)}`
+          startPartsForDisplay && duePartsForDisplay
+            ? `${formatDate(startPartsForDisplay.date, locale, messages.notSelected)} / ${startPartsForDisplay.time}-${duePartsForDisplay.time} / ${formatDate(duePartsForDisplay.date, locale, messages.notSelected)}`
             : messages.notSelected,
       },
       {
@@ -1710,16 +1944,16 @@ export default function CreateQuestScreen({
       },
       {
         label: messages.summary.reward,
-        value: draft.wage
-          ? `${formatDraftReward(draft, locale)} / ${locale === "th" ? "คน" : "person"}`
+        value: draft.questFundingTotal
+          ? `${formatDraftFundingTotal(draft, locale)} / ${locale === "th" ? "คน" : "person"}`
           : messages.notSelected,
       },
     ],
-    [draft, locale, messages, proofRequired]
+    [draft, locale, messages, proofRequired, startPartsForDisplay, duePartsForDisplay]
   );
 
   const selectedQuestTag =
-    tagOptions.find((option) => option.value === draft.tag)?.shortLabel ??
+    tagOptions.find((option) => option.value === draft.tagId)?.shortLabel ??
     messages.notSelected;
   const selectedTeamSize =
     draft.participation === "SINGLE"
@@ -1732,9 +1966,9 @@ export default function CreateQuestScreen({
       ? messages.selectCandidate
       : messages.instantAccept;
   const logisticsSummary =
-    draft.startDate && draft.deadline && draft.startTime && draft.endTime
+    startPartsForDisplay && duePartsForDisplay
       ? messages.logisticsSummaryComplete(
-          `${formatDate(draft.startDate, locale, messages.notSelected)} · ${draft.startTime}–${draft.endTime}`,
+          `${formatDate(startPartsForDisplay.date, locale, messages.notSelected)} / ${startPartsForDisplay.time}-${duePartsForDisplay.time}`,
           draft.locationMode === "ONLINE"
             ? messages.online
             : draft.location || messages.notSelected
@@ -1843,19 +2077,17 @@ export default function CreateQuestScreen({
   const isSaving = saveState === "saving";
   const nextLabel = step === 2 ? messages.reviewQuest : messages.next;
   const schedulePickerDate =
-    scheduleField === "start" ? draft.startDate : draft.deadline;
-  const schedulePickerTime =
-    scheduleField === "start" ? draft.startTime : draft.endTime;
+    scheduleField === "start" ? draft.startTime : draft.dueAt;
   const schedulePickerValue = getSchedulePickerValue(
     Platform.OS,
-    getDateTimePickerValue(schedulePickerDate, schedulePickerTime),
+    getDateTimePickerValue(schedulePickerDate, ""),
     iosPickerValue
   );
   const schedulePickerMinimum =
     scheduleField === "start"
       ? new Date()
-      : draft.startDate
-        ? getDateTimePickerValue(draft.startDate, draft.startTime)
+      : draft.startTime
+        ? getDateTimePickerValue(draft.startTime, "")
         : undefined;
 
   return (
@@ -1967,10 +2199,28 @@ export default function CreateQuestScreen({
                   </Pressable>
                 </View>
               ) : null}
+              {draftNeedsReview ? (
+                <View
+                  accessibilityRole="alert"
+                  className={styles.saveErrorCard}
+                  testID="create-quest-draft-review-required"
+                >
+                  <CircleAlert
+                    color={colors.dangerDark}
+                    size={22}
+                    strokeWidth={2.2}
+                  />
+                  <View className={styles.saveErrorCopy}>
+                    <Text className={styles.saveErrorText}>
+                      {messages.reviewDraftRequired}: {messages.reviewDraftDescription}
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
               {step === 1 ? (
                 <View className={styles.sectionCard}>
                   <SectionHeading
-                    icon={Tag}
+                    icon={TagIcon}
                     title={messages.questDetails}
                     description={messages.questDetailsDescription}
                   />
@@ -1981,16 +2231,16 @@ export default function CreateQuestScreen({
                     value={draft.title}
                     onChangeText={(value) => updateDraft("title", value)}
                     error={errors.title}
-                    maxLength={100}
+                    maxLength={120}
                   />
                   <Select
                     ref={tagRef}
                     label={`${messages.questTag} *`}
                     options={tagOptions}
-                    value={draft.tag}
-                    onValueChange={(value) => updateDraft("tag", value)}
+                    value={draft.tagId}
+                    onValueChange={(value) => updateDraft("tagId", value)}
                     placeholder={messages.chooseQuestTag}
-                    error={errors.tag}
+                    error={errors.tagId}
                     searchable
                     searchPlaceholder={messages.searchQuestTags}
                     noResultsMessage={messages.noMatchingQuestTags}
@@ -2004,16 +2254,16 @@ export default function CreateQuestScreen({
                     value={draft.description}
                     onChangeText={(value) => updateDraft("description", value)}
                     error={errors.description}
-                    maxLength={300}
+                    maxLength={1000}
                   />
-                  <TextArea
-                    ref={conditionsRef}
-                    label={`${messages.completionCriteria} *`}
-                    placeholder={messages.completionCriteriaPlaceholder}
-                    value={draft.conditions}
-                    onChangeText={(value) => updateDraft("conditions", value)}
-                    error={errors.conditions}
-                    maxLength={300}
+                  <ConditionItemsEditor
+                    items={draft.conditionItems}
+                    errors={draft.conditionItems.map(
+                      (_, index) => errors[`conditionItem-${index}`] ?? errors.conditionItems
+                    )}
+                    messages={messages}
+                    onChange={(items) => updateDraft("conditionItems", items)}
+                    firstItemRef={conditionsRef}
                   />
                   <View className={styles.fieldGroup}>
                     <Pressable
@@ -2024,7 +2274,7 @@ export default function CreateQuestScreen({
                       onPress={() =>
                         updateDraft(
                           "proofRequired",
-                          proofRequired ? "none" : "required"
+                          !proofRequired
                         )
                       }
                       testID="create-quest-proof-toggle"
@@ -2156,12 +2406,12 @@ export default function CreateQuestScreen({
                       )}
                       <View className={styles.fieldGroup}>
                         <FieldLabel required optionalLabel={messages.optional}>
-                          {messages.rewardPerPerson}
+                          {messages.questFundingTotal}
                         </FieldLabel>
                         <View
                           className={cn(
                             styles.currencyInput,
-                            errors.wage ? styles.fieldError : null
+                            errors.questFundingTotal ? styles.fieldError : null
                           )}
                         >
                           <Text className={styles.currencySymbol}>฿</Text>
@@ -2170,24 +2420,24 @@ export default function CreateQuestScreen({
                             className={styles.currencyTextInput}
                             placeholder={messages.rewardPlaceholder}
                             placeholderTextColor={colors.textFaint}
-                            value={draft.wage}
+                            value={draft.questFundingTotal}
                             onChangeText={(value) =>
-                              updateDraft("wage", value.replace(/[^0-9.]/g, ""))
+                              updateDraft("questFundingTotal", value.replace(/[^0-9.]/g, ""))
                             }
                             keyboardType="decimal-pad"
-                            accessibilityLabel={`${messages.rewardPerPerson} (THB)`}
+                            accessibilityLabel={`${messages.questFundingTotal} (THB)`}
                           />
                           <Text className={styles.currencyUnit}>THB</Text>
                         </View>
                         <Text
                           accessibilityLiveRegion={
-                            errors.wage ? "assertive" : "none"
+                            errors.questFundingTotal ? "assertive" : "none"
                           }
                           className={
-                            errors.wage ? styles.errorText : styles.helperText
+                            errors.questFundingTotal ? styles.errorText : styles.helperText
                           }
                         >
-                          {errors.wage ?? messages.rewardHelper}
+                          {errors.questFundingTotal ?? messages.rewardHelper}
                         </Text>
                       </View>
                     </View>
@@ -2203,15 +2453,12 @@ export default function CreateQuestScreen({
                       emptyLabel={messages.notSelected}
                       label={messages.startDateTime}
                       value={formatDateTime(
-                        draft.startDate,
                         draft.startTime,
                         locale,
                         messages.notSelected
                       )}
-                      hasValue={Boolean(
-                        draft.startDate && TIME_PATTERN.test(draft.startTime)
-                      )}
-                      error={errors.startDate ?? errors.startTime}
+                      hasValue={isBangkokIsoDateTime(draft.startTime)}
+                      error={errors.startTime}
                       helper={messages.dateTimeHelper}
                       fieldRef={startDateRef}
                       testID="create-quest-start-datetime"
@@ -2221,15 +2468,12 @@ export default function CreateQuestScreen({
                       emptyLabel={messages.notSelected}
                       label={messages.deadlineDateTime}
                       value={formatDateTime(
-                        draft.deadline,
-                        draft.endTime,
+                        draft.dueAt,
                         locale,
                         messages.notSelected
                       )}
-                      hasValue={Boolean(
-                        draft.deadline && TIME_PATTERN.test(draft.endTime)
-                      )}
-                      error={errors.deadline ?? errors.endTime}
+                      hasValue={isBangkokIsoDateTime(draft.dueAt)}
+                      error={errors.dueAt}
                       helper={messages.dateTimeHelper}
                       fieldRef={deadlineRef}
                       testID="create-quest-deadline-datetime"
@@ -2302,6 +2546,7 @@ export default function CreateQuestScreen({
                                 updateDraft("location", value)
                               }
                               accessibilityLabel={messages.location}
+                              maxLength={100}
                               testID="create-quest-location"
                             />
                           </View>
@@ -2456,24 +2701,13 @@ export default function CreateQuestScreen({
                       <View className={styles.escrowRows}>
                         <View className={styles.escrowRow}>
                           <Text className={styles.escrowLabel}>
-                            {messages.rewardPool}
+                            {messages.questFundingTotal}
                           </Text>
                           <Text className={styles.escrowValue}>
-                            {formatDraftReward(draft, locale)} ×{" "}
+                            {formatDraftFundingTotal(draft, locale)} ×{" "}
                             {reviewPublishCheck.escrow.headcount} ={" "}
                             {formatSatang(
                               reviewPublishCheck.escrow.rewardPoolSatang,
-                              locale
-                            )}
-                          </Text>
-                        </View>
-                        <View className={styles.escrowRow}>
-                          <Text className={styles.escrowLabel}>
-                            {messages.platformFee}
-                          </Text>
-                          <Text className={styles.escrowValue}>
-                            {formatSatang(
-                              reviewPublishCheck.escrow.platformFeeSatang,
                               locale
                             )}
                           </Text>
