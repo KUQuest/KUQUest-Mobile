@@ -1,10 +1,12 @@
 import { ApiClient } from "../ApiClient";
 import {
+  questBoardDetailResponseSchema,
   questBoardQuerySchema,
   questBoardResponseSchema,
 } from "./questBoardContracts";
 import type {
   QuestBoardCursor,
+  QuestBoardDetail,
   QuestBoardQuery,
 } from "./questBoardContracts";
 
@@ -29,6 +31,14 @@ export class QuestBoardApi {
     );
 
     return questBoardResponseSchema.parse(body).data;
+  }
+
+  async getQuestDetail(questId: string): Promise<QuestBoardDetail> {
+    const body = await this.client.request<unknown>(
+      `/api/v2/quests/${encodeURIComponent(questId)}`
+    );
+
+    return questBoardDetailResponseSchema.parse(body).data;
   }
 
   /** @deprecated Use listQuests for the v2 Board endpoint. */

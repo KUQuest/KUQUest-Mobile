@@ -5,7 +5,9 @@ export const QUEST_BOARD_API_VERSION = "v2" as const;
 
 const questIdSchema = z.string().uuid();
 const dateTimeSchema = z.string().datetime({ offset: true });
+const questRewardSchema = z.number().finite().min(0).max(700_000);
 const positiveIntegerSchema = z.number().int().positive();
+const nonNegativeIntegerSchema = z.number().int().nonnegative();
 
 export const questBoardModeSchema = z.enum([
   "FIRST_COME_FIRST_SERVED",
@@ -28,28 +30,30 @@ export const questBoardTagSchema = z.object({
 });
 
 export const questBoardLocationSchema = z.object({
-  label: z.string().nullable(),
+  label: z.string().min(1),
 });
 
 export const questBoardImageSchema = z.object({
-  fileId: questIdSchema,
-  position: z.number().int().nonnegative(),
+  imageId: questIdSchema,
+  position: nonNegativeIntegerSchema,
   url: z.string().url(),
+  urlExpiresAt: dateTimeSchema,
 });
 
 /** The Quest Board card returned by GET /api/v2/quests. */
 export const questBoardCardSchema = z.object({
   id: questIdSchema,
   title: z.string(),
-  reward: positiveIntegerSchema,
+  questReward: questRewardSchema,
   tag: questBoardTagSchema,
   mode: questBoardModeSchema,
   participation: questBoardParticipationSchema,
   headcount: positiveIntegerSchema,
+  activeWorkerCount: nonNegativeIntegerSchema.max(20),
   startTime: dateTimeSchema,
-  estimatedDurationMinutes: positiveIntegerSchema.nullable(),
+  dueAt: dateTimeSchema,
   hirerName: z.string(),
-  location: questBoardLocationSchema.nullable(),
+  location: z.string().nullable(),
 });
 
 export const questBoardCursorSchema = z.object({
@@ -68,17 +72,21 @@ export const questBoardDetailSchema = z.object({
   id: questIdSchema,
   title: z.string(),
   description: z.string().nullable(),
-  condition: z.string(),
-  reward: positiveIntegerSchema,
-  tag: questBoardTagSchema.nullable(),
+  condition: z.object({
+    items: z.array(z.object({
+      position: nonNegativeIntegerSchema,
+      text: z.string(),
+    })).min(1),
+  }),
+  tag: questBoardTagSchema,
   mode: questBoardModeSchema,
   participation: questBoardParticipationSchema,
-  questStatus: questBoardStatusSchema,
-  hiddenAt: dateTimeSchema.nullable().optional(),
+  state: questBoardStatusSchema,
+  questReward: questRewardSchema,
   headcount: positiveIntegerSchema,
+  activeWorkerCount: nonNegativeIntegerSchema.max(20),
   startTime: dateTimeSchema,
-  dueAt: dateTimeSchema.nullable(),
-  estimatedDurationMinutes: positiveIntegerSchema.nullable(),
+  dueAt: dateTimeSchema,
   proofRequired: z.boolean(),
   hirerName: z.string(),
   locations: z.array(questBoardLocationSchema),

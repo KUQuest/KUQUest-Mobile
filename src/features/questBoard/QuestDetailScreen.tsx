@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { cn } from "@/tw/cn";
+import type { ApiQuestDetailItem } from "@/api/questBoard/questBoardMapper";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import {
   BriefcaseBusiness,
@@ -88,6 +89,10 @@ import {
   type PartialGroupStartVoter,
   type TeamDirectoryMember,
 } from "./components";
+import {
+  questDetailRepository,
+  type QuestDetailRepository,
+} from "./questBoardRepository";
 
 export interface QuestDetailScreenProps {
   previewState?: BoardPreviewState;
@@ -95,6 +100,7 @@ export interface QuestDetailScreenProps {
   studentId?: string;
   mode?: QuestDetailMode;
   joinStatus?: QuestJoinStatus;
+  detailRepository?: QuestDetailRepository;
 }
 
 type DisplayApplicationStatus = QuestViewerApplicationStatus;
@@ -1190,7 +1196,297 @@ function ConfirmationSheet({
   );
 }
 
-export default function QuestDetailScreen({
+function formatApiDateTime(value: string, locale: "en" | "th"): string {
+  return new Intl.DateTimeFormat(
+    locale === "th" ? "th-TH-u-ca-buddhist" : "en-GB",
+    {
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      month: "short",
+      year: "numeric",
+    }
+  ).format(new Date(value));
+}
+
+function ApiQuestDetailScreen({
+  questId,
+  repository,
+}: {
+  questId?: string;
+  repository: QuestDetailRepository;
+}) {
+  const router = useRouter();
+  const { locale } = useLocale();
+  const messages = questBoardMessages[locale];
+  const [detailState, setDetailState] = useState<ApiQuestDetailItem | null>(
+    null
+  );
+  const [detailKeyState, setDetailKeyState] = useState<string | null>(null);
+  const [loadingState, setLoadingState] = useState(false);
+  const [errorState, setErrorState] = useState<unknown>(null);
+  const [retryAttempt, setRetryAttempt] = useState(0);
+  const requestKey = questId ? `${questId}:${retryAttempt}` : null;
+  const detailIsCurrent = requestKey !== null && detailKeyState === requestKey;
+  const detail = detailIsCurrent ? detailState : null;
+  const loading = Boolean(questId) && (!detailIsCurrent || loadingState);
+  const error = detailIsCurrent ? errorState : null;
+
+  useEffect(() => {
+    if (!questId || !requestKey) return undefined;
+
+    let active = true;
+    void repository
+      .getQuestDetail(questId)
+      .then((nextDetail) => {
+        if (active) {
+          setDetailState(nextDetail);
+          setErrorState(null);
+        }
+      })
+      .catch((nextError: unknown) => {
+        if (active) setErrorState(nextError);
+      })
+      .finally(() => {
+        if (active) {
+          setDetailKeyState(requestKey);
+          setLoadingState(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [questId, repository, requestKey]);
+
+  const handleBack = React.useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace("/(tabs)");
+  }, [router]);
+
+  if (loading) {
+    return (
+      <SafeAreaView
+        edges={["top", "left", "right"]}
+        className={styles.safeArea}
+      >
+        <TopBar
+          backLabel={messages.back}
+          onBackPress={handleBack}
+          title={messages.details}
+          variant="detail"
+        />
+        <QuestDetailSkeleton loadingLabel={messages.loading} />
+      </SafeAreaView>
+    );
+  }
+
+  if (!detail) {
+    return (
+      <SafeAreaView
+        edges={["top", "left", "right"]}
+        className={styles.safeArea}
+      >
+        <TopBar
+          backLabel={messages.back}
+          onBackPress={handleBack}
+          title={messages.details}
+          variant="detail"
+        />
+        <NotFoundState
+          title={error ? messages.errorTitle : messages.questNotFound}
+          description={
+            error ? messages.errorDescription : messages.questNotFoundDescription
+          }
+          actionLabel={error ? messages.retry : messages.back}
+          onAction={
+            error
+              ? () => setRetryAttempt((attempt) => attempt + 1)
+              : handleBack
+          }
+        />
+      </SafeAreaView>
+    );
+  }
+
+  const location = detail.locations.map((item) => item.label).join(", ");
+  const condition = detail.conditionItems.map((item) => item.text).join("\n");
+  const rewardSatang = Math.round(detail.questReward * 100);
+
+  return (
+    <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
+      <TopBar
+        backLabel={messages.back}
+        onBackPress={handleBack}
+        title={messages.details}
+        variant="detail"
+      />
+      <ScrollView
+        contentContainerClassName={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View className={styles.header}>
+          <Text accessibilityRole="header" className={styles.title}>
+            {detail.title}
+          </Text>
+          <Text
+            accessibilityLabel={messages.statusLabel(detail.state)}
+            className={styles.canonicalStatus}
+            testID="api-quest-detail-server-state"
+          >
+            {messages.statusLabel(detail.state)}
+          </Text>
+          <View className={styles.creatorRow}>
+            <View className={styles.creatorAvatar}>
+              <CircleUserRound
+                color={colors.primary}
+                size={17}
+                strokeWidth={2}
+              />
+            </View>
+            <View className={styles.creatorCopy}>
+              <Text className={styles.creatorLabel}>{messages.creator}</Text>
+              <Text className={styles.creatorValue} numberOfLines={1}>
+                {detail.hirerName}
+              </Text>
+            </View>
+          </View>
+          <View accessibilityLabel={messages.tags} className={styles.tagRow}>
+            <Text className={styles.tag}>{detail.tag.name}</Text>
+          </View>
+        </View>
+        {detail.images.length > 0 ? (
+          <View
+            accessibilityLabel={messages.imageCount(detail.images.length)}
+            className={styles.imageGallery}
+          >
+            <QuestImage
+              featured
+              index={1}
+              messages={messages}
+              uri={detail.images[0].url}
+            />
+            {detail.images.length > 1 ? (
+              <View className={styles.imageThumbnailRow}>
+                {detail.images.slice(1).map((image, index) => (
+                  <QuestImage
+                    key={`${image.imageId}-${index + 1}`}
+                    index={index + 2}
+                    messages={messages}
+                    uri={image.url}
+                  />
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+        <View className={styles.heroCard}>
+          <View className={styles.heroPrimary}>
+            <View>
+              <Text className={styles.heroLabel}>{messages.reward}</Text>
+              <Text className={styles.heroRewardValue}>
+                {`${formatSatang(rewardSatang, locale)} ${messages.perPerson}`}
+              </Text>
+            </View>
+            <View className={styles.heroSpots}>
+              <Text className={styles.heroSpotsLabel}>{messages.spots}</Text>
+              <Text className={styles.heroSpotsValue}>
+                {`${detail.activeWorkerCount}/${detail.headcount}`}
+              </Text>
+            </View>
+          </View>
+          <View className={styles.heroDetails}>
+            <View className={styles.heroItem}>
+              <View className={styles.heroItemIcon}>
+                <UsersRound color={colors.primary} size={17} strokeWidth={2} />
+              </View>
+              <View className={styles.heroItemCopy}>
+                <Text className={styles.heroLabel}>{messages.participation}</Text>
+                <Text className={styles.heroValue}>
+                  {detail.participation === "GROUP"
+                    ? messages.team
+                    : messages.singlePerson}
+                </Text>
+              </View>
+            </View>
+            <View className={cn(styles.heroItem, styles.heroItemDivider)}>
+              <View className={styles.heroItemIcon}>
+                <CircleUserRound
+                  color={colors.primary}
+                  size={17}
+                  strokeWidth={2}
+                />
+              </View>
+              <View className={styles.heroItemCopy}>
+                <Text className={styles.heroLabel}>{messages.selectionMode}</Text>
+                <Text className={styles.heroValue}>
+                  {detail.mode === "FIRST_COME_FIRST_SERVED"
+                    ? messages.firstCome
+                    : messages.reviewCandidates}
+                </Text>
+              </View>
+            </View>
+          </View>
+          <View className={styles.heroLocation}>
+            <MapPin color={colors.primary} size={20} strokeWidth={2} />
+            <View className={styles.heroLocationCopy}>
+              <Text className={styles.heroLabel}>{messages.location}</Text>
+              <Text className={styles.heroLocationValue}>{location}</Text>
+            </View>
+          </View>
+        </View>
+        <View
+          accessibilityLabel={messages.schedule}
+          className={styles.scheduleCard}
+          testID="api-quest-detail-server-schedule"
+        >
+          <Text className={styles.scheduleTitle}>{messages.schedule}</Text>
+          <Text className={styles.timelineDate}>
+            {formatApiDateTime(detail.startTime, locale)}
+          </Text>
+          <Text className={styles.timelineDate}>
+            {`${messages.finishBy}: ${formatApiDateTime(detail.dueAt, locale)}`}
+          </Text>
+        </View>
+        <View className={styles.section}>
+          <Text className={styles.sectionTitle}>{messages.description}</Text>
+          <View className={styles.descriptionCard}>
+            <Text className={styles.body}>{detail.description ?? ""}</Text>
+          </View>
+        </View>
+        <View className={styles.section}>
+          <Text className={styles.sectionTitle}>{messages.requirements}</Text>
+          <View className={styles.requirementCard}>
+            <DetailRow
+              icon={ClipboardCheck}
+              label={messages.completionCriteria}
+              value={condition}
+            />
+            <DetailRow
+              icon={Check}
+              label={messages.proofRequired}
+              value={detail.proofRequired ? messages.required : messages.notNeeded}
+            />
+            <DetailRow
+              icon={UsersRound}
+              label={messages.selectionMode}
+              value={
+                detail.mode === "FIRST_COME_FIRST_SERVED"
+                  ? messages.firstCome
+                  : messages.reviewCandidates
+              }
+            />
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function PrototypeQuestDetailScreen({
   previewState,
   questId,
   studentId,
@@ -2423,4 +2719,29 @@ export default function QuestDetailScreen({
       ) : null}
     </SafeAreaView>
   );
+}
+
+export default function QuestDetailScreen(props: QuestDetailScreenProps) {
+  const params = useLocalSearchParams<{
+    id?: string | string[];
+    preview?: string | string[];
+  }>();
+  const { isDemo } = useAuthEnvironment();
+  const resolvedPreview =
+    props.previewState ?? parseBoardPreviewState(params.preview);
+  const resolvedQuestId = parseQuestRouteId(props.questId ?? params.id);
+  const useApiDetail =
+    Boolean(props.detailRepository) ||
+    (!isDemo && Boolean(process.env.EXPO_PUBLIC_API_URL) && !resolvedPreview);
+
+  if (useApiDetail) {
+    return (
+      <ApiQuestDetailScreen
+        questId={resolvedQuestId}
+        repository={props.detailRepository ?? questDetailRepository}
+      />
+    );
+  }
+
+  return <PrototypeQuestDetailScreen {...props} />;
 }

@@ -16,15 +16,16 @@ describe("questBoardContracts", () => {
           {
             id: questId,
             title: "Design a landing page",
-            reward: 980,
+            questReward: 980,
             tag: { id: tagId, name: "Design" },
             mode: "FIRST_COME_FIRST_SERVED",
             participation: "SINGLE",
             headcount: 1,
+            activeWorkerCount: 0,
             startTime: "2026-09-30T09:00:00.000+07:00",
-            estimatedDurationMinutes: 120,
+            dueAt: "2026-09-30T11:00:00.000+07:00",
             hirerName: "Hirer display name",
-            location: { label: "Online" },
+            location: "Online",
           },
         ],
         nextCursor: null,
@@ -32,7 +33,7 @@ describe("questBoardContracts", () => {
     });
 
     expect(response.data.items[0]).toEqual(expect.objectContaining({
-      reward: 980,
+      questReward: 980,
       hirerName: "Hirer display name",
     }));
   });
@@ -44,26 +45,30 @@ describe("questBoardContracts", () => {
         id: questId,
         title: "Design a landing page",
         description: null,
-        condition: "Use the supplied brand colors",
-        reward: 980,
-        tag: null,
+        condition: {
+          items: [{ position: 0, text: "Use the supplied brand colors" }],
+        },
+        tag: { id: tagId, name: "Design" },
         mode: "CANDIDATE",
         participation: "GROUP",
-        questStatus: "QUEST_OPEN",
+        state: "QUEST_OPEN",
+        questReward: 980,
         headcount: 2,
+        activeWorkerCount: 0,
         startTime: "2026-09-30T09:00:00.000+07:00",
-        dueAt: null,
-        estimatedDurationMinutes: null,
+        dueAt: "2026-09-30T11:00:00.000+07:00",
         proofRequired: true,
         hirerName: "Hirer display name",
-        locations: [{ label: null }],
+        locations: [{ label: "Online" }],
         images: [],
       },
     });
 
     expect(response.data).toEqual(expect.objectContaining({
-      condition: "Use the supplied brand colors",
-      questStatus: "QUEST_OPEN",
+      condition: {
+        items: [{ position: 0, text: "Use the supplied brand colors" }],
+      },
+      state: "QUEST_OPEN",
     }));
   });
 

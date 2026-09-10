@@ -32,13 +32,14 @@ describe("QuestBoardApi", () => {
         items: [{
           id: questId,
           title: "Design a landing page",
-          reward: 980,
+          questReward: 980,
           tag: { id: tagId, name: "Design" },
           mode: "FIRST_COME_FIRST_SERVED",
           participation: "SINGLE",
           headcount: 1,
+          activeWorkerCount: 0,
           startTime: "2026-09-30T09:00:00.000+07:00",
-          estimatedDurationMinutes: null,
+          dueAt: "2026-09-30T11:00:00.000+07:00",
           hirerName: "Hirer display name",
           location: null,
         }],
@@ -60,6 +61,44 @@ describe("QuestBoardApi", () => {
           Cookie: "better-auth.session_token=session-cookie",
         }),
       })
+    );
+  });
+
+  test("gets Quest Detail through the v2 endpoint", async () => {
+    fetchMock.mockResolvedValue(response({
+      success: true,
+      data: {
+        id: questId,
+        title: "Design a landing page",
+        description: "Server detail",
+        condition: { items: [{ position: 0, text: "Do the work" }] },
+        tag: { id: tagId, name: "Design" },
+        mode: "FIRST_COME_FIRST_SERVED",
+        participation: "SINGLE",
+        state: "QUEST_ASSIGNED",
+        questReward: 980,
+        headcount: 1,
+        activeWorkerCount: 1,
+        startTime: "2026-09-30T09:00:00.000+07:00",
+        dueAt: "2026-09-30T11:00:00.000+07:00",
+        proofRequired: true,
+        hirerName: "Hirer display name",
+        locations: [{ label: "Online" }],
+        images: [],
+      },
+    }));
+
+    await expect(api.getQuestDetail(questId)).resolves.toEqual(
+      expect.objectContaining({
+        id: questId,
+        state: "QUEST_ASSIGNED",
+        activeWorkerCount: 1,
+      })
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `https://api.example.test/api/v2/quests/${questId}`,
+      expect.objectContaining({ method: "GET" })
     );
   });
 

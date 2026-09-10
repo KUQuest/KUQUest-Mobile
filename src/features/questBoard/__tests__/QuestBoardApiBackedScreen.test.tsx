@@ -30,7 +30,7 @@ jest.mock("react-native/Libraries/Modal/Modal", () => ({
 const item: ApiQuestBoardItem = {
   questId: "2ad5b944-830b-4e28-95a7-5fe2792b713a",
   title: "API Quest",
-  reward: 980,
+  questReward: 980,
   tag: {
     id: "58818dc3-6dad-424f-8dfd-d20b6747aeb3",
     name: "Design",
@@ -38,10 +38,11 @@ const item: ApiQuestBoardItem = {
   mode: "FIRST_COME_FIRST_SERVED",
   participation: "SINGLE",
   headcount: 1,
+  activeWorkerCount: 0,
   startTime: "2099-09-30T09:00:00.000+07:00",
-  estimatedDurationMinutes: 120,
+  dueAt: "2099-09-30T11:00:00.000+07:00",
   hirerName: "API Hirer",
-  location: { label: "Online" },
+  location: "Online",
 };
 
 function repositoryFor(
@@ -234,6 +235,26 @@ describe("API-backed Quest Board screen", () => {
     await waitFor(() => expect(listQuests).toHaveBeenCalledTimes(2));
     expect(view.getByText("Second server result")).toBeTruthy();
     expect(view.getAllByTestId("quest-detail-second-quest")).toHaveLength(1);
+  });
+
+  test("renders server results without applying local expiry or capacity policy", async () => {
+    const serverResult = {
+      ...item,
+      title: "Server-authoritative full expired Quest",
+      activeWorkerCount: item.headcount,
+      startTime: "2020-09-30T09:00:00.000+07:00",
+      dueAt: "2020-09-30T11:00:00.000+07:00",
+    };
+    const view = await render(
+      <QuestBoardScreen
+        boardRepository={repositoryFor(async () => page([serverResult]))}
+      />
+    );
+
+    await waitFor(() =>
+      expect(view.getByText("Server-authoritative full expired Quest")).toBeTruthy()
+    );
+    expect(view.queryByText("No quests available yet.")).toBeNull();
   });
 
   test("never substitutes fixture cards when the API request fails", async () => {

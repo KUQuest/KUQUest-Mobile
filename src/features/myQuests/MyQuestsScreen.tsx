@@ -138,6 +138,8 @@ type LocaleContent = {
   appliedOn: string;
   reason: string;
   host: string;
+  productionUnavailableTitle: string;
+  productionUnavailableDescription: string;
   worker: RoleCopy<WorkerTab>;
   hirer: RoleCopy<HirerTab>;
 };
@@ -168,6 +170,8 @@ const content: Record<SupportedLocale, LocaleContent> = {
     appliedOn: "สมัครเมื่อ",
     reason: "เหตุผล",
     host: "ผู้โพสต์",
+    productionUnavailableTitle: "My Quests ยังไม่พร้อมใช้งานใน production",
+    productionUnavailableDescription: "ข้อมูล My Quests ต้องมาจาก API ที่รองรับก่อน จึงยังไม่แสดงข้อมูล fixture ใน production",
     worker: {
       title: "เควสต์ที่ฉันสมัคร",
       subtitle: "ติดตามเควสต์ที่คุณสมัครไว้",
@@ -237,6 +241,8 @@ const content: Record<SupportedLocale, LocaleContent> = {
     appliedOn: "Applied on",
     reason: "Reason",
     host: "Quest host",
+    productionUnavailableTitle: "My Quests is not connected to the production API",
+    productionUnavailableDescription: "My Quests will appear here when the server-backed endpoint is available.",
     worker: {
       title: "My Apply Quest",
       subtitle: "Track Quests you have applied for",
@@ -921,7 +927,12 @@ export default function MyQuestsScreen() {
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
   const { handleScroll } = useNavigationVisibility();
   const copy = content[locale];
-  const { activePersonaId, onPersonaChange, onReset } = useAuthEnvironment();
+  const { isDemo, activePersonaId, onPersonaChange, onReset } =
+    useAuthEnvironment();
+  const fixtureOnly =
+    isDemo ||
+    (process.env.NODE_ENV === "test" && !process.env.EXPO_PUBLIC_API_URL) ||
+    (__DEV__ && !process.env.EXPO_PUBLIC_API_URL);
   const [roleSelection, setRoleSelection] = useState<{
     personaId: PrototypePersonaId;
     role: Role;
@@ -936,13 +947,12 @@ export default function MyQuestsScreen() {
     null
   );
   const [workflowRevision, setWorkflowRevision] = useState(0);
-  React.useEffect(
-    () =>
-      questWorkflow.subscribe(() =>
-        setWorkflowRevision((revision) => revision + 1)
-      ),
-    []
-  );
+  React.useEffect(() => {
+    if (!fixtureOnly) return undefined;
+    return questWorkflow.subscribe(() =>
+      setWorkflowRevision((revision) => revision + 1)
+    );
+  }, [fixtureOnly]);
   const role =
     roleSelection?.personaId === activePersonaId
       ? roleSelection.role
@@ -957,7 +967,7 @@ export default function MyQuestsScreen() {
     role === "hirer" && activePersonaId !== HIRER_PERSONA_ID
       ? HIRER_PERSONA_ID
       : activePersonaId;
-  const candidateReviewState = candidateReviewQuestId
+  const candidateReviewState = fixtureOnly && candidateReviewQuestId
     ? questWorkflow.getQuestDetailState(candidateReviewQuestId, viewerId)
     : null;
   const canRejectCandidate = candidateReviewState
@@ -968,10 +978,12 @@ export default function MyQuestsScreen() {
       )
     : false;
   const items = useMemo(() => {
+    if (!fixtureOnly) return [];
     void workflowRevision;
     return getWorkflowItems(role, selectedTab, locale, viewerId);
-  }, [workflowRevision, locale, role, selectedTab, viewerId]);
+  }, [fixtureOnly, workflowRevision, locale, role, selectedTab, viewerId]);
   const summary = useMemo(() => {
+    if (!fixtureOnly) return null;
     void workflowRevision;
     if (role !== "worker" || !copy.worker.summary) return null;
     const counts = workerTabs.map(
@@ -993,7 +1005,7 @@ export default function MyQuestsScreen() {
             ? copy.worker.tabs.accepted
             : copy.worker.tabs.history,
     }));
-  }, [activePersonaId, workflowRevision, copy, locale, role]);
+  }, [activePersonaId, fixtureOnly, workflowRevision, copy, locale, role]);
   const tabOptions: readonly (WorkerTab | HirerTab)[] =
     role === "worker" ? workerTabs : hirerTabs;
   const bottomPadding =
@@ -1038,6 +1050,21 @@ export default function MyQuestsScreen() {
       testID="my-quests-prototype-menu"
     />
   );
+
+  if (!fixtureOnly) {
+    return (
+      <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
+        <View className={styles.emptyState}>
+          <Text className={styles.emptyTitle}>
+            {copy.productionUnavailableTitle}
+          </Text>
+          <Text className={styles.emptyDescription}>
+            {copy.productionUnavailableDescription}
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const selectTab = (nextTab: WorkerTab | HirerTab) => {
     const wasSelected = selectedTab === nextTab;

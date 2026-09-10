@@ -353,10 +353,10 @@ function ApiQuestCard({
     quest.mode === "CANDIDATE" ? messages.applyForReview : messages.firstCome;
   const accessibilityLabel = [
     quest.title,
-    `${messages.reward}: ฿${quest.reward}`,
+    `${messages.reward}: ฿${quest.questReward}`,
     `${participation} · ${mode}`,
     `${messages.schedule}: ${schedule}`,
-    `${messages.location}: ${quest.location?.label ?? ""}`,
+    `${messages.location}: ${quest.location ?? ""}`,
     messages.viewDetails,
   ]
     .filter(Boolean)
@@ -384,7 +384,7 @@ function ApiQuestCard({
             </View>
           </View>
           <View className={styles.rewardBlock}>
-            <Text className={styles.rewardAmount}>฿{quest.reward}</Text>
+            <Text className={styles.rewardAmount}>฿{quest.questReward}</Text>
             <Text className={styles.rewardUnit}>{messages.perPerson}</Text>
           </View>
         </View>
@@ -421,7 +421,7 @@ function ApiQuestCard({
               />
             </InfoIcon>
             <Text className={styles.locationText} numberOfLines={2}>
-              {quest.location?.label ?? ""}
+              {quest.location ?? ""}
             </Text>
           </View>
         </View>
