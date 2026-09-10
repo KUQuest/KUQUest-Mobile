@@ -49,7 +49,10 @@ import { colors } from "@/theme/colors";
 import { getAppChromeMetrics } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 import type { ApiQuestBoardItem } from "@/api/questBoard/questBoardMapper";
-import type { QuestBoardQuery } from "@/api/questBoard/questBoardContracts";
+import type {
+  QuestBoardQuery,
+  QuestBoardTag,
+} from "@/api/questBoard/questBoardContracts";
 import styles from "./questBoardStyles";
 import { getLocalizedQuest } from "./questFixtures";
 import {
@@ -63,8 +66,6 @@ import { getQuestRewardSatang, questWorkflow } from "./questWorkflow";
 import type { QuestBoardRepository } from "./questBoardRepository";
 import type { PrototypeScenarioRoute } from "@/components/ui/prototypeMenuData";
 import { tagApi, type TagApi } from "@/api/tag/TagApi";
-import type { QuestBoardTag } from "@/api/questBoard/questBoardContracts";
-
 import { formatSatang } from "./types";
 import {
   emptyQuestBoardFilter,
@@ -1259,11 +1260,12 @@ export default function QuestBoardScreen({
   const [sortOpen, setSortOpen] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [retrying, setRetrying] = useState(false);
-  const [apiItems, setApiItems] = useState<ApiQuestBoardItem[]>([]);
-  const [apiCursor, setApiCursor] = useState<string | null>(null);
-  const [apiLoading, setApiLoading] = useState(!fixtureBoard);
-  const [apiLoadingMore, setApiLoadingMore] = useState(false);
-  const [apiError, setApiError] = useState<unknown>(null);
+  const [apiItemsState, setApiItemsState] = useState<ApiQuestBoardItem[]>([]);
+  const [apiCursorState, setApiCursorState] = useState<string | null>(null);
+  const [apiLoadingState, setApiLoadingState] = useState(false);
+  const [apiLoadingMoreState, setApiLoadingMoreState] = useState(false);
+  const [apiErrorState, setApiErrorState] = useState<unknown>(null);
+  const [apiRequestKeyState, setApiRequestKeyState] = useState<string | null>(null);
   const [apiRetryAttempt, setApiRetryAttempt] = useState(0);
   const [tagCatalog, setTagCatalog] = useState<QuestBoardTag[]>([]);
   const [tagCatalogLoading, setTagCatalogLoading] = useState(false);
@@ -1271,7 +1273,7 @@ export default function QuestBoardScreen({
   const tagCatalogLoadedRef = useRef(false);
   const apiLoadingMoreRef = useRef(false);
   const apiRequestGenerationRef = useRef(0);
-  const [workflowRevision, setWorkflowRevision] = useState(0);
+  const [, setWorkflowRevision] = useState(0);
   const workflowNow = questWorkflow.getNow();
   const tagCatalogClient = tagCatalogApi ?? tagApi;
 
@@ -1300,6 +1302,16 @@ export default function QuestBoardScreen({
     filters.startTo,
     query,
   ]);
+  const apiRequestKey = useMemo(
+    () => `${fixtureBoard ? "fixture" : "api"}:${apiRetryAttempt}:${JSON.stringify(apiQuery)}`,
+    [apiQuery, apiRetryAttempt, fixtureBoard]
+  );
+  const apiStateIsCurrent = apiRequestKeyState === apiRequestKey;
+  const apiItems = apiStateIsCurrent ? apiItemsState : [];
+  const apiCursor = apiStateIsCurrent ? apiCursorState : null;
+  const apiLoading = !fixtureBoard && (!apiStateIsCurrent || apiLoadingState);
+  const apiLoadingMore = apiStateIsCurrent ? apiLoadingMoreState : false;
+  const apiError = apiStateIsCurrent ? apiErrorState : null;
 
   useEffect(
     () => {
@@ -1316,32 +1328,29 @@ export default function QuestBoardScreen({
     const generation = apiRequestGenerationRef.current + 1;
     apiRequestGenerationRef.current = generation;
     apiLoadingMoreRef.current = false;
-    setApiLoadingMore(false);
-    setApiItems([]);
-    setApiCursor(null);
-    setApiError(null);
-    setApiLoading(true);
     let active = true;
     void listQuestBoard(apiQuery)
       .then((page) => {
         if (!active || apiRequestGenerationRef.current !== generation) return;
-        setApiItems(page.items);
-        setApiCursor(page.nextCursor);
+        setApiItemsState(page.items);
+        setApiCursorState(page.nextCursor);
+        setApiErrorState(null);
       })
       .catch((error: unknown) => {
         if (active && apiRequestGenerationRef.current === generation) {
-          setApiError(error);
+          setApiErrorState(error);
         }
       })
       .finally(() => {
         if (active && apiRequestGenerationRef.current === generation) {
-          setApiLoading(false);
+          setApiRequestKeyState(apiRequestKey);
+          setApiLoadingState(false);
         }
       });
     return () => {
       active = false;
     };
-  }, [apiQuery, apiRetryAttempt, fixtureBoard, listQuestBoard]);
+  }, [apiQuery, apiRequestKey, fixtureBoard, listQuestBoard]);
 
   const loadNextApiPage = useCallback(() => {
     if (
@@ -1353,26 +1362,26 @@ export default function QuestBoardScreen({
     const generation = apiRequestGenerationRef.current;
     const cursor = apiCursor;
     apiLoadingMoreRef.current = true;
-    setApiLoadingMore(true);
+    setApiLoadingMoreState(true);
     void listQuestBoard({ ...apiQuery, cursor })
       .then((page) => {
         if (apiRequestGenerationRef.current !== generation) return;
-        setApiItems((items) => {
+        setApiItemsState((items) => {
           const existingIds = new Set(items.map((item) => item.questId));
           return [
             ...items,
             ...page.items.filter((item) => !existingIds.has(item.questId)),
           ];
         });
-        setApiCursor(page.nextCursor);
+        setApiCursorState(page.nextCursor);
       })
       .catch((error: unknown) => {
-        if (apiRequestGenerationRef.current === generation) setApiError(error);
+        if (apiRequestGenerationRef.current === generation) setApiErrorState(error);
       })
       .finally(() => {
         apiLoadingMoreRef.current = false;
         if (apiRequestGenerationRef.current === generation) {
-          setApiLoadingMore(false);
+          setApiLoadingMoreState(false);
         }
       });
   }, [
@@ -1400,7 +1409,7 @@ export default function QuestBoardScreen({
             previewState ?? "populated"
           )
         : ({ kind: "loading" } as const),
-    [fixtureBoard, previewState, resolvedStudentId, workflowRevision]
+    [fixtureBoard, previewState, resolvedStudentId]
   );
   const activePreviewState = previewState ?? "populated";
   const localizedQuests = useMemo(
