@@ -103,4 +103,34 @@ describe("API-backed Quest Detail screen", () => {
     expect(view.queryByText("Quest full")).toBeNull();
     expect(view.queryByText("This Quest is no longer accepting applications.")).toBeNull();
   });
+
+  test("keeps a full GROUP FCFS Quest assigned after its start time when the server says assigned", async () => {
+    const groupDetail: ApiQuestDetailItem = {
+      ...detail,
+      title: "Full group remains server-assigned",
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "GROUP",
+      state: "QUEST_ASSIGNED",
+      headcount: 3,
+      activeWorkerCount: 3,
+    };
+    const getQuestDetail = jest.fn().mockResolvedValue(groupDetail);
+    const view = await render(
+      <QuestDetailScreen
+        detailRepository={repositoryFor(getQuestDetail)}
+        questId={groupDetail.questId}
+      />
+    );
+
+    await waitFor(() =>
+      expect(view.getByText("Full group remains server-assigned")).toBeTruthy()
+    );
+    expect(view.getByTestId("api-quest-detail-server-state")).toHaveTextContent(
+      "Assigned"
+    );
+    expect(view.getByText("3/3")).toBeTruthy();
+    expect(view.queryByText("In progress")).toBeNull();
+    expect(view.queryByText("Quest full")).toBeNull();
+    expect(getQuestDetail).toHaveBeenCalledWith(groupDetail.questId);
+  });
 });
