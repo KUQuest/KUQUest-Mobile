@@ -221,6 +221,29 @@ describe('Quest fixture adapter', () => {
     }
   });
 
+  it('rejects a duplicate Start Work action from the same Worker', () => {
+    const created = createQuestFixtureAdapter({ now: fixedNow });
+    const startTime = new Date('2026-08-11T10:00:00.000Z');
+
+    const first = created.startWork(
+      'full-group-start-demo',
+      DEFAULT_PROTOTYPE_VIEWER_ID,
+      startTime
+    );
+    expect(first.ok).toBe(true);
+
+    const duplicate = created.startWork(
+      'full-group-start-demo',
+      DEFAULT_PROTOTYPE_VIEWER_ID,
+      new Date(startTime.getTime() + 1_000)
+    );
+    expect(duplicate.ok).toBe(false);
+    if (!duplicate.ok) {
+      expect(duplicate.error.code).toBe('DUPLICATE_ACTION');
+      expect(duplicate.state.quest.status).toBe(QuestStatus.QUEST_ASSIGNED);
+    }
+  });
+
   it('enters the partial-start demo directly with a frozen pending roster and voter capabilities', () => {
     const created = createQuestFixtureAdapter({ now: fixedNow });
     const demoWorker = created.getState('partial-group-start-demo', DEFAULT_PROTOTYPE_VIEWER_ID, fixedNow);
@@ -268,6 +291,7 @@ describe('Quest fixture adapter', () => {
     expect(getConsentRemainingMs(atStart?.partialStartConsent, directGroupStart)).toBe(PARTIAL_GROUP_START_CONSENT_WINDOW_MS);
     expect(atStart?.conversation.canWrite).toBe(true);
     expect(atStart?.capabilities.availableActions).toContain('VOTE_PARTIAL_GROUP_START_CONSENT');
+    expect(atStart?.capabilities.availableActions).not.toContain('START_WORK');
     expect(atStart?.capabilities.availableActions).not.toContain('DIRECT_JOIN');
     expect(created.listBoardQuests('demo-worker-3', directGroupStart).some((quest) => quest.id === 'clean-fan')).toBe(false);
 
