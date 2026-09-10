@@ -1,11 +1,16 @@
 import * as SecureStore from 'expo-secure-store';
 
 import { authService } from '@/features/auth/AuthService';
-import { parseStoredQuestSnapshot, type QuestDraft, type QuestDraftStep, type QuestDraftState, type StoredQuestDraft } from './createQuestModel';
+import {
+  parseStoredQuestSnapshot,
+  QUEST_DRAFT_SCHEMA_VERSION,
+  type QuestDraft,
+  type QuestDraftSnapshot,
+  type QuestDraftStep,
+  type QuestDraftState,
+} from './createQuestModel';
 
 export const CREATE_QUEST_DRAFT_KEY = 'kuquest.create-quest-draft';
-
-export type QuestDraftSnapshot = StoredQuestDraft;
 
 export async function getQuestDraftStorageKey(): Promise<string> {
   try {
@@ -32,7 +37,10 @@ export async function persistQuestDraft(
   state: QuestDraftState = 'DRAFT',
   _legacyQuestId?: string,
 ): Promise<void> {
-  await SecureStore.setItemAsync(storageKey, JSON.stringify({ draft, step, state }));
+  await SecureStore.setItemAsync(
+    storageKey,
+    JSON.stringify({ version: QUEST_DRAFT_SCHEMA_VERSION, draft, step, state }),
+  );
 }
 
 export async function deleteQuestDraft(storageKey: string, _legacyQuestId?: string): Promise<void> {
