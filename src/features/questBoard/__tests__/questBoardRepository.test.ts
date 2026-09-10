@@ -75,4 +75,42 @@ describe("ApiQuestBoardRepository", () => {
       "2ad5b944-830b-4e28-95a7-5fe2792b713a"
     );
   });
+
+  test("requests public Board Detail through the public API method", async () => {
+    const api = {
+      getPublicQuestDetail: jest.fn().mockResolvedValue({
+        id: "2ad5b944-830b-4e28-95a7-5fe2792b713a",
+        title: "Public API Quest",
+        description: null,
+        condition: { items: [{ position: 0, text: "Do the work" }] },
+        tag: null,
+        mode: "FIRST_COME_FIRST_SERVED",
+        participation: "GROUP",
+        state: "QUEST_OPEN",
+        questReward: 980,
+        headcount: 2,
+        activeWorkerCount: 0,
+        startTime: "2099-09-30T09:00:00.000+07:00",
+        dueAt: null,
+        proofRequired: false,
+        hirerName: "API Hirer",
+        locations: [],
+        images: [],
+      }),
+    } as unknown as QuestBoardApi;
+    const repository = new ApiQuestBoardRepository(api);
+
+    await expect(
+      repository.getPublicQuestDetail(
+        "2ad5b944-830b-4e28-95a7-5fe2792b713a"
+      )
+    ).resolves.toEqual(expect.objectContaining({
+      questId: "2ad5b944-830b-4e28-95a7-5fe2792b713a",
+      tag: null,
+      dueAt: null,
+    }));
+    expect(api.getPublicQuestDetail).toHaveBeenCalledWith(
+      "2ad5b944-830b-4e28-95a7-5fe2792b713a"
+    );
+  });
 });

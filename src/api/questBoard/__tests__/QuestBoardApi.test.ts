@@ -102,6 +102,45 @@ describe("QuestBoardApi", () => {
     );
   });
 
+  test("gets public Quest Detail through the public v2 endpoint", async () => {
+    fetchMock.mockResolvedValue(response({
+      success: true,
+      data: {
+        id: questId,
+        title: "Public Quest",
+        description: null,
+        condition: { items: [{ position: 0, text: "Do the work" }] },
+        tag: null,
+        mode: "FIRST_COME_FIRST_SERVED",
+        participation: "GROUP",
+        state: "QUEST_OPEN",
+        questReward: 980,
+        headcount: 2,
+        activeWorkerCount: 0,
+        startTime: "2026-09-30T09:00:00.000+07:00",
+        dueAt: null,
+        proofRequired: false,
+        hirerName: "Hirer display name",
+        locations: [],
+        images: [],
+      },
+    }));
+
+    await expect(api.getPublicQuestDetail(questId)).resolves.toEqual(
+      expect.objectContaining({
+        id: questId,
+        state: "QUEST_OPEN",
+        tag: null,
+        dueAt: null,
+      })
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `https://api.example.test/api/v2/quests/${questId}/public`,
+      expect.objectContaining({ method: "GET" })
+    );
+  });
+
   test("serializes canonical filters and preserves the opaque cursor", async () => {
     fetchMock.mockResolvedValue(response({
       success: true,

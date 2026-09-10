@@ -2,7 +2,11 @@ import { render, waitFor } from "@testing-library/react-native";
 
 import QuestDetailScreen from "../QuestDetailScreen";
 import type { ApiQuestDetailItem } from "@/api/questBoard/questBoardMapper";
-import type { QuestDetailRepository } from "../questBoardRepository";
+import {
+  questBoardRepository,
+  questDetailRepository,
+  type QuestDetailRepository,
+} from "../questBoardRepository";
 
 const mockBack = jest.fn();
 const mockCanGoBack = jest.fn(() => true);
@@ -48,9 +52,9 @@ const detail: ApiQuestDetailItem = {
 };
 
 function repositoryFor(
-  getQuestDetail: QuestDetailRepository["getQuestDetail"]
+  getPublicQuestDetail: QuestDetailRepository["getPublicQuestDetail"]
 ): QuestDetailRepository {
-  return { getQuestDetail };
+  return { getPublicQuestDetail };
 }
 
 describe("API-backed Quest Detail screen", () => {
@@ -59,13 +63,39 @@ describe("API-backed Quest Detail screen", () => {
     mockCanGoBack.mockClear();
     mockPush.mockClear();
     mockReplace.mockClear();
+    delete process.env.EXPO_PUBLIC_API_URL;
+  });
+
+  afterEach(() => {
+    delete process.env.EXPO_PUBLIC_API_URL;
+  });
+
+  test("production Board detail uses the default public repository method", async () => {
+    process.env.EXPO_PUBLIC_API_URL = "https://api.example.test";
+    const getPublicQuestDetail = jest
+      .spyOn(questDetailRepository, "getPublicQuestDetail")
+      .mockResolvedValue(detail);
+    const getQuestDetail = jest.spyOn(questBoardRepository, "getQuestDetail");
+
+    const view = await render(
+      <QuestDetailScreen questId={detail.questId} />
+    );
+
+    await waitFor(() =>
+      expect(view.getByText("Server-authoritative detail")).toBeTruthy()
+    );
+    expect(getPublicQuestDetail).toHaveBeenCalledWith(detail.questId);
+    expect(getQuestDetail).not.toHaveBeenCalled();
+
+    getPublicQuestDetail.mockRestore();
+    getQuestDetail.mockRestore();
   });
 
   test("renders server state and capacity without local expiry or full checks", async () => {
-    const getQuestDetail = jest.fn().mockResolvedValue(detail);
+    const getPublicQuestDetail = jest.fn().mockResolvedValue(detail);
     const view = await render(
       <QuestDetailScreen
-        detailRepository={repositoryFor(getQuestDetail)}
+        detailRepository={repositoryFor(getPublicQuestDetail)}
         questId={detail.questId}
       />
     );
@@ -80,17 +110,17 @@ describe("API-backed Quest Detail screen", () => {
     expect(view.queryByTestId("quest-apply-button")).toBeNull();
     expect(view.queryByText("Quest full")).toBeNull();
     expect(view.queryByText("Help move boxes to the dorm")).toBeNull();
-    expect(getQuestDetail).toHaveBeenCalledWith(detail.questId);
+    expect(getPublicQuestDetail).toHaveBeenCalledWith(detail.questId);
   });
 
   test("does not replace a server lifecycle state with a client availability label", async () => {
-    const getQuestDetail = jest.fn().mockResolvedValue({
+    const getPublicQuestDetail = jest.fn().mockResolvedValue({
       ...detail,
       state: "QUEST_FAILED",
     });
     const view = await render(
       <QuestDetailScreen
-        detailRepository={repositoryFor(getQuestDetail)}
+        detailRepository={repositoryFor(getPublicQuestDetail)}
         questId={detail.questId}
       />
     );
@@ -105,7 +135,7 @@ describe("API-backed Quest Detail screen", () => {
   });
 
   test("renders nullable API tag and dueAt without inventing values", async () => {
-    const getQuestDetail = jest.fn().mockResolvedValue({
+    const getPublicQuestDetail = jest.fn().mockResolvedValue({
       ...detail,
       title: "Public Quest without tag or due date",
       tag: null,
@@ -113,7 +143,7 @@ describe("API-backed Quest Detail screen", () => {
     });
     const view = await render(
       <QuestDetailScreen
-        detailRepository={repositoryFor(getQuestDetail)}
+        detailRepository={repositoryFor(getPublicQuestDetail)}
         questId={detail.questId}
       />
     );
@@ -135,10 +165,10 @@ describe("API-backed Quest Detail screen", () => {
       headcount: 3,
       activeWorkerCount: 3,
     };
-    const getQuestDetail = jest.fn().mockResolvedValue(groupDetail);
+    const getPublicQuestDetail = jest.fn().mockResolvedValue(groupDetail);
     const view = await render(
       <QuestDetailScreen
-        detailRepository={repositoryFor(getQuestDetail)}
+        detailRepository={repositoryFor(getPublicQuestDetail)}
         questId={groupDetail.questId}
       />
     );
@@ -152,6 +182,6 @@ describe("API-backed Quest Detail screen", () => {
     expect(view.getByText("3/3")).toBeTruthy();
     expect(view.queryByText("In progress")).toBeNull();
     expect(view.queryByText("Quest full")).toBeNull();
-    expect(getQuestDetail).toHaveBeenCalledWith(groupDetail.questId);
+    expect(getPublicQuestDetail).toHaveBeenCalledWith(groupDetail.questId);
   });
 });

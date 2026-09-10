@@ -41,6 +41,14 @@ export class QuestBoardApi {
     return questBoardDetailResponseSchema.parse(body).data;
   }
 
+  async getPublicQuestDetail(questId: string): Promise<QuestBoardDetail> {
+    const body = await this.client.request<unknown>(
+      `/api/v2/quests/${encodeURIComponent(questId)}/public`
+    );
+
+    return questBoardDetailResponseSchema.parse(body).data;
+  }
+
   /** @deprecated Use listQuests for the v2 Board endpoint. */
   async listBoardQuests(query: QuestBoardQuery = {}): Promise<QuestBoardCursor> {
     return this.listQuests(query);

@@ -1257,7 +1257,7 @@ function ApiQuestDetailScreen({
 
     let active = true;
     void repository
-      .getQuestDetail(questId)
+      .getPublicQuestDetail(questId)
       .then((nextDetail) => {
         if (active) {
           setDetailState(nextDetail);

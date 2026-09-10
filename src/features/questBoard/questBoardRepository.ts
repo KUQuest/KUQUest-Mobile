@@ -13,7 +13,7 @@ export interface QuestBoardRepository {
 }
 
 export interface QuestDetailRepository {
-  getQuestDetail(questId: string): Promise<ApiQuestDetailItem>;
+  getPublicQuestDetail(questId: string): Promise<ApiQuestDetailItem>;
 }
 
 export class ApiQuestBoardRepository
@@ -30,6 +30,11 @@ export class ApiQuestBoardRepository
 
   async getQuestDetail(questId: string): Promise<ApiQuestDetailItem> {
     const detail = await this.api.getQuestDetail(questId);
+    return mapQuestBoardDetail(detail);
+  }
+
+  async getPublicQuestDetail(questId: string): Promise<ApiQuestDetailItem> {
+    const detail = await this.api.getPublicQuestDetail(questId);
     return mapQuestBoardDetail(detail);
   }
 }
