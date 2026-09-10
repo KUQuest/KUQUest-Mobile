@@ -28,6 +28,33 @@ const mockRouter = { replace: jest.fn() };
 const mockLoadQuestDraft = jest.fn();
 const mockPersistQuestDraft = jest.fn();
 const mockDeleteQuestDraft = jest.fn();
+const mockListTags = jest.fn();
+const mockCreateDraft = jest.fn();
+const mockUpdateDraft = jest.fn();
+const mockGetPublishCheck = jest.fn();
+const mockPublishQuest = jest.fn();
+
+jest.mock('../../../api/tag/TagApi', () => ({
+  tagApi: {
+    listTags: (...args: unknown[]) => mockListTags(...args),
+  },
+}));
+
+jest.mock('@/api/quest/QuestCreateApi', () => ({
+  parseQuestPublishCheckData: (data: { blockingReasons?: unknown; warnings?: unknown }) =>
+    Array.isArray(data.blockingReasons)
+      ? {
+          blockingReasons: data.blockingReasons,
+          warnings: Array.isArray(data.warnings) ? data.warnings : [],
+        }
+      : null,
+  questCreateApi: {
+    createDraft: (...args: unknown[]) => mockCreateDraft(...args),
+    updateDraft: (...args: unknown[]) => mockUpdateDraft(...args),
+    getPublishCheck: (...args: unknown[]) => mockGetPublishCheck(...args),
+    publishQuest: (...args: unknown[]) => mockPublishQuest(...args),
+  },
+}));
 
 jest.mock('../createQuestPersistence', () => ({
   getQuestDraftStorageKey: jest.fn().mockResolvedValue('test-key'),
@@ -66,6 +93,14 @@ describe('CreateQuestScreen', () => {
     mockPersistQuestDraft.mockResolvedValue(undefined);
     mockDeleteQuestDraft.mockReset();
     mockDeleteQuestDraft.mockResolvedValue(undefined);
+    mockListTags.mockReset();
+    mockListTags.mockResolvedValue([]);
+    mockCreateDraft.mockReset();
+    mockUpdateDraft.mockReset();
+    mockGetPublishCheck.mockReset();
+    mockGetPublishCheck.mockResolvedValue({});
+    mockPublishQuest.mockReset();
+    mockPublishQuest.mockResolvedValue({ id: 'server-quest-id', status: 'QUEST_OPEN' });
   });
 
   it('keeps the page skeleton visible until draft hydration settles', async () => {
@@ -89,9 +124,9 @@ describe('CreateQuestScreen', () => {
       draft: {
         ...jest.requireActual('../createQuestModel').initialDraft,
         title: 'Restored quest',
-        tag: 'design',
+        tagId: 'design',
         description: 'Restored description',
-        conditions: 'Restored criteria',
+        conditionItems: ['Restored criteria'],
       },
       step: 2,
       state: 'DRAFT',
@@ -145,6 +180,136 @@ describe('CreateQuestScreen', () => {
 
     await fireEvent.press(view.getByLabelText('แท็กเควสต์ *: เทคโนโลยี'));
     expect(view.getByLabelText('แท็กเควสต์ *: เทคโนโลยี')).toBeTruthy();
+  });
+
+  it('supports editing, adding, reordering, and removing condition items', async () => {
+    const view = await render(<CreateQuestScreen />);
+    const firstItem = view.getByTestId('create-quest-condition-item-0');
+
+    await fireEvent.changeText(firstItem, 'First requirement');
+    await fireEvent.press(view.getByTestId('create-quest-condition-add'));
+    await fireEvent.changeText(
+      view.getByTestId('create-quest-condition-item-1'),
+      'Second requirement',
+    );
+    await fireEvent.press(view.getByTestId('create-quest-condition-up-1'));
+
+    expect(view.getByTestId('create-quest-condition-item-0').props.value).toBe(
+      'Second requirement',
+    );
+    expect(view.getByTestId('create-quest-condition-item-1').props.value).toBe(
+      'First requirement',
+    );
+
+    await fireEvent.press(view.getByTestId('create-quest-condition-remove-1'));
+    expect(view.getByTestId('create-quest-condition-item-0').props.value).toBe(
+      'Second requirement',
+    );
+    expect(view.queryByTestId('create-quest-condition-item-1')).toBeNull();
+  });
+
+  it('shows a review-and-resave state for an unsafe stored draft', async () => {
+    mockLoadQuestDraft.mockResolvedValueOnce({
+      requiresReview: true,
+      reason: 'LEGACY_SCHEMA',
+    });
+
+    const view = await render(<CreateQuestScreen />);
+
+    await waitFor(() =>
+      expect(view.getByTestId('create-quest-draft-review-required')).toBeTruthy(),
+    );
+    expect(view.getByText(/ตรวจสอบและบันทึกฉบับร่างนี้อีกครั้ง/)).toBeTruthy();
+    expect(view.queryByTestId('create-quest-save-preview')).toBeNull();
+  });
+
+  it('loads the production tag catalog when the API is configured', async () => {
+    const previousApiUrl = process.env.EXPO_PUBLIC_API_URL;
+    process.env.EXPO_PUBLIC_API_URL = 'https://api.example.test';
+    mockListTags.mockResolvedValueOnce([
+      { id: 'server-tag-id', name: 'Server tag' },
+    ]);
+
+    try {
+      await render(<CreateQuestScreen />);
+      await waitFor(() => expect(mockListTags).toHaveBeenCalledTimes(1));
+    } finally {
+      if (previousApiUrl === undefined) delete process.env.EXPO_PUBLIC_API_URL;
+      else process.env.EXPO_PUBLIC_API_URL = previousApiUrl;
+    }
+  });
+
+  it('uses the v2 API payload and never the fixture adapter in production mode', async () => {
+    const previousApiUrl = process.env.EXPO_PUBLIC_API_URL;
+    const previousDemoProfile = process.env.EXPO_PUBLIC_PROFILE_DEMO;
+    process.env.EXPO_PUBLIC_API_URL = 'https://api.example.test';
+    delete process.env.EXPO_PUBLIC_PROFILE_DEMO;
+    const { initialDraft } = jest.requireActual('../createQuestModel') as typeof import('../createQuestModel');
+    const productionDraft = {
+      ...initialDraft,
+      title: 'Production quest',
+      tagId: '58818dc3-6dad-424f-8dfd-d20b6747aeb3',
+      description: 'Server-backed quest description',
+      conditionItems: ['Submit the completed work.'],
+      startTime: '2099-08-26T09:00:00.000+07:00',
+      dueAt: '2099-08-27T12:00:00.000+07:00',
+      locationMode: 'ONLINE' as const,
+      questFundingTotal: '20.00',
+    };
+    mockLoadQuestDraft.mockResolvedValueOnce({
+      version: 2,
+      draft: productionDraft,
+      step: 3,
+      state: 'DRAFT',
+    });
+    mockListTags.mockResolvedValueOnce([
+      { id: productionDraft.tagId, name: 'Design' },
+    ]);
+    mockCreateDraft.mockResolvedValueOnce({
+      id: 'server-quest-id',
+      status: 'QUEST_DRAFT',
+    });
+
+    try {
+      const view = await render(<CreateQuestScreen />);
+      await waitFor(() => expect(view.getByTestId('create-quest-save-preview')).toBeTruthy());
+      await fireEvent.press(view.getByTestId('create-quest-save-preview'));
+
+      await waitFor(() => expect(mockCreateDraft).toHaveBeenCalled());
+      await waitFor(() => expect(view.getByText('เผยแพร่เควสต์แล้ว')).toBeTruthy());
+      expect(mockCreateDraft).toHaveBeenCalledWith(
+        {
+          title: 'Production quest',
+          description: 'Server-backed quest description',
+          condition: { items: ['Submit the completed work.'] },
+          tagId: productionDraft.tagId,
+          proofRequired: true,
+          startTime: productionDraft.startTime,
+          dueAt: productionDraft.dueAt,
+          locations: [],
+          mode: 'FIRST_COME_FIRST_SERVED',
+          participation: 'SINGLE',
+          headcount: 1,
+          questFundingTotal: 20,
+        },
+        expect.objectContaining({ idempotencyKey: expect.any(String) }),
+      );
+      expect(mockGetPublishCheck).toHaveBeenCalledWith('server-quest-id');
+      expect(mockPublishQuest).toHaveBeenCalledWith(
+        'server-quest-id',
+        expect.objectContaining({ idempotencyKey: expect.any(String) }),
+      );
+      expect(
+        questFixtureAdapter
+          .listStates('demo-hirer')
+          .some((state) => state.quest.title === 'Production quest'),
+      ).toBe(false);
+    } finally {
+      if (previousApiUrl === undefined) delete process.env.EXPO_PUBLIC_API_URL;
+      else process.env.EXPO_PUBLIC_API_URL = previousApiUrl;
+      if (previousDemoProfile === undefined) delete process.env.EXPO_PUBLIC_PROFILE_DEMO;
+      else process.env.EXPO_PUBLIC_PROFILE_DEMO = previousDemoProfile;
+    }
   });
 
   it('keeps Single headcount fixed at one in the mock draft', async () => {
@@ -220,7 +385,7 @@ describe('CreateQuestScreen', () => {
     await fireEvent.press(view.getByLabelText('ตรวจสอบเควสต์'));
 
     await waitFor(() => expect(view.getByTestId('create-quest-start-datetime')).toBeTruthy());
-    expect(view.getByText(/วันที่เริ่มต้น:/)).toBeTruthy();
+    expect(view.getByText(/วันที่และเวลาเริ่มต้น:/)).toBeTruthy();
   });
 
   it('keeps both Review actions wide enough to remain visible', async () => {
@@ -269,7 +434,7 @@ describe('CreateQuestScreen', () => {
     await fireEvent.press(view.getByLabelText('เผยแพร่เควสต์'));
 
     await waitFor(() => expect(view.getByText('เผยแพร่เควสต์แล้ว')).toBeTruthy());
-    expect(view.getByText('เควสต์ของคุณอยู่ในสถานะตัวอย่างที่เผยแพร่แล้ว และจะแสดงใน My Quests ของผู้ว่าจ้าง')).toBeTruthy();
+    expect(view.getByText('เควสต์ของคุณเปิดรับแล้ว และจะแสดงใน My Quests ของผู้ว่าจ้าง')).toBeTruthy();
     expect(mockDeleteQuestDraft).toHaveBeenCalledWith('test-key', 'mock-draft');
   });
 
