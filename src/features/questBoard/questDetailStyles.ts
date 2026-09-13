@@ -161,6 +161,32 @@ const styles = {
   confirmAction:
     "items-center bg-ku-primary rounded-ku-pill flex-[1.4] justify-center min-h-[50px]",
   confirmActionText: "text-ku-white font-ku-semibold text-ku-body-small",
+  proofSheetBackdrop: "bg-ku-overlay flex-1 justify-end",
+  proofSheet:
+    "bg-ku-background rounded-tl-[24px] rounded-tr-[24px] max-h-[90%] p-[24px]",
+  proofSheetHeader: "items-start flex-row justify-between",
+  proofSheetHeaderCopy: "flex-1 min-w-0",
+  proofSheetTitle: "text-ku-text-strong font-ku-bold text-ku-title-small",
+  proofSheetDescription:
+    "text-ku-text-secondary font-ku-regular text-ku-control mt-[4px]",
+  proofSheetContent: "gap-[4px] pb-[16px] pt-[20px]",
+  proofSheetHelper:
+    "text-ku-text-secondary font-ku-regular text-ku-label mb-[12px]",
+  proofAttachmentTrigger:
+    "items-center border-ku-primary rounded-[12px] border flex-row gap-[8px] justify-center min-h-[48px] px-[12px]",
+  proofAttachmentTriggerDisabled: "opacity-50",
+  proofAttachmentTriggerText:
+    "text-ku-primary font-ku-semibold text-ku-body-small",
+  proofAttachmentCount:
+    "text-ku-text-muted font-ku-regular text-ku-label mt-[8px]",
+  proofAttachmentGrid: "flex-row flex-wrap gap-[8px] mt-[8px]",
+  proofAttachment:
+    "bg-ku-surface-muted rounded-[12px] h-[88px] overflow-hidden relative w-[88px]",
+  proofAttachmentImage: "h-full w-full",
+  proofAttachmentRemove:
+    "absolute bg-ku-overlay items-center justify-center right-[4px] rounded-ku-pill top-[4px] h-[28px] w-[28px]",
+  proofValidation: "text-ku-danger-dark font-ku-medium text-ku-label mt-[8px]",
+  proofSheetActions: "gap-[8px] pt-[12px]",
 } as const;
 
 export default styles;

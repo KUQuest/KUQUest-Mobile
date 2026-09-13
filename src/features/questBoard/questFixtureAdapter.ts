@@ -19,6 +19,8 @@ import {
   QuestStatus,
   QuestTeamStatus,
   formatSatang,
+  MAX_PROOF_ATTACHMENTS,
+  MAX_PROOF_NOTE_LENGTH,
   isValidSatang,
   type CanonicalQuestCandidateMode,
   type QuestAction,
@@ -1658,68 +1660,171 @@ function seedStates(): FixtureSeed[] {
 
   addScenarioStates(seeds, byId);
 
-  // Proof/completion fixtures are intentionally adapter-only records. They are
-  // not discovery fixtures, but keep the existing prototype proof transitions
-  // reachable by route/tests.
-  const proofFixture: QuestBoardQuest = {
-    id: "proof-in-progress-demo",
-    title: "Submit a project proof",
-    tags: ["design"],
-    description: "Upload proof for a completed design task.",
-    completionCriteria: "The final design is uploaded for review.",
-    proofRequired: "required",
-    rewardPerPerson: 350,
-    rewardSatang: 35000,
-    headcount: 1,
-    acceptedParticipants: 1,
-    startDate: "2026-08-11",
-    deadline: "2026-08-15",
-    timeRange: "09:00–12:00",
-    postedAt: PROTOTYPE_NOW,
-    location: "Online",
-    locationMode: "online",
-    participationMode: "single",
-    candidateMode: "NO_CANDIDATE",
-    creator: { name: "Demo Hirer" },
-    imageUris: [],
-    studentInterestMatch: false,
-    ownerStudentId: "demo-hirer",
-  };
-  const proofState = createState(proofFixture, QuestStatus.QUEST_IN_PROGRESS);
-  proofState.assignments.push(
-    assignment(proofState.quest, DEFAULT_PROTOTYPE_VIEWER_ID, "DIRECT_JOIN")
-  );
-  ensureConversation(proofState, [
-    proofState.quest.hirerId,
-    DEFAULT_PROTOTYPE_VIEWER_ID,
-  ]);
-  seeds.push({
-    state: proofState,
-    conversationMemberIds: [...(proofState.conversationMemberIds ?? [])],
-  });
+  // Completion fixtures are adapter-only records. They cover every supported
+  // combination of proof requirement, participation, and selection mode.
+  const completionMockDefinitions = [
+    {
+      id: "proof-in-progress-demo",
+      title: "Submit a project proof",
+      proofRequired: "required",
+      participationMode: "single",
+      candidateMode: QuestCandidateMode.NO_CANDIDATE,
+      headcount: 1,
+    },
+    {
+      id: "proof-free-in-progress-demo",
+      title: "Confirm a proof-free Quest",
+      proofRequired: "none",
+      participationMode: "single",
+      candidateMode: QuestCandidateMode.NO_CANDIDATE,
+      headcount: 1,
+    },
+    {
+      id: "proof-candidate-in-progress-demo",
+      title: "Submit proof for a selected Candidate Quest",
+      proofRequired: "required",
+      participationMode: "single",
+      candidateMode: QuestCandidateMode.CANDIDATE,
+      headcount: 1,
+    },
+    {
+      id: "proof-free-candidate-in-progress-demo",
+      title: "Confirm a selected Candidate Quest",
+      proofRequired: "none",
+      participationMode: "single",
+      candidateMode: QuestCandidateMode.CANDIDATE,
+      headcount: 1,
+    },
+    {
+      id: "proof-group-in-progress-demo",
+      title: "Submit proof for a direct group Quest",
+      proofRequired: "required",
+      participationMode: "team",
+      candidateMode: QuestCandidateMode.NO_CANDIDATE,
+      headcount: 2,
+    },
+    {
+      id: "proof-free-group-in-progress-demo",
+      title: "Confirm a direct group Quest",
+      proofRequired: "none",
+      participationMode: "team",
+      candidateMode: QuestCandidateMode.NO_CANDIDATE,
+      headcount: 2,
+    },
+    {
+      id: "proof-team-in-progress-demo",
+      title: "Submit proof for a selected Team Quest",
+      proofRequired: "required",
+      participationMode: "team",
+      candidateMode: QuestCandidateMode.CANDIDATE,
+      headcount: 2,
+    },
+    {
+      id: "proof-free-team-in-progress-demo",
+      title: "Confirm a selected Team Quest",
+      proofRequired: "none",
+      participationMode: "team",
+      candidateMode: QuestCandidateMode.CANDIDATE,
+      headcount: 2,
+    },
+  ] as const;
 
-  const proofFreeFixture: QuestBoardQuest = {
-    ...proofFixture,
-    id: "proof-free-in-progress-demo",
-    title: "Confirm a proof-free Quest",
-    proofRequired: "none",
-    rewardPerPerson: 100,
-    rewardSatang: 10000,
-  };
-  const proofFreeState = createState(
-    proofFreeFixture,
-    QuestStatus.QUEST_IN_PROGRESS
-  );
-  proofFreeState.assignments.push(
-    assignment(proofFreeState.quest, DEFAULT_PROTOTYPE_VIEWER_ID, "DIRECT_JOIN")
-  );
-  ensureConversation(proofFreeState, [
-    proofFreeState.quest.hirerId,
-    DEFAULT_PROTOTYPE_VIEWER_ID,
-  ]);
-  seeds.push({
-    state: proofFreeState,
-    conversationMemberIds: [...(proofFreeState.conversationMemberIds ?? [])],
+  completionMockDefinitions.forEach((definition) => {
+    const fixture: QuestBoardQuest = {
+      id: definition.id,
+      title: definition.title,
+      tags: ["completion"],
+      description:
+        definition.proofRequired === "required"
+          ? "Submit completion evidence for this Quest."
+          : "Confirm the completed work for this Quest.",
+      completionCriteria: "The assigned work is complete.",
+      proofRequired: definition.proofRequired,
+      rewardPerPerson: definition.headcount === 1 ? 350 : 220,
+      rewardSatang: definition.headcount === 1 ? 35000 : 22000,
+      headcount: definition.headcount,
+      acceptedParticipants: definition.headcount,
+      startDate: "2026-08-11",
+      deadline: "2026-08-15",
+      timeRange: "09:00–12:00",
+      postedAt: PROTOTYPE_NOW,
+      location: "Online",
+      locationMode: "online",
+      participationMode: definition.participationMode,
+      candidateMode: definition.candidateMode,
+      creator: { name: "Demo Hirer" },
+      imageUris: [],
+      studentInterestMatch: false,
+      ownerStudentId: "demo-hirer",
+    };
+    const state = createState(fixture, QuestStatus.QUEST_IN_PROGRESS);
+    const isGroup = definition.participationMode === "team";
+    const isCandidate =
+      definition.candidateMode === QuestCandidateMode.CANDIDATE;
+    const workerIds = isGroup
+      ? [DEFAULT_PROTOTYPE_VIEWER_ID, "demo-worker-2"]
+      : [DEFAULT_PROTOTYPE_VIEWER_ID];
+    const teamMembers: QuestTeamMember[] = [
+      {
+        workerId: DEFAULT_PROTOTYPE_VIEWER_ID,
+        role: "LEADER",
+        displayName: "Demo Student",
+      },
+      ...(isGroup
+        ? [
+            {
+              workerId: "demo-worker-2",
+              role: "MEMBER" as const,
+              displayName: "Demo Worker 2",
+            },
+          ]
+        : []),
+    ];
+    const selectedTeam =
+      isGroup && isCandidate
+        ? makeTeam(
+            state.quest,
+            DEFAULT_PROTOTYPE_VIEWER_ID,
+            teamMembers,
+            QuestTeamStatus.TEAM_SELECTED,
+            "completion"
+          )
+        : undefined;
+    if (selectedTeam) state.teams.push(selectedTeam);
+    const selectedApplication = isCandidate
+      ? application(
+          state.quest.id,
+          selectedTeam ? undefined : DEFAULT_PROTOTYPE_VIEWER_ID,
+          QuestApplicationStatus.APPLICATION_SELECTED,
+          selectedTeam?.id,
+          selectedTeam ? "completion-team" : "completion-single"
+        )
+      : undefined;
+    if (selectedApplication) state.applications.push(selectedApplication);
+    state.assignments.push(
+      ...workerIds.map((workerId, index) =>
+        assignment(
+          state.quest,
+          workerId,
+          selectedTeam
+            ? "TEAM"
+            : selectedApplication
+              ? "APPLICATION"
+              : "DIRECT_JOIN",
+          QuestAssignmentStatus.ASSIGNMENT_ACTIVE,
+          `${workerId}-${index + 1}`,
+          selectedApplication?.id,
+          selectedTeam?.id
+        )
+      )
+    );
+    setActualHeadcount(state);
+    state.settlement = settlementFor(state, workerIds.length);
+    ensureConversation(state, [state.quest.hirerId, ...workerIds]);
+    seeds.push({
+      state,
+      conversationMemberIds: [...(state.conversationMemberIds ?? [])],
+    });
   });
 
   const workerPendingFixture: QuestBoardQuest = {
@@ -1737,9 +1842,10 @@ function seedStates(): FixtureSeed[] {
   seeds.push({ state: workerPendingState, conversationMemberIds: [] });
 
   const workerHistoryFixture: QuestBoardQuest = {
-    ...proofFreeFixture,
+    ...questFixtures.find((fixture) => fixture.id === "play-badminton")!,
     id: "worker-history-demo",
     title: "Review a completed project",
+    ownerStudentId: "demo-hirer",
   };
   const workerHistoryState = createState(
     workerHistoryFixture,
@@ -2164,6 +2270,7 @@ function isTeamParticipant(state: QuestDetailState, workerId: string): boolean {
 function isTerminal(status: QuestStatusValue): boolean {
   return (
     status === QuestStatus.QUEST_COMPLETED ||
+    status === QuestStatus.QUEST_FAILED ||
     status === QuestStatus.QUEST_CANCELLED
   );
 }
@@ -2329,6 +2436,26 @@ function actionForViewer(
   const isHirer = viewerId === quest.hirerId;
   const active = hasActiveAssignment(state, viewerId);
   const ownTeam = teamForViewer(state, viewerId);
+  const selectedTeam = state.teams.find(
+    (teamItem) =>
+      teamItem.status === QuestTeamStatus.TEAM_SELECTED &&
+      teamItem.members.some((member) => member.workerId === viewerId)
+  );
+  const hasActiveTeamAssignment = selectedTeam
+    ? state.assignments.some(
+        (assignmentItem) =>
+          assignmentItem.teamId === selectedTeam.id &&
+          assignmentItem.status === QuestAssignmentStatus.ASSIGNMENT_ACTIVE
+      )
+    : false;
+  const canSubmitWork = selectedTeam
+    ? selectedTeam.leaderId === viewerId && hasActiveTeamAssignment
+    : active;
+  const proofOwnerId = selectedTeam?.id ?? viewerId;
+  const hasSubmittedProof = state.proofs.some(
+    (proofItem) =>
+      proofItem.ownerId === proofOwnerId && Boolean(proofItem.submittedAt)
+  );
   const pendingInvitation = isPendingInvitation(state, viewerId);
   const full = countAdmitted(state) >= quest.headcount;
   const ownPendingApplication = state.applications.some(
@@ -2416,13 +2543,14 @@ function actionForViewer(
     actions.push("VOTE_PARTIAL_GROUP_START_CONSENT");
 
   if (
-    active &&
+    canSubmitWork &&
+    !hasSubmittedProof &&
     quest.status === QuestStatus.QUEST_IN_PROGRESS &&
     quest.proofRequired !== "none"
   )
     actions.push("SUBMIT_PROOF");
   if (
-    active &&
+    canSubmitWork &&
     quest.status === QuestStatus.QUEST_IN_PROGRESS &&
     quest.proofRequired === "none"
   )
@@ -2431,7 +2559,12 @@ function actionForViewer(
     actions.push("REWORK_PROOF");
   if (
     isHirer &&
-    quest.status === QuestStatus.QUEST_SUBMITTED &&
+    (
+      [
+        QuestStatus.QUEST_IN_PROGRESS,
+        QuestStatus.QUEST_SUBMITTED,
+      ] as QuestStatusValue[]
+    ).includes(quest.status) &&
     state.proofs.some((item) => item.status === QuestProofStatus.PROOF_PENDING)
   )
     actions.push("REVIEW_PROOF");
@@ -4569,11 +4702,27 @@ export function createQuestFixtureAdapter(
           ownerId,
           currentTime
         );
-      if (imageUris.length > 3)
+      if (note.length > MAX_PROOF_NOTE_LENGTH)
         return failure(
           projected,
           "PROOF_NOT_READY",
-          "A proof can contain at most three images.",
+          `A proof description can contain at most ${MAX_PROOF_NOTE_LENGTH} characters.`,
+          ownerId,
+          currentTime
+        );
+      if (imageUris.length > MAX_PROOF_ATTACHMENTS)
+        return failure(
+          projected,
+          "PROOF_NOT_READY",
+          `A proof can contain at most ${MAX_PROOF_ATTACHMENTS} images.`,
+          ownerId,
+          currentTime
+        );
+      if (!note.trim() && imageUris.length === 0)
+        return failure(
+          projected,
+          "PROOF_NOT_READY",
+          "A proof needs a description or at least one image.",
           ownerId,
           currentTime
         );
@@ -4582,6 +4731,14 @@ export function createQuestFixtureAdapter(
           teamItem.status === QuestTeamStatus.TEAM_SELECTED &&
           teamItem.members.some((member) => member.workerId === ownerId)
       );
+      if (selectedTeam && selectedTeam.leaderId !== ownerId)
+        return failure(
+          projected,
+          "FORBIDDEN",
+          "Only the Team Leader can submit the Team proof.",
+          ownerId,
+          currentTime
+        );
       if (!selectedTeam && !hasActiveAssignment(projected, ownerId))
         return failure(
           projected,
@@ -4595,6 +4752,14 @@ export function createQuestFixtureAdapter(
       const existing = next.proofs.find(
         (item) => item.ownerId === proofOwnerId
       );
+      if (existing?.submittedAt)
+        return failure(
+          projected,
+          "DUPLICATE_ACTION",
+          "This proof has already been sent and cannot be edited.",
+          ownerId,
+          currentTime
+        );
       const nextProof: QuestProof =
         existing ??
         proof(
@@ -4607,42 +4772,13 @@ export function createQuestFixtureAdapter(
         );
       nextProof.teamId = selectedTeam?.id;
       nextProof.status = QuestProofStatus.PROOF_PENDING;
-      nextProof.imageUris = [...imageUris].slice(0, 3);
+      nextProof.imageUris = [...imageUris].slice(0, MAX_PROOF_ATTACHMENTS);
       nextProof.note = note;
       nextProof.submittedAt = currentTime.toISOString();
       nextProof.reviewedAt = undefined;
       nextProof.reviewReason = undefined;
       if (!existing) next.proofs.push(nextProof);
-      const active = activeAssignments(next);
-      const requiredProofOwners = next.teams.some(
-        (teamItem) => teamItem.status === QuestTeamStatus.TEAM_SELECTED
-      )
-        ? [
-            next.teams.find(
-              (teamItem) => teamItem.status === QuestTeamStatus.TEAM_SELECTED
-            )?.id,
-          ].filter((id): id is string => Boolean(id))
-        : active.map((item) => item.workerId);
-      const submittedOwners = new Set(
-        next.proofs
-          .filter((item) =>
-            (
-              [
-                QuestProofStatus.PROOF_PENDING,
-                QuestProofStatus.PROOF_APPROVED,
-                QuestProofStatus.PROOF_AUTO_APPROVED,
-              ] as QuestProof["status"][]
-            ).includes(item.status)
-          )
-          .map((item) => item.ownerId)
-      );
-      if (
-        requiredProofOwners.length > 0 &&
-        requiredProofOwners.every((requiredOwner) =>
-          submittedOwners.has(requiredOwner)
-        )
-      )
-        next.quest.status = QuestStatus.QUEST_SUBMITTED;
+      next.quest.status = QuestStatus.QUEST_IN_PROGRESS;
       commit(next);
       return success(next, ownerId, currentTime);
     },
@@ -4666,7 +4802,14 @@ export function createQuestFixtureAdapter(
           hirerId,
           currentTime
         );
-      if (projected.quest.status !== QuestStatus.QUEST_SUBMITTED)
+      if (
+        !(
+          [
+            QuestStatus.QUEST_IN_PROGRESS,
+            QuestStatus.QUEST_SUBMITTED,
+          ] as QuestStatusValue[]
+        ).includes(projected.quest.status)
+      )
         return failure(
           projected,
           "INVALID_STATUS",
@@ -4696,22 +4839,38 @@ export function createQuestFixtureAdapter(
           hirerId,
           currentTime
         );
+      const completionItems = next.assignments.filter((assignmentItem) =>
+        nextProof.teamId
+          ? assignmentItem.teamId === nextProof.teamId
+          : assignmentItem.workerId === nextProof.ownerId
+      );
       nextProof.reviewedAt = currentTime.toISOString();
       nextProof.reviewReason = reason || undefined;
       if (approve) {
         nextProof.status = QuestProofStatus.PROOF_APPROVED;
-        const allApproved = next.proofs.every(
-          (item) =>
-            item.status === QuestProofStatus.PROOF_APPROVED ||
-            item.status === QuestProofStatus.PROOF_AUTO_APPROVED
-        );
-        if (allApproved) next.quest.status = QuestStatus.QUEST_APPROVED;
-      } else if (nextProof.reworkCount < nextProof.reworkLimit) {
-        nextProof.status = QuestProofStatus.PROOF_REJECTED;
-        next.quest.status = QuestStatus.QUEST_REWORK;
+        completionItems.forEach((item) => {
+          item.status = QuestAssignmentStatus.ASSIGNMENT_COMPLETED;
+          item.completedAt = currentTime.toISOString();
+        });
+        const allCompleted = next.assignments
+          .filter(
+            (assignmentItem) =>
+              assignmentItem.status !==
+              QuestAssignmentStatus.ASSIGNMENT_CANCELLED
+          )
+          .every(
+            (assignmentItem) =>
+              assignmentItem.status ===
+              QuestAssignmentStatus.ASSIGNMENT_COMPLETED
+          );
+        if (allCompleted) next.quest.status = QuestStatus.QUEST_COMPLETED;
       } else {
         nextProof.status = QuestProofStatus.PROOF_REJECTED;
-        next.quest.status = QuestStatus.QUEST_DISPUTED;
+        completionItems.forEach((item) => {
+          item.status = QuestAssignmentStatus.ASSIGNMENT_INCOMPLETE;
+          item.completedAt = undefined;
+        });
+        next.quest.status = QuestStatus.QUEST_FAILED;
       }
       commit(next);
       return success(next, hirerId, currentTime);
@@ -4850,13 +5009,32 @@ export function createQuestFixtureAdapter(
           workerId,
           currentTime
         );
-      const next = clone(projected);
-      const item = next.assignments.find(
-        (assignmentItem) =>
-          assignmentItem.workerId === workerId &&
-          assignmentItem.status === QuestAssignmentStatus.ASSIGNMENT_ACTIVE
+      const selectedTeam = projected.teams.find(
+        (teamItem) =>
+          teamItem.status === QuestTeamStatus.TEAM_SELECTED &&
+          teamItem.members.some((member) => member.workerId === workerId)
       );
-      if (!item)
+      if (selectedTeam && selectedTeam.leaderId !== workerId)
+        return failure(
+          projected,
+          "FORBIDDEN",
+          "Only the Team Leader can confirm the Team's completion.",
+          workerId,
+          currentTime
+        );
+      const next = clone(projected);
+      const completionItems = selectedTeam
+        ? next.assignments.filter(
+            (assignmentItem) =>
+              assignmentItem.teamId === selectedTeam.id &&
+              assignmentItem.status === QuestAssignmentStatus.ASSIGNMENT_ACTIVE
+          )
+        : next.assignments.filter(
+            (assignmentItem) =>
+              assignmentItem.workerId === workerId &&
+              assignmentItem.status === QuestAssignmentStatus.ASSIGNMENT_ACTIVE
+          );
+      if (completionItems.length === 0)
         return failure(
           projected,
           "FORBIDDEN",
@@ -4864,8 +5042,10 @@ export function createQuestFixtureAdapter(
           workerId,
           currentTime
         );
-      item.status = QuestAssignmentStatus.ASSIGNMENT_COMPLETED;
-      item.completedAt = currentTime.toISOString();
+      completionItems.forEach((item) => {
+        item.status = QuestAssignmentStatus.ASSIGNMENT_COMPLETED;
+        item.completedAt = currentTime.toISOString();
+      });
       if (
         next.assignments
           .filter(
@@ -4879,7 +5059,7 @@ export function createQuestFixtureAdapter(
               QuestAssignmentStatus.ASSIGNMENT_COMPLETED
           )
       )
-        next.quest.status = QuestStatus.QUEST_APPROVED;
+        next.quest.status = QuestStatus.QUEST_COMPLETED;
       commit(next);
       return success(next, workerId, currentTime);
     },

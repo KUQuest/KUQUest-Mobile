@@ -25,6 +25,48 @@ const mockRouteParams: {
   joinStatus?: string;
   studentId?: string;
 } = {};
+const completionDemoScenarios = [
+  {
+    questId: "proof-in-progress-demo",
+    requiresProof: true,
+    expectedStatus: "QUEST_IN_PROGRESS",
+  },
+  {
+    questId: "proof-free-in-progress-demo",
+    requiresProof: false,
+    expectedStatus: "QUEST_COMPLETED",
+  },
+  {
+    questId: "proof-candidate-in-progress-demo",
+    requiresProof: true,
+    expectedStatus: "QUEST_IN_PROGRESS",
+  },
+  {
+    questId: "proof-free-candidate-in-progress-demo",
+    requiresProof: false,
+    expectedStatus: "QUEST_COMPLETED",
+  },
+  {
+    questId: "proof-group-in-progress-demo",
+    requiresProof: true,
+    expectedStatus: "QUEST_IN_PROGRESS",
+  },
+  {
+    questId: "proof-free-group-in-progress-demo",
+    requiresProof: false,
+    expectedStatus: "QUEST_IN_PROGRESS",
+  },
+  {
+    questId: "proof-team-in-progress-demo",
+    requiresProof: true,
+    expectedStatus: "QUEST_IN_PROGRESS",
+  },
+  {
+    questId: "proof-free-team-in-progress-demo",
+    requiresProof: false,
+    expectedStatus: "QUEST_COMPLETED",
+  },
+] as const;
 
 jest.mock("expo-router", () => ({
   useRouter: () => mockRouter,
@@ -188,6 +230,116 @@ describe("Quest Detail screen", () => {
     expect(view.queryByTestId("quest-leave-button")).toBeNull();
     alertSpy.mockRestore();
   });
+
+  it("submits a worker's proof details through the completion form", async () => {
+    const view = await render(
+      <QuestDetailScreen questId="proof-in-progress-demo" />
+    );
+
+    await fireEvent.press(view.getByTestId("quest-submit-proof"));
+    expect(view.getByTestId("proof-submission-sheet")).toBeTruthy();
+
+    await fireEvent.press(view.getByTestId("proof-submit"));
+    expect(
+      view.getByText("Add a description or at least one image before sending.")
+    ).toBeTruthy();
+
+    await fireEvent.changeText(
+      view.getByLabelText("Description"),
+      "The final design is ready."
+    );
+    await fireEvent.press(view.getByTestId("proof-submit"));
+
+    await waitFor(() =>
+      expect(view.queryByTestId("proof-submission-sheet")).toBeNull()
+    );
+    expect(
+      questFixtureAdapter.getState("proof-in-progress-demo")?.proofs[0]
+    ).toMatchObject({
+      imageUris: [],
+      note: "The final design is ready.",
+      status: "PROOF_PENDING",
+    });
+  });
+
+  it("confirms proof-free completion before dispatching the action", async () => {
+    const alertSpy = jest
+      .spyOn(Alert, "alert")
+      .mockImplementation(() => undefined);
+    const view = await render(
+      <QuestDetailScreen questId="proof-free-in-progress-demo" />
+    );
+
+    await fireEvent.press(view.getByTestId("quest-confirm-completion"));
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Confirm completion",
+      "Confirm that you completed this Quest. This action cannot be undone.",
+      expect.any(Array)
+    );
+    const confirmButton = alertSpy.mock.calls[0][2]?.find(
+      (button) => button.text === "Confirm completion"
+    );
+    await act(async () => {
+      confirmButton?.onPress?.();
+    });
+
+    await waitFor(() =>
+      expect(
+        questFixtureAdapter.getState("proof-free-in-progress-demo")?.quest
+          .status
+      ).toBe("QUEST_COMPLETED")
+    );
+    alertSpy.mockRestore();
+  });
+  it.each(completionDemoScenarios)(
+    "runs %s through the worker completion action",
+    async ({ questId, requiresProof, expectedStatus }) => {
+      const alertSpy = jest
+        .spyOn(Alert, "alert")
+        .mockImplementation(() => undefined);
+      setActivePrototypePersona("student-demo");
+      const view = await render(<QuestDetailScreen questId={questId} />);
+      const actionTestId = requiresProof
+        ? "quest-submit-proof"
+        : "quest-confirm-completion";
+
+      await waitFor(() => expect(view.getByTestId(actionTestId)).toBeTruthy());
+      if (requiresProof) {
+        await fireEvent.press(view.getByTestId("quest-submit-proof"));
+        await waitFor(() =>
+          expect(view.getByTestId("proof-submission-sheet")).toBeTruthy()
+        );
+        await fireEvent.changeText(
+          view.getByLabelText("Description"),
+          "Demo completion evidence."
+        );
+        await fireEvent.press(view.getByTestId("proof-submit"));
+        await waitFor(() =>
+          expect(questFixtureAdapter.getState(questId)?.proofs[0]?.status).toBe(
+            "PROOF_PENDING"
+          )
+        );
+        expect(view.queryByTestId("proof-submission-sheet")).toBeNull();
+      } else {
+        await fireEvent.press(view.getByTestId("quest-confirm-completion"));
+        const confirmationCall =
+          alertSpy.mock.calls[alertSpy.mock.calls.length - 1];
+        const confirmButton = confirmationCall?.[2]?.find(
+          (button) => button.text === "Confirm completion"
+        );
+        await act(async () => {
+          confirmButton?.onPress?.();
+        });
+      }
+      await waitFor(() =>
+        expect(questFixtureAdapter.getState(questId)?.quest.status).toBe(
+          expectedStatus
+        )
+      );
+      alertSpy.mockRestore();
+    }
+  );
 
   it("opens report review from an assigned joined Quest with its context", async () => {
     const view = await render(

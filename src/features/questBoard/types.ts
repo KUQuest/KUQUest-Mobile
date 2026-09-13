@@ -3,103 +3,117 @@
 
 export const MAX_QUEST_IMAGES = 3;
 export const SATANG_PER_BAHT = 100;
+export const MAX_PROOF_ATTACHMENTS = 5;
+export const MAX_PROOF_NOTE_LENGTH = 1000;
 
 /** Raw Quest lifecycle values returned by the Quest API. */
 export const QuestStatus = {
-  QUEST_DRAFT: 'QUEST_DRAFT',
-  QUEST_OPEN: 'QUEST_OPEN',
+  QUEST_DRAFT: "QUEST_DRAFT",
+  QUEST_OPEN: "QUEST_OPEN",
   /** Legacy umbrella value. New adapter state never emits this value. */
-  QUEST_AWAITING_CONSENT: 'QUEST_AWAITING_CONSENT',
-  QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT: 'QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT',
-  QUEST_AWAITING_EDIT_CONSENT: 'QUEST_AWAITING_EDIT_CONSENT',
-  QUEST_ASSIGNED: 'QUEST_ASSIGNED',
-  QUEST_IN_PROGRESS: 'QUEST_IN_PROGRESS',
-  QUEST_SUBMITTED: 'QUEST_SUBMITTED',
-  QUEST_APPROVED: 'QUEST_APPROVED',
-  QUEST_REWORK: 'QUEST_REWORK',
-  QUEST_COMPLETED: 'QUEST_COMPLETED',
-  QUEST_CANCELLED: 'QUEST_CANCELLED',
-  QUEST_DISPUTED: 'QUEST_DISPUTED',
-  QUEST_HIDDEN: 'QUEST_HIDDEN',
+  QUEST_AWAITING_CONSENT: "QUEST_AWAITING_CONSENT",
+  QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT:
+    "QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT",
+  QUEST_AWAITING_EDIT_CONSENT: "QUEST_AWAITING_EDIT_CONSENT",
+  QUEST_ASSIGNED: "QUEST_ASSIGNED",
+  QUEST_IN_PROGRESS: "QUEST_IN_PROGRESS",
+  QUEST_SUBMITTED: "QUEST_SUBMITTED",
+  QUEST_APPROVED: "QUEST_APPROVED",
+  QUEST_REWORK: "QUEST_REWORK",
+  QUEST_COMPLETED: "QUEST_COMPLETED",
+  QUEST_FAILED: "QUEST_FAILED",
+
+  QUEST_CANCELLED: "QUEST_CANCELLED",
+  QUEST_DISPUTED: "QUEST_DISPUTED",
+  QUEST_HIDDEN: "QUEST_HIDDEN",
 } as const;
-export type QuestStatus = typeof QuestStatus[keyof typeof QuestStatus];
+export type QuestStatus = (typeof QuestStatus)[keyof typeof QuestStatus];
 export const QUEST_STATUS_VALUES = Object.values(QuestStatus);
 
 export const QuestParticipation = {
-  SINGLE: 'SINGLE',
-  GROUP: 'GROUP',
+  SINGLE: "SINGLE",
+  GROUP: "GROUP",
 } as const;
-export type QuestParticipation = typeof QuestParticipation[keyof typeof QuestParticipation];
+export type QuestParticipation =
+  (typeof QuestParticipation)[keyof typeof QuestParticipation];
 
 export const QuestCandidateMode = {
-  NO_CANDIDATE: 'NO_CANDIDATE',
-  CANDIDATE: 'CANDIDATE',
+  NO_CANDIDATE: "NO_CANDIDATE",
+  CANDIDATE: "CANDIDATE",
 } as const;
-export type CanonicalQuestCandidateMode = typeof QuestCandidateMode[keyof typeof QuestCandidateMode];
+export type CanonicalQuestCandidateMode =
+  (typeof QuestCandidateMode)[keyof typeof QuestCandidateMode];
 export type QuestCandidateMode = CanonicalQuestCandidateMode;
 
 export const QuestTeamStatus = {
-  TEAM_FORMING: 'TEAM_FORMING',
-  TEAM_SUBMITTED: 'TEAM_SUBMITTED',
-  TEAM_SELECTED: 'TEAM_SELECTED',
-  TEAM_REJECTED: 'TEAM_REJECTED',
+  TEAM_FORMING: "TEAM_FORMING",
+  TEAM_SUBMITTED: "TEAM_SUBMITTED",
+  TEAM_SELECTED: "TEAM_SELECTED",
+  TEAM_REJECTED: "TEAM_REJECTED",
 } as const;
-export type QuestTeamStatus = typeof QuestTeamStatus[keyof typeof QuestTeamStatus];
+export type QuestTeamStatus =
+  (typeof QuestTeamStatus)[keyof typeof QuestTeamStatus];
 
 export const QuestInvitationStatus = {
-  INVITATION_PENDING: 'INVITATION_PENDING',
-  INVITATION_ACCEPTED: 'INVITATION_ACCEPTED',
-  INVITATION_DECLINED: 'INVITATION_DECLINED',
-  INVITATION_EXPIRED: 'INVITATION_EXPIRED',
-  INVITATION_REVOKED: 'INVITATION_REVOKED',
+  INVITATION_PENDING: "INVITATION_PENDING",
+  INVITATION_ACCEPTED: "INVITATION_ACCEPTED",
+  INVITATION_DECLINED: "INVITATION_DECLINED",
+  INVITATION_EXPIRED: "INVITATION_EXPIRED",
+  INVITATION_REVOKED: "INVITATION_REVOKED",
 } as const;
-export type QuestInvitationStatus = typeof QuestInvitationStatus[keyof typeof QuestInvitationStatus];
+export type QuestInvitationStatus =
+  (typeof QuestInvitationStatus)[keyof typeof QuestInvitationStatus];
 
 export const QuestApplicationStatus = {
-  APPLICATION_APPLIED: 'APPLICATION_APPLIED',
-  APPLICATION_SELECTED: 'APPLICATION_SELECTED',
-  APPLICATION_REJECTED: 'APPLICATION_REJECTED',
-  APPLICATION_WITHDRAWN: 'APPLICATION_WITHDRAWN',
+  APPLICATION_APPLIED: "APPLICATION_APPLIED",
+  APPLICATION_SELECTED: "APPLICATION_SELECTED",
+  APPLICATION_REJECTED: "APPLICATION_REJECTED",
+  APPLICATION_WITHDRAWN: "APPLICATION_WITHDRAWN",
 } as const;
-export type QuestApplicationStatus = typeof QuestApplicationStatus[keyof typeof QuestApplicationStatus];
+export type QuestApplicationStatus =
+  (typeof QuestApplicationStatus)[keyof typeof QuestApplicationStatus];
 
 export const QuestAssignmentStatus = {
-  ASSIGNMENT_ACTIVE: 'ASSIGNMENT_ACTIVE',
-  ASSIGNMENT_COMPLETED: 'ASSIGNMENT_COMPLETED',
-  ASSIGNMENT_INCOMPLETE: 'ASSIGNMENT_INCOMPLETE',
-  ASSIGNMENT_CANCELLED: 'ASSIGNMENT_CANCELLED',
+  ASSIGNMENT_ACTIVE: "ASSIGNMENT_ACTIVE",
+  ASSIGNMENT_COMPLETED: "ASSIGNMENT_COMPLETED",
+  ASSIGNMENT_INCOMPLETE: "ASSIGNMENT_INCOMPLETE",
+  ASSIGNMENT_CANCELLED: "ASSIGNMENT_CANCELLED",
 } as const;
-export type QuestAssignmentStatus = typeof QuestAssignmentStatus[keyof typeof QuestAssignmentStatus];
+export type QuestAssignmentStatus =
+  (typeof QuestAssignmentStatus)[keyof typeof QuestAssignmentStatus];
 
 export const QuestProofStatus = {
-  PROOF_PENDING: 'PROOF_PENDING',
-  PROOF_APPROVED: 'PROOF_APPROVED',
-  PROOF_REJECTED: 'PROOF_REJECTED',
-  PROOF_AUTO_APPROVED: 'PROOF_AUTO_APPROVED',
+  PROOF_PENDING: "PROOF_PENDING",
+  PROOF_APPROVED: "PROOF_APPROVED",
+  PROOF_REJECTED: "PROOF_REJECTED",
+  PROOF_AUTO_APPROVED: "PROOF_AUTO_APPROVED",
 } as const;
-export type QuestProofStatus = typeof QuestProofStatus[keyof typeof QuestProofStatus];
+export type QuestProofStatus =
+  (typeof QuestProofStatus)[keyof typeof QuestProofStatus];
 
 export const QuestEditRequestStatus = {
-  EDIT_REQUEST_PENDING: 'EDIT_REQUEST_PENDING',
-  EDIT_REQUEST_APPROVED: 'EDIT_REQUEST_APPROVED',
-  EDIT_REQUEST_REJECTED: 'EDIT_REQUEST_REJECTED',
+  EDIT_REQUEST_PENDING: "EDIT_REQUEST_PENDING",
+  EDIT_REQUEST_APPROVED: "EDIT_REQUEST_APPROVED",
+  EDIT_REQUEST_REJECTED: "EDIT_REQUEST_REJECTED",
 } as const;
-export type QuestEditRequestStatus = typeof QuestEditRequestStatus[keyof typeof QuestEditRequestStatus];
+export type QuestEditRequestStatus =
+  (typeof QuestEditRequestStatus)[keyof typeof QuestEditRequestStatus];
 
 export const QuestEditResponseStatus = {
-  EDIT_RESPONSE_APPROVED: 'EDIT_RESPONSE_APPROVED',
-  EDIT_RESPONSE_REJECTED: 'EDIT_RESPONSE_REJECTED',
+  EDIT_RESPONSE_APPROVED: "EDIT_RESPONSE_APPROVED",
+  EDIT_RESPONSE_REJECTED: "EDIT_RESPONSE_REJECTED",
 } as const;
-export type QuestEditResponseStatus = typeof QuestEditResponseStatus[keyof typeof QuestEditResponseStatus];
+export type QuestEditResponseStatus =
+  (typeof QuestEditResponseStatus)[keyof typeof QuestEditResponseStatus];
 
-export type QuestLocationMode = 'online' | 'on-campus';
-export type QuestParticipationMode = 'single' | 'team';
-export type QuestBoardSort = 'newest' | 'deadline-soonest' | 'reward-highest';
-export type QuestAvailability = 'available' | 'full' | 'closed';
+export type QuestLocationMode = "online" | "on-campus";
+export type QuestParticipationMode = "single" | "team";
+export type QuestBoardSort = "newest" | "deadline-soonest" | "reward-highest";
+export type QuestAvailability = "available" | "full" | "closed";
 
 export interface SatangReward {
   rewardSatang: number;
-  currency: 'THB';
+  currency: "THB";
 }
 
 export interface QuestLocation {
@@ -114,7 +128,7 @@ export interface QuestReward extends SatangReward {
 
 export interface QuestTeamMember {
   workerId: string;
-  role: 'LEADER' | 'MEMBER';
+  role: "LEADER" | "MEMBER";
   displayName?: string;
 }
 
@@ -158,7 +172,7 @@ export interface QuestAssignment {
   id: string;
   questId: string;
   workerId: string;
-  source: 'DIRECT_JOIN' | 'APPLICATION' | 'TEAM';
+  source: "DIRECT_JOIN" | "APPLICATION" | "TEAM";
   status: QuestAssignmentStatus;
   rewardSatang: number;
   joinedAt: string;
@@ -190,24 +204,26 @@ export interface QuestEditConsentResponse {
 }
 
 export const QuestPartialStartConsentStatus = {
-  PARTIAL_START_PENDING: 'PARTIAL_START_PENDING',
-  PARTIAL_START_APPROVED: 'PARTIAL_START_APPROVED',
-  PARTIAL_START_REJECTED: 'PARTIAL_START_REJECTED',
-  PARTIAL_START_TIMED_OUT: 'PARTIAL_START_TIMED_OUT',
+  PARTIAL_START_PENDING: "PARTIAL_START_PENDING",
+  PARTIAL_START_APPROVED: "PARTIAL_START_APPROVED",
+  PARTIAL_START_REJECTED: "PARTIAL_START_REJECTED",
+  PARTIAL_START_TIMED_OUT: "PARTIAL_START_TIMED_OUT",
 } as const;
-export type QuestPartialStartConsentStatus = typeof QuestPartialStartConsentStatus[keyof typeof QuestPartialStartConsentStatus];
+export type QuestPartialStartConsentStatus =
+  (typeof QuestPartialStartConsentStatus)[keyof typeof QuestPartialStartConsentStatus];
 
 export const QuestPartialStartVoteStatus = {
-  PARTIAL_START_VOTE_APPROVED: 'PARTIAL_START_VOTE_APPROVED',
-  PARTIAL_START_VOTE_REJECTED: 'PARTIAL_START_VOTE_REJECTED',
+  PARTIAL_START_VOTE_APPROVED: "PARTIAL_START_VOTE_APPROVED",
+  PARTIAL_START_VOTE_REJECTED: "PARTIAL_START_VOTE_REJECTED",
 } as const;
-export type QuestPartialStartVoteStatus = typeof QuestPartialStartVoteStatus[keyof typeof QuestPartialStartVoteStatus];
+export type QuestPartialStartVoteStatus =
+  (typeof QuestPartialStartVoteStatus)[keyof typeof QuestPartialStartVoteStatus];
 
 export interface QuestPartialStartConsentResponse {
   voterId: string;
   /** Compatibility alias for consumers that model every voter as a Worker. */
   workerId?: string;
-  role: 'HIRER' | 'WORKER';
+  role: "HIRER" | "WORKER";
   status: QuestPartialStartVoteStatus;
   respondedAt: string;
 }
@@ -232,7 +248,18 @@ export interface QuestEditConsent {
   questId: string;
   previousStatus: QuestStatus;
   status: QuestEditRequestStatus;
-  requestedChanges: Partial<Pick<QuestContract, 'description' | 'completionCriteria' | 'startAt' | 'endAt' | 'deadlineAt' | 'location' | 'imageUris'>>;
+  requestedChanges: Partial<
+    Pick<
+      QuestContract,
+      | "description"
+      | "completionCriteria"
+      | "startAt"
+      | "endAt"
+      | "deadlineAt"
+      | "location"
+      | "imageUris"
+    >
+  >;
   requestedAt: string;
   responseDeadlineAt: string;
   requiredWorkerCount: number;
@@ -240,7 +267,8 @@ export interface QuestEditConsent {
   responses: QuestEditConsentResponse[];
 }
 
-export type ConversationReadOnlyReason = 'TERMINAL' | 'INACTIVE_WORKER' | 'NOT_A_MEMBER' | 'NOT_STARTED';
+export type ConversationReadOnlyReason =
+  "TERMINAL" | "INACTIVE_WORKER" | "NOT_A_MEMBER" | "NOT_STARTED";
 
 export interface WorkConversationCapability {
   conversationId: string | null;
@@ -251,28 +279,28 @@ export interface WorkConversationCapability {
 }
 
 export type QuestAction =
-  | 'DIRECT_JOIN'
-  | 'APPLY'
-  | 'WITHDRAW_APPLICATION'
-  | 'CREATE_TEAM'
-  | 'INVITE_WORKER'
-  | 'RESPOND_INVITATION'
-  | 'SUBMIT_TEAM'
-  | 'SELECT_CANDIDATE'
-  | 'REJECT_CANDIDATE'
-  | 'REJECT_TEAM'
-  | 'REQUEST_EDIT'
-  | 'VOTE_EDIT_CONSENT'
-  | 'VOTE_PARTIAL_GROUP_START_CONSENT'
-  | 'SUBMIT_PROOF'
-  | 'REWORK_PROOF'
-  | 'REVIEW_PROOF'
-  | 'OPEN_DISPUTE'
-  | 'RESOLVE_DISPUTE'
-  | 'CONFIRM_COMPLETION'
-  | 'COMPLETE'
-  | 'CANCEL'
-  | 'PUBLISH';
+  | "DIRECT_JOIN"
+  | "APPLY"
+  | "WITHDRAW_APPLICATION"
+  | "CREATE_TEAM"
+  | "INVITE_WORKER"
+  | "RESPOND_INVITATION"
+  | "SUBMIT_TEAM"
+  | "SELECT_CANDIDATE"
+  | "REJECT_CANDIDATE"
+  | "REJECT_TEAM"
+  | "REQUEST_EDIT"
+  | "VOTE_EDIT_CONSENT"
+  | "VOTE_PARTIAL_GROUP_START_CONSENT"
+  | "SUBMIT_PROOF"
+  | "REWORK_PROOF"
+  | "REVIEW_PROOF"
+  | "OPEN_DISPUTE"
+  | "RESOLVE_DISPUTE"
+  | "CONFIRM_COMPLETION"
+  | "COMPLETE"
+  | "CANCEL"
+  | "PUBLISH";
 
 export interface QuestCapabilities {
   availableActions: QuestAction[];
@@ -333,7 +361,7 @@ export interface QuestContract {
   title: string;
   description: string;
   completionCriteria: string;
-  proofRequired: 'required' | 'optional' | 'none';
+  proofRequired: "required" | "optional" | "none";
   reward: QuestReward;
   location: QuestLocation;
   participation: QuestParticipation;
@@ -349,7 +377,7 @@ export interface QuestContract {
   imageUris: string[];
   hirerId: string;
   prototypeOnly?: boolean;
-  prototypeScenario?: QuestBoardQuest['prototypeScenario'];
+  prototypeScenario?: QuestBoardQuest["prototypeScenario"];
 }
 
 export interface QuestDetailState {
@@ -386,17 +414,24 @@ export function parseSatangInput(value: string): number | null {
   const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(trimmed);
   if (!match) return null;
   const whole = Number(match[1]);
-  const fraction = Number((match[2] ?? '').padEnd(2, '0') || '0');
+  const fraction = Number((match[2] ?? "").padEnd(2, "0") || "0");
   const satang = whole * SATANG_PER_BAHT + fraction;
   return Number.isSafeInteger(satang) ? satang : null;
 }
 
-export function formatSatang(value: number, locale: 'en' | 'th' = 'en'): string {
-  if (!isValidSatang(value)) return '฿0';
+export function formatSatang(
+  value: number,
+  locale: "en" | "th" = "en"
+): string {
+  if (!isValidSatang(value)) return "฿0";
   const baht = Math.floor(value / SATANG_PER_BAHT);
   const satang = value % SATANG_PER_BAHT;
-  const formattedBaht = baht.toLocaleString(locale === 'th' ? 'th-TH' : 'en-US');
-  return satang === 0 ? `฿${formattedBaht}` : `฿${formattedBaht}.${String(satang).padStart(2, '0')}`;
+  const formattedBaht = baht.toLocaleString(
+    locale === "th" ? "th-TH" : "en-US"
+  );
+  return satang === 0
+    ? `฿${formattedBaht}`
+    : `฿${formattedBaht}.${String(satang).padStart(2, "0")}`;
 }
 
 export interface QuestBoardQuest {
@@ -405,7 +440,7 @@ export interface QuestBoardQuest {
   tags: string[];
   description: string;
   completionCriteria: string;
-  proofRequired: 'required' | 'optional' | 'none';
+  proofRequired: "required" | "optional" | "none";
   rewardPerPerson: number;
   /** Canonical integer amount, retained alongside the legacy board display field. */
   rewardSatang?: number;
@@ -427,14 +462,18 @@ export interface QuestBoardQuest {
   ownerStudentId: string;
   /** Prototype-only scenario fixtures remain route/test addressable but hidden from discovery. */
   prototypeOnly?: boolean;
-  prototypeScenario?: 'team-forming-demo' | 'team-selection-demo' | 'single-candidate-demo' | 'partial-group-start-demo';
+  prototypeScenario?:
+    | "team-forming-demo"
+    | "team-selection-demo"
+    | "single-candidate-demo"
+    | "partial-group-start-demo";
   /** Canonical state/capability fields are optional for legacy board consumers. */
   status?: QuestStatus;
   conversation?: WorkConversationCapability;
 }
 
-export type DeadlineFilter = 'today' | 'within-3-days' | 'within-7-days';
-export type StartTimeBucket = 'morning' | 'afternoon' | 'evening';
+export type DeadlineFilter = "today" | "within-3-days" | "within-7-days";
+export type StartTimeBucket = "morning" | "afternoon" | "evening";
 
 export interface QuestBoardFilter {
   query: string;
@@ -452,7 +491,7 @@ export interface QuestBoardQueryOptions {
 }
 
 export const emptyQuestBoardFilter: QuestBoardFilter = {
-  query: '',
+  query: "",
   tags: [],
   rewardMin: null,
   rewardMax: null,

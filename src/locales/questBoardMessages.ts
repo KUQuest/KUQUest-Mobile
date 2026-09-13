@@ -180,6 +180,20 @@ export interface QuestBoardMessages {
   proofRejected: string;
   reworkRemaining: (remaining: number, limit: number) => string;
   submitProof: string;
+  proofSubmissionTitle: string;
+  proofSubmissionDescription: string;
+  proofDescriptionLabel: string;
+  proofDescriptionPlaceholder: string;
+  proofLockDescription: string;
+  proofContentRequired: string;
+  addProofImages: string;
+  proofAttachmentCount: (count: number, maximum: number) => string;
+  proofImageLabel: (index: number) => string;
+  removeProofImage: (index: number) => string;
+  proofImagePickerError: string;
+  proofSubmissionSent: string;
+  confirmCompletionDescription: string;
+
   confirmCompletion: string;
   submitRework: string;
   approveProof: string;
@@ -397,6 +411,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
         QUEST_APPROVED: "Approved",
         QUEST_REWORK: "Rework requested",
         QUEST_COMPLETED: "Completed",
+        QUEST_FAILED: "Failed",
         QUEST_CANCELLED: "Cancelled",
         QUEST_DISPUTED: "Disputed",
         QUEST_HIDDEN: "Hidden",
@@ -452,6 +467,23 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     reworkRemaining: (remaining, limit) =>
       `${remaining} of ${limit} rework attempts remaining`,
     submitProof: "Submit proof",
+    proofSubmissionTitle: "Submit proof of completion",
+    proofSubmissionDescription:
+      "Add a short description or up to five images. Sending locks this proof for Hirer review.",
+    proofDescriptionLabel: "Description",
+    proofDescriptionPlaceholder: "Describe what you completed…",
+    proofLockDescription: "At least a description or one image is required.",
+    proofContentRequired:
+      "Add a description or at least one image before sending.",
+    addProofImages: "Add images",
+    proofAttachmentCount: (count, maximum) => `${count} of ${maximum} images`,
+    proofImageLabel: (index) => `Proof image ${index}`,
+    removeProofImage: (index) => `Remove proof image ${index}`,
+    proofImagePickerError: "Images could not be added. Try again.",
+    proofSubmissionSent: "Proof submitted for Hirer review.",
+    confirmCompletionDescription:
+      "Confirm that you completed this Quest. This action cannot be undone.",
+
     confirmCompletion: "Confirm completion",
     submitRework: "Submit rework",
     approveProof: "Approve proof",
@@ -667,7 +699,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
         QUEST_REWORK: "ขอแก้ไขหลักฐาน",
         QUEST_COMPLETED: "เสร็จสิ้น",
         QUEST_CANCELLED: "ยกเลิกแล้ว",
-        QUEST_DISPUTED: "อยู่ระหว่างข้อพิพาท",
+        QUEST_FAILED: "ไม่สำเร็จ",
         QUEST_HIDDEN: "ซ่อนอยู่",
         TEAM_FORMING: "กำลังรวมทีม",
         TEAM_SUBMITTED: "ส่งทีมแล้ว",
@@ -720,6 +752,22 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     reworkRemaining: (remaining, limit) =>
       `เหลือสิทธิ์แก้ไข ${remaining} จาก ${limit} ครั้ง`,
     submitProof: "ส่งหลักฐาน",
+    proofSubmissionTitle: "ส่งหลักฐานการเสร็จงาน",
+    proofSubmissionDescription:
+      "เพิ่มคำอธิบายสั้น ๆ หรือรูปภาพได้สูงสุด 5 รูป เมื่อส่งแล้วจะแก้ไขไม่ได้และจะรอผู้ว่าจ้างตรวจสอบ",
+    proofDescriptionLabel: "รายละเอียดการทำงาน",
+    proofDescriptionPlaceholder: "อธิบายสิ่งที่คุณทำเสร็จแล้ว",
+    proofLockDescription: "ต้องมีคำอธิบายหรือรูปภาพอย่างน้อย 1 รายการ",
+    proofContentRequired: "เพิ่มคำอธิบายหรือรูปภาพอย่างน้อย 1 รายการก่อนส่ง",
+    addProofImages: "เพิ่มรูปภาพ",
+    proofAttachmentCount: (count, maximum) => `${count}/${maximum} รูป`,
+    proofImageLabel: (index) => `รูปหลักฐานที่ ${index}`,
+    removeProofImage: (index) => `ลบรูปหลักฐานที่ ${index}`,
+    proofImagePickerError: "เพิ่มรูปภาพไม่สำเร็จ ลองอีกครั้ง",
+    proofSubmissionSent: "ส่งหลักฐานให้ผู้ว่าจ้างตรวจสอบแล้ว",
+    confirmCompletionDescription:
+      "ยืนยันว่าคุณทำเควสต์นี้เสร็จแล้ว การดำเนินการนี้ไม่สามารถย้อนกลับได้",
+
     confirmCompletion: "ยืนยันการเสร็จสิ้น",
     submitRework: "ส่งหลักฐานที่แก้ไข",
     approveProof: "อนุมัติหลักฐาน",
