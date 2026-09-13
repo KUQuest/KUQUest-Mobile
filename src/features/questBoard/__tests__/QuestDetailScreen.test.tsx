@@ -189,6 +189,32 @@ describe("Quest Detail screen", () => {
     alertSpy.mockRestore();
   });
 
+  it("opens report review from an assigned joined Quest with its context", async () => {
+    const view = await render(
+      <QuestDetailScreen
+        questId="buy-lunch"
+        studentId="student-demo"
+        mode="join"
+        joinStatus="accepted"
+      />
+    );
+
+    expect(view.getByTestId("quest-report-button")).toBeTruthy();
+    expect(view.queryByTestId("quest-open-dispute")).toBeNull();
+    await fireEvent.press(view.getByTestId("quest-report-button"));
+
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: "/report",
+      params: {
+        source: "quest",
+        questId: "buy-lunch",
+        questTitle: "Buy lunch from the canteen",
+        viewerId: "student-demo",
+        reportedMemberId: "student-creator-4",
+      },
+    });
+  });
+
   it("shows Edit post for the owner view and opens the create flow with the Quest id", async () => {
     const view = await render(
       <QuestDetailScreen questId="clean-fan" mode="post" />

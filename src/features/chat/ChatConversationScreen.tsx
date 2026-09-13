@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Camera,
   ChevronLeft,
+  CircleAlert,
   ClipboardCheck,
   Download,
   FileText,
@@ -558,6 +559,37 @@ export default function ChatConversationScreen() {
     conversation.capability?.readOnlyReason === "TERMINAL"
       ? messages.conversationReadOnlyTerminal
       : messages.conversationNotWritable;
+  const reportQuestId = conversation.questId;
+  const reportProjection =
+    reportQuestId && viewerId
+      ? questWorkflow.getQuestDetailProjection(reportQuestId, viewerId)
+      : null;
+  const canReportConversation = Boolean(
+    reportQuestId &&
+    viewerId &&
+    conversation.capability?.canRead &&
+    reportProjection?.isAssigned &&
+    !reportProjection.isOwner
+  );
+  const handleReportConversation = () => {
+    if (
+      !canReportConversation ||
+      !reportQuestId ||
+      !viewerId ||
+      !reportProjection
+    )
+      return;
+    router.push({
+      pathname: "/report",
+      params: {
+        source: "chat",
+        questId: reportQuestId,
+        questTitle: localizedText(conversation.questTitle, locale),
+        viewerId,
+        reportedMemberId: reportProjection.state.quest.hirerId,
+      },
+    });
+  };
   const messagePlaceholder =
     conversation.participantRole === "owner"
       ? messages.typeOwnerMessage
@@ -702,6 +734,27 @@ export default function ChatConversationScreen() {
             </Text>
           </View>
         </Pressable>
+        {canReportConversation ? (
+          <Pressable
+            accessibilityLabel={messages.reportConversation}
+            accessibilityRole="button"
+            className={styles.reportAction}
+            onPress={handleReportConversation}
+            testID="chat-report-button"
+          >
+            <View className={styles.reportActionIcon}>
+              <CircleAlert color={colors.danger} size={20} strokeWidth={2.2} />
+            </View>
+            <View className={styles.reportActionCopy}>
+              <Text className={styles.reportActionText}>
+                {messages.reportConversation}
+              </Text>
+              <Text className={styles.reportActionDescription}>
+                {messages.reportConversationDescription}
+              </Text>
+            </View>
+          </Pressable>
+        ) : null}
         {!canWrite ? (
           <View
             accessibilityRole="alert"
