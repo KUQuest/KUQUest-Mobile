@@ -744,7 +744,6 @@ function PrototypeStatePanels({
   onConfirmCompletion,
   onSubmitRework,
   onReviewProof,
-  onDispute,
   onResolve,
   onComplete,
   onCancel,
@@ -757,7 +756,6 @@ function PrototypeStatePanels({
   onConfirmCompletion: () => void;
   onSubmitRework: (proofId: string) => void;
   onReviewProof: (proofId: string, approve: boolean) => void;
-  onDispute: () => void;
   onResolve: () => void;
   onComplete: () => void;
   onCancel: () => void;
@@ -1060,18 +1058,6 @@ function PrototypeStatePanels({
         ) : null}
       </View>
     ) : null;
-  const openDisputeButton = capabilities.availableActions.includes(
-    "OPEN_DISPUTE"
-  ) ? (
-    <View className={styles.prototypeActions}>
-      <PrototypeActionButton
-        label={messages.openDispute}
-        onPress={onDispute}
-        danger
-        testID="quest-open-dispute"
-      />
-    </View>
-  ) : null;
   const openCancelButton =
     status === QuestStatus.QUEST_OPEN &&
     capabilities.availableActions.includes("CANCEL") ? (
@@ -1092,7 +1078,6 @@ function PrototypeStatePanels({
       {consentCard}
       {proofCard}
       {disputeCard}
-      {openDisputeButton}
       {openCancelButton}
     </>
   );
@@ -1463,6 +1448,12 @@ export default function QuestDetailScreen({
     detailProjection?.conversationCapability.conversationId &&
     detailProjection.conversationCapability.canRead
   );
+  const canReportQuest = Boolean(
+    isJoinView &&
+    !leftQuest &&
+    (joinedStatus === "accepted" || joinedStatus === "history") &&
+    applicationProjection?.isAssigned
+  );
   const statusTitle = isPostView
     ? messages.postOwnerView
     : isJoinView
@@ -1673,6 +1664,20 @@ export default function QuestDetailScreen({
     });
   };
 
+  const handleReportQuest = () => {
+    if (!quest || !canReportQuest) return;
+    router.push({
+      pathname: "/report",
+      params: {
+        source: "quest",
+        questId: quest.id,
+        questTitle: quest.title,
+        viewerId: applicationStudentId,
+        reportedMemberId: quest.ownerStudentId,
+      },
+    });
+  };
+
   const applyPrototypeResult = (result: QuestActionResult) => {
     if (!result.ok) {
       Alert.alert(messages.details, result.error.message);
@@ -1834,16 +1839,6 @@ export default function QuestDetailScreen({
         },
       },
     ]);
-  };
-  const handlePrototypeDispute = () => {
-    if (resolvedQuestId)
-      applyPrototypeResult(
-        questWorkflow.dispatch({
-          type: "OPEN_DISPUTE",
-          questId: resolvedQuestId,
-          actorId: applicationStudentId,
-        })
-      );
   };
   const handlePrototypeResolve = () => {
     if (resolvedQuestId)
@@ -2209,12 +2204,44 @@ export default function QuestDetailScreen({
             onConfirmCompletion={handlePrototypeConfirmCompletion}
             onSubmitRework={handlePrototypeSubmitRework}
             onReviewProof={handlePrototypeReviewProof}
-            onDispute={handlePrototypeDispute}
             onResolve={handlePrototypeResolve}
             onComplete={handlePrototypeComplete}
             onCancel={handlePrototypeCancel}
             onPublish={handlePrototypePublish}
           />
+        ) : null}
+        {canReportQuest ? (
+          <View className={styles.reportCard} testID="quest-report-card">
+            <View className={styles.reportHeader}>
+              <View className={styles.reportIcon}>
+                <CircleAlert
+                  color={colors.danger}
+                  size={21}
+                  strokeWidth={2.2}
+                />
+              </View>
+              <View className={styles.reportCopy}>
+                <Text className={styles.reportTitle}>
+                  {messages.reportQuest}
+                </Text>
+                <Text className={styles.reportDescription}>
+                  {messages.reportQuestDescription}
+                </Text>
+              </View>
+            </View>
+            <Pressable
+              accessibilityLabel={messages.reportQuest}
+              accessibilityRole="button"
+              className={styles.reportAction}
+              onPress={handleReportQuest}
+              style={{ backgroundColor: colors.danger }}
+              testID="quest-report-button"
+            >
+              <Text className={styles.reportActionText}>
+                {messages.reportQuest}
+              </Text>
+            </Pressable>
+          </View>
         ) : null}
       </ScrollView>
       {activePrototypeState && candidateGroup && !isHirerView ? (
