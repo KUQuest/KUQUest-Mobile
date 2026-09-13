@@ -26,7 +26,6 @@ const PROFILE_TAG_LIMIT = 3;
 type DemoProfileRecord = {
   view: ProfileViewData;
   profile: ProfileResponse;
-  occupations: ProfileEditData["occupations"];
   experiences: ExperienceEntry[];
   portfolio: PortfolioEntry[];
   certificates: CertificateEntry[];
@@ -59,6 +58,7 @@ function toProfileResponse(
   const imageUri = getImageUri(view);
   return {
     email: `${personaId}@ku.th`,
+    version: 1,
     firstName,
     lastName,
     bio: view.about,
@@ -151,13 +151,6 @@ function createRecord(personaId: PrototypePersonaId): DemoProfileRecord {
   return {
     view,
     profile: toProfileResponse(personaId, view),
-    occupations: [
-      {
-        id: `demo-occupation-${personaId}`,
-        name: view.occupation,
-        requiresStudentId: false,
-      },
-    ],
     experiences: view.experiences.map(toExperienceEntry),
     portfolio: view.works.map(toPortfolioEntry),
     certificates: view.certificates.map(toCertificateEntry),
@@ -259,11 +252,11 @@ export class DemoProfileAdapter implements ProfileAdapter {
     const record = getRecord(personaId);
     return {
       profile: clone(record.profile),
-      occupations: clone(record.occupations),
       experiences: clone(record.experiences),
       portfolio: clone(record.portfolio),
       certificates: clone(record.certificates),
       sectionErrors: {},
+      sectionUnavailable: {},
     };
   }
 
@@ -276,16 +269,14 @@ export class DemoProfileAdapter implements ProfileAdapter {
       record.profile.firstName = update.firstName;
     if (update.lastName !== undefined)
       record.profile.lastName = update.lastName;
-    if (update.bio !== undefined) record.profile.bio = update.bio;
-    if (update.occupationId !== undefined) {
-      const occupation = record.occupations.find(
-        (item) => item.id === update.occupationId
-      );
-      if (occupation)
-        record.profile.occupation = {
-          id: occupation.id,
-          name: occupation.name,
-        };
+    if (update.bio?.trim()) record.profile.bio = update.bio.trim();
+    if (update.telephone !== undefined)
+      record.profile.telephone = update.telephone;
+    if (update.departmentId !== undefined && record.profile.department) {
+      record.profile.department = {
+        ...record.profile.department,
+        id: update.departmentId,
+      };
     }
     syncBasics(record);
     return clone(record.profile);
@@ -294,7 +285,7 @@ export class DemoProfileAdapter implements ProfileAdapter {
   async uploadAvatar(
     asset: UploadAsset,
     personaId: PrototypePersonaId = getActivePersonaId()
-  ): Promise<string> {
+  ): Promise<string | null> {
     const record = getRecord(personaId);
     record.profile.avatar = {
       fileId: `demo-avatar-${personaId}`,

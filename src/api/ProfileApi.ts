@@ -1,6 +1,5 @@
 import { ApiError } from './ApiClient';
 import type {
-  AcademicRegistrationOptions,
   CertificateEntry,
   ExperienceEntry,
   PortfolioEntry,
@@ -13,23 +12,50 @@ export type ProfileEditSectionErrors = Partial<Record<ProfileEditSection, true>>
 
 export interface ProfileEditData {
   profile: ProfileResponse;
-  occupations: AcademicRegistrationOptions['occupations'];
   experiences: ExperienceEntry[];
   portfolio: PortfolioEntry[];
   certificates: CertificateEntry[];
   sectionErrors: ProfileEditSectionErrors;
+  sectionUnavailable: ProfileEditSectionErrors;
 }
 
-export type ProfileBasicsUpdate = Pick<ProfileUpdate, 'firstName' | 'lastName' | 'bio' | 'occupationId'>;
+export type ProfileBasicsUpdate = Pick<ProfileUpdate, 'firstName' | 'lastName' | 'bio' | 'telephone' | 'departmentId'>;
 
-type CollectionResult<T> = { items: T[]; failed: boolean };
+export type OptionalCollectionResult<T> = {
+  items: T[];
+  unavailable: boolean;
+};
 
-async function readCollection<T>(request: () => Promise<T[]>): Promise<CollectionResult<T>> {
+export async function readOptionalCollection<T>(
+  request?: () => Promise<T[]>
+): Promise<OptionalCollectionResult<T>> {
+  if (!request) return { items: [], unavailable: true };
+
   try {
-    return { items: await request(), failed: false };
+    return { items: await request(), unavailable: false };
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return { items: [], unavailable: true };
+    }
+    throw error;
+  }
+}
+
+type CollectionResult<T> = {
+  items: T[];
+  failed: boolean;
+  unavailable: boolean;
+};
+
+async function readCollection<T>(
+  request: () => Promise<T[]>
+): Promise<CollectionResult<T>> {
+  try {
+    const result = await readOptionalCollection(request);
+    return { ...result, failed: false };
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) throw error;
-    return { items: [], failed: true };
+    return { items: [], failed: true, unavailable: false };
   }
 }
 
@@ -37,14 +63,8 @@ export class ProfileApi {
   constructor(private readonly studentApi: StudentApi) {}
 
   async getEditData(): Promise<ProfileEditData> {
-    const [profile, options, experiences, portfolio, certificates] = await Promise.all([
+    const [profile, experiences, portfolio, certificates] = await Promise.all([
       this.studentApi.getProfile(),
-      this.studentApi.getAcademicRegistrationOptions().catch((error) => {
-        if (error instanceof ApiError && error.status === 404) {
-          return { occupations: [], faculties: [] };
-        }
-        throw error;
-      }),
       readCollection(() => this.studentApi.listExperience()),
       readCollection(() => this.studentApi.listPortfolio()),
       readCollection(() => this.studentApi.listCertificates()),
@@ -55,23 +75,35 @@ export class ProfileApi {
       ...(portfolio.failed ? { portfolio: true } : {}),
       ...(certificates.failed ? { certificates: true } : {}),
     };
+    const sectionUnavailable: ProfileEditSectionErrors = {
+      ...(experiences.unavailable ? { experience: true } : {}),
+      ...(portfolio.unavailable ? { portfolio: true } : {}),
+      ...(certificates.unavailable ? { certificates: true } : {}),
+    };
 
     return {
       profile,
-      occupations: options.occupations,
       experiences: experiences.items,
       portfolio: portfolio.items,
       certificates: certificates.items,
       sectionErrors,
+      sectionUnavailable,
     };
   }
 
   async updateBasics(update: ProfileBasicsUpdate): Promise<ProfileResponse> {
-    await this.studentApi.updateProfile(update);
+    const normalizedUpdate: ProfileBasicsUpdate = {
+      ...(update.firstName === undefined ? {} : { firstName: update.firstName }),
+      ...(update.lastName === undefined ? {} : { lastName: update.lastName }),
+      ...(update.bio?.trim() ? { bio: update.bio.trim() } : {}),
+      ...(update.telephone === undefined ? {} : { telephone: update.telephone }),
+      ...(update.departmentId === undefined ? {} : { departmentId: update.departmentId }),
+    };
+    await this.studentApi.updateProfile(normalizedUpdate);
     return this.studentApi.getProfile();
   }
 
-  async uploadAvatar(asset: UploadAsset): Promise<string> {
+  async uploadAvatar(asset: UploadAsset): Promise<string | null> {
     return this.studentApi.uploadAvatar(asset);
   }
 

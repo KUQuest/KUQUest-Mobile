@@ -402,5 +402,6 @@ export function getDemoProfileViewData(
     })),
     reviews: demoReviews.map((review) => ({ ...review })),
     sectionErrors: {},
+    sectionUnavailable: {},
   };
 }

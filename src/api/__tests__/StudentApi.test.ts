@@ -70,6 +70,32 @@ describe('StudentApi', () => {
     expect(headers['authorization']).toBeUndefined();
   });
 
+  test('accepts staging Profile version and nullable fields', async () => {
+    fetchMock.mockResolvedValue(response({
+      success: true,
+      data: {
+        version: '7',
+        email: 'student@ku.th',
+        firstName: 'KU',
+        lastName: 'Student',
+        bio: null,
+        telephone: null,
+        studentId: null,
+        academicYear: '3',
+        occupation: null,
+        tags: [{ id: 'design', name: 'Design', questCount: '2' }],
+        department: null,
+        avatar: null,
+      },
+    }));
+
+    await expect(api.getProfile()).resolves.toMatchObject({
+      version: 7,
+      occupation: null,
+      tags: [{ id: 'design', name: 'Design', questCount: 2 }],
+    });
+  });
+
   test('does not attach auth headers when no Better Auth cookie exists', async () => {
     const publicApi = new StudentApi(new ApiClient({
       baseUrl: 'https://api.example.test',
@@ -116,14 +142,21 @@ describe('StudentApi', () => {
     );
   });
 
+  test('rejects an empty Academic Registration update before fetching', async () => {
+    await expect(api.updateAcademicRegistration({})).rejects.toEqual(
+      new ApiError(400, 'VALIDATION_ERROR', 'Academic Registration update must contain at least one field')
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   test('forwards a stable idempotency key for profile mutations', async () => {
     fetchMock.mockResolvedValue(response({ success: true }));
 
-    await api.updateProfile({ bio: null }, { idempotencyKey: 'profile-bio-clear-1' });
+    await api.updateProfile({ bio: 'Updated' }, { idempotencyKey: 'profile-bio-update-1' });
 
     const request = fetchMock.mock.calls[0][1] as RequestInit;
     expect(request.headers).toEqual(expect.objectContaining({
-      'Idempotency-Key': 'profile-bio-clear-1',
+      'Idempotency-Key': 'profile-bio-update-1',
     }));
   });
 
@@ -200,19 +233,19 @@ describe('StudentApi', () => {
     expect(formData.get('images')).toBeNull();
   });
 
-  test('loads reputation and review data with the selected review filter', async () => {
+  test('loads reputation and review data with staging numeric and nullable fields', async () => {
     fetchMock
       .mockResolvedValueOnce(response({
         success: true,
-        data: { totalQuests: 3, rating: { average: 4.5, count: 2, distribution: { '5': 1, '4': 1, '3': 0, '2': 0, '1': 0 } } },
+        data: { totalQuests: '3', rating: { average: 4.5, count: '2', distribution: { '5': '1', '4': 1, '3': 0, '2': 0, '1': 0 } } },
       }))
       .mockResolvedValueOnce(response({
         success: true,
-        data: { items: [], total: 0, nextCursor: null },
+        data: { items: [{ id: 'review-id', reviewer: { displayName: 'Reviewer', avatar: null }, rating: '5', comment: null, createdAt: '2026-01-01T00:00:00.000Z', quest: null }], total: '1', nextCursor: null },
       }));
 
-    await expect(api.getReputation()).resolves.toMatchObject({ totalQuests: 3 });
-    await expect(api.listReviews(1)).resolves.toEqual({ items: [], total: 0 });
+    await expect(api.getReputation()).resolves.toMatchObject({ totalQuests: 3, rating: { count: 2, distribution: { 5: 1 } } });
+    await expect(api.listReviews(1)).resolves.toMatchObject({ items: [{ rating: 5, comment: null }], total: 1, nextCursor: null });
     expect(fetchMock.mock.calls[1][0]).toBe('https://api.example.test/api/v1/profile/reviews?rating=1');
   });
 
@@ -224,6 +257,18 @@ describe('StudentApi', () => {
     const request = fetchMock.mock.calls[0][1] as RequestInit;
     const formData = request.body as FormData;
     expect(formData.get('image')).toBeInstanceOf(Blob);
+  });
+
+  test('accepts a successful Avatar response with a nullable file ID', async () => {
+    fetchMock.mockResolvedValue(response({ success: true, data: { fileId: null, version: '8', avatar: null } }));
+
+    await expect(api.uploadAvatar({ uri: 'file:///tmp/avatar.png' })).resolves.toBeNull();
+  });
+
+  test('rejects an Avatar success response missing its staging data', async () => {
+    fetchMock.mockResolvedValue(response({ success: true, data: {} }));
+
+    await expect(api.uploadAvatar({ uri: 'file:///tmp/avatar.png' })).rejects.toThrow('Required');
   });
 
   test('maps API errors to ApiError with the documented error payload', async () => {

@@ -370,6 +370,15 @@ describe("AuthService", () => {
     expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith("kuquest_cookie");
     expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith("kuquest_session_data");
   });
+  test("clears local auth state when remote sign-out throws synchronously", async () => {
+    betterAuth.signOut.mockImplementation(() => {
+      throw new Error("Backend unavailable");
+    });
+
+    await expect(auth.signOut()).resolves.toBeUndefined();
+    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith("kuquest_cookie");
+    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith("kuquest_session_data");
+  });
 
   test("does not hang when a sign-out provider never responds", async () => {
     jest.useFakeTimers();

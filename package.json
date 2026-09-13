@@ -72,6 +72,7 @@
     "dev:android": "node ./scripts/run-development-build.js android",
     "dev:ios": "node ./scripts/run-development-build.js ios",
     "dev:start": "npm run update-api-env && expo start --dev-client",
+    "staging:start": "node ./scripts/start-staging.js",
     "demo:start": "EXPO_PUBLIC_PROFILE_DEMO=true expo start --dev-client",
     "demo:android:account": "node ./scripts/switch-demo-account.js",
     "build:apk": "eas build --platform android --profile preview",

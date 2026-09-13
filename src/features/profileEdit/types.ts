@@ -5,17 +5,16 @@ export type EditSection = 'basics' | 'experience' | 'portfolio' | 'certificates'
 
 export interface ProfileEditRouteData {
   profile: ProfileResponse;
-  occupations: { id: string; name: string; requiresStudentId: boolean }[];
   experiences: ExperienceEntry[];
   portfolio: PortfolioEntry[];
   certificates: CertificateEntry[];
   sectionErrors: ProfileEditSectionErrors;
+  sectionUnavailable: ProfileEditSectionErrors;
 }
 
 export interface BasicsForm {
   name: string;
   bio: string;
-  occupationId: string;
   profileImage: string;
   profileImageCacheKey?: string;
 }
@@ -46,7 +45,6 @@ export function toBasicsForm(profile: ProfileResponse): BasicsForm {
   return {
     name: [profile.firstName, profile.lastName].filter(Boolean).join(' '),
     bio: profile.bio ?? '',
-    occupationId: profile.occupation?.id ?? '',
     profileImage: profile.avatar?.url ?? '',
     profileImageCacheKey: profile.avatar?.fileId,
   };

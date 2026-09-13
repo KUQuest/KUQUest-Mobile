@@ -83,6 +83,7 @@ export interface ProfileViewData {
   works: ProfileWork[];
   reviews: ProfileReview[];
   sectionErrors: ProfileSectionErrors;
+  sectionUnavailable: ProfileSectionErrors;
 }
 
 export type ProfileTab = 'about' | 'portfolio' | 'reviews';
@@ -406,7 +407,7 @@ function ReviewCard({ review, locale, reviewerAvatarLabel, reviewRatingLabel }: 
   </View>;
 }
 
-export function Reviews({ reviews, stats, sectionTitle, emptyText, noMatchingReviewsText = 'No reviews match this rating.', showAllLabel = 'Show all reviews', allLabel, eligibleReviewsLabel, filteredReviewsLabel, reviewCountLabel, totalQuestsLabel, noRatingLabel = 'No ratings yet', ratingErrorText, accessibilityLabels, locale, listHeader, bottomPadding = 96, initialScrollOffset = 0, onScroll, errorText, retryLabel, onRetry }: { reviews: ProfileReview[]; stats: ProfileStatsData; sectionTitle: string; emptyText: string; noMatchingReviewsText?: string; showAllLabel?: string; allLabel: string; eligibleReviewsLabel: (count: number) => string; filteredReviewsLabel: (count: number, rating: number) => string; reviewCountLabel: string; totalQuestsLabel?: string; noRatingLabel?: string; ratingErrorText?: string; accessibilityLabels?: Pick<ProfileAccessibilityLabels, 'ratingSummaryLabel' | 'ratingDistributionLabel' | 'reviewerAvatarLabel' | 'reviewFilterLabel' | 'reviewRatingLabel'>; locale?: SupportedLocale; listHeader?: React.ReactElement | null; bottomPadding?: number; initialScrollOffset?: number; onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void } & SectionNoticeProps) {
+export function Reviews({ reviews, stats, sectionTitle, emptyText, noMatchingReviewsText = 'No reviews match this rating.', showAllLabel = 'Show all reviews', allLabel, eligibleReviewsLabel, filteredReviewsLabel, reviewCountLabel, totalQuestsLabel, noRatingLabel = 'No ratings yet', ratingErrorText, ratingRetryLabel, onRatingRetry, accessibilityLabels, locale, listHeader, bottomPadding = 96, initialScrollOffset = 0, onScroll, errorText, retryLabel, onRetry }: { reviews: ProfileReview[]; stats: ProfileStatsData; sectionTitle: string; emptyText: string; noMatchingReviewsText?: string; showAllLabel?: string; allLabel: string; eligibleReviewsLabel: (count: number) => string; filteredReviewsLabel: (count: number, rating: number) => string; reviewCountLabel: string; totalQuestsLabel?: string; noRatingLabel?: string; ratingErrorText?: string; ratingRetryLabel?: string; onRatingRetry?: () => void; accessibilityLabels?: Pick<ProfileAccessibilityLabels, 'ratingSummaryLabel' | 'ratingDistributionLabel' | 'reviewerAvatarLabel' | 'reviewFilterLabel' | 'reviewRatingLabel'>; locale?: SupportedLocale; listHeader?: React.ReactElement | null; bottomPadding?: number; initialScrollOffset?: number; onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void } & SectionNoticeProps) {
   const { width, fontScale } = useWindowDimensions();
   const metrics = getProfileLayoutMetrics(width, fontScale);
   const [filter, setFilter] = useState<1 | 2 | 3 | 4 | 5 | null>(null);
@@ -431,7 +432,7 @@ export function Reviews({ reviews, stats, sectionTitle, emptyText, noMatchingRev
       <Text accessibilityRole="header" className={styles.sectionTitle} maxFontSizeMultiplier={2} style={{ fontSize: metrics.sectionTitleFontSize, lineHeight: Math.round(metrics.sectionTitleFontSize * 1.3) }}>{sectionTitle}</Text>
       <View className={styles.rule} />
       {errorText ? <SectionNotice errorText={errorText} retryLabel={retryLabel} onRetry={onRetry} /> : <>
-        {ratingErrorText ? <SectionNotice errorText={ratingErrorText} retryLabel={retryLabel} onRetry={onRetry} /> : <>{reviewSummary}{filter !== null ? <Pressable accessibilityRole="button" accessibilityLabel={showAllLabel} onPress={() => setFilter(null)} className={styles.showAllReviews}><Text className={styles.showAllReviewsText}>{showAllLabel}</Text></Pressable> : null}</>}
+        {ratingErrorText ? <SectionNotice errorText={ratingErrorText} retryLabel={ratingRetryLabel} onRetry={onRatingRetry} /> : <>{reviewSummary}{filter !== null ? <Pressable accessibilityRole="button" accessibilityLabel={showAllLabel} onPress={() => setFilter(null)} className={styles.showAllReviews}><Text className={styles.showAllReviewsText}>{showAllLabel}</Text></Pressable> : null}</>}
       </>}
     </View>
   </>;

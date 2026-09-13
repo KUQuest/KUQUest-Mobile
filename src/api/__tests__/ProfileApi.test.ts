@@ -1,4 +1,5 @@
 import { ProfileApi } from '../ProfileApi';
+import { ApiError } from '../ApiClient';
 import type { StudentApi } from '../StudentApi';
 
 function createProfile() {
@@ -22,10 +23,6 @@ describe('ProfileApi', () => {
   test('loads the editable Student Profile data as one feature-facing document', async () => {
     const studentApi = {
       getProfile: jest.fn().mockResolvedValue(createProfile()),
-      getAcademicRegistrationOptions: jest.fn().mockResolvedValue({
-        occupations: [{ id: 'occupation-id', name: 'Student', requiresStudentId: true }],
-        faculties: [],
-      }),
       listExperience: jest.fn().mockResolvedValue([]),
       listPortfolio: jest.fn().mockResolvedValue([]),
       listCertificates: jest.fn().mockResolvedValue([]),
@@ -33,18 +30,17 @@ describe('ProfileApi', () => {
 
     await expect(new ProfileApi(studentApi).getEditData()).resolves.toEqual({
       profile: createProfile(),
-      occupations: [{ id: 'occupation-id', name: 'Student', requiresStudentId: true }],
       experiences: [],
       portfolio: [],
       certificates: [],
       sectionErrors: {},
+      sectionUnavailable: {},
     });
   });
 
   test('keeps unrelated editor sections available when one collection fails', async () => {
     const studentApi = {
       getProfile: jest.fn().mockResolvedValue(createProfile()),
-      getAcademicRegistrationOptions: jest.fn().mockResolvedValue({ occupations: [], faculties: [] }),
       listExperience: jest.fn().mockRejectedValue(new Error('Experience unavailable')),
       listPortfolio: jest.fn().mockResolvedValue([]),
       listCertificates: jest.fn().mockResolvedValue([]),
@@ -58,7 +54,23 @@ describe('ProfileApi', () => {
     });
   });
 
-  test('saves a focused basics edit through the public profile endpoint', async () => {
+  test('marks a missing collection as unsupported without hiding other sections', async () => {
+    const studentApi = {
+      getProfile: jest.fn().mockResolvedValue(createProfile()),
+      listExperience: jest.fn().mockRejectedValue(new ApiError(404, 'NOT_FOUND', 'Not published')),
+      listPortfolio: jest.fn().mockResolvedValue([]),
+      listCertificates: jest.fn().mockResolvedValue([]),
+    } as unknown as StudentApi;
+
+    await expect(new ProfileApi(studentApi).getEditData()).resolves.toMatchObject({
+      experiences: [],
+      portfolio: [],
+      certificates: [],
+      sectionErrors: {},
+      sectionUnavailable: { experience: true },
+    });
+  });
+  test('saves only staging-supported basics fields through the public profile endpoint', async () => {
     const studentApi = {
       updateProfile: jest.fn().mockResolvedValue(undefined),
       getProfile: jest.fn().mockResolvedValue(createProfile()),
@@ -69,38 +81,27 @@ describe('ProfileApi', () => {
       firstName: 'Ada',
       lastName: 'Lovelace',
       bio: 'Updated',
-      occupationId: 'occupation-id',
+      telephone: '0812345678',
+      departmentId: 'department-id',
     })).resolves.toEqual(createProfile());
 
     expect(studentApi.updateProfile).toHaveBeenCalledWith({
       firstName: 'Ada',
       lastName: 'Lovelace',
       bio: 'Updated',
-      occupationId: 'occupation-id',
+      telephone: '0812345678',
+      departmentId: 'department-id',
     });
   });
-
-  test('sends null when a Student clears their bio', async () => {
+  test('omits a blank bio so an existing Profile value is preserved', async () => {
     const studentApi = {
       updateProfile: jest.fn().mockResolvedValue(undefined),
       getProfile: jest.fn().mockResolvedValue(createProfile()),
     } as unknown as StudentApi;
 
-    await new ProfileApi(studentApi).updateBasics({ bio: null });
+    await new ProfileApi(studentApi).updateBasics({ bio: '   ' });
 
-    expect(studentApi.updateProfile).toHaveBeenCalledWith({ bio: null });
-  });
-
-  test('rethrows non-404 occupation option failures', async () => {
-    const studentApi = {
-      getProfile: jest.fn().mockResolvedValue(createProfile()),
-      getAcademicRegistrationOptions: jest.fn().mockRejectedValue(new Error('temporary failure')),
-      listExperience: jest.fn().mockResolvedValue([]),
-      listPortfolio: jest.fn().mockResolvedValue([]),
-      listCertificates: jest.fn().mockResolvedValue([]),
-    } as unknown as StudentApi;
-
-    await expect(new ProfileApi(studentApi).getEditData()).rejects.toThrow('temporary failure');
+    expect(studentApi.updateProfile).toHaveBeenCalledWith({});
   });
 
 });

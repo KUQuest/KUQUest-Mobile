@@ -87,4 +87,49 @@ describe('ProfilePersistenceCoordinator', () => {
     );
     expect(uploadCertificateImage.mock.calls[0][2]).toEqual(uploadCertificateImage.mock.calls[1][2]);
   });
+
+  it('skips unavailable optional collection mutations', async () => {
+    const api = {
+      updateAcademicRegistration: jest.fn().mockResolvedValue(undefined),
+      updateProfile: jest.fn().mockResolvedValue(undefined),
+      uploadAvatar: jest.fn().mockResolvedValue(null),
+      createCertificate: jest.fn(),
+      updateCertificate: jest.fn(),
+      uploadCertificateImage: jest.fn(),
+      createPortfolio: jest.fn(),
+      updatePortfolio: jest.fn(),
+      deletePortfolio: jest.fn(),
+      createExperience: jest.fn(),
+      updateExperience: jest.fn(),
+      deleteCertificate: jest.fn(),
+      deleteExperience: jest.fn(),
+    } as unknown as StudentApi;
+
+    await new ProfilePersistenceCoordinator().save(
+      api,
+      createDraft(),
+      true,
+      '2026-08-11',
+      {
+        unavailableCollections: {
+          certificates: true,
+          portfolio: true,
+          experience: true,
+        },
+      },
+    );
+
+    expect(api.createCertificate).not.toHaveBeenCalled();
+    expect(api.updateCertificate).not.toHaveBeenCalled();
+    expect(api.uploadCertificateImage).not.toHaveBeenCalled();
+    expect(api.createPortfolio).not.toHaveBeenCalled();
+    expect(api.updatePortfolio).not.toHaveBeenCalled();
+    expect(api.createExperience).not.toHaveBeenCalled();
+    expect(api.updateExperience).not.toHaveBeenCalled();
+    expect(api.deleteCertificate).not.toHaveBeenCalled();
+    expect(api.deletePortfolio).not.toHaveBeenCalled();
+    expect(api.deleteExperience).not.toHaveBeenCalled();
+    expect(api.updateAcademicRegistration).toHaveBeenCalled();
+    expect(api.updateProfile).toHaveBeenCalled();
+  });
 });

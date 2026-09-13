@@ -5,10 +5,11 @@ import ProfileEditSectionScreen, { EditProfileHubScreen } from '../ProfileEditSc
 import { authService } from '../../auth/AuthService';
 
 const mockRouteParams: Record<string, string> = {};
+const mockPush = jest.fn();
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockRouteParams,
-  useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn(), dispatch: jest.fn() }),
+  useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn(), dispatch: jest.fn() }),
   useNavigation: () => ({ addListener: jest.fn(() => jest.fn()), dispatch: jest.fn() }),
   useFocusEffect: (effect: () => (() => void) | void) => jest.requireActual('react').useEffect(effect, []),
 }));
@@ -41,11 +42,11 @@ const editData = {
     department: null,
     avatar: null,
   },
-  occupations: [{ id: 'occupation-id', name: 'Student', requiresStudentId: false }],
   experiences: [],
   portfolio: [],
   certificates: [],
   sectionErrors: {},
+  sectionUnavailable: {},
 };
 
 describe('Edit Profile hub', () => {
@@ -77,10 +78,35 @@ describe('Edit Profile hub', () => {
 
     await waitFor(() => expect(view.getByText('Edit Profile')).toBeTruthy());
     expect(view.getByTestId('profile-edit-section-basics')).toBeTruthy();
-    expect(view.getAllByText('Name, avatar, occupation, and bio')).toHaveLength(2);
+    expect(view.getAllByText('Name, avatar, and bio')).toHaveLength(2);
     expect(view.getByText('0 entries')).toBeTruthy();
     expect(view.getByText('0 projects')).toBeTruthy();
     expect(view.getByText('0 certificates')).toBeTruthy();
+  });
+
+  it('routes academic identity edits through Academic Registration', async () => {
+    const view = await render(<EditProfileHubScreen />);
+
+    await waitFor(() => expect(view.getByTestId('profile-edit-section-academic-registration')).toBeTruthy());
+    fireEvent.press(view.getByTestId('profile-edit-section-academic-registration'));
+
+    expect(mockPush).toHaveBeenCalledWith('/onboarding?mode=edit');
+  });
+  it('does not route academic identity edits through the demo flow', async () => {
+    const previousDemoValue = process.env.EXPO_PUBLIC_PROFILE_DEMO;
+    process.env.EXPO_PUBLIC_PROFILE_DEMO = 'true';
+    try {
+      const view = await render(<EditProfileHubScreen />);
+      await waitFor(() => expect(view.getByTestId('profile-edit-section-academic-registration')).toBeTruthy());
+
+      fireEvent.press(view.getByTestId('profile-edit-section-academic-registration'));
+
+      expect(mockPush).not.toHaveBeenCalled();
+      expect(view.getByText('Unavailable')).toBeTruthy();
+    } finally {
+      if (previousDemoValue === undefined) delete process.env.EXPO_PUBLIC_PROFILE_DEMO;
+      else process.env.EXPO_PUBLIC_PROFILE_DEMO = previousDemoValue;
+    }
   });
 
   it('offers a native Back action from the hub', async () => {
@@ -101,6 +127,30 @@ describe('Edit Profile hub', () => {
     expect(view.getByText('Try again')).toBeTruthy();
   });
 
+  it('shows an explicit unsupported section without offering mutations', async () => {
+    mockRouteParams.section = 'portfolio';
+    mockedGetProfileApi.mockResolvedValue({
+      getEditData: jest.fn().mockResolvedValue({ ...editData, sectionUnavailable: { portfolio: true }}),
+    } as never);
+    const view = await render(<ProfileEditSectionScreen />);
+
+    await waitFor(() => expect(view.getByText('Unavailable')).toBeTruthy());
+    expect(view.queryByText('Add')).toBeNull();
+    expect(view.queryByText('Try again')).toBeNull();
+  });
+
+  it('does not open an editor for an unavailable direct item route', async () => {
+    mockRouteParams.section = 'portfolio';
+    mockRouteParams.itemId = 'new';
+    mockedGetProfileApi.mockResolvedValue({
+      getEditData: jest.fn().mockResolvedValue({ ...editData, sectionUnavailable: { portfolio: true }}),
+    } as never);
+    const view = await render(<ProfileEditSectionScreen />);
+
+    await waitFor(() => expect(view.getByText('Unavailable')).toBeTruthy());
+    expect(view.queryByText('Save changes')).toBeNull();
+    expect(view.queryByLabelText('Title')).toBeNull();
+  });
   it('opens a focused new Experience editor from Add', async () => {
     mockRouteParams.section = 'experience';
     mockRouteParams.itemId = 'new';
@@ -184,13 +234,12 @@ describe('Edit Profile hub', () => {
       firstName: 'Ada',
       lastName: 'Lovelace',
       bio: 'A bio',
-      occupationId: 'occupation-id',
     }));
     expect(view.queryByLabelText('Telephone')).toBeNull();
     expect(view.queryByLabelText('Student ID')).toBeNull();
   });
 
-  it('sends null when a Student clears their bio', async () => {
+  it('preserves the existing bio when a Student leaves it blank', async () => {
     mockRouteParams.section = 'basics';
     const updateBasics = jest.fn().mockResolvedValue(editData.profile);
     mockedGetProfileApi.mockResolvedValue({ getEditData: jest.fn().mockResolvedValue(editData), updateBasics, uploadAvatar: jest.fn() } as never);
@@ -200,6 +249,11 @@ describe('Edit Profile hub', () => {
     await fireEvent.changeText(view.getByLabelText('About you'), '');
     await fireEvent.press(view.getByText('Save changes'));
 
-    await waitFor(() => expect(updateBasics).toHaveBeenCalledWith(expect.objectContaining({ bio: null })));
+    await waitFor(() => expect(updateBasics).toHaveBeenCalledWith({
+      firstName: 'Ada',
+      lastName: 'Student',
+    }));
+    expect(view.queryByLabelText('Telephone')).toBeNull();
+    expect(view.queryByLabelText('Student ID')).toBeNull();
   });
 });
