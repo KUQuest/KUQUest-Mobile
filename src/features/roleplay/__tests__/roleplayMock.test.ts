@@ -9,6 +9,44 @@ describe("roleplayMock", () => {
   beforeEach(() => {
     authEnvironment.reset();
     roleplayMock.reset();
+    roleplayMock.setScenario("single-candidate-demo");
+  });
+
+  it("exposes the four rulebook participation and selection modes", () => {
+    const singleFcfs = roleplayMock.setScenario("print-documents");
+    expect(singleFcfs.scenario.label.en).toBe(
+      "2. Single First Come First Serve"
+    );
+    expect(singleFcfs.state.quest.participation).toBe("SINGLE");
+    expect(singleFcfs.state.quest.candidateMode).toBe("NO_CANDIDATE");
+    expect(singleFcfs.visibleActions).toEqual(["DIRECT_JOIN"]);
+
+    const teamCandidate = roleplayMock.setScenario("team-selection-demo");
+    expect(teamCandidate.state.quest.participation).toBe("GROUP");
+    expect(teamCandidate.state.quest.candidateMode).toBe("CANDIDATE");
+    expect(teamCandidate.state.teams).toHaveLength(2);
+
+    roleplayMock.setPersona("demo-hirer");
+    expect(roleplayMock.getViewModel().visibleActions).toEqual(
+      expect.arrayContaining(["SELECT_CANDIDATE", "REJECT_TEAM"])
+    );
+
+    const teamFcfs = roleplayMock.setScenario("clean-fan");
+    expect(teamFcfs.state.quest.participation).toBe("GROUP");
+    expect(teamFcfs.state.quest.candidateMode).toBe("NO_CANDIDATE");
+    roleplayMock.setPersona("student-demo");
+    expect(roleplayMock.getViewModel().visibleActions).toContain("DIRECT_JOIN");
+  });
+
+  it("uses the existing workflow for Single FCFS direct join", () => {
+    roleplayMock.setScenario("print-documents");
+
+    const result = roleplayMock.dispatch({ type: "DIRECT_JOIN" });
+
+    expect(result.ok).toBe(true);
+    expect(roleplayMock.getViewModel().state.quest.status).toBe(
+      QuestStatus.QUEST_ASSIGNED
+    );
   });
 
   it("exposes the deterministic single Candidate scenario for each persona", () => {

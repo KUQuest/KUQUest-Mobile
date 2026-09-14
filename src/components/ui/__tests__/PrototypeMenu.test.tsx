@@ -5,6 +5,11 @@ import { PrototypeMenu } from "../PrototypeMenu";
 import { PROTOTYPE_PERSONAS, PROTOTYPE_SCENARIOS } from "../prototypeMenuData";
 
 let mockLocale: "en" | "th" = "en";
+const mockPush = jest.fn();
+
+jest.mock("expo-router", () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
 
 jest.mock("@/locales/LocaleProvider", () => ({
   useLocale: () => ({ locale: mockLocale }),
@@ -39,6 +44,7 @@ async function renderMenu(
 describe("PrototypeMenu", () => {
   afterEach(() => {
     mockLocale = "en";
+    mockPush.mockClear();
   });
 
   it("exposes all fixture personas, scenario routes, and reset scopes", async () => {
@@ -134,6 +140,7 @@ describe("PrototypeMenu", () => {
     );
     await fireEvent.press(view.getByTestId("prototype-menu-reset-current"));
     await fireEvent.press(view.getByTestId("prototype-menu-reset-all"));
+    await fireEvent.press(view.getByTestId("prototype-menu-roleplay"));
 
     expect(onPersonaChange).toHaveBeenCalledWith("demo-worker-2");
     expect(onScenarioPress).toHaveBeenCalledWith(
@@ -141,6 +148,7 @@ describe("PrototypeMenu", () => {
     );
     expect(onReset).toHaveBeenNthCalledWith(1, "current");
     expect(onReset).toHaveBeenNthCalledWith(2, "all");
+    expect(mockPush).toHaveBeenCalledWith("/dev/roleplay");
   });
 
   it("renders Thai copy while keeping stable persona IDs and route paths", async () => {

@@ -45,6 +45,7 @@ import {
   questBoardMessages,
   type QuestBoardMessages,
 } from "@/locales/questBoardMessages";
+import { prototypeMenuMessages } from "@/locales/prototypeMenuMessages";
 import { colors } from "@/theme/colors";
 import { getAppChromeMetrics } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
@@ -924,6 +925,7 @@ export default function QuestBoardScreen({
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
   const { handleScroll } = useNavigationVisibility();
   const messages = questBoardMessages[locale];
+  const prototypeMessages = prototypeMenuMessages[locale];
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<QuestBoardFilter>(
     emptyQuestBoardFilter
@@ -1150,14 +1152,29 @@ export default function QuestBoardScreen({
             </Text>
             <Text className={styles.boardSubtitle}>{messages.subtitle}</Text>
           </View>
-          <PrototypeMenu
-            activePersonaId={activePersonaId}
-            compact
-            onPersonaChange={onPersonaChange}
-            onReset={onReset}
-            onScenarioPress={openPrototypeScenario}
-            testID="quest-board-prototype-menu"
-          />
+          {__DEV__ ? (
+            <View className={styles.boardIntroActions}>
+              <Pressable
+                accessibilityLabel={prototypeMessages.roleplay}
+                accessibilityRole="button"
+                className={styles.roleplayShortcut}
+                onPress={() => router.push("/dev/roleplay")}
+                testID="open-roleplay-quest"
+              >
+                <Text className={styles.roleplayShortcutText}>
+                  {prototypeMessages.roleplay}
+                </Text>
+              </Pressable>
+              <PrototypeMenu
+                activePersonaId={activePersonaId}
+                compact
+                onPersonaChange={onPersonaChange}
+                onReset={onReset}
+                onScenarioPress={openPrototypeScenario}
+                testID="quest-board-prototype-menu"
+              />
+            </View>
+          ) : null}
         </View>
       </View>
       <View className={styles.searchField}>
