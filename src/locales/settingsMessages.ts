@@ -5,8 +5,6 @@ export interface SettingsMessages {
   account: string;
   editProfile: string;
   editProfileDescription: string;
-  switchAccount: string;
-  switchAccountDescription: string;
   devOverlay: string;
   devOverlayDescription: string;
   preferences: string;
@@ -38,8 +36,6 @@ export const settingsMessages: Record<SupportedLocale, SettingsMessages> = {
     editProfile: "Edit Profile",
     editProfileDescription:
       "Update your details, experience, work, and certificates",
-    switchAccount: "Switch account",
-    switchAccountDescription: "Sign in with another KU account",
     devOverlay: "Developer launch options",
     devOverlayDescription:
       "Revoke the current session and choose a demo launch target",
@@ -69,8 +65,6 @@ export const settingsMessages: Record<SupportedLocale, SettingsMessages> = {
     account: "บัญชี",
     editProfile: "แก้ไขโปรไฟล์",
     editProfileDescription: "แก้ไขข้อมูล ประสบการณ์ ผลงาน และใบรับรอง",
-    switchAccount: "เปลี่ยนบัญชี",
-    switchAccountDescription: "เข้าสู่ระบบด้วยบัญชี KU อื่น",
     devOverlay: "ตัวเลือกสำหรับนักพัฒนา",
     devOverlayDescription:
       "ยกเลิก session แล้วกลับไปเลือกหน้าเริ่มต้นสำหรับทดสอบ",

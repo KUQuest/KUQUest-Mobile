@@ -18,6 +18,10 @@ describe("roleplayMock", () => {
     expect(student.scenario.prototypeOnly).toBe(true);
     expect(student.activePersonaId).toBe("student-demo");
     expect(student.state.quest.status).toBe(QuestStatus.QUEST_OPEN);
+    expect(student.state.quest.participation).toBe("SINGLE");
+    expect(student.state.quest.candidateMode).toBe("CANDIDATE");
+    expect(student.state.quest.startAt).toContain("2026-08-24T10:00");
+    expect(student.state.quest.deadlineAt).toContain("2026-08-25T12:00");
     expect(student.state.quest.proofRequired).toBe("optional");
     expect(student.visibleActions).toEqual(["APPLY"]);
 

@@ -14,7 +14,6 @@ import {
   LogOut,
   Moon,
   Pencil,
-  UserRound,
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -154,17 +153,7 @@ export default function SettingsScreen() {
                 onPress={() => router.push("/profile/edit")}
                 title={messages.editProfile}
                 testID="settings-edit-profile"
-              />
-              <SettingsRow
-                description={
-                  switchingAccount
-                    ? messages.switchingAccount
-                    : messages.switchAccountDescription
-                }
-                icon={UserRound}
-                onPress={switchAccount}
-                title={messages.switchAccount}
-                testID="settings-switch-account"
+                last={!devOverlayEnabled}
               />
               {devOverlayEnabled ? (
                 <SettingsRow

@@ -35,6 +35,7 @@ describe("Settings screen", () => {
     expect(view.getByText("Support")).toBeTruthy();
     expect(view.getByText("Version 1.0.0")).toBeTruthy();
     expect(view.getByText("Edit Profile")).toBeTruthy();
+    expect(view.queryByTestId("settings-switch-account")).toBeNull();
     expect(view.getByTestId("settings-notifications")).toBeTruthy();
     expect(
       view.getByTestId("settings-scroll").props.contentContainerStyle
@@ -80,15 +81,12 @@ describe("Settings screen", () => {
     );
   });
 
-  it("switches account from settings", async () => {
+  it("does not render account switcher", async () => {
     const view = await render(<SettingsScreen />);
 
-    fireEvent.press(view.getByTestId("settings-switch-account"));
-
-    await waitFor(() => {
-      expect(authService.signOut).toHaveBeenCalledTimes(1);
-      expect(mockReplace).toHaveBeenCalledWith("/");
-    });
+    expect(view.queryByTestId("settings-switch-account")).toBeNull();
+    expect(view.queryByText("Switch account")).toBeNull();
+    expect(authService.signOut).not.toHaveBeenCalled();
   });
 
   it("revokes the session before returning to the dev overlay", async () => {
