@@ -10,18 +10,26 @@ import type {
 
 import {
   ROLEPLAY_SCENARIO,
-  ROLEPLAY_SCENARIO_ID,
+  ROLEPLAY_SCENARIOS,
   type RoleplayAction,
   type RoleplayActionResult,
   type RoleplayActionType,
   type RoleplayMock,
+  type RoleplayScenarioId,
   type RoleplayViewModel,
 } from "./roleplayTypes";
 
 const ROLEPLAY_ACTION_TYPES: Record<RoleplayActionType, true> = {
+  DIRECT_JOIN: true,
   APPLY: true,
+  CREATE_TEAM: true,
+  INVITE_WORKER: true,
+  RESPOND_INVITATION: true,
+  SUBMIT_TEAM: true,
   SELECT_CANDIDATE: true,
   REJECT_CANDIDATE: true,
+  REJECT_TEAM: true,
+  VOTE_PARTIAL_GROUP_START_CONSENT: true,
   CANCEL: true,
 };
 
@@ -31,14 +39,21 @@ function isRoleplayActionType(
   return ROLEPLAY_ACTION_TYPES[action as RoleplayActionType] === true;
 }
 
-function getCurrentState(): QuestDetailState {
+function getScenario(scenarioId: RoleplayScenarioId) {
+  return (
+    ROLEPLAY_SCENARIOS.find((scenario) => scenario.id === scenarioId) ??
+    ROLEPLAY_SCENARIO
+  );
+}
+
+function getCurrentState(scenarioId: RoleplayScenarioId): QuestDetailState {
   const activePersonaId = authEnvironment.getActivePersonaId();
   const state = questWorkflow.getQuestDetailState(
-    ROLEPLAY_SCENARIO_ID,
+    scenarioId,
     activePersonaId
   );
   if (!state) {
-    throw new Error(`Missing roleplay fixture state: ${ROLEPLAY_SCENARIO_ID}`);
+    throw new Error(`Missing roleplay fixture state: ${scenarioId}`);
   }
   return state;
 }
@@ -59,43 +74,96 @@ function roleIneligible(
 
 function toWorkflowAction(
   action: RoleplayAction,
+  questId: RoleplayScenarioId,
   activePersonaId: RoleplayViewModel["activePersonaId"]
 ): QuestFixtureAction {
   switch (action.type) {
+    case "DIRECT_JOIN":
+      return {
+        type: "DIRECT_JOIN",
+        questId,
+        workerId: activePersonaId,
+      };
     case "APPLY":
       return {
         type: "APPLY",
-        questId: ROLEPLAY_SCENARIO_ID,
+        questId,
         workerId: activePersonaId,
+      };
+    case "CREATE_TEAM":
+      return {
+        type: "CREATE_TEAM",
+        questId,
+        leaderId: activePersonaId,
+      };
+    case "INVITE_WORKER":
+      return {
+        type: "INVITE_WORKER",
+        questId,
+        workerId: action.workerId,
+        leaderId: activePersonaId,
+      };
+    case "RESPOND_INVITATION":
+      return {
+        type: "RESPOND_INVITATION",
+        questId,
+        invitationId: action.invitationId,
+        workerId: activePersonaId,
+        accept: action.accept,
+      };
+    case "SUBMIT_TEAM":
+      return {
+        type: "SUBMIT_TEAM",
+        questId,
+        leaderId: activePersonaId,
       };
     case "SELECT_CANDIDATE":
       return {
         type: "SELECT_CANDIDATE",
-        questId: ROLEPLAY_SCENARIO_ID,
+        questId,
         applicationId: action.applicationId,
         hirerId: activePersonaId,
       };
     case "REJECT_CANDIDATE":
       return {
         type: "REJECT_CANDIDATE",
-        questId: ROLEPLAY_SCENARIO_ID,
+        questId,
         applicationId: action.applicationId,
         hirerId: activePersonaId,
+      };
+    case "REJECT_TEAM":
+      return {
+        type: "REJECT_TEAM",
+        questId,
+        teamId: action.teamId,
+        hirerId: activePersonaId,
+      };
+    case "VOTE_PARTIAL_GROUP_START_CONSENT":
+      return {
+        type: "VOTE_PARTIAL_GROUP_START_CONSENT",
+        questId,
+        voterId: activePersonaId,
+        approve: action.approve,
       };
     case "CANCEL":
       return {
         type: "CANCEL",
-        questId: ROLEPLAY_SCENARIO_ID,
+        questId,
         actorId: activePersonaId,
       };
   }
 }
 
-function createRoleplayViewModel(): RoleplayViewModel {
+function createRoleplayViewModel(
+  scenarioId: RoleplayScenarioId
+): RoleplayViewModel {
   const activePersonaId = authEnvironment.getActivePersonaId();
-  const state = getCurrentState();
+  const state = getCurrentState(scenarioId);
   return {
-    scenario: ROLEPLAY_SCENARIO,
+    scenario: {
+      ...getScenario(scenarioId),
+      prototypeOnly: true,
+    },
     activePersonaId,
     state,
     visibleActions:
@@ -105,6 +173,7 @@ function createRoleplayViewModel(): RoleplayViewModel {
 
 export function createRoleplayMock(): RoleplayMock {
   const listeners = new Set<() => void>();
+  let activeScenarioId: RoleplayScenarioId = ROLEPLAY_SCENARIO.id;
   let workflowUnsubscribe: (() => void) | undefined;
   let authUnsubscribe: (() => void) | undefined;
   const notify = () => listeners.forEach((listener) => listener());
@@ -126,23 +195,31 @@ export function createRoleplayMock(): RoleplayMock {
   };
 
   return {
-    getViewModel: createRoleplayViewModel,
+    getViewModel: () => createRoleplayViewModel(activeScenarioId),
+    setScenario: (scenarioId) => {
+      activeScenarioId = scenarioId;
+      return createRoleplayViewModel(activeScenarioId);
+    },
     setPersona: (personaId) => {
       authEnvironment.setActivePersona(personaId);
-      return createRoleplayViewModel();
+      return createRoleplayViewModel(activeScenarioId);
     },
     dispatch: (action) => {
-      const state = getCurrentState();
+      const state = getCurrentState(activeScenarioId);
       if (!state.capabilities.availableActions.includes(action.type)) {
         return roleIneligible(state, action);
       }
       return questWorkflow.dispatch(
-        toWorkflowAction(action, authEnvironment.getActivePersonaId())
+        toWorkflowAction(
+          action,
+          activeScenarioId,
+          authEnvironment.getActivePersonaId()
+        )
       );
     },
     reset: () => {
       questWorkflow.reset();
-      return createRoleplayViewModel();
+      return createRoleplayViewModel(activeScenarioId);
     },
     subscribe,
   };

@@ -1,43 +1,71 @@
 import type {
   PrototypePersonaId,
-  PrototypeScenarioId,
-  PrototypeScenarioRoute,
 } from "@/components/ui/prototypeMenuData";
 import type { QuestFixtureResult } from "@/features/questBoard/questFixtureAdapter";
 import type { QuestDetailState } from "@/features/questBoard/types";
 
-export const ROLEPLAY_SCENARIO_ID = "single-candidate-demo" as const;
-export const ROLEPLAY_SCENARIO_ROUTE = "/quest/single-candidate-demo" as const;
+export const ROLEPLAY_SCENARIOS = [
+  {
+    id: "single-candidate-demo",
+    route: "/quest/single-candidate-demo",
+    label: { en: "1. Single Candidate", th: "1. Single Candidate" },
+  },
+  {
+    id: "print-documents",
+    route: "/quest/print-documents",
+    label: {
+      en: "2. Single First Come First Serve",
+      th: "2. Single First Come First Serve",
+    },
+  },
+  {
+    id: "team-selection-demo",
+    route: "/quest/team-selection-demo",
+    label: { en: "3. Team Candidate", th: "3. Team Candidate" },
+  },
+  {
+    id: "clean-fan",
+    route: "/quest/clean-fan",
+    label: {
+      en: "4. Team First Come First Serve",
+      th: "4. Team First Come First Serve",
+    },
+  },
+] as const;
 
-export type RoleplayScenarioId = Extract<
-  PrototypeScenarioId,
-  typeof ROLEPLAY_SCENARIO_ID
->;
-export type RoleplayScenarioRoute = Extract<
-  PrototypeScenarioRoute,
-  typeof ROLEPLAY_SCENARIO_ROUTE
->;
+export type RoleplayScenarioId = (typeof ROLEPLAY_SCENARIOS)[number]["id"];
+export type RoleplayScenarioRoute =
+  (typeof ROLEPLAY_SCENARIOS)[number]["route"];
+
+export const ROLEPLAY_SCENARIO_ID = ROLEPLAY_SCENARIOS[0].id;
+export const ROLEPLAY_SCENARIO_ROUTE = ROLEPLAY_SCENARIOS[0].route;
 
 export interface RoleplayScenario {
   id: RoleplayScenarioId;
   route: RoleplayScenarioRoute;
+  label: (typeof ROLEPLAY_SCENARIOS)[number]["label"];
   prototypeOnly: true;
 }
 
-/**
- * This scenario intentionally exposes the fixture's optional proof value.
- * That value is prototype compatibility, not a production API guarantee.
- */
+/** The first scenario remains the default entry point for the Roleplay screen. */
 export const ROLEPLAY_SCENARIO: RoleplayScenario = {
   id: ROLEPLAY_SCENARIO_ID,
   route: ROLEPLAY_SCENARIO_ROUTE,
+  label: ROLEPLAY_SCENARIOS[0].label,
   prototypeOnly: true,
 };
 
 export type RoleplayAction =
+  | { type: "DIRECT_JOIN" }
   | { type: "APPLY" }
+  | { type: "CREATE_TEAM" }
+  | { type: "INVITE_WORKER"; workerId: string }
+  | { type: "RESPOND_INVITATION"; invitationId: string; accept: boolean }
+  | { type: "SUBMIT_TEAM" }
   | { type: "SELECT_CANDIDATE"; applicationId: string }
   | { type: "REJECT_CANDIDATE"; applicationId: string }
+  | { type: "REJECT_TEAM"; teamId: string }
+  | { type: "VOTE_PARTIAL_GROUP_START_CONSENT"; approve: boolean }
   | { type: "CANCEL" };
 
 export type RoleplayActionType = RoleplayAction["type"];
@@ -53,6 +81,7 @@ export type RoleplayActionResult = QuestFixtureResult;
 
 export interface RoleplayMock {
   getViewModel(): RoleplayViewModel;
+  setScenario(scenarioId: RoleplayScenarioId): RoleplayViewModel;
   setPersona(personaId: PrototypePersonaId): RoleplayViewModel;
   dispatch(action: RoleplayAction): RoleplayActionResult;
   reset(): RoleplayViewModel;

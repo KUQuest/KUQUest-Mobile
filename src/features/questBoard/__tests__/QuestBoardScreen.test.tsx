@@ -418,6 +418,9 @@ describe("Quest Board screen", () => {
     setActivePrototypePersona("student-demo");
     const view = await render(<QuestBoardScreen />);
 
+    await fireEvent.press(view.getByTestId("open-roleplay-quest"));
+    expect(mockRouter.push).toHaveBeenCalledWith("/dev/roleplay");
+
     expect(view.getByTestId("quest-board-prototype-menu-trigger")).toBeTruthy();
     expect(view.queryByText("Form a campus event team")).toBeNull();
 
