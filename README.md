@@ -70,6 +70,19 @@ bun run dev:start
 > [!NOTE]
 > `bun run dev:start` automatically runs `update-api-env` before launching Metro so your phone/emulator connects to your host machine's current local IP.
 
+### Staging API
+
+Use `staging:start` for Metro development against the staging API. It never runs the local-LAN API updater and fails before Metro unless these values are supplied externally:
+
+```bash
+EXPO_PUBLIC_API_URL=https://kuquest-dev-api.kubits.org \
+EXPO_PUBLIC_GOOGLE_CLIENT_ID=your-google-web-client-id.apps.googleusercontent.com \
+EXPO_PUBLIC_TERMS_VERSION=v1.0 \
+bun run staging:start
+```
+
+The launcher forces `APP_VARIANT=staging`, uses a temporary local Android version code, ignores `.env.local`, and accepts only the exact HTTPS staging origin above. Install the native development client first; native Google Sign-In is not available in Expo Go.
+
 ---
 
 ## 3. Standalone Offline Demo Mode

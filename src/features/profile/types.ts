@@ -144,6 +144,7 @@ export interface ProfileViewData {
   works: ProfileWork[];
   reviews: ProfileReview[];
   sectionErrors: ProfileSectionErrors;
+  sectionUnavailable: ProfileSectionErrors;
 }
 
 export type ProfileAggregate = ProfileViewData;
@@ -155,16 +156,16 @@ export type ProfileEditSectionErrors = Partial<
 
 export interface ProfileEditData {
   profile: ProfileResponse;
-  occupations: AcademicRegistrationOptions["occupations"];
   experiences: ExperienceEntry[];
   portfolio: PortfolioEntry[];
   certificates: CertificateEntry[];
   sectionErrors: ProfileEditSectionErrors;
+  sectionUnavailable: ProfileEditSectionErrors;
 }
 
 export type ProfileBasicsUpdate = Pick<
   ProfileUpdate,
-  "firstName" | "lastName" | "bio" | "occupationId"
+  "firstName" | "lastName" | "bio" | "telephone" | "departmentId"
 >;
 
 export interface ProfileIdentity {
@@ -221,7 +222,7 @@ export interface ProfileAdapter {
   uploadAvatar(
     asset: UploadAsset,
     personaId?: PrototypePersonaId
-  ): Promise<string>;
+  ): Promise<string | null>;
   createExperience(
     entry: ExperienceCreate,
     personaId?: PrototypePersonaId

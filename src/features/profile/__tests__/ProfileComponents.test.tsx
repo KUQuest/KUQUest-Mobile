@@ -186,7 +186,7 @@ describe('Student Profile presentation', () => {
 
   it('does not show an empty rating state when Profile Rating is unavailable', async () => {
     const view = await render(
-      <Reviews reviews={[]} stats={{ totalQuests: null, ratingAverage: null, ratingCount: 0, distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } }} sectionTitle="Reviews" emptyText="No reviews" allLabel="All" eligibleReviewsLabel={(count) => `${count} eligible Quest reviews`} filteredReviewsLabel={(count, rating) => `Showing ${count} ${rating}-star reviews`} reviewCountLabel="reviews" noRatingLabel="No ratings yet" ratingErrorText="This section is temporarily unavailable." retryLabel="Try again" onRetry={() => undefined} />
+      <Reviews reviews={[]} stats={{ totalQuests: null, ratingAverage: null, ratingCount: 0, distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } }} sectionTitle="Reviews" emptyText="No reviews" allLabel="All" eligibleReviewsLabel={(count) => `${count} eligible Quest reviews`} filteredReviewsLabel={(count, rating) => `Showing ${count} ${rating}-star reviews`} reviewCountLabel="reviews" noRatingLabel="No ratings yet" ratingErrorText="This section is temporarily unavailable." ratingRetryLabel="Try again" onRatingRetry={() => undefined} />
     );
 
     expect(view.getByText('This section is temporarily unavailable.')).toBeTruthy();

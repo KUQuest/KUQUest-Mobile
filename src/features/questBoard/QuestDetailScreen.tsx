@@ -84,6 +84,7 @@ import {
 import {
   CandidateReviewSheet,
   PartialGroupStartConsentSheet,
+  ProofSubmissionSheet,
   TeamAssembleSheet,
   type PartialGroupStartVoter,
   type TeamDirectoryMember,
@@ -740,7 +741,7 @@ function PrototypeStatePanels({
   state,
   messages,
   onConsent,
-  onSubmitProof,
+  onOpenProofSubmission,
   onConfirmCompletion,
   onSubmitRework,
   onReviewProof,
@@ -752,7 +753,7 @@ function PrototypeStatePanels({
   state: QuestDetailState;
   messages: QuestBoardMessages;
   onConsent: (approve: boolean) => void;
-  onSubmitProof: () => void;
+  onOpenProofSubmission: () => void;
   onConfirmCompletion: () => void;
   onSubmitRework: (proofId: string) => void;
   onReviewProof: (proofId: string, approve: boolean) => void;
@@ -814,11 +815,15 @@ function PrototypeStatePanels({
     status !== QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT ? (
       <View
         accessibilityRole={
-          status === QuestStatus.QUEST_DISPUTED ? "alert" : undefined
+          status === QuestStatus.QUEST_DISPUTED ||
+          status === QuestStatus.QUEST_FAILED
+            ? "alert"
+            : undefined
         }
         className={cn(
           styles.prototypeCard,
-          status === QuestStatus.QUEST_DISPUTED
+          status === QuestStatus.QUEST_DISPUTED ||
+            status === QuestStatus.QUEST_FAILED
             ? styles.prototypeCardDanger
             : status === QuestStatus.QUEST_COMPLETED ||
                 status === QuestStatus.QUEST_CANCELLED
@@ -842,7 +847,8 @@ function PrototypeStatePanels({
           </Text>
         </View>
         {status === QuestStatus.QUEST_COMPLETED ||
-        status === QuestStatus.QUEST_CANCELLED ? (
+        status === QuestStatus.QUEST_CANCELLED ||
+        status === QuestStatus.QUEST_FAILED ? (
           <Text className={styles.prototypeCopy}>
             {messages.terminalBannerTitle}: {messages.terminalDescription}
           </Text>
@@ -1012,7 +1018,7 @@ function PrototypeStatePanels({
           <View className={styles.prototypeActions}>
             <PrototypeActionButton
               label={messages.submitProof}
-              onPress={onSubmitProof}
+              onPress={onOpenProofSubmission}
               primary
               testID="quest-submit-proof"
             />
@@ -1516,6 +1522,7 @@ export default function QuestDetailScreen({
     useState(false);
   const [partialStartSheetDismissed, setPartialStartSheetDismissed] =
     useState(false);
+  const [proofSubmissionOpen, setProofSubmissionOpen] = useState(false);
   const [teamSearchQuery, setTeamSearchQuery] = useState("");
   const [teamSelectedMemberIds, setTeamSelectedMemberIds] = useState<string[]>(
     []
@@ -1678,12 +1685,13 @@ export default function QuestDetailScreen({
     });
   };
 
-  const applyPrototypeResult = (result: QuestActionResult) => {
+  const applyPrototypeResult = (result: QuestActionResult): boolean => {
     if (!result.ok) {
       Alert.alert(messages.details, result.error.message);
-      return;
+      return false;
     }
     if (result.state) setPrototypeState(result.state);
+    return true;
   };
   const handlePrototypeConsent = (approve: boolean) => {
     if (resolvedQuestId)
@@ -1752,27 +1760,50 @@ export default function QuestDetailScreen({
         })
       );
   };
-  const handlePrototypeSubmitProof = () => {
-    if (resolvedQuestId)
-      applyPrototypeResult(
-        questWorkflow.dispatch({
-          type: "SUBMIT_PROOF",
-          questId: resolvedQuestId,
-          ownerId: applicationStudentId,
-          imageUris: ["fixture://proof-image"],
-          note: "Fixture proof submitted.",
-        })
-      );
+  const handleOpenProofSubmission = () => {
+    setProofSubmissionOpen(true);
+  };
+  const handlePrototypeSubmitProof = (
+    imageUris: string[],
+    note: string
+  ): boolean => {
+    if (!resolvedQuestId) return false;
+    const submitted = applyPrototypeResult(
+      questWorkflow.dispatch({
+        type: "SUBMIT_PROOF",
+        questId: resolvedQuestId,
+        ownerId: prototypeViewerId,
+        imageUris,
+        note,
+      })
+    );
+    if (submitted) {
+      setProofSubmissionOpen(false);
+      announce(messages.proofSubmissionSent);
+    }
+    return submitted;
   };
   const handlePrototypeConfirmCompletion = () => {
-    if (resolvedQuestId)
-      applyPrototypeResult(
-        questWorkflow.dispatch({
-          type: "CONFIRM_COMPLETION",
-          questId: resolvedQuestId,
-          workerId: applicationStudentId,
-        })
-      );
+    if (!resolvedQuestId) return;
+    Alert.alert(
+      messages.confirmCompletion,
+      messages.confirmCompletionDescription,
+      [
+        { text: messages.cancel, style: "cancel" },
+        {
+          text: messages.confirmCompletion,
+          onPress: () => {
+            applyPrototypeResult(
+              questWorkflow.dispatch({
+                type: "CONFIRM_COMPLETION",
+                questId: resolvedQuestId,
+                workerId: prototypeViewerId,
+              })
+            );
+          },
+        },
+      ]
+    );
   };
   const handlePrototypeSubmitRework = (proofId: string) => {
     if (resolvedQuestId)
@@ -2200,7 +2231,7 @@ export default function QuestDetailScreen({
             state={activePrototypeState}
             messages={messages}
             onConsent={handlePrototypeConsent}
-            onSubmitProof={handlePrototypeSubmitProof}
+            onOpenProofSubmission={handleOpenProofSubmission}
             onConfirmCompletion={handlePrototypeConfirmCompletion}
             onSubmitRework={handlePrototypeSubmitRework}
             onReviewProof={handlePrototypeReviewProof}
@@ -2244,6 +2275,13 @@ export default function QuestDetailScreen({
           </View>
         ) : null}
       </ScrollView>
+      {activePrototypeState ? (
+        <ProofSubmissionSheet
+          onClose={() => setProofSubmissionOpen(false)}
+          onSubmit={handlePrototypeSubmitProof}
+          visible={proofSubmissionOpen}
+        />
+      ) : null}
       {activePrototypeState && candidateGroup && !isHirerView ? (
         <TeamAssembleSheet
           bottomInset={insets.bottom}

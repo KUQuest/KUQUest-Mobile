@@ -58,6 +58,7 @@ const profileData = {
   works: [],
   reviews: [],
   sectionErrors: {},
+  sectionUnavailable: {},
 };
 
 describe("Student Profile screen", () => {
@@ -168,6 +169,20 @@ describe("Student Profile screen", () => {
       expect(view.getByTestId("profile-tab-about")).toBeTruthy()
     );
     expect(view.getByText("Manage in Settings")).toBeTruthy();
+  });
+
+  it("shows unavailable rating state without a retry action", async () => {
+    mockedLoadProfile.mockResolvedValue({
+      ...profileData,
+      sectionUnavailable: { reputation: true },
+    });
+
+    const view = await render(<ProfileScreen />);
+
+    await waitFor(() =>
+      expect(view.getByText("Profile Rating is temporarily unavailable.")).toBeTruthy()
+    );
+    expect(view.queryByLabelText("Try again")).toBeNull();
   });
 
   it("hides the transparent profile top bar with navigation while scrolling down", async () => {

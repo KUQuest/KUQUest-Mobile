@@ -112,7 +112,7 @@ function mapApiReviewToView(review: ApiProfileReview): ProfileReview {
     reviewerName: review.reviewer.displayName,
     reviewerAvatar: review.reviewer.avatar?.url ?? "",
     rating: review.rating,
-    comment: review.comment,
+    comment: review.comment ?? "",
     createdAt: review.createdAt,
     questTitle: review.quest?.title ?? "",
   };
@@ -183,6 +183,15 @@ export class LiveProfileAdapter implements ProfileAdapter {
       ...(reputationResult.kind === "error" ? { reputation: true } : {}),
       ...(reviewsResult.kind === "error" ? { reviews: true } : {}),
     };
+    const sectionUnavailable: ProfileSectionErrors = {
+      ...(experiencesResult.kind === "unsupported" ? { experience: true } : {}),
+      ...(portfolioResult.kind === "unsupported" ? { works: true } : {}),
+      ...(certificatesResult.kind === "unsupported"
+        ? { certificates: true }
+        : {}),
+      ...(reputationResult.kind === "unsupported" ? { reputation: true } : {}),
+      ...(reviewsResult.kind === "unsupported" ? { reviews: true } : {}),
+    };
     const apiCertificates =
       certificatesResult.kind === "value" ? certificatesResult.value : [];
     const portfolio =
@@ -228,6 +237,7 @@ export class LiveProfileAdapter implements ProfileAdapter {
       works: portfolio.length > 0 ? portfolio.map(mapApiPortfolioToView) : [],
       reviews: apiReviews.length > 0 ? apiReviews : [],
       sectionErrors,
+      sectionUnavailable,
     };
   }
 

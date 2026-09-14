@@ -1,6 +1,8 @@
 import type { MutationOptions, StudentApi } from '../../api/StudentApi';
 import type { ProfileDraft } from '../profile/types';
 
+export type UnavailableProfileCollections = Partial<Record<'experience' | 'portfolio' | 'certificates', true>>;
+
 export interface ProfilePersistenceResult {
   draft: ProfileDraft;
   completedSteps: string[];
@@ -82,7 +84,7 @@ export class ProfilePersistenceCoordinator {
     return { idempotencyKey: `kuquest-profile-${name}-${mutationHash(value)}` };
   }
 
-  async save(api: StudentApi, form: ProfileDraft, isEditMode: boolean, termsVersion?: string): Promise<ProfilePersistenceResult> {
+  async save(api: StudentApi, form: ProfileDraft, isEditMode: boolean, termsVersion?: string, options?: { unavailableCollections?: UnavailableProfileCollections }): Promise<ProfilePersistenceResult> {
     this.draft = cloneDraft(form);
     this.completedSteps = [];
 
@@ -123,10 +125,10 @@ export class ProfilePersistenceCoordinator {
       });
     }
 
-    await this.saveCertificates(api);
-    await this.savePortfolio(api);
-    await this.saveExperiences(api);
-    await this.deletePendingRecords(api);
+    if (!options?.unavailableCollections?.certificates) await this.saveCertificates(api);
+    if (!options?.unavailableCollections?.portfolio) await this.savePortfolio(api);
+    if (!options?.unavailableCollections?.experience) await this.saveExperiences(api);
+    await this.deletePendingRecords(api, options?.unavailableCollections);
 
     return { draft: cloneDraft(this.draft), completedSteps: [...this.completedSteps] };
   }
@@ -273,27 +275,33 @@ export class ProfilePersistenceCoordinator {
     }
   }
 
-  private async deletePendingRecords(api: StudentApi): Promise<void> {
-    for (const id of this.deletedCertificates) {
-      if (this.uploadedAssets.has(`deleted-certificate:${id}`)) continue;
-      await this.runStep(`certificate:${id}:delete`, async () => {
-        await api.deleteCertificate(id);
-        this.uploadedAssets.add(`deleted-certificate:${id}`);
-      });
+  private async deletePendingRecords(api: StudentApi, unavailableCollections?: UnavailableProfileCollections): Promise<void> {
+    if (!unavailableCollections?.certificates) {
+      for (const id of this.deletedCertificates) {
+        if (this.uploadedAssets.has(`deleted-certificate:${id}`)) continue;
+        await this.runStep(`certificate:${id}:delete`, async () => {
+          await api.deleteCertificate(id);
+          this.uploadedAssets.add(`deleted-certificate:${id}`);
+        });
+      }
     }
-    for (const id of this.deletedPortfolio) {
-      if (this.uploadedAssets.has(`deleted-portfolio:${id}`)) continue;
-      await this.runStep(`portfolio:${id}:delete`, async () => {
-        await api.deletePortfolio(id);
-        this.uploadedAssets.add(`deleted-portfolio:${id}`);
-      });
+    if (!unavailableCollections?.portfolio) {
+      for (const id of this.deletedPortfolio) {
+        if (this.uploadedAssets.has(`deleted-portfolio:${id}`)) continue;
+        await this.runStep(`portfolio:${id}:delete`, async () => {
+          await api.deletePortfolio(id);
+          this.uploadedAssets.add(`deleted-portfolio:${id}`);
+        });
+      }
     }
-    for (const id of this.deletedExperiences) {
-      if (this.uploadedAssets.has(`deleted-experience:${id}`)) continue;
-      await this.runStep(`experience:${id}:delete`, async () => {
-        await api.deleteExperience(id);
-        this.uploadedAssets.add(`deleted-experience:${id}`);
-      });
+    if (!unavailableCollections?.experience) {
+      for (const id of this.deletedExperiences) {
+        if (this.uploadedAssets.has(`deleted-experience:${id}`)) continue;
+        await this.runStep(`experience:${id}:delete`, async () => {
+          await api.deleteExperience(id);
+          this.uploadedAssets.add(`deleted-experience:${id}`);
+        });
+      }
     }
   }
 

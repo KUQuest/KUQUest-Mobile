@@ -18,6 +18,8 @@ export interface ProfileEditMessages {
   stay: string;
   basics: string;
   basicsSummary: string;
+  academicRegistration: string;
+  academicRegistrationSummary: string;
   experience: string;
   experienceSummary: (count: number) => string;
   portfolio: string;
@@ -34,8 +36,6 @@ export interface ProfileEditMessages {
   namePlaceholder: string;
   bio: string;
   bioPlaceholder: string;
-  occupation: string;
-  occupationPlaceholder: string;
   avatar: string;
   image: string;
   changeAvatar: string;
@@ -104,7 +104,9 @@ export const profileEditMessages: Record<SupportedLocale, ProfileEditMessages> =
     leave: 'Discard',
     stay: 'Keep editing',
     basics: 'Profile basics',
-    basicsSummary: 'Name, avatar, occupation, and bio',
+    basicsSummary: 'Name, avatar, and bio',
+    academicRegistration: 'Academic Registration',
+    academicRegistrationSummary: 'Occupation and Student ID',
     experience: 'Experience',
     experienceAddTitle: 'Add Experience',
     experienceEditTitle: 'Edit Experience',
@@ -133,8 +135,6 @@ export const profileEditMessages: Record<SupportedLocale, ProfileEditMessages> =
     namePlaceholder: 'Enter your full name',
     bio: 'About you',
     bioPlaceholder: 'Share your background, skills, or the Quests you are looking for...',
-    occupation: 'Occupation',
-    occupationPlaceholder: 'Select your occupation',
     avatar: 'Profile image',
     image: 'Image',
     changeAvatar: 'Change profile photo',
@@ -189,7 +189,9 @@ export const profileEditMessages: Record<SupportedLocale, ProfileEditMessages> =
     leave: 'ละทิ้ง',
     stay: 'แก้ไขต่อ',
     basics: 'ข้อมูลโปรไฟล์',
-    basicsSummary: 'ชื่อ รูปโปรไฟล์ อาชีพ และคำแนะนำตัว',
+    basicsSummary: 'ชื่อ รูปโปรไฟล์ และคำแนะนำตัว',
+    academicRegistration: 'ข้อมูลการลงทะเบียนการศึกษา',
+    academicRegistrationSummary: 'อาชีพและรหัสนิสิต',
     experience: 'ประสบการณ์',
     experienceAddTitle: 'เพิ่มประสบการณ์',
     experienceEditTitle: 'แก้ไขประสบการณ์',
@@ -218,8 +220,6 @@ export const profileEditMessages: Record<SupportedLocale, ProfileEditMessages> =
     namePlaceholder: 'กรอกชื่อและนามสกุล',
     bio: 'เกี่ยวกับคุณ',
     bioPlaceholder: 'แชร์ประวัติ ทักษะ หรือเควสที่คุณกำลังมองหา...',
-    occupation: 'อาชีพ',
-    occupationPlaceholder: 'เลือกอาชีพ',
     avatar: 'รูปโปรไฟล์',
     image: 'รูปภาพ',
     changeAvatar: 'เปลี่ยนรูปโปรไฟล์',

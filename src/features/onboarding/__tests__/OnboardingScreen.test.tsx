@@ -1,6 +1,8 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import mockReact from 'react';
 import { BackHandler } from 'react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+
+import { ApiError } from "@/api/ApiClient";
 
 import OnboardingScreen from '../screens/OnboardingScreen';
 import { authService } from '../../auth/AuthService';
@@ -162,6 +164,26 @@ describe('OnboardingScreen Academic Registration selections', () => {
 
     resolveOptions(options);
     await waitFor(() => expect(view.getByLabelText('Name-Surname')).toBeTruthy());
+  });
+
+  test('keeps Academic Registration usable when optional collections are unavailable', async () => {
+    mockRouteParams = { step: '3' };
+    const api = createApi({
+      listCertificates: jest.fn().mockRejectedValue(new ApiError(404, 'NOT_FOUND', 'Missing')),
+      listPortfolio: jest.fn().mockRejectedValue(new ApiError(404, 'NOT_FOUND', 'Missing')),
+      listExperience: jest.fn().mockRejectedValue(new ApiError(404, 'NOT_FOUND', 'Missing')),
+    });
+    prepareAuth(api);
+
+    await render(<OnboardingScreen />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText('This section is temporarily unavailable.')).toHaveLength(3);
+    });
+    expect(screen.getByText('Complete')).toBeTruthy();
+    expect(screen.getByLabelText('+ Add another certificate').props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByLabelText('+ Add more experience').props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByLabelText('+ Add more works').props.accessibilityState.disabled).toBe(true);
   });
 
   test('keeps Department disabled until Faculty is selected and clears it when Faculty changes', async () => {

@@ -102,7 +102,7 @@ export class ProfileModule {
   async uploadAvatar(
     asset: UploadAsset,
     personaId?: PrototypePersonaId
-  ): Promise<string> {
+  ): Promise<string | null> {
     return this.getAdapter().uploadAvatar(asset, personaId);
   }
 
@@ -208,6 +208,9 @@ export class ProfileModule {
     const faculty = input.options.faculties.find((item) =>
       item.departments.some((department) => department.id === departmentId)
     );
+    const selectedOccupation = input.options.occupations.find(
+      (item) => item.id === input.status.occupationId
+    );
     const firstName = input.status.firstName || input.profile.firstName;
     const lastName = input.status.lastName || input.profile.lastName;
 
@@ -216,7 +219,10 @@ export class ProfileModule {
         [firstName, lastName].filter(Boolean).join(" ") || input.fallbackName,
       telephone: input.status.telephone ?? input.profile.telephone ?? "",
       occupation: input.status.occupationId ?? "",
-      studentId: input.status.studentId ?? input.profile.studentId ?? "",
+      studentId:
+        selectedOccupation?.requiresStudentId === true
+          ? (input.status.studentId ?? input.profile.studentId ?? "")
+          : "",
       faculty: faculty?.id ?? "",
       department: departmentId,
       acceptedTerms: Boolean(input.status.termsAcceptedAt),

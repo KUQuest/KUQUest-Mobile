@@ -3,6 +3,7 @@ import { File } from 'expo-file-system';
 import {
   academicRegistrationOptionsResponseSchema,
   academicRegistrationStatusResponseSchema,
+  avatarMutationResponseSchema,
   certificateResponseSchema,
   certificateCreateResponseSchema,
   experienceMutationResponseSchema,
@@ -36,8 +37,7 @@ export interface AcademicRegistrationUpdate {
 export interface ProfileUpdate {
   firstName?: string;
   lastName?: string;
-  bio?: string | null;
-  occupationId?: string;
+  bio?: string;
   telephone?: string;
   departmentId?: string;
 }
@@ -141,6 +141,13 @@ export class StudentApi {
       hasDepartmentId: Boolean(update.departmentId),
       hasTermsVersion: Boolean(update.termsVersion),
     }, async () => {
+      if (!Object.values(update).some((value) => value !== undefined)) {
+        throw new ApiError(
+          400,
+          'VALIDATION_ERROR',
+          'Academic Registration update must contain at least one field',
+        );
+      }
       const body = await this.client.requestJson<unknown>('/api/v1/academic-registration', update, { method: 'PATCH', headers: mutationHeaders(options) });
       successResponseSchema.parse(body);
     });
@@ -156,11 +163,17 @@ export class StudentApi {
       hasFirstName: Boolean(update.firstName),
       hasLastName: Boolean(update.lastName),
       hasBio: update.bio !== undefined,
-      hasOccupationId: Boolean(update.occupationId),
       hasTelephone: Boolean(update.telephone),
       hasDepartmentId: Boolean(update.departmentId),
     }, async () => {
-      const body = await this.client.requestJson<unknown>('/api/v1/profile', update, { method: 'PATCH', headers: mutationHeaders(options) });
+      const normalizedUpdate: ProfileUpdate = {
+        ...(update.firstName === undefined ? {} : { firstName: update.firstName }),
+        ...(update.lastName === undefined ? {} : { lastName: update.lastName }),
+        ...(update.bio?.trim() ? { bio: update.bio.trim() } : {}),
+        ...(update.telephone === undefined ? {} : { telephone: update.telephone }),
+        ...(update.departmentId === undefined ? {} : { departmentId: update.departmentId }),
+      };
+      const body = await this.client.requestJson<unknown>('/api/v1/profile', normalizedUpdate, { method: 'PATCH', headers: mutationHeaders(options) });
       successResponseSchema.parse(body);
     });
   }
@@ -190,26 +203,26 @@ export class StudentApi {
     return reputationResponseSchema.parse(body).data;
   }
 
-  async listReviews(rating: 'all' | 5 | 4 | 3 | 2 | 1 = 'all'): Promise<{ items: ProfileReview[]; total: number }> {
+  async listReviews(rating: 'all' | 5 | 4 | 3 | 2 | 1 = 'all'): Promise<{ items: ProfileReview[]; total: number; nextCursor?: string | null }> {
     const query = rating === 'all' ? '' : `?rating=${rating}`;
     const body = await this.client.request<unknown>(`/api/v1/profile/reviews${query}`);
     const parsed = reviewsResponseSchema.parse(body).data;
-    return { items: parsed.items, total: parsed.total };
+    return { items: parsed.items, total: parsed.total, nextCursor: parsed.nextCursor };
   }
 
-  async uploadAvatar(asset: UploadAsset, options?: MutationOptions): Promise<string> {
+  async uploadAvatar(asset: UploadAsset, options?: MutationOptions): Promise<string | null> {
     return this.trace('avatar upload', {
       fileName: asset.name ?? fileNameFromUri(asset.uri, 'avatar.jpg'),
       mimeType: asset.type ?? 'image/jpeg',
     }, async () => {
       const formData = new FormData();
       appendFile(formData, 'avatar', asset);
-      const body = await this.client.requestForm<{ success: true; data: { fileId: string } }>(
+      const body = await this.client.requestForm<unknown>(
         '/api/v1/profile/avatar',
         formData,
         { method: 'POST', headers: mutationHeaders(options) }
       );
-      return body.data.fileId;
+      return avatarMutationResponseSchema.parse(body).data.fileId;
     });
   }
 

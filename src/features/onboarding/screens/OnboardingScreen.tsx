@@ -39,6 +39,7 @@ import {
   X,
 } from "lucide-react-native";
 
+import { readOptionalCollection } from "@/api/ProfileApi";
 import styles from "@/features/onboarding/styles/registrationStyles";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
@@ -59,13 +60,14 @@ import type {
 import { authService } from "../../auth/AuthService";
 import { authEnvironment } from "../../auth/authEnvironment";
 import { AuthError, type OnboardingStep } from "../../auth/types";
-import { ApiError } from "../../../api/ApiClient";
 import type { AcademicRegistrationOptions } from "../../../api/contracts";
 import { profileModule } from "../../profile/profileModule";
 import {
   ProfilePersistenceCoordinator,
   ProfilePersistenceError,
+  type UnavailableProfileCollections,
 } from "../profilePersistenceCoordinator";
+
 import { parseOnboardingStep } from "../steps";
 import { validateProfileBasics, validateProfileDetails } from "../validation";
 
@@ -348,6 +350,8 @@ export default function OnboardingScreen() {
   );
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [unavailableCollections, setUnavailableCollections] =
+    useState<UnavailableProfileCollections>({});
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -421,10 +425,12 @@ export default function OnboardingScreen() {
 
     async function load() {
       setLoadError(false);
+      setUnavailableCollections({});
       setIsLoadingProfile(true);
       try {
         if (demoBypassEnabled) {
           if (active) {
+            setUnavailableCollections({});
             setOptions({
               occupations: [
                 {
@@ -457,43 +463,45 @@ export default function OnboardingScreen() {
         const session = await authService.getSession();
         if (!session) throw new Error("No active session");
         const api = await authService.getStudentApi();
-        const experiencesPromise =
-          typeof api.listExperience === "function"
-            ? api.listExperience().catch((error) => {
-                if (error instanceof ApiError && error.status === 404)
-                  return [];
-                throw error;
-              })
-            : Promise.resolve([]);
         const [
           academicOptions,
           status,
           profile,
-          certificates,
-          portfolio,
-          experiences,
+          certificatesResult,
+          portfolioResult,
+          experiencesResult,
         ] = await Promise.all([
           api.getAcademicRegistrationOptions(),
           api.getAcademicRegistrationStatus(),
           api.getProfile(),
-          api.listCertificates(),
-          api.listPortfolio(),
-          experiencesPromise,
+          readOptionalCollection(() => api.listCertificates()),
+          readOptionalCollection(() => api.listPortfolio()),
+          readOptionalCollection(
+            typeof api.listExperience === "function"
+              ? () => api.listExperience()
+              : undefined
+          ),
         ]);
         const mappedForm = profileModule.mapProfileRecordsToDraft({
           profile,
           status,
           options: academicOptions,
-          certificates,
-          portfolio,
-          experiences,
+          certificates: certificatesResult.items,
+          portfolio: portfolioResult.items,
+          experiences: experiencesResult.items,
           fallbackName: session.user.name,
           fallbackImage: session.user.image ?? "",
         });
+        const nextUnavailableCollections: UnavailableProfileCollections = {
+          ...(certificatesResult.unavailable ? { certificates: true } : {}),
+          ...(portfolioResult.unavailable ? { portfolio: true } : {}),
+          ...(experiencesResult.unavailable ? { experience: true } : {}),
+        };
 
         if (active) {
           setOptions(academicOptions);
           setForm(mappedForm);
+          setUnavailableCollections(nextUnavailableCollections);
         }
       } catch (error) {
         if (error instanceof AuthError && error.code === "SESSION_EXPIRED") {
@@ -618,7 +626,8 @@ export default function OnboardingScreen() {
         api,
         form,
         isEditMode,
-        process.env.EXPO_PUBLIC_TERMS_VERSION
+        process.env.EXPO_PUBLIC_TERMS_VERSION,
+        { unavailableCollections }
       );
       setForm(result.draft);
       if (isEditMode) router.replace("/(tabs)/profile");
@@ -1106,13 +1115,23 @@ export default function OnboardingScreen() {
             {currentStep === 3 && (
               <>
                 <Text className={styles.sectionDesc}>{msg.step3Desc}</Text>
-                <View className={styles.step3Section}>
+                <View
+                  className={styles.step3Section}
+                  pointerEvents={
+                    unavailableCollections.certificates ? "none" : "auto"
+                  }
+                >
                   <View className={styles.sectionHeader}>
                     <Text className={styles.sectionTitle}>
                       {msg.certification}
                     </Text>
                   </View>
                   <Text className={styles.sectionDesc}>{msg.certDesc}</Text>
+                  {unavailableCollections.certificates ? (
+                    <Text className={styles.emptySectionText}>
+                      {msg.optionalUnavailable}
+                    </Text>
+                  ) : null}
                   {form.certificates.map((cert, index) => (
                     <MotionView
                       key={`cert-${cert.id ?? index}`}
@@ -1241,6 +1260,10 @@ export default function OnboardingScreen() {
                     </View>
                   ) : null}
                   <Pressable
+                    disabled={unavailableCollections.certificates}
+                    accessibilityState={{
+                      disabled: unavailableCollections.certificates,
+                    }}
                     accessibilityRole="button"
                     accessibilityLabel={msg.addMoreCert}
                     className={styles.addMoreBtn}
@@ -1259,13 +1282,23 @@ export default function OnboardingScreen() {
                     </Text>
                   </Pressable>
                 </View>
-                <View className={styles.step3Section}>
+                <View
+                  className={styles.step3Section}
+                  pointerEvents={
+                    unavailableCollections.experience ? "none" : "auto"
+                  }
+                >
                   <View className={styles.sectionHeader}>
                     <Text className={styles.sectionTitle}>
                       {msg.experience}
                     </Text>
                   </View>
                   <Text className={styles.sectionDesc}>{msg.expDesc}</Text>
+                  {unavailableCollections.experience ? (
+                    <Text className={styles.emptySectionText}>
+                      {msg.optionalUnavailable}
+                    </Text>
+                  ) : null}
                   {form.experiences.map((experience, index) => (
                     <MotionView
                       key={`experience-${experience.id ?? index}`}
@@ -1445,6 +1478,10 @@ export default function OnboardingScreen() {
                     </View>
                   ) : null}
                   <Pressable
+                    disabled={unavailableCollections.experience}
+                    accessibilityState={{
+                      disabled: unavailableCollections.experience,
+                    }}
                     accessibilityRole="button"
                     accessibilityLabel={msg.addMoreExp}
                     className={styles.addMoreBtn}
@@ -1463,11 +1500,21 @@ export default function OnboardingScreen() {
                     </Text>
                   </Pressable>
                 </View>
-                <View className={styles.step3Section}>
+                <View
+                  className={styles.step3Section}
+                  pointerEvents={
+                    unavailableCollections.portfolio ? "none" : "auto"
+                  }
+                >
                   <View className={styles.sectionHeader}>
                     <Text className={styles.sectionTitle}>{msg.myWorks}</Text>
                   </View>
                   <Text className={styles.sectionDesc}>{msg.workDesc}</Text>
+                  {unavailableCollections.portfolio ? (
+                    <Text className={styles.emptySectionText}>
+                      {msg.optionalUnavailable}
+                    </Text>
+                  ) : null}
                   {form.works.map((work, index) => (
                     <MotionView
                       key={`work-${work.id ?? index}`}
@@ -1551,6 +1598,10 @@ export default function OnboardingScreen() {
                     </View>
                   ) : null}
                   <Pressable
+                    disabled={unavailableCollections.portfolio}
+                    accessibilityState={{
+                      disabled: unavailableCollections.portfolio,
+                    }}
                     accessibilityRole="button"
                     accessibilityLabel={msg.addMoreWorks}
                     className={styles.addMoreBtn}

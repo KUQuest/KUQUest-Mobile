@@ -3,6 +3,10 @@ import { z } from 'zod';
 const authTimestampSchema = z.union([z.string(), z.date()]).transform((value) =>
   value instanceof Date ? value.toISOString() : value
 );
+const integerLikeSchema = z.union([z.number().int(), z.string().regex(/^\d+$/)]).transform(Number);
+const nonNegativeIntegerSchema = integerLikeSchema.refine((value) => value >= 0, 'Expected a non-negative integer');
+const numericLikeSchema = z.union([z.number().finite(), z.string().regex(/^\d+(?:\.\d+)?$/)]).transform(Number);
+const ratingAverageSchema = numericLikeSchema.refine((value) => value >= 0 && value <= 5, 'Expected a rating from 0 through 5');
 
 export const authUserSchema = z.object({
   id: z.string().min(1),
@@ -55,6 +59,7 @@ export const academicRegistrationStatusResponseSchema = z.object({
 export const profileResponseSchema = z.object({
   success: z.literal(true),
   data: z.object({
+    version: nonNegativeIntegerSchema,
     email: z.string().email(),
     firstName: z.string(),
     lastName: z.string(),
@@ -63,13 +68,24 @@ export const profileResponseSchema = z.object({
     studentId: z.string().nullable(),
     academicYear: z.union([z.string(), z.number()]).nullable(),
     university: z.string().nullable().optional(),
-    occupation: z.object({ id: z.string(), name: z.string() }).nullable().optional(),
-    tags: z.array(z.object({ id: z.string(), name: z.string(), questCount: z.number().int().nonnegative().optional() })).optional(),
+    occupation: z.object({ id: z.string(), name: z.string() }).nullable(),
+    tags: z.array(z.object({ id: z.string(), name: z.string(), questCount: nonNegativeIntegerSchema.optional() })),
     department: z.object({
       id: z.string(),
       name: z.string(),
       faculty: z.object({ name: z.string() }),
     }).nullable(),
+    avatar: z.object({
+      fileId: z.string(),
+      url: z.string().url(),
+    }).nullable(),
+  }),
+});
+export const avatarMutationResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    fileId: z.string().nullable(),
+    version: nonNegativeIntegerSchema,
     avatar: z.object({
       fileId: z.string(),
       url: z.string().url(),
@@ -102,16 +118,16 @@ export const experienceMutationResponseSchema = z.object({
 export const reputationResponseSchema = z.object({
   success: z.literal(true),
   data: z.object({
-    totalQuests: z.number().int().nonnegative(),
+    totalQuests: nonNegativeIntegerSchema,
     rating: z.object({
-      average: z.number().min(0).max(5).nullable(),
-      count: z.number().int().nonnegative(),
+      average: ratingAverageSchema.nullable(),
+      count: nonNegativeIntegerSchema,
       distribution: z.object({
-        '5': z.number().int().nonnegative(),
-        '4': z.number().int().nonnegative(),
-        '3': z.number().int().nonnegative(),
-        '2': z.number().int().nonnegative(),
-        '1': z.number().int().nonnegative(),
+        '5': nonNegativeIntegerSchema,
+        '4': nonNegativeIntegerSchema,
+        '3': nonNegativeIntegerSchema,
+        '2': nonNegativeIntegerSchema,
+        '1': nonNegativeIntegerSchema,
       }),
     }),
   }),
@@ -123,8 +139,8 @@ const reviewSchema = z.object({
     displayName: z.string(),
     avatar: z.object({ url: z.string().url() }).nullable().optional(),
   }),
-  rating: z.number().int().min(1).max(5),
-  comment: z.string(),
+  rating: integerLikeSchema.refine((value) => value >= 1 && value <= 5, 'Expected a rating from 1 through 5'),
+  comment: z.string().nullable(),
   createdAt: z.string(),
   quest: z.object({ id: z.string(), title: z.string() }).nullable().optional(),
 });
@@ -133,7 +149,7 @@ export const reviewsResponseSchema = z.object({
   success: z.literal(true),
   data: z.object({
     items: z.array(reviewSchema),
-    total: z.number().int().nonnegative(),
+    total: nonNegativeIntegerSchema,
     nextCursor: z.string().nullable().optional(),
   }),
 });

@@ -266,3 +266,26 @@ An automatic audit record created when proof is marked `PROOF_NOT_APPROVED`.
 
 **Quest Hiding**:
 An Admin flag (`hiddenAt`) removing a Quest from discovery without affecting active work, deadlines, or chat.
+
+---
+
+## Mobile Implementation Vocabulary
+
+**Mobile Surface**:
+A user-visible, route-backed Android/iOS screen or flow that can be verified by the mobile client. A rulebook obligation without a Mobile Surface is an evidence gap, not permission to invent a route.
+
+**Prototype Fixture**:
+Deterministic local Quest, profile, chat, or finance data used to exercise a UI and its state transitions. A Prototype Fixture demonstrates client behavior only; it does not prove that the production API or backend contract is implemented.
+
+**Canonical Adapter**:
+The client boundary that maps fixture/API data and actions into the canonical Quest, Assignment, proof, conversation, and settlement vocabulary used by the UI. Compatibility values may remain inside this boundary while migration is incomplete.
+
+**Compatibility Value**:
+A legacy enum, field, or transport name retained so existing fixtures, API payloads, or tests continue to work while the canonical rulebook vocabulary is adopted. It is not automatically a new domain state and must not be removed without tracing callers and tests.
+
+**Rulebook Gap**:
+A rulebook or mobile-spec obligation for which the current route tree, implementation, or runtime evidence does not yet establish a Mobile Surface. Record the gap and preserve the requirement until the owning surface is intentionally implemented.
+
+## Agent Context Pointer
+
+The repository map, source ownership seams, known rulebook/implementation drift, test topology, and preserve-first debugging protocol live in [`docs/agents/repository-context.md`](docs/agents/repository-context.md). Read it before changing code, tests, fixtures, routes, API boundaries, or files.

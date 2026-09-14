@@ -121,3 +121,21 @@ For delegated or parallel work, keep one writer per file; use read-only scout/re
 - Codex project defaults and role manifests live in `.codex/config.toml` and `.codex/agents/`.
 - Antigravity workspace agents live in `.agents/agents/<role>/agent.md`.
 - Codex parent sessions use `gpt-5.6-luna` with `max`; role manifests use task-shaped effort. Antigravity manifests use its documented `flash`/`pro` tiers.
+
+---
+
+## Repository Map & Preserve-First Debugging
+
+Before any code, route, fixture, API, test, or deletion task, read [`docs/agents/repository-context.md`](docs/agents/repository-context.md). It contains the current source tree, ownership seams, compatibility drift, test topology, and the safe debugging contract. Use [`CONTEXT.md`](CONTEXT.md) for domain language and [`docs/agents/routing.md`](docs/agents/routing.md) to select the rulebook/spec/ADR branch.
+
+Non-negotiable preservation rules:
+
+- Debug the smallest owning path, especially code created or changed in the current task.
+- Preserve pre-existing tests, fixtures, source files, documentation, and QA evidence.
+- Never delete, disable, skip, weaken, or rename an unrelated test to make a failure disappear.
+- Never use reset/clean commands or project reset scripts as routine debugging.
+- Change a test only when the product contract intentionally changed; keep the replacement assertion behavioral.
+- Delete a pre-existing file or test only with explicit user approval and a documented reason.
+- When a route, fixture, API, or rulebook surface is absent, record it as a gap instead of inventing a substitute or deleting the corresponding requirement.
+
+At delivery, verify the changed-file list and confirm every deletion, test change, and compatibility change is directly requested or explicitly justified.
