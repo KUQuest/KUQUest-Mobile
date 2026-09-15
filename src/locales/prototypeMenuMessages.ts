@@ -1,4 +1,4 @@
-import type { SupportedLocale } from './LocaleProvider';
+import type { SupportedLocale } from "./LocaleProvider";
 
 export interface PrototypeMenuMessages {
   openMenu: string;
@@ -9,7 +9,6 @@ export interface PrototypeMenuMessages {
   activePersona: string;
   scenarios: string;
   roleplay: string;
-  roleplayDescription: string;
   reset: string;
   resetCurrent: string;
   resetAll: string;
@@ -17,37 +16,40 @@ export interface PrototypeMenuMessages {
   currentScenario: string;
 }
 
-export const prototypeMenuMessages: Record<SupportedLocale, PrototypeMenuMessages> = {
+export const prototypeMenuMessages: Record<
+  SupportedLocale,
+  PrototypeMenuMessages
+> = {
   en: {
-    openMenu: 'Open Prototype menu',
-    title: 'Prototype controls',
-    subtitle: 'Switch persona or open a hidden scenario.',
-    close: 'Close Prototype menu',
-    personas: 'Personas',
-    activePersona: 'Active persona',
-    scenarios: 'Scenarios',
-    roleplay: 'Roleplay Quest',
-    roleplayDescription: 'Open the development-only roleplay screen.',
-    reset: 'Reset fixture data',
-    resetCurrent: 'Reset current scenario',
-    resetAll: 'Reset all scenarios',
-    resetDescription: 'Reset restores deterministic fixture state. Chat messages stay session-only.',
-    currentScenario: 'Current scenario',
+    openMenu: "Open Prototype menu",
+    title: "Prototype controls",
+    subtitle: "Switch persona or open a hidden scenario.",
+    close: "Close Prototype menu",
+    personas: "Personas",
+    activePersona: "Active persona",
+    scenarios: "Scenarios",
+    roleplay: "Roleplay Quest",
+    reset: "Reset fixture data",
+    resetCurrent: "Reset current scenario",
+    resetAll: "Reset all scenarios",
+    resetDescription:
+      "Reset restores deterministic fixture state. Chat messages stay session-only.",
+    currentScenario: "Current scenario",
   },
   th: {
-    openMenu: 'เปิดเมนู Prototype',
-    title: 'เครื่องมือ Prototype',
-    subtitle: 'สลับตัวตนหรือเปิดสถานการณ์ที่ซ่อนไว้',
-    close: 'ปิดเมนู Prototype',
-    personas: 'ตัวตน',
-    activePersona: 'ตัวตนที่ใช้งานอยู่',
-    scenarios: 'สถานการณ์',
-    roleplay: 'จำลองบทบาท Quest',
-    roleplayDescription: 'เปิดหน้าจอ roleplay สำหรับการพัฒนาเท่านั้น',
-    reset: 'รีเซ็ตข้อมูลทดลอง',
-    resetCurrent: 'รีเซ็ตสถานการณ์ปัจจุบัน',
-    resetAll: 'รีเซ็ตทุกสถานการณ์',
-    resetDescription: 'การรีเซ็ตจะคืนค่าข้อมูลทดลองให้เหมือนเดิม และข้อความแชทจะอยู่ในเซสชันเท่านั้น',
-    currentScenario: 'สถานการณ์ปัจจุบัน',
+    openMenu: "เปิดเมนู Prototype",
+    title: "เครื่องมือ Prototype",
+    subtitle: "สลับตัวตนหรือเปิดสถานการณ์ที่ซ่อนไว้",
+    close: "ปิดเมนู Prototype",
+    personas: "ตัวตน",
+    activePersona: "ตัวตนที่ใช้งานอยู่",
+    scenarios: "สถานการณ์",
+    roleplay: "จำลองบทบาท Quest",
+    reset: "รีเซ็ตข้อมูลทดลอง",
+    resetCurrent: "รีเซ็ตสถานการณ์ปัจจุบัน",
+    resetAll: "รีเซ็ตทุกสถานการณ์",
+    resetDescription:
+      "การรีเซ็ตจะคืนค่าข้อมูลทดลองให้เหมือนเดิม และข้อความแชทจะอยู่ในเซสชันเท่านั้น",
+    currentScenario: "สถานการณ์ปัจจุบัน",
   },
 };

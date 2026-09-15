@@ -144,6 +144,9 @@ describe("AuthEnvironment", () => {
         )
       ).toBe("/quest/single-candidate-demo");
       expect(
+        authEnvironment.parseDeepLink("kuquestmobile-debug://dev/roleplay")
+      ).toBe("/dev/roleplay");
+      expect(
         authEnvironment.parseDeepLink("kuquestmobile-debug:///settings")
       ).toBeUndefined();
       expect(authEnvironment.parseDeepLink(null)).toBeUndefined();
