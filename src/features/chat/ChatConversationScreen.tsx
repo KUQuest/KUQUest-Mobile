@@ -30,7 +30,11 @@ import {
   LoadingSkeleton,
   SkeletonBlock,
 } from "@/components/ui/LoadingSkeleton";
-import { questWorkflow } from "@/features/questBoard/questWorkflow";
+import {
+  chatApi,
+  serverConversationToChatConversation,
+  serverMessageToChatMessage,
+} from "@/api/ChatApi";
 import { useLocale } from "@/locales/LocaleProvider";
 import { chatMessages, type ChatMessages } from "@/locales/chatMessages";
 import { colors } from "@/theme/colors";
@@ -352,73 +356,64 @@ export default function ChatConversationScreen() {
 
   useEffect(() => {
     let active = true;
-    const loadConversation = () => {
+    const loadConversation = async () => {
       if (!conversationId || !viewerId) {
-        if (active)
+        if (active) {
           setLoadState({
             key: conversationRouteKey,
             status: "settled",
             conversation: null,
             messages: [],
           });
+        }
         return;
       }
       try {
-        const nextConversation = questWorkflow.getConversation(
-          conversationId,
-          viewerId
+        const conversationData = await chatApi.listConversations();
+        const serverConversation = conversationData.items.find(
+          (item) => item.id === conversationId
         );
-        if (!nextConversation) {
-          if (active)
+        if (!serverConversation) {
+          if (active) {
             setLoadState({
               key: conversationRouteKey,
               status: "settled",
               conversation: null,
               messages: [],
             });
+          }
           return;
         }
-        const nextMessages = questWorkflow.getConversationMessages(
-          conversationId,
-          viewerId
-        );
-        if (active)
+        const messageData = await chatApi.getMessages(conversationId);
+        if (active) {
           setLoadState({
             key: conversationRouteKey,
             status: "settled",
-            conversation: nextConversation,
-            messages: nextMessages,
+            conversation: serverConversationToChatConversation(
+              serverConversation,
+              viewerId
+            ),
+            messages: messageData.items.map((message) =>
+              serverMessageToChatMessage(message, viewerId)
+            ),
           });
+        }
       } catch {
-        if (active)
+        if (active) {
           setLoadState({
             key: conversationRouteKey,
             status: "error",
             conversation: null,
             messages: [],
           });
+        }
       }
     };
-    loadConversation();
-    const unsubscribe = questWorkflow.subscribe(loadConversation);
+    void loadConversation();
     return () => {
       active = false;
-      unsubscribe();
     };
   }, [conversationId, conversationLoadAttempt, conversationRouteKey, viewerId]);
-
-  useEffect(() => {
-    if (!conversationId || !viewerId) return;
-    try {
-      questWorkflow.dispatch({
-        type: "MARK_CONVERSATION_READ",
-        conversationId,
-        viewerId,
-      });
-    } catch {
-      // A failed read cursor must not prevent the conversation from rendering.
-    }
-  }, [conversationId, viewerId]);
 
   const conversation = loadStateForRoute.conversation;
   const conversationMessages = loadStateForRoute.messages;
@@ -559,37 +554,8 @@ export default function ChatConversationScreen() {
     conversation.capability?.readOnlyReason === "TERMINAL"
       ? messages.conversationReadOnlyTerminal
       : messages.conversationNotWritable;
-  const reportQuestId = conversation.questId;
-  const reportProjection =
-    reportQuestId && viewerId
-      ? questWorkflow.getQuestDetailProjection(reportQuestId, viewerId)
-      : null;
-  const canReportConversation = Boolean(
-    reportQuestId &&
-    viewerId &&
-    conversation.capability?.canRead &&
-    reportProjection?.isAssigned &&
-    !reportProjection.isOwner
-  );
-  const handleReportConversation = () => {
-    if (
-      !canReportConversation ||
-      !reportQuestId ||
-      !viewerId ||
-      !reportProjection
-    )
-      return;
-    router.push({
-      pathname: "/report",
-      params: {
-        source: "chat",
-        questId: reportQuestId,
-        questTitle: localizedText(conversation.questTitle, locale),
-        viewerId,
-        reportedMemberId: reportProjection.state.quest.hirerId,
-      },
-    });
-  };
+  const canReportConversation = false;
+  const handleReportConversation = () => undefined;
   const messagePlaceholder =
     conversation.participantRole === "owner"
       ? messages.typeOwnerMessage
@@ -611,14 +577,19 @@ export default function ChatConversationScreen() {
     if (!canWrite || !viewerId) return;
     const value = draft.trim();
     if (!value) return;
-    const result = questWorkflow.dispatch({
-      type: "SEND_MESSAGE",
-      conversationId: conversation.id,
-      senderId: viewerId,
-      body: value,
-    });
-    if (!result.ok) return;
-    setDraft("");
+    void chatApi
+      .sendMessage(conversation.id, value)
+      .then((sentMessage) => {
+        setLoadState((current) => ({
+          ...current,
+          messages: [
+            ...current.messages,
+            serverMessageToChatMessage(sentMessage, viewerId),
+          ],
+        }));
+        setDraft("");
+      })
+      .catch(() => {});
   };
   const openFile = (attachment: ChatAttachment) =>
     Alert.alert(messages.openFile, `${attachment.name}\n${attachment.meta}`);

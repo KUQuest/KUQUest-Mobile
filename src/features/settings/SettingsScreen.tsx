@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleHelp,
-  Code2,
   FileText,
   Globe2,
   Info,
@@ -21,7 +20,6 @@ import { Pressable, SafeAreaView, ScrollView, Text, View } from "@/tw";
 import { useLocale } from "@/locales/LocaleProvider";
 import { settingsMessages } from "@/locales/settingsMessages";
 import { authService } from "@/features/auth/AuthService";
-import { authEnvironment } from "@/features/auth/authEnvironment";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import styles from "./styles/settingsStyles";
@@ -97,7 +95,6 @@ export default function SettingsScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [switchingAccount, setSwitchingAccount] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const devOverlayEnabled = authEnvironment.isDemoEnabled();
 
   const switchAccount = () => {
     if (switchingAccount) return;
@@ -155,20 +152,6 @@ export default function SettingsScreen() {
                 testID="settings-edit-profile"
                 last={!devOverlayEnabled}
               />
-              {devOverlayEnabled ? (
-                <SettingsRow
-                  description={
-                    switchingAccount
-                      ? messages.switchingAccount
-                      : messages.devOverlayDescription
-                  }
-                  icon={Code2}
-                  onPress={switchAccount}
-                  title={messages.devOverlay}
-                  testID="settings-dev-overlay"
-                  last
-                />
-              ) : null}
             </View>
           </View>
 

@@ -21,14 +21,8 @@ import {
 import { AccessibilityInfo, Alert, BackHandler, Modal } from "react-native";
 import { Image, Pressable, SafeAreaView, ScrollView, Text, View } from "@/tw";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import { authService } from "../auth/AuthService";
-import { authEnvironment, useAuthEnvironment } from "../auth/authEnvironment";
-import { PrototypeMenu } from "@/components/ui/PrototypeMenu";
-import {
-  PROTOTYPE_SCENARIOS,
-  type PrototypeScenarioRoute,
-} from "@/components/ui/prototypeMenuData";
+import { liveQuestService } from "./liveQuestService";
 import { TopBar } from "@/components/ui/TopBar";
 import {
   LoadingSkeleton,
@@ -46,7 +40,6 @@ import {
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import styles from "./questDetailStyles";
-import { getLocalizedQuest } from "./questFixtures";
 import {
   parseBoardPreviewState,
   type BoardPreviewState,
@@ -67,7 +60,6 @@ import {
   QuestInvitationStatus,
   QuestPartialStartConsentStatus,
   QuestParticipation,
-  QuestProofStatus,
   QuestStatus,
   QuestTeamStatus,
   type QuestBoardQuest,
@@ -75,16 +67,15 @@ import {
 } from "./types";
 import { getChatRouteParams } from "@/features/chat/chatData";
 import {
-  DEFAULT_PROTOTYPE_VIEWER_ID,
   getQuestRewardSatang,
-  questWorkflow,
   type QuestActionResult,
+  type QuestDetailProjection,
+  questWorkflow,
   type QuestViewerApplicationStatus,
 } from "./questWorkflow";
 import {
   CandidateReviewSheet,
   PartialGroupStartConsentSheet,
-  ProofSubmissionSheet,
   TeamAssembleSheet,
   type PartialGroupStartVoter,
   type TeamDirectoryMember,
@@ -99,27 +90,9 @@ export interface QuestDetailScreenProps {
 }
 
 type DisplayApplicationStatus = QuestViewerApplicationStatus;
-type ApplicationHydration = {
-  key: string;
-  state: QuestDetailState | null;
-};
 
 function getActionBarPaddingBottom(bottomInset: number): number {
   return Math.max(spacing.md, bottomInset + spacing.sm);
-}
-
-function toDisplayQuest(
-  canonicalQuest: QuestBoardQuest,
-  locale: "en" | "th",
-  previewState?: BoardPreviewState
-): QuestBoardQuest {
-  const localizedQuest = getLocalizedQuest(canonicalQuest, locale);
-  const displayQuest = { ...localizedQuest, creator: localizedQuest.creator };
-  if (previewState === "full" || previewState === "application-accepted")
-    return { ...displayQuest, acceptedParticipants: displayQuest.headcount };
-  if (previewState === "closed")
-    return { ...displayQuest, deadline: "2026-08-11" };
-  return displayQuest;
 }
 
 function announce(message: string): void {
@@ -484,43 +457,6 @@ function ScheduleTimeline({
   );
 }
 
-function PrototypeActionButton({
-  label,
-  onPress,
-  primary = false,
-  danger = false,
-  testID,
-}: {
-  label: string;
-  onPress: () => void;
-  primary?: boolean;
-  danger?: boolean;
-  testID: string;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      className={cn(
-        styles.prototypeAction,
-        primary && styles.prototypeActionPrimary,
-        danger && styles.prototypeActionDanger
-      )}
-      testID={testID}
-    >
-      <Text
-        className={cn(
-          styles.prototypeActionText,
-          primary && styles.prototypeActionTextPrimary,
-          danger && styles.prototypeActionTextDanger
-        )}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 function GroupQuestEntrySurfaces({
   state,
   viewerId,
@@ -737,358 +673,6 @@ function GroupQuestEntrySurfaces({
   );
 }
 
-function PrototypeStatePanels({
-  state,
-  messages,
-  onConsent,
-  onOpenProofSubmission,
-  onConfirmCompletion,
-  onSubmitRework,
-  onReviewProof,
-  onResolve,
-  onComplete,
-  onCancel,
-  onPublish,
-}: {
-  state: QuestDetailState;
-  messages: QuestBoardMessages;
-  onConsent: (approve: boolean) => void;
-  onOpenProofSubmission: () => void;
-  onConfirmCompletion: () => void;
-  onSubmitRework: (proofId: string) => void;
-  onReviewProof: (proofId: string, approve: boolean) => void;
-  onResolve: () => void;
-  onComplete: () => void;
-  onCancel: () => void;
-  onPublish: () => void;
-}) {
-  const { quest, assignments, proofs, editConsent, capabilities } = state;
-  const status = quest.status;
-  const publishCard =
-    status === QuestStatus.QUEST_DRAFT ? (
-      <View className={styles.prototypeCard} testID="quest-publish-check">
-        <View className={styles.prototypeHeader}>
-          <ClipboardCheck color={colors.primary} size={21} strokeWidth={2.2} />
-          <Text className={styles.prototypeTitle}>{messages.publishQuest}</Text>
-        </View>
-        {state.publishCheck ? (
-          <>
-            <Text className={styles.prototypeListItem}>
-              {messages.escrowRewardPool}:{" "}
-              {formatSatang(state.publishCheck.escrow.rewardPoolSatang)}
-            </Text>
-            <Text className={styles.prototypeListItem}>
-              {messages.escrowPlatformFee}:{" "}
-              {formatSatang(state.publishCheck.escrow.platformFeeSatang)}
-            </Text>
-            <Text className={styles.prototypeListItem}>
-              {messages.escrowTotal}:{" "}
-              {formatSatang(state.publishCheck.escrow.totalRequiredSatang)}
-            </Text>
-            {state.publishCheck.blockers.map((blocker) => (
-              <Text className={styles.prototypeCopy} key={blocker}>
-                {blocker}
-              </Text>
-            ))}
-            {state.publishCheck.warnings.map((warning) => (
-              <Text className={styles.prototypeCopy} key={warning}>
-                {warning}
-              </Text>
-            ))}
-          </>
-        ) : null}
-        {capabilities.availableActions.includes("PUBLISH") ? (
-          <View className={styles.prototypeActions}>
-            <PrototypeActionButton
-              label={messages.publishQuest}
-              onPress={onPublish}
-              primary
-              testID="quest-publish"
-            />
-          </View>
-        ) : null}
-      </View>
-    ) : null;
-  const statusCard =
-    status !== QuestStatus.QUEST_OPEN &&
-    status !== QuestStatus.QUEST_DRAFT &&
-    status !== QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT ? (
-      <View
-        accessibilityRole={
-          status === QuestStatus.QUEST_DISPUTED ||
-          status === QuestStatus.QUEST_FAILED
-            ? "alert"
-            : undefined
-        }
-        className={cn(
-          styles.prototypeCard,
-          status === QuestStatus.QUEST_DISPUTED ||
-            status === QuestStatus.QUEST_FAILED
-            ? styles.prototypeCardDanger
-            : status === QuestStatus.QUEST_COMPLETED ||
-                status === QuestStatus.QUEST_CANCELLED
-              ? styles.prototypeCardSuccess
-              : styles.prototypeCardWarning
-        )}
-        testID={`quest-status-banner-${status}`}
-      >
-        <View className={styles.prototypeHeader}>
-          <CircleAlert
-            color={
-              status === QuestStatus.QUEST_DISPUTED
-                ? colors.dangerDark
-                : colors.primary
-            }
-            size={21}
-            strokeWidth={2.2}
-          />
-          <Text className={styles.prototypeTitle}>
-            {messages.statusLabel(status)}
-          </Text>
-        </View>
-        {status === QuestStatus.QUEST_COMPLETED ||
-        status === QuestStatus.QUEST_CANCELLED ||
-        status === QuestStatus.QUEST_FAILED ? (
-          <Text className={styles.prototypeCopy}>
-            {messages.terminalBannerTitle}: {messages.terminalDescription}
-          </Text>
-        ) : null}
-        {status === QuestStatus.QUEST_DISPUTED ? (
-          <Text className={styles.prototypeCopy}>
-            {messages.disputeDescription}
-          </Text>
-        ) : null}
-        {status === QuestStatus.QUEST_ASSIGNED ? (
-          <Text className={styles.prototypeCopy}>
-            {assignments.length} {messages.participants} ·{" "}
-            {messages.statusLabel(status)}
-          </Text>
-        ) : null}
-        {status === QuestStatus.QUEST_APPROVED &&
-        capabilities.availableActions.includes("COMPLETE") ? (
-          <View className={styles.prototypeActions}>
-            <PrototypeActionButton
-              label={messages.completeQuest}
-              onPress={onComplete}
-              primary
-              testID="quest-complete"
-            />
-          </View>
-        ) : null}
-        {capabilities.availableActions.includes("CANCEL") ? (
-          <View className={styles.prototypeActions}>
-            <PrototypeActionButton
-              label={messages.cancelQuest}
-              onPress={onCancel}
-              danger
-              testID="quest-cancel"
-            />
-          </View>
-        ) : null}
-      </View>
-    ) : null;
-
-  const consentCard =
-    editConsent?.status === "EDIT_REQUEST_PENDING" &&
-    status === QuestStatus.QUEST_AWAITING_EDIT_CONSENT ? (
-      <View
-        accessibilityRole="alert"
-        className={cn(styles.prototypeCard, styles.prototypeCardWarning)}
-        testID="quest-edit-consent-state"
-      >
-        <View className={styles.prototypeHeader}>
-          <Clock3 color={colors.primary} size={21} strokeWidth={2.2} />
-          <Text className={styles.prototypeTitle}>
-            {messages.consentBannerTitle}
-          </Text>
-        </View>
-        <Text className={styles.prototypeCopy}>
-          {messages.consentBannerDescription(
-            editConsent.approvedWorkerCount,
-            editConsent.requiredWorkerCount
-          )}
-        </Text>
-        <Text className={styles.prototypeMeta}>
-          {messages.consentCountdown}:{" "}
-          {questWorkflow.getConsentCountdown(editConsent) ?? "00:00"}
-        </Text>
-        <View className={styles.prototypeProgress}>
-          <View
-            className={styles.prototypeProgressFill}
-            style={{
-              width: `${editConsent.requiredWorkerCount ? Math.min(100, (editConsent.approvedWorkerCount / editConsent.requiredWorkerCount) * 100) : 0}%`,
-            }}
-          />
-        </View>
-        {capabilities.availableActions.includes("VOTE_EDIT_CONSENT") ? (
-          <View className={styles.prototypeActions}>
-            <PrototypeActionButton
-              label={messages.approveEdit}
-              onPress={() => onConsent(true)}
-              primary
-              testID="quest-approve-edit"
-            />
-            <PrototypeActionButton
-              label={messages.rejectEdit}
-              onPress={() => onConsent(false)}
-              danger
-              testID="quest-reject-edit"
-            />
-          </View>
-        ) : null}
-      </View>
-    ) : null;
-
-  const proofCard =
-    proofs.length > 0 ||
-    (
-      [
-        QuestStatus.QUEST_IN_PROGRESS,
-        QuestStatus.QUEST_SUBMITTED,
-        QuestStatus.QUEST_REWORK,
-      ] as QuestDetailState["quest"]["status"][]
-    ).includes(status) ? (
-      <View className={styles.prototypeCard} testID="quest-proof-state">
-        <View className={styles.prototypeHeader}>
-          <ClipboardCheck color={colors.primary} size={21} strokeWidth={2.2} />
-          <Text className={styles.prototypeTitle}>
-            {messages.proofBannerTitle}
-          </Text>
-        </View>
-        {proofs.length === 0 ? (
-          <Text className={styles.prototypeCopy}>
-            {quest.proofRequired === "none"
-              ? messages.proofNotNeededDescription
-              : messages.proofRequiredDescription}
-          </Text>
-        ) : (
-          <View className={styles.prototypeList}>
-            {proofs.map((item) => (
-              <View key={item.id}>
-                <Text className={styles.prototypeListItem}>
-                  • {item.ownerId} · {messages.statusLabel(item.status)}
-                </Text>
-                {item.status === QuestProofStatus.PROOF_PENDING ? (
-                  <Text className={styles.prototypeCopy}>
-                    {messages.proofPending}
-                  </Text>
-                ) : null}
-                {item.status === QuestProofStatus.PROOF_REJECTED ? (
-                  <Text className={styles.prototypeCopy}>
-                    {messages.proofRejected} ·{" "}
-                    {messages.reworkRemaining(
-                      Math.max(0, item.reworkLimit - item.reworkCount),
-                      item.reworkLimit
-                    )}
-                  </Text>
-                ) : null}
-                {item.status === QuestProofStatus.PROOF_REJECTED &&
-                capabilities.availableActions.includes("REWORK_PROOF") ? (
-                  <View className={styles.prototypeActions}>
-                    <PrototypeActionButton
-                      label={messages.submitRework}
-                      onPress={() => onSubmitRework(item.id)}
-                      primary
-                      testID={`quest-submit-rework-${item.id}`}
-                    />
-                  </View>
-                ) : null}
-                {item.status === QuestProofStatus.PROOF_PENDING &&
-                capabilities.availableActions.includes("REVIEW_PROOF") ? (
-                  <View className={styles.prototypeActions}>
-                    <PrototypeActionButton
-                      label={messages.approveProof}
-                      onPress={() => onReviewProof(item.id, true)}
-                      primary
-                      testID={`quest-approve-proof-${item.id}`}
-                    />
-                    <PrototypeActionButton
-                      label={messages.rejectProof}
-                      onPress={() => onReviewProof(item.id, false)}
-                      danger
-                      testID={`quest-reject-proof-${item.id}`}
-                    />
-                  </View>
-                ) : null}
-              </View>
-            ))}
-          </View>
-        )}
-        {capabilities.availableActions.includes("SUBMIT_PROOF") ? (
-          <View className={styles.prototypeActions}>
-            <PrototypeActionButton
-              label={messages.submitProof}
-              onPress={onOpenProofSubmission}
-              primary
-              testID="quest-submit-proof"
-            />
-          </View>
-        ) : null}
-        {capabilities.availableActions.includes("CONFIRM_COMPLETION") ? (
-          <View className={styles.prototypeActions}>
-            <PrototypeActionButton
-              label={messages.confirmCompletion}
-              onPress={onConfirmCompletion}
-              primary
-              testID="quest-confirm-completion"
-            />
-          </View>
-        ) : null}
-      </View>
-    ) : null;
-
-  const disputeCard =
-    status === QuestStatus.QUEST_DISPUTED ? (
-      <View
-        className={cn(styles.prototypeCard, styles.prototypeCardDanger)}
-        testID="quest-dispute-state"
-      >
-        <View className={styles.prototypeHeader}>
-          <CircleAlert color={colors.dangerDark} size={21} strokeWidth={2.2} />
-          <Text className={styles.prototypeTitle}>
-            {messages.disputeBannerTitle}
-          </Text>
-        </View>
-        <Text className={styles.prototypeCopy}>
-          {messages.disputeDescription}
-        </Text>
-        {capabilities.availableActions.includes("RESOLVE_DISPUTE") ? (
-          <View className={styles.prototypeActions}>
-            <PrototypeActionButton
-              label={messages.resolveDispute}
-              onPress={onResolve}
-              primary
-              testID="quest-resolve-dispute"
-            />
-          </View>
-        ) : null}
-      </View>
-    ) : null;
-  const openCancelButton =
-    status === QuestStatus.QUEST_OPEN &&
-    capabilities.availableActions.includes("CANCEL") ? (
-      <View className={styles.prototypeActions}>
-        <PrototypeActionButton
-          label={messages.cancelQuest}
-          onPress={onCancel}
-          danger
-          testID="quest-cancel"
-        />
-      </View>
-    ) : null;
-
-  return (
-    <>
-      {publishCard}
-      {statusCard}
-      {consentCard}
-      {proofCard}
-      {disputeCard}
-      {openCancelButton}
-    </>
-  );
-}
-
 function ConfirmationSheet({
   locale,
   messages,
@@ -1222,7 +806,6 @@ export default function QuestDetailScreen({
     studentId?: string | string[];
   }>();
   const { locale } = useLocale();
-  const { activePersonaId, onPersonaChange, onReset } = useAuthEnvironment();
   const messages = questBoardMessages[locale];
   const resolvedQuestId = parseQuestRouteId(questId ?? params.id);
   const resolvedIntent = parseQuestIntent(params.intent);
@@ -1231,16 +814,13 @@ export default function QuestDetailScreen({
     joinStatus ?? parseQuestJoinStatus(params.joinStatus);
   const routeStudentId = parseStudentId(params.studentId);
   const explicitStudentId = studentId ?? routeStudentId;
-  const prototypeDemoEnabled = authEnvironment.isDemoEnabled();
   const [sessionStudentId, setSessionStudentId] = useState<
     string | undefined
   >();
-  const [sessionHydrated, setSessionHydrated] = useState(
-    Boolean(explicitStudentId || prototypeDemoEnabled)
-  );
+  const [liveQuest, setLiveQuest] = useState<QuestBoardQuest | null>(null);
 
   useEffect(() => {
-    if (explicitStudentId || prototypeDemoEnabled) return undefined;
+    if (explicitStudentId) return undefined;
     let active = true;
     void authService
       .getSession()
@@ -1248,152 +828,42 @@ export default function QuestDetailScreen({
         if (!active) return;
         const id = parseStudentId(session?.user.id);
         if (id) setSessionStudentId(id);
-        setSessionHydrated(true);
       })
-      .catch(() => {
-        if (active) setSessionHydrated(true);
-      });
+      .catch(() => {});
     return () => {
       active = false;
     };
-  }, [explicitStudentId, prototypeDemoEnabled]);
+  }, [explicitStudentId]);
   const resolvedPreview =
     previewState ?? parseBoardPreviewState(params.preview);
-  const applicationStudentId =
-    explicitStudentId ??
-    (__DEV__
-      ? activePersonaId
-      : (sessionStudentId ?? DEFAULT_PROTOTYPE_VIEWER_ID));
-  const applicationSessionHydrated = Boolean(
-    explicitStudentId || sessionHydrated || prototypeDemoEnabled
-  );
+  useEffect(() => {
+    if (!resolvedQuestId) return undefined;
+    let active = true;
+    void liveQuestService
+      .getQuestDetail(resolvedQuestId)
+      .then((nextQuest) => {
+        if (active) setLiveQuest(nextQuest);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [resolvedQuestId]);
+  const applicationStudentId = explicitStudentId ?? sessionStudentId ?? "";
   const isJoinView = resolvedMode === "join";
   const isPostView = resolvedMode === "post";
-  const baseDetailProjection = useMemo(
-    () =>
-      resolvedQuestId && resolvedPreview !== "loading"
-        ? questWorkflow.getQuestDetailProjection(
-            resolvedQuestId,
-            applicationStudentId
-          )
-        : null,
-    [applicationStudentId, resolvedPreview, resolvedQuestId]
-  );
-  const basePrototypeState = baseDetailProjection?.state ?? null;
-  const prototypeViewerId = isPostView
-    ? (basePrototypeState?.quest.hirerId ?? applicationStudentId)
-    : applicationStudentId;
-  const initialDetailProjection = useMemo(
-    () =>
-      resolvedQuestId && resolvedPreview !== "loading"
-        ? questWorkflow.getQuestDetailProjection(
-            resolvedQuestId,
-            prototypeViewerId
-          )
-        : null,
-    [prototypeViewerId, resolvedPreview, resolvedQuestId]
-  );
-  const initialPrototypeState = initialDetailProjection?.state ?? null;
-  const [prototypeState, setPrototypeState] = useState<QuestDetailState | null>(
-    () => initialPrototypeState
-  );
-  const applicationHydrationKey = resolvedQuestId
-    ? `${resolvedQuestId}:${applicationStudentId}`
-    : "";
-  const [applicationHydration, setApplicationHydration] =
-    useState<ApplicationHydration>(() => ({
-      key: applicationHydrationKey,
-      state: basePrototypeState,
-    }));
-  useEffect(() => {
-    if (!resolvedQuestId || resolvedPreview === "loading") return undefined;
-    let active = true;
-    const refresh = () => {
-      const next = questWorkflow.getQuestDetailState(
-        resolvedQuestId,
-        prototypeViewerId
-      );
-      if (active) setPrototypeState(next);
-    };
-    refresh();
-    const unsubscribe = questWorkflow.subscribe(refresh);
-    return () => {
-      active = false;
-      unsubscribe();
-    };
-  }, [prototypeViewerId, resolvedPreview, resolvedQuestId]);
-  const activePrototypeState =
-    resolvedPreview === "loading" ||
-    prototypeState?.quest.id !== resolvedQuestId
-      ? null
-      : prototypeState;
-  const detailProjection = useMemo(
-    () =>
-      resolvedQuestId && activePrototypeState
-        ? questWorkflow.getQuestDetailProjection(
-            resolvedQuestId,
-            prototypeViewerId
-          )
-        : null,
-    [activePrototypeState, prototypeViewerId, resolvedQuestId]
-  );
-  const quest = useMemo(
-    () =>
-      detailProjection
-        ? toDisplayQuest(detailProjection.quest, locale, resolvedPreview)
-        : undefined,
-    [detailProjection, locale, resolvedPreview]
-  );
-  useEffect(() => {
-    if (
-      !resolvedQuestId ||
-      resolvedPreview === "loading" ||
-      !applicationSessionHydrated
-    )
-      return undefined;
-    let active = true;
-    const hydrate = () => {
-      const state = questWorkflow.getQuestDetailState(
-        resolvedQuestId,
-        applicationStudentId
-      );
-      if (active)
-        setApplicationHydration({ key: applicationHydrationKey, state });
-    };
-    hydrate();
-    const unsubscribe = questWorkflow.subscribe(hydrate);
-    return () => {
-      active = false;
-      unsubscribe();
-    };
-  }, [
-    applicationHydrationKey,
-    applicationSessionHydrated,
-    applicationStudentId,
-    resolvedPreview,
-    resolvedQuestId,
-  ]);
-  const applicationState =
-    applicationHydration.key === applicationHydrationKey
-      ? applicationHydration.state
-      : null;
-  const applicationProjection = useMemo(
-    () =>
-      resolvedQuestId && applicationState
-        ? questWorkflow.getQuestDetailProjection(
-            resolvedQuestId,
-            applicationStudentId
-          )
-        : null,
-    [applicationState, applicationStudentId, resolvedQuestId]
-  );
-  const applicationStatusHydrated = Boolean(
-    resolvedQuestId &&
-    resolvedPreview !== "loading" &&
-    applicationSessionHydrated &&
-    applicationHydration.key === applicationHydrationKey &&
-    applicationState
-  );
+  const prototypeViewerId = applicationStudentId;
+  const [, setPrototypeState] = useState<QuestDetailState | null>(null);
+  const emptyDetailState = (): QuestDetailState | null => null;
+  const emptyDetailProjection = (): QuestDetailProjection | null => null;
+  const activePrototypeState = emptyDetailState();
+  const liveQuestForRoute =
+    liveQuest?.id === resolvedQuestId ? liveQuest : null;
+  const detailProjection = emptyDetailProjection();
+  const quest = liveQuestForRoute;
+  const applicationState = emptyDetailState();
+  const applicationProjection = emptyDetailProjection();
+  const applicationStatusHydrated = Boolean(liveQuestForRoute);
   const applicationStatus = applicationProjection?.applicationStatus ?? "none";
   const previewApplicationStatus: DisplayApplicationStatus =
     resolvedPreview === "application-pending"
@@ -1406,7 +876,11 @@ export default function QuestDetailScreen({
       ? "full"
       : resolvedPreview === "closed"
         ? "closed"
-        : detailProjection?.availability;
+        : liveQuestForRoute
+          ? liveQuestForRoute.status === QuestStatus.QUEST_OPEN
+            ? "available"
+            : "closed"
+          : detailProjection?.availability;
   const imageUris = quest?.imageUris?.slice(0, MAX_QUEST_IMAGES) ?? [];
   const joinedStatus: QuestJoinStatus | undefined =
     isJoinView && applicationStatusHydrated
@@ -1420,8 +894,10 @@ export default function QuestDetailScreen({
     quest && !firstCome && quest.participationMode === "team"
   );
   const canonicalOpen =
-    !detailProjection ||
-    detailProjection.quest.status === QuestStatus.QUEST_OPEN;
+    liveQuestForRoute?.status === QuestStatus.QUEST_OPEN ||
+    (!liveQuestForRoute &&
+      (!detailProjection ||
+        detailProjection.quest.status === QuestStatus.QUEST_OPEN));
   const partialStartPending = detailProjection?.partialStartPending ?? false;
   const applicationAction = firstCome ? "DIRECT_JOIN" : "APPLY";
   const canApply =
@@ -1522,7 +998,6 @@ export default function QuestDetailScreen({
     useState(false);
   const [partialStartSheetDismissed, setPartialStartSheetDismissed] =
     useState(false);
-  const [proofSubmissionOpen, setProofSubmissionOpen] = useState(false);
   const [teamSearchQuery, setTeamSearchQuery] = useState("");
   const [teamSelectedMemberIds, setTeamSelectedMemberIds] = useState<string[]>(
     []
@@ -1685,24 +1160,12 @@ export default function QuestDetailScreen({
     });
   };
 
-  const applyPrototypeResult = (result: QuestActionResult): boolean => {
+  const applyPrototypeResult = (result: QuestActionResult) => {
     if (!result.ok) {
       Alert.alert(messages.details, result.error.message);
-      return false;
+      return;
     }
     if (result.state) setPrototypeState(result.state);
-    return true;
-  };
-  const handlePrototypeConsent = (approve: boolean) => {
-    if (resolvedQuestId)
-      applyPrototypeResult(
-        questWorkflow.dispatch({
-          type: "VOTE_EDIT_CONSENT",
-          questId: resolvedQuestId,
-          workerId: applicationStudentId,
-          approve,
-        })
-      );
   };
   const handleCreateTeam = () => {
     if (resolvedQuestId)
@@ -1760,77 +1223,6 @@ export default function QuestDetailScreen({
         })
       );
   };
-  const handleOpenProofSubmission = () => {
-    setProofSubmissionOpen(true);
-  };
-  const handlePrototypeSubmitProof = (
-    imageUris: string[],
-    note: string
-  ): boolean => {
-    if (!resolvedQuestId) return false;
-    const submitted = applyPrototypeResult(
-      questWorkflow.dispatch({
-        type: "SUBMIT_PROOF",
-        questId: resolvedQuestId,
-        ownerId: prototypeViewerId,
-        imageUris,
-        note,
-      })
-    );
-    if (submitted) {
-      setProofSubmissionOpen(false);
-      announce(messages.proofSubmissionSent);
-    }
-    return submitted;
-  };
-  const handlePrototypeConfirmCompletion = () => {
-    if (!resolvedQuestId) return;
-    Alert.alert(
-      messages.confirmCompletion,
-      messages.confirmCompletionDescription,
-      [
-        { text: messages.cancel, style: "cancel" },
-        {
-          text: messages.confirmCompletion,
-          onPress: () => {
-            applyPrototypeResult(
-              questWorkflow.dispatch({
-                type: "CONFIRM_COMPLETION",
-                questId: resolvedQuestId,
-                workerId: prototypeViewerId,
-              })
-            );
-          },
-        },
-      ]
-    );
-  };
-  const handlePrototypeSubmitRework = (proofId: string) => {
-    if (resolvedQuestId)
-      applyPrototypeResult(
-        questWorkflow.dispatch({
-          type: "REWORK_PROOF",
-          questId: resolvedQuestId,
-          proofId,
-          ownerId: applicationStudentId,
-          imageUris: [],
-          note: "",
-        })
-      );
-  };
-  const handlePrototypeReviewProof = (proofId: string, approve: boolean) => {
-    if (resolvedQuestId)
-      applyPrototypeResult(
-        questWorkflow.dispatch({
-          type: "REVIEW_PROOF",
-          questId: resolvedQuestId,
-          proofId,
-          approve,
-          reason: "",
-          hirerId: prototypeViewerId,
-        })
-      );
-  };
   const handleSelectCandidate = (applicationId: string) => {
     if (resolvedQuestId)
       applyPrototypeResult(
@@ -1871,85 +1263,6 @@ export default function QuestDetailScreen({
       },
     ]);
   };
-  const handlePrototypeResolve = () => {
-    if (resolvedQuestId)
-      applyPrototypeResult(
-        questWorkflow.dispatch({
-          type: "RESOLVE_DISPUTE",
-          questId: resolvedQuestId,
-          actorId: prototypeViewerId,
-        })
-      );
-  };
-  const handlePrototypeComplete = () => {
-    if (resolvedQuestId)
-      applyPrototypeResult(
-        questWorkflow.dispatch({
-          type: "COMPLETE",
-          questId: resolvedQuestId,
-          hirerId: prototypeViewerId,
-        })
-      );
-  };
-  const handlePrototypeCancel = () => {
-    if (resolvedQuestId)
-      applyPrototypeResult(
-        questWorkflow.dispatch({
-          type: "CANCEL",
-          questId: resolvedQuestId,
-          actorId: prototypeViewerId,
-        })
-      );
-  };
-  const handlePrototypePublish = () => {
-    if (resolvedQuestId)
-      applyPrototypeResult(
-        questWorkflow.dispatch({
-          type: "PUBLISH",
-          questId: resolvedQuestId,
-          hirerId: prototypeViewerId,
-        })
-      );
-  };
-  const openPrototypeScenario = (route: PrototypeScenarioRoute) => {
-    router.push(route);
-  };
-  const handlePrototypePersonaChange = (
-    personaId: Parameters<typeof onPersonaChange>[0]
-  ) => {
-    onPersonaChange(personaId);
-    setTeamSheetOpen(false);
-    setCandidateReviewSheetOpen(false);
-    setPartialStartSheetDismissed(false);
-    setTeamReviewing(false);
-    setTeamSelectedMemberIds([]);
-    setTeamSearchQuery("");
-    setSelectedProposalId(null);
-  };
-  const handlePrototypeReset = (scope: Parameters<typeof onReset>[0]) => {
-    onReset(scope);
-    setTeamSheetOpen(false);
-    setCandidateReviewSheetOpen(false);
-    setPartialStartSheetDismissed(false);
-    setTeamReviewing(false);
-    setTeamSelectedMemberIds([]);
-    setTeamSearchQuery("");
-    setSelectedProposalId(null);
-  };
-  const currentScenario = PROTOTYPE_SCENARIOS.find(
-    (scenario) => scenario.id === resolvedQuestId
-  )?.route;
-  const prototypeMenu = (
-    <PrototypeMenu
-      activePersonaId={activePersonaId}
-      compact
-      currentScenario={currentScenario}
-      onPersonaChange={handlePrototypePersonaChange}
-      onReset={handlePrototypeReset}
-      onScenarioPress={openPrototypeScenario}
-      testID="quest-detail-prototype-menu"
-    />
-  );
   const applicationStatusPending = Boolean(quest) && !applicationStatusHydrated;
   const questPending =
     resolvedPreview === "loading" || applicationStatusPending;
@@ -1963,7 +1276,7 @@ export default function QuestDetailScreen({
         <TopBar
           backLabel={messages.back}
           onBackPress={handleBack}
-          rightAction={prototypeMenu}
+
           title={messages.details}
           variant="detail"
         />
@@ -1981,7 +1294,7 @@ export default function QuestDetailScreen({
         <TopBar
           backLabel={messages.back}
           onBackPress={handleBack}
-          rightAction={prototypeMenu}
+
           title={messages.details}
           variant="detail"
         />
@@ -2000,7 +1313,7 @@ export default function QuestDetailScreen({
       <TopBar
         backLabel={messages.back}
         onBackPress={handleBack}
-        rightAction={prototypeMenu}
+
         title={messages.details}
         variant="detail"
       />
@@ -2226,21 +1539,6 @@ export default function QuestDetailScreen({
             onOpenPartialConsent={() => setPartialStartSheetDismissed(false)}
           />
         ) : null}
-        {activePrototypeState ? (
-          <PrototypeStatePanels
-            state={activePrototypeState}
-            messages={messages}
-            onConsent={handlePrototypeConsent}
-            onOpenProofSubmission={handleOpenProofSubmission}
-            onConfirmCompletion={handlePrototypeConfirmCompletion}
-            onSubmitRework={handlePrototypeSubmitRework}
-            onReviewProof={handlePrototypeReviewProof}
-            onResolve={handlePrototypeResolve}
-            onComplete={handlePrototypeComplete}
-            onCancel={handlePrototypeCancel}
-            onPublish={handlePrototypePublish}
-          />
-        ) : null}
         {canReportQuest ? (
           <View className={styles.reportCard} testID="quest-report-card">
             <View className={styles.reportHeader}>
@@ -2275,13 +1573,6 @@ export default function QuestDetailScreen({
           </View>
         ) : null}
       </ScrollView>
-      {activePrototypeState ? (
-        <ProofSubmissionSheet
-          onClose={() => setProofSubmissionOpen(false)}
-          onSubmit={handlePrototypeSubmitProof}
-          visible={proofSubmissionOpen}
-        />
-      ) : null}
       {activePrototypeState && candidateGroup && !isHirerView ? (
         <TeamAssembleSheet
           bottomInset={insets.bottom}

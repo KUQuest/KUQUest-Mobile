@@ -23,7 +23,6 @@ jest.mock("../../../locales/LocaleProvider", () => ({
 describe("Settings screen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    delete process.env.EXPO_PUBLIC_PROFILE_DEMO;
   });
 
   it("renders grouped account, preference, support, and about content", async () => {
@@ -87,18 +86,6 @@ describe("Settings screen", () => {
     expect(view.queryByTestId("settings-switch-account")).toBeNull();
     expect(view.queryByText("Switch account")).toBeNull();
     expect(authService.signOut).not.toHaveBeenCalled();
-  });
-
-  it("revokes the session before returning to the dev overlay", async () => {
-    process.env.EXPO_PUBLIC_PROFILE_DEMO = "true";
-    const view = await render(<SettingsScreen />);
-
-    fireEvent.press(view.getByTestId("settings-dev-overlay"));
-
-    await waitFor(() => {
-      expect(authService.signOut).toHaveBeenCalledTimes(1);
-      expect(mockReplace).toHaveBeenCalledWith("/");
-    });
   });
 
   it("opens Edit Profile from settings", async () => {

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   AccessibilityInfo,
   Alert,
@@ -7,7 +7,7 @@ import {
   type PanResponderGestureState,
   useWindowDimensions,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   ArrowLeft,
@@ -32,14 +32,10 @@ import {
 
 import { cn } from "@/tw/cn";
 import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
-import { PrototypeMenu } from "@/components/ui/PrototypeMenu";
 import { QuestFundingSummary } from "@/components/ui/QuestFundingSummary";
-import { useAuthEnvironment } from "@/features/auth/authEnvironment";
-import {
-  PROTOTYPE_PERSONAS,
-  type PrototypePersonaId,
-  type PrototypeScenarioRoute,
-} from "@/components/ui/prototypeMenuData";
+import { authService } from "@/features/auth/AuthService";
+import { myQuestService } from "./myQuestService";
+import type { QuestV2CanonicalQuest } from "@/api/questV2Contracts";
 import { Pressable, SafeAreaView, ScrollView, Text, View } from "@/tw";
 import { useLocale, type SupportedLocale } from "@/locales/LocaleProvider";
 import { colors } from "@/theme/colors";
@@ -138,6 +134,9 @@ type LocaleContent = {
   appliedOn: string;
   reason: string;
   host: string;
+  liveLoading: string;
+  liveError: string;
+  liveRetry: string;
   worker: RoleCopy<WorkerTab>;
   hirer: RoleCopy<HirerTab>;
 };
@@ -168,6 +167,9 @@ const content: Record<SupportedLocale, LocaleContent> = {
     appliedOn: "สมัครเมื่อ",
     reason: "เหตุผล",
     host: "ผู้โพสต์",
+    liveLoading: "กำลังโหลดเควสต์ของคุณ…",
+    liveError: "ไม่สามารถโหลดเควสต์ของคุณได้",
+    liveRetry: "ลองอีกครั้ง",
     worker: {
       title: "เควสต์ที่ฉันสมัคร",
       subtitle: "ติดตามเควสต์ที่คุณสมัครไว้",
@@ -237,6 +239,9 @@ const content: Record<SupportedLocale, LocaleContent> = {
     appliedOn: "Applied on",
     reason: "Reason",
     host: "Quest host",
+    liveLoading: "Loading your Quests…",
+    liveError: "We couldn't load your Quests.",
+    liveRetry: "Try again",
     worker: {
       title: "My Apply Quest",
       subtitle: "Track Quests you have applied for",
@@ -278,8 +283,6 @@ const content: Record<SupportedLocale, LocaleContent> = {
   },
 };
 
-const HIRER_PERSONA_ID = PROTOTYPE_PERSONAS[0].id;
-
 const actionLabels: Record<
   SupportedLocale,
   {
@@ -305,13 +308,13 @@ const actionLabels: Record<
     start: "Awaiting start",
   },
 };
-
 function formatQuestDate(value: string, locale: SupportedLocale): string {
   if (!value) return "—";
+  const dateValue = value.length > 10 ? value.slice(0, 10) : value;
   return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
     day: "numeric",
     month: "short",
-  }).format(new Date(`${value}T12:00:00`));
+  }).format(new Date(`${dateValue}T12:00:00`));
 }
 
 function getCategoryTone(tag: string): CategoryTone {
@@ -436,9 +439,8 @@ function prototypeStateSummary(
 }
 
 /**
- * My Quests currently reads the canonical Quest projection through Quest Workflow. There is
- * no asynchronous loader on either the demo or non-demo route, so an empty
- * workflow result must remain an empty state rather than a fabricated skeleton.
+ * Worker-only prototype projections support the existing role summary and
+ * navigation. Hirer cards use the authenticated v2 mine service below.
  */
 function getWorkflowItems(
   role: Role,
@@ -454,6 +456,72 @@ function getWorkflowItems(
     if (!expectedRelationship || projection.tab !== tab) return [];
     const summary = prototypeStateSummary(projection, role, locale, viewerId);
     return summary ? [summary] : [];
+  });
+}
+
+function liveQuestStatusTone(
+  status: QuestV2CanonicalQuest["state"] | "QUEST_HIDDEN"
+): StatusTone {
+  if (status === "QUEST_COMPLETED") return "success";
+  if (status === "QUEST_CANCELLED" || status === "QUEST_FAILED") {
+    return "danger";
+  }
+  if (status === "QUEST_DRAFT") return "neutral";
+  if (status === "QUEST_HIDDEN") return "warning";
+  return "success";
+}
+function liveQuestStatusLabel(
+  status: QuestV2CanonicalQuest["state"] | "QUEST_HIDDEN",
+  locale: SupportedLocale
+): string {
+  if (status === "QUEST_FAILED") return locale === "th" ? "ล้มเหลว" : "Failed";
+  return questBoardMessages[locale].statusLabel(status);
+}
+
+function getLiveHirerItems(
+  quests: QuestV2CanonicalQuest[],
+  tab: HirerTab,
+  locale: SupportedLocale
+): QuestSummary[] {
+  return quests.flatMap((quest) => {
+    const terminal =
+      quest.state === "QUEST_COMPLETED" ||
+      quest.state === "QUEST_CANCELLED" ||
+      quest.state === "QUEST_FAILED";
+    const matchesTab =
+      tab === "draft"
+        ? quest.state === "QUEST_DRAFT"
+        : tab === "completed"
+          ? terminal
+          : !terminal && quest.state !== "QUEST_DRAFT";
+    if (!matchesTab) return [];
+
+    const tag = quest.tag?.name ?? "Quest";
+    const statusValue = quest.hiddenAt ? "QUEST_HIDDEN" : quest.state;
+    const status = liveQuestStatusLabel(statusValue, locale);
+    return [
+      {
+        id: quest.id,
+        title: quest.title,
+        tag,
+        categoryTone: getCategoryTone(tag),
+        date: formatQuestDate(quest.startTime, locale),
+        location: quest.locations[0]?.label ?? "—",
+        description: quest.description ?? "",
+        detail: status,
+        teamSize: String(quest.headcount),
+        status,
+        statusTone: liveQuestStatusTone(statusValue),
+        action:
+          quest.state === "QUEST_DRAFT"
+            ? actionLabels[locale].edit
+            : actionLabels[locale].detail,
+        actionType:
+          quest.state === "QUEST_DRAFT"
+            ? ("edit" as const)
+            : ("detail" as const),
+      },
+    ];
   });
 }
 
@@ -916,7 +984,13 @@ function TipCard({
   );
 }
 
-export default function MyQuestsScreen() {
+export interface MyQuestsScreenProps {
+  initialRole?: Role;
+}
+
+export default function MyQuestsScreen({
+  initialRole = "worker",
+}: MyQuestsScreenProps = {}) {
   const router = useRouter();
   const { locale } = useLocale();
   const { width, fontScale } = useWindowDimensions();
@@ -924,11 +998,20 @@ export default function MyQuestsScreen() {
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
   const { handleScroll } = useNavigationVisibility();
   const copy = content[locale];
-  const { activePersonaId, onPersonaChange, onReset } = useAuthEnvironment();
-  const [roleSelection, setRoleSelection] = useState<{
-    personaId: PrototypePersonaId;
-    role: Role;
-  } | null>(null);
+  const [role, setRole] = useState<Role>(initialRole);
+  const [sessionUserId, setSessionUserId] = useState<string | null>(null);
+  React.useEffect(() => {
+    let active = true;
+    void authService
+      .getSession()
+      .then((session) => {
+        if (active && session?.user?.id) setSessionUserId(session.user.id);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [workerTab, setWorkerTab] = useState<WorkerTab>("pending");
   const [hirerTab, setHirerTab] = useState<HirerTab>("active");
@@ -946,20 +1029,32 @@ export default function MyQuestsScreen() {
       ),
     []
   );
-  const role =
-    roleSelection?.personaId === activePersonaId
-      ? roleSelection.role
-      : activePersonaId === HIRER_PERSONA_ID
-        ? "hirer"
-        : "worker";
+  const [liveHirerQuests, setLiveHirerQuests] = useState<
+    QuestV2CanonicalQuest[] | null
+  >(null);
+  const [liveHirerLoading, setLiveHirerLoading] = useState(false);
+  const [liveHirerError, setLiveHirerError] = useState(false);
+  const loadLiveHirerQuests = useCallback(async () => {
+    setLiveHirerLoading(true);
+    setLiveHirerError(false);
+    try {
+      setLiveHirerQuests(await myQuestService.listAllMyHirerQuests());
+    } catch {
+      setLiveHirerError(true);
+    } finally {
+      setLiveHirerLoading(false);
+    }
+  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      if (role !== "hirer") return undefined;
+      void loadLiveHirerQuests();
+      return undefined;
+    }, [loadLiveHirerQuests, role])
+  );
   const roleCopy = role === "worker" ? copy.worker : copy.hirer;
   const selectedTab = role === "worker" ? workerTab : hirerTab;
-  // The role selector remains an explicit view lens for existing My Quests
-  // behavior; a selected prototype persona is always used for the worker view.
-  const viewerId =
-    role === "hirer" && activePersonaId !== HIRER_PERSONA_ID
-      ? HIRER_PERSONA_ID
-      : activePersonaId;
+  const viewerId = sessionUserId || "";
   const candidateReviewState = candidateReviewQuestId
     ? questWorkflow.getQuestDetailState(candidateReviewQuestId, viewerId)
     : null;
@@ -970,15 +1065,28 @@ export default function MyQuestsScreen() {
           : "REJECT_CANDIDATE"
       )
     : false;
+  const liveHirerMode = role === "hirer";
   const items = useMemo(() => {
-    void workflowRevision;
-    return getWorkflowItems(role, selectedTab, locale, viewerId);
-  }, [workflowRevision, locale, role, selectedTab, viewerId]);
+    if (liveHirerMode) {
+      return liveHirerQuests
+        ? getLiveHirerItems(liveHirerQuests, selectedTab as HirerTab, locale)
+        : [];
+    }
+    return [];
+  }, [
+    liveHirerMode,
+    liveHirerQuests,
+    locale,
+    role,
+    selectedTab,
+    viewerId,
+    workflowRevision,
+  ]);
   const summary = useMemo(() => {
     void workflowRevision;
     if (role !== "worker" || !copy.worker.summary) return null;
     const counts = workerTabs.map(
-      (tab) => getWorkflowItems("worker", tab, locale, activePersonaId).length
+      (tab) => getWorkflowItems("worker", tab, locale, viewerId).length
     );
     return copy.worker.summary.map((metric, index) => ({
       ...metric,
@@ -996,7 +1104,7 @@ export default function MyQuestsScreen() {
             ? copy.worker.tabs.accepted
             : copy.worker.tabs.history,
     }));
-  }, [activePersonaId, workflowRevision, copy, locale, role]);
+  }, [viewerId, workflowRevision, copy, locale, role]);
   const tabOptions: readonly (WorkerTab | HirerTab)[] =
     role === "worker" ? workerTabs : hirerTabs;
   const bottomPadding =
@@ -1005,42 +1113,10 @@ export default function MyQuestsScreen() {
       : chromeMetrics.navHeight + insets.bottom) + spacing.lg;
 
   const selectRole = (nextRole: Role) => {
-    setRoleSelection({ personaId: activePersonaId, role: nextRole });
+    setRole(nextRole);
     setRoleMenuOpen(false);
     AccessibilityInfo.announceForAccessibility(copy.roleLabels[nextRole]);
   };
-
-  const handlePersonaChange = (
-    personaId: Parameters<typeof onPersonaChange>[0]
-  ) => {
-    onPersonaChange(personaId);
-    setRoleSelection(null);
-    setRoleMenuOpen(false);
-    setCandidateReviewQuestId(null);
-    setSelectedProposalId(null);
-  };
-
-  const handlePrototypeReset = (scope: Parameters<typeof onReset>[0]) => {
-    onReset(scope);
-    setRoleMenuOpen(false);
-    setCandidateReviewQuestId(null);
-    setSelectedProposalId(null);
-  };
-
-  const openPrototypeScenario = (route: PrototypeScenarioRoute) => {
-    router.push(route);
-  };
-
-  const prototypeMenu = (
-    <PrototypeMenu
-      activePersonaId={activePersonaId}
-      compact
-      onPersonaChange={handlePersonaChange}
-      onReset={handlePrototypeReset}
-      onScenarioPress={openPrototypeScenario}
-      testID="my-quests-prototype-menu"
-    />
-  );
 
   const selectTab = (nextTab: WorkerTab | HirerTab) => {
     const wasSelected = selectedTab === nextTab;
@@ -1243,7 +1319,6 @@ export default function MyQuestsScreen() {
               <ChevronDown color={colors.primary} size={18} strokeWidth={2.4} />
             )}
           </Pressable>
-          {prototypeMenu}
         </View>
         {roleMenuOpen ? (
           <RoleMenu copy={copy} onSelect={selectRole} role={role} />
@@ -1340,7 +1415,29 @@ export default function MyQuestsScreen() {
             accessibilityLabel={`${role === "worker" ? copy.worker.tabs[workerTab] : copy.hirer.tabs[hirerTab]} Quest list`}
             className={styles.list}
           >
-            {items.length > 0 ? (
+            {liveHirerMode && liveHirerLoading ? (
+              <View
+                accessibilityLabel={copy.liveLoading}
+                className={styles.emptyState}
+                testID="my-quests-live-loading"
+              >
+                <Text className={styles.emptyTitle}>{copy.liveLoading}</Text>
+              </View>
+            ) : liveHirerMode && liveHirerError ? (
+              <View
+                accessibilityLabel={copy.liveError}
+                className={styles.loadErrorState}
+                testID="my-quests-live-error"
+              >
+                <Text className={styles.loadErrorTitle}>{copy.liveError}</Text>
+                <ActionButton
+                  full
+                  label={copy.liveRetry}
+                  onPress={() => void loadLiveHirerQuests()}
+                  testID="my-quests-live-retry"
+                />
+              </View>
+            ) : items.length > 0 ? (
               items.map((quest: QuestSummary) =>
                 role === "worker" ? (
                   <ApplicationQuestCard

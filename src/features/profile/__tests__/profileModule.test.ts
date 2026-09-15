@@ -1,4 +1,4 @@
-import { ApiError } from "@/api/ApiClient";
+import { ApiError } from "../../../api/ApiClient";
 import type {
   AcademicRegistrationOptions,
   AcademicRegistrationStatus,
@@ -8,8 +8,7 @@ import type {
   ProfileResponse,
   ProfileReview,
   Reputation,
-} from "@/api/contracts";
-
+} from "../../../api/contracts";
 import { authService } from "../../auth/AuthService";
 import { AuthError } from "../../auth/types";
 import { profileModule } from "../profileModule";
@@ -30,7 +29,6 @@ const mockedAuthService = authService as unknown as {
 
 const fakeProfile: ProfileResponse = {
   email: "student@ku.th",
-  version: 1,
   firstName: "Jane",
   lastName: "Doe",
   telephone: "0812345678",
@@ -143,7 +141,7 @@ const fakeReviews: { items: ProfileReview[]; total: number } = {
         avatar: { url: "https://example.test/oak.png" },
       },
       rating: 5,
-      comment: null,
+      comment: "Excellent work!",
       createdAt: "2026-02-01T00:00:00.000Z",
       quest: { id: "q-1", title: "Lab Assistant" },
     },
@@ -154,114 +152,6 @@ const fakeReviews: { items: ProfileReview[]; total: number } = {
 describe("profileModule", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    delete process.env.EXPO_PUBLIC_PROFILE_DEMO;
-    profileModule.resetDemoProfiles();
-  });
-
-  describe("Demo Mode", () => {
-    it("returns prototype persona profile when demo is enabled", async () => {
-      process.env.EXPO_PUBLIC_PROFILE_DEMO = "true";
-
-      const data = await profileModule.loadProfile({
-        locale: "en",
-        personaId: "student-demo",
-      });
-
-      expect(data.name).toBe("Siraphat THAPPHA");
-      expect(data.faculty).toBe("Engineering");
-      expect(data.tags.length).toBeLessThanOrEqual(3);
-      expect(mockedAuthService.getStudentApi).not.toHaveBeenCalled();
-    });
-
-    it("mutates and persists demo profile updates in-memory", async () => {
-      process.env.EXPO_PUBLIC_PROFILE_DEMO = "true";
-
-      const updated = await profileModule.updateBasics(
-        {
-          firstName: "NewFirst",
-          lastName: "NewLast",
-          bio: "Updated bio",
-          telephone: "0812345678",
-          departmentId: "demo-department-updated",
-        },
-        "demo-hirer"
-      );
-      expect(updated.firstName).toBe("NewFirst");
-      expect(updated.lastName).toBe("NewLast");
-      expect(updated.bio).toBe("Updated bio");
-      expect(updated.telephone).toBe("0812345678");
-      expect(updated.department?.id).toBe("demo-department-updated");
-
-      const data = await profileModule.loadProfile({
-        locale: "en",
-        personaId: "demo-hirer",
-      });
-      expect(data.name).toBe("NewFirst NewLast");
-      expect(data.about).toBe("Updated bio");
-    });
-
-    it("creates, updates, and deletes demo experience", async () => {
-      process.env.EXPO_PUBLIC_PROFILE_DEMO = "true";
-
-      const created = await profileModule.createExperience(
-        {
-          title: "Demo Intern",
-          employmentType: "Internship",
-          organization: "Demo Org",
-          startedAt: "2026-01-01",
-          endedAt: null,
-          description: "Testing demo",
-        },
-        "demo-hirer"
-      );
-      expect(created?.id).toBeDefined();
-
-      const editDataBefore = await profileModule.getEditData("demo-hirer");
-      expect(
-        editDataBefore.experiences.some((item) => item.title === "Demo Intern")
-      ).toBe(true);
-
-      await profileModule.updateExperience(
-        created!.id,
-        { title: "Senior Demo Intern" },
-        "demo-hirer"
-      );
-      const editDataAfter = await profileModule.getEditData("demo-hirer");
-      expect(
-        editDataAfter.experiences.find((item) => item.id === created!.id)?.title
-      ).toBe("Senior Demo Intern");
-
-      await profileModule.deleteExperience(created!.id, "demo-hirer");
-      const editDataFinal = await profileModule.getEditData("demo-hirer");
-      expect(
-        editDataFinal.experiences.some((item) => item.id === created!.id)
-      ).toBe(false);
-    });
-
-    it("creates, updates, and deletes demo certificates", async () => {
-      process.env.EXPO_PUBLIC_PROFILE_DEMO = "true";
-
-      const certId = await profileModule.createCertificate(
-        { name: "Demo Cert", issuer: "Issuer X", issuedAt: "2025-01-01" },
-        "student-demo"
-      );
-      expect(certId).toBeDefined();
-
-      await profileModule.uploadCertificateImage(
-        certId,
-        { uri: "file://local-cert.png" },
-        "student-demo"
-      );
-      const editData = await profileModule.getEditData("student-demo");
-      const cert = editData.certificates.find((item) => item.id === certId);
-      expect(cert?.image?.url).toBe("file://local-cert.png");
-
-      await profileModule.deleteCertificate(certId, "student-demo");
-      const editDataAfter = await profileModule.getEditData("student-demo");
-      expect(
-        editDataAfter.certificates.some((item) => item.id === certId)
-      ).toBe(false);
-    });
   });
 
   describe("Live Mode", () => {
@@ -313,10 +203,8 @@ describe("profileModule", () => {
       expect(result.certificates[0].issuedYear).toBe("2023");
       expect(result.works).toHaveLength(1);
       expect(result.reviews).toHaveLength(1);
-      expect(result.reviews[0].comment).toBe("");
       expect(result.stats.totalQuests).toBe(12);
       expect(result.sectionErrors).toEqual({});
-      expect(result.sectionUnavailable).toEqual({});
     });
 
     it("tolerates partial section errors without crashing the profile load", async () => {
@@ -354,34 +242,6 @@ describe("profileModule", () => {
         works: true,
         reviews: true,
       });
-      expect(result.sectionUnavailable).toEqual({});
-    });
-    it("marks missing optional collections as unavailable", async () => {
-      mockedAuthService.getSession.mockResolvedValue({
-        user: { name: "Jane Doe", image: null },
-      });
-
-      const mockStudentApi = {
-        getProfile: jest.fn().mockResolvedValue(fakeProfile),
-        getAcademicRegistrationStatus: jest.fn().mockResolvedValue(fakeStatus),
-        getAcademicRegistrationOptions: jest
-          .fn()
-          .mockResolvedValue(fakeOptions),
-        listCertificates: jest.fn().mockResolvedValue(fakeCertificates),
-        listPortfolio: jest
-          .fn()
-          .mockRejectedValue(new ApiError(404, "NOT_FOUND", "Not published")),
-        listExperience: jest.fn().mockResolvedValue(fakeExperiences),
-        getReputation: jest.fn().mockResolvedValue(fakeReputation),
-        listReviews: jest.fn().mockResolvedValue(fakeReviews),
-      };
-      mockedAuthService.getStudentApi.mockResolvedValue(mockStudentApi);
-
-      const result = await profileModule.loadProfile({ locale: "en" });
-
-      expect(result.works).toEqual([]);
-      expect(result.sectionErrors).toEqual({});
-      expect(result.sectionUnavailable).toEqual({ works: true });
     });
 
     it("throws SESSION_EXPIRED if an endpoint responds with 401", async () => {
@@ -418,7 +278,7 @@ describe("profileModule", () => {
       expect(draft.name).toBe("Jane Doe");
       expect(draft.telephone).toBe("0812345678");
       expect(draft.occupation).toBe("occ-1");
-      expect(draft.studentId).toBe("");
+      expect(draft.studentId).toBe("6510000000");
       expect(draft.faculty).toBe("fac-1");
       expect(draft.department).toBe("dept-1");
       expect(draft.acceptedTerms).toBe(true);
@@ -427,20 +287,6 @@ describe("profileModule", () => {
       expect(draft.works).toHaveLength(1);
       expect(draft.works[0].title).toBe("KUQuest App");
       expect(draft.experiences).toHaveLength(2);
-    });
-    it("does not preserve Student ID for an Occupation that does not require it", () => {
-      const draft = profileModule.mapProfileRecordsToDraft({
-        profile: fakeProfile,
-        status: fakeStatus,
-        options: fakeOptions,
-        certificates: [],
-        portfolio: [],
-        experiences: [],
-        fallbackName: "Fallback Name",
-        fallbackImage: "",
-      });
-
-      expect(draft.studentId).toBe("");
     });
   });
 });

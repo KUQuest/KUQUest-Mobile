@@ -21,8 +21,20 @@ export interface QuestBoardMessages {
   topUpQuickAmountLabel: (amount: number) => string;
   topUpPromptPayTitle: string;
   topUpPromptPayDescription: string;
-  topUpPromptPayPrototype: string;
-  topUpPromptPayUnavailable: string;
+  topUpPromptPayQrUnavailable: string;
+  topUpConfirmationTitle: string;
+  topUpCredit: string;
+  topUpFee: string;
+  topUpTax: string;
+  topUpPaymentTotal: string;
+  topUpExpiresAt: string;
+  topUpConfirm: string;
+  topUpPaymentVerified: string;
+  topUpPaymentCredited: (credit: string) => string;
+  topUpDone: string;
+  topUpCreateError: string;
+  topUpVerifyPayment: string;
+  topUpVerifyingPayment: string;
   topUpClose: string;
   topUpBack: string;
   topUpContinue: string;
@@ -217,10 +229,10 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     subtitle: "Find a Quest that fits your skills and time.",
     fundingTitle: "My funding",
     fundingHeld: "RESERVED PER WORKER PLACE",
-    fundingStatusLabel: "PROTOTYPE STATUS",
-    fundingUnavailable: "Payment service unavailable",
+    fundingStatusLabel: "Wallet status",
+    fundingUnavailable: "Wallet balance unavailable",
     fundingUnavailableDescription:
-      "This prototype does not connect to a payment service, so a live balance is not available.",
+      "We could not load your wallet balance. Refresh and try again.",
     fundingReservationDescription:
       "Quest Funding reserves the reward for each requested Worker place.",
     fundingExpand: "Show funding details",
@@ -228,7 +240,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     fundingTopUp: "Top up",
     fundingTransfer: "Transfer",
     fundingActionsUnavailable:
-      "Transfer is unavailable until the payment service is connected. Top up is a prototype flow only.",
+      "Transfers between Members are not supported. Use a funded Quest instead.",
     topUpTitle: "Top up",
     topUpAmountTitle: "Enter amount",
     topUpAmountDescription: "Choose an amount to add to your funding balance.",
@@ -237,10 +249,23 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
       `Choose ฿${amount.toLocaleString("en-US")}`,
     topUpPromptPayTitle: "PromptPay QR",
     topUpPromptPayDescription:
-      "Review this PromptPay QR preview. It is a visual prototype and is not connected to a payment service.",
-    topUpPromptPayPrototype: "Prototype QR · not scannable",
-    topUpPromptPayUnavailable:
-      "PromptPay top up is unavailable. No payment was made and your funding balance was not changed.",
+      "Scan this PromptPay QR with your mobile banking app, then check payment status.",
+    topUpPromptPayQrUnavailable:
+      "The payment provider did not return a PromptPay QR. Please try again.",
+    topUpConfirmationTitle: "Confirm top-up",
+    topUpCredit: "Credit to Spending Balance",
+    topUpFee: "Payment fee",
+    topUpTax: "VAT",
+    topUpPaymentTotal: "Payment total",
+    topUpExpiresAt: "Quote expires",
+    topUpConfirm: "Confirm and create QR",
+    topUpPaymentVerified: "Payment Verified (PAID)",
+    topUpPaymentCredited: (credit) =>
+      `${credit} credited to your Spending Balance`,
+    topUpDone: "Done",
+    topUpCreateError: "Unable to create the PromptPay QR. Please try again.",
+    topUpVerifyPayment: "Check payment status",
+    topUpVerifyingPayment: "Checking payment status…",
     topUpClose: "Close",
     topUpBack: "Back",
     topUpContinue: "Continue",
@@ -509,30 +534,43 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     subtitle: "ค้นหาเควสต์ที่เหมาะกับทักษะและเวลาของคุณ",
     fundingTitle: "เงินของฉัน",
     fundingHeld: "กันเงินไว้สำหรับที่ของ Worker",
-    fundingStatusLabel: "สถานะต้นแบบ",
-    fundingUnavailable: "ระบบชำระเงินยังไม่พร้อมใช้งาน",
+    fundingStatusLabel: "สถานะกระเป๋าเงิน",
+    fundingUnavailable: "ไม่สามารถโหลดข้อมูลยอดเงินได้",
     fundingUnavailableDescription:
-      "ต้นแบบนี้ยังไม่เชื่อมต่อระบบชำระเงิน จึงยังไม่มีข้อมูลยอดเงินที่ใช้งานได้",
+      "ไม่สามารถโหลดข้อมูลยอดเงินของคุณได้ โปรดลองรีเฟรชแล้วลองใหม่อีกครั้ง",
     fundingReservationDescription:
-      "Quest Funding กันค่าตอบแทนไว้สำหรับ Worker แต่ละที่ที่ร้องขอ",
-    fundingExpand: "แสดงรายละเอียดเงิน",
-    fundingCollapse: "ซ่อนรายละเอียดเงิน",
+      "การกันเงินสำหรับเควสต์จะสำรองค่าตอบแทนตามจำนวน Worker ที่ต้องการ",
+    fundingExpand: "แสดงรายละเอียดการกันเงิน",
+    fundingCollapse: "ซ่อนรายละเอียดการกันเงิน",
     fundingTopUp: "เติมเงิน",
     fundingTransfer: "โอนเงิน",
     fundingActionsUnavailable:
-      "การโอนเงินยังไม่พร้อมใช้งานจนกว่าจะเชื่อมต่อระบบชำระเงิน ส่วนการเติมเงินเป็นเพียงขั้นตอนต้นแบบเท่านั้น",
+      "ไม่รองรับการโอนเงินระหว่าง Member โปรดใช้เควสต์ที่มีการกันเงินแทน",
     topUpTitle: "เติมเงิน",
     topUpAmountTitle: "ระบุจำนวนเงิน",
-    topUpAmountDescription: "เลือกจำนวนเงินที่ต้องการเพิ่มในเงินทุนของคุณ",
+    topUpAmountDescription: "เลือกจำนวนเงินที่ต้องการเติมในยอดเงินพร้อมใช้",
     topUpAmountLabel: "จำนวนเงิน (บาท)",
     topUpQuickAmountLabel: (amount) =>
       `เลือก ฿${amount.toLocaleString("en-US")}`,
     topUpPromptPayTitle: "QR พร้อมเพย์",
     topUpPromptPayDescription:
-      "ตรวจสอบ QR พร้อมเพย์ตัวอย่างนี้ QR เป็นเพียงภาพต้นแบบและยังไม่เชื่อมต่อระบบชำระเงิน",
-    topUpPromptPayPrototype: "QR ต้นแบบ · สแกนไม่ได้",
-    topUpPromptPayUnavailable:
-      "การเติมเงินผ่านพร้อมเพย์ยังไม่พร้อมใช้งาน ไม่มีการชำระเงินจริงและยอดเงินของคุณจะไม่เปลี่ยนแปลง",
+      "สแกน QR พร้อมเพย์นี้ด้วยแอปธนาคาร แล้วตรวจสอบสถานะการชำระเงิน",
+    topUpPromptPayQrUnavailable:
+      "ผู้ให้บริการชำระเงินไม่ส่ง QR พร้อมเพย์กลับมา โปรดลองอีกครั้ง",
+    topUpConfirmationTitle: "ยืนยันการเติมเงิน",
+    topUpCredit: "เครดิตเข้ายอดเงินพร้อมใช้",
+    topUpFee: "ค่าธรรมเนียมการชำระเงิน",
+    topUpTax: "ภาษีมูลค่าเพิ่ม",
+    topUpPaymentTotal: "ยอดชำระทั้งหมด",
+    topUpExpiresAt: "ใบเสนอราคาหมดอายุ",
+    topUpConfirm: "ยืนยันและสร้าง QR",
+    topUpPaymentVerified: "ยืนยันการชำระเงินแล้ว (PAID)",
+    topUpPaymentCredited: (credit) =>
+      `เครดิต ${credit} เข้ายอดเงินพร้อมใช้แล้ว`,
+    topUpDone: "เสร็จสิ้น",
+    topUpCreateError: "ไม่สามารถสร้าง QR พร้อมเพย์ได้ โปรดลองอีกครั้ง",
+    topUpVerifyPayment: "ตรวจสอบสถานะการชำระเงิน",
+    topUpVerifyingPayment: "กำลังตรวจสอบสถานะการชำระเงิน…",
     topUpClose: "ปิด",
     topUpBack: "ย้อนกลับ",
     topUpContinue: "ดำเนินการต่อ",

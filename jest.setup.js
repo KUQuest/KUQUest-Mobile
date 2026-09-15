@@ -2,7 +2,6 @@ const React = require("react");
 const { jest } = require("@jest/globals");
 const { View, Pressable, Text } = require("react-native");
 
-
 // reanimated 4 / worklets 0.10's official jest mocks still hit native-module
 // init code outside a real app runtime (upstream immaturity, both packages
 // are brand new). Stub the minimal surface the generated template uses
@@ -35,14 +34,14 @@ jest.mock("react-native-reanimated", () => ({
   },
 }));
 
-jest.mock('@react-native-google-signin/google-signin', () => ({
-  isSuccessResponse: (response) => response.type === 'success',
+jest.mock("@react-native-google-signin/google-signin", () => ({
+  isSuccessResponse: (response) => response.type === "success",
   GoogleSignin: {
     hasPlayServices: jest.fn().mockResolvedValue(true),
     signIn: jest.fn().mockResolvedValue({
       data: {
-        idToken: 'mock_id_token',
-        user: { email: 'student.test@ku.th', name: 'Test Student' },
+        idToken: "mock_id_token",
+        user: { email: "student.test@ku.th", name: "Test Student" },
       },
     }),
     signOut: jest.fn().mockResolvedValue(undefined),
@@ -50,16 +49,16 @@ jest.mock('@react-native-google-signin/google-signin', () => ({
   },
 }));
 
-jest.mock('./src/features/auth/authClient', () => ({
+jest.mock("./src/features/auth/authClient", () => ({
   authClient: {
-    getCookie: jest.fn().mockReturnValue(''),
+    getCookie: jest.fn().mockReturnValue(""),
     signIn: { social: jest.fn() },
     getSession: jest.fn().mockResolvedValue({ data: null, error: null }),
     signOut: jest.fn().mockResolvedValue({ data: null, error: null }),
   },
 }));
 
-jest.mock('expo-secure-store', () => {
+jest.mock("expo-secure-store", () => {
   const store = new Map();
   return {
     isAvailableAsync: jest.fn().mockResolvedValue(true),
@@ -75,10 +74,26 @@ jest.mock('expo-secure-store', () => {
   };
 });
 
-jest.mock('@expo/ui', () => ({
+jest.mock("@expo/ui", () => ({
   Host: ({ children, ...props }) => React.createElement(View, props, children),
-  Switch: ({ value, onValueChange, testID, disabled, ...props }) => React.createElement(Pressable, { accessibilityRole: 'switch', accessibilityState: { checked: value, disabled }, onPress: () => onValueChange(!value), testID, disabled, ...props }),
-  Button: ({ label, onPress, testID, disabled, accessibilityLabel, style, ...props }) =>
+  Switch: ({ value, onValueChange, testID, disabled, ...props }) =>
+    React.createElement(Pressable, {
+      accessibilityRole: "switch",
+      accessibilityState: { checked: value, disabled },
+      onPress: () => onValueChange(!value),
+      testID,
+      disabled,
+      ...props,
+    }),
+  Button: ({
+    label,
+    onPress,
+    testID,
+    disabled,
+    accessibilityLabel,
+    style,
+    ...props
+  }) =>
     React.createElement(
       Pressable,
       { onPress, testID, disabled, accessibilityLabel, style, ...props },
@@ -86,9 +101,9 @@ jest.mock('@expo/ui', () => ({
     ),
 }));
 
-jest.mock('lucide-react-native', () => {
-  const React = require('react');
-  const { View } = require('react-native');
+jest.mock("lucide-react-native", () => {
+  const React = require("react");
+  const { View } = require("react-native");
   const Icon = (props) => React.createElement(View, props);
 
   return {
@@ -156,15 +171,22 @@ jest.mock('lucide-react-native', () => {
     Award: Icon,
     Building2: Icon,
     Code2: Icon,
+    History: Icon,
+    CreditCard: Icon,
+    ArrowRightLeft: Icon,
+    ArrowDownLeft: Icon,
+    QrCode: Icon,
+    CheckCircle2: Icon,
   };
 });
 
-jest.mock('expo-symbols', () => ({
+jest.mock("expo-symbols", () => ({
   SymbolView: (props) => React.createElement(View, props),
 }));
 
-jest.mock('react-native-safe-area-context', () => ({
+jest.mock("react-native-safe-area-context", () => ({
   SafeAreaProvider: ({ children }) => React.createElement(View, null, children),
-  SafeAreaView: ({ children, ...props }) => React.createElement(View, props, children),
+  SafeAreaView: ({ children, ...props }) =>
+    React.createElement(View, props, children),
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));

@@ -34,8 +34,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
 import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
-import { PrototypeMenu } from "@/components/ui/PrototypeMenu";
-import { useAuthEnvironment } from "@/features/auth/authEnvironment";
+import { authService } from "@/features/auth/AuthService";
+import { HomeWalletOverview } from "@/features/wallet/HomeWalletOverview";
 import {
   LoadingSkeleton,
   SkeletonBlock,
@@ -45,7 +45,6 @@ import {
   questBoardMessages,
   type QuestBoardMessages,
 } from "@/locales/questBoardMessages";
-import { prototypeMenuMessages } from "@/locales/prototypeMenuMessages";
 import { colors } from "@/theme/colors";
 import { getAppChromeMetrics } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
@@ -59,8 +58,8 @@ import {
 } from "./questBoardViewData";
 import type { BoardPreviewState } from "./questBoardHarness";
 import { getQuestRewardSatang, questWorkflow } from "./questWorkflow";
-import type { PrototypeScenarioRoute } from "@/components/ui/prototypeMenuData";
 
+import { liveQuestService } from "./liveQuestService";
 import { formatSatang } from "./types";
 import {
   emptyQuestBoardFilter,
@@ -918,14 +917,25 @@ export default function QuestBoardScreen({
 }: QuestBoardScreenProps) {
   const router = useRouter();
   const { locale } = useLocale();
-  const { activePersonaId, onPersonaChange, onReset } = useAuthEnvironment();
-  const resolvedStudentId = currentStudentId?.trim() || activePersonaId;
+  const [sessionUserId, setSessionUserId] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    void authService
+      .getSession()
+      .then((session) => {
+        if (active && session?.user?.id) setSessionUserId(session.user.id);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+  const resolvedStudentId = currentStudentId?.trim() || sessionUserId || "";
   const { width, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
   const { handleScroll } = useNavigationVisibility();
   const messages = questBoardMessages[locale];
-  const prototypeMessages = prototypeMenuMessages[locale];
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<QuestBoardFilter>(
     emptyQuestBoardFilter
@@ -940,16 +950,6 @@ export default function QuestBoardScreen({
   const [sortOpen, setSortOpen] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [retrying, setRetrying] = useState(false);
-  const [, setWorkflowRevision] = useState(0);
-  const workflowNow = questWorkflow.getNow();
-
-  useEffect(
-    () =>
-      questWorkflow.subscribe(() =>
-        setWorkflowRevision((revision) => revision + 1)
-      ),
-    []
-  );
 
   useEffect(() => {
     if (!retrying || previewState !== "loading") return undefined;
@@ -959,17 +959,61 @@ export default function QuestBoardScreen({
     }, 250);
     return () => clearTimeout(timeout);
   }, [previewState, retrying]);
+  const [liveQuests, setLiveQuests] = useState<QuestBoardQuest[] | null>(null);
+  const [liveError, setLiveError] = useState<Error | null>(null);
+  const workflowNow = useMemo(() => new Date(), []);
+  useEffect(() => {
+    let active = true;
+    if (previewState !== "populated") return;
 
-  const boardModel = questWorkflow.getQuestBoardSurfaceModel(
-    resolvedStudentId,
-    previewState
-  );
+    void liveQuestService
+      .listBoardQuests()
+      .then((items) => {
+        if (active) setLiveQuests(items);
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setLiveError(
+            error instanceof Error
+              ? error
+              : new Error("Quest Board request failed")
+          );
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [previewState, retryAttempt]);
+
+  const boardModel = useMemo(() => {
+    if (previewState !== "populated") {
+      return questWorkflow.getQuestBoardSurfaceModel(
+        resolvedStudentId,
+        previewState
+      );
+    }
+    if (liveError) return { kind: "error" as const };
+    if (liveQuests !== null) {
+      const quests = getVisibleQuests(liveQuests, {
+        currentStudentId: resolvedStudentId,
+        now: new Date(),
+      });
+      return quests.length > 0
+        ? { kind: "ready" as const, quests }
+        : { kind: "empty" as const };
+    }
+    return { kind: "loading" as const };
+  }, [liveError, liveQuests, previewState, resolvedStudentId]);
   const localizedQuests = useMemo(
     () =>
       boardModel.kind === "ready"
-        ? boardModel.quests.map((quest) => getLocalizedQuest(quest, locale))
+        ? boardModel.quests.map((quest) =>
+            previewState === "populated"
+              ? quest
+              : getLocalizedQuest(quest, locale)
+          )
         : [],
-    [boardModel, locale]
+    [boardModel, locale, previewState]
   );
   const availableTags = useMemo(
     () =>
@@ -1050,6 +1094,8 @@ export default function QuestBoardScreen({
   );
 
   const retryBoard = () => {
+    setLiveQuests(null);
+    setLiveError(null);
     setRetryAttempt((attempt) => attempt + 1);
     setRetrying(true);
     setPreviewState("loading");
@@ -1138,10 +1184,6 @@ export default function QuestBoardScreen({
     [locale, openQuest]
   );
 
-  const openPrototypeScenario = (route: PrototypeScenarioRoute) => {
-    router.push(route);
-  };
-
   const listHeader = (
     <>
       <View className={styles.boardIntro}>
@@ -1152,31 +1194,9 @@ export default function QuestBoardScreen({
             </Text>
             <Text className={styles.boardSubtitle}>{messages.subtitle}</Text>
           </View>
-          {__DEV__ ? (
-            <View className={styles.boardIntroActions}>
-              <Pressable
-                accessibilityLabel={prototypeMessages.roleplay}
-                accessibilityRole="button"
-                className={styles.roleplayShortcut}
-                onPress={() => router.push("/dev/roleplay")}
-                testID="open-roleplay-quest"
-              >
-                <Text className={styles.roleplayShortcutText}>
-                  {prototypeMessages.roleplay}
-                </Text>
-              </Pressable>
-              <PrototypeMenu
-                activePersonaId={activePersonaId}
-                compact
-                onPersonaChange={onPersonaChange}
-                onReset={onReset}
-                onScenarioPress={openPrototypeScenario}
-                testID="quest-board-prototype-menu"
-              />
-            </View>
-          ) : null}
         </View>
       </View>
+      <HomeWalletOverview locale={locale} />
       <View className={styles.searchField}>
         <Search color={colors.textMuted} size={23} strokeWidth={2} />
         <TextInput
