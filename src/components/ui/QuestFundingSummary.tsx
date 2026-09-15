@@ -1,21 +1,56 @@
-import { Modal, StyleSheet, useColorScheme } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, ArrowUpRight, ChevronDown, Info, Plus, ReceiptText, ShieldCheck, WalletCards, X } from 'lucide-react-native';
+import { Modal, StyleSheet, useColorScheme } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { useCallback, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  ChevronDown,
+  Info,
+  Plus,
+  ReceiptText,
+  ShieldCheck,
+  WalletCards,
+  X,
+} from "lucide-react-native";
 
-import { Pressable, ScrollView, Text, TextInput, View } from '@/tw';
-import type { SupportedLocale } from '@/locales/LocaleProvider';
-import { questBoardMessages } from '@/locales/questBoardMessages';
-import { colors } from '@/theme/colors';
-import { spacing } from '@/theme/spacing';
-import { fontFamily } from '@/theme/typography';
+import { Image, Pressable, ScrollView, Text, TextInput, View } from "@/tw";
+import {
+  walletApi,
+  type TopUpData,
+  type TopUpQuote,
+  type WalletBalances,
+} from "@/api/WalletApi";
+import type { SupportedLocale } from "@/locales/LocaleProvider";
+import { questBoardMessages } from "@/locales/questBoardMessages";
+import { colors } from "@/theme/colors";
+import { spacing } from "@/theme/spacing";
+import { fontFamily } from "@/theme/typography";
 
-type FundingModalKind = 'details' | 'topUp';
-type TopUpStep = 'amount' | 'promptPay';
+type FundingModalKind = "details" | "topUp";
+type TopUpStep = "amount" | "confirmation" | "promptPay";
 
 const QUICK_TOP_UP_AMOUNTS = [100, 500, 1000, 2000] as const;
-const PROTOTYPE_QR_SIZE = 21;
+
+function formatSatang(satang: number, locale: SupportedLocale): string {
+  return `฿${(satang / 100).toLocaleString(
+    locale === "th" ? "th-TH" : "en-US",
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }
+  )}`;
+}
+
+function formatExpiry(expiresAt: string, locale: SupportedLocale): string {
+  const date = new Date(expiresAt);
+  if (Number.isNaN(date.getTime())) return expiresAt;
+  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
 
 const fundingLayout = StyleSheet.create({
   summary: {
@@ -26,73 +61,73 @@ const fundingLayout = StyleSheet.create({
     borderWidth: 1,
   },
   toggle: {
-    alignItems: 'center',
-    flexDirection: 'row',
+    alignItems: "center",
+    flexDirection: "row",
     minHeight: 64,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
   icon: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   chevron: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginLeft: 8,
   },
   modalOverlay: {
-    alignItems: 'center',
+    alignItems: "center",
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingHorizontal: 16,
     paddingVertical: 24,
   },
   modalBackdrop: {
     bottom: 0,
     left: 0,
-    position: 'absolute',
+    position: "absolute",
     right: 0,
     top: 0,
   },
   modalCard: {
     borderRadius: 24,
     borderWidth: 1,
-    maxHeight: '82%',
+    maxHeight: "82%",
     maxWidth: 560,
     paddingHorizontal: 20,
     paddingTop: 16,
-    width: '100%',
+    width: "100%",
   },
   topUpSurface: {
     flex: 1,
     paddingHorizontal: 20,
-    width: '100%',
+    width: "100%",
   },
   topUpFlow: {
-    alignSelf: 'center',
+    alignSelf: "center",
     flex: 1,
     maxWidth: 640,
-    width: '100%',
+    width: "100%",
   },
   topUpFlowContent: {
     flex: 1,
   },
   modalContentRoot: {
     flexShrink: 1,
-    width: '100%',
+    width: "100%",
   },
   modalHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
+    alignItems: "center",
+    flexDirection: "row",
     minHeight: 56,
     marginBottom: 8,
   },
   modalHeaderIcon: {
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 12,
     height: 40,
-    justifyContent: 'center',
+    justifyContent: "center",
     width: 40,
   },
   modalHeaderCopy: {
@@ -106,18 +141,18 @@ const fundingLayout = StyleSheet.create({
     lineHeight: 26,
   },
   modalCloseButton: {
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 9999,
     height: 48,
-    justifyContent: 'center',
+    justifyContent: "center",
     marginLeft: 8,
     width: 48,
   },
   modalBackButton: {
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 9999,
     height: 48,
-    justifyContent: 'center',
+    justifyContent: "center",
     marginRight: 4,
     width: 48,
   },
@@ -141,10 +176,10 @@ const fundingLayout = StyleSheet.create({
     padding: 16,
   },
   statusIcon: {
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 20,
     height: 40,
-    justifyContent: 'center',
+    justifyContent: "center",
     width: 40,
   },
   statusValue: {
@@ -165,17 +200,17 @@ const fundingLayout = StyleSheet.create({
     paddingTop: 12,
   },
   actionRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
     marginTop: 16,
   },
   actionButton: {
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 12,
     borderWidth: 1,
     flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     minHeight: 48,
     paddingHorizontal: 8,
   },
@@ -189,13 +224,13 @@ const fundingLayout = StyleSheet.create({
     paddingTop: 12,
   },
   informationItem: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
+    alignItems: "flex-start",
+    flexDirection: "row",
     gap: 8,
   },
   informationIcon: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingTop: 1,
     width: 24,
   },
@@ -218,10 +253,10 @@ const fundingLayout = StyleSheet.create({
     lineHeight: 18,
   },
   amountField: {
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 12,
     borderWidth: 1,
-    flexDirection: 'row',
+    flexDirection: "row",
     minHeight: 64,
     paddingHorizontal: 16,
   },
@@ -237,20 +272,20 @@ const fundingLayout = StyleSheet.create({
     lineHeight: 30,
     minHeight: 60,
     paddingHorizontal: 8,
-    textAlign: 'right',
+    textAlign: "right",
   },
   quickAmounts: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   quickAmount: {
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 12,
     borderWidth: 1,
-    flexBasis: '23%',
+    flexBasis: "23%",
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     minHeight: 48,
     paddingHorizontal: 8,
   },
@@ -260,9 +295,9 @@ const fundingLayout = StyleSheet.create({
     lineHeight: 21,
   },
   continueButton: {
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 9999,
-    justifyContent: 'center',
+    justifyContent: "center",
     minHeight: 48,
     paddingHorizontal: 16,
   },
@@ -275,15 +310,15 @@ const fundingLayout = StyleSheet.create({
     lineHeight: 22,
   },
   promptPayCard: {
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 16,
     borderWidth: 1,
     padding: 16,
   },
   qrFrame: {
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 12,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: 12,
   },
   qrRows: {
@@ -292,7 +327,7 @@ const fundingLayout = StyleSheet.create({
   },
   qrRow: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   qrCell: {
     flex: 1,
@@ -302,16 +337,16 @@ const fundingLayout = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     marginTop: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   promptPayAmount: {
-    alignItems: 'center',
+    alignItems: "center",
     borderTopWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 16,
     paddingTop: 12,
-    width: '100%',
+    width: "100%",
   },
   promptPayAmountLabel: {
     fontFamily: fontFamily.semiBold,
@@ -328,22 +363,9 @@ const fundingLayout = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     marginTop: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
-
-function isPrototypeQrModuleFilled(row: number, column: number, amount: string): boolean {
-  const finderOrigins = [[0, 0], [0, PROTOTYPE_QR_SIZE - 7], [PROTOTYPE_QR_SIZE - 7, 0]];
-  for (const [originRow, originColumn] of finderOrigins) {
-    const localRow = row - originRow;
-    const localColumn = column - originColumn;
-    if (localRow >= 0 && localRow < 7 && localColumn >= 0 && localColumn < 7) {
-      return localRow === 0 || localRow === 6 || localColumn === 0 || localColumn === 6 || (localRow >= 2 && localRow <= 4 && localColumn >= 2 && localColumn <= 4);
-    }
-  }
-  const seed = Number(amount) || 0;
-  return ((row * 17) + (column * 31) + seed) % 7 < 3;
-}
 
 function isValidTopUpAmount(amount: string): boolean {
   const numericAmount = Number(amount);
@@ -356,17 +378,36 @@ interface FundingDetailsContentProps {
   onTopUp: () => void;
 }
 
-function FundingDetailsContent({ locale, onClose, onTopUp }: FundingDetailsContentProps) {
+function FundingDetailsContent({
+  locale,
+  onClose,
+  onTopUp,
+}: FundingDetailsContentProps) {
   const messages = questBoardMessages[locale];
 
   return (
     <View accessibilityViewIsModal testID="quest-funding-summary-details">
       <View style={fundingLayout.modalHeader}>
-        <View style={[fundingLayout.modalHeaderIcon, { backgroundColor: colors.surfaceAccent }]}>
-          <WalletCards accessible={false} color={colors.primary} size={20} strokeWidth={2.2} />
+        <View
+          style={[
+            fundingLayout.modalHeaderIcon,
+            { backgroundColor: colors.surfaceAccent },
+          ]}
+        >
+          <WalletCards
+            accessible={false}
+            color={colors.primary}
+            size={20}
+            strokeWidth={2.2}
+          />
         </View>
         <View style={fundingLayout.modalHeaderCopy}>
-          <Text accessibilityRole="header" style={[fundingLayout.modalTitle, { color: colors.textStrong }]}>{messages.fundingTitle}</Text>
+          <Text
+            accessibilityRole="header"
+            style={[fundingLayout.modalTitle, { color: colors.textStrong }]}
+          >
+            {messages.fundingTitle}
+          </Text>
         </View>
         <Pressable
           accessibilityLabel={messages.close}
@@ -375,7 +416,12 @@ function FundingDetailsContent({ locale, onClose, onTopUp }: FundingDetailsConte
           onPress={onClose}
           testID="quest-funding-summary-close"
         >
-          <X accessible={false} color={colors.textStrong} size={22} strokeWidth={2.3} />
+          <X
+            accessible={false}
+            color={colors.textStrong}
+            size={22}
+            strokeWidth={2.3}
+          />
         </Pressable>
       </View>
 
@@ -385,7 +431,16 @@ function FundingDetailsContent({ locale, onClose, onTopUp }: FundingDetailsConte
         showsVerticalScrollIndicator={false}
         style={fundingLayout.modalScroll}
       >
-        <View style={[fundingLayout.statusCard, { backgroundColor: colors.surfaceSubtle, borderColor: colors.borderSubtle }]} testID="quest-funding-status-card">
+        <View
+          style={[
+            fundingLayout.statusCard,
+            {
+              backgroundColor: colors.surfaceSubtle,
+              borderColor: colors.borderSubtle,
+            },
+          ]}
+          testID="quest-funding-status-card"
+        >
           <View
             accessible
             accessibilityLabel={`${messages.fundingStatusLabel}: ${messages.fundingUnavailable}. ${messages.fundingUnavailableDescription}`}
@@ -393,30 +448,78 @@ function FundingDetailsContent({ locale, onClose, onTopUp }: FundingDetailsConte
             className="flex-row items-start gap-[12px]"
             testID="quest-funding-status"
           >
-            <View style={[fundingLayout.statusIcon, { backgroundColor: colors.surfaceAccent }]}>
-              <Info accessible={false} color={colors.primary} size={21} strokeWidth={2.2} />
+            <View
+              style={[
+                fundingLayout.statusIcon,
+                { backgroundColor: colors.surfaceAccent },
+              ]}
+            >
+              <Info
+                accessible={false}
+                color={colors.primary}
+                size={21}
+                strokeWidth={2.2}
+              />
             </View>
             <View className="flex-1 min-w-0">
-              <Text className="text-ku-text-muted font-ku-semibold text-ku-label">{messages.fundingStatusLabel}</Text>
-              <Text className="text-ku-text-strong" selectable testID="quest-funding-status-value" style={fundingLayout.statusValue}>{messages.fundingUnavailable}</Text>
-              <Text className="text-ku-text-secondary" testID="quest-funding-status-description" style={fundingLayout.statusDescription}>{messages.fundingUnavailableDescription}</Text>
+              <Text className="text-ku-text-muted font-ku-semibold text-ku-label">
+                {messages.fundingStatusLabel}
+              </Text>
+              <Text
+                className="text-ku-text-strong"
+                selectable
+                testID="quest-funding-status-value"
+                style={fundingLayout.statusValue}
+              >
+                {messages.fundingUnavailable}
+              </Text>
+              <Text
+                className="text-ku-text-secondary"
+                testID="quest-funding-status-description"
+                style={fundingLayout.statusDescription}
+              >
+                {messages.fundingUnavailableDescription}
+              </Text>
             </View>
           </View>
-          <View style={[fundingLayout.reservation, { borderTopColor: colors.borderSubtle }]} testID="quest-funding-reservation-info">
-            <Text className="text-ku-text-secondary font-ku-medium text-ku-label">{messages.fundingHeld}</Text>
-            <Text className="text-ku-text-secondary font-ku-regular text-ku-body-small mt-[4px]">{messages.fundingReservationDescription}</Text>
+          <View
+            style={[
+              fundingLayout.reservation,
+              { borderTopColor: colors.borderSubtle },
+            ]}
+            testID="quest-funding-reservation-info"
+          >
+            <Text className="text-ku-text-secondary font-ku-medium text-ku-label">
+              {messages.fundingHeld}
+            </Text>
+            <Text className="text-ku-text-secondary font-ku-regular text-ku-body-small mt-[4px]">
+              {messages.fundingReservationDescription}
+            </Text>
           </View>
           <View style={fundingLayout.actionRow} testID="quest-funding-actions">
             <Pressable
               accessibilityLabel={messages.fundingTopUp}
               accessibilityRole="button"
               className="flex-1 flex-row items-center justify-center"
-              style={[fundingLayout.actionButton, { backgroundColor: colors.surfaceAccent, borderColor: colors.borderAccent }]}
+              style={[
+                fundingLayout.actionButton,
+                {
+                  backgroundColor: colors.surfaceAccent,
+                  borderColor: colors.borderAccent,
+                },
+              ]}
               onPress={onTopUp}
               testID="quest-funding-top-up"
             >
-              <Plus accessible={false} color={colors.primary} size={18} strokeWidth={2.2} />
-              <Text className="text-ku-primary font-ku-semibold text-ku-label ml-[4px]">{messages.fundingTopUp}</Text>
+              <Plus
+                accessible={false}
+                color={colors.primary}
+                size={18}
+                strokeWidth={2.2}
+              />
+              <Text className="text-ku-primary font-ku-semibold text-ku-label ml-[4px]">
+                {messages.fundingTopUp}
+              </Text>
             </Pressable>
             <Pressable
               accessibilityLabel={messages.fundingTransfer}
@@ -424,11 +527,25 @@ function FundingDetailsContent({ locale, onClose, onTopUp }: FundingDetailsConte
               accessibilityState={{ disabled: true }}
               className="flex-1 flex-row items-center justify-center"
               disabled
-              style={[fundingLayout.actionButton, fundingLayout.actionButtonDisabled, { backgroundColor: colors.surfaceMuted, borderColor: colors.borderMuted }]}
+              style={[
+                fundingLayout.actionButton,
+                fundingLayout.actionButtonDisabled,
+                {
+                  backgroundColor: colors.surfaceMuted,
+                  borderColor: colors.borderMuted,
+                },
+              ]}
               testID="quest-funding-transfer"
             >
-              <ArrowUpRight accessible={false} color={colors.textMuted} size={18} strokeWidth={2.2} />
-              <Text className="text-ku-text-muted font-ku-semibold text-ku-label ml-[4px]">{messages.fundingTransfer}</Text>
+              <ArrowUpRight
+                accessible={false}
+                color={colors.textMuted}
+                size={18}
+                strokeWidth={2.2}
+              />
+              <Text className="text-ku-text-muted font-ku-semibold text-ku-label ml-[4px]">
+                {messages.fundingTransfer}
+              </Text>
             </Pressable>
           </View>
           <Text
@@ -442,25 +559,52 @@ function FundingDetailsContent({ locale, onClose, onTopUp }: FundingDetailsConte
         </View>
         <View
           accessibilityRole="text"
-          style={[fundingLayout.information, { borderTopColor: colors.borderSubtle }]}
+          style={[
+            fundingLayout.information,
+            { borderTopColor: colors.borderSubtle },
+          ]}
           testID="quest-funding-information"
         >
-          <View style={fundingLayout.informationItem} testID="quest-funding-settlement-info">
+          <View
+            style={fundingLayout.informationItem}
+            testID="quest-funding-settlement-info"
+          >
             <View style={fundingLayout.informationIcon}>
-              <ReceiptText accessible={false} color={colors.primary} size={20} strokeWidth={2.1} />
+              <ReceiptText
+                accessible={false}
+                color={colors.primary}
+                size={20}
+                strokeWidth={2.1}
+              />
             </View>
             <View className="flex-1 min-w-0">
-              <Text className="text-ku-text-strong font-ku-semibold text-ku-label">{messages.settlement}</Text>
-              <Text className="text-ku-text-secondary font-ku-regular text-ku-label">{messages.settlementDescription}</Text>
+              <Text className="text-ku-text-strong font-ku-semibold text-ku-label">
+                {messages.settlement}
+              </Text>
+              <Text className="text-ku-text-secondary font-ku-regular text-ku-label">
+                {messages.settlementDescription}
+              </Text>
             </View>
           </View>
-          <View style={fundingLayout.informationItem} testID="quest-funding-refund-info">
+          <View
+            style={fundingLayout.informationItem}
+            testID="quest-funding-refund-info"
+          >
             <View style={fundingLayout.informationIcon}>
-              <ShieldCheck accessible={false} color={colors.primary} size={20} strokeWidth={2.1} />
+              <ShieldCheck
+                accessible={false}
+                color={colors.primary}
+                size={20}
+                strokeWidth={2.1}
+              />
             </View>
             <View className="flex-1 min-w-0">
-              <Text className="text-ku-text-strong font-ku-semibold text-ku-label">{messages.refunds}</Text>
-              <Text className="text-ku-text-secondary font-ku-regular text-ku-label">{messages.refundsDescription}</Text>
+              <Text className="text-ku-text-strong font-ku-semibold text-ku-label">
+                {messages.refunds}
+              </Text>
+              <Text className="text-ku-text-secondary font-ku-regular text-ku-label">
+                {messages.refundsDescription}
+              </Text>
             </View>
           </View>
         </View>
@@ -473,39 +617,81 @@ interface TopUpFlowContentProps {
   locale: SupportedLocale;
   step: TopUpStep;
   amount: string;
+  quote?: TopUpQuote | null;
+  topUp?: TopUpData | null;
+  paymentVerified?: boolean;
+  isConfirming?: boolean;
+  isVerifying?: boolean;
+  verificationError?: string | null;
   onAmountChange: (amount: string) => void;
   onBack: () => void;
   onClose: () => void;
   onContinue: () => void;
+  onConfirm: () => void;
+  onVerifyPayment?: () => void;
 }
 
 function TopUpFlowContent({
   locale,
   step,
   amount,
+  quote,
+  topUp,
+  paymentVerified = false,
+  isVerifying = false,
+  isConfirming = false,
+  verificationError = null,
   onAmountChange,
   onBack,
   onClose,
   onContinue,
+  onConfirm,
+  onVerifyPayment,
 }: TopUpFlowContentProps) {
   const messages = questBoardMessages[locale];
   const amountValid = isValidTopUpAmount(amount);
-  const title = messages.topUpTitle;
+  const title =
+    step === "confirmation"
+      ? messages.topUpConfirmationTitle
+      : step === "promptPay"
+        ? messages.topUpPromptPayTitle
+        : messages.topUpTitle;
 
   return (
-    <View accessibilityViewIsModal style={fundingLayout.topUpFlowContent} testID="quest-funding-top-up-flow">
+    <View
+      accessibilityViewIsModal
+      style={fundingLayout.topUpFlowContent}
+      testID="quest-funding-top-up-flow"
+    >
       <View style={[fundingLayout.modalHeader, { marginBottom: 16 }]}>
         <Pressable
           accessibilityLabel={messages.topUpBack}
           accessibilityRole="button"
+          accessibilityState={{ disabled: isConfirming }}
+          disabled={isConfirming}
           style={fundingLayout.modalBackButton}
           onPress={onBack}
           testID="quest-funding-top-up-back"
         >
-          <ArrowLeft accessible={false} color={colors.textStrong} size={21} strokeWidth={2.2} />
+          <ArrowLeft
+            accessible={false}
+            color={colors.textStrong}
+            size={21}
+            strokeWidth={2.2}
+          />
         </Pressable>
-        <View style={[fundingLayout.modalHeaderCopy, { alignItems: 'center', marginLeft: 0 }]}>
-          <Text accessibilityRole="header" style={[fundingLayout.modalTitle, { color: colors.textStrong }]}>{title}</Text>
+        <View
+          style={[
+            fundingLayout.modalHeaderCopy,
+            { alignItems: "center", marginLeft: 0 },
+          ]}
+        >
+          <Text
+            accessibilityRole="header"
+            style={[fundingLayout.modalTitle, { color: colors.textStrong }]}
+          >
+            {title}
+          </Text>
         </View>
         <Pressable
           accessibilityLabel={messages.close}
@@ -514,7 +700,12 @@ function TopUpFlowContent({
           onPress={onClose}
           testID="quest-funding-top-up-close"
         >
-          <X accessible={false} color={colors.textStrong} size={22} strokeWidth={2.3} />
+          <X
+            accessible={false}
+            color={colors.textStrong}
+            size={22}
+            strokeWidth={2.3}
+          />
         </Pressable>
       </View>
 
@@ -524,42 +715,105 @@ function TopUpFlowContent({
         showsVerticalScrollIndicator={false}
         style={[fundingLayout.modalScroll, fundingLayout.topUpScroll]}
       >
-        {step === 'amount' ? (
+        {step === "amount" ? (
           <>
             <View style={fundingLayout.flowIntro}>
-              <Text style={[fundingLayout.flowTitle, { color: colors.textStrong }]}>{messages.topUpAmountTitle}</Text>
-              <Text style={[fundingLayout.flowDescription, { color: colors.textSecondary }]}>{messages.topUpAmountDescription}</Text>
+              <Text
+                style={[fundingLayout.flowTitle, { color: colors.textStrong }]}
+              >
+                {messages.topUpAmountTitle}
+              </Text>
+              <Text
+                style={[
+                  fundingLayout.flowDescription,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {messages.topUpAmountDescription}
+              </Text>
             </View>
-            <Text style={[fundingLayout.amountLabel, { color: colors.textSecondary }]}>{messages.topUpAmountLabel}</Text>
-            <View style={[fundingLayout.amountField, { backgroundColor: colors.surfaceSubtle, borderColor: colors.borderSubtle }]}>
-              <Text style={[fundingLayout.amountCurrency, { color: colors.primary }]}>฿</Text>
+            <Text
+              style={[
+                fundingLayout.amountLabel,
+                { color: colors.textSecondary },
+              ]}
+            >
+              {messages.topUpAmountLabel}
+            </Text>
+            <View
+              style={[
+                fundingLayout.amountField,
+                {
+                  backgroundColor: colors.surfaceSubtle,
+                  borderColor: colors.borderSubtle,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  fundingLayout.amountCurrency,
+                  { color: colors.primary },
+                ]}
+              >
+                ฿
+              </Text>
               <TextInput
                 accessibilityLabel={messages.topUpAmountLabel}
                 keyboardType="number-pad"
                 maxLength={7}
-                onChangeText={(value) => onAmountChange(value.replace(/[^0-9]/g, ''))}
+                onChangeText={(value) =>
+                  onAmountChange(value.replace(/[^0-9]/g, ""))
+                }
                 placeholder="0"
                 placeholderTextColor={colors.textMuted}
                 returnKeyType="done"
-                style={[fundingLayout.amountInput, { color: colors.textStrong }]}
+                style={[
+                  fundingLayout.amountInput,
+                  { color: colors.textStrong },
+                ]}
                 testID="quest-funding-top-up-amount"
                 value={amount}
               />
             </View>
-            <View accessibilityLabel={messages.topUpAmountLabel} accessibilityRole="toolbar" style={fundingLayout.quickAmounts}>
+            <View
+              accessibilityLabel={messages.topUpAmountLabel}
+              accessibilityRole="toolbar"
+              style={fundingLayout.quickAmounts}
+            >
               {QUICK_TOP_UP_AMOUNTS.map((quickAmount) => {
                 const selected = amount === String(quickAmount);
                 return (
                   <Pressable
-                    accessibilityLabel={messages.topUpQuickAmountLabel(quickAmount)}
+                    accessibilityLabel={messages.topUpQuickAmountLabel(
+                      quickAmount
+                    )}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
-                    style={[fundingLayout.quickAmount, { backgroundColor: selected ? colors.surfaceAccent : colors.surface, borderColor: selected ? colors.borderAccent : colors.borderSubtle }]}
+                    style={[
+                      fundingLayout.quickAmount,
+                      {
+                        backgroundColor: selected
+                          ? colors.surfaceAccent
+                          : colors.surface,
+                        borderColor: selected
+                          ? colors.borderAccent
+                          : colors.borderSubtle,
+                      },
+                    ]}
                     key={quickAmount}
                     onPress={() => onAmountChange(String(quickAmount))}
                     testID={`quest-funding-top-up-quick-${quickAmount}`}
                   >
-                    <Text style={[fundingLayout.quickAmountText, { color: selected ? colors.primary : colors.textStrong }]}>฿{quickAmount.toLocaleString('en-US')}</Text>
+                    <Text
+                      style={[
+                        fundingLayout.quickAmountText,
+                        {
+                          color: selected ? colors.primary : colors.textStrong,
+                        },
+                      ]}
+                    >
+                      ฿{quickAmount.toLocaleString("en-US")}
+                    </Text>
                   </Pressable>
                 );
               })}
@@ -569,55 +823,337 @@ function TopUpFlowContent({
               accessibilityRole="button"
               accessibilityState={{ disabled: !amountValid }}
               disabled={!amountValid}
-              style={[fundingLayout.continueButton, { backgroundColor: amountValid ? colors.primary : colors.surfaceMuted, borderColor: amountValid ? colors.primary : colors.borderMuted }, !amountValid && fundingLayout.continueButtonDisabled]}
+              style={[
+                fundingLayout.continueButton,
+                {
+                  backgroundColor: amountValid
+                    ? colors.primary
+                    : colors.surfaceMuted,
+                  borderColor: amountValid
+                    ? colors.primary
+                    : colors.borderMuted,
+                },
+                !amountValid && fundingLayout.continueButtonDisabled,
+              ]}
               onPress={onContinue}
               testID="quest-funding-top-up-continue"
             >
-              <Text style={[fundingLayout.continueButtonText, { color: amountValid ? colors.white : colors.textMuted }]}>{messages.topUpContinue}</Text>
+              <Text
+                style={[
+                  fundingLayout.continueButtonText,
+                  { color: amountValid ? colors.white : colors.textMuted },
+                ]}
+              >
+                {messages.topUpContinue}
+              </Text>
             </Pressable>
           </>
         ) : null}
 
-        {step === 'promptPay' ? (
+        {step === "confirmation" && quote ? (
+          <View testID="quest-funding-top-up-confirmation">
+            <View style={fundingLayout.flowIntro}>
+              <Text
+                style={[fundingLayout.flowTitle, { color: colors.textStrong }]}
+              >
+                {messages.topUpConfirmationTitle}
+              </Text>
+              <Text
+                style={[
+                  fundingLayout.flowDescription,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {messages.topUpAmountDescription}
+              </Text>
+            </View>
+            <View
+              style={[
+                fundingLayout.promptPayCard,
+                {
+                  backgroundColor: colors.surfaceSubtle,
+                  borderColor: colors.borderSubtle,
+                  gap: 12,
+                },
+              ]}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Text style={{ color: colors.textSecondary }}>
+                  {messages.topUpCredit}
+                </Text>
+                <Text style={{ color: colors.textStrong, fontWeight: "700" }}>
+                  {formatSatang(quote.creditSatang, locale)}
+                </Text>
+              </View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Text style={{ color: colors.textSecondary }}>
+                  {messages.topUpFee}
+                </Text>
+                <Text style={{ color: colors.textStrong }}>
+                  {formatSatang(quote.chargedFeeSatang, locale)}
+                </Text>
+              </View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Text style={{ color: colors.textSecondary }}>
+                  {messages.topUpTax}
+                </Text>
+                <Text style={{ color: colors.textStrong }}>
+                  {formatSatang(quote.chargedTaxSatang, locale)}
+                </Text>
+              </View>
+              <View
+                style={{
+                  borderTopColor: colors.borderSubtle,
+                  borderTopWidth: 1,
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  paddingTop: 12,
+                }}
+              >
+                <Text style={{ color: colors.textStrong, fontWeight: "700" }}>
+                  {messages.topUpPaymentTotal}
+                </Text>
+                <Text
+                  style={{
+                    color: colors.textStrong,
+                    fontSize: 18,
+                    fontWeight: "800",
+                  }}
+                >
+                  {formatSatang(quote.paymentTotalSatang, locale)}
+                </Text>
+              </View>
+            </View>
+            <Text
+              style={{ color: colors.textMuted, fontSize: 12, marginTop: 12 }}
+            >
+              {messages.topUpExpiresAt}: {formatExpiry(quote.expiresAt, locale)}
+            </Text>
+            {verificationError ? (
+              <View
+                className="bg-ku-surface-danger border border-ku-border-danger rounded-[12px] p-[12px] mt-[10px]"
+                testID="quest-funding-verify-error"
+              >
+                <Text className="text-ku-danger-dark font-ku-medium text-[12px]">
+                  {verificationError}
+                </Text>
+              </View>
+            ) : null}
+            <Pressable
+              accessibilityLabel={messages.topUpConfirm}
+              accessibilityRole="button"
+              disabled={isConfirming}
+              style={[
+                fundingLayout.continueButton,
+                {
+                  backgroundColor: colors.primary,
+                  borderColor: colors.primary,
+                },
+                isConfirming && fundingLayout.continueButtonDisabled,
+              ]}
+              onPress={onConfirm}
+              testID="quest-funding-top-up-confirm"
+            >
+              <Text
+                style={[
+                  fundingLayout.continueButtonText,
+                  { color: colors.white },
+                ]}
+              >
+                {messages.topUpConfirm}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {step === "promptPay" ? (
           <>
             <View style={fundingLayout.flowIntro}>
-              <Text style={[fundingLayout.flowTitle, { color: colors.textStrong }]}>{messages.topUpPromptPayTitle}</Text>
-              <Text style={[fundingLayout.flowDescription, { color: colors.textSecondary }]}>{messages.topUpPromptPayDescription}</Text>
+              <Text
+                style={[fundingLayout.flowTitle, { color: colors.textStrong }]}
+              >
+                {messages.topUpPromptPayTitle}
+              </Text>
+              <Text
+                style={[
+                  fundingLayout.flowDescription,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {messages.topUpPromptPayDescription}
+              </Text>
             </View>
-            <View style={[fundingLayout.promptPayCard, { backgroundColor: colors.surfaceSubtle, borderColor: colors.borderSubtle }]} testID="quest-funding-top-up-promptpay">
+            <View
+              style={[
+                fundingLayout.promptPayCard,
+                {
+                  backgroundColor: colors.surfaceSubtle,
+                  borderColor: colors.borderSubtle,
+                },
+              ]}
+              testID="quest-funding-top-up-promptpay"
+            >
               <View
                 accessible
-                accessibilityLabel={`${messages.topUpPromptPayTitle}. ${messages.topUpPromptPayPrototype}. ${messages.topUpAmountLabel}: ฿${Number(amount).toLocaleString('en-US')}`}
+                accessibilityLabel={`${messages.topUpPromptPayTitle}. ${messages.topUpPaymentTotal}: ${formatSatang(topUp!.paymentTotalSatang, locale)}`}
                 accessibilityRole="image"
-                style={[fundingLayout.qrFrame, { backgroundColor: colors.white }]}
+                style={[
+                  fundingLayout.qrFrame,
+                  { backgroundColor: colors.white },
+                ]}
                 testID="quest-funding-top-up-promptpay-qr"
               >
-                <View style={fundingLayout.qrRows}>
-                  {Array.from({ length: PROTOTYPE_QR_SIZE }, (_, row) => (
-                    <View key={row} style={fundingLayout.qrRow}>
-                      {Array.from({ length: PROTOTYPE_QR_SIZE }, (_, column) => (
-                        <View key={column} style={[fundingLayout.qrCell, { backgroundColor: isPrototypeQrModuleFilled(row, column, amount) ? colors.black : colors.white }]} />
-                      ))}
-                    </View>
-                  ))}
-                </View>
+                {topUp!.qrDataUrl ? (
+                  <Image
+                    source={{ uri: topUp!.qrDataUrl }}
+                    style={{ width: 168, height: 168 }}
+                    resizeMode="contain"
+                  />
+                ) : (
+                  <Text style={{ color: colors.textMuted }}>
+                    {messages.topUpPromptPayQrUnavailable}
+                  </Text>
+                )}
               </View>
-              <Text style={[fundingLayout.promptPayPrototype, { color: colors.textMuted }]}>{messages.topUpPromptPayPrototype}</Text>
-              <View style={[fundingLayout.promptPayAmount, { borderTopColor: colors.borderSubtle }]}>
-                <Text style={[fundingLayout.promptPayAmountLabel, { color: colors.textSecondary }]}>{messages.topUpAmountLabel}</Text>
-                <Text selectable style={[fundingLayout.promptPayAmountValue, { color: colors.textStrong }]}>฿{Number(amount).toLocaleString('en-US')}</Text>
+              <Text
+                style={[
+                  fundingLayout.promptPayPrototype,
+                  { color: colors.textMuted },
+                ]}
+              >
+                {topUp!.qrDataUrl
+                  ? messages.topUpPromptPayDescription
+                  : messages.topUpPromptPayQrUnavailable}
+              </Text>
+              <View
+                style={[
+                  fundingLayout.promptPayAmount,
+                  { borderTopColor: colors.borderSubtle },
+                ]}
+              >
+                <Text
+                  style={[
+                    fundingLayout.promptPayAmountLabel,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  {messages.topUpPaymentTotal}
+                </Text>
+                <Text
+                  selectable
+                  style={[
+                    fundingLayout.promptPayAmountValue,
+                    { color: colors.textStrong },
+                  ]}
+                >
+                  {formatSatang(topUp!.paymentTotalSatang, locale)}
+                </Text>
               </View>
             </View>
-            <Text accessible accessibilityRole="text" style={[fundingLayout.promptPayNotice, { color: colors.textSecondary }]} testID="quest-funding-top-up-promptpay-unavailable">{messages.topUpPromptPayUnavailable}</Text>
-            <Pressable
-              accessibilityLabel={messages.topUpClose}
-              accessibilityRole="button"
-              style={[fundingLayout.continueButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
-              onPress={onClose}
-              testID="quest-funding-top-up-promptpay-close"
-            >
-              <Text style={[fundingLayout.continueButtonText, { color: colors.white }]}>{messages.topUpClose}</Text>
-            </Pressable>
+            {paymentVerified ? (
+              <View
+                className="bg-ku-surface-success border border-ku-border-success rounded-[16px] p-[16px] flex-row items-center gap-[12px] mt-[12px]"
+                testID="quest-funding-verified-badge"
+              >
+                <ShieldCheck
+                  color={colors.success}
+                  size={24}
+                  strokeWidth={2.2}
+                />
+                <View className="flex-1">
+                  <Text className="font-ku-bold text-ku-text-strong text-[14px]">
+                    {messages.topUpPaymentVerified}
+                  </Text>
+                  <Text className="font-ku-regular text-ku-text-secondary text-[12px]">
+                    {messages.topUpPaymentCredited(
+                      formatSatang(topUp!.creditSatang, locale)
+                    )}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+
+            {verificationError ? (
+              <View
+                className="bg-ku-surface-danger border border-ku-border-danger rounded-[12px] p-[12px] mt-[10px]"
+                testID="quest-funding-verify-error"
+              >
+                <Text className="text-ku-danger-dark font-ku-medium text-[12px]">
+                  {verificationError}
+                </Text>
+              </View>
+            ) : null}
+
+            <View style={{ gap: 10, marginTop: 12 }}>
+              {!paymentVerified ? (
+                <Pressable
+                  accessibilityLabel={messages.topUpVerifyPayment}
+                  accessibilityRole="button"
+                  style={[
+                    fundingLayout.continueButton,
+                    {
+                      backgroundColor: colors.surfaceSuccess,
+                      borderColor: colors.borderSuccess,
+                      marginTop: 0,
+                    },
+                    isVerifying && fundingLayout.continueButtonDisabled,
+                  ]}
+                  disabled={isVerifying}
+                  onPress={onVerifyPayment}
+                  testID="quest-funding-top-up-verify-payment"
+                >
+                  <Text
+                    style={[
+                      fundingLayout.continueButtonText,
+                      { color: colors.success },
+                    ]}
+                  >
+                    {isVerifying
+                      ? messages.topUpVerifyingPayment
+                      : messages.topUpVerifyPayment}
+                  </Text>
+                </Pressable>
+              ) : null}
+
+              <Pressable
+                accessibilityLabel={messages.topUpClose}
+                accessibilityRole="button"
+                style={[
+                  fundingLayout.continueButton,
+                  {
+                    backgroundColor: colors.primary,
+                    borderColor: colors.primary,
+                    marginTop: 0,
+                  },
+                ]}
+                onPress={onClose}
+                testID="quest-funding-top-up-promptpay-close"
+              >
+                <Text
+                  style={[
+                    fundingLayout.continueButtonText,
+                    { color: colors.white },
+                  ]}
+                >
+                  {paymentVerified ? messages.topUpDone : messages.topUpClose}
+                </Text>
+              </Pressable>
+            </View>
           </>
         ) : null}
       </ScrollView>
@@ -626,81 +1162,136 @@ function TopUpFlowContent({
 }
 
 interface FundingModalProps {
+  amount: string;
   locale: SupportedLocale;
   modal: FundingModalKind;
+  quote?: TopUpQuote | null;
+  topUp?: TopUpData | null;
+  paymentVerified?: boolean;
+  isConfirming?: boolean;
+  isVerifying?: boolean;
+  verificationError?: string | null;
   step: TopUpStep;
-  amount: string;
-  onClose: () => void;
-  onBack: () => void;
-  onTopUp: () => void;
   onAmountChange: (amount: string) => void;
+  onBack: () => void;
+  onClose: () => void;
   onContinue: () => void;
+  onConfirm: () => void;
+  onTopUp: () => void;
+  onVerifyPayment?: () => void;
 }
 
 function FundingModal({
+  amount,
   locale,
   modal,
+  quote,
+  topUp,
+  paymentVerified,
+  isConfirming,
+  isVerifying,
+  verificationError,
   step,
-  amount,
-  onClose,
-  onBack,
-  onTopUp,
   onAmountChange,
+  onBack,
+  onClose,
   onContinue,
+  onConfirm,
+  onTopUp,
+  onVerifyPayment,
 }: FundingModalProps) {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
+  const isDetailsModal = modal === "details";
   const bottomPadding = Math.max(spacing.md, insets.bottom + spacing.sm);
-
-  const isDetailsModal = modal === 'details';
 
   return (
     <>
-      <StatusBar style={isDetailsModal || colorScheme === 'dark' ? 'light' : 'dark'} />
+      <StatusBar
+        style={isDetailsModal || colorScheme === "dark" ? "light" : "dark"}
+      />
       <Modal
-        animationType={isDetailsModal ? 'fade' : 'slide'}
+        animationType={isDetailsModal ? "fade" : "slide"}
         key={modal}
         onRequestClose={onBack}
         statusBarTranslucent
         transparent={isDetailsModal}
         visible
       >
-      {isDetailsModal ? (
-        <View style={[fundingLayout.modalOverlay, { backgroundColor: colors.overlay }]}>
-          <Pressable accessible={false} style={fundingLayout.modalBackdrop} onPress={onClose} testID="quest-funding-summary-backdrop" />
+        {isDetailsModal ? (
           <View
-            accessibilityViewIsModal
-            style={[fundingLayout.modalCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle, paddingBottom: spacing.md }]}
-            testID="quest-funding-summary-modal"
+            style={[
+              fundingLayout.modalOverlay,
+              { backgroundColor: colors.overlay },
+            ]}
           >
-            <View style={fundingLayout.modalContentRoot} testID="quest-funding-summary-centered-modal">
-              <FundingDetailsContent locale={locale} onClose={onClose} onTopUp={onTopUp} />
+            <Pressable
+              accessible={false}
+              style={fundingLayout.modalBackdrop}
+              onPress={onClose}
+              testID="quest-funding-summary-backdrop"
+            />
+            <View
+              accessibilityViewIsModal
+              style={[
+                fundingLayout.modalCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.borderSubtle,
+                  paddingBottom: spacing.md,
+                },
+              ]}
+              testID="quest-funding-summary-modal"
+            >
+              <View
+                style={fundingLayout.modalContentRoot}
+                testID="quest-funding-summary-centered-modal"
+              >
+                <FundingDetailsContent
+                  locale={locale}
+                  onClose={onClose}
+                  onTopUp={onTopUp}
+                />
+              </View>
             </View>
           </View>
-        </View>
-      ) : (
-        <View
-          accessibilityViewIsModal
-          style={[fundingLayout.topUpSurface, { backgroundColor: colors.surface }]}
-          testID="quest-funding-top-up-flow-modal"
-        >
+        ) : (
           <View
             accessibilityViewIsModal
-            style={[fundingLayout.topUpFlow, { paddingBottom: bottomPadding, paddingTop: insets.top }]}
-            testID="quest-funding-top-up-full-screen-modal"
+            style={[
+              fundingLayout.topUpSurface,
+              { backgroundColor: colors.surface },
+            ]}
+            testID="quest-funding-top-up-flow-modal"
           >
-            <TopUpFlowContent
-              amount={amount}
-              locale={locale}
-              onAmountChange={onAmountChange}
-              onBack={onBack}
-              onClose={onClose}
-              onContinue={onContinue}
-              step={step}
-            />
+            <View
+              accessibilityViewIsModal
+              style={[
+                fundingLayout.topUpFlow,
+                { paddingBottom: bottomPadding, paddingTop: insets.top },
+              ]}
+              testID="quest-funding-top-up-full-screen-modal"
+            >
+              <TopUpFlowContent
+                amount={amount}
+                locale={locale}
+                quote={quote}
+                topUp={topUp}
+                paymentVerified={paymentVerified}
+                isConfirming={isConfirming}
+                isVerifying={isVerifying}
+                verificationError={verificationError}
+                onAmountChange={onAmountChange}
+                onBack={onBack}
+                onClose={onClose}
+                onContinue={onContinue}
+                onConfirm={onConfirm}
+                onVerifyPayment={onVerifyPayment}
+                step={step}
+              />
+            </View>
           </View>
-        </View>
-      )}
+        )}
       </Modal>
     </>
   );
@@ -709,57 +1300,192 @@ function FundingModal({
 export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
   const messages = questBoardMessages[locale];
   const [modal, setModal] = useState<FundingModalKind | null>(null);
-  const [topUpStep, setTopUpStep] = useState<TopUpStep>('amount');
-  const [topUpAmount, setTopUpAmount] = useState('');
+  const [topUpStep, setTopUpStep] = useState<TopUpStep>("amount");
+  const [topUpAmount, setTopUpAmount] = useState("");
+  const [liveWallet, setLiveWallet] = useState<WalletBalances | null>(null);
+  const [topUpQuote, setTopUpQuote] = useState<TopUpQuote | null>(null);
+  const [activeTopUp, setActiveTopUp] = useState<TopUpData | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [paymentVerified, setPaymentVerified] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(
+    null
+  );
   useColorScheme();
 
-  const openFundingDetails = () => setModal('details');
-  const closeFundingModal = () => setModal(null);
-  const openTopUp = () => {
-    setTopUpAmount('');
-    setTopUpStep('amount');
-    setModal('topUp');
-  };
-  const handleTopUpBack = () => {
-    setModal(topUpStep === 'promptPay' ? 'topUp' : 'details');
-    if (topUpStep === 'promptPay') setTopUpStep('amount');
-  };
-  const handleTopUpContinue = () => {
-    if (topUpStep === 'amount') {
-      if (!isValidTopUpAmount(topUpAmount)) return;
-      setTopUpStep('promptPay');
+  const loadWallet = useCallback(async () => {
+    try {
+      setLiveWallet(await walletApi.getWallet());
+    } catch {
+      // Keep the last successful wallet snapshot visible.
     }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadWallet();
+      return undefined;
+    }, [loadWallet])
+  );
+
+  const resetTopUp = () => {
+    setTopUpQuote(null);
+    setActiveTopUp(null);
+    setPaymentVerified(false);
+    setIsConfirming(false);
+    setVerificationError(null);
+    setTopUpStep("amount");
   };
 
+  const openFundingDetails = () => setModal("details");
+  const closeFundingModal = () => {
+    if (modal === "topUp") resetTopUp();
+    setModal(null);
+  };
+  const openTopUp = () => {
+    setTopUpAmount("");
+    resetTopUp();
+    setModal("topUp");
+  };
+  const handleTopUpBack = () => {
+    if (topUpStep === "amount") {
+      setModal("details");
+      return;
+    }
+    resetTopUp();
+  };
+  const handleTopUpAmountChange = (amount: string) => {
+    setTopUpAmount(amount);
+    resetTopUp();
+  };
+  const handleTopUpContinue = async () => {
+    if (topUpStep !== "amount" || !isValidTopUpAmount(topUpAmount)) return;
+
+    try {
+      const quote = await walletApi.quoteTopUp(Number(topUpAmount) * 100);
+      setTopUpQuote(quote);
+      setVerificationError(null);
+      setTopUpStep("confirmation");
+    } catch (err: unknown) {
+      setVerificationError(
+        err instanceof Error ? err.message : messages.topUpCreateError
+      );
+    }
+  };
+  const handleTopUpConfirm = async () => {
+    if (topUpStep !== "confirmation" || !topUpQuote || isConfirming) return;
+    setIsConfirming(true);
+
+    try {
+      const topUp = await walletApi.createTopUp(topUpQuote.id);
+      setActiveTopUp(topUp);
+      setVerificationError(null);
+      setTopUpStep("promptPay");
+    } catch (err: unknown) {
+      setVerificationError(
+        err instanceof Error ? err.message : messages.topUpCreateError
+      );
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+  const handleVerifyPayment = async () => {
+    if (!activeTopUp || isVerifying) return;
+    setIsVerifying(true);
+    setVerificationError(null);
+    try {
+      const topUp = await walletApi.simulateTopUp(activeTopUp.id);
+      setActiveTopUp(topUp);
+      if (topUp.topUpStatus === "PAID") {
+        setPaymentVerified(true);
+        setLiveWallet(await walletApi.getWallet());
+      } else {
+        setVerificationError(`Payment status: ${topUp.topUpStatus}`);
+      }
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Verification failed";
+      setVerificationError(message);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
   return (
     <>
       <View
-        style={[fundingLayout.summary, fundingLayout.collapsedSummary, { backgroundColor: colors.surface, borderColor: colors.borderAccent }]}
+        style={[
+          fundingLayout.summary,
+          fundingLayout.collapsedSummary,
+          { backgroundColor: colors.surface, borderColor: colors.borderAccent },
+        ]}
         testID="quest-funding-summary"
       >
         <Pressable
-          accessibilityHint={modal === 'details' ? messages.fundingCollapse : messages.fundingExpand}
+          accessibilityHint={
+            modal === "details"
+              ? messages.fundingCollapse
+              : messages.fundingExpand
+          }
           accessibilityLabel={`${messages.fundingTitle}: ${messages.fundingUnavailable}`}
           accessibilityRole="button"
-          accessibilityState={{ expanded: modal === 'details' }}
+          accessibilityState={{ expanded: modal === "details" }}
           style={fundingLayout.toggle}
           onPress={openFundingDetails}
           testID="quest-funding-summary-toggle"
         >
           <View className="flex-1 flex-row items-center min-w-0">
-            <View style={[fundingLayout.icon, { backgroundColor: colors.surfaceAccent, borderRadius: 12, height: 36, width: 36 }]}>
-              <WalletCards accessible={false} color={colors.primary} size={20} strokeWidth={2.1} />
+            <View
+              style={[
+                fundingLayout.icon,
+                {
+                  backgroundColor: colors.surfaceAccent,
+                  borderRadius: 12,
+                  height: 36,
+                  width: 36,
+                },
+              ]}
+            >
+              <WalletCards
+                accessible={false}
+                color={colors.primary}
+                size={20}
+                strokeWidth={2.1}
+              />
             </View>
             <View className="flex-1 min-w-0 ml-[10px]">
-              <Text numberOfLines={1} style={{ color: colors.textStrong, fontFamily: fontFamily.semiBold, fontSize: 14, lineHeight: 21 }}>
+              <Text
+                numberOfLines={1}
+                style={{
+                  color: colors.textStrong,
+                  fontFamily: fontFamily.semiBold,
+                  fontSize: 14,
+                  lineHeight: 21,
+                }}
+              >
                 {messages.fundingTitle}
               </Text>
-              <Text className="text-ku-text-secondary font-ku-regular text-ku-caption" numberOfLines={1} testID="quest-funding-collapsed-status">
-                {messages.fundingUnavailable}
+              <Text
+                className="text-ku-text-secondary font-ku-regular text-ku-caption"
+                numberOfLines={1}
+                testID="quest-funding-collapsed-status"
+              >
+                {liveWallet
+                  ? `฿${(liveWallet.spendingBalanceSatang / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })} available`
+                  : messages.fundingUnavailable}
               </Text>
             </View>
           </View>
-          <View style={[fundingLayout.chevron, { backgroundColor: colors.surfaceAccent, borderRadius: 9999, height: 44, width: 44 }]}>
+          <View
+            style={[
+              fundingLayout.chevron,
+              {
+                backgroundColor: colors.surfaceAccent,
+                borderRadius: 9999,
+                height: 44,
+                width: 44,
+              },
+            ]}
+          >
             <ChevronDown color={colors.primary} size={21} strokeWidth={2.4} />
           </View>
         </Pressable>
@@ -769,10 +1495,18 @@ export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
           amount={topUpAmount}
           locale={locale}
           modal={modal}
-          onAmountChange={setTopUpAmount}
-          onBack={modal === 'details' ? closeFundingModal : handleTopUpBack}
+          quote={topUpQuote}
+          topUp={activeTopUp}
+          paymentVerified={paymentVerified}
+          isConfirming={isConfirming}
+          isVerifying={isVerifying}
+          verificationError={verificationError}
+          onAmountChange={handleTopUpAmountChange}
+          onBack={modal === "details" ? closeFundingModal : handleTopUpBack}
           onClose={closeFundingModal}
           onContinue={handleTopUpContinue}
+          onConfirm={handleTopUpConfirm}
+          onVerifyPayment={handleVerifyPayment}
           step={topUpStep}
           onTopUp={openTopUp}
         />

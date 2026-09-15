@@ -36,7 +36,6 @@ import { spacing } from "../../theme/spacing";
 import { colors } from "../../theme/colors";
 import { AuthError } from "../auth/types";
 import { useNavigationVisibility } from "../../components/navigation/NavigationVisibilityContext";
-import { useAuthEnvironment } from "../auth/authEnvironment";
 import { ProfileTopBar } from "./components/ProfileTopBar";
 
 function ProfileSkeleton({
@@ -217,7 +216,6 @@ export default function Profile() {
   const { width, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { locale } = useLocale();
-  const { activePersonaId } = useAuthEnvironment();
   const layoutMetrics = getProfileLayoutMetrics(width);
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
   const messages = profileMessages[locale];
@@ -251,10 +249,7 @@ export default function Profile() {
         if (redirectedToRoot.current) return;
         setLoadError(false);
         try {
-          const data = await profileModule.loadProfile({
-            locale,
-            personaId: activePersonaId,
-          });
+          const data = await profileModule.loadProfile({ locale });
           if (active) setViewData(data);
         } catch (error) {
           if (error instanceof AuthError && error.code === "SESSION_EXPIRED") {
@@ -274,7 +269,7 @@ export default function Profile() {
       return () => {
         active = false;
       };
-    }, [activePersonaId, locale, loadAttempt, router])
+    }, [locale, loadAttempt, router])
   );
 
   const content = viewData;

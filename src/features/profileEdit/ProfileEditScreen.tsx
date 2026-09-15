@@ -23,7 +23,6 @@ import {
 import { ApiError } from "../../api/ApiClient";
 import type { ProfileEditData } from "../../api/ProfileApi";
 import { profileModule } from "../profile/profileModule";
-import { authEnvironment, useAuthEnvironment } from "../auth/authEnvironment";
 import { authService } from "../auth/AuthService";
 import { AuthError } from "../auth/types";
 import { onboardingMessages } from "../../locales/registrationOnboarding";
@@ -162,21 +161,19 @@ function ErrorState({
   retryLabel,
 }: {
   message: string;
-  retry?: () => void;
-  retryLabel?: string;
+  retry: () => void;
+  retryLabel: string;
 }) {
   return (
     <View className={styles.statusCard} accessibilityRole="alert">
       <Text className={styles.statusText}>{message}</Text>
-      {retry && retryLabel ? (
-        <Pressable
-          accessibilityRole="button"
-          className={styles.retryButton}
-          onPress={retry}
-        >
-          <Text className={styles.retryButtonText}>{retryLabel}</Text>
-        </Pressable>
-      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        className={styles.retryButton}
+        onPress={retry}
+      >
+        <Text className={styles.retryButtonText}>{retryLabel}</Text>
+      </Pressable>
     </View>
   );
 }
@@ -256,7 +253,7 @@ function ProfileEditLoadingState({
               <>
                 <SkeletonBlock height={18} width="88%" borderRadius={4} />
                 <View style={{ gap: 8, marginTop: 8 }}>
-                  {[1, 2, 3, 4, 5].map((item) => (
+                  {[1, 2, 3, 4].map((item) => (
                     <View
                       key={item}
                       className={styles.sectionRow}
@@ -631,7 +628,6 @@ function HubContent({ data }: { data: ProfileEditData }) {
   const router = useRouter();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
-  const isDemoMode = authEnvironment.isDemoEnabled();
   const sections = [
     {
       key: "basics" as const,
@@ -639,30 +635,23 @@ function HubContent({ data }: { data: ProfileEditData }) {
       summary: messages.basicsSummary,
     },
     {
-      key: "academic-registration" as const,
-      title: messages.academicRegistration,
-      summary: isDemoMode
-        ? messages.unavailable
-        : messages.academicRegistrationSummary,
-    },
-    {
       key: "experience" as const,
       title: messages.experience,
-      summary: data.sectionUnavailable.experience || data.sectionErrors.experience
+      summary: data.sectionErrors.experience
         ? messages.unavailable
         : messages.experienceSummary(data.experiences.length),
     },
     {
       key: "portfolio" as const,
       title: messages.portfolio,
-      summary: data.sectionUnavailable.portfolio || data.sectionErrors.portfolio
+      summary: data.sectionErrors.portfolio
         ? messages.unavailable
         : messages.portfolioSummary(data.portfolio.length),
     },
     {
       key: "certificates" as const,
       title: messages.certificates,
-      summary: data.sectionUnavailable.certificates || data.sectionErrors.certificates
+      summary: data.sectionErrors.certificates
         ? messages.unavailable
         : messages.certificatesSummary(data.certificates.length),
     },
@@ -685,23 +674,9 @@ function HubContent({ data }: { data: ProfileEditData }) {
             <Pressable
               key={section.key}
               testID={`profile-edit-section-${section.key}`}
-              accessibilityState={
-                section.key === "academic-registration"
-                  ? { disabled: isDemoMode }
-                  : undefined
-              }
-              disabled={
-                section.key === "academic-registration" && isDemoMode
-              }
+              accessibilityRole="button"
               className={styles.sectionRow}
-              onPress={() => {
-                if (section.key === "academic-registration") {
-                  if (isDemoMode) return;
-                  router.push("/onboarding?mode=edit");
-                  return;
-                }
-                router.push(`/profile/edit/${section.key}`);
-              }}
+              onPress={() => router.push(`/profile/edit/${section.key}`)}
             >
               <View className={styles.sectionRowContent}>
                 <Text className={styles.sectionRowTitle}>{section.title}</Text>
@@ -773,7 +748,11 @@ function BasicsEditor({
       await profileModule.updateBasics({
         firstName,
         lastName,
-        ...(form.bio.trim() ? { bio: form.bio.trim() } : {}),
+        bio: form.bio.trim() || null,
+        occupationId:
+          data.occupations.length > 0
+            ? form.occupationId || undefined
+            : undefined,
       });
       if (isLocalAsset(form.profileImage)) {
         try {
@@ -887,6 +866,18 @@ function BasicsEditor({
               maxLength={201}
               autoCapitalize="words"
             />
+            {data.occupations.length > 0 ? (
+              <Select
+                label={messages.occupation}
+                placeholder={messages.occupationPlaceholder}
+                options={data.occupations.map((occupation) => ({
+                  label: occupation.name,
+                  value: occupation.id,
+                }))}
+                value={form.occupationId}
+                onValueChange={(value) => setField("occupationId", value)}
+              />
+            ) : null}
             <TextArea
               label={messages.bio}
               placeholder={messages.bioPlaceholder}
@@ -940,10 +931,6 @@ function SectionListScreen({
       `/profile/edit/${section}?itemId=${encodeURIComponent(id ?? "new")}`
     );
 
-  const sectionUnavailable = data.sectionUnavailable[section];
-  const sectionError = data.sectionErrors[section];
-  const sectionHasIssue = sectionUnavailable || sectionError;
-
   return (
     <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
       <ScrollView
@@ -951,19 +938,11 @@ function SectionListScreen({
         showsVerticalScrollIndicator={false}
       >
         <ScreenHeader title={title} backLabel={messages.back} onBack={onBack} />
-        {sectionHasIssue ? (
+        {data.sectionErrors[section] ? (
           <ErrorState
-            message={
-              sectionUnavailable
-                ? messages.unavailable
-                : messages.sectionLoadError
-            }
-            retry={
-              sectionUnavailable
-                ? undefined
-                : () => router.replace(`/profile/edit/${section}`)
-            }
-            retryLabel={sectionUnavailable ? undefined : messages.retry}
+            message={messages.sectionLoadError}
+            retry={() => router.replace(`/profile/edit/${section}`)}
+            retryLabel={messages.retry}
           />
         ) : items.length === 0 ? (
           <View className={styles.emptyState}>
@@ -997,7 +976,7 @@ function SectionListScreen({
             )}
           </View>
         )}
-        {sectionHasIssue ? null : (
+        {data.sectionErrors[section] ? null : (
           <Button
             variant="secondary"
             className={styles.addButton}
@@ -1136,7 +1115,6 @@ function ProfileEditDataLoader({
   const router = useRouter();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
-  const { activePersonaId } = useAuthEnvironment();
   const [data, setData] = useState<ProfileEditData | null>(null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -1151,7 +1129,7 @@ function ProfileEditDataLoader({
       setError(false);
       setData(null);
       void profileModule
-        .getEditData(activePersonaId)
+        .getEditData()
         .then((nextData) => {
           if (active) setData(nextData);
         })
@@ -1168,7 +1146,7 @@ function ProfileEditDataLoader({
       return () => {
         active = false;
       };
-    }, [activePersonaId, attempt, router])
+    }, [attempt, router])
   );
   if (error && !data)
     return (
@@ -1754,18 +1732,6 @@ export default function ProfileEditSectionScreen() {
         if (section === "basics")
           return <BasicsEditor data={data} onBack={onBack} />;
         if (section === "experience") {
-          if (
-            data.sectionUnavailable.experience ||
-            data.sectionErrors.experience
-          ) {
-            return (
-              <SectionListScreen
-                section="experience"
-                data={data}
-                onBack={onBack}
-              />
-            );
-          }
           const entry = data.experiences.find((item) => item.id === itemId);
           return itemId === "new" ? (
             <ExperienceEditor onBack={onBack} />
@@ -1780,18 +1746,6 @@ export default function ProfileEditSectionScreen() {
           );
         }
         if (section === "portfolio") {
-          if (
-            data.sectionUnavailable.portfolio ||
-            data.sectionErrors.portfolio
-          ) {
-            return (
-              <SectionListScreen
-                section="portfolio"
-                data={data}
-                onBack={onBack}
-              />
-            );
-          }
           const entry = data.portfolio.find((item) => item.id === itemId);
           return itemId === "new" ? (
             <PortfolioEditor onBack={onBack} />
@@ -1806,18 +1760,6 @@ export default function ProfileEditSectionScreen() {
           );
         }
         if (section === "certificates") {
-          if (
-            data.sectionUnavailable.certificates ||
-            data.sectionErrors.certificates
-          ) {
-            return (
-              <SectionListScreen
-                section="certificates"
-                data={data}
-                onBack={onBack}
-              />
-            );
-          }
           const entry = data.certificates.find((item) => item.id === itemId);
           return itemId === "new" ? (
             <CertificateEditor onBack={onBack} />

@@ -130,6 +130,25 @@ describe("Quest Board view data", () => {
       }).map((quest) => quest.id)
     ).toEqual(["design-match"]);
   });
+  it("excludes Quests whose scheduled start has already passed", () => {
+    const now = new Date("2026-08-12T09:00:00.000Z");
+    const started = {
+      ...quests[0],
+      id: "started",
+      startDate: "2026-08-12",
+      timeRange: "15:00–16:00",
+    };
+    const upcoming = {
+      ...quests[0],
+      id: "upcoming",
+      startDate: "2026-08-12",
+      timeRange: "17:00–18:00",
+    };
+
+    expect(
+      getVisibleQuests([started, upcoming], { now }).map((quest) => quest.id)
+    ).toEqual(["upcoming"]);
+  });
 
   it("filters by search text, tags, reward bounds, deadline, start time, and location", () => {
     const filter: QuestBoardFilter = {
