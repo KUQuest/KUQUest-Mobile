@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Modal } from "react-native";
-import { useRouter } from "expo-router";
 import { Check, Settings2, X } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -52,7 +51,6 @@ export function PrototypeMenu({
   visible,
 }: PrototypeMenuProps) {
   const { locale } = useLocale();
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const [uncontrolledVisible, setUncontrolledVisible] = useState(false);
   const messages = prototypeMenuMessages[locale];
@@ -78,11 +76,6 @@ export function PrototypeMenu({
 
   const handleReset = (scope: Parameters<PrototypeResetHandler>[0]) => {
     onReset(scope);
-    setVisible(false);
-  };
-
-  const handleRoleplayPress = () => {
-    router.push("/dev/roleplay");
     setVisible(false);
   };
 
@@ -245,31 +238,6 @@ export function PrototypeMenu({
                       </Pressable>
                     );
                   })}
-                </View>
-              </View>
-
-              <View className={styles.section}>
-                <Text className={styles.sectionTitle}>{messages.roleplay}</Text>
-                <Text className={styles.sectionHint}>
-                  {messages.roleplayDescription}
-                </Text>
-                <View className={styles.optionList}>
-                  <Pressable
-                    accessibilityLabel={messages.roleplay}
-                    accessibilityRole="button"
-                    className={styles.scenarioOption}
-                    onPress={handleRoleplayPress}
-                    testID={`${testID}-roleplay`}
-                  >
-                    <View className={styles.scenarioCopy}>
-                      <Text className={styles.scenarioLabel}>
-                        {messages.roleplay}
-                      </Text>
-                      <Text className={styles.scenarioRoute}>
-                        /dev/roleplay
-                      </Text>
-                    </View>
-                  </Pressable>
                 </View>
               </View>
 

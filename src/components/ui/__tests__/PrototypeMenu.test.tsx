@@ -5,11 +5,6 @@ import { PrototypeMenu } from "../PrototypeMenu";
 import { PROTOTYPE_PERSONAS, PROTOTYPE_SCENARIOS } from "../prototypeMenuData";
 
 let mockLocale: "en" | "th" = "en";
-const mockPush = jest.fn();
-
-jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: mockPush }),
-}));
 
 jest.mock("@/locales/LocaleProvider", () => ({
   useLocale: () => ({ locale: mockLocale }),
@@ -44,7 +39,6 @@ async function renderMenu(
 describe("PrototypeMenu", () => {
   afterEach(() => {
     mockLocale = "en";
-    mockPush.mockClear();
   });
 
   it("exposes all fixture personas, scenario routes, and reset scopes", async () => {
@@ -127,6 +121,7 @@ describe("PrototypeMenu", () => {
       "proof-free-group-in-progress-demo",
       "proof-team-in-progress-demo",
       "proof-free-team-in-progress-demo",
+      "roleplay-demo",
     ]);
     PROTOTYPE_SCENARIOS.forEach(({ route }) => {
       expect(view.getByText(route)).toBeTruthy();
@@ -138,17 +133,20 @@ describe("PrototypeMenu", () => {
     await fireEvent.press(
       view.getByTestId("prototype-menu-scenario-single-candidate-demo")
     );
+    await fireEvent.press(
+      view.getByTestId("prototype-menu-scenario-roleplay-demo")
+    );
     await fireEvent.press(view.getByTestId("prototype-menu-reset-current"));
     await fireEvent.press(view.getByTestId("prototype-menu-reset-all"));
-    await fireEvent.press(view.getByTestId("prototype-menu-roleplay"));
 
     expect(onPersonaChange).toHaveBeenCalledWith("demo-worker-2");
-    expect(onScenarioPress).toHaveBeenCalledWith(
+    expect(onScenarioPress).toHaveBeenNthCalledWith(
+      1,
       "/quest/single-candidate-demo"
     );
+    expect(onScenarioPress).toHaveBeenNthCalledWith(2, "/dev/roleplay");
     expect(onReset).toHaveBeenNthCalledWith(1, "current");
     expect(onReset).toHaveBeenNthCalledWith(2, "all");
-    expect(mockPush).toHaveBeenCalledWith("/dev/roleplay");
   });
 
   it("renders Thai copy while keeping stable persona IDs and route paths", async () => {
@@ -168,6 +166,8 @@ describe("PrototypeMenu", () => {
     ).toBeTruthy();
     expect(view.getByText("รีเซ็ตทุกสถานการณ์")).toBeTruthy();
     expect(view.getByText("/quest/partial-group-start-demo")).toBeTruthy();
+    expect(view.getByText("จำลองบทบาท Quest")).toBeTruthy();
+    expect(view.getByText("/dev/roleplay")).toBeTruthy();
   });
 
   it("is opened by a 44-point trigger and closes through the native sheet controls", async () => {

@@ -9,7 +9,6 @@ export interface PrototypeMenuMessages {
   activePersona: string;
   scenarios: string;
   roleplay: string;
-  roleplayDescription: string;
   reset: string;
   resetCurrent: string;
   resetAll: string;
@@ -30,7 +29,6 @@ export const prototypeMenuMessages: Record<
     activePersona: "Active persona",
     scenarios: "Scenarios",
     roleplay: "Roleplay Quest",
-    roleplayDescription: "Open the development-only roleplay screen.",
     reset: "Reset fixture data",
     resetCurrent: "Reset current scenario",
     resetAll: "Reset all scenarios",
@@ -47,7 +45,6 @@ export const prototypeMenuMessages: Record<
     activePersona: "ตัวตนที่ใช้งานอยู่",
     scenarios: "สถานการณ์",
     roleplay: "จำลองบทบาท Quest",
-    roleplayDescription: "เปิดหน้าจอ roleplay สำหรับการพัฒนาเท่านั้น",
     reset: "รีเซ็ตข้อมูลทดลอง",
     resetCurrent: "รีเซ็ตสถานการณ์ปัจจุบัน",
     resetAll: "รีเซ็ตทุกสถานการณ์",

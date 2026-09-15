@@ -109,6 +109,11 @@ export const PROTOTYPE_SCENARIOS = [
       th: "ไม่ใช้หลักฐาน · ทีม Candidate",
     },
   },
+  {
+    id: "roleplay-demo",
+    route: "/dev/roleplay",
+    label: { en: "Roleplay Quest", th: "จำลองบทบาท Quest" },
+  },
 ] as const;
 
 export type PrototypeScenarioId = (typeof PROTOTYPE_SCENARIOS)[number]["id"];
