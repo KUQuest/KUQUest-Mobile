@@ -11,10 +11,7 @@ import type {
   UploadAsset,
 } from "../../api/StudentApi";
 import type { SupportedLocale } from "../../locales/LocaleProvider";
-import type { PrototypePersonaId } from "../../components/ui/prototypeMenuData";
-import { authEnvironment } from "../auth/authEnvironment";
 import { LiveProfileAdapter } from "./adapters/liveProfileAdapter";
-import { DemoProfileAdapter } from "./adapters/demoProfileAdapter";
 import type {
   Certificate,
   Experience,
@@ -26,6 +23,7 @@ import type {
   ProfileViewData,
   Work,
 } from "./types";
+type PrototypePersonaId = string;
 
 function mapApiCertificateToDraft(certificate: CertificateEntry): Certificate {
   return {
@@ -60,22 +58,13 @@ function mapApiExperienceToDraft(entry: ExperienceEntry): Experience {
 
 export class ProfileModule {
   private readonly liveAdapter: LiveProfileAdapter;
-  private readonly demoAdapter: DemoProfileAdapter;
 
-  constructor(
-    liveAdapter = new LiveProfileAdapter(),
-    demoAdapter = new DemoProfileAdapter()
-  ) {
+  constructor(liveAdapter = new LiveProfileAdapter()) {
     this.liveAdapter = liveAdapter;
-    this.demoAdapter = demoAdapter;
   }
 
   getAdapter(): ProfileAdapter {
-    return this.isDemoEnabled() ? this.demoAdapter : this.liveAdapter;
-  }
-
-  isDemoEnabled(): boolean {
-    return authEnvironment.isDemoEnabled();
+    return this.liveAdapter;
   }
 
   async loadProfile(options?: {
@@ -83,8 +72,7 @@ export class ProfileModule {
     personaId?: PrototypePersonaId;
   }): Promise<ProfileViewData> {
     const locale = options?.locale ?? "en";
-    const personaId =
-      options?.personaId ?? authEnvironment.getActivePersonaId();
+    const personaId = options?.personaId;
     return this.getAdapter().loadProfile(locale, personaId);
   }
 
@@ -208,9 +196,6 @@ export class ProfileModule {
     const faculty = input.options.faculties.find((item) =>
       item.departments.some((department) => department.id === departmentId)
     );
-    const selectedOccupation = input.options.occupations.find(
-      (item) => item.id === input.status.occupationId
-    );
     const firstName = input.status.firstName || input.profile.firstName;
     const lastName = input.status.lastName || input.profile.lastName;
 
@@ -219,10 +204,7 @@ export class ProfileModule {
         [firstName, lastName].filter(Boolean).join(" ") || input.fallbackName,
       telephone: input.status.telephone ?? input.profile.telephone ?? "",
       occupation: input.status.occupationId ?? "",
-      studentId:
-        selectedOccupation?.requiresStudentId === true
-          ? (input.status.studentId ?? input.profile.studentId ?? "")
-          : "",
+      studentId: input.status.studentId ?? input.profile.studentId ?? "",
       faculty: faculty?.id ?? "",
       department: departmentId,
       acceptedTerms: Boolean(input.status.termsAcceptedAt),
@@ -232,14 +214,6 @@ export class ProfileModule {
       works: input.portfolio.map(mapApiPortfolioToDraft),
       experiences: input.experiences.map(mapApiExperienceToDraft),
     };
-  }
-
-  resetDemoProfiles(): void {
-    this.demoAdapter.resetDemoData();
-  }
-
-  getDemoProfileRecordForTests(personaId: PrototypePersonaId): ProfileResponse {
-    return this.demoAdapter.getDemoProfileRecordForTests(personaId);
   }
 }
 

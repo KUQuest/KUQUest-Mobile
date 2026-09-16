@@ -2,9 +2,9 @@
 /* eslint-disable @typescript-eslint/no-redeclare */
 
 export const MAX_QUEST_IMAGES = 3;
-export const SATANG_PER_BAHT = 100;
 export const MAX_PROOF_ATTACHMENTS = 5;
 export const MAX_PROOF_NOTE_LENGTH = 1000;
+export const SATANG_PER_BAHT = 100;
 
 /** Raw Quest lifecycle values returned by the Quest API. */
 export const QuestStatus = {
@@ -21,9 +21,8 @@ export const QuestStatus = {
   QUEST_APPROVED: "QUEST_APPROVED",
   QUEST_REWORK: "QUEST_REWORK",
   QUEST_COMPLETED: "QUEST_COMPLETED",
-  QUEST_FAILED: "QUEST_FAILED",
-
   QUEST_CANCELLED: "QUEST_CANCELLED",
+  QUEST_FAILED: "QUEST_FAILED",
   QUEST_DISPUTED: "QUEST_DISPUTED",
   QUEST_HIDDEN: "QUEST_HIDDEN",
 } as const;

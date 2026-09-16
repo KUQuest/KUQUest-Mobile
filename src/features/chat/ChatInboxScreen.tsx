@@ -5,15 +5,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useWindowDimensions } from "react-native";
 
 import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
-import { useAuthEnvironment } from "@/features/auth/authEnvironment";
+import { authService } from "@/features/auth/AuthService";
 import {
   LoadingSkeleton,
   SkeletonBlock,
 } from "@/components/ui/LoadingSkeleton";
-import {
-  DEFAULT_PROTOTYPE_VIEWER_ID,
-  questWorkflow,
-} from "@/features/questBoard/questWorkflow";
 import {
   ScrollView,
   Pressable,
@@ -30,6 +26,7 @@ import { spacing } from "@/theme/spacing";
 import { getChatRouteParams } from "./chatData";
 import type { ChatConversation } from "./chatTypes";
 import styles from "./chatStyles";
+import { chatApi, serverConversationToChatConversation } from "@/api/ChatApi";
 
 function localizedText(
   value: Record<"en" | "th", string>,
@@ -177,15 +174,26 @@ type InboxLoadState = {
 export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
   const router = useRouter();
   const { locale } = useLocale();
-  const { activePersonaId } = useAuthEnvironment();
   const { width, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const messages = chatMessages[locale];
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
   const { handleScroll } = useNavigationVisibility();
   const [query, setQuery] = useState("");
-  const resolvedViewerId =
-    viewerId?.trim() || activePersonaId || DEFAULT_PROTOTYPE_VIEWER_ID;
+  const [sessionUserId, setSessionUserId] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    void authService
+      .getSession()
+      .then((session) => {
+        if (active && session?.user?.id) setSessionUserId(session.user.id);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+  const resolvedViewerId = viewerId?.trim() || sessionUserId || "";
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [loadState, setLoadState] = useState<InboxLoadState>(() => ({
     viewerId: resolvedViewerId,
@@ -194,30 +202,31 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
   }));
   useEffect(() => {
     let active = true;
-    const loadConversations = () => {
+    const loadConversations = async () => {
       try {
-        const nextConversations =
-          questWorkflow.listConversations(resolvedViewerId);
-        if (active)
+        const liveData = await chatApi.listConversations();
+        if (active) {
           setLoadState({
             viewerId: resolvedViewerId,
             status: "settled",
-            conversations: nextConversations,
+            conversations: liveData.items.map((conversation) =>
+              serverConversationToChatConversation(conversation)
+            ),
           });
+        }
       } catch {
-        if (active)
+        if (active) {
           setLoadState({
             viewerId: resolvedViewerId,
             status: "error",
             conversations: [],
           });
+        }
       }
     };
-    loadConversations();
-    const unsubscribe = questWorkflow.subscribe(loadConversations);
+    void loadConversations();
     return () => {
       active = false;
-      unsubscribe();
     };
   }, [loadAttempt, resolvedViewerId]);
   const bottomPadding =

@@ -8,13 +8,14 @@ import {
   type QuestLocationMode as QuestBoardLocationMode,
   type QuestParticipationMode as QuestBoardParticipationMode,
   type QuestPublishCheck,
-} from '../questBoard/types';
+} from "../questBoard/types";
+import type { CreateQuestV2Payload } from "@/api/QuestApi";
 
-export type QuestDraftCandidateMode = 'FIRST_COME_FIRST_SERVED' | 'CANDIDATE';
-export type QuestDraftParticipation = 'SINGLE' | 'GROUP';
-export type QuestDraftProofRequirement = 'required' | 'optional' | 'none';
-export type QuestDraftLocationMode = 'ONLINE' | 'ON_CAMPUS';
-export type QuestDraftState = 'DRAFT' | 'OPEN';
+export type QuestDraftCandidateMode = "FIRST_COME_FIRST_SERVED" | "CANDIDATE";
+export type QuestDraftParticipation = "SINGLE" | "GROUP";
+export type QuestDraftProofRequirement = "required" | "optional" | "none";
+export type QuestDraftLocationMode = "ONLINE" | "ON_CAMPUS";
+export type QuestDraftState = "DRAFT" | "OPEN";
 export type QuestDraftStep = 1 | 2 | 3;
 
 export interface StoredQuestDraft {
@@ -23,18 +24,25 @@ export interface StoredQuestDraft {
   state: QuestDraftState;
 }
 
-export function getSchedulePickerValue(platform: string, draftValue: Date, temporaryValue: Date | null): Date {
-  return platform === 'ios' ? temporaryValue ?? draftValue : draftValue;
+export function getSchedulePickerValue(
+  platform: string,
+  draftValue: Date,
+  temporaryValue: Date | null
+): Date {
+  return platform === "ios" ? (temporaryValue ?? draftValue) : draftValue;
 }
 
 export function getScheduleTimeValue(value: Date): string {
-  const hours = String(value.getHours()).padStart(2, '0');
-  const minutes = String(value.getMinutes()).padStart(2, '0');
+  const hours = String(value.getHours()).padStart(2, "0");
+  const minutes = String(value.getMinutes()).padStart(2, "0");
   return `${hours}:${minutes}`;
 }
 
-export function getHeadcountForParticipation(participation: QuestDraftParticipation, currentHeadcount: string): string {
-  return participation === 'SINGLE' ? '1' : currentHeadcount;
+export function getHeadcountForParticipation(
+  participation: QuestDraftParticipation,
+  currentHeadcount: string
+): string {
+  return participation === "SINGLE" ? "1" : currentHeadcount;
 }
 
 export interface QuestDraft {
@@ -57,42 +65,41 @@ export interface QuestDraft {
 }
 
 export const initialDraft: QuestDraft = {
-  title: '',
-  tag: '',
-  description: '',
-  conditions: '',
-  proofRequired: 'required',
-  startDate: '',
-  deadline: '',
-  startTime: '',
-  endTime: '',
-  locationMode: 'ON_CAMPUS',
-  location: '',
+  title: "",
+  tag: "",
+  description: "",
+  conditions: "",
+  proofRequired: "required",
+  startDate: "",
+  deadline: "",
+  startTime: "",
+  endTime: "",
+  locationMode: "ON_CAMPUS",
+  location: "",
   imageUris: [],
-  candidateMode: 'FIRST_COME_FIRST_SERVED',
-  participation: 'SINGLE',
-  headcount: '1',
-  wage: '',
+  candidateMode: "FIRST_COME_FIRST_SERVED",
+  participation: "SINGLE",
+  headcount: "1",
+  wage: "",
 };
 
 // Temporary UI data until draft loading is connected to the API.
 export const mockQuestDraft: QuestDraft = {
   ...initialDraft,
-  title: 'Draft campus photo session',
-  tag: 'design',
-  description: 'A demo draft that can be edited before publishing.',
-  conditions: 'Upload the final photo set.',
-  startDate: '2099-08-26',
-  deadline: '2099-08-27',
-  startTime: '09:00',
-  endTime: '12:00',
-  location: 'Student activity building',
-  candidateMode: 'CANDIDATE',
-  participation: 'GROUP',
-  headcount: '2',
-  wage: '250',
+  title: "Draft campus photo session",
+  tag: "design",
+  description: "A demo draft that can be edited before publishing.",
+  conditions: "Upload the final photo set.",
+  startDate: "2099-08-26",
+  deadline: "2099-08-27",
+  startTime: "09:00",
+  endTime: "12:00",
+  location: "Student activity building",
+  candidateMode: "CANDIDATE",
+  participation: "GROUP",
+  headcount: "2",
+  wage: "250",
 };
-
 
 export interface QuestBoardModeValues {
   candidateMode: QuestBoardCandidateMode;
@@ -100,11 +107,14 @@ export interface QuestBoardModeValues {
   locationMode: QuestBoardLocationMode;
 }
 
-export function toQuestBoardModeValues(draft: Pick<QuestDraft, 'candidateMode' | 'participation' | 'locationMode'>): QuestBoardModeValues {
+export function toQuestBoardModeValues(
+  draft: Pick<QuestDraft, "candidateMode" | "participation" | "locationMode">
+): QuestBoardModeValues {
   return {
-    candidateMode: draft.candidateMode === 'CANDIDATE' ? 'CANDIDATE' : 'NO_CANDIDATE',
-    participationMode: draft.participation === 'GROUP' ? 'team' : 'single',
-    locationMode: draft.locationMode === 'ONLINE' ? 'online' : 'on-campus',
+    candidateMode:
+      draft.candidateMode === "CANDIDATE" ? "CANDIDATE" : "NO_CANDIDATE",
+    participationMode: draft.participation === "GROUP" ? "team" : "single",
+    locationMode: draft.locationMode === "ONLINE" ? "online" : "on-campus",
   };
 }
 export function isQuestDraftDirty(draft: QuestDraft): boolean {
@@ -112,7 +122,10 @@ export function isQuestDraftDirty(draft: QuestDraft): boolean {
     const currentValue = draft[key];
     const initialValue = initialDraft[key];
     if (Array.isArray(currentValue) && Array.isArray(initialValue)) {
-      return currentValue.length !== initialValue.length || currentValue.some((value, index) => value !== initialValue[index]);
+      return (
+        currentValue.length !== initialValue.length ||
+        currentValue.some((value, index) => value !== initialValue[index])
+      );
     }
     return currentValue !== initialValue;
   });
@@ -132,15 +145,17 @@ export interface QuestDraftPayload {
   startTime: string;
   endTime: string;
   location: QuestLocation;
-  candidateMode: 'NO_CANDIDATE' | 'CANDIDATE';
-  participation: 'SOLO' | 'GROUP';
+  candidateMode: "NO_CANDIDATE" | "CANDIDATE";
+  participation: "SOLO" | "GROUP";
   headcount: number;
   rewardSatang: number;
   imageUris: string[];
 }
 
-function getValidDraftHeadcount(draft: Pick<QuestDraft, 'participation' | 'headcount'>): number | null {
-  if (draft.participation === 'SINGLE') return 1;
+function getValidDraftHeadcount(
+  draft: Pick<QuestDraft, "participation" | "headcount">
+): number | null {
+  if (draft.participation === "SINGLE") return 1;
   const rawHeadcount = draft.headcount.trim();
   if (!rawHeadcount) return null;
 
@@ -148,7 +163,9 @@ function getValidDraftHeadcount(draft: Pick<QuestDraft, 'participation' | 'headc
   return Number.isSafeInteger(headcount) && headcount > 0 ? headcount : null;
 }
 
-export function getDraftRewardSatang(draft: Pick<QuestDraft, 'wage'>): number | null {
+export function getDraftRewardSatang(
+  draft: Pick<QuestDraft, "wage">
+): number | null {
   const value = parseSatangInput(draft.wage);
   return value !== null && value <= MAX_REWARD_THB * 100 ? value : null;
 }
@@ -164,59 +181,137 @@ export function toQuestDraftPayload(draft: QuestDraft): QuestDraftPayload {
     deadline: draft.deadline,
     startTime: draft.startTime,
     endTime: draft.endTime,
-    location: { label: draft.locationMode === 'ONLINE' ? null : draft.location.trim() || null },
-    candidateMode: draft.candidateMode === 'CANDIDATE' ? 'CANDIDATE' : 'NO_CANDIDATE',
-    participation: draft.participation === 'GROUP' ? 'GROUP' : 'SOLO',
-    headcount: draft.participation === 'SINGLE' ? 1 : Number(draft.headcount),
+    location: {
+      label:
+        draft.locationMode === "ONLINE" ? null : draft.location.trim() || null,
+    },
+    candidateMode:
+      draft.candidateMode === "CANDIDATE" ? "CANDIDATE" : "NO_CANDIDATE",
+    participation: draft.participation === "GROUP" ? "GROUP" : "SOLO",
+    headcount: draft.participation === "SINGLE" ? 1 : Number(draft.headcount),
     rewardSatang: getDraftRewardSatang(draft) ?? 0,
     imageUris: [...draft.imageUris].slice(0, MAX_QUEST_IMAGES),
   };
 }
 
+export function toQuestV2Payload(draft: QuestDraft): CreateQuestV2Payload {
+  const fundingTotalSatang = getDraftRewardSatang(draft) ?? 0;
+  const headcount = getValidDraftHeadcount(draft) ?? 0;
+  const location = draft.location.trim();
+
+  return {
+    title: draft.title.trim(),
+    description: draft.description.trim(),
+    condition: { items: [draft.conditions.trim()] },
+    mode: draft.candidateMode,
+    participation: draft.participation,
+    questFundingTotal: fundingTotalSatang / 100,
+    headcount,
+    startTime: `${draft.startDate}T${draft.startTime}:00+07:00`,
+    dueAt: `${draft.deadline}T${draft.endTime}:00+07:00`,
+    tagId: draft.tag.trim() || null,
+    proofRequired: draft.proofRequired !== "none",
+    locations:
+      draft.locationMode === "ON_CAMPUS" && location
+        ? [{ label: location }]
+        : [],
+  };
+}
+
+function getNetRewardSatang(
+  fundingTotalSatang: number,
+  feeRateBasisPoints: number
+): number {
+  const safeFundingTotal =
+    Number.isSafeInteger(fundingTotalSatang) && fundingTotalSatang >= 0
+      ? fundingTotalSatang
+      : 0;
+  const safeFeeRate =
+    Number.isFinite(feeRateBasisPoints) && feeRateBasisPoints >= 0
+      ? feeRateBasisPoints
+      : 0;
+  let low = 0;
+  let high = safeFundingTotal;
+  let best = 0;
+
+  while (low <= high) {
+    const candidate = Math.floor((low + high) / 2);
+    const requiredFee = Math.ceil((candidate * safeFeeRate) / 10_000);
+    if (candidate + requiredFee <= safeFundingTotal) {
+      best = candidate;
+      low = candidate + 1;
+    } else {
+      high = candidate - 1;
+    }
+  }
+
+  return best;
+}
+
 export function calculateQuestEscrow(
-  rewardSatang: number,
+  fundingTotalSatang: number,
   headcount: number,
-  feeRateBasisPoints = DEFAULT_PLATFORM_FEE_BASIS_POINTS,
+  feeRateBasisPoints = DEFAULT_PLATFORM_FEE_BASIS_POINTS
 ): QuestEscrowSummary {
-  const safeReward = Number.isSafeInteger(rewardSatang) && rewardSatang >= 0 ? rewardSatang : 0;
-  const safeHeadcount = Number.isSafeInteger(headcount) && headcount > 0 ? headcount : 0;
-  const platformFeeSatangPerWorker = Math.ceil(safeReward * feeRateBasisPoints / 10_000);
-  const rewardPoolSatang = safeReward * safeHeadcount;
+  const safeFundingTotal =
+    Number.isSafeInteger(fundingTotalSatang) && fundingTotalSatang >= 0
+      ? fundingTotalSatang
+      : 0;
+  const safeHeadcount =
+    Number.isSafeInteger(headcount) && headcount > 0 ? headcount : 0;
+  const rewardSatangPerWorker = getNetRewardSatang(
+    safeFundingTotal,
+    feeRateBasisPoints
+  );
+  const platformFeeSatangPerWorker = safeFundingTotal - rewardSatangPerWorker;
+  const rewardPoolSatang = rewardSatangPerWorker * safeHeadcount;
   const platformFeeSatang = platformFeeSatangPerWorker * safeHeadcount;
   return {
     rewardPoolSatang,
     platformFeeSatang,
-    totalRequiredSatang: rewardPoolSatang + platformFeeSatang,
+    totalRequiredSatang: safeFundingTotal * safeHeadcount,
     headcount: safeHeadcount,
-    rewardSatangPerWorker: safeReward,
+    rewardSatangPerWorker,
     platformFeeSatangPerWorker,
     feeRateBasisPoints,
   };
 }
 
-export function getQuestPublishCheck(draft: QuestDraft, feeRateBasisPoints = DEFAULT_PLATFORM_FEE_BASIS_POINTS): QuestPublishCheck {
+export function getQuestPublishCheck(
+  draft: QuestDraft,
+  feeRateBasisPoints = DEFAULT_PLATFORM_FEE_BASIS_POINTS
+): QuestPublishCheck {
   const headcount = getValidDraftHeadcount(draft);
   const payload = toQuestDraftPayload(draft);
   const blockers: string[] = [];
   const warnings: string[] = [];
-  if (!payload.title) blockers.push('TITLE_REQUIRED');
-  if (!payload.description) blockers.push('DESCRIPTION_REQUIRED');
-  if (!payload.conditions) blockers.push('COMPLETION_CRITERIA_REQUIRED');
-  if (!payload.startDate || !payload.startTime) blockers.push('START_REQUIRED');
-  if (!payload.deadline || !payload.endTime) blockers.push('DEADLINE_REQUIRED');
-  if (draft.locationMode === 'ON_CAMPUS' && !payload.location.label) blockers.push('LOCATION_REQUIRED');
-  if (getDraftRewardSatang(draft) === null) blockers.push('REWARD_INVALID');
-  if (draft.participation === 'GROUP' && headcount === null) blockers.push('HEADCOUNT_INVALID');
-  if (payload.imageUris.length === 0) warnings.push('NO_IMAGES');
+  if (!payload.title) blockers.push("TITLE_REQUIRED");
+  if (!payload.description) blockers.push("DESCRIPTION_REQUIRED");
+  if (!payload.conditions) blockers.push("COMPLETION_CRITERIA_REQUIRED");
+  if (!payload.startDate || !payload.startTime) blockers.push("START_REQUIRED");
+  if (!payload.deadline || !payload.endTime) blockers.push("DEADLINE_REQUIRED");
+  if (draft.locationMode === "ON_CAMPUS" && !payload.location.label)
+    blockers.push("LOCATION_REQUIRED");
+  if (getDraftRewardSatang(draft) === null) blockers.push("REWARD_INVALID");
+  if (draft.participation === "GROUP" && headcount === null)
+    blockers.push("HEADCOUNT_INVALID");
+  if (payload.imageUris.length === 0) warnings.push("NO_IMAGES");
   return {
     canPublish: blockers.length === 0,
     blockers,
     warnings,
-    escrow: calculateQuestEscrow(payload.rewardSatang, headcount ?? 0, feeRateBasisPoints),
+    escrow: calculateQuestEscrow(
+      payload.rewardSatang,
+      headcount ?? 0,
+      feeRateBasisPoints
+    ),
   };
 }
 
-export function formatDraftReward(draft: Pick<QuestDraft, 'wage'>, locale: 'en' | 'th' = 'en'): string {
+export function formatDraftReward(
+  draft: Pick<QuestDraft, "wage">,
+  locale: "en" | "th" = "en"
+): string {
   return formatSatang(getDraftRewardSatang(draft) ?? 0, locale);
 }
 
@@ -227,12 +322,16 @@ export interface RewardValidationMessages {
 }
 
 const defaultRewardValidationMessages: RewardValidationMessages = {
-  empty: 'Enter a reward amount in THB.',
-  format: 'Enter a valid amount in THB with up to 2 decimal places.',
-  bounds: (maximum) => `Reward must be between ฿0 and ฿${maximum.toLocaleString('en-US')}.`,
+  empty: "Enter a reward amount in THB.",
+  format: "Enter a valid amount in THB with up to 2 decimal places.",
+  bounds: (maximum) =>
+    `Reward must be between ฿0 and ฿${maximum.toLocaleString("en-US")}.`,
 };
 
-export function getRewardValidationError(value: string, messages: RewardValidationMessages = defaultRewardValidationMessages): string | undefined {
+export function getRewardValidationError(
+  value: string,
+  messages: RewardValidationMessages = defaultRewardValidationMessages
+): string | undefined {
   const trimmedValue = value.trim();
   if (!trimmedValue) return messages.empty;
   if (!/^\d+(?:\.\d{1,2})?$/.test(trimmedValue)) return messages.format;
@@ -246,23 +345,23 @@ export function getRewardValidationError(value: string, messages: RewardValidati
 }
 
 function normalizeCandidateMode(value: string): QuestDraftCandidateMode {
-  if (value === 'CANDIDATE' || value === 'review') return 'CANDIDATE';
-  return 'FIRST_COME_FIRST_SERVED';
+  if (value === "CANDIDATE" || value === "review") return "CANDIDATE";
+  return "FIRST_COME_FIRST_SERVED";
 }
 
 function normalizeParticipation(value: string): QuestDraftParticipation {
-  if (value === 'GROUP' || value === 'team') return 'GROUP';
-  return 'SINGLE';
+  if (value === "GROUP" || value === "team") return "GROUP";
+  return "SINGLE";
 }
 
 function normalizeLocationMode(value: string): QuestDraftLocationMode {
-  return value === 'ONLINE' || value === 'online' ? 'ONLINE' : 'ON_CAMPUS';
+  return value === "ONLINE" || value === "online" ? "ONLINE" : "ON_CAMPUS";
 }
 
 function normalizeStoredDate(value: string): string {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value === '1970-01-01') return '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value === "1970-01-01") return "";
   const date = new Date(`${value}T12:00:00`);
-  return Number.isNaN(date.getTime()) ? '' : value;
+  return Number.isNaN(date.getTime()) ? "" : value;
 }
 
 function parseStep(value: unknown): QuestDraftStep {
@@ -270,50 +369,74 @@ function parseStep(value: unknown): QuestDraftStep {
 }
 
 function parseState(value: unknown): QuestDraftState {
-  return value === 'OPEN' ? 'OPEN' : 'DRAFT';
+  return value === "OPEN" ? "OPEN" : "DRAFT";
 }
 
 function parseDraftRecord(record: Record<string, unknown>): QuestDraft {
   const stringValue = (key: keyof QuestDraft, fallback: string) =>
-    typeof record[key] === 'string' ? record[key] as string : fallback;
-  const participation = normalizeParticipation(stringValue('participation', initialDraft.participation));
-  const proofRequiredValue = stringValue('proofRequired', initialDraft.proofRequired);
-  const proofRequired: QuestDraftProofRequirement = proofRequiredValue === 'required' || proofRequiredValue === 'optional' || proofRequiredValue === 'none'
-    ? proofRequiredValue
-    : initialDraft.proofRequired;
-  const startDate = normalizeStoredDate(stringValue('startDate', initialDraft.startDate));
-  const deadline = normalizeStoredDate(stringValue('deadline', initialDraft.deadline));
+    typeof record[key] === "string" ? (record[key] as string) : fallback;
+  const participation = normalizeParticipation(
+    stringValue("participation", initialDraft.participation)
+  );
+  const proofRequiredValue = stringValue(
+    "proofRequired",
+    initialDraft.proofRequired
+  );
+  const proofRequired: QuestDraftProofRequirement =
+    proofRequiredValue === "required" ||
+    proofRequiredValue === "optional" ||
+    proofRequiredValue === "none"
+      ? proofRequiredValue
+      : initialDraft.proofRequired;
+  const startDate = normalizeStoredDate(
+    stringValue("startDate", initialDraft.startDate)
+  );
+  const deadline = normalizeStoredDate(
+    stringValue("deadline", initialDraft.deadline)
+  );
 
   return {
-    title: stringValue('title', initialDraft.title),
-    tag: stringValue('tag', initialDraft.tag),
-    description: stringValue('description', initialDraft.description),
-    conditions: stringValue('conditions', initialDraft.conditions),
+    title: stringValue("title", initialDraft.title),
+    tag: stringValue("tag", initialDraft.tag),
+    description: stringValue("description", initialDraft.description),
+    conditions: stringValue("conditions", initialDraft.conditions),
     proofRequired,
     startDate,
     deadline,
-    startTime: stringValue('startTime', initialDraft.startTime),
-    endTime: stringValue('endTime', initialDraft.endTime),
-    locationMode: normalizeLocationMode(stringValue('locationMode', initialDraft.locationMode)),
-    location: stringValue('location', initialDraft.location),
+    startTime: stringValue("startTime", initialDraft.startTime),
+    endTime: stringValue("endTime", initialDraft.endTime),
+    locationMode: normalizeLocationMode(
+      stringValue("locationMode", initialDraft.locationMode)
+    ),
+    location: stringValue("location", initialDraft.location),
     imageUris: Array.isArray(record.imageUris)
-      ? record.imageUris.filter((uri): uri is string => typeof uri === 'string').slice(0, MAX_QUEST_IMAGES)
+      ? record.imageUris
+          .filter((uri): uri is string => typeof uri === "string")
+          .slice(0, MAX_QUEST_IMAGES)
       : [],
-    candidateMode: normalizeCandidateMode(stringValue('candidateMode', initialDraft.candidateMode)),
+    candidateMode: normalizeCandidateMode(
+      stringValue("candidateMode", initialDraft.candidateMode)
+    ),
     participation,
-    headcount: getHeadcountForParticipation(participation, stringValue('headcount', initialDraft.headcount)),
-    wage: stringValue('wage', initialDraft.wage),
+    headcount: getHeadcountForParticipation(
+      participation,
+      stringValue("headcount", initialDraft.headcount)
+    ),
+    wage: stringValue("wage", initialDraft.wage),
   };
 }
 
-export function parseStoredQuestSnapshot(value: string): StoredQuestDraft | null {
+export function parseStoredQuestSnapshot(
+  value: string
+): StoredQuestDraft | null {
   try {
     const parsed: unknown = JSON.parse(value);
-    if (!parsed || typeof parsed !== 'object') return null;
+    if (!parsed || typeof parsed !== "object") return null;
     const record = parsed as Record<string, unknown>;
-    const draftRecord = record.draft && typeof record.draft === 'object'
-      ? record.draft as Record<string, unknown>
-      : record;
+    const draftRecord =
+      record.draft && typeof record.draft === "object"
+        ? (record.draft as Record<string, unknown>)
+        : record;
     return {
       draft: parseDraftRecord(draftRecord),
       step: parseStep(record.step),

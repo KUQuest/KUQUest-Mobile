@@ -51,6 +51,8 @@ import {
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { tagApi, type TagItem } from "@/api/TagApi";
+import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import { StatusBar } from "expo-status-bar";
 
 import { Button } from "@/components/ui/Button";
@@ -70,22 +72,24 @@ import styles from "./createQuestStyles";
 import {
   formatDraftReward,
   getHeadcountForParticipation,
+  getQuestPublishCheck,
   getRewardValidationError,
   getSchedulePickerValue,
   getScheduleTimeValue,
   initialDraft,
   isQuestDraftDirty,
-  mockQuestDraft,
-  toQuestDraftPayload,
+  toQuestV2Payload,
   type QuestDraft,
 } from "./createQuestModel";
 import {
+  createQuestDraftId,
   deleteQuestDraft,
   getQuestDraftStorageKey,
   loadQuestDraft,
   persistQuestDraft,
 } from "./createQuestPersistence";
-import { questWorkflow } from "../questBoard/questWorkflow";
+import { measureFieldRelativeToScroll } from "./createQuestFocus";
+import { liveQuestService } from "../questBoard/liveQuestService";
 import {
   MAX_QUEST_IMAGES,
   formatSatang,
@@ -979,11 +983,8 @@ export default function CreateQuestScreen({
   const headcountRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
   const rewardRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
   const [step, setStep] = useState<Step>(() => (editQuestId ? 2 : 1));
-  const [draft, setDraft] = useState<QuestDraft>(() =>
-    editQuestId
-      ? { ...mockQuestDraft, imageUris: [...mockQuestDraft.imageUris] }
-      : initialDraft
-  );
+  const [draft, setDraft] = useState<QuestDraft>(initialDraft);
+  const draftIdRef = useRef<string | null>(editQuestId ?? null);
   const [draftHydrated, setDraftHydrated] = useState(false);
   const [draftStorageKey, setDraftStorageKey] = useState<string | null>(null);
   const [draftLoadAttempt, setDraftLoadAttempt] = useState(0);
@@ -991,6 +992,7 @@ export default function CreateQuestScreen({
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [saveErrorIntent, setSaveErrorIntent] =
     useState<SaveErrorIntent | null>(null);
+  const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   const [savingAction, setSavingAction] = useState<CompletionState | null>(
     null
   );
@@ -1019,10 +1021,36 @@ export default function CreateQuestScreen({
     questId: string;
     storageKey: string;
     editQuestId?: string;
+    createIdempotencyKey?: string;
+    publishIdempotencyKey?: string;
   } | null>(null);
 
-  const tagOptions = useMemo(
-    () => [
+  const [liveTags, setLiveTags] = useState<TagItem[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    void tagApi
+      .listTags()
+      .then((tags) => {
+        if (mounted && tags.length > 0) setLiveTags(tags);
+      })
+      .catch(() => {
+        // Keep fallback tags
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const tagOptions = useMemo(() => {
+    if (liveTags.length > 0) {
+      return liveTags.map((tag) => ({
+        label: tag.name,
+        shortLabel: tag.name,
+        value: tag.id,
+      }));
+    }
+    return [
       {
         label:
           locale === "th" ? "การออกแบบและงานสร้างสรรค์" : "Design & creative",
@@ -1044,9 +1072,8 @@ export default function CreateQuestScreen({
         shortLabel: locale === "th" ? "ชีวิตมหาวิทยาลัย" : "Campus life",
         value: "campus-life",
       },
-    ],
-    [locale]
-  );
+    ];
+  }, [liveTags, locale]);
   const candidateOptions = useMemo(
     () => [
       {
@@ -1092,6 +1119,7 @@ export default function CreateQuestScreen({
       setSaveState("saving");
       setSavingAction(state);
       setSaveErrorIntent(null);
+      setSaveErrorMessage(null);
       try {
         if (!draftStorageKey) {
           setSaveState("error");
@@ -1099,6 +1127,8 @@ export default function CreateQuestScreen({
           setSavingAction(null);
           return false;
         }
+        const activeDraftId = draftIdRef.current ?? createQuestDraftId();
+        draftIdRef.current = activeDraftId;
         const normalizedDraft = {
           ...draftToSave,
           headcount: getHeadcountForParticipation(
@@ -1106,36 +1136,32 @@ export default function CreateQuestScreen({
             draftToSave.headcount
           ),
         };
-        if (editQuestId) {
-          await persistQuestDraft(
-            draftStorageKey,
-            normalizedDraft,
-            step,
-            state,
-            editQuestId
-          );
-        } else {
-          await persistQuestDraft(
-            draftStorageKey,
-            normalizedDraft,
-            step,
-            state
-          );
-        }
+        await persistQuestDraft(
+          draftStorageKey,
+          activeDraftId,
+          normalizedDraft,
+          step,
+          state
+        );
         if (requestId !== saveRequestRef.current) return false;
         setSaveState("saved");
         setSaveErrorIntent(null);
         setSavingAction(null);
         return true;
-      } catch {
+      } catch (error) {
         if (requestId !== saveRequestRef.current) return false;
         setSaveState("error");
+        setSaveErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "Unable to save the Quest draft."
+        );
         setSaveErrorIntent({ state, completesFlow });
         setSavingAction(null);
         return false;
       }
     },
-    [draftStorageKey, editQuestId, step]
+    [draftStorageKey, step]
   );
 
   const publishQuest = useCallback(
@@ -1144,6 +1170,7 @@ export default function CreateQuestScreen({
       setSaveState("saving");
       setSavingAction("OPEN");
       setSaveErrorIntent(null);
+      setSaveErrorMessage(null);
       try {
         if (!draftStorageKey) {
           setSaveState("error");
@@ -1153,11 +1180,20 @@ export default function CreateQuestScreen({
         }
 
         let publishedQuestId = publishedQuestRef.current?.questId;
-        if (
-          !publishedQuestId ||
-          publishedQuestRef.current?.storageKey !== draftStorageKey ||
-          publishedQuestRef.current?.editQuestId !== editQuestId
-        ) {
+        let createIdempotencyKey =
+          publishedQuestRef.current?.createIdempotencyKey;
+        let publishIdempotencyKey =
+          publishedQuestRef.current?.publishIdempotencyKey;
+        const hasMatchingPublishedQuest =
+          publishedQuestRef.current?.storageKey === draftStorageKey &&
+          publishedQuestRef.current?.editQuestId === editQuestId;
+
+        if (!hasMatchingPublishedQuest) {
+          createIdempotencyKey = undefined;
+          publishIdempotencyKey = undefined;
+        }
+
+        if (!publishedQuestId) {
           const normalizedDraft = {
             ...draftToPublish,
             headcount: getHeadcountForParticipation(
@@ -1165,36 +1201,73 @@ export default function CreateQuestScreen({
               draftToPublish.headcount
             ),
           };
-          const result = questWorkflow.dispatch({
-            type: "CREATE_AND_PUBLISH",
-            payload: toQuestDraftPayload(normalizedDraft),
-            hirerId: "demo-hirer",
-          });
-          if (!result.ok) {
-            setSaveState("error");
-            setSaveErrorIntent({ state: "OPEN", completesFlow: true });
-            setSavingAction(null);
-            return false;
-          }
-          publishedQuestId = result.state.quest.id;
+          createIdempotencyKey = createQuestIdempotencyKey();
+          const created = await liveQuestService.createQuest(
+            toQuestV2Payload(normalizedDraft),
+            createIdempotencyKey
+          );
+          publishedQuestId = created.id;
+          publishIdempotencyKey = createQuestIdempotencyKey();
           publishedQuestRef.current = {
             questId: publishedQuestId,
             storageKey: draftStorageKey,
             editQuestId,
+            createIdempotencyKey,
+            publishIdempotencyKey,
           };
         }
 
-        if (editQuestId) await deleteQuestDraft(draftStorageKey, editQuestId);
-        else await deleteQuestDraft(draftStorageKey);
+        if (!publishIdempotencyKey) {
+          publishIdempotencyKey = createQuestIdempotencyKey();
+          publishedQuestRef.current = {
+            questId: publishedQuestId,
+            storageKey: draftStorageKey,
+            editQuestId,
+            createIdempotencyKey,
+            publishIdempotencyKey,
+          };
+        }
+
+        const publishCheck =
+          await liveQuestService.getPublishCheck(publishedQuestId);
+        if (!publishCheck.canPublish) {
+          const reason =
+            publishCheck.blockingReasons
+              .map((blocker) => blocker.message)
+              .join(" ") || "The Quest is not ready to publish.";
+          throw new Error(reason);
+        }
+
+        const published = await liveQuestService.publishQuest(
+          publishedQuestId,
+          publishIdempotencyKey
+        );
+        if (published.state !== "QUEST_OPEN") {
+          throw new Error("The server did not open the Quest.");
+        }
+
+        if (!publishedQuestId) {
+          throw new Error("The Quest could not be published.");
+        }
+
+        const activeDraftId = draftIdRef.current;
+        if (activeDraftId)
+          await deleteQuestDraft(draftStorageKey, activeDraftId);
         if (requestId !== saveRequestRef.current) return false;
         publishedQuestRef.current = null;
         setSaveState("saved");
         setSaveErrorIntent(null);
+        setSaveErrorMessage(null);
         setSavingAction(null);
         return true;
-      } catch {
+      } catch (error) {
         if (requestId !== saveRequestRef.current) return false;
         setSaveState("error");
+        setSaveErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "Unable to publish the Quest."
+        );
         setSaveErrorIntent({ state: "OPEN", completesFlow: true });
         setSavingAction(null);
         return false;
@@ -1219,9 +1292,10 @@ export default function CreateQuestScreen({
       setDraftStorageKey(null);
       try {
         const storageKey = await getQuestDraftStorageKey();
-        const snapshot = editQuestId
-          ? await loadQuestDraft(storageKey, editQuestId)
-          : await loadQuestDraft(storageKey);
+        const snapshot = await loadQuestDraft(
+          storageKey,
+          draftIdRef.current ?? undefined
+        );
         if (!active) return;
 
         setDraftStorageKey(storageKey);
@@ -1340,22 +1414,20 @@ export default function CreateQuestScreen({
         if (reactTag) void AccessibilityInfo.setAccessibilityFocus(reactTag);
         if ("focus" in target && typeof target.focus === "function")
           target.focus();
-        const scrollTag = findNodeHandle(scrollRef.current);
-        if (
-          scrollTag &&
-          "measureLayout" in target &&
-          typeof target.measureLayout === "function"
-        ) {
-          target.measureLayout(
-            scrollTag,
-            (_x, y) =>
-              scrollRef.current?.scrollTo({
-                y: Math.max(0, y - 24),
-                animated: true,
-              }),
-            () => scrollRef.current?.scrollTo({ y: 0, animated: true })
-          );
-        } else {
+        const nativeScrollRef = scrollRef.current?.getNativeScrollRef();
+        const measured = nativeScrollRef
+          ? measureFieldRelativeToScroll(
+              target,
+              nativeScrollRef,
+              (_x, y) =>
+                scrollRef.current?.scrollTo({
+                  y: Math.max(0, y - 24),
+                  animated: true,
+                }),
+              () => scrollRef.current?.scrollTo({ y: 0, animated: true })
+            )
+          : false;
+        if (!measured) {
           scrollRef.current?.scrollTo({ y: 0, animated: true });
         }
       };
@@ -1474,7 +1546,7 @@ export default function CreateQuestScreen({
 
   const finishQuest = async (state: CompletionState) => {
     if (!validateStep(2)) return;
-    const check = questWorkflow.getDraftPublishCheck(draft);
+    const check = getQuestPublishCheck(draft);
     setPublishCheck(check);
     if (state === "OPEN" && !check.canPublish) {
       const firstBlocker = check.blockers[0];
@@ -1644,15 +1716,15 @@ export default function CreateQuestScreen({
     draftChangedRef.current = false;
     try {
       if (draftStorageKey) {
-        if (editQuestId) {
-          await deleteQuestDraft(draftStorageKey, editQuestId);
-        } else {
-          await deleteQuestDraft(draftStorageKey);
+        const activeDraftId = draftIdRef.current;
+        if (activeDraftId) {
+          await deleteQuestDraft(draftStorageKey, activeDraftId);
         }
       }
     } catch {
       setSaveState("error");
     }
+    draftIdRef.current = null;
     setDraft(initialDraft);
     setErrors({});
     setValidationSummary(null);
@@ -1679,7 +1751,7 @@ export default function CreateQuestScreen({
   const proofRequired = draft.proofRequired !== "none";
 
   const reviewPublishCheck = useMemo(
-    () => publishCheck ?? questWorkflow.getDraftPublishCheck(draft),
+    () => publishCheck ?? getQuestPublishCheck(draft),
     [draft, publishCheck]
   );
   const summary = useMemo(
@@ -1945,7 +2017,6 @@ export default function CreateQuestScreen({
               ) : null}
               {saveState === "error" ? (
                 <View
-                  accessibilityRole="alert"
                   accessibilityLiveRegion="assertive"
                   className={styles.saveErrorCard}
                   testID="create-quest-save-error"
@@ -1957,7 +2028,7 @@ export default function CreateQuestScreen({
                   />
                   <View className={styles.saveErrorCopy}>
                     <Text className={styles.saveErrorText}>
-                      {messages.saveError}
+                      {saveErrorMessage ?? messages.saveError}
                     </Text>
                   </View>
                   <Pressable

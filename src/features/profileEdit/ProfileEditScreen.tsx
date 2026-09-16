@@ -23,9 +23,9 @@ import {
 import { ApiError } from "../../api/ApiClient";
 import type { ProfileEditData } from "../../api/ProfileApi";
 import { profileModule } from "../profile/profileModule";
-import { authEnvironment, useAuthEnvironment } from "../auth/authEnvironment";
 import { authService } from "../auth/AuthService";
 import { AuthError } from "../auth/types";
+import { isPrototypeDemoEnabled } from "../auth/authEnvironment";
 import { onboardingMessages } from "../../locales/registrationOnboarding";
 import {
   profileEditMessages,
@@ -75,8 +75,8 @@ import type {
   ExperienceEntry,
   PortfolioEntry,
 } from "../../api/contracts";
-
 type EditSection = "basics" | "experience" | "portfolio" | "certificates";
+type HubSectionKey = EditSection | "academic-registration";
 
 function getParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -156,27 +156,33 @@ function ScreenHeader({
   );
 }
 
+function UnavailableState({ message }: { message: string }) {
+  return (
+    <View className={styles.statusCard} accessibilityRole="alert">
+      <Text className={styles.statusText}>{message}</Text>
+    </View>
+  );
+}
+
 function ErrorState({
   message,
   retry,
   retryLabel,
 }: {
   message: string;
-  retry?: () => void;
-  retryLabel?: string;
+  retry: () => void;
+  retryLabel: string;
 }) {
   return (
     <View className={styles.statusCard} accessibilityRole="alert">
       <Text className={styles.statusText}>{message}</Text>
-      {retry && retryLabel ? (
-        <Pressable
-          accessibilityRole="button"
-          className={styles.retryButton}
-          onPress={retry}
-        >
-          <Text className={styles.retryButtonText}>{retryLabel}</Text>
-        </Pressable>
-      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        className={styles.retryButton}
+        onPress={retry}
+      >
+        <Text className={styles.retryButtonText}>{retryLabel}</Text>
+      </Pressable>
     </View>
   );
 }
@@ -256,7 +262,7 @@ function ProfileEditLoadingState({
               <>
                 <SkeletonBlock height={18} width="88%" borderRadius={4} />
                 <View style={{ gap: 8, marginTop: 8 }}>
-                  {[1, 2, 3, 4, 5].map((item) => (
+                  {[1, 2, 3, 4].map((item) => (
                     <View
                       key={item}
                       className={styles.sectionRow}
@@ -631,40 +637,67 @@ function HubContent({ data }: { data: ProfileEditData }) {
   const router = useRouter();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
-  const isDemoMode = authEnvironment.isDemoEnabled();
-  const sections = [
+  const [academicUnavailable, setAcademicUnavailable] = useState(
+    () =>
+      isPrototypeDemoEnabled() ||
+      process.env.EXPO_PUBLIC_PROFILE_DEMO === "true"
+  );
+  const openAcademicRegistration = () => {
+    if (
+      isPrototypeDemoEnabled() ||
+      process.env.EXPO_PUBLIC_PROFILE_DEMO === "true"
+    ) {
+      setAcademicUnavailable(true);
+      return;
+    }
+    router.push("/onboarding?mode=edit");
+  };
+  const sections: Array<{
+    key: HubSectionKey;
+    title: string;
+    summary: string;
+    onPress: () => void;
+  }> = [
     {
-      key: "basics" as const,
+      key: "basics",
       title: messages.basics,
       summary: messages.basicsSummary,
+      onPress: () => router.push("/profile/edit/basics"),
     },
     {
-      key: "academic-registration" as const,
+      key: "academic-registration",
       title: messages.academicRegistration,
-      summary: isDemoMode
+      summary: academicUnavailable
         ? messages.unavailable
         : messages.academicRegistrationSummary,
+      onPress: openAcademicRegistration,
     },
     {
-      key: "experience" as const,
+      key: "experience",
       title: messages.experience,
-      summary: data.sectionUnavailable.experience || data.sectionErrors.experience
-        ? messages.unavailable
-        : messages.experienceSummary(data.experiences.length),
+      summary:
+        data.sectionUnavailable.experience || data.sectionErrors.experience
+          ? messages.unavailable
+          : messages.experienceSummary(data.experiences.length),
+      onPress: () => router.push("/profile/edit/experience"),
     },
     {
-      key: "portfolio" as const,
+      key: "portfolio",
       title: messages.portfolio,
-      summary: data.sectionUnavailable.portfolio || data.sectionErrors.portfolio
-        ? messages.unavailable
-        : messages.portfolioSummary(data.portfolio.length),
+      summary:
+        data.sectionUnavailable.portfolio || data.sectionErrors.portfolio
+          ? messages.unavailable
+          : messages.portfolioSummary(data.portfolio.length),
+      onPress: () => router.push("/profile/edit/portfolio"),
     },
     {
-      key: "certificates" as const,
+      key: "certificates",
       title: messages.certificates,
-      summary: data.sectionUnavailable.certificates || data.sectionErrors.certificates
-        ? messages.unavailable
-        : messages.certificatesSummary(data.certificates.length),
+      summary:
+        data.sectionUnavailable.certificates || data.sectionErrors.certificates
+          ? messages.unavailable
+          : messages.certificatesSummary(data.certificates.length),
+      onPress: () => router.push("/profile/edit/certificates"),
     },
   ];
 
@@ -685,23 +718,9 @@ function HubContent({ data }: { data: ProfileEditData }) {
             <Pressable
               key={section.key}
               testID={`profile-edit-section-${section.key}`}
-              accessibilityState={
-                section.key === "academic-registration"
-                  ? { disabled: isDemoMode }
-                  : undefined
-              }
-              disabled={
-                section.key === "academic-registration" && isDemoMode
-              }
+              accessibilityRole="button"
               className={styles.sectionRow}
-              onPress={() => {
-                if (section.key === "academic-registration") {
-                  if (isDemoMode) return;
-                  router.push("/onboarding?mode=edit");
-                  return;
-                }
-                router.push(`/profile/edit/${section.key}`);
-              }}
+              onPress={section.onPress}
             >
               <View className={styles.sectionRowContent}>
                 <Text className={styles.sectionRowTitle}>{section.title}</Text>
@@ -773,7 +792,7 @@ function BasicsEditor({
       await profileModule.updateBasics({
         firstName,
         lastName,
-        ...(form.bio.trim() ? { bio: form.bio.trim() } : {}),
+        bio: form.bio.trim() || undefined,
       });
       if (isLocalAsset(form.profileImage)) {
         try {
@@ -940,10 +959,6 @@ function SectionListScreen({
       `/profile/edit/${section}?itemId=${encodeURIComponent(id ?? "new")}`
     );
 
-  const sectionUnavailable = data.sectionUnavailable[section];
-  const sectionError = data.sectionErrors[section];
-  const sectionHasIssue = sectionUnavailable || sectionError;
-
   return (
     <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
       <ScrollView
@@ -951,19 +966,13 @@ function SectionListScreen({
         showsVerticalScrollIndicator={false}
       >
         <ScreenHeader title={title} backLabel={messages.back} onBack={onBack} />
-        {sectionHasIssue ? (
+        {data.sectionUnavailable[section] ? (
+          <UnavailableState message={messages.unavailable} />
+        ) : data.sectionErrors[section] ? (
           <ErrorState
-            message={
-              sectionUnavailable
-                ? messages.unavailable
-                : messages.sectionLoadError
-            }
-            retry={
-              sectionUnavailable
-                ? undefined
-                : () => router.replace(`/profile/edit/${section}`)
-            }
-            retryLabel={sectionUnavailable ? undefined : messages.retry}
+            message={messages.sectionLoadError}
+            retry={() => router.replace(`/profile/edit/${section}`)}
+            retryLabel={messages.retry}
           />
         ) : items.length === 0 ? (
           <View className={styles.emptyState}>
@@ -997,7 +1006,8 @@ function SectionListScreen({
             )}
           </View>
         )}
-        {sectionHasIssue ? null : (
+        {data.sectionUnavailable[section] ||
+        data.sectionErrors[section] ? null : (
           <Button
             variant="secondary"
             className={styles.addButton}
@@ -1136,7 +1146,6 @@ function ProfileEditDataLoader({
   const router = useRouter();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
-  const { activePersonaId } = useAuthEnvironment();
   const [data, setData] = useState<ProfileEditData | null>(null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -1151,7 +1160,7 @@ function ProfileEditDataLoader({
       setError(false);
       setData(null);
       void profileModule
-        .getEditData(activePersonaId)
+        .getEditData()
         .then((nextData) => {
           if (active) setData(nextData);
         })
@@ -1168,7 +1177,7 @@ function ProfileEditDataLoader({
       return () => {
         active = false;
       };
-    }, [activePersonaId, attempt, router])
+    }, [attempt, router])
   );
   if (error && !data)
     return (
@@ -1754,10 +1763,7 @@ export default function ProfileEditSectionScreen() {
         if (section === "basics")
           return <BasicsEditor data={data} onBack={onBack} />;
         if (section === "experience") {
-          if (
-            data.sectionUnavailable.experience ||
-            data.sectionErrors.experience
-          ) {
+          if (data.sectionUnavailable.experience) {
             return (
               <SectionListScreen
                 section="experience"
@@ -1780,10 +1786,7 @@ export default function ProfileEditSectionScreen() {
           );
         }
         if (section === "portfolio") {
-          if (
-            data.sectionUnavailable.portfolio ||
-            data.sectionErrors.portfolio
-          ) {
+          if (data.sectionUnavailable.portfolio) {
             return (
               <SectionListScreen
                 section="portfolio"
@@ -1806,10 +1809,7 @@ export default function ProfileEditSectionScreen() {
           );
         }
         if (section === "certificates") {
-          if (
-            data.sectionUnavailable.certificates ||
-            data.sectionErrors.certificates
-          ) {
+          if (data.sectionUnavailable.certificates) {
             return (
               <SectionListScreen
                 section="certificates"

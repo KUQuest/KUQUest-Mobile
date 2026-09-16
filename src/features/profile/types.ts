@@ -17,7 +17,7 @@ import type {
   UploadAsset,
 } from "../../api/StudentApi";
 import type { SupportedLocale } from "../../locales/LocaleProvider";
-import type { PrototypePersonaId } from "../../components/ui/prototypeMenuData";
+type PrototypePersonaId = string;
 
 // --- Zod Schemas for Profile Drafts & Entities ---
 

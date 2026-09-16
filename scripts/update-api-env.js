@@ -1,35 +1,38 @@
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
-const dgram = require('node:dgram');
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const dgram = require("node:dgram");
 
-const envPath = path.resolve(__dirname, '..', '.env.local');
+const envPath = path.resolve(__dirname, "..", ".env.local");
 const defaultApiPort = 5000;
 
 function getDefaultRouteAddress() {
   return new Promise((resolve, reject) => {
-    const socket = dgram.createSocket('udp4');
+    const socket = dgram.createSocket("udp4");
 
-    socket.once('error', (error) => {
+    socket.once("error", (error) => {
       socket.close();
       reject(error);
     });
-    socket.connect(80, '1.1.1.1', () => {
+    socket.connect(80, "1.1.1.1", () => {
       const address = socket.address();
       socket.close();
-      resolve(typeof address === 'object' ? address.address : undefined);
+      resolve(typeof address === "object" ? address.address : undefined);
     });
   });
 }
 
 function getFallbackAddress() {
-  const interfaces = Object.values(os.networkInterfaces()).flatMap((entries) => entries ?? []);
-  return interfaces.find((entry) => entry.family === 'IPv4' && !entry.internal)?.address;
+  const interfaces = Object.values(os.networkInterfaces()).flatMap(
+    (entries) => entries ?? []
+  );
+  return interfaces.find((entry) => entry.family === "IPv4" && !entry.internal)
+    ?.address;
 }
 
 function getApiConfig(envContent) {
   const match = envContent.match(/^EXPO_PUBLIC_API_URL=(.*)$/m);
-  if (!match?.[1]) return { protocol: 'http:', port: defaultApiPort };
+  if (!match?.[1]) return { protocol: "http:", port: defaultApiPort };
 
   const currentUrl = new URL(match[1]);
   return {
@@ -43,23 +46,58 @@ function getConfiguredHost(envContent) {
   return match?.[1]?.trim() || process.env.EXPO_PUBLIC_API_HOST;
 }
 
+function isRemoteUrl(urlStr) {
+  try {
+    const url = new URL(urlStr);
+    return (
+      url.protocol === "https:" ||
+      (url.hostname !== "localhost" &&
+        url.hostname !== "127.0.0.1" &&
+        !url.hostname.startsWith("192.168.") &&
+        !url.hostname.startsWith("10.") &&
+        !url.hostname.startsWith("172."))
+    );
+  } catch {
+    return false;
+  }
+}
+
 async function main() {
   if (!fs.existsSync(envPath)) {
-    throw new Error('.env.local was not found');
+    throw new Error(".env.local was not found");
   }
 
-  const envContent = fs.readFileSync(envPath, 'utf8');
+  const envContent = fs.readFileSync(envPath, "utf8");
+  const currentMatch = envContent.match(/^EXPO_PUBLIC_API_URL=(.*)$/m);
+  const currentUrl = currentMatch?.[1]?.trim();
+  const forceLocal =
+    process.argv.includes("--local") || process.argv.includes("--force");
+
+  if (currentUrl && isRemoteUrl(currentUrl) && !forceLocal) {
+    console.log(
+      `EXPO_PUBLIC_API_URL is configured for remote API: ${currentUrl}`
+    );
+    console.log(
+      "Skipping local LAN overwrite (pass --local to force local LAN IP)."
+    );
+    return;
+  }
+
   const apiConfig = getApiConfig(envContent);
-  const host = getConfiguredHost(envContent)
-    ?? await getDefaultRouteAddress().catch(() => getFallbackAddress());
+  const host =
+    getConfiguredHost(envContent) ??
+    (await getDefaultRouteAddress().catch(() => getFallbackAddress()));
 
   if (!host) {
-    throw new Error('Could not detect a local IPv4 address');
+    throw new Error("Could not detect a local IPv4 address");
   }
 
   const apiUrl = `${apiConfig.protocol}//${host}:${apiConfig.port}`;
   const updatedEnv = /^EXPO_PUBLIC_API_URL=.*$/m.test(envContent)
-    ? envContent.replace(/^EXPO_PUBLIC_API_URL=.*$/m, `EXPO_PUBLIC_API_URL=${apiUrl}`)
+    ? envContent.replace(
+        /^EXPO_PUBLIC_API_URL=.*$/m,
+        `EXPO_PUBLIC_API_URL=${apiUrl}`
+      )
     : `${envContent.trimEnd()}\nEXPO_PUBLIC_API_URL=${apiUrl}\n`;
 
   fs.writeFileSync(envPath, updatedEnv);
