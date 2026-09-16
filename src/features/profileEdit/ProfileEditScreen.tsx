@@ -796,7 +796,11 @@ function BasicsEditor({
       });
       if (isLocalAsset(form.profileImage)) {
         try {
-          await profileModule.uploadAvatar({ uri: form.profileImage });
+          await profileModule.uploadAvatar({
+            uri: form.profileImage,
+            name: form.profileImageFileName ?? undefined,
+            type: form.profileImageMimeType ?? undefined,
+          });
         } catch (error) {
           if (await redirectIfSessionExpired(error, router)) return;
           setSaveError(messages.avatarUploadError);
@@ -876,6 +880,8 @@ function BasicsEditor({
                         ...current,
                         profileImage: asset.uri,
                         profileImageCacheKey: undefined,
+                        profileImageMimeType: asset.mimeType,
+                        profileImageFileName: asset.fileName,
                       }));
                     })
                     .catch(() => setSaveError(messages.filePickerError));

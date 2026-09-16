@@ -2,6 +2,9 @@ import { ApiClient } from "./ApiClient";
 import {
   questV2BoardResponseSchema,
   questV2DetailResponseSchema,
+  questV2PublicDetailResponseSchema,
+  questV2ParticipationDetailResponseSchema,
+  questV2ImagesResponseSchema,
   questV2MineResponseSchema,
   questV2AssignmentsMineResponseSchema,
   questV2PublishCheckResponseSchema,
@@ -9,6 +12,9 @@ import {
   questV2CancellationResponseSchema,
   type QuestV2BoardCard,
   type QuestV2Detail,
+  type QuestV2PublicDetail,
+  type QuestV2ParticipationDetail,
+  type QuestV2Image,
   type QuestV2CanonicalQuest,
   type QuestV2Assignment,
   type QuestV2PublishCheck,
@@ -16,6 +22,7 @@ import {
   type QuestV2Mode,
   type QuestV2Participation,
 } from "./questV2Contracts";
+import { appendUploadFile, type UploadAsset } from "./fileUpload";
 
 export function createQuestIdempotencyKey(): string {
   return (
@@ -62,11 +69,20 @@ export class QuestApi {
     return questV2BoardResponseSchema.parse(body).data;
   }
 
-  async getPublicDetail(questId: string): Promise<QuestV2Detail> {
+  async getPublicDetail(questId: string): Promise<QuestV2PublicDetail> {
     const body = await this.client.request<unknown>(
       `/api/v2/quests/${questId}/public`
     );
-    return questV2DetailResponseSchema.parse(body).data;
+    return questV2PublicDetailResponseSchema.parse(body).data;
+  }
+
+  async getParticipationDetail(
+    questId: string
+  ): Promise<QuestV2ParticipationDetail> {
+    const body = await this.client.request<unknown>(
+      `/api/v2/quests/${questId}/participation`
+    );
+    return questV2ParticipationDetailResponseSchema.parse(body).data;
   }
 
   async getDetail(questId: string): Promise<QuestV2Detail> {
@@ -74,6 +90,28 @@ export class QuestApi {
       `/api/v2/quests/${questId}`
     );
     return questV2DetailResponseSchema.parse(body).data;
+  }
+
+  async uploadQuestImages(
+    questId: string,
+    assets: UploadAsset[],
+    idempotencyKey?: string
+  ): Promise<QuestV2Image[]> {
+    if (assets.length === 0) return [];
+    const formData = new FormData();
+    assets.forEach((asset, index) => {
+      appendUploadFile(formData, "images", asset, `quest-${index}`);
+    });
+    const headers: Record<string, string> = {};
+    if (idempotencyKey) {
+      headers["idempotency-key"] = idempotencyKey;
+    }
+    const body = await this.client.requestForm<unknown>(
+      `/api/v2/quests/${questId}/images`,
+      formData,
+      { method: "POST", headers }
+    );
+    return questV2ImagesResponseSchema.parse(body).data.images;
   }
 
   async listMine(

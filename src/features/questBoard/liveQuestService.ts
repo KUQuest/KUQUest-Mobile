@@ -8,6 +8,9 @@ import type {
   QuestV2BoardCard,
   QuestV2CanonicalQuest,
   QuestV2Detail,
+  QuestV2PublicDetail,
+  QuestV2ParticipationDetail,
+  QuestV2Image,
   QuestV2CancellationOutcome,
   QuestV2PublishCheck,
 } from "@/api/questV2Contracts";
@@ -91,6 +94,41 @@ export function canonicalToQuestBoardQuest(
   };
 }
 
+export function publicDetailToQuestBoardQuest(
+  d: QuestV2PublicDetail | QuestV2ParticipationDetail
+): QuestBoardQuest {
+  const startDate = d.startTime.slice(0, 10);
+  const deadline = d.dueAt ? d.dueAt.slice(0, 10) : startDate;
+  const rewardSatang = Math.round(d.questReward * 100);
+
+  return {
+    id: d.id,
+    title: d.title,
+    tags: d.tag ? [d.tag.name] : [],
+    description: d.description || "",
+    completionCriteria: d.condition.items.map((item) => item.text).join("\n"),
+    proofRequired: d.proofRequired ? "required" : "none",
+    rewardPerPerson: d.questReward,
+    rewardSatang,
+    headcount: d.headcount,
+    acceptedParticipants: d.activeWorkerCount,
+    startDate,
+    deadline,
+    timeRange: d.dueAt ? timeRange(d.startTime, d.dueAt) : undefined,
+    postedAt: d.startTime,
+    location: d.locations[0]?.label ?? "Online",
+    locationDetails: { label: d.locations[0]?.label ?? null },
+    locationMode: d.locations.length > 0 ? "on-campus" : "online",
+    participationMode: d.participation === "GROUP" ? "team" : "single",
+    candidateMode: d.mode === "CANDIDATE" ? "CANDIDATE" : "NO_CANDIDATE",
+    creator: { name: d.hirerName },
+    imageUris: d.images?.map((img) => img.url) ?? [],
+    studentInterestMatch: false,
+    ownerStudentId: "",
+    status: d.state as QuestStatus,
+  };
+}
+
 export class LiveQuestService {
   async listBoardQuests(): Promise<QuestBoardQuest[]> {
     const items: QuestBoardQuest[] = [];
@@ -124,11 +162,27 @@ export class LiveQuestService {
       const detail = await questApi.getDetail(questId);
       return canonicalToQuestBoardQuest(detail);
     } catch {
-      const publicDetail = await questApi.getPublicDetail(questId);
-      return canonicalToQuestBoardQuest(
-        publicDetail as unknown as QuestV2CanonicalQuest
-      );
+      try {
+        const publicDetail = await questApi.getPublicDetail(questId);
+        return publicDetailToQuestBoardQuest(publicDetail);
+      } catch {
+        const participationDetail =
+          await questApi.getParticipationDetail(questId);
+        return publicDetailToQuestBoardQuest(participationDetail);
+      }
     }
+  }
+
+  async uploadImages(
+    questId: string,
+    imageUris: string[]
+  ): Promise<QuestV2Image[]> {
+    const assets = imageUris.map((uri) => ({ uri }));
+    return questApi.uploadQuestImages(
+      questId,
+      assets,
+      createQuestIdempotencyKey()
+    );
   }
 
   async getPublishCheck(questId: string): Promise<QuestV2PublishCheck> {
