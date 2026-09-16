@@ -83,6 +83,14 @@ bun run staging:start
 
 The launcher forces `APP_VARIANT=staging`, uses a temporary local Android version code, ignores `.env.local`, and accepts only the exact HTTPS staging origin above. Install the native development client first; native Google Sign-In is not available in Expo Go.
 
+For Android staging sign-in, Google Cloud must also contain an **Android** OAuth client for package `com.kuquest.mobile.staging` and the SHA-1 fingerprint of the staging release keystore. The value passed as `EXPO_PUBLIC_GOOGLE_CLIENT_ID` must be the **Web** OAuth client ID from that same Google Cloud project, including the `.apps.googleusercontent.com` suffix; do not use the Android client ID. When creating the staging release key, print its SHA-1 fingerprint with:
+
+```bash
+node scripts/bootstrap-android-signing.js generate --environment staging --keystore /secure/kuquest-staging.jks
+```
+
+After registering that package/fingerprint and setting the full Web client ID in the GitHub `staging` Environment, rebuild and reinstall the APK. Existing APKs contain the old OAuth configuration and cannot be repaired by a JavaScript update. The APK workflow now rejects malformed client IDs before building.
+
 ---
 
 ## 3. Standalone Offline Demo Mode

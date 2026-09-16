@@ -106,6 +106,10 @@ jobs:
             printf 'EXPO_PUBLIC_API_URL must be an HTTPS URL; received %s\n' "$EXPO_PUBLIC_API_URL" >&2
             exit 78
           fi
+          if ! bun -e 'require("./scripts/start-staging.js").assertGoogleWebClientId(process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID)'; then
+            printf 'EXPO_PUBLIC_GOOGLE_CLIENT_ID must be a Google OAuth Web client ID ending in .apps.googleusercontent.com\n' >&2
+            exit 78
+          fi
           if [[ "$BUILD_VARIANT" != staging && "$BUILD_VARIANT" != production ]]; then
             printf 'Unsupported build variant: %s\n' "$BUILD_VARIANT" >&2
             exit 78
