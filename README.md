@@ -5,97 +5,128 @@ KUQuest Mobile connects students and staff for on-campus peer tasks, powered by 
 > [!IMPORTANT]
 > Because native Google OAuth and secure session storage require custom native modules, this project runs exclusively via **Development Builds** (`--dev-client`), not standard Expo Go.
 
-## 1. Local Backend Connection & Environment Setup
+## 1. Staging-only environment setup
 
-Create a `.env.local` file in the project root:
+The mobile app must connect to the remote **develop staging API**:
+
+```text
+https://kuquest-dev-api.kubits.org
+```
+
+Do **not** run the local API. The mobile app's local API/LAN setup will not work for the normal development flow. Do not use `bun run start`, `bun run dev:start`, `bun run dev:local`, or `bun run update-api-env`.
+
+Create `.env.local` in the project root by copying the template:
+
+```bash
+cp .env.example .env.local
+```
+
+Your `.env.local` should contain:
 
 ```env
-# Backend API URL (Auto-updated to your local LAN IP on Metro start)
-EXPO_PUBLIC_API_URL=http://localhost:5000
+# Remote develop staging backend
+EXPO_PUBLIC_API_URL=https://kuquest-dev-api.kubits.org
 
 # Terms of Service version required by registration
 EXPO_PUBLIC_TERMS_VERSION=v1.0
 
 # Native Google OAuth Web Client ID
-EXPO_PUBLIC_GOOGLE_CLIENT_ID=your-google-web-client-id.apps.googleusercontent.com
-
-# (Optional) iOS URL Scheme for Google Sign-In
-# EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME=com.googleusercontent.apps.your-id
+EXPO_PUBLIC_GOOGLE_CLIENT_ID=673221928877-d133t4thj3ipo94a3kfj4vle2hokmbi4.apps.googleusercontent.com
 ```
 
-### Automatic LAN IP Resolution
+`.env.local` is ignored by Git. Never commit credentials or other private values to the repository.
 
-Mobile emulators and physical devices cannot reach `localhost` directly on your host machine. Every time Metro starts (`bun run start` or `bun run dev:start`), the built-in script `scripts/update-api-env.js` automatically resolves your machine's active local IPv4 address and updates `EXPO_PUBLIC_API_URL` in `.env.local` (e.g. `http://192.168.1.50:5000`).
-
-To manually refresh your local API address without starting Metro:
+> **Important:** `bun run staging:start` intentionally ignores dotenv files and requires the three staging variables in its environment. Load the `.env.local` values into the current terminal before starting Metro:
 
 ```bash
-bun run update-api-env
+set -a
+source .env.local
+set +a
 ```
 
 ## 2. Running the Project
 
 ### Prerequisites
 
-- [Bun](https://bun.sh) (v1.2+)
-- Android Studio with an Android Emulator or Xcode with iOS Simulator
-- JDK 17 configured for Android builds
+- [Bun](https://bun.sh) v1.2+
+- Android Studio with an Android Emulator, or Xcode with an iOS Simulator
+- JDK 17 for Android builds
+- A native Development Build; Expo Go is not supported
 
-### Step 1: Install Dependencies
+### Step 1: Install dependencies
 
 ```bash
 bun install
 ```
 
-### Step 2: Build & Install Native Development Client
+### Step 2: Build and install the native Development Build
 
-Because this project contains native modules (`@react-native-google-signin/google-signin`, `@expo/ui`, etc.), compile and install the development client once before launching Metro:
+This project uses native modules, including Google Sign-In and `@expo/ui`. Build the native client before starting Metro:
 
 ```bash
-# For Android (automatically clears autolinking caches and builds for all architectures)
+# Android
 bun run dev:android
 
-# For iOS
+# iOS
 bun run dev:ios
 ```
 
-### Step 3: Start Metro Development Server
+Do not open the project in Expo Go. Expo Go cannot load the native modules used by this app.
 
-Once the development client is installed on your emulator or connected device, start the Metro bundler:
+### Step 3: Start Metro against staging
 
-```bash
-bun run dev:start
-```
-
-> [!NOTE]
-> `bun run dev:start` automatically runs `update-api-env` before launching Metro so your phone/emulator connects to your host machine's current local IP.
-
-### Staging API
-
-Use `staging:start` for Metro development against the staging API. It never runs the local-LAN API updater and fails before Metro unless these values are supplied externally:
+In the terminal where the `.env.local` values were loaded:
 
 ```bash
-EXPO_PUBLIC_API_URL=https://kuquest-dev-api.kubits.org \
-EXPO_PUBLIC_GOOGLE_CLIENT_ID=your-google-web-client-id.apps.googleusercontent.com \
-EXPO_PUBLIC_TERMS_VERSION=v1.0 \
 bun run staging:start
 ```
 
-The launcher forces `APP_VARIANT=staging`, uses a temporary local Android version code, ignores `.env.local`, and accepts only the exact HTTPS staging origin above. Install the native development client first; native Google Sign-In is not available in Expo Go.
+This command:
 
-For Android staging sign-in, Google Cloud must also contain an **Android** OAuth client for package `com.kuquest.mobile.staging` and the SHA-1 fingerprint of the staging release keystore. The value passed as `EXPO_PUBLIC_GOOGLE_CLIENT_ID` must be the **Web** OAuth client ID from that same Google Cloud project, including the `.apps.googleusercontent.com` suffix; do not use the Android client ID. When creating the staging release key, print its SHA-1 fingerprint with:
+- Connects Metro to `https://kuquest-dev-api.kubits.org`
+- Forces the `staging` app variant
+- Rejects local HTTP/LAN API URLs
+- Does not run the local API updater
+
+### Step 4: Launch the app
+
+For Android, use a running emulator and launch the installed Development Build:
 
 ```bash
-node scripts/bootstrap-android-signing.js generate --environment staging --keystore /secure/kuquest-staging.jks
+bun run android
 ```
 
-After registering that package/fingerprint and setting the full Web client ID in the GitHub `staging` Environment, rebuild and reinstall the APK. Existing APKs contain the old OAuth configuration and cannot be repaired by a JavaScript update. The APK workflow now rejects malformed client IDs before building.
+For iOS, open the installed Development Build from the simulator after Metro starts.
+
+### Android Google Sign-In
+
+Android staging sign-in requires a Google Cloud **Android** OAuth client for package `com.kuquest.mobile.staging` and the SHA-1 fingerprint of the staging signing key. `EXPO_PUBLIC_GOOGLE_CLIENT_ID` must remain the **Web** OAuth client ID and must include the `.apps.googleusercontent.com` suffix.
+
+For staging APK signing setup:
+
+```bash
+node scripts/bootstrap-android-signing.js generate \
+  --environment staging \
+  --keystore /secure/kuquest-staging.jks
+```
+
+After changing OAuth configuration or signing keys, rebuild and reinstall the native app. Existing APKs do not receive native OAuth configuration changes from JavaScript updates.
+
+### Verify the staging backend
+
+Optional endpoint and account verification:
+
+```bash
+bun run verify:staging
+```
+
+This checks the staging health endpoint and the configured Quest, wallet, and Work Chat API surfaces.
 
 ---
 
 ## 3. Standalone Offline Demo Mode
 
-If you need to test the UI, Quest flows, or screen layouts without a running backend server, launch the app in seeded demo mode:
+If you need to test the UI, Quest flows, or screen layouts without any backend connection, launch the app in seeded demo mode:
 
 ```bash
 bun run demo:start
