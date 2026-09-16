@@ -243,7 +243,7 @@ export class AuthService implements AuthAdapter {
   async signOut(): Promise<void> {
     authDebug("sign-out started");
     const remoteSignOut = settleWithin(
-      this.authClient.signOut(),
+      Promise.resolve().then(() => this.authClient.signOut()),
       SIGN_OUT_TIMEOUT_MS
     );
     const nativeSignOut = this.clearNativeGoogleAccount();

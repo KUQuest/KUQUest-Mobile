@@ -64,6 +64,7 @@ import { profileModule } from "../../profile/profileModule";
 import {
   ProfilePersistenceCoordinator,
   ProfilePersistenceError,
+  type UnavailableProfileCollections,
 } from "../profilePersistenceCoordinator";
 import { parseOnboardingStep } from "../steps";
 import { validateProfileBasics, validateProfileDetails } from "../validation";
@@ -114,6 +115,43 @@ function formatDate(value: string, locale: "en" | "th"): string {
         month: "short",
         day: "numeric",
       }).format(date);
+}
+
+type OptionalCollectionResult<T> = {
+  data: T[];
+  unavailable: boolean;
+};
+
+async function readOptionalCollection<T>(
+  request: () => Promise<T[]>
+): Promise<OptionalCollectionResult<T>> {
+  try {
+    return { data: await request(), unavailable: false };
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return { data: [], unavailable: true };
+    }
+    throw error;
+  }
+}
+
+function unavailableCollectionsFromResults(
+  certificates: OptionalCollectionResult<unknown>,
+  portfolio: OptionalCollectionResult<unknown>,
+  experience: OptionalCollectionResult<unknown>
+): UnavailableProfileCollections {
+  return {
+    ...(certificates.unavailable ? { certificates: true } : {}),
+    ...(portfolio.unavailable ? { portfolio: true } : {}),
+    ...(experience.unavailable ? { experience: true } : {}),
+  };
+}
+
+function optionalCollectionMessage(
+  unavailable: boolean,
+  messages: { optionalEmpty: string; optionalUnavailable: string }
+): string {
+  return unavailable ? messages.optionalUnavailable : messages.optionalEmpty;
 }
 
 function onboardingDebug(

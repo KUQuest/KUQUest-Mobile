@@ -25,6 +25,7 @@ import type { ProfileEditData } from "../../api/ProfileApi";
 import { profileModule } from "../profile/profileModule";
 import { authService } from "../auth/AuthService";
 import { AuthError } from "../auth/types";
+import { isPrototypeDemoEnabled } from "../auth/authEnvironment";
 import { onboardingMessages } from "../../locales/registrationOnboarding";
 import {
   profileEditMessages,
@@ -74,8 +75,8 @@ import type {
   ExperienceEntry,
   PortfolioEntry,
 } from "../../api/contracts";
-
 type EditSection = "basics" | "experience" | "portfolio" | "certificates";
+type HubSectionKey = EditSection | "academic-registration";
 
 function getParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -151,6 +152,14 @@ function ScreenHeader({
         {title}
       </Text>
       {action ?? <View className={styles.headerAction} />}
+    </View>
+  );
+}
+
+function UnavailableState({ message }: { message: string }) {
+  return (
+    <View className={styles.statusCard} accessibilityRole="alert">
+      <Text className={styles.statusText}>{message}</Text>
     </View>
   );
 }
@@ -628,32 +637,67 @@ function HubContent({ data }: { data: ProfileEditData }) {
   const router = useRouter();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
-  const sections = [
+  const [academicUnavailable, setAcademicUnavailable] = useState(
+    () =>
+      isPrototypeDemoEnabled() ||
+      process.env.EXPO_PUBLIC_PROFILE_DEMO === "true"
+  );
+  const openAcademicRegistration = () => {
+    if (
+      isPrototypeDemoEnabled() ||
+      process.env.EXPO_PUBLIC_PROFILE_DEMO === "true"
+    ) {
+      setAcademicUnavailable(true);
+      return;
+    }
+    router.push("/onboarding?mode=edit");
+  };
+  const sections: Array<{
+    key: HubSectionKey;
+    title: string;
+    summary: string;
+    onPress: () => void;
+  }> = [
     {
-      key: "basics" as const,
+      key: "basics",
       title: messages.basics,
       summary: messages.basicsSummary,
+      onPress: () => router.push("/profile/edit/basics"),
     },
     {
-      key: "experience" as const,
+      key: "academic-registration",
+      title: messages.academicRegistration,
+      summary: academicUnavailable
+        ? messages.unavailable
+        : messages.academicRegistrationSummary,
+      onPress: openAcademicRegistration,
+    },
+    {
+      key: "experience",
       title: messages.experience,
-      summary: data.sectionErrors.experience
-        ? messages.unavailable
-        : messages.experienceSummary(data.experiences.length),
+      summary:
+        data.sectionUnavailable.experience || data.sectionErrors.experience
+          ? messages.unavailable
+          : messages.experienceSummary(data.experiences.length),
+      onPress: () => router.push("/profile/edit/experience"),
     },
     {
-      key: "portfolio" as const,
+      key: "portfolio",
       title: messages.portfolio,
-      summary: data.sectionErrors.portfolio
-        ? messages.unavailable
-        : messages.portfolioSummary(data.portfolio.length),
+      summary:
+        data.sectionUnavailable.portfolio || data.sectionErrors.portfolio
+          ? messages.unavailable
+          : messages.portfolioSummary(data.portfolio.length),
+      onPress: () => router.push("/profile/edit/portfolio"),
     },
     {
-      key: "certificates" as const,
+      key: "certificates",
       title: messages.certificates,
-      summary: data.sectionErrors.certificates
-        ? messages.unavailable
-        : messages.certificatesSummary(data.certificates.length),
+      summary:
+        data.sectionUnavailable.certificates || data.sectionErrors.certificates
+          ? messages.unavailable
+          : messages.certificatesSummary(data.certificates.length),
+      onPress: () => router.push("/profile/edit/certificates"),
     },
   ];
 
@@ -676,7 +720,7 @@ function HubContent({ data }: { data: ProfileEditData }) {
               testID={`profile-edit-section-${section.key}`}
               accessibilityRole="button"
               className={styles.sectionRow}
-              onPress={() => router.push(`/profile/edit/${section.key}`)}
+              onPress={section.onPress}
             >
               <View className={styles.sectionRowContent}>
                 <Text className={styles.sectionRowTitle}>{section.title}</Text>
@@ -748,11 +792,7 @@ function BasicsEditor({
       await profileModule.updateBasics({
         firstName,
         lastName,
-        bio: form.bio.trim() || null,
-        occupationId:
-          data.occupations.length > 0
-            ? form.occupationId || undefined
-            : undefined,
+        bio: form.bio.trim() || undefined,
       });
       if (isLocalAsset(form.profileImage)) {
         try {
@@ -866,18 +906,6 @@ function BasicsEditor({
               maxLength={201}
               autoCapitalize="words"
             />
-            {data.occupations.length > 0 ? (
-              <Select
-                label={messages.occupation}
-                placeholder={messages.occupationPlaceholder}
-                options={data.occupations.map((occupation) => ({
-                  label: occupation.name,
-                  value: occupation.id,
-                }))}
-                value={form.occupationId}
-                onValueChange={(value) => setField("occupationId", value)}
-              />
-            ) : null}
             <TextArea
               label={messages.bio}
               placeholder={messages.bioPlaceholder}
@@ -938,7 +966,9 @@ function SectionListScreen({
         showsVerticalScrollIndicator={false}
       >
         <ScreenHeader title={title} backLabel={messages.back} onBack={onBack} />
-        {data.sectionErrors[section] ? (
+        {data.sectionUnavailable[section] ? (
+          <UnavailableState message={messages.unavailable} />
+        ) : data.sectionErrors[section] ? (
           <ErrorState
             message={messages.sectionLoadError}
             retry={() => router.replace(`/profile/edit/${section}`)}
@@ -976,7 +1006,8 @@ function SectionListScreen({
             )}
           </View>
         )}
-        {data.sectionErrors[section] ? null : (
+        {data.sectionUnavailable[section] ||
+        data.sectionErrors[section] ? null : (
           <Button
             variant="secondary"
             className={styles.addButton}
@@ -1732,6 +1763,15 @@ export default function ProfileEditSectionScreen() {
         if (section === "basics")
           return <BasicsEditor data={data} onBack={onBack} />;
         if (section === "experience") {
+          if (data.sectionUnavailable.experience) {
+            return (
+              <SectionListScreen
+                section="experience"
+                data={data}
+                onBack={onBack}
+              />
+            );
+          }
           const entry = data.experiences.find((item) => item.id === itemId);
           return itemId === "new" ? (
             <ExperienceEditor onBack={onBack} />
@@ -1746,6 +1786,15 @@ export default function ProfileEditSectionScreen() {
           );
         }
         if (section === "portfolio") {
+          if (data.sectionUnavailable.portfolio) {
+            return (
+              <SectionListScreen
+                section="portfolio"
+                data={data}
+                onBack={onBack}
+              />
+            );
+          }
           const entry = data.portfolio.find((item) => item.id === itemId);
           return itemId === "new" ? (
             <PortfolioEditor onBack={onBack} />
@@ -1760,6 +1809,15 @@ export default function ProfileEditSectionScreen() {
           );
         }
         if (section === "certificates") {
+          if (data.sectionUnavailable.certificates) {
+            return (
+              <SectionListScreen
+                section="certificates"
+                data={data}
+                onBack={onBack}
+              />
+            );
+          }
           const entry = data.certificates.find((item) => item.id === itemId);
           return itemId === "new" ? (
             <CertificateEditor onBack={onBack} />

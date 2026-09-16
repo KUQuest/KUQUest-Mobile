@@ -2,6 +2,8 @@
 /* eslint-disable @typescript-eslint/no-redeclare */
 
 export const MAX_QUEST_IMAGES = 3;
+export const MAX_PROOF_ATTACHMENTS = 5;
+export const MAX_PROOF_NOTE_LENGTH = 1000;
 export const SATANG_PER_BAHT = 100;
 
 /** Raw Quest lifecycle values returned by the Quest API. */

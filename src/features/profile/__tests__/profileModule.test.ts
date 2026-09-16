@@ -28,6 +28,7 @@ const mockedAuthService = authService as unknown as {
 };
 
 const fakeProfile: ProfileResponse = {
+  version: 1,
   email: "student@ku.th",
   firstName: "Jane",
   lastName: "Doe",
