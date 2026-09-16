@@ -386,6 +386,8 @@ export default function OnboardingScreen() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [unavailableCollections, setUnavailableCollections] =
+    useState<UnavailableProfileCollections>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -458,40 +460,43 @@ export default function OnboardingScreen() {
     async function load() {
       setLoadError(false);
       setIsLoadingProfile(true);
+      setUnavailableCollections({});
       try {
         const session = await authService.getSession();
         if (!session) throw new Error("No active session");
         const api = await authService.getStudentApi();
+        const certificatesPromise = readOptionalCollection(() =>
+          api.listCertificates()
+        );
+        const portfolioPromise = readOptionalCollection(() =>
+          api.listPortfolio()
+        );
         const experiencesPromise =
           typeof api.listExperience === "function"
-            ? api.listExperience().catch((error) => {
-                if (error instanceof ApiError && error.status === 404)
-                  return [];
-                throw error;
-              })
-            : Promise.resolve([]);
+            ? readOptionalCollection(() => api.listExperience())
+            : Promise.resolve({ data: [], unavailable: true });
         const [
           academicOptions,
           status,
           profile,
-          certificates,
-          portfolio,
-          experiences,
+          certificatesResult,
+          portfolioResult,
+          experiencesResult,
         ] = await Promise.all([
           api.getAcademicRegistrationOptions(),
           api.getAcademicRegistrationStatus(),
           api.getProfile(),
-          api.listCertificates(),
-          api.listPortfolio(),
+          certificatesPromise,
+          portfolioPromise,
           experiencesPromise,
         ]);
         const mappedForm = profileModule.mapProfileRecordsToDraft({
           profile,
           status,
           options: academicOptions,
-          certificates,
-          portfolio,
-          experiences,
+          certificates: certificatesResult.data,
+          portfolio: portfolioResult.data,
+          experiences: experiencesResult.data,
           fallbackName: session.user.name,
           fallbackImage: session.user.image ?? "",
         });
@@ -499,6 +504,13 @@ export default function OnboardingScreen() {
         if (active) {
           setOptions(academicOptions);
           setForm(mappedForm);
+          setUnavailableCollections(
+            unavailableCollectionsFromResults(
+              certificatesResult,
+              portfolioResult,
+              experiencesResult
+            )
+          );
         }
       } catch (error) {
         if (error instanceof AuthError && error.code === "SESSION_EXPIRED") {
@@ -612,7 +624,8 @@ export default function OnboardingScreen() {
         api,
         form,
         isEditMode,
-        process.env.EXPO_PUBLIC_TERMS_VERSION
+        process.env.EXPO_PUBLIC_TERMS_VERSION,
+        { unavailableCollections }
       );
       setForm(result.draft);
       if (isEditMode) router.replace("/(tabs)/profile");
@@ -1230,13 +1243,20 @@ export default function OnboardingScreen() {
                   {form.certificates.length === 0 ? (
                     <View className={styles.emptySection}>
                       <Text className={styles.emptySectionText}>
-                        {msg.optionalEmpty}
+                        {optionalCollectionMessage(
+                          Boolean(unavailableCollections.certificates),
+                          msg
+                        )}
                       </Text>
                     </View>
                   ) : null}
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={msg.addMoreCert}
+                    accessibilityState={{
+                      disabled: Boolean(unavailableCollections.certificates),
+                    }}
+                    disabled={Boolean(unavailableCollections.certificates)}
                     className={styles.addMoreBtn}
                     onPress={() =>
                       setForm((previous) => ({
@@ -1434,13 +1454,20 @@ export default function OnboardingScreen() {
                   {form.experiences.length === 0 ? (
                     <View className={styles.emptySection}>
                       <Text className={styles.emptySectionText}>
-                        {msg.optionalEmpty}
+                        {optionalCollectionMessage(
+                          Boolean(unavailableCollections.experience),
+                          msg
+                        )}
                       </Text>
                     </View>
                   ) : null}
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={msg.addMoreExp}
+                    accessibilityState={{
+                      disabled: Boolean(unavailableCollections.experience),
+                    }}
+                    disabled={Boolean(unavailableCollections.experience)}
                     className={styles.addMoreBtn}
                     onPress={() =>
                       setForm((previous) => ({
@@ -1540,13 +1567,20 @@ export default function OnboardingScreen() {
                   {form.works.length === 0 ? (
                     <View className={styles.emptySection}>
                       <Text className={styles.emptySectionText}>
-                        {msg.optionalEmpty}
+                        {optionalCollectionMessage(
+                          Boolean(unavailableCollections.portfolio),
+                          msg
+                        )}
                       </Text>
                     </View>
                   ) : null}
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={msg.addMoreWorks}
+                    accessibilityState={{
+                      disabled: Boolean(unavailableCollections.portfolio),
+                    }}
+                    disabled={Boolean(unavailableCollections.portfolio)}
                     className={styles.addMoreBtn}
                     onPress={() =>
                       setForm((previous) => ({
