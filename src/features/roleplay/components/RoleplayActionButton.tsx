@@ -1,9 +1,15 @@
+import type { ReactNode } from "react";
+
 import { Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 
 import styles from "../roleplayStyles";
 
-export type RoleplayActionButtonVariant = "primary" | "secondary" | "danger";
+export type RoleplayActionButtonVariant =
+  | "primary"
+  | "secondary"
+  | "danger"
+  | "neutral";
 
 interface RoleplayActionButtonProps {
   label: string;
@@ -12,6 +18,8 @@ interface RoleplayActionButtonProps {
   testID: string;
   variant?: RoleplayActionButtonVariant;
   disabled?: boolean;
+  compact?: boolean;
+  icon?: ReactNode;
 }
 
 export function RoleplayActionButton({
@@ -21,9 +29,12 @@ export function RoleplayActionButton({
   testID,
   variant = "primary",
   disabled = false,
+  compact = false,
+  icon,
 }: RoleplayActionButtonProps) {
   const isPrimary = variant === "primary";
   const isDanger = variant === "danger";
+  const isNeutral = variant === "neutral";
 
   return (
     <Pressable
@@ -33,35 +44,46 @@ export function RoleplayActionButton({
       className={cn(
         styles.actionButton,
         isPrimary && styles.actionButtonPrimary,
-        !isPrimary && !isDanger && styles.actionButtonSecondary,
+        !isPrimary && !isDanger && !isNeutral && styles.actionButtonSecondary,
         isDanger && styles.actionButtonDanger,
+        isNeutral && styles.actionButtonNeutral,
+        compact && styles.actionButtonCompact,
         disabled && styles.actionButtonDisabled
       )}
       disabled={disabled}
       onPress={onPress}
       testID={testID}
     >
-      <View className={styles.actionCopy}>
+      {icon}
+      <View
+        className={cn(
+          styles.actionCopy,
+          compact && styles.actionCopyCompact
+        )}
+      >
         <Text
           className={cn(
             styles.actionText,
             isPrimary && styles.actionTextLight,
             !isPrimary && !isDanger && styles.actionTextPrimary,
-            isDanger && styles.actionTextDanger
+            isDanger && styles.actionTextDanger,
+            isNeutral && styles.actionTextNeutral
           )}
         >
           {label}
         </Text>
-        <Text
-          className={cn(
-            styles.actionDescription,
-            isPrimary
-              ? styles.actionDescriptionLight
-              : styles.actionDescriptionMuted
-          )}
-        >
-          {description}
-        </Text>
+        {!compact ? (
+          <Text
+            className={cn(
+              styles.actionDescription,
+              isPrimary
+                ? styles.actionDescriptionLight
+                : styles.actionDescriptionMuted
+            )}
+          >
+            {description}
+          </Text>
+        ) : null}
       </View>
     </Pressable>
   );

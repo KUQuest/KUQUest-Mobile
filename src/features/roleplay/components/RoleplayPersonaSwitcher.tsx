@@ -53,27 +53,34 @@ export function RoleplayPersonaSwitcher({
               accessibilityRole="radio"
               accessibilityState={{ selected }}
               className={cn(
-                styles.application,
-                selected && "bg-ku-surface-success border-ku-border-success"
+                styles.personaOption,
+                selected && styles.personaOptionSelected
               )}
               key={persona.id}
               onPress={() => onPersonaChange(persona.id)}
               testID={`roleplay-persona-${persona.id}`}
             >
-              <View className={styles.applicationCopy}>
-                <Text className={styles.applicationId}>{label}</Text>
-                <Text className={styles.applicationApplicant}>
+              <View className={styles.personaOptionCopy}>
+                <Text
+                  className={styles.personaOptionLabel}
+                  testID={`roleplay-persona-label-${persona.id}`}
+                >
+                  {label}
+                </Text>
+                <Text className={styles.personaOptionMeta}>
                   {persona.id}
                 </Text>
               </View>
-              {selected ? (
-                <Check
-                  accessible={false}
-                  color={colors.primary}
-                  size={20}
-                  strokeWidth={2.5}
-                />
-              ) : null}
+              <View className={styles.personaOptionIndicator}>
+                {selected ? (
+                  <Check
+                    accessible={false}
+                    color={colors.primary}
+                    size={20}
+                    strokeWidth={2.5}
+                  />
+                ) : null}
+              </View>
             </Pressable>
           );
         })}

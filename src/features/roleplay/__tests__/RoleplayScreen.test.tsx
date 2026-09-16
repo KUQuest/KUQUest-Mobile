@@ -68,6 +68,8 @@ describe("RoleplayScreen", () => {
     const view = await render(<RoleplayScreen />);
 
     expect(teamId).toBeDefined();
+    expect(view.getAllByText("Accept").length).toBeGreaterThan(0);
+    expect(view.getAllByText("Decline").length).toBeGreaterThan(0);
     expect(
       view.getByTestId(`roleplay-action-select-team-${teamId}`)
     ).toBeTruthy();
@@ -100,6 +102,23 @@ describe("RoleplayScreen", () => {
     });
   });
 
+  it("keeps every role label visible while switching personas", async () => {
+    const view = await render(<RoleplayScreen />);
+
+    await fireEvent.press(view.getByTestId("roleplay-persona-demo-hirer"));
+    await fireEvent.press(view.getByTestId("roleplay-persona-student-demo"));
+
+    expect(view.getByTestId("roleplay-persona-label-demo-hirer")).toHaveTextContent(
+      "Hirer"
+    );
+    expect(
+      view.getByTestId("roleplay-persona-label-student-demo")
+    ).toHaveTextContent("Applicant / Team Leader A");
+    expect(
+      view.getByTestId("roleplay-persona-label-demo-worker-2")
+    ).toHaveTextContent("Invited Worker");
+  });
+
   it("shows feedback and canonical state after an allowed action", async () => {
     roleplayMock.setPersona("demo-hirer");
     const application = roleplayMock
@@ -117,7 +136,7 @@ describe("RoleplayScreen", () => {
         /QUEST_ASSIGNED/
       );
       expect(view.getByTestId("roleplay-feedback")).toHaveTextContent(
-        /Select Candidate completed/
+        /Accept completed/
       );
     });
   });
