@@ -1207,6 +1207,19 @@ export default function CreateQuestScreen({
             createIdempotencyKey
           );
           publishedQuestId = created.id;
+          if (
+            normalizedDraft.imageUris &&
+            normalizedDraft.imageUris.length > 0
+          ) {
+            try {
+              await liveQuestService.uploadImages(
+                publishedQuestId,
+                normalizedDraft.imageUris
+              );
+            } catch (imageError) {
+              console.warn("Failed to upload quest images:", imageError);
+            }
+          }
           publishIdempotencyKey = createQuestIdempotencyKey();
           publishedQuestRef.current = {
             questId: publishedQuestId,

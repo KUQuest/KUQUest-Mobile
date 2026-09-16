@@ -1,5 +1,10 @@
-import { ApiClient, ApiError } from './ApiClient';
-import { File } from 'expo-file-system';
+import { ApiClient, ApiError } from "./ApiClient";
+import {
+  appendUploadFile,
+  fileNameFromUri,
+  mimeTypeFromUri,
+  type UploadAsset,
+} from "./fileUpload";
 import {
   academicRegistrationOptionsResponseSchema,
   academicRegistrationStatusResponseSchema,
@@ -22,7 +27,8 @@ import {
   type ProfileResponse,
   type ProfileReview,
   type Reputation,
-} from './contracts';
+} from "./contracts";
+export type { UploadAsset };
 
 export interface AcademicRegistrationUpdate {
   firstName?: string;
@@ -63,31 +69,22 @@ export interface ExperienceCreate {
   endedAt?: string | null;
 }
 
-export interface UploadAsset {
-  uri: string;
-  name?: string;
-  type?: string;
-}
-
 export interface MutationOptions {
   idempotencyKey?: string;
 }
 
-function mutationHeaders(options?: MutationOptions): Record<string, string> | undefined {
-  return options?.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined;
+function mutationHeaders(
+  options?: MutationOptions
+): Record<string, string> | undefined {
+  return options?.idempotencyKey
+    ? { "Idempotency-Key": options.idempotencyKey }
+    : undefined;
 }
 
-function appendFile(formData: FormData, field: string, asset: UploadAsset): void {
-  const file = new File(asset.uri);
-  formData.append(field, file, asset.name ?? file.name ?? `${field}.jpg`);
-}
-
-function fileNameFromUri(uri: string, fallback: string): string {
-  const lastSegment = uri.split('/').pop();
-  return lastSegment || fallback;
-}
-
-function studentApiDebug(message: string, details: Record<string, unknown> = {}): void {
+function studentApiDebug(
+  message: string,
+  details: Record<string, unknown> = {}
+): void {
   if (__DEV__) {
     console.log(`[student-api] ${message}`, details);
   }
@@ -95,13 +92,26 @@ function studentApiDebug(message: string, details: Record<string, unknown> = {})
 
 function getErrorDetails(error: unknown): Record<string, unknown> {
   if (error instanceof ApiError) {
-    return { name: error.name, status: error.status, code: error.code, message: error.message };
+    return {
+      name: error.name,
+      status: error.status,
+      code: error.code,
+      message: error.message,
+    };
   }
   if (error instanceof Error) {
-    const issues = 'issues' in error && Array.isArray(error.issues)
-      ? error.issues.map((issue: { path?: unknown; message?: unknown }) => ({ path: issue.path, message: issue.message }))
-      : undefined;
-    return { name: error.name, message: error.message, ...(issues ? { issues } : {}) };
+    const issues =
+      "issues" in error && Array.isArray(error.issues)
+        ? error.issues.map((issue: { path?: unknown; message?: unknown }) => ({
+            path: issue.path,
+            message: issue.message,
+          }))
+        : undefined;
+    return {
+      name: error.name,
+      message: error.message,
+      ...(issues ? { issues } : {}),
+    };
   }
   return { message: String(error) };
 }
@@ -109,233 +119,449 @@ function getErrorDetails(error: unknown): Record<string, unknown> {
 export class StudentApi {
   constructor(private readonly client: ApiClient) {}
 
-  private async trace<T>(operation: string, details: Record<string, unknown>, action: () => Promise<T>): Promise<T> {
+  private async trace<T>(
+    operation: string,
+    details: Record<string, unknown>,
+    action: () => Promise<T>
+  ): Promise<T> {
     studentApiDebug(`${operation} started`, details);
     try {
       const result = await action();
       studentApiDebug(`${operation} succeeded`, details);
       return result;
     } catch (error) {
-      studentApiDebug(`${operation} failed`, { ...details, error: getErrorDetails(error) });
+      studentApiDebug(`${operation} failed`, {
+        ...details,
+        error: getErrorDetails(error),
+      });
       throw error;
     }
   }
 
   async getAcademicRegistrationOptions(): Promise<AcademicRegistrationOptions> {
-    const body = await this.client.request<unknown>('/api/v1/academic-registration/options');
+    const body = await this.client.request<unknown>(
+      "/api/v1/academic-registration/options"
+    );
     return academicRegistrationOptionsResponseSchema.parse(body).data;
   }
 
   async getAcademicRegistrationStatus(): Promise<AcademicRegistrationStatus> {
-    const body = await this.client.request<unknown>('/api/v1/academic-registration/status');
+    const body = await this.client.request<unknown>(
+      "/api/v1/academic-registration/status"
+    );
     return academicRegistrationStatusResponseSchema.parse(body).data;
   }
 
-  async updateAcademicRegistration(update: AcademicRegistrationUpdate, options?: MutationOptions): Promise<void> {
-    return this.trace('academic registration update', {
-      hasFirstName: Boolean(update.firstName),
-      hasLastName: Boolean(update.lastName),
-      hasTelephone: Boolean(update.telephone),
-      hasOccupationId: Boolean(update.occupationId),
-      hasStudentId: Boolean(update.studentId),
-      hasDepartmentId: Boolean(update.departmentId),
-      hasTermsVersion: Boolean(update.termsVersion),
-    }, async () => {
-      if (!Object.values(update).some((value) => value !== undefined)) {
-        throw new ApiError(
-          400,
-          'VALIDATION_ERROR',
-          'Academic Registration update must contain at least one field',
+  async updateAcademicRegistration(
+    update: AcademicRegistrationUpdate,
+    options?: MutationOptions
+  ): Promise<void> {
+    return this.trace(
+      "academic registration update",
+      {
+        hasFirstName: Boolean(update.firstName),
+        hasLastName: Boolean(update.lastName),
+        hasTelephone: Boolean(update.telephone),
+        hasOccupationId: Boolean(update.occupationId),
+        hasStudentId: Boolean(update.studentId),
+        hasDepartmentId: Boolean(update.departmentId),
+        hasTermsVersion: Boolean(update.termsVersion),
+      },
+      async () => {
+        if (!Object.values(update).some((value) => value !== undefined)) {
+          throw new ApiError(
+            400,
+            "VALIDATION_ERROR",
+            "Academic Registration update must contain at least one field"
+          );
+        }
+        const body = await this.client.requestJson<unknown>(
+          "/api/v1/academic-registration",
+          update,
+          { method: "PATCH", headers: mutationHeaders(options) }
         );
+        successResponseSchema.parse(body);
       }
-      const body = await this.client.requestJson<unknown>('/api/v1/academic-registration', update, { method: 'PATCH', headers: mutationHeaders(options) });
-      successResponseSchema.parse(body);
-    });
+    );
   }
 
   async getProfile(): Promise<ProfileResponse> {
-    const body = await this.client.request<unknown>('/api/v1/profile');
+    const body = await this.client.request<unknown>("/api/v1/profile");
     return profileResponseSchema.parse(body).data;
   }
 
-  async updateProfile(update: ProfileUpdate, options?: MutationOptions): Promise<void> {
-    return this.trace('profile update', {
-      hasFirstName: Boolean(update.firstName),
-      hasLastName: Boolean(update.lastName),
-      hasBio: update.bio !== undefined,
-      hasTelephone: Boolean(update.telephone),
-      hasDepartmentId: Boolean(update.departmentId),
-    }, async () => {
-      const normalizedUpdate: ProfileUpdate = {
-        ...(update.firstName === undefined ? {} : { firstName: update.firstName }),
-        ...(update.lastName === undefined ? {} : { lastName: update.lastName }),
-        ...(update.bio?.trim() ? { bio: update.bio.trim() } : {}),
-        ...(update.telephone === undefined ? {} : { telephone: update.telephone }),
-        ...(update.departmentId === undefined ? {} : { departmentId: update.departmentId }),
-      };
-      const body = await this.client.requestJson<unknown>('/api/v1/profile', normalizedUpdate, { method: 'PATCH', headers: mutationHeaders(options) });
-      successResponseSchema.parse(body);
-    });
+  async updateProfile(
+    update: ProfileUpdate,
+    options?: MutationOptions
+  ): Promise<void> {
+    return this.trace(
+      "profile update",
+      {
+        hasFirstName: Boolean(update.firstName),
+        hasLastName: Boolean(update.lastName),
+        hasBio: update.bio !== undefined,
+        hasTelephone: Boolean(update.telephone),
+        hasDepartmentId: Boolean(update.departmentId),
+      },
+      async () => {
+        const normalizedUpdate: ProfileUpdate = {
+          ...(update.firstName === undefined
+            ? {}
+            : { firstName: update.firstName }),
+          ...(update.lastName === undefined
+            ? {}
+            : { lastName: update.lastName }),
+          ...(update.bio?.trim() ? { bio: update.bio.trim() } : {}),
+          ...(update.telephone === undefined
+            ? {}
+            : { telephone: update.telephone }),
+          ...(update.departmentId === undefined
+            ? {}
+            : { departmentId: update.departmentId }),
+        };
+        const body = await this.client.requestJson<unknown>(
+          "/api/v1/profile",
+          normalizedUpdate,
+          { method: "PATCH", headers: mutationHeaders(options) }
+        );
+        successResponseSchema.parse(body);
+      }
+    );
   }
 
   async listExperience(): Promise<ExperienceEntry[]> {
-    const body = await this.client.request<unknown>('/api/v1/profile/experience');
+    const body = await this.client.request<unknown>(
+      "/api/v1/profile/experience"
+    );
     return experienceResponseSchema.parse(body).data;
   }
 
-  async createExperience(entry: ExperienceCreate, options?: MutationOptions): Promise<ExperienceEntry | undefined> {
-    const body = await this.client.requestJson<unknown>('/api/v1/profile/experience', entry, { method: 'POST', headers: mutationHeaders(options) });
+  async createExperience(
+    entry: ExperienceCreate,
+    options?: MutationOptions
+  ): Promise<ExperienceEntry | undefined> {
+    const body = await this.client.requestJson<unknown>(
+      "/api/v1/profile/experience",
+      entry,
+      { method: "POST", headers: mutationHeaders(options) }
+    );
     return experienceMutationResponseSchema.parse(body).data?.experience;
   }
 
-  async updateExperience(id: string, update: Partial<ExperienceCreate>, options?: MutationOptions): Promise<ExperienceEntry | undefined> {
-    const body = await this.client.requestJson<unknown>(`/api/v1/profile/experience/${id}`, update, { method: 'PATCH', headers: mutationHeaders(options) });
+  async updateExperience(
+    id: string,
+    update: Partial<ExperienceCreate>,
+    options?: MutationOptions
+  ): Promise<ExperienceEntry | undefined> {
+    const body = await this.client.requestJson<unknown>(
+      `/api/v1/profile/experience/${id}`,
+      update,
+      { method: "PATCH", headers: mutationHeaders(options) }
+    );
     return experienceMutationResponseSchema.parse(body).data?.experience;
   }
 
   async deleteExperience(id: string): Promise<void> {
-    const body = await this.client.request<unknown>(`/api/v1/profile/experience/${id}`, { method: 'DELETE' });
+    const body = await this.client.request<unknown>(
+      `/api/v1/profile/experience/${id}`,
+      { method: "DELETE" }
+    );
     successResponseSchema.parse(body);
   }
 
   async getReputation(): Promise<Reputation> {
-    const body = await this.client.request<unknown>('/api/v1/profile/reputation');
+    const body = await this.client.request<unknown>(
+      "/api/v1/profile/reputation"
+    );
     return reputationResponseSchema.parse(body).data;
   }
 
-  async listReviews(rating: 'all' | 5 | 4 | 3 | 2 | 1 = 'all'): Promise<{ items: ProfileReview[]; total: number; nextCursor?: string | null }> {
-    const query = rating === 'all' ? '' : `?rating=${rating}`;
-    const body = await this.client.request<unknown>(`/api/v1/profile/reviews${query}`);
+  async listReviews(
+    rating: "all" | 5 | 4 | 3 | 2 | 1 = "all"
+  ): Promise<{
+    items: ProfileReview[];
+    total: number;
+    nextCursor?: string | null;
+  }> {
+    const query = rating === "all" ? "" : `?rating=${rating}`;
+    const body = await this.client.request<unknown>(
+      `/api/v1/profile/reviews${query}`
+    );
     const parsed = reviewsResponseSchema.parse(body).data;
-    return { items: parsed.items, total: parsed.total, nextCursor: parsed.nextCursor };
+    return {
+      items: parsed.items,
+      total: parsed.total,
+      nextCursor: parsed.nextCursor,
+    };
   }
 
-  async uploadAvatar(asset: UploadAsset, options?: MutationOptions): Promise<string | null> {
-    return this.trace('avatar upload', {
-      fileName: asset.name ?? fileNameFromUri(asset.uri, 'avatar.jpg'),
-      mimeType: asset.type ?? 'image/jpeg',
-    }, async () => {
-      const formData = new FormData();
-      appendFile(formData, 'avatar', asset);
-      const body = await this.client.requestForm<unknown>(
-        '/api/v1/profile/avatar',
-        formData,
-        { method: 'POST', headers: mutationHeaders(options) }
-      );
-      return avatarMutationResponseSchema.parse(body).data.fileId;
-    });
+  async uploadAvatar(
+    asset: UploadAsset,
+    options?: MutationOptions
+  ): Promise<string | null> {
+    const mimeType = asset.type || mimeTypeFromUri(asset.uri);
+    const ext =
+      mimeType === "image/png"
+        ? "png"
+        : mimeType === "image/webp"
+          ? "webp"
+          : "jpg";
+    const fileName = asset.name ?? fileNameFromUri(asset.uri, `avatar.${ext}`);
+    return this.trace(
+      "avatar upload",
+      {
+        fileName,
+        mimeType,
+      },
+      async () => {
+        const formData = new FormData();
+        appendUploadFile(formData, "avatar", {
+          uri: asset.uri,
+          name: fileName,
+          type: mimeType,
+        });
+        const body = await this.client.requestForm<unknown>(
+          "/api/v1/profile/avatar",
+          formData,
+          { method: "POST", headers: mutationHeaders(options) }
+        );
+        return avatarMutationResponseSchema.parse(body).data.fileId;
+      }
+    );
   }
 
   async listPortfolio(): Promise<PortfolioEntry[]> {
-    const body = await this.client.request<unknown>('/api/v1/profile/portfolio');
+    const body = await this.client.request<unknown>(
+      "/api/v1/profile/portfolio"
+    );
     return portfolioResponseSchema.parse(body).data;
   }
 
-  async createPortfolio(entry: PortfolioCreate, options?: MutationOptions): Promise<string> {
-    return this.trace('portfolio create', {
-      titleLength: entry.title.length,
-      descriptionLength: entry.description?.length ?? 0,
-      imageCount: entry.imageUris.length,
-      localImageCount: entry.imageUris.filter((uri) => !/^https?:\/\//i.test(uri)).length,
-    }, async () => {
-      const formData = new FormData();
-      formData.append('title', entry.title);
-      if (entry.description) formData.append('description', entry.description);
-      entry.imageUris.forEach((uri, index) => appendFile(formData, 'images', {
-        uri,
-        name: fileNameFromUri(uri, `portfolio-${index}.jpg`),
-      }));
-      const body = await this.client.requestForm<unknown>('/api/v1/profile/portfolio', formData, { method: 'POST', headers: mutationHeaders(options) });
-      return portfolioCreateResponseSchema.parse(body).data.id;
-    });
+  async createPortfolio(
+    entry: PortfolioCreate,
+    options?: MutationOptions
+  ): Promise<string> {
+    return this.trace(
+      "portfolio create",
+      {
+        titleLength: entry.title.length,
+        descriptionLength: entry.description?.length ?? 0,
+        imageCount: entry.imageUris.length,
+        localImageCount: entry.imageUris.filter(
+          (uri) => !/^https?:\/\//i.test(uri)
+        ).length,
+      },
+      async () => {
+        const formData = new FormData();
+        formData.append("title", entry.title);
+        if (entry.description)
+          formData.append("description", entry.description);
+        entry.imageUris.forEach((uri, index) =>
+          appendUploadFile(
+            formData,
+            "images",
+            {
+              uri,
+              name: fileNameFromUri(uri, `portfolio-${index}.jpg`),
+            },
+            `portfolio-${index}`
+          )
+        );
+        const body = await this.client.requestForm<unknown>(
+          "/api/v1/profile/portfolio",
+          formData,
+          { method: "POST", headers: mutationHeaders(options) }
+        );
+        return portfolioCreateResponseSchema.parse(body).data.id;
+      }
+    );
   }
 
-  async updatePortfolio(id: string, update: { title?: string; description?: string | null }, options?: MutationOptions): Promise<void> {
-    return this.trace('portfolio update', {
-      id,
-      titleLength: update.title?.length ?? 0,
-      descriptionLength: update.description?.length ?? 0,
-    }, async () => {
-      const body = await this.client.requestJson<unknown>(`/api/v1/profile/portfolio/${id}`, update, { method: 'PATCH', headers: mutationHeaders(options) });
-      successResponseSchema.parse(body);
-    });
+  async updatePortfolio(
+    id: string,
+    update: { title?: string; description?: string | null },
+    options?: MutationOptions
+  ): Promise<void> {
+    return this.trace(
+      "portfolio update",
+      {
+        id,
+        titleLength: update.title?.length ?? 0,
+        descriptionLength: update.description?.length ?? 0,
+      },
+      async () => {
+        const body = await this.client.requestJson<unknown>(
+          `/api/v1/profile/portfolio/${id}`,
+          update,
+          { method: "PATCH", headers: mutationHeaders(options) }
+        );
+        successResponseSchema.parse(body);
+      }
+    );
   }
 
-  async uploadPortfolioImage(id: string, asset: UploadAsset, options?: MutationOptions): Promise<void> {
-    return this.trace('portfolio image upload', {
-      id,
-      fileName: asset.name ?? fileNameFromUri(asset.uri, 'portfolio.jpg'),
-      mimeType: asset.type ?? 'image/jpeg',
-    }, async () => {
-      const formData = new FormData();
-      appendFile(formData, 'image', asset);
-      const body = await this.client.requestForm<unknown>(`/api/v1/profile/portfolio/${id}/image`, formData, { method: 'POST', headers: mutationHeaders(options) });
-      successResponseSchema.parse(body);
-    });
+  async uploadPortfolioImage(
+    id: string,
+    asset: UploadAsset,
+    options?: MutationOptions
+  ): Promise<void> {
+    const mimeType = asset.type || mimeTypeFromUri(asset.uri);
+    const ext =
+      mimeType === "image/png"
+        ? "png"
+        : mimeType === "image/webp"
+          ? "webp"
+          : "jpg";
+    const fileName =
+      asset.name ?? fileNameFromUri(asset.uri, `portfolio.${ext}`);
+    return this.trace(
+      "portfolio image upload",
+      {
+        id,
+        fileName,
+        mimeType,
+      },
+      async () => {
+        const formData = new FormData();
+        appendUploadFile(formData, "image", {
+          uri: asset.uri,
+          name: fileName,
+          type: mimeType,
+        });
+        const body = await this.client.requestForm<unknown>(
+          `/api/v1/profile/portfolio/${id}/image`,
+          formData,
+          { method: "POST", headers: mutationHeaders(options) }
+        );
+        successResponseSchema.parse(body);
+      }
+    );
   }
 
   async deletePortfolioImage(id: string): Promise<void> {
-    const body = await this.client.request<unknown>(`/api/v1/profile/portfolio/${id}/image`, { method: 'DELETE' });
+    const body = await this.client.request<unknown>(
+      `/api/v1/profile/portfolio/${id}/image`,
+      { method: "DELETE" }
+    );
     successResponseSchema.parse(body);
   }
 
   async deletePortfolio(id: string): Promise<void> {
-    return this.trace('portfolio delete', { id }, async () => {
-      const body = await this.client.request<unknown>(`/api/v1/profile/portfolio/${id}`, { method: 'DELETE' });
+    return this.trace("portfolio delete", { id }, async () => {
+      const body = await this.client.request<unknown>(
+        `/api/v1/profile/portfolio/${id}`,
+        { method: "DELETE" }
+      );
       successResponseSchema.parse(body);
     });
   }
 
   async listCertificates(): Promise<CertificateEntry[]> {
-    const body = await this.client.request<unknown>('/api/v1/profile/certificates');
+    const body = await this.client.request<unknown>(
+      "/api/v1/profile/certificates"
+    );
     return certificateResponseSchema.parse(body).data.certificates;
   }
 
-  async createCertificate(entry: CertificateCreate, options?: MutationOptions): Promise<string> {
-    return this.trace('certificate create', {
-      nameLength: entry.name.length,
-      issuerLength: entry.issuer.length,
-      issuedAt: entry.issuedAt,
-    }, async () => {
-      const body = await this.client.requestJson<unknown>('/api/v1/profile/certificates', entry, { method: 'POST', headers: mutationHeaders(options) });
-      return certificateCreateResponseSchema.parse(body).data.certificate.id;
-    });
+  async createCertificate(
+    entry: CertificateCreate,
+    options?: MutationOptions
+  ): Promise<string> {
+    return this.trace(
+      "certificate create",
+      {
+        nameLength: entry.name.length,
+        issuerLength: entry.issuer.length,
+        issuedAt: entry.issuedAt,
+      },
+      async () => {
+        const body = await this.client.requestJson<unknown>(
+          "/api/v1/profile/certificates",
+          entry,
+          { method: "POST", headers: mutationHeaders(options) }
+        );
+        return certificateCreateResponseSchema.parse(body).data.certificate.id;
+      }
+    );
   }
 
-  async updateCertificate(id: string, update: CertificateCreate, options?: MutationOptions): Promise<void> {
-    return this.trace('certificate update', {
-      id,
-      nameLength: update.name.length,
-      issuerLength: update.issuer.length,
-      issuedAt: update.issuedAt,
-    }, async () => {
-      const body = await this.client.requestJson<unknown>(`/api/v1/profile/certificates/${id}`, update, { method: 'PATCH', headers: mutationHeaders(options) });
-      successResponseSchema.parse(body);
-    });
+  async updateCertificate(
+    id: string,
+    update: CertificateCreate,
+    options?: MutationOptions
+  ): Promise<void> {
+    return this.trace(
+      "certificate update",
+      {
+        id,
+        nameLength: update.name.length,
+        issuerLength: update.issuer.length,
+        issuedAt: update.issuedAt,
+      },
+      async () => {
+        const body = await this.client.requestJson<unknown>(
+          `/api/v1/profile/certificates/${id}`,
+          update,
+          { method: "PATCH", headers: mutationHeaders(options) }
+        );
+        successResponseSchema.parse(body);
+      }
+    );
   }
 
   async deleteCertificate(id: string): Promise<void> {
-    return this.trace('certificate delete', { id }, async () => {
-      const body = await this.client.request<unknown>(`/api/v1/profile/certificates/${id}`, { method: 'DELETE' });
+    return this.trace("certificate delete", { id }, async () => {
+      const body = await this.client.request<unknown>(
+        `/api/v1/profile/certificates/${id}`,
+        { method: "DELETE" }
+      );
       successResponseSchema.parse(body);
     });
   }
 
-  async uploadCertificateImage(id: string, asset: UploadAsset, options?: MutationOptions): Promise<void> {
-    return this.trace('certificate image upload', {
-      id,
-      fileName: asset.name ?? fileNameFromUri(asset.uri, 'certificate.jpg'),
-      mimeType: asset.type ?? 'image/jpeg',
-    }, async () => {
-      const formData = new FormData();
-      appendFile(formData, 'image', asset);
-      const body = await this.client.requestForm<unknown>(`/api/v1/profile/certificates/${id}/image`, formData, { method: 'POST', headers: mutationHeaders(options) });
-      successResponseSchema.parse(body);
-    });
+  async uploadCertificateImage(
+    id: string,
+    asset: UploadAsset,
+    options?: MutationOptions
+  ): Promise<void> {
+    const mimeType = asset.type || mimeTypeFromUri(asset.uri);
+    const ext =
+      mimeType === "image/png"
+        ? "png"
+        : mimeType === "image/webp"
+          ? "webp"
+          : "jpg";
+    const fileName =
+      asset.name ?? fileNameFromUri(asset.uri, `certificate.${ext}`);
+    return this.trace(
+      "certificate image upload",
+      {
+        id,
+        fileName,
+        mimeType,
+      },
+      async () => {
+        const formData = new FormData();
+        appendUploadFile(formData, "image", {
+          uri: asset.uri,
+          name: fileName,
+          type: mimeType,
+        });
+        const body = await this.client.requestForm<unknown>(
+          `/api/v1/profile/certificates/${id}/image`,
+          formData,
+          { method: "POST", headers: mutationHeaders(options) }
+        );
+        successResponseSchema.parse(body);
+      }
+    );
   }
 
   async deleteCertificateImage(id: string): Promise<void> {
-    const body = await this.client.request<unknown>(`/api/v1/profile/certificates/${id}/image`, { method: 'DELETE' });
+    const body = await this.client.request<unknown>(
+      `/api/v1/profile/certificates/${id}/image`,
+      { method: "DELETE" }
+    );
     successResponseSchema.parse(body);
   }
 }

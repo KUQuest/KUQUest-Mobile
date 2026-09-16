@@ -1,3 +1,13 @@
+jest.mock("expo-file-system", () => ({
+  File: class MockFile extends Blob {
+    readonly uri: string;
+    constructor(uri: string) {
+      super();
+      this.uri = uri;
+    }
+  },
+}));
+
 import { ApiClient } from "../ApiClient";
 import { QuestApi } from "../QuestApi";
 
@@ -234,6 +244,143 @@ describe("QuestApi", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.example.test/api/v2/assignments/mine",
       expect.objectContaining({ method: "GET" })
+    );
+  });
+
+  it("retrieves public quest detail from /api/v2/quests/:id/public", async () => {
+    const publicData = {
+      success: true,
+      data: {
+        id: "quest-public-1",
+        title: "Public quest",
+        description: "Public description",
+        condition: { items: [{ position: 0, text: "Do the work." }] },
+        tag: { id: "tag-1", name: "Design" },
+        mode: "FIRST_COME_FIRST_SERVED",
+        participation: "SINGLE",
+        state: "QUEST_OPEN",
+        questReward: 100,
+        headcount: 1,
+        activeWorkerCount: 0,
+        startTime: "2026-09-15T10:00:00+07:00",
+        dueAt: "2026-09-15T12:00:00+07:00",
+        proofRequired: false,
+        hirerName: "Hirer One",
+        locations: [{ label: "Campus Library" }],
+        images: [
+          {
+            imageId: "img-1",
+            position: 0,
+            url: "https://example.test/img1.jpg",
+            urlExpiresAt: "2026-09-16T12:00:00Z",
+          },
+        ],
+      },
+    };
+
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => JSON.stringify(publicData),
+    });
+
+    const detail = await api.getPublicDetail("quest-public-1");
+    expect(detail.id).toBe("quest-public-1");
+    expect(detail.hirerName).toBe("Hirer One");
+    expect(detail.questReward).toBe(100);
+    expect(detail.images).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v2/quests/quest-public-1/public",
+      expect.objectContaining({ method: "GET" })
+    );
+  });
+
+  it("retrieves participation quest detail from /api/v2/quests/:id/participation", async () => {
+    const participationData = {
+      success: true,
+      data: {
+        id: "quest-worker-1",
+        title: "Assigned quest",
+        description: "Worker description",
+        condition: { items: [{ position: 0, text: "Do the work." }] },
+        tag: { id: "tag-1", name: "Design" },
+        mode: "FIRST_COME_FIRST_SERVED",
+        participation: "SINGLE",
+        state: "QUEST_IN_PROGRESS",
+        questReward: 200,
+        headcount: 1,
+        activeWorkerCount: 1,
+        startTime: "2026-09-15T10:00:00+07:00",
+        dueAt: "2026-09-15T12:00:00+07:00",
+        proofRequired: true,
+        hirerName: "Hirer Two",
+        locations: [],
+        images: [],
+        assignment: {
+          status: "ASSIGNMENT_ACTIVE",
+          startedAt: "2026-09-15T10:00:00Z",
+        },
+        capabilities: {
+          canViewOnly: false,
+        },
+      },
+    };
+
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => JSON.stringify(participationData),
+    });
+
+    const detail = await api.getParticipationDetail("quest-worker-1");
+    expect(detail.id).toBe("quest-worker-1");
+    expect(detail.assignment?.status).toBe("ASSIGNMENT_ACTIVE");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v2/quests/quest-worker-1/participation",
+      expect.objectContaining({ method: "GET" })
+    );
+  });
+
+  it("uploads quest images with idempotency key", async () => {
+    const uploadResponse = {
+      success: true,
+      data: {
+        images: [
+          {
+            imageId: "img-new-1",
+            position: 0,
+            url: "https://example.test/uploaded.jpg",
+            urlExpiresAt: "2026-09-16T12:00:00Z",
+          },
+        ],
+      },
+    };
+
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => JSON.stringify(uploadResponse),
+    });
+
+    const images = await api.uploadQuestImages(
+      "quest-1",
+      [{ uri: "file:///tmp/image.png", name: "test.png", type: "image/png" }],
+      "idem-1"
+    );
+
+    expect(images).toHaveLength(1);
+    expect(images[0].imageId).toBe("img-new-1");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v2/quests/quest-1/images",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          "idempotency-key": "idem-1",
+        }),
+      })
     );
   });
 });

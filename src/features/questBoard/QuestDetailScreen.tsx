@@ -818,7 +818,10 @@ export default function QuestDetailScreen({
     string | undefined
   >();
   const [liveQuest, setLiveQuest] = useState<QuestBoardQuest | null>(null);
-
+  const [loadedQuestId, setLoadedQuestId] = useState<string | undefined>();
+  const loadingQuest = Boolean(
+    resolvedQuestId && loadedQuestId !== resolvedQuestId
+  );
   useEffect(() => {
     if (explicitStudentId) return undefined;
     let active = true;
@@ -842,9 +845,17 @@ export default function QuestDetailScreen({
     void liveQuestService
       .getQuestDetail(resolvedQuestId)
       .then((nextQuest) => {
-        if (active) setLiveQuest(nextQuest);
+        if (active) {
+          setLiveQuest(nextQuest);
+          setLoadedQuestId(resolvedQuestId);
+        }
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (active) {
+          setLiveQuest(null);
+          setLoadedQuestId(resolvedQuestId);
+        }
+      });
     return () => {
       active = false;
     };
@@ -1265,8 +1276,7 @@ export default function QuestDetailScreen({
   };
   const applicationStatusPending = Boolean(quest) && !applicationStatusHydrated;
   const questPending =
-    resolvedPreview === "loading" || applicationStatusPending;
-
+    loadingQuest || resolvedPreview === "loading" || applicationStatusPending;
   if (questPending) {
     return (
       <SafeAreaView

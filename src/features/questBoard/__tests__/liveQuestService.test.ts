@@ -8,6 +8,10 @@ jest.mock("@/api/QuestApi", () => ({
     createQuest: jest.fn(),
     getPublishCheck: jest.fn(),
     publishQuest: jest.fn(),
+    getDetail: jest.fn(),
+    getPublicDetail: jest.fn(),
+    getParticipationDetail: jest.fn(),
+    uploadQuestImages: jest.fn(),
   },
 }));
 
@@ -82,6 +86,104 @@ describe("LiveQuestService", () => {
     expect(mockedQuestApi.publishQuest).toHaveBeenCalledWith(
       "quest-2",
       "publish-key-2"
+    );
+  });
+
+  it("loads public quest detail when hirer getDetail fails", async () => {
+    mockedQuestApi.getDetail.mockRejectedValue(new Error("Not found"));
+    mockedQuestApi.getPublicDetail.mockResolvedValue({
+      id: "quest-public-1",
+      title: "Public quest",
+      description: "Description",
+      condition: { items: [{ id: "c1", text: "Condition 1" }] },
+      tag: { id: "tag-1", name: "Design" },
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "SINGLE",
+      state: "QUEST_OPEN",
+      questReward: 150,
+      headcount: 1,
+      activeWorkerCount: 0,
+      startTime: "2026-09-16T10:00:00+07:00",
+      dueAt: "2026-09-16T12:00:00+07:00",
+      proofRequired: true,
+      hirerName: "John Hirer",
+      locations: [{ label: "Library" }],
+      images: [
+        {
+          imageId: "img-1",
+          position: 0,
+          url: "https://example.test/img.jpg",
+          urlExpiresAt: "2026-09-17T00:00:00Z",
+        },
+      ],
+    } as never);
+
+    const result = await liveQuestService.getQuestDetail("quest-public-1");
+    expect(result.id).toBe("quest-public-1");
+    expect(result.creator.name).toBe("John Hirer");
+    expect(result.rewardSatang).toBe(15000);
+    expect(result.imageUris).toEqual(["https://example.test/img.jpg"]);
+    expect(mockedQuestApi.getDetail).toHaveBeenCalledWith("quest-public-1");
+    expect(mockedQuestApi.getPublicDetail).toHaveBeenCalledWith(
+      "quest-public-1"
+    );
+  });
+
+  it("loads participation quest detail when both hirer and public detail fail", async () => {
+    mockedQuestApi.getDetail.mockRejectedValue(new Error("Not found"));
+    mockedQuestApi.getPublicDetail.mockRejectedValue(new Error("Not open"));
+    mockedQuestApi.getParticipationDetail.mockResolvedValue({
+      id: "quest-part-1",
+      title: "In-progress quest",
+      description: "Description",
+      condition: { items: [{ id: "c1", text: "Condition 1" }] },
+      tag: null,
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "SINGLE",
+      state: "QUEST_IN_PROGRESS",
+      questReward: 300,
+      headcount: 1,
+      activeWorkerCount: 1,
+      startTime: "2026-09-16T10:00:00+07:00",
+      dueAt: null,
+      proofRequired: false,
+      hirerName: "Alice Hirer",
+      locations: [],
+      images: [],
+      assignment: {
+        status: "ASSIGNMENT_ACTIVE",
+        startedAt: "2026-09-16T10:00:00Z",
+      },
+      capabilities: { canViewOnly: false },
+    } as never);
+
+    const result = await liveQuestService.getQuestDetail("quest-part-1");
+    expect(result.id).toBe("quest-part-1");
+    expect(result.creator.name).toBe("Alice Hirer");
+    expect(result.rewardSatang).toBe(30000);
+    expect(mockedQuestApi.getParticipationDetail).toHaveBeenCalledWith(
+      "quest-part-1"
+    );
+  });
+
+  it("uploads images through questApi.uploadQuestImages", async () => {
+    mockedQuestApi.uploadQuestImages.mockResolvedValue([
+      {
+        imageId: "img-1",
+        position: 0,
+        url: "https://example.test/img.jpg",
+        urlExpiresAt: "2026-09-17T00:00:00Z",
+      },
+    ] as never);
+
+    const images = await liveQuestService.uploadImages("quest-1", [
+      "file:///tmp/img1.jpg",
+    ]);
+    expect(images).toHaveLength(1);
+    expect(mockedQuestApi.uploadQuestImages).toHaveBeenCalledWith(
+      "quest-1",
+      [{ uri: "file:///tmp/img1.jpg" }],
+      expect.any(String)
     );
   });
 });
