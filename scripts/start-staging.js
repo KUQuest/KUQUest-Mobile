@@ -6,6 +6,8 @@ const REQUIRED_ENVIRONMENT = [
   "EXPO_PUBLIC_GOOGLE_CLIENT_ID",
   "EXPO_PUBLIC_TERMS_VERSION",
 ];
+const GOOGLE_WEB_CLIENT_ID_PATTERN =
+  /^[0-9]+(?:-[A-Za-z0-9_-]+)?\.apps\.googleusercontent\.com$/;
 
 function assertStagingApiUrl(value) {
   if (!value) {
@@ -34,6 +36,15 @@ function assertStagingApiUrl(value) {
   }
 }
 
+function assertGoogleWebClientId(value) {
+  const clientId = typeof value === "string" ? value.trim() : "";
+  if (!GOOGLE_WEB_CLIENT_ID_PATTERN.test(clientId)) {
+    throw new Error(
+      "EXPO_PUBLIC_GOOGLE_CLIENT_ID must be a Google OAuth Web client ID"
+    );
+  }
+}
+
 function createStagingEnvironment(environment = process.env) {
   for (const name of REQUIRED_ENVIRONMENT) {
     if (!environment[name]?.trim()) {
@@ -42,11 +53,13 @@ function createStagingEnvironment(environment = process.env) {
   }
 
   assertStagingApiUrl(environment.EXPO_PUBLIC_API_URL.trim());
+  assertGoogleWebClientId(environment.EXPO_PUBLIC_GOOGLE_CLIENT_ID);
 
   return {
     ...environment,
     EXPO_PUBLIC_API_URL: environment.EXPO_PUBLIC_API_URL.trim(),
-    EXPO_PUBLIC_GOOGLE_CLIENT_ID: environment.EXPO_PUBLIC_GOOGLE_CLIENT_ID.trim(),
+    EXPO_PUBLIC_GOOGLE_CLIENT_ID:
+      environment.EXPO_PUBLIC_GOOGLE_CLIENT_ID.trim(),
     EXPO_PUBLIC_TERMS_VERSION: environment.EXPO_PUBLIC_TERMS_VERSION.trim(),
     APP_VARIANT: "staging",
     ANDROID_VERSION_CODE: "1",
@@ -82,6 +95,7 @@ module.exports = {
   STAGING_API_URL,
   REQUIRED_ENVIRONMENT,
   assertStagingApiUrl,
+  assertGoogleWebClientId,
   createStagingEnvironment,
   runStagingStart,
 };

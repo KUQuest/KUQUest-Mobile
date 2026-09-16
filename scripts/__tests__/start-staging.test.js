@@ -7,7 +7,8 @@ const {
 describe("staging:start", () => {
   const environment = {
     EXPO_PUBLIC_API_URL: STAGING_API_URL,
-    EXPO_PUBLIC_GOOGLE_CLIENT_ID: "google-client-id",
+    EXPO_PUBLIC_GOOGLE_CLIENT_ID:
+      "12345678901234567890-staging-web.apps.googleusercontent.com",
     EXPO_PUBLIC_TERMS_VERSION: "2026-01-01",
     EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME: "com.googleusercontent.apps.example",
   };
@@ -43,12 +44,13 @@ describe("staging:start", () => {
   test("trims externally supplied client and terms values", () => {
     const stagingEnvironment = createStagingEnvironment({
       ...environment,
-      EXPO_PUBLIC_GOOGLE_CLIENT_ID: " google-client-id ",
+      EXPO_PUBLIC_GOOGLE_CLIENT_ID:
+        " 12345678901234567890-staging-web.apps.googleusercontent.com ",
       EXPO_PUBLIC_TERMS_VERSION: " 2026-01-01 ",
     });
 
     expect(stagingEnvironment.EXPO_PUBLIC_GOOGLE_CLIENT_ID).toBe(
-      "google-client-id"
+      "12345678901234567890-staging-web.apps.googleusercontent.com"
     );
     expect(stagingEnvironment.EXPO_PUBLIC_TERMS_VERSION).toBe("2026-01-01");
   });
@@ -62,6 +64,19 @@ describe("staging:start", () => {
     expect(() =>
       createStagingEnvironment({ ...environment, EXPO_PUBLIC_API_URL: apiUrl })
     ).toThrow();
+  });
+  test.each([
+    ["google-client-id.apps.googleusercontent.com", "rejects placeholders"],
+    ["12345678901234567890-staging-web", "rejects incomplete IDs"],
+  ])("rejects malformed Google Web client IDs (%s)", (clientId) => {
+    expect(() =>
+      createStagingEnvironment({
+        ...environment,
+        EXPO_PUBLIC_GOOGLE_CLIENT_ID: clientId,
+      })
+    ).toThrow(
+      "EXPO_PUBLIC_GOOGLE_CLIENT_ID must be a Google OAuth Web client ID"
+    );
   });
 
   test("requires externally supplied staging credentials and terms", () => {
