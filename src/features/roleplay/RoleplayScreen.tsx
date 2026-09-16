@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
-import { Check, ChevronLeft, CircleAlert, RefreshCw } from "lucide-react-native";
+import {
+  Check,
+  ChevronLeft,
+  CircleAlert,
+  CircleX,
+  RefreshCw,
+} from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -96,8 +102,8 @@ const roleplayMessages: Record<"en" | "th", RoleplayMessages> = {
     teamsDescription:
       "Team Candidate proposals are formed by members and selected by the Hirer.",
     teamMembers: "Members",
-    selectTeam: "Select Team",
-    rejectTeam: "Reject Team",
+    selectTeam: "Accept",
+    rejectTeam: "Decline",
     invitations: "Team invitations",
     invitationDescription: "Respond to an invitation from a Candidate Team.",
     acceptInvitation: "Accept invitation",
@@ -125,9 +131,9 @@ const roleplayMessages: Record<"en" | "th", RoleplayMessages> = {
       INVITE_WORKER: "Invite Worker",
       RESPOND_INVITATION: "Respond to Invitation",
       SUBMIT_TEAM: "Submit Team",
-      SELECT_CANDIDATE: "Select Candidate",
-      REJECT_CANDIDATE: "Reject Candidate",
-      REJECT_TEAM: "Reject Team",
+      SELECT_CANDIDATE: "Accept",
+      REJECT_CANDIDATE: "Decline",
+      REJECT_TEAM: "Decline",
       VOTE_PARTIAL_GROUP_START_CONSENT: "Approve partial start",
       CANCEL: "Cancel Quest",
     },
@@ -154,8 +160,8 @@ const roleplayMessages: Record<"en" | "th", RoleplayMessages> = {
     teamsDescription:
       "Team Candidate proposals are formed by members and selected by the Hirer.",
     teamMembers: "Members",
-    selectTeam: "Select Team",
-    rejectTeam: "Reject Team",
+    selectTeam: "รับ",
+    rejectTeam: "ปฏิเสธ",
     invitations: "Team invitations",
     invitationDescription: "Respond to an invitation from a Candidate Team.",
     acceptInvitation: "Accept invitation",
@@ -191,8 +197,9 @@ const roleplayMessages: Record<"en" | "th", RoleplayMessages> = {
     ineligible: "ตัวตนที่ใช้งานไม่มีสิทธิ์ทำการกระทำนี้",
     actionLabels: {
       APPLY: "สมัครเป็น Candidate",
-      SELECT_CANDIDATE: "เลือก Candidate",
-      REJECT_CANDIDATE: "ปฏิเสธ Candidate",
+      SELECT_CANDIDATE: "รับ",
+      REJECT_CANDIDATE: "ปฏิเสธ",
+      REJECT_TEAM: "ปฏิเสธ",
       CANCEL: "ยกเลิก Quest",
     },
     actionDescriptions: {
@@ -518,7 +525,7 @@ export default function RoleplayScreen() {
                         </Text>
                       </View>
                       {canSelect || canReject ? (
-                        <View className={styles.applicationActions}>
+                        <View className={styles.decisionActions}>
                           {canSelect ? (
                             <RoleplayActionButton
                               description={
@@ -536,6 +543,15 @@ export default function RoleplayScreen() {
                                   type: "SELECT_CANDIDATE",
                                   applicationId: application.id,
                                 })
+                              }
+                              compact
+                              icon={
+                                <Check
+                                  accessible={false}
+                                  color={colors.white}
+                                  size={18}
+                                  strokeWidth={2.7}
+                                />
                               }
                               testID={`roleplay-action-select-${application.id}`}
                             />
@@ -559,7 +575,16 @@ export default function RoleplayScreen() {
                                 })
                               }
                               testID={`roleplay-action-reject-${application.id}`}
-                              variant="danger"
+                              compact
+                              icon={
+                                <CircleX
+                                  accessible={false}
+                                  color={colors.textSecondary}
+                                  size={18}
+                                  strokeWidth={2.3}
+                                />
+                              }
+                              variant="neutral"
                             />
                           ) : null}
                         </View>
@@ -612,7 +637,7 @@ export default function RoleplayScreen() {
                         </Text>
                       </View>
                       {canSelect || canReject ? (
-                        <View className={styles.applicationActions}>
+                        <View className={styles.decisionActions}>
                           {canSelect && teamApplication ? (
                             <RoleplayActionButton
                               description={getActionDescription(
@@ -625,6 +650,15 @@ export default function RoleplayScreen() {
                                   type: "SELECT_CANDIDATE",
                                   applicationId: teamApplication.id,
                                 })
+                              }
+                              compact
+                              icon={
+                                <Check
+                                  accessible={false}
+                                  color={colors.white}
+                                  size={18}
+                                  strokeWidth={2.7}
+                                />
                               }
                               testID={`roleplay-action-select-team-${team.id}`}
                             />
@@ -643,7 +677,16 @@ export default function RoleplayScreen() {
                                 })
                               }
                               testID={`roleplay-action-reject-team-${team.id}`}
-                              variant="danger"
+                              compact
+                              icon={
+                                <CircleX
+                                  accessible={false}
+                                  color={colors.textSecondary}
+                                  size={18}
+                                  strokeWidth={2.3}
+                                />
+                              }
+                              variant="neutral"
                             />
                           ) : null}
                         </View>
