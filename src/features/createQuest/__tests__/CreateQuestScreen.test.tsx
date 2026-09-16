@@ -61,6 +61,7 @@ const liveDraftSnapshot = {
 jest.mock("../../questBoard/liveQuestService", () => ({
   liveQuestService: {
     createQuest: (...args: unknown[]) => mockLiveCreateQuest(...args),
+    uploadImages: (...args: unknown[]) => Promise.resolve([]),
     getPublishCheck: (...args: unknown[]) => mockLiveGetPublishCheck(...args),
     publishQuest: (...args: unknown[]) => mockLivePublishQuest(...args),
   },

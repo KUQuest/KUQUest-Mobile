@@ -76,10 +76,13 @@ export type QuestV2BoardResponse = z.infer<typeof questV2BoardResponseSchema>;
 export const questV2ImageSchema = z.object({
   imageId: questV2IdSchema,
   position: z.number().int().nonnegative(),
-  url: z.string().url(),
+  url: z.string(),
   urlExpiresAt: z.string(),
 });
 export type QuestV2Image = z.infer<typeof questV2ImageSchema>;
+
+export const questV2PublicImageSchema = questV2ImageSchema;
+export type QuestV2PublicImage = QuestV2Image;
 
 export const questV2CanonicalQuestSchema = z.object({
   id: questV2IdSchema,
@@ -114,6 +117,65 @@ export const questV2DetailResponseSchema = z.object({
   success: z.literal(true),
   data: questV2DetailSchema,
 });
+
+export const questV2PublicDetailSchema = z.object({
+  id: questV2IdSchema,
+  title: z.string().min(1),
+  description: z.string().nullable().optional(),
+  condition: z.object({
+    items: z.array(questV2ConditionItemSchema),
+  }),
+  tag: questV2TagSchema.nullable().optional(),
+  mode: questV2ModeSchema,
+  participation: questV2ParticipationSchema,
+  state: questV2StateSchema,
+  questReward: z.number().nonnegative(),
+  headcount: z.number().int().min(1),
+  activeWorkerCount: z.number().int().nonnegative().default(0),
+  startTime: z.string(),
+  dueAt: z.string().nullable().optional(),
+  proofRequired: z.boolean(),
+  hirerName: z.string(),
+  locations: z.array(questV2LocationSchema).default([]),
+  images: z.array(questV2PublicImageSchema).default([]),
+});
+export type QuestV2PublicDetail = z.infer<typeof questV2PublicDetailSchema>;
+
+export const questV2PublicDetailResponseSchema = z.object({
+  success: z.literal(true),
+  data: questV2PublicDetailSchema,
+});
+
+export const questV2ParticipationDetailSchema =
+  questV2PublicDetailSchema.extend({
+    assignment: z
+      .object({
+        status: z.string(),
+        startedAt: z.string().nullable().optional(),
+      })
+      .optional(),
+    capabilities: z
+      .object({
+        canViewOnly: z.boolean(),
+      })
+      .optional(),
+  });
+export type QuestV2ParticipationDetail = z.infer<
+  typeof questV2ParticipationDetailSchema
+>;
+
+export const questV2ParticipationDetailResponseSchema = z.object({
+  success: z.literal(true),
+  data: questV2ParticipationDetailSchema,
+});
+
+export const questV2ImagesResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    images: z.array(questV2ImageSchema),
+  }),
+});
+export type QuestV2ImagesResponse = z.infer<typeof questV2ImagesResponseSchema>;
 
 export const questV2EscrowSchema = z.object({
   reservationId: z.string().min(1),
