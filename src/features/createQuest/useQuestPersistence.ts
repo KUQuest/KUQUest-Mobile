@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Dispatch, MutableRefObject, SetStateAction } from "react";
+import type { Dispatch, RefObject, SetStateAction } from "react";
 
 import {
   createQuestDraftId,
@@ -42,8 +42,8 @@ export function useQuestPersistence({
   step: Step;
   completedState: CompletionState | null;
   draft: QuestDraft;
-  draftChangedRef: MutableRefObject<boolean>;
-  publishedQuestRef: MutableRefObject<PublishedQuestRefValue | null>;
+  draftChangedRef: RefObject<boolean>;
+  publishedQuestRef: RefObject<PublishedQuestRefValue | null>;
   setDraft: Dispatch<SetStateAction<QuestDraft>>;
   setStep: Dispatch<SetStateAction<Step>>;
   setCompletedState: Dispatch<SetStateAction<CompletionState | null>>;
