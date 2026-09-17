@@ -1,7 +1,5 @@
 import {
   MAX_QUEST_IMAGES,
-  formatSatang,
-  parseSatangInput,
   type QuestCandidateMode as QuestBoardCandidateMode,
   type QuestEscrowSummary,
   type QuestLocation,
@@ -10,6 +8,7 @@ import {
   type QuestPublishCheck,
 } from "../questBoard/types";
 import type { CreateQuestV2Payload } from "@/api/QuestApi";
+import { formatSatang, parseSatangInput } from "@/domain/satang";
 
 export type QuestDraftCandidateMode = "FIRST_COME_FIRST_SERVED" | "CANDIDATE";
 export type QuestDraftParticipation = "SINGLE" | "GROUP";

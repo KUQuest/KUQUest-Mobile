@@ -33,6 +33,7 @@ import { AccessibilityInfo, Modal, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
+import { formatSatang } from "@/domain/satang";
 import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
 import { authService } from "@/features/auth/AuthService";
 import { HomeWalletOverview } from "@/features/wallet/HomeWalletOverview";
@@ -60,7 +61,6 @@ import type { BoardPreviewState } from "./questBoardHarness";
 import { getQuestRewardSatang, questWorkflow } from "./questWorkflow";
 
 import { liveQuestService } from "./liveQuestService";
-import { formatSatang } from "./types";
 import {
   emptyQuestBoardFilter,
   type DeadlineFilter,

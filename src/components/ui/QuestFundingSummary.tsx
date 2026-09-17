@@ -22,6 +22,15 @@ import {
   type TopUpQuote,
   type WalletBalances,
 } from "@/api/WalletApi";
+import { formatSatang } from "@/domain/satang";
+import {
+  checkTopUpAmount,
+  checkTopUpPayment,
+  createTopUpFromQuote,
+  requestTopUpQuote,
+  simulateTopUpPayment,
+  toCompartments,
+} from "@/features/wallet/walletModule";
 import type { SupportedLocale } from "@/locales/LocaleProvider";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
@@ -32,16 +41,6 @@ type FundingModalKind = "details" | "topUp";
 type TopUpStep = "amount" | "confirmation" | "promptPay";
 
 const QUICK_TOP_UP_AMOUNTS = [100, 500, 1000, 2000] as const;
-
-function formatSatang(satang: number, locale: SupportedLocale): string {
-  return `฿${(satang / 100).toLocaleString(
-    locale === "th" ? "th-TH" : "en-US",
-    {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }
-  )}`;
-}
 
 function formatExpiry(expiresAt: string, locale: SupportedLocale): string {
   const date = new Date(expiresAt);
@@ -367,11 +366,6 @@ const fundingLayout = StyleSheet.create({
   },
 });
 
-function isValidTopUpAmount(amount: string): boolean {
-  const numericAmount = Number(amount);
-  return Number.isSafeInteger(numericAmount) && numericAmount > 0;
-}
-
 interface FundingDetailsContentProps {
   locale: SupportedLocale;
   onClose: () => void;
@@ -629,6 +623,7 @@ interface TopUpFlowContentProps {
   onContinue: () => void;
   onConfirm: () => void;
   onVerifyPayment?: () => void;
+  onSimulatePayment?: () => void;
 }
 
 function TopUpFlowContent({
@@ -647,9 +642,10 @@ function TopUpFlowContent({
   onContinue,
   onConfirm,
   onVerifyPayment,
+  onSimulatePayment,
 }: TopUpFlowContentProps) {
   const messages = questBoardMessages[locale];
-  const amountValid = isValidTopUpAmount(amount);
+  const amountValid = checkTopUpAmount(amount).ok;
   const title =
     step === "confirmation"
       ? messages.topUpConfirmationTitle
@@ -887,7 +883,7 @@ function TopUpFlowContent({
                   {messages.topUpCredit}
                 </Text>
                 <Text style={{ color: colors.textStrong, fontWeight: "700" }}>
-                  {formatSatang(quote.creditSatang, locale)}
+                  {formatSatang(quote.creditSatang, locale, "exact")}
                 </Text>
               </View>
               <View
@@ -900,7 +896,7 @@ function TopUpFlowContent({
                   {messages.topUpFee}
                 </Text>
                 <Text style={{ color: colors.textStrong }}>
-                  {formatSatang(quote.chargedFeeSatang, locale)}
+                  {formatSatang(quote.chargedFeeSatang, locale, "exact")}
                 </Text>
               </View>
               <View
@@ -913,7 +909,7 @@ function TopUpFlowContent({
                   {messages.topUpTax}
                 </Text>
                 <Text style={{ color: colors.textStrong }}>
-                  {formatSatang(quote.chargedTaxSatang, locale)}
+                  {formatSatang(quote.chargedTaxSatang, locale, "exact")}
                 </Text>
               </View>
               <View
@@ -935,7 +931,7 @@ function TopUpFlowContent({
                     fontWeight: "800",
                   }}
                 >
-                  {formatSatang(quote.paymentTotalSatang, locale)}
+                  {formatSatang(quote.paymentTotalSatang, locale, "exact")}
                 </Text>
               </View>
             </View>
@@ -1010,7 +1006,7 @@ function TopUpFlowContent({
             >
               <View
                 accessible
-                accessibilityLabel={`${messages.topUpPromptPayTitle}. ${messages.topUpPaymentTotal}: ${formatSatang(topUp!.paymentTotalSatang, locale)}`}
+                accessibilityLabel={`${messages.topUpPromptPayTitle}. ${messages.topUpPaymentTotal}: ${formatSatang(topUp!.paymentTotalSatang, locale, "exact")}`}
                 accessibilityRole="image"
                 style={[
                   fundingLayout.qrFrame,
@@ -1061,7 +1057,7 @@ function TopUpFlowContent({
                     { color: colors.textStrong },
                   ]}
                 >
-                  {formatSatang(topUp!.paymentTotalSatang, locale)}
+                  {formatSatang(topUp!.paymentTotalSatang, locale, "exact")}
                 </Text>
               </View>
             </View>
@@ -1081,7 +1077,7 @@ function TopUpFlowContent({
                   </Text>
                   <Text className="font-ku-regular text-ku-text-secondary text-[12px]">
                     {messages.topUpPaymentCredited(
-                      formatSatang(topUp!.creditSatang, locale)
+                      formatSatang(topUp!.creditSatang, locale, "exact")
                     )}
                   </Text>
                 </View>
@@ -1126,6 +1122,34 @@ function TopUpFlowContent({
                     {isVerifying
                       ? messages.topUpVerifyingPayment
                       : messages.topUpVerifyPayment}
+                  </Text>
+                </Pressable>
+              ) : null}
+
+              {__DEV__ && !paymentVerified ? (
+                <Pressable
+                  accessibilityLabel={messages.topUpSimulateDev}
+                  accessibilityRole="button"
+                  disabled={isVerifying}
+                  style={[
+                    fundingLayout.continueButton,
+                    {
+                      backgroundColor: colors.surfaceMuted,
+                      borderColor: colors.borderMuted,
+                      marginTop: 0,
+                    },
+                    isVerifying && fundingLayout.continueButtonDisabled,
+                  ]}
+                  onPress={onSimulatePayment}
+                  testID="quest-funding-top-up-simulate-dev"
+                >
+                  <Text
+                    style={[
+                      fundingLayout.continueButtonText,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {messages.topUpSimulateDev}
                   </Text>
                 </Pressable>
               ) : null}
@@ -1179,6 +1203,7 @@ interface FundingModalProps {
   onConfirm: () => void;
   onTopUp: () => void;
   onVerifyPayment?: () => void;
+  onSimulatePayment?: () => void;
 }
 
 function FundingModal({
@@ -1199,6 +1224,7 @@ function FundingModal({
   onConfirm,
   onTopUp,
   onVerifyPayment,
+  onSimulatePayment,
 }: FundingModalProps) {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
@@ -1286,6 +1312,7 @@ function FundingModal({
                 onClose={onClose}
                 onContinue={onContinue}
                 onConfirm={onConfirm}
+                onSimulatePayment={onSimulatePayment}
                 onVerifyPayment={onVerifyPayment}
                 step={step}
               />
@@ -1359,10 +1386,18 @@ export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
     resetTopUp();
   };
   const handleTopUpContinue = async () => {
-    if (topUpStep !== "amount" || !isValidTopUpAmount(topUpAmount)) return;
+    if (topUpStep !== "amount") return;
+    const check = checkTopUpAmount(
+      topUpAmount,
+      liveWallet ? toCompartments(liveWallet) : null
+    );
+    if (!check.ok) {
+      setVerificationError(messages.topUpCreateError);
+      return;
+    }
 
     try {
-      const quote = await walletApi.quoteTopUp(Number(topUpAmount) * 100);
+      const quote = await requestTopUpQuote(check.satang);
       setTopUpQuote(quote);
       setVerificationError(null);
       setTopUpStep("confirmation");
@@ -1377,8 +1412,12 @@ export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
     setIsConfirming(true);
 
     try {
-      const topUp = await walletApi.createTopUp(topUpQuote.id);
-      setActiveTopUp(topUp);
+      const result = await createTopUpFromQuote(topUpQuote, new Date());
+      if (!result.ok) {
+        setVerificationError(messages.topUpCreateError);
+        return;
+      }
+      setActiveTopUp(result.topUp);
       setVerificationError(null);
       setTopUpStep("promptPay");
     } catch (err: unknown) {
@@ -1394,13 +1433,35 @@ export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
     setIsVerifying(true);
     setVerificationError(null);
     try {
-      const topUp = await walletApi.simulateTopUp(activeTopUp.id);
+      const topUp = await checkTopUpPayment(activeTopUp.id);
       setActiveTopUp(topUp);
       if (topUp.topUpStatus === "PAID") {
         setPaymentVerified(true);
         setLiveWallet(await walletApi.getWallet());
       } else {
-        setVerificationError(`Payment status: ${topUp.topUpStatus}`);
+        setVerificationError(messages.topUpPaymentPending);
+      }
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Verification failed";
+      setVerificationError(message);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+  const handleSimulatePayment = async () => {
+    if (!activeTopUp || isVerifying) return;
+    setIsVerifying(true);
+    setVerificationError(null);
+    try {
+      const topUp = await simulateTopUpPayment(activeTopUp.id);
+      if (!topUp) return;
+      setActiveTopUp(topUp);
+      if (topUp.topUpStatus === "PAID") {
+        setPaymentVerified(true);
+        setLiveWallet(await walletApi.getWallet());
+      } else {
+        setVerificationError(messages.topUpPaymentPending);
       }
     } catch (err: unknown) {
       const message =
@@ -1506,6 +1567,7 @@ export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
           onClose={closeFundingModal}
           onContinue={handleTopUpContinue}
           onConfirm={handleTopUpConfirm}
+          onSimulatePayment={handleSimulatePayment}
           onVerifyPayment={handleVerifyPayment}
           step={topUpStep}
           onTopUp={openTopUp}

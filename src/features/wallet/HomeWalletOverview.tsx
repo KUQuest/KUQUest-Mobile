@@ -14,11 +14,13 @@ import {
   WalletCards,
 } from "lucide-react-native";
 import { walletApi, type WalletBalances } from "@/api/WalletApi";
+import { formatSatang } from "@/domain/satang";
 import type { SupportedLocale } from "@/locales/LocaleProvider";
 import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
 import { TransactionHistoryModal } from "./TransactionHistoryModal";
 import { WalletPaymentModal } from "./WalletPaymentModal";
+import { convertEarnings, toCompartments } from "./walletModule";
 import { walletStyles as s } from "./walletStyles";
 
 interface HomeWalletOverviewProps {
@@ -71,7 +73,15 @@ export function HomeWalletOverview({
         onPress: async () => {
           setConverting(true);
           try {
-            await walletApi.convertEarnings(balances.earningsBalanceSatang);
+            const compartments = toCompartments(balances);
+            const result = await convertEarnings(
+              balances.earningsBalanceSatang,
+              compartments
+            );
+            if (!result.ok) {
+              Alert.alert(m.convertEarnings, m.convertError);
+              return;
+            }
             Alert.alert(m.convertEarnings, m.convertSuccess);
             setRefreshIndex((idx) => idx + 1);
           } catch (err: unknown) {
@@ -85,10 +95,6 @@ export function HomeWalletOverview({
         },
       },
     ]);
-  };
-
-  const formatSatang = (satang: number) => {
-    return (satang / 100).toLocaleString("en-US", { minimumFractionDigits: 2 });
   };
 
   return (
@@ -148,7 +154,9 @@ export function HomeWalletOverview({
           style={[s.spendingAmount, { color: colors.primaryDeep }]}
           testID="wallet-spending-balance"
         >
-          ฿{balances ? formatSatang(balances.spendingBalanceSatang) : "0.00"}
+          {balances
+            ? formatSatang(balances.spendingBalanceSatang, locale, "exact")
+            : "฿0.00"}
         </Text>
       </View>
 
@@ -164,7 +172,9 @@ export function HomeWalletOverview({
             style={[s.compartmentValue, { color: colors.textStrong }]}
             testID="wallet-earnings-balance"
           >
-            ฿{balances ? formatSatang(balances.earningsBalanceSatang) : "0.00"}
+            {balances
+              ? formatSatang(balances.earningsBalanceSatang, locale, "exact")
+              : "฿0.00"}
           </Text>
         </View>
 
@@ -178,7 +188,9 @@ export function HomeWalletOverview({
             style={[s.compartmentValue, { color: colors.textStrong }]}
             testID="wallet-escrow-balance"
           >
-            ฿{balances ? formatSatang(balances.fundingReservedSatang) : "0.00"}
+            {balances
+              ? formatSatang(balances.fundingReservedSatang, locale, "exact")
+              : "฿0.00"}
           </Text>
         </View>
 
@@ -192,10 +204,9 @@ export function HomeWalletOverview({
             style={[s.compartmentValue, { color: colors.textStrong }]}
             testID="wallet-payout-balance"
           >
-            ฿
             {balances
-              ? formatSatang(balances.reservedForPayoutsSatang)
-              : "0.00"}
+              ? formatSatang(balances.reservedForPayoutsSatang, locale, "exact")
+              : "฿0.00"}
           </Text>
         </View>
       </View>

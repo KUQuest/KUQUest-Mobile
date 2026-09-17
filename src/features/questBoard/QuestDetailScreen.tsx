@@ -37,6 +37,7 @@ import {
   questBoardMessages,
   type QuestBoardMessages,
 } from "@/locales/questBoardMessages";
+import { formatSatang } from "@/domain/satang";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import styles from "./questDetailStyles";
@@ -54,7 +55,6 @@ import {
   type QuestJoinStatus,
 } from "./questRoute";
 import {
-  formatSatang,
   MAX_QUEST_IMAGES,
   QuestCandidateMode,
   QuestInvitationStatus,

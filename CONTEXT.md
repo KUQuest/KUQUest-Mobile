@@ -200,7 +200,7 @@ A rating and optional comment between a Hirer and a Worker after ANY Terminal Qu
 ### 5. Finance, Wallet & Escrow
 
 **Integer Satang**:
-The canonical unit for all financial calculations and balances (฿1.00 = 100 Satang). Max balance capacity is 2,000,000,000 Satang (฿20,000,000).
+The canonical unit for all financial calculations and balances (฿1.00 = 100 Satang). Max balance capacity is 2,000,000,000 Satang (฿20,000,000). The Server is the sole authority for financial calculations and state transitions; client modules perform presentation, display formatting, and pre-flight validation only. Client-side rounding is prohibited.
 
 **Wallet**:
 A Member's funds partitioned into 4 distinct compartments:

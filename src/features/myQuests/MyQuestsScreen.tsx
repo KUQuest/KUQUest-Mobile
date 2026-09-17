@@ -42,6 +42,7 @@ import { colors } from "@/theme/colors";
 import { getAppChromeMetrics } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 import styles from "./myQuestStyles";
+import { formatSatang } from "@/domain/satang";
 import { getLocalizedQuest } from "@/features/questBoard/questFixtures";
 import { CandidateReviewSheet } from "@/features/questBoard/components";
 import {
@@ -53,7 +54,6 @@ import {
   QuestParticipation,
   QuestStatus,
   QuestTeamStatus,
-  formatSatang,
   type QuestDetailState,
   type WorkConversationCapability,
 } from "@/features/questBoard/types";

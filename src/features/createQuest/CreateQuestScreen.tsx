@@ -60,6 +60,7 @@ import {
   LoadingSkeleton,
   SkeletonBlock,
 } from "@/components/ui/LoadingSkeleton";
+import { formatSatang } from "@/domain/satang";
 import { Input } from "@/features/onboarding/components/Input";
 import { Select } from "@/features/onboarding/components/Select";
 import { TextArea } from "@/features/onboarding/components/TextArea";
@@ -90,11 +91,7 @@ import {
 } from "./createQuestPersistence";
 import { measureFieldRelativeToScroll } from "./createQuestFocus";
 import { liveQuestService } from "../questBoard/liveQuestService";
-import {
-  MAX_QUEST_IMAGES,
-  formatSatang,
-  type QuestPublishCheck,
-} from "../questBoard/types";
+import { MAX_QUEST_IMAGES, type QuestPublishCheck } from "../questBoard/types";
 
 type Step = 1 | 2 | 3;
 type ScheduleField = "start" | "end";
