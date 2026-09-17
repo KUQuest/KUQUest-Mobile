@@ -45,7 +45,7 @@ export function HirerQuestProgressCard({
   const messages = hirerHomeMessages[locale];
   const palette =
     colorScheme === "dark" ? hirerHomePalette.dark : hirerHomePalette.light;
-  const avatarSize = Math.min(152, Math.max(88, Math.round(width * 0.25)));
+  const avatarSize = 52;
   const statusLabel = messages.statusLabels[status];
   const dueLabel = useMemo(
     () => messages.dueAt(formatHirerDueAt(dueAt, locale)),
@@ -95,9 +95,16 @@ export function HirerQuestProgressCard({
     >
       <View style={styles.cardHeader}>
         <View style={styles.cardHeaderCopy}>
-          <Text style={[styles.statusLabel, { color: palette.muted }]}>
-            {statusLabel}
-          </Text>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: palette.workerSurface },
+            ]}
+          >
+            <Text style={[styles.statusLabel, { color: palette.completed }]}>
+              {statusLabel}
+            </Text>
+          </View>
           <Text
             accessibilityRole="header"
             numberOfLines={2}
@@ -107,7 +114,7 @@ export function HirerQuestProgressCard({
           </Text>
         </View>
         <View style={styles.headerArrow}>
-          <ChevronRight color={palette.ink} size={34} strokeWidth={2.6} />
+          <ChevronRight color={palette.ink} size={22} strokeWidth={2.4} />
         </View>
       </View>
 
@@ -147,14 +154,14 @@ export function HirerQuestProgressCard({
               ) : (
                 <CircleUserRound
                   color={palette.ink}
-                  size={Math.round(avatarSize * 0.34)}
-                  strokeWidth={1.8}
+                  size={26}
+                  strokeWidth={2}
                 />
               )}
             </View>
           </Pressable>
           <Text
-            numberOfLines={2}
+            numberOfLines={1}
             style={[styles.workerName, { color: palette.ink }]}
           >
             {worker.displayName}

@@ -18,6 +18,15 @@ export interface HirerHomeMessages {
   terminalStageLabel: string;
   openDetails: string;
   dueAt: (value: string) => string;
+  quickAccessTitle: string;
+  quickActiveTitle: string;
+  quickActiveDesc: string;
+  quickDraftTitle: string;
+  quickDraftDesc: string;
+  quickHistoryTitle: string;
+  quickHistoryDesc: string;
+  quickBoardTitle: string;
+  quickBoardDesc: string;
   statusLabels: Record<CanonicalHirerQuestStatus, string>;
   timelineLabels: Record<TimelineStageKey, string>;
   timelineOverrides: Partial<
@@ -40,6 +49,15 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     terminalStageLabel: "terminal",
     openDetails: "Open details",
     dueAt: (value) => value,
+    quickAccessTitle: "Quick Actions",
+    quickActiveTitle: "In Progress",
+    quickActiveDesc: "Active quests",
+    quickDraftTitle: "Drafts",
+    quickDraftDesc: "Saved quest drafts",
+    quickHistoryTitle: "History",
+    quickHistoryDesc: "Completed quests",
+    quickBoardTitle: "Quest Board",
+    quickBoardDesc: "Browse all quests",
     statusLabels: {
       QUEST_DRAFT: "Draft",
       QUEST_OPEN: "Open for applications",
@@ -75,6 +93,15 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     terminalStageLabel: "สถานะสิ้นสุด",
     openDetails: "เปิดรายละเอียด",
     dueAt: (value) => value,
+    quickAccessTitle: "เมนูลัด",
+    quickActiveTitle: "กำลังทำงาน",
+    quickActiveDesc: "เควสต์ที่กำลังดำเนินการ",
+    quickDraftTitle: "ฉบับร่าง",
+    quickDraftDesc: "เควสต์ที่ยังไม่เผยแพร่",
+    quickHistoryTitle: "ประวัติ",
+    quickHistoryDesc: "เควสต์ที่เสร็จสิ้นแล้ว",
+    quickBoardTitle: "กระดานเควสต์",
+    quickBoardDesc: "ค้นหาและดูเควสต์ทั้งหมด",
     statusLabels: {
       QUEST_DRAFT: "ฉบับร่าง",
       QUEST_OPEN: "เปิดรับสมัคร",

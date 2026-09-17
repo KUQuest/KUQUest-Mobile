@@ -3,7 +3,13 @@ import { useColorScheme, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { ScrollView, Text, View } from "@/tw";
+import { Pressable, ScrollView, Text, View } from "@/tw";
+import {
+  Clock3,
+  FileText,
+  History,
+  LayoutDashboard,
+} from "lucide-react-native";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { isPrototypeDemoEnabled } from "@/features/auth/authEnvironment";
@@ -146,6 +152,227 @@ export default function HomeScreen() {
               </Text>
             </View>
           )}
+
+          {/* Quick Access Section */}
+          <View
+            style={styles.quickAccessSection}
+            testID="hirer-home-quick-access"
+          >
+            <Text
+              accessibilityRole="header"
+              style={[
+                styles.quickAccessTitle,
+                { color: themeColors.textStrong },
+              ]}
+            >
+              {messages.quickAccessTitle}
+            </Text>
+
+            <View style={styles.quickAccessGrid}>
+              <Pressable
+                accessibilityLabel={`${messages.quickActiveTitle}: ${messages.quickActiveDesc}`}
+                accessibilityRole="button"
+                onPress={() =>
+                  router.push({
+                    pathname: "/my-quests",
+                    params: { role: "hirer", tab: "active" },
+                  })
+                }
+                style={[
+                  styles.quickAccessCard,
+                  {
+                    backgroundColor: themeColors.surface,
+                    borderColor: themeColors.borderSubtle,
+                  },
+                ]}
+                testID="hirer-quick-access-active"
+              >
+                <View
+                  style={[
+                    styles.quickAccessIconBox,
+                    { backgroundColor: themeColors.surfaceAccent },
+                  ]}
+                >
+                  <Clock3
+                    color={themeColors.primary}
+                    size={22}
+                    strokeWidth={2.2}
+                  />
+                </View>
+                <View style={styles.quickAccessCopy}>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.quickAccessItemTitle,
+                      { color: themeColors.textStrong },
+                    ]}
+                  >
+                    {messages.quickActiveTitle}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.quickAccessItemDesc,
+                      { color: themeColors.textSecondary },
+                    ]}
+                  >
+                    {messages.quickActiveDesc}
+                  </Text>
+                </View>
+              </Pressable>
+
+              <Pressable
+                accessibilityLabel={`${messages.quickDraftTitle}: ${messages.quickDraftDesc}`}
+                accessibilityRole="button"
+                onPress={() =>
+                  router.push({
+                    pathname: "/my-quests",
+                    params: { role: "hirer", tab: "draft" },
+                  })
+                }
+                style={[
+                  styles.quickAccessCard,
+                  {
+                    backgroundColor: themeColors.surface,
+                    borderColor: themeColors.borderSubtle,
+                  },
+                ]}
+                testID="hirer-quick-access-draft"
+              >
+                <View
+                  style={[
+                    styles.quickAccessIconBox,
+                    { backgroundColor: themeColors.surfaceAccent },
+                  ]}
+                >
+                  <FileText
+                    color={themeColors.primary}
+                    size={22}
+                    strokeWidth={2.2}
+                  />
+                </View>
+                <View style={styles.quickAccessCopy}>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.quickAccessItemTitle,
+                      { color: themeColors.textStrong },
+                    ]}
+                  >
+                    {messages.quickDraftTitle}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.quickAccessItemDesc,
+                      { color: themeColors.textSecondary },
+                    ]}
+                  >
+                    {messages.quickDraftDesc}
+                  </Text>
+                </View>
+              </Pressable>
+
+              <Pressable
+                accessibilityLabel={`${messages.quickHistoryTitle}: ${messages.quickHistoryDesc}`}
+                accessibilityRole="button"
+                onPress={() =>
+                  router.push({
+                    pathname: "/my-quests",
+                    params: { role: "hirer", tab: "completed" },
+                  })
+                }
+                style={[
+                  styles.quickAccessCard,
+                  {
+                    backgroundColor: themeColors.surface,
+                    borderColor: themeColors.borderSubtle,
+                  },
+                ]}
+                testID="hirer-quick-access-history"
+              >
+                <View
+                  style={[
+                    styles.quickAccessIconBox,
+                    { backgroundColor: themeColors.surfaceAccent },
+                  ]}
+                >
+                  <History
+                    color={themeColors.primary}
+                    size={22}
+                    strokeWidth={2.2}
+                  />
+                </View>
+                <View style={styles.quickAccessCopy}>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.quickAccessItemTitle,
+                      { color: themeColors.textStrong },
+                    ]}
+                  >
+                    {messages.quickHistoryTitle}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.quickAccessItemDesc,
+                      { color: themeColors.textSecondary },
+                    ]}
+                  >
+                    {messages.quickHistoryDesc}
+                  </Text>
+                </View>
+              </Pressable>
+
+              <Pressable
+                accessibilityLabel={`${messages.quickBoardTitle}: ${messages.quickBoardDesc}`}
+                accessibilityRole="button"
+                onPress={() => router.push("/quest-board")}
+                style={[
+                  styles.quickAccessCard,
+                  {
+                    backgroundColor: themeColors.surface,
+                    borderColor: themeColors.borderSubtle,
+                  },
+                ]}
+                testID="hirer-quick-access-board"
+              >
+                <View
+                  style={[
+                    styles.quickAccessIconBox,
+                    { backgroundColor: themeColors.surfaceAccent },
+                  ]}
+                >
+                  <LayoutDashboard
+                    color={themeColors.primary}
+                    size={22}
+                    strokeWidth={2.2}
+                  />
+                </View>
+                <View style={styles.quickAccessCopy}>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.quickAccessItemTitle,
+                      { color: themeColors.textStrong },
+                    ]}
+                  >
+                    {messages.quickBoardTitle}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.quickAccessItemDesc,
+                      { color: themeColors.textSecondary },
+                    ]}
+                  >
+                    {messages.quickBoardDesc}
+                  </Text>
+                </View>
+              </Pressable>
+            </View>
+          </View>
         </View>
       </ScrollView>
     </ScreenLayout>
