@@ -98,7 +98,6 @@ export class ApiClient {
     const rawBody = response.status === 204 ? "" : await response.text();
     const body = rawBody ? this.parseBody(rawBody) : undefined;
     logQuestPublishResponse(pathOrUrl, response.status, body);
-
     if (!response.ok) {
       const error =
         body && typeof body === "object"

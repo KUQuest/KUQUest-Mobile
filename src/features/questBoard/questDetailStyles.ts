@@ -96,7 +96,16 @@ const styles = {
     "text-ku-text-secondary font-ku-regular text-ku-body-small mt-[4px] text-center",
   statusAction:
     "items-center border-ku-primary rounded-ku-pill border mt-[12px] min-h-[48px] justify-center px-[16px]",
+  statusActionDisabled: "opacity-60",
   statusActionText: "text-ku-primary font-ku-semibold text-ku-body-small",
+  errorState:
+    "items-center bg-ku-surface-danger border-ku-border-danger rounded-[16px] border mt-[24px] p-[20px]",
+  errorTitle: "text-ku-danger-dark font-ku-bold text-ku-emphasis text-center",
+  errorDescription:
+    "text-ku-text-secondary font-ku-regular text-ku-body-small mt-[6px] text-center",
+  errorAction:
+    "items-center bg-ku-danger rounded-ku-pill justify-center min-h-[48px] mt-[16px] px-[20px]",
+  errorActionText: "text-ku-white font-ku-semibold text-ku-body-small",
   prototypeCard:
     "bg-ku-surface border-ku-border-subtle rounded-[16px] border mt-[16px] p-[14px]",
   prototypeCardWarning: "bg-ku-surface-accent border-ku-border-accent",
@@ -139,12 +148,13 @@ const styles = {
   messageOwnerAction:
     "items-center border-ku-primary rounded-ku-pill border flex-1 flex-row gap-[6px] justify-center min-h-[52px] px-[10px]",
   messageOwnerActionDisabled: "opacity-60",
-  messageOwnerActionText: "text-ku-primary font-ku-semibold text-ku-label",
   primaryAction:
     "items-center bg-ku-primary rounded-ku-pill flex-[1.4] justify-center min-h-[52px] px-[12px]",
+  primaryActionDisabled: "opacity-60",
   primaryActionText: "text-ku-white font-ku-semibold text-ku-control",
   leaveAction:
     "items-center border-ku-danger-dark rounded-ku-pill border flex-1 flex-row gap-[8px] justify-center min-h-[52px] px-[12px]",
+  leaveActionDisabled: "opacity-60",
   leaveActionText: "text-ku-danger-dark font-ku-semibold text-ku-control",
   modalBackdrop: "bg-ku-overlay flex-1 justify-end",
   confirmSheet: "bg-ku-background rounded-tl-[24px] rounded-tr-[24px] p-[24px]",

@@ -45,6 +45,74 @@ export function getHeadcountForParticipation(
   return participation === "SINGLE" ? "1" : currentHeadcount;
 }
 
+export function formatQuestDuration(
+  startMs: number,
+  endMs: number,
+  locale: "en" | "th" = "th"
+): string {
+  const diffMs = endMs - startMs;
+  if (diffMs <= 0) return "";
+  const totalMinutes = Math.floor(diffMs / (60 * 1000));
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+  const minutes = totalMinutes % 60;
+
+  if (locale === "th") {
+    const parts: string[] = [];
+    if (days > 0) parts.push(`${days} วัน`);
+    if (hours > 0) parts.push(`${hours} ชั่วโมง`);
+    if (minutes > 0 && days === 0) parts.push(`${minutes} นาที`);
+    return parts.join(" ") || "< 1 นาที";
+  }
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0 && days === 0) parts.push(`${minutes}m`);
+  return parts.join(" ") || "< 1 min";
+}
+
+export function addHoursToTime(time: string, hoursToAdd: number): string {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(time);
+  if (!match) return "12:00";
+  const hours = (Number(match[1]) + hoursToAdd) % 24;
+  const minutes = Number(match[2]);
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+export function getRelativeDateValue(daysOffset = 0): string {
+  const date = new Date();
+  date.setDate(date.getDate() + daysOffset);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function addDaysToDate(dateStr: string, daysToAdd: number): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr))
+    return getRelativeDateValue(daysToAdd);
+  const date = new Date(`${dateStr}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return getRelativeDateValue(daysToAdd);
+  date.setDate(date.getDate() + daysToAdd);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function getNearestQuarterHour(now = new Date()): {
+  hours: string;
+  minutes: string;
+} {
+  const minutes = now.getMinutes();
+  const roundedMinutes = Math.ceil(minutes / 5) * 5;
+  const date = new Date(now);
+  date.setMinutes(roundedMinutes, 0, 0);
+  const hoursStr = String(date.getHours()).padStart(2, "0");
+  const minutesStr = String(date.getMinutes()).padStart(2, "0");
+  return { hours: hoursStr, minutes: minutesStr };
+}
+
 export interface QuestDraft {
   title: string;
   tag: string;

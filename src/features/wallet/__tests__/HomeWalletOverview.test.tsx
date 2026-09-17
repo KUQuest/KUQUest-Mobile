@@ -15,6 +15,10 @@ jest.mock("@/api/WalletApi", () => {
       simulateTopUp: jest.fn(),
       convertEarnings: jest.fn(),
       getTransactionHistory: jest.fn(),
+      listPayoutDestinations: jest.fn(),
+      createPayoutDestination: jest.fn(),
+      requestPayout: jest.fn(),
+      listPayouts: jest.fn(),
     },
   };
 });
@@ -141,6 +145,55 @@ describe("HomeWalletOverview", () => {
     await waitFor(() => {
       expect(view.getByText("Transaction History")).toBeTruthy();
       expect(view.getByText("PromptPay Top-Up")).toBeTruthy();
+    });
+  });
+
+  it("opens payout modal and submits withdrawal request", async () => {
+    (walletApi.listPayoutDestinations as jest.Mock).mockResolvedValue([
+      {
+        id: "dest-1",
+        type: "PROMPTPAY",
+        accountHolderName: "Somchai Jaidee",
+        maskedAccount: "xxx-xxx-1234",
+        isDefault: true,
+        createdAt: "2026-09-17T10:00:00Z",
+      },
+    ]);
+    (walletApi.requestPayout as jest.Mock).mockResolvedValue({
+      id: "pay-1",
+      amountSatang: 20000,
+      feeSatang: 0,
+      status: "PENDING_ADMIN_APPROVAL",
+      destination: {
+        type: "PROMPTPAY",
+        maskedAccount: "xxx-xxx-1234",
+      },
+      createdAt: "2026-09-17T10:00:00Z",
+    });
+
+    const view = await render(<HomeWalletOverview locale="en" />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("wallet-withdraw-button")).toBeTruthy();
+    });
+
+    fireEvent.press(view.getByTestId("wallet-withdraw-button"));
+
+    await waitFor(() => {
+      expect(view.getByTestId("payout-modal")).toBeTruthy();
+      expect(view.getByText("Withdraw Earnings")).toBeTruthy();
+      expect(view.getByText("Somchai Jaidee")).toBeTruthy();
+    });
+    fireEvent.changeText(view.getByTestId("payout-amount-input"), "200");
+    await waitFor(() => {
+      expect(view.getByTestId("payout-amount-input").props.value).toBe("200");
+    });
+    fireEvent.press(view.getByTestId("payout-submit-button"));
+
+    await waitFor(() => {
+      expect(walletApi.requestPayout).toHaveBeenCalledWith(20000, "dest-1");
+      expect(view.getByTestId("payout-success-view")).toBeTruthy();
+      expect(view.getByText("PENDING_ADMIN_APPROVAL")).toBeTruthy();
     });
   });
 });

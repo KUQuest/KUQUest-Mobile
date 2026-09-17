@@ -1,8 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useRouter } from "expo-router";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useFocusEffect, useRouter, type Href } from "expo-router";
 import { MessageCircle, Search } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useWindowDimensions } from "react-native";
+import { RefreshControl, useWindowDimensions } from "react-native";
 
 import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
 import { authService } from "@/features/auth/AuthService";
@@ -27,12 +33,66 @@ import { getChatRouteParams } from "./chatData";
 import type { ChatConversation } from "./chatTypes";
 import styles from "./chatStyles";
 import { chatApi, serverConversationToChatConversation } from "@/api/ChatApi";
+import { useCalmRefresh } from "@/hooks/useCalmRefresh";
+import type { ServerCandidateInquiry } from "@/api/ChatApi";
 
 function localizedText(
   value: Record<"en" | "th", string>,
   locale: "en" | "th"
 ): string {
   return value[locale];
+}
+
+function candidateInquiryToConversation(
+  inquiry: ServerCandidateInquiry,
+  viewerId: string
+): ChatConversation {
+  const otherParticipant =
+    inquiry.participants.find((participant) => participant.id !== viewerId) ??
+    inquiry.participants.find((participant) => participant.role === "HIRER");
+  const title = { en: inquiry.quest.title, th: inquiry.quest.title };
+  const preview = inquiry.latestMessage?.preview ?? "";
+  const participantName = otherParticipant?.displayName ?? inquiry.quest.title;
+  const latestTime = inquiry.latestMessage?.createdAt
+    ? new Date(inquiry.latestMessage.createdAt).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "";
+  return {
+    id: inquiry.id,
+    questId: inquiry.quest.id,
+    questTitle: title,
+    participantName,
+    participantRole: "owner",
+    initials: participantName.slice(0, 2).toUpperCase(),
+    avatarColor: "#208AEF",
+    latestMessage: { en: preview, th: preview },
+    latestTime,
+    unreadCount: inquiry.unreadCount,
+    messages: [],
+    capability: {
+      conversationId: inquiry.id,
+      canRead: true,
+      canWrite: inquiry.state === "INQUIRY_OPEN",
+      readOnly: inquiry.state !== "INQUIRY_OPEN",
+    },
+  };
+}
+
+function filterChatConversations(
+  items: ChatConversation[],
+  query: string,
+  locale: "en" | "th"
+): ChatConversation[] {
+  return items.filter((conversation) => {
+    if (!query) return true;
+    return [
+      localizedText(conversation.questTitle, locale),
+      conversation.participantName,
+      localizedText(conversation.latestMessage, locale),
+    ].some((value) => value.toLocaleLowerCase().includes(query));
+  });
 }
 
 function ConversationAvatar({
@@ -169,8 +229,9 @@ type InboxLoadState = {
   viewerId: string;
   status: "pending" | "settled" | "error";
   conversations: ChatConversation[];
+  candidateInquiries: ChatConversation[];
+  inquiryStatus: "pending" | "settled" | "error";
 };
-
 export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
   const router = useRouter();
   const { locale } = useLocale();
@@ -193,46 +254,83 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
       active = false;
     };
   }, []);
-  const resolvedViewerId = viewerId?.trim() || sessionUserId || "";
-  const [loadAttempt, setLoadAttempt] = useState(0);
+  const resolvedViewerId = viewerId || sessionUserId || "";
+  const normalizedQuery = query.trim().toLocaleLowerCase();
   const [loadState, setLoadState] = useState<InboxLoadState>(() => ({
     viewerId: resolvedViewerId,
     status: "pending",
     conversations: [],
+    candidateInquiries: [],
+    inquiryStatus: "pending",
   }));
+  const resolvedViewerIdRef = useRef(resolvedViewerId);
   useEffect(() => {
-    let active = true;
-    const loadConversations = async () => {
-      try {
-        const liveData = await chatApi.listConversations();
-        if (active) {
-          setLoadState({
-            viewerId: resolvedViewerId,
-            status: "settled",
-            conversations: liveData.items.map((conversation) =>
-              serverConversationToChatConversation(conversation)
-            ),
-          });
-        }
-      } catch {
-        if (active) {
-          setLoadState({
-            viewerId: resolvedViewerId,
-            status: "error",
-            conversations: [],
-          });
-        }
+    resolvedViewerIdRef.current = resolvedViewerId;
+  }, [resolvedViewerId]);
+  const loadConversations = useCallback(async () => {
+    const [workResult, inquiryResult] = await Promise.allSettled([
+      chatApi.listConversations({ limit: 20 }),
+      chatApi.listCandidateInquiries({ limit: 20 }),
+    ]);
+    if (workResult.status === "rejected") {
+      if (resolvedViewerIdRef.current === resolvedViewerId) {
+        setLoadState((current) =>
+          current.viewerId === resolvedViewerId &&
+          (current.conversations.length > 0 ||
+            current.candidateInquiries.length > 0)
+            ? current
+            : {
+                viewerId: resolvedViewerId,
+                status: "error",
+                conversations: [],
+                candidateInquiries: [],
+                inquiryStatus: "error",
+              }
+        );
       }
+      throw workResult.reason;
+    }
+    const inquiryStatus =
+      inquiryResult.status === "fulfilled"
+        ? ("settled" as const)
+        : ("error" as const);
+    const candidateInquiries =
+      inquiryResult.status === "fulfilled"
+        ? inquiryResult.value.items.map((inquiry) =>
+            candidateInquiryToConversation(inquiry, resolvedViewerId)
+          )
+        : [];
+    const workConversations = workResult.value.items.map((conversation) =>
+      serverConversationToChatConversation(conversation, resolvedViewerId)
+    );
+    if (resolvedViewerIdRef.current === resolvedViewerId) {
+      setLoadState({
+        viewerId: resolvedViewerId,
+        status: "settled",
+        conversations: workConversations,
+        candidateInquiries,
+        inquiryStatus,
+      });
+    }
+    return {
+      work: workResult.value,
+      candidateInquiries,
+      inquiryStatus,
     };
-    void loadConversations();
-    return () => {
-      active = false;
-    };
-  }, [loadAttempt, resolvedViewerId]);
+  }, [resolvedViewerId]);
+  const { refreshing, refresh, refreshOnFocus } =
+    useCalmRefresh(loadConversations);
+  useEffect(() => {
+    void refresh(true).catch(() => undefined);
+  }, [refresh, resolvedViewerId]);
+  useFocusEffect(
+    useCallback(() => {
+      refreshOnFocus();
+    }, [refreshOnFocus])
+  );
   const bottomPadding =
     (chromeMetrics.isTablet ? 0 : chromeMetrics.navHeight + insets.bottom) +
     spacing.lg;
-  const normalizedQuery = query.trim().toLocaleLowerCase();
   const loadStateForViewer =
     loadState.viewerId === resolvedViewerId
       ? loadState
@@ -240,20 +338,33 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
           viewerId: resolvedViewerId,
           status: "pending" as const,
           conversations: [],
+          candidateInquiries: [],
+          inquiryStatus: "pending" as const,
         };
+  const inquiryLoadFailed = loadStateForViewer.inquiryStatus === "error";
   const conversationsPending = loadStateForViewer.status === "pending";
   const conversationsLoadFailed = loadStateForViewer.status === "error";
   const conversations = useMemo(
     () =>
-      loadStateForViewer.conversations.filter((conversation) => {
-        if (!normalizedQuery) return true;
-        return [
-          localizedText(conversation.questTitle, locale),
-          conversation.participantName,
-          localizedText(conversation.latestMessage, locale),
-        ].some((value) => value.toLocaleLowerCase().includes(normalizedQuery));
-      }),
+      filterChatConversations(
+        loadStateForViewer.conversations,
+        normalizedQuery,
+        locale
+      ),
     [loadStateForViewer.conversations, locale, normalizedQuery]
+  );
+  const candidateInquiryTitle =
+    locale === "th"
+      ? "การสอบถามก่อนเริ่มงาน · Inquiry"
+      : "Candidate inquiries · Inquiry";
+  const candidateInquiries = useMemo(
+    () =>
+      filterChatConversations(
+        loadStateForViewer.candidateInquiries,
+        normalizedQuery,
+        locale
+      ),
+    [loadStateForViewer.candidateInquiries, locale, normalizedQuery]
   );
 
   return (
@@ -263,6 +374,16 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomPadding }}
+        refreshControl={
+          <RefreshControl
+            colors={[colors.primary]}
+            onRefresh={() => {
+              void refresh(true).catch(() => undefined);
+            }}
+            refreshing={refreshing}
+            tintColor={colors.primary}
+          />
+        }
       >
         <View className={styles.content}>
           <View className={styles.listContent}>
@@ -318,14 +439,15 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
                 </Text>
                 <Pressable
                   accessibilityRole="button"
-                  className={styles.loadErrorAction}
                   onPress={() => {
                     setLoadState({
                       viewerId: resolvedViewerId,
                       status: "pending",
                       conversations: [],
+                      candidateInquiries: [],
+                      inquiryStatus: "pending",
                     });
-                    setLoadAttempt((attempt) => attempt + 1);
+                    void refresh(true).catch(() => undefined);
                   }}
                 >
                   <Text className={styles.loadErrorActionText}>
@@ -374,6 +496,76 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
                 </Text>
               </View>
             )}
+            {inquiryLoadFailed ? (
+              <>
+                <View className={styles.sectionHeading}>
+                  <Text
+                    accessibilityRole="header"
+                    className={styles.sectionTitle}
+                  >
+                    {candidateInquiryTitle}
+                  </Text>
+                </View>
+                <View
+                  accessibilityRole="alert"
+                  accessibilityLiveRegion="assertive"
+                  className={styles.loadErrorState}
+                >
+                  <Text className={styles.loadErrorTitle}>
+                    {locale === "th"
+                      ? "ไม่สามารถโหลด Inquiry ได้"
+                      : "Candidate inquiries could not be loaded."}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setLoadState((current) => ({
+                        ...current,
+                        inquiryStatus: "pending",
+                      }));
+                      void refresh(true).catch(() => undefined);
+                    }}
+                  >
+                    <Text className={styles.loadErrorActionText}>
+                      {messages.retry}
+                    </Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : candidateInquiries.length > 0 ? (
+              <>
+                <View className={styles.sectionHeading}>
+                  <Text
+                    accessibilityRole="header"
+                    className={styles.sectionTitle}
+                  >
+                    {candidateInquiryTitle}
+                  </Text>
+                  <Text className={styles.sectionCount}>
+                    {messages.conversationCount(candidateInquiries.length)}
+                  </Text>
+                </View>
+                <View className={styles.conversationList}>
+                  {candidateInquiries.map((conversation) => (
+                    <ConversationRow
+                      key={`inquiry-${conversation.id}`}
+                      conversation={conversation}
+                      locale={locale}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/quest/[id]/inquiry/[conversationId]",
+                          params: {
+                            id: conversation.questId ?? "",
+                            conversationId: conversation.id,
+                            viewerId: resolvedViewerId,
+                          },
+                        } as unknown as Href)
+                      }
+                    />
+                  ))}
+                </View>
+              </>
+            ) : null}
           </View>
         </View>
       </ScrollView>

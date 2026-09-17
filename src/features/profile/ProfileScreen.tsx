@@ -9,14 +9,9 @@ import { Pressable, SafeAreaView, ScrollView, Text, View } from "@/tw";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import {
-  LoadingSkeleton,
-  SkeletonBlock,
-} from "../../components/ui/LoadingSkeleton";
 import { profileMessages } from "../../locales/profileMessages";
 import { useLocale } from "../../locales/LocaleProvider";
 import styles from "./styles/profileStyles";
-import componentStyles from "./styles/profileComponentStyles";
 import {
   AboutMe,
   Certificates,
@@ -26,6 +21,7 @@ import {
   ProfileStats,
   ProfileTabs,
   Reviews,
+  ProfileSkeleton,
   type ProfileTab,
   type ProfileViewData,
 } from "./components/ProfileComponents";
@@ -33,190 +29,16 @@ import { profileModule } from "./profileModule";
 import { getAppChromeMetrics } from "../../theme/layout";
 import { getProfileLayoutMetrics } from "../../theme/profileLayout";
 import { spacing } from "../../theme/spacing";
-import { colors } from "../../theme/colors";
 import { AuthError } from "../auth/types";
 import { useNavigationVisibility } from "../../components/navigation/NavigationVisibilityContext";
 import { ProfileTopBar } from "./components/ProfileTopBar";
-
-function ProfileSkeleton({
-  activeTab,
-  loadingLabel,
-  width,
-  fontScale,
-  profileTopBarHeight,
-  bottomPadding,
-}: {
-  activeTab: ProfileTab;
-  loadingLabel: string;
-  width: number;
-  fontScale: number;
-  profileTopBarHeight: number;
-  bottomPadding: number;
-}) {
-  const metrics = getProfileLayoutMetrics(width, fontScale);
-  const section = (key: string, lines = 3) => (
-    <View
-      key={key}
-      className={componentStyles.section}
-      style={{ gap: spacing.sm, padding: metrics.cardPadding }}
-    >
-      <SkeletonBlock height={24} width="42%" borderRadius={5} />
-      <SkeletonBlock
-        height={1}
-        borderRadius={0}
-        style={{ marginVertical: spacing.xs }}
-      />
-      {Array.from({ length: lines }, (_, index) => (
-        <SkeletonBlock
-          key={index}
-          height={16}
-          width={index === lines - 1 ? "62%" : index === 1 ? "88%" : "96%"}
-          borderRadius={4}
-        />
-      ))}
-    </View>
-  );
-
-  return (
-    <LoadingSkeleton
-      loadingLabel={loadingLabel}
-      style={{ flex: 1 }}
-      contentStyle={{ flex: 1 }}
-      testID="profile-loading-skeleton"
-    >
-      <ScrollView
-        contentContainerClassName={cn(
-          styles.content,
-          width >= 600 && styles.tabletContent
-        )}
-        contentContainerStyle={{
-          gap: metrics.sectionGap,
-          paddingBottom: bottomPadding,
-          paddingLeft: metrics.pagePadding,
-          paddingRight: metrics.pagePadding,
-          paddingTop: profileTopBarHeight + metrics.sectionGap,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View
-          className={componentStyles.heroCard}
-          style={{ gap: spacing.md, padding: metrics.cardPadding }}
-        >
-          <View
-            style={{
-              alignItems: "flex-start",
-              flexDirection: "row",
-              gap: spacing.md,
-            }}
-          >
-            <SkeletonBlock
-              variant="image"
-              height={metrics.photoSize}
-              width={metrics.photoSize}
-              borderRadius={metrics.photoSize / 2}
-              testID="profile-skeleton-avatar"
-            />
-            <View style={{ flex: 1, gap: spacing.sm, paddingTop: spacing.xs }}>
-              <SkeletonBlock height={28} width="76%" borderRadius={5} />
-              <SkeletonBlock height={16} width="58%" borderRadius={4} />
-              <SkeletonBlock height={16} width="72%" borderRadius={4} />
-              <SkeletonBlock height={16} width="64%" borderRadius={4} />
-            </View>
-          </View>
-          <View style={{ gap: spacing.sm }}>
-            <SkeletonBlock height={14} width="54%" borderRadius={4} />
-            <View style={{ flexDirection: "row", gap: spacing.sm }}>
-              <SkeletonBlock height={28} width={82} borderRadius={15} />
-              <SkeletonBlock height={28} width={96} borderRadius={15} />
-              <SkeletonBlock height={28} width={72} borderRadius={15} />
-            </View>
-          </View>
-        </View>
-        <View
-          className={componentStyles.statsCard}
-          style={{
-            backgroundColor: colors.surfaceMuted,
-            borderColor: colors.borderSubtle,
-            gap: spacing.sm,
-          }}
-        >
-          <View style={{ flexDirection: "row", gap: spacing.sm }}>
-            <SkeletonBlock height={42} borderRadius={6} style={{ flex: 1 }} />
-            <SkeletonBlock height={42} borderRadius={6} style={{ flex: 1 }} />
-            <SkeletonBlock height={42} borderRadius={6} style={{ flex: 1 }} />
-          </View>
-        </View>
-        <View
-          className={componentStyles.tabList}
-          style={{
-            backgroundColor: colors.surfaceMuted,
-            borderColor: colors.borderSubtle,
-            borderRadius: 16,
-            flexDirection: "row",
-            gap: spacing.xs,
-            padding: spacing.xs,
-          }}
-        >
-          {[1, 2, 3].map((item) => (
-            <SkeletonBlock
-              key={item}
-              height={64}
-              borderRadius={10}
-              style={{ flex: 1 }}
-              testID={`profile-skeleton-tab-${item}`}
-            />
-          ))}
-        </View>
-        {activeTab === "about" ? (
-          section("about", 5)
-        ) : activeTab === "portfolio" ? (
-          <>
-            {section("experience", 4)}
-            {section("portfolio", 3)}
-            {section("certificates", 3)}
-          </>
-        ) : (
-          <>
-            {section("reviews-summary", 4)}
-            {[1, 2, 3].map((item) => (
-              <View
-                key={item}
-                className={componentStyles.reviewCard}
-                style={{ gap: spacing.sm }}
-              >
-                <View
-                  style={{
-                    alignItems: "center",
-                    flexDirection: "row",
-                    gap: spacing.sm,
-                  }}
-                >
-                  <SkeletonBlock
-                    variant="image"
-                    height={36}
-                    width={36}
-                    borderRadius={18}
-                  />
-                  <SkeletonBlock height={18} width="38%" borderRadius={4} />
-                </View>
-                <SkeletonBlock height={14} width="32%" borderRadius={4} />
-                <SkeletonBlock height={16} width="92%" borderRadius={4} />
-                <SkeletonBlock height={16} width="68%" borderRadius={4} />
-              </View>
-            ))}
-          </>
-        )}
-      </ScrollView>
-    </LoadingSkeleton>
-  );
-}
 
 export default function Profile() {
   const router = useRouter();
   const { width, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { locale } = useLocale();
-  const layoutMetrics = getProfileLayoutMetrics(width);
+  const layoutMetrics = getProfileLayoutMetrics(width, fontScale);
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
   const messages = profileMessages[locale];
   const { handleScroll: handleNavigationScroll } = useNavigationVisibility();
@@ -275,7 +97,9 @@ export default function Profile() {
   const content = viewData;
   const tabLabels: Record<ProfileTab, string> = {
     about: messages.about,
-    portfolio: messages.portfolio,
+    experience: messages.experience,
+    works: messages.works,
+    certificates: messages.certificates,
     reviews: messages.reviews,
   };
   const bottomPadding =
@@ -283,9 +107,7 @@ export default function Profile() {
     spacing.lg;
   const profileTopBarHeight = chromeMetrics.headerHeight + insets.top;
   const horizontalPadding = layoutMetrics.pagePadding;
-  const portfolioSectionMargin =
-    layoutMetrics.portfolioSectionGap - layoutMetrics.sectionGap;
-  const openSettings = () => router.push("/settings");
+  const openEditProfile = () => router.push("/profile/edit");
   const profileTopBar = <ProfileTopBar />;
   if (loadError && !content) {
     return (
@@ -331,12 +153,19 @@ export default function Profile() {
       noRatingLabel={messages.noRating}
       accessibilityLabel={messages.statisticsLabel}
       errorText={
-        content.sectionUnavailable.reputation || content.sectionErrors.reputation
+        content.sectionUnavailable.reputation ||
+        content.sectionErrors.reputation
           ? messages.ratingUnavailable
           : undefined
       }
-      retryLabel={content.sectionUnavailable.reputation ? undefined : messages.retry}
-      onRetry={content.sectionUnavailable.reputation ? undefined : () => setLoadAttempt((attempt) => attempt + 1)}
+      retryLabel={
+        content.sectionUnavailable.reputation ? undefined : messages.retry
+      }
+      onRetry={
+        content.sectionUnavailable.reputation
+          ? undefined
+          : () => setLoadAttempt((attempt) => attempt + 1)
+      }
     />
   );
   const profileTabs = (
@@ -354,6 +183,8 @@ export default function Profile() {
     >
       <ProfileHeader
         data={content}
+        editProfileLabel={messages.edit}
+        onEditPress={openEditProfile}
         accessibilityLabels={{
           profileImageLabel: messages.profileImageLabel,
           questCategoriesLabel: messages.questCategoriesLabel,
@@ -382,12 +213,19 @@ export default function Profile() {
           noMatchingReviewsText={messages.noMatchingReviews}
           showAllLabel={messages.showAllReviews}
           ratingErrorText={
-            content.sectionUnavailable.reputation || content.sectionErrors.reputation
+            content.sectionUnavailable.reputation ||
+            content.sectionErrors.reputation
               ? messages.ratingUnavailable
               : undefined
           }
-          ratingRetryLabel={content.sectionUnavailable.reputation ? undefined : messages.retry}
-          onRatingRetry={content.sectionUnavailable.reputation ? undefined : () => setLoadAttempt((attempt) => attempt + 1)}
+          ratingRetryLabel={
+            content.sectionUnavailable.reputation ? undefined : messages.retry
+          }
+          onRatingRetry={
+            content.sectionUnavailable.reputation
+              ? undefined
+              : () => setLoadAttempt((attempt) => attempt + 1)
+          }
           accessibilityLabels={{
             ratingSummaryLabel: messages.ratingSummaryLabel,
             ratingDistributionLabel: messages.ratingDistributionLabel,
@@ -405,8 +243,14 @@ export default function Profile() {
               ? messages.sectionUnavailable
               : undefined
           }
-          retryLabel={content.sectionUnavailable.reviews ? undefined : messages.retry}
-          onRetry={content.sectionUnavailable.reviews ? undefined : () => setLoadAttempt((attempt) => attempt + 1)}
+          retryLabel={
+            content.sectionUnavailable.reviews ? undefined : messages.retry
+          }
+          onRetry={
+            content.sectionUnavailable.reviews
+              ? undefined
+              : () => setLoadAttempt((attempt) => attempt + 1)
+          }
         />
       ) : (
         <ScrollView
@@ -429,6 +273,8 @@ export default function Profile() {
         >
           <ProfileHeader
             data={content}
+            editProfileLabel={messages.edit}
+            onEditPress={openEditProfile}
             accessibilityLabels={{
               profileImageLabel: messages.profileImageLabel,
               questCategoriesLabel: messages.questCategoriesLabel,
@@ -441,73 +287,97 @@ export default function Profile() {
               about={content.about}
               sectionTitle={messages.about}
               emptyText={messages.noDescription}
-              emptyActionLabel={messages.manageInSettings}
-              onEditPress={openSettings}
+              emptyActionLabel={messages.edit}
+              onEditPress={openEditProfile}
             />
           ) : null}
-          {activeTab === "portfolio" ? (
-            <>
-              <Experience
-                experiences={content.experiences}
-                sectionTitle={messages.experience}
-                emptyText={messages.noExperience}
-                presentLabel={messages.present}
-                locale={locale}
-                sectionBottomMargin={portfolioSectionMargin}
-                emptyActionLabel={messages.manageInSettings}
-                onEditPress={openSettings}
-                errorText={
-                  content.sectionUnavailable.experience || content.sectionErrors.experience
-                    ? messages.sectionUnavailable
-                    : undefined
-                }
-                retryLabel={content.sectionUnavailable.experience ? undefined : messages.retry}
-                onRetry={content.sectionUnavailable.experience ? undefined : () => setLoadAttempt((attempt) => attempt + 1)}
-              />
-              <MyWork
-                works={content.works}
-                sectionTitle={messages.portfolioWork}
-                emptyText={messages.noWorks}
-                noImageText={messages.noImage}
-                viewLabel={messages.viewWork}
-                closeLabel={messages.closeWork}
-                sectionBottomMargin={portfolioSectionMargin}
-                emptyActionLabel={messages.manageInSettings}
-                onEditPress={openSettings}
-                accessibilityLabels={{
-                  workImageLabel: messages.workImageLabel,
-                }}
-                errorText={
-                  content.sectionUnavailable.works || content.sectionErrors.works
-                    ? messages.sectionUnavailable
-                    : undefined
-                }
-                retryLabel={content.sectionUnavailable.works ? undefined : messages.retry}
-                onRetry={content.sectionUnavailable.works ? undefined : () => setLoadAttempt((attempt) => attempt + 1)}
-              />
-              <Certificates
-                certificates={content.certificates}
-                sectionTitle={messages.certificates}
-                emptyText={messages.noCertificates}
-                previewUnavailableText={messages.previewUnavailable}
-                previewLabel={messages.viewCertificate}
-                closeLabel={messages.closePreview}
-                unavailableText={messages.imageUnavailable}
-                emptyActionLabel={messages.manageInSettings}
-                onEditPress={openSettings}
-                accessibilityLabels={{
-                  certificatePreviewLabel: messages.certificatePreviewLabel,
-                  certificateImageLabel: messages.certificateImageLabel,
-                }}
-                errorText={
-                  content.sectionUnavailable.certificates || content.sectionErrors.certificates
-                    ? messages.sectionUnavailable
-                    : undefined
-                }
-                retryLabel={content.sectionUnavailable.certificates ? undefined : messages.retry}
-                onRetry={content.sectionUnavailable.certificates ? undefined : () => setLoadAttempt((attempt) => attempt + 1)}
-              />
-            </>
+          {activeTab === "experience" ? (
+            <Experience
+              experiences={content.experiences}
+              sectionTitle={messages.experience}
+              emptyText={messages.noExperience}
+              presentLabel={messages.present}
+              locale={locale}
+              emptyActionLabel={messages.edit}
+              onEditPress={openEditProfile}
+              errorText={
+                content.sectionUnavailable.experience ||
+                content.sectionErrors.experience
+                  ? messages.sectionUnavailable
+                  : undefined
+              }
+              retryLabel={
+                content.sectionUnavailable.experience
+                  ? undefined
+                  : messages.retry
+              }
+              onRetry={
+                content.sectionUnavailable.experience
+                  ? undefined
+                  : () => setLoadAttempt((attempt) => attempt + 1)
+              }
+            />
+          ) : null}
+          {activeTab === "works" ? (
+            <MyWork
+              works={content.works}
+              sectionTitle={messages.works}
+              emptyText={messages.noWorks}
+              noImageText={messages.noImage}
+              viewLabel={messages.viewWork}
+              closeLabel={messages.closeWork}
+              emptyActionLabel={messages.edit}
+              onEditPress={openEditProfile}
+              accessibilityLabels={{
+                workImageLabel: messages.workImageLabel,
+              }}
+              errorText={
+                content.sectionUnavailable.works || content.sectionErrors.works
+                  ? messages.sectionUnavailable
+                  : undefined
+              }
+              retryLabel={
+                content.sectionUnavailable.works ? undefined : messages.retry
+              }
+              onRetry={
+                content.sectionUnavailable.works
+                  ? undefined
+                  : () => setLoadAttempt((attempt) => attempt + 1)
+              }
+            />
+          ) : null}
+          {activeTab === "certificates" ? (
+            <Certificates
+              certificates={content.certificates}
+              sectionTitle={messages.certificates}
+              emptyText={messages.noCertificates}
+              previewUnavailableText={messages.previewUnavailable}
+              previewLabel={messages.viewCertificate}
+              closeLabel={messages.closePreview}
+              unavailableText={messages.imageUnavailable}
+              emptyActionLabel={messages.edit}
+              onEditPress={openEditProfile}
+              accessibilityLabels={{
+                certificatePreviewLabel: messages.certificatePreviewLabel,
+                certificateImageLabel: messages.certificateImageLabel,
+              }}
+              errorText={
+                content.sectionUnavailable.certificates ||
+                content.sectionErrors.certificates
+                  ? messages.sectionUnavailable
+                  : undefined
+              }
+              retryLabel={
+                content.sectionUnavailable.certificates
+                  ? undefined
+                  : messages.retry
+              }
+              onRetry={
+                content.sectionUnavailable.certificates
+                  ? undefined
+                  : () => setLoadAttempt((attempt) => attempt + 1)
+              }
+            />
           ) : null}
         </ScrollView>
       )}

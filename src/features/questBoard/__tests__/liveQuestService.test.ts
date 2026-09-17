@@ -1,10 +1,14 @@
 import { liveQuestService } from "../liveQuestService";
 import { questApi } from "@/api/QuestApi";
+import { chatApi } from "@/api/ChatApi";
 import type { CreateQuestV2Payload } from "@/api/QuestApi";
 
 jest.mock("@/api/QuestApi", () => ({
   createQuestIdempotencyKey: jest.fn(() => "create-key-1"),
   questApi: {
+    client: {
+      requestJson: jest.fn(),
+    },
     createQuest: jest.fn(),
     getPublishCheck: jest.fn(),
     publishQuest: jest.fn(),
@@ -12,10 +16,21 @@ jest.mock("@/api/QuestApi", () => ({
     getPublicDetail: jest.fn(),
     getParticipationDetail: jest.fn(),
     uploadQuestImages: jest.fn(),
+    joinQuest: jest.fn(),
+    rejectCandidateApplication: jest.fn(),
+    rejectCandidateTeam: jest.fn(),
+    listMyAssignments: jest.fn(),
+  },
+}));
+
+jest.mock("@/api/ChatApi", () => ({
+  chatApi: {
+    createCandidateInquiry: jest.fn(),
   },
 }));
 
 const mockedQuestApi = questApi as jest.Mocked<typeof questApi>;
+const mockedChatApi = chatApi as jest.Mocked<typeof chatApi>;
 
 const payload: CreateQuestV2Payload = {
   title: "Clean the library",
@@ -185,5 +200,97 @@ describe("LiveQuestService", () => {
       [{ uri: "file:///tmp/img1.jpg" }],
       expect.any(String)
     );
+  });
+  it("calls questApi.joinQuest with questId and idempotencyKey", async () => {
+    const assignment = { id: "assign-1", status: "ASSIGNMENT_ACTIVE" };
+    mockedQuestApi.joinQuest.mockResolvedValue(assignment as never);
+
+    const res = await liveQuestService.joinQuest("quest-join-1");
+    expect(res).toBe(assignment);
+    expect(mockedQuestApi.joinQuest).toHaveBeenCalledWith(
+      "quest-join-1",
+      "create-key-1"
+    );
+  });
+
+  it("resolves and caches hirer participant from candidate-inquiries endpoint", async () => {
+    mockedChatApi.createCandidateInquiry.mockResolvedValue({
+      participants: [
+        {
+          id: "worker-1",
+          role: "PROSPECTIVE_WORKER",
+          displayName: "Worker Bob",
+        },
+        { id: "hirer-1", role: "HIRER", displayName: "Hirer Alice" },
+      ],
+    } as never);
+
+    const hirer = await liveQuestService.getHirerParticipant("quest-hirer-1");
+    expect(hirer).toEqual({ id: "hirer-1", displayName: "Hirer Alice" });
+    expect(mockedChatApi.createCandidateInquiry).toHaveBeenCalledWith(
+      "quest-hirer-1"
+    );
+
+    // Cached subsequent call
+    const cached = await liveQuestService.getHirerParticipant("quest-hirer-1");
+    expect(cached).toEqual({ id: "hirer-1", displayName: "Hirer Alice" });
+    expect(mockedChatApi.createCandidateInquiry).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns null when inquiry fails or has no hirer participant", async () => {
+    mockedChatApi.createCandidateInquiry.mockRejectedValueOnce(
+      new Error("Network error")
+    );
+
+    const hirer =
+      await liveQuestService.getHirerParticipant("quest-hirer-fail");
+    expect(hirer).toBeNull();
+  });
+
+  it("rejects candidate application through questApi.rejectCandidateApplication", async () => {
+    const application = { id: "app-1", state: "APPLICATION_REJECTED" };
+    mockedQuestApi.rejectCandidateApplication.mockResolvedValueOnce(
+      application as never
+    );
+
+    const result = await liveQuestService.rejectApplication(
+      "quest-1",
+      "app-1",
+      "reject-key-1"
+    );
+    expect(result).toBe(application);
+    expect(mockedQuestApi.rejectCandidateApplication).toHaveBeenCalledWith(
+      "quest-1",
+      "app-1",
+      "reject-key-1"
+    );
+  });
+
+  it("rejects candidate team through questApi.rejectCandidateTeam", async () => {
+    const team = { id: "team-1", state: "TEAM_REJECTED" };
+    mockedQuestApi.rejectCandidateTeam.mockResolvedValueOnce(team as never);
+
+    const result = await liveQuestService.rejectCandidateTeam(
+      "quest-1",
+      "team-1",
+      "reject-key-2"
+    );
+    expect(result).toBe(team);
+    expect(mockedQuestApi.rejectCandidateTeam).toHaveBeenCalledWith(
+      "quest-1",
+      "team-1",
+      "reject-key-2"
+    );
+  });
+
+  it("lists worker assignments with optional status filter", async () => {
+    const assignments = [{ id: "assign-1", state: "ASSIGNMENT_COMPLETED" }];
+    mockedQuestApi.listMyAssignments.mockResolvedValueOnce(
+      assignments as never
+    );
+
+    const result = await liveQuestService.listMyWorkerAssignments("completed");
+    expect(result).toBe(assignments);
+    expect(mockedQuestApi.listMyAssignments).toHaveBeenCalledWith("completed");
   });
 });

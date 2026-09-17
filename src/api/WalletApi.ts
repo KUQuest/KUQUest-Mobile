@@ -95,7 +95,7 @@ export interface UserTransactionHistoryResult {
   items: UserTransaction[];
 }
 
-function createIdempotencyKey(): string {
+export function createIdempotencyKey(): string {
   return (
     globalThis.crypto?.randomUUID?.() ??
     `mobile-${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -161,6 +161,100 @@ export const earningsConversionResponseSchema = z.object({
     id: z.string().min(1),
     amountSatang: z.number().int().positive(),
     createdAt: z.string(),
+  }),
+});
+
+export const payoutDestinationTypeSchema = z.enum([
+  "PROMPTPAY",
+  "BANK_ACCOUNT",
+]);
+export type PayoutDestinationType = z.infer<typeof payoutDestinationTypeSchema>;
+
+export const payoutDestinationSchema = z.object({
+  id: z.string().min(1),
+  type: payoutDestinationTypeSchema,
+  accountHolderName: z.string().min(1),
+  maskedAccount: z.string().min(1),
+  bankCode: z.string().nullable().optional(),
+  isDefault: z.boolean(),
+  createdAt: z.string(),
+});
+export type PayoutDestination = z.infer<typeof payoutDestinationSchema>;
+
+export const createPayoutDestinationPayloadSchema = z.object({
+  type: payoutDestinationTypeSchema,
+  accountNumber: z.string().min(1),
+  accountHolderName: z.string().min(1),
+  bankCode: z.string().min(1).nullable().optional(),
+});
+export type CreatePayoutDestinationPayload = z.infer<
+  typeof createPayoutDestinationPayloadSchema
+>;
+
+export const payoutDestinationsResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    destinations: z.array(payoutDestinationSchema),
+  }),
+});
+export type PayoutDestinationsResponse = z.infer<
+  typeof payoutDestinationsResponseSchema
+>;
+
+export const payoutDestinationResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    destination: payoutDestinationSchema,
+  }),
+});
+
+export const deletePayoutDestinationResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    id: z.string().min(1),
+  }),
+});
+
+export const payoutStatusSchema = z.enum([
+  "PENDING_ADMIN_APPROVAL",
+  "SUBMITTED_TO_PROVIDER",
+  "PROVIDER_PENDING",
+  "SUCCEEDED",
+  "FAILED",
+  "REJECTED",
+]);
+export type PayoutStatus = z.infer<typeof payoutStatusSchema>;
+
+export const payoutRecordSchema = z.object({
+  id: z.string().min(1),
+  amountSatang: z.number().int(),
+  feeSatang: z.number().int(),
+  status: payoutStatusSchema,
+  destination: z.object({
+    type: payoutDestinationTypeSchema,
+    maskedAccount: z.string().min(1),
+  }),
+  createdAt: z.string(),
+});
+export type PayoutRecord = z.infer<typeof payoutRecordSchema>;
+
+export const requestPayoutPayloadSchema = z.object({
+  amountSatang: z.number().int().positive(),
+  destinationId: z.string().min(1),
+});
+export type RequestPayoutPayload = z.infer<typeof requestPayoutPayloadSchema>;
+
+export const payoutResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    payout: payoutRecordSchema,
+  }),
+});
+
+export const payoutsListResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    payouts: z.array(payoutRecordSchema),
   }),
 });
 
@@ -243,6 +337,59 @@ export class WalletApi {
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         ),
     };
+  }
+
+  async listPayoutDestinations(): Promise<PayoutDestination[]> {
+    const body = await this.client.request<unknown>(
+      "/api/v1/payout-destinations"
+    );
+    return payoutDestinationsResponseSchema.parse(body).data.destinations;
+  }
+
+  async createPayoutDestination(
+    payload: CreatePayoutDestinationPayload
+  ): Promise<PayoutDestination> {
+    const validatedPayload =
+      createPayoutDestinationPayloadSchema.parse(payload);
+    const body = await this.client.requestJson<unknown>(
+      "/api/v1/payout-destinations",
+      validatedPayload,
+      { method: "POST" }
+    );
+    return payoutDestinationResponseSchema.parse(body).data.destination;
+  }
+
+  async deletePayoutDestination(id: string): Promise<{ id: string }> {
+    const body = await this.client.request<unknown>(
+      `/api/v1/payout-destinations/${id}`,
+      { method: "DELETE" }
+    );
+    return deletePayoutDestinationResponseSchema.parse(body).data;
+  }
+
+  async requestPayout(
+    amountSatang: number,
+    destinationId: string,
+    idempotencyKey = createIdempotencyKey()
+  ): Promise<PayoutRecord> {
+    const payload = requestPayoutPayloadSchema.parse({
+      amountSatang,
+      destinationId,
+    });
+    const body = await this.client.requestJson<unknown>(
+      "/api/v1/payouts",
+      payload,
+      {
+        method: "POST",
+        headers: { "idempotency-key": idempotencyKey },
+      }
+    );
+    return payoutResponseSchema.parse(body).data.payout;
+  }
+
+  async listPayouts(): Promise<PayoutRecord[]> {
+    const body = await this.client.request<unknown>("/api/v1/payouts");
+    return payoutsListResponseSchema.parse(body).data.payouts;
   }
 }
 

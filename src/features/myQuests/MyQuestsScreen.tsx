@@ -3,6 +3,7 @@ import {
   AccessibilityInfo,
   Alert,
   PanResponder,
+  RefreshControl,
   type GestureResponderEvent,
   type PanResponderGestureState,
   useWindowDimensions,
@@ -34,7 +35,9 @@ import { cn } from "@/tw/cn";
 import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
 import { QuestFundingSummary } from "@/components/ui/QuestFundingSummary";
 import { authService } from "@/features/auth/AuthService";
+import { useCalmRefresh } from "@/hooks/useCalmRefresh";
 import { myQuestService } from "./myQuestService";
+import type { LiveQuestSnapshot } from "@/features/questBoard/liveQuestService";
 import type { QuestV2CanonicalQuest } from "@/api/questV2Contracts";
 import { Pressable, SafeAreaView, ScrollView, Text, View } from "@/tw";
 import { useLocale, type SupportedLocale } from "@/locales/LocaleProvider";
@@ -478,6 +481,98 @@ function liveQuestStatusLabel(
   return questBoardMessages[locale].statusLabel(status);
 }
 
+function getLiveWorkerAction(
+  snapshot: LiveQuestSnapshot,
+  locale: SupportedLocale
+): string {
+  const thai = locale === "th";
+  switch (snapshot.nextAction) {
+    case "WAIT_FOR_START":
+      return actionLabels[locale].start;
+    case "SUBMIT_PROOF":
+      return thai ? "ส่งหลักฐาน" : "Submit proof";
+    case "CONFIRM_COMPLETION":
+      return thai ? "ยืนยันการเสร็จสิ้น" : "Confirm completion";
+    case "RESPOND_TO_EDIT":
+      return thai ? "ตอบกลับคำขอแก้ไข" : "Respond to edit";
+    case "CREATE_REVIEW":
+      return thai ? "เขียนรีวิว" : "Write review";
+    default:
+      return actionLabels[locale].detail;
+  }
+}
+
+function getLiveWorkerItems(
+  snapshots: LiveQuestSnapshot[],
+  tab: WorkerTab,
+  locale: SupportedLocale,
+  viewerId: string
+): QuestSummary[] {
+  return snapshots.flatMap((snapshot) => {
+    const quest = snapshot.quest;
+    const terminal =
+      snapshot.assignment?.state !== "ASSIGNMENT_ACTIVE" ||
+      snapshot.state === "QUEST_COMPLETED" ||
+      snapshot.state === "QUEST_CANCELLED" ||
+      snapshot.state === "QUEST_FAILED";
+    const pending =
+      !terminal &&
+      (snapshot.state === "QUEST_ASSIGNED" ||
+        snapshot.nextAction === "WAIT_FOR_START");
+    const snapshotTab: WorkerTab = terminal
+      ? "history"
+      : pending
+        ? "pending"
+        : "accepted";
+    if (snapshotTab !== tab) return [];
+
+    const tag = quest.tag?.name ?? "Quest";
+    const statusValue =
+      "hiddenAt" in quest && quest.hiddenAt ? "QUEST_HIDDEN" : snapshot.state;
+    const status = liveQuestStatusLabel(statusValue, locale);
+    const acceptedCount =
+      snapshot.team?.members.length ??
+      (quest as QuestV2CanonicalQuest & { activeWorkerCount?: number })
+        .activeWorkerCount ??
+      (snapshot.assignment ? 1 : 0);
+    const groupChatId =
+      snapshot.capabilities.canReadWorkChat && snapshot.workConversation
+        ? snapshot.workConversation.id
+        : undefined;
+    const groupChatCapability = groupChatId
+      ? {
+          conversationId: groupChatId,
+          canRead: snapshot.capabilities.canReadWorkChat,
+          canWrite: snapshot.capabilities.canWriteWorkChat,
+        }
+      : undefined;
+    return [
+      {
+        id: quest.id,
+        title: quest.title,
+        tag,
+        categoryTone: getCategoryTone(tag),
+        date: `${formatQuestDate(quest.startTime, locale)}${
+          quest.dueAt ? ` · ${formatQuestDate(quest.dueAt, locale)}` : ""
+        }`,
+        location: quest.locations[0]?.label ?? "—",
+        description: quest.description ?? "",
+        detail: status,
+        teamSize: `${acceptedCount} / ${quest.headcount}`,
+        status,
+        statusTone: liveQuestStatusTone(statusValue),
+        action: getLiveWorkerAction(snapshot, locale),
+        actionType: "detail",
+        groupChatId,
+        groupChatViewerId: viewerId,
+        host: "hirerName" in quest ? quest.hirerName : undefined,
+        appliedOn: snapshot.assignment?.createdAt
+          ? formatQuestDate(snapshot.assignment.createdAt, locale)
+          : undefined,
+      },
+    ];
+  });
+}
 function getLiveHirerItems(
   quests: QuestV2CanonicalQuest[],
   tab: HirerTab,
@@ -780,6 +875,7 @@ function ApplicationQuestCard({
   const questAccessibilityLabel = [
     quest.title,
     quest.status,
+    quest.action,
     quest.date,
     quest.location,
     quest.detail,
@@ -834,6 +930,14 @@ function ApplicationQuestCard({
           ) : null}
         </View>
       </Pressable>
+      <View className={styles.actionsRow}>
+        <ActionButton
+          full
+          label={quest.action}
+          onPress={onPress}
+          testID={`my-quest-action-${quest.id}`}
+        />
+      </View>
       {quest.groupChatId ? (
         <View className={styles.groupChatRow}>
           <ActionButton
@@ -1032,25 +1136,55 @@ export default function MyQuestsScreen({
   const [liveHirerQuests, setLiveHirerQuests] = useState<
     QuestV2CanonicalQuest[] | null
   >(null);
-  const [liveHirerLoading, setLiveHirerLoading] = useState(false);
   const [liveHirerError, setLiveHirerError] = useState(false);
   const loadLiveHirerQuests = useCallback(async () => {
-    setLiveHirerLoading(true);
     setLiveHirerError(false);
     try {
-      setLiveHirerQuests(await myQuestService.listAllMyHirerQuests());
-    } catch {
+      const quests = await myQuestService.listAllMyHirerQuests();
+      setLiveHirerQuests(quests);
+      return quests;
+    } catch (error) {
       setLiveHirerError(true);
-    } finally {
-      setLiveHirerLoading(false);
+      throw error;
     }
   }, []);
+  const { refreshing, refresh, refreshOnFocus } =
+    useCalmRefresh(loadLiveHirerQuests);
   useFocusEffect(
     useCallback(() => {
       if (role !== "hirer") return undefined;
-      void loadLiveHirerQuests();
+      refreshOnFocus();
       return undefined;
-    }, [loadLiveHirerQuests, role])
+    }, [refreshOnFocus, role])
+  );
+  const [liveWorkerSnapshots, setLiveWorkerSnapshots] = useState<
+    LiveQuestSnapshot[] | null
+  >(null);
+  const [liveWorkerError, setLiveWorkerError] = useState(false);
+  const loadLiveWorkerSnapshots = useCallback(async () => {
+    if (!sessionUserId) return [];
+    setLiveWorkerError(false);
+    try {
+      const snapshots =
+        await myQuestService.listMyWorkerQuestSnapshots(sessionUserId);
+      setLiveWorkerSnapshots(snapshots);
+      return snapshots;
+    } catch (error) {
+      setLiveWorkerError(true);
+      throw error;
+    }
+  }, [sessionUserId]);
+  const {
+    refreshing: workerRefreshing,
+    refresh: refreshWorker,
+    refreshOnFocus: refreshWorkerOnFocus,
+  } = useCalmRefresh(loadLiveWorkerSnapshots);
+  useFocusEffect(
+    useCallback(() => {
+      if (role !== "worker" || !sessionUserId) return undefined;
+      refreshWorkerOnFocus();
+      return undefined;
+    }, [refreshWorkerOnFocus, role, sessionUserId])
   );
   const roleCopy = role === "worker" ? copy.worker : copy.hirer;
   const selectedTab = role === "worker" ? workerTab : hirerTab;
@@ -1066,27 +1200,39 @@ export default function MyQuestsScreen({
       )
     : false;
   const liveHirerMode = role === "hirer";
+  const liveHirerLoading =
+    liveHirerMode && liveHirerQuests === null && refreshing;
+  const liveWorkerMode = role === "worker";
+  const liveWorkerLoading =
+    liveWorkerMode && liveWorkerSnapshots === null && workerRefreshing;
   const items = useMemo(() => {
     if (liveHirerMode) {
       return liveHirerQuests
         ? getLiveHirerItems(liveHirerQuests, selectedTab as HirerTab, locale)
         : [];
     }
-    return [];
+    return liveWorkerSnapshots
+      ? getLiveWorkerItems(
+          liveWorkerSnapshots,
+          selectedTab as WorkerTab,
+          locale,
+          viewerId
+        )
+      : [];
   }, [
     liveHirerMode,
     liveHirerQuests,
+    liveWorkerSnapshots,
     locale,
-    role,
     selectedTab,
     viewerId,
-    workflowRevision,
   ]);
   const summary = useMemo(() => {
-    void workflowRevision;
     if (role !== "worker" || !copy.worker.summary) return null;
-    const counts = workerTabs.map(
-      (tab) => getWorkflowItems("worker", tab, locale, viewerId).length
+    const counts = workerTabs.map((tab) =>
+      liveWorkerSnapshots
+        ? getLiveWorkerItems(liveWorkerSnapshots, tab, locale, viewerId).length
+        : 0
     );
     return copy.worker.summary.map((metric, index) => ({
       ...metric,
@@ -1104,7 +1250,7 @@ export default function MyQuestsScreen({
             ? copy.worker.tabs.accepted
             : copy.worker.tabs.history,
     }));
-  }, [viewerId, workflowRevision, copy, locale, role]);
+  }, [liveWorkerSnapshots, viewerId, copy, locale, role]);
   const tabOptions: readonly (WorkerTab | HirerTab)[] =
     role === "worker" ? workerTabs : hirerTabs;
   const bottomPadding =
@@ -1176,6 +1322,17 @@ export default function MyQuestsScreen({
     });
   };
 
+  const openWorkerWork = (questId: string) => {
+    if (!viewerId) return;
+    router.push({
+      pathname: `../quest/${questId}/work`,
+      params: {
+        viewerId,
+        studentId: viewerId,
+      },
+    });
+  };
+
   const openGroupChat = (
     chatId: string,
     questId?: string,
@@ -1200,9 +1357,17 @@ export default function MyQuestsScreen({
     });
   };
 
+  const openManageQuest = (questId: string) => {
+    router.push(`../quest/${questId}/manage`);
+  };
+
   const openPrimaryQuestAction = (quest: QuestSummary) => {
     if (quest.actionType === "edit") {
       router.push({ pathname: "/create", params: { editQuestId: quest.id } });
+      return;
+    }
+    if (role === "hirer") {
+      openManageQuest(quest.id);
       return;
     }
     if (quest.actionType === "applicants") {
@@ -1408,6 +1573,17 @@ export default function MyQuestsScreen({
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomPadding }}
+        refreshControl={
+          <RefreshControl
+            onRefresh={() =>
+              void (liveHirerMode ? refresh(true) : refreshWorker(true)).catch(
+                () => undefined
+              )
+            }
+            refreshing={liveHirerMode ? refreshing : workerRefreshing}
+            tintColor={colors.primary}
+          />
+        }
       >
         <View className={styles.surface}>
           {role === "hirer" ? <QuestFundingSummary locale={locale} /> : null}
@@ -1415,7 +1591,8 @@ export default function MyQuestsScreen({
             accessibilityLabel={`${role === "worker" ? copy.worker.tabs[workerTab] : copy.hirer.tabs[hirerTab]} Quest list`}
             className={styles.list}
           >
-            {liveHirerMode && liveHirerLoading ? (
+            {(liveHirerMode && liveHirerLoading) ||
+            (liveWorkerMode && liveWorkerLoading) ? (
               <View
                 accessibilityLabel={copy.liveLoading}
                 className={styles.emptyState}
@@ -1423,7 +1600,7 @@ export default function MyQuestsScreen({
               >
                 <Text className={styles.emptyTitle}>{copy.liveLoading}</Text>
               </View>
-            ) : liveHirerMode && liveHirerError ? (
+            ) : liveHirerMode && liveHirerQuests === null && liveHirerError ? (
               <View
                 accessibilityLabel={copy.liveError}
                 className={styles.loadErrorState}
@@ -1433,7 +1610,25 @@ export default function MyQuestsScreen({
                 <ActionButton
                   full
                   label={copy.liveRetry}
-                  onPress={() => void loadLiveHirerQuests()}
+                  onPress={() => void refresh(true).catch(() => undefined)}
+                  testID="my-quests-live-retry"
+                />
+              </View>
+            ) : liveWorkerMode &&
+              liveWorkerSnapshots === null &&
+              liveWorkerError ? (
+              <View
+                accessibilityLabel={copy.liveError}
+                className={styles.loadErrorState}
+                testID="my-quests-live-error"
+              >
+                <Text className={styles.loadErrorTitle}>{copy.liveError}</Text>
+                <ActionButton
+                  full
+                  label={copy.liveRetry}
+                  onPress={() =>
+                    void refreshWorker(true).catch(() => undefined)
+                  }
                   testID="my-quests-live-retry"
                 />
               </View>
@@ -1442,6 +1637,7 @@ export default function MyQuestsScreen({
                 role === "worker" ? (
                   <ApplicationQuestCard
                     key={quest.id}
+                    onPress={() => openWorkerWork(quest.id)}
                     copy={copy}
                     onGroupChat={() =>
                       quest.groupChatId
@@ -1453,7 +1649,6 @@ export default function MyQuestsScreen({
                           )
                         : undefined
                     }
-                    onPress={() => openQuest(quest.id, "join", workerTab)}
                     quest={quest}
                   />
                 ) : (
@@ -1471,7 +1666,11 @@ export default function MyQuestsScreen({
                         : undefined
                     }
                     onPrimaryAction={() => openPrimaryQuestAction(quest)}
-                    onPress={() => openQuest(quest.id, "post")}
+                    onPress={() =>
+                      quest.actionType === "edit"
+                        ? openQuest(quest.id, "post")
+                        : openManageQuest(quest.id)
+                    }
                     quest={quest}
                   />
                 )

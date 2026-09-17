@@ -32,12 +32,14 @@ import DateTimePicker, {
 import * as ImagePicker from "expo-image-picker";
 import {
   ArrowLeft,
+  Calendar,
   CalendarClock,
   Check,
   ChevronDown,
   ChevronRight,
   CircleAlert,
   CircleHelp,
+  Clock,
   Clock3,
   ImagePlus,
   Mail,
@@ -70,9 +72,14 @@ import { getCreateQuestLayoutMetrics } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 import styles from "./createQuestStyles";
 import {
+  addDaysToDate,
+  addHoursToTime,
   formatDraftReward,
+  formatQuestDuration,
   getHeadcountForParticipation,
+  getNearestQuarterHour,
   getQuestPublishCheck,
+  getRelativeDateValue,
   getRewardValidationError,
   getSchedulePickerValue,
   getScheduleTimeValue,
@@ -81,6 +88,7 @@ import {
   toQuestV2Payload,
   type QuestDraft,
 } from "./createQuestModel";
+import CustomTimePickerModal from "./components/CustomTimePickerModal";
 import {
   createQuestDraftId,
   deleteQuestDraft,
@@ -239,6 +247,8 @@ function SectionHeading({
 function DateTimeField({
   label,
   value,
+  dateFormatted,
+  timeValue,
   error,
   helper,
   emptyLabel,
@@ -246,9 +256,15 @@ function DateTimeField({
   hasValue,
   testID,
   onPress,
+  onDatePress,
+  onTimePress,
+  quickPresets,
+  messages,
 }: {
   label: string;
   value: string;
+  dateFormatted?: string;
+  timeValue?: string;
   error?: string;
   helper: string;
   emptyLabel: string;
@@ -256,29 +272,121 @@ function DateTimeField({
   hasValue: boolean;
   testID?: string;
   onPress: () => void;
+  onDatePress?: () => void;
+  onTimePress?: () => void;
+  quickPresets?: { label: string; onPress: () => void }[];
+  messages: typeof createQuestMessages.en;
 }) {
+  const hasDate = Boolean(dateFormatted && dateFormatted !== emptyLabel);
+  const hasTime = Boolean(timeValue && TIME_PATTERN.test(timeValue));
+
   return (
-    <View className={styles.fieldGroup}>
-      <FieldLabel required optionalLabel="">
-        {label}
-      </FieldLabel>
+    <View className={styles.scheduleCard}>
+      <View className={styles.scheduleCardHeader}>
+        <View className={styles.scheduleCardTitle}>
+          <CalendarClock color={colors.primary} size={18} strokeWidth={2.2} />
+          <Text className={styles.scheduleCardTitle}>{label}</Text>
+        </View>
+        {hasDate && hasTime ? (
+          <View className="bg-ku-surface-success px-[8px] py-[2px] rounded-ku-pill">
+            <Text className="text-ku-success font-ku-bold text-ku-label">
+              {timeValue}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+
       <Pressable
         ref={fieldRef}
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${value || emptyLabel}`}
         accessibilityState={{ disabled: false }}
         onPress={onPress}
-        className={cn(styles.dateField, error ? styles.fieldError : null)}
         testID={testID}
-        android_ripple={{ color: colors.surfaceAccent }}
       >
-        <Text
-          className={cn(styles.dateText, !hasValue && styles.placeholderText)}
-        >
-          {value || emptyLabel}
-        </Text>
-        <CalendarClock color={colors.textSecondary} size={19} strokeWidth={2} />
+        <View className={styles.scheduleSplitRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${messages.selectDate}: ${dateFormatted || emptyLabel}`}
+            onPress={onDatePress ?? onPress}
+            className={cn(
+              styles.scheduleSplitBtn,
+              error ? styles.scheduleSplitBtnError : null
+            )}
+            testID={testID ? `${testID}-date-btn` : undefined}
+          >
+            <View className={styles.scheduleSplitBtnCopy}>
+              <Text className={styles.scheduleSplitBtnLabel}>
+                {messages.startDate}
+              </Text>
+              <Text
+                numberOfLines={1}
+                className={cn(
+                  styles.scheduleSplitBtnValue,
+                  !hasDate && styles.placeholderText
+                )}
+              >
+                {dateFormatted || emptyLabel}
+              </Text>
+            </View>
+            <Calendar
+              color={hasDate ? colors.primary : colors.textMuted}
+              size={18}
+              strokeWidth={2}
+            />
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${messages.selectTime}: ${timeValue || emptyLabel}`}
+            onPress={onTimePress ?? onPress}
+            className={cn(
+              styles.scheduleSplitBtn,
+              error ? styles.scheduleSplitBtnError : null
+            )}
+            testID={testID ? `${testID}-time-btn` : undefined}
+          >
+            <View className={styles.scheduleSplitBtnCopy}>
+              <Text className={styles.scheduleSplitBtnLabel}>
+                {messages.startTime}
+              </Text>
+              <Text
+                numberOfLines={1}
+                className={cn(
+                  styles.scheduleSplitBtnValue,
+                  !hasTime && styles.placeholderText
+                )}
+              >
+                {hasTime ? timeValue : messages.selectTime}
+              </Text>
+            </View>
+            <Clock
+              color={hasTime ? colors.primary : colors.textMuted}
+              size={18}
+              strokeWidth={2}
+            />
+          </Pressable>
+        </View>
       </Pressable>
+
+      {quickPresets && quickPresets.length > 0 ? (
+        <View className={styles.scheduleQuickChips}>
+          {quickPresets.map((preset) => (
+            <Pressable
+              key={preset.label}
+              accessibilityRole="button"
+              accessibilityLabel={preset.label}
+              onPress={preset.onPress}
+              className={styles.quickChip}
+              hitSlop={4}
+              testID={`quick-preset-${preset.label}`}
+            >
+              <Text className={styles.quickChipText}>{preset.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+
       <Text
         accessibilityLiveRegion={error ? "assertive" : "none"}
         className={error ? styles.errorText : styles.helperText}
@@ -1001,11 +1109,15 @@ export default function CreateQuestScreen({
     null
   );
   const [imageError, setImageError] = useState<string | undefined>();
-  const [scheduleField, setScheduleField] = useState<ScheduleField | null>(
+  const [datePickerField, setDatePickerField] = useState<ScheduleField | null>(
     null
   );
-  const [pickerMode, setPickerMode] = useState<PickerMode>("date");
-  const [iosPickerValue, setIosPickerValue] = useState<Date | null>(null);
+  const [timePickerField, setTimePickerField] = useState<ScheduleField | null>(
+    null
+  );
+  const [iosDatePickerValue, setIosDatePickerValue] = useState<Date | null>(
+    null
+  );
   const [completedState, setCompletedState] = useState<CompletionState | null>(
     null
   );
@@ -1627,34 +1739,37 @@ export default function CreateQuestScreen({
     }
   };
 
-  const closeSchedulePicker = () => {
-    setScheduleField(null);
-    setPickerMode("date");
-    setIosPickerValue(null);
+  const closeDatePicker = () => {
+    setDatePickerField(null);
+    setIosDatePickerValue(null);
   };
 
-  const openSchedulePicker = (field: ScheduleField) => {
+  const openDatePicker = (field: ScheduleField) => {
+    setDatePickerField(field);
     const dateValue = field === "start" ? draft.startDate : draft.deadline;
     const timeValue = field === "start" ? draft.startTime : draft.endTime;
-    setScheduleField(field);
-    setPickerMode("date");
-    setIosPickerValue(
+    setIosDatePickerValue(
       Platform.OS === "ios"
         ? getDateTimePickerValue(dateValue, timeValue)
         : null
     );
   };
 
-  const saveScheduleValue = (field: ScheduleField, value: Date) => {
-    const dateKey = field === "start" ? "startDate" : "deadline";
-    const timeKey = field === "start" ? "startTime" : "endTime";
-    updateDraft(dateKey, toDateValue(value));
-    updateDraft(timeKey, getScheduleTimeValue(value));
+  const openTimePicker = (field: ScheduleField) => {
+    setTimePickerField(field);
   };
 
-  const saveScheduleTime = (field: ScheduleField, value: Date) => {
-    const timeKey = field === "start" ? "startTime" : "endTime";
-    updateDraft(timeKey, getScheduleTimeValue(value));
+  const closeTimePicker = () => {
+    setTimePickerField(null);
+  };
+
+  const openSchedulePicker = (field: ScheduleField) => {
+    const dateValue = field === "start" ? draft.startDate : draft.deadline;
+    if (!dateValue) {
+      openDatePicker(field);
+    } else {
+      openTimePicker(field);
+    }
   };
 
   const handleDateChange = (
@@ -1662,31 +1777,65 @@ export default function CreateQuestScreen({
     selectedDate?: Date
   ) => {
     if (event.type === "dismissed") {
-      closeSchedulePicker();
+      closeDatePicker();
       return;
     }
-    if (!selectedDate || !scheduleField) return;
+    if (!selectedDate || !datePickerField) return;
 
     if (Platform.OS === "ios") {
-      setIosPickerValue(selectedDate);
+      setIosDatePickerValue(selectedDate);
       return;
     }
 
-    if (pickerMode === "date") {
-      const dateKey = scheduleField === "start" ? "startDate" : "deadline";
-      updateDraft(dateKey, toDateValue(selectedDate));
-      setPickerMode("time");
-      return;
-    }
+    const field = datePickerField;
+    const dateKey = field === "start" ? "startDate" : "deadline";
+    updateDraft(dateKey, toDateValue(selectedDate));
+    closeDatePicker();
 
-    saveScheduleTime(scheduleField, selectedDate);
-    closeSchedulePicker();
+    const timeValue = field === "start" ? draft.startTime : draft.endTime;
+    if (!timeValue || !TIME_PATTERN.test(timeValue)) {
+      setTimePickerField(field);
+    }
   };
 
-  const confirmIosScheduleValue = () => {
-    if (scheduleField && iosPickerValue)
-      saveScheduleValue(scheduleField, iosPickerValue);
-    closeSchedulePicker();
+  const confirmIosDateValue = () => {
+    if (datePickerField && iosDatePickerValue) {
+      const field = datePickerField;
+      const dateKey = field === "start" ? "startDate" : "deadline";
+      updateDraft(dateKey, toDateValue(iosDatePickerValue));
+      closeDatePicker();
+
+      const timeValue = field === "start" ? draft.startTime : draft.endTime;
+      if (!timeValue || !TIME_PATTERN.test(timeValue)) {
+        setTimePickerField(field);
+      }
+    } else {
+      closeDatePicker();
+    }
+  };
+
+  const handleConfirmCustomTime = (time: string) => {
+    if (!timePickerField) return;
+    const timeKey = timePickerField === "start" ? "startTime" : "endTime";
+    updateDraft(timeKey, time);
+    closeTimePicker();
+  };
+
+  const handleFixDeadlineQuick = () => {
+    if (!draft.startDate) {
+      updateDraft("startDate", getRelativeDateValue(0));
+    }
+    const baseDate = draft.startDate || getRelativeDateValue(0);
+    updateDraft("deadline", baseDate);
+
+    const baseTime =
+      draft.startTime && TIME_PATTERN.test(draft.startTime)
+        ? draft.startTime
+        : "09:00";
+    if (!draft.startTime) {
+      updateDraft("startTime", baseTime);
+    }
+    updateDraft("endTime", addHoursToTime(baseTime, 2));
   };
 
   const pickImages = async () => {
@@ -1933,22 +2082,21 @@ export default function CreateQuestScreen({
 
   const isSaving = saveState === "saving";
   const nextLabel = step === 2 ? messages.reviewQuest : messages.next;
-  const schedulePickerDate =
-    scheduleField === "start" ? draft.startDate : draft.deadline;
-  const schedulePickerTime =
-    scheduleField === "start" ? draft.startTime : draft.endTime;
-  const schedulePickerValue = getSchedulePickerValue(
+  const datePickerDate =
+    datePickerField === "start" ? draft.startDate : draft.deadline;
+  const datePickerTime =
+    datePickerField === "start" ? draft.startTime : draft.endTime;
+  const datePickerValue = getSchedulePickerValue(
     Platform.OS,
-    getDateTimePickerValue(schedulePickerDate, schedulePickerTime),
-    iosPickerValue
+    getDateTimePickerValue(datePickerDate, datePickerTime),
+    iosDatePickerValue
   );
-  const schedulePickerMinimum =
-    scheduleField === "start"
+  const datePickerMinimum =
+    datePickerField === "start"
       ? new Date()
       : draft.startDate
         ? getDateTimePickerValue(draft.startDate, draft.startTime)
         : undefined;
-
   return (
     <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
       <StatusBar style="light" />
@@ -2292,6 +2440,12 @@ export default function CreateQuestScreen({
                     <DateTimeField
                       emptyLabel={messages.notSelected}
                       label={messages.startDateTime}
+                      dateFormatted={formatDate(
+                        draft.startDate,
+                        locale,
+                        messages.selectDate
+                      )}
+                      timeValue={draft.startTime}
                       value={formatDateTime(
                         draft.startDate,
                         draft.startTime,
@@ -2306,10 +2460,127 @@ export default function CreateQuestScreen({
                       fieldRef={startDateRef}
                       testID="create-quest-start-datetime"
                       onPress={() => openSchedulePicker("start")}
+                      onDatePress={() => openDatePicker("start")}
+                      onTimePress={() => openTimePicker("start")}
+                      messages={messages}
+                      quickPresets={[
+                        {
+                          label: messages.today,
+                          onPress: () =>
+                            updateDraft("startDate", getRelativeDateValue(0)),
+                        },
+                        {
+                          label: messages.tomorrow,
+                          onPress: () =>
+                            updateDraft("startDate", getRelativeDateValue(1)),
+                        },
+                        {
+                          label: messages.now,
+                          onPress: () => {
+                            updateDraft("startDate", getRelativeDateValue(0));
+                            const { hours, minutes } = getNearestQuarterHour();
+                            updateDraft("startTime", `${hours}:${minutes}`);
+                          },
+                        },
+                        {
+                          label: messages.in1h,
+                          onPress: () => {
+                            updateDraft("startDate", getRelativeDateValue(0));
+                            const { hours, minutes } = getNearestQuarterHour();
+                            updateDraft(
+                              "startTime",
+                              addHoursToTime(`${hours}:${minutes}`, 1)
+                            );
+                          },
+                        },
+                      ]}
                     />
+
+                    {/* Duration / Timeline Indicator between Start and Deadline */}
+                    {draft.startDate &&
+                    draft.deadline &&
+                    draft.startTime &&
+                    draft.endTime
+                      ? (() => {
+                          const startMs = getDateTimeValue(
+                            draft.startDate,
+                            draft.startTime
+                          );
+                          const endMs = getDateTimeValue(
+                            draft.deadline,
+                            draft.endTime
+                          );
+                          const isOrderError =
+                            startMs !== null &&
+                            endMs !== null &&
+                            endMs <= startMs;
+                          if (isOrderError) {
+                            return (
+                              <View className={styles.durationBadgeError}>
+                                <View className="flex-row items-center gap-[6px] flex-1">
+                                  <CircleAlert
+                                    color={colors.danger}
+                                    size={16}
+                                    strokeWidth={2.2}
+                                  />
+                                  <Text
+                                    className={styles.durationBadgeErrorText}
+                                  >
+                                    {messages.timeOrderError}
+                                  </Text>
+                                </View>
+                                <Pressable
+                                  accessibilityRole="button"
+                                  accessibilityLabel={messages.fixDeadlineQuick}
+                                  onPress={handleFixDeadlineQuick}
+                                  className={styles.fixDeadlineButton}
+                                  testID="create-quest-fix-deadline-btn"
+                                >
+                                  <Text
+                                    className={styles.fixDeadlineButtonText}
+                                  >
+                                    {messages.fixDeadlineQuick}
+                                  </Text>
+                                </Pressable>
+                              </View>
+                            );
+                          }
+                          if (startMs !== null && endMs !== null) {
+                            const durationStr = formatQuestDuration(
+                              startMs,
+                              endMs,
+                              locale
+                            );
+                            if (durationStr) {
+                              return (
+                                <View className={styles.durationBadge}>
+                                  <View className="flex-row items-center gap-[6px] flex-1">
+                                    <Clock3
+                                      color={colors.primary}
+                                      size={16}
+                                      strokeWidth={2.2}
+                                    />
+                                    <Text className={styles.durationBadgeText}>
+                                      {`${messages.questDuration}: ${durationStr}`}
+                                    </Text>
+                                  </View>
+                                </View>
+                              );
+                            }
+                          }
+                          return null;
+                        })()
+                      : null}
+
                     <DateTimeField
                       emptyLabel={messages.notSelected}
                       label={messages.deadlineDateTime}
+                      dateFormatted={formatDate(
+                        draft.deadline,
+                        locale,
+                        messages.selectDate
+                      )}
+                      timeValue={draft.endTime}
                       value={formatDateTime(
                         draft.deadline,
                         draft.endTime,
@@ -2324,6 +2595,55 @@ export default function CreateQuestScreen({
                       fieldRef={deadlineRef}
                       testID="create-quest-deadline-datetime"
                       onPress={() => openSchedulePicker("end")}
+                      onDatePress={() => openDatePicker("end")}
+                      onTimePress={() => openTimePicker("end")}
+                      messages={messages}
+                      quickPresets={[
+                        {
+                          label: messages.sameDay,
+                          onPress: () =>
+                            updateDraft(
+                              "deadline",
+                              draft.startDate || getRelativeDateValue(0)
+                            ),
+                        },
+                        {
+                          label: messages.plus1Day,
+                          onPress: () =>
+                            updateDraft(
+                              "deadline",
+                              draft.startDate
+                                ? addDaysToDate(draft.startDate, 1)
+                                : getRelativeDateValue(1)
+                            ),
+                        },
+                        {
+                          label: messages.in2h,
+                          onPress: () => {
+                            const baseDate =
+                              draft.startDate || getRelativeDateValue(0);
+                            updateDraft("deadline", baseDate);
+                            const baseTime =
+                              draft.startTime &&
+                              TIME_PATTERN.test(draft.startTime)
+                                ? draft.startTime
+                                : "09:00";
+                            if (!draft.startTime) {
+                              updateDraft("startTime", baseTime);
+                            }
+                            updateDraft("endTime", addHoursToTime(baseTime, 2));
+                          },
+                        },
+                        {
+                          label: messages.endOfDay,
+                          onPress: () => {
+                            const baseDate =
+                              draft.startDate || getRelativeDateValue(0);
+                            updateDraft("deadline", baseDate);
+                            updateDraft("endTime", "23:59");
+                          },
+                        },
+                      ]}
                     />
                     <View className={styles.fieldGroup}>
                       <Pressable
@@ -2664,26 +2984,26 @@ export default function CreateQuestScreen({
         </KeyboardAvoidingView>
       </View>
 
-      {scheduleField ? (
+      {datePickerField ? (
         Platform.OS === "ios" ? (
           <Modal
             transparent
             animationType="slide"
-            onRequestClose={closeSchedulePicker}
+            onRequestClose={closeDatePicker}
             visible
           >
             <View className={styles.modalBackdrop}>
               <View accessibilityViewIsModal className={styles.pickerSheet}>
                 <View className={styles.pickerHeader}>
                   <Text className={styles.pickerTitle}>
-                    {scheduleField === "start"
-                      ? messages.startDateTime
-                      : messages.deadlineDateTime}
+                    {datePickerField === "start"
+                      ? messages.startDate
+                      : messages.deadline}
                   </Text>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={messages.dateDone}
-                    onPress={confirmIosScheduleValue}
+                    onPress={confirmIosDateValue}
                     className={styles.pickerDoneButton}
                   >
                     <Text className={styles.pickerDoneText}>
@@ -2692,28 +3012,47 @@ export default function CreateQuestScreen({
                   </Pressable>
                 </View>
                 <DateTimePicker
-                  value={schedulePickerValue}
-                  mode="datetime"
+                  value={datePickerValue}
+                  mode="date"
                   display="spinner"
                   onChange={handleDateChange}
-                  minimumDate={schedulePickerMinimum}
+                  minimumDate={datePickerMinimum}
                 />
               </View>
             </View>
           </Modal>
         ) : (
           <DateTimePicker
-            value={schedulePickerValue}
-            mode={pickerMode}
+            value={datePickerValue}
+            mode="date"
             display="default"
-            is24Hour
             onChange={handleDateChange}
-            minimumDate={
-              pickerMode === "date" ? schedulePickerMinimum : undefined
-            }
+            minimumDate={datePickerMinimum}
           />
         )
       ) : null}
+
+      <CustomTimePickerModal
+        visible={Boolean(timePickerField)}
+        field={timePickerField ?? "start"}
+        title={
+          timePickerField === "start"
+            ? messages.selectStartTime
+            : messages.selectEndTime
+        }
+        initialTime={
+          timePickerField === "start" ? draft.startTime : draft.endTime
+        }
+        targetDate={
+          timePickerField === "start"
+            ? formatDate(draft.startDate, locale, "")
+            : formatDate(draft.deadline, locale, "")
+        }
+        startTime={draft.startTime}
+        messages={messages}
+        onConfirm={handleConfirmCustomTime}
+        onClose={closeTimePicker}
+      />
     </SafeAreaView>
   );
 }

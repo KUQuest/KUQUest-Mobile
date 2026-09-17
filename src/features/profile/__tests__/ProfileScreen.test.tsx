@@ -5,8 +5,10 @@ import ProfileScreen from "../ProfileScreen";
 import { profileModule } from "../profileModule";
 import { NavigationVisibilityProvider } from "../../../components/navigation/NavigationVisibilityContext";
 
+const mockPush = jest.fn();
+
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+  useRouter: () => ({ push: mockPush, replace: jest.fn() }),
   useFocusEffect: (effect: () => (() => void) | void) =>
     jest.requireActual("react").useEffect(effect, []),
 }));
@@ -45,7 +47,17 @@ const profileData = {
     ratingCount: 15,
     distribution: { 5: 12, 4: 2, 3: 1, 2: 0, 1: 0 },
   },
-  experiences: [],
+  experiences: [
+    {
+      id: "experience",
+      title: "Frontend Developer",
+      employmentType: "Internship",
+      organization: "Tech Startup",
+      description: "Built mobile interfaces",
+      startedAt: "2024-01-01",
+      endedAt: null,
+    },
+  ],
   certificates: [
     {
       id: "certificate",
@@ -55,7 +67,14 @@ const profileData = {
       link: "https://example.test/certificate.png",
     },
   ],
-  works: [],
+  works: [
+    {
+      id: "work",
+      title: "KUQuest App",
+      detail: "Student quest marketplace",
+      imageUri: "",
+    },
+  ],
   reviews: [],
   sectionErrors: {},
   sectionUnavailable: {},
@@ -63,9 +82,17 @@ const profileData = {
 
 describe("Student Profile screen", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    mockPush.mockReset();
+    mockedLoadProfile.mockReset();
     mockedLoadProfile.mockResolvedValue(profileData);
   });
+  const renderLoadedProfile = async () => {
+    const view = await render(<ProfileScreen />);
+    await waitFor(() =>
+      expect(view.getByTestId("profile-tab-about")).toBeTruthy()
+    );
+    return view;
+  };
 
   it("shows the page skeleton until profile data settles", async () => {
     let resolveProfile!: (value: typeof profileData) => void;
@@ -86,15 +113,14 @@ describe("Student Profile screen", () => {
     );
   });
 
-  it("opens About by default and switches to the selected profile section", async () => {
-    const view = await render(<ProfileScreen />);
+  it("opens About by default, supports edit navigation, and exposes section tabs", async () => {
+    const view = await renderLoadedProfile();
 
-    await waitFor(() =>
-      expect(view.getByTestId("profile-tab-about")).toBeTruthy()
-    );
-    expect(view.queryByText("Student Profile")).toBeNull();
     expect(view.getByText("Profile")).toBeTruthy();
     expect(view.getByTestId("open-settings")).toBeTruthy();
+    expect(view.getByText("Edit Profile")).toBeTruthy();
+    fireEvent.press(view.getByRole("button", { name: "Edit Profile" }));
+    expect(mockPush).toHaveBeenCalledWith("/profile/edit");
     expect(view.getByText("Profile Rating")).toBeTruthy();
     expect(view.getByTestId("profile-stats")).toBeTruthy();
     expect(view.getByText("Most frequent Quest categories")).toBeTruthy();
@@ -102,28 +128,47 @@ describe("Student Profile screen", () => {
       view.getByTestId("profile-content-scroll").props.stickyHeaderIndices
     ).toBeUndefined();
     expect(view.getByText("A profile description")).toBeTruthy();
-    expect(view.queryByText("Advanced React Patterns")).toBeNull();
+    expect(view.getByTestId("profile-tab-experience")).toBeTruthy();
+    expect(view.getByTestId("profile-tab-works")).toBeTruthy();
+    expect(view.getByTestId("profile-tab-certificates")).toBeTruthy();
+    expect(view.getByTestId("profile-tab-reviews")).toBeTruthy();
+  });
 
-    await fireEvent.press(view.getByTestId("profile-tab-portfolio"));
+  it("opens Experience when its tab is pressed", async () => {
+    const view = await renderLoadedProfile();
 
+    await fireEvent.press(view.getByTestId("profile-tab-experience"));
+    await waitFor(() =>
+      expect(view.getByText("Frontend Developer")).toBeTruthy()
+    );
+    expect(view.getByTestId("profile-section-Experience")).toBeTruthy();
+    expect(view.queryByText("A profile description")).toBeNull();
+  });
+
+  it("opens Works when its tab is pressed", async () => {
+    const view = await renderLoadedProfile();
+
+    await fireEvent.press(view.getByTestId("profile-tab-works"));
+    await waitFor(() =>
+      expect(view.getByTestId("profile-section-Works")).toBeTruthy()
+    );
+    expect(view.queryByText("Frontend Developer")).toBeNull();
+  });
+
+  it("opens Certificates when its tab is pressed", async () => {
+    const view = await renderLoadedProfile();
+
+    await fireEvent.press(view.getByTestId("profile-tab-certificates"));
     await waitFor(() =>
       expect(view.getByText("Advanced React Patterns")).toBeTruthy()
     );
+    expect(view.getByTestId("profile-section-Certificates")).toBeTruthy();
     expect(view.getByText("View certificate preview")).toBeTruthy();
     expect(view.getByText("Frontend Masters")).toBeTruthy();
-    expect(view.queryByText("A profile description")).toBeNull();
-    expect(
-      view.getByTestId("profile-tab-portfolio").props.accessibilityState
-    ).toEqual({ selected: true });
-    expect(view.getByTestId("profile-section-Experience").props.style).toEqual(
-      expect.objectContaining({ marginBottom: 8 })
-    );
-    expect(
-      view.getByTestId("profile-section-Portfolio Work").props.style
-    ).toEqual(expect.objectContaining({ marginBottom: 8 }));
-    expect(view.queryByTestId("profile-tab-experience")).toBeNull();
-    expect(view.queryByTestId("profile-tab-works")).toBeNull();
-    expect(view.queryByTestId("profile-tab-certificates")).toBeNull();
+  });
+
+  it("opens Reviews when its tab is pressed", async () => {
+    const view = await renderLoadedProfile();
 
     await fireEvent.press(view.getByTestId("profile-tab-reviews"));
     await waitFor(() =>
@@ -160,7 +205,7 @@ describe("Student Profile screen", () => {
     );
   });
 
-  it("offers a Settings recovery action when About is empty", async () => {
+  it("offers an Edit Profile recovery action when About is empty", async () => {
     mockedLoadProfile.mockResolvedValue({ ...profileData, about: "" });
 
     const view = await render(<ProfileScreen />);
@@ -168,7 +213,10 @@ describe("Student Profile screen", () => {
     await waitFor(() =>
       expect(view.getByTestId("profile-tab-about")).toBeTruthy()
     );
-    expect(view.getByText("Manage in Settings")).toBeTruthy();
+    const editButtons = view.getAllByRole("button", { name: "Edit Profile" });
+    expect(editButtons.length).toBeGreaterThan(1);
+    fireEvent.press(editButtons[editButtons.length - 1]);
+    expect(mockPush).toHaveBeenCalledWith("/profile/edit");
   });
 
   it("shows unavailable rating state without a retry action", async () => {
@@ -180,7 +228,9 @@ describe("Student Profile screen", () => {
     const view = await render(<ProfileScreen />);
 
     await waitFor(() =>
-      expect(view.getByText("Profile Rating is temporarily unavailable.")).toBeTruthy()
+      expect(
+        view.getByText("Profile Rating is temporarily unavailable.")
+      ).toBeTruthy()
     );
     expect(view.queryByLabelText("Try again")).toBeNull();
   });

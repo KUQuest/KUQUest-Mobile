@@ -237,6 +237,77 @@ describe("CreateQuestScreen", () => {
     expect(view.getByTestId("create-quest-deadline-datetime")).toBeTruthy();
   });
 
+  it("opens custom time picker and updates start time on confirm", async () => {
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
+
+    await fireEvent.press(view.getByTestId("create-quest-logistics-toggle"));
+    expect(
+      view.getByTestId("create-quest-start-datetime-time-btn")
+    ).toBeTruthy();
+
+    await fireEvent.press(
+      view.getByTestId("create-quest-start-datetime-time-btn")
+    );
+    expect(view.getByTestId("custom-time-picker-confirm")).toBeTruthy();
+
+    await fireEvent.press(view.getByTestId("hour-cell-14"));
+    await fireEvent.press(view.getByTestId("minute-cell-30"));
+    await fireEvent.press(view.getByTestId("custom-time-picker-confirm"));
+
+    await waitFor(() => {
+      expect(view.getAllByText("14:30").length).toBeGreaterThan(0);
+    });
+  });
+
+  it("applies quick date and time presets in the logistics flow", async () => {
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
+
+    await fireEvent.press(view.getByTestId("create-quest-logistics-toggle"));
+
+    const todayChip = view.getByTestId("quick-preset-วันนี้");
+    expect(todayChip).toBeTruthy();
+    await fireEvent.press(todayChip);
+
+    const sameDayChip = view.getByTestId("quick-preset-วันเดียวกัน");
+    expect(sameDayChip).toBeTruthy();
+    await fireEvent.press(sameDayChip);
+
+    const plus2hChip = view.getByTestId("quick-preset-+2 ชม.");
+    expect(plus2hChip).toBeTruthy();
+    await fireEvent.press(plus2hChip);
+  });
+
+  it("shows quick-fix button when deadline is earlier than start time", async () => {
+    mockLoadQuestDraft.mockResolvedValueOnce({
+      draft: {
+        ...jest.requireActual("../createQuestModel").initialDraft,
+        title: "Test Inverted Quest",
+        tag: "design",
+        description: "Test desc",
+        conditions: "Test criteria",
+        startDate: "2099-08-26",
+        deadline: "2099-08-26",
+        startTime: "15:00",
+        endTime: "09:00",
+      },
+      step: 2,
+      state: "DRAFT",
+    });
+
+    const view = await render(<CreateQuestScreen />);
+    await fireEvent.press(view.getByTestId("create-quest-logistics-toggle"));
+
+    const fixBtn = await waitFor(() =>
+      view.getByTestId("create-quest-fix-deadline-btn")
+    );
+    expect(fixBtn).toBeTruthy();
+    await fireEvent.press(fixBtn);
+
+    await waitFor(() => {
+      expect(view.queryByTestId("create-quest-fix-deadline-btn")).toBeNull();
+    });
+  });
+
   it("aligns the fixed Single headcount value like the other form fields", async () => {
     const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
 

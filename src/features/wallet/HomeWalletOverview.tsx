@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import {
   ArrowRightLeft,
+  ArrowUpRight,
   History,
   Plus,
   RefreshCw,
@@ -19,6 +20,7 @@ import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
 import { TransactionHistoryModal } from "./TransactionHistoryModal";
 import { WalletPaymentModal } from "./WalletPaymentModal";
+import { PayoutModal } from "./PayoutModal";
 import { walletStyles as s } from "./walletStyles";
 
 interface HomeWalletOverviewProps {
@@ -35,6 +37,7 @@ export function HomeWalletOverview({
   const [loading, setLoading] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [payoutModalOpen, setPayoutModalOpen] = useState(false);
   const [converting, setConverting] = useState(false);
   const [refreshIndex, setRefreshIndex] = useState(0);
 
@@ -57,10 +60,12 @@ export function HomeWalletOverview({
     };
   }, [onBalanceChange, refreshIndex]);
 
-  const handleRefresh = () => {
+  const refreshWallet = () => {
     setLoading(true);
     setRefreshIndex((idx) => idx + 1);
   };
+
+  const handleRefresh = refreshWallet;
 
   const handleConvertEarnings = () => {
     if (!balances || balances.earningsBalanceSatang <= 0 || converting) return;
@@ -216,6 +221,27 @@ export function HomeWalletOverview({
         </TouchableOpacity>
 
         <TouchableOpacity
+          accessibilityLabel={locale === "th" ? "ถอนเงิน" : "Withdraw"}
+          accessibilityRole="button"
+          onPress={() => setPayoutModalOpen(true)}
+          style={[
+            s.actionButtonSecondary,
+            {
+              borderColor: colors.borderAccent,
+              backgroundColor: colors.surface,
+            },
+          ]}
+          testID="wallet-withdraw-button"
+        >
+          <ArrowUpRight color={colors.primary} size={15} />
+          <Text
+            style={[s.actionButtonLabelSecondary, { color: colors.primary }]}
+          >
+            {locale === "th" ? "ถอนเงิน" : "Withdraw"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           accessibilityLabel={m.transactions}
           accessibilityRole="button"
           onPress={() => setHistoryModalOpen(true)}
@@ -284,6 +310,14 @@ export function HomeWalletOverview({
         locale={locale}
         onClose={() => setHistoryModalOpen(false)}
         visible={historyModalOpen}
+      />
+
+      <PayoutModal
+        earningsSatang={balances?.earningsBalanceSatang ?? 0}
+        locale={locale}
+        onClose={() => setPayoutModalOpen(false)}
+        onPayoutSuccess={refreshWallet}
+        visible={payoutModalOpen}
       />
     </View>
   );

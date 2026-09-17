@@ -18,6 +18,8 @@ import {
   profileResponseSchema,
   reputationResponseSchema,
   reviewsResponseSchema,
+  publicProfileResponseSchema,
+  publicProfileReviewsResponseSchema,
   successResponseSchema,
   type AcademicRegistrationOptions,
   type AcademicRegistrationStatus,
@@ -27,6 +29,8 @@ import {
   type ProfileResponse,
   type ProfileReview,
   type Reputation,
+  type PublicProfileResponse,
+  type PublicProfileReviewsData,
 } from "./contracts";
 export type { UploadAsset };
 
@@ -189,6 +193,23 @@ export class StudentApi {
     const body = await this.client.request<unknown>("/api/v1/profile");
     return profileResponseSchema.parse(body).data;
   }
+  async getPublicProfile(userId: string): Promise<PublicProfileResponse> {
+    const body = await this.client.request<unknown>(
+      `/api/v1/profile/${userId}`
+    );
+    return publicProfileResponseSchema.parse(body).data;
+  }
+
+  async listPublicReviews(
+    userId: string,
+    rating?: number
+  ): Promise<PublicProfileReviewsData> {
+    const query = rating ? `?rating=${rating}` : "";
+    const body = await this.client.request<unknown>(
+      `/api/v1/profile/${userId}/reviews${query}`
+    );
+    return publicProfileReviewsResponseSchema.parse(body).data;
+  }
 
   async updateProfile(
     update: ProfileUpdate,
@@ -276,9 +297,7 @@ export class StudentApi {
     return reputationResponseSchema.parse(body).data;
   }
 
-  async listReviews(
-    rating: "all" | 5 | 4 | 3 | 2 | 1 = "all"
-  ): Promise<{
+  async listReviews(rating: "all" | 5 | 4 | 3 | 2 | 1 = "all"): Promise<{
     items: ProfileReview[];
     total: number;
     nextCursor?: string | null;
