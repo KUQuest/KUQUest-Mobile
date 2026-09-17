@@ -69,6 +69,26 @@ export interface CreateQuestMessages {
   dateDone: string;
   startTime: string;
   endTime: string;
+  selectTime: string;
+  selectDate: string;
+  selectStartTime: string;
+  selectEndTime: string;
+  hour: string;
+  minute: string;
+  confirmTime: string;
+  cancel: string;
+  quickPresets: string;
+  now: string;
+  in30m: string;
+  in1h: string;
+  in2h: string;
+  today: string;
+  tomorrow: string;
+  sameDay: string;
+  plus1Day: string;
+  endOfDay: string;
+  questDuration: string;
+  fixDeadlineQuick: string;
   location: string;
   online: string;
   onlineQuest: string;
@@ -108,6 +128,7 @@ export interface CreateQuestMessages {
   publishQuest: string;
   publishingQuest: string;
   loadingDraft: string;
+  loadingTags: string;
   savedDraftTitle: string;
   savedDraftDescription: string;
   publishedQuestTitle: string;
@@ -262,6 +283,26 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       dateDone: "Done",
       startTime: "Start time",
       endTime: "End time",
+      selectTime: "Select time",
+      selectDate: "Select date",
+      selectStartTime: "Select start time",
+      selectEndTime: "Select deadline time",
+      hour: "Hour",
+      minute: "Minute",
+      confirmTime: "Confirm time",
+      cancel: "Cancel",
+      quickPresets: "Quick presets",
+      now: "Now",
+      in30m: "+30m",
+      in1h: "+1 hr",
+      in2h: "+2 hrs",
+      today: "Today",
+      tomorrow: "Tomorrow",
+      sameDay: "Same day",
+      plus1Day: "+1 day",
+      endOfDay: "End of day (23:59)",
+      questDuration: "Duration",
+      fixDeadlineQuick: "Set to +2 hrs from start",
       location: "Location",
       online: "Online",
       onlineQuest: "This is an online Quest",
@@ -306,6 +347,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       publishQuest: "Publish Quest",
       publishingQuest: "Publishing Quest…",
       loadingDraft: "Restoring your draft…",
+      loadingTags: "Loading tags…",
       savedDraftTitle: "Quest draft saved locally",
       savedDraftDescription:
         "Your draft is stored securely on this device and is not visible on the Quest Board yet.",
@@ -498,6 +540,26 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       dateDone: "เสร็จสิ้น",
       startTime: "เวลาเริ่มต้น",
       endTime: "เวลาสิ้นสุด",
+      selectTime: "เลือกเวลา",
+      selectDate: "เลือกวันที่",
+      selectStartTime: "เลือกเวลาเริ่มต้น",
+      selectEndTime: "เลือกเวลาสิ้นสุด (เดดไลน์)",
+      hour: "ชั่วโมง",
+      minute: "นาที",
+      confirmTime: "ยืนยันเวลา",
+      cancel: "ยกเลิก",
+      quickPresets: "เลือกด่วน",
+      now: "ตอนนี้",
+      in30m: "+30 นาที",
+      in1h: "+1 ชม.",
+      in2h: "+2 ชม.",
+      today: "วันนี้",
+      tomorrow: "พรุ่งนี้",
+      sameDay: "วันเดียวกัน",
+      plus1Day: "+1 วัน",
+      endOfDay: "สิ้นสุดวัน (23:59)",
+      questDuration: "ระยะเวลาเควสต์",
+      fixDeadlineQuick: "ตั้งเป็น +2 ชม. จากเวลาเริ่ม",
       location: "สถานที่",
       online: "ออนไลน์",
       onlineQuest: "เควสต์นี้เป็นงานออนไลน์",
@@ -539,6 +601,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       publishQuest: "เผยแพร่เควสต์",
       publishingQuest: "กำลังเผยแพร่เควสต์…",
       loadingDraft: "กำลังกู้คืนฉบับร่าง…",
+      loadingTags: "กำลังโหลดแท็ก…",
       savedDraftTitle: "บันทึกฉบับร่างเควสต์แล้ว",
       savedDraftDescription:
         "ฉบับร่างถูกเก็บไว้อย่างปลอดภัยในอุปกรณ์นี้ และยังไม่แสดงบนกระดานเควสต์",

@@ -428,6 +428,7 @@ export interface QuestBoardQuest {
   imageUris?: string[];
   studentInterestMatch: boolean;
   ownerStudentId: string;
+  hirerName?: string;
   /** Prototype-only scenario fixtures remain route/test addressable but hidden from discovery. */
   prototypeOnly?: boolean;
   prototypeScenario?:
@@ -438,6 +439,10 @@ export interface QuestBoardQuest {
   /** Canonical state/capability fields are optional for legacy board consumers. */
   status?: QuestStatus;
   conversation?: WorkConversationCapability;
+  /** Viewer-specific participation projection from the public detail endpoint. */
+  hasJoined?: boolean;
+  assignmentId?: string | null;
+  assignmentStatus?: QuestAssignmentStatus | null;
 }
 
 export type DeadlineFilter = "today" | "within-3-days" | "within-7-days";

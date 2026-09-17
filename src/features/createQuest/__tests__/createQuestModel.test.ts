@@ -1,12 +1,17 @@
 import {
   adaptV2PublishCheck,
+  addDaysToDate,
+  addHoursToTime,
   calculateQuestEscrow,
   formatBangkokIso,
   formatDraftReward,
+  formatQuestDuration,
   getDraftRewardSatang,
   getHeadcountForParticipation,
+  getNearestQuarterHour,
   getQuestApiErrorMessage,
   getQuestPublishCheck,
+  getRelativeDateValue,
   getRewardValidationError,
   getSchedulePickerValue,
   getScheduleTimeValue,
@@ -182,7 +187,7 @@ describe("Create Quest model", () => {
       const payload = toQuestV2Payload({
         ...initialDraft,
         title: "Clean the library",
-        tag: "tag-library",
+        tag: "11111111-1111-4111-8111-111111111111",
         description: "Clean the shared library.",
         conditions: "The library is clean.",
         startDate: "2099-08-26",
@@ -205,9 +210,9 @@ describe("Create Quest model", () => {
         participation: "GROUP",
         questFundingTotal: 250.5,
         headcount: 3,
-        startTime: toBangkokDateTime("2099-08-26", "09:00"),
-        dueAt: toBangkokDateTime("2099-08-27", "12:00"),
-        tagId: "tag-library",
+        startTime: "2099-08-26T09:00:00+07:00",
+        dueAt: "2099-08-27T12:00:00+07:00",
+        tagId: "11111111-1111-4111-8111-111111111111",
         proofRequired: true,
         locations: [{ label: "Main library" }],
       });
@@ -240,6 +245,15 @@ describe("Create Quest model", () => {
         "Library is clean",
         "Trash removed",
       ]);
+    });
+
+    test("omits non-server fallback tag values from the API payload", () => {
+      const payload = toQuestV2Payload({
+        ...initialDraft,
+        tag: "design",
+      });
+
+      expect(payload.tagId).toBeNull();
     });
 
     test("reports reward pool plus per-Worker Platform Fee with ceiling rounding", () => {
@@ -420,6 +434,58 @@ describe("Create Quest model", () => {
       timeOnlyPickerValue.setHours(7, 0, 0, 0);
 
       expect(getScheduleTimeValue(timeOnlyPickerValue)).toBe("07:00");
+    });
+  });
+
+  describe("addHoursToTime", () => {
+    test("adds hours correctly within same day", () => {
+      expect(addHoursToTime("09:00", 2)).toBe("11:00");
+      expect(addHoursToTime("14:30", 3)).toBe("17:30");
+    });
+
+    test("wraps around midnight", () => {
+      expect(addHoursToTime("23:15", 2)).toBe("01:15");
+    });
+  });
+
+  describe("formatQuestDuration", () => {
+    test("formats duration in Thai", () => {
+      const start = new Date("2026-09-20T09:00:00").getTime();
+      const end = new Date("2026-09-20T12:30:00").getTime();
+      expect(formatQuestDuration(start, end, "th")).toBe("3 ชั่วโมง 30 นาที");
+    });
+
+    test("formats duration in English with days and hours", () => {
+      const start = new Date("2026-09-20T09:00:00").getTime();
+      const end = new Date("2026-09-21T11:00:00").getTime();
+      expect(formatQuestDuration(start, end, "en")).toBe("1d 2h");
+    });
+
+    test("returns empty string when end is before or equal to start", () => {
+      const time = new Date("2026-09-20T09:00:00").getTime();
+      expect(formatQuestDuration(time, time)).toBe("");
+      expect(formatQuestDuration(time, time - 1000)).toBe("");
+    });
+  });
+
+  describe("getRelativeDateValue", () => {
+    test("returns YYYY-MM-DD pattern for today and tomorrow", () => {
+      expect(getRelativeDateValue(0)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(getRelativeDateValue(1)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+  });
+
+  describe("addDaysToDate", () => {
+    test("adds days to YYYY-MM-DD correctly", () => {
+      expect(addDaysToDate("2026-09-20", 1)).toBe("2026-09-21");
+      expect(addDaysToDate("2026-09-30", 1)).toBe("2026-10-01");
+    });
+  });
+
+  describe("getNearestQuarterHour", () => {
+    test("rounds up minutes to nearest 5 minutes", () => {
+      const d = new Date(2026, 8, 20, 14, 12);
+      expect(getNearestQuarterHour(d)).toEqual({ hours: "14", minutes: "15" });
     });
   });
 

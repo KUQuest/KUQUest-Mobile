@@ -1,6 +1,8 @@
-import type { ComponentRef, Ref } from "react";
+import { useState, type ComponentRef, type Ref } from "react";
 import {
   Check,
+  CircleAlert,
+  Clock3,
   ImagePlus,
   MapPin,
   UserRoundCheck,
@@ -19,16 +21,25 @@ import { createQuestMessages } from "@/locales/createQuestMessages";
 import type { SupportedLocale } from "@/locales/LocaleProvider";
 import { colors } from "@/theme/colors";
 import styles from "../createQuestStyles";
-import { formatDateTime } from "../createQuestDates";
-import { TIME_PATTERN, type QuestDraft } from "../createQuestModel";
-import type { ChoiceOption } from "../createQuestTypes";
+import { formatDate, formatDateTime } from "../createQuestDates";
+import {
+  addDaysToDate,
+  addHoursToTime,
+  formatQuestDuration,
+  getDateTimeValue,
+  getNearestQuarterHour,
+  getRelativeDateValue,
+  TIME_PATTERN,
+  type QuestDraft,
+} from "../createQuestModel";
+import type { ChoiceOption, ScheduleField } from "../createQuestTypes";
 import { ChoiceGroup } from "./ChoiceGroup";
+import CustomTimePickerModal from "./CustomTimePickerModal";
 import { DateTimeField } from "./DateTimeField";
 import { FieldLabel } from "./FieldLabel";
 import { LogisticsSection } from "./LogisticsSection";
 import { ModeSummary } from "./ModeSummary";
 import { SectionHeading } from "./SectionHeading";
-
 export function TeamSetupStep({
   messages,
   draft,
@@ -54,7 +65,7 @@ export function TeamSetupStep({
   updateDraft,
   updateParticipation,
 }: {
-  messages: typeof createQuestMessages.en;
+  messages: (typeof createQuestMessages)["en"];
   draft: QuestDraft;
   errors: Record<string, string>;
   locale: SupportedLocale;
@@ -66,14 +77,14 @@ export function TeamSetupStep({
   logisticsSummary: string;
   onToggleLogistics: () => void;
   imageError?: string;
-  setImageError: (error: string | undefined) => void;
+  setImageError: (error?: string) => void;
   headcountRef: Ref<ComponentRef<typeof RNTextInput>>;
   rewardRef: Ref<ComponentRef<typeof RNTextInput>>;
   startDateRef: Ref<ComponentRef<typeof RNPressable>>;
   deadlineRef: Ref<ComponentRef<typeof RNPressable>>;
   locationRef: Ref<ComponentRef<typeof RNTextInput>>;
-  openSchedulePicker: (field: "start" | "end") => void;
-  pickImages: () => Promise<void>;
+  openSchedulePicker: (field: ScheduleField) => void;
+  pickImages: () => void;
   removeImage: (index: number) => void;
   updateDraft: <K extends keyof QuestDraft>(
     field: K,
@@ -81,6 +92,25 @@ export function TeamSetupStep({
   ) => void;
   updateParticipation: (value: QuestDraft["participation"]) => void;
 }) {
+  const [timePickerField, setTimePickerField] = useState<ScheduleField | null>(
+    null
+  );
+  const handleFixDeadlineQuick = () => {
+    if (!draft.startDate) {
+      updateDraft("startDate", getRelativeDateValue(0));
+    }
+    const baseDate = draft.startDate || getRelativeDateValue(0);
+    updateDraft("deadline", baseDate);
+
+    const baseTime =
+      draft.startTime && TIME_PATTERN.test(draft.startTime)
+        ? draft.startTime
+        : "09:00";
+    if (!draft.startTime) {
+      updateDraft("startTime", baseTime);
+    }
+    updateDraft("endTime", addHoursToTime(baseTime, 2));
+  };
   return (
     <>
       <View className={styles.sectionCard}>
@@ -219,6 +249,12 @@ export function TeamSetupStep({
             locale,
             messages.notSelected
           )}
+          dateFormatted={formatDate(
+            draft.startDate,
+            locale,
+            messages.notSelected
+          )}
+          timeValue={draft.startTime}
           hasValue={Boolean(
             draft.startDate && TIME_PATTERN.test(draft.startTime)
           )}
@@ -227,7 +263,102 @@ export function TeamSetupStep({
           fieldRef={startDateRef}
           testID="create-quest-start-datetime"
           onPress={() => openSchedulePicker("start")}
+          onDatePress={() => openSchedulePicker("start")}
+          onTimePress={() => setTimePickerField("start")}
+          messages={messages}
+          quickPresets={[
+            {
+              label: messages.today,
+              onPress: () => updateDraft("startDate", getRelativeDateValue(0)),
+            },
+            {
+              label: messages.tomorrow,
+              onPress: () => updateDraft("startDate", getRelativeDateValue(1)),
+            },
+            {
+              label: messages.now,
+              onPress: () => {
+                updateDraft("startDate", getRelativeDateValue(0));
+                const { hours, minutes } = getNearestQuarterHour();
+                updateDraft("startTime", `${hours}:${minutes}`);
+              },
+            },
+            {
+              label: messages.in1h,
+              onPress: () => {
+                updateDraft("startDate", getRelativeDateValue(0));
+                const { hours, minutes } = getNearestQuarterHour();
+                updateDraft(
+                  "startTime",
+                  addHoursToTime(`${hours}:${minutes}`, 1)
+                );
+              },
+            },
+          ]}
         />
+        {draft.startDate && draft.deadline && draft.startTime && draft.endTime
+          ? (() => {
+              const startMs = getDateTimeValue(
+                draft.startDate,
+                draft.startTime
+              );
+              const endMs = getDateTimeValue(draft.deadline, draft.endTime);
+              const isOrderError =
+                startMs !== null && endMs !== null && endMs <= startMs;
+              if (isOrderError) {
+                return (
+                  <View
+                    className={cn(
+                      styles.durationBadge,
+                      styles.durationBadgeError
+                    )}
+                  >
+                    <View className="flex-row items-center gap-[6px] flex-1">
+                      <CircleAlert
+                        color={colors.danger}
+                        size={16}
+                        strokeWidth={2.2}
+                      />
+                      <Text className={styles.durationBadgeErrorText}>
+                        {messages.timeOrderError}
+                      </Text>
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={messages.fixDeadlineQuick}
+                      onPress={handleFixDeadlineQuick}
+                      className={styles.fixDeadlineButton}
+                      testID="create-quest-fix-deadline-btn"
+                    >
+                      <Text className={styles.fixDeadlineButtonText}>
+                        {messages.fixDeadlineQuick}
+                      </Text>
+                    </Pressable>
+                  </View>
+                );
+              }
+              if (startMs !== null && endMs !== null) {
+                const durationStr = formatQuestDuration(startMs, endMs, locale);
+                if (durationStr) {
+                  return (
+                    <View className={styles.durationBadge}>
+                      <View className="flex-row items-center gap-[6px]">
+                        <Clock3
+                          color={colors.primary}
+                          size={16}
+                          strokeWidth={2.2}
+                        />
+                        <Text className={styles.durationBadgeText}>
+                          {messages.questDuration}: {durationStr}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                }
+              }
+              return null;
+            })()
+          : null}
         <DateTimeField
           emptyLabel={messages.notSelected}
           label={messages.deadlineDateTime}
@@ -237,12 +368,64 @@ export function TeamSetupStep({
             locale,
             messages.notSelected
           )}
+          dateFormatted={formatDate(
+            draft.deadline,
+            locale,
+            messages.notSelected
+          )}
+          timeValue={draft.endTime}
           hasValue={Boolean(draft.deadline && TIME_PATTERN.test(draft.endTime))}
           error={errors.deadline ?? errors.endTime}
           helper={messages.dateTimeHelper}
           fieldRef={deadlineRef}
           testID="create-quest-deadline-datetime"
           onPress={() => openSchedulePicker("end")}
+          onDatePress={() => openSchedulePicker("end")}
+          onTimePress={() => setTimePickerField("end")}
+          messages={messages}
+          quickPresets={[
+            {
+              label: messages.sameDay,
+              onPress: () =>
+                updateDraft(
+                  "deadline",
+                  draft.startDate || getRelativeDateValue(0)
+                ),
+            },
+            {
+              label: messages.plus1Day,
+              onPress: () =>
+                updateDraft(
+                  "deadline",
+                  draft.startDate
+                    ? addDaysToDate(draft.startDate, 1)
+                    : getRelativeDateValue(1)
+                ),
+            },
+            {
+              label: messages.in2h,
+              onPress: () => {
+                const baseDate = draft.startDate || getRelativeDateValue(0);
+                updateDraft("deadline", baseDate);
+                const baseTime =
+                  draft.startTime && TIME_PATTERN.test(draft.startTime)
+                    ? draft.startTime
+                    : "09:00";
+                if (!draft.startTime) {
+                  updateDraft("startTime", baseTime);
+                }
+                updateDraft("endTime", addHoursToTime(baseTime, 2));
+              },
+            },
+            {
+              label: messages.endOfDay,
+              onPress: () => {
+                const baseDate = draft.startDate || getRelativeDateValue(0);
+                updateDraft("deadline", baseDate);
+                updateDraft("endTime", "23:59");
+              },
+            },
+          ]}
         />
         <View className={styles.fieldGroup}>
           <Pressable
@@ -370,6 +553,32 @@ export function TeamSetupStep({
           ) : null}
         </View>
       </LogisticsSection>
+      <CustomTimePickerModal
+        visible={Boolean(timePickerField)}
+        field={timePickerField ?? "start"}
+        title={
+          timePickerField === "start"
+            ? messages.selectStartTime
+            : messages.selectEndTime
+        }
+        initialTime={
+          timePickerField === "start" ? draft.startTime : draft.endTime
+        }
+        targetDate={
+          timePickerField === "start"
+            ? formatDate(draft.startDate, locale, "")
+            : formatDate(draft.deadline, locale, "")
+        }
+        startTime={draft.startTime}
+        messages={messages}
+        onConfirm={(nextTime) => {
+          if (!timePickerField) return;
+          const timeKey = timePickerField === "start" ? "startTime" : "endTime";
+          updateDraft(timeKey, nextTime);
+          setTimePickerField(null);
+        }}
+        onClose={() => setTimePickerField(null)}
+      />
     </>
   );
 }

@@ -29,6 +29,7 @@ describe("QuestApi", () => {
     data: {
       id: "quest-1",
       version: 1,
+      hiddenAt: null,
       title: "Test quest",
       description: "Complete the test quest.",
       condition: { items: [{ position: 0, text: "Submit the result." }] },
@@ -43,6 +44,8 @@ describe("QuestApi", () => {
       proofRequired: true,
       locations: [{ label: "Campus Library" }],
       images: [],
+      createdAt: "2026-09-14T10:00:00+07:00",
+      updatedAt: "2026-09-14T10:00:00+07:00",
     },
   } as const;
 
@@ -68,6 +71,12 @@ describe("QuestApi", () => {
       },
     },
   } as const;
+  const okJson = (data: unknown) => ({
+    ok: true,
+    status: 200,
+    headers: new Headers({ "content-type": "application/json" }),
+    text: async () => JSON.stringify(data),
+  });
 
   it("lists quest board cards with query parameters", async () => {
     const data = {
@@ -131,7 +140,7 @@ describe("QuestApi", () => {
       headers: new Headers({ "content-type": "application/json" }),
       text: async () => JSON.stringify(detailResponse),
     });
-    const result = await api.createQuest(payload);
+    const result = await api.createQuest(payload, "create-quest-1");
 
     expect(result.id).toBe("quest-1");
     expect(fetchMock).toHaveBeenCalledWith(
@@ -216,7 +225,7 @@ describe("QuestApi", () => {
       text: async () => JSON.stringify(publishResponse),
     });
 
-    const result = await api.publishQuest("quest-1");
+    const result = await api.publishQuest("quest-1", "publish-quest-1");
 
     expect(result.state).toBe("QUEST_OPEN");
     expect(fetchMock).toHaveBeenCalledWith(
@@ -303,6 +312,12 @@ describe("QuestApi", () => {
     expect(assignments[0].state).toBe("ASSIGNMENT_ACTIVE");
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.example.test/api/v2/assignments/mine",
+      expect.objectContaining({ method: "GET" })
+    );
+
+    await api.listMyAssignments("completed");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v2/assignments/mine?status=completed",
       expect.objectContaining({ method: "GET" })
     );
   });
@@ -470,6 +485,635 @@ describe("QuestApi", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.example.test/api/v1/tags",
       expect.objectContaining({ method: "GET" })
+    );
+  });
+  it("covers Candidate application lifecycle routes and typed responses", async () => {
+    const application = {
+      id: "application-1",
+      questId: "quest-1",
+      memberId: "member-1",
+      state: "APPLICATION_APPLIED",
+      appliedAt: "2026-09-15T10:00:00Z",
+    };
+    const assignment = {
+      id: "assignment-1",
+      questId: "quest-1",
+      workerId: "member-1",
+      state: "ASSIGNMENT_ACTIVE",
+      questState: "QUEST_IN_PROGRESS",
+      startedAt: "2026-09-15T10:00:00Z",
+      createdAt: "2026-09-15T09:00:00Z",
+    };
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith("/applications") && init?.method === "GET") {
+        return Promise.resolve(
+          okJson({ success: true, data: { items: [application] } })
+        );
+      }
+      if (url.endsWith("/select")) {
+        return Promise.resolve(
+          okJson({
+            success: true,
+            data: {
+              assignments: [assignment],
+              questState: "QUEST_IN_PROGRESS",
+            },
+          })
+        );
+      }
+      if (url.endsWith("/withdraw")) {
+        return Promise.resolve(
+          okJson({
+            success: true,
+            data: { ...application, state: "APPLICATION_WITHDRAWN" },
+          })
+        );
+      }
+      if (url.endsWith("/reject")) {
+        return Promise.resolve(
+          okJson({
+            success: true,
+            data: { ...application, state: "APPLICATION_REJECTED" },
+          })
+        );
+      }
+      return Promise.resolve(okJson({ success: true, data: application }));
+    });
+
+    await expect(api.applyQuest("quest-1", "apply-1")).resolves.toMatchObject({
+      id: "application-1",
+      state: "APPLICATION_APPLIED",
+    });
+    await expect(api.listApplications("quest-1")).resolves.toEqual([
+      application,
+    ]);
+    await expect(
+      api.getApplication("quest-1", "application-1")
+    ).resolves.toEqual(application);
+    await expect(
+      api.withdrawApplication("quest-1", "application-1", "withdraw-1")
+    ).resolves.toMatchObject({
+      id: "application-1",
+      state: "APPLICATION_WITHDRAWN",
+    });
+    await expect(
+      api.selectApplication("quest-1", "application-1", "select-1")
+    ).resolves.toEqual({
+      assignments: [assignment],
+      questState: "QUEST_IN_PROGRESS",
+    });
+    await expect(
+      api.rejectCandidateApplication("quest-1", "application-1", "reject-1")
+    ).resolves.toEqual({
+      ...application,
+      state: "APPLICATION_REJECTED",
+    });
+
+    expect(fetchMock.mock.calls[0]).toEqual([
+      "https://api.example.test/api/v2/quests/quest-1/applications",
+      expect.objectContaining({
+        method: "POST",
+        body: "{}",
+        headers: expect.objectContaining({ "idempotency-key": "apply-1" }),
+      }),
+    ]);
+    expect(fetchMock.mock.calls[3]).toEqual([
+      "https://api.example.test/api/v2/quests/quest-1/applications/application-1/withdraw",
+      expect.objectContaining({
+        method: "POST",
+        body: "{}",
+        headers: expect.objectContaining({ "idempotency-key": "withdraw-1" }),
+      }),
+    ]);
+    expect(fetchMock.mock.calls[4]).toEqual([
+      "https://api.example.test/api/v2/quests/quest-1/applications/application-1/select",
+      expect.objectContaining({
+        method: "POST",
+        body: "{}",
+        headers: expect.objectContaining({ "idempotency-key": "select-1" }),
+      }),
+    ]);
+  });
+
+  it("sends Candidate team mutations with payloads and idempotency keys", async () => {
+    const team = {
+      id: "team-1",
+      questId: "quest-1",
+      leaderId: "member-1",
+      name: "Design crew",
+      headcount: 2,
+      state: "TEAM_FORMING",
+      joinCode: "JOIN-123",
+      joinCodeExpiresAt: "2026-09-16T10:00:00Z",
+      members: [{ memberId: "member-1", joinedAt: "2026-09-15T10:00:00Z" }],
+      submission: null,
+      createdAt: "2026-09-15T09:00:00Z",
+    };
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith("/teams") && init?.method === "GET") {
+        return Promise.resolve(
+          okJson({ success: true, data: { items: [team] } })
+        );
+      }
+      if (url.endsWith("/reject")) {
+        return Promise.resolve(
+          okJson({ success: true, data: { ...team, state: "TEAM_REJECTED" } })
+        );
+      }
+      return Promise.resolve(okJson({ success: true, data: team }));
+    });
+
+    await expect(
+      api.createCandidateTeam(
+        "quest-1",
+        { name: "Design crew", headcount: 2 },
+        "team-create-1"
+      )
+    ).resolves.toEqual(team);
+    await expect(
+      api.updateCandidateTeam(
+        "quest-1",
+        "team-1",
+        { name: "Design team" },
+        "team-update-1"
+      )
+    ).resolves.toEqual(team);
+    await expect(
+      api.joinCandidateTeam("quest-1", "team-1", "JOIN-123", "team-join-1")
+    ).resolves.toEqual(team);
+    await expect(
+      api.submitCandidateTeam(
+        "quest-1",
+        "team-1",
+        { text: "Ready to work", fileIds: ["file-1"] },
+        "team-submit-1"
+      )
+    ).resolves.toEqual(team);
+    await expect(api.listCandidateTeams("quest-1")).resolves.toEqual([team]);
+    await expect(api.getCandidateTeam("quest-1", "team-1")).resolves.toEqual(
+      team
+    );
+    await expect(
+      api.rejectCandidateTeam("quest-1", "team-1", "team-reject-1")
+    ).resolves.toEqual({ ...team, state: "TEAM_REJECTED" });
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "https://api.example.test/api/v2/quests/quest-1/teams",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ name: "Design crew", headcount: 2 }),
+        headers: expect.objectContaining({
+          "idempotency-key": "team-create-1",
+        }),
+      })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "https://api.example.test/api/v2/quests/quest-1/teams/team-1",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ name: "Design team" }),
+        headers: expect.objectContaining({
+          "idempotency-key": "team-update-1",
+        }),
+      })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      "https://api.example.test/api/v2/quests/quest-1/teams/team-1/join",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ joinCode: "JOIN-123" }),
+        headers: expect.objectContaining({ "idempotency-key": "team-join-1" }),
+      })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      4,
+      "https://api.example.test/api/v2/quests/quest-1/teams/team-1/submit",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ text: "Ready to work", fileIds: ["file-1"] }),
+        headers: expect.objectContaining({
+          "idempotency-key": "team-submit-1",
+        }),
+      })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      5,
+      "https://api.example.test/api/v2/quests/quest-1/teams",
+      expect.objectContaining({ method: "GET" })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      6,
+      "https://api.example.test/api/v2/quests/quest-1/teams/team-1",
+      expect.objectContaining({ method: "GET" })
+    );
+  });
+
+  it("handles underfilled decisions through separate routes", async () => {
+    const underfilled = {
+      id: "underfilled-1",
+      questId: "quest-1",
+      questState: "QUEST_IN_PROGRESS",
+      state: "UNDERFILLED_DECISION_PENDING",
+      activeWorkerCount: 1,
+      headcount: 2,
+      workerRewardPool: 200,
+      questReward: 200,
+      dueAt: "2026-09-16T12:00:00Z",
+      decision: {
+        status: "UNDERFILLED_DECISION_PENDING",
+        value: null,
+        expiresAt: "2026-09-15T11:00:00Z",
+      },
+      consent: {
+        status: "UNDERFILLED_CONSENT_NOT_STARTED",
+        expiresAt: null,
+        totalCount: 0,
+        acceptedCount: 0,
+        declinedCount: 0,
+        pendingCount: 0,
+      },
+      responses: [],
+      ownResponse: null,
+    };
+    fetchMock.mockResolvedValue(okJson({ success: true, data: underfilled }));
+
+    await expect(api.getUnderfilled("quest-1")).resolves.toEqual(underfilled);
+    await expect(
+      api.decideUnderfilled("quest-1", "PROCEED", "decision-1")
+    ).resolves.toEqual(underfilled);
+    await expect(
+      api.respondUnderfilledConsent("quest-1", "ACCEPT", "consent-1")
+    ).resolves.toEqual(underfilled);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "https://api.example.test/api/v2/quests/quest-1/underfilled",
+      expect.objectContaining({ method: "GET" })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "https://api.example.test/api/v2/quests/quest-1/underfilled/decision",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ decision: "PROCEED" }),
+        headers: expect.objectContaining({ "idempotency-key": "decision-1" }),
+      })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      "https://api.example.test/api/v2/quests/quest-1/underfilled/consent",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ decision: "ACCEPT" }),
+        headers: expect.objectContaining({ "idempotency-key": "consent-1" }),
+      })
+    );
+
+    // Worker underfilled response (omits responses, ownResponse has no workerId/assignmentId)
+    const workerUnderfilled = {
+      ...underfilled,
+      responses: undefined,
+      ownResponse: {
+        decision: "ACCEPT",
+        questReward: 200,
+        respondedAt: "2026-09-15T10:30:00Z",
+      },
+    };
+    fetchMock.mockResolvedValueOnce(
+      okJson({ success: true, data: workerUnderfilled })
+    );
+    await expect(api.getUnderfilled("quest-1")).resolves.toMatchObject({
+      id: "underfilled-1",
+      ownResponse: { decision: "ACCEPT", questReward: 200 },
+    });
+  });
+  it("uses If-Match with Quest edits and preserves edit-request contracts", async () => {
+    const editRequest = {
+      requestId: "edit-request-1",
+      questId: "quest-1",
+      status: "EDIT_REQUEST_PENDING",
+      failureCode: null,
+      createdAt: "2026-09-15T10:00:00Z",
+      expiresAt: "2026-09-15T11:00:00Z",
+      appliedAt: null,
+      failedAt: null,
+      previousCondition: { items: [{ position: 0, text: "Old condition" }] },
+      proposedCondition: { items: [{ position: 0, text: "New condition" }] },
+      responseSummary: {
+        totalCount: 1,
+        acceptedCount: 0,
+        declinedCount: 0,
+        pendingCount: 1,
+      },
+      responses: [],
+      ownResponse: null,
+    };
+    fetchMock.mockResolvedValue(okJson(detailResponse));
+
+    await expect(
+      api.editQuest(
+        "quest-1",
+        { title: "Updated title" },
+        { version: 7, idempotencyKey: "edit-1" }
+      )
+    ).resolves.toMatchObject({ id: "quest-1" });
+
+    fetchMock.mockResolvedValue(okJson({ success: true, data: editRequest }));
+    await expect(
+      api.createEditRequest(
+        "quest-1",
+        { condition: { items: ["New condition"] } },
+        "request-1"
+      )
+    ).resolves.toEqual(editRequest);
+    await expect(api.getEditRequest("edit-request-1")).resolves.toEqual(
+      editRequest
+    );
+    await expect(
+      api.respondToEditRequest(
+        "edit-request-1",
+        { decision: "EDIT_RESPONSE_ACCEPTED" },
+        "response-1"
+      )
+    ).resolves.toEqual(editRequest);
+
+    // Worker edit request response (omits responses, ownResponse has no workerId)
+    const workerEditRequest = {
+      ...editRequest,
+      responses: undefined,
+      ownResponse: {
+        decision: "EDIT_RESPONSE_ACCEPTED",
+        reason: null,
+        respondedAt: "2026-09-15T10:15:00Z",
+      },
+    };
+    fetchMock.mockResolvedValueOnce(
+      okJson({ success: true, data: workerEditRequest })
+    );
+    await expect(api.getEditRequest("edit-request-1")).resolves.toMatchObject({
+      requestId: "edit-request-1",
+      ownResponse: { decision: "EDIT_RESPONSE_ACCEPTED" },
+    });
+
+    expect(fetchMock.mock.calls[0]).toEqual([
+      "https://api.example.test/api/v2/quests/quest-1",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ title: "Updated title" }),
+        headers: expect.objectContaining({
+          "idempotency-key": "edit-1",
+          "If-Match": "7",
+        }),
+      }),
+    ]);
+    expect(fetchMock.mock.calls[1]).toEqual([
+      "https://api.example.test/api/v2/quests/quest-1/edit-requests",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ condition: { items: ["New condition"] } }),
+        headers: expect.objectContaining({ "idempotency-key": "request-1" }),
+      }),
+    ]);
+    expect(fetchMock.mock.calls[3]).toEqual([
+      "https://api.example.test/api/v2/quests/edit-requests/edit-request-1/respond",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          decision: "EDIT_RESPONSE_ACCEPTED",
+        }),
+        headers: expect.objectContaining({ "idempotency-key": "response-1" }),
+      }),
+    ]);
+  });
+
+  it("covers proof lifecycle transport and typed completion/proof review parsing", async () => {
+    const proof = {
+      id: "proof-1",
+      questId: "quest-1",
+      workerId: "worker-1",
+      teamId: null,
+      submittedByUserId: "user-1",
+      description: "Evidence",
+      status: "PROOF_PENDING",
+      submittedAt: null,
+      createdAt: "2026-09-15T10:00:00Z",
+      updatedAt: "2026-09-15T10:00:00Z",
+      visibility: "FULL",
+      fileIds: ["file-1"],
+      files: [
+        {
+          fileId: "file-1",
+          contentType: "image/png",
+          sizeBytes: 100,
+          position: 0,
+          uploadStatus: "PROOF_FILE_READY",
+          failureCode: null,
+        },
+      ],
+    };
+    const proofReview = {
+      success: true,
+      data: {
+        proof: { id: "proof-1", status: "PROOF_APPROVED" },
+        questStatus: "QUEST_COMPLETED",
+      },
+    };
+    const deletion = {
+      success: true,
+      data: { deleted: true, proofSubmissionId: "proof-1" },
+    };
+    const completion = {
+      success: true,
+      data: {
+        confirmed: true,
+        confirmedAt: "2026-09-15T12:00:00Z",
+        questStatus: "QUEST_COMPLETED",
+      },
+    };
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith("/review")) return Promise.resolve(okJson(proofReview));
+      if (url.endsWith("/completion-confirmation"))
+        return Promise.resolve(okJson(completion));
+      if (
+        init?.method === "DELETE" &&
+        url.endsWith("/proof-submissions/proof-1")
+      ) {
+        return Promise.resolve(okJson(deletion));
+      }
+      if (url.endsWith("/proof-submissions") && init?.method === "GET") {
+        return Promise.resolve(
+          okJson({ success: true, data: { items: [proof] } })
+        );
+      }
+      return Promise.resolve(okJson({ success: true, data: proof }));
+    });
+
+    await expect(
+      api.createProofDraft(
+        "quest-1",
+        {
+          assets: [
+            {
+              uri: "file:///tmp/evidence.png",
+              name: "evidence.png",
+              type: "image/png",
+            },
+          ],
+          description: "Evidence",
+        },
+        "proof-create-1"
+      )
+    ).resolves.toEqual(proof);
+    const createInit = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(createInit.method).toBe("POST");
+    expect(createInit.headers).toEqual(
+      expect.objectContaining({ "idempotency-key": "proof-create-1" })
+    );
+    expect((createInit.body as FormData).get("description")).toBe("Evidence");
+    expect((createInit.body as FormData).get("files")).toEqual(
+      expect.any(Blob)
+    );
+
+    await expect(
+      api.updateProofDraft(
+        "quest-1",
+        "proof-1",
+        { description: "Updated evidence", fileIds: ["file-1"] },
+        "proof-update-1"
+      )
+    ).resolves.toEqual(proof);
+    await expect(
+      api.submitProofDraft("quest-1", "proof-1", "proof-submit-1")
+    ).resolves.toEqual(proof);
+    await expect(api.listProofSubmissions("quest-1")).resolves.toEqual([proof]);
+    await expect(
+      api.deleteProofDraft("quest-1", "proof-1", "proof-delete-1")
+    ).resolves.toEqual({
+      deleted: true,
+      proofSubmissionId: "proof-1",
+    });
+    await expect(
+      api.reviewProof(
+        "quest-1",
+        "proof-1",
+        { decision: "PROOF_APPROVED" },
+        "proof-review-1"
+      )
+    ).resolves.toEqual({
+      proof: { id: "proof-1", status: "PROOF_APPROVED" },
+      questStatus: "QUEST_COMPLETED",
+    });
+    await expect(
+      api.confirmCompletion("quest-1", "completion-1")
+    ).resolves.toEqual({
+      confirmed: true,
+      confirmedAt: "2026-09-15T12:00:00Z",
+      questStatus: "QUEST_COMPLETED",
+    });
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "https://api.example.test/api/v2/quests/quest-1/proof-submissions/proof-1",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({
+          description: "Updated evidence",
+          fileIds: ["file-1"],
+        }),
+        headers: expect.objectContaining({
+          "idempotency-key": "proof-update-1",
+        }),
+      })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      6,
+      "https://api.example.test/api/v2/quests/quest-1/proof-submissions/proof-1/review",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ decision: "PROOF_APPROVED" }),
+        headers: expect.objectContaining({
+          "idempotency-key": "proof-review-1",
+        }),
+      })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      7,
+      "https://api.example.test/api/v2/quests/quest-1/completion-confirmation",
+      expect.objectContaining({
+        method: "POST",
+        body: "{}",
+        headers: expect.objectContaining({ "idempotency-key": "completion-1" }),
+      })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      5,
+      "https://api.example.test/api/v2/quests/quest-1/proof-submissions/proof-1",
+      expect.objectContaining({
+        method: "DELETE",
+        headers: expect.objectContaining({
+          "idempotency-key": "proof-delete-1",
+        }),
+      })
+    );
+  });
+
+  it("creates and updates typed Quest reviews", async () => {
+    const review = {
+      id: "review-1",
+      questId: "quest-1",
+      reviewerId: "hirer-1",
+      revieweeId: "worker-1",
+      rating: 5,
+      comment: "Excellent work",
+      createdAt: "2026-09-15T12:00:00Z",
+      updatedAt: "2026-09-15T12:00:00Z",
+    };
+    fetchMock.mockResolvedValue(okJson({ success: true, data: review }));
+
+    await expect(
+      api.createReview(
+        "quest-1",
+        { revieweeId: "worker-1", rating: 5, comment: "Excellent work" },
+        "review-create-1"
+      )
+    ).resolves.toEqual(review);
+    await expect(
+      api.updateReview(
+        "quest-1",
+        "review-1",
+        { rating: 4, comment: "Good work" },
+        "review-update-1"
+      )
+    ).resolves.toEqual(review);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "https://api.example.test/api/v2/quests/quest-1/reviews",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          revieweeId: "worker-1",
+          rating: 5,
+          comment: "Excellent work",
+        }),
+        headers: expect.objectContaining({
+          "idempotency-key": "review-create-1",
+        }),
+      })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "https://api.example.test/api/v2/quests/quest-1/reviews/review-1",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ rating: 4, comment: "Good work" }),
+        headers: expect.objectContaining({
+          "idempotency-key": "review-update-1",
+        }),
+      })
     );
   });
 });
