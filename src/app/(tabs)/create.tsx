@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 
-import { Pressable, SafeAreaView, Text, View } from "@/tw";
+import { Pressable, Text, View } from "@/tw";
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { useLocale } from "@/locales/LocaleProvider";
 import CreateQuestScreen from "@/features/createQuest/CreateQuestScreen";
 import {
@@ -49,9 +50,9 @@ export default function CreateScreen() {
 
   if (loadingDrafts) {
     return (
-      <SafeAreaView className="bg-ku-background flex-1 items-center justify-center">
+      <ScreenLayout className="bg-ku-background flex-1 items-center justify-center">
         <Text className="text-ku-text-secondary">Loading Quest drafts…</Text>
-      </SafeAreaView>
+      </ScreenLayout>
     );
   }
 
@@ -73,7 +74,7 @@ export default function CreateScreen() {
         };
 
   return (
-    <SafeAreaView className="bg-ku-background flex-1 px-[20px] pt-[32px]">
+    <ScreenLayout className="bg-ku-background flex-1 px-[20px] pt-[32px]">
       <Text className="text-ku-text-strong font-ku-bold text-ku-title">
         {copy.title}
       </Text>
@@ -102,6 +103,6 @@ export default function CreateScreen() {
           </Pressable>
         ))}
       </View>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }

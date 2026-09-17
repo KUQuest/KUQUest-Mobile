@@ -5,13 +5,15 @@ import { BottomNav } from "@/components/navigation/BottomNav";
 import { NavigationVisibilityProvider } from "@/components/navigation/NavigationVisibilityContext";
 import { useLocale } from "@/locales/LocaleProvider";
 import { navigationMessages } from "@/locales/navigationMessages";
+import { getAppChromeMetrics } from "@/theme/layout";
 
 export default function TabsLayout() {
-  const { width } = useWindowDimensions();
+  const { width, fontScale } = useWindowDimensions();
+  const metrics = getAppChromeMetrics(width, fontScale);
   const segments = useSegments();
   const { locale } = useLocale();
   const messages = navigationMessages[locale];
-  const isTablet = width >= 768;
+  const isTablet = metrics.isTablet;
   const isCreateQuest = segments[segments.length - 1] === "create";
   const isChatConversation = segments[segments.length - 2] === "chat";
 
@@ -26,7 +28,7 @@ export default function TabsLayout() {
           headerShown: false,
           tabBarPosition: isTablet ? "left" : "bottom",
           tabBarStyle: {
-            width: isTablet ? 88 : undefined,
+            width: isTablet ? metrics.tabletNavWidth : undefined,
             backgroundColor: "transparent",
             borderTopWidth: 0,
             elevation: 0,

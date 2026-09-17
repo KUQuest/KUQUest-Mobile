@@ -6,7 +6,9 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 
-import { Pressable, SafeAreaView, Text, View } from "@/tw";
+import { Pressable, Text, View } from "@/tw";
+
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { useLocale } from "@/locales/LocaleProvider";
 import { navigationMessages } from "@/locales/navigationMessages";
 import { colors } from "@/theme/colors";
@@ -43,7 +45,7 @@ export function FeaturePlaceholder({
   const { descriptionKey, icon: Icon } = featureConfig[titleKey];
 
   return (
-    <SafeAreaView
+    <ScreenLayout
       edges={["top", "left", "right"]}
       className="flex-1 bg-ku-background"
     >
@@ -69,6 +71,6 @@ export function FeaturePlaceholder({
           </Pressable>
         ) : null}
       </View>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }

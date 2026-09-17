@@ -10,24 +10,18 @@ import { MessageCircle, Search } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RefreshControl, useWindowDimensions } from "react-native";
 
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
 import { authService } from "@/features/auth/AuthService";
 import {
   LoadingSkeleton,
   SkeletonBlock,
 } from "@/components/ui/LoadingSkeleton";
-import {
-  ScrollView,
-  Pressable,
-  SafeAreaView,
-  Text,
-  TextInput,
-  View,
-} from "@/tw";
+import { ScrollView, Pressable, Text, TextInput, View } from "@/tw";
 import { useLocale } from "@/locales/LocaleProvider";
 import { chatMessages } from "@/locales/chatMessages";
 import { colors } from "@/theme/colors";
-import { getAppChromeMetrics } from "@/theme/layout";
+import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 import { getChatRouteParams } from "./chatData";
 import type { ChatConversation } from "./chatTypes";
@@ -317,7 +311,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
       candidateInquiries,
       inquiryStatus,
     };
-  }, [resolvedViewerId]);
+  }, [resolvedViewerId, setLoadState]);
   const { refreshing, refresh, refreshOnFocus } =
     useCalmRefresh(loadConversations);
   useEffect(() => {
@@ -329,8 +323,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
     }, [refreshOnFocus])
   );
   const bottomPadding =
-    (chromeMetrics.isTablet ? 0 : chromeMetrics.navHeight + insets.bottom) +
-    spacing.lg;
+    getBottomNavigationInset(chromeMetrics, insets.bottom) + spacing.lg;
   const loadStateForViewer =
     loadState.viewerId === resolvedViewerId
       ? loadState
@@ -368,7 +361,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
   );
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
+    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
       <ScrollView
         onScroll={handleScroll}
         scrollEventThrottle={16}
@@ -569,6 +562,6 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }

@@ -1,5 +1,7 @@
 import {
+  getActionBarPaddingBottom,
   getAppChromeMetrics,
+  getBottomNavigationInset,
   getCreateQuestLayoutMetrics,
 } from "../theme/layout";
 
@@ -67,5 +69,29 @@ describe("app chrome sizing", () => {
       horizontalPadding: 32,
       contentMaxWidth: 640,
     });
+  });
+});
+
+describe("bottom navigation insets", () => {
+  it("reserves no bottom inset when a tablet shows the navigation rail", () => {
+    const metrics = getAppChromeMetrics(768);
+
+    expect(getBottomNavigationInset(metrics, 34)).toBe(0);
+  });
+
+  it("reserves the navigation height plus the inset on phones", () => {
+    const metrics = getAppChromeMetrics(384);
+
+    expect(getBottomNavigationInset(metrics, 12)).toBe(metrics.navHeight + 12);
+  });
+});
+
+describe("action bar bottom padding", () => {
+  it("keeps a comfortable minimum when the bottom inset is small", () => {
+    expect(getActionBarPaddingBottom(0)).toBe(16);
+  });
+
+  it("clears a tall bottom inset", () => {
+    expect(getActionBarPaddingBottom(34)).toBe(42);
   });
 });

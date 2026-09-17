@@ -14,11 +14,12 @@ import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import { type UploadAsset } from "@/api/fileUpload";
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
 import { Button } from "@/components/ui/Button";
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
 import { useLocale } from "@/locales/LocaleProvider";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
-import { ScrollView, SafeAreaView, Text, View } from "@/tw";
+import { ScrollView, Text, View } from "@/tw";
 
 import { authService } from "../auth/AuthService";
 import {
@@ -432,7 +433,10 @@ export default function QuestProofScreen({
 
   if (!resolvedQuestId || !resolvedViewerId) {
     return (
-      <SafeAreaView className="bg-ku-background flex-1">
+      <ScreenLayout
+        edges={["top", "left", "right", "bottom"]}
+        className="bg-ku-background flex-1"
+      >
         <TopBar
           onBackPress={() => router.back()}
           title={messages.proofBannerTitle}
@@ -442,12 +446,15 @@ export default function QuestProofScreen({
             {messages.errorDescription}
           </Text>
         </View>
-      </SafeAreaView>
+      </ScreenLayout>
     );
   }
 
   return (
-    <SafeAreaView className="bg-ku-background flex-1">
+    <ScreenLayout
+      edges={["top", "left", "right", "bottom"]}
+      className="bg-ku-background flex-1"
+    >
       <TopBar
         onBackPress={() => router.back()}
         title={messages.proofBannerTitle}
@@ -599,6 +606,6 @@ export default function QuestProofScreen({
           (isDraft || !proof)
         )}
       />
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }

@@ -19,12 +19,12 @@ import {
   Image,
   KeyboardAvoidingView,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   TextInput,
   View,
 } from "@/tw";
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import * as ImagePicker from "expo-image-picker";
 import {
   Check,
@@ -685,7 +685,7 @@ export default function CreateQuestScreen({
 
   if (!draftHydrated && saveState !== "error") {
     return (
-      <SafeAreaView
+      <ScreenLayout
         edges={["top", "left", "right"]}
         className={styles.safeArea}
       >
@@ -726,14 +726,14 @@ export default function CreateQuestScreen({
             />
           )}
         </View>
-      </SafeAreaView>
+      </ScreenLayout>
     );
   }
 
   if (completedState) {
     const published = completedState === "OPEN";
     return (
-      <SafeAreaView
+      <ScreenLayout
         edges={["top", "left", "right"]}
         className={styles.safeArea}
       >
@@ -775,7 +775,7 @@ export default function CreateQuestScreen({
             </Button>
           </View>
         </View>
-      </SafeAreaView>
+      </ScreenLayout>
     );
   }
 
@@ -783,7 +783,7 @@ export default function CreateQuestScreen({
   const nextLabel = step === 2 ? messages.reviewQuest : messages.next;
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
+    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
       <StatusBar style="light" />
       <CreateQuestHeader
         messages={messages}
@@ -1174,6 +1174,6 @@ export default function CreateQuestScreen({
         locale={locale}
         suggestedAmountSatang={missingSatang}
       />
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }

@@ -26,7 +26,7 @@ import {
   Modal,
   RefreshControl,
 } from "react-native";
-import { Image, Pressable, SafeAreaView, ScrollView, Text, View } from "@/tw";
+import { Image, Pressable, ScrollView, Text, View } from "@/tw";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ApiError } from "@/api/ApiClient";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
@@ -41,6 +41,7 @@ import {
   type LiveQuestSnapshot,
 } from "./liveQuestService";
 import type { QuestFixtureError } from "./questFixtureAdapter";
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
 import {
   LoadingSkeleton,
@@ -56,6 +57,7 @@ import {
   type QuestBoardMessages,
 } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
+import { getActionBarPaddingBottom } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 import styles from "./questDetailStyles";
 import {
@@ -108,10 +110,6 @@ export interface QuestDetailScreenProps {
 }
 
 type DisplayApplicationStatus = QuestViewerApplicationStatus;
-
-function getActionBarPaddingBottom(bottomInset: number): number {
-  return Math.max(spacing.md, bottomInset + spacing.sm);
-}
 
 function getLiveActionError(error: unknown, fallback: string): string {
   if (error instanceof ApiError) return `${error.code}: ${error.message}`;
@@ -905,7 +903,7 @@ function ConfirmationSheet({
           onPress={() => undefined}
           className={styles.confirmSheet}
           style={{
-            paddingBottom: Math.max(spacing.md, insets.bottom + spacing.sm),
+            paddingBottom: getActionBarPaddingBottom(insets.bottom),
           }}
         >
           <View className={styles.confirmHeader}>
@@ -1985,7 +1983,7 @@ export default function QuestDetailScreen({
   const questPending = loadingQuest || resolvedPreview === "loading";
   if (questPending) {
     return (
-      <SafeAreaView
+      <ScreenLayout
         edges={["top", "left", "right"]}
         className={styles.safeArea}
       >
@@ -1996,14 +1994,14 @@ export default function QuestDetailScreen({
           variant="detail"
         />
         <QuestDetailSkeleton loadingLabel={messages.loading} />
-      </SafeAreaView>
+      </ScreenLayout>
     );
   }
 
   if (liveError || resolvedPreview === "error" || !quest) {
     const errorState = Boolean(liveError) || resolvedPreview === "error";
     return (
-      <SafeAreaView
+      <ScreenLayout
         edges={["top", "left", "right"]}
         className={styles.safeArea}
       >
@@ -2032,12 +2030,12 @@ export default function QuestDetailScreen({
           }
           error={errorState}
         />
-      </SafeAreaView>
+      </ScreenLayout>
     );
   }
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
+    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
       <TopBar
         backLabel={messages.back}
         onBackPress={handleBack}
@@ -2642,6 +2640,6 @@ export default function QuestDetailScreen({
           quest={quest}
         />
       ) : null}
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }

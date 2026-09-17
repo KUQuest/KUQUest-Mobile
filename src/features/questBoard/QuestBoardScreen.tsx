@@ -10,7 +10,6 @@ import {
   FlatList,
   Image,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   TextInput,
@@ -40,6 +39,7 @@ import {
 import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formatSatang } from "@/domain/satang";
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
 import { authService } from "@/features/auth/AuthService";
 import { useCalmRefresh } from "@/hooks/useCalmRefresh";
@@ -54,7 +54,7 @@ import {
   type QuestBoardMessages,
 } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
-import { getAppChromeMetrics } from "@/theme/layout";
+import { getActionBarPaddingBottom, getAppChromeMetrics } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 import styles from "./questBoardStyles";
 import { getLocalizedQuest } from "./questFixtures";
@@ -659,7 +659,7 @@ function QuestBoardFilterSheet({
           className={styles.sheet}
           style={{
             height: "88%",
-            paddingBottom: Math.max(spacing.md, insets.bottom + spacing.sm),
+            paddingBottom: getActionBarPaddingBottom(insets.bottom),
           }}
           testID="quest-filter-sheet"
         >
@@ -934,7 +934,7 @@ function QuestBoardSortSheet({
           onPress={() => undefined}
           className={styles.sheet}
           style={{
-            paddingBottom: Math.max(spacing.md, insets.bottom + spacing.sm),
+            paddingBottom: getActionBarPaddingBottom(insets.bottom),
           }}
         >
           <View className={styles.sheetHeader}>
@@ -1493,7 +1493,7 @@ export default function QuestBoardScreen({
     ) : null;
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
+    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
       <FlatList
         accessibilityLabel={messages.resultsLabel}
         refreshControl={
@@ -1545,6 +1545,6 @@ export default function QuestBoardScreen({
           sort={sort}
         />
       ) : null}
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }

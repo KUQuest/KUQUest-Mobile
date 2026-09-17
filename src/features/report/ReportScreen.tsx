@@ -19,6 +19,7 @@ import {
   Text,
   View,
 } from "@/tw";
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import {
   REPORT_TOPIC_VALUES,
   type ReportRouteParams,
@@ -127,7 +128,7 @@ export default function ReportScreen() {
   };
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
+    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
       <View className={styles.header}>
         <Pressable
           accessibilityLabel={messages.back}
@@ -406,6 +407,6 @@ export default function ReportScreen() {
           </View>
         </SafeAreaView>
       </Modal>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }

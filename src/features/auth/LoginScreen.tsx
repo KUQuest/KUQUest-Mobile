@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { cn } from "@/tw/cn";
 import { useColorScheme, useWindowDimensions } from "react-native";
-import { Pressable, SafeAreaView, Text, View } from "@/tw";
+import { Pressable, Text, View } from "@/tw";
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { StatusBar } from "expo-status-bar";
 import { Host, Button } from "@expo/ui";
 import { GraduationCap, TriangleAlert } from "lucide-react-native";
@@ -72,7 +73,7 @@ export default function LoginScreen({
   };
 
   return (
-    <SafeAreaView className={styles.safeArea}>
+    <ScreenLayout className={styles.safeArea}>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <View className={styles.container}>
         <View className={styles.content}>
@@ -176,6 +177,6 @@ export default function LoginScreen({
           </View>
         </View>
       </View>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }

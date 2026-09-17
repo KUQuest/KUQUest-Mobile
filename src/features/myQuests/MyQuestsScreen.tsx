@@ -32,6 +32,7 @@ import {
 } from "lucide-react-native";
 
 import { cn } from "@/tw/cn";
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
 import { QuestFundingSummary } from "@/components/ui/QuestFundingSummary";
 import { authService } from "@/features/auth/AuthService";
@@ -51,10 +52,10 @@ import {
   type StatusTone,
 } from "./myQuestService";
 import type { QuestV2CanonicalQuest } from "@/api/questV2Contracts";
-import { Pressable, SafeAreaView, ScrollView, Text, View } from "@/tw";
+import { Pressable, ScrollView, Text, View } from "@/tw";
 import { useLocale, type SupportedLocale } from "@/locales/LocaleProvider";
 import { colors } from "@/theme/colors";
-import { getAppChromeMetrics } from "@/theme/layout";
+import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 import styles from "./myQuestStyles";
 import { formatSatang } from "@/domain/satang";
@@ -1194,9 +1195,9 @@ export default function MyQuestsScreen({
   const tabOptions: readonly (WorkerTab | HirerTab)[] =
     role === "worker" ? workerTabs : hirerTabs;
   const bottomPadding =
-    (chromeMetrics.isTablet
-      ? spacing.lg
-      : chromeMetrics.navHeight + insets.bottom) + spacing.lg;
+    getBottomNavigationInset(chromeMetrics, insets.bottom) +
+    spacing.lg +
+    (chromeMetrics.isTablet ? spacing.lg : 0);
 
   const selectRole = (nextRole: Role) => {
     setRole(nextRole);
@@ -1394,7 +1395,7 @@ export default function MyQuestsScreen({
   };
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
+    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
       <View className={cn(styles.hero, roleMenuOpen && styles.heroMenuOpen)}>
         <View className={styles.headerRow}>
           <Pressable
@@ -1676,6 +1677,6 @@ export default function MyQuestsScreen({
           fullScreen
         />
       ) : null}
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }

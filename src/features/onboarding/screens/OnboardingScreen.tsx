@@ -13,11 +13,11 @@ import {
   Image,
   KeyboardAvoidingView,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   View,
 } from "@/tw";
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import Animated, * as Reanimated from "react-native-reanimated";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -209,7 +209,7 @@ function OnboardingSkeleton({
   );
 
   return (
-    <SafeAreaView
+    <ScreenLayout
       edges={["top", "left", "right", "bottom"]}
       className={styles.safeArea}
     >
@@ -328,7 +328,7 @@ function OnboardingSkeleton({
           </View>
         </KeyboardAvoidingView>
       </LoadingSkeleton>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }
 
@@ -853,7 +853,7 @@ export default function OnboardingScreen() {
 
   if (loadError && options === null) {
     return (
-      <SafeAreaView className={styles.safeArea}>
+      <ScreenLayout className={styles.safeArea}>
         <View className={styles.loadErrorCard} accessibilityRole="alert">
           <CircleAlert size={24} color={colors.danger} strokeWidth={2} />
           <Text className={styles.submitErrorText}>{msg.loadError}</Text>
@@ -865,12 +865,12 @@ export default function OnboardingScreen() {
             <Text className={styles.addMoreBtnText}>{msg.retrySubmitBtn}</Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </ScreenLayout>
     );
   }
 
   return (
-    <SafeAreaView
+    <ScreenLayout
       edges={["top", "left", "right", "bottom"]}
       className={styles.safeArea}
     >
@@ -1747,6 +1747,6 @@ export default function OnboardingScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }
