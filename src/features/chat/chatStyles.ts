@@ -140,6 +140,18 @@ const styles = {
     "text-ku-text-strong flex-1 font-ku-regular text-ku-body-small min-h-[48px] px-[8px]",
   sendButton:
     "items-center bg-ku-primary rounded-ku-pill h-[42px] justify-center w-[42px]",
+  inlineImageWrap:
+    "rounded-[14px] overflow-hidden mt-[4px] border border-ku-border-subtle bg-ku-surface-muted max-w-[260px]",
+  inlineImage: "w-[240px] h-[160px] rounded-[14px]",
+  pendingAttachmentsBar:
+    "flex-row px-[16px] py-[8px] bg-ku-background border-t border-ku-border-subtle gap-[8px]",
+  pendingAttachmentChip:
+    "relative w-[56px] h-[56px] rounded-[10px] overflow-hidden border border-ku-border-accent bg-ku-surface-muted items-center justify-center",
+  pendingAttachmentImage: "w-full h-full",
+  pendingAttachmentRemove:
+    "absolute top-[2px] right-[2px] bg-black/60 rounded-full w-[20px] h-[20px] items-center justify-center",
+  pendingAttachmentUploading:
+    "absolute inset-0 bg-black/40 items-center justify-center",
 } as const;
 
 export default styles;

@@ -34,6 +34,11 @@ const styles = {
   cardSeparator: "h-[8px]",
   card: "shadow-[0px_2px_5px_rgb(18_32_24_/0.06)] bg-ku-white border-ku-border-accent rounded-[16px] border p-[16px] active:bg-ku-surface-muted",
   cardBody: "rounded-[10px]",
+  ownerRow: "flex-row items-center mb-[8px] gap-[8px]",
+  ownerAvatar:
+    "w-[28px] h-[28px] rounded-ku-pill bg-ku-surface-accent border border-ku-border-accent items-center justify-center overflow-hidden",
+  ownerAvatarText: "text-ku-primary font-ku-bold text-ku-caption",
+  ownerName: "text-ku-text-secondary font-ku-medium text-ku-body-small flex-1",
   cardTopRow: "items-start flex-row justify-between",
   cardTitleColumn: "flex-1 min-w-0 mr-[8px]",
   cardTitle: "text-ku-text-strong font-ku-bold text-ku-subtitle",

@@ -132,6 +132,7 @@ const experienceSchema = z.object({
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
 });
+export const experienceEntrySchema = experienceSchema;
 
 export const experienceResponseSchema = z.object({
   success: z.literal(true),
@@ -172,6 +173,17 @@ const reviewSchema = z.object({
     "Expected a rating from 1 through 5"
   ),
   comment: z.string().nullable(),
+  createdAt: z.string(),
+  quest: z.object({ id: z.string(), title: z.string() }).nullable().optional(),
+});
+export const profileReviewSchema = z.object({
+  id: z.string(),
+  reviewer: z.object({
+    displayName: z.string(),
+    avatar: z.object({ url: z.string() }).nullable().optional(),
+  }),
+  rating: z.union([z.number(), z.string()]).transform(Number),
+  comment: z.string().nullable().optional(),
   createdAt: z.string(),
   quest: z.object({ id: z.string(), title: z.string() }).nullable().optional(),
 });
@@ -222,6 +234,79 @@ export const certificateResponseSchema = z.object({
     ),
   }),
 });
+export const portfolioEntrySchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string().nullable().optional(),
+  images: z
+    .array(
+      z.object({
+        fileId: z.string().optional(),
+        position: z.union([z.string(), z.number()]).optional(),
+        url: z.string(),
+      })
+    )
+    .default([]),
+  createdAt: z.string().optional(),
+});
+
+export const certificateEntrySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  issuer: z.string(),
+  issuedAt: z.string(),
+  image: z
+    .object({ fileId: z.string().optional(), url: z.string() })
+    .nullable()
+    .optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+});
+
+export const publicProfileResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    version: z.number().int().min(1).default(1),
+    firstName: z.string(),
+    lastName: z.string(),
+    bio: z.string().nullable().optional(),
+    academicYear: z.union([z.number().int(), z.string()]).nullable().optional(),
+    department: z
+      .object({
+        id: z.string().optional(),
+        name: z.string(),
+        faculty: z.object({ name: z.string() }),
+      })
+      .nullable()
+      .optional(),
+    avatar: z
+      .object({
+        fileId: z.string().optional(),
+        url: z.string(),
+      })
+      .nullable()
+      .optional(),
+    occupation: z
+      .object({
+        id: z.string().optional(),
+        name: z.string(),
+      })
+      .nullable()
+      .optional(),
+    experience: z.array(experienceEntrySchema).default([]),
+    portfolio: z.array(portfolioEntrySchema).default([]),
+    certificates: z.array(certificateEntrySchema).default([]),
+  }),
+});
+
+export const publicProfileReviewsResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    items: z.array(profileReviewSchema).default([]),
+    total: z.union([z.number().int(), z.string()]).default(0),
+    nextCursor: z.string().nullable().optional(),
+  }),
+});
 
 export const certificateCreateResponseSchema = z.object({
   success: z.literal(true),
@@ -252,3 +337,9 @@ export type PortfolioEntry = z.infer<
 export type CertificateEntry = z.infer<
   typeof certificateResponseSchema
 >["data"]["certificates"][number];
+export type PublicProfileResponse = z.infer<
+  typeof publicProfileResponseSchema
+>["data"];
+export type PublicProfileReviewsData = z.infer<
+  typeof publicProfileReviewsResponseSchema
+>["data"];

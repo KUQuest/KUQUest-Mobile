@@ -18,6 +18,11 @@ import {
   type QuestFixtureValueResult,
   type QuestWorkflowAction,
 } from "./questFixtureAdapter";
+import { liveQuestService } from "./liveQuestService";
+import type {
+  LiveQuestSnapshot,
+  LiveQuestSnapshotOptions,
+} from "./liveQuestService";
 import { QuestApplicationStatus as CanonicalApplicationStatus } from "./types";
 import type {
   QuestAvailability,
@@ -130,6 +135,15 @@ export interface QuestWorkflow {
     questId: string,
     viewerId?: string
   ): QuestDetailProjection | null;
+  /**
+   * Reads the production Quest boundary. Existing synchronous methods remain
+   * fixture-only so preview and roleplay callers stay deterministic.
+   */
+  getLiveQuestSnapshot(
+    questId: string,
+    viewerId: string,
+    options?: LiveQuestSnapshotOptions
+  ): Promise<LiveQuestSnapshot>;
   getMyQuestsModel(viewerId?: string): QuestDetailState[];
   getMyQuestsProjection(viewerId?: string): QuestMyQuestProjection[];
   getPublishCheck(questId: string): QuestPublishCheck | null;
@@ -367,6 +381,8 @@ export function createQuestWorkflow(
       const state = adapter.getQuestDetail(questId, viewerId, now);
       return state ? createDetailProjection(state, viewerId, now) : null;
     },
+    getLiveQuestSnapshot: (questId, viewerId, options) =>
+      liveQuestService.getLiveSnapshot(questId, viewerId, options),
     getMyQuestsModel: (viewerId = DEFAULT_PROTOTYPE_VIEWER_ID) =>
       adapter.listStates(viewerId, at()),
     getMyQuestsProjection: (viewerId = DEFAULT_PROTOTYPE_VIEWER_ID) => {

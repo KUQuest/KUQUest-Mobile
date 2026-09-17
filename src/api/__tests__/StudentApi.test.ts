@@ -391,7 +391,68 @@ describe("StudentApi", () => {
       api.uploadAvatar({ uri: "file:///tmp/avatar.png" })
     ).rejects.toThrow("Required");
   });
+  test("loads public profile for a user ID from /api/v1/profile/:userId", async () => {
+    fetchMock.mockResolvedValue(
+      response({
+        success: true,
+        data: {
+          version: 1,
+          firstName: "Public",
+          lastName: "User",
+          bio: "Public bio",
+          academicYear: 3,
+          department: {
+            id: "dept-1",
+            name: "Software",
+            faculty: { name: "Engineering" },
+          },
+          avatar: { fileId: "f-1", url: "https://example.test/avatar.png" },
+          occupation: { id: "occ-1", name: "Student" },
+          experience: [],
+          portfolio: [],
+          certificates: [],
+        },
+      })
+    );
 
+    const result = await api.getPublicProfile("user-uuid-1");
+    expect(result.firstName).toBe("Public");
+    expect(result.lastName).toBe("User");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v1/profile/user-uuid-1",
+      expect.objectContaining({ method: "GET" })
+    );
+  });
+
+  test("lists public reviews for a user ID from /api/v1/profile/:userId/reviews", async () => {
+    fetchMock.mockResolvedValue(
+      response({
+        success: true,
+        data: {
+          items: [
+            {
+              id: "rev-1",
+              reviewer: { displayName: "Peer", avatar: null },
+              rating: 5,
+              comment: "Great work!",
+              createdAt: "2026-09-01T00:00:00.000Z",
+              quest: null,
+            },
+          ],
+          total: 1,
+          nextCursor: null,
+        },
+      })
+    );
+
+    const result = await api.listPublicReviews("user-uuid-1", 5);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].comment).toBe("Great work!");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v1/profile/user-uuid-1/reviews?rating=5",
+      expect.objectContaining({ method: "GET" })
+    );
+  });
   test("maps API errors to ApiError with the documented error payload", async () => {
     fetchMock.mockResolvedValue(
       response(

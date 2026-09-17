@@ -240,21 +240,21 @@ describe("group Quest sheets", () => {
 
     expect(view.queryByText("Forming Team")).toBeNull();
     expect(view.getByText("Submitted Leader")).toBeTruthy();
-    expect(view.getByText("Selected")).toBeTruthy();
-    expect(view.getByText("Rejected")).toBeTruthy();
+    expect(view.getAllByText("Selected")).toHaveLength(2);
+    expect(view.getAllByText("Rejected")).toHaveLength(2);
     expect(view.getByText("Requested headcount")).toBeTruthy();
     expect(view.getByText("Actual headcount")).toBeTruthy();
     expect(view.getByTestId("candidate-review-settlement")).toBeTruthy();
 
     await fireEvent.press(
-      view.getByTestId("candidate-review-select-proposal-submitted")
+      view.getAllByTestId("candidate-review-select-proposal-submitted")[0]
     );
     expect(onSelectProposal).toHaveBeenCalledWith("proposal-submitted");
     await fireEvent.press(
-      view.getByTestId("candidate-review-accept-proposal-submitted")
+      view.getAllByTestId("candidate-review-accept-proposal-submitted")[0]
     );
     await fireEvent.press(
-      view.getByTestId("candidate-review-reject-proposal-submitted")
+      view.getAllByTestId("candidate-review-reject-proposal-submitted")[0]
     );
     expect(onAccept).toHaveBeenCalledWith("proposal-submitted");
     expect(onReject).toHaveBeenCalledWith("proposal-submitted");
