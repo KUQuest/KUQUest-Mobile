@@ -8,7 +8,7 @@ import mockReact, { type ReactNode } from "react";
 import { StyleSheet, TextInput as RNTextInput } from "react-native";
 import CreateQuestScreen from "../CreateQuestScreen";
 import { measureFieldRelativeToScroll } from "../createQuestFocus";
-import { initialDraft } from "../createQuestModel";
+import { initialDraft, toBangkokDateTime } from "../createQuestModel";
 jest.mock("react-native/Libraries/Modal/Modal", () => {
   return {
     __esModule: true,
@@ -407,8 +407,8 @@ describe("CreateQuestScreen", () => {
         participation: "GROUP",
         questFundingTotal: 250,
         headcount: 2,
-        startTime: "2099-08-26T09:00:00+07:00",
-        dueAt: "2099-08-27T12:00:00+07:00",
+        startTime: toBangkokDateTime("2099-08-26", "09:00"),
+        dueAt: toBangkokDateTime("2099-08-27", "12:00"),
       }),
       expect.any(String)
     );

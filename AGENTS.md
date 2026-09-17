@@ -28,6 +28,7 @@ Always use the canonical ubiquitous language from `CONTEXT.md`.
   - **Quest & Work Chat**: `docs/rulebook/quest/quest-work-chat-rulebook.md` and sub-contracts.
   - **Finance & Wallet**: `docs/rulebook/finance/finance-rulebook.md` and sub-contracts.
   - **Admin Operations**: `docs/rulebook/admin/admin-rulebook.md` and sub-contracts.
+- **Backend OpenAPI Specification**: `docs/api/api.yaml` (canonical backend routes/schemas) — inspect via `bun run query-api` / `query-api` skill; do not read or grep the 50k-line file directly.
 - **Mobile Domain Specifications**:
   - Quest States & Lifecycle: `docs/specs/quest-state-summary.md`
   - Group & Candidate Matrix: `docs/specs/group-quest-behavior.md`
@@ -70,8 +71,9 @@ Ask one missing fact at a time when interviewing the user. State known context b
 - Bug reports / QA: `qa` — conversational bug intake, files GitHub issues.
 - Issue lifecycle: `triage` — categorises issues/PRs into the five labels above.
 - Domain/architecture: `domain-modeling` (terminology, ADRs), `improve-codebase-architecture` (refactor scan).
+- API contract inspection: `query-api` — search routes, parameters, and schemas (`bun run query-api`) before modifying `src/api/*` or mock fixtures.
 
-Typical chain: `grilling`/`grill-with-docs` → `to-spec`/`to-tickets` → `triage` as issues come in → `wayfinder` if scope exceeds one session.
+Typical chain: `grilling`/`grill-with-docs` → `to-spec`/`to-tickets` → `query-api` (API contract check) → `triage` as issues come in → `wayfinder` if scope exceeds one session.
 
 ### Gotchas
 
@@ -97,7 +99,7 @@ For delegated or parallel work, keep one writer per file; use read-only scout/re
 
 ## Repository Map & Preserve-First Debugging
 
-Before any code, route, fixture, API, test, or deletion task, read [`docs/agents/repository-context.md`](docs/agents/repository-context.md). It contains the current source tree, ownership seams, compatibility drift, test topology, and the safe debugging contract. Use [`CONTEXT.md`](CONTEXT.md) for domain language and [`docs/agents/routing.md`](docs/agents/routing.md) to select the rulebook/spec/ADR branch.
+Before any code, route, fixture, API, test, or deletion task, read [`docs/agents/repository-context.md`](docs/agents/repository-context.md). It contains the current source tree, ownership seams, compatibility drift, test topology, and the safe debugging contract. Use [`CONTEXT.md`](CONTEXT.md) for domain language, [`docs/agents/routing.md`](docs/agents/routing.md) to select the rulebook/spec/ADR branch, and `query-api` for backend API contracts.
 
 Non-negotiable preservation rules:
 
