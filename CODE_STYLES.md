@@ -70,6 +70,7 @@ src/
 │       ├── styles/               # Feature-local styles / Tailwind class maps
 │       └── __tests__/            # Unit and component tests for this feature
 ├── components/           # Shared, domain-agnostic UI and navigation components
+│   ├── layout/           # ScreenLayout and screen-level safe-area ownership
 │   ├── ui/               # Button, LoadingSkeleton, TopBar, QuestFundingSummary
 │   └── navigation/       # BottomNav, NavigationVisibilityContext
 ├── api/                  # HTTP client, Better Auth cookie bridge, Zod contracts
@@ -82,7 +83,9 @@ src/
 ### Feature Module Rules
 
 - **Self-contained**: Keep feature-local sub-components, types, and styles inside `src/features/<feature>/`.
-- **Screen Separation**: `<Feature>Screen.tsx` owns lifecycle hooks, safe-area layout, and screen coordination; extract complex rendering into `components/`.
+- **Screen Separation**: `<Feature>Screen.tsx` owns lifecycle hooks, screen composition, and safe-area edge policy through `ScreenLayout`; extract complex rendering into `components/`.
+- **Screen roots**: Use `ScreenLayout` from `@/components/layout/ScreenLayout` for full-screen safe-area ownership. Preserve explicit `edges`, `className`, accessibility props, and child behavior.
+- **Local safe areas**: Use direct `SafeAreaView` from `@/tw` for nested sheets or modals with a distinct inset policy.
 - **Pure Logic**: Extract state machines, calculations, and data mappings into pure functions (`<feature>Module.ts` or `<feature>Workflow.ts`) covered by fast unit tests.
 
 ---
