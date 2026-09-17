@@ -183,6 +183,64 @@ describe("ChatApi", () => {
       })
     );
   });
+  it("omits blank text for attachment-only messages", async () => {
+    const data = {
+      success: true,
+      data: {
+        message: {
+          id: "msg-attachment-only",
+          conversationId: "conv-1",
+          sequence: 6,
+          kind: "USER",
+          sender: { id: "user-1", displayName: "Me" },
+          text: null,
+          attachments: [],
+          systemType: null,
+          systemPayload: null,
+          eventId: null,
+          createdAt: "2026-09-15T12:05:00Z",
+        },
+      },
+    };
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => JSON.stringify(data),
+    });
+
+    await api.sendMessage("conv-1", "", "client-work-attachment", [
+      "attachment-1",
+    ]);
+    await api.sendCandidateInquiryMessage(
+      "inquiry-1",
+      "",
+      "client-inquiry-attachment",
+      ["attachment-1"]
+    );
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "https://api.example.test/api/v1/chat/conversations/conv-1/messages",
+      expect.objectContaining({
+        body: JSON.stringify({
+          clientMessageId: "client-work-attachment",
+          attachmentIds: ["attachment-1"],
+        }),
+      })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "https://api.example.test/api/v1/chat/candidate-inquiries/inquiry-1/messages",
+      expect.objectContaining({
+        body: JSON.stringify({
+          clientMessageId: "client-inquiry-attachment",
+          attachmentIds: ["attachment-1"],
+        }),
+      })
+    );
+  });
+
   it("sends Work Chat attachment payloads and parses attachment responses", async () => {
     const attachment = {
       id: "attachment-1",

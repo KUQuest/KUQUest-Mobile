@@ -334,7 +334,7 @@ export class ChatApi {
       `/api/v1/chat/conversations/${conversationId}/messages`,
       {
         clientMessageId,
-        text,
+        ...(text?.trim() ? { text } : {}),
         ...(attachmentIds ? { attachmentIds } : {}),
       },
       { method: "POST" }
@@ -468,7 +468,7 @@ export class ChatApi {
       `/api/v1/chat/candidate-inquiries/${conversationId}/messages`,
       {
         clientMessageId,
-        text,
+        ...(text?.trim() ? { text } : {}),
         ...(attachmentIds ? { attachmentIds } : {}),
       },
       { method: "POST" }

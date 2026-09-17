@@ -451,7 +451,8 @@ function deriveCapabilities(input: {
     editRequest?.status === "EDIT_REQUEST_PENDING" &&
     editRequest.ownResponse === null;
   const pendingProof = proofs.some((proof) => proof.status === "PROOF_PENDING");
-  const canWorkChat = Boolean(workConversation) && Boolean(assignment);
+  const canWorkChat =
+    Boolean(workConversation) && (isHirer || assignment !== null);
   return {
     canJoin:
       isProspectiveWorker &&
@@ -515,7 +516,8 @@ function deriveCapabilities(input: {
     canRequestEdit: isHirer && assigned,
     canRespondToEdit: isWorker && activeWorker === true && pendingEdit,
     canReadWorkChat: canWorkChat,
-    canWriteWorkChat: canWorkChat && activeWorker === true && !terminal,
+    canWriteWorkChat:
+      canWorkChat && !terminal && (isHirer || activeWorker === true),
     canSubmitProof:
       isWorker &&
       activeWorker === true &&
