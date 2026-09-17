@@ -9,7 +9,6 @@ import {
   AccessibilityInfo,
   Alert,
   findNodeHandle,
-  Modal,
   Platform,
   Pressable as RNPressable,
   TextInput as RNTextInput,
@@ -26,28 +25,19 @@ import {
   TextInput,
   View,
 } from "@/tw";
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import {
-  ArrowLeft,
-  CalendarClock,
   Check,
-  ChevronDown,
   ChevronRight,
   CircleAlert,
-  CircleHelp,
   Clock3,
   ImagePlus,
-  Mail,
   MapPin,
   Tag,
   UserRound,
   UserRoundCheck,
   UsersRound,
   X,
-  type LucideIcon,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -89,13 +79,10 @@ import {
   getHeadcountForParticipation,
   getQuestApiErrorMessage,
   getQuestPublishCheck,
-  getSchedulePickerValue,
-  getScheduleTimeValue,
   initialDraft,
   isQuestDraftDirty,
   MAX_REWARD_THB,
   TIME_PATTERN,
-  toDateValue,
   toQuestV2Payload,
   validateQuestDraftStep,
   type QuestDraft,
@@ -108,23 +95,14 @@ import {
   persistQuestDraft,
 } from "./createQuestPersistence";
 import { measureFieldRelativeToScroll } from "./createQuestFocus";
-import {
-  formatDate,
-  formatDateTime,
-  getDatePickerValue,
-  getDateTimePickerValue,
-} from "./createQuestDates";
+import { formatDate, formatDateTime } from "./createQuestDates";
 import {
   LOGISTICS_FIELDS,
   QUEST_DETAIL_FIELDS,
-  type ChoiceOption,
-  type ChoiceVariant,
   type CompletionState,
   type Focusable,
-  type PickerMode,
   type SaveErrorIntent,
   type SaveState,
-  type ScheduleField,
   type Step,
 } from "./createQuestTypes";
 import { liveQuestService } from "../questBoard/liveQuestService";
