@@ -8,15 +8,7 @@ import React, {
 import { RefreshControl } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  ChevronLeft,
-  Clock3,
-  MessageCircle,
-  RefreshCw,
-  ShieldCheck,
-} from "lucide-react-native";
+import { ChevronLeft, RefreshCw } from "lucide-react-native";
 
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
@@ -38,6 +30,8 @@ import {
   type LiveQuestNextAction,
   type LiveQuestSnapshot,
 } from "./liveQuestService";
+import QuestWorkActionsCard from "./components/QuestWorkActionsCard";
+import QuestWorkStatusCard from "./components/QuestWorkStatusCard";
 
 const POLL_INTERVAL_MS = 5_000;
 const POLL_WINDOW_BEFORE_START_MS = 60_000;
@@ -147,54 +141,6 @@ function getErrorText(error: unknown, messages: QuestWorkMessages): string {
   if (error instanceof Error && error.message)
     return `${messages.serverError} ${error.message}`;
   return messages.serverError;
-}
-
-function StateCard({
-  children,
-  tone = "neutral",
-}: {
-  children: React.ReactNode;
-  tone?: "neutral" | "warning" | "success";
-}) {
-  return (
-    <View
-      className={`rounded-2xl border p-4 ${
-        tone === "warning"
-          ? "border-amber-300 bg-amber-50"
-          : tone === "success"
-            ? "border-emerald-300 bg-emerald-50"
-            : "border-slate-200 bg-white"
-      }`}
-    >
-      {children}
-    </View>
-  );
-}
-
-function WorkRow({
-  label,
-  value,
-  detail,
-}: {
-  label: string;
-  value: string;
-  detail?: string;
-}) {
-  return (
-    <View className="mb-3 flex-row justify-between gap-3">
-      <Text className="flex-1 text-sm text-slate-500">{label}</Text>
-      <View className="flex-1 items-end">
-        <Text className="text-right text-sm font-semibold text-slate-900">
-          {value}
-        </Text>
-        {detail ? (
-          <Text className="mt-1 text-right text-xs text-slate-500">
-            {detail}
-          </Text>
-        ) : null}
-      </View>
-    </View>
-  );
 }
 
 export default function QuestWorkScreen({
@@ -506,6 +452,21 @@ export default function QuestWorkScreen({
   const canOpenChat = Boolean(
     snapshot?.capabilities.canReadWorkChat && conversationId && resolvedViewerId
   );
+  const openDispute = useCallback(() => {
+    if (!resolvedQuestId) return;
+    router.push(`../quest/${resolvedQuestId}/dispute`);
+  }, [resolvedQuestId, router]);
+  const openChat = useCallback(() => {
+    if (!conversationId || !resolvedQuestId || !resolvedViewerId) return;
+    router.push({
+      pathname: "/chat/[id]",
+      params: getChatRouteParams({
+        conversationId,
+        questId: resolvedQuestId,
+        viewerId: resolvedViewerId,
+      }),
+    });
+  }, [conversationId, resolvedQuestId, resolvedViewerId, router]);
   const contentBottom = Math.max(spacing.lg, insets.bottom + spacing.md);
 
   if (loadState === "pending" && !snapshot) {
@@ -594,264 +555,42 @@ export default function QuestWorkScreen({
             </Pressable>
           </View>
 
-          <StateCard
-            tone={
-              isTerminal
-                ? "neutral"
-                : snapshot.state === "QUEST_IN_PROGRESS"
-                  ? "success"
-                  : "warning"
-            }
-          >
-            <View className="flex-row items-start justify-between gap-3">
-              <View className="flex-1">
-                <Text className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {status}
-                </Text>
-                <Text className="mt-1 text-2xl font-bold text-slate-950">
-                  {snapshot.quest.title}
-                </Text>
-              </View>
-              <Clock3
-                color={isTerminal ? colors.textMuted : colors.primary}
-                size={22}
-              />
-            </View>
-            <View className="mt-4 border-t border-slate-200 pt-3">
-              <WorkRow
-                label={messages.assignment}
-                value={assignmentLabel(snapshot, questMessages)}
-              />
-              <WorkRow
-                label={messages.nextAction}
-                value={nextActionLabel(
-                  snapshot.nextAction,
-                  messages,
-                  questMessages
-                )}
-              />
-              <WorkRow
-                label={messages.dueAt}
-                value={countdown}
-                detail={
-                  snapshot.dueAt
-                    ? formatDateTime(snapshot.dueAt, locale)
-                    : undefined
-                }
-              />
-            </View>
-          </StateCard>
-
-          {stale ? (
-            <View className="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2">
-              <Text className="text-sm text-amber-900">{messages.stale}</Text>
-              {errorText ? (
-                <Text className="mt-1 text-xs text-amber-800">{errorText}</Text>
-              ) : null}
-            </View>
-          ) : null}
-
-          {snapshot.state === "QUEST_ASSIGNED" ? (
-            <View className="mt-3 flex-row items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 px-3 py-3">
-              <ShieldCheck color={colors.primary} size={20} />
-              <View className="flex-1">
-                <Text className="font-semibold text-blue-950">
-                  {messages.waitingForStart}
-                </Text>
-                <Text className="mt-1 text-sm leading-5 text-blue-900">
-                  {messages.startsAutomatically}
-                </Text>
-              </View>
-            </View>
-          ) : null}
-
-          {isTerminal ? (
-            <View className="mt-3 rounded-xl border border-slate-200 bg-slate-100 px-3 py-3">
-              <Text className="text-sm leading-5 text-slate-700">
-                {messages.archiveDescription}
-              </Text>
-              {snapshot.state === "QUEST_FAILED" && resolvedQuestId ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={messages.fileDispute}
-                  className="mt-3 flex-row items-center justify-center gap-2 rounded-xl bg-amber-600 px-3 py-2.5"
-                  onPress={() => {
-                    router.push(`../quest/${resolvedQuestId}/dispute`);
-                  }}
-                >
-                  <AlertTriangle color="white" size={16} />
-                  <Text className="text-center text-sm font-semibold text-white">
-                    {messages.fileDispute}
-                  </Text>
-                </Pressable>
-              ) : null}
-            </View>
-          ) : null}
-
-          <View className="mt-5">
-            <Text className="mb-3 text-lg font-bold text-slate-950">
-              {messages.conditions}
-            </Text>
-            <StateCard>
-              {conditions.length ? (
-                conditions.map((condition) => (
-                  <View
-                    key={`${condition.position}-${condition.text}`}
-                    className="mb-3 flex-row items-start gap-2 last:mb-0"
-                  >
-                    <CheckCircle2 color={colors.primary} size={18} />
-                    <Text className="flex-1 text-sm leading-5 text-slate-700">
-                      {condition.text}
-                    </Text>
-                  </View>
-                ))
-              ) : (
-                <Text className="text-sm text-slate-500">
-                  {messages.actionUnavailable}
-                </Text>
-              )}
-            </StateCard>
-          </View>
-
-          {snapshot.editRequest?.status === "EDIT_REQUEST_PENDING" ? (
-            <StateCard tone="warning">
-              <Text className="text-lg font-bold text-slate-950">
-                {messages.editTitle}
-              </Text>
-              <Text className="mt-1 text-sm leading-5 text-slate-700">
-                {messages.editDescription}
-              </Text>
-              <View className="mt-3 rounded-xl bg-white px-3 py-3">
-                {snapshot.editRequest.proposedCondition.items.map((item) => (
-                  <Text
-                    key={`${item.position}-${item.text}`}
-                    className="mb-1 text-sm text-slate-700"
-                  >
-                    • {item.text}
-                  </Text>
-                ))}
-              </View>
-              {snapshot.capabilities.canRespondToEdit ? (
-                <View className="mt-3 flex-row gap-2">
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={messages.acceptEdit}
-                    disabled={editSending}
-                    className="flex-1 rounded-xl bg-slate-950 px-3 py-3 disabled:opacity-50"
-                    onPress={() => void respondToEdit("EDIT_RESPONSE_ACCEPTED")}
-                  >
-                    <Text className="text-center text-sm font-semibold text-white">
-                      {messages.acceptEdit}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={messages.declineEdit}
-                    disabled={editSending}
-                    className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-3 disabled:opacity-50"
-                    onPress={() => void respondToEdit("EDIT_RESPONSE_DECLINED")}
-                  >
-                    <Text className="text-center text-sm font-semibold text-slate-900">
-                      {messages.declineEdit}
-                    </Text>
-                  </Pressable>
-                </View>
-              ) : (
-                <Text className="mt-3 text-sm text-slate-500">
-                  {messages.actionUnavailable}
-                </Text>
-              )}
-            </StateCard>
-          ) : null}
-          {editFeedback ? (
-            <Text className="mt-2 text-sm text-emerald-700">
-              {editFeedback}
-            </Text>
-          ) : null}
-
-          {snapshot.capabilities.canSubmitProof ? (
-            <View className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
-              <View className="flex-row items-center gap-2">
-                <CheckCircle2 color={colors.primaryDeep} size={20} />
-                <Text className="font-bold text-slate-950">
-                  {messages.proofCta}
-                </Text>
-              </View>
-              <Text className="mt-2 text-sm leading-5 text-slate-600">
-                {messages.proofPlaceholder}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={messages.proofCta}
-                className="mt-3 rounded-xl bg-slate-950 px-3 py-3"
-                onPress={openProof}
-              >
-                <Text className="text-center text-sm font-semibold text-white">
-                  {messages.proofCta}
-                </Text>
-              </Pressable>
-            </View>
-          ) : null}
-
-          {snapshot.capabilities.canConfirmCompletion ? (
-            <View className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
-              <View className="flex-row items-center gap-2">
-                <CheckCircle2 color={colors.primaryDeep} size={20} />
-                <Text className="font-bold text-slate-950">
-                  {messages.confirmationCta}
-                </Text>
-              </View>
-              <Text className="mt-2 text-sm leading-5 text-slate-600">
-                {messages.confirmationPlaceholder}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={messages.confirmationCta}
-                disabled={confirmationSending}
-                className="mt-3 rounded-xl bg-slate-950 px-3 py-3 disabled:opacity-50"
-                onPress={() => void confirmCompletion()}
-              >
-                {confirmationSending ? (
-                  <ActivityIndicator color="white" />
-                ) : (
-                  <Text className="text-center text-sm font-semibold text-white">
-                    {messages.confirmationCta}
-                  </Text>
-                )}
-              </Pressable>
-            </View>
-          ) : null}
-
-          <View className="mt-5">
-            {canOpenChat ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={messages.workChat}
-                className="flex-row items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3"
-                onPress={() => {
-                  if (!conversationId || !resolvedQuestId || !resolvedViewerId)
-                    return;
-                  router.push({
-                    pathname: "/chat/[id]",
-                    params: getChatRouteParams({
-                      conversationId,
-                      questId: resolvedQuestId,
-                      viewerId: resolvedViewerId,
-                    }),
-                  });
-                }}
-              >
-                <MessageCircle color="white" size={18} />
-                <Text className="font-semibold text-white">
-                  {messages.workChat}
-                </Text>
-              </Pressable>
-            ) : (
-              <Text className="text-center text-sm text-slate-500">
-                {messages.noChat}
-              </Text>
+          <QuestWorkStatusCard
+            snapshot={snapshot}
+            status={status}
+            assignment={assignmentLabel(snapshot, questMessages)}
+            nextAction={nextActionLabel(
+              snapshot.nextAction,
+              messages,
+              questMessages
             )}
-          </View>
+            countdown={countdown}
+            dueAtDetail={
+              snapshot.dueAt
+                ? formatDateTime(snapshot.dueAt, locale)
+                : undefined
+            }
+            isTerminal={isTerminal}
+            messages={messages}
+          />
+
+          <QuestWorkActionsCard
+            snapshot={snapshot}
+            messages={messages}
+            stale={stale}
+            errorText={errorText}
+            conditions={conditions}
+            editSending={editSending}
+            editFeedback={editFeedback}
+            confirmationSending={confirmationSending}
+            isTerminal={isTerminal}
+            canOpenChat={canOpenChat}
+            onRespondToEdit={respondToEdit}
+            onOpenProof={openProof}
+            onConfirmCompletion={confirmCompletion}
+            onFileDispute={resolvedQuestId ? openDispute : undefined}
+            onOpenChat={openChat}
+          />
         </View>
       </ScrollView>
     </ScreenLayout>

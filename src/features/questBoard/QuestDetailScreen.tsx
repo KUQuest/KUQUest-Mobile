@@ -1,65 +1,38 @@
 import React, { useEffect, useState } from "react";
-import { cn } from "@/tw/cn";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { AccessibilityInfo, Alert, BackHandler } from "react-native";
+import { Pressable, Text, View } from "@/tw";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BriefcaseBusiness,
-  CalendarDays,
   Check,
   CircleAlert,
-  CircleUserRound,
-  ClipboardCheck,
-  Clock3,
-  ImageOff,
   LogOut,
-  MapPin,
   MessageCircle,
   Pencil,
   Plus,
-  UsersRound,
-  X,
-  type LucideIcon,
 } from "lucide-react-native";
-import {
-  AccessibilityInfo,
-  Alert,
-  BackHandler,
-  Modal,
-  RefreshControl,
-} from "react-native";
-import { Image, Pressable, ScrollView, Text, View } from "@/tw";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { cn } from "@/tw/cn";
 import { ApiError } from "@/api/ApiClient";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import type { UploadAsset } from "@/api/fileUpload";
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
+import { TopBar } from "@/components/ui/TopBar";
 import { useCalmRefresh } from "@/hooks/useCalmRefresh";
+import { useLocale } from "@/locales/LocaleProvider";
+import { groupQuestMessages } from "@/locales/groupQuestMessages";
+import { questBoardMessages } from "@/locales/questBoardMessages";
+import { colors } from "@/theme/colors";
+import { getActionBarPaddingBottom } from "@/theme/layout";
+import styles from "./questDetailStyles";
 import { authService } from "../auth/AuthService";
 import {
   canonicalToQuestBoardQuest,
   liveQuestService,
   publicDetailToQuestBoardQuest,
-  type LiveQuestNextAction,
   type LiveQuestSnapshot,
 } from "./liveQuestService";
 import type { QuestFixtureError } from "./questFixtureAdapter";
-import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { TopBar } from "@/components/ui/TopBar";
-import {
-  LoadingSkeleton,
-  SkeletonBlock,
-} from "@/components/ui/LoadingSkeleton";
-import { useLocale } from "@/locales/LocaleProvider";
-import {
-  groupQuestMessages,
-  type GroupQuestMessages,
-} from "@/locales/groupQuestMessages";
-import {
-  questBoardMessages,
-  type QuestBoardMessages,
-} from "@/locales/questBoardMessages";
-import { colors } from "@/theme/colors";
-import { getActionBarPaddingBottom } from "@/theme/layout";
-import { spacing } from "@/theme/spacing";
-import styles from "./questDetailStyles";
 import {
   getQuestDetailFixture,
   parseBoardPreviewState,
@@ -74,7 +47,6 @@ import {
   type QuestDetailMode,
   type QuestJoinStatus,
 } from "./questRoute";
-import { formatSatang } from "@/domain/satang";
 import {
   MAX_QUEST_IMAGES,
   QuestCandidateMode,
@@ -86,6 +58,8 @@ import {
   type QuestBoardQuest,
   type QuestDetailState,
 } from "./types";
+import type { PartialGroupStartVoter } from "./components/PartialGroupStartConsentSheet";
+import type { TeamDirectoryMember } from "./components/TeamAssembleSheet";
 import { getChatRouteParams } from "@/features/chat/chatData";
 import {
   getQuestRewardSatang,
@@ -93,13 +67,12 @@ import {
   questWorkflow,
   type QuestViewerApplicationStatus,
 } from "./questWorkflow";
+import { QuestDetailBody } from "./components/QuestDetailBody";
 import {
-  CandidateReviewSheet,
-  PartialGroupStartConsentSheet,
-  TeamAssembleSheet,
-  type PartialGroupStartVoter,
-  type TeamDirectoryMember,
-} from "./components";
+  NotFoundState,
+  QuestDetailSkeleton,
+} from "./components/QuestDetailStateViews";
+import { QuestDetailSheets } from "./components/QuestDetailSheets";
 
 export interface QuestDetailScreenProps {
   previewState?: BoardPreviewState;
@@ -125,49 +98,6 @@ function announce(message: string): void {
   AccessibilityInfo.announceForAccessibility(message);
 }
 
-function formatDeadline(value: string, locale: "en" | "th"): string {
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(`${value}T12:00:00`));
-}
-
-function locationLabel(
-  quest: QuestBoardQuest,
-  messages: QuestBoardMessages
-): string {
-  return quest.locationMode === "online" ? messages.online : messages.onCampus;
-}
-
-function proofLabel(
-  quest: QuestBoardQuest,
-  messages: QuestBoardMessages
-): string {
-  if (quest.proofRequired === "required") return messages.required;
-  if (quest.proofRequired === "optional") return messages.optional;
-  return messages.notNeeded;
-}
-
-function proofDescription(
-  quest: QuestBoardQuest,
-  messages: QuestBoardMessages
-): string {
-  if (quest.proofRequired === "required")
-    return messages.proofRequiredDescription;
-  if (quest.proofRequired === "optional")
-    return messages.proofOptionalDescription;
-  return messages.proofNotNeededDescription;
-}
-
-function candidateDescription(
-  quest: QuestBoardQuest,
-  messages: QuestBoardMessages
-): string {
-  return quest.candidateMode === "NO_CANDIDATE"
-    ? messages.firstComeDescription
-    : messages.reviewCandidatesDescription;
-}
 function toQuestBoardQuest(snapshot: LiveQuestSnapshot): QuestBoardQuest {
   return "questFundingTotal" in snapshot.quest
     ? canonicalToQuestBoardQuest(snapshot.quest)
@@ -195,773 +125,6 @@ function getLiveJoinStatus(
   if (snapshot.assignment?.state === "ASSIGNMENT_ACTIVE") return "accepted";
   if (snapshot.application?.state === "APPLICATION_APPLIED") return "pending";
   return undefined;
-}
-
-function getNextActionLabel(
-  action: LiveQuestNextAction,
-  messages: QuestBoardMessages
-): string {
-  switch (action) {
-    case "JOIN":
-      return messages.joinNow;
-    case "APPLY":
-      return messages.applyNow;
-    case "WITHDRAW_APPLICATION":
-      return messages.withdrawApplication;
-    case "CREATE_TEAM":
-    case "JOIN_TEAM":
-    case "SUBMIT_TEAM":
-      return messages.viewMyQuests;
-    case "SELECT_CANDIDATE":
-    case "SELECT_TEAM":
-      return messages.viewMyQuests;
-    default:
-      return messages.viewMyQuests;
-  }
-}
-
-function LiveEntrySurface({
-  snapshot,
-  messages,
-  groupMessages,
-  busy = false,
-  onOpenTeam,
-  onOpenCandidateReview,
-  onOpenPartialConsent,
-}: {
-  snapshot: LiveQuestSnapshot;
-  messages: QuestBoardMessages;
-  groupMessages: GroupQuestMessages;
-  busy?: boolean;
-  onOpenTeam: () => void;
-  onOpenCandidateReview: () => void;
-  onOpenPartialConsent: () => void;
-}) {
-  const isGroupCandidate =
-    snapshot.participation === "GROUP" && snapshot.mode === "CANDIDATE";
-  const isHirer = snapshot.actor === "HIRER";
-  const isUnderfilled =
-    snapshot.nextAction === "DECIDE_UNDERFILLED" ||
-    snapshot.nextAction === "CONSENT_UNDERFILLED";
-  const shouldRender =
-    isUnderfilled ||
-    (isGroupCandidate &&
-      !isHirer &&
-      (snapshot.team !== null ||
-        snapshot.capabilities.canCreateTeam ||
-        snapshot.capabilities.canJoinTeam ||
-        snapshot.capabilities.canUpdateTeam ||
-        snapshot.capabilities.canSubmitTeam ||
-        snapshot.capabilities.canSelectTeam)) ||
-    (isHirer &&
-      (snapshot.capabilities.canSelectCandidate ||
-        snapshot.capabilities.canSelectTeam ||
-        snapshot.capabilities.canRejectCandidate ||
-        snapshot.capabilities.canRejectTeam));
-  if (!shouldRender) return null;
-
-  const title = isUnderfilled
-    ? groupMessages.partialConsentTitle
-    : isHirer
-      ? groupMessages.candidateReviewTitle
-      : groupMessages.noTeamTitle;
-  const description = isUnderfilled
-    ? groupMessages.partialConsentSubtitle
-    : isHirer
-      ? groupMessages.candidateReviewSubtitle
-      : groupMessages.noTeamDescription;
-  const testID = isUnderfilled
-    ? "quest-live-underfilled-entry"
-    : isHirer
-      ? "quest-candidate-review-entry"
-      : "quest-team-entry-surface";
-  const onOpen = isUnderfilled
-    ? onOpenPartialConsent
-    : isHirer
-      ? onOpenCandidateReview
-      : onOpenTeam;
-  const actionLabel = isUnderfilled
-    ? getNextActionLabel(snapshot.nextAction, messages)
-    : isHirer
-      ? groupMessages.selectProposal
-      : snapshot.team
-        ? groupMessages.reviewRoster
-        : groupMessages.createTeam;
-
-  return (
-    <View
-      accessibilityRole="alert"
-      className={cn(styles.statusCard, isHirer && styles.statusCardOwner)}
-      testID={testID}
-    >
-      {isUnderfilled ? (
-        <Clock3 color={colors.primary} size={25} strokeWidth={2.2} />
-      ) : isHirer ? (
-        <CircleUserRound color={colors.primary} size={25} strokeWidth={2.2} />
-      ) : (
-        <UsersRound color={colors.primary} size={25} strokeWidth={2.2} />
-      )}
-      <Text className={styles.statusTitle}>{title}</Text>
-      <Text className={styles.statusDescription}>{description}</Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ disabled: busy }}
-        className={cn(styles.statusAction, busy && styles.statusActionDisabled)}
-        disabled={busy}
-        onPress={onOpen}
-        testID={`${testID}-action`}
-      >
-        <Text className={styles.statusActionText}>{actionLabel}</Text>
-      </Pressable>
-    </View>
-  );
-}
-
-function NotFoundState({
-  title,
-  description,
-  actionLabel,
-  onAction,
-  error = false,
-}: {
-  title: string;
-  description: string;
-  actionLabel: string;
-  onAction: () => void;
-  error?: boolean;
-}) {
-  return (
-    <View
-      accessibilityRole="alert"
-      className={error ? styles.errorState : styles.section}
-      testID={error ? "quest-detail-error-state" : "quest-detail-not-found"}
-    >
-      <Text className={error ? styles.errorTitle : styles.sectionTitle}>
-        {title}
-      </Text>
-      <Text className={error ? styles.errorDescription : styles.body}>
-        {description}
-      </Text>
-      <Pressable
-        accessibilityRole="button"
-        onPress={onAction}
-        className={error ? styles.errorAction : styles.primaryAction}
-      >
-        <Text
-          className={error ? styles.errorActionText : styles.primaryActionText}
-        >
-          {actionLabel}
-        </Text>
-      </Pressable>
-    </View>
-  );
-}
-
-function QuestDetailSkeleton({ loadingLabel }: { loadingLabel: string }) {
-  const insets = useSafeAreaInsets();
-  return (
-    <LoadingSkeleton
-      loadingLabel={loadingLabel}
-      style={{ flex: 1 }}
-      contentStyle={{ flex: 1 }}
-      testID="quest-detail-loading-skeleton"
-    >
-      <View style={{ flex: 1 }}>
-        <ScrollView
-          contentContainerClassName={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View className={styles.header} style={{ gap: spacing.xs }}>
-            <SkeletonBlock height={34} width="86%" borderRadius={6} />
-            <View
-              style={{
-                flexDirection: "row",
-                gap: spacing.xs,
-                marginTop: spacing.xs,
-              }}
-            >
-              <SkeletonBlock height={24} width={64} borderRadius={12} />
-              <SkeletonBlock height={24} width={82} borderRadius={12} />
-            </View>
-            <View
-              style={{
-                alignItems: "center",
-                flexDirection: "row",
-                gap: spacing.sm,
-                marginTop: spacing.sm,
-              }}
-            >
-              <SkeletonBlock
-                variant="image"
-                height={32}
-                width={32}
-                borderRadius={16}
-              />
-              <View style={{ flex: 1, gap: spacing.xs }}>
-                <SkeletonBlock height={14} width="24%" borderRadius={4} />
-                <SkeletonBlock height={17} width="58%" borderRadius={4} />
-              </View>
-            </View>
-          </View>
-          <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
-            <SkeletonBlock
-              variant="image"
-              height={196}
-              borderRadius={16}
-              testID="quest-detail-skeleton-featured-image"
-            />
-            <View style={{ flexDirection: "row", gap: spacing.sm }}>
-              <SkeletonBlock
-                variant="image"
-                height={76}
-                borderRadius={16}
-                style={{ flex: 1 }}
-              />
-              <SkeletonBlock
-                variant="image"
-                height={76}
-                borderRadius={16}
-                style={{ flex: 1 }}
-              />
-            </View>
-          </View>
-          <View className={styles.heroCard} style={{ gap: spacing.md }}>
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
-              <View style={{ gap: spacing.xs }}>
-                <SkeletonBlock height={14} width={54} borderRadius={4} />
-                <SkeletonBlock height={28} width={126} borderRadius={5} />
-              </View>
-              <SkeletonBlock height={52} width={78} borderRadius={12} />
-            </View>
-            <View style={{ flexDirection: "row", gap: spacing.sm }}>
-              <SkeletonBlock height={58} borderRadius={8} style={{ flex: 1 }} />
-              <SkeletonBlock height={58} borderRadius={8} style={{ flex: 1 }} />
-            </View>
-            <View style={{ flexDirection: "row", gap: spacing.sm }}>
-              <SkeletonBlock height={20} width={20} borderRadius={10} />
-              <View style={{ flex: 1, gap: spacing.xs }}>
-                <SkeletonBlock height={14} width="24%" borderRadius={4} />
-                <SkeletonBlock height={18} width="74%" borderRadius={4} />
-                <SkeletonBlock height={14} width="38%" borderRadius={4} />
-              </View>
-            </View>
-          </View>
-          <View className={styles.scheduleCard} style={{ gap: spacing.md }}>
-            <View
-              style={{
-                alignItems: "center",
-                flexDirection: "row",
-                gap: spacing.sm,
-              }}
-            >
-              <SkeletonBlock height={36} width={36} borderRadius={18} />
-              <View style={{ flex: 1, gap: spacing.xs }}>
-                <SkeletonBlock height={20} width="34%" borderRadius={5} />
-                <SkeletonBlock height={14} width="58%" borderRadius={4} />
-              </View>
-            </View>
-            <View style={{ flexDirection: "row", gap: spacing.md }}>
-              <SkeletonBlock height={132} width={12} borderRadius={6} />
-              <View style={{ flex: 1, gap: spacing.sm }}>
-                <SkeletonBlock height={18} width="46%" borderRadius={4} />
-                <SkeletonBlock height={22} width="64%" borderRadius={5} />
-                <SkeletonBlock height={15} width="54%" borderRadius={4} />
-                <SkeletonBlock height={18} width="42%" borderRadius={4} />
-                <SkeletonBlock height={22} width="58%" borderRadius={5} />
-              </View>
-            </View>
-          </View>
-          {[1, 2].map((section) => (
-            <View
-              key={section}
-              style={{ gap: spacing.sm, marginTop: spacing.lg }}
-            >
-              <SkeletonBlock
-                height={22}
-                width={section === 1 ? 126 : 112}
-                borderRadius={5}
-              />
-              <View
-                className={styles.descriptionCard}
-                style={{ gap: spacing.sm }}
-              >
-                <SkeletonBlock height={16} width="94%" borderRadius={4} />
-                <SkeletonBlock height={16} width="78%" borderRadius={4} />
-                <SkeletonBlock height={16} width="58%" borderRadius={4} />
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-        <View
-          className={styles.actionBar}
-          style={{ paddingBottom: getActionBarPaddingBottom(insets.bottom) }}
-          testID="quest-detail-loading-action-bar"
-        >
-          <SkeletonBlock height={52} borderRadius={26} />
-        </View>
-      </View>
-    </LoadingSkeleton>
-  );
-}
-
-function DetailRow({
-  icon: Icon,
-  label,
-  value,
-  description,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  description?: string;
-}) {
-  return (
-    <View className={styles.requirementRow}>
-      <View className={styles.requirementIcon}>
-        <Icon color={colors.primary} size={20} strokeWidth={2} />
-      </View>
-      <View className={styles.requirementCopy}>
-        <Text className={styles.requirementLabel}>{label}</Text>
-        <Text className={styles.requirementValue}>{value}</Text>
-        {description ? (
-          <Text className={styles.requirementDescription}>{description}</Text>
-        ) : null}
-      </View>
-    </View>
-  );
-}
-
-function QuestImage({
-  uri,
-  index,
-  messages,
-  featured = false,
-}: {
-  uri: string;
-  index: number;
-  messages: QuestBoardMessages;
-  featured?: boolean;
-}) {
-  const [failed, setFailed] = useState(false);
-  const label = messages.questImageLabel(index);
-  const imageClassName = cn(
-    styles.questImage,
-    featured ? styles.questImageFeatured : styles.questImageThumbnail
-  );
-
-  if (failed) {
-    return (
-      <View
-        accessibilityLabel={`${label}. ${messages.imageUnavailable}`}
-        className={cn(
-          styles.questImageFallback,
-          featured
-            ? styles.questImageFallbackFeatured
-            : styles.questImageFallbackThumbnail
-        )}
-      >
-        <ImageOff color={colors.textMuted} size={24} strokeWidth={1.8} />
-        <Text className={styles.questImageFallbackText}>
-          {messages.imageUnavailable}
-        </Text>
-      </View>
-    );
-  }
-
-  return (
-    <Image
-      accessibilityLabel={label}
-      cachePolicy="memory-disk"
-      contentFit="cover"
-      onError={() => setFailed(true)}
-      source={{ uri }}
-      className={imageClassName}
-    />
-  );
-}
-
-function ScheduleTimeline({
-  locale,
-  messages,
-  quest,
-}: {
-  locale: "en" | "th";
-  messages: QuestBoardMessages;
-  quest: QuestBoardQuest;
-}) {
-  return (
-    <View
-      accessibilityLabel={messages.schedule}
-      className={styles.scheduleCard}
-      testID="quest-schedule-timeline"
-    >
-      <View className={styles.scheduleHeader}>
-        <View className={styles.scheduleHeaderIcon}>
-          <CalendarDays color={colors.primary} size={19} strokeWidth={2} />
-        </View>
-        <View className={styles.scheduleHeaderCopy}>
-          <Text className={styles.scheduleTitle}>{messages.schedule}</Text>
-          <Text className={styles.scheduleDescription}>
-            {messages.scheduleDescription}
-          </Text>
-        </View>
-      </View>
-      <View className={styles.scheduleTimeline}>
-        <View className={styles.timelineRail}>
-          <View className={styles.timelineDotActive} />
-          <View className={styles.timelineLine} />
-          <View className={styles.timelineDot} />
-        </View>
-        <View className={styles.timelineEvents}>
-          <View className={styles.timelineEvent}>
-            <Text className={styles.timelineLabel}>{messages.startWork}</Text>
-            <Text className={styles.timelineDate}>
-              {formatDeadline(quest.startDate, locale)}
-            </Text>
-            <View className={styles.timelineTimeRow}>
-              <Clock3 color={colors.primary} size={15} strokeWidth={2} />
-              <Text className={styles.timelineTimeLabel}>
-                {messages.workWindow}
-              </Text>
-              <Text className={styles.timelineTime}>
-                {quest.timeRange ?? messages.timeNotSpecified}
-              </Text>
-            </View>
-          </View>
-          <View className={styles.timelineEvent}>
-            <Text className={styles.timelineLabel}>{messages.finishBy}</Text>
-            <Text className={styles.timelineDate}>
-              {formatDeadline(quest.deadline, locale)}
-            </Text>
-            <Text className={styles.timelineDescription}>
-              {messages.finishByDescription}
-            </Text>
-          </View>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function GroupQuestEntrySurfaces({
-  state,
-  viewerId,
-  isHirer,
-  messages,
-  onOpenTeam,
-  onOpenCandidateReview,
-  onOpenPartialConsent,
-}: {
-  state: QuestDetailState;
-  viewerId: string;
-  isHirer: boolean;
-  messages: GroupQuestMessages;
-  onOpenTeam: () => void;
-  onOpenCandidateReview: () => void;
-  onOpenPartialConsent: () => void;
-}) {
-  const {
-    quest,
-    teams,
-    invitations,
-    applications,
-    partialStartConsent,
-    capabilities,
-  } = state;
-  const isCandidateGroup =
-    quest.participation === QuestParticipation.GROUP &&
-    quest.candidateMode === QuestCandidateMode.CANDIDATE;
-  const isCandidateQuest = quest.candidateMode === QuestCandidateMode.CANDIDATE;
-  const ownTeam = teams.find(
-    (team) =>
-      team.members.some((member) => member.workerId === viewerId) ||
-      team.leaderId === viewerId
-  );
-  const ownInvitation = invitations.find(
-    (invitation) =>
-      invitation.invitedWorkerId === viewerId &&
-      invitation.status === QuestInvitationStatus.INVITATION_PENDING
-  );
-  const invitationTeam = ownInvitation
-    ? teams.find((team) => team.id === ownInvitation.teamId)
-    : undefined;
-  const team = ownTeam ?? invitationTeam;
-  const canCreateTeam = capabilities.availableActions.includes("CREATE_TEAM");
-  const shouldShowTeamSurface =
-    isCandidateGroup && !isHirer && (Boolean(team) || canCreateTeam);
-  const teamStatus = team?.status;
-  const teamTitle = !team
-    ? messages.noTeamTitle
-    : teamStatus === QuestTeamStatus.TEAM_SELECTED
-      ? messages.teamSelected
-      : teamStatus === QuestTeamStatus.TEAM_REJECTED
-        ? messages.teamRejected
-        : teamStatus === QuestTeamStatus.TEAM_SUBMITTED
-          ? messages.submittedTitle
-          : messages.teamTitle;
-  const teamDescription = !team
-    ? messages.noTeamDescription
-    : teamStatus === QuestTeamStatus.TEAM_FORMING
-      ? messages.teamSubtitle
-      : messages.lockedDescription;
-  const teamActionLabel =
-    !team || teamStatus === QuestTeamStatus.TEAM_FORMING
-      ? messages.reviewRoster
-      : messages.submittedTitle;
-  const reviewableProposalCount =
-    quest.participation === QuestParticipation.GROUP
-      ? teams.filter(
-          (candidate) => candidate.status !== QuestTeamStatus.TEAM_FORMING
-        ).length
-      : applications.filter((application) => !application.teamId).length;
-  const partialPending =
-    partialStartConsent?.status ===
-    QuestPartialStartConsentStatus.PARTIAL_START_PENDING;
-  const partialApproved =
-    partialStartConsent?.status ===
-    QuestPartialStartConsentStatus.PARTIAL_START_APPROVED;
-  const partialDescription = partialPending
-    ? messages.partialConsentSubtitle
-    : partialApproved
-      ? messages.approvedDescription(
-          state.actualHeadcount ??
-            partialStartConsent?.frozenWorkerIds.length ??
-            0
-        )
-      : partialStartConsent?.status ===
-          QuestPartialStartConsentStatus.PARTIAL_START_TIMED_OUT
-        ? messages.timedOutDescription
-        : messages.cancelledDescription;
-
-  return (
-    <>
-      {shouldShowTeamSurface ? (
-        <View
-          accessibilityRole="alert"
-          className={cn(
-            styles.statusCard,
-            teamStatus === QuestTeamStatus.TEAM_REJECTED &&
-              styles.statusCardBlocked,
-            !team && styles.statusCardOwner
-          )}
-          testID="quest-team-entry-surface"
-        >
-          <UsersRound
-            color={
-              teamStatus === QuestTeamStatus.TEAM_REJECTED
-                ? colors.dangerDark
-                : colors.primary
-            }
-            size={25}
-            strokeWidth={2.2}
-          />
-          <Text className={styles.statusTitle}>{teamTitle}</Text>
-          <Text className={styles.statusDescription}>{teamDescription}</Text>
-          <Text className={styles.statusDescription}>
-            {messages.rosterCount(team?.members.length ?? 0, quest.headcount)}
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onOpenTeam}
-            className={styles.statusAction}
-            testID="quest-open-team-sheet"
-          >
-            <Text className={styles.statusActionText}>
-              {!team && canCreateTeam ? messages.createTeam : teamActionLabel}
-            </Text>
-          </Pressable>
-        </View>
-      ) : null}
-
-      {isCandidateQuest && isHirer ? (
-        <View
-          accessibilityRole="alert"
-          className={cn(styles.statusCard, styles.statusCardOwner)}
-          testID="quest-candidate-review-entry"
-        >
-          <CircleUserRound color={colors.primary} size={25} strokeWidth={2.2} />
-          <Text className={styles.statusTitle}>
-            {messages.candidateReviewTitle}
-          </Text>
-          <Text className={styles.statusDescription}>
-            {messages.candidateReviewSubtitle}
-          </Text>
-          <Text className={styles.statusDescription}>
-            {messages.proposalCount(reviewableProposalCount)}
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onOpenCandidateReview}
-            className={styles.statusAction}
-            testID="quest-open-candidate-review-sheet"
-          >
-            <Text className={styles.statusActionText}>
-              {messages.selectProposal}
-            </Text>
-          </Pressable>
-        </View>
-      ) : null}
-
-      {quest.participation === QuestParticipation.GROUP &&
-      quest.candidateMode === QuestCandidateMode.NO_CANDIDATE &&
-      partialStartConsent ? (
-        <View
-          accessibilityRole="alert"
-          className={cn(
-            styles.statusCard,
-            partialPending
-              ? styles.statusCardOwner
-              : partialApproved
-                ? styles.statusCard
-                : styles.statusCardBlocked
-          )}
-          testID="quest-partial-start-entry"
-        >
-          <Clock3
-            color={
-              partialApproved
-                ? colors.primary
-                : partialPending
-                  ? colors.primary
-                  : colors.dangerDark
-            }
-            size={25}
-            strokeWidth={2.2}
-          />
-          <Text className={styles.statusTitle}>
-            {partialPending
-              ? messages.partialConsentTitle
-              : partialApproved
-                ? messages.approvedTitle
-                : messages.cancelledTitle}
-          </Text>
-          <Text className={styles.statusDescription}>{partialDescription}</Text>
-          <Text className={styles.statusDescription}>
-            {messages.votesProgress(
-              partialStartConsent.approvedVoterCount,
-              partialStartConsent.requiredVoterCount ??
-                partialStartConsent.requiredVoterIds.length
-            )}
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onOpenPartialConsent}
-            className={styles.statusAction}
-            testID="quest-open-partial-start-sheet"
-          >
-            <Text className={styles.statusActionText}>
-              {messages.voteStatus}
-            </Text>
-          </Pressable>
-        </View>
-      ) : null}
-    </>
-  );
-}
-
-function ConfirmationSheet({
-  locale,
-  messages,
-  quest,
-  onCancel,
-  onConfirm,
-  busy = false,
-}: {
-  locale: "en" | "th";
-  messages: QuestBoardMessages;
-  quest: QuestBoardQuest;
-  onCancel: () => void;
-  onConfirm: () => void;
-  busy?: boolean;
-}) {
-  const insets = useSafeAreaInsets();
-  const firstCome = quest.candidateMode === "NO_CANDIDATE";
-  const title = firstCome
-    ? messages.confirmParticipationTitle
-    : messages.confirmApplicationTitle;
-  const description = firstCome
-    ? messages.confirmParticipationDescription
-    : messages.confirmApplicationDescription;
-  const confirmLabel = firstCome
-    ? messages.confirmParticipation
-    : messages.confirmApplication;
-
-  return (
-    <Modal
-      animationType="slide"
-      onDismiss={() => announce(messages.details)}
-      onRequestClose={onCancel}
-      onShow={() => announce(title)}
-      transparent
-      visible
-    >
-      <Pressable onPress={onCancel} className={styles.modalBackdrop}>
-        <Pressable
-          accessibilityViewIsModal
-          onPress={() => undefined}
-          className={styles.confirmSheet}
-          style={{
-            paddingBottom: getActionBarPaddingBottom(insets.bottom),
-          }}
-        >
-          <View className={styles.confirmHeader}>
-            <Text accessibilityRole="header" className={styles.confirmTitle}>
-              {title}
-            </Text>
-            <Pressable
-              accessibilityLabel={messages.notYet}
-              accessibilityRole="button"
-              onPress={onCancel}
-              className={styles.sheetCloseButton}
-            >
-              <X color={colors.textStrong} size={24} />
-            </Pressable>
-          </View>
-          <Text className={styles.confirmDescription}>{description}</Text>
-          <View className={styles.confirmSummary}>
-            <Text className={styles.confirmSummaryText}>{quest.title}</Text>
-            <Text
-              className={styles.confirmSummaryText}
-            >{`${formatSatang(getQuestRewardSatang(quest), locale)} ${messages.perPerson}`}</Text>
-            <Text
-              className={styles.confirmSummaryText}
-            >{`${messages.schedule}: ${formatDeadline(quest.startDate, locale)}${quest.timeRange ? ` · ${quest.timeRange}` : ""}`}</Text>
-            <Text
-              className={styles.confirmSummaryText}
-            >{`${messages.deadline}: ${formatDeadline(quest.deadline, locale)}`}</Text>
-            <Text
-              className={styles.confirmSummaryText}
-            >{`${messages.location}: ${quest.location}`}</Text>
-          </View>
-          <View className={styles.confirmActions}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={onCancel}
-              className={styles.cancelAction}
-            >
-              <Text className={styles.cancelActionText}>{messages.notYet}</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              disabled={busy}
-              onPress={onConfirm}
-              className={cn(
-                styles.confirmAction,
-                busy && styles.primaryActionDisabled
-              )}
-              testID="confirm-quest-application"
-            >
-              <Text className={styles.confirmActionText}>
-                {busy ? messages.loading : confirmLabel}
-              </Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
 }
 
 export default function QuestDetailScreen({
@@ -2043,509 +1206,322 @@ export default function QuestDetailScreen({
         title={messages.details}
         variant="detail"
       />
-      <ScrollView
-        contentContainerClassName={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              void refresh(true).catch(() => undefined);
-            }}
-          />
+      <QuestDetailBody
+        canReportQuest={canReportQuest}
+        canonicalStatus={canonicalStatus}
+        imageUris={imageUris}
+        liveEntry={
+          !explicitPreview && liveSnapshot
+            ? {
+                snapshot: liveSnapshot,
+                groupMessages,
+                busy: Boolean(liveAction),
+                onOpenTeam: () => setTeamSheetOpen(true),
+                onOpenCandidateReview: () => {
+                  setSelectedProposalId(null);
+                  setCandidateReviewSheetOpen(true);
+                },
+                onOpenPartialConsent: handleOpenLiveUnderfilled,
+              }
+            : undefined
         }
-      >
-        <View className={styles.header}>
-          <Text accessibilityRole="header" className={styles.title}>
-            {quest.title}
-          </Text>
-          {canonicalStatus ? (
-            <Text
-              accessibilityLabel={messages.statusLabel(canonicalStatus)}
-              className={styles.canonicalStatus}
-              testID="quest-canonical-status"
-            >
-              {messages.statusLabel(canonicalStatus)}
-            </Text>
-          ) : null}
-          <View className={styles.creatorRow}>
-            <View className={styles.creatorAvatar}>
-              <CircleUserRound
-                color={colors.primary}
-                size={17}
-                strokeWidth={2}
-              />
-            </View>
-            <View className={styles.creatorCopy}>
-              <Text className={styles.creatorLabel}>{messages.creator}</Text>
-              <Text
-                className={styles.creatorValue}
-                numberOfLines={1}
-              >{`${quest.creator.name}${quest.creator.faculty ? ` · ${quest.creator.faculty}` : ""}`}</Text>
-            </View>
-          </View>
-          <View accessibilityLabel={messages.tags} className={styles.tagRow}>
-            {quest.tags.map((tag) => (
-              <Text key={tag} className={styles.tag}>
-                {tag}
-              </Text>
-            ))}
-          </View>
-        </View>
-        {imageUris.length > 0 ? (
-          <View
-            accessibilityLabel={messages.imageCount(imageUris.length)}
-            className={styles.imageGallery}
-          >
-            <QuestImage
-              featured
-              index={1}
-              messages={messages}
-              uri={imageUris[0]}
-            />
-            {imageUris.length > 1 ? (
-              <View className={styles.imageThumbnailRow}>
-                {imageUris.slice(1).map((uri, index) => (
-                  <QuestImage
-                    key={`${uri}-${index + 1}`}
-                    index={index + 2}
-                    messages={messages}
-                    uri={uri}
-                  />
-                ))}
-              </View>
-            ) : null}
-          </View>
-        ) : null}
-        <View className={styles.heroCard}>
-          <View className={styles.heroPrimary}>
-            <View>
-              <Text className={styles.heroLabel}>{messages.reward}</Text>
-              <Text
-                className={styles.heroRewardValue}
-              >{`${formatSatang(getQuestRewardSatang(quest), locale)} ${messages.perPerson}`}</Text>
-            </View>
-            <View className={styles.heroSpots}>
-              <Text className={styles.heroSpotsLabel}>{messages.spots}</Text>
-              <Text
-                className={styles.heroSpotsValue}
-              >{`${quest.acceptedParticipants}/${quest.headcount}`}</Text>
-            </View>
-          </View>
-          <View className={styles.heroDetails}>
-            <View className={styles.heroItem}>
-              <View className={styles.heroItemIcon}>
-                <UsersRound color={colors.primary} size={17} strokeWidth={2} />
-              </View>
-              <View className={styles.heroItemCopy}>
-                <Text className={styles.heroLabel}>
-                  {messages.participation}
-                </Text>
-                <Text className={styles.heroValue}>
-                  {quest.participationMode === "team"
-                    ? messages.team
-                    : messages.singlePerson}
-                </Text>
-              </View>
-            </View>
-            <View className={cn(styles.heroItem, styles.heroItemDivider)}>
-              <View className={styles.heroItemIcon}>
-                <CircleUserRound
-                  color={colors.primary}
-                  size={17}
-                  strokeWidth={2}
-                />
-              </View>
-              <View className={styles.heroItemCopy}>
-                <Text className={styles.heroLabel}>
-                  {messages.candidateMode}
-                </Text>
-                <Text className={styles.heroValue}>
-                  {quest.candidateMode === "NO_CANDIDATE"
-                    ? messages.firstCome
-                    : messages.reviewCandidates}
-                </Text>
-              </View>
-            </View>
-          </View>
-          <View className={styles.heroLocation}>
-            <MapPin color={colors.primary} size={20} strokeWidth={2} />
-            <View className={styles.heroLocationCopy}>
-              <Text className={styles.heroLabel}>{messages.location}</Text>
-              <Text className={styles.heroLocationValue}>{quest.location}</Text>
-              <Text className={styles.heroDetail}>
-                {locationLabel(quest, messages)}
-              </Text>
-            </View>
-          </View>
-        </View>
-        <ScheduleTimeline locale={locale} messages={messages} quest={quest} />
-        <View className={styles.section}>
-          <Text className={styles.sectionTitle}>{messages.description}</Text>
-          <View className={styles.descriptionCard}>
-            <Text className={styles.body}>{quest.description}</Text>
-          </View>
-        </View>
-        <View className={styles.section}>
-          <Text className={styles.sectionTitle}>{messages.requirements}</Text>
-          <View className={styles.requirementCard}>
-            <DetailRow
-              icon={ClipboardCheck}
-              label={messages.completionCriteria}
-              value={quest.completionCriteria}
-            />
-            <DetailRow
-              icon={Check}
-              label={messages.proofRequired}
-              value={proofLabel(quest, messages)}
-              description={proofDescription(quest, messages)}
-            />
-            <DetailRow
-              icon={UsersRound}
-              label={messages.candidateMode}
-              value={
-                quest.candidateMode === "NO_CANDIDATE"
-                  ? messages.firstCome
-                  : messages.reviewCandidates
+        messages={messages}
+        locale={locale}
+        onOpenWorkHub={handleOpenWorkHub}
+        onRefresh={() => {
+          void refresh(true).catch(() => undefined);
+        }}
+        onReportQuest={handleReportQuest}
+        prototypeEntry={
+          activePrototypeState
+            ? {
+                state: activePrototypeState,
+                viewerId: prototypeViewerId,
+                isHirer: isHirerView,
+                messages: groupMessages,
+                onOpenTeam: () => setTeamSheetOpen(true),
+                onOpenCandidateReview: () => {
+                  setSelectedProposalId(null);
+                  setCandidateReviewSheetOpen(true);
+                },
+                onOpenPartialConsent: () =>
+                  setPartialStartSheetDismissed(false),
               }
-              description={candidateDescription(quest, messages)}
-            />
-            <DetailRow
-              icon={BriefcaseBusiness}
-              label={messages.participation}
-              value={
-                quest.participationMode === "team"
-                  ? messages.team
-                  : messages.singlePerson
+            : undefined
+        }
+        quest={quest}
+        refreshing={refreshing}
+        status={
+          statusTitle
+            ? {
+                title: statusTitle,
+                description: statusDescription,
+                unavailable: statusIsUnavailable,
+                postView: isPostView,
+                leftQuest,
+                history: joinedStatus === "history",
+                Icon: StatusIcon,
+                iconColor: statusIconColor,
               }
-            />
-          </View>
-        </View>
-        {statusTitle ? (
-          <View
-            accessibilityRole="alert"
-            className={cn(
-              styles.statusCard,
-              statusIsUnavailable && styles.statusCardBlocked,
-              isPostView && styles.statusCardOwner,
-              (leftQuest || joinedStatus === "history") &&
-                styles.statusCardMuted
-            )}
-          >
-            <StatusIcon color={statusIconColor} size={25} strokeWidth={2.2} />
-            <Text className={styles.statusTitle}>{statusTitle}</Text>
-            <Text className={styles.statusDescription}>
-              {statusDescription}
-            </Text>
-            {!statusIsUnavailable && !isPostView && !leftQuest ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={handleOpenWorkHub}
-                className={styles.statusAction}
-                testID="view-my-quests"
-              >
-                <Text className={styles.statusActionText}>
-                  {messages.viewMyQuests}
-                </Text>
-              </Pressable>
-            ) : null}
-          </View>
-        ) : null}
-        {activePrototypeState ? (
-          <GroupQuestEntrySurfaces
-            state={activePrototypeState}
-            viewerId={prototypeViewerId}
-            isHirer={isHirerView}
-            messages={groupMessages}
-            onOpenTeam={() => setTeamSheetOpen(true)}
-            onOpenCandidateReview={() => {
-              setSelectedProposalId(null);
-              setCandidateReviewSheetOpen(true);
-            }}
-            onOpenPartialConsent={() => setPartialStartSheetDismissed(false)}
-          />
-        ) : null}
-        {!explicitPreview && liveSnapshot ? (
-          <LiveEntrySurface
-            snapshot={liveSnapshot}
-            messages={messages}
-            groupMessages={groupMessages}
-            busy={Boolean(liveAction)}
-            onOpenTeam={() => setTeamSheetOpen(true)}
-            onOpenCandidateReview={() => {
-              setSelectedProposalId(null);
-              setCandidateReviewSheetOpen(true);
-            }}
-            onOpenPartialConsent={handleOpenLiveUnderfilled}
-          />
-        ) : null}
-        {canReportQuest ? (
-          <View className={styles.reportCard} testID="quest-report-card">
-            <View className={styles.reportHeader}>
-              <View className={styles.reportIcon}>
-                <CircleAlert
-                  color={colors.danger}
-                  size={21}
-                  strokeWidth={2.2}
-                />
-              </View>
-              <View className={styles.reportCopy}>
-                <Text className={styles.reportTitle}>
-                  {messages.reportQuest}
-                </Text>
-                <Text className={styles.reportDescription}>
-                  {messages.reportQuestDescription}
-                </Text>
-              </View>
-            </View>
-            <Pressable
-              accessibilityLabel={messages.reportQuest}
-              accessibilityRole="button"
-              className={styles.reportAction}
-              onPress={handleReportQuest}
-              style={{ backgroundColor: colors.danger }}
-              testID="quest-report-button"
-            >
-              <Text className={styles.reportActionText}>
-                {messages.reportQuest}
-              </Text>
-            </Pressable>
-          </View>
-        ) : null}
-      </ScrollView>
-      {activePrototypeState && candidateGroup && !isHirerView ? (
-        <TeamAssembleSheet
-          bottomInset={insets.bottom}
-          eligibleMembers={teamDirectory}
-          invitations={activePrototypeState.invitations}
-          locale={locale}
-          onClose={() => {
-            setTeamSheetOpen(false);
-            setTeamReviewing(false);
-            setTeamSelectedMemberIds([]);
-            setTeamSearchQuery("");
-          }}
-          onCreateTeam={
-            activePrototypeState.capabilities.availableActions.includes(
-              "CREATE_TEAM"
-            )
-              ? handleCreateTeam
-              : undefined
-          }
-          onInviteMembers={
-            activePrototypeState.capabilities.availableActions.includes(
-              "INVITE_WORKER"
-            )
-              ? handleInviteMembers
-              : undefined
-          }
-          onRespondInvitation={
-            activePrototypeState.capabilities.availableActions.includes(
-              "RESPOND_INVITATION"
-            )
-              ? handleInvitation
-              : undefined
-          }
-          onSearchQueryChange={setTeamSearchQuery}
-          onSelectedMemberIdsChange={setTeamSelectedMemberIds}
-          onReviewChange={setTeamReviewing}
-          onSubmit={
-            activePrototypeState.capabilities.availableActions.includes(
-              "SUBMIT_TEAM"
-            )
-              ? handleSubmitTeam
-              : undefined
-          }
-          requestedHeadcount={activePrototypeState.quest.headcount}
-          reviewing={teamReviewing}
-          searchQuery={teamSearchQuery}
-          selectedMemberIds={teamSelectedMemberIds}
-          team={teamSheetTeam}
-          viewerId={applicationStudentId}
-          visible={teamSheetOpen}
-        />
-      ) : null}
-      {liveTeamSurface ? (
-        <TeamAssembleSheet
-          bottomInset={insets.bottom}
-          canLeaveTeam={liveSnapshot?.capabilities.canLeaveTeam}
-          canRemoveMember={liveSnapshot?.capabilities.canRemoveTeamMember}
-          canRegenerateJoinCode={
-            liveSnapshot?.capabilities.canRegenerateTeamCode
-          }
-          canUpdateTeam={liveSnapshot?.capabilities.canUpdateTeam}
-          eligibleMembers={[]}
-          joinCode={liveTeamSheetTeam?.joinCode}
-          joinCodeExpiresAt={liveTeamSheetTeam?.joinCodeExpiresAt}
-          teamName={liveTeamSheetTeam?.name}
-          onClose={() => {
-            setTeamSheetOpen(false);
-            setTeamReviewing(false);
-            setTeamSelectedMemberIds([]);
-            setTeamSearchQuery("");
-          }}
-          onCreateTeam={
-            liveSnapshot?.capabilities.canCreateTeam
-              ? handleLiveCreateTeam
-              : undefined
-          }
-          onJoinTeam={
-            liveSnapshot?.capabilities.canJoinTeam
-              ? handleLiveJoinTeam
-              : undefined
-          }
-          onLeaveTeam={handleLiveLeaveTeam}
-          onRemoveMember={handleLiveRemoveTeamMember}
-          onRegenerateJoinCode={handleLiveRegenerateTeamCode}
-          onUpdateTeamName={handleLiveUpdateTeamName}
-          onReviewChange={setTeamReviewing}
-          onSubmitTeam={handleLiveSubmitTeam}
-          onUploadProposalFile={handleLiveUploadTeamFile}
-          requestedHeadcount={liveSnapshot?.quest.headcount}
-          reviewing={teamReviewing}
-          searchQuery={teamSearchQuery}
-          submitting={liveAction === "submit-team"}
-          team={liveTeamSheetTeam}
-          viewerId={applicationStudentId}
-          visible={teamSheetOpen}
-        />
-      ) : null}
-      {activePrototypeState &&
-      isHirerView &&
-      quest.candidateMode === QuestCandidateMode.CANDIDATE ? (
-        <CandidateReviewSheet
-          actualHeadcount={activePrototypeState.actualHeadcount}
-          applications={activePrototypeState.applications}
-          bottomInset={insets.bottom}
-          locale={locale}
-          mode={candidateGroup ? "team" : "individual"}
-          onAcceptProposal={
-            activePrototypeState.capabilities.availableActions.includes(
-              "SELECT_CANDIDATE"
-            )
-              ? handleSelectCandidate
-              : undefined
-          }
-          onClose={() => {
-            setCandidateReviewSheetOpen(false);
-            setSelectedProposalId(null);
-          }}
-          onRejectProposal={
-            activePrototypeState.capabilities.availableActions.includes(
-              candidateGroup ? "REJECT_TEAM" : "REJECT_CANDIDATE"
-            )
-              ? handleRejectCandidate
-              : undefined
-          }
-          onSelectProposal={setSelectedProposalId}
-          questTitle={quest.title}
-          requestedHeadcount={activePrototypeState.quest.headcount}
-          rewardSatangPerWorker={activePrototypeState.quest.reward.rewardSatang}
-          selectedProposalId={selectedProposalId}
-          settlement={detailProjection?.settlement ?? undefined}
-          teams={
-            candidateGroup
-              ? activePrototypeState.teams.filter(
-                  (team) => team.status !== QuestTeamStatus.TEAM_FORMING
-                )
-              : []
-          }
-          visible={candidateReviewSheetOpen}
-          fullScreen
-        />
-      ) : null}
-      {!explicitPreview &&
-      liveSnapshot &&
-      liveSnapshot.actor === "HIRER" &&
-      liveSnapshot.mode === "CANDIDATE" &&
-      (liveSnapshot.capabilities.canSelectCandidate ||
-        liveSnapshot.capabilities.canSelectTeam ||
-        liveSnapshot.capabilities.canRejectCandidate ||
-        liveSnapshot.capabilities.canRejectTeam) ? (
-        <CandidateReviewSheet
-          actualHeadcount={liveSnapshot.assignments.length}
-          applications={liveSnapshot.applications}
-          bottomInset={insets.bottom}
-          fullScreen
-          loading={
-            liveAction === "select-candidate" ||
-            liveAction === "reject-candidate"
-          }
-          locale={locale}
-          mode={liveSnapshot.participation === "GROUP" ? "team" : "individual"}
-          onAcceptProposal={liveAction ? undefined : handleSelectCandidate}
-          onRejectProposal={liveAction ? undefined : handleRejectCandidate}
-          onClose={() => {
-            setCandidateReviewSheetOpen(false);
-            setSelectedProposalId(null);
-          }}
-          onSelectProposal={setSelectedProposalId}
-          rewardSatangPerWorker={getQuestRewardSatang(quest)}
-          requestedHeadcount={liveSnapshot.quest.headcount}
-          selectedProposalId={selectedProposalId}
-          teams={
-            liveSnapshot.participation === "GROUP" ? liveSnapshot.teams : []
-          }
-          visible={candidateReviewSheetOpen}
-        />
-      ) : null}
-      {activePrototypeState &&
-      activePrototypeState.quest.participation === QuestParticipation.GROUP &&
-      activePrototypeState.quest.candidateMode ===
-        QuestCandidateMode.NO_CANDIDATE &&
-      activePrototypeState.partialStartConsent ? (
-        <PartialGroupStartConsentSheet
-          actualHeadcount={activePrototypeState.actualHeadcount}
-          bottomInset={insets.bottom}
-          canRespond={activePrototypeState.capabilities.availableActions.includes(
-            "VOTE_PARTIAL_GROUP_START_CONSENT"
-          )}
-          consent={activePrototypeState.partialStartConsent}
-          hirerId={activePrototypeState.quest.hirerId}
-          locale={locale}
-          onClose={() => setPartialStartSheetDismissed(true)}
-          onVote={handlePartialStartVote}
-          questTitle={quest.title}
-          requestedHeadcount={activePrototypeState.quest.headcount}
-          voters={partialVoters}
-          viewerId={prototypeViewerId}
-          visible={partialStartSheetOpen}
-        />
-      ) : null}
-      {!explicitPreview &&
-      liveSnapshot?.participation === "GROUP" &&
-      liveSnapshot.mode === "FIRST_COME_FIRST_SERVED" &&
-      liveSnapshot.underfilled ? (
-        <PartialGroupStartConsentSheet
-          actualHeadcount={liveSnapshot.underfilled.activeWorkerCount}
-          bottomInset={insets.bottom}
-          canConsent={liveSnapshot.capabilities.canConsentUnderfilled}
-          canDecide={liveSnapshot.capabilities.canDecideUnderfilled}
-          canRespond={
-            liveSnapshot.capabilities.canConsentUnderfilled ||
-            liveSnapshot.capabilities.canDecideUnderfilled
-          }
-          error={undefined}
-          loading={
-            liveAction === "underfilled-decision" ||
-            liveAction === "underfilled-consent"
-          }
-          locale={locale}
-          onClose={() => setPartialStartSheetDismissed(true)}
-          onHirerDecision={handleLiveUnderfilledDecision}
-          onWorkerConsent={handleLiveUnderfilledConsent}
-          questTitle={quest.title}
-          requestedHeadcount={liveSnapshot.underfilled.headcount}
-          underfilled={liveSnapshot.underfilled}
-          viewerId={applicationStudentId}
-          visible={
-            !partialStartSheetDismissed &&
-            (liveSnapshot.nextAction === "DECIDE_UNDERFILLED" ||
-              liveSnapshot.nextAction === "CONSENT_UNDERFILLED")
-          }
-          voters={livePartialVoters}
-        />
-      ) : null}
+            : undefined
+        }
+      />
+      <QuestDetailSheets
+        confirmationSheet={
+          confirmationOpen
+            ? {
+                locale,
+                messages,
+                onCancel: () => {
+                  setManualConfirmationOpen(false);
+                  setDismissedIntent(routeIntentKey);
+                },
+                onConfirm: confirmApplication,
+                busy: Boolean(liveAction),
+                quest,
+              }
+            : undefined
+        }
+        liveCandidateSheet={
+          !explicitPreview &&
+          liveSnapshot &&
+          liveSnapshot.actor === "HIRER" &&
+          liveSnapshot.mode === "CANDIDATE" &&
+          (liveSnapshot.capabilities.canSelectCandidate ||
+            liveSnapshot.capabilities.canSelectTeam ||
+            liveSnapshot.capabilities.canRejectCandidate ||
+            liveSnapshot.capabilities.canRejectTeam)
+            ? {
+                actualHeadcount: liveSnapshot.assignments.length,
+                applications: liveSnapshot.applications,
+                bottomInset: insets.bottom,
+                fullScreen: true,
+                loading:
+                  liveAction === "select-candidate" ||
+                  liveAction === "reject-candidate",
+                locale,
+                mode:
+                  liveSnapshot.participation === "GROUP"
+                    ? "team"
+                    : "individual",
+                onAcceptProposal: liveAction
+                  ? undefined
+                  : handleSelectCandidate,
+                onRejectProposal: liveAction
+                  ? undefined
+                  : handleRejectCandidate,
+                onClose: () => {
+                  setCandidateReviewSheetOpen(false);
+                  setSelectedProposalId(null);
+                },
+                onSelectProposal: setSelectedProposalId,
+                rewardSatangPerWorker: getQuestRewardSatang(quest),
+                requestedHeadcount: liveSnapshot.quest.headcount,
+                selectedProposalId,
+                teams:
+                  liveSnapshot.participation === "GROUP"
+                    ? liveSnapshot.teams
+                    : [],
+                visible: candidateReviewSheetOpen,
+              }
+            : undefined
+        }
+        liveConsentSheet={
+          !explicitPreview &&
+          liveSnapshot?.participation === "GROUP" &&
+          liveSnapshot.mode === "FIRST_COME_FIRST_SERVED" &&
+          liveSnapshot.underfilled
+            ? {
+                actualHeadcount: liveSnapshot.underfilled.activeWorkerCount,
+                bottomInset: insets.bottom,
+                canConsent: liveSnapshot.capabilities.canConsentUnderfilled,
+                canDecide: liveSnapshot.capabilities.canDecideUnderfilled,
+                canRespond:
+                  liveSnapshot.capabilities.canConsentUnderfilled ||
+                  liveSnapshot.capabilities.canDecideUnderfilled,
+                error: undefined,
+                loading:
+                  liveAction === "underfilled-decision" ||
+                  liveAction === "underfilled-consent",
+                locale,
+                onClose: () => setPartialStartSheetDismissed(true),
+                onHirerDecision: handleLiveUnderfilledDecision,
+                onWorkerConsent: handleLiveUnderfilledConsent,
+                questTitle: quest.title,
+                requestedHeadcount: liveSnapshot.underfilled.headcount,
+                underfilled: liveSnapshot.underfilled,
+                viewerId: applicationStudentId,
+                visible:
+                  !partialStartSheetDismissed &&
+                  (liveSnapshot.nextAction === "DECIDE_UNDERFILLED" ||
+                    liveSnapshot.nextAction === "CONSENT_UNDERFILLED"),
+                voters: livePartialVoters,
+              }
+            : undefined
+        }
+        liveTeamSheet={
+          liveTeamSurface && liveSnapshot
+            ? {
+                bottomInset: insets.bottom,
+                canLeaveTeam: liveSnapshot.capabilities.canLeaveTeam,
+                canRemoveMember: liveSnapshot.capabilities.canRemoveTeamMember,
+                canRegenerateJoinCode:
+                  liveSnapshot.capabilities.canRegenerateTeamCode,
+                canUpdateTeam: liveSnapshot.capabilities.canUpdateTeam,
+                eligibleMembers: [],
+                joinCode: liveTeamSheetTeam?.joinCode,
+                joinCodeExpiresAt: liveTeamSheetTeam?.joinCodeExpiresAt,
+                teamName: liveTeamSheetTeam?.name,
+                onClose: () => {
+                  setTeamSheetOpen(false);
+                  setTeamReviewing(false);
+                  setTeamSelectedMemberIds([]);
+                  setTeamSearchQuery("");
+                },
+                onCreateTeam: liveSnapshot.capabilities.canCreateTeam
+                  ? handleLiveCreateTeam
+                  : undefined,
+                onJoinTeam: liveSnapshot.capabilities.canJoinTeam
+                  ? handleLiveJoinTeam
+                  : undefined,
+                onLeaveTeam: handleLiveLeaveTeam,
+                onRemoveMember: handleLiveRemoveTeamMember,
+                onRegenerateJoinCode: handleLiveRegenerateTeamCode,
+                onUpdateTeamName: handleLiveUpdateTeamName,
+                onReviewChange: setTeamReviewing,
+                onSubmitTeam: handleLiveSubmitTeam,
+                onUploadProposalFile: handleLiveUploadTeamFile,
+                requestedHeadcount: liveSnapshot.quest.headcount,
+                reviewing: teamReviewing,
+                searchQuery: teamSearchQuery,
+                submitting: liveAction === "submit-team",
+                team: liveTeamSheetTeam,
+                viewerId: applicationStudentId,
+                visible: teamSheetOpen,
+              }
+            : undefined
+        }
+        prototypeCandidateSheet={
+          activePrototypeState &&
+          isHirerView &&
+          quest.candidateMode === QuestCandidateMode.CANDIDATE
+            ? {
+                actualHeadcount: activePrototypeState.actualHeadcount,
+                applications: activePrototypeState.applications,
+                bottomInset: insets.bottom,
+                locale,
+                mode: candidateGroup ? "team" : "individual",
+                onAcceptProposal:
+                  activePrototypeState.capabilities.availableActions.includes(
+                    "SELECT_CANDIDATE"
+                  )
+                    ? handleSelectCandidate
+                    : undefined,
+                onClose: () => {
+                  setCandidateReviewSheetOpen(false);
+                  setSelectedProposalId(null);
+                },
+                onRejectProposal:
+                  activePrototypeState.capabilities.availableActions.includes(
+                    candidateGroup ? "REJECT_TEAM" : "REJECT_CANDIDATE"
+                  )
+                    ? handleRejectCandidate
+                    : undefined,
+                onSelectProposal: setSelectedProposalId,
+                questTitle: quest.title,
+                requestedHeadcount: activePrototypeState.quest.headcount,
+                rewardSatangPerWorker:
+                  activePrototypeState.quest.reward.rewardSatang,
+                selectedProposalId,
+                settlement: detailProjection?.settlement ?? undefined,
+                teams: candidateGroup
+                  ? activePrototypeState.teams.filter(
+                      (team) => team.status !== QuestTeamStatus.TEAM_FORMING
+                    )
+                  : [],
+                visible: candidateReviewSheetOpen,
+                fullScreen: true,
+              }
+            : undefined
+        }
+        prototypeConsentSheet={
+          activePrototypeState &&
+          activePrototypeState.quest.participation ===
+            QuestParticipation.GROUP &&
+          activePrototypeState.quest.candidateMode ===
+            QuestCandidateMode.NO_CANDIDATE &&
+          activePrototypeState.partialStartConsent
+            ? {
+                actualHeadcount: activePrototypeState.actualHeadcount,
+                bottomInset: insets.bottom,
+                canRespond:
+                  activePrototypeState.capabilities.availableActions.includes(
+                    "VOTE_PARTIAL_GROUP_START_CONSENT"
+                  ),
+                consent: activePrototypeState.partialStartConsent,
+                hirerId: activePrototypeState.quest.hirerId,
+                locale,
+                onClose: () => setPartialStartSheetDismissed(true),
+                onVote: handlePartialStartVote,
+                questTitle: quest.title,
+                requestedHeadcount: activePrototypeState.quest.headcount,
+                voters: partialVoters,
+                viewerId: prototypeViewerId,
+                visible: partialStartSheetOpen,
+              }
+            : undefined
+        }
+        prototypeTeamSheet={
+          activePrototypeState && candidateGroup && !isHirerView
+            ? {
+                bottomInset: insets.bottom,
+                eligibleMembers: teamDirectory,
+                invitations: activePrototypeState.invitations,
+                locale,
+                onClose: () => {
+                  setTeamSheetOpen(false);
+                  setTeamReviewing(false);
+                  setTeamSelectedMemberIds([]);
+                  setTeamSearchQuery("");
+                },
+                onCreateTeam:
+                  activePrototypeState.capabilities.availableActions.includes(
+                    "CREATE_TEAM"
+                  )
+                    ? handleCreateTeam
+                    : undefined,
+                onInviteMembers:
+                  activePrototypeState.capabilities.availableActions.includes(
+                    "INVITE_WORKER"
+                  )
+                    ? handleInviteMembers
+                    : undefined,
+                onRespondInvitation:
+                  activePrototypeState.capabilities.availableActions.includes(
+                    "RESPOND_INVITATION"
+                  )
+                    ? handleInvitation
+                    : undefined,
+                onSearchQueryChange: setTeamSearchQuery,
+                onSelectedMemberIdsChange: setTeamSelectedMemberIds,
+                onReviewChange: setTeamReviewing,
+                onSubmit:
+                  activePrototypeState.capabilities.availableActions.includes(
+                    "SUBMIT_TEAM"
+                  )
+                    ? handleSubmitTeam
+                    : undefined,
+                requestedHeadcount: activePrototypeState.quest.headcount,
+                reviewing: teamReviewing,
+                searchQuery: teamSearchQuery,
+                selectedMemberIds: teamSelectedMemberIds,
+                team: teamSheetTeam,
+                viewerId: applicationStudentId,
+                visible: teamSheetOpen,
+              }
+            : undefined
+        }
+      />
       {isPostView ? (
         <View
           className={styles.actionBar}
@@ -2626,19 +1602,6 @@ export default function QuestDetailScreen({
             ) : null}
           </View>
         </View>
-      ) : null}
-      {confirmationOpen ? (
-        <ConfirmationSheet
-          locale={locale}
-          messages={messages}
-          onCancel={() => {
-            setManualConfirmationOpen(false);
-            setDismissedIntent(routeIntentKey);
-          }}
-          onConfirm={confirmApplication}
-          busy={Boolean(liveAction)}
-          quest={quest}
-        />
       ) : null}
     </ScreenLayout>
   );
