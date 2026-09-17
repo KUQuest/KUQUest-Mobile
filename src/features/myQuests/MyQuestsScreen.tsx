@@ -1027,10 +1027,12 @@ function TipCard({
 
 export interface MyQuestsScreenProps {
   initialRole?: Role;
+  initialTab?: string;
 }
 
 export default function MyQuestsScreen({
   initialRole = "worker",
+  initialTab,
 }: MyQuestsScreenProps = {}) {
   const router = useRouter();
   const { locale } = useLocale();
@@ -1054,8 +1056,45 @@ export default function MyQuestsScreen({
     };
   }, []);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
-  const [workerTab, setWorkerTab] = useState<WorkerTab>("pending");
-  const [hirerTab, setHirerTab] = useState<HirerTab>("active");
+  const [workerTab, setWorkerTab] = useState<WorkerTab>(
+    initialTab === "accepted" ||
+      initialTab === "history" ||
+      initialTab === "pending"
+      ? initialTab
+      : "pending"
+  );
+  const [hirerTab, setHirerTab] = useState<HirerTab>(
+    initialTab === "draft" ||
+      initialTab === "completed" ||
+      initialTab === "active"
+      ? initialTab
+      : "active"
+  );
+
+  React.useEffect(() => {
+    if (initialRole) setRole(initialRole);
+  }, [initialRole]);
+
+  React.useEffect(() => {
+    if (!initialTab) return;
+    if (role === "hirer") {
+      if (
+        initialTab === "draft" ||
+        initialTab === "completed" ||
+        initialTab === "active"
+      ) {
+        setHirerTab(initialTab);
+      }
+    } else {
+      if (
+        initialTab === "accepted" ||
+        initialTab === "history" ||
+        initialTab === "pending"
+      ) {
+        setWorkerTab(initialTab);
+      }
+    }
+  }, [initialTab, role]);
   const [candidateReviewQuestId, setCandidateReviewQuestId] = useState<
     string | null
   >(null);
