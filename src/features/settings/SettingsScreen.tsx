@@ -17,7 +17,8 @@ import {
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Pressable, SafeAreaView, ScrollView, Text, View } from "@/tw";
+import { Pressable, ScrollView, Text, View } from "@/tw";
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { useLocale } from "@/locales/LocaleProvider";
 import { settingsMessages } from "@/locales/settingsMessages";
 import { authService } from "@/features/auth/AuthService";
@@ -118,7 +119,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
+    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
       <View className="items-center flex-row h-[56px] px-[12px]">
         <Pressable
           accessibilityLabel={messages.back}
@@ -251,6 +252,6 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }

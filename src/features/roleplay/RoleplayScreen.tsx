@@ -17,7 +17,8 @@ import { QuestTeamStatus } from "@/features/questBoard/types";
 import { useLocale } from "@/locales/LocaleProvider";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
-import { Pressable, SafeAreaView, ScrollView, Text, View } from "@/tw";
+import { Pressable, ScrollView, Text, View } from "@/tw";
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { cn } from "@/tw/cn";
 
 import {
@@ -357,7 +358,7 @@ export default function RoleplayScreen() {
   if (!__DEV__) return null;
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
+    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
       <View className={styles.header}>
         <Pressable
           accessibilityLabel={messages.back}
@@ -895,6 +896,6 @@ export default function RoleplayScreen() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }

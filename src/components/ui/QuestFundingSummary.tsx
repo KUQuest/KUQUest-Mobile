@@ -34,6 +34,7 @@ import {
 import type { SupportedLocale } from "@/locales/LocaleProvider";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
+import { getActionBarPaddingBottom } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 import { fontFamily } from "@/theme/typography";
 
@@ -1396,7 +1397,7 @@ function FundingModal({
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const isDetailsModal = modal === "details";
-  const bottomPadding = Math.max(spacing.md, insets.bottom + spacing.sm);
+  const bottomPadding = getActionBarPaddingBottom(insets.bottom);
 
   return (
     <>

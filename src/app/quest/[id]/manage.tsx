@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Alert, RefreshControl } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { MessageSquare, ShieldCheck, X } from "lucide-react-native";
-import { SafeAreaView, ScrollView, Text, View, Pressable } from "@/tw";
+import { ScrollView, Text, View, Pressable } from "@/tw";
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
 import { authService } from "@/features/auth/AuthService";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
@@ -114,7 +115,7 @@ export default function HirerQuestManageRoute() {
 
   if (loading)
     return (
-      <SafeAreaView className="flex-1 bg-ku-bg">
+      <ScreenLayout className="flex-1 bg-ku-bg">
         <TopBar
           title="Manage Quest"
           onBackPress={() => router.back()}
@@ -123,11 +124,11 @@ export default function HirerQuestManageRoute() {
         <View className="p-6">
           <Text>Loading live Quest…</Text>
         </View>
-      </SafeAreaView>
+      </ScreenLayout>
     );
   if (error || !snapshot)
     return (
-      <SafeAreaView className="flex-1 bg-ku-bg">
+      <ScreenLayout className="flex-1 bg-ku-bg">
         <TopBar
           title="Manage Quest"
           onBackPress={() => router.back()}
@@ -142,7 +143,7 @@ export default function HirerQuestManageRoute() {
             <Text className="text-center text-white">Retry</Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </ScreenLayout>
     );
 
   const quest = snapshot.quest;
@@ -226,7 +227,7 @@ export default function HirerQuestManageRoute() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-ku-bg">
+    <ScreenLayout className="flex-1 bg-ku-bg">
       <TopBar
         title="Manage Quest"
         onBackPress={() => router.back()}
@@ -366,6 +367,6 @@ export default function HirerQuestManageRoute() {
         onClose={() => setUnderfilledOpen(false)}
         locale={locale}
       />
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }

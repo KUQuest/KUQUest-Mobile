@@ -6,12 +6,12 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   TextInput,
   View,
 } from "@/tw";
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { cn } from "@/tw/cn";
 import {
   AlertCircle,
@@ -145,7 +145,7 @@ export default function QuestDisputeScreen() {
   };
 
   return (
-    <SafeAreaView
+    <ScreenLayout
       edges={["top", "left", "right", "bottom"]}
       className="flex-1 bg-slate-50"
     >
@@ -297,6 +297,6 @@ export default function QuestDisputeScreen() {
           </Button>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }

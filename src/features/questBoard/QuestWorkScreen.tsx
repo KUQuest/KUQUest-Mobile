@@ -18,14 +18,8 @@ import {
   ShieldCheck,
 } from "lucide-react-native";
 
-import {
-  ActivityIndicator,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  Text,
-  View,
-} from "@/tw";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "@/tw";
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { ApiError } from "@/api/ApiClient";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import { authService } from "@/features/auth/AuthService";
@@ -516,7 +510,7 @@ export default function QuestWorkScreen({
 
   if (loadState === "pending" && !snapshot) {
     return (
-      <SafeAreaView
+      <ScreenLayout
         edges={["top", "left", "right", "bottom"]}
         className="flex-1 bg-slate-50"
       >
@@ -529,13 +523,13 @@ export default function QuestWorkScreen({
             {questMessages.loading}
           </Text>
         </View>
-      </SafeAreaView>
+      </ScreenLayout>
     );
   }
 
   if (!snapshot) {
     return (
-      <SafeAreaView
+      <ScreenLayout
         edges={["top", "left", "right", "bottom"]}
         className="flex-1 bg-slate-50"
       >
@@ -557,12 +551,12 @@ export default function QuestWorkScreen({
             </Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </ScreenLayout>
     );
   }
 
   return (
-    <SafeAreaView
+    <ScreenLayout
       edges={["top", "left", "right", "bottom"]}
       className="flex-1 bg-slate-50"
     >
@@ -860,6 +854,6 @@ export default function QuestWorkScreen({
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }

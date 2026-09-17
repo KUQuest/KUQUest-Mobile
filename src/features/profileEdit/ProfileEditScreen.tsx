@@ -44,13 +44,13 @@ import {
   Image,
   KeyboardAvoidingView,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   View,
 } from "../../tw";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "../../theme/colors";
+import { ScreenLayout } from "../../components/layout/ScreenLayout";
 import styles from "./profileEditStyles";
 import {
   formatDateForApi,
@@ -238,7 +238,7 @@ function ProfileEditLoadingState({
   const listSection = variant !== "hub" && !isEditor;
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
+    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
       <View style={{ paddingHorizontal: 24, paddingTop: 16 }}>
         <ScreenHeader title={title} backLabel={messages.back} onBack={onBack} />
       </View>
@@ -390,7 +390,7 @@ function ProfileEditLoadingState({
           ) : null}
         </View>
       </LoadingSkeleton>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }
 
@@ -702,7 +702,7 @@ function HubContent({ data }: { data: ProfileEditData }) {
   ];
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
+    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
       <ScrollView
         contentContainerClassName={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -737,7 +737,7 @@ function HubContent({ data }: { data: ProfileEditData }) {
           ))}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }
 
@@ -824,7 +824,7 @@ function BasicsEditor({
     : undefined;
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
+    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
       <KeyboardAvoidingView
         className={styles.screen}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -932,7 +932,7 @@ function BasicsEditor({
           onPress={() => void save()}
         />
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }
 
@@ -966,7 +966,7 @@ function SectionListScreen({
     );
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
+    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
       <ScrollView
         contentContainerClassName={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -1025,7 +1025,7 @@ function SectionListScreen({
           </Button>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }
 
@@ -1187,7 +1187,7 @@ function ProfileEditDataLoader({
   );
   if (error && !data)
     return (
-      <SafeAreaView
+      <ScreenLayout
         edges={["top", "left", "right"]}
         className={styles.safeArea}
       >
@@ -1203,7 +1203,7 @@ function ProfileEditDataLoader({
             retryLabel={messages.retry}
           />
         </ScrollView>
-      </SafeAreaView>
+      </ScreenLayout>
     );
   if (!data)
     return (
@@ -1297,7 +1297,7 @@ function ExperienceEditor({
   };
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
+    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
       <KeyboardAvoidingView
         className={styles.screen}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -1396,7 +1396,7 @@ function ExperienceEditor({
           onPress={() => void save()}
         />
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }
 
@@ -1489,7 +1489,7 @@ function PortfolioEditor({
     setForm((current) => ({ ...current, imageUri: uri }));
   };
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
+    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
       <KeyboardAvoidingView
         className={styles.screen}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -1557,7 +1557,7 @@ function PortfolioEditor({
           onPress={() => void save()}
         />
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }
 
@@ -1657,7 +1657,7 @@ function CertificateEditor({
     ]);
   };
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
+    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
       <KeyboardAvoidingView
         className={styles.screen}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -1734,7 +1734,7 @@ function CertificateEditor({
           onPress={() => void save()}
         />
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }
 

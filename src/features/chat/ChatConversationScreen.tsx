@@ -24,12 +24,12 @@ import {
   X,
 } from "lucide-react-native";
 
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import {
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   TextInput,
@@ -444,7 +444,7 @@ function ChatConversationSkeleton({
   onBack: () => void;
 }) {
   return (
-    <SafeAreaView
+    <ScreenLayout
       edges={["top", "left", "right", "bottom"]}
       className={styles.safeArea}
     >
@@ -571,7 +571,7 @@ function ChatConversationSkeleton({
           </View>
         </View>
       </LoadingSkeleton>
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }
 
@@ -960,7 +960,7 @@ export default function ChatConversationScreen({
 
   if (conversationLoadFailed) {
     return (
-      <SafeAreaView
+      <ScreenLayout
         edges={["top", "left", "right", "bottom"]}
         className={styles.safeArea}
       >
@@ -999,13 +999,13 @@ export default function ChatConversationScreen({
             <Text className={styles.loadErrorActionText}>{messages.retry}</Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </ScreenLayout>
     );
   }
 
   if (!conversation) {
     return (
-      <SafeAreaView
+      <ScreenLayout
         edges={["top", "left", "right", "bottom"]}
         className={styles.safeArea}
       >
@@ -1023,7 +1023,7 @@ export default function ChatConversationScreen({
             </Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </ScreenLayout>
     );
   }
   const role =
@@ -1259,7 +1259,7 @@ export default function ChatConversationScreen({
   };
 
   return (
-    <SafeAreaView
+    <ScreenLayout
       edges={["top", "left", "right", "bottom"]}
       className={styles.safeArea}
     >
@@ -1670,6 +1670,6 @@ export default function ChatConversationScreen({
         fileName={viewerState.name}
         onClose={() => setViewerState({ visible: false, url: null })}
       />
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }

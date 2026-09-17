@@ -5,7 +5,7 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
-import { Pressable, SafeAreaView, ScrollView, Text, View } from "@/tw";
+import { Pressable, ScrollView, Text, View } from "@/tw";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -26,12 +26,16 @@ import {
   type ProfileViewData,
 } from "./components/ProfileComponents";
 import { profileModule } from "./profileModule";
-import { getAppChromeMetrics } from "../../theme/layout";
+import {
+  getAppChromeMetrics,
+  getBottomNavigationInset,
+} from "../../theme/layout";
 import { getProfileLayoutMetrics } from "../../theme/profileLayout";
 import { spacing } from "../../theme/spacing";
 import { AuthError } from "../auth/types";
 import { useNavigationVisibility } from "../../components/navigation/NavigationVisibilityContext";
 import { ProfileTopBar } from "./components/ProfileTopBar";
+import { ScreenLayout } from "../../components/layout/ScreenLayout";
 
 export default function Profile() {
   const router = useRouter();
@@ -103,15 +107,14 @@ export default function Profile() {
     reviews: messages.reviews,
   };
   const bottomPadding =
-    (chromeMetrics.isTablet ? 0 : chromeMetrics.navHeight + insets.bottom) +
-    spacing.lg;
+    getBottomNavigationInset(chromeMetrics, insets.bottom) + spacing.lg;
   const profileTopBarHeight = chromeMetrics.headerHeight + insets.top;
   const horizontalPadding = layoutMetrics.pagePadding;
   const openEditProfile = () => router.push("/profile/edit");
   const profileTopBar = <ProfileTopBar />;
   if (loadError && !content) {
     return (
-      <SafeAreaView edges={["left", "right"]} className={styles.safeArea}>
+      <ScreenLayout edges={["left", "right"]} className={styles.safeArea}>
         {profileTopBar}
         <View style={{ flex: 1, paddingTop: profileTopBarHeight }}>
           <View className={styles.errorState}>
@@ -125,12 +128,12 @@ export default function Profile() {
             </Pressable>
           </View>
         </View>
-      </SafeAreaView>
+      </ScreenLayout>
     );
   }
   if (!content) {
     return (
-      <SafeAreaView edges={["left", "right"]} className={styles.safeArea}>
+      <ScreenLayout edges={["left", "right"]} className={styles.safeArea}>
         {profileTopBar}
         <ProfileSkeleton
           activeTab={activeTab}
@@ -140,7 +143,7 @@ export default function Profile() {
           profileTopBarHeight={profileTopBarHeight}
           width={width}
         />
-      </SafeAreaView>
+      </ScreenLayout>
     );
   }
 
@@ -196,7 +199,7 @@ export default function Profile() {
   );
 
   return (
-    <SafeAreaView edges={["left", "right"]} className={styles.safeArea}>
+    <ScreenLayout edges={["left", "right"]} className={styles.safeArea}>
       {profileTopBar}
       {activeTab === "reviews" ? (
         <Reviews
@@ -381,6 +384,6 @@ export default function Profile() {
           ) : null}
         </ScrollView>
       )}
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }

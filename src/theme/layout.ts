@@ -1,3 +1,5 @@
+import { spacing } from "./spacing";
+
 export interface AppChromeMetrics {
   isTablet: boolean;
   tabletNavWidth: number;
@@ -19,6 +21,11 @@ export interface CreateQuestLayoutMetrics {
   horizontalPadding: number;
   contentMaxWidth: number;
 }
+
+export type BottomNavigationMetrics = Pick<
+  AppChromeMetrics,
+  "isTablet" | "navHeight"
+>;
 
 export function getCreateQuestLayoutMetrics(
   width: number
@@ -89,4 +96,15 @@ export function getAppChromeMetrics(
       baseMetrics.navHeight +
       Math.max(0, navItemHeight - baseMetrics.navItemHeight),
   };
+}
+
+export function getBottomNavigationInset(
+  metrics: BottomNavigationMetrics,
+  bottomInset: number
+): number {
+  return metrics.isTablet ? 0 : metrics.navHeight + bottomInset;
+}
+
+export function getActionBarPaddingBottom(bottomInset: number): number {
+  return Math.max(spacing.md, bottomInset + spacing.sm);
 }

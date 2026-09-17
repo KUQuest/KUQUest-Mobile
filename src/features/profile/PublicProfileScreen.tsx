@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useWindowDimensions } from "react-native";
 import {
   BriefcaseBusiness,
@@ -12,6 +11,7 @@ import {
 } from "lucide-react-native";
 
 import { Image, Pressable, ScrollView, Text, View } from "@/tw";
+import { ScreenLayout } from "../../components/layout/ScreenLayout";
 import { cn } from "@/tw/cn";
 import { colors } from "@/theme/colors";
 import { getProfileLayoutMetrics } from "@/theme/profileLayout";
@@ -373,7 +373,7 @@ export default function PublicProfileScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView
+      <ScreenLayout
         edges={["top", "left", "right"]}
         className="flex-1 bg-ku-surface"
       >
@@ -384,13 +384,13 @@ export default function PublicProfileScreen() {
           width={width}
           fontScale={fontScale}
         />
-      </SafeAreaView>
+      </ScreenLayout>
     );
   }
 
   if (error && !profile) {
     return (
-      <SafeAreaView
+      <ScreenLayout
         edges={["top", "left", "right"]}
         className="flex-1 bg-ku-surface"
       >
@@ -409,12 +409,12 @@ export default function PublicProfileScreen() {
             </Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </ScreenLayout>
     );
   }
 
   return (
-    <SafeAreaView
+    <ScreenLayout
       edges={["top", "left", "right"]}
       className="flex-1 bg-ku-surface"
     >
@@ -516,6 +516,6 @@ export default function PublicProfileScreen() {
           </View>
         </ScrollView>
       )}
-    </SafeAreaView>
+    </ScreenLayout>
   );
 }
