@@ -147,7 +147,7 @@ export default function QuestDisputeScreen() {
   return (
     <SafeAreaView
       edges={["top", "left", "right", "bottom"]}
-      className="flex-1 bg-slate-50"
+      className="flex-1 bg-ku-background"
     >
       <TopBar
         title={isTh ? "ยื่นคำร้องข้อพิพาท" : "File Dispute"}
@@ -164,14 +164,14 @@ export default function QuestDisputeScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Header & Escrow Notice */}
-          <View className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <View className="mb-5 rounded-2xl border border-ku-border-accent bg-ku-surface-accent p-4">
             <View className="flex-row items-center gap-2">
-              <AlertTriangle color="#B45309" size={20} />
-              <Text className="text-base font-bold text-amber-950">
+              <AlertTriangle color={colors.primaryDeep} size={20} />
+              <Text className="text-ku-text-strong text-base font-bold">
                 {isTh ? "ข้อกำหนดการยื่นข้อพิพาท" : "Dispute Case Filing"}
               </Text>
             </View>
-            <Text className="mt-2 text-sm leading-5 text-amber-900">
+            <Text className="mt-2 text-ku-text-secondary text-sm leading-5">
               {isTh
                 ? "สามารถยื่นข้อพิพาทได้ภายใน 24 ชั่วโมงหลังเควสต์ล้มเหลว เมื่อยื่นแล้ว เงินประกันจะถูกระงับไว้ 7 วันเพื่อรอการตรวจสอบจากผู้ดูแลระบบ"
                 : "Disputes can be filed within 24 hours of quest failure. Upon filing, held funding is preserved for 7 days pending admin investigation."}
@@ -179,7 +179,7 @@ export default function QuestDisputeScreen() {
           </View>
 
           {/* Reason Selector */}
-          <Text className="mb-3 text-base font-bold text-slate-950">
+          <Text className="mb-3 text-ku-text-strong text-base font-bold">
             {isTh ? "สาเหตุของข้อพิพาท" : "Reason for Dispute"}
           </Text>
           <View className="mb-6 gap-2.5">
@@ -195,8 +195,8 @@ export default function QuestDisputeScreen() {
                   className={cn(
                     "flex-row items-start gap-3 rounded-2xl border p-4 transition-colors",
                     isSelected
-                      ? "border-emerald-700 bg-emerald-50/60"
-                      : "border-slate-200 bg-white"
+                      ? "border-ku-border-accent bg-ku-surface-accent"
+                      : "border-ku-border-subtle bg-ku-card"
                   )}
                 >
                   <View className="mt-0.5">
@@ -210,12 +210,12 @@ export default function QuestDisputeScreen() {
                     <Text
                       className={cn(
                         "text-sm font-semibold",
-                        isSelected ? "text-emerald-950" : "text-slate-900"
+                        isSelected ? "text-ku-primary" : "text-ku-text-strong"
                       )}
                     >
                       {isTh ? option.labelTh : option.labelEn}
                     </Text>
-                    <Text className="mt-1 text-xs leading-4 text-slate-600">
+                    <Text className="mt-1 text-ku-text-secondary text-xs leading-4">
                       {isTh ? option.descTh : option.descEn}
                     </Text>
                   </View>
@@ -227,22 +227,22 @@ export default function QuestDisputeScreen() {
           {/* Statement Input */}
           <View className="mb-6">
             <View className="mb-2 flex-row items-center justify-between">
-              <Text className="text-base font-bold text-slate-950">
+              <Text className="text-ku-text-strong text-base font-bold">
                 {isTh ? "คำชี้แจงและหลักฐาน" : "Statement & Details"}
-                <Text className="text-red-500"> *</Text>
+                <Text className="text-ku-danger"> *</Text>
               </Text>
               <Text
                 className={cn(
                   "text-xs",
                   statement.length > 1000
-                    ? "font-bold text-red-500"
-                    : "text-slate-500"
+                    ? "font-bold text-ku-danger"
+                    : "text-ku-text-muted"
                 )}
               >
                 {statement.length}/1000
               </Text>
             </View>
-            <View className="rounded-2xl border border-slate-200 bg-white p-3">
+            <View className="rounded-2xl border border-ku-border-subtle bg-ku-card p-3">
               <TextInput
                 multiline
                 numberOfLines={6}
@@ -252,16 +252,16 @@ export default function QuestDisputeScreen() {
                     ? "อธิบายเหตุการณ์และข้อเท็จจริงโดยละเอียด..."
                     : "Describe the situation, conditions, and relevant facts in detail..."
                 }
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textMuted}
                 value={statement}
                 onChangeText={setStatement}
-                className="min-h-[140px] text-sm leading-5 text-slate-900"
+                className="min-h-[140px] text-ku-text-strong text-sm leading-5"
                 textAlignVertical="top"
                 editable={!submitting}
               />
             </View>
             {statement.length > 1000 ? (
-              <Text className="mt-1 text-xs text-red-500">
+              <Text className="mt-1 text-ku-danger text-xs">
                 {isTh
                   ? "คำชี้แจงมีความยาวเกิน 1,000 ตัวอักษร"
                   : "Statement exceeds the 1000 character limit."}
@@ -271,9 +271,9 @@ export default function QuestDisputeScreen() {
 
           {/* Error notice if present */}
           {errorMessage ? (
-            <View className="mb-4 flex-row items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3">
-              <AlertCircle color="#DC2626" size={18} />
-              <Text className="flex-1 text-xs text-red-700">
+            <View className="mb-4 flex-row items-center gap-2 rounded-xl border border-ku-border-danger bg-ku-surface-danger p-3">
+              <AlertCircle color={colors.dangerIcon} size={18} />
+              <Text className="flex-1 text-ku-danger-dark text-xs">
                 {errorMessage}
               </Text>
             </View>
@@ -288,7 +288,7 @@ export default function QuestDisputeScreen() {
             accessibilityLabel={isTh ? "ยื่นคำร้องข้อพิพาท" : "Submit Dispute"}
           >
             {submitting ? (
-              <ActivityIndicator color="white" />
+              <ActivityIndicator color={colors.white} />
             ) : isTh ? (
               "ยื่นคำร้องข้อพิพาท"
             ) : (

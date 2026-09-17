@@ -793,6 +793,7 @@ function ActionButton({
       {renderActionIcon(label, compact ? 14 : 17)}
       <Text
         className={cn(styles.actionText, compact && styles.actionTextCompact)}
+        style={{ color: colors.primary }}
       >
         {label}
       </Text>

@@ -114,32 +114,34 @@ export default function HirerQuestManageRoute() {
 
   if (loading)
     return (
-      <SafeAreaView className="flex-1 bg-ku-bg">
+      <SafeAreaView className="flex-1 bg-ku-background">
         <TopBar
           title="Manage Quest"
           onBackPress={() => router.back()}
           backLabel="Back"
         />
         <View className="p-6">
-          <Text>Loading live Quest…</Text>
+          <Text className="text-ku-text-secondary">Loading live Quest…</Text>
         </View>
       </SafeAreaView>
     );
   if (error || !snapshot)
     return (
-      <SafeAreaView className="flex-1 bg-ku-bg">
+      <SafeAreaView className="flex-1 bg-ku-background">
         <TopBar
           title="Manage Quest"
           onBackPress={() => router.back()}
           backLabel="Back"
         />
         <View className="p-6">
-          <Text>{error ?? "Quest not found"}</Text>
+          <Text className="text-ku-text-secondary">
+            {error ?? "Quest not found"}
+          </Text>
           <Pressable
             className="mt-4 rounded-xl bg-ku-primary p-4"
             onPress={() => void load()}
           >
-            <Text className="text-center text-white">Retry</Text>
+            <Text className="text-ku-white text-center">Retry</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -226,7 +228,7 @@ export default function HirerQuestManageRoute() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-ku-bg">
+    <SafeAreaView className="flex-1 bg-ku-background">
       <TopBar
         title="Manage Quest"
         onBackPress={() => router.back()}
@@ -253,7 +255,7 @@ export default function HirerQuestManageRoute() {
         >
           {snapshot.state} · {snapshot.mode}
         </Text>
-        <View className="mt-5 rounded-2xl bg-white p-4">
+        <View className="mt-5 rounded-2xl bg-ku-card p-4">
           <Text className="text-ku-text-strong font-ku-bold">Roster</Text>
           <Text className="mt-2 text-ku-text-secondary">
             {snapshot.assignments.length} assigned · {snapshot.quest.headcount}{" "}
@@ -275,7 +277,7 @@ export default function HirerQuestManageRoute() {
             className="mt-3 rounded-2xl bg-ku-primary p-4"
             onPress={() => setCandidateOpen(true)}
           >
-            <Text className="text-center text-white font-ku-bold">
+            <Text className="text-ku-white text-center font-ku-bold">
               Review candidates and teams
             </Text>
           </Pressable>
@@ -284,7 +286,7 @@ export default function HirerQuestManageRoute() {
         snapshot.capabilities.canDecideUnderfilled ? (
           <Pressable
             testID="hirer-manage-underfilled"
-            className="mt-3 rounded-2xl bg-ku-warning p-4"
+            className="mt-3 rounded-2xl bg-ku-surface-accent p-4"
             onPress={() => setUnderfilledOpen(true)}
           >
             <Text className="text-center text-ku-text-strong font-ku-bold">
@@ -307,7 +309,7 @@ export default function HirerQuestManageRoute() {
         {snapshot.capabilities.canReadWorkChat && snapshot.workConversation ? (
           <Pressable
             testID="hirer-manage-work-chat"
-            className="mt-3 flex-row items-center rounded-2xl bg-white p-4"
+            className="mt-3 flex-row items-center rounded-2xl bg-ku-card p-4"
             onPress={openChat}
           >
             <MessageSquare color={colors.primary} size={20} />

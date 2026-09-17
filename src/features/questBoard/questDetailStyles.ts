@@ -129,7 +129,7 @@ const styles = {
     "bg-ku-surface-danger border-ku-border-danger rounded-[16px] mt-[16px] p-[14px]",
   reportHeader: "items-start flex-row gap-[10px]",
   reportIcon:
-    "items-center bg-ku-white rounded-ku-pill h-[36px] justify-center shrink-0 w-[36px]",
+    "items-center bg-ku-card rounded-ku-pill h-[36px] justify-center shrink-0 w-[36px]",
   reportCopy: "flex-1 min-w-0",
   reportTitle: "text-ku-danger-dark font-ku-bold text-ku-body",
   reportDescription:

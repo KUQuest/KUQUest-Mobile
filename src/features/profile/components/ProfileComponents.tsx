@@ -474,6 +474,9 @@ export function ProfileTabs({
               styles.tabText,
               activeTab === key && styles.tabTextSelected
             )}
+            style={{
+              color: activeTab === key ? colors.primary : colors.textSecondary,
+            }}
           >
             {labels[key]}
           </Text>
@@ -514,27 +517,31 @@ export function ProfileStats({
       {errorText ? null : (
         <View className={styles.statsTopRow}>
           <View className={styles.statItem}>
-            <View className={styles.statValueRow}>
-              <Text
-                accessibilityLabel={`${ratingLabel}: ${ratingText}`}
-                maxFontSizeMultiplier={2}
-                className={cn(
-                  styles.statValue,
-                  stats.ratingAverage === null && styles.statEmptyValue
-                )}
-              >
-                {ratingText}
-              </Text>
-              {stats.ratingAverage !== null ? (
-                <Text accessible={false} className={styles.statStar}>
-                  ★
-                </Text>
-              ) : null}
-            </View>
-            <Text className={styles.statLabel} maxFontSizeMultiplier={2}>
-              {ratingLabel}
+            <Text
+              accessibilityLabel={`${ratingLabel}: ${ratingText}`}
+              maxFontSizeMultiplier={2}
+              className={cn(
+                styles.statValue,
+                stats.ratingAverage === null && styles.statEmptyValue
+              )}
+              style={{
+                color:
+                  stats.ratingAverage === null
+                    ? colors.textSecondary
+                    : colors.primaryDeep,
+              }}
+            >
+              {ratingText}
             </Text>
+            {stats.ratingAverage !== null ? (
+              <Text accessible={false} className={styles.statStar}>
+                ★
+              </Text>
+            ) : null}
           </View>
+          <Text className={styles.statLabel} maxFontSizeMultiplier={2}>
+            {ratingLabel}
+          </Text>
           <View className={styles.statDivider} />
           <View className={styles.statItem}>
             <Text

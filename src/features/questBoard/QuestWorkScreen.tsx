@@ -166,10 +166,10 @@ function StateCard({
     <View
       className={`rounded-2xl border p-4 ${
         tone === "warning"
-          ? "border-amber-300 bg-amber-50"
+          ? "border-ku-border-accent bg-ku-surface-accent"
           : tone === "success"
-            ? "border-emerald-300 bg-emerald-50"
-            : "border-slate-200 bg-white"
+            ? "border-ku-border-success bg-ku-surface-success"
+            : "border-ku-border-subtle bg-ku-card"
       }`}
     >
       {children}
@@ -188,13 +188,13 @@ function WorkRow({
 }) {
   return (
     <View className="mb-3 flex-row justify-between gap-3">
-      <Text className="flex-1 text-sm text-slate-500">{label}</Text>
+      <Text className="flex-1 text-ku-text-secondary text-sm">{label}</Text>
       <View className="flex-1 items-end">
-        <Text className="text-right text-sm font-semibold text-slate-900">
+        <Text className="text-ku-text-strong text-right text-sm font-semibold">
           {value}
         </Text>
         {detail ? (
-          <Text className="mt-1 text-right text-xs text-slate-500">
+          <Text className="mt-1 text-ku-text-muted text-right text-xs">
             {detail}
           </Text>
         ) : null}
@@ -518,14 +518,14 @@ export default function QuestWorkScreen({
     return (
       <SafeAreaView
         edges={["top", "left", "right", "bottom"]}
-        className="flex-1 bg-slate-50"
+        className="flex-1 bg-ku-background"
       >
         <View
           className="flex-1 items-center justify-center px-6"
           testID="quest-work-loading"
         >
           <ActivityIndicator color={colors.primary} />
-          <Text className="mt-3 text-sm text-slate-500">
+          <Text className="mt-3 text-ku-text-secondary text-sm">
             {questMessages.loading}
           </Text>
         </View>
@@ -537,22 +537,22 @@ export default function QuestWorkScreen({
     return (
       <SafeAreaView
         edges={["top", "left", "right", "bottom"]}
-        className="flex-1 bg-slate-50"
+        className="flex-1 bg-ku-background"
       >
         <View className="flex-1 justify-center px-6" testID="quest-work-error">
-          <Text className="text-xl font-bold text-slate-950">
+          <Text className="text-ku-text-strong text-xl font-bold">
             {messages.serverError}
           </Text>
-          <Text className="mt-2 text-sm leading-5 text-slate-600">
+          <Text className="mt-2 text-ku-text-secondary text-sm leading-5">
             {errorText ?? messages.missingRoute}
           </Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={messages.retry}
-            className="mt-5 rounded-xl bg-slate-950 px-4 py-3"
+            className="mt-5 rounded-xl bg-ku-primary px-4 py-3"
             onPress={() => void loadSnapshot(true).catch(() => undefined)}
           >
-            <Text className="text-center font-semibold text-white">
+            <Text className="text-ku-white text-center font-semibold">
               {messages.retry}
             </Text>
           </Pressable>
@@ -564,7 +564,7 @@ export default function QuestWorkScreen({
   return (
     <SafeAreaView
       edges={["top", "left", "right", "bottom"]}
-      className="flex-1 bg-slate-50"
+      className="flex-1 bg-ku-background"
     >
       <ScrollView
         refreshControl={
@@ -582,18 +582,18 @@ export default function QuestWorkScreen({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={questMessages.back}
-              className="h-10 w-10 items-center justify-center rounded-full bg-white"
+              className="h-10 w-10 items-center justify-center rounded-full bg-ku-card"
               onPress={handleBack}
             >
               <ChevronLeft color={colors.primaryDeep} size={23} />
             </Pressable>
-            <Text className="text-base font-bold text-slate-950">
+            <Text className="text-ku-text-strong text-base font-bold">
               {messages.title}
             </Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={messages.refresh}
-              className="h-10 w-10 items-center justify-center rounded-full bg-white"
+              className="h-10 w-10 items-center justify-center rounded-full bg-ku-card"
               onPress={() => void loadSnapshot(true).catch(() => undefined)}
             >
               <RefreshCw color={colors.primaryDeep} size={18} />
@@ -611,10 +611,10 @@ export default function QuestWorkScreen({
           >
             <View className="flex-row items-start justify-between gap-3">
               <View className="flex-1">
-                <Text className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <Text className="text-ku-text-muted text-xs font-semibold uppercase tracking-wider">
                   {status}
                 </Text>
-                <Text className="mt-1 text-2xl font-bold text-slate-950">
+                <Text className="mt-1 text-ku-text-strong text-2xl font-bold">
                   {snapshot.quest.title}
                 </Text>
               </View>
@@ -623,7 +623,7 @@ export default function QuestWorkScreen({
                 size={22}
               />
             </View>
-            <View className="mt-4 border-t border-slate-200 pt-3">
+            <View className="mt-4 border-t border-ku-border-subtle pt-3">
               <WorkRow
                 label={messages.assignment}
                 value={assignmentLabel(snapshot, questMessages)}
@@ -649,22 +649,26 @@ export default function QuestWorkScreen({
           </StateCard>
 
           {stale ? (
-            <View className="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2">
-              <Text className="text-sm text-amber-900">{messages.stale}</Text>
+            <View className="mt-3 rounded-xl border border-ku-border-accent bg-ku-surface-accent px-3 py-2">
+              <Text className="text-ku-primary-deep text-sm">
+                {messages.stale}
+              </Text>
               {errorText ? (
-                <Text className="mt-1 text-xs text-amber-800">{errorText}</Text>
+                <Text className="mt-1 text-ku-text-secondary text-xs">
+                  {errorText}
+                </Text>
               ) : null}
             </View>
           ) : null}
 
           {snapshot.state === "QUEST_ASSIGNED" ? (
-            <View className="mt-3 flex-row items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 px-3 py-3">
+            <View className="mt-3 flex-row items-start gap-3 rounded-xl border border-ku-border-success bg-ku-surface-success px-3 py-3">
               <ShieldCheck color={colors.primary} size={20} />
               <View className="flex-1">
-                <Text className="font-semibold text-blue-950">
+                <Text className="text-ku-text-strong font-semibold">
                   {messages.waitingForStart}
                 </Text>
-                <Text className="mt-1 text-sm leading-5 text-blue-900">
+                <Text className="mt-1 text-ku-text-secondary text-sm leading-5">
                   {messages.startsAutomatically}
                 </Text>
               </View>
@@ -672,8 +676,8 @@ export default function QuestWorkScreen({
           ) : null}
 
           {isTerminal ? (
-            <View className="mt-3 rounded-xl border border-slate-200 bg-slate-100 px-3 py-3">
-              <Text className="text-sm leading-5 text-slate-700">
+            <View className="mt-3 rounded-xl border border-ku-border-subtle bg-ku-surface-muted px-3 py-3">
+              <Text className="text-ku-text-secondary text-sm leading-5">
                 {messages.archiveDescription}
               </Text>
               {snapshot.state === "QUEST_FAILED" && resolvedQuestId ? (
@@ -685,8 +689,8 @@ export default function QuestWorkScreen({
                     router.push(`../quest/${resolvedQuestId}/dispute`);
                   }}
                 >
-                  <AlertTriangle color="white" size={16} />
-                  <Text className="text-center text-sm font-semibold text-white">
+                  <AlertTriangle color={colors.white} size={16} />
+                  <Text className="text-ku-white text-center text-sm font-semibold">
                     {messages.fileDispute}
                   </Text>
                 </Pressable>
@@ -695,7 +699,7 @@ export default function QuestWorkScreen({
           ) : null}
 
           <View className="mt-5">
-            <Text className="mb-3 text-lg font-bold text-slate-950">
+            <Text className="mb-3 text-ku-text-strong text-lg font-bold">
               {messages.conditions}
             </Text>
             <StateCard>
@@ -706,13 +710,13 @@ export default function QuestWorkScreen({
                     className="mb-3 flex-row items-start gap-2 last:mb-0"
                   >
                     <CheckCircle2 color={colors.primary} size={18} />
-                    <Text className="flex-1 text-sm leading-5 text-slate-700">
+                    <Text className="flex-1 text-ku-text-secondary text-sm leading-5">
                       {condition.text}
                     </Text>
                   </View>
                 ))
               ) : (
-                <Text className="text-sm text-slate-500">
+                <Text className="text-ku-text-muted text-sm">
                   {messages.actionUnavailable}
                 </Text>
               )}
@@ -721,17 +725,17 @@ export default function QuestWorkScreen({
 
           {snapshot.editRequest?.status === "EDIT_REQUEST_PENDING" ? (
             <StateCard tone="warning">
-              <Text className="text-lg font-bold text-slate-950">
+              <Text className="text-ku-text-strong text-lg font-bold">
                 {messages.editTitle}
               </Text>
-              <Text className="mt-1 text-sm leading-5 text-slate-700">
+              <Text className="mt-1 text-ku-text-secondary text-sm leading-5">
                 {messages.editDescription}
               </Text>
-              <View className="mt-3 rounded-xl bg-white px-3 py-3">
+              <View className="mt-3 rounded-xl bg-ku-surface-muted px-3 py-3">
                 {snapshot.editRequest.proposedCondition.items.map((item) => (
                   <Text
                     key={`${item.position}-${item.text}`}
-                    className="mb-1 text-sm text-slate-700"
+                    className="mb-1 text-ku-text-secondary text-sm"
                   >
                     • {item.text}
                   </Text>
@@ -743,10 +747,10 @@ export default function QuestWorkScreen({
                     accessibilityRole="button"
                     accessibilityLabel={messages.acceptEdit}
                     disabled={editSending}
-                    className="flex-1 rounded-xl bg-slate-950 px-3 py-3 disabled:opacity-50"
+                    className="flex-1 rounded-xl bg-ku-primary px-3 py-3 disabled:opacity-50"
                     onPress={() => void respondToEdit("EDIT_RESPONSE_ACCEPTED")}
                   >
-                    <Text className="text-center text-sm font-semibold text-white">
+                    <Text className="text-ku-white text-center text-sm font-semibold">
                       {messages.acceptEdit}
                     </Text>
                   </Pressable>
@@ -754,45 +758,43 @@ export default function QuestWorkScreen({
                     accessibilityRole="button"
                     accessibilityLabel={messages.declineEdit}
                     disabled={editSending}
-                    className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-3 disabled:opacity-50"
+                    className="flex-1 rounded-xl border border-ku-border bg-ku-surface px-3 py-3 disabled:opacity-50"
                     onPress={() => void respondToEdit("EDIT_RESPONSE_DECLINED")}
                   >
-                    <Text className="text-center text-sm font-semibold text-slate-900">
+                    <Text className="text-ku-text-strong text-center text-sm font-semibold">
                       {messages.declineEdit}
                     </Text>
                   </Pressable>
                 </View>
               ) : (
-                <Text className="mt-3 text-sm text-slate-500">
+                <Text className="mt-3 text-ku-text-muted text-sm">
                   {messages.actionUnavailable}
                 </Text>
               )}
             </StateCard>
           ) : null}
           {editFeedback ? (
-            <Text className="mt-2 text-sm text-emerald-700">
-              {editFeedback}
-            </Text>
+            <Text className="mt-2 text-ku-success text-sm">{editFeedback}</Text>
           ) : null}
 
           {snapshot.capabilities.canSubmitProof ? (
-            <View className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+            <View className="mt-5 rounded-2xl border border-ku-border-subtle bg-ku-card p-4">
               <View className="flex-row items-center gap-2">
                 <CheckCircle2 color={colors.primaryDeep} size={20} />
-                <Text className="font-bold text-slate-950">
+                <Text className="text-ku-text-strong font-bold">
                   {messages.proofCta}
                 </Text>
               </View>
-              <Text className="mt-2 text-sm leading-5 text-slate-600">
+              <Text className="mt-2 text-ku-text-secondary text-sm leading-5">
                 {messages.proofPlaceholder}
               </Text>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={messages.proofCta}
-                className="mt-3 rounded-xl bg-slate-950 px-3 py-3"
+                className="mt-3 rounded-xl bg-ku-primary px-3 py-3"
                 onPress={openProof}
               >
-                <Text className="text-center text-sm font-semibold text-white">
+                <Text className="text-ku-white text-center text-sm font-semibold">
                   {messages.proofCta}
                 </Text>
               </Pressable>
@@ -800,27 +802,27 @@ export default function QuestWorkScreen({
           ) : null}
 
           {snapshot.capabilities.canConfirmCompletion ? (
-            <View className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+            <View className="mt-5 rounded-2xl border border-ku-border-subtle bg-ku-card p-4">
               <View className="flex-row items-center gap-2">
                 <CheckCircle2 color={colors.primaryDeep} size={20} />
-                <Text className="font-bold text-slate-950">
+                <Text className="text-ku-text-strong font-bold">
                   {messages.confirmationCta}
                 </Text>
               </View>
-              <Text className="mt-2 text-sm leading-5 text-slate-600">
+              <Text className="mt-2 text-ku-text-secondary text-sm leading-5">
                 {messages.confirmationPlaceholder}
               </Text>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={messages.confirmationCta}
                 disabled={confirmationSending}
-                className="mt-3 rounded-xl bg-slate-950 px-3 py-3 disabled:opacity-50"
+                className="mt-3 rounded-xl bg-ku-primary px-3 py-3 disabled:opacity-50"
                 onPress={() => void confirmCompletion()}
               >
                 {confirmationSending ? (
-                  <ActivityIndicator color="white" />
+                  <ActivityIndicator color={colors.white} />
                 ) : (
-                  <Text className="text-center text-sm font-semibold text-white">
+                  <Text className="text-ku-white text-center text-sm font-semibold">
                     {messages.confirmationCta}
                   </Text>
                 )}
@@ -833,7 +835,7 @@ export default function QuestWorkScreen({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={messages.workChat}
-                className="flex-row items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3"
+                className="flex-row items-center justify-center gap-2 rounded-xl bg-ku-primary px-4 py-3"
                 onPress={() => {
                   if (!conversationId || !resolvedQuestId || !resolvedViewerId)
                     return;
@@ -847,13 +849,13 @@ export default function QuestWorkScreen({
                   });
                 }}
               >
-                <MessageCircle color="white" size={18} />
-                <Text className="font-semibold text-white">
+                <MessageCircle color={colors.white} size={18} />
+                <Text className="text-ku-white font-semibold">
                   {messages.workChat}
                 </Text>
               </Pressable>
             ) : (
-              <Text className="text-center text-sm text-slate-500">
+              <Text className="text-center text-ku-text-muted text-sm">
                 {messages.noChat}
               </Text>
             )}

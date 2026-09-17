@@ -1,6 +1,6 @@
-@import 'tailwindcss/theme.css' layer(theme);
-@import 'tailwindcss/preflight.css' layer(base);
-@import 'tailwindcss/utilities.css';
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
 
 @layer theme {
   @theme {
@@ -49,10 +49,10 @@
     --spacing-ku-lg: 24px;
     --spacing-ku-xl: 32px;
 
-    --font-ku-regular: 'NotoSansThai_400Regular';
-    --font-ku-medium: 'NotoSansThai_500Medium';
-    --font-ku-semibold: 'NotoSansThai_600SemiBold';
-    --font-ku-bold: 'NotoSansThai_700Bold';
+    --font-ku-regular: "NotoSansThai_400Regular";
+    --font-ku-medium: "NotoSansThai_500Medium";
+    --font-ku-semibold: "NotoSansThai_600SemiBold";
+    --font-ku-bold: "NotoSansThai_700Bold";
     --text-ku-display: 44px;
     --text-ku-display--line-height: 1.181818;
     --text-ku-display-small: 32px;
@@ -95,44 +95,44 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-ku-background: #101713;
-    --color-ku-surface: #17211b;
-    --color-ku-surface-muted: #202b24;
-    --color-ku-surface-subtle: #1c2520;
-    --color-ku-surface-accent: #1e3a29;
-    --color-ku-surface-success: #173522;
-    --color-ku-surface-danger: #3d1e23;
-    --color-ku-surface-image: #2f4934;
-    --color-ku-surface-placeholder: #303735;
-    --color-ku-surface-nav-translucent: rgb(23 33 27 / 0.94);
-    --color-ku-border-nav: rgb(213 231 216 / 0.16);
-    --color-ku-nav-icon-muted: #a3b1a6;
-    --color-ku-primary: #0a7b43;
-    --color-ku-primary-dark: #0f9d54;
-    --color-ku-primary-deep: #a6e6af;
-    --color-ku-text: #e6efe8;
-    --color-ku-text-strong: #f3f8f3;
-    --color-ku-text-secondary: #c4d1c7;
-    --color-ku-text-muted: #a3b1a6;
-    --color-ku-text-subtle: #aebdb1;
-    --color-ku-text-faint: #97a69a;
-    --color-ku-border: #526258;
-    --color-ku-border-subtle: #344139;
-    --color-ku-border-muted: #445047;
-    --color-ku-border-accent: #3b6b49;
-    --color-ku-border-danger: #87515a;
-    --color-ku-border-success: #4a8057;
-    --color-ku-danger: #ff7b7b;
-    --color-ku-danger-dark: #ffb4b8;
-    --color-ku-danger-light: #8b454b;
-    --color-ku-danger-icon: #ff8a8a;
-    --color-ku-success: #8bd391;
-    --color-ku-success-bright: #8be091;
-    --color-ku-success-light: #b5f3b8;
-    --color-ku-black: #0b100d;
-    --color-ku-white: #f7fbf7;
-    --color-ku-card: #1c2821;
-    --color-ku-overlay: rgb(0 0 0 / 0.64);
+    --color-ku-background: #051a1d;
+    --color-ku-surface: #092328;
+    --color-ku-surface-muted: #0e3033;
+    --color-ku-surface-subtle: #0a292d;
+    --color-ku-surface-accent: #0a403a;
+    --color-ku-surface-success: #0b3d32;
+    --color-ku-surface-danger: #3a1d28;
+    --color-ku-surface-image: #123a37;
+    --color-ku-surface-placeholder: #17373a;
+    --color-ku-surface-nav-translucent: rgb(5 26 29 / 0.94);
+    --color-ku-border-nav: rgb(138 245 208 / 0.16);
+    --color-ku-nav-icon-muted: #8bafa9;
+    --color-ku-primary: #00e6a0;
+    --color-ku-primary-dark: #00c88a;
+    --color-ku-primary-deep: #8af5d0;
+    --color-ku-text: #e8f5f1;
+    --color-ku-text-strong: #f5fffb;
+    --color-ku-text-secondary: #b8d2cc;
+    --color-ku-text-muted: #86a9a2;
+    --color-ku-text-subtle: #95beb5;
+    --color-ku-text-faint: #6e928c;
+    --color-ku-border: #2a5756;
+    --color-ku-border-subtle: #174144;
+    --color-ku-border-muted: #1c4a4b;
+    --color-ku-border-accent: #1d6a5b;
+    --color-ku-border-danger: #7f4654;
+    --color-ku-border-success: #2f8068;
+    --color-ku-danger: #ff7887;
+    --color-ku-danger-dark: #ffb1b7;
+    --color-ku-danger-light: #8b4554;
+    --color-ku-danger-icon: #ff8594;
+    --color-ku-success: #6ef1be;
+    --color-ku-success-bright: #00e5a0;
+    --color-ku-success-light: #a0f7d2;
+    --color-ku-black: #021012;
+    --color-ku-white: #f5fffb;
+    --color-ku-card: #0d2c31;
+    --color-ku-overlay: rgb(0 7 8 / 0.72);
   }
 }
 

@@ -1316,6 +1316,9 @@ export default function QuestBoardScreen({
               styles.toolbarText,
               hasActiveFilters && styles.toolbarTextActive
             )}
+            style={{
+              color: hasActiveFilters ? colors.white : colors.textStrong,
+            }}
           >
             {messages.filter}
           </Text>
@@ -1336,7 +1339,10 @@ export default function QuestBoardScreen({
           testID="open-quest-sort"
         >
           <ArrowDownUp color={colors.textStrong} size={22} strokeWidth={2.3} />
-          <Text className={styles.toolbarText}>
+          <Text
+            style={{ color: colors.textStrong }}
+            className={styles.toolbarText}
+          >
             {messages.sort}: {sortLabel}
           </Text>
         </Pressable>

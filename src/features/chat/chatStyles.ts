@@ -16,7 +16,7 @@ const styles = {
   sectionCount: "text-ku-text-muted font-ku-medium text-ku-meta",
   conversationList: "gap-[8px]",
   conversationRow:
-    "items-center bg-ku-white border-ku-border-accent rounded-[16px] border flex-row min-h-[88px] p-[12px] active:bg-ku-surface-muted",
+    "items-center bg-ku-card border-ku-border-accent rounded-[16px] border flex-row min-h-[88px] p-[12px] active:bg-ku-surface-muted",
   avatar:
     "items-center rounded-ku-pill shrink-0 h-[48px] justify-center w-[48px]",
   avatarText: "text-ku-primary-deep font-ku-bold text-ku-body-small",
@@ -62,7 +62,7 @@ const styles = {
   contextCard:
     "items-center bg-ku-surface-accent border-ku-border-accent rounded-[16px] border flex-row mx-[24px] mt-[16px] p-[12px]",
   contextIcon:
-    "items-center bg-ku-white rounded-[12px] h-[40px] justify-center w-[40px]",
+    "items-center bg-ku-card rounded-[12px] h-[40px] justify-center w-[40px]",
   contextCopy: "flex-1 min-w-0 ml-[10px]",
   contextLabel: "text-ku-text-muted font-ku-medium text-ku-label",
   contextTitle: "text-ku-primary font-ku-semibold text-ku-body-small mt-[1px]",
@@ -71,7 +71,7 @@ const styles = {
   reportAction:
     "items-center bg-ku-surface-danger border-ku-border-danger rounded-[16px] border flex-row mx-[24px] mt-[12px] p-[12px]",
   reportActionIcon:
-    "items-center bg-ku-white rounded-[10px] h-[36px] justify-center w-[36px]",
+    "items-center bg-ku-card rounded-[10px] h-[36px] justify-center w-[36px]",
   reportActionCopy: "flex-1 min-w-0 ml-[10px]",
   reportActionText: "text-ku-danger-dark font-ku-semibold text-ku-body-small",
   reportActionDescription:
@@ -89,7 +89,7 @@ const styles = {
     "text-ku-text-strong flex-1 font-ku-regular text-ku-body-small min-h-[48px] px-[6px]",
   scopeSwitch: "bg-ku-surface-muted rounded-ku-pill flex-row mt-[8px] p-[3px]",
   scopeItem: "items-center flex-1 justify-center min-h-[36px] px-[8px]",
-  scopeItemActive: "bg-ku-white rounded-ku-pill",
+  scopeItemActive: "bg-ku-card rounded-ku-pill",
   scopeText: "text-ku-text-secondary font-ku-medium text-ku-label",
   scopeTextActive: "text-ku-primary font-ku-semibold",
   resultMeta:
@@ -120,7 +120,7 @@ const styles = {
   attachmentMeta: "text-ku-text-muted font-ku-regular text-ku-caption mt-[1px]",
   fileList: "gap-[8px] px-[24px] pt-[16px]",
   fileRow:
-    "items-center bg-ku-white border-ku-border-accent rounded-[14px] border flex-row min-h-[68px] p-[10px] active:bg-ku-surface-muted",
+    "items-center bg-ku-card border-ku-border-accent rounded-[14px] border flex-row min-h-[68px] p-[10px] active:bg-ku-surface-muted",
   fileType: "items-center rounded-[10px] h-[42px] justify-center w-[42px]",
   fileTypePdf: "bg-ku-surface-danger",
   fileTypeImage: "bg-ku-surface-accent",
