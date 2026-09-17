@@ -57,6 +57,17 @@ export interface WalletMessages {
   spendingBalanceCardDesc: string;
   escrowCardTitle: string;
   escrowCardDesc: string;
+  earningsCardTitle: string;
+  earningsCardDesc: string;
+  payoutCardTitle: string;
+  payoutCardDesc: string;
+  swapToWorkerView: string;
+  swapToHirerView: string;
+  hirerViewLabel: string;
+  workerViewLabel: string;
+  balanceCardsHint: string;
+  swapAllButton: string;
+  swapHint: string;
   historySectionTitle: string;
   filterAll: string;
   filterInflow: string;
@@ -126,11 +137,22 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
       "Notice: A unified double-entry ledger statements endpoint (/api/v1/wallet/transactions) is not currently exposed by the API server. Live PromptPay Top-ups and Bank Payouts are retrieved directly from /api/v1/top-ups and /api/v1/payouts. Internal Quest Escrow locks and settlements are displayed as illustrative placeholders until the ledger history API is deployed.",
     financeSubtitle: "Finance",
     amaWalletTitle: "Ama Wallet",
-    sendMoneyAction: "Send Money",
+    sendMoneyAction: "Top Up",
     spendingBalanceCardTitle: "Available balance",
     spendingBalanceCardDesc: "Ready to spend on quests",
     escrowCardTitle: "Money on hold",
     escrowCardDesc: "Paid out when quest completes",
+    earningsCardTitle: "Earnings",
+    earningsCardDesc: "Earned from completed quests",
+    payoutCardTitle: "Pending payout",
+    payoutCardDesc: "Transferring to bank",
+    swapToWorkerView: "Worker earnings",
+    swapToHirerView: "Hirer balance",
+    hirerViewLabel: "Hirer funds",
+    workerViewLabel: "Worker funds",
+    balanceCardsHint: "Tap card to swap view",
+    swapAllButton: "Swap all",
+    swapHint: "Tap to swap",
     historySectionTitle: "History",
     filterAll: "All",
     filterInflow: "Inflow",
@@ -199,11 +221,22 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
       "หมายเหตุ: ระบบ API ประวัติธุรกรรมบัญชีแยกประเภทสมบูรณ์ (/api/v1/wallet/transactions) ยังไม่เปิดให้บริการ ขณะนี้แสดงรายการเติมเงิน PromptPay และการถอนเงินจริงจาก API (/api/v1/top-ups, /api/v1/payouts) ส่วนรายการกันเงินประกันเควสต์และค่าตอบแทนแสดงเป็นรายการตัวอย่างจนกว่า API บัญชีแยกประเภทจะพร้อมใช้งาน",
     financeSubtitle: "การเงิน",
     amaWalletTitle: "Ama Wallet",
-    sendMoneyAction: "การส่งเงิน",
+    sendMoneyAction: "เติมเงิน",
     spendingBalanceCardTitle: "เงินพร้อมใช้",
     spendingBalanceCardDesc: "ใช้จ้างงานได้ทันที",
     escrowCardTitle: "เงินที่พักไว้",
     escrowCardDesc: "รอจ่ายเมื่องานเสร็จ",
+    earningsCardTitle: "รายได้สะสม",
+    earningsCardDesc: "รายได้จากการทำเควสต์",
+    payoutCardTitle: "กำลังถอนเงิน",
+    payoutCardDesc: "รอโอนเข้าบัญชีธนาคาร",
+    swapToWorkerView: "ดูรายได้ผู้รับงาน",
+    swapToHirerView: "ดูเงินผู้ว่าจ้าง",
+    hirerViewLabel: "กระเป๋าผู้ว่าจ้าง",
+    workerViewLabel: "กระเป๋าผู้รับงาน",
+    balanceCardsHint: "แตะการ์ดเพื่อสลับมุมมอง",
+    swapAllButton: "สลับทั้งหมด",
+    swapHint: "แตะเพื่อสลับ",
     historySectionTitle: "ประวัติ",
     filterAll: "ทั้งหมด",
     filterInflow: "เงินเข้า",

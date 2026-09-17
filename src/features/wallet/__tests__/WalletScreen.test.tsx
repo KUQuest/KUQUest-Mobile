@@ -97,9 +97,8 @@ describe("Hirer WalletScreen", () => {
     expect(view.queryByTestId("brighter-campus-badge")).toBeNull();
     // Banner
     expect(view.getByTestId("hirer-wallet-banner")).toBeTruthy();
-    expect(view.getByText("การส่งเงิน")).toBeTruthy();
+    expect(view.getByText("เติมเงิน")).toBeTruthy();
     expect(view.getByTestId("hirer-wallet-banner-action-btn")).toBeTruthy();
-
     // Balance cards
     expect(view.getByTestId("hirer-balance-cards")).toBeTruthy();
     expect(view.getByTestId("hirer-spending-balance")).toBeTruthy();
@@ -129,6 +128,65 @@ describe("Hirer WalletScreen", () => {
     expect(view.getByTestId("hirer-tx-tx-3")).toBeTruthy();
     expect(view.getByText("ค่าธรรมเนียมระบบ")).toBeTruthy();
     expect(view.getByText("- ฿10.00")).toBeTruthy();
+  });
+  it("swaps balance cards separately on individual card press", async () => {
+    const view = await render(<WalletScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("hirer-balance-cards")).toBeTruthy();
+    });
+
+    // Initial state: Both in Hirer perspective
+    expect(view.getByText("แตะการ์ดเพื่อสลับมุมมอง")).toBeTruthy();
+    expect(view.getByText("สลับทั้งหมด")).toBeTruthy();
+    expect(view.getByText("เงินพร้อมใช้")).toBeTruthy();
+    expect(view.getByText("฿ 2,450.00")).toBeTruthy();
+    expect(view.getByText("ใช้จ้างงานได้ทันที")).toBeTruthy();
+    expect(view.getByText("เงินที่พักไว้")).toBeTruthy();
+    expect(view.getByText("฿ 1,200.00")).toBeTruthy();
+    expect(view.getByText("รอจ่ายเมื่องานเสร็จ")).toBeTruthy();
+
+    // 1. Tap Card 1 only -> ONLY Card 1 swaps to Earnings
+    fireEvent.press(view.getByTestId("hirer-card-1"));
+
+    await waitFor(() => {
+      expect(view.getByText("รายได้สะสม")).toBeTruthy();
+    });
+    expect(view.getByText("฿ 4,000.00")).toBeTruthy();
+    expect(view.getByText("รายได้จากการทำเควสต์")).toBeTruthy();
+    // Card 2 remains in Escrow
+    expect(view.getByText("เงินที่พักไว้")).toBeTruthy();
+    expect(view.getByText("฿ 1,200.00")).toBeTruthy();
+
+    // 2. Tap Card 2 only -> ONLY Card 2 swaps to Pending Payout
+    fireEvent.press(view.getByTestId("hirer-card-2"));
+
+    await waitFor(() => {
+      expect(view.getByText("กำลังถอนเงิน")).toBeTruthy();
+    });
+    expect(view.getByText("฿ 1,000.00")).toBeTruthy();
+    expect(view.getByText("รอโอนเข้าบัญชีธนาคาร")).toBeTruthy();
+    // Card 1 remains in Earnings
+    expect(view.getByText("รายได้สะสม")).toBeTruthy();
+    expect(view.getByText("฿ 4,000.00")).toBeTruthy();
+
+    // 3. Tap Card 1 again -> Card 1 swaps back to Spending balance while Card 2 stays in Payout
+    fireEvent.press(view.getByTestId("hirer-card-1"));
+
+    await waitFor(() => {
+      expect(view.getByText("เงินพร้อมใช้")).toBeTruthy();
+    });
+    expect(view.getByText("฿ 2,450.00")).toBeTruthy();
+    expect(view.getByText("กำลังถอนเงิน")).toBeTruthy();
+    expect(view.getByText("฿ 1,000.00")).toBeTruthy();
+
+    // 4. Tap Swap All button -> both cards toggle
+    fireEvent.press(view.getByTestId("hirer-balance-swap-all-btn"));
+
+    await waitFor(() => {
+      expect(view.getByText("รายได้สะสม")).toBeTruthy();
+    });
+    expect(view.getByText("เงินที่พักไว้")).toBeTruthy();
   });
 
   it("filters transactions when a filter is chosen", async () => {

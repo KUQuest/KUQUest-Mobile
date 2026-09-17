@@ -127,20 +127,31 @@ export default function WalletScreen() {
           subtitle={m.walletSubtitle}
           title={m.financeSubtitle}
         />
-        {/* Action Banner "การส่งเงิน" */}
+        {/* Action Banner "เติมเงิน" */}
         <HirerWalletBanner
           label={m.sendMoneyAction}
           onPress={() => setPaymentModalOpen(true)}
         />
 
-        {/* Balance Compartment Cards: Spending Balance & Money in Escrow */}
+        {/* Balance Compartment Cards: Spending Balance & Money in Escrow (Swappable Separately) */}
         <HirerBalanceCards
+          balanceCardsHint={m.balanceCardsHint}
+          earningsBalanceSatang={balances?.earningsBalanceSatang ?? 0}
+          earningsDesc={m.earningsCardDesc}
+          earningsTitle={m.earningsCardTitle}
           escrowDesc={m.escrowCardDesc}
           escrowTitle={m.escrowCardTitle}
           fundingReservedSatang={balances?.fundingReservedSatang ?? 0}
+          hirerViewLabel={m.hirerViewLabel}
+          payoutDesc={m.payoutCardDesc}
+          payoutTitle={m.payoutCardTitle}
+          reservedForPayoutsSatang={balances?.reservedForPayoutsSatang ?? 0}
           spendingBalanceSatang={balances?.spendingBalanceSatang ?? 0}
           spendingDesc={m.spendingBalanceCardDesc}
           spendingTitle={m.spendingBalanceCardTitle}
+          swapAllButton={m.swapAllButton}
+          swapHint={m.swapHint}
+          workerViewLabel={m.workerViewLabel}
         />
 
         {/* History Section: Header & Filter Dropdown */}
