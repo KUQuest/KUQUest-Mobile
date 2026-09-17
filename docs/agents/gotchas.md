@@ -11,6 +11,14 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 ## Entries
 
+### 2026-09-17 — Keep file recovery scoped to the current worktree
+
+**What happened**: A screen migration required repeated restoration after extraction artifacts changed tracked screens. One recovery attempt used `git show ... | sponge`, which could overwrite active edits.
+
+**Root cause**: File recovery replaced working-tree state instead of applying a bounded edit against re-read content.
+
+**Rule**: Re-read before recovery and use a scoped edit. Main owns Git restoration; when a baseline replacement is necessary, restore only the explicitly owned path and reapply the requested changes. Keep `git show ... | sponge` out of worktree recovery.
+
 ### 2026-09-17 — Captured command output can be summarized, truncated, or replaced
 
 **What happened**: Three `bun run test` runs in an agent harness reported `✅ 54 passed` while the suite was `Test Suites: 1 failed, 54 passed, 55 total`; a false "tests green" claim reached a PR body. In a later session the wrapper replaced command output entirely — several runs returned only `✓ Build successful (0 units compiled)` (even for `cat` and `git log`), and `bun x jest <file>` reported `✅ 0 passed` while nothing ran.

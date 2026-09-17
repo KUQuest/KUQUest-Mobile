@@ -90,10 +90,11 @@ Follow `CODE_STYLES.md` at the repo root for formatting, import grouping, featur
 
 ## Subagent Workflow
 
-For delegated or parallel work, keep one writer per file; use read-only scout/reviewer/verifier roles for independent work.
+For delegated or parallel work, assign one writer per file and give each implementation task an explicit file allowlist. Main owns the shared worktree, branch, and Git mutations; subagents use read-only Git inspection and return changes only within that allowlist.
 
-- Require each subagent handoff to list the files it changed.
-- Require a handoff to cite a repo rule by `file:line` or not at all: a handoff once reported the lint rule `ts-no-tiny-functions`, which `eslint.config.js` does not define.
+- Require each subagent handoff to list changed files and include scoped `git status --short --untracked-files=all` plus `git diff --stat <base>` output.
+- Main checks that every changed or untracked path is in the allowlist before validation or commit.
+- Require handoffs to cite a repo rule by `file:line` or not at all; do not accept invented lint-rule names.
 
 ---
 
