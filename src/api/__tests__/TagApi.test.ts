@@ -2,13 +2,16 @@ import { ApiClient } from "../ApiClient";
 import { TagApi } from "../TagApi";
 
 describe("TagApi", () => {
-  it("parses live tags response correctly", async () => {
+  it("parses paginated live tags response correctly", async () => {
     const data = {
       success: true,
-      data: [
-        { id: "tag-1", name: "Content" },
-        { id: "tag-2", name: "Frontend" },
-      ],
+      data: {
+        items: [
+          { id: "tag-1", name: "Content" },
+          { id: "tag-2", name: "Frontend" },
+        ],
+        nextCursor: "cursor-2",
+      },
     };
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
@@ -24,14 +27,15 @@ describe("TagApi", () => {
     });
 
     const api = new TagApi(client);
-    const tags = await api.listTags();
+    const page = await api.listTags({
+      q: "front end",
+      limit: 10,
+      cursor: "cursor-1",
+    });
 
-    expect(tags).toEqual([
-      { id: "tag-1", name: "Content" },
-      { id: "tag-2", name: "Frontend" },
-    ]);
+    expect(page).toEqual(data.data);
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.example.test/api/v1/tags",
+      "https://api.example.test/api/v1/tags?q=front+end&limit=10&cursor=cursor-1",
       expect.objectContaining({ method: "GET" })
     );
   });

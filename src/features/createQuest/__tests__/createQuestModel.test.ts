@@ -180,7 +180,7 @@ describe("Create Quest model", () => {
       const payload = toQuestV2Payload({
         ...initialDraft,
         title: "Clean the library",
-        tag: "tag-library",
+        tag: "11111111-1111-4111-8111-111111111111",
         description: "Clean the shared library.",
         conditions: "The library is clean.",
         startDate: "2099-08-26",
@@ -205,10 +205,19 @@ describe("Create Quest model", () => {
         headcount: 3,
         startTime: "2099-08-26T09:00:00+07:00",
         dueAt: "2099-08-27T12:00:00+07:00",
-        tagId: "tag-library",
+        tagId: "11111111-1111-4111-8111-111111111111",
         proofRequired: true,
         locations: [{ label: "Main library" }],
       });
+    });
+
+    test("omits non-server fallback tag values from the API payload", () => {
+      const payload = toQuestV2Payload({
+        ...initialDraft,
+        tag: "design",
+      });
+
+      expect(payload.tagId).toBeNull();
     });
 
     test("reports reward pool plus per-Worker Platform Fee with ceiling rounding", () => {

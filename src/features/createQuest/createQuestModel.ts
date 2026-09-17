@@ -262,6 +262,12 @@ export function toQuestDraftPayload(draft: QuestDraft): QuestDraftPayload {
   };
 }
 
+function isServerTagId(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value.trim()
+  );
+}
+
 export function toQuestV2Payload(draft: QuestDraft): CreateQuestV2Payload {
   const fundingTotalSatang = getDraftRewardSatang(draft) ?? 0;
   const headcount = getValidDraftHeadcount(draft) ?? 0;
@@ -277,7 +283,7 @@ export function toQuestV2Payload(draft: QuestDraft): CreateQuestV2Payload {
     headcount,
     startTime: `${draft.startDate}T${draft.startTime}:00+07:00`,
     dueAt: `${draft.deadline}T${draft.endTime}:00+07:00`,
-    tagId: draft.tag.trim() || null,
+    tagId: isServerTagId(draft.tag) ? draft.tag.trim() : null,
     proofRequired: draft.proofRequired !== "none",
     locations:
       draft.locationMode === "ON_CAMPUS" && location

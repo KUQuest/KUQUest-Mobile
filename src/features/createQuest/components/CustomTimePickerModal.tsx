@@ -134,10 +134,11 @@ export default function CustomTimePickerModal({
   };
 
   const handleStepMinute = (delta: number) => {
-    setMinute((current) => {
-      const next = (current + delta + 60) % 60;
-      return next;
-    });
+    const totalMinutes = hour * 60 + minute + delta;
+    const normalizedMinutes =
+      ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
+    setHour(Math.floor(normalizedMinutes / 60));
+    setMinute(normalizedMinutes % 60);
   };
 
   const handleApplyPreset = (presetTime: string) => {

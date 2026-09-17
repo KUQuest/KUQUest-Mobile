@@ -128,6 +128,7 @@ export interface CreateQuestMessages {
   publishQuest: string;
   publishingQuest: string;
   loadingDraft: string;
+  loadingTags: string;
   savedDraftTitle: string;
   savedDraftDescription: string;
   publishedQuestTitle: string;
@@ -334,6 +335,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       publishQuest: "Publish Quest",
       publishingQuest: "Publishing Quest…",
       loadingDraft: "Restoring your draft…",
+      loadingTags: "Loading tags…",
       savedDraftTitle: "Quest draft saved locally",
       savedDraftDescription:
         "Your draft is stored securely on this device and is not visible on the Quest Board yet.",
@@ -542,6 +544,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       publishQuest: "เผยแพร่เควสต์",
       publishingQuest: "กำลังเผยแพร่เควสต์…",
       loadingDraft: "กำลังกู้คืนฉบับร่าง…",
+      loadingTags: "กำลังโหลดแท็ก…",
       savedDraftTitle: "บันทึกฉบับร่างเควสต์แล้ว",
       savedDraftDescription:
         "ฉบับร่างถูกเก็บไว้อย่างปลอดภัยในอุปกรณ์นี้ และยังไม่แสดงบนกระดานเควสต์",

@@ -308,7 +308,10 @@ function DateTimeField({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${messages.selectDate}: ${dateFormatted || emptyLabel}`}
-            onPress={onDatePress ?? onPress}
+            onPress={(event) => {
+              event.stopPropagation();
+              (onDatePress ?? onPress)();
+            }}
             className={cn(
               styles.scheduleSplitBtn,
               error ? styles.scheduleSplitBtnError : null
@@ -339,7 +342,10 @@ function DateTimeField({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${messages.selectTime}: ${timeValue || emptyLabel}`}
-            onPress={onTimePress ?? onPress}
+            onPress={(event) => {
+              event.stopPropagation();
+              (onTimePress ?? onPress)();
+            }}
             className={cn(
               styles.scheduleSplitBtn,
               error ? styles.scheduleSplitBtnError : null
@@ -1138,24 +1144,50 @@ export default function CreateQuestScreen({
   } | null>(null);
 
   const [liveTags, setLiveTags] = useState<TagItem[]>([]);
+  const [hasLoadedLiveTags, setHasLoadedLiveTags] = useState(false);
+  const [tagLoading, setTagLoading] = useState(false);
+  const tagRequestRef = useRef(0);
+  const tagSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    let mounted = true;
+  const loadTags = useCallback((query = "") => {
+    const requestId = ++tagRequestRef.current;
+    setTagLoading(true);
     void tagApi
-      .listTags()
-      .then((tags) => {
-        if (mounted && tags.length > 0) setLiveTags(tags);
+      .listTags({ q: query, limit: 50 })
+      .then((page) => {
+        if (requestId !== tagRequestRef.current) return;
+        setLiveTags(page.items);
+        setHasLoadedLiveTags(true);
       })
       .catch(() => {
-        // Keep fallback tags
+        if (requestId !== tagRequestRef.current) return;
+        setLiveTags([]);
+        setHasLoadedLiveTags(false);
+      })
+      .finally(() => {
+        if (requestId === tagRequestRef.current) setTagLoading(false);
       });
-    return () => {
-      mounted = false;
-    };
   }, []);
 
+  useEffect(() => {
+    loadTags();
+    return () => {
+      clearTimeout(tagSearchTimerRef.current);
+    };
+  }, [loadTags]);
+
+  const handleTagSearch = useCallback(
+    (query: string) => {
+      clearTimeout(tagSearchTimerRef.current);
+      tagSearchTimerRef.current = setTimeout(() => {
+        loadTags(query);
+      }, 250);
+    },
+    [loadTags]
+  );
+
   const tagOptions = useMemo(() => {
-    if (liveTags.length > 0) {
+    if (hasLoadedLiveTags) {
       return liveTags.map((tag) => ({
         label: tag.name,
         shortLabel: tag.name,
@@ -1185,7 +1217,7 @@ export default function CreateQuestScreen({
         value: "campus-life",
       },
     ];
-  }, [liveTags, locale]);
+  }, [hasLoadedLiveTags, liveTags, locale]);
   const candidateOptions = useMemo(
     () => [
       {
@@ -2230,6 +2262,9 @@ export default function CreateQuestScreen({
                     placeholder={messages.chooseQuestTag}
                     error={errors.tag}
                     searchable
+                    loading={tagLoading}
+                    loadingMessage={messages.loadingTags}
+                    onSearchChange={handleTagSearch}
                     searchPlaceholder={messages.searchQuestTags}
                     noResultsMessage={messages.noMatchingQuestTags}
                     clearSearchLabel={messages.clearSearch}

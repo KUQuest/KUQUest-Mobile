@@ -259,6 +259,49 @@ describe("CreateQuestScreen", () => {
     });
   });
 
+  it("keeps the custom time picker open when no date is selected", async () => {
+    mockLoadQuestDraft.mockResolvedValueOnce({
+      draft: {
+        ...initialDraft,
+        title: "Time picker quest",
+        tag: "design",
+        description: "Choose a time",
+        conditions: "The time is saved",
+        location: "Activity building",
+        wage: "250",
+      },
+      step: 2,
+      state: "DRAFT",
+    });
+
+    const view = await render(
+      <CreateQuestScreen editQuestId="draft-without-schedule" />
+    );
+
+    await fireEvent.press(view.getByTestId("create-quest-logistics-toggle"));
+    await fireEvent.press(
+      view.getByTestId("create-quest-start-datetime-time-btn")
+    );
+
+    expect(view.getByTestId("custom-time-picker-confirm")).toBeTruthy();
+  });
+
+  it("carries minute-step overflow into the next hour", async () => {
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
+
+    await fireEvent.press(view.getByTestId("create-quest-logistics-toggle"));
+    await fireEvent.press(
+      view.getByTestId("create-quest-start-datetime-time-btn")
+    );
+    await fireEvent.press(view.getByTestId("hour-cell-23"));
+    await fireEvent.press(view.getByTestId("minute-cell-55"));
+    await fireEvent.press(view.getByTestId("minute-step-plus5"));
+
+    expect(
+      view.getByTestId("custom-time-picker-confirm").props.accessibilityLabel
+    ).toContain("00:00");
+  });
+
   it("applies quick date and time presets in the logistics flow", async () => {
     const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
 
