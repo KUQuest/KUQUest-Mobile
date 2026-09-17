@@ -1549,7 +1549,14 @@ export default function QuestDetailScreen({
     void liveQuestService
       .createCandidateInquiry(quest.id)
       .then((inquiry) => {
-        router.push(`./inquiry/${inquiry.id}`);
+        router.push({
+          pathname: "/quest/[id]/inquiry/[conversationId]",
+          params: {
+            id: quest.id,
+            conversationId: inquiry.id,
+            viewerId: applicationStudentId,
+          },
+        });
       })
       .catch((error) => {
         Alert.alert(

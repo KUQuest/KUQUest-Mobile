@@ -215,6 +215,40 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
       expect(mockPush).toHaveBeenCalledWith("/profile/hirer-oak-uuid");
     });
   });
+  it("opens Candidate Inquiry with explicit route parameters", async () => {
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createLiveSnapshot({
+        mode: "CANDIDATE",
+        quest: {
+          ...createLiveSnapshot().quest,
+          mode: "CANDIDATE",
+        },
+      })
+    );
+    (liveQuestService.createCandidateInquiry as jest.Mock).mockResolvedValue({
+      id: "inquiry-1",
+    });
+
+    const view = await render(
+      <QuestDetailScreen questId="quest-live-1" studentId="current-worker-1" />
+    );
+
+    await waitFor(() =>
+      expect(view.getByTestId("quest-message-owner-button")).toBeTruthy()
+    );
+    fireEvent.press(view.getByTestId("quest-message-owner-button"));
+
+    await waitFor(() =>
+      expect(mockPush).toHaveBeenCalledWith({
+        pathname: "/quest/[id]/inquiry/[conversationId]",
+        params: {
+          id: "quest-live-1",
+          conversationId: "inquiry-1",
+          viewerId: "current-worker-1",
+        },
+      })
+    );
+  });
 
   it("does not render a join pill in quest cards", async () => {
     const view = await render(

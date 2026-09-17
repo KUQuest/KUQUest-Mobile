@@ -20,12 +20,18 @@ jest.mock("@/api/QuestApi", () => ({
     rejectCandidateApplication: jest.fn(),
     rejectCandidateTeam: jest.fn(),
     listMyAssignments: jest.fn(),
+    listQuestAssignments: jest.fn(),
+    listApplications: jest.fn(),
+    listCandidateTeams: jest.fn(),
+    getUnderfilled: jest.fn(),
+    listProofSubmissions: jest.fn(),
   },
 }));
 
 jest.mock("@/api/ChatApi", () => ({
   chatApi: {
     createCandidateInquiry: jest.fn(),
+    listConversations: jest.fn(),
   },
 }));
 
@@ -245,6 +251,61 @@ describe("LiveQuestService", () => {
     const hirer =
       await liveQuestService.getHirerParticipant("quest-hirer-fail");
     expect(hirer).toBeNull();
+  });
+  it("allows a Hirer to read and write an active Work Conversation", async () => {
+    mockedQuestApi.getDetail.mockResolvedValue({
+      id: "quest-work-1",
+      title: "Work Quest",
+      description: "Coordinate the work.",
+      condition: { items: [{ id: "condition-1", text: "Complete the work." }] },
+      tag: null,
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "SINGLE",
+      state: "QUEST_IN_PROGRESS",
+      questReward: 100,
+      headcount: 1,
+      activeWorkerCount: 1,
+      startTime: "2099-08-26T09:00:00+07:00",
+      dueAt: "2099-08-27T12:00:00+07:00",
+      proofRequired: false,
+      hirerName: "Hirer Alice",
+      locations: [],
+      images: [],
+    } as never);
+    mockedQuestApi.listQuestAssignments.mockResolvedValue([]);
+    mockedQuestApi.listApplications.mockResolvedValue([]);
+    mockedQuestApi.listCandidateTeams.mockResolvedValue([]);
+    mockedQuestApi.getUnderfilled.mockResolvedValue(null as never);
+    mockedQuestApi.listProofSubmissions.mockResolvedValue([]);
+    mockedChatApi.listConversations.mockResolvedValue({
+      items: [
+        {
+          id: "conversation-work-1",
+          type: "CONVERSATION_WORK",
+          quest: {
+            id: "quest-work-1",
+            title: "Work Quest",
+            status: "QUEST_IN_PROGRESS",
+          },
+          latestMessage: null,
+          lastActivityAt: null,
+          archived: false,
+          readOnly: false,
+          unreadCount: 0,
+        },
+      ],
+      nextCursor: null,
+    } as never);
+
+    const snapshot = await liveQuestService.getLiveSnapshot(
+      "quest-work-1",
+      "hirer-1"
+    );
+
+    expect(snapshot.capabilities).toMatchObject({
+      canReadWorkChat: true,
+      canWriteWorkChat: true,
+    });
   });
 
   it("rejects candidate application through questApi.rejectCandidateApplication", async () => {
