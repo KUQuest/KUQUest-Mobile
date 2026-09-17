@@ -16,13 +16,21 @@ jest.mock("../../auth/AuthService", () => ({
   authService: { signOut: jest.fn().mockResolvedValue(undefined) },
 }));
 
+const mockSetLocale = jest.fn();
+let mockLocale: "th" | "en" = "en";
+
 jest.mock("../../../locales/LocaleProvider", () => ({
-  useLocale: () => ({ locale: "en" }),
+  useLocale: () => ({
+    locale: mockLocale,
+    setLocale: mockSetLocale,
+  }),
 }));
 
 describe("Settings screen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockSetLocale.mockReset();
+    mockLocale = "en";
   });
 
   it("renders grouped account, preference, support, and about content", async () => {
@@ -42,6 +50,60 @@ describe("Settings screen", () => {
     ).toBeGreaterThanOrEqual(24);
     expect(view.getByTestId("settings-content")).toBeTruthy();
     expect(view.queryByTestId("settings-report")).toBeNull();
+  });
+
+  it("renders language row with current language and opens modal when pressed", async () => {
+    const view = await render(<SettingsScreen />);
+
+    expect(view.getByText("English")).toBeTruthy();
+
+    fireEvent.press(view.getByTestId("settings-language"));
+
+    await waitFor(() => {
+      expect(view.getByTestId("settings-language-modal")).toBeTruthy();
+      expect(view.getByTestId("settings-language-th")).toBeTruthy();
+      expect(view.getByTestId("settings-language-en")).toBeTruthy();
+    });
+  });
+
+  it("switches language to Thai when Thai option is pressed in modal", async () => {
+    const view = await render(<SettingsScreen />);
+
+    fireEvent.press(view.getByTestId("settings-language"));
+    await waitFor(() =>
+      expect(view.getByTestId("settings-language-th")).toBeTruthy()
+    );
+    fireEvent.press(view.getByTestId("settings-language-th"));
+
+    await waitFor(() => expect(mockSetLocale).toHaveBeenCalledWith("th"));
+  });
+
+  it("switches language to English when English option is pressed in modal", async () => {
+    mockLocale = "th";
+    const view = await render(<SettingsScreen />);
+
+    fireEvent.press(view.getByTestId("settings-language"));
+    await waitFor(() =>
+      expect(view.getByTestId("settings-language-en")).toBeTruthy()
+    );
+    fireEvent.press(view.getByTestId("settings-language-en"));
+
+    await waitFor(() => expect(mockSetLocale).toHaveBeenCalledWith("en"));
+  });
+
+  it("closes modal when cancel button is pressed without calling setLocale", async () => {
+    const view = await render(<SettingsScreen />);
+
+    fireEvent.press(view.getByTestId("settings-language"));
+    await waitFor(() =>
+      expect(view.getByTestId("settings-language-modal-cancel")).toBeTruthy()
+    );
+    fireEvent.press(view.getByTestId("settings-language-modal-cancel"));
+
+    await waitFor(() => {
+      expect(view.queryByTestId("settings-language-th")).toBeNull();
+    });
+    expect(mockSetLocale).not.toHaveBeenCalled();
   });
 
   it("renders a red logout button at the bottom and returns to the start screen", async () => {
