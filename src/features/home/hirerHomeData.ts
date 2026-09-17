@@ -39,11 +39,13 @@ export interface LocalizedHirerCopy {
 export interface HirerHomeQuestFixture {
   id: string;
   title: LocalizedHirerCopy;
+  tag?: LocalizedHirerCopy;
   status: CanonicalHirerQuestStatus;
   worker: {
     id: string;
     displayName: LocalizedHirerCopy;
     avatarUri?: string;
+    faculty?: LocalizedHirerCopy;
   };
   dueAt: string;
 }
@@ -132,12 +134,20 @@ export const hirerHomeQuestFixture: HirerHomeQuestFixture = {
     en: "Sweep the area around campus",
     th: "กวาดขยะรอบมหาวิทยาลัย",
   },
+  tag: {
+    en: "Cleaning",
+    th: "ทำความสะอาด",
+  },
   status: QuestStatus.QUEST_IN_PROGRESS,
   worker: {
     id: "demo-worker-1",
     displayName: {
       en: "Nattaphon Jaidee",
       th: "ณัฐพล ใจดี",
+    },
+    faculty: {
+      en: "Faculty of Engineering",
+      th: "คณะวิศวกรรมศาสตร์",
     },
   },
   dueAt: "2026-09-19T18:00:00+07:00",

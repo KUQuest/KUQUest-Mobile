@@ -13,7 +13,9 @@ export interface HirerHomeMessages {
   emptyDescription: string;
   activeQuestTitle: string;
   workerProfile: string;
+  assignedWorkerRole: string;
   timelineTitle: string;
+  stepProgress: (current: number, total: number) => string;
   currentStageLabel: string;
   terminalStageLabel: string;
   openDetails: string;
@@ -46,7 +48,10 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
       "Published Quests with accepted Workers will appear here.",
     activeQuestTitle: "Active Quest",
     workerProfile: "View Worker profile",
+    assignedWorkerRole: "Assigned Worker",
     timelineTitle: "QUEST TIMELINE",
+    stepProgress: (current: number, total: number) =>
+      `Step ${current} of ${total}`,
     currentStageLabel: "current",
     terminalStageLabel: "terminal",
     openDetails: "Open details",
@@ -92,7 +97,10 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     emptyDescription: "เควสต์ที่เผยแพร่และมีผู้ทำงานตอบรับจะแสดงที่นี่",
     activeQuestTitle: "เควสต์ที่กำลังดำเนินการ",
     workerProfile: "ดูโปรไฟล์ผู้ทำงาน",
+    assignedWorkerRole: "ผู้รับผิดชอบงาน",
     timelineTitle: "ลำดับการทำงาน",
+    stepProgress: (current: number, total: number) =>
+      `ขั้นตอนที่ ${current} จาก ${total}`,
     currentStageLabel: "สถานะปัจจุบัน",
     terminalStageLabel: "สถานะสิ้นสุด",
     openDetails: "เปิดรายละเอียด",

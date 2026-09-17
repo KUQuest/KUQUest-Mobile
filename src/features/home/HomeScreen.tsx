@@ -118,10 +118,12 @@ export default function HomeScreen() {
                 onOpenWorkerProfile={handleOpenWorkerProfile}
                 questId={quest.id}
                 status={quest.status}
+                tag={quest.tag?.[locale]}
                 title={quest.title[locale]}
                 worker={{
                   avatarUri: quest.worker.avatarUri,
                   displayName: quest.worker.displayName[locale],
+                  faculty: quest.worker.faculty?.[locale],
                   id: quest.worker.id,
                 }}
               />
