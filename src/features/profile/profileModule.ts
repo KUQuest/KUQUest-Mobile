@@ -282,94 +282,94 @@ export class ProfileModule {
   }
 
   async getEditData(): Promise<ProfileEditData> {
-    const profileApi = await authService.getProfileApi();
-    return profileApi.getEditData();
+    const studentApi = await authService.getStudentApi();
+    return studentApi.getEditData();
   }
 
   async updateBasics(update: ProfileBasicsUpdate): Promise<ProfileResponse> {
-    const profileApi = await authService.getProfileApi();
-    return profileApi.updateBasics(update);
+    const studentApi = await authService.getStudentApi();
+    return studentApi.updateBasics(update);
   }
 
   async uploadAvatar(asset: UploadAsset): Promise<string | null> {
-    const profileApi = await authService.getProfileApi();
-    return profileApi.uploadAvatar(asset);
+    const studentApi = await authService.getStudentApi();
+    return studentApi.uploadAvatar(asset);
   }
 
   async createExperience(
     entry: ExperienceCreate
   ): Promise<ExperienceEntry | undefined> {
-    const profileApi = await authService.getProfileApi();
-    return profileApi.createExperience(entry);
+    const studentApi = await authService.getStudentApi();
+    return studentApi.createExperience(entry);
   }
 
   async updateExperience(
     id: string,
     update: Partial<ExperienceCreate>
   ): Promise<ExperienceEntry | undefined> {
-    const profileApi = await authService.getProfileApi();
-    return profileApi.updateExperience(id, update);
+    const studentApi = await authService.getStudentApi();
+    return studentApi.updateExperience(id, update);
   }
 
   async deleteExperience(id: string): Promise<void> {
-    const profileApi = await authService.getProfileApi();
-    return profileApi.deleteExperience(id);
+    const studentApi = await authService.getStudentApi();
+    return studentApi.deleteExperience(id);
   }
 
   async createPortfolio(entry: PortfolioCreate): Promise<string> {
-    const profileApi = await authService.getProfileApi();
-    return profileApi.createPortfolio(entry);
+    const studentApi = await authService.getStudentApi();
+    return studentApi.createPortfolio(entry);
   }
 
   async updatePortfolio(
     id: string,
     update: { title?: string; description?: string | null }
   ): Promise<void> {
-    const profileApi = await authService.getProfileApi();
-    return profileApi.updatePortfolio(id, update);
+    const studentApi = await authService.getStudentApi();
+    return studentApi.updatePortfolio(id, update);
   }
 
   async uploadPortfolioImage(id: string, asset: UploadAsset): Promise<void> {
-    const profileApi = await authService.getProfileApi();
-    return profileApi.uploadPortfolioImage(id, asset);
+    const studentApi = await authService.getStudentApi();
+    return studentApi.uploadPortfolioImage(id, asset);
   }
 
   async deletePortfolioImage(id: string): Promise<void> {
-    const profileApi = await authService.getProfileApi();
-    return profileApi.deletePortfolioImage(id);
+    const studentApi = await authService.getStudentApi();
+    return studentApi.deletePortfolioImage(id);
   }
 
   async deletePortfolio(id: string): Promise<void> {
-    const profileApi = await authService.getProfileApi();
-    return profileApi.deletePortfolio(id);
+    const studentApi = await authService.getStudentApi();
+    return studentApi.deletePortfolio(id);
   }
 
   async createCertificate(entry: CertificateCreate): Promise<string> {
-    const profileApi = await authService.getProfileApi();
-    return profileApi.createCertificate(entry);
+    const studentApi = await authService.getStudentApi();
+    return studentApi.createCertificate(entry);
   }
 
   async updateCertificate(
     id: string,
     update: CertificateCreate
   ): Promise<void> {
-    const profileApi = await authService.getProfileApi();
-    return profileApi.updateCertificate(id, update);
+    const studentApi = await authService.getStudentApi();
+    return studentApi.updateCertificate(id, update);
   }
 
   async uploadCertificateImage(id: string, asset: UploadAsset): Promise<void> {
-    const profileApi = await authService.getProfileApi();
-    return profileApi.uploadCertificateImage(id, asset);
+    const studentApi = await authService.getStudentApi();
+    return studentApi.uploadCertificateImage(id, asset);
   }
 
   async deleteCertificateImage(id: string): Promise<void> {
-    const profileApi = await authService.getProfileApi();
-    return profileApi.deleteCertificateImage(id);
+    const studentApi = await authService.getStudentApi();
+    return studentApi.deleteCertificateImage(id);
   }
 
   async deleteCertificate(id: string): Promise<void> {
-    const profileApi = await authService.getProfileApi();
-    return profileApi.deleteCertificate(id);
+    const studentApi = await authService.getStudentApi();
+    return studentApi.deleteCertificate(id);
   }
 
   mapProfileRecordsToDraft(input: ProfileDraftMapperInput): ProfileDraft {

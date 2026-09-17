@@ -408,3 +408,123 @@ describe("StudentApi", () => {
     );
   });
 });
+
+describe("StudentApi profile edit aggregation", () => {
+  let api: StudentApi;
+
+  function createProfile() {
+    return {
+      version: 1,
+      email: "student@ku.th",
+      firstName: "Ada",
+      lastName: "Student",
+      bio: "A bio",
+      telephone: "0812345678",
+      studentId: "6712345678",
+      academicYear: "3",
+      university: "Kasetsart University",
+      occupation: { id: "occupation-id", name: "Student" },
+      tags: [{ id: "design", name: "Design" }],
+      department: {
+        id: "department-id",
+        name: "Software Engineering",
+        faculty: { name: "Science" },
+      },
+      avatar: { fileId: "avatar-id", url: "https://example.test/avatar.jpg" },
+    };
+  }
+
+  beforeEach(() => {
+    api = new StudentApi(
+      new ApiClient({
+        baseUrl: "https://api.example.test",
+        fetchImpl: jest.fn() as unknown as typeof fetch,
+      })
+    );
+  });
+
+  test("loads the editable Student Profile data as one feature-facing document", async () => {
+    jest.spyOn(api, "getProfile").mockResolvedValue(createProfile());
+    jest.spyOn(api, "listExperience").mockResolvedValue([]);
+    jest.spyOn(api, "listPortfolio").mockResolvedValue([]);
+    jest.spyOn(api, "listCertificates").mockResolvedValue([]);
+
+    await expect(api.getEditData()).resolves.toEqual({
+      profile: createProfile(),
+      experiences: [],
+      portfolio: [],
+      certificates: [],
+      sectionErrors: {},
+      sectionUnavailable: {},
+    });
+  });
+
+  test("keeps unrelated editor sections available when one collection fails", async () => {
+    jest.spyOn(api, "getProfile").mockResolvedValue(createProfile());
+    jest
+      .spyOn(api, "listExperience")
+      .mockRejectedValue(new Error("Experience unavailable"));
+    jest.spyOn(api, "listPortfolio").mockResolvedValue([]);
+    jest.spyOn(api, "listCertificates").mockResolvedValue([]);
+
+    await expect(api.getEditData()).resolves.toMatchObject({
+      experiences: [],
+      portfolio: [],
+      certificates: [],
+      sectionErrors: { experience: true },
+    });
+  });
+
+  test("marks a missing collection as unsupported without hiding other sections", async () => {
+    jest.spyOn(api, "getProfile").mockResolvedValue(createProfile());
+    jest
+      .spyOn(api, "listExperience")
+      .mockRejectedValue(new ApiError(404, "NOT_FOUND", "Not published"));
+    jest.spyOn(api, "listPortfolio").mockResolvedValue([]);
+    jest.spyOn(api, "listCertificates").mockResolvedValue([]);
+
+    await expect(api.getEditData()).resolves.toMatchObject({
+      experiences: [],
+      portfolio: [],
+      certificates: [],
+      sectionErrors: {},
+      sectionUnavailable: { experience: true },
+    });
+  });
+
+  test("saves only staging-supported basics fields through the public profile endpoint", async () => {
+    const updateProfile = jest
+      .spyOn(api, "updateProfile")
+      .mockResolvedValue(undefined);
+    jest.spyOn(api, "getProfile").mockResolvedValue(createProfile());
+
+    await expect(
+      api.updateBasics({
+        firstName: "Ada",
+        lastName: "Lovelace",
+        bio: "Updated",
+        telephone: "0812345678",
+        departmentId: "department-id",
+      })
+    ).resolves.toEqual(createProfile());
+
+    expect(updateProfile).toHaveBeenCalledWith({
+      firstName: "Ada",
+      lastName: "Lovelace",
+      bio: "Updated",
+      telephone: "0812345678",
+      departmentId: "department-id",
+    });
+  });
+
+  test("omits a blank bio so an existing Profile value is preserved", async () => {
+    const updateProfile = jest
+      .spyOn(api, "updateProfile")
+      .mockResolvedValue(undefined);
+    jest.spyOn(api, "getProfile").mockResolvedValue(createProfile());
+
+    await api.updateBasics({ bio: "   " });
+
+    expect(updateProfile).toHaveBeenCalledWith({});
+  });
+});

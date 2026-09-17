@@ -17,14 +17,12 @@ jest.mock("../../auth/AuthService", () => ({
   authService: {
     getSession: jest.fn(),
     getStudentApi: jest.fn(),
-    getProfileApi: jest.fn(),
   },
 }));
 
 const mockedAuthService = authService as unknown as {
   getSession: jest.Mock;
   getStudentApi: jest.Mock;
-  getProfileApi: jest.Mock;
 };
 
 const fakeProfile: ProfileResponse = {

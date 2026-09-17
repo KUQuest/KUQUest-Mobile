@@ -34,7 +34,17 @@ import { cn } from "@/tw/cn";
 import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
 import { QuestFundingSummary } from "@/components/ui/QuestFundingSummary";
 import { authService } from "@/features/auth/AuthService";
-import { myQuestService } from "./myQuestService";
+import {
+  actionLabels,
+  formatQuestDate,
+  getCategoryTone,
+  getLiveHirerItems,
+  myQuestService,
+  type CategoryTone,
+  type HirerTab,
+  type QuestSummary,
+  type StatusTone,
+} from "./myQuestService";
 import type { QuestV2CanonicalQuest } from "@/api/questV2Contracts";
 import { Pressable, SafeAreaView, ScrollView, Text, View } from "@/tw";
 import { useLocale, type SupportedLocale } from "@/locales/LocaleProvider";
@@ -63,34 +73,8 @@ import { getChatRouteParams } from "@/features/chat/chatData";
 
 type Role = "worker" | "hirer";
 type WorkerTab = "pending" | "accepted" | "history";
-type HirerTab = "active" | "draft" | "completed";
 type QuestDetailMode = "join" | "post";
-type StatusTone = "success" | "warning" | "danger" | "neutral";
-type CategoryTone = "green" | "blue" | "purple";
 type CandidateDecision = "accept" | "reject";
-
-type QuestSummary = {
-  id: string;
-  title: string;
-  tag: string;
-  categoryTone: CategoryTone;
-  date: string;
-  location: string;
-  description: string;
-  detail: string;
-  teamSize: string;
-  status: string;
-  statusTone: StatusTone;
-  action: string;
-  actionType?: "edit" | "applicants" | "detail";
-  secondaryAction?: string;
-  groupChatId?: string;
-  groupChatCapability?: WorkConversationCapability;
-  groupChatViewerId?: string;
-  host?: string;
-  appliedOn?: string;
-  reason?: string;
-};
 
 type SummaryMetric = {
   icon: "applications" | "accepted" | "history";
@@ -283,48 +267,6 @@ const content: Record<SupportedLocale, LocaleContent> = {
   },
 };
 
-const actionLabels: Record<
-  SupportedLocale,
-  {
-    detail: string;
-    applicants: string;
-    edit: string;
-    message: string;
-    start: string;
-  }
-> = {
-  th: {
-    detail: "ดูรายละเอียด",
-    applicants: "ดูผู้สมัคร",
-    edit: "แก้ไข",
-    message: "ข้อความ",
-    start: "รอเริ่มงาน",
-  },
-  en: {
-    detail: "View Detail",
-    applicants: "View Applicants",
-    edit: "Edit",
-    message: "Message",
-    start: "Awaiting start",
-  },
-};
-function formatQuestDate(value: string, locale: SupportedLocale): string {
-  if (!value) return "—";
-  const dateValue = value.length > 10 ? value.slice(0, 10) : value;
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
-    day: "numeric",
-    month: "short",
-  }).format(new Date(`${dateValue}T12:00:00`));
-}
-
-function getCategoryTone(tag: string): CategoryTone {
-  if (tag.toLocaleLowerCase().includes("print") || tag.includes("ถ่าย"))
-    return "blue";
-  if (tag.toLocaleLowerCase().includes("design") || tag.includes("ออกแบบ"))
-    return "purple";
-  return "green";
-}
-
 function findCandidateProposal(state: QuestDetailState, proposalId: string) {
   const application = state.applications.find(
     (item) =>
@@ -456,72 +398,6 @@ function getWorkflowItems(
     if (!expectedRelationship || projection.tab !== tab) return [];
     const summary = prototypeStateSummary(projection, role, locale, viewerId);
     return summary ? [summary] : [];
-  });
-}
-
-function liveQuestStatusTone(
-  status: QuestV2CanonicalQuest["state"] | "QUEST_HIDDEN"
-): StatusTone {
-  if (status === "QUEST_COMPLETED") return "success";
-  if (status === "QUEST_CANCELLED" || status === "QUEST_FAILED") {
-    return "danger";
-  }
-  if (status === "QUEST_DRAFT") return "neutral";
-  if (status === "QUEST_HIDDEN") return "warning";
-  return "success";
-}
-function liveQuestStatusLabel(
-  status: QuestV2CanonicalQuest["state"] | "QUEST_HIDDEN",
-  locale: SupportedLocale
-): string {
-  if (status === "QUEST_FAILED") return locale === "th" ? "ล้มเหลว" : "Failed";
-  return questBoardMessages[locale].statusLabel(status);
-}
-
-function getLiveHirerItems(
-  quests: QuestV2CanonicalQuest[],
-  tab: HirerTab,
-  locale: SupportedLocale
-): QuestSummary[] {
-  return quests.flatMap((quest) => {
-    const terminal =
-      quest.state === "QUEST_COMPLETED" ||
-      quest.state === "QUEST_CANCELLED" ||
-      quest.state === "QUEST_FAILED";
-    const matchesTab =
-      tab === "draft"
-        ? quest.state === "QUEST_DRAFT"
-        : tab === "completed"
-          ? terminal
-          : !terminal && quest.state !== "QUEST_DRAFT";
-    if (!matchesTab) return [];
-
-    const tag = quest.tag?.name ?? "Quest";
-    const statusValue = quest.hiddenAt ? "QUEST_HIDDEN" : quest.state;
-    const status = liveQuestStatusLabel(statusValue, locale);
-    return [
-      {
-        id: quest.id,
-        title: quest.title,
-        tag,
-        categoryTone: getCategoryTone(tag),
-        date: formatQuestDate(quest.startTime, locale),
-        location: quest.locations[0]?.label ?? "—",
-        description: quest.description ?? "",
-        detail: status,
-        teamSize: String(quest.headcount),
-        status,
-        statusTone: liveQuestStatusTone(statusValue),
-        action:
-          quest.state === "QUEST_DRAFT"
-            ? actionLabels[locale].edit
-            : actionLabels[locale].detail,
-        actionType:
-          quest.state === "QUEST_DRAFT"
-            ? ("edit" as const)
-            : ("detail" as const),
-      },
-    ];
   });
 }
 
@@ -1069,7 +945,11 @@ export default function MyQuestsScreen({
   const items = useMemo(() => {
     if (liveHirerMode) {
       return liveHirerQuests
-        ? getLiveHirerItems(liveHirerQuests, selectedTab as HirerTab, locale)
+        ? myQuestService.getLiveHirerItems(
+            liveHirerQuests,
+            selectedTab as HirerTab,
+            locale
+          )
         : [];
     }
     return [];

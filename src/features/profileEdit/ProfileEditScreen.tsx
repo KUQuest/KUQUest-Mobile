@@ -21,7 +21,7 @@ import {
 } from "lucide-react-native";
 
 import { ApiError } from "../../api/ApiClient";
-import type { ProfileEditData } from "../../api/ProfileApi";
+import type { ProfileEditData } from "../../api/StudentApi";
 import { profileModule } from "../profile/profileModule";
 import { authService } from "../auth/AuthService";
 import { AuthError } from "../auth/types";
