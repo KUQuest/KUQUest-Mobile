@@ -87,13 +87,7 @@ import {
   validateQuestDraftStep,
   type QuestDraft,
 } from "./createQuestModel";
-import {
-  createQuestDraftId,
-  deleteQuestDraft,
-  getQuestDraftStorageKey,
-  loadQuestDraft,
-  persistQuestDraft,
-} from "./createQuestPersistence";
+import { deleteQuestDraft } from "./createQuestPersistence";
 import { measureFieldRelativeToScroll } from "./createQuestFocus";
 import { formatDate, formatDateTime } from "./createQuestDates";
 import {
@@ -105,6 +99,10 @@ import {
   type SaveState,
   type Step,
 } from "./createQuestTypes";
+import {
+  useQuestPersistence,
+  type PublishedQuestRefValue,
+} from "./useQuestPersistence";
 import { liveQuestService } from "../questBoard/liveQuestService";
 import { MAX_QUEST_IMAGES, type QuestPublishCheck } from "../questBoard/types";
 
@@ -122,9 +120,6 @@ export default function CreateQuestScreen({
   const layout = getCreateQuestLayoutMetrics(width);
   const insets = useSafeAreaInsets();
   const draftChangedRef = useRef(false);
-  const skipPersistRef = useRef(false);
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const saveRequestRef = useRef(0);
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const titleRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
   const tagRef = useRef<React.ComponentRef<typeof RNPressable>>(null);
@@ -137,18 +132,6 @@ export default function CreateQuestScreen({
   const rewardRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
   const [step, setStep] = useState<Step>(() => (editQuestId ? 2 : 1));
   const [draft, setDraft] = useState<QuestDraft>(initialDraft);
-  const draftIdRef = useRef<string | null>(editQuestId ?? null);
-  const [draftHydrated, setDraftHydrated] = useState(false);
-  const [draftStorageKey, setDraftStorageKey] = useState<string | null>(null);
-  const [draftLoadAttempt, setDraftLoadAttempt] = useState(0);
-  const [draftLoadError, setDraftLoadError] = useState(false);
-  const [saveState, setSaveState] = useState<SaveState>("idle");
-  const [saveErrorIntent, setSaveErrorIntent] =
-    useState<SaveErrorIntent | null>(null);
-  const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
-  const [savingAction, setSavingAction] = useState<CompletionState | null>(
-    null
-  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [validationSummary, setValidationSummary] = useState<string | null>(
     null
@@ -171,14 +154,37 @@ export default function CreateQuestScreen({
   );
   const focusedInvalidFieldRef = useRef<string | null>(null);
   const publishCheckRequestRef = useRef(0);
-  const publishedQuestRef = useRef<{
-    questId: string;
-    version?: number;
-    storageKey: string;
-    editQuestId?: string;
-    createIdempotencyKey?: string;
-    publishIdempotencyKey?: string;
-  } | null>(null);
+  const publishedQuestRef = useRef<PublishedQuestRefValue | null>(null);
+
+  const {
+    draftIdRef,
+    draftHydrated,
+    draftStorageKey,
+    draftLoadError,
+    retryDraftLoad,
+    saveState,
+    setSaveState,
+    saveErrorIntent,
+    setSaveErrorIntent,
+    saveErrorMessage,
+    setSaveErrorMessage,
+    savingAction,
+    setSavingAction,
+    skipPersistRef,
+    saveTimerRef,
+    saveRequestRef,
+    saveDraft,
+  } = useQuestPersistence({
+    editQuestId,
+    step,
+    completedState,
+    draft,
+    draftChangedRef,
+    publishedQuestRef,
+    setDraft,
+    setStep,
+    setCompletedState,
+  });
 
   const [liveTags, setLiveTags] = useState<TagItem[]>([]);
 
@@ -262,61 +268,6 @@ export default function CreateQuestScreen({
       },
     ],
     [messages]
-  );
-
-  const saveDraft = useCallback(
-    async (
-      draftToSave: QuestDraft,
-      state: CompletionState = "DRAFT",
-      completesFlow = false
-    ): Promise<boolean> => {
-      const requestId = ++saveRequestRef.current;
-      setSaveState("saving");
-      setSavingAction(state);
-      setSaveErrorIntent(null);
-      setSaveErrorMessage(null);
-      try {
-        if (!draftStorageKey) {
-          setSaveState("error");
-          setSaveErrorIntent({ state, completesFlow });
-          setSavingAction(null);
-          return false;
-        }
-        const activeDraftId = draftIdRef.current ?? createQuestDraftId();
-        draftIdRef.current = activeDraftId;
-        const normalizedDraft = {
-          ...draftToSave,
-          headcount: getHeadcountForParticipation(
-            draftToSave.participation,
-            draftToSave.headcount
-          ),
-        };
-        await persistQuestDraft(
-          draftStorageKey,
-          activeDraftId,
-          normalizedDraft,
-          step,
-          state
-        );
-        if (requestId !== saveRequestRef.current) return false;
-        setSaveState("saved");
-        setSaveErrorIntent(null);
-        setSavingAction(null);
-        return true;
-      } catch (error) {
-        if (requestId !== saveRequestRef.current) return false;
-        setSaveState("error");
-        setSaveErrorMessage(
-          error instanceof Error
-            ? error.message
-            : "Unable to save the Quest draft."
-        );
-        setSaveErrorIntent({ state, completesFlow });
-        setSavingAction(null);
-        return false;
-      }
-    },
-    [draftStorageKey, step]
   );
 
   const publishQuest = useCallback(
@@ -448,75 +399,6 @@ export default function CreateQuestScreen({
     },
     [draftStorageKey, editQuestId, locale]
   );
-
-  useEffect(() => {
-    let active = true;
-    publishedQuestRef.current = null;
-    draftChangedRef.current = false;
-    skipPersistRef.current = true;
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = null;
-    }
-
-    void (async () => {
-      setDraftHydrated(false);
-      setDraftLoadError(false);
-      setDraftStorageKey(null);
-      try {
-        const storageKey = await getQuestDraftStorageKey();
-        const snapshot = await loadQuestDraft(
-          storageKey,
-          draftIdRef.current ?? undefined
-        );
-        if (!active) return;
-
-        setDraftStorageKey(storageKey);
-        if (snapshot && !draftChangedRef.current) {
-          setDraft({
-            ...snapshot.draft,
-            headcount: getHeadcountForParticipation(
-              snapshot.draft.participation,
-              snapshot.draft.headcount
-            ),
-          });
-          setStep(snapshot.step);
-          setCompletedState(snapshot.state === "OPEN" ? "OPEN" : null);
-        }
-        setDraftHydrated(true);
-      } catch {
-        if (!active) return;
-        skipPersistRef.current = false;
-        setDraftLoadError(true);
-        setDraftHydrated(false);
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [draftLoadAttempt, editQuestId]);
-
-  useEffect(() => {
-    if (!draftHydrated || !draftStorageKey || completedState) return undefined;
-    if (skipPersistRef.current) {
-      skipPersistRef.current = false;
-      return undefined;
-    }
-
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
-      saveTimerRef.current = null;
-      void saveDraft(draft);
-    }, 400);
-
-    return () => {
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-        saveTimerRef.current = null;
-      }
-    };
-  }, [completedState, draft, draftHydrated, draftStorageKey, saveDraft, step]);
 
   const refreshPublishCheck = useCallback(async () => {
     if (!draftHydrated || !draftStorageKey) return;
@@ -836,12 +718,6 @@ export default function CreateQuestScreen({
 
   const showHelp = () =>
     Alert.alert(messages.helpTitle, messages.helpDescription);
-
-  const retryDraftLoad = () => {
-    setDraftLoadError(false);
-    setDraftHydrated(false);
-    setDraftLoadAttempt((attempt) => attempt + 1);
-  };
 
   const goBack = () => {
     setPendingInvalidField(null);
