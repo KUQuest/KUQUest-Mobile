@@ -1,19 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import {
-  CheckCircle2,
-  Clock3,
-  FileCheck2,
-  LockKeyhole,
-  Send,
-  ShieldAlert,
-} from "lucide-react-native";
 
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import { type UploadAsset } from "@/api/fileUpload";
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
-import { Button } from "@/components/ui/Button";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
 import { useLocale } from "@/locales/LocaleProvider";
@@ -22,6 +13,9 @@ import { colors } from "@/theme/colors";
 import { ScrollView, Text, View } from "@/tw";
 
 import { authService } from "../auth/AuthService";
+import { QuestProofActionSection } from "./components/QuestProofActionSection";
+import { QuestProofStatusCard } from "./components/QuestProofStatusCard";
+import { QuestProofSummaryCard } from "./components/QuestProofSummaryCard";
 import {
   ProofSubmissionSheet,
   type ProofDraftAsset,
@@ -471,111 +465,63 @@ export default function QuestProofScreen({
           contentContainerClassName="pb-[40px] px-[20px]"
           showsVerticalScrollIndicator={false}
         >
-          <View className="bg-ku-surface-accent border-ku-border-accent rounded-[18px] border mt-[20px] p-[16px]">
-            <Text className="text-ku-text-strong font-ku-bold text-ku-title-small">
-              {snapshot?.quest.title ?? messages.proofBannerTitle}
-            </Text>
-            <Text className="text-ku-text-secondary font-ku-regular text-ku-body-small mt-[6px]">
-              {snapshot?.proofRequired
+          <QuestProofSummaryCard
+            countdown={countdown}
+            description={
+              snapshot?.proofRequired
                 ? messages.proofRequiredDescription
-                : messages.proofNotNeededDescription}
-            </Text>
-            {countdown ? (
-              <View className="items-center flex-row mt-[14px]">
-                <Clock3 color={colors.primary} size={18} />
-                <Text className="text-ku-primary font-ku-semibold text-ku-body-small ml-[7px]">
-                  {countdown}
-                </Text>
-              </View>
-            ) : null}
-          </View>
+                : messages.proofNotNeededDescription
+            }
+            error={error}
+            title={snapshot?.quest.title ?? messages.proofBannerTitle}
+          />
 
-          {error ? (
-            <View className="bg-ku-surface-danger border-ku-border-danger rounded-[14px] border flex-row items-start mt-[12px] p-[12px]">
-              <ShieldAlert color={colors.danger} size={20} />
-              <Text
-                accessibilityRole="alert"
-                className="text-ku-danger flex-1 font-ku-medium text-ku-body-small ml-[8px]"
-              >
-                {error}
-              </Text>
-            </View>
-          ) : null}
-
-          <View className="bg-ku-card border-ku-border rounded-[18px] border mt-[16px] p-[16px]">
-            <View className="items-center flex-row">
-              {status === "PROOF_APPROVED" ? (
-                <CheckCircle2 color={colors.success} size={22} />
-              ) : status === "PROOF_NOT_APPROVED" ? (
-                <ShieldAlert color={colors.danger} size={22} />
-              ) : status === "PROOF_PENDING" ? (
-                <LockKeyhole color={colors.primary} size={22} />
-              ) : (
-                <FileCheck2 color={colors.primary} size={22} />
-              )}
-              <Text className="text-ku-text-strong font-ku-bold text-ku-subtitle ml-[8px]">
-                {statusLabel}
-              </Text>
-            </View>
-            {proof?.description ? (
-              <Text className="text-ku-text-secondary text-ku-body-small mt-[12px]">
-                {proof.description}
-              </Text>
-            ) : null}
-            {status === "PROOF_PENDING" ? (
-              <Text className="text-ku-text-secondary text-ku-body-small mt-[10px]">
-                {messages.proofPending}
-              </Text>
-            ) : null}
-            {status === "PROOF_NOT_APPROVED" ? (
-              <Text className="text-ku-text-secondary text-ku-body-small mt-[10px]">
-                {messages.terminalDescription}
-              </Text>
-            ) : null}
-            {isDraft ? (
-              <Text className="text-ku-text-secondary text-ku-body-small mt-[10px]">
-                {messages.proofLockDescription}
-              </Text>
-            ) : null}
-          </View>
+          <QuestProofStatusCard
+            description={proof?.description}
+            icon={
+              status === "PROOF_APPROVED"
+                ? "approved"
+                : status === "PROOF_NOT_APPROVED"
+                  ? "not-approved"
+                  : status === "PROOF_PENDING"
+                    ? "pending"
+                    : "draft"
+            }
+            label={statusLabel}
+            lockDescription={
+              isDraft ? messages.proofLockDescription : undefined
+            }
+            pendingDescription={
+              status === "PROOF_PENDING" ? messages.proofPending : undefined
+            }
+            terminalDescription={
+              status === "PROOF_NOT_APPROVED"
+                ? messages.terminalDescription
+                : undefined
+            }
+          />
 
           {snapshot?.proofRequired ? (
-            <View className="mt-[18px] gap-[10px]">
-              {snapshot.capabilities.canSubmitProof && (isDraft || !proof) ? (
-                <Button
-                  onPress={() => setSheetOpen(true)}
-                  testID="open-proof-submission"
-                >
-                  <Send color={colors.white} size={18} />
-                  <Text className="text-ku-white font-ku-semibold text-ku-body ml-[8px]">
-                    {messages.submitProof}
-                  </Text>
-                </Button>
-              ) : null}
-              <Button
-                disabled={refreshing}
-                onPress={() => void loadSnapshot(true)}
-                testID="proof-refresh"
-                variant="secondary"
-              >
-                {messages.retry}
-              </Button>
-            </View>
+            <QuestProofActionSection
+              canSubmit={
+                snapshot.capabilities.canSubmitProof && (isDraft || !proof)
+              }
+              onOpenSubmission={() => setSheetOpen(true)}
+              onRefresh={() => void loadSnapshot(true)}
+              refreshing={refreshing}
+              retryLabel={messages.retry}
+              submitLabel={messages.submitProof}
+              variant="proof"
+            />
           ) : snapshot ? (
-            <View className="mt-[18px]">
-              <Text className="text-ku-text-secondary text-ku-body-small mb-[10px]">
-                {messages.confirmCompletionDescription}
-              </Text>
-              {snapshot.capabilities.canConfirmCompletion ? (
-                <Button
-                  disabled={refreshing}
-                  onPress={confirmCompletion}
-                  testID="confirm-proof-free-completion"
-                >
-                  {messages.confirmCompletion}
-                </Button>
-              ) : null}
-            </View>
+            <QuestProofActionSection
+              canConfirm={snapshot.capabilities.canConfirmCompletion}
+              confirmLabel={messages.confirmCompletion}
+              description={messages.confirmCompletionDescription}
+              onConfirm={confirmCompletion}
+              refreshing={refreshing}
+              variant="completion"
+            />
           ) : null}
         </ScrollView>
       )}
