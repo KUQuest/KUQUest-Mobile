@@ -86,6 +86,8 @@ Typical chain: `grilling`/`grill-with-docs` → `to-spec`/`to-tickets` → `quer
 
 Follow `CODE_STYLES.md` at the repo root for formatting, import grouping, feature architecture, NativeWind UI conventions, and Jest testing standards.
 
+- **Large screens**: Before creating or expanding a screen likely to exceed roughly 400 lines or contain multiple independently testable visual regions, read `CODE_STYLES.md` §3, "Large Screen Composition". Isolate feature-local components first, assemble them in the screen, and promote only domain-agnostic components with a second real consumer to `src/components/`.
+
 ---
 
 ## Subagent Workflow
