@@ -8,6 +8,7 @@ import React, {
 import { cn } from "@/tw/cn";
 import {
   FlatList,
+  Image,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -29,13 +30,18 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react-native";
-import { AccessibilityInfo, Modal, useWindowDimensions } from "react-native";
+import {
+  AccessibilityInfo,
+  Alert,
+  Modal,
+  RefreshControl,
+  useWindowDimensions,
+} from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-
-import { formatSatang } from "@/domain/satang";
 import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
 import { authService } from "@/features/auth/AuthService";
+import { useCalmRefresh } from "@/hooks/useCalmRefresh";
 import { HomeWalletOverview } from "@/features/wallet/HomeWalletOverview";
 import {
   LoadingSkeleton,
@@ -61,6 +67,7 @@ import type { BoardPreviewState } from "./questBoardHarness";
 import { getQuestRewardSatang, questWorkflow } from "./questWorkflow";
 
 import { liveQuestService } from "./liveQuestService";
+import { formatSatang } from "./types";
 import {
   emptyQuestBoardFilter,
   type DeadlineFilter,
@@ -173,12 +180,41 @@ function QuestCard({
   locale: "en" | "th";
   onDetail: () => void;
 }) {
+  const router = useRouter();
   const messages = questBoardMessages[locale];
   const tags = [...new Set(quest.tags)].slice(0, 1);
   const spotsRemaining = quest.headcount - quest.acceptedParticipants;
   const scheduleLabel = quest.timeRange
     ? `${quest.timeRange} · ${formatDeadline(quest.startDate, locale)}`
     : formatDeadline(quest.startDate, locale);
+
+  const ownerDisplayName = quest.creator.name || quest.hirerName || "Hirer";
+  const ownerInitials =
+    ownerDisplayName
+      .split(" ")
+      .map((s: string) => s[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "?";
+
+  const handleOwnerPress = async (e: { stopPropagation?: () => void }) => {
+    e?.stopPropagation?.();
+    if (quest.ownerStudentId) {
+      router.push(`/profile/${quest.ownerStudentId}`);
+      return;
+    }
+    try {
+      const hirer = await liveQuestService.getHirerParticipant(quest.id);
+      if (hirer?.id) {
+        router.push(`/profile/${hirer.id}`);
+      } else {
+        Alert.alert("Profile", "Profile unavailable for this quest.");
+      }
+    } catch {
+      Alert.alert("Profile", "Profile unavailable for this quest.");
+    }
+  };
 
   return (
     <Pressable
@@ -193,6 +229,28 @@ function QuestCard({
         className={styles.cardBody}
         testID={`quest-card-${quest.id}`}
       >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Profile of ${ownerDisplayName}`}
+          onPress={handleOwnerPress}
+          className={styles.ownerRow}
+          testID={`quest-card-owner-${quest.id}`}
+        >
+          <View className={styles.ownerAvatar}>
+            {quest.creator.avatarUri ? (
+              <Image
+                source={{ uri: quest.creator.avatarUri }}
+                className="w-full h-full"
+                contentFit="cover"
+              />
+            ) : (
+              <Text className={styles.ownerAvatarText}>{ownerInitials}</Text>
+            )}
+          </View>
+          <Text className={styles.ownerName} numberOfLines={1}>
+            {ownerDisplayName}
+          </Text>
+        </Pressable>
         <View className={styles.cardTopRow}>
           <View className={styles.cardTitleColumn}>
             <Text
@@ -961,29 +1019,42 @@ export default function QuestBoardScreen({
   }, [previewState, retrying]);
   const [liveQuests, setLiveQuests] = useState<QuestBoardQuest[] | null>(null);
   const [liveError, setLiveError] = useState<Error | null>(null);
+  const hasSuccessfulBoardDataRef = useRef(false);
+  const loadBoard = useCallback(async (): Promise<QuestBoardQuest[]> => {
+    try {
+      const items = await liveQuestService.listBoardQuests();
+      hasSuccessfulBoardDataRef.current = true;
+      setLiveQuests(items);
+      setLiveError(null);
+      return items;
+    } catch (error: unknown) {
+      const normalizedError =
+        error instanceof Error
+          ? error
+          : new Error("Quest Board request failed");
+      if (!hasSuccessfulBoardDataRef.current) {
+        setLiveError(normalizedError);
+      }
+      throw normalizedError;
+    }
+  }, []);
+  const { refreshing, refresh, refreshOnFocus } = useCalmRefresh(loadBoard);
+  const refreshBoard = useCallback(() => {
+    if (previewState !== "populated") return;
+    void refresh(true).catch(() => undefined);
+  }, [previewState, refresh]);
   const workflowNow = useMemo(() => new Date(), []);
   useEffect(() => {
-    let active = true;
     if (previewState !== "populated") return;
-
-    void liveQuestService
-      .listBoardQuests()
-      .then((items) => {
-        if (active) setLiveQuests(items);
-      })
-      .catch((error: unknown) => {
-        if (active) {
-          setLiveError(
-            error instanceof Error
-              ? error
-              : new Error("Quest Board request failed")
-          );
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [previewState, retryAttempt]);
+    void refresh(retryAttempt > 0).catch(() => undefined);
+  }, [previewState, refresh, retryAttempt]);
+  useFocusEffect(
+    useCallback(() => {
+      if (previewState !== "populated") return undefined;
+      refreshOnFocus();
+      return undefined;
+    }, [previewState, refreshOnFocus])
+  );
 
   const boardModel = useMemo(() => {
     if (previewState !== "populated") {
@@ -1094,6 +1165,7 @@ export default function QuestBoardScreen({
   );
 
   const retryBoard = () => {
+    hasSuccessfulBoardDataRef.current = false;
     setLiveQuests(null);
     setLiveError(null);
     setRetryAttempt((attempt) => attempt + 1);
@@ -1244,6 +1316,9 @@ export default function QuestBoardScreen({
               styles.toolbarText,
               hasActiveFilters && styles.toolbarTextActive
             )}
+            style={{
+              color: hasActiveFilters ? colors.white : colors.textStrong,
+            }}
           >
             {messages.filter}
           </Text>
@@ -1264,7 +1339,10 @@ export default function QuestBoardScreen({
           testID="open-quest-sort"
         >
           <ArrowDownUp color={colors.textStrong} size={22} strokeWidth={2.3} />
-          <Text className={styles.toolbarText}>
+          <Text
+            style={{ color: colors.textStrong }}
+            className={styles.toolbarText}
+          >
             {messages.sort}: {sortLabel}
           </Text>
         </Pressable>
@@ -1424,6 +1502,13 @@ export default function QuestBoardScreen({
     <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
       <FlatList
         accessibilityLabel={messages.resultsLabel}
+        refreshControl={
+          <RefreshControl
+            onRefresh={refreshBoard}
+            refreshing={refreshing}
+            testID="quest-board-refresh-control"
+          />
+        }
         contentContainerClassName={styles.scrollContent}
         contentContainerStyle={{
           paddingBottom:

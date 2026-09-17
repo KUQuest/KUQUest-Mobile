@@ -12,13 +12,14 @@ import { useLocale, type SupportedLocale } from "@/locales/LocaleProvider";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import { colors } from "@/theme/colors";
 import {
+  formatSatang,
   QuestPartialStartConsentStatus,
   QuestPartialStartVoteStatus,
   type QuestPartialStartConsent,
 } from "../types";
+import type { QuestV2Underfilled } from "@/api/questV2Contracts";
 import styles from "./groupQuestStyles";
 import { QuestBottomSheet } from "./QuestBottomSheet";
-import { questWorkflow } from "../questWorkflow";
 
 export interface PartialGroupStartVoter {
   id: string;
@@ -32,6 +33,8 @@ export type PartialGroupStartSurfaceState =
 export interface PartialGroupStartConsentSheetProps {
   visible: boolean;
   consent?: QuestPartialStartConsent | null;
+  /** Canonical v2 underfilled projection. Legacy consent remains supported for fixtures. */
+  underfilled?: QuestV2Underfilled | null;
   voters?: readonly PartialGroupStartVoter[];
   hirerId?: string;
   questTitle?: string;
@@ -39,6 +42,11 @@ export interface PartialGroupStartConsentSheetProps {
   actualHeadcount?: number;
   viewerId?: string;
   canRespond?: boolean;
+  canDecide?: boolean;
+  canConsent?: boolean;
+  onHirerDecision?: (decision: "PROCEED" | "CANCEL") => void;
+  onWorkerConsent?: (decision: "ACCEPT" | "DECLINE") => void;
+  splitRewardSatang?: number;
   surfaceState?: PartialGroupStartSurfaceState;
   loading?: boolean;
   error?: string;
@@ -128,6 +136,7 @@ function ErrorState({
 export function PartialGroupStartConsentSheet({
   visible,
   consent = null,
+  underfilled = null,
   voters = [],
   hirerId,
   questTitle,
@@ -135,6 +144,11 @@ export function PartialGroupStartConsentSheet({
   actualHeadcount,
   viewerId,
   canRespond = true,
+  canDecide = false,
+  canConsent = false,
+  onHirerDecision,
+  onWorkerConsent,
+  splitRewardSatang,
   surfaceState = "ready",
   loading = false,
   error,
@@ -149,98 +163,142 @@ export function PartialGroupStartConsentSheet({
   const contextLocale = useLocale().locale;
   const locale = localeProp ?? contextLocale;
   const messages = getMessages(locale);
-  const [workflowRevision, setWorkflowRevision] = useState(0);
+  const [clock, setClock] = useState(() => Date.now());
   useEffect(() => {
-    if (
-      !visible ||
-      consent?.status !== QuestPartialStartConsentStatus.PARTIAL_START_PENDING
-    )
-      return undefined;
-    return questWorkflow.subscribe(() =>
-      setWorkflowRevision((revision) => revision + 1)
-    );
-  }, [consent?.id, consent?.status, visible]);
-  void workflowRevision;
-  const clock = questWorkflow.getNow().getTime();
+    if (!visible) return undefined;
+    const interval = setInterval(() => setClock(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [visible]);
 
   const voterMap = useMemo(
     () => new Map(voters.map((voter) => [voter.id, voter])),
     [voters]
   );
-  const requiredVoters = useMemo(() => {
-    if (!consent) return [];
-    return consent.requiredVoterIds.map((id) => {
-      const provided = voterMap.get(id);
-      const role =
-        provided?.role ??
-        (id === hirerId
-          ? "HIRER"
-          : consent.frozenWorkerIds.includes(id)
-            ? "WORKER"
-            : id === consent.requiredVoterIds[0]
-              ? "HIRER"
-              : "WORKER");
-      return { id, displayName: provided?.displayName ?? id, role };
-    });
-  }, [consent, hirerId, voterMap]);
-  const responseMap = useMemo(
+  const frozenWorkerIds =
+    underfilled?.responses?.map((response) => response.workerId) ??
+    consent?.frozenWorkerIds ??
+    [];
+  const requiredVoterIds = underfilled
+    ? frozenWorkerIds
+    : (consent?.requiredVoterIds ?? []);
+  const requiredVoters = useMemo(
     () =>
-      new Map(
-        (consent?.responses ?? []).map((response) => [
-          response.voterId,
-          response,
-        ])
-      ),
-    [consent?.responses]
+      requiredVoterIds.map((id) => {
+        const provided = voterMap.get(id);
+        const role = provided?.role ?? (id === hirerId ? "HIRER" : "WORKER");
+        return { id, displayName: provided?.displayName ?? id, role };
+      }),
+    [hirerId, requiredVoterIds, voterMap]
   );
-  const deadline = consent
-    ? new Date(consent.responseDeadlineAt).getTime()
-    : Number.NaN;
+  const responseMap = useMemo(() => {
+    if (underfilled) {
+      return new Map(
+        (underfilled.responses ?? []).map((response) => [
+          response.workerId,
+          response.decision === "ACCEPT"
+            ? QuestPartialStartVoteStatus.PARTIAL_START_VOTE_APPROVED
+            : response.decision === "DECLINE"
+              ? QuestPartialStartVoteStatus.PARTIAL_START_VOTE_REJECTED
+              : undefined,
+        ])
+      );
+    }
+    return new Map(
+      (consent?.responses ?? []).map((response) => [
+        response.voterId,
+        response.status,
+      ])
+    );
+  }, [consent?.responses, underfilled]);
+  const decisionPending = underfilled?.state === "UNDERFILLED_DECISION_PENDING";
+  const consentPending = underfilled?.state === "UNDERFILLED_CONSENT_PENDING";
+  const deadline = underfilled
+    ? new Date(
+        (decisionPending
+          ? underfilled.decision.expiresAt
+          : underfilled.consent.expiresAt) ?? ""
+      ).getTime()
+    : consent
+      ? new Date(consent.responseDeadlineAt).getTime()
+      : Number.NaN;
   const remaining = Number.isFinite(deadline)
     ? Math.max(0, deadline - clock)
     : 0;
-  const duration = consent
-    ? Math.max(
-        1,
-        new Date(consent.responseDeadlineAt).getTime() -
-          new Date(consent.requestedAt).getTime()
-      )
-    : 1;
-  const progress = consent
-    ? Math.max(0, Math.min(100, (remaining / duration) * 100))
-    : 0;
-  const derivedApproved = requiredVoters.filter(
-    (voter) =>
-      responseMap.get(voter.id)?.status ===
-      QuestPartialStartVoteStatus.PARTIAL_START_VOTE_APPROVED
-  ).length;
+  const requested =
+    underfilled?.headcount ??
+    requestedHeadcount ??
+    consent?.frozenWorkerIds.length ??
+    0;
+  const actual =
+    underfilled?.activeWorkerCount ??
+    actualHeadcount ??
+    consent?.frozenWorkerIds.length ??
+    0;
+  const duration = underfilled
+    ? 10 * 60 * 1000
+    : consent
+      ? Math.max(
+          1,
+          new Date(consent.responseDeadlineAt).getTime() -
+            new Date(consent.requestedAt).getTime()
+        )
+      : 1;
+  const progress = Math.max(0, Math.min(100, (remaining / duration) * 100));
+  const derivedApproved = underfilled
+    ? underfilled.consent.acceptedCount
+    : requiredVoters.filter(
+        (voter) =>
+          responseMap.get(voter.id) ===
+          QuestPartialStartVoteStatus.PARTIAL_START_VOTE_APPROVED
+      ).length;
   const approvedCount = Math.max(
-    consent?.approvedVoterCount ?? 0,
+    underfilled?.consent.acceptedCount ?? consent?.approvedVoterCount ?? 0,
     derivedApproved
   );
-  const requiredCount = consent?.requiredVoterCount ?? requiredVoters.length;
-  const frozenCount = consent?.frozenWorkerIds.length ?? 0;
-  const requested = requestedHeadcount ?? frozenCount;
-  const actual = actualHeadcount ?? frozenCount;
+  const requiredCount =
+    underfilled?.consent.totalCount ??
+    consent?.requiredVoterCount ??
+    requiredVoters.length;
   const currentResponse = viewerId ? responseMap.get(viewerId) : undefined;
-  const canVote = Boolean(
-    consent &&
-    consent.status === QuestPartialStartConsentStatus.PARTIAL_START_PENDING &&
-    remaining > 0 &&
-    canRespond &&
-    (!viewerId || consent.requiredVoterIds.includes(viewerId)) &&
-    !currentResponse
-  );
+  const canVote =
+    Boolean(
+      consent &&
+      consent.status === QuestPartialStartConsentStatus.PARTIAL_START_PENDING &&
+      remaining > 0 &&
+      canRespond &&
+      (!viewerId || consent.requiredVoterIds.includes(viewerId)) &&
+      !currentResponse
+    ) ||
+    Boolean(
+      underfilled &&
+      consentPending &&
+      remaining > 0 &&
+      canConsent &&
+      viewerId &&
+      frozenWorkerIds.includes(viewerId) &&
+      !currentResponse
+    );
 
   const vote = (approve: boolean) => {
     if (!canVote) return;
-    if (onVote) onVote(approve);
+    if (underfilled && onWorkerConsent)
+      onWorkerConsent(approve ? "ACCEPT" : "DECLINE");
+    else if (onVote) onVote(approve);
     else if (approve) onApprove?.();
     else onReject?.();
   };
+  const decide = (decision: "PROCEED" | "CANCEL") => {
+    if (underfilled && decisionPending && canDecide)
+      onHirerDecision?.(decision);
+  };
 
-  const terminal =
-    consent?.status === QuestPartialStartConsentStatus.PARTIAL_START_APPROVED
+  const terminal = underfilled
+    ? underfilled.state === "UNDERFILLED_COMPLETED"
+      ? "approved"
+      : underfilled.state === "UNDERFILLED_CANCELLED"
+        ? "cancelled"
+        : "pending"
+    : consent?.status === QuestPartialStartConsentStatus.PARTIAL_START_APPROVED
       ? "approved"
       : consent?.status ===
             QuestPartialStartConsentStatus.PARTIAL_START_REJECTED ||
@@ -248,11 +306,13 @@ export function PartialGroupStartConsentSheet({
             QuestPartialStartConsentStatus.PARTIAL_START_TIMED_OUT
         ? "cancelled"
         : "pending";
-  const terminalDescription =
-    consent?.status === QuestPartialStartConsentStatus.PARTIAL_START_TIMED_OUT
+  const terminalDescription = underfilled
+    ? locale === "th"
+      ? "เควสต์ถูกยกเลิกก่อนการยินยอมจะเสร็จสิ้น เงินที่สำรองไว้จะคืนเต็มจำนวน"
+      : "The Quest was cancelled before consent completed. Reserved rewards are fully refunded."
+    : consent?.status === QuestPartialStartConsentStatus.PARTIAL_START_TIMED_OUT
       ? messages.timedOutDescription
       : messages.cancelledDescription;
-
   const content =
     loading || surfaceState === "loading" ? (
       <LoadingState label={messages.loading} />
@@ -262,7 +322,7 @@ export function PartialGroupStartConsentSheet({
         onRetry={onRetry}
         retryLabel={messages.retry}
       />
-    ) : !consent || surfaceState === "empty" ? (
+    ) : (!consent && !underfilled) || surfaceState === "empty" ? (
       <View className={styles.emptyState} testID="partial-group-start-empty">
         <View className={styles.emptyIcon}>
           <Clock3 color={colors.primary} size={26} strokeWidth={1.9} />
@@ -346,6 +406,32 @@ export function PartialGroupStartConsentSheet({
               <Text className={styles.reviewValue}>{actual}</Text>
             </View>
           </View>
+          {underfilled ? (
+            <>
+              <View className={styles.reviewRow}>
+                <Text className={styles.reviewLabel}>
+                  {locale === "th"
+                    ? "ค่าตอบแทนใหม่ต่อผู้ทำงาน"
+                    : "New reward per Worker"}
+                </Text>
+                <Text selectable className={styles.reviewValue}>
+                  {formatSatang(
+                    splitRewardSatang ??
+                      Math.round((underfilled.questReward ?? 0) * 100),
+                    locale
+                  )}
+                </Text>
+              </View>
+              <View className={styles.reviewRow}>
+                <Text className={styles.reviewLabel}>
+                  {locale === "th" ? "กำหนดส่งงาน" : "Due date"}
+                </Text>
+                <Text selectable className={styles.reviewValue}>
+                  {underfilled.dueAt ?? (locale === "th" ? "ไม่มี" : "Not set")}
+                </Text>
+              </View>
+            </>
+          ) : null}
         </View>
 
         <View
@@ -389,7 +475,7 @@ export function PartialGroupStartConsentSheet({
             </Text>
           </View>
           <View className={styles.voterList}>
-            {consent.frozenWorkerIds.map((workerId) => {
+            {frozenWorkerIds.map((workerId) => {
               const voter = requiredVoters.find(
                 (candidate) => candidate.id === workerId
               );
@@ -437,8 +523,51 @@ export function PartialGroupStartConsentSheet({
             </Text>
           </View>
         ) : null}
-        {canVote ? (
-          <View className={styles.consentActions}>
+        {decisionPending && canDecide && onHirerDecision ? (
+          <View
+            className={styles.consentActions}
+            testID="partial-group-start-hirer-decision"
+          >
+            <Pressable
+              accessibilityLabel={
+                locale === "th"
+                  ? "ดำเนินการต่อด้วยทีมปัจจุบัน"
+                  : "Proceed with current roster"
+              }
+              accessibilityRole="button"
+              className={`${styles.consentAction} ${styles.consentActionApprove}`}
+              onPress={() => decide("PROCEED")}
+              testID="partial-group-start-proceed"
+            >
+              <Check color={colors.white} size={17} strokeWidth={2.7} />
+              <Text
+                className={`${styles.consentActionText} ${styles.consentActionTextApprove}`}
+              >
+                {locale === "th" ? "ดำเนินการต่อ" : "Proceed"}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityLabel={
+                locale === "th" ? "ยกเลิกเควสต์" : "Cancel Quest"
+              }
+              accessibilityRole="button"
+              className={`${styles.consentAction} ${styles.consentActionReject}`}
+              onPress={() => decide("CANCEL")}
+              testID="partial-group-start-cancel"
+            >
+              <CircleX color={colors.dangerDark} size={17} strokeWidth={2.2} />
+              <Text
+                className={`${styles.consentActionText} ${styles.consentActionTextReject}`}
+              >
+                {locale === "th" ? "ยกเลิก" : "Cancel"}
+              </Text>
+            </Pressable>
+          </View>
+        ) : canVote ? (
+          <View
+            className={styles.consentActions}
+            testID="partial-group-start-worker-consent"
+          >
             <Pressable
               accessibilityLabel={messages.approveStart}
               accessibilityRole="button"
@@ -493,15 +622,16 @@ function VoterRow({
   labels,
 }: {
   voter: PartialGroupStartVoter;
-  response?: QuestPartialStartConsent["responses"][number];
+  response?:
+    QuestPartialStartConsent["responses"][number] | QuestPartialStartVoteStatus;
   labels: ReturnType<typeof getMessages>;
 }) {
+  const responseStatus =
+    typeof response === "string" ? response : response?.status;
   const approved =
-    response?.status ===
-    QuestPartialStartVoteStatus.PARTIAL_START_VOTE_APPROVED;
+    responseStatus === QuestPartialStartVoteStatus.PARTIAL_START_VOTE_APPROVED;
   const rejected =
-    response?.status ===
-    QuestPartialStartVoteStatus.PARTIAL_START_VOTE_REJECTED;
+    responseStatus === QuestPartialStartVoteStatus.PARTIAL_START_VOTE_REJECTED;
   const statusLabel = approved
     ? labels.approvedVote
     : rejected

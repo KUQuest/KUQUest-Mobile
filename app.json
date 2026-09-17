@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "kuquestmobile",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.kuquest.mobile"
@@ -37,21 +37,6 @@
         }
       ],
       "expo-font",
-      [
-        "expo-localization",
-        {
-          "supportedLocales": {
-            "ios": [
-              "en",
-              "th"
-            ],
-            "android": [
-              "en",
-              "th"
-            ]
-          }
-        }
-      ],
       "@react-native-community/datetimepicker"
     ],
     "experiments": {

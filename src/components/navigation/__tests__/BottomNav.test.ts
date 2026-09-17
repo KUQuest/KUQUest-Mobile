@@ -4,8 +4,8 @@ import { BottomNav, navigationItems } from "../BottomNav";
 import styles from "../bottomNavStyles";
 import { navigationMessages } from "../../../locales/navigationMessages";
 
-jest.mock("expo-localization", () => ({
-  getLocales: () => [{ languageCode: "en" }],
+jest.mock("../../../locales/LocaleProvider", () => ({
+  useLocale: () => ({ locale: "en" }),
 }));
 
 jest.mock("lucide-react-native", () => ({

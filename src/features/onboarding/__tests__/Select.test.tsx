@@ -25,14 +25,15 @@ const options = [
 ];
 
 describe("Select", () => {
-  test("filters searchable options and clears the query", async () => {
+  test("filters searchable options, reports remote queries, and clears the query", async () => {
+    const onSearchChange = jest.fn();
     const view = await render(
       <Select
         label="Faculty"
         options={options}
         value=""
         onValueChange={jest.fn()}
-        placeholder="Select faculty"
+        onSearchChange={onSearchChange}
         searchable
         searchPlaceholder="Search faculty"
         noResultsMessage="No results"
@@ -46,6 +47,7 @@ describe("Select", () => {
       view.getByTestId("select-search-input"),
       "engineering"
     );
+    expect(onSearchChange).toHaveBeenCalledWith("engineering");
 
     expect(view.getByText("Faculty of Engineering")).toBeTruthy();
     expect(view.queryByText("Faculty of Agriculture")).toBeNull();
@@ -53,6 +55,7 @@ describe("Select", () => {
     await fireEvent.press(view.getByTestId("clear-search-button"));
 
     expect(view.getByText("Faculty of Agriculture")).toBeTruthy();
+    expect(onSearchChange).toHaveBeenLastCalledWith("");
     expect(view.getByText("Faculty of Fisheries")).toBeTruthy();
   });
 

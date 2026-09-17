@@ -104,7 +104,8 @@ Evidence: [`chat/chat-list.png`](./sds/screenshots/chat/chat-list.png), [`chat/c
 
 1. Open Profile to view Public Profile, affiliation (Occupation, Faculty, Department), Rating, Quest count, Reviews, Experience, Portfolio Work, and Certificates.
 2. Switch between About, Experience, Works, Certificates, and Reviews tabs.
-3. Tap the Settings icon in the Profile top bar to access Edit Profile, Wallet & Payout destination, Switch Account, developer options, notifications, and terms.
+3. Tap the Settings icon in the Profile top bar to access Edit Profile, Wallet & Payout destination, Switch Account, developer options, notifications, language selection, and terms.
+4. Toggle Appearance to choose Light or Dark, then toggle the language switch below it to select Thai (`TH`) or English (`EN`).
 
 Evidence: [`profile/profile-about.png`](./sds/screenshots/profile/profile-about.png), [`settings/settings.png`](./sds/screenshots/settings/settings.png)
 

@@ -10,8 +10,8 @@ import LoginScreen from "../LoginScreen";
 import { AuthAdapter, AuthError, type AuthSession } from "../types";
 import { authMessages } from "../../../locales/authMessages";
 
-jest.mock("expo-localization", () => ({
-  getLocales: () => [{ languageCode: "th" }],
+jest.mock("../../../locales/LocaleProvider", () => ({
+  useLocale: () => ({ locale: "th" }),
 }));
 
 function createSession(): AuthSession {

@@ -1,10 +1,13 @@
-# System Locale Only for UI Language
+# In-App Locale Selection
 
-The mobile application is required to support both Thai (`th`) and English (`en`) UI texts. However, instead of providing an in-app toggle to switch the language, we have decided to derive the language exclusively from the OS-level locale settings (using `expo-localization`).
+KUQuest supports Thai (`th`) and English (`en`) UI text. The active language
+is selected in Settings with a TH/EN switch instead of being derived from the
+operating system locale.
 
-By strictly tying the UI language to the system locale:
-- We enforce consistency across the OS and the app.
-- We simplify the application state (removing manual toggle overrides and persistence).
-- If the system locale is anything other than Thai (`th`), the app defaults to English (`en`).
+The locale provider starts with Thai as the default and persists an explicit
+selection with `expo-secure-store`. Changing the selection updates localized
+content immediately and remains effective across app restarts. OS locale
+changes do not alter the app language.
 
-This introduces a minor UX friction for users who might prefer to use the app in a language different from their OS, but it aligns with the strict requirements established during development to prevent manual user overrides.
+This gives Members control over the language used by KUQuest while keeping the
+supported language set intentionally limited to Thai and English.

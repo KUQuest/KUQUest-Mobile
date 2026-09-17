@@ -53,6 +53,7 @@ export interface ProfileMessages {
   certificate: string;
   student: string;
   professor: string;
+  back: string;
 }
 
 export const profileMessages: Record<SupportedLocale, ProfileMessages> = {
@@ -111,6 +112,7 @@ export const profileMessages: Record<SupportedLocale, ProfileMessages> = {
     certificate: "Certificate",
     student: "Student",
     professor: "Professor",
+    back: "Back",
   },
   th: {
     loading: "กำลังโหลดโปรไฟล์...",
@@ -165,5 +167,6 @@ export const profileMessages: Record<SupportedLocale, ProfileMessages> = {
     certificate: "ใบรับรอง",
     student: "นักศึกษา",
     professor: "อาจารย์",
+    back: "ย้อนกลับ",
   },
 };

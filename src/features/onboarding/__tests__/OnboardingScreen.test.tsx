@@ -42,10 +42,6 @@ jest.mock("expo-router", () => ({
   useLocalSearchParams: () => mockRouteParams,
 }));
 
-jest.mock("expo-localization", () => ({
-  getLocales: () => [{ languageCode: "en" }],
-}));
-
 jest.mock("../../../locales/LocaleProvider", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
@@ -369,17 +365,19 @@ describe("OnboardingScreen Academic Registration selections", () => {
         },
         avatar: null,
       }),
-      listExperience: jest.fn().mockResolvedValue([
-        {
-          id: "experience-id",
-          title: "Tutor",
-          employmentType: "Part-time",
-          organization: "KU",
-          description: "Helps students",
-          startedAt: "2024-01-01",
-          endedAt: null,
-        },
-      ]),
+      listExperience: jest
+        .fn()
+        .mockResolvedValue([
+          {
+            id: "experience-id",
+            title: "Tutor",
+            employmentType: "Part-time",
+            organization: "KU",
+            description: "Helps students",
+            startedAt: "2024-01-01",
+            endedAt: null,
+          },
+        ]),
       updateExperience: jest.fn().mockResolvedValue(undefined),
     });
     prepareAuth(api);

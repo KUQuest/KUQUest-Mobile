@@ -54,7 +54,7 @@ const styles = {
   applicationCard:
     "bg-ku-card border-ku-border-subtle rounded-[16px] border p-[10px]",
   skeletonCard:
-    "bg-ku-white border-ku-border-subtle rounded-[16px] border p-[12px]",
+    "bg-ku-card border-ku-border-subtle rounded-[16px] border p-[12px]",
   skeletonSummary:
     "bg-ku-surface-muted border-ku-border-subtle rounded-[16px] border flex-row gap-[8px] p-[10px]",
   skeletonTip:
@@ -102,7 +102,7 @@ const styles = {
   actionButtonCompact: "min-h-[30px] mt-[8px] px-[3px]",
   actionButtonFull: "flex-[1.01]",
   actionText: "text-ku-primary font-ku-semibold text-ku-label text-center",
-  actionTextCompact: "text-[10px] leading-[13px]",
+  actionTextCompact: "text-ku-primary text-[10px] leading-[13px]",
   actionsRow: "flex-row gap-[8px] mt-[8px]",
   groupChatRow: "flex-row mt-[8px]",
   actionButtonHighlighted: "bg-ku-surface-success border-ku-border-success",

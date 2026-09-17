@@ -32,8 +32,13 @@ const styles = {
   filterChipText: "text-ku-success font-ku-medium text-ku-label",
   cards: "gap-[8px] mt-[16px]",
   cardSeparator: "h-[8px]",
-  card: "shadow-[0px_2px_5px_rgb(18_32_24_/0.06)] bg-ku-white border-ku-border-accent rounded-[16px] border p-[16px] active:bg-ku-surface-muted",
+  card: "shadow-[0px_2px_5px_rgb(18_32_24_/0.06)] bg-ku-card border-ku-border-accent rounded-[16px] border p-[16px] active:bg-ku-surface-muted",
   cardBody: "rounded-[10px]",
+  ownerRow: "flex-row items-center mb-[8px] gap-[8px]",
+  ownerAvatar:
+    "w-[28px] h-[28px] rounded-ku-pill bg-ku-surface-accent border border-ku-border-accent items-center justify-center overflow-hidden",
+  ownerAvatarText: "text-ku-primary font-ku-bold text-ku-caption",
+  ownerName: "text-ku-text-secondary font-ku-medium text-ku-body-small flex-1",
   cardTopRow: "items-start flex-row justify-between",
   cardTitleColumn: "flex-1 min-w-0 mr-[8px]",
   cardTitle: "text-ku-text-strong font-ku-bold text-ku-subtitle",
@@ -80,7 +85,7 @@ const styles = {
     "bg-ku-primary rounded-ku-pill mt-[16px] min-h-[48px] justify-center px-[24px]",
   stateActionText: "text-ku-white font-ku-semibold text-ku-body-small",
   skeletonCard:
-    "bg-ku-white border-ku-border-accent rounded-[16px] border p-[16px]",
+    "bg-ku-card border-ku-border-accent rounded-[16px] border p-[16px]",
   modalBackdrop: "bg-ku-overlay flex-1 justify-end",
   sheet:
     "bg-ku-background rounded-tl-[24px] rounded-tr-[24px] max-h-[88%] px-[24px] pt-[8px]",
@@ -102,7 +107,7 @@ const styles = {
     "items-center bg-ku-surface-success border-ku-border-success rounded-ku-pill border flex-row min-h-[48px] px-[10px]",
   selectedTagText: "text-ku-success font-ku-medium text-ku-label mr-[4px]",
   tagSearchField:
-    "items-center bg-ku-white border-ku-border-muted rounded-[8px] border flex-row min-h-[48px] px-[12px]",
+    "items-center bg-ku-card border-ku-border-muted rounded-[8px] border flex-row min-h-[48px] px-[12px]",
   tagSearchInput:
     "text-ku-text-strong flex-1 font-ku-regular text-ku-body-small min-h-[46px] px-[8px]",
   tagSuggestions: "flex-row flex-wrap gap-[4px] mt-[8px]",
@@ -110,7 +115,7 @@ const styles = {
     "text-ku-text-muted font-ku-regular text-ku-body-small mt-[8px]",
   optionList: "flex-row flex-wrap gap-[4px]",
   option:
-    "bg-ku-white border-ku-border rounded-ku-pill border min-h-[48px] justify-center px-[16px] active:bg-ku-surface-muted",
+    "bg-ku-card border-ku-border rounded-ku-pill border min-h-[48px] justify-center px-[16px] active:bg-ku-surface-muted",
   optionSelected: "bg-ku-surface-accent border-ku-primary",
   optionText: "text-ku-text-secondary font-ku-medium text-ku-meta",
   optionTextSelected: "text-ku-primary font-ku-semibold",
@@ -118,7 +123,7 @@ const styles = {
   rewardField: "flex-1 gap-[4px]",
   rewardFieldLabel: "text-ku-text-secondary font-ku-semibold text-ku-label",
   rewardInput:
-    "bg-ku-white border-ku-border-muted rounded-[8px] border font-ku-regular text-ku-text-strong min-h-[48px] px-[12px]",
+    "bg-ku-card border-ku-border-muted rounded-[8px] border font-ku-regular text-ku-text-strong min-h-[48px] px-[12px]",
   rewardError: "text-ku-danger font-ku-regular text-ku-label mt-[4px]",
   sheetActions:
     "items-center border-t-ku-border-subtle border-t flex-row gap-[8px] mt-[8px] pt-[16px]",

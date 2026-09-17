@@ -105,6 +105,89 @@ const styles = {
   pickerTitle: "text-ku-text-strong font-ku-bold text-ku-body",
   pickerDoneButton: "items-center min-h-[44px] justify-center px-[8px]",
   pickerDoneText: "text-ku-primary font-ku-semibold text-ku-body-small",
+  timePickerBackdrop: "bg-ku-overlay flex-1 justify-end",
+  timePickerSheet:
+    "bg-ku-background rounded-tl-[24px] rounded-tr-[24px] px-[20px] pb-[28px] pt-[16px]",
+  timePickerHeader: "items-center flex-row justify-between mb-[12px]",
+  timePickerTitle: "text-ku-text-strong font-ku-bold text-ku-body",
+  timePickerSubtitle:
+    "text-ku-text-muted font-ku-regular text-ku-meta mt-[2px]",
+  timePickerCloseButton:
+    "items-center justify-center p-[6px] rounded-ku-pill min-h-[36px] min-w-[36px]",
+  timeDisplayContainer:
+    "items-center flex-row justify-center gap-[12px] my-[10px]",
+  timeDisplayBox:
+    "items-center justify-center bg-ku-card border-2 border-ku-border-muted rounded-[16px] px-[20px] py-[8px] min-w-[96px]",
+  timeDisplayBoxActive: "border-ku-primary bg-ku-surface-accent",
+  timeDisplayText:
+    "text-ku-text-strong font-ku-bold text-[34px] leading-[42px]",
+  timeDisplayTextActive: "text-ku-primary",
+  timeDisplayLabel: "text-ku-text-muted font-ku-medium text-ku-meta mt-[2px]",
+  timeDisplayLabelActive: "text-ku-primary font-ku-semibold",
+  timeColon: "text-ku-text-strong font-ku-bold text-[32px] leading-[40px]",
+  timePresetsScroll: "py-[4px] mb-[12px]",
+  timePresetChip:
+    "bg-ku-surface-accent border border-ku-border-accent rounded-ku-pill px-[12px] py-[6px] mr-[6px] items-center justify-center",
+  timePresetChipActive: "bg-ku-primary border-ku-primary",
+  timePresetText: "text-ku-primary font-ku-semibold text-ku-body-small",
+  timePresetTextActive: "text-white font-ku-bold",
+  timeSectionLabel:
+    "text-ku-text-secondary font-ku-semibold text-ku-body-small mb-[8px] mt-[4px]",
+  hourGrid: "flex-row flex-wrap justify-between gap-[6px] mb-[12px]",
+  hourCell:
+    "items-center justify-center bg-ku-card border border-ku-border-subtle rounded-[10px] w-[50px] h-[40px]",
+  hourCellSelected: "bg-ku-primary border-ku-primary",
+  hourCellText: "text-ku-text-strong font-ku-semibold text-ku-body-small",
+  hourCellTextSelected: "text-white font-ku-bold",
+  minuteGrid: "flex-row flex-wrap justify-between gap-[8px] mb-[12px]",
+  minuteCell:
+    "items-center justify-center bg-ku-card border border-ku-border-subtle rounded-[12px] w-[72px] h-[44px]",
+  minuteCellSelected: "bg-ku-primary border-ku-primary",
+  minuteCellText: "text-ku-text-strong font-ku-semibold text-ku-body-small",
+  minuteCellTextSelected: "text-white font-ku-bold",
+  minuteStepperContainer:
+    "flex-row items-center justify-between bg-ku-surface-accent rounded-[12px] px-[12px] py-[8px] mb-[12px]",
+  minuteStepperLabel:
+    "text-ku-text-secondary font-ku-medium text-ku-body-small",
+  minuteStepperButtons: "flex-row items-center gap-[8px]",
+  stepperBtn:
+    "bg-ku-card border border-ku-border rounded-[8px] px-[10px] py-[6px] items-center justify-center min-w-[54px]",
+  stepperBtnText: "text-ku-text-strong font-ku-bold text-ku-body-small",
+  timePickerActions: "flex-row items-center gap-[10px] mt-[8px]",
+  timePickerCancelBtn:
+    "flex-1 items-center justify-center border border-ku-border rounded-[12px] min-h-[46px] px-[12px]",
+  timePickerCancelText:
+    "text-ku-text-secondary font-ku-semibold text-ku-control",
+  timePickerConfirmBtn:
+    "flex-1 items-center justify-center bg-ku-primary rounded-[12px] min-h-[46px] px-[16px]",
+  timePickerConfirmText: "text-white font-ku-bold text-ku-control",
+  scheduleCard:
+    "bg-ku-card border border-ku-border-subtle rounded-[14px] p-[12px] mb-[12px]",
+  scheduleCardHeader: "flex-row items-center justify-between mb-[8px]",
+  scheduleCardTitle:
+    "text-ku-text-strong font-ku-bold text-ku-body-small flex-row items-center gap-[6px]",
+  scheduleSplitRow: "flex-row gap-[8px]",
+  scheduleSplitBtn:
+    "flex-1 bg-ku-surface-subtle border border-ku-border rounded-[10px] px-[12px] py-[10px] flex-row items-center justify-between min-h-[48px]",
+  scheduleSplitBtnError: "border-ku-danger bg-ku-surface-danger",
+  scheduleSplitBtnCopy: "flex-1 mr-[8px]",
+  scheduleSplitBtnLabel: "text-ku-text-muted font-ku-regular text-ku-meta",
+  scheduleSplitBtnValue:
+    "text-ku-text-strong font-ku-semibold text-ku-body-small mt-[1px]",
+  scheduleQuickChips: "flex-row flex-wrap gap-[6px] mt-[8px]",
+  quickChip:
+    "bg-ku-surface-accent border border-ku-border-accent rounded-ku-pill px-[10px] py-[4px] items-center justify-center",
+  quickChipText: "text-ku-primary font-ku-semibold text-ku-meta",
+  durationBadge:
+    "bg-ku-surface-accent border border-ku-border-accent rounded-[12px] p-[10px] my-[8px] flex-row items-center justify-between",
+  durationBadgeError: "bg-ku-surface-danger border-ku-border-danger",
+  durationBadgeText:
+    "text-ku-primary font-ku-semibold text-ku-body-small flex-1",
+  durationBadgeErrorText:
+    "text-ku-danger-dark font-ku-medium text-ku-body-small flex-1",
+  fixDeadlineButton:
+    "bg-ku-card border border-ku-border-danger rounded-[8px] px-[10px] py-[4px] ml-[8px]",
+  fixDeadlineButtonText: "text-ku-danger-dark font-ku-bold text-ku-meta",
   iconInput:
     "text-ku-text-strong flex-1 font-ku-regular text-ku-control ml-[8px] min-h-[46px]",
   onlineToggle:

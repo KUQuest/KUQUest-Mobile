@@ -35,6 +35,7 @@ interface SelectProps {
   error?: string;
   searchable?: boolean;
   searchPlaceholder?: string;
+  onSearchChange?: (query: string) => void;
   noResultsMessage?: string;
   emptyMessage?: string;
   loading?: boolean;
@@ -69,6 +70,7 @@ export const Select = React.forwardRef<
     noResultsMessage = "No results",
     emptyMessage = "No options available",
     loading = false,
+    onSearchChange,
     loadingMessage = "Loading...",
     clearSearchLabel = "Clear search",
     closeLabel = "Close",
@@ -144,6 +146,7 @@ export const Select = React.forwardRef<
   const closeModal = () => {
     Keyboard.dismiss();
     setSearchQuery("");
+    onSearchChange?.("");
     setDropdownPosition(null);
     setModalVisible(false);
   };
@@ -159,7 +162,10 @@ export const Select = React.forwardRef<
       <TextInput
         autoFocus
         value={searchQuery}
-        onChangeText={setSearchQuery}
+        onChangeText={(value) => {
+          setSearchQuery(value);
+          onSearchChange?.(value);
+        }}
         placeholder={searchPlaceholder}
         placeholderTextColor={colors.textFaint}
         className={styles.searchInput}
@@ -170,7 +176,10 @@ export const Select = React.forwardRef<
       {searchQuery ? (
         <Pressable
           className={styles.clearButton}
-          onPress={() => setSearchQuery("")}
+          onPress={() => {
+            setSearchQuery("");
+            onSearchChange?.("");
+          }}
           accessibilityRole="button"
           accessibilityLabel={clearSearchLabel}
           testID="clear-search-button"

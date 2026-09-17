@@ -25,7 +25,7 @@ const styles = {
   statsTopRow: "items-center flex-row justify-around",
   statItem: "items-center flex-1",
   statValue: "text-ku-primary-deep font-ku-bold text-ku-title font-ku-bold",
-  statEmptyValue: "text-ku-meta text-center",
+  statEmptyValue: "text-ku-text-secondary text-ku-meta text-center",
   statLabel:
     "text-ku-text-secondary font-ku-semibold text-ku-label mt-[2px] text-center",
   statValueRow: "items-center flex-row gap-[3px]",

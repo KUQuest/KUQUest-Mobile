@@ -1,5 +1,7 @@
 import {
   MAX_QUEST_IMAGES,
+  formatSatang,
+  parseSatangInput,
   type QuestCandidateMode as QuestBoardCandidateMode,
   type QuestEscrowSummary,
   type QuestLocation,
@@ -11,7 +13,8 @@ import type { CreateQuestV2Payload } from "@/api/QuestApi";
 import type { QuestV2PublishCheck } from "@/api/questV2Contracts";
 import { createQuestMessages } from "@/locales/createQuestMessages";
 import type { SupportedLocale } from "@/locales/LocaleProvider";
-import { formatSatang, parseSatangInput } from "@/domain/satang";
+
+export const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export type QuestDraftCandidateMode = "FIRST_COME_FIRST_SERVED" | "CANDIDATE";
 export type QuestDraftParticipation = "SINGLE" | "GROUP";
@@ -45,6 +48,79 @@ export function getHeadcountForParticipation(
   currentHeadcount: string
 ): string {
   return participation === "SINGLE" ? "1" : currentHeadcount;
+}
+export function toDateValue(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+export function formatQuestDuration(
+  startMs: number,
+  endMs: number,
+  locale: "en" | "th" = "th"
+): string {
+  const diffMs = endMs - startMs;
+  if (diffMs <= 0) return "";
+  const totalMinutes = Math.floor(diffMs / (60 * 1000));
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+  const minutes = totalMinutes % 60;
+
+  if (locale === "th") {
+    const parts: string[] = [];
+    if (days > 0) parts.push(`${days} วัน`);
+    if (hours > 0) parts.push(`${hours} ชั่วโมง`);
+    if (minutes > 0 && days === 0) parts.push(`${minutes} นาที`);
+    return parts.join(" ") || "< 1 นาที";
+  }
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0 && days === 0) parts.push(`${minutes}m`);
+  return parts.join(" ") || "< 1 min";
+}
+
+export function addHoursToTime(time: string, hoursToAdd: number): string {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(time);
+  if (!match) return "12:00";
+  const hours = (Number(match[1]) + hoursToAdd) % 24;
+  const minutes = Number(match[2]);
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+export function getRelativeDateValue(daysOffset = 0): string {
+  const date = new Date();
+  date.setDate(date.getDate() + daysOffset);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function addDaysToDate(dateStr: string, daysToAdd: number): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr))
+    return getRelativeDateValue(daysToAdd);
+  const date = new Date(`${dateStr}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return getRelativeDateValue(daysToAdd);
+  date.setDate(date.getDate() + daysToAdd);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function getNearestQuarterHour(now = new Date()): {
+  hours: string;
+  minutes: string;
+} {
+  const minutes = now.getMinutes();
+  const roundedMinutes = Math.ceil(minutes / 5) * 5;
+  const date = new Date(now);
+  date.setMinutes(roundedMinutes, 0, 0);
+  const hoursStr = String(date.getHours()).padStart(2, "0");
+  const minutesStr = String(date.getMinutes()).padStart(2, "0");
+  return { hours: hoursStr, minutes: minutesStr };
 }
 
 export interface QuestDraft {
@@ -133,8 +209,7 @@ export function isQuestDraftDirty(draft: QuestDraft): boolean {
   });
 }
 
-export const MAX_REWARD_THB = 700_000;
-export const MIN_REWARD_THB = 1;
+export const MAX_REWARD_THB = 1_000_000;
 export const DEFAULT_PLATFORM_FEE_BASIS_POINTS = 500;
 
 export interface QuestDraftPayload {
@@ -197,38 +272,28 @@ export function toQuestDraftPayload(draft: QuestDraft): QuestDraftPayload {
   };
 }
 
+function isServerTagId(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value.trim()
+  );
+}
+
 export function toQuestV2Payload(draft: QuestDraft): CreateQuestV2Payload {
   const fundingTotalSatang = getDraftRewardSatang(draft) ?? 0;
   const headcount = getValidDraftHeadcount(draft) ?? 0;
   const location = draft.location.trim();
-  const conditionItems = draft.conditions
-    .split("\n")
-    .map((item) => item.trim())
-    .filter(Boolean);
 
   return {
     title: draft.title.trim(),
     description: draft.description.trim(),
-    condition: {
-      items:
-        conditionItems.length > 0
-          ? conditionItems
-          : draft.conditions.trim()
-            ? [draft.conditions.trim()]
-            : [],
-    },
+    condition: { items: [draft.conditions.trim()] },
     mode: draft.candidateMode,
     participation: draft.participation,
     questFundingTotal: fundingTotalSatang / 100,
     headcount,
-    startTime:
-      toBangkokDateTime(draft.startDate, draft.startTime) ??
-      `${draft.startDate}T${draft.startTime}:00+07:00`,
-    dueAt:
-      draft.deadline && draft.endTime
-        ? toBangkokDateTime(draft.deadline, draft.endTime)
-        : null,
-    tagId: draft.tag.trim() || null,
+    startTime: `${draft.startDate}T${draft.startTime}:00+07:00`,
+    dueAt: `${draft.deadline}T${draft.endTime}:00+07:00`,
+    tagId: isServerTagId(draft.tag) ? draft.tag.trim() : null,
     proofRequired: draft.proofRequired !== "none",
     locations:
       draft.locationMode === "ON_CAMPUS" && location
@@ -326,7 +391,6 @@ export function getQuestPublishCheck(
     ),
   };
 }
-
 export function adaptV2PublishCheck(
   serverCheck: QuestV2PublishCheck
 ): QuestPublishCheck {
@@ -383,137 +447,11 @@ export function getRewardValidationError(
   if (!/^\d+(?:\.\d{1,2})?$/.test(trimmedValue)) return messages.format;
 
   const amountSatang = parseSatangInput(trimmedValue);
-  if (
-    amountSatang === null ||
-    amountSatang < MIN_REWARD_THB * 100 ||
-    amountSatang > MAX_REWARD_THB * 100
-  ) {
+  if (amountSatang === null || amountSatang > MAX_REWARD_THB * 100) {
     return messages.bounds(MAX_REWARD_THB);
   }
 
   return undefined;
-}
-
-export const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
-
-export function toDateValue(date: Date): string {
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${date.getFullYear()}-${month}-${day}`;
-}
-
-export function getDateTimeValue(
-  dateValue: string,
-  timeValue: string
-): number | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue) || !TIME_PATTERN.test(timeValue))
-    return null;
-  const date = new Date(`${dateValue}T${timeValue}:00`);
-  return Number.isNaN(date.getTime()) ? null : date.getTime();
-}
-
-export function formatBangkokIso(date: Date): string {
-  const b = new Date(date.getTime() + 7 * 60 * 60 * 1000);
-  return `${b.toISOString().slice(0, 19)}+07:00`;
-}
-
-export function toBangkokDateTime(
-  dateStr: string,
-  timeStr: string
-): string | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || !TIME_PATTERN.test(timeStr))
-    return null;
-  const [yearStr, monthStr, dayStr] = dateStr.split("-");
-  const year = Number(yearStr);
-  const month = Number(monthStr);
-  const day = Number(dayStr);
-  const [hourStr, minuteStr] = timeStr.split(":");
-  const hours = Number(hourStr);
-  const minutes = Number(minuteStr);
-  const date = new Date(year, month - 1, day, hours, minutes, 0);
-  if (
-    Number.isNaN(date.getTime()) ||
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
-  ) {
-    return null;
-  }
-  return formatBangkokIso(date);
-}
-
-export interface QuestDraftStepFinding {
-  field:
-    | "title"
-    | "tag"
-    | "description"
-    | "conditions"
-    | "startDate"
-    | "deadline"
-    | "startTime"
-    | "endTime"
-    | "location"
-    | "headcount"
-    | "wage";
-  code: string;
-}
-
-export function validateQuestDraftStep(
-  draft: QuestDraft,
-  step: QuestDraftStep,
-  now: Date
-): QuestDraftStepFinding[] {
-  const findings: QuestDraftStepFinding[] = [];
-  if (step === 1) {
-    if (!draft.title.trim())
-      findings.push({ field: "title", code: "required" });
-    if (!draft.tag) findings.push({ field: "tag", code: "required" });
-    if (!draft.description.trim())
-      findings.push({ field: "description", code: "required" });
-    if (!draft.conditions.trim())
-      findings.push({ field: "conditions", code: "required" });
-  }
-  if (step === 2) {
-    const today = toDateValue(now);
-    if (!draft.startDate)
-      findings.push({ field: "startDate", code: "required" });
-    else if (draft.startDate < today)
-      findings.push({ field: "startDate", code: "startDatePast" });
-    if (!draft.deadline) findings.push({ field: "deadline", code: "required" });
-    if (draft.startDate && draft.deadline && draft.deadline < draft.startDate)
-      findings.push({ field: "deadline", code: "deadlineOrder" });
-    if (!draft.startTime)
-      findings.push({ field: "startTime", code: "required" });
-    else if (!TIME_PATTERN.test(draft.startTime))
-      findings.push({ field: "startTime", code: "format" });
-    if (!draft.endTime) findings.push({ field: "endTime", code: "required" });
-    else if (!TIME_PATTERN.test(draft.endTime))
-      findings.push({ field: "endTime", code: "format" });
-    const startDateTime = getDateTimeValue(draft.startDate, draft.startTime);
-    const endDateTime = getDateTimeValue(draft.deadline, draft.endTime);
-    if (
-      startDateTime !== null &&
-      endDateTime !== null &&
-      endDateTime <= startDateTime
-    )
-      findings.push({ field: "endTime", code: "timeOrder" });
-    if (draft.locationMode === "ON_CAMPUS" && !draft.location.trim())
-      findings.push({ field: "location", code: "required" });
-    if (draft.participation === "GROUP") {
-      if (!draft.headcount.trim())
-        findings.push({ field: "headcount", code: "required" });
-      else if (Number(draft.headcount) < 1)
-        findings.push({ field: "headcount", code: "bounds" });
-    }
-    // Reuse the reward rule; sentinel messages double as codes.
-    const wageCode = getRewardValidationError(draft.wage, {
-      empty: "empty",
-      format: "format",
-      bounds: () => "bounds",
-    });
-    if (wageCode) findings.push({ field: "wage", code: wageCode });
-  }
-  return findings;
 }
 
 function normalizeCandidateMode(value: string): QuestDraftCandidateMode {

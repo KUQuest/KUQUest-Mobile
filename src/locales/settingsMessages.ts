@@ -12,10 +12,12 @@ export interface SettingsMessages {
   notificationsDescription: string;
   language: string;
   languageDescription: string;
-  systemLanguage: string;
+  thaiLanguage: string;
+  englishLanguage: string;
   appearance: string;
   appearanceDescription: string;
-  systemAppearance: string;
+  lightAppearance: string;
+  darkAppearance: string;
   support: string;
   help: string;
   helpDescription: string;
@@ -43,11 +45,13 @@ export const settingsMessages: Record<SupportedLocale, SettingsMessages> = {
     notifications: "Quest notifications",
     notificationsDescription: "Updates about applications and assignments",
     language: "Language",
-    languageDescription: "Use the language selected by your device",
-    systemLanguage: "English",
+    languageDescription: "Choose the language used in KUQuest",
+    thaiLanguage: "Thai",
+    englishLanguage: "English",
     appearance: "Appearance",
-    appearanceDescription: "Follow your device appearance",
-    systemAppearance: "System",
+    appearanceDescription: "Choose between light and dark mode",
+    lightAppearance: "Light",
+    darkAppearance: "Dark",
     support: "Support",
     help: "Help and feedback",
     helpDescription: "Get help with using KUQuest",
@@ -72,11 +76,13 @@ export const settingsMessages: Record<SupportedLocale, SettingsMessages> = {
     notifications: "การแจ้งเตือนเควสต์",
     notificationsDescription: "อัปเดตเกี่ยวกับการสมัครและงานที่ได้รับ",
     language: "ภาษา",
-    languageDescription: "ใช้ภาษาที่เลือกไว้ในอุปกรณ์",
-    systemLanguage: "ไทย",
+    languageDescription: "เลือกภาษาที่ใช้ใน KUQuest",
+    thaiLanguage: "ภาษาไทย",
+    englishLanguage: "ภาษาอังกฤษ",
     appearance: "รูปแบบการแสดงผล",
-    appearanceDescription: "ใช้รูปแบบตามอุปกรณ์",
-    systemAppearance: "ตามระบบ",
+    appearanceDescription: "เลือกโหมดสว่างหรือมืด",
+    lightAppearance: "สว่าง",
+    darkAppearance: "มืด",
     support: "ช่วยเหลือ",
     help: "ช่วยเหลือและข้อเสนอแนะ",
     helpDescription: "ดูวิธีใช้งาน KUQuest",

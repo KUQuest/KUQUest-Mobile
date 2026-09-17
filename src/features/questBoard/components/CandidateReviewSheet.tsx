@@ -9,11 +9,11 @@ import {
 } from "lucide-react-native";
 
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "@/tw";
-import { formatSatang } from "@/domain/satang";
 import { useLocale, type SupportedLocale } from "@/locales/LocaleProvider";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import { colors } from "@/theme/colors";
 import {
+  formatSatang,
   QuestApplicationStatus,
   QuestTeamStatus,
   type QuestApplication,
@@ -21,6 +21,7 @@ import {
   type QuestTeam,
   type QuestTeamMember,
 } from "../types";
+import type { QuestV2Application, QuestV2Team } from "@/api/questV2Contracts";
 import styles from "./groupQuestStyles";
 import { QuestBottomSheet } from "./QuestBottomSheet";
 
@@ -60,8 +61,8 @@ type NormalizedProposal = {
 
 export interface CandidateReviewSheetProps {
   visible: boolean;
-  applications?: readonly QuestApplication[];
-  teams?: readonly QuestTeam[];
+  applications?: readonly (QuestApplication | QuestV2Application)[];
+  teams?: readonly (QuestTeam | QuestV2Team)[];
   /** Optional display-ready records for callers that already have a proposal projection. */
   proposals?: readonly CandidateReviewProposal[];
   mode?: "individual" | "team";
@@ -159,6 +160,58 @@ function StatusPill({
 function getMessages(locale: SupportedLocale) {
   return groupQuestMessages[locale];
 }
+type QuestApplicationRecord = QuestApplication | QuestV2Application;
+
+function isQuestV2Application(
+  application: QuestApplicationRecord
+): application is QuestV2Application {
+  return "memberId" in application;
+}
+
+function isLegacyQuestApplication(
+  application: QuestApplicationRecord
+): application is QuestApplication {
+  return !isQuestV2Application(application);
+}
+
+function hasLegacyTeamId(
+  application: QuestApplicationRecord
+): application is QuestApplication & { teamId: string } {
+  return isLegacyQuestApplication(application) && Boolean(application.teamId);
+}
+
+function hasLegacyApplicantId(
+  application: QuestApplicationRecord
+): application is QuestApplication & { applicantId: string } {
+  return (
+    isLegacyQuestApplication(application) && Boolean(application.applicantId)
+  );
+}
+
+function applicationStatus(application: QuestApplicationRecord) {
+  return isQuestV2Application(application)
+    ? application.state
+    : application.status;
+}
+
+function applicationApplicantId(
+  application: QuestApplicationRecord
+): string | undefined {
+  if (isQuestV2Application(application)) return application.memberId;
+  return hasLegacyApplicantId(application)
+    ? application.applicantId
+    : undefined;
+}
+
+function applicationSubmittedAt(application: QuestApplicationRecord) {
+  return isQuestV2Application(application)
+    ? application.appliedAt
+    : application.submittedAt;
+}
+
+function isWithdrawnApplication(application: QuestApplicationRecord) {
+  return applicationStatus(application) === "APPLICATION_WITHDRAWN";
+}
 
 function proposalFromRecord(
   proposal: CandidateReviewProposal,
@@ -253,65 +306,84 @@ function normalizeProposals({
   const teamMode =
     mode === "team" ||
     teamList.length > 0 ||
-    applicationList.some((application) => Boolean(application.teamId));
+    applicationList.some(hasLegacyTeamId);
+  const applicationId = (application: QuestApplicationRecord) => application.id;
   if (teamMode) {
-    const teamApplications = new Map(
-      applicationList
-        .filter((application) => application.teamId)
-        .map((application) => [application.teamId as string, application])
-    );
-    const submittedTeams = teamList.filter(
-      (team) => team.status !== QuestTeamStatus.TEAM_FORMING
-    );
+    const teamApplications = new Map<string, QuestApplication>();
+    for (const application of applicationList) {
+      if (hasLegacyTeamId(application)) {
+        teamApplications.set(application.teamId, application);
+      }
+    }
+    const submittedTeams = teamList.filter((team) => {
+      const status = "status" in team ? team.status : team.state;
+      return (
+        status !== QuestTeamStatus.TEAM_FORMING && status !== "TEAM_DISBANDED"
+      );
+    });
     const submittedProposals: NormalizedProposal[] =
       submittedTeams.map<NormalizedProposal>((team) => {
+        const status = "status" in team ? team.status : team.state;
+        const members: readonly QuestTeamMember[] =
+          "status" in team
+            ? team.members
+            : team.members.map((member) => ({
+                workerId: member.memberId,
+                role: member.memberId === team.leaderId ? "LEADER" : "MEMBER",
+                displayName: memberIdentities.get(member.memberId)?.displayName,
+              }));
         const application = teamApplications.get(team.id);
+        const proposalId = "proposalId" in team ? team.proposalId : undefined;
         const leaderName =
-          team.members.find((member) => member.workerId === team.leaderId)
+          members.find((member) => member.workerId === team.leaderId)
             ?.displayName ??
           memberIdentities.get(team.leaderId)?.displayName ??
           team.leaderId;
         return {
-          id: application?.id ?? team.proposalId ?? team.id,
+          id: application?.id ?? proposalId ?? team.id,
           type: "team",
-          status: team.status,
+          status,
           displayName: leaderName,
-          detail: `${messages.teamProposal} · ${messages.memberCount(team.members.length)}`,
+          detail: `${messages.teamProposal} · ${messages.memberCount(members.length)}`,
           submittedAt: application?.submittedAt ?? team.createdAt,
-          members: team.members,
+          members,
         };
       });
-    if (teamList.length > 0) return submittedProposals;
+    const fallbackTeamApplications = applicationList.filter(
+      (application): application is QuestApplication & { teamId: string } =>
+        hasLegacyTeamId(application) && !isWithdrawnApplication(application)
+    );
     return submittedProposals.concat(
-      applicationList
-        .filter((application) => Boolean(application.teamId))
-        .map<NormalizedProposal>((application) => ({
-          id: application.id,
-          type: "team",
-          status: application.status,
-          displayName: application.teamId ?? application.id,
-          detail: messages.teamProposal,
-          submittedAt: application.submittedAt,
-          members: [],
-        }))
+      fallbackTeamApplications.map<NormalizedProposal>((application) => ({
+        id: applicationId(application),
+        type: "team",
+        status: applicationStatus(application),
+        displayName: application.teamId ?? application.id,
+        detail: messages.teamProposal,
+        submittedAt: applicationSubmittedAt(application),
+        members: [],
+      }))
     );
   }
 
-  return applicationList.map((application) => ({
-    id: application.id,
-    type: "individual" as const,
-    status: application.status,
-    displayName: application.applicantId
-      ? (identities.get(application.applicantId)?.displayName ??
-        application.applicantId)
-      : application.id,
-    detail: application.applicantId
-      ? (identities.get(application.applicantId)?.detail ??
-        messages.individualProposal)
-      : messages.individualProposal,
-    submittedAt: application.submittedAt,
-    members: [],
-  }));
+  return applicationList
+    .filter((application) => !isWithdrawnApplication(application))
+    .map((application) => {
+      const applicantId = applicationApplicantId(application);
+      return {
+        id: applicationId(application),
+        type: "individual" as const,
+        status: applicationStatus(application),
+        displayName: applicantId
+          ? (identities.get(applicantId)?.displayName ?? applicantId)
+          : application.id,
+        detail: applicantId
+          ? (identities.get(applicantId)?.detail ?? messages.individualProposal)
+          : messages.individualProposal,
+        submittedAt: applicationSubmittedAt(application),
+        members: [],
+      };
+    });
 }
 
 function LoadingState({ label }: { label: string }) {
@@ -551,20 +623,24 @@ export function CandidateReviewSheet({
     ]
   );
   const isTeamMode =
-    normalizedProposals.some((proposal) => proposal.type === "team") ||
-    mode === "team";
+    mode === "team" ||
+    normalizedProposals.some((proposal) => proposal.type === "team");
+  const legacySubmittedTeam = teams.find(
+    (candidate): candidate is QuestTeam =>
+      !("state" in candidate) &&
+      candidate.status !== QuestTeamStatus.TEAM_FORMING
+  );
+  const requested =
+    settlement?.requestedHeadcount ??
+    requestedHeadcount ??
+    legacySubmittedTeam?.requiredHeadcount ??
+    1;
   const selected = normalizedProposals.find(
     (proposal) =>
       proposal.id === selectedProposalId ||
       proposal.status === QuestTeamStatus.TEAM_SELECTED ||
       proposal.status === QuestApplicationStatus.APPLICATION_SELECTED
   );
-  const requested =
-    settlement?.requestedHeadcount ??
-    requestedHeadcount ??
-    teams.find((team) => team.status !== QuestTeamStatus.TEAM_FORMING)
-      ?.requiredHeadcount ??
-    1;
   const selectedActual = selected
     ? selected.type === "team"
       ? selected.members.length

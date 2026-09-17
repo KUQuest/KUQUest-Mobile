@@ -1,14 +1,19 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import * as ImagePicker from "expo-image-picker";
 import {
   Check,
   CircleAlert,
   CircleX,
   Clock3,
+  FileText,
+  ImagePlus,
   Mail,
   Plus,
   Search,
+  Trash2,
   UsersRound,
 } from "lucide-react-native";
+import type { UploadAsset } from "@/api/fileUpload";
 
 import {
   ActivityIndicator,
@@ -27,6 +32,7 @@ import {
   type QuestInvitation,
   type QuestTeam,
 } from "../types";
+import type { QuestV2Team } from "@/api/questV2Contracts";
 import styles from "./groupQuestStyles";
 import { QuestBottomSheet } from "./QuestBottomSheet";
 
@@ -38,17 +44,38 @@ export interface TeamDirectoryMember {
   kuEmail?: string;
   handle?: string;
 }
+export interface ProposalFileItem {
+  id: string;
+  name: string;
+  sizeBytes?: number;
+}
 
 export type TeamAssembleSurfaceState =
   "ready" | "loading" | "error" | "empty" | "submitted";
 
 export interface TeamAssembleSheetProps {
   visible: boolean;
-  team?: QuestTeam | null;
+  team?: QuestTeam | QuestV2Team | null;
   invitations?: readonly QuestInvitation[];
   eligibleMembers?: readonly TeamDirectoryMember[];
   requestedHeadcount?: number;
   viewerId?: string;
+  /** Canonical v2 join code override; forming teams expose their server value by default. */
+  joinCode?: string | null;
+  joinCodeExpiresAt?: string | null;
+  joinCodeInput?: string;
+  onJoinCodeInputChange?: (joinCode: string) => void;
+  onJoinTeam?: (joinCode: string) => void;
+  teamName?: string | null;
+  onUpdateTeamName?: (teamId: string, name: string) => void;
+  canUpdateTeam?: boolean;
+  onRegenerateJoinCode?: (teamId: string) => void;
+  onLeaveTeam?: (teamId: string) => void;
+  onRemoveMember?: (teamId: string, memberId: string) => void;
+  canLeaveTeam?: boolean;
+  canRemoveMember?: boolean;
+  canRegenerateJoinCode?: boolean;
+  submissionBlocker?: string;
   surfaceState?: TeamAssembleSurfaceState;
   loading?: boolean;
   error?: string;
@@ -65,14 +92,38 @@ export interface TeamAssembleSheetProps {
   onRespondInvitation?: (invitationId: string, accept: boolean) => void;
   onAcceptInvitation?: (invitationId: string) => void;
   onDeclineInvitation?: (invitationId: string) => void;
-  onSubmit?: (teamId: string) => void;
-  onSubmitTeam?: (teamId: string) => void;
+  onSubmit?: (
+    teamId: string,
+    payload?: { text?: string; fileIds?: string[] }
+  ) => void;
+  onSubmitTeam?: (
+    teamId: string,
+    payload?: { text?: string; fileIds?: string[] }
+  ) => void;
+  onUploadFile?: (asset: UploadAsset) => Promise<ProposalFileItem>;
+  onUploadProposalFile?: (asset: UploadAsset) => Promise<ProposalFileItem>;
   onRetry?: () => void;
   onClose: () => void;
   bottomInset?: number;
   locale?: SupportedLocale;
 }
 
+function canonicalMemberRows(
+  team: QuestV2Team,
+  directory: readonly TeamDirectoryMember[]
+): Array<{ workerId: string; displayName: string; role: "LEADER" | "MEMBER" }> {
+  return team.members.map((member) => ({
+    workerId: member.memberId,
+    displayName:
+      directory.find((candidate) => memberId(candidate) === member.memberId)
+        ?.displayName ?? member.memberId,
+    role: member.memberId === team.leaderId ? "LEADER" : "MEMBER",
+  }));
+}
+
+function isCanonicalTeam(team: QuestTeam | QuestV2Team): team is QuestV2Team {
+  return "state" in team;
+}
 function memberId(member: TeamDirectoryMember): string {
   return member.workerId ?? member.id;
 }
@@ -162,10 +213,22 @@ function RosterRow({
   member,
   role,
   acceptedLabel,
+  canLeave,
+  canRemove,
+  onLeave,
+  onRemove,
+  leaveLabel = "Leave",
+  removeLabel = "Remove",
 }: {
   member: { workerId: string; displayName?: string };
   role: string;
   acceptedLabel: string;
+  canLeave?: boolean;
+  canRemove?: boolean;
+  onLeave?: () => void;
+  onRemove?: () => void;
+  leaveLabel?: string;
+  removeLabel?: string;
 }) {
   const name = member.displayName ?? member.workerId;
   return (
@@ -183,6 +246,27 @@ function RosterRow({
         </Text>
         <Text className={styles.rosterRole}>{role}</Text>
       </View>
+      {canRemove && onRemove ? (
+        <Pressable
+          accessibilityLabel={`${removeLabel}: ${name}`}
+          accessibilityRole="button"
+          className={styles.searchClear}
+          onPress={onRemove}
+          testID={`team-assemble-remove-member-${member.workerId}`}
+        >
+          <CircleX color={colors.dangerDark} size={18} strokeWidth={2} />
+        </Pressable>
+      ) : canLeave && onLeave ? (
+        <Pressable
+          accessibilityLabel={`${leaveLabel}: ${name}`}
+          accessibilityRole="button"
+          className={styles.memberInvite}
+          onPress={onLeave}
+          testID={`team-assemble-leave-team-${member.workerId}`}
+        >
+          <Text className={styles.memberInviteText}>{leaveLabel}</Text>
+        </Pressable>
+      ) : null}
       <Text className={styles.rosterStatus}>{acceptedLabel}</Text>
     </View>
   );
@@ -271,6 +355,21 @@ export function TeamAssembleSheet({
   requestedHeadcount,
   viewerId,
   surfaceState = "ready",
+  joinCode,
+  joinCodeExpiresAt,
+  joinCodeInput,
+  onJoinCodeInputChange,
+  onJoinTeam,
+  teamName,
+  onUpdateTeamName,
+  canUpdateTeam,
+  onRegenerateJoinCode,
+  onLeaveTeam,
+  onRemoveMember,
+  canLeaveTeam,
+  canRemoveMember,
+  canRegenerateJoinCode,
+  submissionBlocker,
   loading = false,
   error,
   submitting = false,
@@ -288,6 +387,8 @@ export function TeamAssembleSheet({
   onDeclineInvitation,
   onSubmit,
   onSubmitTeam,
+  onUploadFile,
+  onUploadProposalFile,
   onRetry,
   onClose,
   bottomInset,
@@ -299,19 +400,129 @@ export function TeamAssembleSheet({
   const [internalQuery, setInternalQuery] = useState("");
   const [internalSelectedIds, setInternalSelectedIds] = useState<string[]>([]);
   const [internalReviewing, setInternalReviewing] = useState(false);
+  const canonicalTeam = team && isCanonicalTeam(team) ? team : null;
+  const initialDraft = teamName ?? canonicalTeam?.name ?? "";
+  const [teamNameDraft, setTeamNameDraft] = useState(initialDraft);
+  const lastSyncedTeamRef = useRef(initialDraft);
+  const [internalJoinCode, setInternalJoinCode] = useState("");
   const query = searchQuery ?? internalQuery;
+  const setQuery = (nextQuery: string) => {
+    if (searchQuery === undefined) setInternalQuery(nextQuery);
+    onSearchQueryChange?.(nextQuery);
+  };
   const selectedIds = selectedMemberIds ?? internalSelectedIds;
+  const [proposalText, setProposalText] = useState("");
+  const [proposalFiles, setProposalFiles] = useState<ProposalFileItem[]>([]);
+  const [isPickingFile, setIsPickingFile] = useState(false);
+  const [filePickError, setFilePickError] = useState<string | null>(null);
+
+  const handlePickFiles = async () => {
+    if (isPickingFile) return;
+    setIsPickingFile(true);
+    setFilePickError(null);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsMultipleSelection: true,
+        quality: 0.8,
+      });
+      if (result.canceled || !result.assets) return;
+
+      const newFiles: ProposalFileItem[] = [];
+      for (const asset of result.assets) {
+        const uploadAsset: UploadAsset = {
+          uri: asset.uri,
+          name: asset.fileName ?? `proposal-${Date.now()}.jpg`,
+          type: asset.mimeType ?? "image/jpeg",
+        };
+        if (onUploadProposalFile) {
+          const uploaded = await onUploadProposalFile(uploadAsset);
+          newFiles.push(uploaded);
+        } else if (onUploadFile) {
+          const uploaded = await onUploadFile(uploadAsset);
+          newFiles.push(uploaded);
+        } else {
+          const fileId =
+            asset.fileName ??
+            `file-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+          newFiles.push({
+            id: fileId,
+            name: asset.fileName ?? "attachment.jpg",
+            sizeBytes: asset.fileSize ?? undefined,
+          });
+        }
+      }
+      setProposalFiles((prev) => [...prev, ...newFiles]);
+    } catch (err) {
+      setFilePickError(
+        err instanceof Error ? err.message : "Failed to pick file"
+      );
+    } finally {
+      setIsPickingFile(false);
+    }
+  };
+
+  const handleRemoveFile = (fileId: string) => {
+    setProposalFiles((prev) => prev.filter((file) => file.id !== fileId));
+  };
   const isReviewing = reviewing ?? internalReviewing;
-  const requiredHeadcount = team?.requiredHeadcount ?? requestedHeadcount ?? 1;
-  const acceptedMembers = team?.members ?? [];
-  const pendingInvitations = invitations.filter(
-    (invitation) =>
-      invitation.status === QuestInvitationStatus.INVITATION_PENDING &&
-      (!team || invitation.teamId === team.id)
-  );
+  const legacyTeam = team && !isCanonicalTeam(team) ? team : null;
+  const canonical = canonicalTeam !== null;
+  useEffect(() => {
+    const currentName = teamName ?? canonicalTeam?.name ?? "";
+    if (currentName !== lastSyncedTeamRef.current) {
+      lastSyncedTeamRef.current = currentName;
+      setTeamNameDraft(currentName);
+    }
+  }, [canonicalTeam?.id, canonicalTeam?.name, teamName]);
+  const leaveLabel = locale === "th" ? "ออกจากทีม" : "Leave";
+  const removeLabel = locale === "th" ? "นำออก" : "Remove";
+  const canonicalMembers = canonicalTeam
+    ? canonicalMemberRows(canonicalTeam, eligibleMembers)
+    : [];
+  const acceptedMembers = canonicalTeam
+    ? canonicalMembers
+    : (legacyTeam?.members ?? []);
+  const requiredHeadcount =
+    canonicalTeam?.headcount ??
+    legacyTeam?.requiredHeadcount ??
+    requestedHeadcount ??
+    1;
+  const teamStatus = canonicalTeam?.state ?? legacyTeam?.status;
   const isLocked =
-    Boolean(team && team.status !== QuestTeamStatus.TEAM_FORMING) ||
+    Boolean(team && teamStatus !== QuestTeamStatus.TEAM_FORMING) ||
     surfaceState === "submitted";
+  const viewerIsMember = Boolean(
+    team &&
+    (!viewerId ||
+      acceptedMembers.some((member) => member.workerId === viewerId))
+  );
+  const isLeader = Boolean(team && (!viewerId || team.leaderId === viewerId));
+  const code = joinCode ?? canonicalTeam?.joinCode ?? null;
+  const codeExpiry =
+    joinCodeExpiresAt ?? canonicalTeam?.joinCodeExpiresAt ?? null;
+  const canRenameTeam = Boolean(
+    canonical &&
+    teamStatus === QuestTeamStatus.TEAM_FORMING &&
+    isLeader &&
+    canUpdateTeam !== false &&
+    onUpdateTeamName
+  );
+  const renameTeam = () => {
+    if (!team || !canRenameTeam) return;
+    const nextName = teamNameDraft.trim();
+    const currentName = (teamName ?? canonicalTeam?.name ?? "").trim();
+    if (!nextName || nextName === currentName) return;
+    onUpdateTeamName?.(team.id, nextName);
+  };
+  const inputCode = joinCodeInput ?? internalJoinCode;
+  const pendingInvitations = canonicalTeam
+    ? []
+    : invitations.filter(
+        (invitation) =>
+          invitation.status === QuestInvitationStatus.INVITATION_PENDING &&
+          (!team || invitation.teamId === team.id)
+      );
   const occupiedIds = new Set([
     ...acceptedMembers.map((member) => member.workerId),
     ...invitations
@@ -345,12 +556,9 @@ export function TeamAssembleSheet({
   const canRespondToInvitations = Boolean(
     onRespondInvitation || onAcceptInvitation || onDeclineInvitation
   );
-
-  const setQuery = (nextQuery: string) => {
-    if (searchQuery === undefined) setInternalQuery(nextQuery);
-    onSearchQueryChange?.(nextQuery);
-  };
-
+  const submissionReady = canonical
+    ? acceptedMembers.length === requiredHeadcount
+    : acceptedMembers.length > 0;
   const setSelected = (next: string[]) => {
     if (selectedMemberIds === undefined) setInternalSelectedIds(next);
     onSelectedMemberIdsChange?.(next);
@@ -384,14 +592,22 @@ export function TeamAssembleSheet({
   };
 
   const submit = () => {
-    if (!team || acceptedMembers.length === 0 || isLocked || submitting) return;
-    (onSubmit ?? onSubmitTeam)?.(team.id);
+    if (!team || !submissionReady || isLocked || submitting) return;
+    const payload = {
+      text: proposalText,
+      fileIds: proposalFiles.map((f) => f.id),
+    };
+    if (onSubmitTeam) {
+      onSubmitTeam(team.id, payload);
+    } else if (onSubmit) {
+      onSubmit(team.id);
+    }
   };
 
   const teamStatusLabel =
-    team?.status === QuestTeamStatus.TEAM_SELECTED
+    teamStatus === QuestTeamStatus.TEAM_SELECTED
       ? messages.teamSelected
-      : team?.status === QuestTeamStatus.TEAM_REJECTED
+      : teamStatus === QuestTeamStatus.TEAM_REJECTED
         ? messages.teamRejected
         : messages.teamSubmitted;
   const sheetContent =
@@ -408,11 +624,7 @@ export function TeamAssembleSheet({
         <View className={styles.emptyIcon}>
           <UsersRound color={colors.primary} size={26} strokeWidth={1.9} />
         </View>
-        <Text className={styles.emptyTitle}>
-          {surfaceState === "empty"
-            ? messages.noTeamTitle
-            : messages.noTeamTitle}
-        </Text>
+        <Text className={styles.emptyTitle}>{messages.noTeamTitle}</Text>
         <Text className={styles.emptyText}>{messages.noTeamDescription}</Text>
         {onCreateTeam ? (
           <Pressable
@@ -440,13 +652,13 @@ export function TeamAssembleSheet({
         {isLocked ? (
           <View
             accessibilityLiveRegion="polite"
-            className={`${styles.notice} ${team.status === QuestTeamStatus.TEAM_REJECTED ? styles.noticeDanger : styles.noticeSuccess}`}
+            className={`${styles.notice} ${teamStatus === QuestTeamStatus.TEAM_REJECTED ? styles.noticeDanger : styles.noticeSuccess}`}
             testID="team-assemble-locked-state"
           >
             <View
-              className={`${styles.noticeIcon} ${team.status === QuestTeamStatus.TEAM_REJECTED ? styles.noticeIconDanger : ""}`}
+              className={`${styles.noticeIcon} ${teamStatus === QuestTeamStatus.TEAM_REJECTED ? styles.noticeIconDanger : ""}`}
             >
-              {team.status === QuestTeamStatus.TEAM_REJECTED ? (
+              {teamStatus === QuestTeamStatus.TEAM_REJECTED ? (
                 <CircleX
                   color={colors.dangerDark}
                   size={18}
@@ -458,15 +670,142 @@ export function TeamAssembleSheet({
             </View>
             <View className={styles.noticeCopy}>
               <Text className={styles.noticeTitle}>
-                {team.status === QuestTeamStatus.TEAM_REJECTED
+                {teamStatus === QuestTeamStatus.TEAM_REJECTED
                   ? messages.teamRejected
-                  : team.status === QuestTeamStatus.TEAM_SELECTED
+                  : teamStatus === QuestTeamStatus.TEAM_SELECTED
                     ? messages.teamSelected
                     : messages.submittedTitle}
               </Text>
               <Text className={styles.noticeText}>
                 {messages.lockedDescription}
               </Text>
+            </View>
+          </View>
+        ) : null}
+        {canonical && teamStatus === "TEAM_FORMING" ? (
+          <View className={styles.section} testID="team-assemble-join-code">
+            <View className={styles.sectionHeader}>
+              <Text accessibilityRole="header" className={styles.sectionTitle}>
+                {locale === "th" ? "รหัสเข้าร่วมทีม" : "Team Join Code"}
+              </Text>
+              {codeExpiry ? (
+                <Text className={styles.sectionMeta}>
+                  {locale === "th"
+                    ? `หมดอายุ ${formatExpiry(codeExpiry, locale)}`
+                    : `Expires ${formatExpiry(codeExpiry, locale)}`}
+                </Text>
+              ) : null}
+            </View>
+            {viewerIsMember ? (
+              <View className={styles.reviewCard}>
+                <Text
+                  selectable
+                  accessibilityLabel={
+                    code
+                      ? `${locale === "th" ? "รหัสเข้าร่วมทีม" : "Team Join Code"}: ${code}`
+                      : undefined
+                  }
+                  className={styles.proposalSummaryTitle}
+                >
+                  {code ??
+                    (locale === "th" ? "ยังไม่มีรหัส" : "No code available")}
+                </Text>
+                {isLeader &&
+                canRegenerateJoinCode !== false &&
+                onRegenerateJoinCode ? (
+                  <Pressable
+                    accessibilityLabel={
+                      locale === "th" ? "สร้างรหัสใหม่" : "Regenerate join code"
+                    }
+                    accessibilityRole="button"
+                    className={styles.memberInvite}
+                    onPress={() => onRegenerateJoinCode(team.id)}
+                    testID="team-assemble-regenerate-join-code"
+                  >
+                    <Text className={styles.memberInviteText}>
+                      {locale === "th" ? "สร้างรหัสใหม่" : "Regenerate"}
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : onJoinTeam ? (
+              <View className={styles.searchField}>
+                <TextInput
+                  accessibilityLabel={
+                    locale === "th"
+                      ? "กรอกรหัสเข้าร่วมทีม"
+                      : "Enter team join code"
+                  }
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  className={styles.searchInput}
+                  onChangeText={(value) => {
+                    if (joinCodeInput === undefined) setInternalJoinCode(value);
+                    onJoinCodeInputChange?.(value);
+                  }}
+                  placeholder={
+                    locale === "th"
+                      ? "กรอกรหัสเข้าร่วมทีม"
+                      : "Enter team join code"
+                  }
+                  placeholderTextColor={colors.textFaint}
+                  testID="team-assemble-join-code-input"
+                  value={inputCode}
+                />
+                <Pressable
+                  accessibilityLabel={
+                    locale === "th" ? "เข้าร่วมทีม" : "Join team"
+                  }
+                  accessibilityRole="button"
+                  className={styles.memberInvite}
+                  disabled={!inputCode.trim()}
+                  onPress={() => onJoinTeam(inputCode.trim())}
+                  testID="team-assemble-join"
+                >
+                  <Text className={styles.memberInviteText}>
+                    {locale === "th" ? "เข้าร่วม" : "Join"}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+        {canRenameTeam ? (
+          <View className={styles.section} testID="team-assemble-name-editor">
+            <Text accessibilityRole="header" className={styles.sectionTitle}>
+              {locale === "th" ? "ชื่อทีม" : "Team name"}
+            </Text>
+            <View className={styles.searchField}>
+              <TextInput
+                accessibilityLabel={locale === "th" ? "ชื่อทีม" : "Team name"}
+                autoCapitalize="sentences"
+                autoCorrect
+                className={styles.searchInput}
+                maxLength={120}
+                onChangeText={setTeamNameDraft}
+                placeholder={locale === "th" ? "ชื่อทีม" : "Team name"}
+                placeholderTextColor={colors.textFaint}
+                testID="team-assemble-name-input"
+                value={teamNameDraft}
+              />
+              <Pressable
+                accessibilityLabel={
+                  locale === "th" ? "บันทึกชื่อทีม" : "Save team name"
+                }
+                accessibilityRole="button"
+                className={styles.memberInvite}
+                disabled={
+                  !teamNameDraft.trim() ||
+                  teamNameDraft.trim() ===
+                    (teamName ?? canonicalTeam?.name ?? "").trim()
+                }
+                onPress={renameTeam}
+                testID="team-assemble-save-name"
+              >
+                <Text className={styles.memberInviteText}>
+                  {locale === "th" ? "บันทึก" : "Save"}
+                </Text>
+              </Pressable>
             </View>
           </View>
         ) : null}
@@ -510,18 +849,49 @@ export function TeamAssembleSheet({
               {acceptedMembers.map((member) => (
                 <RosterRow
                   acceptedLabel={messages.invitationAccepted}
+                  canLeave={
+                    canonical &&
+                    !isLocked &&
+                    canLeaveTeam !== false &&
+                    member.workerId === viewerId &&
+                    Boolean(onLeaveTeam)
+                  }
+                  canRemove={
+                    canonical &&
+                    !isLocked &&
+                    isLeader &&
+                    canRemoveMember !== false &&
+                    member.workerId !== viewerId &&
+                    Boolean(onRemoveMember)
+                  }
                   key={member.workerId}
                   member={member}
+                  leaveLabel={leaveLabel}
+                  removeLabel={removeLabel}
+                  onLeave={
+                    onLeaveTeam && team ? () => onLeaveTeam(team.id) : undefined
+                  }
+                  onRemove={
+                    onRemoveMember && team
+                      ? () => onRemoveMember(team.id, member.workerId)
+                      : undefined
+                  }
                   role={
                     member.role === "LEADER" ? messages.leader : messages.member
                   }
                 />
               ))}
             </View>
+            {!isLocked ? (
+              <Text className={styles.helper}>
+                {canonical
+                  ? locale === "th"
+                    ? `ต้องมีสมาชิกครบ ${requiredHeadcount} คนจึงจะส่งทีมได้`
+                    : `Add exactly ${requiredHeadcount} members before submitting.`
+                  : messages.partialRosterHint}
+              </Text>
+            ) : null}
           </View>
-          {!isLocked ? (
-            <Text className={styles.helper}>{messages.partialRosterHint}</Text>
-          ) : null}
         </View>
 
         {pendingInvitations.length > 0 ? (
@@ -561,7 +931,7 @@ export function TeamAssembleSheet({
           </View>
         ) : null}
 
-        {!isLocked && !isReviewing ? (
+        {!isLocked && !isReviewing && !canonical ? (
           <View className={styles.section}>
             <Text accessibilityRole="header" className={styles.sectionTitle}>
               {messages.searchMembers}
@@ -714,9 +1084,158 @@ export function TeamAssembleSheet({
             ) : null}
           </View>
         ) : null}
+        {canonical && isLeader && !isLocked ? (
+          <View
+            className={styles.section}
+            testID="team-assemble-proposal-section"
+          >
+            <View className={styles.sectionHeader}>
+              <Text accessibilityRole="header" className={styles.sectionTitle}>
+                {locale === "th"
+                  ? "ข้อเสนอและเอกสารแนบ"
+                  : "Proposal & Supporting Files"}
+              </Text>
+              {proposalFiles.length > 0 ? (
+                <Text className={styles.sectionMeta}>
+                  {locale === "th"
+                    ? `${proposalFiles.length} ไฟล์`
+                    : `${proposalFiles.length} files`}
+                </Text>
+              ) : null}
+            </View>
+            <Text className={styles.helper}>
+              {locale === "th"
+                ? "เพิ่มรายละเอียดหรือแนบเอกสารเพื่อประกอบการพิจารณา"
+                : "Add a proposal note and supporting documents or images"}
+            </Text>
+            <View className="bg-ku-surface border-ku-border rounded-[18px] border p-[12px] mt-[8px]">
+              <TextInput
+                accessibilityLabel={
+                  locale === "th" ? "ข้อความเสนอตัว" : "Proposal note"
+                }
+                className="text-ku-text-strong font-ku-regular text-ku-body min-h-[72px]"
+                multiline
+                numberOfLines={3}
+                onChangeText={setProposalText}
+                placeholder={
+                  locale === "th"
+                    ? "ข้อความเสนอตัวหรือรายละเอียดเพิ่มเติม (ไม่บังคับ)"
+                    : "Proposal note or message (optional)"
+                }
+                placeholderTextColor={colors.textFaint}
+                testID="team-proposal-text-input"
+                textAlignVertical="top"
+                value={proposalText}
+              />
+            </View>
+            <View className="mt-[10px] gap-[8px]">
+              {proposalFiles.map((file) => (
+                <View
+                  key={file.id}
+                  className="bg-ku-surface-muted border-ku-border-subtle border rounded-[14px] flex-row items-center justify-between px-[12px] py-[8px]"
+                  testID={`team-proposal-file-${file.id}`}
+                >
+                  <View className="flex-row items-center flex-1 min-w-0 pr-[8px]">
+                    <FileText
+                      color={colors.primary}
+                      size={18}
+                      strokeWidth={2}
+                    />
+                    <View className="ml-[8px] flex-1 min-w-0">
+                      <Text
+                        className="text-ku-text-strong font-ku-medium text-ku-body-small"
+                        numberOfLines={1}
+                      >
+                        {file.name}
+                      </Text>
+                      {file.sizeBytes ? (
+                        <Text className="text-ku-text-secondary font-ku-regular text-ku-label">
+                          {Math.round(file.sizeBytes / 1024)} KB
+                        </Text>
+                      ) : null}
+                    </View>
+                  </View>
+                  <Pressable
+                    accessibilityLabel={
+                      locale === "th"
+                        ? `ลบไฟล์ ${file.name}`
+                        : `Remove file ${file.name}`
+                    }
+                    accessibilityRole="button"
+                    className="items-center justify-center p-[6px]"
+                    onPress={() => handleRemoveFile(file.id)}
+                    testID={`team-remove-file-${file.id}`}
+                  >
+                    <Trash2
+                      color={colors.dangerDark}
+                      size={16}
+                      strokeWidth={2}
+                    />
+                  </Pressable>
+                </View>
+              ))}
+              <Pressable
+                accessibilityLabel={
+                  locale === "th" ? "แนบไฟล์หรือรูปภาพ" : "Attach file or image"
+                }
+                accessibilityRole="button"
+                className="items-center border-ku-primary border-dashed rounded-[14px] border flex-row justify-center min-h-[44px] gap-[6px] px-[12px] py-[8px]"
+                disabled={isPickingFile}
+                onPress={handlePickFiles}
+                testID="team-pick-file-button"
+              >
+                {isPickingFile ? (
+                  <ActivityIndicator color={colors.primary} size="small" />
+                ) : (
+                  <>
+                    <ImagePlus
+                      color={colors.primary}
+                      size={18}
+                      strokeWidth={2.2}
+                    />
+                    <Text className="text-ku-primary font-ku-semibold text-ku-label">
+                      {locale === "th"
+                        ? "แนบเอกสารหรือรูปภาพ"
+                        : "Attach file or image"}
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+              {filePickError ? (
+                <Text className="text-ku-danger-dark font-ku-regular text-ku-label mt-[2px]">
+                  {filePickError}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
 
-        {!isLocked ? (
-          isReviewing ? (
+        {!isLocked && (!canonical || isLeader) ? (
+          submissionBlocker && canonical && submissionReady ? (
+            <View
+              accessibilityRole="alert"
+              className={`${styles.notice} ${styles.noticeDanger}`}
+              testID="team-assemble-submission-blocked"
+            >
+              <View
+                className={`${styles.noticeIcon} ${styles.noticeIconDanger}`}
+              >
+                <CircleAlert
+                  color={colors.dangerDark}
+                  size={18}
+                  strokeWidth={2.1}
+                />
+              </View>
+              <View className={styles.noticeCopy}>
+                <Text className={styles.noticeTitle}>
+                  {locale === "th"
+                    ? "ยังส่งทีมไม่ได้"
+                    : "Team submission unavailable"}
+                </Text>
+                <Text className={styles.noticeText}>{submissionBlocker}</Text>
+              </View>
+            </View>
+          ) : isReviewing ? (
             <View className={styles.reviewCard} testID="team-assemble-review">
               <View className={styles.reviewHeader}>
                 <View className={styles.reviewIcon}>
@@ -749,6 +1268,26 @@ export function TeamAssembleSheet({
                     {messages.partialRosterHint}
                   </Text>
                 </View>
+                {proposalFiles.length > 0 ? (
+                  <View className={styles.reviewRow}>
+                    <Text className={styles.reviewLabel}>
+                      {locale === "th" ? "ไฟล์แนบ" : "Attached files"}
+                    </Text>
+                    <Text className={styles.reviewValue}>
+                      {proposalFiles.length}
+                    </Text>
+                  </View>
+                ) : null}
+                {proposalText.trim() ? (
+                  <View className={styles.reviewRow}>
+                    <Text className={styles.reviewLabel}>
+                      {locale === "th" ? "ข้อเสนอ" : "Proposal"}
+                    </Text>
+                    <Text className={styles.reviewValue} numberOfLines={2}>
+                      {proposalText.trim()}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
               <Pressable
                 accessibilityLabel={
@@ -756,10 +1295,10 @@ export function TeamAssembleSheet({
                 }
                 accessibilityRole="button"
                 accessibilityState={{
-                  disabled: submitting || acceptedMembers.length === 0,
+                  disabled: submitting || !submissionReady,
                 }}
-                className={`${styles.submitButton} ${submitting || acceptedMembers.length === 0 ? styles.submitButtonDisabled : ""}`}
-                disabled={submitting || acceptedMembers.length === 0}
+                className={`${styles.submitButton} ${submitting || !submissionReady ? styles.submitButtonDisabled : ""}`}
+                disabled={submitting || !submissionReady}
                 onPress={submit}
                 testID="team-assemble-confirm-submit"
               >
@@ -767,17 +1306,13 @@ export function TeamAssembleSheet({
                   <ActivityIndicator color={colors.white} size="small" />
                 ) : (
                   <Check
-                    color={
-                      acceptedMembers.length === 0
-                        ? colors.textMuted
-                        : colors.white
-                    }
+                    color={!submissionReady ? colors.textMuted : colors.white}
                     size={18}
                     strokeWidth={2.7}
                   />
                 )}
                 <Text
-                  className={`${styles.submitButtonText} ${acceptedMembers.length === 0 ? styles.submitButtonTextDisabled : ""}`}
+                  className={`${styles.submitButtonText} ${!submissionReady ? styles.submitButtonTextDisabled : ""}`}
                 >
                   {submitting
                     ? messages.submittingTeam
@@ -800,21 +1335,19 @@ export function TeamAssembleSheet({
             <Pressable
               accessibilityLabel={messages.reviewRoster}
               accessibilityRole="button"
-              accessibilityState={{ disabled: acceptedMembers.length === 0 }}
-              className={`${styles.submitButton} ${acceptedMembers.length === 0 ? styles.submitButtonDisabled : ""}`}
-              disabled={acceptedMembers.length === 0}
+              accessibilityState={{ disabled: !submissionReady }}
+              className={`${styles.submitButton} ${!submissionReady ? styles.submitButtonDisabled : ""}`}
+              disabled={!submissionReady}
               onPress={() => setReview(true)}
               testID="team-assemble-review-roster"
             >
               <UsersRound
-                color={
-                  acceptedMembers.length === 0 ? colors.textMuted : colors.white
-                }
+                color={!submissionReady ? colors.textMuted : colors.white}
                 size={18}
                 strokeWidth={2.3}
               />
               <Text
-                className={`${styles.submitButtonText} ${acceptedMembers.length === 0 ? styles.submitButtonTextDisabled : ""}`}
+                className={`${styles.submitButtonText} ${!submissionReady ? styles.submitButtonTextDisabled : ""}`}
               >
                 {messages.reviewRoster}
               </Text>

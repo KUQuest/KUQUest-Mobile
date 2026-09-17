@@ -211,7 +211,7 @@ export function BottomNav({
                   fontSize: metrics.labelFontSize,
                   includeFontPadding: false,
                   lineHeight: metrics.labelLineHeight,
-                  color: isFocused ? colors.primaryDeep : undefined,
+                  color: isFocused ? colors.primaryDeep : colors.textSecondary,
                 }}
               >
                 {messages[item.shortLabelKey]}
