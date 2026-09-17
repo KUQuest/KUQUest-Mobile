@@ -1,6 +1,4 @@
-import type {
-  PrototypePersonaId,
-} from "@/components/ui/prototypeMenuData";
+import type { PrototypePersonaId } from "@/components/ui/prototypeMenuData";
 import type { QuestFixtureResult } from "@/features/questBoard/questFixtureAdapter";
 import type { QuestDetailState } from "@/features/questBoard/types";
 

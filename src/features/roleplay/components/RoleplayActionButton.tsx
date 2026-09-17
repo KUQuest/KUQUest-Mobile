@@ -6,10 +6,7 @@ import { cn } from "@/tw/cn";
 import styles from "../roleplayStyles";
 
 export type RoleplayActionButtonVariant =
-  | "primary"
-  | "secondary"
-  | "danger"
-  | "neutral";
+  "primary" | "secondary" | "danger" | "neutral";
 
 interface RoleplayActionButtonProps {
   label: string;
@@ -56,10 +53,7 @@ export function RoleplayActionButton({
     >
       {icon}
       <View
-        className={cn(
-          styles.actionCopy,
-          compact && styles.actionCopyCompact
-        )}
+        className={cn(styles.actionCopy, compact && styles.actionCopyCompact)}
       >
         <Text
           className={cn(

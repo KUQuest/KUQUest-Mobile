@@ -1,108 +1,262 @@
-import { DEFAULT_PROTOTYPE_VIEWER_ID, createQuestFixtureAdapter, questFixtureAdapter } from '../../questBoard/questFixtureAdapter';
-import { getChatRouteParams } from '../chatData';
-import { QuestStatus } from '../../questBoard/types';
+import {
+  DEFAULT_PROTOTYPE_VIEWER_ID,
+  createQuestFixtureAdapter,
+  questFixtureAdapter,
+} from "../../questBoard/questFixtureAdapter";
+import { getChatRouteParams } from "../chatData";
+import { QuestStatus } from "../../questBoard/types";
 
-describe('adapter-owned fixture chat data', () => {
-  const fixedNow = new Date('2026-08-12T09:00:00.000Z');
+describe("adapter-owned fixture chat data", () => {
+  const fixedNow = new Date("2026-08-12T09:00:00.000Z");
 
   beforeEach(() => {
     questFixtureAdapter.reset();
   });
 
-  it('projects seeded server conversation IDs and messages without a chatData fixture copy', () => {
-    const conversation = questFixtureAdapter.getConversation('campus-survey-crew', DEFAULT_PROTOTYPE_VIEWER_ID, fixedNow);
+  it("projects seeded server conversation IDs and messages without a chatData fixture copy", () => {
+    const conversation = questFixtureAdapter.getConversation(
+      "campus-survey-crew",
+      DEFAULT_PROTOTYPE_VIEWER_ID,
+      fixedNow
+    );
 
     expect(conversation).toMatchObject({
-      id: 'campus-survey-crew',
-      capability: { conversationId: 'campus-survey-crew', canRead: true, canWrite: true, readOnly: false },
+      id: "campus-survey-crew",
+      capability: {
+        conversationId: "campus-survey-crew",
+        canRead: true,
+        canWrite: true,
+        readOnly: false,
+      },
     });
-    expect(questFixtureAdapter.getConversationMessages('campus-survey-crew', DEFAULT_PROTOTYPE_VIEWER_ID, fixedNow)).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: 'campus-1', sender: 'other' }),
-    ]));
+    expect(
+      questFixtureAdapter.getConversationMessages(
+        "campus-survey-crew",
+        DEFAULT_PROTOTYPE_VIEWER_ID,
+        fixedNow
+      )
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "campus-1", sender: "other" }),
+      ])
+    );
   });
 
-  it('lists only readable viewer conversations and rejects a non-member send', () => {
+  it("lists only readable viewer conversations and rejects a non-member send", () => {
     const created = createQuestFixtureAdapter({ now: fixedNow });
-    created.joinDirect('print-documents', DEFAULT_PROTOTYPE_VIEWER_ID, fixedNow);
+    created.joinDirect(
+      "print-documents",
+      DEFAULT_PROTOTYPE_VIEWER_ID,
+      fixedNow
+    );
 
-    expect(created.listConversations(DEFAULT_PROTOTYPE_VIEWER_ID, fixedNow).some((item) => item.id === 'conversation-fixture-print-documents')).toBe(true);
-    expect(created.getConversation('conversation-fixture-print-documents', 'not-a-member', fixedNow)).toBeNull();
-    expect(created.getConversationMessages('conversation-fixture-print-documents', 'not-a-member', fixedNow)).toEqual([]);
+    expect(
+      created
+        .listConversations(DEFAULT_PROTOTYPE_VIEWER_ID, fixedNow)
+        .some((item) => item.id === "conversation-fixture-print-documents")
+    ).toBe(true);
+    expect(
+      created.getConversation(
+        "conversation-fixture-print-documents",
+        "not-a-member",
+        fixedNow
+      )
+    ).toBeNull();
+    expect(
+      created.getConversationMessages(
+        "conversation-fixture-print-documents",
+        "not-a-member",
+        fixedNow
+      )
+    ).toEqual([]);
 
-    const denied = created.sendMessage('conversation-fixture-print-documents', 'not-a-member', 'Should be rejected.', fixedNow);
+    const denied = created.sendMessage(
+      "conversation-fixture-print-documents",
+      "not-a-member",
+      "Should be rejected.",
+      fixedNow
+    );
     expect(denied.ok).toBe(false);
-    if (!denied.ok) expect(denied.error.code).toBe('FORBIDDEN');
+    if (!denied.ok) expect(denied.error.code).toBe("FORBIDDEN");
   });
 
-  it('sends session-only messages, notifies subscribers, and clears them on reset', () => {
+  it("sends session-only messages, notifies subscribers, and clears them on reset", () => {
     const created = createQuestFixtureAdapter({ now: fixedNow });
-    created.joinDirect('print-documents', DEFAULT_PROTOTYPE_VIEWER_ID, fixedNow);
+    created.joinDirect(
+      "print-documents",
+      DEFAULT_PROTOTYPE_VIEWER_ID,
+      fixedNow
+    );
     const listener = jest.fn();
     created.subscribe(listener);
 
-    const sent = created.sendMessage('conversation-fixture-print-documents', DEFAULT_PROTOTYPE_VIEWER_ID, 'Meet at the copy shop.', fixedNow);
+    const sent = created.sendMessage(
+      "conversation-fixture-print-documents",
+      DEFAULT_PROTOTYPE_VIEWER_ID,
+      "Meet at the copy shop.",
+      fixedNow
+    );
 
     expect(sent.ok).toBe(true);
     if (sent.ok) {
-      expect(sent.value).toMatchObject({ sender: 'me', text: { en: 'Meet at the copy shop.', th: 'Meet at the copy shop.' } });
-      expect(sent.value.id).toBe('conversation-fixture-print-documents-message-2');
+      expect(sent.value).toMatchObject({
+        sender: "me",
+        text: { en: "Meet at the copy shop.", th: "Meet at the copy shop." },
+      });
+      expect(sent.value.id).toBe(
+        "conversation-fixture-print-documents-message-2"
+      );
     }
-    expect(created.getConversationMessages('conversation-fixture-print-documents', DEFAULT_PROTOTYPE_VIEWER_ID, fixedNow)).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: 'conversation-fixture-print-documents-message-2' }),
-    ]));
+    expect(
+      created.getConversationMessages(
+        "conversation-fixture-print-documents",
+        DEFAULT_PROTOTYPE_VIEWER_ID,
+        fixedNow
+      )
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "conversation-fixture-print-documents-message-2",
+        }),
+      ])
+    );
     expect(listener).toHaveBeenCalledTimes(1);
 
     created.reset();
-    expect(created.getConversation('conversation-fixture-print-documents', DEFAULT_PROTOTYPE_VIEWER_ID, fixedNow)).toBeNull();
+    expect(
+      created.getConversation(
+        "conversation-fixture-print-documents",
+        DEFAULT_PROTOTYPE_VIEWER_ID,
+        fixedNow
+      )
+    ).toBeNull();
   });
 
-  it('marks a viewer read cursor and projects unread counts from adapter state', () => {
+  it("marks a viewer read cursor and projects unread counts from adapter state", () => {
     const created = createQuestFixtureAdapter({ now: fixedNow });
-    const before = created.getConversation('campus-survey-crew', DEFAULT_PROTOTYPE_VIEWER_ID, fixedNow);
+    const before = created.getConversation(
+      "campus-survey-crew",
+      DEFAULT_PROTOTYPE_VIEWER_ID,
+      fixedNow
+    );
     expect(before?.unreadCount).toBe(2);
 
-    const marked = created.markConversationRead('campus-survey-crew', DEFAULT_PROTOTYPE_VIEWER_ID, fixedNow);
+    const marked = created.markConversationRead(
+      "campus-survey-crew",
+      DEFAULT_PROTOTYPE_VIEWER_ID,
+      fixedNow
+    );
     expect(marked.ok).toBe(true);
-    expect(created.getConversation('campus-survey-crew', DEFAULT_PROTOTYPE_VIEWER_ID, fixedNow)?.unreadCount).toBe(0);
+    expect(
+      created.getConversation(
+        "campus-survey-crew",
+        DEFAULT_PROTOTYPE_VIEWER_ID,
+        fixedNow
+      )?.unreadCount
+    ).toBe(0);
 
-    const received = created.sendMessage('campus-survey-crew', 'demo-hirer', 'One more detail.', fixedNow);
+    const received = created.sendMessage(
+      "campus-survey-crew",
+      "demo-hirer",
+      "One more detail.",
+      fixedNow
+    );
     expect(received.ok).toBe(true);
-    expect(created.getConversation('campus-survey-crew', DEFAULT_PROTOTYPE_VIEWER_ID, fixedNow)?.unreadCount).toBe(1);
+    expect(
+      created.getConversation(
+        "campus-survey-crew",
+        DEFAULT_PROTOTYPE_VIEWER_ID,
+        fixedNow
+      )?.unreadCount
+    ).toBe(1);
   });
 
-  it('enforces terminal, dispute, and pending partial-start capabilities from Quest context', () => {
+  it("enforces terminal, dispute, and pending partial-start capabilities from Quest context", () => {
     const created = createQuestFixtureAdapter({ now: fixedNow });
-    const terminal = created.getConversation('conversation-fixture-clean-study-table', 'demo-worker-3', fixedNow);
-    expect(terminal?.capability).toMatchObject({ canRead: true, canWrite: false, readOnly: true, readOnlyReason: 'TERMINAL' });
-    const terminalSend = created.sendMessage('conversation-fixture-clean-study-table', 'demo-worker-3', 'No new message.', fixedNow);
+    const terminal = created.getConversation(
+      "conversation-fixture-clean-study-table",
+      "demo-worker-3",
+      fixedNow
+    );
+    expect(terminal?.capability).toMatchObject({
+      canRead: true,
+      canWrite: false,
+      readOnly: true,
+      readOnlyReason: "TERMINAL",
+    });
+    const terminalSend = created.sendMessage(
+      "conversation-fixture-clean-study-table",
+      "demo-worker-3",
+      "No new message.",
+      fixedNow
+    );
     expect(terminalSend.ok).toBe(false);
 
-    const disputed = created.getConversation('conversation-fixture-clean-fridge', 'demo-worker-3', fixedNow);
+    const disputed = created.getConversation(
+      "conversation-fixture-clean-fridge",
+      "demo-worker-3",
+      fixedNow
+    );
     expect(disputed?.status).toBe(QuestStatus.QUEST_DISPUTED);
-    expect(disputed?.capability).toMatchObject({ canRead: true, canWrite: true, readOnly: false });
+    expect(disputed?.capability).toMatchObject({
+      canRead: true,
+      canWrite: true,
+      readOnly: false,
+    });
 
-    const pending = created.getConversation('conversation-fixture-partial-group-start-demo', 'student-demo', fixedNow);
+    const pending = created.getConversation(
+      "conversation-fixture-partial-group-start-demo",
+      "student-demo",
+      fixedNow
+    );
     expect(pending).toBeTruthy();
-    const pendingAtEntry = created.getConversation('conversation-fixture-partial-group-start-demo', 'student-demo', new Date('2026-08-12T09:00:00.000Z'));
-    expect(pendingAtEntry?.capability).toMatchObject({ canRead: true, canWrite: true, readOnly: false });
-    const afterDeadline = created.getConversation('conversation-fixture-partial-group-start-demo', 'student-demo', new Date('2026-08-12T09:05:00.000Z'));
-    expect(afterDeadline?.capability).toMatchObject({ canRead: true, canWrite: false, readOnly: true, readOnlyReason: 'TERMINAL' });
+    const pendingAtEntry = created.getConversation(
+      "conversation-fixture-partial-group-start-demo",
+      "student-demo",
+      new Date("2026-08-12T09:00:00.000Z")
+    );
+    expect(pendingAtEntry?.capability).toMatchObject({
+      canRead: true,
+      canWrite: true,
+      readOnly: false,
+    });
+    const afterDeadline = created.getConversation(
+      "conversation-fixture-partial-group-start-demo",
+      "student-demo",
+      new Date("2026-08-12T09:05:00.000Z")
+    );
+    expect(afterDeadline?.capability).toMatchObject({
+      canRead: true,
+      canWrite: false,
+      readOnly: true,
+      readOnlyReason: "TERMINAL",
+    });
   });
 
-  it('does not recover a conversation from an unmatched Quest context', () => {
-    expect(questFixtureAdapter.getConversation('does-not-exist', DEFAULT_PROTOTYPE_VIEWER_ID)).toBeNull();
-    expect(questFixtureAdapter.getConversation('quest-move-boxes-group', DEFAULT_PROTOTYPE_VIEWER_ID)).toBeNull();
+  it("does not recover a conversation from an unmatched Quest context", () => {
+    expect(
+      questFixtureAdapter.getConversation(
+        "does-not-exist",
+        DEFAULT_PROTOTYPE_VIEWER_ID
+      )
+    ).toBeNull();
+    expect(
+      questFixtureAdapter.getConversation(
+        "quest-move-boxes-group",
+        DEFAULT_PROTOTYPE_VIEWER_ID
+      )
+    ).toBeNull();
   });
 
-  it('keeps capabilities off the chat route', () => {
+  it("keeps capabilities off the chat route", () => {
     const params = getChatRouteParams({
-      conversationId: 'conversation-server-a',
+      conversationId: "conversation-server-a",
       viewerId: DEFAULT_PROTOTYPE_VIEWER_ID,
     });
 
     expect(params).toEqual({
-      id: 'conversation-server-a',
-      conversationId: 'conversation-server-a',
+      id: "conversation-server-a",
+      conversationId: "conversation-server-a",
       viewerId: DEFAULT_PROTOTYPE_VIEWER_ID,
     });
   });

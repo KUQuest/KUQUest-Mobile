@@ -1,1 +1,1 @@
-export { default } from '@/features/auth/AuthGate';
+export { default } from "@/features/auth/AuthGate";

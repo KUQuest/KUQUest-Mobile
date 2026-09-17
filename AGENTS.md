@@ -73,6 +73,11 @@ Ask one missing fact at a time when interviewing the user. State known context b
 
 Typical chain: `grilling`/`grill-with-docs` → `to-spec`/`to-tickets` → `triage` as issues come in → `wayfinder` if scope exceeds one session.
 
+### Gotchas
+
+- Read `docs/agents/gotchas.md` before working in this repo.
+- Append to `docs/agents/gotchas.md` when a session's failure generalizes beyond the current task.
+
 ---
 
 ## Code Style
@@ -81,46 +86,12 @@ Follow `CODE_STYLES.md` at the repo root for formatting, import grouping, featur
 
 ---
 
-## Coding Guidelines
-
-Behavioral guidelines to reduce common LLM coding mistakes ([source](https://github.com/multica-ai/andrej-karpathy-skills)). Bias toward caution over speed; use judgment on trivial tasks.
-
-**1. Think before coding** — don't assume, don't hide confusion, surface tradeoffs.
-
-- State assumptions explicitly; if uncertain, ask.
-- If multiple interpretations exist, present them — don't pick silently.
-- If a simpler approach exists, say so; push back when warranted.
-- If something is unclear, stop, name what's confusing, ask.
-
-**2. Simplicity first** — minimum code that solves the problem, nothing speculative.
-
-- No features beyond what was asked. No abstractions for single-use code. No unrequested "flexibility". No error handling for impossible scenarios.
-- 200 lines that could be 50 → rewrite it.
-- Ask: "Would a senior engineer call this overcomplicated?" If yes, simplify.
-
-**3. Surgical changes** — touch only what you must, clean up only your own mess.
-
-- Don't "improve" adjacent code, comments, or formatting. Don't refactor what isn't broken. Match existing style even if you'd do it differently.
-- Unrelated dead code: mention it, don't delete it.
-- Remove imports/variables/functions YOUR changes made unused; don't remove pre-existing dead code unless asked.
-- Test: every changed line traces directly to the user's request.
-
-**4. Goal-driven execution** — define success criteria, loop until verified.
-
-- "Add validation" → write tests for invalid inputs, then make them pass.
-- "Fix the bug" → write a test that reproduces it, then make it pass.
-- "Refactor X" → ensure tests pass before and after.
-- Multi-step tasks: state a brief plan, one line per step with its verify check.
-
----
-
 ## Subagent Workflow
 
 For delegated or parallel work, keep one writer per file; use read-only scout/reviewer/verifier roles for independent work.
 
-- Codex project defaults and role manifests live in `.codex/config.toml` and `.codex/agents/`.
-- Antigravity workspace agents live in `.agents/agents/<role>/agent.md`.
-- Codex parent sessions use `gpt-5.6-luna` with `max`; role manifests use task-shaped effort. Antigravity manifests use its documented `flash`/`pro` tiers.
+- Require each subagent handoff to list the files it changed.
+- Require a handoff to cite a repo rule by `file:line` or not at all: a handoff once reported the lint rule `ts-no-tiny-functions`, which `eslint.config.js` does not define.
 
 ---
 
@@ -136,6 +107,7 @@ Non-negotiable preservation rules:
 - Never use reset/clean commands or project reset scripts as routine debugging.
 - Change a test only when the product contract intentionally changed; keep the replacement assertion behavioral.
 - Delete a pre-existing file or test only with explicit user approval and a documented reason.
+- Remove imports, variables, and functions that your change made unused; leave pre-existing dead code alone and mention it instead of deleting it.
 - When a route, fixture, API, or rulebook surface is absent, record it as a gap instead of inventing a substitute or deleting the corresponding requirement.
 
 At delivery, verify the changed-file list and confirm every deletion, test change, and compatibility change is directly requested or explicitly justified.

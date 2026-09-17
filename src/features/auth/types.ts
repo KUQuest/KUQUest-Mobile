@@ -1,18 +1,18 @@
 export type OnboardingStep = 1 | 2 | 3;
 
-export type AuthUser = import('../../api/contracts').AuthUser;
+export type AuthUser = import("../../api/contracts").AuthUser;
 
 export interface AuthSession {
   user: AuthUser;
 }
 
 export type AuthErrorCode =
-  | 'INVALID_EMAIL_DOMAIN'
-  | 'OAUTH_CANCELLED'
-  | 'PLAY_SERVICES_UNAVAILABLE'
-  | 'OAUTH_FAILED'
-  | 'API_ERROR'
-  | 'SESSION_EXPIRED';
+  | "INVALID_EMAIL_DOMAIN"
+  | "OAUTH_CANCELLED"
+  | "PLAY_SERVICES_UNAVAILABLE"
+  | "OAUTH_FAILED"
+  | "API_ERROR"
+  | "SESSION_EXPIRED";
 
 export interface AuthErrorOptions {
   cause?: unknown;
@@ -24,11 +24,11 @@ export class AuthError extends Error {
   constructor(
     public code: AuthErrorCode,
     message?: string,
-    options?: AuthErrorOptions,
+    options?: AuthErrorOptions
   ) {
     super(message || code);
-    this.name = 'AuthError';
-    if (options && 'cause' in options) this.cause = options.cause;
+    this.name = "AuthError";
+    if (options && "cause" in options) this.cause = options.cause;
   }
 }
 
@@ -48,5 +48,4 @@ export interface AuthAdapter {
 }
 
 export type RoutingDestination =
-  | { type: 'HOME' }
-  | { type: 'ONBOARDING'; step: OnboardingStep };
+  { type: "HOME" } | { type: "ONBOARDING"; step: OnboardingStep };

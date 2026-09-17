@@ -1,24 +1,21 @@
-import React, { useState } from 'react';
-import { cn } from '@/tw/cn';
-import { useColorScheme, useWindowDimensions } from 'react-native';
-import { Pressable, SafeAreaView, Text, View } from '@/tw';
-import { StatusBar } from 'expo-status-bar';
-import { Host, Button } from '@expo/ui';
-import { GraduationCap, TriangleAlert } from 'lucide-react-native';
+import React, { useState } from "react";
+import { cn } from "@/tw/cn";
+import { useColorScheme, useWindowDimensions } from "react-native";
+import { Pressable, SafeAreaView, Text, View } from "@/tw";
+import { StatusBar } from "expo-status-bar";
+import { Host, Button } from "@expo/ui";
+import { GraduationCap, TriangleAlert } from "lucide-react-native";
 import {
   AuthAdapter,
   AuthErrorCode,
   AuthError,
   RoutingDestination,
-} from './types';
-import { authService } from './AuthService';
-import {
-  authMessages,
-  getAuthErrorText,
-} from '../../locales/authMessages';
-import { useLocale } from '../../locales/LocaleProvider';
-import { colors } from '@/theme/colors';
-import styles from './styles/loginStyles';
+} from "./types";
+import { authService } from "./AuthService";
+import { authMessages, getAuthErrorText } from "../../locales/authMessages";
+import { useLocale } from "../../locales/LocaleProvider";
+import { colors } from "@/theme/colors";
+import styles from "./styles/loginStyles";
 
 interface LoginErrorState {
   code: AuthErrorCode;
@@ -65,7 +62,7 @@ export default function LoginScreen({
     } catch (err: unknown) {
       setIsLoading(false);
       const errorCode: AuthErrorCode =
-        err instanceof AuthError ? err.code : 'OAUTH_FAILED';
+        err instanceof AuthError ? err.code : "OAUTH_FAILED";
       const message = err instanceof Error ? err.message : JSON.stringify(err);
       setError({
         code: errorCode,
@@ -76,7 +73,7 @@ export default function LoginScreen({
 
   return (
     <SafeAreaView className={styles.safeArea}>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <View className={styles.container}>
         <View className={styles.content}>
           {/* Header Section */}
@@ -94,10 +91,10 @@ export default function LoginScreen({
             >
               <GraduationCap color={colors.primary} size={24} strokeWidth={2} />
               <Text className={styles.noticeText}>
-                {messages.noticeTextPrefix}{' '}
+                {messages.noticeTextPrefix}{" "}
                 <Text className={styles.noticeTextBold}>
                   {messages.noticeEmailDomain}
-                </Text>{' '}
+                </Text>{" "}
                 {messages.noticeTextSuffix}
               </Text>
             </View>
@@ -110,13 +107,22 @@ export default function LoginScreen({
                 accessibilityLabel={getAuthErrorText(error.code, currentLocale)}
                 testID="error-banner"
               >
-                <TriangleAlert color={colors.danger} size={22} strokeWidth={2} />
+                <TriangleAlert
+                  color={colors.danger}
+                  size={22}
+                  strokeWidth={2}
+                />
                 <View className={styles.errorContent}>
                   <Text className={styles.errorText} testID="error-message">
                     {getAuthErrorText(error.code, currentLocale)}
                   </Text>
                   {error.message && (
-                    <Text className={cn(styles.errorText, 'text-ku-label mt-[4px] text-ku-danger-light')}>
+                    <Text
+                      className={cn(
+                        styles.errorText,
+                        "text-ku-label mt-[4px] text-ku-danger-light"
+                      )}
+                    >
                       {error.message}
                     </Text>
                   )}
@@ -139,7 +145,9 @@ export default function LoginScreen({
               <Host seedColor={colors.primary} matchContents>
                 <Button
                   variant="filled"
-                  label={isLoading ? messages.loadingAuth : messages.signInWithGoogle}
+                  label={
+                    isLoading ? messages.loadingAuth : messages.signInWithGoogle
+                  }
                   onPress={handleAuth}
                   style={{ width: buttonWidth }}
                   disabled={isLoading}
@@ -152,9 +160,15 @@ export default function LoginScreen({
           {/* Footer Section */}
           <View className={styles.footerSection}>
             <View className={styles.footerLinks} accessibilityRole="text">
-              <Text className={styles.footerLinkText}>{messages.termsOfService}</Text>
-              <Text className={styles.footerLinkText}>{messages.privacyPolicy}</Text>
-              <Text className={styles.footerLinkText}>{messages.contactUs}</Text>
+              <Text className={styles.footerLinkText}>
+                {messages.termsOfService}
+              </Text>
+              <Text className={styles.footerLinkText}>
+                {messages.privacyPolicy}
+              </Text>
+              <Text className={styles.footerLinkText}>
+                {messages.contactUs}
+              </Text>
             </View>
             <Text className={styles.copyrightText}>
               © 2024 KUQUEST. All rights reserved.

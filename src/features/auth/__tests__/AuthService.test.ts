@@ -108,7 +108,7 @@ describe("AuthService", () => {
       nativeSuccess({
         idToken: "google-id-token",
         user: { email: "student@ku.th" },
-      }),
+      })
     );
     betterAuth.signIn.social.mockResolvedValue({
       data: { user: createUser() },
@@ -130,7 +130,7 @@ describe("AuthService", () => {
       expect.objectContaining({
         credentials: "omit",
         headers: { Cookie: "better-auth.session_token=session-cookie" },
-      }),
+      })
     );
   });
 
@@ -139,7 +139,7 @@ describe("AuthService", () => {
       nativeSuccess({
         idToken: "google-id-token",
         user: { email: "student@ku.th" },
-      }),
+      })
     );
     betterAuth.signIn.social.mockResolvedValue({
       data: { user: createUser() },
@@ -160,7 +160,7 @@ describe("AuthService", () => {
     } as unknown as SignInResponse);
 
     await expect(auth.authenticate()).rejects.toEqual(
-      new AuthError("OAUTH_CANCELLED"),
+      new AuthError("OAUTH_CANCELLED")
     );
     expect(betterAuth.signIn.social).not.toHaveBeenCalled();
   });
@@ -169,7 +169,7 @@ describe("AuthService", () => {
     googleSignin.hasPlayServices.mockResolvedValue(false);
 
     await expect(auth.authenticate()).rejects.toEqual(
-      new AuthError("PLAY_SERVICES_UNAVAILABLE"),
+      new AuthError("PLAY_SERVICES_UNAVAILABLE")
     );
     expect(googleSignin.signIn).not.toHaveBeenCalled();
   });
@@ -185,7 +185,7 @@ describe("AuthService", () => {
     });
     let selectedAccount: "non-ku" | "ku" = "non-ku";
     googleSignin.signIn.mockImplementation(async () =>
-      selectedAccount === "non-ku" ? nonKuResponse : kuResponse,
+      selectedAccount === "non-ku" ? nonKuResponse : kuResponse
     );
     googleSignin.signOut.mockImplementation(async () => {
       selectedAccount = "ku";
@@ -197,7 +197,7 @@ describe("AuthService", () => {
     });
 
     await expect(auth.authenticate()).rejects.toEqual(
-      new AuthError("INVALID_EMAIL_DOMAIN"),
+      new AuthError("INVALID_EMAIL_DOMAIN")
     );
     await expect(auth.authenticate()).resolves.toEqual(createSession());
 
@@ -211,14 +211,11 @@ describe("AuthService", () => {
 
   test("rejects a missing Google ID token", async () => {
     googleSignin.signIn.mockResolvedValue(
-      nativeSuccess({ user: { email: "student@ku.th" } }),
+      nativeSuccess({ user: { email: "student@ku.th" } })
     );
 
     await expect(auth.authenticate()).rejects.toEqual(
-      new AuthError(
-        "OAUTH_FAILED",
-        "Google Sign-In did not return an ID token",
-      ),
+      new AuthError("OAUTH_FAILED", "Google Sign-In did not return an ID token")
     );
   });
 
@@ -227,7 +224,7 @@ describe("AuthService", () => {
       nativeSuccess({
         idToken: "google-id-token",
         user: { email: "student@ku.th" },
-      }),
+      })
     );
     betterAuth.signIn.social.mockResolvedValue({
       data: null,
@@ -235,7 +232,7 @@ describe("AuthService", () => {
     });
 
     await expect(auth.authenticate()).rejects.toEqual(
-      new AuthError("OAUTH_FAILED", "Invalid token"),
+      new AuthError("OAUTH_FAILED", "Invalid token")
     );
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -245,11 +242,11 @@ describe("AuthService", () => {
       nativeSuccess({
         idToken: "google-id-token",
         user: { email: "someone@gmail.com" },
-      }),
+      })
     );
 
     await expect(auth.authenticate()).rejects.toEqual(
-      new AuthError("INVALID_EMAIL_DOMAIN"),
+      new AuthError("INVALID_EMAIL_DOMAIN")
     );
     expect(betterAuth.signIn.social).not.toHaveBeenCalled();
   });
@@ -259,7 +256,7 @@ describe("AuthService", () => {
       nativeSuccess({
         idToken: "google-id-token",
         user: { email: "someone@gmail.com" },
-      }),
+      })
     );
 
     await expect(auth.authenticate()).rejects.toThrow();
@@ -271,7 +268,7 @@ describe("AuthService", () => {
       nativeSuccess({
         idToken: "google-id-token",
         user: { email: "student@ku.th" },
-      }),
+      })
     );
     betterAuth.signIn.social.mockResolvedValue({
       data: null,
@@ -284,7 +281,7 @@ describe("AuthService", () => {
 
   test("clears the chosen Google account when no ID token comes back", async () => {
     googleSignin.signIn.mockResolvedValue(
-      nativeSuccess({ user: { email: "student@ku.th" } }),
+      nativeSuccess({ user: { email: "student@ku.th" } })
     );
 
     await expect(auth.authenticate()).rejects.toThrow();
@@ -306,12 +303,12 @@ describe("AuthService", () => {
       nativeSuccess({
         idToken: "google-id-token",
         user: { email: "someone@gmail.com" },
-      }),
+      })
     );
     googleSignin.signOut.mockRejectedValue(new Error("Play Services offline"));
 
     await expect(auth.authenticate()).rejects.toEqual(
-      new AuthError("INVALID_EMAIL_DOMAIN"),
+      new AuthError("INVALID_EMAIL_DOMAIN")
     );
   });
 
@@ -349,7 +346,7 @@ describe("AuthService", () => {
     fetchMock.mockRejectedValue(new Error("Registration service unavailable"));
 
     await expect(auth.getRoutingDestination()).rejects.toEqual(
-      new AuthError("API_ERROR", "Registration service unavailable"),
+      new AuthError("API_ERROR", "Registration service unavailable")
     );
   });
 
@@ -368,7 +365,9 @@ describe("AuthService", () => {
     expect(betterAuth.signOut).toHaveBeenCalledTimes(1);
     expect(googleSignin.signOut).toHaveBeenCalledTimes(1);
     expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith("kuquest_cookie");
-    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith("kuquest_session_data");
+    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith(
+      "kuquest_session_data"
+    );
   });
   test("clears local auth state when remote sign-out throws synchronously", async () => {
     betterAuth.signOut.mockImplementation(() => {
@@ -377,7 +376,9 @@ describe("AuthService", () => {
 
     await expect(auth.signOut()).resolves.toBeUndefined();
     expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith("kuquest_cookie");
-    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith("kuquest_session_data");
+    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith(
+      "kuquest_session_data"
+    );
   });
 
   test("does not hang when a sign-out provider never responds", async () => {

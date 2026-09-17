@@ -1,4 +1,4 @@
-import { spacing } from './spacing';
+import { spacing } from "./spacing";
 
 export interface ProfileLayoutMetrics {
   pagePadding: number;
@@ -12,7 +12,10 @@ export interface ProfileLayoutMetrics {
   gridColumns: 1 | 2;
 }
 
-export function getProfileLayoutMetrics(width: number, fontScale = 1): ProfileLayoutMetrics {
+export function getProfileLayoutMetrics(
+  width: number,
+  fontScale = 1
+): ProfileLayoutMetrics {
   const usesSingleColumn = width < 384 || fontScale >= 1.3;
 
   if (width < 384) {

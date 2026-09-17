@@ -1,17 +1,20 @@
-import type { SupportedLocale } from '../../locales/LocaleProvider';
-import type { QuestStatus, WorkConversationCapability } from '../questBoard/types';
+import type { SupportedLocale } from "../../locales/LocaleProvider";
+import type {
+  QuestStatus,
+  WorkConversationCapability,
+} from "../questBoard/types";
 
 export type LocalizedText = Record<SupportedLocale, string>;
 
 export interface ChatAttachment {
   name: string;
   meta: string;
-  kind: 'pdf' | 'image';
+  kind: "pdf" | "image";
 }
 
 export interface ChatMessage {
   id: string;
-  sender: 'me' | 'other';
+  sender: "me" | "other";
   text?: LocalizedText;
   time: string;
   attachment?: ChatAttachment;
@@ -25,7 +28,7 @@ export interface ChatConversation {
   capability?: WorkConversationCapability;
   questTitle: LocalizedText;
   participantName: string;
-  participantRole: 'owner' | 'member';
+  participantRole: "owner" | "member";
   initials: string;
   avatarColor: string;
   latestMessage: LocalizedText;

@@ -1,8 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { AccessibilityInfo, View, type StyleProp, type ViewStyle } from 'react-native';
-import Animated, { useAnimatedStyle, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
+import React, { useEffect, useState } from "react";
+import {
+  AccessibilityInfo,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 
-import { colors } from '@/theme/colors';
+import { colors } from "@/theme/colors";
 
 export interface LoadingSkeletonProps {
   loadingLabel: string;
@@ -14,8 +24,8 @@ export interface LoadingSkeletonProps {
 
 export interface SkeletonBlockProps {
   height: number;
-  width?: number | `${number}%` | 'auto';
-  variant?: 'block' | 'image';
+  width?: number | `${number}%` | "auto";
+  variant?: "block" | "image";
   borderRadius?: number;
   style?: StyleProp<ViewStyle>;
   testID?: string;
@@ -29,7 +39,10 @@ function useReducedMotionPreference(): boolean {
     void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
       if (mounted) setReduceMotion(enabled);
     });
-    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    const subscription = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      setReduceMotion
+    );
     return () => {
       mounted = false;
       subscription?.remove();
@@ -43,18 +56,29 @@ function useReducedMotionPreference(): boolean {
  * A screen-level loading state. The only accessible element is the busy
  * progressbar; all of the geometry inside it is decorative.
  */
-export function LoadingSkeleton({ loadingLabel, children, style, contentStyle, testID }: LoadingSkeletonProps) {
+export function LoadingSkeleton({
+  loadingLabel,
+  children,
+  style,
+  contentStyle,
+  testID,
+}: LoadingSkeletonProps) {
   const reduceMotion = useReducedMotionPreference();
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: reduceMotion ? 1 : withRepeat(
-      withSequence(
-        withTiming(1, { duration: 600 }),
-        withTiming(0.72, { duration: 600 }),
-      ),
-      -1,
-      false,
-    ),
-  }), [reduceMotion]);
+  const animatedStyle = useAnimatedStyle(
+    () => ({
+      opacity: reduceMotion
+        ? 1
+        : withRepeat(
+            withSequence(
+              withTiming(1, { duration: 600 }),
+              withTiming(0.72, { duration: 600 })
+            ),
+            -1,
+            false
+          ),
+    }),
+    [reduceMotion]
+  );
 
   return (
     <Animated.View
@@ -65,21 +89,35 @@ export function LoadingSkeleton({ loadingLabel, children, style, contentStyle, t
       style={[style, animatedStyle]}
       testID={testID}
     >
-      <View accessible={false} importantForAccessibility="no" style={contentStyle}>
+      <View
+        accessible={false}
+        importantForAccessibility="no"
+        style={contentStyle}
+      >
         {children}
       </View>
     </Animated.View>
   );
 }
 
-export function SkeletonBlock({ height, width = '100%', variant = 'block', borderRadius = 8, style, testID }: SkeletonBlockProps) {
+export function SkeletonBlock({
+  height,
+  width = "100%",
+  variant = "block",
+  borderRadius = 8,
+  style,
+  testID,
+}: SkeletonBlockProps) {
   return (
     <View
       accessible={false}
       importantForAccessibility="no"
       style={[
         {
-          backgroundColor: variant === 'image' ? colors.surfacePlaceholder : colors.surfaceMuted,
+          backgroundColor:
+            variant === "image"
+              ? colors.surfacePlaceholder
+              : colors.surfaceMuted,
           borderRadius,
           height,
           width,

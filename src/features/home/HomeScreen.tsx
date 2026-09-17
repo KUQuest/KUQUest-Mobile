@@ -1,8 +1,8 @@
-import { FeaturePlaceholder } from '@/components/ui/FeaturePlaceholder';
-import { useRouter } from 'expo-router';
-import { authService } from '../auth/AuthService';
-import { navigationMessages } from '@/locales/navigationMessages';
-import { useLocale } from '@/locales/LocaleProvider';
+import { FeaturePlaceholder } from "@/components/ui/FeaturePlaceholder";
+import { useRouter } from "expo-router";
+import { authService } from "../auth/AuthService";
+import { navigationMessages } from "@/locales/navigationMessages";
+import { useLocale } from "@/locales/LocaleProvider";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -11,8 +11,14 @@ export default function HomeScreen() {
 
   const handleSignOut = async () => {
     await authService.signOut();
-    router.replace('/');
+    router.replace("/");
   };
 
-  return <FeaturePlaceholder titleKey="boardTitle" actionLabel={messages.logout} onAction={() => void handleSignOut()} />;
+  return (
+    <FeaturePlaceholder
+      titleKey="boardTitle"
+      actionLabel={messages.logout}
+      onAction={() => void handleSignOut()}
+    />
+  );
 }

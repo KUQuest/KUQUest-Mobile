@@ -1,4 +1,4 @@
-import QuestBoardScreen from '@/features/questBoard/QuestBoardScreen';
+import QuestBoardScreen from "@/features/questBoard/QuestBoardScreen";
 
 export default function QuestBoardRoute() {
   return <QuestBoardScreen />;

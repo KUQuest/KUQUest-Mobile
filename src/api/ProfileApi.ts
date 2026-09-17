@@ -1,14 +1,23 @@
-import { ApiError } from './ApiClient';
+import { ApiError } from "./ApiClient";
 import type {
   CertificateEntry,
   ExperienceEntry,
   PortfolioEntry,
   ProfileResponse,
-} from './contracts';
-import type { StudentApi, ProfileUpdate, UploadAsset, CertificateCreate, ExperienceCreate, PortfolioCreate } from './StudentApi';
+} from "./contracts";
+import type {
+  StudentApi,
+  ProfileUpdate,
+  UploadAsset,
+  CertificateCreate,
+  ExperienceCreate,
+  PortfolioCreate,
+} from "./StudentApi";
 
-export type ProfileEditSection = 'experience' | 'portfolio' | 'certificates';
-export type ProfileEditSectionErrors = Partial<Record<ProfileEditSection, true>>;
+export type ProfileEditSection = "experience" | "portfolio" | "certificates";
+export type ProfileEditSectionErrors = Partial<
+  Record<ProfileEditSection, true>
+>;
 
 export interface ProfileEditData {
   profile: ProfileResponse;
@@ -19,7 +28,10 @@ export interface ProfileEditData {
   sectionUnavailable: ProfileEditSectionErrors;
 }
 
-export type ProfileBasicsUpdate = Pick<ProfileUpdate, 'firstName' | 'lastName' | 'bio' | 'telephone' | 'departmentId'>;
+export type ProfileBasicsUpdate = Pick<
+  ProfileUpdate,
+  "firstName" | "lastName" | "bio" | "telephone" | "departmentId"
+>;
 
 export type OptionalCollectionResult<T> = {
   items: T[];
@@ -93,11 +105,17 @@ export class ProfileApi {
 
   async updateBasics(update: ProfileBasicsUpdate): Promise<ProfileResponse> {
     const normalizedUpdate: ProfileBasicsUpdate = {
-      ...(update.firstName === undefined ? {} : { firstName: update.firstName }),
+      ...(update.firstName === undefined
+        ? {}
+        : { firstName: update.firstName }),
       ...(update.lastName === undefined ? {} : { lastName: update.lastName }),
       ...(update.bio?.trim() ? { bio: update.bio.trim() } : {}),
-      ...(update.telephone === undefined ? {} : { telephone: update.telephone }),
-      ...(update.departmentId === undefined ? {} : { departmentId: update.departmentId }),
+      ...(update.telephone === undefined
+        ? {}
+        : { telephone: update.telephone }),
+      ...(update.departmentId === undefined
+        ? {}
+        : { departmentId: update.departmentId }),
     };
     await this.studentApi.updateProfile(normalizedUpdate);
     return this.studentApi.getProfile();
@@ -107,11 +125,16 @@ export class ProfileApi {
     return this.studentApi.uploadAvatar(asset);
   }
 
-  async createExperience(entry: ExperienceCreate): Promise<ExperienceEntry | undefined> {
+  async createExperience(
+    entry: ExperienceCreate
+  ): Promise<ExperienceEntry | undefined> {
     return this.studentApi.createExperience(entry);
   }
 
-  async updateExperience(id: string, update: Partial<ExperienceCreate>): Promise<ExperienceEntry | undefined> {
+  async updateExperience(
+    id: string,
+    update: Partial<ExperienceCreate>
+  ): Promise<ExperienceEntry | undefined> {
     return this.studentApi.updateExperience(id, update);
   }
 
@@ -123,7 +146,10 @@ export class ProfileApi {
     return this.studentApi.createPortfolio(entry);
   }
 
-  async updatePortfolio(id: string, update: { title?: string; description?: string | null }): Promise<void> {
+  async updatePortfolio(
+    id: string,
+    update: { title?: string; description?: string | null }
+  ): Promise<void> {
     return this.studentApi.updatePortfolio(id, update);
   }
 
@@ -143,7 +169,10 @@ export class ProfileApi {
     return this.studentApi.createCertificate(entry);
   }
 
-  async updateCertificate(id: string, update: CertificateCreate): Promise<void> {
+  async updateCertificate(
+    id: string,
+    update: CertificateCreate
+  ): Promise<void> {
     return this.studentApi.updateCertificate(id, update);
   }
 

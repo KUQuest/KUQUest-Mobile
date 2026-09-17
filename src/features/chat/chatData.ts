@@ -1,4 +1,4 @@
-import type { ChatRouteParams } from './chatTypes';
+import type { ChatRouteParams } from "./chatTypes";
 
 export type {
   ChatAttachment,
@@ -6,7 +6,7 @@ export type {
   ChatMessage,
   ChatRouteParams,
   LocalizedText,
-} from './chatTypes';
+} from "./chatTypes";
 
 /**
  * Keep only stable identifiers on the chat route. Conversation membership and
