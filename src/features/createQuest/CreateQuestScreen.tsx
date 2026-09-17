@@ -67,6 +67,8 @@ import { FieldLabel } from "./components/FieldLabel";
 import { LogisticsSection } from "./components/LogisticsSection";
 import { ModeSummary } from "./components/ModeSummary";
 import { SectionHeading } from "./components/SectionHeading";
+import { SchedulePickerModal } from "./components/SchedulePickerModal";
+import { useSchedulePicker } from "./useSchedulePicker";
 import { QuestTopUpModal } from "@/components/ui/QuestFundingSummary";
 import { CreateQuestSkeleton } from "./components/CreateQuestSkeleton";
 import { QuestSetupOverview } from "./components/QuestSetupOverview";
@@ -174,11 +176,6 @@ export default function CreateQuestScreen({
     null
   );
   const [imageError, setImageError] = useState<string | undefined>();
-  const [scheduleField, setScheduleField] = useState<ScheduleField | null>(
-    null
-  );
-  const [pickerMode, setPickerMode] = useState<PickerMode>("date");
-  const [iosPickerValue, setIosPickerValue] = useState<Date | null>(null);
   const [completedState, setCompletedState] = useState<CompletionState | null>(
     null
   );
@@ -647,6 +644,17 @@ export default function CreateQuestScreen({
     });
   };
 
+  const {
+    activeField: scheduleField,
+    pickerMode,
+    pickerValue: schedulePickerValue,
+    minimumDate: schedulePickerMinimum,
+    openPicker: openSchedulePicker,
+    closePicker: closeSchedulePicker,
+    handleChange: handleDateChange,
+    confirmIos: confirmIosScheduleValue,
+  } = useSchedulePicker({ draft, updateDraft });
+
   const updateParticipation = (value: QuestDraft["participation"]) => {
     draftChangedRef.current = true;
     skipPersistRef.current = false;
@@ -876,68 +884,6 @@ export default function CreateQuestScreen({
       setStep((current) => (current - 1) as Step);
       scrollRef.current?.scrollTo({ y: 0, animated: false });
     }
-  };
-
-  const closeSchedulePicker = () => {
-    setScheduleField(null);
-    setPickerMode("date");
-    setIosPickerValue(null);
-  };
-
-  const openSchedulePicker = (field: ScheduleField) => {
-    const dateValue = field === "start" ? draft.startDate : draft.deadline;
-    const timeValue = field === "start" ? draft.startTime : draft.endTime;
-    setScheduleField(field);
-    setPickerMode("date");
-    setIosPickerValue(
-      Platform.OS === "ios"
-        ? getDateTimePickerValue(dateValue, timeValue)
-        : null
-    );
-  };
-
-  const saveScheduleValue = (field: ScheduleField, value: Date) => {
-    const dateKey = field === "start" ? "startDate" : "deadline";
-    const timeKey = field === "start" ? "startTime" : "endTime";
-    updateDraft(dateKey, toDateValue(value));
-    updateDraft(timeKey, getScheduleTimeValue(value));
-  };
-
-  const saveScheduleTime = (field: ScheduleField, value: Date) => {
-    const timeKey = field === "start" ? "startTime" : "endTime";
-    updateDraft(timeKey, getScheduleTimeValue(value));
-  };
-
-  const handleDateChange = (
-    event: DateTimePickerEvent,
-    selectedDate?: Date
-  ) => {
-    if (event.type === "dismissed") {
-      closeSchedulePicker();
-      return;
-    }
-    if (!selectedDate || !scheduleField) return;
-
-    if (Platform.OS === "ios") {
-      setIosPickerValue(selectedDate);
-      return;
-    }
-
-    if (pickerMode === "date") {
-      const dateKey = scheduleField === "start" ? "startDate" : "deadline";
-      updateDraft(dateKey, toDateValue(selectedDate));
-      setPickerMode("time");
-      return;
-    }
-
-    saveScheduleTime(scheduleField, selectedDate);
-    closeSchedulePicker();
-  };
-
-  const confirmIosScheduleValue = () => {
-    if (scheduleField && iosPickerValue)
-      saveScheduleValue(scheduleField, iosPickerValue);
-    closeSchedulePicker();
   };
 
   const pickImages = async () => {
@@ -1186,21 +1132,6 @@ export default function CreateQuestScreen({
 
   const isSaving = saveState === "saving";
   const nextLabel = step === 2 ? messages.reviewQuest : messages.next;
-  const schedulePickerDate =
-    scheduleField === "start" ? draft.startDate : draft.deadline;
-  const schedulePickerTime =
-    scheduleField === "start" ? draft.startTime : draft.endTime;
-  const schedulePickerValue = getSchedulePickerValue(
-    Platform.OS,
-    getDateTimePickerValue(schedulePickerDate, schedulePickerTime),
-    iosPickerValue
-  );
-  const schedulePickerMinimum =
-    scheduleField === "start"
-      ? new Date()
-      : draft.startDate
-        ? getDateTimePickerValue(draft.startDate, draft.startTime)
-        : undefined;
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
@@ -1959,56 +1890,17 @@ export default function CreateQuestScreen({
         </KeyboardAvoidingView>
       </View>
 
-      {scheduleField ? (
-        Platform.OS === "ios" ? (
-          <Modal
-            transparent
-            animationType="slide"
-            onRequestClose={closeSchedulePicker}
-            visible
-          >
-            <View className={styles.modalBackdrop}>
-              <View accessibilityViewIsModal className={styles.pickerSheet}>
-                <View className={styles.pickerHeader}>
-                  <Text className={styles.pickerTitle}>
-                    {scheduleField === "start"
-                      ? messages.startDateTime
-                      : messages.deadlineDateTime}
-                  </Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={messages.dateDone}
-                    onPress={confirmIosScheduleValue}
-                    className={styles.pickerDoneButton}
-                  >
-                    <Text className={styles.pickerDoneText}>
-                      {messages.dateDone}
-                    </Text>
-                  </Pressable>
-                </View>
-                <DateTimePicker
-                  value={schedulePickerValue}
-                  mode="datetime"
-                  display="spinner"
-                  onChange={handleDateChange}
-                  minimumDate={schedulePickerMinimum}
-                />
-              </View>
-            </View>
-          </Modal>
-        ) : (
-          <DateTimePicker
-            value={schedulePickerValue}
-            mode={pickerMode}
-            display="default"
-            is24Hour
-            onChange={handleDateChange}
-            minimumDate={
-              pickerMode === "date" ? schedulePickerMinimum : undefined
-            }
-          />
-        )
-      ) : null}
+      <SchedulePickerModal
+        messages={messages}
+        visible={scheduleField !== null}
+        field={scheduleField}
+        mode={pickerMode}
+        value={schedulePickerValue}
+        minimumDate={schedulePickerMinimum}
+        onChange={handleDateChange}
+        onConfirmIos={confirmIosScheduleValue}
+        onClose={closeSchedulePicker}
+      />
 
       <QuestTopUpModal
         visible={showTopUpModal}
