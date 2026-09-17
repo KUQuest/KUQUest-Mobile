@@ -41,11 +41,7 @@ import {
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  createQuestIdempotencyKey,
-  questApi,
-  type TagItem,
-} from "@/api/QuestApi";
+import { questApi, type TagItem } from "@/api/QuestApi";
 import { StatusBar } from "expo-status-bar";
 
 import { Button } from "@/components/ui/Button";
@@ -93,8 +89,6 @@ import {
   QUEST_DETAIL_FIELDS,
   type CompletionState,
   type Focusable,
-  type SaveErrorIntent,
-  type SaveState,
   type Step,
 } from "./createQuestTypes";
 import {
@@ -102,8 +96,7 @@ import {
   type PublishedQuestRefValue,
 } from "./useQuestPersistence";
 import { useQuestPublish } from "./useQuestPublish";
-import { liveQuestService } from "../questBoard/liveQuestService";
-import { MAX_QUEST_IMAGES, type QuestPublishCheck } from "../questBoard/types";
+import { MAX_QUEST_IMAGES } from "../questBoard/types";
 
 export interface CreateQuestScreenProps {
   editQuestId?: string;
