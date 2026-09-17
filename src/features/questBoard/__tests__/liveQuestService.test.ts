@@ -6,6 +6,7 @@ jest.mock("@/api/QuestApi", () => ({
   createQuestIdempotencyKey: jest.fn(() => "create-key-1"),
   questApi: {
     createQuest: jest.fn(),
+    editQuest: jest.fn(),
     getPublishCheck: jest.fn(),
     publishQuest: jest.fn(),
     getDetail: jest.fn(),
@@ -184,6 +185,27 @@ describe("LiveQuestService", () => {
       "quest-1",
       [{ uri: "file:///tmp/img1.jpg" }],
       expect.any(String)
+    );
+  });
+
+  it("edits a draft quest via questApi.editQuest", async () => {
+    mockedQuestApi.editQuest.mockResolvedValue({
+      id: "quest-1",
+      version: 2,
+    } as never);
+
+    const updated = await liveQuestService.editQuest(
+      "quest-1",
+      1,
+      { title: "Updated Title" },
+      "idem-1"
+    );
+    expect(updated.id).toBe("quest-1");
+    expect(mockedQuestApi.editQuest).toHaveBeenCalledWith(
+      "quest-1",
+      1,
+      { title: "Updated Title" },
+      "idem-1"
     );
   });
 });

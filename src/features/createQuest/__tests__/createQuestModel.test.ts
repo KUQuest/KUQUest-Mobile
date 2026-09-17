@@ -1,8 +1,11 @@
 import {
+  adaptV2PublishCheck,
   calculateQuestEscrow,
+  formatBangkokIso,
   formatDraftReward,
   getDraftRewardSatang,
   getHeadcountForParticipation,
+  getQuestApiErrorMessage,
   getQuestPublishCheck,
   getRewardValidationError,
   getSchedulePickerValue,
@@ -10,12 +13,16 @@ import {
   initialDraft,
   isQuestDraftDirty,
   MAX_REWARD_THB,
+  MIN_REWARD_THB,
   parseStoredQuestDraft,
   parseStoredQuestSnapshot,
+  toBangkokDateTime,
   toQuestDraftPayload,
   toQuestV2Payload,
   toQuestBoardModeValues,
 } from "../createQuestModel";
+import type { QuestV2PublishCheck } from "@/api/questV2Contracts";
+import { createQuestMessages } from "@/locales/createQuestMessages";
 
 describe("Create Quest model", () => {
   describe("getHeadcountForParticipation", () => {
@@ -61,8 +68,8 @@ describe("Create Quest model", () => {
   });
 
   describe("getRewardValidationError", () => {
-    test("accepts zero and rewards with up to two decimal places", () => {
-      expect(getRewardValidationError("0")).toBeUndefined();
+    test("accepts the minimum funding amount and values with up to two decimal places", () => {
+      expect(getRewardValidationError(String(MIN_REWARD_THB))).toBeUndefined();
       expect(getRewardValidationError("1250.50")).toBeUndefined();
     });
 
@@ -75,10 +82,10 @@ describe("Create Quest model", () => {
       );
     });
 
-    test("rejects rewards outside the client-side safety bound", () => {
-      expect(getRewardValidationError(String(MAX_REWARD_THB + 1))).toContain(
-        "between ฿0"
-      );
+    test("rejects rewards outside the 1 to 700,000 THB funding bounds", () => {
+      expect(getRewardValidationError("0")).toContain("between ฿0");
+      expect(getRewardValidationError(String(MAX_REWARD_THB))).toBeUndefined();
+      expect(getRewardValidationError("700001")).toContain("between ฿0");
     });
   });
 
@@ -198,12 +205,41 @@ describe("Create Quest model", () => {
         participation: "GROUP",
         questFundingTotal: 250.5,
         headcount: 3,
-        startTime: "2099-08-26T09:00:00+07:00",
-        dueAt: "2099-08-27T12:00:00+07:00",
+        startTime: toBangkokDateTime("2099-08-26", "09:00"),
+        dueAt: toBangkokDateTime("2099-08-27", "12:00"),
         tagId: "tag-library",
         proofRequired: true,
         locations: [{ label: "Main library" }],
       });
+    });
+
+    test("omits dueAt when the deadline is not fully scheduled", () => {
+      const payload = toQuestV2Payload({
+        ...initialDraft,
+        title: "Clean the library",
+        conditions: "The library is clean.",
+        startDate: "2099-08-26",
+        startTime: "09:00",
+        wage: "250",
+      });
+      expect(payload.dueAt).toBeNull();
+      expect(payload.startTime).toBe(toBangkokDateTime("2099-08-26", "09:00"));
+    });
+
+    test("splits multi-line completion criteria into condition items", () => {
+      const payload = toQuestV2Payload({
+        ...initialDraft,
+        title: "Clean the library",
+        conditions: "Photo uploaded\n\n Library is clean \nTrash removed",
+        startDate: "2099-08-26",
+        startTime: "09:00",
+        wage: "250",
+      });
+      expect(payload.condition.items).toEqual([
+        "Photo uploaded",
+        "Library is clean",
+        "Trash removed",
+      ]);
     });
 
     test("reports reward pool plus per-Worker Platform Fee with ceiling rounding", () => {
@@ -232,6 +268,129 @@ describe("Create Quest model", () => {
       expect(check.blockers).toEqual([]);
       expect(check.warnings).toContain("NO_IMAGES");
       expect(check.escrow.totalRequiredSatang).toBe(25000);
+    });
+  });
+
+  describe("Bangkok time conversion", () => {
+    test("formats instants as RFC 3339 with the fixed +07:00 Bangkok offset", () => {
+      expect(formatBangkokIso(new Date("2026-10-15T02:00:00Z"))).toBe(
+        "2026-10-15T09:00:00+07:00"
+      );
+      expect(formatBangkokIso(new Date("2026-10-15T18:30:05Z"))).toBe(
+        "2026-10-16T01:30:05+07:00"
+      );
+    });
+
+    test("converts a local schedule selection to Bangkok time or null", () => {
+      const localNoon = new Date(2026, 9, 15, 9, 0, 0);
+      expect(toBangkokDateTime("2026-10-15", "09:00")).toBe(
+        formatBangkokIso(localNoon)
+      );
+      expect(toBangkokDateTime("26-10-2026", "09:00")).toBeNull();
+      expect(toBangkokDateTime("2026-10-15", "9:00")).toBeNull();
+      expect(toBangkokDateTime("2026-10-15", "24:00")).toBeNull();
+      expect(toBangkokDateTime("2099-02-30", "10:00")).toBeNull();
+    });
+  });
+
+  describe("adaptV2PublishCheck", () => {
+    const serverCheck: QuestV2PublishCheck = {
+      canPublish: false,
+      blockingReasons: [
+        { code: "QUEST_TAG_REQUIRED", message: "Select a tag." },
+        { code: "INSUFFICIENT_SPENDING_BALANCE", message: "Top up." },
+      ],
+      warnings: [{ code: "NO_IMAGES", message: "Optional." }],
+      questFundingTotal: 500,
+      questFundingTotalSatang: 50000,
+      questReward: 490,
+      questRewardSatang: 49000,
+      platformFee: 10,
+      platformFeeSatang: 1000,
+      escrowRequirement: 500,
+      escrowRequirementSatang: 50000,
+      headcount: 3,
+      platformFeeBps: 200,
+      feeRoundingMode: "UP",
+      policyRevisionId: "7df4ea20-21a4-4f01-9a70-3882bbd12345",
+      policyRevision: 1,
+    };
+
+    test("projects the server quote into the client publish check", () => {
+      expect(adaptV2PublishCheck(serverCheck)).toEqual({
+        canPublish: false,
+        blockers: ["QUEST_TAG_REQUIRED", "INSUFFICIENT_SPENDING_BALANCE"],
+        warnings: ["NO_IMAGES"],
+        escrow: {
+          rewardPoolSatang: 147000,
+          platformFeeSatang: 3000,
+          totalRequiredSatang: 50000,
+          headcount: 3,
+          rewardSatangPerWorker: 49000,
+          platformFeeSatangPerWorker: 1000,
+          feeRateBasisPoints: 200,
+        },
+      });
+    });
+
+    test("keeps a publishable check free of blockers", () => {
+      const ready = adaptV2PublishCheck({
+        ...serverCheck,
+        canPublish: true,
+        blockingReasons: [],
+        warnings: [],
+      });
+      expect(ready.canPublish).toBe(true);
+      expect(ready.blockers).toEqual([]);
+      expect(ready.escrow.totalRequiredSatang).toBe(50000);
+    });
+  });
+
+  describe("getQuestApiErrorMessage", () => {
+    test("maps known API error codes to localized messages", () => {
+      expect(
+        getQuestApiErrorMessage("INVALID_QUEST_FUNDING_TOTAL", "en")
+      ).toContain("700,000");
+      expect(getQuestApiErrorMessage("INVALID_TITLE", "th")).toContain("120");
+      expect(getQuestApiErrorMessage("INVALID_TITLE", "en")).not.toBe(
+        getQuestApiErrorMessage("INVALID_TITLE", "th")
+      );
+    });
+
+    test("falls back to the generic save error for unknown codes", () => {
+      expect(getQuestApiErrorMessage("MYSTERY_CODE", "en")).toBe(
+        createQuestMessages.en.saveError
+      );
+      expect(getQuestApiErrorMessage("MYSTERY_CODE", "th")).toBe(
+        createQuestMessages.th.saveError
+      );
+    });
+  });
+
+  describe("localized blocking guidance", () => {
+    test("covers every publish blocker code in both locales", () => {
+      const codes = [
+        "QUEST_TAG_REQUIRED",
+        "QUEST_DUE_AT_REQUIRED",
+        "QUEST_DUE_AT_NOT_AFTER_START_TIME",
+        "QUEST_START_TIME_NOT_IN_FUTURE",
+        "QUEST_CONDITION_REQUIRED",
+        "QUEST_HEADCOUNT_INVALID",
+        "WALLET_NOT_ACTIVE",
+        "INSUFFICIENT_SPENDING_BALANCE",
+      ] as const;
+
+      for (const locale of ["en", "th"] as const) {
+        for (const code of codes) {
+          const guidance = createQuestMessages[locale].blockingGuidance[code];
+          const text =
+            typeof guidance === "function" ? guidance("50.00") : guidance;
+          expect(text.length).toBeGreaterThan(0);
+        }
+        expect(createQuestMessages[locale].topUpAction.length).toBeGreaterThan(
+          0
+        );
+      }
     });
   });
 

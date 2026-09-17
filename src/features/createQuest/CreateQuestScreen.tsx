@@ -58,7 +58,9 @@ import {
 } from "@/api/QuestApi";
 import { StatusBar } from "expo-status-bar";
 
+import { walletApi, type WalletBalances } from "@/api/WalletApi";
 import { Button } from "@/components/ui/Button";
+import { QuestTopUpModal } from "@/components/ui/QuestFundingSummary";
 import {
   LoadingSkeleton,
   SkeletonBlock,
@@ -74,8 +76,10 @@ import { getCreateQuestLayoutMetrics } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 import styles from "./createQuestStyles";
 import {
+  adaptV2PublishCheck,
   formatDraftReward,
   getHeadcountForParticipation,
+  getQuestApiErrorMessage,
   getQuestPublishCheck,
   getSchedulePickerValue,
   getScheduleTimeValue,
@@ -1001,13 +1005,20 @@ export default function CreateQuestScreen({
   const [publishCheck, setPublishCheck] = useState<QuestPublishCheck | null>(
     null
   );
+  const [walletBalances, setWalletBalances] = useState<WalletBalances | null>(
+    null
+  );
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [isCheckingPublish, setIsCheckingPublish] = useState(false);
   const [logisticsExpanded, setLogisticsExpanded] = useState(false);
   const [pendingInvalidField, setPendingInvalidField] = useState<string | null>(
     null
   );
   const focusedInvalidFieldRef = useRef<string | null>(null);
+  const publishCheckRequestRef = useRef(0);
   const publishedQuestRef = useRef<{
     questId: string;
+    version?: number;
     storageKey: string;
     editQuestId?: string;
     createIdempotencyKey?: string;
@@ -1212,6 +1223,7 @@ export default function CreateQuestScreen({
           publishIdempotencyKey = createQuestIdempotencyKey();
           publishedQuestRef.current = {
             questId: publishedQuestId,
+            version: created.version,
             storageKey: draftStorageKey,
             editQuestId,
             createIdempotencyKey,
@@ -1223,6 +1235,7 @@ export default function CreateQuestScreen({
           publishIdempotencyKey = createQuestIdempotencyKey();
           publishedQuestRef.current = {
             questId: publishedQuestId,
+            version: publishedQuestRef.current?.version,
             storageKey: draftStorageKey,
             editQuestId,
             createIdempotencyKey,
@@ -1265,17 +1278,20 @@ export default function CreateQuestScreen({
       } catch (error) {
         if (requestId !== saveRequestRef.current) return false;
         setSaveState("error");
+        const errorCode = (error as { code?: unknown } | null)?.code;
         setSaveErrorMessage(
-          error instanceof Error
-            ? error.message
-            : "Unable to publish the Quest."
+          typeof errorCode === "string" && errorCode
+            ? getQuestApiErrorMessage(errorCode, locale)
+            : error instanceof Error
+              ? error.message
+              : "Unable to publish the Quest."
         );
         setSaveErrorIntent({ state: "OPEN", completesFlow: true });
         setSavingAction(null);
         return false;
       }
     },
-    [draftStorageKey, editQuestId]
+    [draftStorageKey, editQuestId, locale]
   );
 
   useEffect(() => {
@@ -1346,6 +1362,89 @@ export default function CreateQuestScreen({
       }
     };
   }, [completedState, draft, draftHydrated, draftStorageKey, saveDraft, step]);
+
+  const refreshPublishCheck = useCallback(async () => {
+    if (!draftHydrated || !draftStorageKey) return;
+    const requestId = ++publishCheckRequestRef.current;
+    setIsCheckingPublish(true);
+    try {
+      try {
+        setWalletBalances(await walletApi.getWallet());
+      } catch {
+        setWalletBalances(null);
+      }
+
+      const normalizedDraft = {
+        ...draft,
+        headcount: getHeadcountForParticipation(
+          draft.participation,
+          draft.headcount
+        ),
+      };
+      const existing = publishedQuestRef.current;
+      let questId = existing?.questId ?? editQuestId;
+      if (questId) {
+        if (
+          existing &&
+          existing.questId === questId &&
+          draftChangedRef.current &&
+          existing.version != null
+        ) {
+          const edited = await liveQuestService.editQuest(
+            questId,
+            existing.version,
+            toQuestV2Payload(normalizedDraft)
+          );
+          if (requestId !== publishCheckRequestRef.current) return;
+          publishedQuestRef.current = { ...existing, version: edited.version };
+        }
+      } else {
+        const createIdempotencyKey = createQuestIdempotencyKey();
+        const created = await liveQuestService.createQuest(
+          toQuestV2Payload(normalizedDraft),
+          createIdempotencyKey
+        );
+        if (requestId !== publishCheckRequestRef.current) return;
+        questId = created.id;
+        if (normalizedDraft.imageUris && normalizedDraft.imageUris.length > 0) {
+          try {
+            await liveQuestService.uploadImages(
+              questId,
+              normalizedDraft.imageUris
+            );
+          } catch (imageError) {
+            console.warn("Failed to upload quest images:", imageError);
+          }
+        }
+        publishedQuestRef.current = {
+          questId,
+          version: created.version,
+          storageKey: draftStorageKey,
+          editQuestId,
+          createIdempotencyKey,
+        };
+      }
+
+      const check = await liveQuestService.getPublishCheck(questId);
+      if (requestId !== publishCheckRequestRef.current) return;
+      setPublishCheck(adaptV2PublishCheck(check));
+    } catch {
+      if (requestId !== publishCheckRequestRef.current) return;
+      // Prototype/offline mode: fall back to the local publish check.
+      setPublishCheck(getQuestPublishCheck(draft));
+    } finally {
+      if (requestId === publishCheckRequestRef.current)
+        setIsCheckingPublish(false);
+    }
+  }, [draft, draftHydrated, draftStorageKey, editQuestId]);
+
+  useEffect(() => {
+    if (step !== 3 || !draftHydrated || completedState) return;
+    const timer = setTimeout(() => {
+      void refreshPublishCheck();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [completedState, draftHydrated, refreshPublishCheck, step]);
 
   const updateDraft = <K extends keyof QuestDraft>(
     field: K,
@@ -1531,7 +1630,7 @@ export default function CreateQuestScreen({
 
   const finishQuest = async (state: CompletionState) => {
     if (!validateStep(2)) return;
-    const check = getQuestPublishCheck(draft);
+    const check = reviewPublishCheck;
     setPublishCheck(check);
     if (state === "OPEN" && !check.canPublish) {
       const firstBlocker = check.blockers[0];
@@ -1735,9 +1834,11 @@ export default function CreateQuestScreen({
   }, [draft.candidateMode, draft.participation, messages]);
   const proofRequired = draft.proofRequired !== "none";
 
-  const reviewPublishCheck = useMemo(
-    () => publishCheck ?? getQuestPublishCheck(draft),
-    [draft, publishCheck]
+  const reviewPublishCheck = publishCheck ?? getQuestPublishCheck(draft);
+  const missingSatang = Math.max(
+    0,
+    reviewPublishCheck.escrow.totalRequiredSatang -
+      (walletBalances?.spendingBalanceSatang ?? 0)
   );
   const summary = useMemo(
     () => [
@@ -2494,6 +2595,7 @@ export default function CreateQuestScreen({
                       accessibilityLiveRegion={
                         reviewPublishCheck.canPublish ? "polite" : "assertive"
                       }
+                      accessibilityState={{ busy: isCheckingPublish }}
                       className={cn(
                         styles.publishCheckCard,
                         !reviewPublishCheck.canPublish &&
@@ -2560,6 +2662,47 @@ export default function CreateQuestScreen({
                           {messages.publishCheckWarning}
                         </Text>
                       ) : null}
+                      {!reviewPublishCheck.canPublish ? (
+                        <View testID="create-quest-blocking-guidance">
+                          {reviewPublishCheck.blockers.map((blocker) =>
+                            blocker === "INSUFFICIENT_SPENDING_BALANCE" ? (
+                              <View key={blocker}>
+                                <Text className={styles.publishCheckNote}>
+                                  {messages.blockingGuidance.INSUFFICIENT_SPENDING_BALANCE(
+                                    formatSatang(missingSatang, locale)
+                                  )}
+                                </Text>
+                                <Pressable
+                                  accessibilityRole="button"
+                                  accessibilityLabel={messages.topUpAction}
+                                  className={cn(
+                                    styles.retryButton,
+                                    styles.publishCheckNote
+                                  )}
+                                  onPress={() => setShowTopUpModal(true)}
+                                  testID="create-quest-top-up-button"
+                                >
+                                  <Text className={styles.retryButtonText}>
+                                    {messages.topUpAction}
+                                  </Text>
+                                </Pressable>
+                              </View>
+                            ) : (
+                              <Text
+                                className={styles.publishCheckNote}
+                                key={blocker}
+                              >
+                                {(
+                                  messages.blockingGuidance as unknown as Record<
+                                    string,
+                                    string
+                                  >
+                                )[blocker] ?? blocker}
+                              </Text>
+                            )
+                          )}
+                        </View>
+                      ) : null}
                     </View>
                   </View>
                 </>
@@ -2619,7 +2762,7 @@ export default function CreateQuestScreen({
                       ? messages.publishingQuest
                       : messages.publishQuest
                   }
-                  disabled={isSaving}
+                  disabled={isSaving || !reviewPublishCheck.canPublish}
                   label={
                     savingAction === "OPEN"
                       ? messages.publishingQuest
@@ -2686,6 +2829,16 @@ export default function CreateQuestScreen({
           />
         )
       ) : null}
+
+      <QuestTopUpModal
+        visible={showTopUpModal}
+        onClose={() => setShowTopUpModal(false)}
+        onSuccess={() => {
+          void refreshPublishCheck();
+        }}
+        locale={locale}
+        suggestedAmountSatang={missingSatang}
+      />
     </SafeAreaView>
   );
 }

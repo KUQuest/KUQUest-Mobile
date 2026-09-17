@@ -50,6 +50,7 @@ export interface CreateQuestV2Payload {
 export const tagItemSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
+  createdAt: z.string().optional(),
 });
 
 export const tagListResponseSchema = z.object({
@@ -113,21 +114,17 @@ export class QuestApi {
   async uploadQuestImages(
     questId: string,
     assets: UploadAsset[],
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Image[]> {
     if (assets.length === 0) return [];
     const formData = new FormData();
     assets.forEach((asset, index) => {
       appendUploadFile(formData, "images", asset, `quest-${index}`);
     });
-    const headers: Record<string, string> = {};
-    if (idempotencyKey) {
-      headers["idempotency-key"] = idempotencyKey;
-    }
     const body = await this.client.requestForm<unknown>(
       `/api/v2/quests/${questId}/images`,
       formData,
-      { method: "POST", headers }
+      { method: "POST", headers: { "Idempotency-Key": idempotencyKey } }
     );
     return questV2ImagesResponseSchema.parse(body).data.images;
   }
@@ -162,7 +159,7 @@ export class QuestApi {
       payload,
       {
         method: "POST",
-        headers: { "idempotency-key": idempotencyKey },
+        headers: { "Idempotency-Key": idempotencyKey },
       }
     );
     return questV2DetailResponseSchema.parse(body).data;
@@ -170,13 +167,19 @@ export class QuestApi {
 
   async editQuest(
     questId: string,
-    payload: Partial<CreateQuestV2Payload>
+    version: number,
+    payload: Partial<CreateQuestV2Payload>,
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2CanonicalQuest> {
     const body = await this.client.requestJson<unknown>(
       `/api/v2/quests/${questId}`,
       payload,
       {
         method: "PATCH",
+        headers: {
+          "Idempotency-Key": idempotencyKey,
+          "If-Match": String(version),
+        },
       }
     );
     return questV2DetailResponseSchema.parse(body).data;
@@ -193,15 +196,12 @@ export class QuestApi {
     questId: string,
     idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Detail> {
-    const headers: Record<string, string> = {};
-    if (idempotencyKey) headers["idempotency-key"] = idempotencyKey;
-
     const body = await this.client.requestJson<unknown>(
       `/api/v2/quests/${questId}/publish`,
       {},
       {
         method: "POST",
-        headers,
+        headers: { "Idempotency-Key": idempotencyKey },
       }
     );
     return questV2PublishResponseSchema.parse(body).data.quest;
@@ -209,17 +209,14 @@ export class QuestApi {
 
   async cancelQuest(
     questId: string,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2CancellationOutcome> {
-    const headers: Record<string, string> = {};
-    if (idempotencyKey) headers["idempotency-key"] = idempotencyKey;
-
     const body = await this.client.requestJson<unknown>(
       `/api/v2/quests/${questId}/cancel`,
       {},
       {
         method: "POST",
-        headers,
+        headers: { "Idempotency-Key": idempotencyKey },
       }
     );
     return questV2CancellationResponseSchema.parse(body).data;
@@ -227,11 +224,8 @@ export class QuestApi {
 
   async joinQuest(
     questId: string,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Assignment> {
-    const headers: Record<string, string> = {};
-    if (idempotencyKey) headers["idempotency-key"] = idempotencyKey;
-
     const body = await this.client.requestJson<{
       success: true;
       data: QuestV2Assignment;
@@ -240,7 +234,7 @@ export class QuestApi {
       {},
       {
         method: "POST",
-        headers,
+        headers: { "Idempotency-Key": idempotencyKey },
       }
     );
     return body.data;
@@ -248,11 +242,8 @@ export class QuestApi {
 
   async confirmCompletion(
     questId: string,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<{ completedAt: string }> {
-    const headers: Record<string, string> = {};
-    if (idempotencyKey) headers["idempotency-key"] = idempotencyKey;
-
     const body = await this.client.requestJson<{
       success: true;
       data: { completedAt: string };
@@ -261,7 +252,7 @@ export class QuestApi {
       {},
       {
         method: "POST",
-        headers,
+        headers: { "Idempotency-Key": idempotencyKey },
       }
     );
     return body.data;

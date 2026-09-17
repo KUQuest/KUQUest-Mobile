@@ -188,6 +188,16 @@ export class LiveQuestService {
   async getPublishCheck(questId: string): Promise<QuestV2PublishCheck> {
     return questApi.getPublishCheck(questId);
   }
+
+  async editQuest(
+    questId: string,
+    version: number,
+    payload: Partial<CreateQuestV2Payload>,
+    idempotencyKey?: string
+  ): Promise<QuestV2CanonicalQuest> {
+    return questApi.editQuest(questId, version, payload, idempotencyKey);
+  }
+
   async createQuest(
     payload: CreateQuestV2Payload,
     idempotencyKey?: string

@@ -1,6 +1,6 @@
 import { Modal, StyleSheet, useColorScheme } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -1185,6 +1185,173 @@ function TopUpFlowContent({
   );
 }
 
+interface TopUpFlowOptions {
+  locale: SupportedLocale;
+  onBackFromAmount: () => void;
+  /** Invoked after a payment is verified and the wallet reloaded. */
+  onPaid?: () => void;
+}
+
+function useTopUpFlow({ locale, onBackFromAmount, onPaid }: TopUpFlowOptions) {
+  const messages = questBoardMessages[locale];
+  const [topUpStep, setTopUpStep] = useState<TopUpStep>("amount");
+  const [topUpAmount, setTopUpAmount] = useState("");
+  const [liveWallet, setLiveWallet] = useState<WalletBalances | null>(null);
+  const [topUpQuote, setTopUpQuote] = useState<TopUpQuote | null>(null);
+  const [activeTopUp, setActiveTopUp] = useState<TopUpData | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [paymentVerified, setPaymentVerified] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(
+    null
+  );
+
+  const loadWallet = useCallback(async () => {
+    try {
+      setLiveWallet(await walletApi.getWallet());
+    } catch {
+      // Keep the last successful wallet snapshot visible.
+    }
+  }, []);
+
+  const resetTopUp = useCallback(() => {
+    setTopUpQuote(null);
+    setActiveTopUp(null);
+    setPaymentVerified(false);
+    setIsConfirming(false);
+    setVerificationError(null);
+    setTopUpStep("amount");
+  }, []);
+
+  const openTopUp = useCallback(
+    (suggestedAmountSatang?: number) => {
+      setTopUpAmount(
+        suggestedAmountSatang && suggestedAmountSatang > 0
+          ? String(Math.ceil(suggestedAmountSatang / 100))
+          : ""
+      );
+      resetTopUp();
+    },
+    [resetTopUp]
+  );
+
+  const handleTopUpBack = () => {
+    if (topUpStep === "amount") {
+      onBackFromAmount();
+      return;
+    }
+    resetTopUp();
+  };
+  const handleTopUpAmountChange = (amount: string) => {
+    setTopUpAmount(amount);
+    resetTopUp();
+  };
+  const handleTopUpContinue = async () => {
+    if (topUpStep !== "amount") return;
+    const check = checkTopUpAmount(
+      topUpAmount,
+      liveWallet ? toCompartments(liveWallet) : null
+    );
+    if (!check.ok) {
+      setVerificationError(messages.topUpCreateError);
+      return;
+    }
+
+    try {
+      const quote = await requestTopUpQuote(check.satang);
+      setTopUpQuote(quote);
+      setVerificationError(null);
+      setTopUpStep("confirmation");
+    } catch (err: unknown) {
+      setVerificationError(
+        err instanceof Error ? err.message : messages.topUpCreateError
+      );
+    }
+  };
+  const handleTopUpConfirm = async () => {
+    if (topUpStep !== "confirmation" || !topUpQuote || isConfirming) return;
+    setIsConfirming(true);
+
+    try {
+      const result = await createTopUpFromQuote(topUpQuote, new Date());
+      if (!result.ok) {
+        setVerificationError(messages.topUpCreateError);
+        return;
+      }
+      setActiveTopUp(result.topUp);
+      setVerificationError(null);
+      setTopUpStep("promptPay");
+    } catch (err: unknown) {
+      setVerificationError(
+        err instanceof Error ? err.message : messages.topUpCreateError
+      );
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+  const settleTopUp = async (topUp: TopUpData) => {
+    setActiveTopUp(topUp);
+    if (topUp.topUpStatus !== "PAID") {
+      setVerificationError(messages.topUpPaymentPending);
+      return;
+    }
+    setPaymentVerified(true);
+    await loadWallet();
+    onPaid?.();
+  };
+  const handleVerifyPayment = async () => {
+    if (!activeTopUp || isVerifying) return;
+    setIsVerifying(true);
+    setVerificationError(null);
+    try {
+      await settleTopUp(await checkTopUpPayment(activeTopUp.id));
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Verification failed";
+      setVerificationError(message);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+  const handleSimulatePayment = async () => {
+    if (!activeTopUp || isVerifying) return;
+    setIsVerifying(true);
+    setVerificationError(null);
+    try {
+      const topUp = await simulateTopUpPayment(activeTopUp.id);
+      if (!topUp) return;
+      await settleTopUp(topUp);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Verification failed";
+      setVerificationError(message);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  return {
+    topUpStep,
+    topUpAmount,
+    liveWallet,
+    topUpQuote,
+    activeTopUp,
+    isConfirming,
+    isVerifying,
+    paymentVerified,
+    verificationError,
+    loadWallet,
+    resetTopUp,
+    openTopUp,
+    handleTopUpBack,
+    handleTopUpAmountChange,
+    handleTopUpContinue,
+    handleTopUpConfirm,
+    handleVerifyPayment,
+    handleSimulatePayment,
+  };
+}
+
 interface FundingModalProps {
   amount: string;
   locale: SupportedLocale;
@@ -1327,27 +1494,18 @@ function FundingModal({
 export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
   const messages = questBoardMessages[locale];
   const [modal, setModal] = useState<FundingModalKind | null>(null);
-  const [topUpStep, setTopUpStep] = useState<TopUpStep>("amount");
-  const [topUpAmount, setTopUpAmount] = useState("");
-  const [liveWallet, setLiveWallet] = useState<WalletBalances | null>(null);
-  const [topUpQuote, setTopUpQuote] = useState<TopUpQuote | null>(null);
-  const [activeTopUp, setActiveTopUp] = useState<TopUpData | null>(null);
-  const [isConfirming, setIsConfirming] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [paymentVerified, setPaymentVerified] = useState(false);
-  const [verificationError, setVerificationError] = useState<string | null>(
-    null
-  );
+  const closeFundingModal = () => {
+    flow.resetTopUp();
+    setModal(null);
+  };
+  const flow = useTopUpFlow({
+    locale,
+    onBackFromAmount: () => setModal("details"),
+  });
+
   useColorScheme();
 
-  const loadWallet = useCallback(async () => {
-    try {
-      setLiveWallet(await walletApi.getWallet());
-    } catch {
-      // Keep the last successful wallet snapshot visible.
-    }
-  }, []);
-
+  const { loadWallet } = flow;
   useFocusEffect(
     useCallback(() => {
       void loadWallet();
@@ -1355,121 +1513,10 @@ export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
     }, [loadWallet])
   );
 
-  const resetTopUp = () => {
-    setTopUpQuote(null);
-    setActiveTopUp(null);
-    setPaymentVerified(false);
-    setIsConfirming(false);
-    setVerificationError(null);
-    setTopUpStep("amount");
-  };
-
   const openFundingDetails = () => setModal("details");
-  const closeFundingModal = () => {
-    if (modal === "topUp") resetTopUp();
-    setModal(null);
-  };
   const openTopUp = () => {
-    setTopUpAmount("");
-    resetTopUp();
+    flow.openTopUp();
     setModal("topUp");
-  };
-  const handleTopUpBack = () => {
-    if (topUpStep === "amount") {
-      setModal("details");
-      return;
-    }
-    resetTopUp();
-  };
-  const handleTopUpAmountChange = (amount: string) => {
-    setTopUpAmount(amount);
-    resetTopUp();
-  };
-  const handleTopUpContinue = async () => {
-    if (topUpStep !== "amount") return;
-    const check = checkTopUpAmount(
-      topUpAmount,
-      liveWallet ? toCompartments(liveWallet) : null
-    );
-    if (!check.ok) {
-      setVerificationError(messages.topUpCreateError);
-      return;
-    }
-
-    try {
-      const quote = await requestTopUpQuote(check.satang);
-      setTopUpQuote(quote);
-      setVerificationError(null);
-      setTopUpStep("confirmation");
-    } catch (err: unknown) {
-      setVerificationError(
-        err instanceof Error ? err.message : messages.topUpCreateError
-      );
-    }
-  };
-  const handleTopUpConfirm = async () => {
-    if (topUpStep !== "confirmation" || !topUpQuote || isConfirming) return;
-    setIsConfirming(true);
-
-    try {
-      const result = await createTopUpFromQuote(topUpQuote, new Date());
-      if (!result.ok) {
-        setVerificationError(messages.topUpCreateError);
-        return;
-      }
-      setActiveTopUp(result.topUp);
-      setVerificationError(null);
-      setTopUpStep("promptPay");
-    } catch (err: unknown) {
-      setVerificationError(
-        err instanceof Error ? err.message : messages.topUpCreateError
-      );
-    } finally {
-      setIsConfirming(false);
-    }
-  };
-  const handleVerifyPayment = async () => {
-    if (!activeTopUp || isVerifying) return;
-    setIsVerifying(true);
-    setVerificationError(null);
-    try {
-      const topUp = await checkTopUpPayment(activeTopUp.id);
-      setActiveTopUp(topUp);
-      if (topUp.topUpStatus === "PAID") {
-        setPaymentVerified(true);
-        setLiveWallet(await walletApi.getWallet());
-      } else {
-        setVerificationError(messages.topUpPaymentPending);
-      }
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Verification failed";
-      setVerificationError(message);
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-  const handleSimulatePayment = async () => {
-    if (!activeTopUp || isVerifying) return;
-    setIsVerifying(true);
-    setVerificationError(null);
-    try {
-      const topUp = await simulateTopUpPayment(activeTopUp.id);
-      if (!topUp) return;
-      setActiveTopUp(topUp);
-      if (topUp.topUpStatus === "PAID") {
-        setPaymentVerified(true);
-        setLiveWallet(await walletApi.getWallet());
-      } else {
-        setVerificationError(messages.topUpPaymentPending);
-      }
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Verification failed";
-      setVerificationError(message);
-    } finally {
-      setIsVerifying(false);
-    }
   };
   return (
     <>
@@ -1530,8 +1577,8 @@ export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
                 numberOfLines={1}
                 testID="quest-funding-collapsed-status"
               >
-                {liveWallet
-                  ? `฿${(liveWallet.spendingBalanceSatang / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })} available`
+                {flow.liveWallet
+                  ? `฿${(flow.liveWallet.spendingBalanceSatang / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })} available`
                   : messages.fundingUnavailable}
               </Text>
             </View>
@@ -1553,26 +1600,87 @@ export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
       </View>
       {modal ? (
         <FundingModal
-          amount={topUpAmount}
+          amount={flow.topUpAmount}
           locale={locale}
           modal={modal}
-          quote={topUpQuote}
-          topUp={activeTopUp}
-          paymentVerified={paymentVerified}
-          isConfirming={isConfirming}
-          isVerifying={isVerifying}
-          verificationError={verificationError}
-          onAmountChange={handleTopUpAmountChange}
-          onBack={modal === "details" ? closeFundingModal : handleTopUpBack}
+          quote={flow.topUpQuote}
+          topUp={flow.activeTopUp}
+          paymentVerified={flow.paymentVerified}
+          isConfirming={flow.isConfirming}
+          isVerifying={flow.isVerifying}
+          verificationError={flow.verificationError}
+          onAmountChange={flow.handleTopUpAmountChange}
+          onBack={
+            modal === "details" ? closeFundingModal : flow.handleTopUpBack
+          }
           onClose={closeFundingModal}
-          onContinue={handleTopUpContinue}
-          onConfirm={handleTopUpConfirm}
-          onSimulatePayment={handleSimulatePayment}
-          onVerifyPayment={handleVerifyPayment}
-          step={topUpStep}
+          onContinue={flow.handleTopUpContinue}
+          onConfirm={flow.handleTopUpConfirm}
+          onSimulatePayment={flow.handleSimulatePayment}
+          onVerifyPayment={flow.handleVerifyPayment}
+          step={flow.topUpStep}
           onTopUp={openTopUp}
         />
       ) : null}
     </>
+  );
+}
+
+export interface QuestTopUpModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
+  locale: SupportedLocale;
+  suggestedAmountSatang?: number;
+}
+
+export function QuestTopUpModal({
+  visible,
+  onClose,
+  onSuccess,
+  locale,
+  suggestedAmountSatang,
+}: QuestTopUpModalProps) {
+  const finish = useCallback(() => {
+    onSuccess?.();
+    onClose();
+  }, [onSuccess, onClose]);
+
+  const flow = useTopUpFlow({
+    locale,
+    onBackFromAmount: onClose,
+    onPaid: finish,
+  });
+  const { loadWallet, openTopUp } = flow;
+
+  useEffect(() => {
+    if (!visible) return;
+    openTopUp(suggestedAmountSatang);
+    void loadWallet();
+  }, [visible, suggestedAmountSatang, openTopUp, loadWallet]);
+
+  if (!visible) return null;
+
+  return (
+    <FundingModal
+      amount={flow.topUpAmount}
+      locale={locale}
+      modal="topUp"
+      quote={flow.topUpQuote}
+      topUp={flow.activeTopUp}
+      paymentVerified={flow.paymentVerified}
+      isConfirming={flow.isConfirming}
+      isVerifying={flow.isVerifying}
+      verificationError={flow.verificationError}
+      step={flow.topUpStep}
+      onAmountChange={flow.handleTopUpAmountChange}
+      onBack={flow.handleTopUpBack}
+      onClose={finish}
+      onContinue={flow.handleTopUpContinue}
+      onConfirm={flow.handleTopUpConfirm}
+      onSimulatePayment={flow.handleSimulatePayment}
+      onVerifyPayment={flow.handleVerifyPayment}
+      onTopUp={finish}
+    />
   );
 }

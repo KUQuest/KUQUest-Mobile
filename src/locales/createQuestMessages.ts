@@ -154,6 +154,18 @@ export interface CreateQuestMessages {
   rewardEmptyError: string;
   rewardFormatError: string;
   rewardBoundsError: (maximum: number) => string;
+  blockingGuidance: {
+    QUEST_TAG_REQUIRED: string;
+    QUEST_DUE_AT_REQUIRED: string;
+    QUEST_DUE_AT_NOT_AFTER_START_TIME: string;
+    QUEST_START_TIME_NOT_IN_FUTURE: string;
+    QUEST_CONDITION_REQUIRED: string;
+    QUEST_HEADCOUNT_INVALID: string;
+    WALLET_NOT_ACTIVE: string;
+    INSUFFICIENT_SPENDING_BALANCE: (missingAmount: string) => string;
+  };
+  topUpAction: string;
+  apiErrors: Record<string, string>;
   summary: {
     title: string;
     questTag: string;
@@ -349,6 +361,51 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         "Enter a valid amount in THB with up to 2 decimal places.",
       rewardBoundsError: (maximum) =>
         `Reward must be between ฿0 and ฿${maximum.toLocaleString("en-US")}.`,
+      blockingGuidance: {
+        QUEST_TAG_REQUIRED:
+          "Please select a skill category Tag for your Quest.",
+        QUEST_DUE_AT_REQUIRED: "Please set a due deadline for the Quest.",
+        QUEST_DUE_AT_NOT_AFTER_START_TIME:
+          "The deadline must be strictly after the start time.",
+        QUEST_START_TIME_NOT_IN_FUTURE: "The start time must be in the future.",
+        QUEST_CONDITION_REQUIRED: "Add at least one completion condition item.",
+        QUEST_HEADCOUNT_INVALID:
+          "Headcount must be 1 for Single, or 2–20 for Team.",
+        WALLET_NOT_ACTIVE:
+          "Your wallet is inactive or suspended. Please contact support.",
+        INSUFFICIENT_SPENDING_BALANCE: (missingAmount) =>
+          `Insufficient spending balance. You need ${missingAmount} more.`,
+      },
+      topUpAction: "Top up Wallet",
+      apiErrors: {
+        INVALID_TITLE: "Title must be 1 to 120 characters.",
+        INVALID_DESCRIPTION: "Description cannot exceed 1000 characters.",
+        INVALID_CONDITION:
+          "Add at least one condition item of up to 255 characters.",
+        INVALID_HEADCOUNT: "Headcount does not match the participation mode.",
+        INVALID_QUEST_FUNDING_TOTAL:
+          "Quest funding total must be between ฿1 and ฿700,000 with up to 2 decimal places.",
+        INVALID_QUEST_DATES:
+          "The schedule times are invalid, or the deadline is not after the start time.",
+        INVALID_LOCATIONS: "Use at most 10 locations with a valid label.",
+        TAG_NOT_FOUND: "The selected Quest Tag no longer exists.",
+        QUEST_NOT_FOUND:
+          "We could not find this Quest, or you are not the Hirer.",
+        QUEST_NOT_DRAFT: "This Quest is no longer a draft.",
+        QUEST_IMAGE_LIMIT_REACHED: "A Quest gallery can hold at most 3 images.",
+        IMAGE_TOO_LARGE: "Each image must be 5 MB or smaller.",
+        UNSUPPORTED_IMAGE_TYPE: "Images must be JPEG, PNG, or WebP.",
+        QUEST_EDIT_CONFLICT:
+          "This draft changed elsewhere. Reload it and try again.",
+        QUEST_ESCROW_UNAVAILABLE:
+          "The payment ledger is temporarily unavailable. Try again.",
+        IDEMPOTENCY_KEY_REUSED:
+          "This action was replayed with different data. Reload and try again.",
+        IDEMPOTENCY_IN_PROGRESS:
+          "The previous request is still in progress. Please wait a moment.",
+        IDEMPOTENCY_UNAVAILABLE:
+          "We could not confirm your request. Try again.",
+      },
       summary: {
         title: "Title",
         questTag: "Quest Tag",
@@ -535,6 +592,49 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       rewardFormatError: "กรอกจำนวนเงินที่ถูกต้อง โดยมีทศนิยมไม่เกิน 2 ตำแหน่ง",
       rewardBoundsError: (maximum) =>
         `ค่าตอบแทนต้องอยู่ระหว่าง ฿0 ถึง ฿${maximum.toLocaleString("th-TH")}`,
+      blockingGuidance: {
+        QUEST_TAG_REQUIRED: "กรุณาเลือกแท็กหมวดหมู่สำหรับเควสต์",
+        QUEST_DUE_AT_REQUIRED: "กรุณากำหนดเวลาส่งงาน (Deadline)",
+        QUEST_DUE_AT_NOT_AFTER_START_TIME:
+          "เวลาส่งงานต้องอยู่หลังเวลาเริ่มต้นเควสต์",
+        QUEST_START_TIME_NOT_IN_FUTURE: "เวลาเริ่มต้นเควสต์ต้องอยู่ในอนาคต",
+        QUEST_CONDITION_REQUIRED: "ต้องมีเกณฑ์การเสร็จงานอย่างน้อย 1 ข้อ",
+        QUEST_HEADCOUNT_INVALID:
+          "จำนวนผู้ทำงานไม่ถูกต้อง (เดี่ยว 1 คน, ทีม 2-20 คน)",
+        WALLET_NOT_ACTIVE: "กระเป๋าเงินของคุณถูกระงับหรือไม่พร้อมใช้งาน",
+        INSUFFICIENT_SPENDING_BALANCE: (missingAmount) =>
+          `ยอดเงินพร้อมใช้ไม่เพียงพอ ขาดอีก ${missingAmount}`,
+      },
+      topUpAction: "เติมเงิน",
+      apiErrors: {
+        INVALID_TITLE: "ชื่อเควสต์ต้องมี 1 ถึง 120 ตัวอักษร",
+        INVALID_DESCRIPTION: "รายละเอียดงานต้องไม่เกิน 1000 ตัวอักษร",
+        INVALID_CONDITION:
+          "ต้องมีเกณฑ์การเสร็จงานอย่างน้อย 1 ข้อ แต่ละข้อไม่เกิน 255 ตัวอักษร",
+        INVALID_HEADCOUNT: "จำนวนผู้เข้าร่วมไม่ถูกต้องตามรูปแบบการเข้าร่วม",
+        INVALID_QUEST_FUNDING_TOTAL:
+          "เงินทุนเควสต์ต้องอยู่ระหว่าง ฿1 ถึง ฿700,000 โดยมีทศนิยมไม่เกิน 2 ตำแหน่ง",
+        INVALID_QUEST_DATES:
+          "วันเวลาไม่ถูกต้อง หรือเวลาส่งงานต้องอยู่หลังเวลาเริ่มต้น",
+        INVALID_LOCATIONS:
+          "ระบุสถานที่ได้ไม่เกิน 10 แห่ง พร้อมป้ายชื่อที่ถูกต้อง",
+        TAG_NOT_FOUND: "ไม่พบแท็กเควสต์ที่เลือก",
+        QUEST_NOT_FOUND: "ไม่พบเควสต์นี้ หรือคุณไม่ใช่ผู้ว่าจ้าง",
+        QUEST_NOT_DRAFT: "เควสต์นี้ไม่ได้อยู่ในสถานะฉบับร่างแล้ว",
+        QUEST_IMAGE_LIMIT_REACHED: "แนบรูปภาพได้ไม่เกิน 3 รูป",
+        IMAGE_TOO_LARGE: "รูปภาพแต่ละรูปต้องไม่เกิน 5 MB",
+        UNSUPPORTED_IMAGE_TYPE: "รองรับเฉพาะไฟล์ JPEG, PNG หรือ WebP",
+        QUEST_EDIT_CONFLICT:
+          "ฉบับร่างนี้ถูกแก้ไขจากที่อื่น กรุณาโหลดใหม่แล้วลองอีกครั้ง",
+        QUEST_ESCROW_UNAVAILABLE:
+          "ระบบการเงินไม่พร้อมใช้งานชั่วคราว กรุณาลองอีกครั้ง",
+        IDEMPOTENCY_KEY_REUSED:
+          "คำขอนี้ถูกส่งซ้ำด้วยข้อมูลที่แตกต่างกัน กรุณาโหลดใหม่แล้วลองอีกครั้ง",
+        IDEMPOTENCY_IN_PROGRESS:
+          "คำขอก่อนหน้ากำลังดำเนินการอยู่ กรุณารอสักครู่",
+        IDEMPOTENCY_UNAVAILABLE:
+          "ไม่สามารถยืนยันคำขอของคุณได้ กรุณาลองอีกครั้ง",
+      },
       summary: {
         title: "ชื่อเควสต์",
         questTag: "แท็กเควสต์",

@@ -75,6 +75,7 @@ export type QuestV2BoardResponse = z.infer<typeof questV2BoardResponseSchema>;
 
 export const questV2ImageSchema = z.object({
   imageId: questV2IdSchema,
+  fileId: z.string().optional(),
   position: z.number().int().nonnegative(),
   url: z.string(),
   urlExpiresAt: z.string(),
