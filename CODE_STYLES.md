@@ -6,7 +6,7 @@ Authoritative coding conventions, architecture patterns, and style rules for KUQ
 
 ## 1. Formatting & Tooling
 
-Formatting is enforced via Prettier (`.prettierrc`) and ESLint (`eslint.config.js`). Every commit is verified by Husky pre-commit hooks (`bun run typecheck` + `bun run test`).
+Prettier formatting is configured in `.prettierrc`. The `lint-staged` pre-commit hook reformats each STAGED file in full, so a single-line edit to an unformatted file produces a whole-file diff. `bun run format:check` gates `src/**/*.{ts,tsx}` in CI. Run `bun run format` as its own commit, separate from any feature change. Every commit is verified by Husky pre-commit hooks (`bun run typecheck` + `bun run test`).
 
 - **Indentation**: 2 spaces (no tabs).
 - **Quotes**: Double quotes (`"..."`) for strings and JSX attributes; single quotes allowed within double quotes.
@@ -159,8 +159,16 @@ KUQuest Mobile uses **Tailwind CSS / NativeWind v5** with unified design tokens.
 - **Focus on Behavior**: Test observable user interactions, visible text, accessibility roles, loading skeletons, error fallbacks, and state changes. Avoid asserting private component structure or Tailwind class strings.
 - **Mocking**: Mock native modules and API boundaries cleanly in `jest.setup.js` or local test mocks.
 - **Verification Commands**:
+
   ```bash
-  bun run typecheck   # Type-check TypeScript definitions
-  bun run lint        # Lint files with Expo ESLint
-  bun run test        # Run full Jest test suite
+  bun run verify      # Single gate: typecheck && lint && format:check && test
+  bun run typecheck   # Narrower: type-check TypeScript definitions
+  bun run lint        # Narrower: lint files with Expo ESLint
+  bun run format:check  # Narrower: check Prettier formatting of src
+  bun run test        # Narrower: run full Jest test suite
   ```
+
+  Always confirm a Jest run by reading its `Test Suites:` and `Tests:` summary lines — a wrapper that summarizes output can report only the passing suite count and hide a failing suite.
+
+- **Fixture Timestamps**: A timestamp that production code compares against the current time is clock-relative — write `new Date(Date.now() + N).toISOString()`; a timestamp that only needs to be far future uses the `2099` sentinel. A fixture date that silently goes stale breaks the suite when a deadline or expiry rule is added.
+- **Dead Code Scan**: `bun run deadcode` reports unused files and unused exports (`knip.json`). It is advisory, not part of `bun run verify`, because Expo entry points and native config produce false positives. Run it before adding a helper that may already exist: three copies of `formatSatang` once shipped while a correct unused implementation sat in the repo.

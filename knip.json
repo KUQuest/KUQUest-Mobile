@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreExportsUsedInFile": true,
+  "entry": [
+    "src/app/**/*.{ts,tsx}",
+    "jest.setup.js",
+    "scripts/*.js",
+    "*.config.{js,ts}"
+  ],
+  "project": ["src/**/*.{ts,tsx}"],
+  "ignore": ["src/**/__tests__/**"],
+  "ignoreDependencies": ["@tailwindcss/postcss", "tailwindcss"]
+}
