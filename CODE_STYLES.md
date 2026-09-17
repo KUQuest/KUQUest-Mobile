@@ -83,7 +83,8 @@ src/
 ### Feature Module Rules
 
 - **Self-contained**: Keep feature-local sub-components, types, and styles inside `src/features/<feature>/`.
-- **Screen Separation**: `<Feature>Screen.tsx` owns lifecycle hooks, screen composition, and safe-area edge policy through `ScreenLayout`; extract complex rendering into `components/`.
+- **Screen Separation**: `<Feature>Screen.tsx` owns lifecycle hooks, screen composition, and safe-area edge policy through `ScreenLayout`; extract complex rendering into feature-local `components/`.
+- **Large Screen Composition**: Treat a screen as large when it is likely to exceed roughly 400 lines or contains multiple independently testable visual regions. Before implementing it, create isolated components in `src/features/<feature>/components/`, then assemble them from `<Feature>Screen.tsx`. Keep lifecycle, navigation, safe-area policy, and composition in the screen. Promote a component to `src/components/` only after a second real consumer exists and its interface is domain-agnostic; keep one-feature and domain-specific components local.
 - **Screen roots**: Use `ScreenLayout` from `@/components/layout/ScreenLayout` for full-screen safe-area ownership. Preserve explicit `edges`, `className`, accessibility props, and child behavior.
 - **Local safe areas**: Use direct `SafeAreaView` from `@/tw` for nested sheets or modals with a distinct inset policy.
 - **Pure Logic**: Extract state machines, calculations, and data mappings into pure functions (`<feature>Module.ts` or `<feature>Workflow.ts`) covered by fast unit tests.
