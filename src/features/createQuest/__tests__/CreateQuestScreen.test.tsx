@@ -38,6 +38,31 @@ const mockCreateQuestDraftId = jest.fn(() => "draft-1");
 const mockLiveCreateQuest = jest.fn();
 const mockLiveGetPublishCheck = jest.fn();
 const mockLivePublishQuest = jest.fn();
+const mockWalletGetWallet = jest.fn();
+const defaultWalletBalances = {
+  spendingBalanceSatang: 100_000,
+  earningsBalanceSatang: 0,
+  fundingReservedSatang: 0,
+  reservedForPayoutsSatang: 0,
+};
+const serverPublishCheckFixture = {
+  canPublish: true,
+  blockingReasons: [],
+  warnings: [],
+  questFundingTotalSatang: 25000,
+  questRewardSatang: 23750,
+  platformFeeSatang: 1250,
+  escrowRequirementSatang: 25000,
+  headcount: 1,
+  platformFeeBps: 500,
+  feeRoundingMode: "UP" as const,
+  policyRevisionId: "policy-rev-1",
+  policyRevision: 1,
+  questFundingTotal: 250,
+  questReward: 237.5,
+  platformFee: 12.5,
+  escrowRequirement: 250,
+};
 const liveDraftSnapshot = {
   draft: {
     ...initialDraft,
@@ -64,6 +89,12 @@ jest.mock("../../questBoard/liveQuestService", () => ({
     uploadImages: (...args: unknown[]) => Promise.resolve([]),
     getPublishCheck: (...args: unknown[]) => mockLiveGetPublishCheck(...args),
     publishQuest: (...args: unknown[]) => mockLivePublishQuest(...args),
+  },
+}));
+
+jest.mock("@/api/WalletApi", () => ({
+  walletApi: {
+    getWallet: (...args: unknown[]) => mockWalletGetWallet(...args),
   },
 }));
 
@@ -120,6 +151,8 @@ describe("CreateQuestScreen", () => {
     mockLiveCreateQuest.mockReset();
     mockLiveGetPublishCheck.mockReset();
     mockLivePublishQuest.mockReset();
+    mockWalletGetWallet.mockReset();
+    mockWalletGetWallet.mockResolvedValue(defaultWalletBalances);
   });
 
   it("keeps the page skeleton visible until draft hydration settles", async () => {
@@ -385,6 +418,86 @@ describe("CreateQuestScreen", () => {
       expect.any(String)
     );
     expect(mockDeleteQuestDraft).toHaveBeenCalledWith("test-key", "mock-draft");
+  });
+
+  it("disables publish and shows blocking guidance when the server check blocks", async () => {
+    mockLiveGetPublishCheck.mockResolvedValue({
+      ...serverPublishCheckFixture,
+      canPublish: false,
+      blockingReasons: [
+        { code: "QUEST_TAG_REQUIRED", message: "Tag is required" },
+      ],
+    });
+
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
+    await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
+
+    await waitFor(() =>
+      expect(
+        view.getByTestId("create-quest-save-preview").props.accessibilityState
+      ).toMatchObject({ disabled: true })
+    );
+    expect(view.getByText("แก้ไขข้อขัดข้องก่อนเผยแพร่เควสต์")).toBeTruthy();
+    expect(view.getByText("กรุณาเลือกแท็กหมวดหมู่สำหรับเควสต์")).toBeTruthy();
+    expect(view.queryByTestId("create-quest-top-up-button")).toBeNull();
+
+    await fireEvent.press(view.getByTestId("create-quest-save-preview"));
+    expect(mockLivePublishQuest).not.toHaveBeenCalled();
+  });
+
+  it("shows the missing spending balance and opens the top-up flow", async () => {
+    mockWalletGetWallet.mockResolvedValue({
+      ...defaultWalletBalances,
+      spendingBalanceSatang: 10_000,
+    });
+    mockLiveGetPublishCheck.mockResolvedValue({
+      ...serverPublishCheckFixture,
+      canPublish: false,
+      blockingReasons: [
+        {
+          code: "INSUFFICIENT_SPENDING_BALANCE",
+          message: "Spending balance too low",
+        },
+      ],
+    });
+
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
+    await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
+
+    expect(
+      await view.findByText("ยอดเงินพร้อมใช้ไม่เพียงพอ ขาดอีก ฿150")
+    ).toBeTruthy();
+
+    await fireEvent.press(view.getByTestId("create-quest-top-up-button"));
+    await waitFor(() =>
+      expect(view.getByTestId("quest-funding-top-up-flow")).toBeTruthy()
+    );
+  });
+
+  it("maps publish API error codes to localized messages", async () => {
+    mockLiveCreateQuest.mockResolvedValue({ id: "server-quest-err" });
+    mockLiveGetPublishCheck.mockResolvedValue(serverPublishCheckFixture);
+    mockLivePublishQuest.mockRejectedValue(
+      Object.assign(new Error("ledger exploded"), {
+        status: 503,
+        code: "QUEST_ESCROW_UNAVAILABLE",
+      })
+    );
+
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
+    await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
+    await waitFor(() =>
+      expect(view.getByTestId("create-quest-save-preview")).toBeTruthy()
+    );
+    await fireEvent.press(view.getByTestId("create-quest-save-preview"));
+
+    await waitFor(() =>
+      expect(view.getByTestId("create-quest-save-error")).toBeTruthy()
+    );
+    expect(
+      view.getByText("ระบบการเงินไม่พร้อมใช้งานชั่วคราว กรุณาลองอีกครั้ง")
+    ).toBeTruthy();
+    expect(view.queryByText("ledger exploded")).toBeNull();
   });
 
   it("retries a failed live publish without creating another Quest", async () => {

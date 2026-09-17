@@ -1,3 +1,6 @@
+import { ApiClient } from "../ApiClient";
+import { QuestApi } from "../QuestApi";
+
 jest.mock("expo-file-system", () => ({
   File: class MockFile extends Blob {
     readonly uri: string;
@@ -7,10 +10,6 @@ jest.mock("expo-file-system", () => ({
     }
   },
 }));
-
-import { ApiClient } from "../ApiClient";
-import { QuestApi } from "../QuestApi";
-
 describe("QuestApi", () => {
   let fetchMock: jest.Mock;
   let api: QuestApi;
@@ -142,7 +141,68 @@ describe("QuestApi", () => {
         body: JSON.stringify(payload),
         headers: expect.objectContaining({
           "Content-Type": "application/json",
-          "idempotency-key": expect.any(String),
+          "Idempotency-Key": expect.any(String),
+        }),
+      })
+    );
+  });
+
+  it("edits a quest draft with If-Match and explicit idempotency key", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => JSON.stringify(detailResponse),
+    });
+
+    const result = await api.editQuest(
+      "quest-1",
+      1,
+      { title: "Updated Title" },
+      "idem-edit-1"
+    );
+
+    expect(result.id).toBe("quest-1");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v2/quests/quest-1",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ title: "Updated Title" }),
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+          "Idempotency-Key": "idem-edit-1",
+          "If-Match": "1",
+        }),
+      })
+    );
+  });
+
+  it("generates an idempotency key when editing without one", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () =>
+        JSON.stringify({
+          ...detailResponse,
+          data: { ...detailResponse.data, version: 2 },
+        }),
+    });
+
+    const result = await api.editQuest("quest-1", 2, {
+      questFundingTotal: 600,
+    });
+
+    expect(result.version).toBe(2);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v2/quests/quest-1",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ questFundingTotal: 600 }),
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+          "Idempotency-Key": expect.any(String),
+          "If-Match": "2",
         }),
       })
     );
@@ -166,7 +226,7 @@ describe("QuestApi", () => {
         body: "{}",
         headers: expect.objectContaining({
           "Content-Type": "application/json",
-          "idempotency-key": expect.any(String),
+          "Idempotency-Key": expect.any(String),
         }),
       })
     );
@@ -350,6 +410,7 @@ describe("QuestApi", () => {
         images: [
           {
             imageId: "img-new-1",
+            fileId: "file-new-1",
             position: 0,
             url: "https://example.test/uploaded.jpg",
             urlExpiresAt: "2026-09-16T12:00:00Z",
@@ -378,7 +439,7 @@ describe("QuestApi", () => {
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
-          "idempotency-key": "idem-1",
+          "Idempotency-Key": "idem-1",
         }),
       })
     );
@@ -388,7 +449,7 @@ describe("QuestApi", () => {
     const data = {
       success: true,
       data: [
-        { id: "tag-1", name: "Content" },
+        { id: "tag-1", name: "Content", createdAt: "2026-08-01T00:00:00.000Z" },
         { id: "tag-2", name: "Frontend" },
       ],
     };
@@ -403,7 +464,7 @@ describe("QuestApi", () => {
     const tags = await api.listTags();
 
     expect(tags).toEqual([
-      { id: "tag-1", name: "Content" },
+      { id: "tag-1", name: "Content", createdAt: "2026-08-01T00:00:00.000Z" },
       { id: "tag-2", name: "Frontend" },
     ]);
     expect(fetchMock).toHaveBeenCalledWith(

@@ -129,6 +129,7 @@ KUQuest Mobile uses **Tailwind CSS / NativeWind v5** with unified design tokens.
 - **Currency & Escrow**:
   - Always calculate and store money in **Integer Satang** (฿1.00 = 100 Satang).
   - `questFundingTotal` = net `questReward` + `platformFee` (`ceil(reward × feeRate)`).
+  - **Money boundaries carry their unit in the name**: satang fields end in `Satang`; fields without the suffix (e.g. `questFundingTotal`, API payloads in THB) are baht. Convert exactly once, at the boundary, with the explicit `/ 100` or `* 100` adjacent to the field it feeds — never pass a bare arithmetic expression between them. The reviewer rejects a diff where a `*Satang` value flows into a suffixed-less payload field (or vice versa) without a named conversion step; prefer branded unit types (a `Baht`/`Satang` brand) where the compiler can carry the unit.
 - **Canonical Quest States**:
   - Use the exact 7 states: `QUEST_DRAFT`, `QUEST_OPEN`, `QUEST_ASSIGNED`, `QUEST_IN_PROGRESS`, `QUEST_COMPLETED`, `QUEST_CANCELLED`, `QUEST_FAILED`.
   - Sub-state flows (10m Quest Edits, 10m Underfilled FCFS consent) occur within `QUEST_ASSIGNED` without altering the Quest state enum.

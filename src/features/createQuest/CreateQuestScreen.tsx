@@ -9,7 +9,6 @@ import {
   AccessibilityInfo,
   Alert,
   findNodeHandle,
-  Modal,
   Platform,
   Pressable as RNPressable,
   TextInput as RNTextInput,
@@ -26,43 +25,41 @@ import {
   TextInput,
   View,
 } from "@/tw";
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import {
-  ArrowLeft,
-  CalendarClock,
   Check,
-  ChevronDown,
   ChevronRight,
   CircleAlert,
-  CircleHelp,
   Clock3,
   ImagePlus,
-  Mail,
   MapPin,
   Tag,
   UserRound,
   UserRoundCheck,
   UsersRound,
   X,
-  type LucideIcon,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  createQuestIdempotencyKey,
-  questApi,
-  type TagItem,
-} from "@/api/QuestApi";
+import { questApi, type TagItem } from "@/api/QuestApi";
 import { StatusBar } from "expo-status-bar";
 
 import { Button } from "@/components/ui/Button";
-import {
-  LoadingSkeleton,
-  SkeletonBlock,
-} from "@/components/ui/LoadingSkeleton";
+import { ChoiceGroup } from "./components/ChoiceGroup";
+import { CreateQuestHeader } from "./components/CreateQuestHeader";
+import { DateTimeField } from "./components/DateTimeField";
+import { FieldLabel } from "./components/FieldLabel";
+import { LogisticsSection } from "./components/LogisticsSection";
+import { ModeSummary } from "./components/ModeSummary";
+import { QuestDetailsStep } from "./components/QuestDetailsStep";
+import { SectionHeading } from "./components/SectionHeading";
+import { TeamSetupStep } from "./components/TeamSetupStep";
+import { SchedulePickerModal } from "./components/SchedulePickerModal";
+import { useSchedulePicker } from "./useSchedulePicker";
+import { QuestTopUpModal } from "@/components/ui/QuestFundingSummary";
+import { CreateQuestSkeleton } from "./components/CreateQuestSkeleton";
+import { QuestSetupOverview } from "./components/QuestSetupOverview";
+import { ReviewActionButton } from "./components/ReviewActionButton";
 import { formatSatang } from "@/domain/satang";
 import { Input } from "@/features/onboarding/components/Input";
 import { Select } from "@/features/onboarding/components/Select";
@@ -77,872 +74,29 @@ import {
   formatDraftReward,
   getHeadcountForParticipation,
   getQuestPublishCheck,
-  getSchedulePickerValue,
-  getScheduleTimeValue,
   initialDraft,
   isQuestDraftDirty,
   MAX_REWARD_THB,
   TIME_PATTERN,
-  toDateValue,
-  toQuestV2Payload,
   validateQuestDraftStep,
   type QuestDraft,
 } from "./createQuestModel";
-import {
-  createQuestDraftId,
-  deleteQuestDraft,
-  getQuestDraftStorageKey,
-  loadQuestDraft,
-  persistQuestDraft,
-} from "./createQuestPersistence";
+import { deleteQuestDraft } from "./createQuestPersistence";
 import { measureFieldRelativeToScroll } from "./createQuestFocus";
-import { liveQuestService } from "../questBoard/liveQuestService";
-import { MAX_QUEST_IMAGES, type QuestPublishCheck } from "../questBoard/types";
-
-type Step = 1 | 2 | 3;
-type ScheduleField = "start" | "end";
-type PickerMode = "date" | "time";
-type SaveState = "idle" | "saving" | "saved" | "error";
-type CompletionState = "DRAFT" | "OPEN";
-type SaveErrorIntent = { state: CompletionState; completesFlow: boolean };
-type Focusable =
-  | React.ComponentRef<typeof RNTextInput>
-  | React.ComponentRef<typeof RNPressable>;
-type ChoiceVariant = "format" | "acceptance";
-type ChoiceOption = {
-  value: string;
-  label: string;
-  description: string;
-  icon: LucideIcon;
-};
-type ReviewActionButtonProps = {
-  label: string;
-  variant: "primary" | "secondary";
-  accessibilityLabel: string;
-  disabled: boolean;
-  stacked: boolean;
-  testID: string;
-  onPress: () => void;
-};
-
-const QUEST_DETAIL_FIELDS = new Set([
-  "title",
-  "tag",
-  "description",
-  "conditions",
-]);
-const LOGISTICS_FIELDS = new Set([
-  "startDate",
-  "deadline",
-  "startTime",
-  "endTime",
-  "location",
-]);
-
-function formatDate(
-  value: string,
-  locale: "en" | "th",
-  emptyLabel: string
-): string {
-  if (!value) return emptyLabel;
-  const date = new Date(`${value}T12:00:00`);
-  if (Number.isNaN(date.getTime())) return emptyLabel;
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-}
-
-function formatDateTime(
-  dateValue: string,
-  timeValue: string,
-  locale: "en" | "th",
-  emptyLabel: string
-): string {
-  if (!dateValue || !TIME_PATTERN.test(timeValue)) return emptyLabel;
-  return `${formatDate(dateValue, locale, emptyLabel)} · ${timeValue}`;
-}
-
-function getDatePickerValue(value: string): Date {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return new Date(`${value}T12:00:00`);
-  return new Date();
-}
-
-function getDateTimePickerValue(dateValue: string, timeValue: string): Date {
-  const date = getDatePickerValue(dateValue);
-  const match = TIME_PATTERN.exec(timeValue);
-  if (match) date.setHours(Number(match[1]), Number(match[2]), 0, 0);
-  return date;
-}
-
-function FieldLabel({
-  children,
-  required = false,
-  optionalLabel,
-}: {
-  children: string;
-  required?: boolean;
-  optionalLabel: string;
-}) {
-  return (
-    <Text className={styles.fieldLabel}>
-      {children}
-      {required ? (
-        <Text className={styles.required}> *</Text>
-      ) : optionalLabel ? (
-        <Text className={styles.optional}> · {optionalLabel}</Text>
-      ) : null}
-    </Text>
-  );
-}
-
-function SectionHeading({
-  icon: Icon,
-  title,
-  description,
-  compact = false,
-}: {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  compact?: boolean;
-}) {
-  return (
-    <View
-      className={cn(styles.sectionHeading, compact && styles.subsectionHeading)}
-    >
-      <View className={styles.sectionIcon}>
-        <Icon color={colors.primary} size={20} strokeWidth={2.2} />
-      </View>
-      <View className={styles.sectionHeadingText}>
-        <Text accessibilityRole="header" className={styles.sectionTitle}>
-          {title}
-        </Text>
-        <Text className={styles.sectionDescription}>{description}</Text>
-      </View>
-    </View>
-  );
-}
-
-function DateTimeField({
-  label,
-  value,
-  error,
-  helper,
-  emptyLabel,
-  fieldRef,
-  hasValue,
-  testID,
-  onPress,
-}: {
-  label: string;
-  value: string;
-  error?: string;
-  helper: string;
-  emptyLabel: string;
-  fieldRef: React.Ref<React.ComponentRef<typeof RNPressable>>;
-  hasValue: boolean;
-  testID?: string;
-  onPress: () => void;
-}) {
-  return (
-    <View className={styles.fieldGroup}>
-      <FieldLabel required optionalLabel="">
-        {label}
-      </FieldLabel>
-      <Pressable
-        ref={fieldRef}
-        accessibilityRole="button"
-        accessibilityLabel={`${label}: ${value || emptyLabel}`}
-        accessibilityState={{ disabled: false }}
-        onPress={onPress}
-        className={cn(styles.dateField, error ? styles.fieldError : null)}
-        testID={testID}
-        android_ripple={{ color: colors.surfaceAccent }}
-      >
-        <Text
-          className={cn(styles.dateText, !hasValue && styles.placeholderText)}
-        >
-          {value || emptyLabel}
-        </Text>
-        <CalendarClock color={colors.textSecondary} size={19} strokeWidth={2} />
-      </Pressable>
-      <Text
-        accessibilityLiveRegion={error ? "assertive" : "none"}
-        className={error ? styles.errorText : styles.helperText}
-      >
-        {error ?? helper}
-      </Text>
-    </View>
-  );
-}
-
-function CreateQuestHeader({
-  messages,
-  step,
-  onBackPress,
-  onHelpPress,
-  onStepPress,
-}: {
-  messages: typeof createQuestMessages.en;
-  step: Step;
-  onBackPress: () => void;
-  onHelpPress: () => void;
-  onStepPress: (step: Step) => void;
-}) {
-  const stepLabels = [
-    messages.missionInfo,
-    messages.teamSetup,
-    messages.review,
-  ];
-
-  return (
-    <View className={styles.hero}>
-      <View className={styles.heroTop}>
-        <Pressable
-          accessibilityLabel={messages.back}
-          accessibilityRole="button"
-          className={styles.heroButton}
-          onPress={onBackPress}
-          style={{ borderColor: "rgba(255,255,255,0.42)" }}
-          testID="create-quest-header-back"
-        >
-          <ArrowLeft color={colors.white} size={28} strokeWidth={2.4} />
-        </Pressable>
-        <View className={styles.heroTitleGroup}>
-          <Text accessibilityRole="header" className={styles.heroTitle}>
-            {messages.title}
-          </Text>
-          <Text className={styles.heroSubtitle}>{messages.headerSubtitle}</Text>
-        </View>
-        <Pressable
-          accessibilityLabel={messages.helpLabel}
-          accessibilityRole="button"
-          className={styles.heroButton}
-          onPress={onHelpPress}
-          style={{ borderColor: "rgba(255,255,255,0.42)" }}
-          testID="create-quest-help"
-        >
-          <CircleHelp color={colors.white} size={30} strokeWidth={2.2} />
-        </Pressable>
-      </View>
-
-      <View
-        accessibilityRole="progressbar"
-        accessibilityValue={{ min: 1, max: 3, now: step }}
-        className={styles.progressTrack}
-      >
-        {[1, 2, 3].map((item, index) => (
-          <React.Fragment key={item}>
-            <Pressable
-              accessibilityLabel={`${messages.step(item, 3)}: ${stepLabels[index]}`}
-              accessibilityRole="button"
-              accessibilityState={{
-                disabled: item > step,
-                selected: item === step,
-              }}
-              className={styles.progressNodePressable}
-              disabled={item > step}
-              onPress={() => onStepPress(item as Step)}
-            >
-              <View
-                className={styles.progressNode}
-                style={{
-                  backgroundColor:
-                    item <= step
-                      ? colors.successBright
-                      : "rgba(255,255,255,0.34)",
-                }}
-              >
-                {item < step ? (
-                  <Check color={colors.white} size={26} strokeWidth={2.8} />
-                ) : (
-                  <Text className={styles.progressNodeText}>{item}</Text>
-                )}
-              </View>
-            </Pressable>
-            {index < 2 ? (
-              <View
-                className={styles.progressConnector}
-                style={{
-                  backgroundColor:
-                    item < step
-                      ? colors.successBright
-                      : "rgba(255,255,255,0.3)",
-                }}
-              />
-            ) : null}
-          </React.Fragment>
-        ))}
-      </View>
-      <View className={styles.stepLabels}>
-        {stepLabels.map((label, index) => (
-          <Text
-            key={label}
-            className={cn(
-              styles.stepLabel,
-              index + 1 === step && styles.stepLabelActive
-            )}
-            style={{
-              color:
-                index + 1 === step
-                  ? colors.white
-                  : index + 1 < step
-                    ? "rgba(255,255,255,0.86)"
-                    : "rgba(255,255,255,0.62)",
-            }}
-          >
-            {label}
-          </Text>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function CreateQuestSkeleton({
-  step,
-  loadingLabel,
-  horizontalPadding,
-  contentMaxWidth,
-  stackedActions,
-}: {
-  step: Step;
-  loadingLabel: string;
-  horizontalPadding: number;
-  contentMaxWidth: number | "100%";
-  stackedActions: boolean;
-}) {
-  const field = (key: string, height = 48) => (
-    <View key={key} style={{ gap: 4 }}>
-      <SkeletonBlock height={14} width="42%" borderRadius={4} />
-      <SkeletonBlock height={height} borderRadius={10} />
-    </View>
-  );
-  const body =
-    step === 1 ? (
-      <View className={styles.sectionCard} style={{ gap: spacing.md }}>
-        <View
-          style={{
-            alignItems: "center",
-            flexDirection: "row",
-            gap: spacing.sm,
-          }}
-        >
-          <SkeletonBlock height={36} width={36} borderRadius={10} />
-          <View style={{ flex: 1, gap: spacing.xs }}>
-            <SkeletonBlock height={22} width="48%" borderRadius={5} />
-            <SkeletonBlock height={15} width="72%" borderRadius={4} />
-          </View>
-        </View>
-        {["title", "tag"].map((key) => field(key))}
-        {field("description", 112)}
-        {field("conditions", 112)}
-        <SkeletonBlock height={48} borderRadius={12} />
-      </View>
-    ) : step === 2 ? (
-      <>
-        <View className={styles.sectionCard} style={{ gap: spacing.md }}>
-          <View
-            style={{
-              alignItems: "center",
-              flexDirection: "row",
-              gap: spacing.sm,
-            }}
-          >
-            <SkeletonBlock height={36} width={36} borderRadius={10} />
-            <View style={{ flex: 1, gap: spacing.xs }}>
-              <SkeletonBlock height={22} width="58%" borderRadius={5} />
-              <SkeletonBlock height={15} width="82%" borderRadius={4} />
-            </View>
-          </View>
-          <View style={{ flexDirection: "row", gap: spacing.sm }}>
-            <SkeletonBlock height={104} borderRadius={14} style={{ flex: 1 }} />
-            <SkeletonBlock height={104} borderRadius={14} style={{ flex: 1 }} />
-          </View>
-          <SkeletonBlock
-            height={1}
-            borderRadius={0}
-            style={{ marginVertical: spacing.sm }}
-          />
-          <View
-            style={{
-              alignItems: "center",
-              flexDirection: "row",
-              gap: spacing.sm,
-            }}
-          >
-            <SkeletonBlock height={36} width={36} borderRadius={10} />
-            <View style={{ flex: 1, gap: spacing.xs }}>
-              <SkeletonBlock height={22} width="64%" borderRadius={5} />
-              <SkeletonBlock height={15} width="76%" borderRadius={4} />
-            </View>
-          </View>
-          <SkeletonBlock height={88} borderRadius={14} />
-          <SkeletonBlock height={68} borderRadius={14} />
-          {field("headcount")}
-          {field("reward")}
-        </View>
-        <View className={styles.sectionCard} style={{ gap: spacing.md }}>
-          <View
-            style={{
-              alignItems: "center",
-              flexDirection: "row",
-              gap: spacing.sm,
-            }}
-          >
-            <SkeletonBlock height={36} width={36} borderRadius={10} />
-            <View style={{ flex: 1, gap: spacing.xs }}>
-              <SkeletonBlock height={22} width="42%" borderRadius={5} />
-              <SkeletonBlock height={15} width="72%" borderRadius={4} />
-            </View>
-            <SkeletonBlock height={22} width={22} borderRadius={11} />
-          </View>
-          <SkeletonBlock height={48} borderRadius={12} />
-          <SkeletonBlock height={48} borderRadius={12} />
-          <SkeletonBlock height={64} borderRadius={12} />
-          <SkeletonBlock variant="image" height={128} borderRadius={12} />
-        </View>
-      </>
-    ) : (
-      <>
-        <View className={styles.setupCard} style={{ gap: spacing.md }}>
-          <SkeletonBlock height={22} width="46%" borderRadius={5} />
-          <View style={{ flexDirection: "row", gap: spacing.sm }}>
-            <SkeletonBlock height={58} borderRadius={8} style={{ flex: 1 }} />
-            <SkeletonBlock height={58} borderRadius={8} style={{ flex: 1 }} />
-            <SkeletonBlock height={58} borderRadius={8} style={{ flex: 1 }} />
-          </View>
-          <SkeletonBlock height={16} width="84%" borderRadius={4} />
-        </View>
-        <View className={styles.sectionCard} style={{ gap: spacing.md }}>
-          <View
-            style={{
-              alignItems: "center",
-              flexDirection: "row",
-              gap: spacing.sm,
-            }}
-          >
-            <SkeletonBlock height={36} width={36} borderRadius={10} />
-            <View style={{ flex: 1, gap: spacing.xs }}>
-              <SkeletonBlock height={22} width="36%" borderRadius={5} />
-              <SkeletonBlock height={15} width="74%" borderRadius={4} />
-            </View>
-          </View>
-          <View style={{ gap: spacing.sm }}>
-            {[1, 2, 3, 4, 5, 6].map((item) => (
-              <View
-                key={item}
-                style={{ flexDirection: "row", gap: spacing.sm }}
-              >
-                <SkeletonBlock height={15} width="28%" borderRadius={4} />
-                <SkeletonBlock height={15} width="56%" borderRadius={4} />
-              </View>
-            ))}
-          </View>
-          <SkeletonBlock height={142} borderRadius={14} />
-        </View>
-      </>
-    );
-
-  return (
-    <LoadingSkeleton
-      loadingLabel={loadingLabel}
-      style={{ flex: 1 }}
-      contentStyle={{ flex: 1 }}
-      testID="create-quest-loading-skeleton"
-    >
-      <View style={{ flex: 1 }}>
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{
-            paddingBottom: spacing.xl,
-            paddingHorizontal: horizontalPadding,
-            paddingTop: spacing.lg,
-          }}
-          showsVerticalScrollIndicator={false}
-        >
-          <View
-            style={{
-              alignSelf: "center",
-              gap: spacing.sm,
-              width: contentMaxWidth,
-            }}
-          >
-            {body}
-          </View>
-        </ScrollView>
-        <View
-          className={cn(
-            styles.loadingActionBar,
-            stackedActions && styles.actionBarStacked
-          )}
-          style={{ flexDirection: stackedActions ? "column" : "row" }}
-        >
-          <SkeletonBlock
-            height={56}
-            borderRadius={14}
-            style={{ flex: 1, width: stackedActions ? "100%" : undefined }}
-            testID="create-quest-loading-action"
-          />
-          {step === 3 ? (
-            <SkeletonBlock
-              height={56}
-              borderRadius={14}
-              style={{ flex: 1, width: stackedActions ? "100%" : undefined }}
-            />
-          ) : null}
-        </View>
-      </View>
-    </LoadingSkeleton>
-  );
-}
-
-function SetupMetric({
-  icon: Icon,
-  label,
-  value,
-  testID,
-  wide,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  testID: string;
-  wide: boolean;
-}) {
-  return (
-    <View
-      accessible
-      accessibilityLabel={`${label}: ${value}`}
-      className={cn(styles.setupMetric, wide && styles.setupMetricWide)}
-      testID={testID}
-    >
-      <View className={styles.setupMetricIcon}>
-        <Icon color={colors.primary} size={22} strokeWidth={2.1} />
-      </View>
-      <View
-        className={cn(
-          styles.setupMetricCopy,
-          wide && styles.setupMetricCopyWide
-        )}
-      >
-        <Text
-          className={cn(
-            styles.setupMetricLabel,
-            wide && styles.setupMetricLabelWide
-          )}
-        >
-          {label}
-        </Text>
-        <Text
-          className={cn(
-            styles.setupMetricValue,
-            wide && styles.setupMetricValueWide
-          )}
-        >
-          {value}
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-function QuestSetupOverview({
-  messages,
-  questTag,
-  teamSize,
-  acceptanceMethod,
-  wide,
-}: {
-  messages: typeof createQuestMessages.en;
-  questTag: string;
-  teamSize: string;
-  acceptanceMethod: string;
-  wide: boolean;
-}) {
-  return (
-    <View className={styles.setupCard}>
-      <View className={styles.setupTitleRow}>
-        <View className={styles.setupTitleIcon}>
-          <Check color={colors.primary} size={18} strokeWidth={2.6} />
-        </View>
-        <Text className={styles.setupTitle}>{messages.questSetup}</Text>
-      </View>
-      <View className={styles.setupMetrics}>
-        <SetupMetric
-          icon={Tag}
-          label={messages.questTag}
-          value={questTag}
-          testID="create-quest-summary-type"
-          wide={wide}
-        />
-        <View
-          className={cn(
-            styles.setupMetricDivider,
-            wide && styles.setupMetricDividerWide
-          )}
-        />
-        <SetupMetric
-          icon={UsersRound}
-          label={messages.teamSize}
-          value={teamSize}
-          testID="create-quest-summary-size"
-          wide={wide}
-        />
-        <View
-          className={cn(
-            styles.setupMetricDivider,
-            wide && styles.setupMetricDividerWide
-          )}
-        />
-        <SetupMetric
-          icon={Mail}
-          label={messages.acceptanceMethod}
-          value={acceptanceMethod}
-          testID="create-quest-summary-applicants"
-          wide={wide}
-        />
-      </View>
-      <View className={styles.setupDivider} />
-      <Text className={styles.setupHint}>{messages.setupHint}</Text>
-    </View>
-  );
-}
-
-function ChoiceGroup({
-  label,
-  value,
-  options,
-  variant,
-  stacked,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: ChoiceOption[];
-  variant: ChoiceVariant;
-  stacked: boolean;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <View
-      className={cn(
-        styles.choiceGroup,
-        variant === "format"
-          ? stacked
-            ? styles.choiceGroupFormatStacked
-            : styles.choiceGroupFormat
-          : styles.choiceGroupAcceptance
-      )}
-      accessibilityRole="radiogroup"
-      accessibilityLabel={label}
-      style={
-        variant === "format" && stacked
-          ? { flexDirection: "column" }
-          : undefined
-      }
-    >
-      {options.map((option) => {
-        const selected = option.value === value;
-        const Icon = option.icon;
-        return (
-          <Pressable
-            key={option.value}
-            accessibilityRole="radio"
-            accessibilityLabel={`${label}: ${option.label}. ${option.description}`}
-            accessibilityState={{ selected }}
-            onPress={() => onChange(option.value)}
-            className={cn(
-              styles.choice,
-              variant === "format"
-                ? stacked
-                  ? styles.choiceFormatStacked
-                  : styles.choiceFormat
-                : styles.choiceAcceptance,
-              selected && styles.choiceSelected
-            )}
-            testID={`create-quest-choice-${option.value.toLowerCase()}`}
-          >
-            <View className={styles.choiceIcon}>
-              <Icon
-                color={colors.primary}
-                size={variant === "format" ? 27 : 26}
-                strokeWidth={2.1}
-              />
-            </View>
-            <View className={styles.choiceCopy}>
-              <Text
-                className={cn(
-                  styles.choiceText,
-                  selected && styles.choiceTextSelected
-                )}
-              >
-                {option.label}
-              </Text>
-              <Text className={styles.choiceDescription}>
-                {option.description}
-              </Text>
-            </View>
-            <View
-              className={cn(styles.radio, selected && styles.radioSelected)}
-            >
-              {selected ? <View className={styles.radioDot} /> : null}
-            </View>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
-function ReviewActionButton({
-  label,
-  variant,
-  accessibilityLabel,
-  disabled,
-  stacked,
-  testID,
-  onPress,
-}: ReviewActionButtonProps) {
-  const isSecondary = variant === "secondary";
-  const layoutStyle = stacked
-    ? {
-        flexBasis: "auto" as const,
-        flexGrow: 0,
-        flexShrink: 0,
-        width: "100%" as const,
-      }
-    : {
-        flexBasis: 0,
-        flexGrow: 1,
-        flexShrink: 1,
-        minWidth: 0,
-        width: "auto" as const,
-      };
-
-  return (
-    <Pressable
-      accessibilityLabel={accessibilityLabel}
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      className={cn(
-        styles.reviewActionButton,
-        stacked && styles.reviewActionButtonStacked,
-        isSecondary
-          ? styles.reviewActionButtonSecondary
-          : styles.reviewActionButtonPrimary
-      )}
-      disabled={disabled}
-      onPress={onPress}
-      style={[layoutStyle, { opacity: disabled ? 0.55 : 1 }]}
-      testID={testID}
-    >
-      <Text
-        className={cn(
-          styles.reviewActionText,
-          isSecondary
-            ? styles.reviewActionTextSecondary
-            : styles.reviewActionTextPrimary
-        )}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-function ModeSummary({
-  messages,
-  participation,
-  candidateMode,
-  combinationHint,
-}: {
-  messages: typeof createQuestMessages.en;
-  participation: QuestDraft["participation"];
-  candidateMode: QuestDraft["candidateMode"];
-  combinationHint: string;
-}) {
-  const participationLabel =
-    participation === "SINGLE" ? messages.singleFormat : messages.teamFormat;
-  const candidateLabel =
-    candidateMode === "FIRST_COME_FIRST_SERVED"
-      ? messages.instantAccept
-      : messages.selectCandidate;
-
-  return (
-    <View accessibilityLiveRegion="polite" className={styles.modeSummary}>
-      <View className={styles.modeIcon}>
-        {participation === "SINGLE" ? (
-          <UserRoundCheck color={colors.primary} size={30} strokeWidth={2.1} />
-        ) : (
-          <UsersRound color={colors.primary} size={32} strokeWidth={2.1} />
-        )}
-      </View>
-      <View className={styles.modeCopy}>
-        <Text className={styles.modeTitle}>
-          {messages.selectedMode}:{" "}
-          <Text className={styles.modeValue}>
-            {participationLabel} + {candidateLabel}
-          </Text>
-        </Text>
-        <Text className={styles.modeDescription}>{combinationHint}</Text>
-      </View>
-    </View>
-  );
-}
-
-function LogisticsSection({
-  messages,
-  expanded,
-  summary,
-  onPress,
-  children,
-}: {
-  messages: typeof createQuestMessages.en;
-  expanded: boolean;
-  summary: string;
-  onPress: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <View className={styles.sectionCard}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${messages.logistics}: ${expanded ? messages.logisticsDescription : summary}`}
-        accessibilityState={{ expanded }}
-        className={styles.collapsibleHeader}
-        onPress={onPress}
-        testID="create-quest-logistics-toggle"
-      >
-        <View className={styles.collapsibleHeaderIcon}>
-          <CalendarClock color={colors.primary} size={20} strokeWidth={2.2} />
-        </View>
-        <View className={styles.collapsibleHeaderCopy}>
-          <Text accessibilityRole="header" className={styles.sectionTitle}>
-            {messages.logistics}
-          </Text>
-          <Text className={styles.sectionDescription}>
-            {messages.logisticsDescription}
-          </Text>
-          {!expanded ? (
-            <Text className={styles.collapsibleSummary}>{summary}</Text>
-          ) : null}
-        </View>
-        <ChevronDown
-          color={colors.primary}
-          size={22}
-          strokeWidth={2.2}
-          style={{ transform: [{ rotate: expanded ? "180deg" : "0deg" }] }}
-        />
-      </Pressable>
-      {expanded ? (
-        <View className={styles.collapsibleContent}>{children}</View>
-      ) : null}
-    </View>
-  );
-}
+import { formatDate, formatDateTime } from "./createQuestDates";
+import {
+  LOGISTICS_FIELDS,
+  QUEST_DETAIL_FIELDS,
+  type CompletionState,
+  type Focusable,
+  type Step,
+} from "./createQuestTypes";
+import {
+  useQuestPersistence,
+  type PublishedQuestRefValue,
+} from "./useQuestPersistence";
+import { useQuestPublish } from "./useQuestPublish";
+import { MAX_QUEST_IMAGES } from "../questBoard/types";
 
 export interface CreateQuestScreenProps {
   editQuestId?: string;
@@ -958,9 +112,6 @@ export default function CreateQuestScreen({
   const layout = getCreateQuestLayoutMetrics(width);
   const insets = useSafeAreaInsets();
   const draftChangedRef = useRef(false);
-  const skipPersistRef = useRef(false);
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const saveRequestRef = useRef(0);
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const titleRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
   const tagRef = useRef<React.ComponentRef<typeof RNPressable>>(null);
@@ -973,46 +124,75 @@ export default function CreateQuestScreen({
   const rewardRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
   const [step, setStep] = useState<Step>(() => (editQuestId ? 2 : 1));
   const [draft, setDraft] = useState<QuestDraft>(initialDraft);
-  const draftIdRef = useRef<string | null>(editQuestId ?? null);
-  const [draftHydrated, setDraftHydrated] = useState(false);
-  const [draftStorageKey, setDraftStorageKey] = useState<string | null>(null);
-  const [draftLoadAttempt, setDraftLoadAttempt] = useState(0);
-  const [draftLoadError, setDraftLoadError] = useState(false);
-  const [saveState, setSaveState] = useState<SaveState>("idle");
-  const [saveErrorIntent, setSaveErrorIntent] =
-    useState<SaveErrorIntent | null>(null);
-  const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
-  const [savingAction, setSavingAction] = useState<CompletionState | null>(
-    null
-  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [validationSummary, setValidationSummary] = useState<string | null>(
     null
   );
   const [imageError, setImageError] = useState<string | undefined>();
-  const [scheduleField, setScheduleField] = useState<ScheduleField | null>(
-    null
-  );
-  const [pickerMode, setPickerMode] = useState<PickerMode>("date");
-  const [iosPickerValue, setIosPickerValue] = useState<Date | null>(null);
   const [completedState, setCompletedState] = useState<CompletionState | null>(
     null
   );
-  const [publishCheck, setPublishCheck] = useState<QuestPublishCheck | null>(
-    null
-  );
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [logisticsExpanded, setLogisticsExpanded] = useState(false);
   const [pendingInvalidField, setPendingInvalidField] = useState<string | null>(
     null
   );
   const focusedInvalidFieldRef = useRef<string | null>(null);
-  const publishedQuestRef = useRef<{
-    questId: string;
-    storageKey: string;
-    editQuestId?: string;
-    createIdempotencyKey?: string;
-    publishIdempotencyKey?: string;
-  } | null>(null);
+  const publishedQuestRef = useRef<PublishedQuestRefValue | null>(null);
+
+  const {
+    draftIdRef,
+    draftHydrated,
+    draftStorageKey,
+    draftLoadError,
+    retryDraftLoad,
+    saveState,
+    setSaveState,
+    saveErrorIntent,
+    setSaveErrorIntent,
+    saveErrorMessage,
+    setSaveErrorMessage,
+    savingAction,
+    setSavingAction,
+    skipPersistRef,
+    saveTimerRef,
+    saveRequestRef,
+    saveDraft,
+  } = useQuestPersistence({
+    editQuestId,
+    step,
+    completedState,
+    draft,
+    draftChangedRef,
+    publishedQuestRef,
+    setDraft,
+    setStep,
+    setCompletedState,
+  });
+
+  const {
+    publishCheck,
+    setPublishCheck,
+    walletBalances,
+    isCheckingPublish,
+    publishQuest,
+    refreshPublishCheck,
+  } = useQuestPublish({
+    editQuestId,
+    step,
+    completedState,
+    draftHydrated,
+    draftStorageKey,
+    draft,
+    draftIdRef,
+    draftChangedRef,
+    publishedQuestRef,
+    saveRequestRef,
+    setSaveState,
+    setSaveErrorIntent,
+    setSaveErrorMessage,
+    setSavingAction,
+  });
 
   const [liveTags, setLiveTags] = useState<TagItem[]>([]);
 
@@ -1098,255 +278,6 @@ export default function CreateQuestScreen({
     [messages]
   );
 
-  const saveDraft = useCallback(
-    async (
-      draftToSave: QuestDraft,
-      state: CompletionState = "DRAFT",
-      completesFlow = false
-    ): Promise<boolean> => {
-      const requestId = ++saveRequestRef.current;
-      setSaveState("saving");
-      setSavingAction(state);
-      setSaveErrorIntent(null);
-      setSaveErrorMessage(null);
-      try {
-        if (!draftStorageKey) {
-          setSaveState("error");
-          setSaveErrorIntent({ state, completesFlow });
-          setSavingAction(null);
-          return false;
-        }
-        const activeDraftId = draftIdRef.current ?? createQuestDraftId();
-        draftIdRef.current = activeDraftId;
-        const normalizedDraft = {
-          ...draftToSave,
-          headcount: getHeadcountForParticipation(
-            draftToSave.participation,
-            draftToSave.headcount
-          ),
-        };
-        await persistQuestDraft(
-          draftStorageKey,
-          activeDraftId,
-          normalizedDraft,
-          step,
-          state
-        );
-        if (requestId !== saveRequestRef.current) return false;
-        setSaveState("saved");
-        setSaveErrorIntent(null);
-        setSavingAction(null);
-        return true;
-      } catch (error) {
-        if (requestId !== saveRequestRef.current) return false;
-        setSaveState("error");
-        setSaveErrorMessage(
-          error instanceof Error
-            ? error.message
-            : "Unable to save the Quest draft."
-        );
-        setSaveErrorIntent({ state, completesFlow });
-        setSavingAction(null);
-        return false;
-      }
-    },
-    [draftStorageKey, step]
-  );
-
-  const publishQuest = useCallback(
-    async (draftToPublish: QuestDraft): Promise<boolean> => {
-      const requestId = ++saveRequestRef.current;
-      setSaveState("saving");
-      setSavingAction("OPEN");
-      setSaveErrorIntent(null);
-      setSaveErrorMessage(null);
-      try {
-        if (!draftStorageKey) {
-          setSaveState("error");
-          setSaveErrorIntent({ state: "OPEN", completesFlow: true });
-          setSavingAction(null);
-          return false;
-        }
-
-        let publishedQuestId = publishedQuestRef.current?.questId;
-        let createIdempotencyKey =
-          publishedQuestRef.current?.createIdempotencyKey;
-        let publishIdempotencyKey =
-          publishedQuestRef.current?.publishIdempotencyKey;
-        const hasMatchingPublishedQuest =
-          publishedQuestRef.current?.storageKey === draftStorageKey &&
-          publishedQuestRef.current?.editQuestId === editQuestId;
-
-        if (!hasMatchingPublishedQuest) {
-          createIdempotencyKey = undefined;
-          publishIdempotencyKey = undefined;
-        }
-
-        if (!publishedQuestId) {
-          const normalizedDraft = {
-            ...draftToPublish,
-            headcount: getHeadcountForParticipation(
-              draftToPublish.participation,
-              draftToPublish.headcount
-            ),
-          };
-          createIdempotencyKey = createQuestIdempotencyKey();
-          const created = await liveQuestService.createQuest(
-            toQuestV2Payload(normalizedDraft),
-            createIdempotencyKey
-          );
-          publishedQuestId = created.id;
-          if (
-            normalizedDraft.imageUris &&
-            normalizedDraft.imageUris.length > 0
-          ) {
-            try {
-              await liveQuestService.uploadImages(
-                publishedQuestId,
-                normalizedDraft.imageUris
-              );
-            } catch (imageError) {
-              console.warn("Failed to upload quest images:", imageError);
-            }
-          }
-          publishIdempotencyKey = createQuestIdempotencyKey();
-          publishedQuestRef.current = {
-            questId: publishedQuestId,
-            storageKey: draftStorageKey,
-            editQuestId,
-            createIdempotencyKey,
-            publishIdempotencyKey,
-          };
-        }
-
-        if (!publishIdempotencyKey) {
-          publishIdempotencyKey = createQuestIdempotencyKey();
-          publishedQuestRef.current = {
-            questId: publishedQuestId,
-            storageKey: draftStorageKey,
-            editQuestId,
-            createIdempotencyKey,
-            publishIdempotencyKey,
-          };
-        }
-
-        const publishCheck =
-          await liveQuestService.getPublishCheck(publishedQuestId);
-        if (!publishCheck.canPublish) {
-          const reason =
-            publishCheck.blockingReasons
-              .map((blocker) => blocker.message)
-              .join(" ") || "The Quest is not ready to publish.";
-          throw new Error(reason);
-        }
-
-        const published = await liveQuestService.publishQuest(
-          publishedQuestId,
-          publishIdempotencyKey
-        );
-        if (published.state !== "QUEST_OPEN") {
-          throw new Error("The server did not open the Quest.");
-        }
-
-        if (!publishedQuestId) {
-          throw new Error("The Quest could not be published.");
-        }
-
-        const activeDraftId = draftIdRef.current;
-        if (activeDraftId)
-          await deleteQuestDraft(draftStorageKey, activeDraftId);
-        if (requestId !== saveRequestRef.current) return false;
-        publishedQuestRef.current = null;
-        setSaveState("saved");
-        setSaveErrorIntent(null);
-        setSaveErrorMessage(null);
-        setSavingAction(null);
-        return true;
-      } catch (error) {
-        if (requestId !== saveRequestRef.current) return false;
-        setSaveState("error");
-        setSaveErrorMessage(
-          error instanceof Error
-            ? error.message
-            : "Unable to publish the Quest."
-        );
-        setSaveErrorIntent({ state: "OPEN", completesFlow: true });
-        setSavingAction(null);
-        return false;
-      }
-    },
-    [draftStorageKey, editQuestId]
-  );
-
-  useEffect(() => {
-    let active = true;
-    publishedQuestRef.current = null;
-    draftChangedRef.current = false;
-    skipPersistRef.current = true;
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = null;
-    }
-
-    void (async () => {
-      setDraftHydrated(false);
-      setDraftLoadError(false);
-      setDraftStorageKey(null);
-      try {
-        const storageKey = await getQuestDraftStorageKey();
-        const snapshot = await loadQuestDraft(
-          storageKey,
-          draftIdRef.current ?? undefined
-        );
-        if (!active) return;
-
-        setDraftStorageKey(storageKey);
-        if (snapshot && !draftChangedRef.current) {
-          setDraft({
-            ...snapshot.draft,
-            headcount: getHeadcountForParticipation(
-              snapshot.draft.participation,
-              snapshot.draft.headcount
-            ),
-          });
-          setStep(snapshot.step);
-          setCompletedState(snapshot.state === "OPEN" ? "OPEN" : null);
-        }
-        setDraftHydrated(true);
-      } catch {
-        if (!active) return;
-        skipPersistRef.current = false;
-        setDraftLoadError(true);
-        setDraftHydrated(false);
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [draftLoadAttempt, editQuestId]);
-
-  useEffect(() => {
-    if (!draftHydrated || !draftStorageKey || completedState) return undefined;
-    if (skipPersistRef.current) {
-      skipPersistRef.current = false;
-      return undefined;
-    }
-
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
-      saveTimerRef.current = null;
-      void saveDraft(draft);
-    }, 400);
-
-    return () => {
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-        saveTimerRef.current = null;
-      }
-    };
-  }, [completedState, draft, draftHydrated, draftStorageKey, saveDraft, step]);
-
   const updateDraft = <K extends keyof QuestDraft>(
     field: K,
     value: QuestDraft[K]
@@ -1367,6 +298,17 @@ export default function CreateQuestScreen({
       return next;
     });
   };
+
+  const {
+    activeField: scheduleField,
+    pickerMode,
+    pickerValue: schedulePickerValue,
+    minimumDate: schedulePickerMinimum,
+    openPicker: openSchedulePicker,
+    closePicker: closeSchedulePicker,
+    handleChange: handleDateChange,
+    confirmIos: confirmIosScheduleValue,
+  } = useSchedulePicker({ draft, updateDraft });
 
   const updateParticipation = (value: QuestDraft["participation"]) => {
     draftChangedRef.current = true;
@@ -1444,9 +386,9 @@ export default function CreateQuestScreen({
 
   useEffect(() => {
     if (!pendingInvalidField) return;
-    const targetStep = QUEST_DETAIL_FIELDS.has(pendingInvalidField) ? 1 : 2;
+    const targetStep = pendingInvalidField in QUEST_DETAIL_FIELDS ? 1 : 2;
     if (step !== targetStep) return;
-    if (LOGISTICS_FIELDS.has(pendingInvalidField) && !logisticsExpanded) return;
+    if (pendingInvalidField in LOGISTICS_FIELDS && !logisticsExpanded) return;
     if (focusedInvalidFieldRef.current === pendingInvalidField) return;
     focusedInvalidFieldRef.current = pendingInvalidField;
     focusInvalidField(pendingInvalidField);
@@ -1499,7 +441,7 @@ export default function CreateQuestScreen({
       const firstError = `${fieldLabels[firstErrorKey] ?? messages.title}: ${nextErrors[firstErrorKey]}`;
       setValidationSummary(firstError);
       AccessibilityInfo.announceForAccessibility(firstError);
-      if (currentStep === 2 && LOGISTICS_FIELDS.has(firstErrorKey))
+      if (currentStep === 2 && firstErrorKey in LOGISTICS_FIELDS)
         setLogisticsExpanded(true);
       if (currentStep !== step) {
         setStep(currentStep);
@@ -1531,7 +473,7 @@ export default function CreateQuestScreen({
 
   const finishQuest = async (state: CompletionState) => {
     if (!validateStep(2)) return;
-    const check = getQuestPublishCheck(draft);
+    const check = reviewPublishCheck;
     setPublishCheck(check);
     if (state === "OPEN" && !check.canPublish) {
       const firstBlocker = check.blockers[0];
@@ -1572,12 +514,6 @@ export default function CreateQuestScreen({
   const showHelp = () =>
     Alert.alert(messages.helpTitle, messages.helpDescription);
 
-  const retryDraftLoad = () => {
-    setDraftLoadError(false);
-    setDraftHydrated(false);
-    setDraftLoadAttempt((attempt) => attempt + 1);
-  };
-
   const goBack = () => {
     setPendingInvalidField(null);
     if (step === 1) {
@@ -1597,68 +533,6 @@ export default function CreateQuestScreen({
       setStep((current) => (current - 1) as Step);
       scrollRef.current?.scrollTo({ y: 0, animated: false });
     }
-  };
-
-  const closeSchedulePicker = () => {
-    setScheduleField(null);
-    setPickerMode("date");
-    setIosPickerValue(null);
-  };
-
-  const openSchedulePicker = (field: ScheduleField) => {
-    const dateValue = field === "start" ? draft.startDate : draft.deadline;
-    const timeValue = field === "start" ? draft.startTime : draft.endTime;
-    setScheduleField(field);
-    setPickerMode("date");
-    setIosPickerValue(
-      Platform.OS === "ios"
-        ? getDateTimePickerValue(dateValue, timeValue)
-        : null
-    );
-  };
-
-  const saveScheduleValue = (field: ScheduleField, value: Date) => {
-    const dateKey = field === "start" ? "startDate" : "deadline";
-    const timeKey = field === "start" ? "startTime" : "endTime";
-    updateDraft(dateKey, toDateValue(value));
-    updateDraft(timeKey, getScheduleTimeValue(value));
-  };
-
-  const saveScheduleTime = (field: ScheduleField, value: Date) => {
-    const timeKey = field === "start" ? "startTime" : "endTime";
-    updateDraft(timeKey, getScheduleTimeValue(value));
-  };
-
-  const handleDateChange = (
-    event: DateTimePickerEvent,
-    selectedDate?: Date
-  ) => {
-    if (event.type === "dismissed") {
-      closeSchedulePicker();
-      return;
-    }
-    if (!selectedDate || !scheduleField) return;
-
-    if (Platform.OS === "ios") {
-      setIosPickerValue(selectedDate);
-      return;
-    }
-
-    if (pickerMode === "date") {
-      const dateKey = scheduleField === "start" ? "startDate" : "deadline";
-      updateDraft(dateKey, toDateValue(selectedDate));
-      setPickerMode("time");
-      return;
-    }
-
-    saveScheduleTime(scheduleField, selectedDate);
-    closeSchedulePicker();
-  };
-
-  const confirmIosScheduleValue = () => {
-    if (scheduleField && iosPickerValue)
-      saveScheduleValue(scheduleField, iosPickerValue);
-    closeSchedulePicker();
   };
 
   const pickImages = async () => {
@@ -1735,9 +609,11 @@ export default function CreateQuestScreen({
   }, [draft.candidateMode, draft.participation, messages]);
   const proofRequired = draft.proofRequired !== "none";
 
-  const reviewPublishCheck = useMemo(
-    () => publishCheck ?? getQuestPublishCheck(draft),
-    [draft, publishCheck]
+  const reviewPublishCheck = publishCheck ?? getQuestPublishCheck(draft);
+  const missingSatang = Math.max(
+    0,
+    reviewPublishCheck.escrow.totalRequiredSatang -
+      (walletBalances?.spendingBalanceSatang ?? 0)
   );
   const summary = useMemo(
     () => [
@@ -1905,21 +781,6 @@ export default function CreateQuestScreen({
 
   const isSaving = saveState === "saving";
   const nextLabel = step === 2 ? messages.reviewQuest : messages.next;
-  const schedulePickerDate =
-    scheduleField === "start" ? draft.startDate : draft.deadline;
-  const schedulePickerTime =
-    scheduleField === "start" ? draft.startTime : draft.endTime;
-  const schedulePickerValue = getSchedulePickerValue(
-    Platform.OS,
-    getDateTimePickerValue(schedulePickerDate, schedulePickerTime),
-    iosPickerValue
-  );
-  const schedulePickerMinimum =
-    scheduleField === "start"
-      ? new Date()
-      : draft.startDate
-        ? getDateTimePickerValue(draft.startDate, draft.startTime)
-        : undefined;
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} className={styles.safeArea}>
@@ -2030,434 +891,48 @@ export default function CreateQuestScreen({
                 </View>
               ) : null}
               {step === 1 ? (
-                <View className={styles.sectionCard}>
-                  <SectionHeading
-                    icon={Tag}
-                    title={messages.questDetails}
-                    description={messages.questDetailsDescription}
-                  />
-                  <Input
-                    ref={titleRef}
-                    label={`${messages.titleLabel} *`}
-                    placeholder={messages.titlePlaceholder}
-                    value={draft.title}
-                    onChangeText={(value) => updateDraft("title", value)}
-                    error={errors.title}
-                    maxLength={100}
-                  />
-                  <Select
-                    ref={tagRef}
-                    label={`${messages.questTag} *`}
-                    options={tagOptions}
-                    value={draft.tag}
-                    onValueChange={(value) => updateDraft("tag", value)}
-                    placeholder={messages.chooseQuestTag}
-                    error={errors.tag}
-                    searchable
-                    searchPlaceholder={messages.searchQuestTags}
-                    noResultsMessage={messages.noMatchingQuestTags}
-                    clearSearchLabel={messages.clearSearch}
-                    closeLabel={messages.close}
-                  />
-                  <TextArea
-                    ref={descriptionRef}
-                    label={`${messages.description} *`}
-                    placeholder={messages.descriptionPlaceholder}
-                    value={draft.description}
-                    onChangeText={(value) => updateDraft("description", value)}
-                    error={errors.description}
-                    maxLength={300}
-                  />
-                  <TextArea
-                    ref={conditionsRef}
-                    label={`${messages.completionCriteria} *`}
-                    placeholder={messages.completionCriteriaPlaceholder}
-                    value={draft.conditions}
-                    onChangeText={(value) => updateDraft("conditions", value)}
-                    error={errors.conditions}
-                    maxLength={300}
-                  />
-                  <View className={styles.fieldGroup}>
-                    <Pressable
-                      accessibilityLabel={messages.proofRequiredToggle}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: proofRequired }}
-                      className={styles.proofToggle}
-                      onPress={() =>
-                        updateDraft(
-                          "proofRequired",
-                          proofRequired ? "none" : "required"
-                        )
-                      }
-                      testID="create-quest-proof-toggle"
-                    >
-                      <View
-                        className={cn(
-                          styles.checkbox,
-                          proofRequired && styles.checkboxChecked
-                        )}
-                      >
-                        {proofRequired ? (
-                          <Check
-                            color={colors.white}
-                            size={15}
-                            strokeWidth={3}
-                          />
-                        ) : null}
-                      </View>
-                      <Text className={styles.proofToggleLabel}>
-                        {messages.proofRequiredToggle}
-                      </Text>
-                    </Pressable>
-                    <Text className={styles.proofDescription}>
-                      {proofRequired
-                        ? messages.proofRequiredDescription
-                        : messages.proofNotNeededDescription}
-                    </Text>
-                  </View>
-                </View>
+                <QuestDetailsStep
+                  messages={messages}
+                  draft={draft}
+                  errors={errors}
+                  tagOptions={tagOptions}
+                  proofRequired={proofRequired}
+                  titleRef={titleRef}
+                  tagRef={tagRef}
+                  descriptionRef={descriptionRef}
+                  conditionsRef={conditionsRef}
+                  updateDraft={updateDraft}
+                />
               ) : null}
 
               {step === 2 ? (
-                <>
-                  <View className={styles.sectionCard}>
-                    <SectionHeading
-                      compact
-                      icon={UsersRound}
-                      title={`1. ${messages.chooseWorkFormat}`}
-                      description={messages.chooseWorkFormatDescription}
-                    />
-                    <ChoiceGroup
-                      label={messages.participation}
-                      value={draft.participation}
-                      options={participationOptions}
-                      variant="format"
-                      stacked={useStackedChoices}
-                      onChange={(value) =>
-                        updateParticipation(
-                          value as QuestDraft["participation"]
-                        )
-                      }
-                    />
-
-                    <View className={styles.subsectionBlock}>
-                      <SectionHeading
-                        compact
-                        icon={UserRoundCheck}
-                        title={`2. ${messages.chooseAcceptanceMethod}`}
-                        description={messages.chooseAcceptanceMethodDescription}
-                      />
-                      <ChoiceGroup
-                        label={messages.candidateMode}
-                        value={draft.candidateMode}
-                        options={candidateOptions}
-                        variant="acceptance"
-                        stacked={false}
-                        onChange={(value) =>
-                          updateDraft(
-                            "candidateMode",
-                            value as QuestDraft["candidateMode"]
-                          )
-                        }
-                      />
-                    </View>
-
-                    <ModeSummary
-                      messages={messages}
-                      participation={draft.participation}
-                      candidateMode={draft.candidateMode}
-                      combinationHint={combinationHint}
-                    />
-
-                    <View className={styles.additionalSettings}>
-                      <Text
-                        accessibilityRole="header"
-                        className={styles.additionalSettingsTitle}
-                      >
-                        {messages.capacityAndReward}
-                      </Text>
-                      <Text className={styles.sectionDescription}>
-                        {messages.participantsRewardDescription}
-                      </Text>
-                      {draft.participation === "SINGLE" ? (
-                        <View className={styles.fieldGroup}>
-                          <FieldLabel optionalLabel="">
-                            {messages.headcount}
-                          </FieldLabel>
-                          <View
-                            accessible
-                            accessibilityLabel={`${messages.headcount}: 1`}
-                            accessibilityState={{ disabled: true }}
-                            className={styles.readOnlyField}
-                            style={{
-                              alignItems: "flex-start",
-                              justifyContent: "center",
-                            }}
-                          >
-                            <Text className={styles.readOnlyValue}>1</Text>
-                          </View>
-                          <Text className={styles.singleHeadcountHint}>
-                            {messages.singleHeadcountHint}
-                          </Text>
-                        </View>
-                      ) : (
-                        <Input
-                          ref={headcountRef}
-                          label={`${messages.headcount} *`}
-                          placeholder={messages.headcountPlaceholder}
-                          value={draft.headcount}
-                          onChangeText={(value) =>
-                            updateDraft(
-                              "headcount",
-                              value.replace(/[^0-9]/g, "")
-                            )
-                          }
-                          error={errors.headcount}
-                          keyboardType="number-pad"
-                        />
-                      )}
-                      <View className={styles.fieldGroup}>
-                        <FieldLabel required optionalLabel={messages.optional}>
-                          {messages.rewardPerPerson}
-                        </FieldLabel>
-                        <View
-                          className={cn(
-                            styles.currencyInput,
-                            errors.wage ? styles.fieldError : null
-                          )}
-                        >
-                          <Text className={styles.currencySymbol}>฿</Text>
-                          <TextInput
-                            ref={rewardRef}
-                            className={styles.currencyTextInput}
-                            placeholder={messages.rewardPlaceholder}
-                            placeholderTextColor={colors.textFaint}
-                            value={draft.wage}
-                            onChangeText={(value) =>
-                              updateDraft("wage", value.replace(/[^0-9.]/g, ""))
-                            }
-                            keyboardType="decimal-pad"
-                            accessibilityLabel={`${messages.rewardPerPerson} (THB)`}
-                          />
-                          <Text className={styles.currencyUnit}>THB</Text>
-                        </View>
-                        <Text
-                          accessibilityLiveRegion={
-                            errors.wage ? "assertive" : "none"
-                          }
-                          className={
-                            errors.wage ? styles.errorText : styles.helperText
-                          }
-                        >
-                          {errors.wage ?? messages.rewardHelper}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  <LogisticsSection
-                    messages={messages}
-                    expanded={logisticsExpanded}
-                    summary={logisticsSummary}
-                    onPress={() => setLogisticsExpanded((current) => !current)}
-                  >
-                    <DateTimeField
-                      emptyLabel={messages.notSelected}
-                      label={messages.startDateTime}
-                      value={formatDateTime(
-                        draft.startDate,
-                        draft.startTime,
-                        locale,
-                        messages.notSelected
-                      )}
-                      hasValue={Boolean(
-                        draft.startDate && TIME_PATTERN.test(draft.startTime)
-                      )}
-                      error={errors.startDate ?? errors.startTime}
-                      helper={messages.dateTimeHelper}
-                      fieldRef={startDateRef}
-                      testID="create-quest-start-datetime"
-                      onPress={() => openSchedulePicker("start")}
-                    />
-                    <DateTimeField
-                      emptyLabel={messages.notSelected}
-                      label={messages.deadlineDateTime}
-                      value={formatDateTime(
-                        draft.deadline,
-                        draft.endTime,
-                        locale,
-                        messages.notSelected
-                      )}
-                      hasValue={Boolean(
-                        draft.deadline && TIME_PATTERN.test(draft.endTime)
-                      )}
-                      error={errors.deadline ?? errors.endTime}
-                      helper={messages.dateTimeHelper}
-                      fieldRef={deadlineRef}
-                      testID="create-quest-deadline-datetime"
-                      onPress={() => openSchedulePicker("end")}
-                    />
-                    <View className={styles.fieldGroup}>
-                      <Pressable
-                        accessibilityRole="checkbox"
-                        accessibilityState={{
-                          checked: draft.locationMode === "ONLINE",
-                        }}
-                        accessibilityLabel={messages.onlineQuest}
-                        onPress={() =>
-                          updateDraft(
-                            "locationMode",
-                            draft.locationMode === "ONLINE"
-                              ? "ON_CAMPUS"
-                              : "ONLINE"
-                          )
-                        }
-                        className={styles.onlineToggle}
-                      >
-                        <View
-                          className={cn(
-                            styles.checkbox,
-                            draft.locationMode === "ONLINE" &&
-                              styles.checkboxChecked
-                          )}
-                        >
-                          {draft.locationMode === "ONLINE" ? (
-                            <Check
-                              color={colors.white}
-                              size={15}
-                              strokeWidth={3}
-                            />
-                          ) : null}
-                        </View>
-                        <View className={styles.onlineToggleCopy}>
-                          <Text className={styles.onlineToggleTitle}>
-                            {messages.onlineQuest}
-                          </Text>
-                          <Text className={styles.onlineToggleHint}>
-                            {messages.onlineQuestHint}
-                          </Text>
-                        </View>
-                      </Pressable>
-                      {draft.locationMode === "ON_CAMPUS" ? (
-                        <>
-                          <FieldLabel required optionalLabel="">
-                            {messages.location}
-                          </FieldLabel>
-                          <View
-                            className={cn(
-                              styles.inputWithIcon,
-                              errors.location && styles.fieldError
-                            )}
-                          >
-                            <MapPin
-                              color={colors.textMuted}
-                              size={18}
-                              strokeWidth={2}
-                            />
-                            <TextInput
-                              ref={locationRef}
-                              className={styles.iconInput}
-                              placeholder={messages.locationPlaceholder}
-                              placeholderTextColor={colors.textFaint}
-                              value={draft.location}
-                              onChangeText={(value) =>
-                                updateDraft("location", value)
-                              }
-                              accessibilityLabel={messages.location}
-                              testID="create-quest-location"
-                            />
-                          </View>
-                          {errors.location ? (
-                            <Text className={styles.errorText}>
-                              {errors.location}
-                            </Text>
-                          ) : null}
-                        </>
-                      ) : null}
-                    </View>
-                    <View className={styles.fieldGroup}>
-                      <FieldLabel optionalLabel={messages.optional}>
-                        {messages.images}
-                      </FieldLabel>
-                      {draft.imageUris.length > 0 ? (
-                        <View className={styles.imagePicker} accessible={false}>
-                          <View className={styles.imageGrid}>
-                            {draft.imageUris.map((uri, index) => (
-                              <View
-                                key={`${uri}-${index}`}
-                                className={styles.imagePreviewContainer}
-                              >
-                                <Image
-                                  accessibilityLabel={messages.questImage(
-                                    index + 1
-                                  )}
-                                  cachePolicy="memory-disk"
-                                  onError={() =>
-                                    setImageError(messages.imageError)
-                                  }
-                                  source={{ uri }}
-                                  className={styles.previewImage}
-                                />
-                                <Pressable
-                                  accessibilityRole="button"
-                                  accessibilityLabel={messages.removeImage(
-                                    index + 1
-                                  )}
-                                  hitSlop={8}
-                                  onPress={() => removeImage(index)}
-                                  className={styles.removeImageButton}
-                                >
-                                  <X
-                                    color={colors.white}
-                                    size={15}
-                                    strokeWidth={2.5}
-                                  />
-                                </Pressable>
-                              </View>
-                            ))}
-                          </View>
-                          <Pressable
-                            accessibilityRole="button"
-                            accessibilityLabel={messages.changeImages}
-                            onPress={() => void pickImages()}
-                            className={styles.changeImagesButton}
-                          >
-                            <Text className={styles.imageTitle}>
-                              {messages.changeImages}
-                            </Text>
-                          </Pressable>
-                        </View>
-                      ) : (
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={messages.addImages}
-                          onPress={() => void pickImages()}
-                          className={styles.imagePicker}
-                        >
-                          <ImagePlus
-                            color={colors.primary}
-                            size={28}
-                            strokeWidth={1.8}
-                          />
-                          <Text className={styles.imageTitle}>
-                            {messages.addImages}
-                          </Text>
-                          <Text className={styles.helperText}>
-                            {messages.imagesOptional}
-                          </Text>
-                        </Pressable>
-                      )}
-                      {imageError ? (
-                        <Text
-                          accessibilityRole="alert"
-                          className={styles.errorText}
-                        >
-                          {imageError}
-                        </Text>
-                      ) : null}
-                    </View>
-                  </LogisticsSection>
-                </>
+                <TeamSetupStep
+                  messages={messages}
+                  draft={draft}
+                  errors={errors}
+                  locale={locale}
+                  participationOptions={participationOptions}
+                  candidateOptions={candidateOptions}
+                  combinationHint={combinationHint}
+                  useStackedChoices={useStackedChoices}
+                  logisticsExpanded={logisticsExpanded}
+                  logisticsSummary={logisticsSummary}
+                  onToggleLogistics={() =>
+                    setLogisticsExpanded((current) => !current)
+                  }
+                  imageError={imageError}
+                  setImageError={setImageError}
+                  headcountRef={headcountRef}
+                  rewardRef={rewardRef}
+                  startDateRef={startDateRef}
+                  deadlineRef={deadlineRef}
+                  locationRef={locationRef}
+                  openSchedulePicker={openSchedulePicker}
+                  pickImages={pickImages}
+                  removeImage={removeImage}
+                  updateDraft={updateDraft}
+                  updateParticipation={updateParticipation}
+                />
               ) : null}
 
               {step === 3 ? (
@@ -2494,6 +969,7 @@ export default function CreateQuestScreen({
                       accessibilityLiveRegion={
                         reviewPublishCheck.canPublish ? "polite" : "assertive"
                       }
+                      accessibilityState={{ busy: isCheckingPublish }}
                       className={cn(
                         styles.publishCheckCard,
                         !reviewPublishCheck.canPublish &&
@@ -2560,6 +1036,47 @@ export default function CreateQuestScreen({
                           {messages.publishCheckWarning}
                         </Text>
                       ) : null}
+                      {!reviewPublishCheck.canPublish ? (
+                        <View testID="create-quest-blocking-guidance">
+                          {reviewPublishCheck.blockers.map((blocker) =>
+                            blocker === "INSUFFICIENT_SPENDING_BALANCE" ? (
+                              <View key={blocker}>
+                                <Text className={styles.publishCheckNote}>
+                                  {messages.blockingGuidance.INSUFFICIENT_SPENDING_BALANCE(
+                                    formatSatang(missingSatang, locale)
+                                  )}
+                                </Text>
+                                <Pressable
+                                  accessibilityRole="button"
+                                  accessibilityLabel={messages.topUpAction}
+                                  className={cn(
+                                    styles.retryButton,
+                                    styles.publishCheckNote
+                                  )}
+                                  onPress={() => setShowTopUpModal(true)}
+                                  testID="create-quest-top-up-button"
+                                >
+                                  <Text className={styles.retryButtonText}>
+                                    {messages.topUpAction}
+                                  </Text>
+                                </Pressable>
+                              </View>
+                            ) : (
+                              <Text
+                                className={styles.publishCheckNote}
+                                key={blocker}
+                              >
+                                {(
+                                  messages.blockingGuidance as unknown as Record<
+                                    string,
+                                    string
+                                  >
+                                )[blocker] ?? blocker}
+                              </Text>
+                            )
+                          )}
+                        </View>
+                      ) : null}
                     </View>
                   </View>
                 </>
@@ -2619,7 +1136,7 @@ export default function CreateQuestScreen({
                       ? messages.publishingQuest
                       : messages.publishQuest
                   }
-                  disabled={isSaving}
+                  disabled={isSaving || !reviewPublishCheck.canPublish}
                   label={
                     savingAction === "OPEN"
                       ? messages.publishingQuest
@@ -2636,56 +1153,27 @@ export default function CreateQuestScreen({
         </KeyboardAvoidingView>
       </View>
 
-      {scheduleField ? (
-        Platform.OS === "ios" ? (
-          <Modal
-            transparent
-            animationType="slide"
-            onRequestClose={closeSchedulePicker}
-            visible
-          >
-            <View className={styles.modalBackdrop}>
-              <View accessibilityViewIsModal className={styles.pickerSheet}>
-                <View className={styles.pickerHeader}>
-                  <Text className={styles.pickerTitle}>
-                    {scheduleField === "start"
-                      ? messages.startDateTime
-                      : messages.deadlineDateTime}
-                  </Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={messages.dateDone}
-                    onPress={confirmIosScheduleValue}
-                    className={styles.pickerDoneButton}
-                  >
-                    <Text className={styles.pickerDoneText}>
-                      {messages.dateDone}
-                    </Text>
-                  </Pressable>
-                </View>
-                <DateTimePicker
-                  value={schedulePickerValue}
-                  mode="datetime"
-                  display="spinner"
-                  onChange={handleDateChange}
-                  minimumDate={schedulePickerMinimum}
-                />
-              </View>
-            </View>
-          </Modal>
-        ) : (
-          <DateTimePicker
-            value={schedulePickerValue}
-            mode={pickerMode}
-            display="default"
-            is24Hour
-            onChange={handleDateChange}
-            minimumDate={
-              pickerMode === "date" ? schedulePickerMinimum : undefined
-            }
-          />
-        )
-      ) : null}
+      <SchedulePickerModal
+        messages={messages}
+        visible={scheduleField !== null}
+        field={scheduleField}
+        mode={pickerMode}
+        value={schedulePickerValue}
+        minimumDate={schedulePickerMinimum}
+        onChange={handleDateChange}
+        onConfirmIos={confirmIosScheduleValue}
+        onClose={closeSchedulePicker}
+      />
+
+      <QuestTopUpModal
+        visible={showTopUpModal}
+        onClose={() => setShowTopUpModal(false)}
+        onSuccess={() => {
+          void refreshPublishCheck();
+        }}
+        locale={locale}
+        suggestedAmountSatang={missingSatang}
+      />
     </SafeAreaView>
   );
 }

@@ -8,6 +8,9 @@ import {
   type QuestPublishCheck,
 } from "../questBoard/types";
 import type { CreateQuestV2Payload } from "@/api/QuestApi";
+import type { QuestV2PublishCheck } from "@/api/questV2Contracts";
+import { createQuestMessages } from "@/locales/createQuestMessages";
+import type { SupportedLocale } from "@/locales/LocaleProvider";
 import { formatSatang, parseSatangInput } from "@/domain/satang";
 
 export type QuestDraftCandidateMode = "FIRST_COME_FIRST_SERVED" | "CANDIDATE";
@@ -130,7 +133,8 @@ export function isQuestDraftDirty(draft: QuestDraft): boolean {
   });
 }
 
-export const MAX_REWARD_THB = 1_000_000;
+export const MAX_REWARD_THB = 700_000;
+export const MIN_REWARD_THB = 1;
 export const DEFAULT_PLATFORM_FEE_BASIS_POINTS = 500;
 
 export interface QuestDraftPayload {
@@ -197,17 +201,33 @@ export function toQuestV2Payload(draft: QuestDraft): CreateQuestV2Payload {
   const fundingTotalSatang = getDraftRewardSatang(draft) ?? 0;
   const headcount = getValidDraftHeadcount(draft) ?? 0;
   const location = draft.location.trim();
+  const conditionItems = draft.conditions
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
 
   return {
     title: draft.title.trim(),
     description: draft.description.trim(),
-    condition: { items: [draft.conditions.trim()] },
+    condition: {
+      items:
+        conditionItems.length > 0
+          ? conditionItems
+          : draft.conditions.trim()
+            ? [draft.conditions.trim()]
+            : [],
+    },
     mode: draft.candidateMode,
     participation: draft.participation,
     questFundingTotal: fundingTotalSatang / 100,
     headcount,
-    startTime: `${draft.startDate}T${draft.startTime}:00+07:00`,
-    dueAt: `${draft.deadline}T${draft.endTime}:00+07:00`,
+    startTime:
+      toBangkokDateTime(draft.startDate, draft.startTime) ??
+      `${draft.startDate}T${draft.startTime}:00+07:00`,
+    dueAt:
+      draft.deadline && draft.endTime
+        ? toBangkokDateTime(draft.deadline, draft.endTime)
+        : null,
     tagId: draft.tag.trim() || null,
     proofRequired: draft.proofRequired !== "none",
     locations:
@@ -307,6 +327,33 @@ export function getQuestPublishCheck(
   };
 }
 
+export function adaptV2PublishCheck(
+  serverCheck: QuestV2PublishCheck
+): QuestPublishCheck {
+  return {
+    canPublish: serverCheck.canPublish,
+    blockers: serverCheck.blockingReasons.map((reason) => reason.code),
+    warnings: serverCheck.warnings.map((warning) => warning.code),
+    escrow: {
+      rewardPoolSatang: serverCheck.questRewardSatang * serverCheck.headcount,
+      platformFeeSatang: serverCheck.platformFeeSatang * serverCheck.headcount,
+      totalRequiredSatang: serverCheck.escrowRequirementSatang,
+      headcount: serverCheck.headcount,
+      rewardSatangPerWorker: serverCheck.questRewardSatang,
+      platformFeeSatangPerWorker: serverCheck.platformFeeSatang,
+      feeRateBasisPoints: serverCheck.platformFeeBps,
+    },
+  };
+}
+
+export function getQuestApiErrorMessage(
+  code: string,
+  locale: SupportedLocale
+): string {
+  const messages = createQuestMessages[locale];
+  return messages.apiErrors[code] ?? messages.saveError;
+}
+
 export function formatDraftReward(
   draft: Pick<QuestDraft, "wage">,
   locale: "en" | "th" = "en"
@@ -336,7 +383,11 @@ export function getRewardValidationError(
   if (!/^\d+(?:\.\d{1,2})?$/.test(trimmedValue)) return messages.format;
 
   const amountSatang = parseSatangInput(trimmedValue);
-  if (amountSatang === null || amountSatang > MAX_REWARD_THB * 100) {
+  if (
+    amountSatang === null ||
+    amountSatang < MIN_REWARD_THB * 100 ||
+    amountSatang > MAX_REWARD_THB * 100
+  ) {
     return messages.bounds(MAX_REWARD_THB);
   }
 
@@ -359,6 +410,36 @@ export function getDateTimeValue(
     return null;
   const date = new Date(`${dateValue}T${timeValue}:00`);
   return Number.isNaN(date.getTime()) ? null : date.getTime();
+}
+
+export function formatBangkokIso(date: Date): string {
+  const b = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+  return `${b.toISOString().slice(0, 19)}+07:00`;
+}
+
+export function toBangkokDateTime(
+  dateStr: string,
+  timeStr: string
+): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || !TIME_PATTERN.test(timeStr))
+    return null;
+  const [yearStr, monthStr, dayStr] = dateStr.split("-");
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  const day = Number(dayStr);
+  const [hourStr, minuteStr] = timeStr.split(":");
+  const hours = Number(hourStr);
+  const minutes = Number(minuteStr);
+  const date = new Date(year, month - 1, day, hours, minutes, 0);
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+  return formatBangkokIso(date);
 }
 
 export interface QuestDraftStepFinding {

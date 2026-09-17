@@ -11,13 +11,13 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 ## Entries
 
-### 2026-09-17 — Summarized Jest output can hide a failing suite
+### 2026-09-17 — Captured command output can be summarized, truncated, or replaced
 
-**What happened**: Three `bun run test` runs in an agent harness reported `✅ 54 passed` while the suite was `Test Suites: 1 failed, 54 passed, 55 total` and `Tests: 1 failed, 372 passed, 373 total`; a false "tests green" claim reached a PR body.
+**What happened**: Three `bun run test` runs in an agent harness reported `✅ 54 passed` while the suite was `Test Suites: 1 failed, 54 passed, 55 total`; a false "tests green" claim reached a PR body. In a later session the wrapper replaced command output entirely — several runs returned only `✓ Build successful (0 units compiled)` (even for `cat` and `git log`), and `bun x jest <file>` reported `✅ 0 passed` while nothing ran.
 
-**Root cause**: The harness wrapper reports passing test counts and drops Jest's failure summary.
+**Root cause**: The harness wrapper summarizes or replaces captured stdout; it can drop failures or report a count for a run that never happened.
 
-**Rule**: Confirm a Jest run by reading its `Test Suites:` and `Tests:` lines — capture the output to a file and read it when the wrapper summarizes — and treat a bare passing count as unverified.
+**Rule**: Verify an important command by capturing its output to a file and reading that file (`cmd > /tmp/x.log 2>&1`, then read it). Treat a bare passing count, a suspiciously short result, or output you did not expect as unverified and re-run once through the capture pattern. For scoped Jest runs, use `./node_modules/.bin/jest <file> --silent > /tmp/x.log 2>&1`; `bun x jest` can misreport.
 
 ### 2026-09-17 — The pre-commit hook reformats every staged file in full
 
