@@ -24,7 +24,6 @@ describe("Hirer Home", () => {
   it("opens the Quest detail from the active-work card", async () => {
     const view = await render(<HomeScreen />);
 
-    expect(view.getByText("Prototype preview")).toBeTruthy();
     expect(
       view.getByTestId("hirer-quest-card-hirer-home-progress-demo")
     ).toBeTruthy();
@@ -53,5 +52,36 @@ describe("Hirer Home", () => {
     expect(
       view.queryByTestId("hirer-quest-card-hirer-home-progress-demo")
     ).toBeNull();
+  });
+
+  it("renders Quick Access buttons and navigates to the selected destination", async () => {
+    const view = await render(<HomeScreen />);
+
+    expect(view.getByTestId("hirer-home-quick-access")).toBeTruthy();
+    expect(view.getByText("Quick Actions")).toBeTruthy();
+
+    fireEvent.press(view.getByTestId("hirer-quick-access-active"));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/my-quests",
+      params: { role: "hirer", tab: "active" },
+    });
+
+    fireEvent.press(view.getByTestId("hirer-quick-access-draft"));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/my-quests",
+      params: { role: "hirer", tab: "draft" },
+    });
+
+    fireEvent.press(view.getByTestId("hirer-quick-access-history"));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/my-quests",
+      params: { role: "hirer", tab: "completed" },
+    });
+
+    fireEvent.press(view.getByTestId("hirer-quick-access-board"));
+    expect(mockPush).toHaveBeenCalledWith("/quest-board");
+
+    fireEvent.press(view.getByTestId("hirer-quick-access-topup"));
+    expect(mockPush).toHaveBeenCalledWith("/money");
   });
 });

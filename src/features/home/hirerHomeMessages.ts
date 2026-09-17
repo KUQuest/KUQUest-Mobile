@@ -12,12 +12,26 @@ export interface HirerHomeMessages {
   emptyTitle: string;
   emptyDescription: string;
   activeQuestTitle: string;
+  activeQuestCounter: (current: number, total: number) => string;
   workerProfile: string;
+  assignedWorkerRole: string;
   timelineTitle: string;
+  stepProgress: (current: number, total: number) => string;
   currentStageLabel: string;
   terminalStageLabel: string;
   openDetails: string;
   dueAt: (value: string) => string;
+  quickAccessTitle: string;
+  quickActiveTitle: string;
+  quickActiveDesc: string;
+  quickDraftTitle: string;
+  quickDraftDesc: string;
+  quickHistoryTitle: string;
+  quickHistoryDesc: string;
+  quickBoardTitle: string;
+  quickBoardDesc: string;
+  quickTopUpTitle: string;
+  quickTopUpDesc: string;
   statusLabels: Record<CanonicalHirerQuestStatus, string>;
   timelineLabels: Record<TimelineStageKey, string>;
   timelineOverrides: Partial<
@@ -34,12 +48,27 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     emptyDescription:
       "Published Quests with accepted Workers will appear here.",
     activeQuestTitle: "Active Quest",
+    activeQuestCounter: (current, total) => `${current} of ${total}`,
     workerProfile: "View Worker profile",
+    assignedWorkerRole: "Assigned Worker",
     timelineTitle: "QUEST TIMELINE",
+    stepProgress: (current: number, total: number) =>
+      `Step ${current} of ${total}`,
     currentStageLabel: "current",
     terminalStageLabel: "terminal",
     openDetails: "Open details",
     dueAt: (value) => value,
+    quickAccessTitle: "Quick Actions",
+    quickActiveTitle: "In Progress",
+    quickActiveDesc: "Active quests",
+    quickDraftTitle: "Drafts",
+    quickDraftDesc: "Saved quest drafts",
+    quickHistoryTitle: "History",
+    quickHistoryDesc: "Completed quests",
+    quickBoardTitle: "Quest Board",
+    quickBoardDesc: "Browse all quests",
+    quickTopUpTitle: "Top-up",
+    quickTopUpDesc: "PromptPay QR deposit",
     statusLabels: {
       QUEST_DRAFT: "Draft",
       QUEST_OPEN: "Open for applications",
@@ -69,12 +98,27 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     emptyTitle: "ยังไม่มีเควสต์ที่กำลังดำเนินการ",
     emptyDescription: "เควสต์ที่เผยแพร่และมีผู้ทำงานตอบรับจะแสดงที่นี่",
     activeQuestTitle: "เควสต์ที่กำลังดำเนินการ",
+    activeQuestCounter: (current, total) => `${current}/${total}`,
     workerProfile: "ดูโปรไฟล์ผู้ทำงาน",
+    assignedWorkerRole: "ผู้รับผิดชอบงาน",
     timelineTitle: "ลำดับการทำงาน",
+    stepProgress: (current: number, total: number) =>
+      `ขั้นตอนที่ ${current} จาก ${total}`,
     currentStageLabel: "สถานะปัจจุบัน",
     terminalStageLabel: "สถานะสิ้นสุด",
     openDetails: "เปิดรายละเอียด",
     dueAt: (value) => value,
+    quickAccessTitle: "เมนูลัด",
+    quickActiveTitle: "กำลังทำงาน",
+    quickActiveDesc: "เควสต์ที่กำลังดำเนินการ",
+    quickDraftTitle: "ฉบับร่าง",
+    quickDraftDesc: "เควสต์ที่ยังไม่เผยแพร่",
+    quickHistoryTitle: "ประวัติ",
+    quickHistoryDesc: "เควสต์ที่เสร็จสิ้นแล้ว",
+    quickBoardTitle: "กระดานเควสต์",
+    quickBoardDesc: "ค้นหาและดูเควสต์ทั้งหมด",
+    quickTopUpTitle: "เติมเงิน",
+    quickTopUpDesc: "เติมเงินผ่านพร้อมเพย์",
     statusLabels: {
       QUEST_DRAFT: "ฉบับร่าง",
       QUEST_OPEN: "เปิดรับสมัคร",
