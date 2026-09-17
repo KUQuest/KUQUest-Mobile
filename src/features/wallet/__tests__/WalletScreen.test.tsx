@@ -3,6 +3,12 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { walletApi } from "@/api/WalletApi";
 import WalletScreen from "../WalletScreen";
 
+const mockPush = jest.fn();
+jest.mock("expo-router", () => ({
+  useRouter: () => ({ push: mockPush }),
+  useFocusEffect: (effect: () => (() => void) | void) =>
+    jest.requireActual("react").useEffect(effect, []),
+}));
 jest.mock("@/locales/LocaleProvider", () => ({
   useLocale: () => ({ locale: "th" }),
 }));
@@ -212,8 +218,65 @@ describe("Hirer WalletScreen", () => {
       expect(view.queryByTestId("hirer-tx-tx-3")).toBeNull();
     });
   });
+  it("opens transaction detail modal with full endpoint data when a transaction item is tapped", async () => {
+    const view = await render(<WalletScreen />);
 
-  it("opens top-up payment modal when banner action button is pressed", async () => {
+    await waitFor(() => {
+      expect(view.getByTestId("hirer-tx-tx-2")).toBeTruthy();
+    });
+
+    // Tap transaction item
+    fireEvent.press(view.getByTestId("hirer-tx-tx-2"));
+
+    await waitFor(() => {
+      expect(view.getByTestId("transaction-detail-modal")).toBeTruthy();
+    });
+
+    expect(view.getByTestId("tx-detail-title")).toHaveTextContent(
+      "เติมเงินเข้า Wallet"
+    );
+    expect(view.getByTestId("tx-detail-amount")).toHaveTextContent(
+      "+ ฿1,000.00"
+    );
+    expect(view.getByTestId("tx-detail-status-badge")).toHaveTextContent(
+      "สำเร็จ"
+    );
+    expect(view.getByTestId("tx-detail-source-tag")).toBeTruthy();
+    expect(view.getByTestId("tx-detail-reference")).toHaveTextContent("tx-2");
+
+    // Close modal
+    fireEvent.press(view.getByTestId("transaction-detail-close-btn"));
+
+    await waitFor(() => {
+      expect(view.queryByTestId("transaction-detail-modal")).toBeNull();
+    });
+  });
+
+  it("filters transactions by top_up", async () => {
+    const view = await render(<WalletScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("hirer-wallet-transactions-list")).toBeTruthy();
+    });
+
+    // Open filter modal
+    fireEvent.press(view.getByTestId("hirer-history-filter-button"));
+
+    await waitFor(() => {
+      expect(view.getByTestId("filter-opt-top_up")).toBeTruthy();
+    });
+
+    // Select top_up
+    fireEvent.press(view.getByTestId("filter-opt-top_up"));
+
+    await waitFor(() => {
+      expect(view.getByTestId("hirer-tx-tx-2")).toBeTruthy();
+      expect(view.queryByTestId("hirer-tx-tx-1")).toBeNull();
+      expect(view.queryByTestId("hirer-tx-tx-3")).toBeNull();
+    });
+  });
+
+  it("navigates to /top-up when banner action button is pressed", async () => {
     const view = await render(<WalletScreen />);
 
     await waitFor(() => {
@@ -222,9 +285,46 @@ describe("Hirer WalletScreen", () => {
 
     fireEvent.press(view.getByTestId("hirer-wallet-banner-action-btn"));
 
-    // Payment modal should open (WalletPaymentModal testID)
+    expect(mockPush).toHaveBeenCalledWith("/top-up");
+  });
+  it("opens transfer earnings modal when switcher bar shortcut button is pressed", async () => {
+    const view = await render(<WalletScreen />);
+
     await waitFor(() => {
-      expect(view.getByText(/PromptPay/i)).toBeTruthy();
+      expect(
+        view.getByTestId("hirer-balance-transfer-shortcut-btn")
+      ).toBeTruthy();
+    });
+
+    fireEvent.press(view.getByTestId("hirer-balance-transfer-shortcut-btn"));
+
+    await waitFor(() => {
+      expect(view.getByTestId("transfer-earnings-modal")).toBeTruthy();
+      expect(view.getByText("โอนรายได้เข้าเงินพร้อมใช้")).toBeTruthy();
+    });
+  });
+
+  it("opens transfer earnings modal from Card 1 when swapped to earnings mode", async () => {
+    const view = await render(<WalletScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("hirer-card-1")).toBeTruthy();
+    });
+
+    // Flip Card 1 to earnings
+    fireEvent.press(view.getByTestId("hirer-card-1"));
+
+    await waitFor(() => {
+      expect(view.getByTestId("hirer-card1-transfer-btn")).toBeTruthy();
+    });
+
+    fireEvent.press(view.getByTestId("hirer-card1-transfer-btn"));
+
+    await waitFor(() => {
+      expect(view.getByTestId("transfer-earnings-modal")).toBeTruthy();
+      expect(view.getByTestId("transfer-current-earnings")).toHaveTextContent(
+        "฿ 4,000.00"
+      );
     });
   });
 

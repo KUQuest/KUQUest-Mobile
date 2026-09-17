@@ -173,17 +173,36 @@ describe("WalletApi", () => {
       },
     };
 
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      headers: new Headers({ "content-type": "application/json" }),
-      text: async () => JSON.stringify(activityResponse),
+    fetchMock.mockImplementation((url: string) => {
+      if (url.includes("/api/v1/wallet/activities")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers({ "content-type": "application/json" }),
+          text: async () => JSON.stringify(activityResponse),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () =>
+          JSON.stringify({ success: true, data: { items: [] } }),
+      });
     });
 
     const history = await api.getTransactionHistory(30);
 
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.example.test/api/v1/wallet/activities?limit=30",
+      expect.objectContaining({ method: "GET" })
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v1/top-ups?limit=30",
+      expect.objectContaining({ method: "GET" })
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v1/payouts?limit=30",
       expect.objectContaining({ method: "GET" })
     );
     expect(history.items).toHaveLength(2);
@@ -389,5 +408,84 @@ describe("WalletApi", () => {
         status: "PENDING_ADMIN_APPROVAL",
       })
     );
+  });
+
+  it("merges activities and top-ups without duplicating transactions", async () => {
+    const activitiesResponse = {
+      success: true,
+      data: {
+        activities: [
+          {
+            id: "act-topup-1",
+            ledgerTransactionId: "ledger-tx-1",
+            occurredAt: "2026-09-18T10:00:00Z",
+            type: "TOP_UP",
+            activityStatus: "COMPLETED",
+            spendingDeltaSatang: 10000,
+            earningsDeltaSatang: 0,
+            fundingReservedDeltaSatang: 0,
+            payoutReservedDeltaSatang: 0,
+            resourceType: "TOP_UP",
+            resourceId: "topup-uuid-1",
+          },
+        ],
+      },
+    };
+
+    const topUpsResponse = {
+      success: true,
+      data: {
+        items: [
+          {
+            id: "topup-uuid-1",
+            internalReference: "top-up:topup-uuid-1",
+            creditSatang: 10000,
+            paymentTotalSatang: 10086,
+            topUpStatus: "PAID",
+            creditedLedgerTransactionId: "ledger-tx-1",
+            createdAt: "2026-09-18T10:00:00Z",
+          },
+        ],
+      },
+    };
+
+    const payoutsResponse = {
+      success: true,
+      data: {
+        items: [],
+      },
+    };
+
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => JSON.stringify(activitiesResponse),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => JSON.stringify(topUpsResponse),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => JSON.stringify(payoutsResponse),
+      });
+
+    const history = await api.getTransactionHistory();
+
+    // Must be exactly 1 item, NOT 2 items!
+    expect(history.items).toHaveLength(1);
+    expect(history.items[0]).toMatchObject({
+      amountSatang: 10000,
+      direction: "INFLOW",
+      type: "TOP_UP",
+      status: "PAID",
+      reference: "top-up:topup-uuid-1",
+    });
   });
 });

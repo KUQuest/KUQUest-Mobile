@@ -1,8 +1,9 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  ChevronRight,
   CreditCard,
   FileText,
   Lock,
@@ -12,12 +13,15 @@ import {
 import { colors } from "@/theme/colors";
 import { fontFamily } from "@/theme/typography";
 import type { ClassifiedHirerTransaction } from "../walletModule";
+
 interface HirerTransactionItemProps {
   transaction: ClassifiedHirerTransaction;
+  onPress?: (transaction: ClassifiedHirerTransaction) => void;
 }
 
 export function HirerTransactionItem({
   transaction: tx,
+  onPress,
 }: HirerTransactionItemProps) {
   const renderIcon = () => {
     switch (tx.iconKind) {
@@ -53,8 +57,21 @@ export function HirerTransactionItem({
     tx.iconKind === "refund" ||
     tx.iconKind === "generic_inflow";
 
+  const isPending = tx.statusKind === "pending";
+  const isFailed = tx.statusKind === "failed" || tx.statusKind === "expired";
+
+  const CardComponent = onPress ? TouchableOpacity : View;
+
   return (
-    <View style={styles.card} testID={`hirer-tx-${tx.id}`}>
+    <CardComponent
+      accessibilityHint="แตะเพื่อดูรายละเอียดธุรกรรม"
+      accessibilityLabel={`${tx.title}, ${tx.amountText}`}
+      accessibilityRole={onPress ? "button" : undefined}
+      activeOpacity={0.75}
+      onPress={onPress ? () => onPress(tx) : undefined}
+      style={styles.card}
+      testID={`hirer-tx-${tx.id}`}
+    >
       {/* Icon Box */}
       <View
         style={[
@@ -67,18 +84,29 @@ export function HirerTransactionItem({
 
       {/* Title, Subtitle, Date */}
       <View style={styles.contentWrap}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text numberOfLines={1} style={styles.title}>
           {tx.title}
         </Text>
         {tx.subtitle ? (
-          <Text style={styles.subtitle} numberOfLines={1}>
+          <Text numberOfLines={1} style={styles.subtitle}>
             {tx.subtitle}
           </Text>
         ) : null}
-        <Text style={styles.date}>{tx.dateFormatted}</Text>
+        <View style={styles.dateRow}>
+          <Text style={styles.date}>{tx.dateFormatted}</Text>
+          {isPending ? (
+            <View style={styles.pendingChip}>
+              <Text style={styles.pendingText}>{tx.statusLabel}</Text>
+            </View>
+          ) : isFailed ? (
+            <View style={styles.failedChip}>
+              <Text style={styles.failedText}>{tx.statusLabel}</Text>
+            </View>
+          ) : null}
+        </View>
       </View>
 
-      {/* Amount */}
+      {/* Amount and Chevron */}
       <View style={styles.amountWrap}>
         <Text
           style={[
@@ -88,8 +116,11 @@ export function HirerTransactionItem({
         >
           {tx.amountText}
         </Text>
+        {onPress ? (
+          <ChevronRight color={colors.textMuted} size={16} strokeWidth={2} />
+        ) : null}
       </View>
-    </View>
+    </CardComponent>
   );
 }
 
@@ -97,13 +128,12 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
     borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    padding: 14,
     marginBottom: 10,
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
   },
   iconBox: {
     width: 44,
@@ -111,7 +141,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 14,
+    marginRight: 12,
   },
   iconBoxNeutral: {
     backgroundColor: colors.surfaceMuted,
@@ -121,32 +151,58 @@ const styles = StyleSheet.create({
   },
   contentWrap: {
     flex: 1,
-    justifyContent: "center",
+    marginRight: 8,
   },
   title: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 15,
-    color: colors.textStrong,
+    fontFamily: fontFamily.medium,
+    fontSize: 14,
     lineHeight: 20,
+    color: colors.textStrong,
+    marginBottom: 2,
   },
   subtitle: {
     fontFamily: fontFamily.regular,
     fontSize: 12,
-    color: colors.textSecondary,
     lineHeight: 16,
-    marginTop: 2,
+    color: colors.textSecondary,
+    marginBottom: 2,
+  },
+  dateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   date: {
     fontFamily: fontFamily.regular,
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textMuted,
-    lineHeight: 16,
-    marginTop: 2,
+  },
+  pendingChip: {
+    backgroundColor: "#FEF9C3",
+    paddingVertical: 1,
+    paddingHorizontal: 6,
+    borderRadius: 4,
+  },
+  pendingText: {
+    fontFamily: fontFamily.medium,
+    fontSize: 10,
+    color: "#854D0E",
+  },
+  failedChip: {
+    backgroundColor: colors.surfaceDanger,
+    paddingVertical: 1,
+    paddingHorizontal: 6,
+    borderRadius: 4,
+  },
+  failedText: {
+    fontFamily: fontFamily.medium,
+    fontSize: 10,
+    color: colors.danger,
   },
   amountWrap: {
-    alignItems: "flex-end",
-    justifyContent: "center",
-    marginLeft: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   amount: {
     fontFamily: fontFamily.bold,

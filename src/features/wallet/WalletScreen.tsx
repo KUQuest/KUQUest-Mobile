@@ -10,8 +10,8 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { AlertCircle, FileText, RefreshCw } from "lucide-react-native";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import {
   walletApi,
   type UserTransaction,
@@ -33,10 +33,15 @@ import {
 import { HirerTransactionItem } from "./components/HirerTransactionItem";
 import { HirerWalletBanner } from "./components/HirerWalletBanner";
 import { HirerWalletHeader } from "./components/HirerWalletHeader";
-import { classifyHirerTransaction } from "./walletModule";
-import { WalletPaymentModal } from "./WalletPaymentModal";
+import {
+  classifyHirerTransaction,
+  type ClassifiedHirerTransaction,
+} from "./walletModule";
+import { TransactionDetailModal } from "./components/TransactionDetailModal";
+import { TransferEarningsModal } from "./components/TransferEarningsModal";
 
 export default function WalletScreen() {
+  const router = useRouter();
   const { locale } = useLocale();
   const m = walletMessages[locale];
   const { width, fontScale } = useWindowDimensions();
@@ -49,8 +54,9 @@ export default function WalletScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<HirerHistoryFilterOption>("all");
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-
+  const [transferModalOpen, setTransferModalOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<ClassifiedHirerTransaction | null>(null);
   const fetchData = useCallback(async () => {
     try {
       const [walletRes, historyRes] = await Promise.all([
@@ -73,6 +79,12 @@ export default function WalletScreen() {
     void fetchData();
   }, [fetchData]);
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  useFocusEffect(
+    useCallback(() => {
+      void fetchData();
+    }, [fetchData])
+  );
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
     void fetchData();
@@ -85,11 +97,19 @@ export default function WalletScreen() {
   const filteredList = classifiedList.filter((item) => {
     if (filter === "inflow") return item.isInflow;
     if (filter === "outflow") return !item.isInflow;
+    if (filter === "top_up") {
+      return item.type === "TOP_UP" || item.sourceApi === "TOP_UPS";
+    }
+    if (filter === "payout") {
+      return item.type === "PAYOUT" || item.sourceApi === "PAYOUTS";
+    }
     if (filter === "escrow") {
       return (
         item.iconKind === "escrow_pay" ||
         item.iconKind === "unlock_pay" ||
-        item.iconKind === "refund"
+        item.iconKind === "refund" ||
+        item.type === "HOLD" ||
+        item.type === "RELEASE"
       );
     }
     return true;
@@ -97,9 +117,11 @@ export default function WalletScreen() {
 
   const filterOptions = [
     { key: "all" as const, label: m.filterAll },
+    { key: "top_up" as const, label: m.filterTopUp },
+    { key: "payout" as const, label: m.filterPayout },
+    { key: "escrow" as const, label: m.filterEscrow },
     { key: "inflow" as const, label: m.filterInflow },
     { key: "outflow" as const, label: m.filterOutflow },
-    { key: "escrow" as const, label: m.filterEscrow },
   ];
 
   return (
@@ -130,7 +152,7 @@ export default function WalletScreen() {
         {/* Action Banner "เติมเงิน" */}
         <HirerWalletBanner
           label={m.sendMoneyAction}
-          onPress={() => setPaymentModalOpen(true)}
+          onPress={() => router.push("/top-up")}
         />
 
         {/* Balance Compartment Cards: Spending Balance & Money in Escrow (Swappable Separately) */}
@@ -152,6 +174,8 @@ export default function WalletScreen() {
           swapAllButton={m.swapAllButton}
           swapHint={m.swapHint}
           workerViewLabel={m.workerViewLabel}
+          onTransferEarnings={() => setTransferModalOpen(true)}
+          transferButtonLabel={m.convertEarnings}
         />
 
         {/* History Section: Header & Filter Dropdown */}
@@ -185,7 +209,11 @@ export default function WalletScreen() {
         ) : filteredList.length > 0 ? (
           <View testID="hirer-wallet-transactions-list">
             {filteredList.map((tx) => (
-              <HirerTransactionItem key={tx.id} transaction={tx} />
+              <HirerTransactionItem
+                key={tx.id}
+                onPress={setSelectedTransaction}
+                transaction={tx}
+              />
             ))}
           </View>
         ) : (
@@ -199,15 +227,22 @@ export default function WalletScreen() {
         )}
       </ScrollView>
 
-      {/* Top-up via PromptPay QR Modal */}
-      <WalletPaymentModal
-        locale={locale}
-        onClose={() => setPaymentModalOpen(false)}
+      {/* Transaction Detail Modal */}
+      <TransactionDetailModal
+        messages={m}
+        onClose={() => setSelectedTransaction(null)}
+        transaction={selectedTransaction}
+        visible={Boolean(selectedTransaction)}
+      />
+      {/* Transfer Earnings Modal */}
+      <TransferEarningsModal
+        balances={balances}
+        messages={m}
+        onClose={() => setTransferModalOpen(false)}
         onSuccess={() => {
-          setPaymentModalOpen(false);
           void fetchData();
         }}
-        visible={paymentModalOpen}
+        visible={transferModalOpen}
       />
     </ScreenLayout>
   );

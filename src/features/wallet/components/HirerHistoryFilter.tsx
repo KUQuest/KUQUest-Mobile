@@ -11,7 +11,8 @@ import { Check, ChevronDown } from "lucide-react-native";
 import { colors } from "@/theme/colors";
 import { fontFamily } from "@/theme/typography";
 
-export type HirerHistoryFilterOption = "all" | "inflow" | "outflow" | "escrow";
+export type HirerHistoryFilterOption =
+  "all" | "top_up" | "payout" | "escrow" | "inflow" | "outflow";
 
 interface HirerHistoryFilterProps {
   title: string;

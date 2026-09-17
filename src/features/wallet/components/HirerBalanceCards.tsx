@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import {
   Animated,
   StyleSheet,
@@ -35,6 +35,8 @@ interface HirerBalanceCardsProps {
   swapHint: string;
   hirerViewLabel: string;
   workerViewLabel: string;
+  onTransferEarnings?: () => void;
+  transferButtonLabel?: string;
 }
 
 export function HirerBalanceCards({
@@ -53,15 +55,16 @@ export function HirerBalanceCards({
   balanceCardsHint,
   swapAllButton,
   swapHint,
+  onTransferEarnings,
+  transferButtonLabel,
 }: HirerBalanceCardsProps) {
   const [card1Mode, setCard1Mode] = useState<"spending" | "earnings">(
     "spending"
   );
   const [card2Mode, setCard2Mode] = useState<"escrow" | "payout">("escrow");
 
-  const card1Anim = useRef(new Animated.Value(0)).current;
-  const card2Anim = useRef(new Animated.Value(0)).current;
-
+  const [card1Anim] = useState(() => new Animated.Value(0));
+  const [card2Anim] = useState(() => new Animated.Value(0));
   const isCard1Earnings = card1Mode === "earnings";
   const isCard2Payout = card2Mode === "payout";
 
@@ -157,19 +160,39 @@ export function HirerBalanceCards({
           <Text style={styles.hintText}>{balanceCardsHint}</Text>
         </View>
 
-        <TouchableOpacity
-          accessibilityLabel={swapAllButton}
-          accessibilityRole="button"
-          activeOpacity={0.7}
-          onPress={toggleAll}
-          style={styles.swapAllButton}
-          testID="hirer-balance-swap-all-btn"
-        >
-          <Text style={styles.swapAllButtonText}>{swapAllButton}</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.switcherActions}>
+          {onTransferEarnings ? (
+            <TouchableOpacity
+              accessibilityLabel={transferButtonLabel ?? "โอนรายได้"}
+              accessibilityRole="button"
+              activeOpacity={0.7}
+              onPress={onTransferEarnings}
+              style={styles.transferShortcutBtn}
+              testID="hirer-balance-transfer-shortcut-btn"
+            >
+              <ArrowRightLeft
+                color={colors.primaryDeep}
+                size={11}
+                strokeWidth={2.4}
+              />
+              <Text style={styles.transferShortcutBtnText}>
+                {transferButtonLabel ?? "โอนรายได้"}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
 
-      {/* 2 Balance Cards: Swappable Separately */}
+          <TouchableOpacity
+            accessibilityLabel={swapAllButton}
+            accessibilityRole="button"
+            activeOpacity={0.7}
+            onPress={toggleAll}
+            style={styles.swapAllButton}
+            testID="hirer-balance-swap-all-btn"
+          >
+            <Text style={styles.swapAllButtonText}>{swapAllButton}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
       <View style={styles.row}>
         {/* Card 1: Spending Balance <-> Earnings */}
         <Animated.View
@@ -184,58 +207,86 @@ export function HirerBalanceCards({
             },
           ]}
         >
-          <TouchableOpacity
-            accessibilityHint={swapHint}
-            accessibilityLabel={`${currentCard1Title}, ${formatHirerCardAmount(currentCard1Amount)}`}
-            accessibilityRole="button"
-            activeOpacity={0.85}
-            onPress={toggleCard1}
+          <View
             style={[
               styles.card,
               isCard1Earnings ? styles.earningsCard : styles.spendingCard,
             ]}
-            testID="hirer-card-1"
           >
-            <View style={styles.cardHeader}>
-              <Text
-                numberOfLines={1}
-                style={styles.cardLabel}
-                testID="hirer-card1-title"
-              >
-                {currentCard1Title}
-              </Text>
-              <View style={styles.iconGroup}>
-                <View
-                  style={styles.cardSwapChip}
-                  testID="hirer-card-1-swap-btn"
-                >
-                  <ArrowRightLeft
-                    color={colors.primaryDeep}
-                    size={11}
-                    strokeWidth={2.4}
-                  />
-                </View>
-                {isCard1Earnings ? (
-                  <Sparkles color={colors.primary} size={18} strokeWidth={2} />
-                ) : (
-                  <Wallet color={colors.primary} size={18} strokeWidth={2} />
-                )}
-              </View>
-            </View>
-            <Text
-              adjustsFontSizeToFit
-              numberOfLines={1}
-              style={styles.spendingAmount}
-              testID="hirer-spending-balance"
+            <TouchableOpacity
+              accessibilityHint={swapHint}
+              accessibilityLabel={`${currentCard1Title}, ${formatHirerCardAmount(currentCard1Amount)}`}
+              accessibilityRole="button"
+              activeOpacity={0.85}
+              onPress={toggleCard1}
+              style={styles.cardContent}
+              testID="hirer-card-1"
             >
-              {formatHirerCardAmount(currentCard1Amount)}
-            </Text>
-            <Text numberOfLines={1} style={styles.spendingDesc}>
-              {currentCard1Desc}
-            </Text>
-          </TouchableOpacity>
+              <View style={styles.cardHeader}>
+                <Text
+                  numberOfLines={1}
+                  style={styles.cardLabel}
+                  testID="hirer-card1-title"
+                >
+                  {currentCard1Title}
+                </Text>
+                <View style={styles.iconGroup}>
+                  <View
+                    style={styles.cardSwapChip}
+                    testID="hirer-card-1-swap-btn"
+                  >
+                    <ArrowRightLeft
+                      color={colors.primaryDeep}
+                      size={11}
+                      strokeWidth={2.4}
+                    />
+                  </View>
+                  {isCard1Earnings ? (
+                    <Sparkles
+                      color={colors.primary}
+                      size={18}
+                      strokeWidth={2}
+                    />
+                  ) : (
+                    <Wallet color={colors.primary} size={18} strokeWidth={2} />
+                  )}
+                </View>
+              </View>
+              <Text
+                adjustsFontSizeToFit
+                numberOfLines={1}
+                style={styles.spendingAmount}
+                testID="hirer-spending-balance"
+              >
+                {formatHirerCardAmount(currentCard1Amount)}
+              </Text>
+              <Text numberOfLines={1} style={styles.spendingDesc}>
+                {currentCard1Desc}
+              </Text>
+            </TouchableOpacity>
+            {isCard1Earnings && onTransferEarnings ? (
+              <TouchableOpacity
+                accessibilityLabel={
+                  transferButtonLabel ?? "โอนเข้าเงินพร้อมใช้"
+                }
+                accessibilityRole="button"
+                activeOpacity={0.8}
+                onPress={onTransferEarnings}
+                style={styles.cardTransferBtn}
+                testID="hirer-card1-transfer-btn"
+              >
+                <ArrowRightLeft
+                  color={colors.white}
+                  size={11}
+                  strokeWidth={2.4}
+                />
+                <Text style={styles.cardTransferBtnText}>
+                  {transferButtonLabel ?? "โอนเข้าเงินพร้อมใช้"}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
         </Animated.View>
-
         {/* Card 2: Escrow <-> Pending Payout */}
         <Animated.View
           style={[
@@ -323,6 +374,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
   },
+  switcherActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  transferShortcutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 3,
+    paddingHorizontal: 9,
+    borderRadius: 999,
+    backgroundColor: colors.surfaceSuccess,
+    borderWidth: 1,
+    borderColor: colors.borderSuccess,
+  },
+  transferShortcutBtnText: {
+    fontFamily: fontFamily.medium,
+    fontSize: 11,
+    color: colors.primaryDeep,
+  },
   swapAllButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -337,6 +409,26 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.medium,
     fontSize: 11,
     color: colors.primaryDeep,
+  },
+  cardTransferBtn: {
+    backgroundColor: colors.primaryDeep,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    marginTop: 6,
+  },
+  cardTransferBtnText: {
+    fontFamily: fontFamily.semiBold,
+    fontSize: 11,
+    color: colors.white,
+  },
+  cardContent: {
+    flex: 1,
+    justifyContent: "space-between",
   },
   row: {
     flexDirection: "row",
