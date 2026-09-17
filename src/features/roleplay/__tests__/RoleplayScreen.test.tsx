@@ -51,7 +51,9 @@ describe("RoleplayScreen", () => {
   it("switches between the four rulebook roleplay scenarios", async () => {
     const view = await render(<RoleplayScreen />);
 
-    await fireEvent.press(view.getByTestId("roleplay-scenario-print-documents"));
+    await fireEvent.press(
+      view.getByTestId("roleplay-scenario-print-documents")
+    );
 
     await waitFor(() => {
       expect(view.getByTestId("roleplay-scenario")).toHaveTextContent(
@@ -108,9 +110,9 @@ describe("RoleplayScreen", () => {
     await fireEvent.press(view.getByTestId("roleplay-persona-demo-hirer"));
     await fireEvent.press(view.getByTestId("roleplay-persona-student-demo"));
 
-    expect(view.getByTestId("roleplay-persona-label-demo-hirer")).toHaveTextContent(
-      "Hirer"
-    );
+    expect(
+      view.getByTestId("roleplay-persona-label-demo-hirer")
+    ).toHaveTextContent("Hirer");
     expect(
       view.getByTestId("roleplay-persona-label-student-demo")
     ).toHaveTextContent("Applicant / Team Leader A");

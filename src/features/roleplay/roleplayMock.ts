@@ -48,10 +48,7 @@ function getScenario(scenarioId: RoleplayScenarioId) {
 
 function getCurrentState(scenarioId: RoleplayScenarioId): QuestDetailState {
   const activePersonaId = authEnvironment.getActivePersonaId();
-  const state = questWorkflow.getQuestDetailState(
-    scenarioId,
-    activePersonaId
-  );
+  const state = questWorkflow.getQuestDetailState(scenarioId, activePersonaId);
   if (!state) {
     throw new Error(`Missing roleplay fixture state: ${scenarioId}`);
   }

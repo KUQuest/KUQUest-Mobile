@@ -1,9 +1,9 @@
-import { useCssElement } from 'react-native-css';
-import React from 'react';
-import { StyleSheet } from 'react-native';
-import { Image as RNImage } from 'expo-image';
+import { useCssElement } from "react-native-css";
+import React from "react";
+import { StyleSheet } from "react-native";
+import { Image as RNImage } from "expo-image";
 
-type CssImageProps = Omit<React.ComponentProps<typeof RNImage>, 'style'> & {
+type CssImageProps = Omit<React.ComponentProps<typeof RNImage>, "style"> & {
   className?: string;
   style?: unknown;
 };
@@ -14,8 +14,7 @@ export type ImageProps = React.ComponentProps<typeof RNImage> & {
 
 function CSSImage({ className: _className, style, ...props }: CssImageProps) {
   const flattenedStyle = StyleSheet.flatten(style as never) as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   const { objectFit, objectPosition, ...nativeStyle } = flattenedStyle || {};
   const contentFit = objectFit ?? props.contentFit;
   const contentPosition = objectPosition ?? props.contentPosition;
@@ -23,12 +22,18 @@ function CSSImage({ className: _className, style, ...props }: CssImageProps) {
   return (
     <RNImage
       {...props}
-      contentFit={contentFit as React.ComponentProps<typeof RNImage>['contentFit']}
-      contentPosition={contentPosition as React.ComponentProps<typeof RNImage>['contentPosition']}
-      source={
-        typeof props.source === 'string' ? { uri: props.source } : props.source
+      contentFit={
+        contentFit as React.ComponentProps<typeof RNImage>["contentFit"]
       }
-      style={nativeStyle as React.ComponentProps<typeof RNImage>['style']}
+      contentPosition={
+        contentPosition as React.ComponentProps<
+          typeof RNImage
+        >["contentPosition"]
+      }
+      source={
+        typeof props.source === "string" ? { uri: props.source } : props.source
+      }
+      style={nativeStyle as React.ComponentProps<typeof RNImage>["style"]}
     />
   );
 }
@@ -36,11 +41,11 @@ function CSSImage({ className: _className, style, ...props }: CssImageProps) {
 const CssElement = useCssElement as unknown as (
   component: unknown,
   props: unknown,
-  mapping: unknown,
+  mapping: unknown
 ) => React.ReactElement;
 
 export const Image = (props: CssImageProps) => {
-  return CssElement(CSSImage, props, { className: 'style' });
+  return CssElement(CSSImage, props, { className: "style" });
 };
 
-Image.displayName = 'CSS(Image)';
+Image.displayName = "CSS(Image)";

@@ -1,1 +1,1 @@
-export { default } from '@/features/questBoard/QuestDetailScreen';
+export { default } from "@/features/questBoard/QuestDetailScreen";

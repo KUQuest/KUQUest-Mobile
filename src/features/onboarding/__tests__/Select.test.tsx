@@ -1,23 +1,31 @@
-import { fireEvent, render } from '@testing-library/react-native';
-import mockReact, { type ReactNode } from 'react';
-import { Select } from '../components/Select';
+import { fireEvent, render } from "@testing-library/react-native";
+import mockReact, { type ReactNode } from "react";
+import { Select } from "../components/Select";
 
-jest.mock('react-native/Libraries/Modal/Modal', () => {
+jest.mock("react-native/Libraries/Modal/Modal", () => {
   return {
     __esModule: true,
-    default: ({ visible, children }: { visible: boolean; children: ReactNode }) =>
-      visible ? mockReact.createElement(mockReact.Fragment, null, children) : null,
+    default: ({
+      visible,
+      children,
+    }: {
+      visible: boolean;
+      children: ReactNode;
+    }) =>
+      visible
+        ? mockReact.createElement(mockReact.Fragment, null, children)
+        : null,
   };
 });
 
 const options = [
-  { label: 'Faculty of Agriculture', value: 'faculty-agriculture' },
-  { label: 'Faculty of Engineering', value: 'faculty-engineering' },
-  { label: 'Faculty of Fisheries', value: 'faculty-fisheries' },
+  { label: "Faculty of Agriculture", value: "faculty-agriculture" },
+  { label: "Faculty of Engineering", value: "faculty-engineering" },
+  { label: "Faculty of Fisheries", value: "faculty-fisheries" },
 ];
 
-describe('Select', () => {
-  test('filters searchable options and clears the query', async () => {
+describe("Select", () => {
+  test("filters searchable options and clears the query", async () => {
     const view = await render(
       <Select
         label="Faculty"
@@ -33,19 +41,22 @@ describe('Select', () => {
       />
     );
 
-    await fireEvent.press(view.getByTestId('select-trigger'));
-    await fireEvent.changeText(view.getByTestId('select-search-input'), 'engineering');
+    await fireEvent.press(view.getByTestId("select-trigger"));
+    await fireEvent.changeText(
+      view.getByTestId("select-search-input"),
+      "engineering"
+    );
 
-    expect(view.getByText('Faculty of Engineering')).toBeTruthy();
-    expect(view.queryByText('Faculty of Agriculture')).toBeNull();
+    expect(view.getByText("Faculty of Engineering")).toBeTruthy();
+    expect(view.queryByText("Faculty of Agriculture")).toBeNull();
 
-    await fireEvent.press(view.getByTestId('clear-search-button'));
+    await fireEvent.press(view.getByTestId("clear-search-button"));
 
-    expect(view.getByText('Faculty of Agriculture')).toBeTruthy();
-    expect(view.getByText('Faculty of Fisheries')).toBeTruthy();
+    expect(view.getByText("Faculty of Agriculture")).toBeTruthy();
+    expect(view.getByText("Faculty of Fisheries")).toBeTruthy();
   });
 
-  test('shows a no-results state when no option matches', async () => {
+  test("shows a no-results state when no option matches", async () => {
     const view = await render(
       <Select
         label="Faculty"
@@ -61,13 +72,16 @@ describe('Select', () => {
       />
     );
 
-    await fireEvent.press(view.getByTestId('select-trigger'));
-    await fireEvent.changeText(view.getByTestId('select-search-input'), 'medicine');
+    await fireEvent.press(view.getByTestId("select-trigger"));
+    await fireEvent.changeText(
+      view.getByTestId("select-search-input"),
+      "medicine"
+    );
 
-    expect(view.getByText('No results')).toBeTruthy();
+    expect(view.getByText("No results")).toBeTruthy();
   });
 
-  test('selects an option and closes the searchable picker', async () => {
+  test("selects an option and closes the searchable picker", async () => {
     const onValueChange = jest.fn();
     const view = await render(
       <Select
@@ -84,49 +98,53 @@ describe('Select', () => {
       />
     );
 
-    await fireEvent.press(view.getByTestId('select-trigger'));
-    await fireEvent.press(view.getByText('Faculty of Engineering'));
+    await fireEvent.press(view.getByTestId("select-trigger"));
+    await fireEvent.press(view.getByText("Faculty of Engineering"));
 
-    expect(onValueChange).toHaveBeenCalledWith('faculty-engineering');
-    expect(view.queryByTestId('select-search-input')).toBeNull();
+    expect(onValueChange).toHaveBeenCalledWith("faculty-engineering");
+    expect(view.queryByTestId("select-search-input")).toBeNull();
   });
 
-  test('keeps non-searchable selects compatible with the existing behavior', async () => {
+  test("keeps non-searchable selects compatible with the existing behavior", async () => {
     const view = await render(
       <Select
         label="Occupation"
-        options={[{ label: 'Student', value: 'occupation-student' }]}
+        options={[{ label: "Student", value: "occupation-student" }]}
         value=""
         onValueChange={jest.fn()}
         placeholder="Select occupation"
       />
     );
 
-    await fireEvent.press(view.getByTestId('select-trigger'));
+    await fireEvent.press(view.getByTestId("select-trigger"));
 
-    expect(view.queryByTestId('select-search-input')).toBeNull();
-    expect(view.getByText('Student')).toBeTruthy();
+    expect(view.queryByTestId("select-search-input")).toBeNull();
+    expect(view.getByText("Student")).toBeTruthy();
   });
 
-  test('includes the field context in selected and option accessibility labels', async () => {
+  test("includes the field context in selected and option accessibility labels", async () => {
     const view = await render(
       <Select
         label="Quest Tag"
-        options={[{ label: 'Technology', value: 'technology' }]}
+        options={[{ label: "Technology", value: "technology" }]}
         value="technology"
         onValueChange={jest.fn()}
         placeholder="Choose a Quest Tag"
       />
     );
 
-    expect(view.getByTestId('select-trigger').props.accessibilityLabel).toBe('Quest Tag: Technology');
+    expect(view.getByTestId("select-trigger").props.accessibilityLabel).toBe(
+      "Quest Tag: Technology"
+    );
 
-    await fireEvent.press(view.getByTestId('select-trigger'));
-    const technologyOptions = view.getAllByText('Technology');
-    expect(technologyOptions[1].parent?.props.accessibilityLabel).toBe('Quest Tag: Technology');
+    await fireEvent.press(view.getByTestId("select-trigger"));
+    const technologyOptions = view.getAllByText("Technology");
+    expect(technologyOptions[1].parent?.props.accessibilityLabel).toBe(
+      "Quest Tag: Technology"
+    );
   });
 
-  test('does not open when disabled', async () => {
+  test("does not open when disabled", async () => {
     const view = await render(
       <Select
         label="Department"
@@ -138,12 +156,12 @@ describe('Select', () => {
       />
     );
 
-    await fireEvent.press(view.getByTestId('select-trigger'));
+    await fireEvent.press(view.getByTestId("select-trigger"));
 
-    expect(view.queryByText('Faculty of Agriculture')).toBeNull();
+    expect(view.queryByText("Faculty of Agriculture")).toBeNull();
   });
 
-  test('exposes localized action labels and closes from the close action', async () => {
+  test("exposes localized action labels and closes from the close action", async () => {
     const view = await render(
       <Select
         label="Faculty"
@@ -159,13 +177,17 @@ describe('Select', () => {
       />
     );
 
-    await fireEvent.press(view.getByTestId('select-trigger'));
+    await fireEvent.press(view.getByTestId("select-trigger"));
 
-    expect(view.getByTestId('select-search-input').props.accessibilityRole).toBe('search');
-    expect(view.getByTestId('close-select-button').props.accessibilityLabel).toBe('Close faculty picker');
+    expect(
+      view.getByTestId("select-search-input").props.accessibilityRole
+    ).toBe("search");
+    expect(
+      view.getByTestId("close-select-button").props.accessibilityLabel
+    ).toBe("Close faculty picker");
 
-    await fireEvent.press(view.getByTestId('close-select-button'));
+    await fireEvent.press(view.getByTestId("close-select-button"));
 
-    expect(view.queryByTestId('select-search-input')).toBeNull();
+    expect(view.queryByTestId("select-search-input")).toBeNull();
   });
 });

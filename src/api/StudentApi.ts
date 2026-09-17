@@ -276,9 +276,7 @@ export class StudentApi {
     return reputationResponseSchema.parse(body).data;
   }
 
-  async listReviews(
-    rating: "all" | 5 | 4 | 3 | 2 | 1 = "all"
-  ): Promise<{
+  async listReviews(rating: "all" | 5 | 4 | 3 | 2 | 1 = "all"): Promise<{
     items: ProfileReview[];
     total: number;
     nextCursor?: string | null;

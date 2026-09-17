@@ -1,13 +1,19 @@
-import mockReact from 'react';
-import { BackHandler } from 'react-native';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import mockReact from "react";
+import { BackHandler } from "react-native";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react-native";
 
 import { ApiError } from "@/api/ApiClient";
 
-import OnboardingScreen from '../screens/OnboardingScreen';
-import { authService } from '../../auth/AuthService';
+import OnboardingScreen from "../screens/OnboardingScreen";
+import { authService } from "../../auth/AuthService";
 
-jest.mock('../../auth/AuthService', () => ({
+jest.mock("../../auth/AuthService", () => ({
   authService: {
     getSession: jest.fn(),
     getStudentApi: jest.fn(),
@@ -15,32 +21,40 @@ jest.mock('../../auth/AuthService', () => ({
   },
 }));
 
-jest.mock('react-native/Libraries/Modal/Modal', () => {
+jest.mock("react-native/Libraries/Modal/Modal", () => {
   return {
     __esModule: true,
-    default: ({ visible, children }: { visible: boolean; children: mockReact.ReactNode }) =>
-      visible ? mockReact.createElement(mockReact.Fragment, null, children) : null,
+    default: ({
+      visible,
+      children,
+    }: {
+      visible: boolean;
+      children: mockReact.ReactNode;
+    }) =>
+      visible
+        ? mockReact.createElement(mockReact.Fragment, null, children)
+        : null,
   };
 });
 
-jest.mock('expo-router', () => ({
+jest.mock("expo-router", () => ({
   useRouter: () => ({ replace: jest.fn(), back: jest.fn() }),
   useLocalSearchParams: () => mockRouteParams,
 }));
 
-jest.mock('expo-localization', () => ({
-  getLocales: () => [{ languageCode: 'en' }],
+jest.mock("expo-localization", () => ({
+  getLocales: () => [{ languageCode: "en" }],
 }));
 
-jest.mock('../../../locales/LocaleProvider', () => ({
-  useLocale: () => ({ locale: 'en' }),
+jest.mock("../../../locales/LocaleProvider", () => ({
+  useLocale: () => ({ locale: "en" }),
 }));
 
-jest.mock('expo-image-picker', () => ({
+jest.mock("expo-image-picker", () => ({
   launchImageLibraryAsync: jest.fn(),
 }));
 
-jest.mock('@expo/vector-icons', () => ({
+jest.mock("@expo/vector-icons", () => ({
   MaterialIcons: () => null,
 }));
 
@@ -52,17 +66,21 @@ const mockedAuthService = authService as unknown as {
 let mockRouteParams: { mode?: string; step?: string } = {};
 
 const options = {
-  occupations: [{ id: 'occupation-student', name: 'Student', requiresStudentId: true }],
+  occupations: [
+    { id: "occupation-student", name: "Student", requiresStudentId: true },
+  ],
   faculties: [
     {
-      id: 'faculty-engineering',
-      name: 'Faculty of Engineering',
-      departments: [{ id: 'department-software', name: 'Software Engineering' }],
+      id: "faculty-engineering",
+      name: "Faculty of Engineering",
+      departments: [
+        { id: "department-software", name: "Software Engineering" },
+      ],
     },
     {
-      id: 'faculty-science',
-      name: 'Faculty of Science',
-      departments: [{ id: 'department-mathematics', name: 'Mathematics' }],
+      id: "faculty-science",
+      name: "Faculty of Science",
+      departments: [{ id: "department-mathematics", name: "Mathematics" }],
     },
   ],
 };
@@ -71,8 +89,8 @@ function createApi(overrides: Record<string, unknown> = {}) {
   return {
     getAcademicRegistrationOptions: jest.fn().mockResolvedValue(options),
     getAcademicRegistrationStatus: jest.fn().mockResolvedValue({
-      firstName: '',
-      lastName: '',
+      firstName: "",
+      lastName: "",
       telephone: null,
       occupationId: null,
       studentId: null,
@@ -82,9 +100,9 @@ function createApi(overrides: Record<string, unknown> = {}) {
       completed: false,
     }),
     getProfile: jest.fn().mockResolvedValue({
-      email: 'student@ku.th',
-      firstName: '',
-      lastName: '',
+      email: "student@ku.th",
+      firstName: "",
+      lastName: "",
       bio: null,
       telephone: null,
       studentId: null,
@@ -104,35 +122,34 @@ function createApi(overrides: Record<string, unknown> = {}) {
 function createCompletedApi(overrides: Record<string, unknown> = {}) {
   return createApi({
     getAcademicRegistrationStatus: jest.fn().mockResolvedValue({
-      firstName: 'KU',
-      lastName: 'Student',
-      telephone: '0812345678',
-      occupationId: 'occupation-student',
-      studentId: '6712345678',
-      departmentId: 'department-software',
-      termsAcceptedAt: '2026-08-11T00:00:00.000Z',
-      termsVersion: '2026-08-11',
+      firstName: "KU",
+      lastName: "Student",
+      telephone: "0812345678",
+      occupationId: "occupation-student",
+      studentId: "6712345678",
+      departmentId: "department-software",
+      termsAcceptedAt: "2026-08-11T00:00:00.000Z",
+      termsVersion: "2026-08-11",
       completed: true,
     }),
     getProfile: jest.fn().mockResolvedValue({
-      email: 'student@ku.th',
-      firstName: 'KU',
-      lastName: 'Student',
+      email: "student@ku.th",
+      firstName: "KU",
+      lastName: "Student",
       bio: null,
-      telephone: '0812345678',
-      studentId: '6712345678',
+      telephone: "0812345678",
+      studentId: "6712345678",
       academicYear: 3,
       department: {
-        id: 'department-software',
-        name: 'Software Engineering',
-        faculty: { name: 'Faculty of Engineering' },
+        id: "department-software",
+        name: "Software Engineering",
+        faculty: { name: "Faculty of Engineering" },
       },
       avatar: null,
     }),
     ...overrides,
   });
 }
-
 
 function prepareAuth(api: ReturnType<typeof createApi>) {
   mockedAuthService.getSession.mockResolvedValue({
@@ -141,126 +158,161 @@ function prepareAuth(api: ReturnType<typeof createApi>) {
   mockedAuthService.getStudentApi.mockResolvedValue(api);
 }
 
-describe('OnboardingScreen Academic Registration selections', () => {
+describe("OnboardingScreen Academic Registration selections", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRouteParams = {};
-    process.env.EXPO_PUBLIC_TERMS_VERSION = '2026-08-11';
+    process.env.EXPO_PUBLIC_TERMS_VERSION = "2026-08-11";
   });
 
-  test('shows the page skeleton until registration data settles', async () => {
+  test("shows the page skeleton until registration data settles", async () => {
     let resolveOptions!: (value: typeof options) => void;
     const api = createApi({
-      getAcademicRegistrationOptions: jest.fn().mockReturnValue(new Promise<typeof options>((resolve) => {
-        resolveOptions = resolve;
-      })),
+      getAcademicRegistrationOptions: jest.fn().mockReturnValue(
+        new Promise<typeof options>((resolve) => {
+          resolveOptions = resolve;
+        })
+      ),
     });
     prepareAuth(api);
 
     const view = await render(<OnboardingScreen />);
 
-    expect(view.getByLabelText('Loading profile...')).toBeTruthy();
-    expect(view.queryByLabelText('Name-Surname')).toBeNull();
+    expect(view.getByLabelText("Loading profile...")).toBeTruthy();
+    expect(view.queryByLabelText("Name-Surname")).toBeNull();
 
     resolveOptions(options);
-    await waitFor(() => expect(view.getByLabelText('Name-Surname')).toBeTruthy());
+    await waitFor(() =>
+      expect(view.getByLabelText("Name-Surname")).toBeTruthy()
+    );
   });
 
-  test('keeps Academic Registration usable when optional collections are unavailable', async () => {
-    mockRouteParams = { step: '3' };
+  test("keeps Academic Registration usable when optional collections are unavailable", async () => {
+    mockRouteParams = { step: "3" };
     const api = createApi({
-      listCertificates: jest.fn().mockRejectedValue(new ApiError(404, 'NOT_FOUND', 'Missing')),
-      listPortfolio: jest.fn().mockRejectedValue(new ApiError(404, 'NOT_FOUND', 'Missing')),
-      listExperience: jest.fn().mockRejectedValue(new ApiError(404, 'NOT_FOUND', 'Missing')),
+      listCertificates: jest
+        .fn()
+        .mockRejectedValue(new ApiError(404, "NOT_FOUND", "Missing")),
+      listPortfolio: jest
+        .fn()
+        .mockRejectedValue(new ApiError(404, "NOT_FOUND", "Missing")),
+      listExperience: jest
+        .fn()
+        .mockRejectedValue(new ApiError(404, "NOT_FOUND", "Missing")),
     });
     prepareAuth(api);
 
     await render(<OnboardingScreen />);
 
     await waitFor(() => {
-      expect(screen.getAllByText('This section is temporarily unavailable.')).toHaveLength(3);
+      expect(
+        screen.getAllByText("This section is temporarily unavailable.")
+      ).toHaveLength(3);
     });
-    expect(screen.getByText('Complete')).toBeTruthy();
-    expect(screen.getByLabelText('+ Add another certificate').props.accessibilityState.disabled).toBe(true);
-    expect(screen.getByLabelText('+ Add more experience').props.accessibilityState.disabled).toBe(true);
-    expect(screen.getByLabelText('+ Add more works').props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByText("Complete")).toBeTruthy();
+    expect(
+      screen.getByLabelText("+ Add another certificate").props
+        .accessibilityState.disabled
+    ).toBe(true);
+    expect(
+      screen.getByLabelText("+ Add more experience").props.accessibilityState
+        .disabled
+    ).toBe(true);
+    expect(
+      screen.getByLabelText("+ Add more works").props.accessibilityState
+        .disabled
+    ).toBe(true);
   });
 
-  test('keeps Department disabled until Faculty is selected and clears it when Faculty changes', async () => {
+  test("keeps Department disabled until Faculty is selected and clears it when Faculty changes", async () => {
     const api = createApi();
     prepareAuth(api);
     await render(<OnboardingScreen />);
 
-    await waitFor(() => expect(screen.getAllByTestId('select-trigger')).toHaveLength(3));
-    const triggers = () => screen.getAllByTestId('select-trigger');
+    await waitFor(() =>
+      expect(screen.getAllByTestId("select-trigger")).toHaveLength(3)
+    );
+    const triggers = () => screen.getAllByTestId("select-trigger");
     expect(triggers()[2].props.accessibilityState.disabled).toBe(true);
 
     await fireEvent.press(triggers()[1]);
-    await fireEvent.press(screen.getByText('Faculty of Engineering'));
+    await fireEvent.press(screen.getByText("Faculty of Engineering"));
     expect(triggers()[2].props.accessibilityState.disabled).toBe(false);
 
     await fireEvent.press(triggers()[2]);
-    await fireEvent.press(screen.getByText('Software Engineering'));
-    expect(triggers()[2].props.accessibilityLabel).toBe('Department: Software Engineering');
+    await fireEvent.press(screen.getByText("Software Engineering"));
+    expect(triggers()[2].props.accessibilityLabel).toBe(
+      "Department: Software Engineering"
+    );
 
     await fireEvent.press(triggers()[1]);
-    await fireEvent.press(screen.getByText('Faculty of Science'));
+    await fireEvent.press(screen.getByText("Faculty of Science"));
 
-    expect(triggers()[2].props.accessibilityLabel).toBe('Department: Enter your department');
+    expect(triggers()[2].props.accessibilityLabel).toBe(
+      "Department: Enter your department"
+    );
     expect(triggers()[2].props.accessibilityState.disabled).toBe(false);
 
     await fireEvent.press(triggers()[2]);
-    expect(screen.getByText('Mathematics')).toBeTruthy();
-    expect(screen.queryByText('Software Engineering')).toBeNull();
+    expect(screen.getByText("Mathematics")).toBeTruthy();
+    expect(screen.queryByText("Software Engineering")).toBeNull();
   });
 
-  test('opens searchable dropdowns for occupation, faculty, and department', async () => {
+  test("opens searchable dropdowns for occupation, faculty, and department", async () => {
     const api = createApi();
     prepareAuth(api);
     await render(<OnboardingScreen />);
 
-    await waitFor(() => expect(screen.getAllByTestId('select-trigger')).toHaveLength(3));
-    const triggers = () => screen.getAllByTestId('select-trigger');
+    await waitFor(() =>
+      expect(screen.getAllByTestId("select-trigger")).toHaveLength(3)
+    );
+    const triggers = () => screen.getAllByTestId("select-trigger");
 
     await fireEvent.press(triggers()[0]);
-    expect(screen.getByTestId('select-search-input').props.placeholder).toBe('Search occupation');
-    expect(screen.getByTestId('select-dropdown')).toBeTruthy();
-    expect(screen.queryByTestId('close-select-button')).toBeNull();
-    await fireEvent.press(screen.getByTestId('select-dropdown-dismiss'));
+    expect(screen.getByTestId("select-search-input").props.placeholder).toBe(
+      "Search occupation"
+    );
+    expect(screen.getByTestId("select-dropdown")).toBeTruthy();
+    expect(screen.queryByTestId("close-select-button")).toBeNull();
+    await fireEvent.press(screen.getByTestId("select-dropdown-dismiss"));
 
     await fireEvent.press(triggers()[1]);
-    expect(screen.getByTestId('select-search-input').props.placeholder).toBe('Search faculty');
-    await fireEvent.press(screen.getByText('Faculty of Engineering'));
+    expect(screen.getByTestId("select-search-input").props.placeholder).toBe(
+      "Search faculty"
+    );
+    await fireEvent.press(screen.getByText("Faculty of Engineering"));
 
     await fireEvent.press(triggers()[2]);
-    expect(screen.getByTestId('select-search-input').props.placeholder).toBe('Search department');
+    expect(screen.getByTestId("select-search-input").props.placeholder).toBe(
+      "Search department"
+    );
   });
 
-  test('submits canonical Occupation and Department IDs', async () => {
+  test("submits canonical Occupation and Department IDs", async () => {
     const api = createApi({
       getAcademicRegistrationStatus: jest.fn().mockResolvedValue({
-        firstName: 'KU',
-        lastName: 'Student',
-        telephone: '0812345678',
-        occupationId: 'occupation-student',
-        studentId: '6712345678',
-        departmentId: 'department-software',
-        termsAcceptedAt: '2026-08-11T00:00:00.000Z',
-        termsVersion: '2026-08-11',
+        firstName: "KU",
+        lastName: "Student",
+        telephone: "0812345678",
+        occupationId: "occupation-student",
+        studentId: "6712345678",
+        departmentId: "department-software",
+        termsAcceptedAt: "2026-08-11T00:00:00.000Z",
+        termsVersion: "2026-08-11",
         completed: false,
       }),
       getProfile: jest.fn().mockResolvedValue({
-        email: 'student@ku.th',
-        firstName: 'KU',
-        lastName: 'Student',
+        email: "student@ku.th",
+        firstName: "KU",
+        lastName: "Student",
         bio: null,
-        telephone: '0812345678',
-        studentId: '6712345678',
+        telephone: "0812345678",
+        studentId: "6712345678",
         academicYear: null,
         department: {
-          id: 'department-software',
-          name: 'Software Engineering',
-          faculty: { name: 'Faculty of Engineering' },
+          id: "department-software",
+          name: "Software Engineering",
+          faculty: { name: "Faculty of Engineering" },
         },
         avatar: null,
       }),
@@ -268,85 +320,144 @@ describe('OnboardingScreen Academic Registration selections', () => {
     prepareAuth(api);
     await render(<OnboardingScreen />);
 
-    await waitFor(() => expect(screen.getByText('Faculty of Engineering')).toBeTruthy());
-    await fireEvent.press(screen.getByText('Next'));
-    await fireEvent.press(screen.getByText('Next'));
-    await fireEvent.press(screen.getByText('Complete'));
+    await waitFor(() =>
+      expect(screen.getByText("Faculty of Engineering")).toBeTruthy()
+    );
+    await fireEvent.press(screen.getByText("Next"));
+    await fireEvent.press(screen.getByText("Next"));
+    await fireEvent.press(screen.getByText("Complete"));
 
     await waitFor(() => {
       expect(api.updateAcademicRegistration).toHaveBeenCalledWith(
         expect.objectContaining({
-          occupationId: 'occupation-student',
-          departmentId: 'department-software',
+          occupationId: "occupation-student",
+          departmentId: "department-software",
         }),
-        expect.objectContaining({ idempotencyKey: expect.stringContaining('academic-registration') }),
+        expect.objectContaining({
+          idempotencyKey: expect.stringContaining("academic-registration"),
+        })
       );
     });
   });
 
-  test('edits an existing Experience without repeating Academic Registration writes', async () => {
-    mockRouteParams = { mode: 'edit' };
+  test("edits an existing Experience without repeating Academic Registration writes", async () => {
+    mockRouteParams = { mode: "edit" };
     const api = createApi({
       getAcademicRegistrationStatus: jest.fn().mockResolvedValue({
-        firstName: 'KU', lastName: 'Student', telephone: '0812345678', occupationId: 'occupation-student', studentId: '6712345678', departmentId: 'department-software', termsAcceptedAt: '2026-08-11T00:00:00.000Z', termsVersion: '2026-08-11', completed: true,
+        firstName: "KU",
+        lastName: "Student",
+        telephone: "0812345678",
+        occupationId: "occupation-student",
+        studentId: "6712345678",
+        departmentId: "department-software",
+        termsAcceptedAt: "2026-08-11T00:00:00.000Z",
+        termsVersion: "2026-08-11",
+        completed: true,
       }),
       getProfile: jest.fn().mockResolvedValue({
-        email: 'student@ku.th', firstName: 'KU', lastName: 'Student', bio: null, telephone: '0812345678', studentId: '6712345678', academicYear: 3, department: { id: 'department-software', name: 'Software Engineering', faculty: { name: 'Faculty of Engineering' } }, avatar: null,
+        email: "student@ku.th",
+        firstName: "KU",
+        lastName: "Student",
+        bio: null,
+        telephone: "0812345678",
+        studentId: "6712345678",
+        academicYear: 3,
+        department: {
+          id: "department-software",
+          name: "Software Engineering",
+          faculty: { name: "Faculty of Engineering" },
+        },
+        avatar: null,
       }),
-      listExperience: jest.fn().mockResolvedValue([{ id: 'experience-id', title: 'Tutor', employmentType: 'Part-time', organization: 'KU', description: 'Helps students', startedAt: '2024-01-01', endedAt: null }]),
+      listExperience: jest.fn().mockResolvedValue([
+        {
+          id: "experience-id",
+          title: "Tutor",
+          employmentType: "Part-time",
+          organization: "KU",
+          description: "Helps students",
+          startedAt: "2024-01-01",
+          endedAt: null,
+        },
+      ]),
       updateExperience: jest.fn().mockResolvedValue(undefined),
     });
     prepareAuth(api);
     await render(<OnboardingScreen />);
 
-    await waitFor(() => expect(screen.getByText('Faculty of Engineering')).toBeTruthy());
-    await fireEvent.press(screen.getByText('Next'));
-    await fireEvent.press(screen.getByText('Next'));
-    await fireEvent.changeText(screen.getByLabelText('Job title'), 'Lead Tutor');
-    await fireEvent.press(screen.getByText('Save Changes'));
+    await waitFor(() =>
+      expect(screen.getByText("Faculty of Engineering")).toBeTruthy()
+    );
+    await fireEvent.press(screen.getByText("Next"));
+    await fireEvent.press(screen.getByText("Next"));
+    await fireEvent.changeText(
+      screen.getByLabelText("Job title"),
+      "Lead Tutor"
+    );
+    await fireEvent.press(screen.getByText("Save Changes"));
 
-    await waitFor(() => expect(api.updateExperience).toHaveBeenCalledWith(
-      'experience-id',
-      expect.objectContaining({ title: 'Lead Tutor' }),
-      expect.objectContaining({ idempotencyKey: expect.stringContaining('experience-0-update') }),
-    ));
+    await waitFor(() =>
+      expect(api.updateExperience).toHaveBeenCalledWith(
+        "experience-id",
+        expect.objectContaining({ title: "Lead Tutor" }),
+        expect.objectContaining({
+          idempotencyKey: expect.stringContaining("experience-0-update"),
+        })
+      )
+    );
     expect(api.updateAcademicRegistration).toHaveBeenCalledWith(
       expect.objectContaining({
-        occupationId: 'occupation-student',
-        studentId: '6712345678',
-        departmentId: 'department-software',
+        occupationId: "occupation-student",
+        studentId: "6712345678",
+        departmentId: "department-software",
       }),
-      expect.objectContaining({ idempotencyKey: expect.stringContaining('academic-registration') }),
+      expect.objectContaining({
+        idempotencyKey: expect.stringContaining("academic-registration"),
+      })
     );
   });
-  test('clears field and dependent validation errors as values change', async () => {
+  test("clears field and dependent validation errors as values change", async () => {
     const api = createApi();
     prepareAuth(api);
     await render(<OnboardingScreen />);
 
-    await waitFor(() => expect(screen.getAllByTestId('select-trigger')).toHaveLength(3));
-    await fireEvent.press(screen.getByText('Next'));
+    await waitFor(() =>
+      expect(screen.getAllByTestId("select-trigger")).toHaveLength(3)
+    );
+    await fireEvent.press(screen.getByText("Next"));
 
-    const requiredErrorCount = screen.getAllByText('This field is required').length;
-    await fireEvent.changeText(screen.getByLabelText('Telephone'), '0812345678');
-    expect(screen.getAllByText('This field is required')).toHaveLength(requiredErrorCount - 1);
+    const requiredErrorCount = screen.getAllByText(
+      "This field is required"
+    ).length;
+    await fireEvent.changeText(
+      screen.getByLabelText("Telephone"),
+      "0812345678"
+    );
+    expect(screen.getAllByText("This field is required")).toHaveLength(
+      requiredErrorCount - 1
+    );
 
-    await fireEvent.press(screen.getAllByTestId('select-trigger')[1]);
-    await fireEvent.press(screen.getByText('Faculty of Engineering'));
-    expect(screen.getAllByText('This field is required')).toHaveLength(requiredErrorCount - 3);
+    await fireEvent.press(screen.getAllByTestId("select-trigger")[1]);
+    await fireEvent.press(screen.getByText("Faculty of Engineering"));
+    expect(screen.getAllByText("This field is required")).toHaveLength(
+      requiredErrorCount - 3
+    );
   });
 
-  test('walks backward through onboarding steps on Android Back', async () => {
-    mockRouteParams = { step: '3' };
+  test("walks backward through onboarding steps on Android Back", async () => {
+    mockRouteParams = { step: "3" };
     const api = createApi();
     prepareAuth(api);
-    const addEventListener = jest.spyOn(BackHandler, 'addEventListener').mockImplementation(() => ({ remove: jest.fn() }) as never);
+    const addEventListener = jest
+      .spyOn(BackHandler, "addEventListener")
+      .mockImplementation(() => ({ remove: jest.fn() }) as never);
 
     await render(<OnboardingScreen />);
-    await waitFor(() => expect(screen.getByText('Step 3 of 3')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Step 3 of 3")).toBeTruthy());
 
     const getBackHandler = () => {
-      const lastCall = addEventListener.mock.calls[addEventListener.mock.calls.length - 1];
+      const lastCall =
+        addEventListener.mock.calls[addEventListener.mock.calls.length - 1];
       return lastCall[1] as () => boolean;
     };
     let backHandler = getBackHandler();
@@ -355,37 +466,41 @@ describe('OnboardingScreen Academic Registration selections', () => {
       handled = backHandler();
     });
     expect(handled).toBe(true);
-    await waitFor(() => expect(screen.getByText('Step 2 of 3')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Step 2 of 3")).toBeTruthy());
     backHandler = getBackHandler();
     handled = false;
     await act(() => {
       handled = backHandler();
     });
     expect(handled).toBe(true);
-    await waitFor(() => expect(screen.getByText('Step 1 of 3')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Step 1 of 3")).toBeTruthy());
 
     addEventListener.mockRestore();
   });
 
-  test('removes the final optional item to an empty section and localizes picker close actions', async () => {
-    mockRouteParams = { step: '3' };
+  test("removes the final optional item to an empty section and localizes picker close actions", async () => {
+    mockRouteParams = { step: "3" };
     const api = createApi();
     prepareAuth(api);
     await render(<OnboardingScreen />);
-    await waitFor(() => expect(screen.getByText('Step 3 of 3')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Step 3 of 3")).toBeTruthy());
 
-    await fireEvent.press(screen.getByText('+ Add another certificate'));
-    expect(screen.getByLabelText('Remove certificate 1')).toBeTruthy();
-    await fireEvent.press(screen.getByLabelText('Remove certificate 1'));
-    expect(screen.queryByLabelText('Remove certificate 1')).toBeNull();
-    expect(screen.getAllByText('Nothing added yet — you can add this later.')).toHaveLength(3);
+    await fireEvent.press(screen.getByText("+ Add another certificate"));
+    expect(screen.getByLabelText("Remove certificate 1")).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText("Remove certificate 1"));
+    expect(screen.queryByLabelText("Remove certificate 1")).toBeNull();
+    expect(
+      screen.getAllByText("Nothing added yet — you can add this later.")
+    ).toHaveLength(3);
 
-    await fireEvent.press(screen.getByText('+ Add more experience'));
-    await fireEvent.press(screen.getByTestId('select-trigger'));
-    expect(screen.getByTestId('close-select-button').props.accessibilityLabel).toBe('Close');
+    await fireEvent.press(screen.getByText("+ Add more experience"));
+    await fireEvent.press(screen.getByTestId("select-trigger"));
+    expect(
+      screen.getByTestId("close-select-button").props.accessibilityLabel
+    ).toBe("Close");
   });
 
-  test('exposes semantic footer buttons and localized saving feedback', async () => {
+  test("exposes semantic footer buttons and localized saving feedback", async () => {
     let resolveSave: () => void = () => undefined;
     const pendingSave = new Promise<void>((resolve) => {
       resolveSave = resolve;
@@ -394,14 +509,19 @@ describe('OnboardingScreen Academic Registration selections', () => {
       updateAcademicRegistration: jest.fn().mockReturnValue(pendingSave),
     });
     prepareAuth(api);
-    mockRouteParams = { step: '3' };
+    mockRouteParams = { step: "3" };
     await render(<OnboardingScreen />);
-    await waitFor(() => expect(screen.getByText('Step 3 of 3')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Step 3 of 3")).toBeTruthy());
 
-    expect(screen.getByRole('button', { name: 'Complete' })).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Complete' }));
-    await waitFor(() => expect(screen.getByText('Saving your registration')).toBeTruthy());
-    expect(screen.getByRole('button', { name: 'Saving...' }).props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByRole("button", { name: "Complete" })).toBeTruthy();
+    await fireEvent.press(screen.getByRole("button", { name: "Complete" }));
+    await waitFor(() =>
+      expect(screen.getByText("Saving your registration")).toBeTruthy()
+    );
+    expect(
+      screen.getByRole("button", { name: "Saving..." }).props.accessibilityState
+        .disabled
+    ).toBe(true);
 
     resolveSave();
     await waitFor(() => expect(api.updateProfile).toHaveBeenCalled());

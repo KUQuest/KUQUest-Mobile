@@ -1,7 +1,10 @@
-import { getAppChromeMetrics, getCreateQuestLayoutMetrics } from '../theme/layout';
+import {
+  getAppChromeMetrics,
+  getCreateQuestLayoutMetrics,
+} from "../theme/layout";
 
-describe('app chrome sizing', () => {
-  it('uses compact dimensions on the connected phone width', () => {
+describe("app chrome sizing", () => {
+  it("uses compact dimensions on the connected phone width", () => {
     expect(getAppChromeMetrics(384)).toEqual({
       isTablet: false,
       tabletNavWidth: 0,
@@ -19,7 +22,7 @@ describe('app chrome sizing', () => {
     });
   });
 
-  it('keeps the larger reference dimensions for wider phone layouts', () => {
+  it("keeps the larger reference dimensions for wider phone layouts", () => {
     expect(getAppChromeMetrics(430)).toEqual({
       isTablet: false,
       tabletNavWidth: 0,
@@ -37,11 +40,14 @@ describe('app chrome sizing', () => {
     });
   });
 
-  it('uses a navigation rail on expanded widths', () => {
-    expect(getAppChromeMetrics(768)).toMatchObject({ isTablet: true, tabletNavWidth: 88 });
+  it("uses a navigation rail on expanded widths", () => {
+    expect(getAppChromeMetrics(768)).toMatchObject({
+      isTablet: true,
+      tabletNavWidth: 88,
+    });
   });
 
-  it('gives navigation labels and their container room to grow with large text', () => {
+  it("gives navigation labels and their container room to grow with large text", () => {
     const metrics = getAppChromeMetrics(384, 2);
 
     expect(metrics.labelFontSize).toBe(22);
@@ -50,7 +56,7 @@ describe('app chrome sizing', () => {
     expect(metrics.navHeight).toBeGreaterThan(60);
   });
 
-  it('keeps the Create Quest form readable on compact and expanded widths', () => {
+  it("keeps the Create Quest form readable on compact and expanded widths", () => {
     expect(getCreateQuestLayoutMetrics(320)).toEqual({
       isExpanded: false,
       horizontalPadding: 16,

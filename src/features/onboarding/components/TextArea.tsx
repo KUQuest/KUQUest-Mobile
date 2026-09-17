@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { cn } from '@/tw/cn';
-import { TextInput as RNTextInput, TextInputProps } from 'react-native';
-import { Text, TextInput, View } from '@/tw';
-import { colors } from '@/theme/colors';
-import styles from '../styles/textAreaStyles';
+import React, { useState } from "react";
+import { cn } from "@/tw/cn";
+import { TextInput as RNTextInput, TextInputProps } from "react-native";
+import { Text, TextInput, View } from "@/tw";
+import { colors } from "@/theme/colors";
+import styles from "../styles/textAreaStyles";
 
 interface TextAreaProps extends TextInputProps {
   label: string;
@@ -13,7 +13,25 @@ interface TextAreaProps extends TextInputProps {
   success?: boolean;
 }
 
-export const TextArea = React.forwardRef<React.ComponentRef<typeof RNTextInput>, TextAreaProps>(function TextArea({ label, error, maxLength, value, success = false, style, accessibilityLabel, editable = true, onFocus, onBlur, ...props }, ref) {
+export const TextArea = React.forwardRef<
+  React.ComponentRef<typeof RNTextInput>,
+  TextAreaProps
+>(function TextArea(
+  {
+    label,
+    error,
+    maxLength,
+    value,
+    success = false,
+    style,
+    accessibilityLabel,
+    editable = true,
+    onFocus,
+    onBlur,
+    ...props
+  },
+  ref
+) {
   const [focused, setFocused] = useState(false);
 
   return (
@@ -21,7 +39,14 @@ export const TextArea = React.forwardRef<React.ComponentRef<typeof RNTextInput>,
       <Text className={styles.label}>{label}</Text>
       <TextInput
         ref={ref}
-        className={cn(styles.input, error ? styles.inputError : null, success ? styles.inputSuccess : null, focused ? styles.inputFocused : null, !editable ? styles.inputDisabled : null)} style={style}
+        className={cn(
+          styles.input,
+          error ? styles.inputError : null,
+          success ? styles.inputSuccess : null,
+          focused ? styles.inputFocused : null,
+          !editable ? styles.inputDisabled : null
+        )}
+        style={style}
         placeholderTextColor={colors.textFaint}
         multiline
         textAlignVertical="top"
@@ -40,10 +65,16 @@ export const TextArea = React.forwardRef<React.ComponentRef<typeof RNTextInput>,
         }}
         {...props}
       />
-      {(error || maxLength !== undefined) ? (
+      {error || maxLength !== undefined ? (
         <View className={styles.footerRow}>
           {error ? (
-            <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" className={styles.errorText}>{error}</Text>
+            <Text
+              accessibilityRole="alert"
+              accessibilityLiveRegion="assertive"
+              className={styles.errorText}
+            >
+              {error}
+            </Text>
           ) : (
             <View className="flex-1" />
           )}
@@ -57,4 +88,4 @@ export const TextArea = React.forwardRef<React.ComponentRef<typeof RNTextInput>,
     </View>
   );
 });
-TextArea.displayName = 'TextArea';
+TextArea.displayName = "TextArea";

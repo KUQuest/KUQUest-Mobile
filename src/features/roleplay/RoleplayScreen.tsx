@@ -138,7 +138,8 @@ const roleplayMessages: Record<"en" | "th", RoleplayMessages> = {
       CANCEL: "Cancel Quest",
     },
     actionDescriptions: {
-      DIRECT_JOIN: "Join directly; the first eligible Worker receives the slot.",
+      DIRECT_JOIN:
+        "Join directly; the first eligible Worker receives the slot.",
       APPLY: "Submit an individual Candidate application.",
       CREATE_TEAM: "Start a Candidate Team for a GROUP Quest.",
       INVITE_WORKER: "Invite another Worker to your forming Team.",
@@ -528,12 +529,10 @@ export default function RoleplayScreen() {
                         <View className={styles.decisionActions}>
                           {canSelect ? (
                             <RoleplayActionButton
-                              description={
-                                getActionDescription(
-                                  messages,
-                                  "SELECT_CANDIDATE"
-                                )
-                              }
+                              description={getActionDescription(
+                                messages,
+                                "SELECT_CANDIDATE"
+                              )}
                               label={getActionLabel(
                                 messages,
                                 "SELECT_CANDIDATE"
@@ -558,12 +557,10 @@ export default function RoleplayScreen() {
                           ) : null}
                           {canReject ? (
                             <RoleplayActionButton
-                              description={
-                                getActionDescription(
-                                  messages,
-                                  "REJECT_CANDIDATE"
-                                )
-                              }
+                              description={getActionDescription(
+                                messages,
+                                "REJECT_CANDIDATE"
+                              )}
                               label={getActionLabel(
                                 messages,
                                 "REJECT_CANDIDATE"
@@ -627,7 +624,8 @@ export default function RoleplayScreen() {
                             {team.id}
                           </Text>
                           <Text className={styles.applicationApplicant}>
-                            {messages.teamMembers}: {team.members
+                            {messages.teamMembers}:{" "}
+                            {team.members
                               .map((member) => member.workerId)
                               .join(", ")}
                           </Text>
@@ -700,7 +698,9 @@ export default function RoleplayScreen() {
 
           {invitations.length > 0 ? (
             <View className={styles.panel} testID="roleplay-invitations">
-              <Text className={styles.sectionTitle}>{messages.invitations}</Text>
+              <Text className={styles.sectionTitle}>
+                {messages.invitations}
+              </Text>
               <Text className={styles.sectionHint}>
                 {messages.invitationDescription}
               </Text>
@@ -789,9 +789,7 @@ export default function RoleplayScreen() {
                         description={getActionDescription(messages, action)}
                         key={action}
                         label={`${getActionLabel(messages, action)} (${workerId})`}
-                        onPress={() =>
-                          handleAction({ type: action, workerId })
-                        }
+                        onPress={() => handleAction({ type: action, workerId })}
                         testID={actionTestId({ type: action, workerId })}
                         variant={actionVariant(action)}
                       />

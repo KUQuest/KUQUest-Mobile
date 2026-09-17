@@ -331,12 +331,19 @@ export default function Profile() {
       noRatingLabel={messages.noRating}
       accessibilityLabel={messages.statisticsLabel}
       errorText={
-        content.sectionUnavailable.reputation || content.sectionErrors.reputation
+        content.sectionUnavailable.reputation ||
+        content.sectionErrors.reputation
           ? messages.ratingUnavailable
           : undefined
       }
-      retryLabel={content.sectionUnavailable.reputation ? undefined : messages.retry}
-      onRetry={content.sectionUnavailable.reputation ? undefined : () => setLoadAttempt((attempt) => attempt + 1)}
+      retryLabel={
+        content.sectionUnavailable.reputation ? undefined : messages.retry
+      }
+      onRetry={
+        content.sectionUnavailable.reputation
+          ? undefined
+          : () => setLoadAttempt((attempt) => attempt + 1)
+      }
     />
   );
   const profileTabs = (
@@ -382,12 +389,19 @@ export default function Profile() {
           noMatchingReviewsText={messages.noMatchingReviews}
           showAllLabel={messages.showAllReviews}
           ratingErrorText={
-            content.sectionUnavailable.reputation || content.sectionErrors.reputation
+            content.sectionUnavailable.reputation ||
+            content.sectionErrors.reputation
               ? messages.ratingUnavailable
               : undefined
           }
-          ratingRetryLabel={content.sectionUnavailable.reputation ? undefined : messages.retry}
-          onRatingRetry={content.sectionUnavailable.reputation ? undefined : () => setLoadAttempt((attempt) => attempt + 1)}
+          ratingRetryLabel={
+            content.sectionUnavailable.reputation ? undefined : messages.retry
+          }
+          onRatingRetry={
+            content.sectionUnavailable.reputation
+              ? undefined
+              : () => setLoadAttempt((attempt) => attempt + 1)
+          }
           accessibilityLabels={{
             ratingSummaryLabel: messages.ratingSummaryLabel,
             ratingDistributionLabel: messages.ratingDistributionLabel,
@@ -405,8 +419,14 @@ export default function Profile() {
               ? messages.sectionUnavailable
               : undefined
           }
-          retryLabel={content.sectionUnavailable.reviews ? undefined : messages.retry}
-          onRetry={content.sectionUnavailable.reviews ? undefined : () => setLoadAttempt((attempt) => attempt + 1)}
+          retryLabel={
+            content.sectionUnavailable.reviews ? undefined : messages.retry
+          }
+          onRetry={
+            content.sectionUnavailable.reviews
+              ? undefined
+              : () => setLoadAttempt((attempt) => attempt + 1)
+          }
         />
       ) : (
         <ScrollView
@@ -457,12 +477,21 @@ export default function Profile() {
                 emptyActionLabel={messages.manageInSettings}
                 onEditPress={openSettings}
                 errorText={
-                  content.sectionUnavailable.experience || content.sectionErrors.experience
+                  content.sectionUnavailable.experience ||
+                  content.sectionErrors.experience
                     ? messages.sectionUnavailable
                     : undefined
                 }
-                retryLabel={content.sectionUnavailable.experience ? undefined : messages.retry}
-                onRetry={content.sectionUnavailable.experience ? undefined : () => setLoadAttempt((attempt) => attempt + 1)}
+                retryLabel={
+                  content.sectionUnavailable.experience
+                    ? undefined
+                    : messages.retry
+                }
+                onRetry={
+                  content.sectionUnavailable.experience
+                    ? undefined
+                    : () => setLoadAttempt((attempt) => attempt + 1)
+                }
               />
               <MyWork
                 works={content.works}
@@ -478,12 +507,19 @@ export default function Profile() {
                   workImageLabel: messages.workImageLabel,
                 }}
                 errorText={
-                  content.sectionUnavailable.works || content.sectionErrors.works
+                  content.sectionUnavailable.works ||
+                  content.sectionErrors.works
                     ? messages.sectionUnavailable
                     : undefined
                 }
-                retryLabel={content.sectionUnavailable.works ? undefined : messages.retry}
-                onRetry={content.sectionUnavailable.works ? undefined : () => setLoadAttempt((attempt) => attempt + 1)}
+                retryLabel={
+                  content.sectionUnavailable.works ? undefined : messages.retry
+                }
+                onRetry={
+                  content.sectionUnavailable.works
+                    ? undefined
+                    : () => setLoadAttempt((attempt) => attempt + 1)
+                }
               />
               <Certificates
                 certificates={content.certificates}
@@ -500,12 +536,21 @@ export default function Profile() {
                   certificateImageLabel: messages.certificateImageLabel,
                 }}
                 errorText={
-                  content.sectionUnavailable.certificates || content.sectionErrors.certificates
+                  content.sectionUnavailable.certificates ||
+                  content.sectionErrors.certificates
                     ? messages.sectionUnavailable
                     : undefined
                 }
-                retryLabel={content.sectionUnavailable.certificates ? undefined : messages.retry}
-                onRetry={content.sectionUnavailable.certificates ? undefined : () => setLoadAttempt((attempt) => attempt + 1)}
+                retryLabel={
+                  content.sectionUnavailable.certificates
+                    ? undefined
+                    : messages.retry
+                }
+                onRetry={
+                  content.sectionUnavailable.certificates
+                    ? undefined
+                    : () => setLoadAttempt((attempt) => attempt + 1)
+                }
               />
             </>
           ) : null}

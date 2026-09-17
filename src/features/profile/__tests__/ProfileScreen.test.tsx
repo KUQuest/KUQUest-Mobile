@@ -180,7 +180,9 @@ describe("Student Profile screen", () => {
     const view = await render(<ProfileScreen />);
 
     await waitFor(() =>
-      expect(view.getByText("Profile Rating is temporarily unavailable.")).toBeTruthy()
+      expect(
+        view.getByText("Profile Rating is temporarily unavailable.")
+      ).toBeTruthy()
     );
     expect(view.queryByLabelText("Try again")).toBeNull();
   });

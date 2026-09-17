@@ -1,12 +1,12 @@
-import React from 'react';
-import { Modal } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X } from 'lucide-react-native';
+import React from "react";
+import { Modal } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { X } from "lucide-react-native";
 
-import { Pressable, Text, View } from '@/tw';
-import { colors } from '@/theme/colors';
-import { spacing } from '@/theme/spacing';
-import styles from './groupQuestStyles';
+import { Pressable, Text, View } from "@/tw";
+import { colors } from "@/theme/colors";
+import { spacing } from "@/theme/spacing";
+import styles from "./groupQuestStyles";
 
 export interface QuestBottomSheetProps {
   visible: boolean;
@@ -38,29 +38,51 @@ export function QuestBottomSheet({
   fullScreen = false,
 }: QuestBottomSheetProps) {
   const insets = useSafeAreaInsets();
-  const paddingBottom = Math.max(spacing.md, (bottomInset ?? insets.bottom) + spacing.sm);
+  const paddingBottom = Math.max(
+    spacing.md,
+    (bottomInset ?? insets.bottom) + spacing.sm
+  );
 
   return (
-    <Modal animationType="slide" onRequestClose={onClose} transparent={!fullScreen} visible={visible}>
-      <View className={fullScreen ? styles.sheetOverlayFullScreen : styles.sheetOverlay}>
-        {fullScreen ? null : <Pressable
-          accessibilityLabel={closeLabel}
-          accessibilityRole="button"
-          className={styles.sheetBackdrop}
-          onPress={onClose}
-          testID={`${testID}-backdrop`}
-        />}
+    <Modal
+      animationType="slide"
+      onRequestClose={onClose}
+      transparent={!fullScreen}
+      visible={visible}
+    >
+      <View
+        className={
+          fullScreen ? styles.sheetOverlayFullScreen : styles.sheetOverlay
+        }
+      >
+        {fullScreen ? null : (
+          <Pressable
+            accessibilityLabel={closeLabel}
+            accessibilityRole="button"
+            className={styles.sheetBackdrop}
+            onPress={onClose}
+            testID={`${testID}-backdrop`}
+          />
+        )}
         <View
           accessibilityViewIsModal
           className={fullScreen ? styles.sheetFullScreen : styles.sheet}
-          style={{ flex: fullScreen ? 1 : undefined, paddingBottom, paddingTop: fullScreen ? insets.top + spacing.sm : undefined }}
+          style={{
+            flex: fullScreen ? 1 : undefined,
+            paddingBottom,
+            paddingTop: fullScreen ? insets.top + spacing.sm : undefined,
+          }}
           testID={testID}
         >
           {fullScreen ? null : <View className={styles.sheetHandle} />}
           <View className={styles.sheetHeader}>
             <View className={styles.sheetHeading}>
-              <Text accessibilityRole="header" className={styles.sheetTitle}>{title}</Text>
-              {subtitle ? <Text className={styles.sheetSubtitle}>{subtitle}</Text> : null}
+              <Text accessibilityRole="header" className={styles.sheetTitle}>
+                {title}
+              </Text>
+              {subtitle ? (
+                <Text className={styles.sheetSubtitle}>{subtitle}</Text>
+              ) : null}
             </View>
             <Pressable
               accessibilityLabel={closeLabel}
@@ -79,4 +101,4 @@ export function QuestBottomSheet({
   );
 }
 
-QuestBottomSheet.displayName = 'QuestBottomSheet';
+QuestBottomSheet.displayName = "QuestBottomSheet";

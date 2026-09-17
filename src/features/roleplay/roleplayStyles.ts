@@ -24,8 +24,10 @@ const styles = {
     "items-center bg-ku-surface-muted border-ku-border-subtle rounded-[14px] border flex-row min-h-[52px] p-[12px]",
   scenarioOptionSelected: "bg-ku-surface-success border-ku-border-success",
   scenarioOptionCopy: "flex-1 min-w-0 pr-[8px]",
-  scenarioOptionLabel: "text-ku-text-strong font-ku-semibold text-ku-body-small",
-  scenarioOptionMeta: "text-ku-text-secondary font-ku-regular text-ku-caption mt-[2px]",
+  scenarioOptionLabel:
+    "text-ku-text-strong font-ku-semibold text-ku-body-small",
+  scenarioOptionMeta:
+    "text-ku-text-secondary font-ku-regular text-ku-caption mt-[2px]",
   scenarioLabel:
     "text-ku-text-muted font-ku-semibold text-ku-caption mt-[14px]",
   scenarioName:
@@ -62,7 +64,8 @@ const styles = {
     "text-ku-text-strong font-ku-semibold text-ku-body-small shrink",
   personaOptionMeta:
     "text-ku-text-secondary font-ku-regular text-ku-caption mt-[2px] shrink",
-  personaOptionIndicator: "items-center justify-center shrink-0 h-[24px] w-[24px]",
+  personaOptionIndicator:
+    "items-center justify-center shrink-0 h-[24px] w-[24px]",
   applicationActions: "flex-row gap-[8px] mt-[10px]",
   decisionActions: "flex-row gap-[10px] mt-[12px]",
   actionList: "gap-[8px] mt-[12px]",

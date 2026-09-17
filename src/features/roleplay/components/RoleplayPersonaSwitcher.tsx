@@ -67,9 +67,7 @@ export function RoleplayPersonaSwitcher({
                 >
                   {label}
                 </Text>
-                <Text className={styles.personaOptionMeta}>
-                  {persona.id}
-                </Text>
+                <Text className={styles.personaOptionMeta}>{persona.id}</Text>
               </View>
               <View className={styles.personaOptionIndicator}>
                 {selected ? (
