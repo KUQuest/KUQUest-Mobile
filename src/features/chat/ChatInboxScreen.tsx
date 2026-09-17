@@ -26,7 +26,7 @@ import { spacing } from "@/theme/spacing";
 import { getChatRouteParams } from "./chatData";
 import type { ChatConversation } from "./chatTypes";
 import styles from "./chatStyles";
-import { chatApi, serverConversationToChatConversation } from "@/api/ChatApi";
+import { conversationModule } from "./conversationModule";
 
 function localizedText(
   value: Record<"en" | "th", string>,
@@ -204,14 +204,13 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
     let active = true;
     const loadConversations = async () => {
       try {
-        const liveData = await chatApi.listConversations();
+        const liveConversations =
+          await conversationModule.listConversations(resolvedViewerId);
         if (active) {
           setLoadState({
             viewerId: resolvedViewerId,
             status: "settled",
-            conversations: liveData.items.map((conversation) =>
-              serverConversationToChatConversation(conversation)
-            ),
+            conversations: liveConversations,
           });
         }
       } catch {

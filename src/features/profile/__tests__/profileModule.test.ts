@@ -261,6 +261,23 @@ describe("profileModule", () => {
         new AuthError("SESSION_EXPIRED")
       );
     });
+
+    it("propagates a non-401 failure on the required profile endpoint", async () => {
+      mockedAuthService.getSession.mockResolvedValue({
+        user: { name: "Jane Doe", image: null },
+      });
+
+      const mockStudentApi = {
+        getProfile: jest
+          .fn()
+          .mockRejectedValue(new ApiError(500, "SERVER_ERROR", "Profile down")),
+      };
+      mockedAuthService.getStudentApi.mockResolvedValue(mockStudentApi);
+
+      await expect(profileModule.loadProfile({ locale: "en" })).rejects.toThrow(
+        new ApiError(500, "SERVER_ERROR", "Profile down")
+      );
+    });
   });
 
   describe("Academic Registration Draft Mapping", () => {

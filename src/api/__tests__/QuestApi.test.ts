@@ -383,4 +383,32 @@ describe("QuestApi", () => {
       })
     );
   });
+
+  it("parses live tags response correctly", async () => {
+    const data = {
+      success: true,
+      data: [
+        { id: "tag-1", name: "Content" },
+        { id: "tag-2", name: "Frontend" },
+      ],
+    };
+
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => JSON.stringify(data),
+    });
+
+    const tags = await api.listTags();
+
+    expect(tags).toEqual([
+      { id: "tag-1", name: "Content" },
+      { id: "tag-2", name: "Frontend" },
+    ]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v1/tags",
+      expect.objectContaining({ method: "GET" })
+    );
+  });
 });

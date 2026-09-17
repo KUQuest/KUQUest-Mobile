@@ -51,8 +51,11 @@ import {
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { tagApi, type TagItem } from "@/api/TagApi";
-import { createQuestIdempotencyKey } from "@/api/QuestApi";
+import {
+  createQuestIdempotencyKey,
+  questApi,
+  type TagItem,
+} from "@/api/QuestApi";
 import { StatusBar } from "expo-status-bar";
 
 import { Button } from "@/components/ui/Button";
@@ -74,12 +77,15 @@ import {
   formatDraftReward,
   getHeadcountForParticipation,
   getQuestPublishCheck,
-  getRewardValidationError,
   getSchedulePickerValue,
   getScheduleTimeValue,
   initialDraft,
   isQuestDraftDirty,
+  MAX_REWARD_THB,
+  TIME_PATTERN,
+  toDateValue,
   toQuestV2Payload,
+  validateQuestDraftStep,
   type QuestDraft,
 } from "./createQuestModel";
 import {
@@ -119,7 +125,6 @@ type ReviewActionButtonProps = {
   onPress: () => void;
 };
 
-const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 const QUEST_DETAIL_FIELDS = new Set([
   "title",
   "tag",
@@ -157,19 +162,6 @@ function formatDateTime(
 ): string {
   if (!dateValue || !TIME_PATTERN.test(timeValue)) return emptyLabel;
   return `${formatDate(dateValue, locale, emptyLabel)} · ${timeValue}`;
-}
-
-function getDateTimeValue(dateValue: string, timeValue: string): number | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue) || !TIME_PATTERN.test(timeValue))
-    return null;
-  const date = new Date(`${dateValue}T${timeValue}:00`);
-  return Number.isNaN(date.getTime()) ? null : date.getTime();
-}
-
-function toDateValue(date: Date): string {
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${date.getFullYear()}-${month}-${day}`;
 }
 
 function getDatePickerValue(value: string): Date {
@@ -1026,7 +1018,7 @@ export default function CreateQuestScreen({
 
   useEffect(() => {
     let mounted = true;
-    void tagApi
+    void questApi
       .listTags()
       .then((tags) => {
         if (mounted && tags.length > 0) setLiveTags(tags);
@@ -1461,48 +1453,31 @@ export default function CreateQuestScreen({
   }, [focusInvalidField, logisticsExpanded, pendingInvalidField, step]);
 
   const validateStep = (currentStep: Step): boolean => {
+    const findings = validateQuestDraftStep(draft, currentStep, new Date());
+    const codeMessages: Record<string, string> = {
+      "title:required": messages.titleError,
+      "tag:required": messages.questTagError,
+      "description:required": messages.descriptionError,
+      "conditions:required": messages.completionCriteriaError,
+      "startDate:required": messages.startDateError,
+      "startDate:startDatePast": messages.startDatePastError,
+      "deadline:required": messages.deadlineError,
+      "deadline:deadlineOrder": messages.deadlineOrderError,
+      "startTime:required": messages.startTimeError,
+      "startTime:format": messages.startTimeError,
+      "endTime:required": messages.endTimeError,
+      "endTime:format": messages.endTimeError,
+      "endTime:timeOrder": messages.timeOrderError,
+      "location:required": messages.locationError,
+      "headcount:required": messages.headcountError,
+      "headcount:bounds": messages.headcountError,
+      "wage:empty": messages.rewardEmptyError,
+      "wage:format": messages.rewardFormatError,
+      "wage:bounds": messages.rewardBoundsError(MAX_REWARD_THB),
+    };
     const nextErrors: Record<string, string> = {};
-    if (currentStep === 1) {
-      if (!draft.title.trim()) nextErrors.title = messages.titleError;
-      if (!draft.tag) nextErrors.tag = messages.questTagError;
-      if (!draft.description.trim())
-        nextErrors.description = messages.descriptionError;
-      if (!draft.conditions.trim())
-        nextErrors.conditions = messages.completionCriteriaError;
-    }
-    if (currentStep === 2) {
-      const today = toDateValue(new Date());
-      if (!draft.startDate) nextErrors.startDate = messages.startDateError;
-      else if (draft.startDate < today)
-        nextErrors.startDate = messages.startDatePastError;
-      if (!draft.deadline) nextErrors.deadline = messages.deadlineError;
-      if (draft.startDate && draft.deadline && draft.deadline < draft.startDate)
-        nextErrors.deadline = messages.deadlineOrderError;
-      if (!draft.startTime || !TIME_PATTERN.test(draft.startTime))
-        nextErrors.startTime = messages.startTimeError;
-      if (!draft.endTime || !TIME_PATTERN.test(draft.endTime))
-        nextErrors.endTime = messages.endTimeError;
-      const startDateTime = getDateTimeValue(draft.startDate, draft.startTime);
-      const endDateTime = getDateTimeValue(draft.deadline, draft.endTime);
-      if (
-        startDateTime !== null &&
-        endDateTime !== null &&
-        endDateTime <= startDateTime
-      )
-        nextErrors.endTime = messages.timeOrderError;
-      if (draft.locationMode === "ON_CAMPUS" && !draft.location.trim())
-        nextErrors.location = messages.locationError;
-      if (
-        draft.participation === "GROUP" &&
-        (!draft.headcount.trim() || Number(draft.headcount) < 1)
-      )
-        nextErrors.headcount = messages.headcountError;
-      const rewardError = getRewardValidationError(draft.wage, {
-        empty: messages.rewardEmptyError,
-        format: messages.rewardFormatError,
-        bounds: messages.rewardBoundsError,
-      });
-      if (rewardError) nextErrors.wage = rewardError;
+    for (const { field, code } of findings) {
+      nextErrors[field] = codeMessages[`${field}:${code}`];
     }
 
     setErrors(nextErrors);

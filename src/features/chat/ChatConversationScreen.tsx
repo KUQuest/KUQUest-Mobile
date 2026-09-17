@@ -30,11 +30,7 @@ import {
   LoadingSkeleton,
   SkeletonBlock,
 } from "@/components/ui/LoadingSkeleton";
-import {
-  chatApi,
-  serverConversationToChatConversation,
-  serverMessageToChatMessage,
-} from "@/api/ChatApi";
+import { conversationModule } from "./conversationModule";
 import { useLocale } from "@/locales/LocaleProvider";
 import { chatMessages, type ChatMessages } from "@/locales/chatMessages";
 import { colors } from "@/theme/colors";
@@ -323,6 +319,7 @@ type ConversationLoadState = {
   status: "pending" | "settled" | "error";
   conversation: ChatConversation | null;
   messages: ChatMessage[];
+  canPost: boolean;
 };
 
 export default function ChatConversationScreen() {
@@ -340,6 +337,7 @@ export default function ChatConversationScreen() {
     status: conversationId && viewerId ? "pending" : "settled",
     conversation: null,
     messages: [],
+    canPost: false,
   }));
   const loadStateForRoute =
     loadState.key === conversationRouteKey
@@ -352,6 +350,7 @@ export default function ChatConversationScreen() {
               : ("settled" as const),
           conversation: null,
           messages: [],
+          canPost: false,
         };
 
   useEffect(() => {
@@ -364,38 +363,23 @@ export default function ChatConversationScreen() {
             status: "settled",
             conversation: null,
             messages: [],
+            canPost: false,
           });
         }
         return;
       }
       try {
-        const conversationData = await chatApi.listConversations();
-        const serverConversation = conversationData.items.find(
-          (item) => item.id === conversationId
+        const loaded = await conversationModule.loadConversation(
+          conversationId,
+          viewerId
         );
-        if (!serverConversation) {
-          if (active) {
-            setLoadState({
-              key: conversationRouteKey,
-              status: "settled",
-              conversation: null,
-              messages: [],
-            });
-          }
-          return;
-        }
-        const messageData = await chatApi.getMessages(conversationId);
         if (active) {
           setLoadState({
             key: conversationRouteKey,
             status: "settled",
-            conversation: serverConversationToChatConversation(
-              serverConversation,
-              viewerId
-            ),
-            messages: messageData.items.map((message) =>
-              serverMessageToChatMessage(message, viewerId)
-            ),
+            conversation: loaded.conversation,
+            messages: loaded.messages,
+            canPost: loaded.canPost,
           });
         }
       } catch {
@@ -405,6 +389,7 @@ export default function ChatConversationScreen() {
             status: "error",
             conversation: null,
             messages: [],
+            canPost: false,
           });
         }
       }
@@ -506,6 +491,7 @@ export default function ChatConversationScreen() {
                 status: "pending",
                 conversation: null,
                 messages: [],
+                canPost: false,
               });
               setConversationLoadAttempt((attempt) => attempt + 1);
             }}
@@ -545,11 +531,7 @@ export default function ChatConversationScreen() {
     conversation.participantRole === "owner"
       ? messages.questOwner
       : messages.questMember;
-  const canWrite = Boolean(
-    conversation.capability?.canRead &&
-    conversation.capability.canWrite &&
-    !conversation.capability.readOnly
-  );
+  const canWrite = loadStateForRoute.canPost;
   const readOnlyDescription =
     conversation.capability?.readOnlyReason === "TERMINAL"
       ? messages.conversationReadOnlyTerminal
@@ -577,15 +559,12 @@ export default function ChatConversationScreen() {
     if (!canWrite || !viewerId) return;
     const value = draft.trim();
     if (!value) return;
-    void chatApi
-      .sendMessage(conversation.id, value)
+    void conversationModule
+      .sendMessage(conversation.id, value, viewerId)
       .then((sentMessage) => {
         setLoadState((current) => ({
           ...current,
-          messages: [
-            ...current.messages,
-            serverMessageToChatMessage(sentMessage, viewerId),
-          ],
+          messages: [...current.messages, sentMessage],
         }));
         setDraft("");
       })
