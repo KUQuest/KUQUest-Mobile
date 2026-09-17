@@ -20,6 +20,9 @@ jest.mock("expo-router", () => ({
   useFocusEffect: (effect: () => (() => void) | void) =>
     jest.requireActual("react").useEffect(effect, []),
 }));
+jest.mock("@/locales/LocaleProvider", () => ({
+  useLocale: () => ({ locale: "en" }),
+}));
 
 jest.mock("@/components/navigation/NavigationVisibilityContext", () => ({
   useNavigationVisibility: () => ({ handleScroll: jest.fn() }),

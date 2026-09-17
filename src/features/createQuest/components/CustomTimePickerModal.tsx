@@ -53,29 +53,38 @@ export default function CustomTimePickerModal({
 
   useEffect(() => {
     if (!visible) return;
-    setActiveTab("hour");
 
-    if (initialTime && /^([01]\d|2[0-3]):[0-5]\d$/.test(initialTime)) {
-      const [h, m] = initialTime.split(":").map(Number);
-      setHour(h);
-      setMinute(m);
-      return;
-    }
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (!active) return;
+      setActiveTab("hour");
 
-    if (
-      field === "end" &&
-      startTime &&
-      /^([01]\d|2[0-3]):[0-5]\d$/.test(startTime)
-    ) {
-      const [sh, sm] = startTime.split(":").map(Number);
-      setHour((sh + 2) % 24);
-      setMinute(sm);
-      return;
-    }
+      if (initialTime && /^([01]\d|2[0-3]):[0-5]\d$/.test(initialTime)) {
+        const [h, m] = initialTime.split(":").map(Number);
+        setHour(h);
+        setMinute(m);
+        return;
+      }
 
-    const { hours, minutes } = getNearestQuarterHour();
-    setHour(Number(hours));
-    setMinute(Number(minutes));
+      if (
+        field === "end" &&
+        startTime &&
+        /^([01]\d|2[0-3]):[0-5]\d$/.test(startTime)
+      ) {
+        const [sh, sm] = startTime.split(":").map(Number);
+        setHour((sh + 2) % 24);
+        setMinute(sm);
+        return;
+      }
+
+      const { hours, minutes } = getNearestQuarterHour();
+      setHour(Number(hours));
+      setMinute(Number(minutes));
+    });
+
+    return () => {
+      active = false;
+    };
   }, [visible, initialTime, field, startTime]);
 
   const formattedTime = useMemo(() => {

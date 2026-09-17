@@ -243,25 +243,37 @@ export function InlineImageAttachment({
   onFilePress: () => void;
   onImagePress: (url: string, name: string) => void;
 }) {
-  const [resolvedUrl, setResolvedUrl] = useState<string | null>(() =>
-    attachmentLinkCache.get(attachment.id)
-  );
-  const [loading, setLoading] = useState<boolean>(
-    () => !attachmentLinkCache.get(attachment.id)
-  );
-  const [error, setError] = useState<boolean>(false);
+  const attachmentRequestKey = [
+    isCandidateInquiry ? "candidate" : "work",
+    conversationId,
+    attachment.id,
+  ].join(":");
+  const cachedUrl = attachmentLinkCache.get(attachment.id);
+  const [resolution, setResolution] = useState<{
+    requestKey: string;
+    url: string | null;
+    error: boolean;
+  }>(() => ({
+    requestKey: attachmentRequestKey,
+    url: cachedUrl,
+    error: false,
+  }));
+  const hasCurrentResolution = resolution.requestKey === attachmentRequestKey;
+  const resolvedUrl =
+    cachedUrl ?? (hasCurrentResolution ? resolution.url : null);
+  const loading =
+    !cachedUrl &&
+    (!hasCurrentResolution || (!resolution.error && !resolution.url));
+  const error = hasCurrentResolution && !cachedUrl && resolution.error;
 
   useEffect(() => {
     let active = true;
     const cached = attachmentLinkCache.get(attachment.id);
     if (cached) {
-      setResolvedUrl(cached);
-      setLoading(false);
-      return;
+      return () => {
+        active = false;
+      };
     }
-
-    setLoading(true);
-    setError(false);
 
     const fetcher = async () => {
       if (isCandidateInquiry) {
@@ -277,21 +289,27 @@ export function InlineImageAttachment({
       .getOrFetch(attachment.id, fetcher)
       .then((url) => {
         if (active) {
-          setResolvedUrl(url);
-          setLoading(false);
+          setResolution({
+            requestKey: attachmentRequestKey,
+            url,
+            error: false,
+          });
         }
       })
       .catch(() => {
         if (active) {
-          setError(true);
-          setLoading(false);
+          setResolution({
+            requestKey: attachmentRequestKey,
+            url: null,
+            error: true,
+          });
         }
       });
 
     return () => {
       active = false;
     };
-  }, [attachment.id, conversationId, isCandidateInquiry]);
+  }, [attachment.id, attachmentRequestKey, conversationId, isCandidateInquiry]);
 
   if (loading || error || !resolvedUrl) {
     return (

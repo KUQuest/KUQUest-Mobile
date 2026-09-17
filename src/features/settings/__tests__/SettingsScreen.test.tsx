@@ -7,6 +7,8 @@ import { authService } from "../../auth/AuthService";
 const mockBack = jest.fn();
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
+const mockSetLocale = jest.fn();
+const mockSetAppearance = jest.fn();
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({ back: mockBack, push: mockPush, replace: mockReplace }),
@@ -17,7 +19,14 @@ jest.mock("../../auth/AuthService", () => ({
 }));
 
 jest.mock("../../../locales/LocaleProvider", () => ({
-  useLocale: () => ({ locale: "en" }),
+  useLocale: () => ({ locale: "en", setLocale: mockSetLocale }),
+}));
+
+jest.mock("../../../theme/AppearanceProvider", () => ({
+  useAppearance: () => ({
+    appearance: "light",
+    setAppearance: mockSetAppearance,
+  }),
 }));
 
 describe("Settings screen", () => {
@@ -42,6 +51,29 @@ describe("Settings screen", () => {
     ).toBeGreaterThanOrEqual(24);
     expect(view.getByTestId("settings-content")).toBeTruthy();
     expect(view.queryByTestId("settings-report")).toBeNull();
+  });
+
+  it("renders the language switch and selects Thai", async () => {
+    const view = await render(<SettingsScreen />);
+    const toggle = view.getByTestId("settings-language");
+
+    expect(view.getByTestId("settings-language-section")).toBeTruthy();
+    expect(toggle.props.accessibilityState.checked).toBe(true);
+
+    fireEvent.press(toggle);
+
+    expect(mockSetLocale).toHaveBeenCalledWith("th");
+  });
+
+  it("renders the appearance switch and selects dark mode", async () => {
+    const view = await render(<SettingsScreen />);
+    const toggle = view.getByTestId("settings-appearance");
+
+    expect(toggle.props.accessibilityState.checked).toBe(false);
+
+    fireEvent.press(toggle);
+
+    expect(mockSetAppearance).toHaveBeenCalledWith("dark");
   });
 
   it("renders a red logout button at the bottom and returns to the start screen", async () => {

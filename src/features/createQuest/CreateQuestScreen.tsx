@@ -1170,8 +1170,12 @@ export default function CreateQuestScreen({
   }, []);
 
   useEffect(() => {
-    loadTags();
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (active) loadTags();
+    });
     return () => {
+      active = false;
       clearTimeout(tagSearchTimerRef.current);
     };
   }, [loadTags]);

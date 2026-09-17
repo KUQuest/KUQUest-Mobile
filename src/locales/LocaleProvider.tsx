@@ -1,34 +1,70 @@
-import { AppState, AppStateStatus } from 'react-native';
-import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import { getLocales } from 'expo-localization';
+import * as SecureStore from "expo-secure-store";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
-export type SupportedLocale = 'th' | 'en';
+export type SupportedLocale = "th" | "en";
 
-export function getDeviceLocale(): SupportedLocale {
-  return getLocales()[0]?.languageCode === 'th' ? 'th' : 'en';
+export const DEFAULT_LOCALE: SupportedLocale = "th";
+export const LOCALE_STORAGE_KEY = "kuquest_locale";
+
+function isSupportedLocale(value: string | null): value is SupportedLocale {
+  return value === "th" || value === "en";
 }
 
 interface LocaleContextValue {
   locale: SupportedLocale;
+  setLocale: (locale: SupportedLocale) => void;
 }
 
-const LocaleContext = createContext<LocaleContextValue>({ locale: getDeviceLocale() });
+const LocaleContext = createContext<LocaleContextValue>({
+  locale: DEFAULT_LOCALE,
+  setLocale: () => undefined,
+});
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<SupportedLocale>(getDeviceLocale);
+  const [locale, setLocaleState] = useState<SupportedLocale>(DEFAULT_LOCALE);
+  const hasManualSelection = useRef(false);
 
   useEffect(() => {
-    const handleAppStateChange = (nextState: AppStateStatus) => {
-      if (nextState === 'active') {
-        setLocale(getDeviceLocale());
-      }
-    };
+    let mounted = true;
 
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-    return () => subscription.remove();
+    void SecureStore.getItemAsync(LOCALE_STORAGE_KEY)
+      .then((storedLocale) => {
+        if (
+          mounted &&
+          !hasManualSelection.current &&
+          isSupportedLocale(storedLocale)
+        ) {
+          setLocaleState(storedLocale);
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  return <LocaleContext.Provider value={{ locale }}>{children}</LocaleContext.Provider>;
+  const setLocale = useCallback((nextLocale: SupportedLocale) => {
+    hasManualSelection.current = true;
+    setLocaleState(nextLocale);
+    void SecureStore.setItemAsync(LOCALE_STORAGE_KEY, nextLocale).catch(
+      () => undefined
+    );
+  }, []);
+
+  return (
+    <LocaleContext.Provider value={{ locale, setLocale }}>
+      {children}
+    </LocaleContext.Provider>
+  );
 }
 
 export function useLocale(): LocaleContextValue {

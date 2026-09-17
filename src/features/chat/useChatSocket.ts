@@ -73,25 +73,18 @@ export function useChatSocket({
   enabled,
   onEvent,
 }: UseChatSocketOptions): UseChatSocketResult {
+  const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
   const [status, setStatus] = useState<ChatSocketStatus>("idle");
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const onEventRef = useRef(onEvent);
+  const socketActive = Boolean(apiBaseUrl && enabled && conversationId);
 
   useEffect(() => {
     onEventRef.current = onEvent;
   }, [onEvent]);
 
   useEffect(() => {
-    const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
-    if (!apiBaseUrl) {
-      setStatus("unavailable");
-      setReconnectAttempt(0);
-      return;
-    }
-
-    if (!enabled || !conversationId) {
-      setStatus("idle");
-      setReconnectAttempt(0);
+    if (!apiBaseUrl || !enabled || !conversationId) {
       return;
     }
 
@@ -154,7 +147,16 @@ export function useChatSocket({
       clearReconnectTimer();
       socket?.close();
     };
-  }, [conversationId, conversationType, enabled]);
+  }, [apiBaseUrl, conversationId, conversationType, enabled]);
 
-  return { status, reconnectAttempt };
+  const effectiveStatus = !apiBaseUrl
+    ? "unavailable"
+    : !socketActive
+      ? "idle"
+      : status;
+
+  return {
+    status: effectiveStatus,
+    reconnectAttempt: socketActive ? reconnectAttempt : 0,
+  };
 }

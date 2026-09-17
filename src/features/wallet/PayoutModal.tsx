@@ -84,22 +84,20 @@ export function PayoutModal({
   const amountSatang = parseAmountSatang(amountText);
 
   useEffect(() => {
-    if (!visible) {
-      setAccountHolderName("");
-      setPromptPayAccount("");
-      setSuccessfulPayout(null);
-      return;
-    }
+    if (!visible) return;
 
     let active = true;
-    setLoadingDestinations(true);
-    setAddingDestination(false);
-    setSelectedDestinationId(null);
-    setSuccessfulPayout(null);
+    const loadDestinations = async () => {
+      await Promise.resolve();
+      if (!active) return;
 
-    walletApi
-      .listPayoutDestinations()
-      .then((loadedDestinations) => {
+      setLoadingDestinations(true);
+      setAddingDestination(false);
+      setSelectedDestinationId(null);
+      setSuccessfulPayout(null);
+
+      try {
+        const loadedDestinations = await walletApi.listPayoutDestinations();
         if (!active) return;
 
         setDestinations(loadedDestinations);
@@ -108,8 +106,7 @@ export function PayoutModal({
           loadedDestinations[0];
         setSelectedDestinationId(defaultDestination?.id ?? null);
         setAddingDestination(loadedDestinations.length === 0);
-      })
-      .catch((error: unknown) => {
+      } catch (error: unknown) {
         if (!active) return;
         Alert.alert(
           isThai
@@ -122,10 +119,12 @@ export function PayoutModal({
             error
           )
         );
-      })
-      .finally(() => {
+      } finally {
         if (active) setLoadingDestinations(false);
-      });
+      }
+    };
+
+    void loadDestinations();
 
     return () => {
       active = false;
@@ -248,6 +247,8 @@ export function PayoutModal({
   };
 
   const handleClose = () => {
+    setAccountHolderName("");
+    setPromptPayAccount("");
     setSuccessfulPayout(null);
     onClose();
   };

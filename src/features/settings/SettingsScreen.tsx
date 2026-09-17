@@ -16,12 +16,12 @@ import {
   Pencil,
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import { Pressable, SafeAreaView, ScrollView, Text, View } from "@/tw";
 import { useLocale } from "@/locales/LocaleProvider";
 import { settingsMessages } from "@/locales/settingsMessages";
 import { authService } from "@/features/auth/AuthService";
 import { authEnvironment } from "@/features/auth/authEnvironment";
+import { useAppearance } from "@/theme/AppearanceProvider";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import styles from "./styles/settingsStyles";
@@ -90,7 +90,8 @@ function SettingsRow({
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { locale } = useLocale();
+  const { locale, setLocale } = useLocale();
+  const { appearance, setAppearance } = useAppearance();
   const messages = settingsMessages[locale];
   const insets = useSafeAreaInsets();
   const bottomPadding = insets.bottom + spacing.lg;
@@ -192,17 +193,48 @@ export default function SettingsScreen() {
                 }
               />
               <SettingsRow
-                description={messages.languageDescription}
-                icon={Globe2}
-                title={messages.language}
-                value={messages.systemLanguage}
-              />
-              <SettingsRow
                 description={messages.appearanceDescription}
                 icon={Moon}
                 title={messages.appearance}
-                value={messages.systemAppearance}
+                trailing={
+                  <View className={styles.switchHost}>
+                    <Host matchContents seedColor={colors.primary}>
+                      <Switch
+                        testID="settings-appearance"
+                        value={appearance === "dark"}
+                        onValueChange={(useDark) =>
+                          setAppearance(useDark ? "dark" : "light")
+                        }
+                      />
+                    </Host>
+                  </View>
+                }
+                value={
+                  appearance === "dark"
+                    ? messages.darkAppearance
+                    : messages.lightAppearance
+                }
+              />
+              <SettingsRow
+                description={messages.languageDescription}
+                icon={Globe2}
                 last
+                testID="settings-language-section"
+                title={messages.language}
+                trailing={
+                  <View className={styles.switchHost}>
+                    <Host matchContents seedColor={colors.primary}>
+                      <Switch
+                        testID="settings-language"
+                        value={locale === "en"}
+                        onValueChange={(useEnglish) =>
+                          setLocale(useEnglish ? "en" : "th")
+                        }
+                      />
+                    </Host>
+                  </View>
+                }
+                value={locale === "en" ? "EN" : "TH"}
               />
             </View>
           </View>
