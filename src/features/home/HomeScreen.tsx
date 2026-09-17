@@ -9,6 +9,7 @@ import {
   FileText,
   History,
   LayoutDashboard,
+  WalletCards,
 } from "lucide-react-native";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
@@ -368,6 +369,53 @@ export default function HomeScreen() {
                     ]}
                   >
                     {messages.quickBoardDesc}
+                  </Text>
+                </View>
+              </Pressable>
+
+              <Pressable
+                accessibilityLabel={`${messages.quickTopUpTitle}: ${messages.quickTopUpDesc}`}
+                accessibilityRole="button"
+                onPress={() => router.push("/money")}
+                style={[
+                  styles.quickAccessCard,
+                  {
+                    backgroundColor: themeColors.surface,
+                    borderColor: themeColors.borderSubtle,
+                  },
+                ]}
+                testID="hirer-quick-access-topup"
+              >
+                <View
+                  style={[
+                    styles.quickAccessIconBox,
+                    { backgroundColor: themeColors.surfaceAccent },
+                  ]}
+                >
+                  <WalletCards
+                    color={themeColors.primary}
+                    size={22}
+                    strokeWidth={2.2}
+                  />
+                </View>
+                <View style={styles.quickAccessCopy}>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.quickAccessItemTitle,
+                      { color: themeColors.textStrong },
+                    ]}
+                  >
+                    {messages.quickTopUpTitle}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.quickAccessItemDesc,
+                      { color: themeColors.textSecondary },
+                    ]}
+                  >
+                    {messages.quickTopUpDesc}
                   </Text>
                 </View>
               </Pressable>

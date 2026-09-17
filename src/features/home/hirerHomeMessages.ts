@@ -27,6 +27,8 @@ export interface HirerHomeMessages {
   quickHistoryDesc: string;
   quickBoardTitle: string;
   quickBoardDesc: string;
+  quickTopUpTitle: string;
+  quickTopUpDesc: string;
   statusLabels: Record<CanonicalHirerQuestStatus, string>;
   timelineLabels: Record<TimelineStageKey, string>;
   timelineOverrides: Partial<
@@ -58,6 +60,8 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     quickHistoryDesc: "Completed quests",
     quickBoardTitle: "Quest Board",
     quickBoardDesc: "Browse all quests",
+    quickTopUpTitle: "Top-up",
+    quickTopUpDesc: "PromptPay QR deposit",
     statusLabels: {
       QUEST_DRAFT: "Draft",
       QUEST_OPEN: "Open for applications",
@@ -102,6 +106,8 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     quickHistoryDesc: "เควสต์ที่เสร็จสิ้นแล้ว",
     quickBoardTitle: "กระดานเควสต์",
     quickBoardDesc: "ค้นหาและดูเควสต์ทั้งหมด",
+    quickTopUpTitle: "เติมเงิน",
+    quickTopUpDesc: "เติมเงินผ่านพร้อมเพย์",
     statusLabels: {
       QUEST_DRAFT: "ฉบับร่าง",
       QUEST_OPEN: "เปิดรับสมัคร",

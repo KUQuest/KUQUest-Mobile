@@ -81,5 +81,8 @@ describe("Hirer Home", () => {
 
     fireEvent.press(view.getByTestId("hirer-quick-access-board"));
     expect(mockPush).toHaveBeenCalledWith("/quest-board");
+
+    fireEvent.press(view.getByTestId("hirer-quick-access-topup"));
+    expect(mockPush).toHaveBeenCalledWith("/money");
   });
 });
