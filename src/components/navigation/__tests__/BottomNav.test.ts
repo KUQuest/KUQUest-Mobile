@@ -1,6 +1,12 @@
 import { fireEvent, render } from "@testing-library/react-native";
 import React from "react";
-import { BottomNav, navigationItems } from "../BottomNav";
+import {
+  BottomNav,
+  hirerNavigationItems,
+  navigationItems,
+  workerNavigationItems,
+} from "../BottomNav";
+import { RoleWorkspaceProvider } from "../RoleWorkspaceContext";
 import styles from "../bottomNavStyles";
 import { navigationMessages } from "../../../locales/navigationMessages";
 
@@ -9,6 +15,7 @@ jest.mock("expo-localization", () => ({
 }));
 
 jest.mock("lucide-react-native", () => ({
+  BriefcaseBusiness: () => null,
   CheckSquare: () => null,
   CircleUserRound: () => null,
   LayoutDashboard: () => null,
@@ -19,6 +26,7 @@ jest.mock("lucide-react-native", () => ({
 
 describe("authenticated primary navigation", () => {
   it("keeps the approved five-destination order", () => {
+    expect(hirerNavigationItems).toBe(navigationItems);
     expect(navigationItems.map((item) => item.routeName)).toEqual([
       "index",
       "money",
@@ -34,6 +42,22 @@ describe("authenticated primary navigation", () => {
     ).toMatchObject({ isCreate: true });
   });
 
+  it("keeps the approved five-destination order for Worker workspace", () => {
+    expect(workerNavigationItems.map((item) => item.routeName)).toEqual([
+      "index",
+      "money",
+      "my-quests",
+      "chat",
+      "profile",
+    ]);
+  });
+
+  it("marks Work Management as the central action in Worker workspace", () => {
+    expect(
+      workerNavigationItems.find((item) => item.routeName === "my-quests")
+    ).toMatchObject({ isCreate: true });
+  });
+
   it("provides the approved English and Thai labels", () => {
     expect(navigationMessages.en).toMatchObject({
       board: "Home",
@@ -45,6 +69,8 @@ describe("authenticated primary navigation", () => {
       createShort: "Create Quest",
       chat: "Chat",
       profile: "Profile",
+      workManagement: "Work Management",
+      workManagementShort: "Work",
     });
     expect(navigationMessages.th).toMatchObject({
       board: "หน้าหลัก",
@@ -56,6 +82,8 @@ describe("authenticated primary navigation", () => {
       createShort: "สร้างเควสต์",
       chat: "แชต",
       profile: "โปรไฟล์นักศึกษา",
+      workManagement: "จัดการงาน",
+      workManagementShort: "จัดการงาน",
     });
   });
 
@@ -156,5 +184,41 @@ describe("authenticated primary navigation", () => {
     expect(view.getByTestId("tab-index").props.accessibilityState).toEqual({
       selected: false,
     });
+  });
+
+  it("renders Worker navigation items when in Worker workspace", async () => {
+    const routes = [
+      { key: "index-key", name: "index" },
+      { key: "money-key", name: "money" },
+      { key: "create-key", name: "create" },
+      { key: "my-quests-key", name: "my-quests" },
+      { key: "chat-key", name: "chat" },
+      { key: "profile-key", name: "profile" },
+    ];
+
+    const view = await render(
+      React.createElement(
+        RoleWorkspaceProvider,
+        { initialWorkspace: "worker" },
+        React.createElement(BottomNav, {
+          state: { index: 0, routes } as never,
+          descriptors: Object.fromEntries(
+            routes.map((route) => [route.key, { options: {} }])
+          ) as never,
+          navigation: {
+            emit: jest.fn(() => ({ defaultPrevented: false })),
+            navigate: jest.fn(),
+          } as never,
+          insets: { top: 0, right: 0, bottom: 0, left: 0 },
+        })
+      )
+    );
+
+    expect(view.getByTestId("tab-my-quests")).toBeTruthy();
+    expect(view.queryByTestId("tab-create")).toBeNull();
+    expect(view.getByTestId("tab-index")).toBeTruthy();
+    expect(view.getByTestId("tab-money")).toBeTruthy();
+    expect(view.getByTestId("tab-chat")).toBeTruthy();
+    expect(view.getByTestId("tab-profile")).toBeTruthy();
   });
 });

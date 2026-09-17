@@ -5,6 +5,7 @@ import { useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { Pressable, Text, View } from "@/tw";
 import { Animated } from "@/tw/animated";
 import {
+  BriefcaseBusiness,
   CircleUserRound,
   LayoutDashboard,
   MessageSquare,
@@ -16,18 +17,25 @@ import { navigationMessages } from "@/locales/navigationMessages";
 import { getAppChromeMetrics } from "@/theme/layout";
 import { useNavigationVisibility } from "./NavigationVisibilityContext";
 import styles, { getBottomNavigationColors } from "./bottomNavStyles";
+import { useRoleWorkspace } from "./RoleWorkspaceContext";
 
 type NavigationItem = {
   routeName: string;
-  labelKey: "board" | "money" | "create" | "chat" | "profile";
+  labelKey:
+    "board" | "money" | "create" | "workManagement" | "chat" | "profile";
   shortLabelKey:
-    "boardShort" | "moneyShort" | "createShort" | "chatShort" | "profileShort";
+    | "boardShort"
+    | "moneyShort"
+    | "createShort"
+    | "workManagementShort"
+    | "chatShort"
+    | "profileShort";
   icon: typeof LayoutDashboard;
   isCreate?: boolean;
   hasUnread?: boolean;
 };
 
-export const navigationItems: readonly NavigationItem[] = [
+export const hirerNavigationItems: readonly NavigationItem[] = [
   {
     routeName: "index",
     labelKey: "board",
@@ -61,6 +69,42 @@ export const navigationItems: readonly NavigationItem[] = [
   },
 ];
 
+export const workerNavigationItems: readonly NavigationItem[] = [
+  {
+    routeName: "index",
+    labelKey: "board",
+    shortLabelKey: "boardShort",
+    icon: LayoutDashboard,
+  },
+  {
+    routeName: "money",
+    labelKey: "money",
+    shortLabelKey: "moneyShort",
+    icon: WalletCards,
+  },
+  {
+    routeName: "my-quests",
+    labelKey: "workManagement",
+    shortLabelKey: "workManagementShort",
+    icon: BriefcaseBusiness,
+    isCreate: true,
+  },
+  {
+    routeName: "chat",
+    labelKey: "chat",
+    shortLabelKey: "chatShort",
+    icon: MessageSquare,
+  },
+  {
+    routeName: "profile",
+    labelKey: "profile",
+    shortLabelKey: "profileShort",
+    icon: CircleUserRound,
+  },
+];
+
+export const navigationItems: readonly NavigationItem[] = hirerNavigationItems;
+
 type TabBarProps = Parameters<
   NonNullable<React.ComponentProps<typeof import("expo-router").Tabs>["tabBar"]>
 >[0];
@@ -78,7 +122,10 @@ export function BottomNav({
   const { locale } = useLocale();
   const messages = navigationMessages[locale];
   const focusedRouteKey = state.routes[state.index]?.key;
+  const { workspace, switchWorkspace } = useRoleWorkspace();
   const { navigationVisible, showNavigation } = useNavigationVisibility();
+  const activeItems =
+    workspace === "worker" ? workerNavigationItems : hirerNavigationItems;
   const shouldHide = !metrics.isTablet && !navigationVisible;
   const hiddenTranslateY = metrics.navHeight + Math.max(insets.bottom, 10) + 24;
   const navigationAnimationStyle = useAnimatedStyle(
@@ -130,11 +177,11 @@ export function BottomNav({
         className={cn(styles.bar, metrics.isTablet && styles.tabletBar)}
         style={{ minHeight: metrics.isTablet ? undefined : metrics.navHeight }}
       >
-        {state.routes.map((route) => {
-          const item = navigationItems.find(
-            ({ routeName }) => routeName === route.name
+        {activeItems.map((item) => {
+          const route = state.routes.find(
+            ({ name }) => name === item.routeName
           );
-          if (!item) return null;
+          if (!route) return null;
 
           const isFocused = route.key === focusedRouteKey;
           const options = descriptors[route.key]?.options;
@@ -154,6 +201,12 @@ export function BottomNav({
             }
           };
 
+          const onLongPress =
+            item.routeName === "profile"
+              ? () => {
+                  void switchWorkspace();
+                }
+              : undefined;
           return (
             <Pressable
               key={route.key}
@@ -163,6 +216,14 @@ export function BottomNav({
                 ? {}
                 : { accessibilityState: { selected: isFocused } })}
               onPress={onPress}
+              onLongPress={onLongPress}
+              accessibilityHint={
+                item.routeName === "profile"
+                  ? locale === "th"
+                    ? "กดค้างเพื่อสลับพื้นที่ทำงาน"
+                    : "Long press to switch workspace"
+                  : undefined
+              }
               className={cn(
                 styles.item,
                 metrics.isTablet && styles.tabletItem,

@@ -4,11 +4,13 @@ export interface NavigationMessages {
   board: string;
   money: string;
   create: string;
+  workManagement: string;
   chat: string;
   profile: string;
   boardShort: string;
   moneyShort: string;
   createShort: string;
+  workManagementShort: string;
   chatShort: string;
   profileShort: string;
   boardTitle: string;
@@ -34,6 +36,8 @@ export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
     boardShort: "Home",
     moneyShort: "Money",
     createShort: "Create Quest",
+    workManagement: "Work Management",
+    workManagementShort: "Work",
     chatShort: "Chat",
     profileShort: "Profile",
     boardTitle: "Quest Board",
@@ -59,6 +63,8 @@ export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
     boardShort: "หน้าหลัก",
     moneyShort: "กระเป๋าเงิน",
     createShort: "สร้างเควสต์",
+    workManagement: "จัดการงาน",
+    workManagementShort: "จัดการงาน",
     chatShort: "แชต",
     profileShort: "โปรไฟล์",
     boardTitle: "กระดานเควสต์",
