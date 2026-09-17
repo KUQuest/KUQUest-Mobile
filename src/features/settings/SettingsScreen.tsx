@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { useRouter } from "expo-router";
+import { Modal } from "react-native";
 import { Host, Switch } from "@expo/ui";
 import {
   Bell,
+  Check,
   ChevronLeft,
   ChevronRight,
   CircleHelp,
@@ -91,11 +93,12 @@ function SettingsRow({
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { locale } = useLocale();
+  const { locale, setLocale } = useLocale();
   const messages = settingsMessages[locale];
   const insets = useSafeAreaInsets();
   const bottomPadding = insets.bottom + spacing.lg;
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [switchingAccount, setSwitchingAccount] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const devOverlayEnabled = authEnvironment.isDemoEnabled();
@@ -195,8 +198,14 @@ export default function SettingsScreen() {
               <SettingsRow
                 description={messages.languageDescription}
                 icon={Globe2}
+                onPress={() => setLanguageModalVisible(true)}
                 title={messages.language}
-                value={messages.systemLanguage}
+                value={
+                  locale === "th"
+                    ? messages.thaiLanguage
+                    : messages.englishLanguage
+                }
+                testID="settings-language"
               />
               <SettingsRow
                 description={messages.appearanceDescription}
@@ -252,6 +261,85 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
       </ScrollView>
+      <Modal
+        transparent={true}
+        visible={languageModalVisible}
+        onRequestClose={() => setLanguageModalVisible(false)}
+        testID="settings-language-modal"
+      >
+        <View className="flex-1 items-center justify-center px-[24px]">
+          <Pressable
+            accessibilityLabel={messages.cancel}
+            accessibilityRole="button"
+            className="absolute inset-0"
+            onPress={() => setLanguageModalVisible(false)}
+            style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
+          />
+          <View
+            accessibilityViewIsModal
+            className="bg-white max-w-[420px] rounded-[20px] p-[20px] w-full"
+          >
+            <Text
+              accessibilityRole="header"
+              className="text-ku-text-strong font-ku-bold text-ku-title-small"
+            >
+              {messages.selectLanguage}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: locale === "th" }}
+              className={`items-center border flex-row justify-between min-h-[52px] mt-[16px] px-[16px] rounded-[14px] ${
+                locale === "th"
+                  ? "bg-ku-primary/10 border-ku-primary"
+                  : "border-ku-border"
+              }`}
+              onPress={async () => {
+                await setLocale("th");
+                setLanguageModalVisible(false);
+              }}
+              testID="settings-language-th"
+            >
+              <Text className="text-ku-text-strong font-ku-semibold text-ku-control">
+                {messages.thaiLanguage}
+              </Text>
+              {locale === "th" ? (
+                <Check color={colors.primary} size={20} strokeWidth={2.5} />
+              ) : null}
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: locale === "en" }}
+              className={`items-center border flex-row justify-between min-h-[52px] mt-[8px] px-[16px] rounded-[14px] ${
+                locale === "en"
+                  ? "bg-ku-primary/10 border-ku-primary"
+                  : "border-ku-border"
+              }`}
+              onPress={async () => {
+                await setLocale("en");
+                setLanguageModalVisible(false);
+              }}
+              testID="settings-language-en"
+            >
+              <Text className="text-ku-text-strong font-ku-semibold text-ku-control">
+                {messages.englishLanguage}
+              </Text>
+              {locale === "en" ? (
+                <Check color={colors.primary} size={20} strokeWidth={2.5} />
+              ) : null}
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              className="items-center justify-center min-h-[48px] mt-[12px] rounded-[14px] active:bg-ku-surface"
+              onPress={() => setLanguageModalVisible(false)}
+              testID="settings-language-modal-cancel"
+            >
+              <Text className="text-ku-primary font-ku-semibold text-ku-control">
+                {messages.cancel}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </ScreenLayout>
   );
 }

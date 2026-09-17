@@ -1,4 +1,4 @@
-import { AppState, AppStateStatus } from "react-native";
+import * as SecureStore from "expo-secure-store";
 import {
   createContext,
   ReactNode,
@@ -6,41 +6,55 @@ import {
   useEffect,
   useState,
 } from "react";
-import { getLocales } from "expo-localization";
 
 export type SupportedLocale = "th" | "en";
 
+export const DEFAULT_LOCALE: SupportedLocale = "th";
+export const LOCALE_STORAGE_KEY = "kuquest_user_locale";
+
 export function getDeviceLocale(): SupportedLocale {
-  return getLocales()[0]?.languageCode === "th" ? "th" : "en";
+  return DEFAULT_LOCALE;
 }
 
-interface LocaleContextValue {
+export interface LocaleContextValue {
   locale: SupportedLocale;
+  setLocale: (locale: SupportedLocale) => Promise<void>;
 }
 
 const LocaleContext = createContext<LocaleContextValue>({
-  locale: getDeviceLocale(),
+  locale: DEFAULT_LOCALE,
+  setLocale: async () => {},
 });
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<SupportedLocale>(getDeviceLocale);
+  const [locale, setLocaleState] = useState<SupportedLocale>(DEFAULT_LOCALE);
 
   useEffect(() => {
-    const handleAppStateChange = (nextState: AppStateStatus) => {
-      if (nextState === "active") {
-        setLocale(getDeviceLocale());
+    const loadLocale = async () => {
+      try {
+        const storedLocale = await SecureStore.getItemAsync(LOCALE_STORAGE_KEY);
+        if (storedLocale === "th" || storedLocale === "en") {
+          setLocaleState(storedLocale);
+        }
+      } catch {
+        // Gracefully fall back to the default locale when storage is unavailable.
       }
     };
 
-    const subscription = AppState.addEventListener(
-      "change",
-      handleAppStateChange
-    );
-    return () => subscription.remove();
+    void loadLocale();
   }, []);
 
+  const setLocale = async (nextLocale: SupportedLocale) => {
+    setLocaleState(nextLocale);
+    try {
+      await SecureStore.setItemAsync(LOCALE_STORAGE_KEY, nextLocale);
+    } catch {
+      // Gracefully handle storage write errors.
+    }
+  };
+
   return (
-    <LocaleContext.Provider value={{ locale }}>
+    <LocaleContext.Provider value={{ locale, setLocale }}>
       {children}
     </LocaleContext.Provider>
   );

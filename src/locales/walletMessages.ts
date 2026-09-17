@@ -50,8 +50,65 @@ export interface WalletMessages {
   placeholderBadge: string;
   ledgerNoticeTitle: string;
   ledgerNoticeDescription: string;
+  financeSubtitle: string;
+  amaWalletTitle: string;
+  sendMoneyAction: string;
+  spendingBalanceCardTitle: string;
+  spendingBalanceCardDesc: string;
+  escrowCardTitle: string;
+  escrowCardDesc: string;
+  earningsCardTitle: string;
+  earningsCardDesc: string;
+  payoutCardTitle: string;
+  payoutCardDesc: string;
+  swapToWorkerView: string;
+  swapToHirerView: string;
+  hirerViewLabel: string;
+  workerViewLabel: string;
+  balanceCardsHint: string;
+  swapAllButton: string;
+  swapHint: string;
+  historySectionTitle: string;
+  filterAll: string;
+  filterInflow: string;
+  filterOutflow: string;
+  filterEscrow: string;
+  filterTopUp: string;
+  filterPayout: string;
+  transactionDetailTitle: string;
+  txSourceLabel: string;
+  txStatusLabel: string;
+  txDateLabel: string;
+  txReferenceLabel: string;
+  txAmountLabel: string;
+  statusCompleted: string;
+  statusPending: string;
+  statusFailed: string;
+  statusExpired: string;
+  sourceActivities: string;
+  sourceTopUps: string;
+  sourcePayouts: string;
+  closeButton: string;
+  emptyHistoryTitle: string;
+  emptyHistoryDesc: string;
+  errorLoadingWallet: string;
+  retry: string;
+  transferEarningsTitle: string;
+  transferEarningsDesc: string;
+  fromEarnings: string;
+  toSpending: string;
+  transferAmountLabel: string;
+  transferAll: string;
+  transferFeeFree: string;
+  transferPolicyNote: string;
+  transferConfirmBtn: string;
+  transferring: string;
+  minTransferHint: string;
+  insufficientEarnings: string;
+  noEarningsAvailable: string;
+  transferSuccessTitle: string;
+  transferSuccessDesc: (amount: string) => string;
 }
-
 export const walletMessages: Record<SupportedLocale, WalletMessages> = {
   en: {
     walletTitle: "Wallet Overview",
@@ -108,6 +165,68 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     ledgerNoticeTitle: "API Endpoint Status Note",
     ledgerNoticeDescription:
       "Notice: A unified double-entry ledger statements endpoint (/api/v1/wallet/transactions) is not currently exposed by the API server. Live PromptPay Top-ups and Bank Payouts are retrieved directly from /api/v1/top-ups and /api/v1/payouts. Internal Quest Escrow locks and settlements are displayed as illustrative placeholders until the ledger history API is deployed.",
+    financeSubtitle: "Finance",
+    amaWalletTitle: "Ama Wallet",
+    sendMoneyAction: "Top Up",
+    spendingBalanceCardTitle: "Available balance",
+    spendingBalanceCardDesc: "Ready to spend on quests",
+    escrowCardTitle: "Money on hold",
+    escrowCardDesc: "Paid out when quest completes",
+    earningsCardTitle: "Earnings",
+    earningsCardDesc: "Earned from completed quests",
+    payoutCardTitle: "Pending payout",
+    payoutCardDesc: "Transferring to bank",
+    swapToWorkerView: "Worker earnings",
+    swapToHirerView: "Hirer balance",
+    hirerViewLabel: "Hirer funds",
+    workerViewLabel: "Worker funds",
+    balanceCardsHint: "Tap card to swap view",
+    swapAllButton: "Swap all",
+    swapHint: "Tap to swap",
+    historySectionTitle: "History",
+    filterAll: "All",
+    filterInflow: "Inflow",
+    filterOutflow: "Outflow",
+    filterEscrow: "On hold",
+    filterTopUp: "Top-ups",
+    filterPayout: "Payouts",
+    transactionDetailTitle: "Transaction Details",
+    txSourceLabel: "Source",
+    txStatusLabel: "Status",
+    txDateLabel: "Date & Time",
+    txReferenceLabel: "Reference",
+    txAmountLabel: "Amount",
+    statusCompleted: "Completed",
+    statusPending: "Pending",
+    statusFailed: "Failed",
+    statusExpired: "Expired",
+    sourceActivities: "Wallet Activities",
+    sourceTopUps: "PromptPay Top-up",
+    sourcePayouts: "Bank Payout",
+    closeButton: "Close",
+    emptyHistoryTitle: "No transaction history",
+    emptyHistoryDesc:
+      "Your transactions will appear here once you top up or post quests.",
+    errorLoadingWallet: "Failed to load wallet data",
+    retry: "Retry",
+    transferEarningsTitle: "Transfer to Spending",
+    transferEarningsDesc:
+      "Transfer accumulated earnings into your spending balance instantly to post quests.",
+    fromEarnings: "From: Earnings",
+    toSpending: "To: Spending Balance",
+    transferAmountLabel: "Amount to transfer (฿)",
+    transferAll: "All",
+    transferFeeFree: "Fee-Free (0% Fee)",
+    transferPolicyNote:
+      "Transfers are instant and irreversible per financial rulebook policy.",
+    transferConfirmBtn: "Confirm Transfer",
+    transferring: "Transferring...",
+    minTransferHint: "Minimum transfer ฿1.00",
+    insufficientEarnings: "Insufficient earnings balance",
+    noEarningsAvailable: "No earnings available to transfer",
+    transferSuccessTitle: "Transfer Successful",
+    transferSuccessDesc: (amount: string) =>
+      `Successfully transferred ${amount} to spending balance.`,
   },
   th: {
     walletTitle: "ภาพรวมกระเป๋าเงิน",
@@ -164,5 +283,66 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     ledgerNoticeTitle: "หมายเหตุการเชื่อมต่อ API",
     ledgerNoticeDescription:
       "หมายเหตุ: ระบบ API ประวัติธุรกรรมบัญชีแยกประเภทสมบูรณ์ (/api/v1/wallet/transactions) ยังไม่เปิดให้บริการ ขณะนี้แสดงรายการเติมเงิน PromptPay และการถอนเงินจริงจาก API (/api/v1/top-ups, /api/v1/payouts) ส่วนรายการกันเงินประกันเควสต์และค่าตอบแทนแสดงเป็นรายการตัวอย่างจนกว่า API บัญชีแยกประเภทจะพร้อมใช้งาน",
+    financeSubtitle: "การเงิน",
+    amaWalletTitle: "Ama Wallet",
+    sendMoneyAction: "เติมเงิน",
+    spendingBalanceCardTitle: "เงินพร้อมใช้",
+    spendingBalanceCardDesc: "ใช้จ้างงานได้ทันที",
+    escrowCardTitle: "เงินที่พักไว้",
+    escrowCardDesc: "รอจ่ายเมื่องานเสร็จ",
+    earningsCardTitle: "รายได้สะสม",
+    earningsCardDesc: "รายได้จากการทำเควสต์",
+    payoutCardTitle: "กำลังถอนเงิน",
+    payoutCardDesc: "รอโอนเข้าบัญชีธนาคาร",
+    swapToWorkerView: "ดูรายได้ผู้รับงาน",
+    swapToHirerView: "ดูเงินผู้ว่าจ้าง",
+    hirerViewLabel: "กระเป๋าผู้ว่าจ้าง",
+    workerViewLabel: "กระเป๋าผู้รับงาน",
+    balanceCardsHint: "แตะการ์ดเพื่อสลับมุมมอง",
+    swapAllButton: "สลับทั้งหมด",
+    swapHint: "แตะเพื่อสลับ",
+    historySectionTitle: "ประวัติ",
+    filterAll: "ทั้งหมด",
+    filterInflow: "เงินเข้า",
+    filterOutflow: "เงินออก",
+    filterEscrow: "เงินที่พักไว้",
+    filterTopUp: "เติมเงิน",
+    filterPayout: "ถอนเงิน",
+    transactionDetailTitle: "รายละเอียดธุรกรรม",
+    txSourceLabel: "ช่องทาง",
+    txStatusLabel: "สถานะ",
+    txDateLabel: "วันและเวลา",
+    txReferenceLabel: "เลขอ้างอิง",
+    txAmountLabel: "จำนวนเงิน",
+    statusCompleted: "สำเร็จ",
+    statusPending: "รอดำเนินการ",
+    statusFailed: "ไม่สำเร็จ",
+    statusExpired: "หมดอายุ",
+    sourceActivities: "กิจกรรมบัญชี (Activities API)",
+    sourceTopUps: "เติมเงิน PromptPay (Top-ups API)",
+    sourcePayouts: "ถอนเงินเข้าบัญชี (Payouts API)",
+    closeButton: "ปิด",
+    emptyHistoryTitle: "ยังไม่มีประวัติการทำธุรกรรม",
+    emptyHistoryDesc: "เมื่อคุณเติมเงินหรือลงภารกิจ ประวัติจะแสดงที่นี่",
+    errorLoadingWallet: "เกิดข้อผิดพลาดในการโหลดข้อมูลกระเป๋าเงิน",
+    retry: "ลองใหม่อีกครั้ง",
+    transferEarningsTitle: "โอนรายได้เข้าเงินพร้อมใช้",
+    transferEarningsDesc:
+      "โอนเงินจากรายได้สะสมเข้าสู่ยอดเงินพร้อมใช้เพื่อใช้จ้างงานต่อได้ทันที",
+    fromEarnings: "จาก: รายได้สะสม",
+    toSpending: "ไปยัง: เงินพร้อมใช้",
+    transferAmountLabel: "จำนวนเงินที่ต้องการโอน (บาท)",
+    transferAll: "โอนทั้งหมด",
+    transferFeeFree: "ไม่มีค่าธรรมเนียม (ฟรี 0%)",
+    transferPolicyNote:
+      "การโอนรายได้จะเกิดขึ้นทันที และไม่สามารถยกเลิกหรือโอนกลับเป็นรายได้ได้ ตามกฎข้อบังคับ",
+    transferConfirmBtn: "ยืนยันการโอนเงิน",
+    transferring: "กำลังโอนเงิน...",
+    minTransferHint: "ยอดโอนขั้นต่ำ ฿1.00",
+    insufficientEarnings: "ยอดเงินไม่เพียงพอ",
+    noEarningsAvailable: "คุณยังไม่มียอดรายได้ที่สามารถโอนได้",
+    transferSuccessTitle: "โอนเงินสำเร็จ",
+    transferSuccessDesc: (amount: string) =>
+      `โอน ${amount} เข้าสู่ยอดเงินพร้อมใช้สำเร็จแล้ว`,
   },
 };
