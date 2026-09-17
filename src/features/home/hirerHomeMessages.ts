@@ -12,6 +12,7 @@ export interface HirerHomeMessages {
   emptyTitle: string;
   emptyDescription: string;
   activeQuestTitle: string;
+  activeQuestCounter: (current: number, total: number) => string;
   workerProfile: string;
   assignedWorkerRole: string;
   timelineTitle: string;
@@ -47,6 +48,7 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     emptyDescription:
       "Published Quests with accepted Workers will appear here.",
     activeQuestTitle: "Active Quest",
+    activeQuestCounter: (current, total) => `${current} of ${total}`,
     workerProfile: "View Worker profile",
     assignedWorkerRole: "Assigned Worker",
     timelineTitle: "QUEST TIMELINE",
@@ -96,6 +98,7 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     emptyTitle: "ยังไม่มีเควสต์ที่กำลังดำเนินการ",
     emptyDescription: "เควสต์ที่เผยแพร่และมีผู้ทำงานตอบรับจะแสดงที่นี่",
     activeQuestTitle: "เควสต์ที่กำลังดำเนินการ",
+    activeQuestCounter: (current, total) => `${current}/${total}`,
     workerProfile: "ดูโปรไฟล์ผู้ทำงาน",
     assignedWorkerRole: "ผู้รับผิดชอบงาน",
     timelineTitle: "ลำดับการทำงาน",

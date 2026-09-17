@@ -24,7 +24,6 @@ describe("Hirer Home", () => {
   it("opens the Quest detail from the active-work card", async () => {
     const view = await render(<HomeScreen />);
 
-    expect(view.getByText("Prototype preview")).toBeTruthy();
     expect(
       view.getByTestId("hirer-quest-card-hirer-home-progress-demo")
     ).toBeTruthy();

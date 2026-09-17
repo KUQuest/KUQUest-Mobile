@@ -105,14 +105,14 @@ export function HirerQuestProgressCard({
       style={[
         styles.card,
         {
-          backgroundColor: palette.surface,
+          backgroundColor: palette.cardBg,
           borderColor: palette.cardBorder,
-          shadowColor: palette.shadow,
+          shadowColor: palette.cardShadow,
         },
       ]}
       testID={`hirer-quest-card-${questId}`}
     >
-      {/* Top: Topic & Status */}
+      {/* Top: Topic, Tag & Status */}
       <View style={styles.cardHeader}>
         <View style={styles.cardHeaderMetaRow}>
           {tag ? (
@@ -143,29 +143,19 @@ export function HirerQuestProgressCard({
               styles.statusBadge,
               {
                 backgroundColor: isTerminal
-                  ? palette.surfaceDanger
-                  : palette.surfaceSuccess,
+                  ? palette.terminalBg
+                  : palette.statusBg,
                 borderColor: isTerminal
-                  ? palette.borderDanger
-                  : palette.borderSuccess,
+                  ? palette.terminalBorder
+                  : palette.statusBorder,
               },
             ]}
           >
-            <View
-              style={[
-                styles.statusBadgeDot,
-                {
-                  backgroundColor: isTerminal
-                    ? palette.terminal
-                    : palette.completed,
-                },
-              ]}
-            />
             <Text
               style={[
                 styles.statusLabel,
                 {
-                  color: isTerminal ? palette.terminal : palette.completed,
+                  color: isTerminal ? palette.terminalText : palette.statusText,
                 },
               ]}
             >
@@ -188,7 +178,9 @@ export function HirerQuestProgressCard({
         </View>
       </View>
 
-      <View style={[styles.divider, { backgroundColor: palette.cardBorder }]} />
+      <View
+        style={[styles.divider, { backgroundColor: palette.footerBorder }]}
+      />
 
       {/* Body */}
       <View style={styles.cardBody}>
@@ -203,7 +195,7 @@ export function HirerQuestProgressCard({
           style={[
             styles.workerBanner,
             {
-              backgroundColor: palette.workerSurface,
+              backgroundColor: palette.workerBg,
               borderColor: palette.workerBorder,
             },
           ]}
@@ -214,8 +206,8 @@ export function HirerQuestProgressCard({
               style={[
                 styles.workerAvatar,
                 {
-                  backgroundColor: palette.surfaceSuccess,
-                  borderColor: palette.borderSuccess,
+                  backgroundColor: palette.avatarBg,
+                  borderColor: palette.tagBorder,
                 },
               ]}
             >
@@ -229,7 +221,7 @@ export function HirerQuestProgressCard({
                 <Text
                   style={[
                     styles.workerAvatarText,
-                    { color: palette.primaryDeep },
+                    { color: palette.avatarText },
                   ]}
                 >
                   {worker.displayName.slice(0, 1).toUpperCase()}
@@ -279,7 +271,10 @@ export function HirerQuestProgressCard({
 
           <View style={styles.stagesTrack}>
             <View
-              style={[styles.trackLine, { backgroundColor: palette.connector }]}
+              style={[
+                styles.trackLine,
+                { backgroundColor: palette.stepConnector },
+              ]}
             />
             {stages.map((stage) => {
               const isCompleted = stage.state === "completed";
@@ -292,13 +287,13 @@ export function HirerQuestProgressCard({
                     <View
                       style={[
                         styles.stepDotCurrentOuter,
-                        { backgroundColor: palette.currentHalo },
+                        { backgroundColor: palette.stepCurrentOuter },
                       ]}
                     >
                       <View
                         style={[
                           styles.stepDotCurrentInner,
-                          { backgroundColor: palette.primary },
+                          { backgroundColor: palette.stepCurrentInner },
                         ]}
                       />
                     </View>
@@ -308,16 +303,20 @@ export function HirerQuestProgressCard({
                         styles.stepDot,
                         {
                           backgroundColor: isCompleted
-                            ? palette.completed
-                            : palette.surface,
+                            ? palette.stepCompleted
+                            : palette.cardBg,
                           borderColor: isCompleted
-                            ? palette.completed
-                            : palette.pending,
+                            ? palette.stepCompleted
+                            : palette.stepUpcoming,
                         },
                       ]}
                     >
                       {isCompleted ? (
-                        <Check color="#FFFFFF" size={11} strokeWidth={3} />
+                        <Check
+                          color={palette.stepCompletedCheck}
+                          size={11}
+                          strokeWidth={3}
+                        />
                       ) : null}
                     </View>
                   )}
@@ -329,9 +328,9 @@ export function HirerQuestProgressCard({
                         color: isCurrent
                           ? palette.primary
                           : isCompleted
-                            ? palette.completed
+                            ? palette.primary
                             : isTerminalStage
-                              ? palette.terminal
+                              ? palette.terminalText
                               : palette.muted,
                       },
                       isCurrent && styles.stepLabelCurrent,
@@ -351,7 +350,7 @@ export function HirerQuestProgressCard({
         style={[
           styles.cardFooter,
           {
-            backgroundColor: palette.footer,
+            backgroundColor: palette.footerBg,
             borderTopColor: palette.footerBorder,
             borderTopWidth: 1,
           },
