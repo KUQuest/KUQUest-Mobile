@@ -2,12 +2,12 @@ import type { SupportedLocale } from "./LocaleProvider";
 
 export interface NavigationMessages {
   board: string;
-  myQuests: string;
+  money: string;
   create: string;
   chat: string;
   profile: string;
   boardShort: string;
-  myQuestsShort: string;
+  moneyShort: string;
   createShort: string;
   chatShort: string;
   profileShort: string;
@@ -27,13 +27,13 @@ export interface NavigationMessages {
 export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
   en: {
     board: "Home",
-    myQuests: "My Quests",
-    create: "Create",
+    money: "Money",
+    create: "Create Quest",
     chat: "Chat",
     profile: "Profile",
     boardShort: "Home",
-    myQuestsShort: "Quests",
-    createShort: "Create",
+    moneyShort: "Money",
+    createShort: "Create Quest",
     chatShort: "Chat",
     profileShort: "Profile",
     boardTitle: "Quest Board",
@@ -52,13 +52,13 @@ export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
   },
   th: {
     board: "หน้าหลัก",
-    myQuests: "เควสต์ของฉัน",
-    create: "สร้าง",
+    money: "กระเป๋าเงิน",
+    create: "สร้างเควสต์",
     chat: "แชต",
     profile: "โปรไฟล์นักศึกษา",
     boardShort: "หน้าหลัก",
-    myQuestsShort: "เควสต์",
-    createShort: "สร้าง",
+    moneyShort: "กระเป๋าเงิน",
+    createShort: "สร้างเควสต์",
     chatShort: "แชต",
     profileShort: "โปรไฟล์",
     boardTitle: "กระดานเควสต์",

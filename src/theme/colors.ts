@@ -80,14 +80,19 @@ export const darkColors = {
   overlay: "rgba(0, 0, 0, 0.64)",
 } as const;
 
-export type ThemeColors = typeof lightColors;
+export type ThemeColors = typeof lightColors | typeof darkColors;
+export type AppColorScheme =
+  "dark" | "light" | "unspecified" | null | undefined;
+
+export function getThemeColors(colorScheme: AppColorScheme) {
+  return colorScheme === "dark" ? darkColors : lightColors;
+}
 
 // Existing consumers can keep reading `colors.foo`; the proxy resolves the
 // current native appearance without requiring every caller to add a hook.
 export const colors = new Proxy(lightColors, {
   get(_target, property: keyof ThemeColors) {
-    const palette =
-      Appearance.getColorScheme() === "dark" ? darkColors : lightColors;
+    const palette = getThemeColors(Appearance.getColorScheme());
     return palette[property];
   },
 }) as ThemeColors;

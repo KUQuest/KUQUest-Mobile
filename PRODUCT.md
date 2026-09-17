@@ -22,7 +22,8 @@ A job board restricted to the `@ku.th` community, using structured Quests with c
 
 - Sign-in uses Google authentication and is restricted to the `@ku.th` email domain.
 - A first successful sign-in leads to Academic Registration before the main app can be used.
-- Authenticated navigation includes Quest Board, My Quests, Create, Chat, and Student Profile.
+- The authenticated Hirer Role Workspace uses Home, Money, Create Quest, Chat, and Profile.
+- The Worker Role Workspace is a planned follow-up surface; the first launch defaults to Hirer.
 - The Quest Board supports discovery through search, filters, sorting, and Quest Detail before applying.
 - Creating a Quest uses a three-step flow covering details, schedule/location, and participants/reward.
 - The app supports Thai and English locales and uses Thai baht for rewards.

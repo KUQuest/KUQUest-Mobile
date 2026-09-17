@@ -1,5 +1,5 @@
-import QuestBoardScreen from "@/features/questBoard/QuestBoardScreen";
+import HomeScreen from "@/features/home/HomeScreen";
 
-export default function QuestBoardRoute() {
-  return <QuestBoardScreen />;
+export default function HirerHomeRoute() {
+  return <HomeScreen />;
 }

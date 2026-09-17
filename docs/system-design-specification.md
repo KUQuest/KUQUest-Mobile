@@ -19,17 +19,17 @@ This document records the mobile UI surfaces, navigation paths, user journeys, p
 
 ## 3. Primary navigation
 
-Authenticated Members access five primary destinations through the bottom navigation:
+Authenticated Members access five primary destinations through a Role Workspace. The first shipped workspace is Hirer:
 
-| Label     | Route               | Purpose                                                                           | Aligned Specification                                                             |
-| --------- | ------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Home      | `/(tabs)/index`     | Discover published `QUEST_OPEN` Quests using search, filters, and sort            | [`docs/specs/quest-state-summary.md`](specs/quest-state-summary.md)               |
-| My Quests | `/(tabs)/my-quests` | Track joined/posted Quests, Assignments, and Quest Escrow funding                 | [`docs/specs/quest-state-summary.md`](specs/quest-state-summary.md)               |
-| Create    | `/(tabs)/create`    | Create, configure conditions, and fund Quests with a three-step wizard            | [`docs/specs/group-quest-behavior.md`](specs/group-quest-behavior.md)             |
-| Chat      | `/(tabs)/chat`      | List Candidate Inquiry and Work Conversations                                     | [`docs/specs/conversation-and-work-chat.md`](specs/conversation-and-work-chat.md) |
-| Profile   | `/(tabs)/profile`   | View Public Profile, Reputation, Portfolio, Certificates, Experience, and Reviews | [`docs/specs/student-profile-redesign.md`](specs/student-profile-redesign.md)     |
+| Label        | Route             | Purpose                                                                           | Aligned Specification                                                             |
+| ------------ | ----------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Home         | `/(tabs)/index`   | Track active Quests, Worker progress, due dates, and Quest Detail entry           | [`docs/specs/quest-state-summary.md`](specs/quest-state-summary.md)               |
+| Money        | `/(tabs)/money`   | Review Wallet Compartments and manage PromptPay top-ups and payouts               | [`docs/specs/wallet-and-payments.md`](specs/wallet-and-payments.md)               |
+| Create Quest | `/(tabs)/create`  | Create, configure conditions, and fund Quests with a three-step wizard            | [`docs/specs/group-quest-behavior.md`](specs/group-quest-behavior.md)             |
+| Chat         | `/(tabs)/chat`    | List Candidate Inquiry and Work Conversations                                     | [`docs/specs/conversation-and-work-chat.md`](specs/conversation-and-work-chat.md) |
+| Profile      | `/(tabs)/profile` | View Public Profile, Reputation, Portfolio, Certificates, Experience, and Reviews | [`docs/specs/student-profile-redesign.md`](specs/student-profile-redesign.md)     |
 
-Settings is reached from the Profile top bar via `/settings`.
+The Worker Role Workspace and its Work Manager destination are deferred. The existing `/(tabs)/my-quests` route remains route-backed for its current role selector but is not a Hirer primary destination.
 
 ## 4. User journeys
 

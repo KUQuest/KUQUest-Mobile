@@ -1,3 +1,8 @@
+import { getThemeColors, type AppColorScheme } from "@/theme/colors";
+
+export function getBottomNavigationColors(colorScheme: AppColorScheme) {
+  return getThemeColors(colorScheme);
+}
 const styles = {
   container:
     "absolute bottom-0 left-0 right-0 items-stretch px-[10px] pt-[6px]",
