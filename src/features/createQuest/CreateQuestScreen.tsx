@@ -65,6 +65,7 @@ import { CreateQuestHeader } from "./components/CreateQuestHeader";
 import { QuestTopUpModal } from "@/components/ui/QuestFundingSummary";
 import { CreateQuestSkeleton } from "./components/CreateQuestSkeleton";
 import { QuestSetupOverview } from "./components/QuestSetupOverview";
+import { ReviewActionButton } from "./components/ReviewActionButton";
 import { formatSatang } from "@/domain/satang";
 import { Input } from "@/features/onboarding/components/Input";
 import { Select } from "@/features/onboarding/components/Select";
@@ -121,16 +122,6 @@ import {
 } from "./createQuestTypes";
 import { liveQuestService } from "../questBoard/liveQuestService";
 import { MAX_QUEST_IMAGES, type QuestPublishCheck } from "../questBoard/types";
-
-type ReviewActionButtonProps = {
-  label: string;
-  variant: "primary" | "secondary";
-  accessibilityLabel: string;
-  disabled: boolean;
-  stacked: boolean;
-  testID: string;
-  onPress: () => void;
-};
 
 function FieldLabel({
   children,
@@ -231,62 +222,6 @@ function DateTimeField({
         {error ?? helper}
       </Text>
     </View>
-  );
-}
-
-function ReviewActionButton({
-  label,
-  variant,
-  accessibilityLabel,
-  disabled,
-  stacked,
-  testID,
-  onPress,
-}: ReviewActionButtonProps) {
-  const isSecondary = variant === "secondary";
-  const layoutStyle = stacked
-    ? {
-        flexBasis: "auto" as const,
-        flexGrow: 0,
-        flexShrink: 0,
-        width: "100%" as const,
-      }
-    : {
-        flexBasis: 0,
-        flexGrow: 1,
-        flexShrink: 1,
-        minWidth: 0,
-        width: "auto" as const,
-      };
-
-  return (
-    <Pressable
-      accessibilityLabel={accessibilityLabel}
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      className={cn(
-        styles.reviewActionButton,
-        stacked && styles.reviewActionButtonStacked,
-        isSecondary
-          ? styles.reviewActionButtonSecondary
-          : styles.reviewActionButtonPrimary
-      )}
-      disabled={disabled}
-      onPress={onPress}
-      style={[layoutStyle, { opacity: disabled ? 0.55 : 1 }]}
-      testID={testID}
-    >
-      <Text
-        className={cn(
-          styles.reviewActionText,
-          isSecondary
-            ? styles.reviewActionTextSecondary
-            : styles.reviewActionTextPrimary
-        )}
-      >
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 
