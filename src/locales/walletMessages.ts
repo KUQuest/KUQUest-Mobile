@@ -50,6 +50,22 @@ export interface WalletMessages {
   placeholderBadge: string;
   ledgerNoticeTitle: string;
   ledgerNoticeDescription: string;
+  financeSubtitle: string;
+  amaWalletTitle: string;
+  sendMoneyAction: string;
+  spendingBalanceCardTitle: string;
+  spendingBalanceCardDesc: string;
+  escrowCardTitle: string;
+  escrowCardDesc: string;
+  historySectionTitle: string;
+  filterAll: string;
+  filterInflow: string;
+  filterOutflow: string;
+  filterEscrow: string;
+  emptyHistoryTitle: string;
+  emptyHistoryDesc: string;
+  errorLoadingWallet: string;
+  retry: string;
 }
 
 export const walletMessages: Record<SupportedLocale, WalletMessages> = {
@@ -108,6 +124,23 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     ledgerNoticeTitle: "API Endpoint Status Note",
     ledgerNoticeDescription:
       "Notice: A unified double-entry ledger statements endpoint (/api/v1/wallet/transactions) is not currently exposed by the API server. Live PromptPay Top-ups and Bank Payouts are retrieved directly from /api/v1/top-ups and /api/v1/payouts. Internal Quest Escrow locks and settlements are displayed as illustrative placeholders until the ledger history API is deployed.",
+    financeSubtitle: "Finance",
+    amaWalletTitle: "Ama Wallet",
+    sendMoneyAction: "Send Money",
+    spendingBalanceCardTitle: "Available balance",
+    spendingBalanceCardDesc: "Ready to spend on quests",
+    escrowCardTitle: "Money on hold",
+    escrowCardDesc: "Paid out when quest completes",
+    historySectionTitle: "History",
+    filterAll: "All",
+    filterInflow: "Inflow",
+    filterOutflow: "Outflow",
+    filterEscrow: "On hold",
+    emptyHistoryTitle: "No transaction history",
+    emptyHistoryDesc:
+      "Your transactions will appear here once you top up or post quests.",
+    errorLoadingWallet: "Failed to load wallet data",
+    retry: "Retry",
   },
   th: {
     walletTitle: "ภาพรวมกระเป๋าเงิน",
@@ -164,5 +197,21 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     ledgerNoticeTitle: "หมายเหตุการเชื่อมต่อ API",
     ledgerNoticeDescription:
       "หมายเหตุ: ระบบ API ประวัติธุรกรรมบัญชีแยกประเภทสมบูรณ์ (/api/v1/wallet/transactions) ยังไม่เปิดให้บริการ ขณะนี้แสดงรายการเติมเงิน PromptPay และการถอนเงินจริงจาก API (/api/v1/top-ups, /api/v1/payouts) ส่วนรายการกันเงินประกันเควสต์และค่าตอบแทนแสดงเป็นรายการตัวอย่างจนกว่า API บัญชีแยกประเภทจะพร้อมใช้งาน",
+    financeSubtitle: "การเงิน",
+    amaWalletTitle: "Ama Wallet",
+    sendMoneyAction: "การส่งเงิน",
+    spendingBalanceCardTitle: "เงินพร้อมใช้",
+    spendingBalanceCardDesc: "ใช้จ้างงานได้ทันที",
+    escrowCardTitle: "เงินที่พักไว้",
+    escrowCardDesc: "รอจ่ายเมื่องานเสร็จ",
+    historySectionTitle: "ประวัติ",
+    filterAll: "ทั้งหมด",
+    filterInflow: "เงินเข้า",
+    filterOutflow: "เงินออก",
+    filterEscrow: "เงินที่พักไว้",
+    emptyHistoryTitle: "ยังไม่มีประวัติการทำธุรกรรม",
+    emptyHistoryDesc: "เมื่อคุณเติมเงินหรือลงภารกิจ ประวัติจะแสดงที่นี่",
+    errorLoadingWallet: "เกิดข้อผิดพลาดในการโหลดข้อมูลกระเป๋าเงิน",
+    retry: "ลองใหม่อีกครั้ง",
   },
 };

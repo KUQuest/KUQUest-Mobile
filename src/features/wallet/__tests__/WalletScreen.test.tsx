@@ -1,0 +1,199 @@
+import React from "react";
+import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { walletApi } from "@/api/WalletApi";
+import WalletScreen from "../WalletScreen";
+
+jest.mock("@/locales/LocaleProvider", () => ({
+  useLocale: () => ({ locale: "th" }),
+}));
+jest.mock("react-native/Libraries/Modal/Modal", () => ({
+  __esModule: true,
+  default: ({
+    visible,
+    children,
+  }: {
+    visible: boolean;
+    children: React.ReactNode;
+  }) => (visible ? <>{children}</> : null),
+}));
+jest.mock("@/api/WalletApi", () => {
+  const original = jest.requireActual("@/api/WalletApi");
+  return {
+    ...original,
+    walletApi: {
+      getWallet: jest.fn(),
+      getTransactionHistory: jest.fn(),
+      quoteTopUp: jest.fn(),
+      createTopUp: jest.fn(),
+      getTopUpStatus: jest.fn(),
+      simulateTopUp: jest.fn(),
+      convertEarnings: jest.fn(),
+    },
+  };
+});
+
+const mockBalances = {
+  spendingBalanceSatang: 245_000,
+  earningsBalanceSatang: 400_000,
+  fundingReservedSatang: 120_000,
+  reservedForPayoutsSatang: 100_000,
+};
+
+const mockTransactions = [
+  {
+    id: "tx-1",
+    type: "HOLD" as const,
+    title: "Quest Escrow Reserved",
+    titleTh: "กันเงินประกันเควสต์",
+    amountSatang: 50_000,
+    direction: "OUTFLOW" as const,
+    status: "COMPLETED",
+    createdAt: "2024-04-12T10:00:00Z",
+    reference: "กวาดขยะรอบมหาลัย",
+  },
+  {
+    id: "tx-2",
+    type: "TOP_UP" as const,
+    title: "PromptPay Top-Up",
+    titleTh: "เติมเงินผ่านพร้อมเพย์",
+    amountSatang: 100_000,
+    direction: "INFLOW" as const,
+    status: "COMPLETED",
+    createdAt: "2024-04-10T10:00:00Z",
+  },
+  {
+    id: "tx-3",
+    type: "SPEND" as const,
+    title: "Platform Fee",
+    titleTh: "ค่าธรรมเนียม",
+    amountSatang: 1_000,
+    direction: "OUTFLOW" as const,
+    status: "COMPLETED",
+    createdAt: "2024-04-03T10:00:00Z",
+    resourceType: "platform_fee",
+  },
+];
+
+describe("Hirer WalletScreen", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (walletApi.getWallet as jest.Mock).mockResolvedValue(mockBalances);
+    (walletApi.getTransactionHistory as jest.Mock).mockResolvedValue({
+      items: mockTransactions,
+    });
+  });
+
+  it("renders header, slogan badge, banner, balances, and transaction history", async () => {
+    const view = await render(<WalletScreen />);
+
+    // Header
+    await waitFor(() => {
+      expect(view.getByTestId("hirer-wallet-header")).toBeTruthy();
+    });
+    expect(view.getByTestId("hirer-wallet-title")).toBeTruthy();
+    expect(view.getByText("การเงิน")).toBeTruthy();
+    expect(view.getByText("ยอดเงินคงเหลือและระบบชำระเงิน")).toBeTruthy();
+    expect(view.queryByText("Ama Wallet")).toBeNull();
+    expect(view.queryByTestId("brighter-campus-badge")).toBeNull();
+    // Banner
+    expect(view.getByTestId("hirer-wallet-banner")).toBeTruthy();
+    expect(view.getByText("การส่งเงิน")).toBeTruthy();
+    expect(view.getByTestId("hirer-wallet-banner-action-btn")).toBeTruthy();
+
+    // Balance cards
+    expect(view.getByTestId("hirer-balance-cards")).toBeTruthy();
+    expect(view.getByTestId("hirer-spending-balance")).toBeTruthy();
+    expect(view.getByText("฿ 2,450.00")).toBeTruthy();
+    expect(view.getByText("เงินพร้อมใช้")).toBeTruthy();
+    expect(view.getByText("ใช้จ้างงานได้ทันที")).toBeTruthy();
+
+    expect(view.getByTestId("hirer-escrow-balance")).toBeTruthy();
+    expect(view.getByText("฿ 1,200.00")).toBeTruthy();
+    expect(view.getByText("เงินที่พักไว้")).toBeTruthy();
+    expect(view.getByText("รอจ่ายเมื่องานเสร็จ")).toBeTruthy();
+
+    // History section
+    expect(view.getByText("ประวัติ")).toBeTruthy();
+    expect(view.getByTestId("hirer-history-filter-button")).toBeTruthy();
+
+    // Transactions list
+    expect(view.getByTestId("hirer-wallet-transactions-list")).toBeTruthy();
+    expect(view.getByTestId("hirer-tx-tx-1")).toBeTruthy();
+    expect(view.getByText("พักเงินสำหรับเควสต์")).toBeTruthy();
+    expect(view.getByText("กวาดขยะรอบมหาลัย")).toBeTruthy();
+    expect(view.getByText("- ฿500.00")).toBeTruthy();
+    expect(view.getByTestId("hirer-tx-tx-2")).toBeTruthy();
+    expect(view.getByText("เติมเงินเข้า Wallet")).toBeTruthy();
+    expect(view.getByText("+ ฿1,000.00")).toBeTruthy();
+
+    expect(view.getByTestId("hirer-tx-tx-3")).toBeTruthy();
+    expect(view.getByText("ค่าธรรมเนียมระบบ")).toBeTruthy();
+    expect(view.getByText("- ฿10.00")).toBeTruthy();
+  });
+
+  it("filters transactions when a filter is chosen", async () => {
+    const view = await render(<WalletScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("hirer-wallet-transactions-list")).toBeTruthy();
+    });
+
+    // Open filter modal
+    fireEvent.press(view.getByTestId("hirer-history-filter-button"));
+
+    await waitFor(() => {
+      expect(view.getByTestId("filter-opt-inflow")).toBeTruthy();
+    });
+
+    // Select inflow
+    fireEvent.press(view.getByTestId("filter-opt-inflow"));
+
+    await waitFor(() => {
+      expect(view.getByTestId("hirer-tx-tx-2")).toBeTruthy();
+      expect(view.queryByTestId("hirer-tx-tx-1")).toBeNull();
+      expect(view.queryByTestId("hirer-tx-tx-3")).toBeNull();
+    });
+  });
+
+  it("opens top-up payment modal when banner action button is pressed", async () => {
+    const view = await render(<WalletScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("hirer-wallet-banner-action-btn")).toBeTruthy();
+    });
+
+    fireEvent.press(view.getByTestId("hirer-wallet-banner-action-btn"));
+
+    // Payment modal should open (WalletPaymentModal testID)
+    await waitFor(() => {
+      expect(view.getByText(/PromptPay/i)).toBeTruthy();
+    });
+  });
+
+  it("displays empty state when there are no transactions", async () => {
+    (walletApi.getTransactionHistory as jest.Mock).mockResolvedValue({
+      items: [],
+    });
+
+    const view = await render(<WalletScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("hirer-wallet-empty")).toBeTruthy();
+    });
+    expect(view.getByText("ยังไม่มีประวัติการทำธุรกรรม")).toBeTruthy();
+  });
+
+  it("displays error card with retry button when loading fails", async () => {
+    (walletApi.getWallet as jest.Mock).mockRejectedValue(
+      new Error("Network connection failed")
+    );
+
+    const view = await render(<WalletScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("hirer-wallet-error")).toBeTruthy();
+    });
+    expect(view.getByText("Network connection failed")).toBeTruthy();
+    expect(view.getByTestId("hirer-wallet-retry-button")).toBeTruthy();
+  });
+});

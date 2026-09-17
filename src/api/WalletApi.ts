@@ -89,6 +89,11 @@ export interface UserTransaction {
   status: string;
   createdAt: string;
   reference?: string;
+  resourceType?: string | null;
+  spendingDeltaSatang?: number;
+  earningsDeltaSatang?: number;
+  fundingReservedDeltaSatang?: number;
+  payoutReservedDeltaSatang?: number;
 }
 
 export interface UserTransactionHistoryResult {
@@ -152,9 +157,13 @@ function transactionFromActivity(activity: WalletActivity): UserTransaction {
     status: activity.activityStatus,
     createdAt: activity.occurredAt,
     reference: activity.resourceId ?? undefined,
+    resourceType: activity.resourceType,
+    spendingDeltaSatang: activity.spendingDeltaSatang,
+    earningsDeltaSatang: activity.earningsDeltaSatang,
+    fundingReservedDeltaSatang: activity.fundingReservedDeltaSatang,
+    payoutReservedDeltaSatang: activity.payoutReservedDeltaSatang,
   };
 }
-
 export const earningsConversionResponseSchema = z.object({
   success: z.literal(true),
   data: z.object({
