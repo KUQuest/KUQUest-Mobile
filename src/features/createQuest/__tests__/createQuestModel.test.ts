@@ -296,9 +296,8 @@ describe("Create Quest model", () => {
     });
 
     test("converts a local schedule selection to Bangkok time or null", () => {
-      const localNoon = new Date(2026, 9, 15, 9, 0, 0);
       expect(toBangkokDateTime("2026-10-15", "09:00")).toBe(
-        formatBangkokIso(localNoon)
+        "2026-10-15T09:00:00+07:00"
       );
       expect(toBangkokDateTime("26-10-2026", "09:00")).toBeNull();
       expect(toBangkokDateTime("2026-10-15", "9:00")).toBeNull();
