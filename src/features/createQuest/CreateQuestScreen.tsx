@@ -56,6 +56,7 @@ import { DateTimeField } from "./components/DateTimeField";
 import { FieldLabel } from "./components/FieldLabel";
 import { LogisticsSection } from "./components/LogisticsSection";
 import { ModeSummary } from "./components/ModeSummary";
+import { QuestDetailsStep } from "./components/QuestDetailsStep";
 import { SectionHeading } from "./components/SectionHeading";
 import { SchedulePickerModal } from "./components/SchedulePickerModal";
 import { useSchedulePicker } from "./useSchedulePicker";
@@ -1096,92 +1097,18 @@ export default function CreateQuestScreen({
                 </View>
               ) : null}
               {step === 1 ? (
-                <View className={styles.sectionCard}>
-                  <SectionHeading
-                    icon={Tag}
-                    title={messages.questDetails}
-                    description={messages.questDetailsDescription}
-                  />
-                  <Input
-                    ref={titleRef}
-                    label={`${messages.titleLabel} *`}
-                    placeholder={messages.titlePlaceholder}
-                    value={draft.title}
-                    onChangeText={(value) => updateDraft("title", value)}
-                    error={errors.title}
-                    maxLength={100}
-                  />
-                  <Select
-                    ref={tagRef}
-                    label={`${messages.questTag} *`}
-                    options={tagOptions}
-                    value={draft.tag}
-                    onValueChange={(value) => updateDraft("tag", value)}
-                    placeholder={messages.chooseQuestTag}
-                    error={errors.tag}
-                    searchable
-                    searchPlaceholder={messages.searchQuestTags}
-                    noResultsMessage={messages.noMatchingQuestTags}
-                    clearSearchLabel={messages.clearSearch}
-                    closeLabel={messages.close}
-                  />
-                  <TextArea
-                    ref={descriptionRef}
-                    label={`${messages.description} *`}
-                    placeholder={messages.descriptionPlaceholder}
-                    value={draft.description}
-                    onChangeText={(value) => updateDraft("description", value)}
-                    error={errors.description}
-                    maxLength={300}
-                  />
-                  <TextArea
-                    ref={conditionsRef}
-                    label={`${messages.completionCriteria} *`}
-                    placeholder={messages.completionCriteriaPlaceholder}
-                    value={draft.conditions}
-                    onChangeText={(value) => updateDraft("conditions", value)}
-                    error={errors.conditions}
-                    maxLength={300}
-                  />
-                  <View className={styles.fieldGroup}>
-                    <Pressable
-                      accessibilityLabel={messages.proofRequiredToggle}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: proofRequired }}
-                      className={styles.proofToggle}
-                      onPress={() =>
-                        updateDraft(
-                          "proofRequired",
-                          proofRequired ? "none" : "required"
-                        )
-                      }
-                      testID="create-quest-proof-toggle"
-                    >
-                      <View
-                        className={cn(
-                          styles.checkbox,
-                          proofRequired && styles.checkboxChecked
-                        )}
-                      >
-                        {proofRequired ? (
-                          <Check
-                            color={colors.white}
-                            size={15}
-                            strokeWidth={3}
-                          />
-                        ) : null}
-                      </View>
-                      <Text className={styles.proofToggleLabel}>
-                        {messages.proofRequiredToggle}
-                      </Text>
-                    </Pressable>
-                    <Text className={styles.proofDescription}>
-                      {proofRequired
-                        ? messages.proofRequiredDescription
-                        : messages.proofNotNeededDescription}
-                    </Text>
-                  </View>
-                </View>
+                <QuestDetailsStep
+                  messages={messages}
+                  draft={draft}
+                  errors={errors}
+                  tagOptions={tagOptions}
+                  proofRequired={proofRequired}
+                  titleRef={titleRef}
+                  tagRef={tagRef}
+                  descriptionRef={descriptionRef}
+                  conditionsRef={conditionsRef}
+                  updateDraft={updateDraft}
+                />
               ) : null}
 
               {step === 2 ? (
