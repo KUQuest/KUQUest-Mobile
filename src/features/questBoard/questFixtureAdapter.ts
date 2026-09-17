@@ -322,13 +322,6 @@ export interface QuestFixtureAdapter {
   /** Compatibility projection for the pre-adapter inbox; fixture data still lives in the adapter. */
   listFixtureConversations(viewerId?: string, now?: Date): ChatConversation[];
   getSettlement(questId: string, now?: Date): QuestSettlementSummary | null;
-  searchKuMembers(
-    questId: string,
-    query: string,
-    leaderId?: string,
-    now?: Date
-  ): QuestMemberSearchResult[];
-  /** Alias for the KU-member search seam. */
   searchMembers(
     questId: string,
     query: string,
@@ -378,17 +371,7 @@ export interface QuestFixtureAdapter {
     workerId?: string,
     now?: Date
   ): QuestFixtureResult;
-  directJoin(
-    questId: string,
-    workerId?: string,
-    now?: Date
-  ): QuestFixtureResult;
   applyCandidate(
-    questId: string,
-    workerId?: string,
-    now?: Date
-  ): QuestFixtureResult;
-  submitApplication(
     questId: string,
     workerId?: string,
     now?: Date
@@ -397,11 +380,6 @@ export interface QuestFixtureAdapter {
     questId: string,
     applicationId?: string,
     workerIdOrNow?: string | Date,
-    now?: Date
-  ): QuestFixtureResult;
-  withdrawCandidate(
-    questId: string,
-    workerId?: string,
     now?: Date
   ): QuestFixtureResult;
   createTeam(
@@ -489,18 +467,6 @@ export interface QuestFixtureAdapter {
     now?: Date
   ): QuestFixtureResult;
   votePartialGroupStartConsent(
-    questId: string,
-    voterId: string,
-    approve: boolean,
-    now?: Date
-  ): QuestFixtureResult;
-  votePartialStartConsent(
-    questId: string,
-    voterId: string,
-    approve: boolean,
-    now?: Date
-  ): QuestFixtureResult;
-  respondToPartialStartConsent(
     questId: string,
     voterId: string,
     approve: boolean,
@@ -3351,7 +3317,7 @@ export function createQuestFixtureAdapter(
         ];
       });
     },
-    searchKuMembers: (
+    searchMembers: (
       questId,
       query,
       leaderId = DEFAULT_PROTOTYPE_VIEWER_ID,
@@ -3398,12 +3364,6 @@ export function createQuestFixtureAdapter(
         )
         .map((member) => ({ ...member }));
     },
-    searchMembers: (
-      questId,
-      query,
-      leaderId = DEFAULT_PROTOTYPE_VIEWER_ID,
-      now = baseNow
-    ) => adapter.searchKuMembers(questId, query, leaderId, now),
     createQuest: (payload, hirerId = "demo-hirer", now = baseNow) =>
       adapter.createAndPublishQuest(payload, hirerId, now),
     createAndPublishQuest: (payload, hirerId = "demo-hirer", now = baseNow) => {
@@ -3561,11 +3521,6 @@ export function createQuestFixtureAdapter(
       commit(next);
       return success(next, workerId, currentTime);
     },
-    directJoin: (
-      questId,
-      workerId = DEFAULT_PROTOTYPE_VIEWER_ID,
-      now = baseNow
-    ) => adapter.joinDirect(questId, workerId, now),
     applyCandidate: (
       questId,
       workerId = DEFAULT_PROTOTYPE_VIEWER_ID,
@@ -3645,11 +3600,6 @@ export function createQuestFixtureAdapter(
       commit(next);
       return success(next, workerId, currentTime);
     },
-    submitApplication: (
-      questId,
-      workerId = DEFAULT_PROTOTYPE_VIEWER_ID,
-      now = baseNow
-    ) => adapter.applyCandidate(questId, workerId, now),
     withdrawApplication: (questId, applicationId, workerIdOrNow, now) => {
       const parsed = resolveDateAndString(workerIdOrNow, baseNow);
       const currentTime = at(now ?? parsed.now);
@@ -3698,11 +3648,6 @@ export function createQuestFixtureAdapter(
       commit(next);
       return success(next, actorId, currentTime);
     },
-    withdrawCandidate: (
-      questId,
-      workerId = DEFAULT_PROTOTYPE_VIEWER_ID,
-      now = baseNow
-    ) => adapter.withdrawApplication(questId, undefined, workerId, now),
     createTeam: (
       questId,
       leaderId = DEFAULT_PROTOTYPE_VIEWER_ID,
@@ -4670,10 +4615,6 @@ export function createQuestFixtureAdapter(
       commit(next);
       return success(next, voterId, currentTime);
     },
-    votePartialStartConsent: (questId, voterId, approve, now = baseNow) =>
-      adapter.votePartialGroupStartConsent(questId, voterId, approve, now),
-    respondToPartialStartConsent: (questId, voterId, approve, now = baseNow) =>
-      adapter.votePartialGroupStartConsent(questId, voterId, approve, now),
     submitProof: (
       questId,
       ownerId = DEFAULT_PROTOTYPE_VIEWER_ID,
@@ -5351,7 +5292,7 @@ export function createQuestFixtureAdapter(
             now
           );
         case "VOTE_PARTIAL_START_CONSENT":
-          return adapter.votePartialStartConsent(
+          return adapter.votePartialGroupStartConsent(
             action.questId,
             action.voterId,
             action.approve,
