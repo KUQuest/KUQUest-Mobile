@@ -1,0 +1,3 @@
+interface:
+  display_name: "Query API"
+  short_description: "Query and inspect KUQuest OpenAPI specification"

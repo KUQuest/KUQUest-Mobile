@@ -68,6 +68,7 @@
   "scripts": {
     "start": "npm run update-api-env && expo start",
     "update-api-env": "node ./scripts/update-api-env.js",
+    "query-api": "node ./scripts/query-api.js",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "node ./scripts/run-development-build.js android",
     "ios": "expo run:ios",
