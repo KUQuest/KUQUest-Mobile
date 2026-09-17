@@ -27,7 +27,7 @@ jest.mock("expo-router", () => ({
 
 jest.mock("../../auth/AuthService", () => ({
   authService: {
-    getProfileApi: jest.fn(),
+    getStudentApi: jest.fn(),
     signOut: jest.fn(),
   },
 }));
@@ -36,8 +36,8 @@ jest.mock("../../../locales/LocaleProvider", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 
-const mockedGetProfileApi = authService.getProfileApi as jest.MockedFunction<
-  typeof authService.getProfileApi
+const mockedGetStudentApi = authService.getStudentApi as jest.MockedFunction<
+  typeof authService.getStudentApi
 >;
 
 const editData = {
@@ -67,7 +67,7 @@ describe("Edit Profile hub", () => {
     jest.clearAllMocks();
     delete mockRouteParams.section;
     delete mockRouteParams.itemId;
-    mockedGetProfileApi.mockResolvedValue({
+    mockedGetStudentApi.mockResolvedValue({
       getEditData: jest.fn().mockResolvedValue(editData),
     } as never);
   });
@@ -79,7 +79,7 @@ describe("Edit Profile hub", () => {
         resolveData = resolve;
       })
     );
-    mockedGetProfileApi.mockResolvedValue({ getEditData } as never);
+    mockedGetStudentApi.mockResolvedValue({ getEditData } as never);
 
     const view = await render(<EditProfileHubScreen />);
 
@@ -149,7 +149,7 @@ describe("Edit Profile hub", () => {
 
   it("shows a recoverable section error without offering Add", async () => {
     mockRouteParams.section = "portfolio";
-    mockedGetProfileApi.mockResolvedValue({
+    mockedGetStudentApi.mockResolvedValue({
       getEditData: jest
         .fn()
         .mockResolvedValue({ ...editData, sectionErrors: { portfolio: true } }),
@@ -167,7 +167,7 @@ describe("Edit Profile hub", () => {
 
   it("shows an explicit unsupported section without offering mutations", async () => {
     mockRouteParams.section = "portfolio";
-    mockedGetProfileApi.mockResolvedValue({
+    mockedGetStudentApi.mockResolvedValue({
       getEditData: jest.fn().mockResolvedValue({
         ...editData,
         sectionUnavailable: { portfolio: true },
@@ -183,7 +183,7 @@ describe("Edit Profile hub", () => {
   it("does not open an editor for an unavailable direct item route", async () => {
     mockRouteParams.section = "portfolio";
     mockRouteParams.itemId = "new";
-    mockedGetProfileApi.mockResolvedValue({
+    mockedGetStudentApi.mockResolvedValue({
       getEditData: jest.fn().mockResolvedValue({
         ...editData,
         sectionUnavailable: { portfolio: true },
@@ -217,7 +217,7 @@ describe("Edit Profile hub", () => {
     mockRouteParams.section = "certificates";
     mockRouteParams.itemId = "new";
     let resolveData!: (value: typeof editData) => void;
-    mockedGetProfileApi.mockResolvedValue({
+    mockedGetStudentApi.mockResolvedValue({
       getEditData: jest.fn().mockReturnValue(
         new Promise<typeof editData>((resolve) => {
           resolveData = resolve;
@@ -258,7 +258,7 @@ describe("Edit Profile hub", () => {
     mockRouteParams.section = "certificates";
     mockRouteParams.itemId = "certificate-1";
     let resolveData!: (value: typeof editData) => void;
-    mockedGetProfileApi.mockResolvedValue({
+    mockedGetStudentApi.mockResolvedValue({
       getEditData: jest.fn().mockReturnValue(
         new Promise<typeof editData>((resolve) => {
           resolveData = resolve;
@@ -293,7 +293,7 @@ describe("Edit Profile hub", () => {
   it("saves a focused basics edit without exposing protected fields", async () => {
     mockRouteParams.section = "basics";
     const updateBasics = jest.fn().mockResolvedValue(editData.profile);
-    mockedGetProfileApi.mockResolvedValue({
+    mockedGetStudentApi.mockResolvedValue({
       getEditData: jest.fn().mockResolvedValue(editData),
       updateBasics,
       uploadAvatar: jest.fn(),
@@ -329,7 +329,7 @@ describe("Edit Profile hub", () => {
   it("preserves the existing bio when a Student leaves it blank", async () => {
     mockRouteParams.section = "basics";
     const updateBasics = jest.fn().mockResolvedValue(editData.profile);
-    mockedGetProfileApi.mockResolvedValue({
+    mockedGetStudentApi.mockResolvedValue({
       getEditData: jest.fn().mockResolvedValue(editData),
       updateBasics,
       uploadAvatar: jest.fn(),

@@ -17,14 +17,12 @@ jest.mock("../../auth/AuthService", () => ({
   authService: {
     getSession: jest.fn(),
     getStudentApi: jest.fn(),
-    getProfileApi: jest.fn(),
   },
 }));
 
 const mockedAuthService = authService as unknown as {
   getSession: jest.Mock;
   getStudentApi: jest.Mock;
-  getProfileApi: jest.Mock;
 };
 
 const fakeProfile: ProfileResponse = {
@@ -259,6 +257,23 @@ describe("profileModule", () => {
 
       await expect(profileModule.loadProfile({ locale: "en" })).rejects.toThrow(
         new AuthError("SESSION_EXPIRED")
+      );
+    });
+
+    it("propagates a non-401 failure on the required profile endpoint", async () => {
+      mockedAuthService.getSession.mockResolvedValue({
+        user: { name: "Jane Doe", image: null },
+      });
+
+      const mockStudentApi = {
+        getProfile: jest
+          .fn()
+          .mockRejectedValue(new ApiError(500, "SERVER_ERROR", "Profile down")),
+      };
+      mockedAuthService.getStudentApi.mockResolvedValue(mockStudentApi);
+
+      await expect(profileModule.loadProfile({ locale: "en" })).rejects.toThrow(
+        new ApiError(500, "SERVER_ERROR", "Profile down")
       );
     });
   });

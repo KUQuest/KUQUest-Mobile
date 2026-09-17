@@ -9,15 +9,7 @@ import type {
   PortfolioEntry,
   ProfileResponse,
 } from "../../api/contracts";
-import type {
-  CertificateCreate,
-  ExperienceCreate,
-  PortfolioCreate,
-  ProfileUpdate,
-  UploadAsset,
-} from "../../api/StudentApi";
-import type { SupportedLocale } from "../../locales/LocaleProvider";
-type PrototypePersonaId = string;
+import type { ProfileUpdate } from "../../api/StudentApi";
 
 // --- Zod Schemas for Profile Drafts & Entities ---
 
@@ -205,70 +197,4 @@ export function createEmptyProfile(identity?: ProfileIdentity): ProfileDraft {
 
 export function isProfileDraft(value: unknown): value is ProfileDraft {
   return profileDraftSchema.safeParse(value).success;
-}
-
-// --- Profile Adapter Interface (Internal Seam) ---
-
-export interface ProfileAdapter {
-  loadProfile(
-    locale: SupportedLocale,
-    personaId?: PrototypePersonaId
-  ): Promise<ProfileViewData>;
-  getEditData(personaId?: PrototypePersonaId): Promise<ProfileEditData>;
-  updateBasics(
-    update: ProfileBasicsUpdate,
-    personaId?: PrototypePersonaId
-  ): Promise<ProfileResponse>;
-  uploadAvatar(
-    asset: UploadAsset,
-    personaId?: PrototypePersonaId
-  ): Promise<string | null>;
-  createExperience(
-    entry: ExperienceCreate,
-    personaId?: PrototypePersonaId
-  ): Promise<ExperienceEntry | undefined>;
-  updateExperience(
-    id: string,
-    update: Partial<ExperienceCreate>,
-    personaId?: PrototypePersonaId
-  ): Promise<ExperienceEntry | undefined>;
-  deleteExperience(id: string, personaId?: PrototypePersonaId): Promise<void>;
-  createPortfolio(
-    entry: PortfolioCreate,
-    personaId?: PrototypePersonaId
-  ): Promise<string>;
-  updatePortfolio(
-    id: string,
-    update: { title?: string; description?: string | null },
-    personaId?: PrototypePersonaId
-  ): Promise<void>;
-  uploadPortfolioImage(
-    id: string,
-    asset: UploadAsset,
-    personaId?: PrototypePersonaId
-  ): Promise<void>;
-  deletePortfolioImage(
-    id: string,
-    personaId?: PrototypePersonaId
-  ): Promise<void>;
-  deletePortfolio(id: string, personaId?: PrototypePersonaId): Promise<void>;
-  createCertificate(
-    entry: CertificateCreate,
-    personaId?: PrototypePersonaId
-  ): Promise<string>;
-  updateCertificate(
-    id: string,
-    update: CertificateCreate,
-    personaId?: PrototypePersonaId
-  ): Promise<void>;
-  uploadCertificateImage(
-    id: string,
-    asset: UploadAsset,
-    personaId?: PrototypePersonaId
-  ): Promise<void>;
-  deleteCertificateImage(
-    id: string,
-    personaId?: PrototypePersonaId
-  ): Promise<void>;
-  deleteCertificate(id: string, personaId?: PrototypePersonaId): Promise<void>;
 }

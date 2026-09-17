@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { cn } from "@/tw/cn";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -12,13 +12,11 @@ import {
   ImageOff,
   LogOut,
   MapPin,
-  MessageCircle,
   Pencil,
   UsersRound,
-  X,
   type LucideIcon,
 } from "lucide-react-native";
-import { AccessibilityInfo, Alert, BackHandler, Modal } from "react-native";
+import { AccessibilityInfo, Alert, BackHandler } from "react-native";
 import { Image, Pressable, SafeAreaView, ScrollView, Text, View } from "@/tw";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { authService } from "../auth/AuthService";
@@ -29,10 +27,6 @@ import {
   SkeletonBlock,
 } from "@/components/ui/LoadingSkeleton";
 import { useLocale } from "@/locales/LocaleProvider";
-import {
-  groupQuestMessages,
-  type GroupQuestMessages,
-} from "@/locales/groupQuestMessages";
 import {
   questBoardMessages,
   type QuestBoardMessages,
@@ -47,39 +41,18 @@ import {
 } from "./questBoardHarness";
 import {
   parseQuestDetailMode,
-  parseQuestIntent,
   parseQuestJoinStatus,
   parseQuestRouteId,
   parseStudentId,
   type QuestDetailMode,
   type QuestJoinStatus,
 } from "./questRoute";
-import {
-  MAX_QUEST_IMAGES,
-  QuestCandidateMode,
-  QuestInvitationStatus,
-  QuestPartialStartConsentStatus,
-  QuestParticipation,
-  QuestStatus,
-  QuestTeamStatus,
-  type QuestBoardQuest,
-  type QuestDetailState,
-} from "./types";
-import { getChatRouteParams } from "@/features/chat/chatData";
+import { MAX_QUEST_IMAGES, QuestStatus, type QuestBoardQuest } from "./types";
 import {
   getQuestRewardSatang,
-  type QuestActionResult,
-  type QuestDetailProjection,
   questWorkflow,
   type QuestViewerApplicationStatus,
 } from "./questWorkflow";
-import {
-  CandidateReviewSheet,
-  PartialGroupStartConsentSheet,
-  TeamAssembleSheet,
-  type PartialGroupStartVoter,
-  type TeamDirectoryMember,
-} from "./components";
 
 export interface QuestDetailScreenProps {
   previewState?: BoardPreviewState;
@@ -457,317 +430,6 @@ function ScheduleTimeline({
   );
 }
 
-function GroupQuestEntrySurfaces({
-  state,
-  viewerId,
-  isHirer,
-  messages,
-  onOpenTeam,
-  onOpenCandidateReview,
-  onOpenPartialConsent,
-}: {
-  state: QuestDetailState;
-  viewerId: string;
-  isHirer: boolean;
-  messages: GroupQuestMessages;
-  onOpenTeam: () => void;
-  onOpenCandidateReview: () => void;
-  onOpenPartialConsent: () => void;
-}) {
-  const {
-    quest,
-    teams,
-    invitations,
-    applications,
-    partialStartConsent,
-    capabilities,
-  } = state;
-  const isCandidateGroup =
-    quest.participation === QuestParticipation.GROUP &&
-    quest.candidateMode === QuestCandidateMode.CANDIDATE;
-  const isCandidateQuest = quest.candidateMode === QuestCandidateMode.CANDIDATE;
-  const ownTeam = teams.find(
-    (team) =>
-      team.members.some((member) => member.workerId === viewerId) ||
-      team.leaderId === viewerId
-  );
-  const ownInvitation = invitations.find(
-    (invitation) =>
-      invitation.invitedWorkerId === viewerId &&
-      invitation.status === QuestInvitationStatus.INVITATION_PENDING
-  );
-  const invitationTeam = ownInvitation
-    ? teams.find((team) => team.id === ownInvitation.teamId)
-    : undefined;
-  const team = ownTeam ?? invitationTeam;
-  const canCreateTeam = capabilities.availableActions.includes("CREATE_TEAM");
-  const shouldShowTeamSurface =
-    isCandidateGroup && !isHirer && (Boolean(team) || canCreateTeam);
-  const teamStatus = team?.status;
-  const teamTitle = !team
-    ? messages.noTeamTitle
-    : teamStatus === QuestTeamStatus.TEAM_SELECTED
-      ? messages.teamSelected
-      : teamStatus === QuestTeamStatus.TEAM_REJECTED
-        ? messages.teamRejected
-        : teamStatus === QuestTeamStatus.TEAM_SUBMITTED
-          ? messages.submittedTitle
-          : messages.teamTitle;
-  const teamDescription = !team
-    ? messages.noTeamDescription
-    : teamStatus === QuestTeamStatus.TEAM_FORMING
-      ? messages.teamSubtitle
-      : messages.lockedDescription;
-  const teamActionLabel =
-    !team || teamStatus === QuestTeamStatus.TEAM_FORMING
-      ? messages.reviewRoster
-      : messages.submittedTitle;
-  const reviewableProposalCount =
-    quest.participation === QuestParticipation.GROUP
-      ? teams.filter(
-          (candidate) => candidate.status !== QuestTeamStatus.TEAM_FORMING
-        ).length
-      : applications.filter((application) => !application.teamId).length;
-  const partialPending =
-    partialStartConsent?.status ===
-    QuestPartialStartConsentStatus.PARTIAL_START_PENDING;
-  const partialApproved =
-    partialStartConsent?.status ===
-    QuestPartialStartConsentStatus.PARTIAL_START_APPROVED;
-  const partialDescription = partialPending
-    ? messages.partialConsentSubtitle
-    : partialApproved
-      ? messages.approvedDescription(
-          state.actualHeadcount ??
-            partialStartConsent?.frozenWorkerIds.length ??
-            0
-        )
-      : partialStartConsent?.status ===
-          QuestPartialStartConsentStatus.PARTIAL_START_TIMED_OUT
-        ? messages.timedOutDescription
-        : messages.cancelledDescription;
-
-  return (
-    <>
-      {shouldShowTeamSurface ? (
-        <View
-          accessibilityRole="alert"
-          className={cn(
-            styles.statusCard,
-            teamStatus === QuestTeamStatus.TEAM_REJECTED &&
-              styles.statusCardBlocked,
-            !team && styles.statusCardOwner
-          )}
-          testID="quest-team-entry-surface"
-        >
-          <UsersRound
-            color={
-              teamStatus === QuestTeamStatus.TEAM_REJECTED
-                ? colors.dangerDark
-                : colors.primary
-            }
-            size={25}
-            strokeWidth={2.2}
-          />
-          <Text className={styles.statusTitle}>{teamTitle}</Text>
-          <Text className={styles.statusDescription}>{teamDescription}</Text>
-          <Text className={styles.statusDescription}>
-            {messages.rosterCount(team?.members.length ?? 0, quest.headcount)}
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onOpenTeam}
-            className={styles.statusAction}
-            testID="quest-open-team-sheet"
-          >
-            <Text className={styles.statusActionText}>
-              {!team && canCreateTeam ? messages.createTeam : teamActionLabel}
-            </Text>
-          </Pressable>
-        </View>
-      ) : null}
-
-      {isCandidateQuest && isHirer ? (
-        <View
-          accessibilityRole="alert"
-          className={cn(styles.statusCard, styles.statusCardOwner)}
-          testID="quest-candidate-review-entry"
-        >
-          <CircleUserRound color={colors.primary} size={25} strokeWidth={2.2} />
-          <Text className={styles.statusTitle}>
-            {messages.candidateReviewTitle}
-          </Text>
-          <Text className={styles.statusDescription}>
-            {messages.candidateReviewSubtitle}
-          </Text>
-          <Text className={styles.statusDescription}>
-            {messages.proposalCount(reviewableProposalCount)}
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onOpenCandidateReview}
-            className={styles.statusAction}
-            testID="quest-open-candidate-review-sheet"
-          >
-            <Text className={styles.statusActionText}>
-              {messages.selectProposal}
-            </Text>
-          </Pressable>
-        </View>
-      ) : null}
-
-      {quest.participation === QuestParticipation.GROUP &&
-      quest.candidateMode === QuestCandidateMode.NO_CANDIDATE &&
-      partialStartConsent ? (
-        <View
-          accessibilityRole="alert"
-          className={cn(
-            styles.statusCard,
-            partialPending
-              ? styles.statusCardOwner
-              : partialApproved
-                ? styles.statusCard
-                : styles.statusCardBlocked
-          )}
-          testID="quest-partial-start-entry"
-        >
-          <Clock3
-            color={
-              partialApproved
-                ? colors.primary
-                : partialPending
-                  ? colors.primary
-                  : colors.dangerDark
-            }
-            size={25}
-            strokeWidth={2.2}
-          />
-          <Text className={styles.statusTitle}>
-            {partialPending
-              ? messages.partialConsentTitle
-              : partialApproved
-                ? messages.approvedTitle
-                : messages.cancelledTitle}
-          </Text>
-          <Text className={styles.statusDescription}>{partialDescription}</Text>
-          <Text className={styles.statusDescription}>
-            {messages.votesProgress(
-              partialStartConsent.approvedVoterCount,
-              partialStartConsent.requiredVoterCount ??
-                partialStartConsent.requiredVoterIds.length
-            )}
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onOpenPartialConsent}
-            className={styles.statusAction}
-            testID="quest-open-partial-start-sheet"
-          >
-            <Text className={styles.statusActionText}>
-              {messages.voteStatus}
-            </Text>
-          </Pressable>
-        </View>
-      ) : null}
-    </>
-  );
-}
-
-function ConfirmationSheet({
-  locale,
-  messages,
-  quest,
-  onCancel,
-  onConfirm,
-}: {
-  locale: "en" | "th";
-  messages: QuestBoardMessages;
-  quest: QuestBoardQuest;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  const insets = useSafeAreaInsets();
-  const firstCome = quest.candidateMode === "NO_CANDIDATE";
-  const title = firstCome
-    ? messages.confirmParticipationTitle
-    : messages.confirmApplicationTitle;
-  const description = firstCome
-    ? messages.confirmParticipationDescription
-    : messages.confirmApplicationDescription;
-  const confirmLabel = firstCome
-    ? messages.confirmParticipation
-    : messages.confirmApplication;
-
-  return (
-    <Modal
-      animationType="slide"
-      onDismiss={() => announce(messages.details)}
-      onRequestClose={onCancel}
-      onShow={() => announce(title)}
-      transparent
-      visible
-    >
-      <Pressable onPress={onCancel} className={styles.modalBackdrop}>
-        <Pressable
-          accessibilityViewIsModal
-          onPress={() => undefined}
-          className={styles.confirmSheet}
-          style={{
-            paddingBottom: Math.max(spacing.md, insets.bottom + spacing.sm),
-          }}
-        >
-          <View className={styles.confirmHeader}>
-            <Text accessibilityRole="header" className={styles.confirmTitle}>
-              {title}
-            </Text>
-            <Pressable
-              accessibilityLabel={messages.notYet}
-              accessibilityRole="button"
-              onPress={onCancel}
-              className={styles.sheetCloseButton}
-            >
-              <X color={colors.textStrong} size={24} />
-            </Pressable>
-          </View>
-          <Text className={styles.confirmDescription}>{description}</Text>
-          <View className={styles.confirmSummary}>
-            <Text className={styles.confirmSummaryText}>{quest.title}</Text>
-            <Text
-              className={styles.confirmSummaryText}
-            >{`${formatSatang(getQuestRewardSatang(quest), locale)} ${messages.perPerson}`}</Text>
-            <Text
-              className={styles.confirmSummaryText}
-            >{`${messages.schedule}: ${formatDeadline(quest.startDate, locale)}${quest.timeRange ? ` · ${quest.timeRange}` : ""}`}</Text>
-            <Text
-              className={styles.confirmSummaryText}
-            >{`${messages.deadline}: ${formatDeadline(quest.deadline, locale)}`}</Text>
-            <Text
-              className={styles.confirmSummaryText}
-            >{`${messages.location}: ${quest.location}`}</Text>
-          </View>
-          <View className={styles.confirmActions}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={onCancel}
-              className={styles.cancelAction}
-            >
-              <Text className={styles.cancelActionText}>{messages.notYet}</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={onConfirm}
-              className={styles.confirmAction}
-              testID="confirm-quest-application"
-            >
-              <Text className={styles.confirmActionText}>{confirmLabel}</Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
-}
-
 export default function QuestDetailScreen({
   previewState,
   questId,
@@ -808,7 +470,6 @@ export default function QuestDetailScreen({
   const { locale } = useLocale();
   const messages = questBoardMessages[locale];
   const resolvedQuestId = parseQuestRouteId(questId ?? params.id);
-  const resolvedIntent = parseQuestIntent(params.intent);
   const resolvedMode = mode ?? parseQuestDetailMode(params.mode);
   const resolvedJoinStatus =
     joinStatus ?? parseQuestJoinStatus(params.joinStatus);
@@ -863,25 +524,16 @@ export default function QuestDetailScreen({
   const applicationStudentId = explicitStudentId ?? sessionStudentId ?? "";
   const isJoinView = resolvedMode === "join";
   const isPostView = resolvedMode === "post";
-  const prototypeViewerId = applicationStudentId;
-  const [, setPrototypeState] = useState<QuestDetailState | null>(null);
-  const emptyDetailState = (): QuestDetailState | null => null;
-  const emptyDetailProjection = (): QuestDetailProjection | null => null;
-  const activePrototypeState = emptyDetailState();
   const liveQuestForRoute =
     liveQuest?.id === resolvedQuestId ? liveQuest : null;
-  const detailProjection = emptyDetailProjection();
   const quest = liveQuestForRoute;
-  const applicationState = emptyDetailState();
-  const applicationProjection = emptyDetailProjection();
   const applicationStatusHydrated = Boolean(liveQuestForRoute);
-  const applicationStatus = applicationProjection?.applicationStatus ?? "none";
   const previewApplicationStatus: DisplayApplicationStatus =
     resolvedPreview === "application-pending"
       ? "pending"
       : resolvedPreview === "application-accepted"
         ? "accepted"
-        : applicationStatus;
+        : "none";
   const availability =
     resolvedPreview === "full"
       ? "full"
@@ -891,62 +543,14 @@ export default function QuestDetailScreen({
           ? liveQuestForRoute.status === QuestStatus.QUEST_OPEN
             ? "available"
             : "closed"
-          : detailProjection?.availability;
+          : undefined;
   const imageUris = quest?.imageUris?.slice(0, MAX_QUEST_IMAGES) ?? [];
   const joinedStatus: QuestJoinStatus | undefined =
     isJoinView && applicationStatusHydrated
-      ? (resolvedJoinStatus ??
-        (applicationStatus === "pending" || applicationStatus === "accepted"
-          ? applicationStatus
-          : "accepted"))
+      ? (resolvedJoinStatus ?? "accepted")
       : undefined;
   const firstCome = quest?.candidateMode === "NO_CANDIDATE";
-  const candidateGroup = Boolean(
-    quest && !firstCome && quest.participationMode === "team"
-  );
-  const canonicalOpen =
-    liveQuestForRoute?.status === QuestStatus.QUEST_OPEN ||
-    (!liveQuestForRoute &&
-      (!detailProjection ||
-        detailProjection.quest.status === QuestStatus.QUEST_OPEN));
-  const partialStartPending = detailProjection?.partialStartPending ?? false;
-  const applicationAction = firstCome ? "DIRECT_JOIN" : "APPLY";
-  const canApply =
-    !isJoinView &&
-    !isPostView &&
-    availability === "available" &&
-    canonicalOpen &&
-    !partialStartPending &&
-    previewApplicationStatus === "none" &&
-    !candidateGroup &&
-    applicationStatusHydrated &&
-    Boolean(
-      applicationState?.capabilities.availableActions.includes(
-        applicationAction
-      )
-    );
-  const [manualConfirmationOpen, setManualConfirmationOpen] = useState(false);
   const [leftQuest, setLeftQuest] = useState(false);
-  const routeIntentKey = `${resolvedQuestId ?? ""}:${resolvedIntent ?? ""}`;
-  const [dismissedIntent, setDismissedIntent] = useState<string | undefined>();
-  const confirmationOpen =
-    manualConfirmationOpen ||
-    (resolvedIntent === "apply" &&
-      dismissedIntent !== routeIntentKey &&
-      canApply);
-  const canMessageOwner = Boolean(
-    quest &&
-    !isPostView &&
-    quest.ownerStudentId !== applicationStudentId &&
-    detailProjection?.conversationCapability.conversationId &&
-    detailProjection.conversationCapability.canRead
-  );
-  const canReportQuest = Boolean(
-    isJoinView &&
-    !leftQuest &&
-    (joinedStatus === "accepted" || joinedStatus === "history") &&
-    applicationProjection?.isAssigned
-  );
   const statusTitle = isPostView
     ? messages.postOwnerView
     : isJoinView
@@ -1002,104 +606,6 @@ export default function QuestDetailScreen({
     : leftQuest
       ? colors.dangerDark
       : colors.primary;
-  const groupMessages = groupQuestMessages[locale];
-  const isHirerView = detailProjection?.isOwner ?? false;
-  const [teamSheetOpen, setTeamSheetOpen] = useState(false);
-  const [candidateReviewSheetOpen, setCandidateReviewSheetOpen] =
-    useState(false);
-  const [partialStartSheetDismissed, setPartialStartSheetDismissed] =
-    useState(false);
-  const [teamSearchQuery, setTeamSearchQuery] = useState("");
-  const [teamSelectedMemberIds, setTeamSelectedMemberIds] = useState<string[]>(
-    []
-  );
-  const [teamReviewing, setTeamReviewing] = useState(false);
-  const [selectedProposalId, setSelectedProposalId] = useState<string | null>(
-    null
-  );
-
-  const teamSheetTeam = useMemo(() => {
-    if (!activePrototypeState || !candidateGroup || isHirerView)
-      return undefined;
-    const ownTeam = activePrototypeState.teams.find(
-      (team) =>
-        team.members.some(
-          (member) => member.workerId === applicationStudentId
-        ) || team.leaderId === applicationStudentId
-    );
-    if (ownTeam) return ownTeam;
-    const invitation = activePrototypeState.invitations.find(
-      (item) =>
-        item.invitedWorkerId === applicationStudentId &&
-        item.status === QuestInvitationStatus.INVITATION_PENDING
-    );
-    return invitation
-      ? activePrototypeState.teams.find((team) => team.id === invitation.teamId)
-      : undefined;
-  }, [activePrototypeState, applicationStudentId, candidateGroup, isHirerView]);
-  const teamDirectory = useMemo<TeamDirectoryMember[]>(() => {
-    if (
-      !resolvedQuestId ||
-      !activePrototypeState ||
-      !candidateGroup ||
-      isHirerView ||
-      teamSheetTeam?.leaderId !== applicationStudentId ||
-      teamSheetTeam.status !== QuestTeamStatus.TEAM_FORMING
-    )
-      return [];
-    return questWorkflow.searchMembers(
-      resolvedQuestId,
-      teamSearchQuery,
-      applicationStudentId
-    );
-  }, [
-    activePrototypeState,
-    applicationStudentId,
-    candidateGroup,
-    isHirerView,
-    resolvedQuestId,
-    teamSearchQuery,
-    teamSheetTeam,
-  ]);
-  const partialVoters = useMemo<PartialGroupStartVoter[]>(() => {
-    const consent = activePrototypeState?.partialStartConsent;
-    if (!activePrototypeState || !consent) return [];
-    return consent.requiredVoterIds.map((id) => ({
-      id,
-      displayName:
-        id === activePrototypeState.quest.hirerId
-          ? (quest?.creator.name ?? id)
-          : id,
-      role: id === activePrototypeState.quest.hirerId ? "HIRER" : "WORKER",
-    }));
-  }, [activePrototypeState, quest?.creator.name]);
-  const partialStartSheetOpen =
-    Boolean(activePrototypeState?.partialStartConsent) &&
-    activePrototypeState?.partialStartConsent?.status !==
-      QuestPartialStartConsentStatus.PARTIAL_START_APPROVED &&
-    !partialStartSheetDismissed;
-
-  const confirmApplication = () => {
-    if (!quest || !canApply) return;
-    const result: QuestActionResult = firstCome
-      ? questWorkflow.dispatch({
-          type: "DIRECT_JOIN",
-          questId: quest.id,
-          workerId: applicationStudentId,
-        })
-      : questWorkflow.dispatch({
-          type: "APPLY",
-          questId: quest.id,
-          workerId: applicationStudentId,
-        });
-    if (!result.ok) {
-      Alert.alert(messages.details, result.error.message);
-      return;
-    }
-    setPrototypeState(result.state);
-    setManualConfirmationOpen(false);
-    setDismissedIntent(routeIntentKey);
-  };
 
   const handleLeaveQuest = () => {
     if (!quest || (joinedStatus !== "pending" && joinedStatus !== "accepted"))
@@ -1128,7 +634,6 @@ export default function QuestDetailScreen({
             Alert.alert(messages.details, result.error.message);
             return;
           }
-          if (result?.ok) setPrototypeState(result.state);
           setLeftQuest(true);
           announce(messages.leftQuest);
         },
@@ -1141,139 +646,6 @@ export default function QuestDetailScreen({
     router.push({ pathname: "/create", params: { editQuestId: quest.id } });
   };
 
-  const handleMessageOwner = () => {
-    if (!quest || !canMessageOwner) return;
-    const capability = detailProjection?.conversationCapability;
-    if (!capability?.conversationId || !capability.canRead) return;
-    router.push({
-      pathname: "/chat/[id]",
-      params: getChatRouteParams({
-        conversationId: capability.conversationId,
-        questId: quest.id,
-        viewerId: applicationStudentId,
-        ownerName: quest.creator.name,
-        questTitle: quest.title,
-      }),
-    });
-  };
-
-  const handleReportQuest = () => {
-    if (!quest || !canReportQuest) return;
-    router.push({
-      pathname: "/report",
-      params: {
-        source: "quest",
-        questId: quest.id,
-        questTitle: quest.title,
-        viewerId: applicationStudentId,
-        reportedMemberId: quest.ownerStudentId,
-      },
-    });
-  };
-
-  const applyPrototypeResult = (result: QuestActionResult) => {
-    if (!result.ok) {
-      Alert.alert(messages.details, result.error.message);
-      return;
-    }
-    if (result.state) setPrototypeState(result.state);
-  };
-  const handleCreateTeam = () => {
-    if (resolvedQuestId)
-      applyPrototypeResult(
-        questWorkflow.dispatch({
-          type: "CREATE_TEAM",
-          questId: resolvedQuestId,
-          leaderId: applicationStudentId,
-        })
-      );
-  };
-  const handleInviteMembers = (memberIds: string[]) => {
-    memberIds.forEach((memberId) => {
-      if (resolvedQuestId)
-        applyPrototypeResult(
-          questWorkflow.dispatch({
-            type: "INVITE_WORKER",
-            questId: resolvedQuestId,
-            workerId: memberId,
-            leaderId: applicationStudentId,
-          })
-        );
-    });
-  };
-  const handleSubmitTeam = (teamId: string) => {
-    if (resolvedQuestId && teamSheetTeam?.id === teamId)
-      applyPrototypeResult(
-        questWorkflow.dispatch({
-          type: "SUBMIT_TEAM",
-          questId: resolvedQuestId,
-          leaderId: applicationStudentId,
-        })
-      );
-  };
-  const handleInvitation = (invitationId: string, accept: boolean) => {
-    if (resolvedQuestId)
-      applyPrototypeResult(
-        questWorkflow.dispatch({
-          type: "RESPOND_INVITATION",
-          questId: resolvedQuestId,
-          invitationId,
-          workerId: applicationStudentId,
-          accept,
-        })
-      );
-  };
-  const handlePartialStartVote = (approve: boolean) => {
-    if (resolvedQuestId)
-      applyPrototypeResult(
-        questWorkflow.dispatch({
-          type: "VOTE_PARTIAL_START_CONSENT",
-          questId: resolvedQuestId,
-          voterId: prototypeViewerId,
-          approve,
-        })
-      );
-  };
-  const handleSelectCandidate = (applicationId: string) => {
-    if (resolvedQuestId)
-      applyPrototypeResult(
-        questWorkflow.dispatch({
-          type: "SELECT_CANDIDATE",
-          questId: resolvedQuestId,
-          applicationId,
-          hirerId: prototypeViewerId,
-        })
-      );
-  };
-  const handleRejectCandidate = (proposalId: string) => {
-    if (!resolvedQuestId || !quest) return;
-    const proposalType = candidateGroup
-      ? groupMessages.teamProposal
-      : groupMessages.individualProposal;
-    Alert.alert(groupMessages.reject, `${quest.title}\n${proposalType}`, [
-      { text: groupMessages.cancel, style: "cancel" },
-      {
-        text: groupMessages.reject,
-        style: "destructive",
-        onPress: () => {
-          const result = candidateGroup
-            ? questWorkflow.dispatch({
-                type: "REJECT_TEAM",
-                questId: resolvedQuestId,
-                teamId: proposalId,
-                hirerId: prototypeViewerId,
-              })
-            : questWorkflow.dispatch({
-                type: "REJECT_CANDIDATE",
-                questId: resolvedQuestId,
-                applicationId: proposalId,
-                hirerId: prototypeViewerId,
-              });
-          applyPrototypeResult(result);
-        },
-      },
-    ]);
-  };
   const applicationStatusPending = Boolean(quest) && !applicationStatusHydrated;
   const questPending =
     loadingQuest || resolvedPreview === "loading" || applicationStatusPending;
@@ -1335,23 +707,6 @@ export default function QuestDetailScreen({
           <Text accessibilityRole="header" className={styles.title}>
             {quest.title}
           </Text>
-          {activePrototypeState ? (
-            <Text
-              accessibilityLabel={
-                activePrototypeState.quest.status ===
-                QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT
-                  ? groupMessages.partialConsentTitle
-                  : messages.statusLabel(activePrototypeState.quest.status)
-              }
-              className={styles.canonicalStatus}
-              testID="quest-canonical-status"
-            >
-              {activePrototypeState.quest.status ===
-              QuestStatus.QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT
-                ? groupMessages.partialConsentTitle
-                : messages.statusLabel(activePrototypeState.quest.status)}
-            </Text>
-          ) : null}
           <View className={styles.creatorRow}>
             <View className={styles.creatorAvatar}>
               <CircleUserRound
@@ -1535,173 +890,7 @@ export default function QuestDetailScreen({
             ) : null}
           </View>
         ) : null}
-        {activePrototypeState ? (
-          <GroupQuestEntrySurfaces
-            state={activePrototypeState}
-            viewerId={prototypeViewerId}
-            isHirer={isHirerView}
-            messages={groupMessages}
-            onOpenTeam={() => setTeamSheetOpen(true)}
-            onOpenCandidateReview={() => {
-              setSelectedProposalId(null);
-              setCandidateReviewSheetOpen(true);
-            }}
-            onOpenPartialConsent={() => setPartialStartSheetDismissed(false)}
-          />
-        ) : null}
-        {canReportQuest ? (
-          <View className={styles.reportCard} testID="quest-report-card">
-            <View className={styles.reportHeader}>
-              <View className={styles.reportIcon}>
-                <CircleAlert
-                  color={colors.danger}
-                  size={21}
-                  strokeWidth={2.2}
-                />
-              </View>
-              <View className={styles.reportCopy}>
-                <Text className={styles.reportTitle}>
-                  {messages.reportQuest}
-                </Text>
-                <Text className={styles.reportDescription}>
-                  {messages.reportQuestDescription}
-                </Text>
-              </View>
-            </View>
-            <Pressable
-              accessibilityLabel={messages.reportQuest}
-              accessibilityRole="button"
-              className={styles.reportAction}
-              onPress={handleReportQuest}
-              style={{ backgroundColor: colors.danger }}
-              testID="quest-report-button"
-            >
-              <Text className={styles.reportActionText}>
-                {messages.reportQuest}
-              </Text>
-            </Pressable>
-          </View>
-        ) : null}
       </ScrollView>
-      {activePrototypeState && candidateGroup && !isHirerView ? (
-        <TeamAssembleSheet
-          bottomInset={insets.bottom}
-          eligibleMembers={teamDirectory}
-          invitations={activePrototypeState.invitations}
-          locale={locale}
-          onClose={() => {
-            setTeamSheetOpen(false);
-            setTeamReviewing(false);
-            setTeamSelectedMemberIds([]);
-            setTeamSearchQuery("");
-          }}
-          onCreateTeam={
-            activePrototypeState.capabilities.availableActions.includes(
-              "CREATE_TEAM"
-            )
-              ? handleCreateTeam
-              : undefined
-          }
-          onInviteMembers={
-            activePrototypeState.capabilities.availableActions.includes(
-              "INVITE_WORKER"
-            )
-              ? handleInviteMembers
-              : undefined
-          }
-          onRespondInvitation={
-            activePrototypeState.capabilities.availableActions.includes(
-              "RESPOND_INVITATION"
-            )
-              ? handleInvitation
-              : undefined
-          }
-          onSearchQueryChange={setTeamSearchQuery}
-          onSelectedMemberIdsChange={setTeamSelectedMemberIds}
-          onReviewChange={setTeamReviewing}
-          onSubmit={
-            activePrototypeState.capabilities.availableActions.includes(
-              "SUBMIT_TEAM"
-            )
-              ? handleSubmitTeam
-              : undefined
-          }
-          requestedHeadcount={activePrototypeState.quest.headcount}
-          reviewing={teamReviewing}
-          searchQuery={teamSearchQuery}
-          selectedMemberIds={teamSelectedMemberIds}
-          team={teamSheetTeam}
-          viewerId={applicationStudentId}
-          visible={teamSheetOpen}
-        />
-      ) : null}
-      {activePrototypeState &&
-      isHirerView &&
-      quest.candidateMode === QuestCandidateMode.CANDIDATE ? (
-        <CandidateReviewSheet
-          actualHeadcount={activePrototypeState.actualHeadcount}
-          applications={activePrototypeState.applications}
-          bottomInset={insets.bottom}
-          locale={locale}
-          mode={candidateGroup ? "team" : "individual"}
-          onAcceptProposal={
-            activePrototypeState.capabilities.availableActions.includes(
-              "SELECT_CANDIDATE"
-            )
-              ? handleSelectCandidate
-              : undefined
-          }
-          onClose={() => {
-            setCandidateReviewSheetOpen(false);
-            setSelectedProposalId(null);
-          }}
-          onRejectProposal={
-            activePrototypeState.capabilities.availableActions.includes(
-              candidateGroup ? "REJECT_TEAM" : "REJECT_CANDIDATE"
-            )
-              ? handleRejectCandidate
-              : undefined
-          }
-          onSelectProposal={setSelectedProposalId}
-          questTitle={quest.title}
-          requestedHeadcount={activePrototypeState.quest.headcount}
-          rewardSatangPerWorker={activePrototypeState.quest.reward.rewardSatang}
-          selectedProposalId={selectedProposalId}
-          settlement={detailProjection?.settlement ?? undefined}
-          teams={
-            candidateGroup
-              ? activePrototypeState.teams.filter(
-                  (team) => team.status !== QuestTeamStatus.TEAM_FORMING
-                )
-              : []
-          }
-          visible={candidateReviewSheetOpen}
-          fullScreen
-        />
-      ) : null}
-      {activePrototypeState &&
-      activePrototypeState.quest.participation === QuestParticipation.GROUP &&
-      activePrototypeState.quest.candidateMode ===
-        QuestCandidateMode.NO_CANDIDATE &&
-      activePrototypeState.partialStartConsent ? (
-        <PartialGroupStartConsentSheet
-          actualHeadcount={activePrototypeState.actualHeadcount}
-          bottomInset={insets.bottom}
-          canRespond={activePrototypeState.capabilities.availableActions.includes(
-            "VOTE_PARTIAL_GROUP_START_CONSENT"
-          )}
-          consent={activePrototypeState.partialStartConsent}
-          hirerId={activePrototypeState.quest.hirerId}
-          locale={locale}
-          onClose={() => setPartialStartSheetDismissed(true)}
-          onVote={handlePartialStartVote}
-          questTitle={quest.title}
-          requestedHeadcount={activePrototypeState.quest.headcount}
-          voters={partialVoters}
-          viewerId={prototypeViewerId}
-          visible={partialStartSheetOpen}
-        />
-      ) : null}
       {isPostView ? (
         <View
           className={styles.actionBar}
@@ -1719,76 +908,28 @@ export default function QuestDetailScreen({
             </Text>
           </Pressable>
         </View>
-      ) : canMessageOwner ||
-        (isJoinView && !leftQuest && joinedStatus !== "history") ||
-        canApply ? (
+      ) : isJoinView && !leftQuest && joinedStatus !== "history" ? (
         <View
           className={styles.actionBar}
           style={{ paddingBottom: getActionBarPaddingBottom(insets.bottom) }}
           testID="quest-action-bar"
         >
           <View className={styles.actionRow}>
-            {canMessageOwner ? (
-              <Pressable
-                accessibilityLabel={messages.messageOwner}
-                accessibilityRole="button"
-                className={styles.messageOwnerAction}
-                onPress={handleMessageOwner}
-                testID="quest-message-owner-button"
-              >
-                <MessageCircle
-                  color={colors.primary}
-                  size={18}
-                  strokeWidth={2.2}
-                />
-                <Text
-                  className={styles.messageOwnerActionText}
-                  numberOfLines={1}
-                >
-                  {messages.messageOwnerShort}
-                </Text>
-              </Pressable>
-            ) : null}
-            {isJoinView && !leftQuest && joinedStatus !== "history" ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={handleLeaveQuest}
-                className={styles.leaveAction}
-                testID="quest-leave-button"
-              >
-                <LogOut color={colors.dangerDark} size={19} strokeWidth={2.2} />
-                <Text className={styles.leaveActionText}>
-                  {joinedStatus === "pending"
-                    ? messages.withdrawApplication
-                    : messages.leaveQuest}
-                </Text>
-              </Pressable>
-            ) : canApply ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setManualConfirmationOpen(true)}
-                className={styles.primaryAction}
-                testID="quest-apply-button"
-              >
-                <Text className={styles.primaryActionText}>
-                  {firstCome ? messages.joinNow : messages.applyNow}
-                </Text>
-              </Pressable>
-            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              onPress={handleLeaveQuest}
+              className={styles.leaveAction}
+              testID="quest-leave-button"
+            >
+              <LogOut color={colors.dangerDark} size={19} strokeWidth={2.2} />
+              <Text className={styles.leaveActionText}>
+                {joinedStatus === "pending"
+                  ? messages.withdrawApplication
+                  : messages.leaveQuest}
+              </Text>
+            </Pressable>
           </View>
         </View>
-      ) : null}
-      {confirmationOpen ? (
-        <ConfirmationSheet
-          locale={locale}
-          messages={messages}
-          onCancel={() => {
-            setManualConfirmationOpen(false);
-            setDismissedIntent(routeIntentKey);
-          }}
-          onConfirm={confirmApplication}
-          quest={quest}
-        />
       ) : null}
     </SafeAreaView>
   );

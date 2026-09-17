@@ -4,7 +4,7 @@ import type {
   PortfolioEntry,
   ProfileResponse,
 } from "../../api/contracts";
-import type { ProfileEditSectionErrors } from "../../api/ProfileApi";
+import type { ProfileEditSectionErrors } from "../../api/StudentApi";
 
 export type EditSection =
   "basics" | "experience" | "portfolio" | "certificates";

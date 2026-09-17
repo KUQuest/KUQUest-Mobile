@@ -343,6 +343,98 @@ export function getRewardValidationError(
   return undefined;
 }
 
+export const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+export function toDateValue(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+export function getDateTimeValue(
+  dateValue: string,
+  timeValue: string
+): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue) || !TIME_PATTERN.test(timeValue))
+    return null;
+  const date = new Date(`${dateValue}T${timeValue}:00`);
+  return Number.isNaN(date.getTime()) ? null : date.getTime();
+}
+
+export interface QuestDraftStepFinding {
+  field:
+    | "title"
+    | "tag"
+    | "description"
+    | "conditions"
+    | "startDate"
+    | "deadline"
+    | "startTime"
+    | "endTime"
+    | "location"
+    | "headcount"
+    | "wage";
+  code: string;
+}
+
+export function validateQuestDraftStep(
+  draft: QuestDraft,
+  step: QuestDraftStep,
+  now: Date
+): QuestDraftStepFinding[] {
+  const findings: QuestDraftStepFinding[] = [];
+  if (step === 1) {
+    if (!draft.title.trim())
+      findings.push({ field: "title", code: "required" });
+    if (!draft.tag) findings.push({ field: "tag", code: "required" });
+    if (!draft.description.trim())
+      findings.push({ field: "description", code: "required" });
+    if (!draft.conditions.trim())
+      findings.push({ field: "conditions", code: "required" });
+  }
+  if (step === 2) {
+    const today = toDateValue(now);
+    if (!draft.startDate)
+      findings.push({ field: "startDate", code: "required" });
+    else if (draft.startDate < today)
+      findings.push({ field: "startDate", code: "startDatePast" });
+    if (!draft.deadline) findings.push({ field: "deadline", code: "required" });
+    if (draft.startDate && draft.deadline && draft.deadline < draft.startDate)
+      findings.push({ field: "deadline", code: "deadlineOrder" });
+    if (!draft.startTime)
+      findings.push({ field: "startTime", code: "required" });
+    else if (!TIME_PATTERN.test(draft.startTime))
+      findings.push({ field: "startTime", code: "format" });
+    if (!draft.endTime) findings.push({ field: "endTime", code: "required" });
+    else if (!TIME_PATTERN.test(draft.endTime))
+      findings.push({ field: "endTime", code: "format" });
+    const startDateTime = getDateTimeValue(draft.startDate, draft.startTime);
+    const endDateTime = getDateTimeValue(draft.deadline, draft.endTime);
+    if (
+      startDateTime !== null &&
+      endDateTime !== null &&
+      endDateTime <= startDateTime
+    )
+      findings.push({ field: "endTime", code: "timeOrder" });
+    if (draft.locationMode === "ON_CAMPUS" && !draft.location.trim())
+      findings.push({ field: "location", code: "required" });
+    if (draft.participation === "GROUP") {
+      if (!draft.headcount.trim())
+        findings.push({ field: "headcount", code: "required" });
+      else if (Number(draft.headcount) < 1)
+        findings.push({ field: "headcount", code: "bounds" });
+    }
+    // Reuse the reward rule; sentinel messages double as codes.
+    const wageCode = getRewardValidationError(draft.wage, {
+      empty: "empty",
+      format: "format",
+      bounds: () => "bounds",
+    });
+    if (wageCode) findings.push({ field: "wage", code: wageCode });
+  }
+  return findings;
+}
+
 function normalizeCandidateMode(value: string): QuestDraftCandidateMode {
   if (value === "CANDIDATE" || value === "review") return "CANDIDATE";
   return "FIRST_COME_FIRST_SERVED";
