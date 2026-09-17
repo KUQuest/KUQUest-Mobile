@@ -18,10 +18,18 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react-native";
-import { walletApi, type TopUpData, type TopUpQuote } from "@/api/WalletApi";
+import { type TopUpData, type TopUpQuote } from "@/api/WalletApi";
+import { formatSatang } from "@/domain/satang";
 import type { SupportedLocale } from "@/locales/LocaleProvider";
 import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
+import {
+  checkTopUpAmount,
+  checkTopUpPayment,
+  createTopUpFromQuote,
+  requestTopUpQuote,
+  simulateTopUpPayment,
+} from "./walletModule";
 import { walletStyles as s } from "./walletStyles";
 
 interface WalletPaymentModalProps {
@@ -32,16 +40,6 @@ interface WalletPaymentModalProps {
 }
 
 const QUICK_AMOUNTS = [100, 500, 1000, 2000] as const;
-
-function formatSatang(satang: number, locale: SupportedLocale): string {
-  return `฿${(satang / 100).toLocaleString(
-    locale === "th" ? "th-TH" : "en-US",
-    {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }
-  )}`;
-}
 
 function formatExpiry(expiresAt: string, locale: SupportedLocale): string {
   const date = new Date(expiresAt);
@@ -71,12 +69,8 @@ export function WalletPaymentModal({
   const [paymentVerified, setPaymentVerified] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  const numericAmount = Number(amountStr);
-  const amountSatang = numericAmount * 100;
-  const isAmountValid =
-    Number.isSafeInteger(numericAmount) &&
-    numericAmount >= 10 &&
-    Number.isSafeInteger(amountSatang);
+  const amountCheck = checkTopUpAmount(amountStr);
+  const isAmountValid = amountCheck.ok;
 
   const resetQuote = () => {
     setQuote(null);
@@ -96,8 +90,12 @@ export function WalletPaymentModal({
   };
 
   const handleContinue = async () => {
-    if (!isAmountValid) {
-      setError(m.minTopUpHint);
+    if (!amountCheck.ok) {
+      setError(
+        amountCheck.reason === "BELOW_MINIMUM"
+          ? m.minTopUpHint
+          : m.paymentFailed
+      );
       return;
     }
     setLoading(true);
@@ -105,7 +103,7 @@ export function WalletPaymentModal({
     setStatusMessage(null);
 
     try {
-      const nextQuote = await walletApi.quoteTopUp(amountSatang);
+      const nextQuote = await requestTopUpQuote(amountCheck.satang);
       setQuote(nextQuote);
       setStep("confirmation");
     } catch (err: unknown) {
@@ -121,8 +119,12 @@ export function WalletPaymentModal({
     setError(null);
 
     try {
-      const topUp = await walletApi.createTopUp(quote.id);
-      setActiveTopUp(topUp);
+      const result = await createTopUpFromQuote(quote, new Date());
+      if (!result.ok) {
+        setError(m.paymentFailed);
+        return;
+      }
+      setActiveTopUp(result.topUp);
       setStep("promptPay");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : m.paymentFailed);
@@ -131,20 +133,37 @@ export function WalletPaymentModal({
     }
   };
 
+  const applyPaymentStatus = (latest: TopUpData) => {
+    setActiveTopUp(latest);
+    if (latest.topUpStatus === "PAID") {
+      setPaymentVerified(true);
+      setStatusMessage(m.paymentSuccess);
+      onSuccess();
+    } else {
+      setStatusMessage(m.paymentPending);
+    }
+  };
+
   const handleVerifyPayment = async () => {
     if (!activeTopUp || checkingStatus) return;
     setCheckingStatus(true);
     setStatusMessage(null);
     try {
-      const latest = await walletApi.simulateTopUp(activeTopUp.id);
-      setActiveTopUp(latest);
-      if (latest.topUpStatus === "PAID") {
-        setPaymentVerified(true);
-        setStatusMessage(m.paymentSuccess);
-        onSuccess();
-      } else {
-        setStatusMessage(m.paymentPending);
-      }
+      applyPaymentStatus(await checkTopUpPayment(activeTopUp.id));
+    } catch (err: unknown) {
+      setStatusMessage(err instanceof Error ? err.message : m.paymentFailed);
+    } finally {
+      setCheckingStatus(false);
+    }
+  };
+
+  const handleSimulatePayment = async () => {
+    if (!activeTopUp || checkingStatus) return;
+    setCheckingStatus(true);
+    setStatusMessage(null);
+    try {
+      const latest = await simulateTopUpPayment(activeTopUp.id);
+      if (latest) applyPaymentStatus(latest);
     } catch (err: unknown) {
       setStatusMessage(err instanceof Error ? err.message : m.paymentFailed);
     } finally {
@@ -435,7 +454,7 @@ export function WalletPaymentModal({
                     <Text
                       style={{ color: colors.textStrong, fontWeight: "700" }}
                     >
-                      {formatSatang(quote.creditSatang, locale)}
+                      {formatSatang(quote.creditSatang, locale, "exact")}
                     </Text>
                   </View>
                   <View
@@ -448,7 +467,7 @@ export function WalletPaymentModal({
                       {m.topUpFee}
                     </Text>
                     <Text style={{ color: colors.textStrong }}>
-                      {formatSatang(quote.chargedFeeSatang, locale)}
+                      {formatSatang(quote.chargedFeeSatang, locale, "exact")}
                     </Text>
                   </View>
                   <View
@@ -461,7 +480,7 @@ export function WalletPaymentModal({
                       {m.topUpTax}
                     </Text>
                     <Text style={{ color: colors.textStrong }}>
-                      {formatSatang(quote.chargedTaxSatang, locale)}
+                      {formatSatang(quote.chargedTaxSatang, locale, "exact")}
                     </Text>
                   </View>
                   <View
@@ -485,7 +504,7 @@ export function WalletPaymentModal({
                         fontWeight: "800",
                       }}
                     >
-                      {formatSatang(quote.paymentTotalSatang, locale)}
+                      {formatSatang(quote.paymentTotalSatang, locale, "exact")}
                     </Text>
                   </View>
                 </View>
@@ -599,7 +618,11 @@ export function WalletPaymentModal({
                         }}
                       >
                         {m.topUpPromptPayTitle} •{" "}
-                        {formatSatang(activeTopUp!.paymentTotalSatang, locale)}
+                        {formatSatang(
+                          activeTopUp!.paymentTotalSatang,
+                          locale,
+                          "exact"
+                        )}
                       </Text>
                     </View>
                   )}
@@ -618,7 +641,11 @@ export function WalletPaymentModal({
                       marginTop: 2,
                     }}
                   >
-                    {formatSatang(activeTopUp!.paymentTotalSatang, locale)}
+                    {formatSatang(
+                      activeTopUp!.paymentTotalSatang,
+                      locale,
+                      "exact"
+                    )}
                   </Text>
                 </View>
 
@@ -662,7 +689,11 @@ export function WalletPaymentModal({
                         }}
                       >
                         {m.paymentCredited(
-                          formatSatang(activeTopUp!.creditSatang, locale)
+                          formatSatang(
+                            activeTopUp!.creditSatang,
+                            locale,
+                            "exact"
+                          )
                         )}
                       </Text>
                     </View>
@@ -732,6 +763,37 @@ export function WalletPaymentModal({
                           </Text>
                         </>
                       )}
+                    </TouchableOpacity>
+                  ) : null}
+                  {__DEV__ && !paymentVerified ? (
+                    <TouchableOpacity
+                      accessibilityLabel={m.simulateSuccess}
+                      accessibilityRole="button"
+                      disabled={checkingStatus}
+                      onPress={handleSimulatePayment}
+                      style={[
+                        s.actionButtonSecondary,
+                        {
+                          backgroundColor: colors.surfaceMuted,
+                          borderColor: colors.borderSubtle,
+                          height: 48,
+                          borderRadius: 14,
+                        },
+                      ]}
+                      testID="quest-funding-top-up-simulate-dev"
+                    >
+                      <Text
+                        style={[
+                          s.actionButtonLabelSecondary,
+                          {
+                            color: colors.textStrong,
+                            fontSize: 14,
+                            fontWeight: "700",
+                          },
+                        ]}
+                      >
+                        {m.simulateSuccess}
+                      </Text>
                     </TouchableOpacity>
                   ) : null}
 

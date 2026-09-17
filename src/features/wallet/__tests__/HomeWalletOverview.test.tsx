@@ -64,7 +64,7 @@ describe("HomeWalletOverview", () => {
       chargedFeeSatang: 400,
       chargedTaxSatang: 28,
       paymentTotalSatang: 50428,
-      expiresAt: "2026-09-15T12:00:00Z",
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
     });
     (walletApi.createTopUp as jest.Mock).mockResolvedValueOnce({
       id: "topup-1",
@@ -75,7 +75,7 @@ describe("HomeWalletOverview", () => {
       qrDataUrl: "data:image/png;base64,mock-qr",
       topUpStatus: "PENDING",
     });
-    (walletApi.simulateTopUp as jest.Mock).mockResolvedValueOnce({
+    (walletApi.getTopUpStatus as jest.Mock).mockResolvedValueOnce({
       id: "topup-1",
       creditSatang: 50000,
       topUpStatus: "PAID",

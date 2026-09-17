@@ -73,6 +73,7 @@ src/
 │   ├── ui/               # Button, LoadingSkeleton, TopBar, QuestFundingSummary
 │   └── navigation/       # BottomNav, NavigationVisibilityContext
 ├── api/                  # HTTP client, Better Auth cookie bridge, Zod contracts
+├── domain/               # Cross-slice domain primitives (Integer Satang)
 ├── locales/              # Thai/English localization dictionaries and LocaleProvider
 ├── theme/                # Design tokens (colors, spacing, typography, layout metrics)
 └── tw/                   # NativeWind primitives and cn() utility

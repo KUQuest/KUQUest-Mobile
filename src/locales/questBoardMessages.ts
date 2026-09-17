@@ -35,6 +35,8 @@ export interface QuestBoardMessages {
   topUpCreateError: string;
   topUpVerifyPayment: string;
   topUpVerifyingPayment: string;
+  topUpPaymentPending: string;
+  topUpSimulateDev: string;
   topUpClose: string;
   topUpBack: string;
   topUpContinue: string;
@@ -266,6 +268,8 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     topUpCreateError: "Unable to create the PromptPay QR. Please try again.",
     topUpVerifyPayment: "Check payment status",
     topUpVerifyingPayment: "Checking payment status…",
+    topUpPaymentPending: "Awaiting payment confirmation…",
+    topUpSimulateDev: "Simulate Paid (Dev)",
     topUpClose: "Close",
     topUpBack: "Back",
     topUpContinue: "Continue",
@@ -571,6 +575,8 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     topUpCreateError: "ไม่สามารถสร้าง QR พร้อมเพย์ได้ โปรดลองอีกครั้ง",
     topUpVerifyPayment: "ตรวจสอบสถานะการชำระเงิน",
     topUpVerifyingPayment: "กำลังตรวจสอบสถานะการชำระเงิน…",
+    topUpPaymentPending: "กำลังรอการยืนยันการชำระเงิน…",
+    topUpSimulateDev: "จำลองชำระสำเร็จ (Dev)",
     topUpClose: "ปิด",
     topUpBack: "ย้อนกลับ",
     topUpContinue: "ดำเนินการต่อ",

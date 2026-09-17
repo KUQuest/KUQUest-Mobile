@@ -1,3 +1,4 @@
+import { formatSatang, isValidSatang } from "@/domain/satang";
 import { questFixtures } from "./questFixtures";
 import type {
   ChatAttachment,
@@ -18,10 +19,8 @@ import {
   QuestProofStatus,
   QuestStatus,
   QuestTeamStatus,
-  formatSatang,
   MAX_PROOF_ATTACHMENTS,
   MAX_PROOF_NOTE_LENGTH,
-  isValidSatang,
   type CanonicalQuestCandidateMode,
   type QuestAction,
   type QuestApplication,
