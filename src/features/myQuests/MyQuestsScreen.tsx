@@ -1070,7 +1070,7 @@ export default function MyQuestsScreen({
       ? initialTab
       : "active"
   );
-
+  /* eslint-disable react-hooks/set-state-in-effect -- sync tab and role with route parameters */
   React.useEffect(() => {
     if (initialRole) setRole(initialRole);
   }, [initialRole]);
@@ -1095,6 +1095,7 @@ export default function MyQuestsScreen({
       }
     }
   }, [initialTab, role]);
+  /* eslint-enable react-hooks/set-state-in-effect */
   const [candidateReviewQuestId, setCandidateReviewQuestId] = useState<
     string | null
   >(null);
