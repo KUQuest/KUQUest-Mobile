@@ -14,13 +14,14 @@ jest.mock("lucide-react-native", () => ({
   LayoutDashboard: () => null,
   MessageSquare: () => null,
   Plus: () => null,
+  WalletCards: () => null,
 }));
 
 describe("authenticated primary navigation", () => {
   it("keeps the approved five-destination order", () => {
     expect(navigationItems.map((item) => item.routeName)).toEqual([
       "index",
-      "my-quests",
+      "money",
       "create",
       "chat",
       "profile",
@@ -38,8 +39,10 @@ describe("authenticated primary navigation", () => {
       board: "Home",
       boardShort: "Home",
       boardTitle: "Quest Board",
-      myQuests: "My Quests",
-      create: "Create",
+      money: "Money",
+      moneyShort: "Money",
+      create: "Create Quest",
+      createShort: "Create Quest",
       chat: "Chat",
       profile: "Profile",
     });
@@ -47,8 +50,10 @@ describe("authenticated primary navigation", () => {
       board: "หน้าหลัก",
       boardShort: "หน้าหลัก",
       boardTitle: "กระดานเควสต์",
-      myQuests: "เควสต์ของฉัน",
-      create: "สร้าง",
+      money: "กระเป๋าเงิน",
+      moneyShort: "กระเป๋าเงิน",
+      create: "สร้างเควสต์",
+      createShort: "สร้างเควสต์",
       chat: "แชต",
       profile: "โปรไฟล์นักศึกษา",
     });

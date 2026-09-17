@@ -1,4 +1,5 @@
 import React from "react";
+import { StyleSheet } from "react-native";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { HomeWalletOverview } from "../HomeWalletOverview";
 import { walletApi } from "@/api/WalletApi";
@@ -59,6 +60,27 @@ describe("HomeWalletOverview", () => {
     expect(view.getByText("฿450.00")).toBeTruthy();
     expect(view.getByText("฿150.00")).toBeTruthy();
     expect(view.getByText("฿50.00")).toBeTruthy();
+  });
+
+  it("keeps Money controls at the Android touch-target minimum", async () => {
+    const view = await render(<HomeWalletOverview locale="en" />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("wallet-spending-balance")).toBeTruthy();
+    });
+
+    expect(
+      StyleSheet.flatten(view.getByTestId("wallet-refresh-button").props.style)
+    ).toMatchObject({ height: 48, width: 48 });
+    expect(
+      StyleSheet.flatten(view.getByTestId("wallet-topup-button").props.style)
+    ).toMatchObject({ height: 48 });
+    expect(
+      StyleSheet.flatten(view.getByTestId("wallet-withdraw-button").props.style)
+    ).toMatchObject({ height: 48 });
+    expect(
+      StyleSheet.flatten(view.getByTestId("wallet-history-button").props.style)
+    ).toMatchObject({ height: 48 });
   });
 
   it("quotes server totals before confirmation and creates PromptPay only after confirm", async () => {

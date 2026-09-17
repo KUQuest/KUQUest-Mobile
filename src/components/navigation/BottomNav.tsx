@@ -1,32 +1,27 @@
 import React from "react";
 import { cn } from "@/tw/cn";
-import { useWindowDimensions } from "react-native";
+import { useColorScheme, useWindowDimensions } from "react-native";
 import { useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { Pressable, Text, View } from "@/tw";
 import { Animated } from "@/tw/animated";
 import {
-  CheckSquare,
   CircleUserRound,
   LayoutDashboard,
   MessageSquare,
   Plus,
+  WalletCards,
 } from "lucide-react-native";
 import { useLocale } from "@/locales/LocaleProvider";
 import { navigationMessages } from "@/locales/navigationMessages";
-import { colors } from "@/theme/colors";
 import { getAppChromeMetrics } from "@/theme/layout";
 import { useNavigationVisibility } from "./NavigationVisibilityContext";
-import styles from "./bottomNavStyles";
+import styles, { getBottomNavigationColors } from "./bottomNavStyles";
 
 type NavigationItem = {
   routeName: string;
-  labelKey: "board" | "myQuests" | "create" | "chat" | "profile";
+  labelKey: "board" | "money" | "create" | "chat" | "profile";
   shortLabelKey:
-    | "boardShort"
-    | "myQuestsShort"
-    | "createShort"
-    | "chatShort"
-    | "profileShort";
+    "boardShort" | "moneyShort" | "createShort" | "chatShort" | "profileShort";
   icon: typeof LayoutDashboard;
   isCreate?: boolean;
   hasUnread?: boolean;
@@ -40,10 +35,10 @@ export const navigationItems: readonly NavigationItem[] = [
     icon: LayoutDashboard,
   },
   {
-    routeName: "my-quests",
-    labelKey: "myQuests",
-    shortLabelKey: "myQuestsShort",
-    icon: CheckSquare,
+    routeName: "money",
+    labelKey: "money",
+    shortLabelKey: "moneyShort",
+    icon: WalletCards,
   },
   {
     routeName: "create",
@@ -77,6 +72,8 @@ export function BottomNav({
   insets,
 }: TabBarProps) {
   const { width, fontScale } = useWindowDimensions();
+  const colorScheme = useColorScheme();
+  const navigationColors = getBottomNavigationColors(colorScheme);
   const metrics = getAppChromeMetrics(width, fontScale);
   const { locale } = useLocale();
   const messages = navigationMessages[locale];
@@ -192,14 +189,18 @@ export function BottomNav({
                     }}
                   >
                     <Icon
-                      color={colors.white}
+                      color={navigationColors.white}
                       size={metrics.createIconSize}
                       strokeWidth={2.5}
                     />
                   </View>
                 ) : (
                   <Icon
-                    color={isFocused ? colors.primaryDeep : colors.navIconMuted}
+                    color={
+                      isFocused
+                        ? navigationColors.primaryDeep
+                        : navigationColors.navIconMuted
+                    }
                     size={metrics.iconSize}
                     strokeWidth={2.5}
                   />
@@ -211,7 +212,9 @@ export function BottomNav({
                   fontSize: metrics.labelFontSize,
                   includeFontPadding: false,
                   lineHeight: metrics.labelLineHeight,
-                  color: isFocused ? colors.primaryDeep : undefined,
+                  color: isFocused
+                    ? navigationColors.primaryDeep
+                    : navigationColors.textSecondary,
                 }}
               >
                 {messages[item.shortLabelKey]}
@@ -220,7 +223,7 @@ export function BottomNav({
                 <View
                   accessibilityLabel={`${label} selected`}
                   className={styles.activeIndicator}
-                  style={{ backgroundColor: colors.primaryDeep }}
+                  style={{ backgroundColor: navigationColors.primaryDeep }}
                 />
               ) : null}
               {item.hasUnread ? (

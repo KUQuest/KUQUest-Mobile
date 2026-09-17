@@ -1377,6 +1377,7 @@ function seedStates(): FixtureSeed[] {
     "clean-fridge": QuestStatus.QUEST_DISPUTED,
     "walk-together": QuestStatus.QUEST_AWAITING_EDIT_CONSENT,
     "play-badminton": QuestStatus.QUEST_OPEN,
+    "hirer-home-progress-demo": QuestStatus.QUEST_IN_PROGRESS,
   };
   const seeds = questFixtures.map((fixture) => ({
     state: createState(fixture, statuses[fixture.id] ?? QuestStatus.QUEST_OPEN),
@@ -1389,6 +1390,14 @@ function seedStates(): FixtureSeed[] {
     return seed;
   };
 
+  const hirerHomeProgress = get("hirer-home-progress-demo");
+  hirerHomeProgress.state.assignments.push(
+    assignment(hirerHomeProgress.state.quest, "demo-worker-1", "APPLICATION")
+  );
+  ensureConversation(hirerHomeProgress.state, [
+    hirerHomeProgress.state.quest.hirerId,
+    "demo-worker-1",
+  ]);
   const moveBoxes = get("move-boxes");
   moveBoxes.state.applications.push(
     application(moveBoxes.state.quest.id, "demo-worker-2")

@@ -60,6 +60,10 @@ _Avoid_: Candidate, Departed Worker.
 A former Active Worker whose Assignment ended before Quest completion (e.g. through cancellation). Retains read-only access to messages sent up to their departure.
 _Avoid_: Active Worker, Candidate.
 
+**Role Workspace**:
+A task-focused in-app view for a Member acting as a Hirer or Worker. It changes the Member's presented tasks and primary actions without changing the Member's identity or Quest-specific roles.
+_Avoid_: Account type, permanent role, profile role.
+
 ---
 
 ### 2. Academic Registration & Profile
