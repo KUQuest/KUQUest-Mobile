@@ -100,25 +100,28 @@ import {
   persistQuestDraft,
 } from "./createQuestPersistence";
 import { measureFieldRelativeToScroll } from "./createQuestFocus";
+import {
+  formatDate,
+  formatDateTime,
+  getDatePickerValue,
+  getDateTimePickerValue,
+} from "./createQuestDates";
+import {
+  LOGISTICS_FIELDS,
+  QUEST_DETAIL_FIELDS,
+  type ChoiceOption,
+  type ChoiceVariant,
+  type CompletionState,
+  type Focusable,
+  type PickerMode,
+  type SaveErrorIntent,
+  type SaveState,
+  type ScheduleField,
+  type Step,
+} from "./createQuestTypes";
 import { liveQuestService } from "../questBoard/liveQuestService";
 import { MAX_QUEST_IMAGES, type QuestPublishCheck } from "../questBoard/types";
 
-type Step = 1 | 2 | 3;
-type ScheduleField = "start" | "end";
-type PickerMode = "date" | "time";
-type SaveState = "idle" | "saving" | "saved" | "error";
-type CompletionState = "DRAFT" | "OPEN";
-type SaveErrorIntent = { state: CompletionState; completesFlow: boolean };
-type Focusable =
-  | React.ComponentRef<typeof RNTextInput>
-  | React.ComponentRef<typeof RNPressable>;
-type ChoiceVariant = "format" | "acceptance";
-type ChoiceOption = {
-  value: string;
-  label: string;
-  description: string;
-  icon: LucideIcon;
-};
 type ReviewActionButtonProps = {
   label: string;
   variant: "primary" | "secondary";
@@ -128,57 +131,6 @@ type ReviewActionButtonProps = {
   testID: string;
   onPress: () => void;
 };
-
-const QUEST_DETAIL_FIELDS = new Set([
-  "title",
-  "tag",
-  "description",
-  "conditions",
-]);
-const LOGISTICS_FIELDS = new Set([
-  "startDate",
-  "deadline",
-  "startTime",
-  "endTime",
-  "location",
-]);
-
-function formatDate(
-  value: string,
-  locale: "en" | "th",
-  emptyLabel: string
-): string {
-  if (!value) return emptyLabel;
-  const date = new Date(`${value}T12:00:00`);
-  if (Number.isNaN(date.getTime())) return emptyLabel;
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-}
-
-function formatDateTime(
-  dateValue: string,
-  timeValue: string,
-  locale: "en" | "th",
-  emptyLabel: string
-): string {
-  if (!dateValue || !TIME_PATTERN.test(timeValue)) return emptyLabel;
-  return `${formatDate(dateValue, locale, emptyLabel)} · ${timeValue}`;
-}
-
-function getDatePickerValue(value: string): Date {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return new Date(`${value}T12:00:00`);
-  return new Date();
-}
-
-function getDateTimePickerValue(dateValue: string, timeValue: string): Date {
-  const date = getDatePickerValue(dateValue);
-  const match = TIME_PATTERN.exec(timeValue);
-  if (match) date.setHours(Number(match[1]), Number(match[2]), 0, 0);
-  return date;
-}
 
 function FieldLabel({
   children,
@@ -1543,9 +1495,9 @@ export default function CreateQuestScreen({
 
   useEffect(() => {
     if (!pendingInvalidField) return;
-    const targetStep = QUEST_DETAIL_FIELDS.has(pendingInvalidField) ? 1 : 2;
+    const targetStep = pendingInvalidField in QUEST_DETAIL_FIELDS ? 1 : 2;
     if (step !== targetStep) return;
-    if (LOGISTICS_FIELDS.has(pendingInvalidField) && !logisticsExpanded) return;
+    if (pendingInvalidField in LOGISTICS_FIELDS && !logisticsExpanded) return;
     if (focusedInvalidFieldRef.current === pendingInvalidField) return;
     focusedInvalidFieldRef.current = pendingInvalidField;
     focusInvalidField(pendingInvalidField);
@@ -1598,7 +1550,7 @@ export default function CreateQuestScreen({
       const firstError = `${fieldLabels[firstErrorKey] ?? messages.title}: ${nextErrors[firstErrorKey]}`;
       setValidationSummary(firstError);
       AccessibilityInfo.announceForAccessibility(firstError);
-      if (currentStep === 2 && LOGISTICS_FIELDS.has(firstErrorKey))
+      if (currentStep === 2 && firstErrorKey in LOGISTICS_FIELDS)
         setLogisticsExpanded(true);
       if (currentStep !== step) {
         setStep(currentStep);
