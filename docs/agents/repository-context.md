@@ -76,6 +76,7 @@ The route tree currently has no dedicated route file for Sent Work, Candidate In
 - `src/api/` — `ApiClient`, request/error boundary, Zod/API contracts, `StudentApi`, `ProfileApi`. Network behavior belongs here, not in screen render code.
 - `src/components/ui/` — shared UI primitives, loading/placeholder/button, TopBar, Quest Funding Summary, Prototype Menu.
 - `src/components/navigation/` — BottomNav and navigation visibility context.
+- `src/components/layout/` — shared screen roots and safe-area ownership (`ScreenLayout`).
 - `src/domain/` — cross-slice domain primitives; `satang.ts` owns Integer Satang parsing and display.
 - `src/locales/` — Thai/English dictionaries and `LocaleProvider`; user-visible strings belong here.
 - `src/theme/` — colors, spacing, typography, layout/profile metrics.
