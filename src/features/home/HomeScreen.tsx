@@ -67,10 +67,17 @@ export default function HomeScreen() {
       );
 
       const cardPromises = activeQuests.map(async (q) => {
-        const [assignments, applications] = await Promise.all([
+        const isSingleCandidate =
+          q.mode === "CANDIDATE" && q.participation !== "GROUP";
+        const isGroupCandidate =
+          q.mode === "CANDIDATE" && q.participation === "GROUP";
+        const [assignments, applications, teams] = await Promise.all([
           questApi.listQuestAssignments(q.id).catch(() => []),
-          q.mode === "CANDIDATE"
+          isSingleCandidate
             ? questApi.listApplications(q.id).catch(() => [])
+            : Promise.resolve([]),
+          isGroupCandidate
+            ? questApi.listCandidateTeams(q.id).catch(() => [])
             : Promise.resolve([]),
         ]);
 
@@ -78,6 +85,7 @@ export default function HomeScreen() {
           new Set([
             ...assignments.map((a) => a.workerId),
             ...applications.map((a) => a.memberId),
+            ...teams.map((t) => t.leaderId),
           ])
         );
 
@@ -106,10 +114,15 @@ export default function HomeScreen() {
           .map((a) => profileMap.get(a.workerId))
           .filter((p): p is QuestMemberProfile => Boolean(p));
 
-        const applicantsList = applications
-          .filter((app) => app.state === "APPLICATION_APPLIED")
-          .map((app) => profileMap.get(app.memberId))
-          .filter((p): p is QuestMemberProfile => Boolean(p));
+        const applicantsList = isGroupCandidate
+          ? teams
+              .filter((t) => t.state === "TEAM_SUBMITTED")
+              .map((t) => profileMap.get(t.leaderId))
+              .filter((p): p is QuestMemberProfile => Boolean(p))
+          : applications
+              .filter((app) => app.state === "APPLICATION_APPLIED")
+              .map((app) => profileMap.get(app.memberId))
+              .filter((p): p is QuestMemberProfile => Boolean(p));
 
         return {
           id: q.id,
@@ -641,7 +654,19 @@ export default function HomeScreen() {
           applicants={rosterModalQuest.applicants}
           onClose={() => setRosterModalQuest(null)}
           onOpenWorkerProfile={handleOpenWorkerProfile}
-          onOpenManageQuest={handleOpenDetails}
+          onOpenManageQuest={() => {
+            const hasPendingSelection =
+              rosterModalQuest.mode === "CANDIDATE" &&
+              rosterModalQuest.applicants.length > 0;
+            if (hasPendingSelection) {
+              router.push({
+                pathname: "/quest/[id]/select-roster",
+                params: { id: rosterModalQuest.id },
+              });
+            } else {
+              handleOpenDetails(rosterModalQuest.id);
+            }
+          }}
         />
       )}
     </ScreenLayout>
