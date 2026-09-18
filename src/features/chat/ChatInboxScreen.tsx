@@ -379,12 +379,14 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
   const { refreshing, refresh, refreshOnFocus } =
     useCalmRefresh(loadConversations);
   useEffect(() => {
+    if (!resolvedViewerId) return;
     void refresh(true).catch(() => undefined);
   }, [refresh, resolvedViewerId]);
   useFocusEffect(
     useCallback(() => {
+      if (!resolvedViewerId) return;
       refreshOnFocus();
-    }, [refreshOnFocus])
+    }, [refreshOnFocus, resolvedViewerId])
   );
   const bottomPadding =
     getBottomNavigationInset(chromeMetrics, insets.bottom) + spacing.lg;
