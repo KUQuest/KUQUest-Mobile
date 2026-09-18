@@ -450,7 +450,7 @@ export default function HomeScreen() {
               <Pressable
                 accessibilityLabel={`${messages.quickTopUpTitle}: ${messages.quickTopUpDesc}`}
                 accessibilityRole="button"
-                onPress={() => router.push("/money")}
+                onPress={() => router.push("/top-up")}
                 style={[
                   styles.quickAccessCard,
                   {
