@@ -12,6 +12,8 @@ export const chatAttachmentSchema = z.object({
   fileName: z.string(),
   mediaType: z.string(),
   sizeBytes: z.number().int().positive(),
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
   createdAt: z.string(),
 });
 export type ServerChatAttachment = z.infer<typeof chatAttachmentSchema>;
@@ -265,9 +267,65 @@ export function serverConversationToChatConversation(
   };
 }
 
+export interface CachedChatAttachmentLink {
+  attachmentId: string;
+  url: string;
+  expiresAt: string;
+  expiresAtTimestamp: number;
+}
+
 export class ChatApi {
+  private readonly attachmentLinkCache = new Map<
+    string,
+    CachedChatAttachmentLink
+  >();
+
   constructor(private readonly client: ApiClient = new ApiClient()) {}
 
+  private parseExpiresAt(expiresAt: string): number {
+    const parsed = Date.parse(expiresAt);
+    if (!Number.isNaN(parsed)) {
+      return parsed;
+    }
+    const numeric = Number(expiresAt);
+    return Number.isNaN(numeric) ? 0 : numeric;
+  }
+
+  getCachedAttachmentLink(
+    attachmentId: string
+  ): ServerChatAttachmentLink | null {
+    const cached = this.attachmentLinkCache.get(attachmentId);
+    if (!cached) {
+      return null;
+    }
+    // 60-second safety window before expiry
+    if (Date.now() >= cached.expiresAtTimestamp - 60_000) {
+      this.attachmentLinkCache.delete(attachmentId);
+      return null;
+    }
+    return {
+      attachmentId: cached.attachmentId,
+      url: cached.url,
+      expiresAt: cached.expiresAt,
+    };
+  }
+
+  cacheAttachmentLink(
+    attachmentId: string,
+    link: ServerChatAttachmentLink
+  ): void {
+    const expiresAtTimestamp = this.parseExpiresAt(link.expiresAt);
+    this.attachmentLinkCache.set(attachmentId, {
+      attachmentId: link.attachmentId,
+      url: link.url,
+      expiresAt: link.expiresAt,
+      expiresAtTimestamp,
+    });
+  }
+
+  clearAttachmentLinkCache(): void {
+    this.attachmentLinkCache.clear();
+  }
   async listConversations(
     params: {
       limit?: number;
@@ -367,18 +425,28 @@ export class ChatApi {
 
   async getAttachmentLink(
     conversationId: string,
-    attachmentId: string
+    attachmentId: string,
+    options?: { skipCache?: boolean }
   ): Promise<ServerChatAttachmentLink> {
+    if (!options?.skipCache) {
+      const cached = this.getCachedAttachmentLink(attachmentId);
+      if (cached) {
+        return cached;
+      }
+    }
     const body = await this.client.request<unknown>(
       `/api/v1/chat/conversations/${conversationId}/attachments/${attachmentId}/link`
     );
-    return chatAttachmentLinkResponseSchema.parse(body).data;
+    const link = chatAttachmentLinkResponseSchema.parse(body).data;
+    this.cacheAttachmentLink(attachmentId, link);
+    return link;
   }
 
   async deleteAttachment(
     conversationId: string,
     attachmentId: string
   ): Promise<{ attachmentId: string }> {
+    this.attachmentLinkCache.delete(attachmentId);
     const body = await this.client.request<unknown>(
       `/api/v1/chat/conversations/${conversationId}/attachments/${attachmentId}`,
       { method: "DELETE" }
@@ -504,18 +572,28 @@ export class ChatApi {
 
   async getCandidateInquiryAttachmentLink(
     conversationId: string,
-    attachmentId: string
+    attachmentId: string,
+    options?: { skipCache?: boolean }
   ): Promise<ServerChatAttachmentLink> {
+    if (!options?.skipCache) {
+      const cached = this.getCachedAttachmentLink(attachmentId);
+      if (cached) {
+        return cached;
+      }
+    }
     const body = await this.client.request<unknown>(
       `/api/v1/chat/candidate-inquiries/${conversationId}/attachments/${attachmentId}/link`
     );
-    return chatAttachmentLinkResponseSchema.parse(body).data;
+    const link = chatAttachmentLinkResponseSchema.parse(body).data;
+    this.cacheAttachmentLink(attachmentId, link);
+    return link;
   }
 
   async deleteCandidateInquiryAttachment(
     conversationId: string,
     attachmentId: string
   ): Promise<{ attachmentId: string }> {
+    this.attachmentLinkCache.delete(attachmentId);
     const body = await this.client.request<unknown>(
       `/api/v1/chat/candidate-inquiries/${conversationId}/attachments/${attachmentId}`,
       { method: "DELETE" }

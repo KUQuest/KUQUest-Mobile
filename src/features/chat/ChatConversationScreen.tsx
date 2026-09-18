@@ -590,6 +590,7 @@ export default function ChatConversationScreen({
         visible={viewerState.visible}
         imageUrl={viewerState.url}
         fileName={viewerState.name}
+        timestamp={viewerState.timestamp}
         onClose={() => setViewerState({ visible: false, url: null })}
       />
     </ScreenLayout>

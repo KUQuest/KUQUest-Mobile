@@ -141,12 +141,12 @@ const styles = {
   sendButton:
     "items-center bg-ku-primary rounded-ku-pill h-[42px] justify-center w-[42px]",
   inlineImageWrap:
-    "rounded-[14px] overflow-hidden mt-[4px] border border-ku-border-subtle bg-ku-surface-muted max-w-[260px]",
-  inlineImage: "w-[240px] h-[160px] rounded-[14px]",
+    "rounded-[14px] overflow-hidden mt-[4px] border border-ku-border-subtle bg-ku-surface-muted max-w-[260px] max-h-[320px]",
+  inlineImage: "w-[240px] h-[160px] max-w-[260px] max-h-[320px] rounded-[14px]",
   pendingAttachmentsBar:
     "flex-row px-[16px] py-[8px] bg-ku-background border-t border-ku-border-subtle gap-[8px]",
   pendingAttachmentChip:
-    "relative w-[56px] h-[56px] rounded-[10px] overflow-hidden border border-ku-border-accent bg-ku-surface-muted items-center justify-center",
+    "relative w-[64px] h-[64px] rounded-[10px] overflow-hidden border border-ku-border-accent bg-ku-surface-muted items-center justify-center",
   pendingAttachmentImage: "w-full h-full",
   pendingAttachmentRemove:
     "absolute top-[2px] right-[2px] bg-black/60 rounded-full w-[20px] h-[20px] items-center justify-center",
