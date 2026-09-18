@@ -5,11 +5,12 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { FlatList, RefreshControl, View } from "react-native";
+import { RefreshControl, View } from "react-native";
 import { AccessibilityInfo, useWindowDimensions } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
+import { QuestList } from "@/components/ui/QuestList";
 import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
 import { authService } from "@/features/auth/AuthService";
 import { useLocale } from "@/locales/LocaleProvider";
@@ -413,7 +414,7 @@ export default function QuestBoardScreen({
 
   return (
     <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
-      <FlatList
+      <QuestList
         accessibilityLabel={messages.resultsLabel}
         refreshControl={
           <RefreshControl

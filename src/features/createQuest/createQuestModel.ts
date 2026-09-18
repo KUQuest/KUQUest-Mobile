@@ -8,7 +8,11 @@ import {
   type QuestPublishCheck,
 } from "../questBoard/types";
 import type { CreateQuestV2Payload } from "@/api/QuestApi";
-import type { QuestV2PublishCheck } from "@/api/questV2Contracts";
+import type {
+  QuestV2Detail,
+  QuestV2PublishCheck,
+} from "@/api/questV2Contracts";
+
 import { createQuestMessages } from "@/locales/createQuestMessages";
 import type { SupportedLocale } from "@/locales/LocaleProvider";
 import { formatSatang, parseSatangInput } from "@/domain/satang";
@@ -152,6 +156,48 @@ export const initialDraft: QuestDraft = {
   headcount: "1",
   wage: "",
 };
+
+function getServerDateTimeParts(
+  value: string | null
+): { date: string; time: string } | null {
+  const match = /^(\d{4}-\d{2}-\d{2})T([01]\d|2[0-3]):([0-5]\d)/.exec(
+    value ?? ""
+  );
+  if (!match) return null;
+  return { date: match[1], time: `${match[2]}:${match[3]}` };
+}
+
+export function questDetailToDraft(detail: QuestV2Detail): QuestDraft {
+  const start = getServerDateTimeParts(detail.startTime);
+  const deadline = getServerDateTimeParts(detail.dueAt);
+
+  return {
+    ...initialDraft,
+    title: detail.title,
+    tag: detail.tag?.id ?? "",
+    description: detail.description ?? "",
+    conditions: detail.condition.items
+      .slice()
+      .sort((left, right) => left.position - right.position)
+      .map((item) => item.text)
+      .join("\n"),
+    proofRequired: detail.proofRequired ? "required" : "none",
+    startDate: start?.date ?? "",
+    deadline: deadline?.date ?? "",
+    startTime: start?.time ?? "",
+    endTime: deadline?.time ?? "",
+    locationMode: detail.locations.length > 0 ? "ON_CAMPUS" : "ONLINE",
+    location: detail.locations[0]?.label ?? "",
+    imageUris: detail.images
+      .slice()
+      .sort((left, right) => left.position - right.position)
+      .map((image) => image.url),
+    candidateMode: detail.mode,
+    participation: detail.participation,
+    headcount: String(detail.headcount),
+    wage: String(detail.questFundingTotal),
+  };
+}
 
 // Temporary UI data until draft loading is connected to the API.
 export const mockQuestDraft: QuestDraft = {

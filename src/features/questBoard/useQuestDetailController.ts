@@ -724,7 +724,10 @@ export function useQuestDetailController({
 
   const handleEditPost = () => {
     if (!quest) return;
-    router.push({ pathname: "/create", params: { editQuestId: quest.id } });
+    router.push({
+      pathname: "/quest/[id]/edit",
+      params: { id: quest.id },
+    });
   };
   const handleOpenWorkHub = () => {
     router.push("/my-quests");

@@ -21,15 +21,76 @@ import {
   MIN_REWARD_THB,
   parseStoredQuestDraft,
   parseStoredQuestSnapshot,
+  questDetailToDraft,
   toBangkokDateTime,
   toQuestDraftPayload,
   toQuestV2Payload,
   toQuestBoardModeValues,
 } from "../createQuestModel";
-import type { QuestV2PublishCheck } from "@/api/questV2Contracts";
+import type {
+  QuestV2Detail,
+  QuestV2PublishCheck,
+} from "@/api/questV2Contracts";
 import { createQuestMessages } from "@/locales/createQuestMessages";
 
 describe("Create Quest model", () => {
+  describe("questDetailToDraft", () => {
+    test("hydrates server detail into the shared edit form shape", () => {
+      const draft = questDetailToDraft({
+        id: "quest-1",
+        version: 4,
+        hiddenAt: null,
+        title: "Campus photo session",
+        description: "Take photos around campus.",
+        condition: {
+          items: [
+            { position: 1, text: "Upload the final set." },
+            { position: 0, text: "Use the agreed locations." },
+          ],
+        },
+        tag: { id: "tag-1", name: "Design" },
+        mode: "CANDIDATE",
+        participation: "GROUP",
+        state: "QUEST_DRAFT",
+        questFundingTotal: 250.5,
+        headcount: 3,
+        startTime: "2026-10-01T09:15:00+07:00",
+        dueAt: "2026-10-02T12:30:00+07:00",
+        proofRequired: true,
+        locations: [{ label: "Student activity building" }],
+        images: [
+          {
+            imageId: "image-1",
+            fileId: "file-1",
+            position: 0,
+            url: "https://example.test/image.jpg",
+            urlExpiresAt: "2026-10-01T09:30:00+07:00",
+          },
+        ],
+        createdAt: "2026-09-30T10:00:00+07:00",
+        updatedAt: "2026-09-30T10:00:00+07:00",
+      } satisfies QuestV2Detail);
+
+      expect(draft).toMatchObject({
+        title: "Campus photo session",
+        tag: "tag-1",
+        conditions: "Use the agreed locations.\nUpload the final set.",
+        candidateMode: "CANDIDATE",
+        participation: "GROUP",
+        headcount: "3",
+        wage: "250.5",
+        startDate: "2026-10-01",
+        startTime: "09:15",
+        deadline: "2026-10-02",
+        endTime: "12:30",
+        locationMode: "ON_CAMPUS",
+        location: "Student activity building",
+        imageUris: ["https://example.test/image.jpg"],
+        proofRequired: "required",
+      });
+    });
+  });
+
   describe("getHeadcountForParticipation", () => {
     test("always returns one Worker for SINGLE", () => {
       expect(getHeadcountForParticipation("SINGLE", "")).toBe("1");

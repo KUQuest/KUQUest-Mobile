@@ -14,9 +14,9 @@ import {
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { useRoleWorkspace } from "@/components/navigation/RoleWorkspaceContext";
-import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
 import WorkerHomeScreen from "@/features/workerHome/WorkerHomeScreen";
 import { isPrototypeDemoEnabled } from "@/features/auth/authEnvironment";
+import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
 import { useLocale } from "@/locales/LocaleProvider";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { getThemeColors } from "@/theme/colors";
@@ -26,7 +26,6 @@ import { HirerQuestProgressCard } from "./components/HirerQuestProgressCard";
 import { hirerHomeQuestFixture, hirerHomeQuestFixtures } from "./hirerHomeData";
 import { hirerHomeMessages } from "./hirerHomeMessages";
 import { hirerHomeStyles as styles } from "./hirerHomeStyles";
-
 export default function HomeScreen() {
   const { workspace } = useRoleWorkspace();
   const router = useRouter();
@@ -454,7 +453,7 @@ export default function HomeScreen() {
               <Pressable
                 accessibilityLabel={`${messages.quickTopUpTitle}: ${messages.quickTopUpDesc}`}
                 accessibilityRole="button"
-                onPress={() => router.push("/top-up")}
+                onPress={() => router.push("/money")}
                 style={[
                   styles.quickAccessCard,
                   {

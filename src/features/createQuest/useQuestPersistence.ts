@@ -37,6 +37,7 @@ export function useQuestPersistence({
   setDraft,
   setStep,
   setCompletedState,
+  enabled = true,
 }: {
   editQuestId?: string;
   step: Step;
@@ -47,6 +48,7 @@ export function useQuestPersistence({
   setDraft: Dispatch<SetStateAction<QuestDraft>>;
   setStep: Dispatch<SetStateAction<Step>>;
   setCompletedState: Dispatch<SetStateAction<CompletionState | null>>;
+  enabled?: boolean;
 }) {
   const draftIdRef = useRef<string | null>(editQuestId ?? null);
   const [draftHydrated, setDraftHydrated] = useState(false);
@@ -120,6 +122,8 @@ export function useQuestPersistence({
   );
 
   useEffect(() => {
+    if (!enabled) return undefined;
+
     let active = true;
     publishedQuestRef.current = null;
     draftChangedRef.current = false;
@@ -169,6 +173,7 @@ export function useQuestPersistence({
     draftChangedRef,
     draftLoadAttempt,
     editQuestId,
+    enabled,
     publishedQuestRef,
     setCompletedState,
     setDraft,
@@ -176,7 +181,8 @@ export function useQuestPersistence({
   ]);
 
   useEffect(() => {
-    if (!draftHydrated || !draftStorageKey || completedState) return undefined;
+    if (!enabled || !draftHydrated || !draftStorageKey || completedState)
+      return undefined;
     if (skipPersistRef.current) {
       skipPersistRef.current = false;
       return undefined;
@@ -199,6 +205,7 @@ export function useQuestPersistence({
     draft,
     draftHydrated,
     draftStorageKey,
+    enabled,
     saveDraft,
     skipPersistRef,
     step,

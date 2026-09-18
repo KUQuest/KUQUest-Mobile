@@ -82,6 +82,6 @@ describe("Hirer Home", () => {
     expect(mockPush).toHaveBeenCalledWith("/quest-board");
 
     fireEvent.press(view.getByTestId("hirer-quick-access-topup"));
-    expect(mockPush).toHaveBeenCalledWith("/top-up");
+    expect(mockPush).toHaveBeenCalledWith("/money");
   });
 });
