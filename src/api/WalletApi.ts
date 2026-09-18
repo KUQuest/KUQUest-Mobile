@@ -237,47 +237,128 @@ export type PayoutDestinationType = z.infer<typeof payoutDestinationTypeSchema>;
 
 export const payoutDestinationSchema = z.object({
   id: z.string().min(1),
-  type: payoutDestinationTypeSchema,
-  accountHolderName: z.string().min(1),
-  maskedAccount: z.string().min(1),
+  principalUserId: z.string().optional(),
+  recipientType: z.literal("SELF").optional(),
+  givenName: z.string().optional(),
+  surname: z.string().optional(),
+  relationship: z.literal("SELF").optional(),
+  accountCountry: z.string().optional(),
+  accountCurrency: z.string().optional(),
   bankCode: z.string().nullable().optional(),
-  isDefault: z.boolean(),
+  accountHolderName: z.string().min(1),
+  routingType: z.enum(["BANK_ACCOUNT", "PROMPTPAY"]).optional(),
+  maskedLastFour: z.string().optional(),
+  maskedRoutingValue: z.string().optional(),
   createdAt: z.string(),
+  retiredAt: z.string().nullable().optional(),
+  // compatibility with mobile client properties
+  type: payoutDestinationTypeSchema.optional(),
+  maskedAccount: z.string().optional(),
+  isDefault: z.boolean().optional(),
 });
 export type PayoutDestination = z.infer<typeof payoutDestinationSchema>;
 
+export function normalizePayoutDestination(
+  raw: PayoutDestination
+): PayoutDestination {
+  const resolvedType =
+    raw.type ??
+    (raw.routingType === "PROMPTPAY" ? "PROMPTPAY" : "BANK_ACCOUNT");
+  const resolvedMasked =
+    raw.maskedAccount ??
+    raw.maskedRoutingValue ??
+    (raw.maskedLastFour ? `•••• ${raw.maskedLastFour}` : "");
+  return {
+    ...raw,
+    type: resolvedType,
+    routingType: raw.routingType ?? resolvedType,
+    maskedAccount: resolvedMasked,
+    isDefault: raw.isDefault ?? true,
+  };
+}
+
 export const createPayoutDestinationPayloadSchema = z.object({
-  type: payoutDestinationTypeSchema,
-  accountNumber: z.string().min(1),
+  givenName: z.string().min(1).optional(),
+  surname: z.string().min(1).optional(),
   accountHolderName: z.string().min(1),
-  bankCode: z.string().min(1).nullable().optional(),
+  bankCode: z.string().min(1).optional(),
+  accountNumber: z.string().min(1),
+  routingType: z.enum(["BANK_ACCOUNT", "PROMPTPAY"]).optional(),
+  routingValue: z.string().optional(),
+  recipientType: z.literal("SELF").optional(),
+  relationship: z.literal("SELF").optional(),
+  accountCountry: z.literal("TH").optional(),
+  accountCurrency: z.literal("THB").optional(),
+  // compatibility with existing callers
+  type: payoutDestinationTypeSchema.optional(),
 });
-export type CreatePayoutDestinationPayload = z.infer<
+export type CreatePayoutDestinationPayload = z.input<
   typeof createPayoutDestinationPayloadSchema
 >;
 
-export const payoutDestinationsResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    destinations: z.array(payoutDestinationSchema),
+export const activePayoutDestinationResponseSchema = z.union([
+  z.object({
+    success: z.literal(true),
+    data: payoutDestinationSchema.nullable(),
   }),
-});
+  z
+    .object({
+      success: z.literal(true),
+      data: z.object({
+        destinations: z.array(payoutDestinationSchema),
+      }),
+    })
+    .transform((val) => ({
+      success: true as const,
+      data: val.data.destinations[0] ?? null,
+    })),
+]);
+
+export const payoutDestinationsResponseSchema = z.union([
+  z.object({
+    success: z.literal(true),
+    data: z.object({
+      destinations: z.array(payoutDestinationSchema),
+    }),
+  }),
+  z
+    .object({
+      success: z.literal(true),
+      data: payoutDestinationSchema.nullable(),
+    })
+    .transform((val) => ({
+      success: true as const,
+      data: {
+        destinations: val.data ? [normalizePayoutDestination(val.data)] : [],
+      },
+    })),
+]);
 export type PayoutDestinationsResponse = z.infer<
   typeof payoutDestinationsResponseSchema
 >;
 
 export const payoutDestinationResponseSchema = z.object({
   success: z.literal(true),
-  data: z.object({
-    destination: payoutDestinationSchema,
-  }),
+  data: z
+    .union([
+      z
+        .object({
+          destination: payoutDestinationSchema,
+        })
+        .transform((val) => val.destination),
+      payoutDestinationSchema,
+    ])
+    .nullable(),
 });
 
 export const deletePayoutDestinationResponseSchema = z.object({
   success: z.literal(true),
-  data: z.object({
-    id: z.string().min(1),
-  }),
+  data: z
+    .object({
+      retired: z.boolean().optional(),
+      id: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const payoutStatusSchema = z.enum([
@@ -286,34 +367,122 @@ export const payoutStatusSchema = z.enum([
   "PROVIDER_PENDING",
   "SUCCEEDED",
   "FAILED",
+  "CANCELLED",
   "REJECTED",
 ]);
 export type PayoutStatus = z.infer<typeof payoutStatusSchema>;
 
+export const payoutQuoteSchema = z.object({
+  id: z.string().min(1),
+  principalUserId: z.string().optional(),
+  payoutDestinationId: z.string().optional(),
+  policyRevisionId: z.string().optional(),
+  receiptSatang: z.union([z.number(), z.string()]).transform(Number),
+  maximumFeeSatang: z.union([z.number(), z.string()]).transform(Number),
+  maximumTaxSatang: z.union([z.number(), z.string()]).transform(Number),
+  maximumDebitSatang: z.union([z.number(), z.string()]).transform(Number),
+  feeRoundingMode: z.string().optional(),
+  expiresAt: z.string(),
+  consumedAt: z.string().nullable().optional(),
+  createdAt: z.string(),
+});
+export type PayoutQuote = z.infer<typeof payoutQuoteSchema>;
+
+export const payoutQuoteResponseSchema = z.object({
+  success: z.literal(true),
+  data: payoutQuoteSchema,
+});
+
+export const payoutStatusHistoryItemSchema = z.object({
+  id: z.string().min(1),
+  fromStatus: z.string().nullable(),
+  toStatus: z.string(),
+  providerStatus: z.string().nullable().optional(),
+  actorUserId: z.string().nullable().optional(),
+  actorAdminId: z.string().nullable().optional(),
+  source: z.string().optional(),
+  reason: z.string().nullable().optional(),
+  occurredAt: z.string(),
+});
+export type PayoutStatusHistoryItem = z.infer<
+  typeof payoutStatusHistoryItemSchema
+>;
+
+export const payoutStatusHistoryResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.array(payoutStatusHistoryItemSchema),
+});
+
 export const payoutRecordSchema = z.object({
   id: z.string().min(1),
-  amountSatang: z.number().int(),
-  feeSatang: z.number().int(),
-  status: payoutStatusSchema,
-  destination: z.object({
-    type: payoutDestinationTypeSchema,
-    maskedAccount: z.string().min(1),
-  }),
+  internalReference: z.string().optional(),
+  principalUserId: z.string().optional(),
+  quoteId: z.string().optional(),
+  payoutDestinationId: z.string().optional(),
+  principalSatang: z
+    .union([z.number(), z.string()])
+    .transform(Number)
+    .optional(),
+  receiptSatang: z.union([z.number(), z.string()]).transform(Number).optional(),
+  maximumFeeSatang: z
+    .union([z.number(), z.string()])
+    .transform(Number)
+    .optional(),
+  maximumTaxSatang: z
+    .union([z.number(), z.string()])
+    .transform(Number)
+    .optional(),
+  maximumDebitSatang: z
+    .union([z.number(), z.string()])
+    .transform(Number)
+    .optional(),
+  actualFeeSatang: z
+    .union([z.number(), z.string()])
+    .transform(Number)
+    .nullable()
+    .optional(),
+  actualTaxSatang: z
+    .union([z.number(), z.string()])
+    .transform(Number)
+    .nullable()
+    .optional(),
+  actualDebitSatang: z
+    .union([z.number(), z.string()])
+    .transform(Number)
+    .nullable()
+    .optional(),
+  payoutStatus: payoutStatusSchema.optional(),
+  status: payoutStatusSchema.optional(),
+  amountSatang: z.union([z.number(), z.string()]).transform(Number).optional(),
+  feeSatang: z.union([z.number(), z.string()]).transform(Number).optional(),
+  destination: z
+    .object({
+      type: payoutDestinationTypeSchema.optional(),
+      maskedAccount: z.string().optional(),
+    })
+    .optional(),
   createdAt: z.string(),
+  updatedAt: z.string().optional(),
 });
 export type PayoutRecord = z.infer<typeof payoutRecordSchema>;
 
 export const requestPayoutPayloadSchema = z.object({
-  amountSatang: z.number().int().positive(),
-  destinationId: z.string().min(1),
+  amountSatang: z.number().int().positive().optional(),
+  destinationId: z.string().min(1).optional(),
+  quoteId: z.string().min(1).optional(),
 });
 export type RequestPayoutPayload = z.infer<typeof requestPayoutPayloadSchema>;
 
 export const payoutResponseSchema = z.object({
   success: z.literal(true),
-  data: z.object({
-    payout: payoutRecordSchema,
-  }),
+  data: z.union([
+    z
+      .object({
+        payout: payoutRecordSchema,
+      })
+      .transform((val) => val.payout),
+    payoutRecordSchema,
+  ]),
 });
 
 export const payoutsListResponseSchema = z.object({
@@ -600,11 +769,17 @@ export class WalletApi {
     return { items: uniqueItems };
   }
 
-  async listPayoutDestinations(): Promise<PayoutDestination[]> {
+  async getActivePayoutDestination(): Promise<PayoutDestination | null> {
     const body = await this.client.request<unknown>(
       "/api/v1/payout-destinations"
     );
-    return payoutDestinationsResponseSchema.parse(body).data.destinations;
+    const parsed = activePayoutDestinationResponseSchema.parse(body);
+    return parsed.data ? normalizePayoutDestination(parsed.data) : null;
+  }
+
+  async listPayoutDestinations(): Promise<PayoutDestination[]> {
+    const destination = await this.getActivePayoutDestination();
+    return destination ? [destination] : [];
   }
 
   async createPayoutDestination(
@@ -612,40 +787,172 @@ export class WalletApi {
   ): Promise<PayoutDestination> {
     const validatedPayload =
       createPayoutDestinationPayloadSchema.parse(payload);
+    const names = (validatedPayload.accountHolderName ?? "")
+      .trim()
+      .split(/\s+/);
+    const givenName = validatedPayload.givenName ?? names[0] ?? "Member";
+    const surname =
+      validatedPayload.surname ?? (names.slice(1).join(" ") || "Student");
+    const routingType =
+      validatedPayload.routingType ??
+      (validatedPayload.type === "PROMPTPAY" ? "PROMPTPAY" : "BANK_ACCOUNT");
+    const bankCode =
+      validatedPayload.bankCode ??
+      (routingType === "PROMPTPAY" ? "PROMPTPAY" : "KBANK");
+
+    const bodyPayload: Record<string, unknown> = {
+      accountHolderName: validatedPayload.accountHolderName,
+      accountNumber: validatedPayload.accountNumber,
+      bankCode,
+      givenName,
+      surname,
+      routingType,
+    };
+    if (validatedPayload.type) {
+      bodyPayload.type = validatedPayload.type;
+    }
+    if (validatedPayload.recipientType) {
+      bodyPayload.recipientType = validatedPayload.recipientType;
+    }
+    if (validatedPayload.relationship) {
+      bodyPayload.relationship = validatedPayload.relationship;
+    }
+    if (validatedPayload.accountCountry) {
+      bodyPayload.accountCountry = validatedPayload.accountCountry;
+    }
+    if (validatedPayload.accountCurrency) {
+      bodyPayload.accountCurrency = validatedPayload.accountCurrency;
+    }
+
     const body = await this.client.requestJson<unknown>(
       "/api/v1/payout-destinations",
-      validatedPayload,
+      bodyPayload,
       { method: "POST" }
     );
-    return payoutDestinationResponseSchema.parse(body).data.destination;
+    const parsed = payoutDestinationResponseSchema.parse(body);
+    if (!parsed.data) {
+      throw new Error("Payout destination creation returned null data");
+    }
+    return normalizePayoutDestination(parsed.data);
   }
 
-  async deletePayoutDestination(id: string): Promise<{ id: string }> {
+  async deletePayoutDestination(
+    id?: string
+  ): Promise<{ id?: string; retired: boolean }> {
     const body = await this.client.request<unknown>(
-      `/api/v1/payout-destinations/${id}`,
+      "/api/v1/payout-destinations",
       { method: "DELETE" }
     );
-    return deletePayoutDestinationResponseSchema.parse(body).data;
+    const parsed = deletePayoutDestinationResponseSchema.parse(body);
+    return { id, retired: parsed.data?.retired ?? true };
   }
 
-  async requestPayout(
-    amountSatang: number,
-    destinationId: string,
+  async retireActivePayoutDestination(): Promise<boolean> {
+    const res = await this.deletePayoutDestination();
+    return res.retired;
+  }
+
+  async quotePayout(receiptSatang: number): Promise<PayoutQuote> {
+    const body = await this.client.requestJson<unknown>(
+      "/api/v1/payouts/quotes",
+      { receiptSatang },
+      { method: "POST" }
+    );
+    return payoutQuoteResponseSchema.parse(body).data;
+  }
+
+  async createPayout(
+    quoteId: string,
     idempotencyKey = createIdempotencyKey()
   ): Promise<PayoutRecord> {
-    const payload = requestPayoutPayloadSchema.parse({
-      amountSatang,
-      destinationId,
-    });
     const body = await this.client.requestJson<unknown>(
       "/api/v1/payouts",
-      payload,
+      { quoteId },
       {
         method: "POST",
         headers: { "idempotency-key": idempotencyKey },
       }
     );
-    return payoutResponseSchema.parse(body).data.payout;
+    const raw = payoutResponseSchema.parse(body).data;
+    const resolvedStatus = (raw.status ??
+      raw.payoutStatus ??
+      "PENDING_ADMIN_APPROVAL") as PayoutStatus;
+    return {
+      ...raw,
+      amountSatang:
+        raw.amountSatang ?? raw.receiptSatang ?? raw.principalSatang ?? 0,
+      feeSatang:
+        raw.feeSatang ?? raw.actualFeeSatang ?? raw.maximumFeeSatang ?? 0,
+      status: resolvedStatus,
+      payoutStatus: resolvedStatus,
+    };
+  }
+
+  async requestPayout(
+    amountSatangOrQuoteId: number | string,
+    destinationId?: string,
+    idempotencyKey = createIdempotencyKey()
+  ): Promise<PayoutRecord> {
+    if (typeof amountSatangOrQuoteId === "string") {
+      return this.createPayout(amountSatangOrQuoteId, idempotencyKey);
+    }
+    if (destinationId) {
+      const payload = {
+        amountSatang: amountSatangOrQuoteId,
+        destinationId,
+      };
+      const body = await this.client.requestJson<unknown>(
+        "/api/v1/payouts",
+        payload,
+        {
+          method: "POST",
+          headers: { "idempotency-key": idempotencyKey },
+        }
+      );
+      const raw = payoutResponseSchema.parse(body).data;
+      const resolvedStatus = (raw.status ??
+        raw.payoutStatus ??
+        "PENDING_ADMIN_APPROVAL") as PayoutStatus;
+      return {
+        ...raw,
+        amountSatang:
+          raw.amountSatang ?? raw.receiptSatang ?? raw.principalSatang ?? 0,
+        feeSatang:
+          raw.feeSatang ?? raw.actualFeeSatang ?? raw.maximumFeeSatang ?? 0,
+        status: resolvedStatus,
+        payoutStatus: resolvedStatus,
+      };
+    }
+    const quote = await this.quotePayout(amountSatangOrQuoteId);
+    return this.createPayout(quote.id, idempotencyKey);
+  }
+
+  async getPayout(payoutId: string): Promise<PayoutRecord> {
+    const body = await this.client.request<unknown>(
+      `/api/v1/payouts/${payoutId}`
+    );
+    const raw = payoutResponseSchema.parse(body).data;
+    const resolvedStatus = (raw.status ??
+      raw.payoutStatus ??
+      "PENDING_ADMIN_APPROVAL") as PayoutStatus;
+    return {
+      ...raw,
+      amountSatang:
+        raw.amountSatang ?? raw.receiptSatang ?? raw.principalSatang ?? 0,
+      feeSatang:
+        raw.feeSatang ?? raw.actualFeeSatang ?? raw.maximumFeeSatang ?? 0,
+      status: resolvedStatus,
+      payoutStatus: resolvedStatus,
+    };
+  }
+
+  async listPayoutStatusHistory(
+    payoutId: string
+  ): Promise<PayoutStatusHistoryItem[]> {
+    const body = await this.client.request<unknown>(
+      `/api/v1/payouts/${payoutId}/status-history`
+    );
+    return payoutStatusHistoryResponseSchema.parse(body).data;
   }
 }
 

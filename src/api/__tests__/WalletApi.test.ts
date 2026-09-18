@@ -300,10 +300,13 @@ describe("WalletApi", () => {
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({
-          type: "BANK_ACCOUNT",
-          accountNumber: "1234567890",
           accountHolderName: "Somchai Jaidee",
+          accountNumber: "1234567890",
           bankCode: "KBANK",
+          givenName: "Somchai",
+          surname: "Jaidee",
+          routingType: "BANK_ACCOUNT",
+          type: "BANK_ACCOUNT",
         }),
       })
     );
@@ -365,6 +368,196 @@ describe("WalletApi", () => {
         status: "PENDING_ADMIN_APPROVAL",
       })
     );
+  });
+
+  it("gets active payout destination matching OpenAPI schema", async () => {
+    const activeDestinationResponse = {
+      success: true,
+      data: {
+        id: "dest-open-1",
+        principalUserId: "user-1",
+        recipientType: "SELF",
+        givenName: "Anan",
+        surname: "Sukjai",
+        relationship: "SELF",
+        accountCountry: "TH",
+        accountCurrency: "THB",
+        bankCode: "SCB",
+        accountHolderName: "Anan Sukjai",
+        routingType: "BANK_ACCOUNT",
+        maskedLastFour: "9876",
+        maskedRoutingValue: "xxx-x-xx987-6",
+        createdAt: "2026-09-18T08:00:00Z",
+        retiredAt: null,
+      },
+    };
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => JSON.stringify(activeDestinationResponse),
+    });
+
+    const destination = await api.getActivePayoutDestination();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v1/payout-destinations",
+      expect.objectContaining({ method: "GET" })
+    );
+    expect(destination).toEqual(
+      expect.objectContaining({
+        id: "dest-open-1",
+        givenName: "Anan",
+        surname: "Sukjai",
+        bankCode: "SCB",
+        accountHolderName: "Anan Sukjai",
+        type: "BANK_ACCOUNT",
+        maskedAccount: "xxx-x-xx987-6",
+      })
+    );
+  });
+
+  it("retires active payout destination with DELETE without path id", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () =>
+        JSON.stringify({ success: true, data: { retired: true } }),
+    });
+
+    const retired = await api.retireActivePayoutDestination();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v1/payout-destinations",
+      expect.objectContaining({ method: "DELETE" })
+    );
+    expect(retired).toBe(true);
+  });
+
+  it("quotes a payout with receiptSatang", async () => {
+    const quoteResponse = {
+      success: true,
+      data: {
+        id: "quote-1",
+        principalUserId: "user-1",
+        payoutDestinationId: "dest-1",
+        policyRevisionId: "rev-1",
+        receiptSatang: 20000,
+        maximumFeeSatang: 1500,
+        maximumTaxSatang: 105,
+        maximumDebitSatang: 21605,
+        feeRoundingMode: "UP",
+        expiresAt: "2026-09-18T10:15:00Z",
+        consumedAt: null,
+        createdAt: "2026-09-18T10:00:00Z",
+      },
+    };
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => JSON.stringify(quoteResponse),
+    });
+
+    const quote = await api.quotePayout(20000);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v1/payouts/quotes",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ receiptSatang: 20000 }),
+      })
+    );
+    expect(quote.id).toBe("quote-1");
+    expect(quote.receiptSatang).toBe(20000);
+    expect(quote.maximumDebitSatang).toBe(21605);
+  });
+
+  it("creates a payout against a quoteId with idempotency key", async () => {
+    const createPayoutResponse = {
+      success: true,
+      data: {
+        id: "payout-quote-1",
+        internalReference: "PO-12345",
+        principalUserId: "user-1",
+        quoteId: "quote-1",
+        payoutDestinationId: "dest-1",
+        payoutStatus: "PENDING_ADMIN_APPROVAL",
+        receiptSatang: 20000,
+        actualFeeSatang: 1500,
+        createdAt: "2026-09-18T10:01:00Z",
+      },
+    };
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => JSON.stringify(createPayoutResponse),
+    });
+
+    const record = await api.createPayout("quote-1", "idemp-key-99");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v1/payouts",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          "idempotency-key": "idemp-key-99",
+        }),
+        body: JSON.stringify({ quoteId: "quote-1" }),
+      })
+    );
+    expect(record.id).toBe("payout-quote-1");
+    expect(record.status).toBe("PENDING_ADMIN_APPROVAL");
+    expect(record.amountSatang).toBe(20000);
+  });
+
+  it("fetches single payout detail and status history", async () => {
+    const payoutDetailResponse = {
+      success: true,
+      data: {
+        id: "payout-1",
+        payoutStatus: "SUBMITTED_TO_PROVIDER",
+        receiptSatang: 50000,
+        actualFeeSatang: 1500,
+        createdAt: "2026-09-18T10:00:00Z",
+      },
+    };
+    const statusHistoryResponse = {
+      success: true,
+      data: [
+        {
+          id: "hist-1",
+          fromStatus: "PENDING_ADMIN_APPROVAL",
+          toStatus: "SUBMITTED_TO_PROVIDER",
+          occurredAt: "2026-09-18T10:05:00Z",
+        },
+      ],
+    };
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => JSON.stringify(payoutDetailResponse),
+    });
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => JSON.stringify(statusHistoryResponse),
+    });
+
+    const detail = await api.getPayout("payout-1");
+    const history = await api.listPayoutStatusHistory("payout-1");
+
+    expect(detail.status).toBe("SUBMITTED_TO_PROVIDER");
+    expect(history).toHaveLength(1);
+    expect(history[0].toStatus).toBe("SUBMITTED_TO_PROVIDER");
   });
 
   it("lists payouts history", async () => {
