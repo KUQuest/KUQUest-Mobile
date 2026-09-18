@@ -13,8 +13,10 @@ import {
 } from "lucide-react-native";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { isPrototypeDemoEnabled } from "@/features/auth/authEnvironment";
+import { useRoleWorkspace } from "@/components/navigation/RoleWorkspaceContext";
 import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
+import WorkerHomeScreen from "@/features/workerHome/WorkerHomeScreen";
+import { isPrototypeDemoEnabled } from "@/features/auth/authEnvironment";
 import { useLocale } from "@/locales/LocaleProvider";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { getThemeColors } from "@/theme/colors";
@@ -26,6 +28,7 @@ import { hirerHomeMessages } from "./hirerHomeMessages";
 import { hirerHomeStyles as styles } from "./hirerHomeStyles";
 
 export default function HomeScreen() {
+  const { workspace } = useRoleWorkspace();
   const router = useRouter();
   const { locale } = useLocale();
   const { width, fontScale } = useWindowDimensions();
@@ -60,6 +63,7 @@ export default function HomeScreen() {
     },
     [router]
   );
+  if (workspace === "worker") return <WorkerHomeScreen />;
   return (
     <ScreenLayout edges={["top", "left", "right"]} className="bg-ku-background">
       <ScrollView
