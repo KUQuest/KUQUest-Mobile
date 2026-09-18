@@ -213,6 +213,30 @@ export interface QuestBoardMessages {
   submitRework: string;
   approveProof: string;
   rejectProof: string;
+  proofReviewTitle: string;
+  proofReviewDescription: string;
+  proofReviewSubmittedAt: string;
+  proofReviewDueAt: string;
+  proofReviewDescriptionLabel: string;
+  proofReviewNoDescription: string;
+  proofReviewEvidenceLabel: string;
+  proofReviewNoEvidence: string;
+  proofReviewFileLabel: (
+    position: number,
+    contentType: string,
+    size: string
+  ) => string;
+  proofReviewFileStatus: (status: string) => string;
+  proofReviewPreview: string;
+  proofReviewPreviewUnavailable: string;
+  proofReviewPreviewError: string;
+  proofReviewDoNotApprove: string;
+  proofReviewApprove: string;
+  proofReviewReasonLabel: string;
+  proofReviewReasonPlaceholder: string;
+  proofReviewReasonRequired: string;
+  proofReviewReasonTooLong: string;
+  proofReviewConfirmNotApproved: string;
   disputeBannerTitle: string;
   disputeDescription: string;
   resolveDispute: string;
@@ -521,6 +545,36 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     submitRework: "Submit rework",
     approveProof: "Approve proof",
     rejectProof: "Request rework",
+    proofReviewTitle: "Review submitted work",
+    proofReviewDescription:
+      "Inspect the submitted notes and evidence before making a final decision.",
+    proofReviewSubmittedAt: "Submitted",
+    proofReviewDueAt: "Quest due at",
+    proofReviewDescriptionLabel: "Worker notes",
+    proofReviewNoDescription: "No notes were included.",
+    proofReviewEvidenceLabel: "Attached evidence",
+    proofReviewNoEvidence: "No evidence files were attached.",
+    proofReviewFileLabel: (position, contentType, size) =>
+      `File ${position} · ${contentType}${size ? ` · ${size}` : ""}`,
+    proofReviewPreview: "Preview",
+    proofReviewPreviewUnavailable:
+      "A preview link is not available for this private file.",
+    proofReviewPreviewError: "This evidence could not be opened.",
+    proofReviewDoNotApprove: "Do not approve",
+    proofReviewApprove: "Approve work",
+    proofReviewReasonLabel: "Reason for non-approval",
+    proofReviewReasonPlaceholder:
+      "Explain why the submitted work does not satisfy the Quest conditions.",
+    proofReviewReasonRequired: "Enter a reason before confirming non-approval.",
+    proofReviewReasonTooLong:
+      "The non-approval reason must be 1,000 characters or fewer.",
+    proofReviewFileStatus: (status) =>
+      ({
+        PROOF_FILE_READY: "Ready",
+        PROOF_FILE_FAILED: "Failed",
+        PROOF_FILE_PENDING: "Uploading",
+      })[status] ?? status,
+    proofReviewConfirmNotApproved: "Confirm non-approval",
     disputeBannerTitle: "Quest dispute",
     disputeDescription:
       "This Quest is waiting for an authorized dispute resolution.",
@@ -823,6 +877,34 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     submitRework: "ส่งหลักฐานที่แก้ไข",
     approveProof: "อนุมัติหลักฐาน",
     rejectProof: "ขอให้แก้ไขใหม่",
+    proofReviewTitle: "ตรวจสอบงานที่ส่ง",
+    proofReviewDescription:
+      "ตรวจสอบรายละเอียดและหลักฐานก่อนตัดสินใจขั้นสุดท้าย",
+    proofReviewSubmittedAt: "เวลาที่ส่ง",
+    proofReviewDueAt: "กำหนดส่งเควสต์",
+    proofReviewDescriptionLabel: "รายละเอียดจากผู้ทำงาน",
+    proofReviewNoDescription: "ไม่ได้แนบรายละเอียด",
+    proofReviewEvidenceLabel: "หลักฐานที่แนบ",
+    proofReviewNoEvidence: "ไม่ได้แนบไฟล์หลักฐาน",
+    proofReviewFileLabel: (position, contentType, size) =>
+      `ไฟล์ที่ ${position} · ${contentType}${size ? ` · ${size}` : ""}`,
+    proofReviewPreview: "ดูตัวอย่าง",
+    proofReviewPreviewUnavailable: "ไม่มีลิงก์ตัวอย่างสำหรับไฟล์ส่วนตัวนี้",
+    proofReviewPreviewError: "ไม่สามารถเปิดหลักฐานนี้ได้",
+    proofReviewDoNotApprove: "ไม่อนุมัติงาน",
+    proofReviewApprove: "อนุมัติงาน",
+    proofReviewReasonLabel: "เหตุผลที่ไม่อนุมัติ",
+    proofReviewReasonPlaceholder:
+      "อธิบายว่าเหตุใดงานที่ส่งจึงไม่ตรงตามเงื่อนไขของเควสต์",
+    proofReviewReasonRequired: "กรุณาระบุเหตุก่อนยืนยันการไม่อนุมัติ",
+    proofReviewReasonTooLong: "เหตุผลต้องมีความยาวไม่เกิน 1,000 ตัวอักษร",
+    proofReviewFileStatus: (status) =>
+      ({
+        PROOF_FILE_READY: "พร้อม",
+        PROOF_FILE_FAILED: "ล้มเหลว",
+        PROOF_FILE_PENDING: "กำลังอัปโหลด",
+      })[status] ?? status,
+    proofReviewConfirmNotApproved: "ยืนยันการไม่อนุมัติ",
     disputeBannerTitle: "ข้อพิพาทเควสต์",
     disputeDescription: "เควสต์นี้รอการแก้ไขข้อพิพาทจากผู้มีอำนาจ",
     resolveDispute: "แก้ไขข้อพิพาท",

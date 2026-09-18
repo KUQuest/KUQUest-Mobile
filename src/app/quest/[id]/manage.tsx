@@ -6,7 +6,10 @@ import { ScrollView, Text, View, Pressable } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
 import { authService } from "@/features/auth/AuthService";
-import { createQuestIdempotencyKey } from "@/api/QuestApi";
+import {
+  createQuestIdempotencyKey,
+  type QuestV2ProofReviewPayload,
+} from "@/api/QuestApi";
 import {
   liveQuestService,
   type LiveQuestSnapshot,
@@ -14,6 +17,7 @@ import {
 import {
   CandidateReviewSheet,
   PartialGroupStartConsentSheet,
+  ProofReviewModal,
 } from "@/features/questBoard/components";
 import { getChatRouteParams } from "@/features/chat/chatData";
 import { useLocale } from "@/locales/LocaleProvider";
@@ -35,6 +39,7 @@ export default function HirerQuestManageRoute() {
   const [error, setError] = useState<string>();
   const [candidateOpen, setCandidateOpen] = useState(false);
   const [underfilledOpen, setUnderfilledOpen] = useState(false);
+  const [proofReviewOpen, setProofReviewOpen] = useState(false);
 
   useEffect(() => {
     void authService
@@ -97,17 +102,19 @@ export default function HirerQuestManageRoute() {
   }, [questId, viewerId]);
 
   const command = useCallback(
-    async (run: (key: string) => Promise<unknown>) => {
-      if (!questId || !viewerId) return;
+    async (run: (key: string) => Promise<unknown>): Promise<boolean> => {
+      if (!questId || !viewerId) return false;
       try {
         await run(createQuestIdempotencyKey());
         await load(true);
+        return true;
       } catch (caught) {
         await load(true);
         Alert.alert(
           "Quest",
           caught instanceof Error ? caught.message : "Action failed"
         );
+        return false;
       }
     },
     [load, questId, viewerId]
@@ -200,30 +207,17 @@ export default function HirerQuestManageRoute() {
     ]);
   const reviewProof = () => {
     if (!pendingProof || !snapshot.capabilities.canReviewProof) return;
-    Alert.alert("Review proof", "Approve this proof submission?", [
-      { text: "Close", style: "cancel" },
-      {
-        text: "Reject unavailable",
-        style: "destructive",
-        onPress: () =>
-          Alert.alert(
-            "Backend contract blocker",
-            "PROOF_NOT_APPROVED requires a rejection reason. This screen has no reason input, so no rejection request was sent."
-          ),
-      },
-      {
-        text: "Approve",
-        onPress: () =>
-          void command((key) =>
-            liveQuestService.reviewProof(
-              quest.id,
-              pendingProof.id,
-              { decision: "PROOF_APPROVED" },
-              key
-            )
-          ),
-      },
-    ]);
+    setProofReviewOpen(true);
+  };
+  const submitProofReview = (
+    payload: QuestV2ProofReviewPayload
+  ): Promise<boolean> => {
+    if (!pendingProof || !snapshot.capabilities.canReviewProof) {
+      return Promise.resolve(false);
+    }
+    return command((key) =>
+      liveQuestService.reviewProof(quest.id, pendingProof.id, payload, key)
+    );
   };
 
   return (
@@ -366,6 +360,13 @@ export default function HirerQuestManageRoute() {
         }}
         onClose={() => setUnderfilledOpen(false)}
         locale={locale}
+      />
+      <ProofReviewModal
+        dueAt={snapshot.dueAt}
+        onClose={() => setProofReviewOpen(false)}
+        onReview={submitProofReview}
+        proof={pendingProof}
+        visible={proofReviewOpen && Boolean(pendingProof)}
       />
     </ScreenLayout>
   );
