@@ -134,6 +134,7 @@ export interface CreateQuestMessages {
   publishedQuestTitle: string;
   publishedQuestDescription: string;
   createAnotherDraft: string;
+  createNewQuest: string;
   notSelected: string;
   onlineOrAgreed: string;
   noImages: string;
@@ -151,6 +152,7 @@ export interface CreateQuestMessages {
   savePreview: string;
   savingPreview: string;
   viewQuestBoard: string;
+  toHome: string;
   publishCheckTitle: string;
   publishCheckReady: string;
   publishCheckBlocked: string;
@@ -355,6 +357,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       publishedQuestDescription:
         "Your Quest is now published on the Quest Board and will appear in My Quests for the Hirer.",
       createAnotherDraft: "Create another draft",
+      createNewQuest: "Create new quest",
       notSelected: "Not selected",
       onlineOrAgreed: "Online or to be agreed",
       noImages: "None",
@@ -372,7 +375,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       retryLoadDraft: "Try again",
       savePreview: "Save Quest preview",
       savingPreview: "Saving preview…",
-      viewQuestBoard: "Back to Quest Board",
+      viewQuestBoard: "To Home",
+      toHome: "To Home",
       publishCheckTitle: "Publish check & Escrow",
       publishCheckReady: "Ready to publish",
       publishCheckBlocked: "Resolve the publish blockers before publishing.",
@@ -609,6 +613,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       publishedQuestDescription:
         "เควสต์ของคุณเผยแพร่บนกระดานเควสต์แล้ว และจะแสดงใน My Quests ของผู้ว่าจ้าง",
       createAnotherDraft: "สร้างฉบับร่างใหม่",
+      createNewQuest: "สร้างเควสต์ใหม่",
       notSelected: "ยังไม่ได้เลือก",
       onlineOrAgreed: "ออนไลน์หรือรอตกลงกัน",
       noImages: "ไม่มี",
@@ -626,7 +631,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       retryLoadDraft: "ลองอีกครั้ง",
       savePreview: "บันทึกตัวอย่างเควสต์",
       savingPreview: "กำลังบันทึกตัวอย่าง…",
-      viewQuestBoard: "กลับไปกระดานเควสต์",
+      viewQuestBoard: "กลับหน้าหลัก",
+      toHome: "กลับหน้าหลัก",
       publishCheckTitle: "ตรวจสอบการเผยแพร่และ Escrow",
       publishCheckReady: "พร้อมเผยแพร่",
       publishCheckBlocked: "แก้ไขข้อขัดข้องก่อนเผยแพร่เควสต์",

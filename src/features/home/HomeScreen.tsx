@@ -1,6 +1,10 @@
 import React, { useCallback, useState } from "react";
-import { useColorScheme, useWindowDimensions } from "react-native";
-import { useRouter } from "expo-router";
+import {
+  RefreshControl,
+  useColorScheme,
+  useWindowDimensions,
+} from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Pressable, ScrollView, Text, View } from "@/tw";
@@ -12,6 +16,8 @@ import {
   WalletCards,
 } from "lucide-react-native";
 
+import { questApi } from "@/api/QuestApi";
+import { studentApi } from "@/api/StudentApi";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { isPrototypeDemoEnabled } from "@/features/auth/authEnvironment";
 import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
@@ -21,10 +27,15 @@ import { getThemeColors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 
 import { HirerQuestProgressCard } from "./components/HirerQuestProgressCard";
-import { hirerHomeQuestFixture, hirerHomeQuestFixtures } from "./hirerHomeData";
+import { HirerQuestRosterModal } from "./components/HirerQuestRosterModal";
+import {
+  hirerHomeQuestFixtures,
+  type CanonicalHirerQuestStatus,
+  type LiveHirerQuestCardData,
+  type QuestMemberProfile,
+} from "./hirerHomeData";
 import { hirerHomeMessages } from "./hirerHomeMessages";
 import { hirerHomeStyles as styles } from "./hirerHomeStyles";
-
 export default function HomeScreen() {
   const router = useRouter();
   const { locale } = useLocale();
@@ -36,19 +47,129 @@ export default function HomeScreen() {
   const themeColors = getThemeColors(colorScheme);
   const messages = hirerHomeMessages[locale];
   const [activeCardIndex, setActiveCardIndex] = useState(0);
-  const quests = hirerHomeQuestFixtures;
-  const cardWidth = Math.min(width - 32, 640);
+  const [liveQuests, setLiveQuests] = useState<LiveHirerQuestCardData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [rosterModalQuest, setRosterModalQuest] =
+    useState<LiveHirerQuestCardData | null>(null);
+
+  const fetchActiveQuests = useCallback(async () => {
+    try {
+      const res = await questApi.listMine({ limit: 50 });
+      const mineQuests = res.items;
+
+      // Active and open quests created by this Hirer (exclude cancelled & completed)
+      const activeQuests = mineQuests.filter(
+        (q) => q.state !== "QUEST_CANCELLED" && q.state !== "QUEST_COMPLETED"
+      );
+
+      const cardPromises = activeQuests.map(async (q) => {
+        const [assignments, applications] = await Promise.all([
+          questApi.listQuestAssignments(q.id).catch(() => []),
+          q.mode === "CANDIDATE"
+            ? questApi.listApplications(q.id).catch(() => [])
+            : Promise.resolve([]),
+        ]);
+
+        const memberIds = Array.from(
+          new Set([
+            ...assignments.map((a) => a.workerId),
+            ...applications.map((a) => a.memberId),
+          ])
+        );
+
+        const profileMap = new Map<string, QuestMemberProfile>();
+        await Promise.all(
+          memberIds.map(async (id) => {
+            try {
+              const p = await studentApi.getPublicProfile(id);
+              const name = [p.firstName, p.lastName].filter(Boolean).join(" ");
+              profileMap.set(id, {
+                id,
+                displayName: name || "KU Student",
+                avatarUri: p.avatar?.url,
+                faculty: p.department?.faculty?.name,
+              });
+            } catch {
+              profileMap.set(id, {
+                id,
+                displayName: "KU Student",
+              });
+            }
+          })
+        );
+
+        const assignedWorkers = assignments
+          .map((a) => profileMap.get(a.workerId))
+          .filter((p): p is QuestMemberProfile => Boolean(p));
+
+        const applicantsList = applications
+          .filter((app) => app.state === "APPLICATION_APPLIED")
+          .map((app) => profileMap.get(app.memberId))
+          .filter((p): p is QuestMemberProfile => Boolean(p));
+
+        return {
+          id: q.id,
+          title: q.title,
+          tag: q.tag?.name,
+          status: q.state as CanonicalHirerQuestStatus,
+          mode: q.mode,
+          participation: q.participation,
+          headcount: q.headcount,
+          dueAt: q.dueAt,
+          assignedWorkers,
+          applicants: applicantsList,
+        };
+      });
+
+      const cards = await Promise.all(cardPromises);
+      setLiveQuests(cards);
+    } catch (err) {
+      console.warn("[HomeScreen] Failed to load active quests:", err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void fetchActiveQuests();
+    }, [fetchActiveQuests])
+  );
+
   const isPrototypeDemo = isPrototypeDemoEnabled();
+  const displayQuests =
+    liveQuests.length > 0
+      ? liveQuests
+      : isPrototypeDemo
+        ? hirerHomeQuestFixtures.map((f) => ({
+            id: f.id,
+            title: f.title[locale],
+            tag: f.tag?.[locale],
+            status: f.status,
+            mode: "FIRST_COME_FIRST_SERVED" as const,
+            participation: "SINGLE" as const,
+            headcount: 1,
+            dueAt: f.dueAt,
+            assignedWorkers: [
+              {
+                id: f.worker.id,
+                displayName: f.worker.displayName[locale],
+                avatarUri: f.worker.avatarUri,
+                faculty: f.worker.faculty?.[locale],
+              },
+            ],
+            applicants: [],
+          }))
+        : [];
+
+  const cardWidth = Math.min(width - 32, 640);
   const handleOpenDetails = useCallback(
     (questId: string) => {
       router.push({
-        pathname: "/quest/[id]",
-        params: {
-          id: questId,
-          mode: "post",
-          preview: "populated",
-          studentId: "demo-hirer",
-        },
+        pathname: "/quest/[id]/manage",
+        params: { id: questId },
       });
     },
     [router]
@@ -68,6 +189,17 @@ export default function HomeScreen() {
             getBottomNavigationInset(metrics, insets.bottom) + spacing.xl,
         }}
         onScroll={handleScroll}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              void fetchActiveQuests();
+            }}
+            colors={[themeColors.primary]}
+            tintColor={themeColors.primary}
+          />
+        }
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         testID="hirer-home-scroll"
@@ -91,7 +223,7 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          {isPrototypeDemo ? (
+          {displayQuests.length > 0 ? (
             <>
               <View style={styles.sectionHeaderRow}>
                 <Text
@@ -102,7 +234,7 @@ export default function HomeScreen() {
                 >
                   {messages.activeQuestTitle}
                 </Text>
-                {quests.length > 1 ? (
+                {displayQuests.length > 1 ? (
                   <View
                     style={[
                       styles.sectionCounterBadge,
@@ -121,7 +253,7 @@ export default function HomeScreen() {
                     >
                       {messages.activeQuestCounter(
                         activeCardIndex + 1,
-                        quests.length
+                        displayQuests.length
                       )}
                     </Text>
                   </View>
@@ -137,7 +269,7 @@ export default function HomeScreen() {
                     const offsetX = event.nativeEvent.contentOffset.x;
                     const nextIndex = Math.round(offsetX / (cardWidth + 12));
                     setActiveCardIndex(
-                      Math.max(0, Math.min(nextIndex, quests.length - 1))
+                      Math.max(0, Math.min(nextIndex, displayQuests.length - 1))
                     );
                   }}
                   pagingEnabled
@@ -146,40 +278,37 @@ export default function HomeScreen() {
                   snapToInterval={cardWidth + 12}
                   testID="hirer-quest-carousel"
                 >
-                  {quests.map((item) => (
+                  {displayQuests.map((item) => (
                     <View key={item.id} style={{ width: cardWidth }}>
                       <HirerQuestProgressCard
                         dueAt={item.dueAt}
                         onOpenDetails={() => handleOpenDetails(item.id)}
-                        onOpenWorkerProfile={() =>
-                          handleOpenWorkerProfile(item.worker.id)
-                        }
+                        onOpenWorkerProfile={handleOpenWorkerProfile}
+                        onViewRoster={() => setRosterModalQuest(item)}
                         questId={item.id}
                         status={item.status}
-                        tag={item.tag?.[locale]}
-                        title={item.title[locale]}
-                        worker={{
-                          avatarUri: item.worker.avatarUri,
-                          displayName: item.worker.displayName[locale],
-                          faculty: item.worker.faculty?.[locale],
-                          id: item.worker.id,
-                        }}
+                        tag={item.tag}
+                        title={item.title}
+                        headcount={item.headcount}
+                        mode={item.mode}
+                        assignedWorkers={item.assignedWorkers}
+                        applicants={item.applicants}
                       />
                     </View>
                   ))}
                 </ScrollView>
 
-                {quests.length > 1 ? (
+                {displayQuests.length > 1 ? (
                   <View
                     accessibilityLabel={messages.activeQuestCounter(
                       activeCardIndex + 1,
-                      quests.length
+                      displayQuests.length
                     )}
                     accessibilityRole="progressbar"
                     style={styles.carouselPagination}
                     testID="hirer-quest-carousel-dots"
                   >
-                    {quests.map((item, index) => (
+                    {displayQuests.map((item, index) => (
                       <View
                         key={item.id}
                         style={[
@@ -497,6 +626,20 @@ export default function HomeScreen() {
           </View>
         </View>
       </ScrollView>
+      {rosterModalQuest && (
+        <HirerQuestRosterModal
+          visible={Boolean(rosterModalQuest)}
+          questTitle={rosterModalQuest.title}
+          questId={rosterModalQuest.id}
+          status={rosterModalQuest.status}
+          headcount={rosterModalQuest.headcount}
+          assignedWorkers={rosterModalQuest.assignedWorkers}
+          applicants={rosterModalQuest.applicants}
+          onClose={() => setRosterModalQuest(null)}
+          onOpenWorkerProfile={handleOpenWorkerProfile}
+          onOpenManageQuest={handleOpenDetails}
+        />
+      )}
     </ScreenLayout>
   );
 }

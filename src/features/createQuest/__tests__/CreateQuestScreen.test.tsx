@@ -688,6 +688,11 @@ describe("CreateQuestScreen", () => {
     await waitFor(() =>
       expect(view.getByText("เผยแพร่เควสต์แล้ว")).toBeTruthy()
     );
+    expect(view.getByText("สร้างเควสต์ใหม่")).toBeTruthy();
+    expect(view.getByText("กลับหน้าหลัก")).toBeTruthy();
+
+    await fireEvent.press(view.getByText("กลับหน้าหลัก"));
+    expect(mockRouter.replace).toHaveBeenCalledWith("/(tabs)");
   });
 
   it("autosaves edits and exposes a retry when persistence fails", async () => {

@@ -764,14 +764,16 @@ export default function CreateQuestScreen({
               onPress={() => void resetDraft()}
               className={styles.fullButton}
             >
-              {messages.createAnotherDraft}
+              {published
+                ? messages.createNewQuest
+                : messages.createAnotherDraft}
             </Button>
             <Button
               variant="secondary"
               onPress={leaveCreateFlow}
               className={styles.fullButton}
             >
-              {messages.viewQuestBoard}
+              {messages.toHome}
             </Button>
           </View>
         </View>

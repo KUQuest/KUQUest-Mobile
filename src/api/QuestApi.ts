@@ -101,7 +101,15 @@ export const tagItemSchema = z.object({
 
 export const tagListResponseSchema = z.object({
   success: z.literal(true),
-  data: z.array(tagItemSchema),
+  data: z.union([
+    z.array(tagItemSchema),
+    z
+      .object({
+        items: z.array(tagItemSchema),
+        nextCursor: z.string().nullable().optional(),
+      })
+      .transform((val) => val.items),
+  ]),
 });
 
 export type TagItem = z.infer<typeof tagItemSchema>;

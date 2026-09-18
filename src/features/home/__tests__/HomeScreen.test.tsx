@@ -1,87 +1,109 @@
-import { fireEvent, render } from "@testing-library/react-native";
 import React from "react";
+import { render, waitFor } from "@testing-library/react-native";
 
+import { questApi } from "@/api/QuestApi";
+import { studentApi } from "@/api/StudentApi";
+import { LocaleProvider } from "@/locales/LocaleProvider";
 import HomeScreen from "../HomeScreen";
 
-const mockPush = jest.fn();
-const mockIsPrototypeDemoEnabled = jest.fn(() => true);
-
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    back: jest.fn(),
+  }),
+  useFocusEffect: (cb: () => void) => {
+    const React = jest.requireActual("react");
+    React.useEffect(() => {
+      cb();
+    }, [cb]);
+  },
 }));
-jest.mock("@/locales/LocaleProvider", () => ({
-  useLocale: () => ({ locale: "en" }),
+
+jest.mock("@/api/QuestApi", () => ({
+  questApi: {
+    listMine: jest.fn(),
+    listQuestAssignments: jest.fn(),
+    listApplications: jest.fn(),
+  },
 }));
-jest.mock("@/features/auth/authEnvironment", () => ({
-  isPrototypeDemoEnabled: () => mockIsPrototypeDemoEnabled(),
+
+jest.mock("@/api/StudentApi", () => ({
+  studentApi: {
+    getPublicProfile: jest.fn(),
+  },
 }));
-describe("Hirer Home", () => {
+
+describe("HomeScreen live active quests syncing", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockIsPrototypeDemoEnabled.mockReturnValue(true);
   });
 
-  it("opens the Quest detail from the active-work card", async () => {
-    const view = await render(<HomeScreen />);
+  it("syncs and displays active quests created by the hirer with assigned worker", async () => {
+    (questApi.listMine as jest.Mock).mockResolvedValue({
+      items: [
+        {
+          id: "live-q1",
+          title: "Science Exhibition Booth Setup",
+          state: "QUEST_ASSIGNED",
+          mode: "FIRST_COME_FIRST_SERVED",
+          participation: "SINGLE",
+          headcount: 1,
+          dueAt: "2026-09-20T17:00:00.000+07:00",
+          tag: { name: "Design" },
+        },
+      ],
+      nextCursor: null,
+    });
 
-    expect(
-      view.getByTestId("hirer-quest-card-hirer-home-progress-demo")
-    ).toBeTruthy();
+    (questApi.listQuestAssignments as jest.Mock).mockResolvedValue([
+      {
+        id: "assign-1",
+        questId: "live-q1",
+        workerId: "worker-chat-1",
+        state: "ASSIGNMENT_ACTIVE",
+      },
+    ]);
 
-    fireEvent.press(
-      view.getByTestId("hirer-quest-card-details-hirer-home-progress-demo")
-    );
-
-    expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/quest/[id]",
-      params: {
-        id: "hirer-home-progress-demo",
-        mode: "post",
-        preview: "populated",
-        studentId: "demo-hirer",
+    (studentApi.getPublicProfile as jest.Mock).mockResolvedValue({
+      firstName: "Chat",
+      lastName: "Worker",
+      avatar: null,
+      department: {
+        faculty: { name: "Engineering" },
       },
     });
+
+    const { getByText, getByTestId } = await render(
+      <LocaleProvider>
+        <HomeScreen />
+      </LocaleProvider>
+    );
+
+    await waitFor(() => {
+      expect(getByText("Science Exhibition Booth Setup")).toBeTruthy();
+    });
+
+    expect(getByText("Chat Worker")).toBeTruthy();
+    expect(getByTestId("hirer-quest-card-worker-live-q1")).toBeTruthy();
   });
 
-  it("does not show synthetic Quest data outside prototype mode", async () => {
-    mockIsPrototypeDemoEnabled.mockReturnValue(false);
-
-    const view = await render(<HomeScreen />);
-
-    expect(view.getByTestId("hirer-home-empty")).toBeTruthy();
-    expect(
-      view.queryByTestId("hirer-quest-card-hirer-home-progress-demo")
-    ).toBeNull();
-  });
-
-  it("renders Quick Access buttons and navigates to the selected destination", async () => {
-    const view = await render(<HomeScreen />);
-
-    expect(view.getByTestId("hirer-home-quick-access")).toBeTruthy();
-    expect(view.getByText("Quick Actions")).toBeTruthy();
-
-    fireEvent.press(view.getByTestId("hirer-quick-access-active"));
-    expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/my-quests",
-      params: { role: "hirer", tab: "active" },
+  it("shows empty state when no active quests exist", async () => {
+    (questApi.listMine as jest.Mock).mockResolvedValue({
+      items: [],
+      nextCursor: null,
     });
 
-    fireEvent.press(view.getByTestId("hirer-quick-access-draft"));
-    expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/my-quests",
-      params: { role: "hirer", tab: "draft" },
+    const { getByTestId, queryByTestId } = await render(
+      <LocaleProvider>
+        <HomeScreen />
+      </LocaleProvider>
+    );
+
+    await waitFor(() => {
+      expect(getByTestId("hirer-home-empty")).toBeTruthy();
     });
 
-    fireEvent.press(view.getByTestId("hirer-quick-access-history"));
-    expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/my-quests",
-      params: { role: "hirer", tab: "completed" },
-    });
-
-    fireEvent.press(view.getByTestId("hirer-quick-access-board"));
-    expect(mockPush).toHaveBeenCalledWith("/quest-board");
-
-    fireEvent.press(view.getByTestId("hirer-quick-access-topup"));
-    expect(mockPush).toHaveBeenCalledWith("/top-up");
+    expect(queryByTestId("hirer-quest-carousel")).toBeNull();
   });
 });

@@ -37,6 +37,20 @@ export interface HirerHomeMessages {
   timelineOverrides: Partial<
     Record<CanonicalHirerQuestStatus, Partial<Record<TimelineStageKey, string>>>
   >;
+  applicantsLabel: (count: number) => string;
+  joinedLabel: (count: number, max?: number) => string;
+  waitingForApplicants: string;
+  noApplicantsYet: string;
+  viewApplicants: string;
+  viewParticipants: string;
+  manageQuest: string;
+  rosterModalTitle: string;
+  joinedSectionTitle: string;
+  applicantsSectionTitle: string;
+  noRosterYet: string;
+  openManageQuest: string;
+  viewProfile: string;
+  close: string;
 }
 
 export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
@@ -90,6 +104,21 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
       QUEST_CANCELLED: { completed: "Cancelled" },
       QUEST_FAILED: { review: "Not completed" },
     },
+    applicantsLabel: (count: number) => `Applicants (${count})`,
+    joinedLabel: (count: number, max?: number) =>
+      max ? `Joined (${count}/${max})` : `Joined (${count})`,
+    waitingForApplicants: "Awaiting applicants or workers",
+    noApplicantsYet: "No applicants yet",
+    viewApplicants: "View applicants",
+    viewParticipants: "View participants",
+    manageQuest: "Manage quest",
+    rosterModalTitle: "Quest Participants & Applicants",
+    joinedSectionTitle: "Joined Workers",
+    applicantsSectionTitle: "Applicants",
+    noRosterYet: "No workers or applicants yet for this quest.",
+    openManageQuest: "Manage quest & select candidates",
+    viewProfile: "View profile",
+    close: "Close",
   },
   th: {
     title: "หน้าหลักผู้ว่าจ้าง",
@@ -140,5 +169,20 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
       QUEST_CANCELLED: { completed: "ยกเลิกแล้ว" },
       QUEST_FAILED: { review: "ไม่สำเร็จ" },
     },
+    applicantsLabel: (count: number) => `ผู้สมัคร (${count} คน)`,
+    joinedLabel: (count: number, max?: number) =>
+      max ? `ผู้เข้าร่วม (${count}/${max} คน)` : `ผู้เข้าร่วม (${count} คน)`,
+    waitingForApplicants: "รอผู้สมัครหรือผู้ตอบรับ",
+    noApplicantsYet: "ยังไม่มีผู้สมัคร",
+    viewApplicants: "ดูผู้สมัคร",
+    viewParticipants: "ดูผู้เข้าร่วม",
+    manageQuest: "จัดการเควสต์",
+    rosterModalTitle: "ผู้เข้าร่วมและผู้สมัครเควสต์",
+    joinedSectionTitle: "ผู้เข้าร่วมที่ตอบรับแล้ว",
+    applicantsSectionTitle: "ผู้สมัคร",
+    noRosterYet: "ยังไม่มีผู้สมัครหรือผู้เข้าร่วมสำหรับเควสต์นี้",
+    openManageQuest: "จัดการเควสต์และคัดเลือกผู้สมัคร",
+    viewProfile: "ดูโปรไฟล์",
+    close: "ปิด",
   },
 };
