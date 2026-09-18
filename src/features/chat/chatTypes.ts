@@ -27,8 +27,11 @@ export interface ChatConversation {
   status?: QuestStatus;
   capability?: WorkConversationCapability;
   questTitle: LocalizedText;
+  participantId?: string;
   participantName: string;
   participantRole: "owner" | "member";
+  participantAvatarUrl?: string;
+  participantAvatarFileId?: string;
   initials: string;
   avatarColor: string;
   latestMessage: LocalizedText;

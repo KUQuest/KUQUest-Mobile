@@ -1,0 +1,554 @@
+import React, { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, useColorScheme } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as ImagePicker from "expo-image-picker";
+import {
+  CheckCircle2,
+  ImagePlus,
+  RefreshCw,
+  Trash2,
+} from "lucide-react-native";
+
+import { Image, Pressable, ScrollView, Text, TextInput, View } from "@/tw";
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
+import { TopBar } from "@/components/ui/TopBar";
+import { createQuestIdempotencyKey } from "@/api/QuestApi";
+import type { UploadAsset } from "@/api/fileUpload";
+import { authService } from "@/features/auth/AuthService";
+import {
+  liveQuestService,
+  type LiveQuestSnapshot,
+} from "@/features/questBoard/liveQuestService";
+import { useLocale } from "@/locales/LocaleProvider";
+import { getThemeColors } from "@/theme/colors";
+import { fontFamily } from "@/theme/typography";
+import { workerHomeMessages } from "../workerHomeMessages";
+
+export interface WorkerProofUploadScreenProps {
+  questId?: string;
+  viewerId?: string;
+  onSuccess?: () => void;
+}
+
+export default function WorkerProofUploadScreen({
+  questId: propQuestId,
+  viewerId: propViewerId,
+  onSuccess,
+}: WorkerProofUploadScreenProps = {}) {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme();
+  const themeColors = getThemeColors(colorScheme);
+  const { locale } = useLocale();
+  const messages = workerHomeMessages[locale];
+
+  const params = useLocalSearchParams<{
+    id?: string | string[];
+    viewerId?: string | string[];
+    studentId?: string | string[];
+  }>();
+
+  const resolvedQuestId =
+    propQuestId ?? (Array.isArray(params.id) ? params.id[0] : params.id);
+  const explicitViewerId =
+    propViewerId ??
+    (Array.isArray(params.viewerId) ? params.viewerId[0] : params.viewerId) ??
+    (Array.isArray(params.studentId) ? params.studentId[0] : params.studentId);
+
+  const [sessionUserId, setSessionUserId] = useState<string>();
+  const resolvedViewerId = explicitViewerId ?? sessionUserId;
+
+  const [snapshot, setSnapshot] = useState<LiveQuestSnapshot | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string>();
+  const [selectedImage, setSelectedImage] =
+    useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [description, setDescription] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    void authService
+      .getSession()
+      .then((session) => {
+        if (active && session?.user.id) setSessionUserId(session.user.id);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const loadSnapshot = useCallback(async () => {
+    if (!resolvedQuestId || !resolvedViewerId) return;
+    setLoading(true);
+    setError(undefined);
+    try {
+      const snap = await liveQuestService.getLiveSnapshot(
+        resolvedQuestId,
+        resolvedViewerId
+      );
+      setSnapshot(snap);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : messages.errorTitle);
+    } finally {
+      setLoading(false);
+    }
+  }, [messages.errorTitle, resolvedQuestId, resolvedViewerId]);
+
+  /* eslint-disable react-hooks/set-state-in-effect -- initial async load updates screen state */
+  useEffect(() => {
+    if (resolvedQuestId && resolvedViewerId) {
+      void loadSnapshot();
+    }
+  }, [loadSnapshot, resolvedQuestId, resolvedViewerId]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  const handlePickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.[0]) {
+        setSelectedImage(result.assets[0]);
+      }
+    } catch {
+      Alert.alert(messages.errorTitle, messages.imageRequiredAlert);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+  };
+
+  // Case A: Doesn't require proof -> just end the quest (complete)
+  const handleConfirmCompletionDirectly = async () => {
+    if (!resolvedQuestId || submitting) return;
+    setSubmitting(true);
+    setError(undefined);
+    try {
+      await liveQuestService.confirmCompletion(
+        resolvedQuestId,
+        createQuestIdempotencyKey()
+      );
+      Alert.alert(
+        messages.confirmCompleteTitle,
+        messages.proofSubmittedSuccess,
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              if (onSuccess) {
+                onSuccess();
+              } else {
+                router.replace("/(tabs)/my-quests");
+              }
+            },
+          },
+        ]
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : messages.errorTitle);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Case B: Requires proof -> upload image & submit
+  const handleSubmitProof = async () => {
+    if (!resolvedQuestId || submitting) return;
+    if (!selectedImage) {
+      Alert.alert(messages.errorTitle, messages.imageRequiredAlert);
+      return;
+    }
+
+    setSubmitting(true);
+    setError(undefined);
+    try {
+      const uploadAsset: UploadAsset = {
+        uri: selectedImage.uri,
+        name: selectedImage.fileName ?? `proof-${Date.now()}.jpg`,
+        type: selectedImage.mimeType ?? "image/jpeg",
+      };
+
+      const proofDraft = await liveQuestService.createProofDraft(
+        resolvedQuestId,
+        {
+          assets: [uploadAsset],
+          description: description.trim() || undefined,
+        },
+        createQuestIdempotencyKey()
+      );
+
+      await liveQuestService.submitProofDraft(
+        resolvedQuestId,
+        proofDraft.id,
+        createQuestIdempotencyKey()
+      );
+
+      Alert.alert(messages.workTitle, messages.proofSubmittedSuccess, [
+        {
+          text: "OK",
+          onPress: () => {
+            if (onSuccess) {
+              onSuccess();
+            } else {
+              router.replace("/(tabs)/my-quests");
+            }
+          },
+        },
+      ]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : messages.errorTitle);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const isProofRequired = snapshot?.proofRequired !== false;
+
+  return (
+    <ScreenLayout edges={["top", "left", "right"]} className="bg-ku-background">
+      <TopBar onBackPress={() => router.back()} title={messages.workTitle} />
+
+      {loading ? (
+        <View
+          className="flex-1 items-center justify-center p-6"
+          testID="worker-proof-loading"
+        >
+          <ActivityIndicator color={themeColors.primaryDeep} />
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingTop: 16,
+            paddingBottom: insets.bottom + 32,
+          }}
+          showsVerticalScrollIndicator={false}
+          testID="worker-proof-scroll"
+        >
+          {/* Quest Context Banner */}
+          {snapshot ? (
+            <View
+              style={{
+                backgroundColor: themeColors.surface,
+                borderColor: themeColors.borderSubtle,
+                borderRadius: 16,
+                borderWidth: 1,
+                padding: 16,
+                marginBottom: 20,
+              }}
+              testID="worker-proof-quest-summary"
+            >
+              <Text
+                style={{
+                  fontFamily: fontFamily.semiBold,
+                  fontSize: 16,
+                  color: themeColors.textStrong,
+                }}
+              >
+                {snapshot.quest.title}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fontFamily.regular,
+                  fontSize: 13,
+                  color: themeColors.textSecondary,
+                  marginTop: 4,
+                }}
+              >
+                Quest #{resolvedQuestId?.slice(0, 8)}
+              </Text>
+            </View>
+          ) : null}
+
+          {error ? (
+            <View
+              style={{
+                backgroundColor: themeColors.surfaceMuted,
+                borderColor: themeColors.borderSubtle,
+                borderRadius: 12,
+                borderWidth: 1,
+                padding: 12,
+                marginBottom: 16,
+              }}
+              testID="worker-proof-error-banner"
+            >
+              <Text style={{ color: themeColors.textStrong, fontSize: 13 }}>
+                {error}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Case A: Does not require proof */}
+          {!isProofRequired ? (
+            <View
+              style={{
+                backgroundColor: themeColors.surface,
+                borderColor: themeColors.borderSubtle,
+                borderRadius: 16,
+                borderWidth: 1,
+                padding: 20,
+                alignItems: "center",
+              }}
+              testID="worker-proof-not-required-section"
+            >
+              <CheckCircle2 size={40} color={themeColors.success} />
+              <Text
+                style={{
+                  fontFamily: fontFamily.semiBold,
+                  fontSize: 17,
+                  color: themeColors.textStrong,
+                  marginTop: 12,
+                  textAlign: "center",
+                }}
+              >
+                {messages.proofNotRequiredNote}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fontFamily.regular,
+                  fontSize: 13,
+                  color: themeColors.textSecondary,
+                  marginTop: 6,
+                  textAlign: "center",
+                }}
+              >
+                {messages.confirmCompleteDesc}
+              </Text>
+
+              <Pressable
+                accessibilityLabel={messages.completeQuestDirectly}
+                accessibilityRole="button"
+                disabled={submitting}
+                onPress={handleConfirmCompletionDirectly}
+                style={{
+                  backgroundColor: themeColors.primaryDeep,
+                  borderRadius: 12,
+                  width: "100%",
+                  paddingVertical: 14,
+                  alignItems: "center",
+                  marginTop: 24,
+                  minHeight: 48,
+                  opacity: submitting ? 0.6 : 1,
+                }}
+                testID="worker-direct-complete-button"
+              >
+                {submitting ? (
+                  <ActivityIndicator color={themeColors.white} />
+                ) : (
+                  <Text
+                    style={{
+                      fontFamily: fontFamily.semiBold,
+                      fontSize: 15,
+                      color: themeColors.white,
+                    }}
+                  >
+                    {messages.completeQuestDirectly}
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          ) : (
+            /* Case B: Requires proof -> "+ Image upload" & "Submit" */
+            <View testID="worker-proof-required-section">
+              {/* Image Upload Box as in sketch */}
+              <View style={{ marginBottom: 16 }}>
+                {!selectedImage ? (
+                  <Pressable
+                    accessibilityLabel={messages.uploadImagePrompt}
+                    accessibilityRole="button"
+                    onPress={handlePickImage}
+                    style={{
+                      backgroundColor: themeColors.surface,
+                      borderColor: themeColors.borderSubtle,
+                      borderWidth: 2,
+                      borderStyle: "dashed",
+                      borderRadius: 18,
+                      height: 220,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 10,
+                    }}
+                    testID="worker-image-upload-box"
+                  >
+                    <View
+                      style={{
+                        width: 54,
+                        height: 54,
+                        borderRadius: 27,
+                        backgroundColor: themeColors.surfaceMuted,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <ImagePlus size={26} color={themeColors.primaryDeep} />
+                    </View>
+                    <Text
+                      style={{
+                        fontFamily: fontFamily.semiBold,
+                        fontSize: 16,
+                        color: themeColors.primaryDeep,
+                      }}
+                    >
+                      {messages.uploadImagePrompt}
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <View
+                    style={{
+                      borderRadius: 18,
+                      overflow: "hidden",
+                      borderWidth: 1,
+                      borderColor: themeColors.borderSubtle,
+                      backgroundColor: themeColors.surface,
+                    }}
+                    testID="worker-image-preview-container"
+                  >
+                    <Image
+                      accessibilityLabel="Proof preview"
+                      contentFit="cover"
+                      source={{ uri: selectedImage.uri }}
+                      style={{ width: "100%", height: 220 }}
+                      testID="worker-proof-image-preview"
+                    />
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        padding: 12,
+                        borderTopWidth: 1,
+                        borderColor: themeColors.borderSubtle,
+                      }}
+                    >
+                      <Pressable
+                        accessibilityLabel={messages.changeImage}
+                        accessibilityRole="button"
+                        onPress={handlePickImage}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
+                          paddingVertical: 6,
+                          paddingHorizontal: 12,
+                          borderRadius: 8,
+                          backgroundColor: themeColors.surfaceMuted,
+                        }}
+                        testID="worker-change-image-btn"
+                      >
+                        <RefreshCw size={14} color={themeColors.primaryDeep} />
+                        <Text
+                          style={{
+                            fontFamily: fontFamily.medium,
+                            fontSize: 13,
+                            color: themeColors.primaryDeep,
+                          }}
+                        >
+                          {messages.changeImage}
+                        </Text>
+                      </Pressable>
+
+                      <Pressable
+                        accessibilityLabel={messages.removeImage}
+                        accessibilityRole="button"
+                        onPress={handleRemoveImage}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
+                          paddingVertical: 6,
+                          paddingHorizontal: 12,
+                          borderRadius: 8,
+                        }}
+                        testID="worker-remove-image-btn"
+                      >
+                        <Trash2
+                          size={14}
+                          color={themeColors.danger ?? "#ef4444"}
+                        />
+                        <Text
+                          style={{
+                            fontFamily: fontFamily.medium,
+                            fontSize: 13,
+                            color: themeColors.danger ?? "#ef4444",
+                          }}
+                        >
+                          {messages.removeImage}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                )}
+              </View>
+
+              {/* Note / Description */}
+              <View style={{ marginBottom: 24 }}>
+                <TextInput
+                  accessibilityLabel={messages.proofDescriptionPlaceholder}
+                  multiline
+                  numberOfLines={4}
+                  onChangeText={setDescription}
+                  placeholder={messages.proofDescriptionPlaceholder}
+                  placeholderTextColor={themeColors.textSecondary}
+                  style={{
+                    backgroundColor: themeColors.surface,
+                    borderColor: themeColors.borderSubtle,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    color: themeColors.textStrong,
+                    fontFamily: fontFamily.regular,
+                    fontSize: 14,
+                    minHeight: 100,
+                    paddingHorizontal: 14,
+                    paddingTop: 12,
+                    paddingBottom: 12,
+                    textAlignVertical: "top",
+                  }}
+                  testID="worker-proof-description-input"
+                  value={description}
+                />
+              </View>
+
+              {/* Submit Button */}
+              <Pressable
+                accessibilityLabel={messages.submitWork}
+                accessibilityRole="button"
+                disabled={submitting || !selectedImage}
+                onPress={handleSubmitProof}
+                style={{
+                  backgroundColor: themeColors.primaryDeep,
+                  borderRadius: 14,
+                  paddingVertical: 14,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: 50,
+                  opacity: submitting || !selectedImage ? 0.5 : 1,
+                }}
+                testID="worker-proof-submit-button"
+              >
+                {submitting ? (
+                  <ActivityIndicator color={themeColors.white} />
+                ) : (
+                  <Text
+                    style={{
+                      fontFamily: fontFamily.semiBold,
+                      fontSize: 16,
+                      color: themeColors.white,
+                    }}
+                  >
+                    {messages.submitWork}
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          )}
+        </ScrollView>
+      )}
+    </ScreenLayout>
+  );
+}

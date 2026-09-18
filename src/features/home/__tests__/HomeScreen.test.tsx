@@ -1,14 +1,16 @@
 import React from "react";
-import { render, waitFor } from "@testing-library/react-native";
+import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import { questApi } from "@/api/QuestApi";
 import { studentApi } from "@/api/StudentApi";
 import { LocaleProvider } from "@/locales/LocaleProvider";
 import HomeScreen from "../HomeScreen";
 
+const mockPush = jest.fn();
+
 jest.mock("expo-router", () => ({
   useRouter: () => ({
-    push: jest.fn(),
+    push: mockPush,
     replace: jest.fn(),
     back: jest.fn(),
   }),
@@ -105,5 +107,45 @@ describe("HomeScreen live active quests syncing", () => {
     });
 
     expect(queryByTestId("hirer-quest-carousel")).toBeNull();
+  });
+  it("navigates to the correct destination for each Quick Access action", async () => {
+    (questApi.listMine as jest.Mock).mockResolvedValue({
+      items: [],
+      nextCursor: null,
+    });
+
+    const { getByTestId } = await render(
+      <LocaleProvider>
+        <HomeScreen />
+      </LocaleProvider>
+    );
+
+    await waitFor(() => {
+      expect(getByTestId("hirer-home-quick-access")).toBeTruthy();
+    });
+
+    fireEvent.press(getByTestId("hirer-quick-access-active"));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/my-quests",
+      params: { role: "hirer", tab: "active" },
+    });
+
+    fireEvent.press(getByTestId("hirer-quick-access-draft"));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/my-quests",
+      params: { role: "hirer", tab: "draft" },
+    });
+
+    fireEvent.press(getByTestId("hirer-quick-access-history"));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/my-quests",
+      params: { role: "hirer", tab: "completed" },
+    });
+
+    fireEvent.press(getByTestId("hirer-quick-access-board"));
+    expect(mockPush).toHaveBeenCalledWith("/quest-board");
+
+    fireEvent.press(getByTestId("hirer-quick-access-topup"));
+    expect(mockPush).toHaveBeenCalledWith("/top-up");
   });
 });

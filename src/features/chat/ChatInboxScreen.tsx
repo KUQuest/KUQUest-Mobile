@@ -17,7 +17,7 @@ import {
   LoadingSkeleton,
   SkeletonBlock,
 } from "@/components/ui/LoadingSkeleton";
-import { ScrollView, Pressable, Text, TextInput, View } from "@/tw";
+import { Image, ScrollView, Pressable, Text, TextInput, View } from "@/tw";
 import { useLocale } from "@/locales/LocaleProvider";
 import { chatMessages } from "@/locales/chatMessages";
 import { colors } from "@/theme/colors";
@@ -29,6 +29,7 @@ import styles from "./chatStyles";
 import { chatApi, serverConversationToChatConversation } from "@/api/ChatApi";
 import { useCalmRefresh } from "@/hooks/useCalmRefresh";
 import type { ServerCandidateInquiry } from "@/api/ChatApi";
+import { enrichChatConversation } from "./chatProfile";
 
 function localizedText(
   value: Record<"en" | "th", string>,
@@ -57,6 +58,7 @@ function candidateInquiryToConversation(
     id: inquiry.id,
     questId: inquiry.quest.id,
     questTitle: title,
+    ...(otherParticipant?.id ? { participantId: otherParticipant.id } : {}),
     participantName,
     participantRole: "owner",
     initials: participantName.slice(0, 2).toUpperCase(),
@@ -91,18 +93,45 @@ function filterChatConversations(
 
 function ConversationAvatar({
   conversation,
+  onPress,
 }: {
   conversation: ChatConversation;
+  onPress?: () => void;
 }) {
-  return (
+  const avatar = (
     <View
-      accessible
+      accessible={!onPress}
       accessibilityLabel={conversation.participantName}
       className={styles.avatar}
       style={{ backgroundColor: conversation.avatarColor }}
     >
-      <Text className={styles.avatarText}>{conversation.initials}</Text>
+      {conversation.participantAvatarUrl ? (
+        <Image
+          accessibilityLabel={conversation.participantName}
+          cachePolicy="memory-disk"
+          contentFit="cover"
+          source={{ uri: conversation.participantAvatarUrl }}
+          style={{ height: "100%", width: "100%" }}
+          testID={`chat-avatar-image-${conversation.participantId ?? conversation.id}`}
+        />
+      ) : (
+        <Text className={styles.avatarText}>{conversation.initials}</Text>
+      )}
     </View>
+  );
+  if (!onPress) return avatar;
+  return (
+    <Pressable
+      accessibilityLabel={`View profile of ${conversation.participantName}`}
+      accessibilityRole="button"
+      onPress={(event) => {
+        event.stopPropagation();
+        onPress();
+      }}
+      testID={`chat-avatar-${conversation.participantId ?? conversation.id}`}
+    >
+      {avatar}
+    </Pressable>
   );
 }
 
@@ -110,10 +139,12 @@ function ConversationRow({
   conversation,
   locale,
   onPress,
+  onOpenProfile,
 }: {
   conversation: ChatConversation;
   locale: "en" | "th";
   onPress: () => void;
+  onOpenProfile?: () => void;
 }) {
   const messages = chatMessages[locale];
   const role =
@@ -140,7 +171,7 @@ function ConversationRow({
       onPress={onPress}
       testID={`chat-conversation-${conversation.id}`}
     >
-      <ConversationAvatar conversation={conversation} />
+      <ConversationAvatar conversation={conversation} onPress={onOpenProfile} />
       <View className={styles.rowCopy}>
         <Text className={styles.questTitle} numberOfLines={1}>
           {localizedText(conversation.questTitle, locale)}
@@ -290,12 +321,45 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
         : ("error" as const);
     const candidateInquiries =
       inquiryResult.status === "fulfilled"
-        ? inquiryResult.value.items.map((inquiry) =>
-            candidateInquiryToConversation(inquiry, resolvedViewerId)
+        ? await Promise.all(
+            inquiryResult.value.items.map((inquiry) =>
+              enrichChatConversation(
+                candidateInquiryToConversation(inquiry, resolvedViewerId)
+              )
+            )
           )
         : [];
-    const workConversations = workResult.value.items.map((conversation) =>
-      serverConversationToChatConversation(conversation, resolvedViewerId)
+    const workConversations = await Promise.all(
+      workResult.value.items.map(async (conversation) => {
+        const converted = serverConversationToChatConversation(
+          conversation,
+          resolvedViewerId
+        );
+        try {
+          const participants = await chatApi.listParticipants(conversation.id);
+          const otherParticipant =
+            participants.find(
+              (participant) => participant.id !== resolvedViewerId
+            ) ?? participants[0];
+          return enrichChatConversation({
+            ...converted,
+            ...(otherParticipant?.id
+              ? { participantId: otherParticipant.id }
+              : {}),
+            participantName:
+              otherParticipant?.displayName ?? converted.participantName,
+            participantRole:
+              otherParticipant?.role === "HIRER" ? "owner" : "member",
+            initials: (
+              otherParticipant?.displayName ?? converted.participantName
+            )
+              .slice(0, 2)
+              .toUpperCase(),
+          });
+        } catch {
+          return converted;
+        }
+      })
     );
     if (resolvedViewerIdRef.current === resolvedViewerId) {
       setLoadState({
@@ -467,6 +531,14 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
                         }),
                       })
                     }
+                    onOpenProfile={
+                      conversation.participantId
+                        ? () =>
+                            router.push(
+                              `/profile/${conversation.participantId}`
+                            )
+                        : undefined
+                    }
                   />
                 ))}
               </View>
@@ -553,6 +625,14 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
                             viewerId: resolvedViewerId,
                           },
                         } as unknown as Href)
+                      }
+                      onOpenProfile={
+                        conversation.participantId
+                          ? () =>
+                              router.push(
+                                `/profile/${conversation.participantId}`
+                              )
+                          : undefined
                       }
                     />
                   ))}
