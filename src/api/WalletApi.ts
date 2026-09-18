@@ -57,6 +57,7 @@ export const topUpResponseSchema = z.object({
 });
 export const walletActivitySchema = z.object({
   id: z.string().min(1),
+  ledgerTransactionId: z.string().min(1).optional(),
   occurredAt: z.string(),
   type: z.enum(["TOP_UP", "SPEND", "EARN", "HOLD", "RELEASE", "CONVERT"]),
   activityStatus: z.enum(["PENDING", "COMPLETED", "FAILED"]),
@@ -75,9 +76,56 @@ export const walletActivitiesResponseSchema = z.object({
     activities: z.array(walletActivitySchema),
   }),
 });
+export const topUpListItemSchema = z.object({
+  id: z.string().min(1),
+  internalReference: z.string().optional(),
+  creditSatang: z.union([z.number(), z.string()]).transform(Number),
+  paymentTotalSatang: z
+    .union([z.number(), z.string()])
+    .transform(Number)
+    .optional(),
+  topUpStatus: z.string(),
+  creditedLedgerTransactionId: z.string().nullable().optional(),
+  createdAt: z.string(),
+  qrExpiresAt: z.string().nullable().optional(),
+});
+export type TopUpListItem = z.infer<typeof topUpListItemSchema>;
+
+export const topUpsListResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    items: z.array(topUpListItemSchema),
+  }),
+});
+
+export const payoutListItemSchema = z.object({
+  id: z.string().min(1),
+  internalReference: z.string().optional(),
+  principalSatang: z
+    .union([z.number(), z.string()])
+    .transform(Number)
+    .optional(),
+  amountSatang: z.union([z.number(), z.string()]).transform(Number).optional(),
+  feeSatang: z.union([z.number(), z.string()]).transform(Number).optional(),
+  payoutStatus: z.string().optional(),
+  status: z.string().optional(),
+  destinationMaskedLastFour: z.string().optional(),
+  destinationBankCode: z.string().optional(),
+  destinationAccountHolderName: z.string().optional(),
+  destination: z
+    .object({
+      type: z.string().optional(),
+      maskedAccount: z.string().optional(),
+    })
+    .optional(),
+  createdAt: z.string(),
+  reserveLedgerTransactionId: z.string().optional(),
+  finalLedgerTransactionId: z.string().nullable().optional(),
+});
+export type PayoutListItem = z.infer<typeof payoutListItemSchema>;
 
 export type TransactionType =
-  "TOP_UP" | "SPEND" | "EARN" | "HOLD" | "RELEASE" | "CONVERT";
+  "TOP_UP" | "SPEND" | "EARN" | "HOLD" | "RELEASE" | "CONVERT" | "PAYOUT";
 
 export interface UserTransaction {
   id: string;
@@ -89,8 +137,16 @@ export interface UserTransaction {
   status: string;
   createdAt: string;
   reference?: string;
+  resourceType?: string | null;
+  ledgerTransactionId?: string;
+  spendingDeltaSatang?: number;
+  earningsDeltaSatang?: number;
+  fundingReservedDeltaSatang?: number;
+  payoutReservedDeltaSatang?: number;
+  sourceApi?: "ACTIVITIES" | "TOP_UPS" | "PAYOUTS";
+  destinationInfo?: string;
+  expiresAt?: string;
 }
-
 export interface UserTransactionHistoryResult {
   items: UserTransaction[];
 }
@@ -130,6 +186,10 @@ const activityLabels: Record<
     title: "Earnings Converted",
     titleTh: "โอนรายได้เข้าสู่ยอดเงินพร้อมใช้",
   },
+  PAYOUT: {
+    title: "Bank Payout",
+    titleTh: "ถอนเงินเข้าบัญชีธนาคาร",
+  },
 };
 
 function transactionFromActivity(activity: WalletActivity): UserTransaction {
@@ -152,14 +212,19 @@ function transactionFromActivity(activity: WalletActivity): UserTransaction {
     status: activity.activityStatus,
     createdAt: activity.occurredAt,
     reference: activity.resourceId ?? undefined,
+    resourceType: activity.resourceType,
+    ledgerTransactionId: activity.ledgerTransactionId,
+    spendingDeltaSatang: activity.spendingDeltaSatang,
+    earningsDeltaSatang: activity.earningsDeltaSatang,
+    fundingReservedDeltaSatang: activity.fundingReservedDeltaSatang,
+    payoutReservedDeltaSatang: activity.payoutReservedDeltaSatang,
   };
 }
-
 export const earningsConversionResponseSchema = z.object({
   success: z.literal(true),
   data: z.object({
     id: z.string().min(1),
-    amountSatang: z.number().int().positive(),
+    amountSatang: z.coerce.number().int().positive(),
     createdAt: z.string(),
   }),
 });
@@ -320,23 +385,219 @@ export class WalletApi {
     return topUpResponseSchema.parse(body).data;
   }
 
-  async getTransactionHistory(
-    limit = 20
-  ): Promise<UserTransactionHistoryResult> {
-    const body = await this.client.request<unknown>(
-      `/api/v1/wallet/activities?limit=${limit}`
-    );
-    const activities =
-      walletActivitiesResponseSchema.parse(body).data.activities;
+  async listTopUps(limit?: number): Promise<TopUpListItem[]> {
+    try {
+      const path = limit ? `/api/v1/top-ups?limit=${limit}` : "/api/v1/top-ups";
+      const body = await this.client.request<unknown>(path);
+      return topUpsListResponseSchema.parse(body).data.items;
+    } catch {
+      return [];
+    }
+  }
 
-    return {
-      items: activities
-        .map(transactionFromActivity)
-        .sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  async listPayouts(limit?: number): Promise<PayoutListItem[]> {
+    try {
+      const path = limit ? `/api/v1/payouts?limit=${limit}` : "/api/v1/payouts";
+      const body = await this.client.request<unknown>(path);
+      const parsed = payoutsListResponseSchema.parse(body).data;
+      return "items" in parsed
+        ? (parsed.items as unknown as PayoutListItem[])
+        : (parsed.payouts as unknown as PayoutListItem[]);
+    } catch {
+      return [];
+    }
+  }
+
+  async getTransactionHistory(
+    limit = 30
+  ): Promise<UserTransactionHistoryResult> {
+    const [activitiesRes, topUpsRes, payoutsRes] = await Promise.allSettled([
+      this.client
+        .request<unknown>(`/api/v1/wallet/activities?limit=${limit}`)
+        .then(
+          (body) => walletActivitiesResponseSchema.parse(body).data.activities
         ),
-    };
+      this.listTopUps(limit),
+      this.listPayouts(limit),
+    ]);
+
+    const activities =
+      activitiesRes.status === "fulfilled" ? activitiesRes.value : [];
+    const topUps = topUpsRes.status === "fulfilled" ? topUpsRes.value : [];
+    const payouts = payoutsRes.status === "fulfilled" ? payoutsRes.value : [];
+
+    const itemsMap = new Map<string, UserTransaction>();
+
+    // 1. Process ledger activities
+    for (const activity of activities) {
+      const tx = transactionFromActivity(activity);
+      tx.sourceApi = "ACTIVITIES";
+      itemsMap.set(tx.id, tx);
+    }
+
+    // 2. Process top-ups from Top-ups API
+    for (const topUp of topUps) {
+      const topUpIdNorm = topUp.id.toLowerCase();
+      const topUpRefNorm = topUp.internalReference
+        ?.toLowerCase()
+        .replace(/^top-up:/, "");
+
+      const matched = Array.from(itemsMap.values()).find((tx) => {
+        if (tx.id.toLowerCase() === topUpIdNorm) return true;
+        if (
+          topUp.creditedLedgerTransactionId &&
+          (tx.id === topUp.creditedLedgerTransactionId ||
+            tx.ledgerTransactionId === topUp.creditedLedgerTransactionId)
+        ) {
+          return true;
+        }
+        if (tx.reference) {
+          const txRefNorm = tx.reference.toLowerCase().replace(/^top-up:/, "");
+          if (txRefNorm === topUpIdNorm) return true;
+          if (topUpRefNorm && txRefNorm === topUpRefNorm) return true;
+        }
+        if (
+          tx.type === "TOP_UP" &&
+          tx.amountSatang === topUp.creditSatang &&
+          Math.abs(
+            new Date(tx.createdAt).getTime() -
+              new Date(topUp.createdAt).getTime()
+          ) < 60000
+        ) {
+          return true;
+        }
+        return false;
+      });
+
+      if (matched) {
+        matched.sourceApi = "TOP_UPS";
+        matched.status = topUp.topUpStatus;
+        if (topUp.internalReference) {
+          matched.reference = topUp.internalReference;
+        }
+        if (topUp.qrExpiresAt) {
+          matched.expiresAt = topUp.qrExpiresAt;
+        }
+      } else {
+        const isPaid = topUp.topUpStatus === "PAID";
+        itemsMap.set(topUp.id, {
+          id: topUp.id,
+          type: "TOP_UP",
+          title: "PromptPay Top-Up",
+          titleTh: "เติมเงินผ่านพร้อมเพย์",
+          amountSatang: topUp.creditSatang,
+          direction: "INFLOW",
+          status: topUp.topUpStatus,
+          createdAt: topUp.createdAt,
+          reference: topUp.internalReference,
+          sourceApi: "TOP_UPS",
+          expiresAt: topUp.qrExpiresAt ?? undefined,
+          spendingDeltaSatang: isPaid ? topUp.creditSatang : 0,
+        });
+      }
+    }
+
+    // 3. Process payouts from Payouts API
+    for (const payout of payouts) {
+      const payoutAmount = payout.principalSatang ?? payout.amountSatang ?? 0;
+      const destinationInfo = payout.destinationMaskedLastFour
+        ? `${payout.destinationBankCode ?? "ธนาคาร"} •• ${payout.destinationMaskedLastFour}`
+        : payout.destination?.maskedAccount;
+
+      const payoutIdNorm = payout.id.toLowerCase();
+      const payoutRefNorm = payout.internalReference
+        ?.toLowerCase()
+        .replace(/^payout:/, "");
+
+      const matched = Array.from(itemsMap.values()).find((tx) => {
+        if (tx.id.toLowerCase() === payoutIdNorm) return true;
+        if (
+          payout.reserveLedgerTransactionId &&
+          (tx.id === payout.reserveLedgerTransactionId ||
+            tx.ledgerTransactionId === payout.reserveLedgerTransactionId)
+        ) {
+          return true;
+        }
+        if (
+          payout.finalLedgerTransactionId &&
+          (tx.id === payout.finalLedgerTransactionId ||
+            tx.ledgerTransactionId === payout.finalLedgerTransactionId)
+        ) {
+          return true;
+        }
+        if (tx.reference) {
+          const txRefNorm = tx.reference.toLowerCase().replace(/^payout:/, "");
+          if (txRefNorm === payoutIdNorm) return true;
+          if (payoutRefNorm && txRefNorm === payoutRefNorm) return true;
+        }
+        if (
+          tx.type === "PAYOUT" &&
+          tx.amountSatang === payoutAmount &&
+          Math.abs(
+            new Date(tx.createdAt).getTime() -
+              new Date(payout.createdAt).getTime()
+          ) < 60000
+        ) {
+          return true;
+        }
+        return false;
+      });
+
+      if (matched) {
+        matched.sourceApi = "PAYOUTS";
+        if (destinationInfo) matched.destinationInfo = destinationInfo;
+        if (payout.payoutStatus || payout.status) {
+          matched.status = payout.payoutStatus ?? payout.status!;
+        }
+        if (payout.internalReference) {
+          matched.reference = payout.internalReference;
+        }
+      } else {
+        itemsMap.set(payout.id, {
+          id: payout.id,
+          type: "PAYOUT",
+          title: "Bank Payout",
+          titleTh: "ถอนเงินเข้าบัญชีธนาคาร",
+          amountSatang: payoutAmount,
+          direction: "OUTFLOW",
+          status: payout.payoutStatus ?? payout.status ?? "PENDING",
+          createdAt: payout.createdAt,
+          reference: payout.internalReference,
+          sourceApi: "PAYOUTS",
+          destinationInfo,
+          payoutReservedDeltaSatang: -payoutAmount,
+        });
+      }
+    }
+
+    const items = Array.from(itemsMap.values()).sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    const uniqueItems: UserTransaction[] = [];
+    const seenKeys = new Set<string>();
+
+    for (const item of items) {
+      const refKey = item.reference
+        ? `${item.type}:${item.reference.toLowerCase().replace(/^(top-up|payout):/, "")}`
+        : null;
+      const primaryKey = item.id.toLowerCase();
+
+      if (seenKeys.has(primaryKey) || (refKey && seenKeys.has(refKey))) {
+        continue;
+      }
+
+      seenKeys.add(primaryKey);
+      if (refKey) seenKeys.add(refKey);
+      if (item.ledgerTransactionId) {
+        seenKeys.add(item.ledgerTransactionId.toLowerCase());
+      }
+
+      uniqueItems.push(item);
+    }
+
+    return { items: uniqueItems };
   }
 
   async listPayoutDestinations(): Promise<PayoutDestination[]> {
@@ -385,11 +646,6 @@ export class WalletApi {
       }
     );
     return payoutResponseSchema.parse(body).data.payout;
-  }
-
-  async listPayouts(): Promise<PayoutRecord[]> {
-    const body = await this.client.request<unknown>("/api/v1/payouts");
-    return payoutsListResponseSchema.parse(body).data.payouts;
   }
 }
 

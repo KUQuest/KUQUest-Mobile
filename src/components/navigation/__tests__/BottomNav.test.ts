@@ -12,8 +12,8 @@ import { RoleWorkspaceProvider } from "../RoleWorkspaceContext";
 import styles from "../bottomNavStyles";
 import { navigationMessages } from "../../../locales/navigationMessages";
 
-jest.mock("expo-localization", () => ({
-  getLocales: () => [{ languageCode: "en" }],
+jest.mock("../../../locales/LocaleProvider", () => ({
+  useLocale: () => ({ locale: "en", setLocale: jest.fn() }),
 }));
 
 jest.mock("lucide-react-native", () => ({

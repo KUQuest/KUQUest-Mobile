@@ -5,8 +5,12 @@ import {
   checkConversionAmount,
   checkTopUpAmount,
   checkTopUpPayment,
+  classifyHirerTransaction,
   convertEarnings,
   createTopUpFromQuote,
+  formatHirerCardAmount,
+  formatHirerTransactionAmount,
+  formatTransactionDate,
   type WalletCompartments,
   MAX_WALLET_SATANG,
   MIN_TOP_UP_SATANG,
@@ -247,5 +251,99 @@ describe("simulateTopUpPayment", () => {
 
     expect(result).toEqual(topUpData);
     expect(walletApi.simulateTopUp).toHaveBeenCalledWith("topup-1");
+  });
+});
+
+describe("Hirer wallet formatting and classification", () => {
+  it("formats card amounts with currency prefix and space", () => {
+    expect(formatHirerCardAmount(245_000)).toBe("฿ 2,450.00");
+    expect(formatHirerCardAmount(120_000)).toBe("฿ 1,200.00");
+    expect(formatHirerCardAmount(0)).toBe("฿ 0.00");
+  });
+
+  it("formats transaction amounts with sign and baht symbol", () => {
+    expect(formatHirerTransactionAmount(50_000, "OUTFLOW")).toEqual({
+      text: "- ฿500.00",
+      isInflow: false,
+    });
+    expect(formatHirerTransactionAmount(100_000, "INFLOW")).toEqual({
+      text: "+ ฿1,000.00",
+      isInflow: true,
+    });
+    expect(formatHirerTransactionAmount(1_000, "OUTFLOW")).toEqual({
+      text: "- ฿10.00",
+      isInflow: false,
+    });
+  });
+
+  it("formats dates in Thai Buddhist calendar", () => {
+    const date = "2024-04-12T10:00:00Z";
+    const formatted = formatTransactionDate(date, "th");
+    expect(formatted).toContain("12");
+    expect(formatted).toContain("เม.ย.");
+    expect(formatted).toContain("2567");
+  });
+
+  it("classifies HOLD transaction as escrow payment", () => {
+    const classified = classifyHirerTransaction(
+      {
+        id: "tx-1",
+        type: "HOLD",
+        title: "Quest Escrow",
+        titleTh: "กันเงินประกันเควสต์",
+        amountSatang: 50_000,
+        direction: "OUTFLOW",
+        status: "COMPLETED",
+        createdAt: "2024-04-12T10:00:00Z",
+        reference: "กวาดขยะรอบมหาลัย",
+      },
+      "th"
+    );
+    expect(classified.title).toBe("พักเงินสำหรับเควสต์");
+    expect(classified.subtitle).toBe("กวาดขยะรอบมหาลัย");
+    expect(classified.amountText).toBe("- ฿500.00");
+    expect(classified.isInflow).toBe(false);
+    expect(classified.iconKind).toBe("escrow_pay");
+  });
+
+  it("classifies TOP_UP transaction as wallet topup", () => {
+    const classified = classifyHirerTransaction(
+      {
+        id: "tx-2",
+        type: "TOP_UP",
+        title: "PromptPay Top-Up",
+        titleTh: "เติมเงินผ่านพร้อมเพย์",
+        amountSatang: 100_000,
+        direction: "INFLOW",
+        status: "COMPLETED",
+        createdAt: "2024-04-10T10:00:00Z",
+      },
+      "th"
+    );
+    expect(classified.title).toBe("เติมเงินเข้า Wallet");
+    expect(classified.amountText).toBe("+ ฿1,000.00");
+    expect(classified.isInflow).toBe(true);
+    expect(classified.iconKind).toBe("top_up");
+  });
+
+  it("classifies fee transactions accurately", () => {
+    const classified = classifyHirerTransaction(
+      {
+        id: "tx-3",
+        type: "SPEND",
+        title: "Platform Fee",
+        titleTh: "ค่าธรรมเนียม",
+        amountSatang: 1_000,
+        direction: "OUTFLOW",
+        status: "COMPLETED",
+        createdAt: "2024-04-03T10:00:00Z",
+        resourceType: "platform_fee",
+      },
+      "th"
+    );
+    expect(classified.title).toBe("ค่าธรรมเนียมระบบ");
+    expect(classified.amountText).toBe("- ฿10.00");
+    expect(classified.isInflow).toBe(false);
+    expect(classified.iconKind).toBe("fee");
   });
 });

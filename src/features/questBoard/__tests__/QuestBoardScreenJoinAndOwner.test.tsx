@@ -29,6 +29,9 @@ jest.mock("@/features/wallet/HomeWalletOverview", () => ({
   HomeWalletOverview: () => null,
 }));
 
+jest.mock("@/locales/LocaleProvider", () => ({
+  useLocale: () => ({ locale: "en" }),
+}));
 jest.mock("@/features/auth/AuthService", () => ({
   authService: {
     getSession: jest
