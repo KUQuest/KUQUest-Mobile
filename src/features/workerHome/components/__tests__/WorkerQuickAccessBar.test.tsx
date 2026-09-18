@@ -44,7 +44,7 @@ describe("WorkerQuickAccessBar", () => {
     expect(view.toJSON()).toBeNull();
   });
 
-  it("renders the floating bar when assignment is active", async () => {
+  it("renders the floating bar with quest state and title", async () => {
     const view = await render(
       <WorkerQuickAccessBar
         assignment={{
@@ -57,12 +57,77 @@ describe("WorkerQuickAccessBar", () => {
           createdAt: "2026-09-18T08:00:00Z",
         }}
         bottomInset={60}
+        questTitle="Campus Tree Planting"
       />
     );
 
     expect(view.getByTestId("worker-quick-access-bar")).toBeTruthy();
-    expect(view.getByText("Working in progress")).toBeTruthy();
-    expect(view.getByText(/Quest #11223344/)).toBeTruthy();
+    expect(view.getByText("In Progress")).toBeTruthy();
+    expect(view.getByText(/Campus Tree Planting/)).toBeTruthy();
+    expect(view.queryByText(/Quest #/)).toBeNull();
+  });
+
+  it("renders the floating bar while an assignment waits to start", async () => {
+    const view = await render(
+      <WorkerQuickAccessBar
+        assignment={{
+          id: "assign-assigned",
+          questId: "quest-assigned",
+          workerId: "worker-1",
+          state: "ASSIGNMENT_ACTIVE",
+          questState: "QUEST_ASSIGNED",
+          startedAt: null,
+          createdAt: "2026-09-18T08:00:00Z",
+        }}
+        bottomInset={60}
+        questTitle="Campus Cleanup"
+      />
+    );
+
+    expect(view.getByTestId("worker-quick-access-bar")).toBeTruthy();
+    expect(view.getByText("Waiting to start")).toBeTruthy();
+    expect(view.getByText(/Campus Cleanup/)).toBeTruthy();
+  });
+
+  it("does not render the floating bar for a terminal quest", async () => {
+    const view = await render(
+      <WorkerQuickAccessBar
+        assignment={{
+          id: "assign-completed",
+          questId: "quest-completed",
+          workerId: "worker-1",
+          state: "ASSIGNMENT_ACTIVE",
+          questState: "QUEST_COMPLETED",
+          startedAt: null,
+          createdAt: "2026-09-18T00:00:00Z",
+        }}
+        bottomInset={60}
+      />
+    );
+
+    expect(view.toJSON()).toBeNull();
+  });
+
+  it("navigates to work management on press", async () => {
+    const view = await render(
+      <WorkerQuickAccessBar
+        assignment={{
+          id: "assign-act",
+          questId: "quest-active",
+          workerId: "worker-1",
+          state: "ASSIGNMENT_ACTIVE",
+          questState: "QUEST_IN_PROGRESS",
+          startedAt: "2026-09-18T08:00:00Z",
+          createdAt: "2026-09-18T08:00:00Z",
+        }}
+        bottomInset={60}
+        questTitle="Campus Tree Planting"
+      />
+    );
+
+    fireEvent.press(view.getByTestId("worker-quick-access-bar"));
+
+    expect(mockPush).toHaveBeenCalledWith("/my-quests");
   });
 
   it("navigates to quest on press", async () => {
@@ -83,9 +148,6 @@ describe("WorkerQuickAccessBar", () => {
 
     fireEvent.press(view.getByTestId("worker-quick-access-bar"));
 
-    expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/quest/[id]/proof",
-      params: { id: "11223344-5566-7788-9900-aabbccddeeff" },
-    });
+    expect(mockPush).toHaveBeenCalledWith("/my-quests");
   });
 });

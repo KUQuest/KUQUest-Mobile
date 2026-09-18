@@ -26,6 +26,7 @@ jest.mock("@/components/navigation/RoleWorkspaceContext", () => ({
 
 jest.mock("@/api/QuestApi", () => ({
   questApi: {
+    getParticipationDetail: jest.fn(),
     listMyAssignments: jest.fn(),
     listBoard: jest.fn(),
     listTags: jest.fn(),
@@ -113,7 +114,7 @@ describe("WorkerHomeScreen", () => {
         {
           id: "quest-100",
           title: "Library Book Scanning",
-          questReward: 25000,
+          questReward: 250,
           tag: { id: "tag-1", name: "Campus" },
           mode: "FIRST_COME_FIRST_SERVED",
           participation: "SINGLE",
@@ -156,7 +157,7 @@ describe("WorkerHomeScreen", () => {
     expect(view.queryByTestId("worker-quick-access-bar")).toBeNull();
   });
 
-  it("shows Grab-like quick access bar when user has an active ongoing quest, and navigates on press", async () => {
+  it("shows the quick access bar with quest state and name", async () => {
     (questApi.listMyAssignments as jest.Mock).mockResolvedValue([
       {
         id: "assign-active-1",
@@ -168,19 +169,48 @@ describe("WorkerHomeScreen", () => {
         createdAt: "2026-09-18T09:00:00Z",
       },
     ]);
+    (questApi.getParticipationDetail as jest.Mock).mockResolvedValue({
+      id: "quest-active-12345678",
+      title: "Library Setup",
+      state: "QUEST_IN_PROGRESS",
+    });
 
     const view = await render(<WorkerHomeScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("worker-quick-access-bar")).toBeTruthy();
-      expect(view.getByText("Working in progress")).toBeTruthy();
+      expect(view.getByText("In Progress")).toBeTruthy();
+      expect(view.getByText(/Library Setup/)).toBeTruthy();
     });
 
     fireEvent.press(view.getByTestId("worker-quick-access-bar"));
 
-    expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/quest/[id]/proof",
-      params: { id: "quest-active-12345678" },
+    expect(mockPush).toHaveBeenCalledWith("/my-quests");
+  });
+
+  it("shows the quick access bar while an assignment waits to start", async () => {
+    (questApi.listMyAssignments as jest.Mock).mockResolvedValue([
+      {
+        id: "assign-assigned-1",
+        questId: "quest-assigned-1",
+        workerId: "worker-1",
+        state: "ASSIGNMENT_ACTIVE",
+        questState: "QUEST_ASSIGNED",
+        startedAt: null,
+        createdAt: "2026-09-18T09:00:00Z",
+      },
+    ]);
+    (questApi.getParticipationDetail as jest.Mock).mockResolvedValue({
+      id: "quest-assigned-1",
+      title: "Campus Cleanup",
+      state: "QUEST_ASSIGNED",
+    });
+
+    const view = await render(<WorkerHomeScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("worker-quick-access-bar")).toBeTruthy();
+      expect(view.getByText(/Campus Cleanup/)).toBeTruthy();
     });
   });
 

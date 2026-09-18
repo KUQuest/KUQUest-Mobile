@@ -9,6 +9,7 @@ import {
   Clock3,
   ImageOff,
   MapPin,
+  Plus,
   UsersRound,
   type LucideIcon,
 } from "lucide-react-native";
@@ -25,6 +26,10 @@ import { formatDeadline } from "../questDetailFormat";
 import type { LiveQuestSnapshot } from "../liveQuestService";
 import type { QuestBoardQuest, QuestDetailState } from "../types";
 import styles from "../questDetailStyles";
+import {
+  QuestParticipantRoster,
+  type QuestParticipant,
+} from "./QuestParticipantRoster";
 import {
   GroupQuestEntrySurfaces,
   LiveEntrySurface,
@@ -204,7 +209,6 @@ function ScheduleTimeline({
     </View>
   );
 }
-
 export interface QuestDetailBodyProps {
   quest: QuestBoardQuest;
   locale: "en" | "th";
@@ -213,6 +217,13 @@ export interface QuestDetailBodyProps {
   canonicalStatus?: string;
   refreshing: boolean;
   onRefresh: () => void;
+  canParticipate: boolean;
+  participationFirstCome: boolean;
+  onOpenParticipation: () => void;
+  participationBusy: boolean;
+  participants?: readonly QuestParticipant[];
+  participantCount?: number;
+  onOpenParticipantProfile?: (participantId: string) => void;
   status?: {
     title: string;
     description: string;
@@ -253,6 +264,13 @@ export function QuestDetailBody({
   canonicalStatus,
   refreshing,
   onRefresh,
+  canParticipate,
+  participationFirstCome,
+  onOpenParticipation,
+  participationBusy,
+  participants = [],
+  participantCount = participants.length,
+  onOpenParticipantProfile,
   status,
   onOpenWorkHub,
   prototypeEntry,
@@ -385,6 +403,55 @@ export function QuestDetailBody({
           </View>
         </View>
       </View>
+      {quest.participationMode === "team" && onOpenParticipantProfile ? (
+        <QuestParticipantRoster
+          countLabel={messages.participantsSummary(
+            participantCount,
+            quest.headcount
+          )}
+          onOpenProfile={onOpenParticipantProfile}
+          participants={participants}
+          profileLabel={messages.participantProfile}
+          title={messages.participants}
+        />
+      ) : null}
+      {canParticipate ? (
+        <View
+          className={styles.participationCard}
+          testID="quest-participation-action"
+        >
+          <View className={styles.participationCopy}>
+            <Text className={styles.participationTitle}>
+              {participationFirstCome
+                ? messages.confirmParticipationTitle
+                : messages.confirmApplicationTitle}
+            </Text>
+            <Text className={styles.participationDescription}>
+              {participationFirstCome
+                ? messages.confirmParticipationDescription
+                : messages.confirmApplicationDescription}
+            </Text>
+          </View>
+          <Pressable
+            accessibilityLabel={
+              participationFirstCome ? messages.joinNow : messages.applyNow
+            }
+            accessibilityRole="button"
+            disabled={participationBusy}
+            onPress={onOpenParticipation}
+            className={cn(
+              styles.participationAction,
+              participationBusy && styles.participationActionDisabled
+            )}
+            testID="quest-apply-button"
+          >
+            <Plus color={colors.primary} size={18} strokeWidth={2.4} />
+            <Text className={styles.participationActionText}>
+              {participationFirstCome ? messages.joinNow : messages.applyNow}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
       <ScheduleTimeline locale={locale} messages={messages} quest={quest} />
       <View className={styles.section}>
         <Text className={styles.sectionTitle}>{messages.description}</Text>

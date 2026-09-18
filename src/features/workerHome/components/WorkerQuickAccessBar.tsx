@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { BriefcaseBusiness, ChevronRight } from "lucide-react-native";
 
 import { Pressable, Text, View } from "@/tw";
-import type { QuestV2Assignment } from "@/api/questV2Contracts";
+import type { QuestV2Assignment, QuestV2State } from "@/api/questV2Contracts";
 import { useLocale } from "@/locales/LocaleProvider";
 import { getThemeColors } from "@/theme/colors";
 import { workerHomeMessages } from "../workerHomeMessages";
@@ -13,12 +13,16 @@ import { workerHomeStyles as styles } from "../workerHomeStyles";
 interface WorkerQuickAccessBarProps {
   assignment: QuestV2Assignment | null;
   bottomInset: number;
+  questTitle?: string;
+  questState?: QuestV2State;
   onPress?: () => void;
 }
 
 export function WorkerQuickAccessBar({
   assignment,
   bottomInset,
+  questTitle,
+  questState,
   onPress,
 }: WorkerQuickAccessBarProps) {
   const router = useRouter();
@@ -27,28 +31,37 @@ export function WorkerQuickAccessBar({
   const { locale } = useLocale();
   const messages = workerHomeMessages[locale];
 
-  // Grab-like rule: only pop up if quest that user accepted is ongoing
-  if (!assignment || assignment.state !== "ASSIGNMENT_ACTIVE") {
+  const currentQuestState = questState ?? assignment?.questState;
+  const isActiveQuest =
+    currentQuestState === "QUEST_ASSIGNED" ||
+    currentQuestState === "QUEST_IN_PROGRESS";
+
+  if (
+    !assignment ||
+    assignment.state !== "ASSIGNMENT_ACTIVE" ||
+    !isActiveQuest
+  ) {
     return null;
   }
+
+  const isWaitingToStart = currentQuestState === "QUEST_ASSIGNED";
+  const stateLabel = isWaitingToStart
+    ? messages.stateAssigned
+    : messages.stateInProgress;
+  const progressWidth = isWaitingToStart ? "0%" : "70%";
 
   const handlePress = () => {
     if (onPress) {
       onPress();
       return;
     }
-    router.push({
-      pathname: "/quest/[id]/proof",
-      params: { id: assignment.questId },
-    });
+    router.push("/my-quests");
   };
-
-  const questShortId = assignment.questId.slice(0, 8);
 
   return (
     <Pressable
       accessibilityHint={messages.tapToOpenWork}
-      accessibilityLabel={`${messages.workingInProgress}: Quest #${questShortId}`}
+      accessibilityLabel={`${stateLabel}: ${questTitle ?? messages.workTitle}`}
       accessibilityRole="button"
       onPress={handlePress}
       style={[
@@ -84,7 +97,7 @@ export function WorkerQuickAccessBar({
                   { color: themeColors.primaryDeep },
                 ]}
               >
-                {messages.workingInProgress}
+                {stateLabel}
               </Text>
             </View>
             <Text
@@ -94,7 +107,7 @@ export function WorkerQuickAccessBar({
                 { color: themeColors.textSecondary },
               ]}
             >
-              Quest #{questShortId} · {messages.tapToOpenWork}
+              {questTitle ?? messages.workTitle} · {messages.tapToOpenWork}
             </Text>
           </View>
         </View>
@@ -102,7 +115,6 @@ export function WorkerQuickAccessBar({
         <ChevronRight size={18} color={themeColors.primaryDeep} />
       </View>
 
-      {/* Progress track bar like Grab active task */}
       <View
         style={[
           styles.quickAccessProgressBar,
@@ -112,7 +124,10 @@ export function WorkerQuickAccessBar({
         <View
           style={[
             styles.quickAccessProgressFill,
-            { backgroundColor: themeColors.primaryDeep },
+            {
+              backgroundColor: themeColors.primaryDeep,
+              width: progressWidth,
+            },
           ]}
         />
       </View>

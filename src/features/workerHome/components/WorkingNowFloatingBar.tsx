@@ -52,30 +52,39 @@ export function WorkingNowFloatingBar({
   const { locale } = useLocale();
   const messages = workerHomeMessages[locale];
 
-  if (!assignment || assignment.state !== "ASSIGNMENT_ACTIVE") {
+  const isWaitingToStart = assignment?.questState === "QUEST_ASSIGNED";
+  const isInProgress = assignment?.questState === "QUEST_IN_PROGRESS";
+
+  if (
+    !assignment ||
+    assignment.state !== "ASSIGNMENT_ACTIVE" ||
+    (!isWaitingToStart && !isInProgress)
+  ) {
     return null;
   }
+
+  const stateLabel = isWaitingToStart
+    ? messages.stateAssigned
+    : messages.stateInProgress;
+  const subtitle = isWaitingToStart
+    ? `${questTitle ?? messages.workTitle} · ${stateLabel}`
+    : `${questTitle ?? messages.workTitle} · ${formatElapsedTime(
+        assignment.startedAt,
+        locale
+      )}`;
 
   const handlePress = () => {
     if (onPress) {
       onPress();
       return;
     }
-    router.push({
-      pathname: "/quest/[id]/work",
-      params: { id: assignment.questId },
-    });
+    router.push("/my-quests");
   };
-
-  const elapsed = formatElapsedTime(
-    assignment.startedAt ?? assignment.createdAt,
-    locale
-  );
 
   return (
     <Pressable
-      accessibilityHint="Opens quest details and work screen"
-      accessibilityLabel={`${messages.workingNow}: ${elapsed}`}
+      accessibilityHint={messages.tapToOpenWork}
+      accessibilityLabel={`${stateLabel}: ${questTitle ?? messages.workTitle}`}
       accessibilityRole="button"
       onPress={handlePress}
       style={[
@@ -100,7 +109,7 @@ export function WorkingNowFloatingBar({
           <Text
             style={[styles.workingNowTitle, { color: themeColors.primaryDeep }]}
           >
-            {messages.workingNow}
+            {stateLabel}
           </Text>
           <Text
             numberOfLines={1}
@@ -109,8 +118,7 @@ export function WorkingNowFloatingBar({
               { color: themeColors.textSecondary },
             ]}
           >
-            {questTitle ? `${questTitle} · ` : ""}
-            {elapsed}
+            {subtitle}
           </Text>
         </View>
       </View>

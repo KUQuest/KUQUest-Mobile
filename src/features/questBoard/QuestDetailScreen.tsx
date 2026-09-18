@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from "@/tw";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { LogOut, MessageCircle, Pencil, Plus } from "lucide-react-native";
+import { LogOut, MessageCircle, Pencil } from "lucide-react-native";
 import { cn } from "@/tw/cn";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
@@ -109,9 +109,7 @@ export default function QuestDetailScreen(props: QuestDetailScreenProps) {
           </Pressable>
         </View>
       ) : actionBar &&
-        (actionBar.canMessageOwner ||
-          actionBar.canShowWithdraw ||
-          actionBar.canApply) ? (
+        (actionBar.canMessageOwner || actionBar.canShowWithdraw) ? (
         <View
           className={styles.actionBar}
           style={{ paddingBottom: getActionBarPaddingBottom(insets.bottom) }}
@@ -150,25 +148,6 @@ export default function QuestDetailScreen(props: QuestDetailScreenProps) {
                 <LogOut color={colors.dangerDark} size={19} strokeWidth={2.2} />
                 <Text className={styles.leaveActionText}>
                   {messages.withdrawApplication}
-                </Text>
-              </Pressable>
-            ) : actionBar.canApply ? (
-              <Pressable
-                accessibilityLabel={
-                  actionBar.firstCome ? messages.joinNow : messages.applyNow
-                }
-                accessibilityRole="button"
-                disabled={actionBar.busy}
-                onPress={actionBar.onOpenApply}
-                className={cn(
-                  styles.primaryAction,
-                  actionBar.busy && styles.primaryActionDisabled
-                )}
-                testID="quest-apply-button"
-              >
-                <Plus color={colors.white} size={19} strokeWidth={2.2} />
-                <Text className={styles.primaryActionText}>
-                  {actionBar.firstCome ? messages.joinNow : messages.applyNow}
                 </Text>
               </Pressable>
             ) : null}

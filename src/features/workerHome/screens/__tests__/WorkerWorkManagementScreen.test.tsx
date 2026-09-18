@@ -26,6 +26,7 @@ jest.mock("@/features/auth/AuthService", () => ({
 
 jest.mock("@/api/QuestApi", () => ({
   questApi: {
+    getParticipationDetail: jest.fn(),
     listMyAssignments: jest.fn(),
   },
 }));
@@ -94,19 +95,30 @@ describe("WorkerWorkManagementScreen", () => {
       expect(view.getByText("Campus Tree Planting")).toBeTruthy();
       expect(view.getByText("Prof. Anan")).toBeTruthy();
       expect(view.getByText("Quest State")).toBeTruthy();
-      expect(view.getByTestId("working-now-floating-bar")).toBeTruthy();
-      expect(view.getByText("Working Now")).toBeTruthy();
+      expect(view.getByTestId("current-quest-submit-button")).toBeTruthy();
+      expect(view.getAllByText("In Progress").length).toBeGreaterThan(0);
     });
 
-    // Tap Current Quest card -> opens work screen
+    // The card still opens the work details.
     fireEvent.press(view.getByTestId("current-quest-card"));
-
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/quest/[id]/work",
       params: { id: "quest-active-1" },
     });
-  });
 
+    // The always-visible submit action opens the worker proof/completion flow.
+    mockPush.mockClear();
+    fireEvent.press(view.getByTestId("current-quest-submit-button"));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]/proof",
+      params: { id: "quest-active-1" },
+    });
+
+    // The floating shortcut consistently returns to Work Management.
+    mockPush.mockClear();
+    fireEvent.press(view.getByTestId("working-now-floating-bar"));
+    expect(mockPush).toHaveBeenCalledWith("/my-quests");
+  });
   it("switches tabs between Applied Quest and History", async () => {
     (questApi.listMyAssignments as jest.Mock).mockResolvedValue([
       {
@@ -130,14 +142,10 @@ describe("WorkerWorkManagementScreen", () => {
     ]);
 
     const view = await render(<WorkerWorkManagementScreen />);
-
-    // In Applied tab by default
     await waitFor(() => {
       expect(view.getByTestId("applied-quests-list")).toBeTruthy();
       expect(view.getByTestId("applied-quest-item-assign-app-1")).toBeTruthy();
     });
-
-    // Switch to History tab
     fireEvent.press(view.getByTestId("tab-history-quest"));
 
     await waitFor(() => {

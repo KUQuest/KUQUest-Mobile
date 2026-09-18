@@ -1,6 +1,10 @@
+const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const {
+  STAGING_SPEC_URL,
   loadSpec,
+  loadStagingSpec,
   extractOperations,
   searchOperations,
   findOperation,
@@ -181,6 +185,39 @@ describe("query-api CLI helper", () => {
     expect(output).toContain("[200]");
   });
 
+  test("loads the live staging OpenAPI source through the query helper", async () => {
+    const cacheDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "kuquest-query-api-")
+    );
+    const cachePath = path.join(cacheDir, "staging.json");
+    const doc = {
+      openapi: "3.0.3",
+      paths: {
+        "/api/v2/quests": {
+          get: { operationId: "listQuestBoardV2" },
+        },
+      },
+    };
+    const fetchImpl = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => doc,
+    });
+
+    try {
+      const result = await loadStagingSpec({
+        cachePath,
+        fetchImpl,
+        noCache: true,
+      });
+      expect(fetchImpl).toHaveBeenCalledWith(STAGING_SPEC_URL);
+      expect(result.doc).toEqual(doc);
+      expect(result.operations[0].operationId).toBe("listQuestBoardV2");
+      expect(fs.existsSync(cachePath)).toBe(true);
+    } finally {
+      fs.rmSync(cacheDir, { recursive: true, force: true });
+    }
+  });
   test("loadSpec loads real repository OpenAPI document", () => {
     const specPath = path.resolve(__dirname, "../../docs/api/api.yaml");
     const { doc, operations } = loadSpec({ specPath, refresh: false });

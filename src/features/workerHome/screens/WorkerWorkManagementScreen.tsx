@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -50,8 +50,17 @@ export default function WorkerWorkManagementScreen() {
     useState<LiveQuestSnapshot | null>(null);
   const [appliedQuests, setAppliedQuests] = useState<QuestV2Assignment[]>([]);
   const [historyQuests, setHistoryQuests] = useState<QuestV2Assignment[]>([]);
+  const [questTitles, setQuestTitles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -69,6 +78,7 @@ export default function WorkerWorkManagementScreen() {
   const loadData = useCallback(async () => {
     try {
       const allAssignments = await questApi.listMyAssignments("all");
+      if (!mountedRef.current) return;
 
       const active = allAssignments.filter(
         (a) => a.state === "ASSIGNMENT_ACTIVE"
@@ -90,6 +100,32 @@ export default function WorkerWorkManagementScreen() {
       setHistoryQuests(history);
       setAppliedQuests(applied);
 
+      const activeQuestIds = new Set(active.map((item) => item.questId));
+      const questIds = [
+        ...new Set(
+          allAssignments
+            .map((item) => item.questId)
+            .filter((questId) => !activeQuestIds.has(questId))
+        ),
+      ];
+      void Promise.allSettled(
+        questIds.map(async (questId) => {
+          const detail = await questApi.getParticipationDetail(questId);
+          return [questId, detail.title] as const;
+        })
+      ).then((titleResults) => {
+        if (!mountedRef.current) return;
+        const nextQuestTitles: Record<string, string> = {};
+        titleResults.forEach((result) => {
+          if (result.status === "fulfilled" && result.value[1]) {
+            nextQuestTitles[result.value[0]] = result.value[1];
+          }
+        });
+        if (Object.keys(nextQuestTitles).length > 0) {
+          setQuestTitles(nextQuestTitles);
+        }
+      });
+
       if (active.length > 0) {
         const topActive = active[0];
         setCurrentAssignment(topActive);
@@ -100,7 +136,15 @@ export default function WorkerWorkManagementScreen() {
               topActive.questId,
               sessionUserId
             );
-            setCurrentSnapshot(snap);
+            if (mountedRef.current) {
+              setCurrentSnapshot(snap);
+              if (snap?.quest?.title) {
+                setQuestTitles((titles) => ({
+                  ...titles,
+                  [topActive.questId]: snap.quest.title,
+                }));
+              }
+            }
           } catch {
             // keep topActive without snapshot
           }
@@ -112,8 +156,10 @@ export default function WorkerWorkManagementScreen() {
     } catch {
       // fallback
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (mountedRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [sessionUserId]);
 
@@ -131,6 +177,17 @@ export default function WorkerWorkManagementScreen() {
   const bottomNavInset = getBottomNavigationInset(metrics, insets.bottom);
   const scrollBottomPadding =
     bottomNavInset + (currentAssignment ? 76 : 16) + spacing.xl;
+  const currentQuestState =
+    currentSnapshot?.state ?? currentAssignment?.questState;
+  const currentQuestCanSubmit =
+    currentSnapshot?.capabilities !== undefined
+      ? currentSnapshot.capabilities.canSubmitProof ||
+        currentSnapshot.capabilities.canConfirmCompletion
+      : currentQuestState === "QUEST_IN_PROGRESS";
+  const currentQuestSubmissionPending =
+    currentSnapshot?.proofs?.some(
+      (proof) => proof.status === "PROOF_PENDING"
+    ) ?? false;
 
   return (
     <ScreenLayout edges={["top", "left", "right"]} className="bg-ku-background">
@@ -185,7 +242,16 @@ export default function WorkerWorkManagementScreen() {
                 params: { id: currentAssignment.questId },
               });
             }}
-            state={currentSnapshot?.state ?? currentAssignment.questState}
+            onSubmit={() => {
+              router.push({
+                pathname: "/quest/[id]/proof",
+                params: { id: currentAssignment.questId },
+              });
+            }}
+            proofRequired={currentSnapshot?.proofRequired}
+            state={currentQuestState}
+            submitEnabled={currentQuestCanSubmit}
+            submissionPending={currentQuestSubmissionPending}
             title={currentSnapshot?.quest.title}
           />
         ) : (
@@ -334,78 +400,90 @@ export default function WorkerWorkManagementScreen() {
           </Pressable>
         </View>
 
-        {/* Section 3: Tab Content List */}
         {activeTab === "applied" ? (
-          /* Applied quest list: only show on waiting state here */
           appliedQuests.length > 0 ? (
             <View style={styles.cardList} testID="applied-quests-list">
-              {appliedQuests.map((quest) => (
-                <Pressable
-                  accessibilityRole="button"
-                  key={quest.id}
-                  onPress={() => {
-                    router.push({
-                      pathname: "/quest/[id]",
-                      params: { id: quest.questId },
-                    });
-                  }}
-                  style={[
-                    styles.feedCard,
-                    {
-                      backgroundColor: themeColors.surface,
-                      borderColor: themeColors.borderSubtle,
-                    },
-                  ]}
-                  testID={`applied-quest-item-${quest.id}`}
-                >
-                  <View style={styles.feedCardTop}>
-                    <Text
-                      numberOfLines={2}
-                      style={[
-                        styles.cardTitle,
-                        { color: themeColors.textStrong },
-                      ]}
-                    >
-                      Quest #{quest.questId.slice(0, 8)}
-                    </Text>
-                    <View
-                      style={[
-                        styles.badgePill,
-                        {
-                          backgroundColor: themeColors.surfaceAccent,
-                          borderColor: themeColors.borderAccent,
+              {appliedQuests.map((quest) => {
+                const questTitle =
+                  questTitles[quest.questId] ??
+                  messages.questDetailsUnavailable;
+                const statusLabel =
+                  quest.questState === "QUEST_IN_PROGRESS"
+                    ? messages.stateInProgress
+                    : messages.stateAssigned;
+                return (
+                  <Pressable
+                    accessibilityLabel={questTitle}
+                    accessibilityRole="button"
+                    key={quest.id}
+                    onPress={() => {
+                      router.push({
+                        pathname: "/quest/[id]",
+                        params: {
+                          id: quest.questId,
+                          joinStatus: "accepted",
+                          mode: "join",
                         },
-                      ]}
-                    >
+                      });
+                    }}
+                    style={[
+                      styles.feedCard,
+                      {
+                        backgroundColor: themeColors.surface,
+                        borderColor: themeColors.borderSubtle,
+                      },
+                    ]}
+                    testID={`applied-quest-item-${quest.id}`}
+                  >
+                    <View style={styles.feedCardTop}>
                       <Text
+                        numberOfLines={2}
                         style={[
-                          styles.badgeText,
-                          { color: themeColors.primaryDeep },
+                          styles.cardTitle,
+                          { color: themeColors.textStrong },
                         ]}
                       >
-                        {messages.waitingForHirer}
+                        {questTitle}
                       </Text>
+                      <View
+                        style={[
+                          styles.badgePill,
+                          {
+                            backgroundColor: themeColors.surfaceAccent,
+                            borderColor: themeColors.borderAccent,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.badgeText,
+                            { color: themeColors.primaryDeep },
+                          ]}
+                        >
+                          {statusLabel}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
 
-                  <View style={styles.cardMetaRow}>
-                    <View style={styles.cardMetaItem}>
-                      <Clock size={13} color={themeColors.textSecondary} />
-                      <Text
-                        style={[
-                          styles.cardMetaText,
-                          { color: themeColors.textSecondary },
-                        ]}
-                      >
-                        {new Date(quest.createdAt).toLocaleDateString(
-                          locale === "th" ? "th-TH" : "en-US",
-                          { month: "short", day: "numeric" }
-                        )}
-                      </Text>
+                    <View style={styles.cardMetaRow}>
+                      <View style={styles.cardMetaItem}>
+                        <Clock size={13} color={themeColors.textSecondary} />
+                        <Text
+                          style={[
+                            styles.cardMetaText,
+                            { color: themeColors.textSecondary },
+                          ]}
+                        >
+                          {new Date(quest.createdAt).toLocaleDateString(
+                            locale === "th" ? "th-TH" : "en-US",
+                            { month: "short", day: "numeric" }
+                          )}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                </Pressable>
-              ))}
+                  </Pressable>
+                );
+              })}
             </View>
           ) : (
             <View
@@ -425,21 +503,27 @@ export default function WorkerWorkManagementScreen() {
               </Text>
             </View>
           )
-        ) : /* History tab: Done, reject (include applied and didn't get selected) */
-        historyQuests.length > 0 ? (
+        ) : historyQuests.length > 0 ? (
           <View style={styles.cardList} testID="history-quests-list">
             {historyQuests.map((quest) => {
+              const questTitle =
+                questTitles[quest.questId] ?? messages.questDetailsUnavailable;
               const isCompleted =
                 quest.state === "ASSIGNMENT_COMPLETED" ||
                 quest.questState === "QUEST_COMPLETED";
               return (
                 <Pressable
+                  accessibilityLabel={questTitle}
                   accessibilityRole="button"
                   key={quest.id}
                   onPress={() => {
                     router.push({
                       pathname: "/quest/[id]",
-                      params: { id: quest.questId },
+                      params: {
+                        id: quest.questId,
+                        joinStatus: "history",
+                        mode: "join",
+                      },
                     });
                   }}
                   style={[
@@ -459,7 +543,7 @@ export default function WorkerWorkManagementScreen() {
                         { color: themeColors.textStrong },
                       ]}
                     >
-                      Quest #{quest.questId.slice(0, 8)}
+                      {questTitle}
                     </Text>
                     <View
                       style={[
@@ -541,14 +625,14 @@ export default function WorkerWorkManagementScreen() {
         assignment={currentAssignment}
         bottomInset={bottomNavInset}
         onPress={() => {
-          if (currentAssignment) {
-            router.push({
-              pathname: "/quest/[id]/work",
-              params: { id: currentAssignment.questId },
-            });
-          }
+          router.push("/my-quests");
         }}
-        questTitle={currentSnapshot?.quest.title}
+        questTitle={
+          currentSnapshot?.quest.title ??
+          (currentAssignment
+            ? questTitles[currentAssignment.questId]
+            : undefined)
+        }
       />
     </ScreenLayout>
   );
