@@ -157,9 +157,16 @@ export function PayoutModal({
 
     setSavingDestination(true);
     try {
+      const names = holderName.split(/\s+/);
+      const givenName = names[0] || "Member";
+      const surname = names.slice(1).join(" ") || "Student";
       const destination = await walletApi.createPayoutDestination({
         type: "PROMPTPAY",
+        routingType: "PROMPTPAY",
+        givenName,
+        surname,
         accountHolderName: holderName,
+        bankCode: "PROMPTPAY",
         accountNumber,
       });
       setDestinations((current) => [...current, destination]);
@@ -227,10 +234,26 @@ export function PayoutModal({
 
     setSubmittingPayout(true);
     try {
-      const payout = await walletApi.requestPayout(
-        amountSatang,
-        selectedDestinationId
-      );
+      let payout: PayoutRecord;
+      if (
+        typeof walletApi.quotePayout === "function" &&
+        typeof walletApi.createPayout === "function"
+      ) {
+        try {
+          const quote = await walletApi.quotePayout(amountSatang);
+          payout = await walletApi.createPayout(quote.id);
+        } catch {
+          payout = await walletApi.requestPayout(
+            amountSatang,
+            selectedDestinationId
+          );
+        }
+      } else {
+        payout = await walletApi.requestPayout(
+          amountSatang,
+          selectedDestinationId
+        );
+      }
       setSuccessfulPayout(payout);
       onPayoutSuccess();
     } catch (error: unknown) {
