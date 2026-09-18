@@ -136,7 +136,7 @@ export default function HirerQuestManageRoute() {
 
   if (loading)
     return (
-      <ScreenLayout className="flex-1 bg-ku-bg">
+      <ScreenLayout className="bg-ku-bg flex-1">
         <TopBar
           title="Manage Quest"
           onBackPress={() => router.back()}
@@ -149,7 +149,7 @@ export default function HirerQuestManageRoute() {
     );
   if (error || !snapshot)
     return (
-      <ScreenLayout className="flex-1 bg-ku-bg">
+      <ScreenLayout className="bg-ku-bg flex-1">
         <TopBar
           title="Manage Quest"
           onBackPress={() => router.back()}
@@ -268,7 +268,7 @@ export default function HirerQuestManageRoute() {
   };
 
   return (
-    <ScreenLayout className="flex-1 bg-ku-bg">
+    <ScreenLayout className="bg-ku-bg flex-1">
       <TopBar
         title="Manage Quest"
         onBackPress={() => router.back()}
@@ -285,18 +285,18 @@ export default function HirerQuestManageRoute() {
       >
         <Text
           accessibilityRole="header"
-          className="text-ku-text-strong text-2xl font-ku-bold"
+          className="font-ku-bold text-2xl text-ku-text-strong"
         >
           {quest.title}
         </Text>
         <Text
           testID="hirer-manage-state"
-          className="mt-2 text-ku-primary font-ku-bold"
+          className="mt-2 font-ku-bold text-ku-primary"
         >
           {snapshot.state} · {snapshot.mode}
         </Text>
         <View className="mt-5 rounded-2xl bg-white p-4">
-          <Text className="text-ku-text-strong font-ku-bold">Roster</Text>
+          <Text className="font-ku-bold text-ku-text-strong">Roster</Text>
           <Text className="mt-2 text-ku-text-secondary">
             {snapshot.assignments.length} assigned · {snapshot.quest.headcount}{" "}
             requested
@@ -317,7 +317,7 @@ export default function HirerQuestManageRoute() {
             className="mt-3 rounded-2xl bg-ku-primary p-4"
             onPress={() => setCandidateOpen(true)}
           >
-            <Text className="text-center text-white font-ku-bold">
+            <Text className="text-center font-ku-bold text-white">
               Review candidates and teams
             </Text>
           </Pressable>
@@ -326,10 +326,10 @@ export default function HirerQuestManageRoute() {
         snapshot.capabilities.canDecideUnderfilled ? (
           <Pressable
             testID="hirer-manage-underfilled"
-            className="mt-3 rounded-2xl bg-ku-warning p-4"
+            className="bg-ku-warning mt-3 rounded-2xl p-4"
             onPress={() => setUnderfilledOpen(true)}
           >
-            <Text className="text-center text-ku-text-strong font-ku-bold">
+            <Text className="text-center font-ku-bold text-ku-text-strong">
               Decide underfilled Quest
             </Text>
           </Pressable>
@@ -341,7 +341,7 @@ export default function HirerQuestManageRoute() {
             onPress={() => setConditionEditOpen(true)}
           >
             <FileEdit color={colors.primary} size={20} />
-            <Text className="ml-3 text-ku-primary font-ku-bold">
+            <Text className="ml-3 font-ku-bold text-ku-primary">
               {messages.proposeConditionChanges}
             </Text>
           </Pressable>
@@ -361,7 +361,7 @@ export default function HirerQuestManageRoute() {
             onPress={reviewProof}
           >
             <ShieldCheck color={colors.primary} size={20} />
-            <Text className="mt-2 text-ku-primary font-ku-bold">
+            <Text className="mt-2 font-ku-bold text-ku-primary">
               Review pending proof
             </Text>
           </Pressable>
@@ -373,7 +373,7 @@ export default function HirerQuestManageRoute() {
             onPress={openChat}
           >
             <MessageSquare color={colors.primary} size={20} />
-            <Text className="ml-3 text-ku-primary font-ku-bold">
+            <Text className="ml-3 font-ku-bold text-ku-primary">
               Open Work Chat
             </Text>
           </Pressable>
@@ -385,7 +385,7 @@ export default function HirerQuestManageRoute() {
             onPress={cancel}
           >
             <X color={colors.danger} size={20} />
-            <Text className="ml-3 text-ku-danger font-ku-bold">
+            <Text className="ml-3 font-ku-bold text-ku-danger">
               Cancel Quest
             </Text>
           </Pressable>

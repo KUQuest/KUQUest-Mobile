@@ -73,8 +73,11 @@ A unit test should answer one small behavioral question and use explicit inputs 
 Example shape:
 
 ```ts
-test('rejects a session with an invalid onboarding step', () => {
-  const value = { ...validSession, user: { ...validSession.user, onboardingStep: 9 } };
+test("rejects a session with an invalid onboarding step", () => {
+  const value = {
+    ...validSession,
+    user: { ...validSession.user, onboardingStep: 9 },
+  };
 
   expect(isAuthSession(value)).toBe(false);
 });
@@ -136,15 +139,15 @@ Prefer factories with overrides over one giant mutable fixture:
 
 ```ts
 export function createAuthSession(
-  overrides: Partial<AuthSession['user']> = {}
+  overrides: Partial<AuthSession["user"]> = {}
 ): AuthSession {
   return {
-    token: 'test-token',
+    token: "test-token",
     user: {
-      id: 'test-user',
-      email: 'student@ku.th',
-      name: 'Test Student',
-      onboardingStatus: 'COMPLETED',
+      id: "test-user",
+      email: "student@ku.th",
+      name: "Test Student",
+      onboardingStatus: "COMPLETED",
       ...overrides,
     },
     createdAt: 1_000,
@@ -184,18 +187,18 @@ The React Native Testing Library guidance explains the difference between `getBy
 Example:
 
 ```tsx
-test('retry repeats the same auth mode', async () => {
+test("retry repeats the same auth mode", async () => {
   const adapter = createAuthAdapter();
   adapter.authenticate
-    .mockRejectedValueOnce(new AuthError('ACCOUNT_NOT_FOUND'))
+    .mockRejectedValueOnce(new AuthError("ACCOUNT_NOT_FOUND"))
     .mockResolvedValueOnce(createAuthSession());
 
   await render(<LoginScreen authAdapter={adapter} />);
-  await fireEvent.press(screen.getByTestId('signin-button'));
-  await screen.findByTestId('retry-button');
-  await fireEvent.press(screen.getByTestId('retry-button'));
+  await fireEvent.press(screen.getByTestId("signin-button"));
+  await screen.findByTestId("retry-button");
+  await fireEvent.press(screen.getByTestId("retry-button"));
 
-  expect(adapter.authenticate).toHaveBeenLastCalledWith('signin');
+  expect(adapter.authenticate).toHaveBeenLastCalledWith("signin");
 });
 ```
 

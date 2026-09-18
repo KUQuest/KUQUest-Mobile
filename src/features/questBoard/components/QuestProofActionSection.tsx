@@ -35,7 +35,7 @@ export function QuestProofActionSection(props: QuestProofActionSectionProps) {
             testID="open-proof-submission"
           >
             <Send color={colors.white} size={18} />
-            <Text className="text-ku-white font-ku-semibold text-ku-body ml-[8px]">
+            <Text className="ml-[8px] font-ku-semibold text-ku-body text-ku-white">
               {props.submitLabel}
             </Text>
           </Button>
@@ -54,7 +54,7 @@ export function QuestProofActionSection(props: QuestProofActionSectionProps) {
 
   return (
     <View className="mt-[18px]">
-      <Text className="text-ku-text-secondary text-ku-body-small mb-[10px]">
+      <Text className="mb-[10px] text-ku-body-small text-ku-text-secondary">
         {props.description}
       </Text>
       {props.canConfirm ? (

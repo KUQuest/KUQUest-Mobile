@@ -18,17 +18,17 @@ export function QuestProofSummaryCard({
 }: QuestProofSummaryCardProps) {
   return (
     <>
-      <View className="bg-ku-surface-accent border-ku-border-accent rounded-[18px] border mt-[20px] p-[16px]">
-        <Text className="text-ku-text-strong font-ku-bold text-ku-title-small">
+      <View className="mt-[20px] rounded-[18px] border border-ku-border-accent bg-ku-surface-accent p-[16px]">
+        <Text className="font-ku-bold text-ku-title-small text-ku-text-strong">
           {title}
         </Text>
-        <Text className="text-ku-text-secondary font-ku-regular text-ku-body-small mt-[6px]">
+        <Text className="mt-[6px] font-ku-regular text-ku-body-small text-ku-text-secondary">
           {description}
         </Text>
         {countdown ? (
-          <View className="items-center flex-row mt-[14px]">
+          <View className="mt-[14px] flex-row items-center">
             <Clock3 color={colors.primary} size={18} />
-            <Text className="text-ku-primary font-ku-semibold text-ku-body-small ml-[7px]">
+            <Text className="ml-[7px] font-ku-semibold text-ku-body-small text-ku-primary">
               {countdown}
             </Text>
           </View>
@@ -36,11 +36,11 @@ export function QuestProofSummaryCard({
       </View>
 
       {error ? (
-        <View className="bg-ku-surface-danger border-ku-border-danger rounded-[14px] border flex-row items-start mt-[12px] p-[12px]">
+        <View className="mt-[12px] flex-row items-start rounded-[14px] border border-ku-border-danger bg-ku-surface-danger p-[12px]">
           <ShieldAlert color={colors.danger} size={20} />
           <Text
             accessibilityRole="alert"
-            className="text-ku-danger flex-1 font-ku-medium text-ku-body-small ml-[8px]"
+            className="ml-[8px] flex-1 font-ku-medium text-ku-body-small text-ku-danger"
           >
             {error}
           </Text>

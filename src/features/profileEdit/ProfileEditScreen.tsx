@@ -516,7 +516,7 @@ function ImagePickerField({
 
   return (
     <View className="gap-ku-sm">
-      <Text className="font-ku-semibold text-ku-text-secondary text-ku-label">
+      <Text className="font-ku-semibold text-ku-label text-ku-text-secondary">
         {label}
       </Text>
       <Pressable
@@ -544,10 +544,10 @@ function ImagePickerField({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={removeLabel}
-          className="min-h-[48px] self-start justify-center"
+          className="min-h-[48px] justify-center self-start"
           onPress={() => onChange("")}
         >
-          <Text className="font-ku-semibold text-ku-primary text-ku-meta">
+          <Text className="font-ku-semibold text-ku-meta text-ku-primary">
             {removeLabel}
           </Text>
         </Pressable>
@@ -587,7 +587,7 @@ function DateField({
     : new Date();
   return (
     <View className={styles.dateField}>
-      <Text className="font-ku-semibold text-ku-text-secondary text-ku-label mb-[6px]">
+      <Text className="mb-[6px] font-ku-semibold text-ku-label text-ku-text-secondary">
         {label}
       </Text>
       <Pressable
@@ -605,7 +605,7 @@ function DateField({
       {error ? (
         <Text
           accessibilityRole="alert"
-          className="font-ku-regular text-ku-danger text-ku-label mt-[4px]"
+          className="mt-[4px] font-ku-regular text-ku-label text-ku-danger"
         >
           {error}
         </Text>

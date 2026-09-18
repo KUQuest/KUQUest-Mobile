@@ -313,7 +313,7 @@ export function TeamSetupStep({
                       styles.durationBadgeError
                     )}
                   >
-                    <View className="flex-row items-center gap-[6px] flex-1">
+                    <View className="flex-1 flex-row items-center gap-[6px]">
                       <CircleAlert
                         color={colors.danger}
                         size={16}

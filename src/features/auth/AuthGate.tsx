@@ -65,7 +65,7 @@ export default function Index() {
   if (status === "loading") {
     return (
       <View
-        className="flex-1 justify-center items-center bg-ku-background"
+        className="flex-1 items-center justify-center bg-ku-background"
         testID="auth-gate-loading"
       >
         <ActivityIndicator size="large" color={colors.primary} />
@@ -76,26 +76,26 @@ export default function Index() {
   if (status === "error") {
     return (
       <View
-        className="flex-1 justify-center items-center p-[24px] bg-ku-background"
+        className="flex-1 items-center justify-center bg-ku-background p-[24px]"
         accessibilityRole="alert"
         testID="auth-gate-error"
       >
-        <Text className="text-ku-text-strong text-ku-subtitle font-ku-bold text-center">
+        <Text className="text-center font-ku-bold text-ku-subtitle text-ku-text-strong">
           {messages.sessionLoadTitle}
         </Text>
-        <Text className="text-ku-text-secondary mt-[8px] text-center">
+        <Text className="mt-[8px] text-center text-ku-text-secondary">
           {messages.sessionLoadDescription}
         </Text>
         <Pressable
           accessibilityRole="button"
-          className="mt-[20px] rounded-ku-pill bg-ku-primary min-h-[44px] px-[24px] justify-center"
+          className="mt-[20px] min-h-[44px] justify-center rounded-ku-pill bg-ku-primary px-[24px]"
           onPress={() => {
             setStatus("loading");
             setAttempt((value) => value + 1);
           }}
           testID="auth-gate-retry"
         >
-          <Text className="text-ku-white font-ku-semibold">
+          <Text className="font-ku-semibold text-ku-white">
             {messages.retryButton}
           </Text>
         </Pressable>

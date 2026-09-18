@@ -67,10 +67,10 @@ export function HirerQuestRosterModal({
             paddingBottom: Math.max(insets.bottom, 20),
           }}
         >
-          <View className="flex-row items-center justify-between mb-4">
+          <View className="mb-4 flex-row items-center justify-between">
             <View className="flex-1 pr-4">
               <Text
-                className="text-lg font-ku-bold"
+                className="font-ku-bold text-lg"
                 style={{ color: themeColors.textStrong }}
                 numberOfLines={1}
               >
@@ -102,7 +102,7 @@ export function HirerQuestRosterModal({
               style={{ backgroundColor: themeColors.surfaceAccent }}
             >
               <Text
-                className="text-xs font-ku-medium"
+                className="font-ku-medium text-xs"
                 style={{ color: themeColors.primary }}
               >
                 {messages.joinedLabel(assignedWorkers.length, headcount)}
@@ -114,7 +114,7 @@ export function HirerQuestRosterModal({
                 style={{ backgroundColor: themeColors.surfaceMuted }}
               >
                 <Text
-                  className="text-xs font-ku-medium"
+                  className="font-ku-medium text-xs"
                   style={{ color: themeColors.textStrong }}
                 >
                   {messages.applicantsLabel(applicants.length)}
@@ -135,7 +135,7 @@ export function HirerQuestRosterModal({
                 <View className="mb-2.5 flex-row items-center gap-1.5">
                   <CheckCircle2 size={16} color={themeColors.primary} />
                   <Text
-                    className="text-sm font-ku-bold"
+                    className="font-ku-bold text-sm"
                     style={{ color: themeColors.textStrong }}
                   >
                     {messages.joinedSectionTitle} ({assignedWorkers.length})
@@ -153,7 +153,7 @@ export function HirerQuestRosterModal({
                   >
                     <View className="flex-1 flex-row items-center">
                       <View
-                        className="mr-3 h-10 w-10 overflow-hidden rounded-full items-center justify-center"
+                        className="mr-3 h-10 w-10 items-center justify-center overflow-hidden rounded-full"
                         style={{ backgroundColor: themeColors.surfaceAccent }}
                       >
                         {worker.avatarUri ? (
@@ -196,7 +196,7 @@ export function HirerQuestRosterModal({
                       testID={`roster-worker-profile-${worker.id}`}
                     >
                       <Text
-                        className="text-xs font-ku-bold"
+                        className="font-ku-bold text-xs"
                         style={{ color: themeColors.primary }}
                       >
                         {messages.viewProfile}
@@ -213,7 +213,7 @@ export function HirerQuestRosterModal({
                 <View className="mb-2.5 flex-row items-center gap-1.5">
                   <Users size={16} color={themeColors.primary} />
                   <Text
-                    className="text-sm font-ku-bold"
+                    className="font-ku-bold text-sm"
                     style={{ color: themeColors.textStrong }}
                   >
                     {messages.applicantsSectionTitle} ({applicants.length})
@@ -231,7 +231,7 @@ export function HirerQuestRosterModal({
                   >
                     <View className="flex-1 flex-row items-center">
                       <View
-                        className="mr-3 h-10 w-10 overflow-hidden rounded-full items-center justify-center"
+                        className="mr-3 h-10 w-10 items-center justify-center overflow-hidden rounded-full"
                         style={{ backgroundColor: themeColors.surfaceAccent }}
                       >
                         {applicant.avatarUri ? (
@@ -274,7 +274,7 @@ export function HirerQuestRosterModal({
                       testID={`roster-applicant-profile-${applicant.id}`}
                     >
                       <Text
-                        className="text-xs font-ku-bold"
+                        className="font-ku-bold text-xs"
                         style={{ color: themeColors.primary }}
                       >
                         {messages.viewProfile}
@@ -290,7 +290,7 @@ export function HirerQuestRosterModal({
               <View className="items-center justify-center py-8">
                 <Users size={36} color={themeColors.textSecondary} />
                 <Text
-                  className="mt-3 text-center text-sm font-ku-medium"
+                  className="mt-3 text-center font-ku-medium text-sm"
                   style={{ color: themeColors.textSecondary }}
                 >
                   {messages.noRosterYet}
@@ -305,11 +305,11 @@ export function HirerQuestRosterModal({
               onClose();
               onOpenManageQuest(questId);
             }}
-            className="mt-2 w-full rounded-2xl p-4 items-center"
+            className="mt-2 w-full items-center rounded-2xl p-4"
             style={{ backgroundColor: themeColors.primary }}
             testID="hirer-roster-manage-button"
           >
-            <Text className="text-white font-ku-bold text-base">
+            <Text className="font-ku-bold text-base text-white">
               {messages.openManageQuest}
             </Text>
           </TouchableOpacity>

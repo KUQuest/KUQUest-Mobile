@@ -66,7 +66,7 @@ export default function QuestWorkStatusCard({
     >
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
-          <Text className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <Text className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
             {status}
           </Text>
           <Text className="mt-1 text-2xl font-bold text-slate-950">

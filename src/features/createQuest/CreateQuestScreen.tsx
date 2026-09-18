@@ -1202,14 +1202,14 @@ export default function CreateQuestScreen({
                   disabled: isSaving || editState.cancelState === "cancelling",
                 }}
                 className={cn(
-                  "items-center justify-center rounded-[12px] border border-ku-danger min-h-[44px] px-[12px]",
+                  "min-h-[44px] items-center justify-center rounded-[12px] border border-ku-danger px-[12px]",
                   useStackedActions ? "w-full" : "flex-1"
                 )}
                 disabled={isSaving || editState.cancelState === "cancelling"}
                 onPress={confirmCancel}
                 testID="edit-quest-cancel"
               >
-                <Text className="text-ku-danger font-ku-semibold">
+                <Text className="font-ku-semibold text-ku-danger">
                   {editState.cancelState === "cancelling"
                     ? messages.cancellingQuest
                     : messages.cancelQuest}

@@ -1108,12 +1108,12 @@ export function TeamAssembleSheet({
                 ? "เพิ่มรายละเอียดหรือแนบเอกสารเพื่อประกอบการพิจารณา"
                 : "Add a proposal note and supporting documents or images"}
             </Text>
-            <View className="bg-ku-surface border-ku-border rounded-[18px] border p-[12px] mt-[8px]">
+            <View className="mt-[8px] rounded-[18px] border border-ku-border bg-ku-surface p-[12px]">
               <TextInput
                 accessibilityLabel={
                   locale === "th" ? "ข้อความเสนอตัว" : "Proposal note"
                 }
-                className="text-ku-text-strong font-ku-regular text-ku-body min-h-[72px]"
+                className="min-h-[72px] font-ku-regular text-ku-body text-ku-text-strong"
                 multiline
                 numberOfLines={3}
                 onChangeText={setProposalText}
@@ -1132,24 +1132,24 @@ export function TeamAssembleSheet({
               {proposalFiles.map((file) => (
                 <View
                   key={file.id}
-                  className="bg-ku-surface-muted border-ku-border-subtle border rounded-[14px] flex-row items-center justify-between px-[12px] py-[8px]"
+                  className="flex-row items-center justify-between rounded-[14px] border border-ku-border-subtle bg-ku-surface-muted px-[12px] py-[8px]"
                   testID={`team-proposal-file-${file.id}`}
                 >
-                  <View className="flex-row items-center flex-1 min-w-0 pr-[8px]">
+                  <View className="min-w-0 flex-1 flex-row items-center pr-[8px]">
                     <FileText
                       color={colors.primary}
                       size={18}
                       strokeWidth={2}
                     />
-                    <View className="ml-[8px] flex-1 min-w-0">
+                    <View className="ml-[8px] min-w-0 flex-1">
                       <Text
-                        className="text-ku-text-strong font-ku-medium text-ku-body-small"
+                        className="font-ku-medium text-ku-body-small text-ku-text-strong"
                         numberOfLines={1}
                       >
                         {file.name}
                       </Text>
                       {file.sizeBytes ? (
-                        <Text className="text-ku-text-secondary font-ku-regular text-ku-label">
+                        <Text className="font-ku-regular text-ku-label text-ku-text-secondary">
                           {Math.round(file.sizeBytes / 1024)} KB
                         </Text>
                       ) : null}
@@ -1179,7 +1179,7 @@ export function TeamAssembleSheet({
                   locale === "th" ? "แนบไฟล์หรือรูปภาพ" : "Attach file or image"
                 }
                 accessibilityRole="button"
-                className="items-center border-ku-primary border-dashed rounded-[14px] border flex-row justify-center min-h-[44px] gap-[6px] px-[12px] py-[8px]"
+                className="min-h-[44px] flex-row items-center justify-center gap-[6px] rounded-[14px] border border-dashed border-ku-primary px-[12px] py-[8px]"
                 disabled={isPickingFile}
                 onPress={handlePickFiles}
                 testID="team-pick-file-button"
@@ -1193,7 +1193,7 @@ export function TeamAssembleSheet({
                       size={18}
                       strokeWidth={2.2}
                     />
-                    <Text className="text-ku-primary font-ku-semibold text-ku-label">
+                    <Text className="font-ku-semibold text-ku-label text-ku-primary">
                       {locale === "th"
                         ? "แนบเอกสารหรือรูปภาพ"
                         : "Attach file or image"}
@@ -1202,7 +1202,7 @@ export function TeamAssembleSheet({
                 )}
               </Pressable>
               {filePickError ? (
-                <Text className="text-ku-danger-dark font-ku-regular text-ku-label mt-[2px]">
+                <Text className="mt-[2px] font-ku-regular text-ku-label text-ku-danger-dark">
                   {filePickError}
                 </Text>
               ) : null}

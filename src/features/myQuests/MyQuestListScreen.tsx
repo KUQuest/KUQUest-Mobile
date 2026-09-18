@@ -767,7 +767,7 @@ export default function MyQuestListScreen({
 
   return (
     <ScreenLayout
-      className="bg-ku-background flex-1"
+      className="flex-1 bg-ku-background"
       edges={["top", "left", "right"]}
     >
       <View style={[styles.root, { backgroundColor: palette.background }]}>

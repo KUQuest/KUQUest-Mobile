@@ -145,7 +145,7 @@ export function QuestCard({ quest, locale, onDetail }: QuestCardProps) {
             {quest.creator.avatarUri ? (
               <Image
                 source={{ uri: quest.creator.avatarUri }}
-                className="w-full h-full"
+                className="h-full w-full"
                 contentFit="cover"
               />
             ) : (

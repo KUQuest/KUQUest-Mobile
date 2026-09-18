@@ -447,14 +447,14 @@ export default function QuestProofScreen({
     return (
       <ScreenLayout
         edges={["top", "left", "right", "bottom"]}
-        className="bg-ku-background flex-1"
+        className="flex-1 bg-ku-background"
       >
         <TopBar
           onBackPress={() => router.back()}
           title={messages.proofBannerTitle}
         />
         <View className="flex-1 items-center justify-center px-[24px]">
-          <Text className="text-ku-text-secondary text-ku-body text-center">
+          <Text className="text-center text-ku-body text-ku-text-secondary">
             {messages.errorDescription}
           </Text>
         </View>
@@ -465,7 +465,7 @@ export default function QuestProofScreen({
   return (
     <ScreenLayout
       edges={["top", "left", "right", "bottom"]}
-      className="bg-ku-background flex-1"
+      className="flex-1 bg-ku-background"
     >
       <TopBar
         onBackPress={() => router.back()}
@@ -474,13 +474,13 @@ export default function QuestProofScreen({
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator color={colors.primary} />
-          <Text className="text-ku-text-secondary text-ku-body mt-[12px]">
+          <Text className="mt-[12px] text-ku-body text-ku-text-secondary">
             {messages.loading}
           </Text>
         </View>
       ) : (
         <ScrollView
-          contentContainerClassName="pb-[40px] px-[20px]"
+          contentContainerClassName="px-[20px] pb-[40px]"
           showsVerticalScrollIndicator={false}
         >
           <QuestProofSummaryCard

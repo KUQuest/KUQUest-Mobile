@@ -19,7 +19,7 @@ export default function EditQuestScreen({ questId }: EditQuestScreenProps) {
 
   if (!questId) {
     return (
-      <ScreenLayout className="bg-ku-background flex-1 items-center justify-center p-[24px]">
+      <ScreenLayout className="flex-1 items-center justify-center bg-ku-background p-[24px]">
         <View className="w-full items-center gap-[12px]">
           <Text accessibilityRole="alert" className="text-ku-text-secondary">
             {messages.loadDraftError}

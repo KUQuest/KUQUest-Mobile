@@ -121,7 +121,7 @@ export default function LoginScreen({
                     <Text
                       className={cn(
                         styles.errorText,
-                        "text-ku-label mt-[4px] text-ku-danger-light"
+                        "mt-[4px] text-ku-label text-ku-danger-light"
                       )}
                     >
                       {error.message}

@@ -89,7 +89,7 @@ function MemberAvatar({
 }) {
   return (
     <View
-      className="mr-3 h-12 w-12 overflow-hidden rounded-full items-center justify-center"
+      className="mr-3 h-12 w-12 items-center justify-center overflow-hidden rounded-full"
       style={{ backgroundColor }}
     >
       {avatarUri ? (
@@ -461,7 +461,7 @@ export default function SelectRosterRoute() {
 
   if (loading) {
     return (
-      <ScreenLayout className="flex-1 bg-ku-bg">
+      <ScreenLayout className="bg-ku-bg flex-1">
         <TopBar
           title={messages.selectRosterTitle}
           onBackPress={() => router.back()}
@@ -477,7 +477,7 @@ export default function SelectRosterRoute() {
 
   if (error || !snapshot) {
     return (
-      <ScreenLayout className="flex-1 bg-ku-bg">
+      <ScreenLayout className="bg-ku-bg flex-1">
         <TopBar
           title={messages.selectRosterTitle}
           onBackPress={() => router.back()}
@@ -494,7 +494,7 @@ export default function SelectRosterRoute() {
             style={{ backgroundColor: colors.primary }}
             onPress={() => void load()}
           >
-            <Text className="text-center text-white font-ku-bold">
+            <Text className="text-center font-ku-bold text-white">
               {groupMessages.retry}
             </Text>
           </Pressable>
@@ -514,7 +514,7 @@ export default function SelectRosterRoute() {
 
   if (snapshot.mode !== "CANDIDATE") {
     return (
-      <ScreenLayout className="flex-1 bg-ku-bg">
+      <ScreenLayout className="bg-ku-bg flex-1">
         <TopBar
           title={messages.selectRosterTitle}
           onBackPress={() => router.back()}
@@ -546,7 +546,7 @@ export default function SelectRosterRoute() {
     <View className="mb-4">
       <Text
         accessibilityRole="header"
-        className="text-2xl font-ku-bold"
+        className="font-ku-bold text-2xl"
         style={{ color: colors.textStrong }}
       >
         {quest.title}
@@ -590,7 +590,7 @@ export default function SelectRosterRoute() {
   );
 
   return (
-    <ScreenLayout edges={["top", "left", "right"]} className="flex-1 bg-ku-bg">
+    <ScreenLayout edges={["top", "left", "right"]} className="bg-ku-bg flex-1">
       <TopBar
         title={messages.selectRosterTitle}
         onBackPress={() => router.back()}

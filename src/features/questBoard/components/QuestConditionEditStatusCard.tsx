@@ -43,7 +43,7 @@ export function QuestConditionEditStatusCard({
     <StateCard tone="warning">
       <Text
         testID="hirer-condition-edit-pending-title"
-        className="text-ku-body font-ku-bold text-ku-text-strong"
+        className="font-ku-bold text-ku-body text-ku-text-strong"
       >
         {messages.conditionEditPendingTitle}
       </Text>

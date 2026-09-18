@@ -153,7 +153,7 @@ export function ProofReviewModal({
           <SafeAreaView edges={["bottom"]}>
             <View className={styles.proofSheetHeader}>
               <View className={styles.proofSheetHeaderCopy}>
-                <View className="items-center flex-row gap-[8px]">
+                <View className="flex-row items-center gap-[8px]">
                   <ShieldCheck color={colors.primary} size={22} />
                   <Text
                     accessibilityRole="header"
@@ -182,48 +182,48 @@ export function ProofReviewModal({
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              <View className="bg-ku-surface-accent rounded-[14px] p-[14px] gap-[8px]">
-                <Text className="text-ku-text-muted font-ku-medium text-ku-label">
+              <View className="gap-[8px] rounded-[14px] bg-ku-surface-accent p-[14px]">
+                <Text className="font-ku-medium text-ku-label text-ku-text-muted">
                   {messages.proofReviewSubmittedAt}
                 </Text>
-                <Text className="text-ku-text-strong font-ku-semibold text-ku-body-small">
+                <Text className="font-ku-semibold text-ku-body-small text-ku-text-strong">
                   {submittedAt}
                 </Text>
-                <Text className="text-ku-text-muted font-ku-medium text-ku-label mt-[4px]">
+                <Text className="mt-[4px] font-ku-medium text-ku-label text-ku-text-muted">
                   {messages.proofReviewDueAt}
                 </Text>
-                <Text className="text-ku-text-strong font-ku-semibold text-ku-body-small">
+                <Text className="font-ku-semibold text-ku-body-small text-ku-text-strong">
                   {deadline}
                 </Text>
               </View>
 
               <View className="mt-[16px]">
-                <Text className="text-ku-text-strong font-ku-bold text-ku-body">
+                <Text className="font-ku-bold text-ku-body text-ku-text-strong">
                   {messages.proofReviewDescriptionLabel}
                 </Text>
-                <Text className="text-ku-text-secondary font-ku-regular text-ku-body-small mt-[8px]">
+                <Text className="mt-[8px] font-ku-regular text-ku-body-small text-ku-text-secondary">
                   {proof.description?.trim() ||
                     messages.proofReviewNoDescription}
                 </Text>
               </View>
 
               <View className="mt-[20px]">
-                <Text className="text-ku-text-strong font-ku-bold text-ku-body">
+                <Text className="font-ku-bold text-ku-body text-ku-text-strong">
                   {messages.proofReviewEvidenceLabel}
                 </Text>
                 {proof.files.length === 0 ? (
-                  <Text className="text-ku-text-secondary font-ku-regular text-ku-body-small mt-[8px]">
+                  <Text className="mt-[8px] font-ku-regular text-ku-body-small text-ku-text-secondary">
                     {messages.proofReviewNoEvidence}
                   </Text>
                 ) : (
-                  <View className="gap-[10px] mt-[8px]">
+                  <View className="mt-[8px] gap-[10px]">
                     {proof.files.map((file) => {
                       const kind = fileKind(file.contentType);
                       const size = formatFileSize(file.sizeBytes);
                       const fileUrl = file.url ?? undefined;
                       return (
                         <View
-                          className="bg-ku-surface-muted border-ku-border-subtle rounded-[14px] border p-[10px]"
+                          className="rounded-[14px] border border-ku-border-subtle bg-ku-surface-muted p-[10px]"
                           key={file.fileId}
                           testID={`proof-review-file-${file.position}`}
                         >
@@ -241,21 +241,21 @@ export function ProofReviewModal({
                               />
                             </Pressable>
                           ) : null}
-                          <View className="items-center flex-row">
+                          <View className="flex-row items-center">
                             {kind === "image" ? (
                               <ImageIcon color={colors.primary} size={20} />
                             ) : (
                               <FileText color={colors.primary} size={20} />
                             )}
-                            <View className="flex-1 ml-[10px]">
-                              <Text className="text-ku-text-strong font-ku-semibold text-ku-body-small">
+                            <View className="ml-[10px] flex-1">
+                              <Text className="font-ku-semibold text-ku-body-small text-ku-text-strong">
                                 {messages.proofReviewFileLabel(
                                   file.position + 1,
                                   file.contentType,
                                   size
                                 )}
                               </Text>
-                              <Text className="text-ku-text-muted font-ku-regular text-ku-label mt-[2px]">
+                              <Text className="mt-[2px] font-ku-regular text-ku-label text-ku-text-muted">
                                 {messages.proofReviewFileStatus(
                                   file.uploadStatus
                                 )}
@@ -265,17 +265,17 @@ export function ProofReviewModal({
                               <Pressable
                                 accessibilityLabel={messages.proofReviewPreview}
                                 accessibilityRole="button"
-                                className="border-ku-primary rounded-ku-pill border px-[10px] py-[7px]"
+                                className="rounded-ku-pill border border-ku-primary px-[10px] py-[7px]"
                                 onPress={() => void openPreview(fileUrl)}
                               >
-                                <Text className="text-ku-primary font-ku-semibold text-ku-label">
+                                <Text className="font-ku-semibold text-ku-label text-ku-primary">
                                   {messages.proofReviewPreview}
                                 </Text>
                               </Pressable>
                             ) : null}
                           </View>
                           {!fileUrl ? (
-                            <Text className="text-ku-text-muted font-ku-regular text-ku-label mt-[8px]">
+                            <Text className="mt-[8px] font-ku-regular text-ku-label text-ku-text-muted">
                               {messages.proofReviewPreviewUnavailable}
                             </Text>
                           ) : null}

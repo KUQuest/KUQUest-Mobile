@@ -1,7 +1,7 @@
 ---
 name: KUQuest
 description: A trusted community job board for people with @ku.th accounts.
-colors: 
+colors:
   background: "#FFFCFA"
   surface: "#FCF9F8"
   surface-muted: "#F5F2F0"
@@ -152,6 +152,7 @@ KUQuest is a trusted community job board for people with `@ku.th` accounts. Its 
 The atmosphere is warm, grounded, friendly, and quietly energetic in light appearance. Warm paper surfaces keep long lists and **Quest Detail** information comfortable to read. In dark appearance, the same system moves to deep green-black layers with pale text and softened green signals. Deep green marks important actions and active states. Fresh Lime appears as a focused signal for selected navigation and success, not as decoration. Cards, filters, and inputs use soft edges and calm layers so the interface feels friendly, soft, and confident.
 
 **Key Characteristics:**
+
 - Warm paper background with quiet off-white surface layers.
 - Deep Forest Green for primary actions and important product identity.
 - Fresh Lime for active navigation and success signals.
@@ -164,15 +165,18 @@ The atmosphere is warm, grounded, friendly, and quietly energetic in light appea
 The palette uses warm neutrals as the light canvas and a disciplined green range as the voice of the community. Dark appearance uses deep green-black surfaces and pale semantic text while preserving the same action and status roles. Status colors stay semantic and should not become decorative accents.
 
 ### Primary
+
 - **Deep Forest Green:** The main action color for applying, creating, confirming, and selected controls.
 - **Deep Forest Dark:** The darker action state for pressed or high-emphasis green content.
 - **Deep Forest Deep:** The strongest green for back icons, initials, and high-contrast identity details.
 
 ### Secondary
+
 - **Fresh Lime:** The active navigation and success signal. Use it for selected destination labels, active indicators, and positive outcomes.
 - **Success Green:** Supporting positive text and certificate or completion metadata.
 
 ### Neutral
+
 - **Warm Paper:** The main app canvas. It gives the mobile interface a warm, calm base.
 - **Quiet Surface:** A slightly separated surface for sheets, profile areas, and grouped content.
 - **Content Card:** The primary card surface. It is warm white in light appearance and deep green-black in dark appearance.
@@ -190,6 +194,7 @@ The palette uses warm neutrals as the light canvas and a disciplined green range
 - **Accent Border:** Selected controls and positive notice outlines.
 
 ### Status
+
 - **Danger Red:** Invalid fields and urgent error states.
 - **Danger Dark:** Error copy and recovery actions on danger surfaces.
 - **Danger Light:** Supporting error tint.
@@ -212,6 +217,7 @@ The palette uses warm neutrals as the light canvas and a disciplined green range
 **Character:** The type system is direct and readable. Bold Noto Sans Thai gives the interface a confident KUQuest voice, while regular text keeps requirements, schedules, rewards, and profile information easy to scan in both supported locales.
 
 ### Hierarchy
+
 - **Display** (bold, 44px): Sign-in product identity and the strongest entry-point title.
 - **Headline** (bold, 30px / 38px): Main flow titles such as Create Quest.
 - **Title** (bold, 24px / 29px): Page and completion titles, reward values, and profile statistics.
@@ -238,6 +244,7 @@ The implementation changes app chrome below 400px, expands profile content from 
 Depth is layered and calm. Warm and pale green surface changes separate groups before a shadow is added. Cards and the bottom navigation use soft, low-contrast shadows. Sheets use an overlay and a raised bottom surface. Avoid large offsets, glossy effects, and decorative blur.
 
 ### Shadow Vocabulary
+
 - **Quest Card lift** (`0px 2px 5px rgba(18, 32, 24, 0.06)`): A quiet separation from the warm canvas while scanning Quest results.
 - **Navigation lift** (`0px 4px 4px rgba(18, 32, 24, 0.06)`): Keeps the floating bottom navigation readable above scrolling content.
 - **Create action lift** (`0px 3px 4px rgba(18, 32, 24, 0.18)`): Gives the central Create action a clear position without making it look glossy.
@@ -257,6 +264,7 @@ Borders are light and functional. Keep them thin and quiet. Use rounded hit area
 Components should feel friendly, soft, and confident. They should make the next action clear without adding visual noise.
 
 ### Buttons
+
 - **Shape:** Full pills for primary and secondary actions; minimum height 48px.
 - **Primary:** Deep Forest Green background, white label, semibold type, and 16px horizontal padding.
 - **Secondary:** Transparent background with a 2px Deep Forest Green outline and Deep Forest Green label.
@@ -264,11 +272,13 @@ Components should feel friendly, soft, and confident. They should make the next 
 - **Use:** Use a clear action label such as Apply now, Create Quest, Next, or Retry. Do not hide the action in an icon alone.
 
 ### Chips
+
 - **Style:** Rounded pills with a pale green or quiet neutral surface, compact padding, and small semibold labels.
 - **State:** Selected Quest Board filters use the accent surface and primary green text. Selected review filters use the primary green surface and white text.
 - **Use:** Use chips for Quest Tags, active Quest Board filters, and small profile categories. They are not a replacement for a full section heading.
 
 ### Cards / Containers
+
 - **Corner Style:** Quest Cards and Student Profile sections use the 16px card radius. Small review and form summary containers use 8px to 10px.
 - **Background:** Use the Content Card surface for primary content cards and quiet surface layers for grouped or secondary content. The Content Card surface changes with appearance; do not use a bright white card in dark appearance.
 - **Shadow Strategy:** Follow the calm layered approach in Elevation & Depth.
@@ -277,6 +287,7 @@ Components should feel friendly, soft, and confident. They should make the next 
 - **Signature behavior:** A Quest Card places the title and reward first, then category, creator, metadata, and lifecycle actions. Keep this order stable so people can compare Quests quickly.
 
 ### Inputs / Fields
+
 - **Style:** White field surface, quiet 1px border, 8px radius, 48px minimum height, and 12px horizontal padding.
 - **Focus:** Replace the quiet border with Deep Forest Green while keeping the field shape stable.
 - **Error / Success:** Use the semantic danger or success border and helper text. Error copy must explain the problem and how to recover.
@@ -284,6 +295,7 @@ Components should feel friendly, soft, and confident. They should make the next 
 - **Select and Text Area:** Use the same field language. Select options open in a bottom sheet on mobile.
 
 ### Navigation
+
 - **Style:** Five authenticated destinations: Quest Board, My Quests, Create, Chat, and Student Profile.
 - **Default:** Translucent warm surface, 28px radius, quiet border, and muted green-gray icons.
 - **Active:** Fresh Lime icon and label with a short active indicator. The central Create action uses a raised Deep Forest Green circular control.
@@ -291,11 +303,13 @@ Components should feel friendly, soft, and confident. They should make the next 
 - **Tablet treatment:** Use a vertical rail on expanded widths and reserve horizontal content space for it.
 
 ### Quest Board Filter Sheet
+
 - **Style:** A bottom sheet with a warm background, 24px top corners, a small handle, a clear title, and grouped options.
 - **Behavior:** Keep the current search query visible behind the sheet, preserve selected filters while editing, and provide explicit Apply filters and Clear all actions.
 - **State:** Invalid reward bounds disable the primary Apply filters action and show a danger message near the fields.
 
 ### Student Profile
+
 - **Style:** Use a brand row, Content Card surfaces for the profile header and statistics, and section cards with consistent 16px corners.
 - **Tabs:** Use a horizontal tab strip with icons, a 72px minimum tab height, and a primary-green bottom indicator for the selected section.
 - **Trust content:** Keep Profile Rating, completed Quest count, Experience, Portfolio Work, Certificates, and Reviews easy to scan. Do not expose private contact details or Student ID.
@@ -303,6 +317,7 @@ Components should feel friendly, soft, and confident. They should make the next 
 ## Do's and Don'ts
 
 ### Do:
+
 - **Do** use Deep Forest Green for primary actions, selected controls, and the main KUQuest identity.
 - **Do** keep the Warm Paper canvas and quiet surface layers behind Quest Board content.
 - **Do** preserve the compact Quest Card order: title, reward, category, creator, metadata, then actions.
@@ -312,6 +327,7 @@ Components should feel friendly, soft, and confident. They should make the next 
 - **Do** provide clear loading, empty, error, unavailable, pending, and accepted states.
 
 ### Don't:
+
 - **Don't** introduce generic corporate blue, glossy gradients, or noisy gaming aesthetics.
 - **Don't** turn KUQuest into a crowded gig-marketplace interface with dense badges and competing accents.
 - **Don't** use green on every surface or for text that does not represent an action, active state, or positive result.

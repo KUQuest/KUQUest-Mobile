@@ -244,14 +244,14 @@ export default function PublicProfileScreen() {
   );
 
   const topBar = (
-    <View className="flex-row items-center justify-between px-4 py-2 border-b border-ku-border-subtle bg-ku-surface">
+    <View className="flex-row items-center justify-between border-b border-ku-border-subtle bg-ku-surface px-4 py-2">
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={messages.back ?? "Back"}
         testID="public-profile-back-button"
         hitSlop={8}
         onPress={() => router.back()}
-        className="items-center justify-center rounded-ku-pill h-[44px] w-[44px] active:bg-ku-surface-muted"
+        className="h-[44px] w-[44px] items-center justify-center rounded-ku-pill active:bg-ku-surface-muted"
       >
         <ChevronLeft color={colors.primaryDeep} size={24} strokeWidth={2.5} />
       </Pressable>
@@ -264,7 +264,7 @@ export default function PublicProfileScreen() {
         />
         <Text
           numberOfLines={1}
-          className="text-ku-text-strong font-ku-semibold text-ku-caption mt-0.5"
+          className="mt-0.5 font-ku-semibold text-ku-caption text-ku-text-strong"
           testID="public-profile-header-name"
         >
           {displayName || messages.title}
@@ -276,7 +276,7 @@ export default function PublicProfileScreen() {
 
   const stickyProfileTabs = (
     <View
-      className="bg-ku-surface py-2 border-b border-ku-border-subtle"
+      className="border-b border-ku-border-subtle bg-ku-surface py-2"
       testID="public-profile-tabs"
     >
       <ScrollView
@@ -296,10 +296,10 @@ export default function PublicProfileScreen() {
               accessibilityState={{ selected: isSelected }}
               onPress={() => setActiveTab(key)}
               className={cn(
-                "flex-row items-center gap-1.5 px-4 py-2 rounded-ku-pill border min-h-[40px]",
+                "min-h-[40px] flex-row items-center gap-1.5 rounded-ku-pill border px-4 py-2",
                 isSelected
-                  ? "bg-ku-primary border-ku-primary"
-                  : "bg-ku-surface-muted border-ku-border-subtle"
+                  ? "border-ku-primary bg-ku-primary"
+                  : "border-ku-border-subtle bg-ku-surface-muted"
               )}
             >
               <Icon
@@ -309,7 +309,7 @@ export default function PublicProfileScreen() {
               />
               <Text
                 className={cn(
-                  "text-xs font-ku-semibold",
+                  "font-ku-semibold text-xs",
                   isSelected ? "text-ku-white" : "text-ku-text-secondary"
                 )}
                 maxFontSizeMultiplier={2}
@@ -342,8 +342,8 @@ export default function PublicProfileScreen() {
         }}
       />
       {bio ? (
-        <View className="bg-ku-surface border border-ku-border-subtle rounded-ku-card p-3 mt-3">
-          <Text className="text-ku-text-secondary font-ku-regular text-ku-body-small">
+        <View className="rounded-ku-card mt-3 border border-ku-border-subtle bg-ku-surface p-3">
+          <Text className="font-ku-regular text-ku-body-small text-ku-text-secondary">
             {bio}
           </Text>
         </View>
@@ -396,7 +396,7 @@ export default function PublicProfileScreen() {
       >
         {topBar}
         <View className="flex-1 items-center justify-center p-6">
-          <Text className="text-ku-text-secondary text-center mb-4">
+          <Text className="mb-4 text-center text-ku-text-secondary">
             {error}
           </Text>
           <Pressable
@@ -404,7 +404,7 @@ export default function PublicProfileScreen() {
             onPress={() => setLoadAttempt((prev) => prev + 1)}
             className="min-h-[48px] min-w-[140px] items-center justify-center rounded-ku-pill bg-ku-primary px-6 active:opacity-90"
           >
-            <Text className="text-ku-white font-ku-semibold">
+            <Text className="font-ku-semibold text-ku-white">
               {messages.retry}
             </Text>
           </Pressable>

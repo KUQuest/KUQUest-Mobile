@@ -1,0 +1,32 @@
+# Dependencies and tool caches
+.agents/
+.claude/
+.omp/
+.pi/
+node_modules/
+.expo/
+.gradle/
+.gradle-local-check/
+.kotlin/
+
+# Build and test output
+dist/
+web-build/
+coverage/
+
+# Expo prebuild output; generated in this repository
+android/
+ios/
+
+# Upstream API contracts
+docs/api/api.yaml
+
+# Generated declarations
+expo-env.d.ts
+nativewind-env.d.ts
+
+# Package-manager generated files
+bun.lock
+package-lock.json
+pnpm-lock.yaml
+yarn.lock

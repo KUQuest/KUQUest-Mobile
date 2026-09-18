@@ -1,6 +1,6 @@
-@import 'tailwindcss/theme.css' layer(theme);
-@import 'tailwindcss/preflight.css' layer(base);
-@import 'tailwindcss/utilities.css';
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
 
 @layer theme {
   @theme {
@@ -49,10 +49,10 @@
     --spacing-ku-lg: 24px;
     --spacing-ku-xl: 32px;
 
-    --font-ku-regular: 'NotoSansThai_400Regular';
-    --font-ku-medium: 'NotoSansThai_500Medium';
-    --font-ku-semibold: 'NotoSansThai_600SemiBold';
-    --font-ku-bold: 'NotoSansThai_700Bold';
+    --font-ku-regular: "NotoSansThai_400Regular";
+    --font-ku-medium: "NotoSansThai_500Medium";
+    --font-ku-semibold: "NotoSansThai_600SemiBold";
+    --font-ku-bold: "NotoSansThai_700Bold";
     --text-ku-display: 44px;
     --text-ku-display--line-height: 1.181818;
     --text-ku-display-small: 32px;

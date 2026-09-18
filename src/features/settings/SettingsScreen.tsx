@@ -123,11 +123,11 @@ export default function SettingsScreen() {
 
   return (
     <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
-      <View className="items-center flex-row h-[56px] px-[12px]">
+      <View className="h-[56px] flex-row items-center px-[12px]">
         <Pressable
           accessibilityLabel={messages.back}
           accessibilityRole="button"
-          className="items-center h-[48px] justify-center w-[48px]"
+          className="h-[48px] w-[48px] items-center justify-center"
           onPress={() => router.back()}
           testID="settings-back"
         >
@@ -135,7 +135,7 @@ export default function SettingsScreen() {
         </Pressable>
         <Text
           accessibilityRole="header"
-          className="text-ku-text-strong font-ku-bold text-ku-title-small ml-[4px]"
+          className="ml-[4px] font-ku-bold text-ku-title-small text-ku-text-strong"
         >
           {messages.title}
         </Text>
@@ -249,13 +249,13 @@ export default function SettingsScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ disabled: loggingOut }}
-            className="border-ku-danger items-center flex-row justify-center min-h-[52px] rounded-[16px] border px-[16px] active:bg-ku-danger/10"
+            className="min-h-[52px] flex-row items-center justify-center rounded-[16px] border border-ku-danger px-[16px] active:bg-ku-danger/10"
             disabled={loggingOut}
             onPress={logout}
             testID="settings-logout"
           >
             <LogOut color={colors.danger} size={20} strokeWidth={2} />
-            <Text className="text-ku-danger font-ku-semibold text-ku-control ml-[8px]">
+            <Text className="ml-[8px] font-ku-semibold text-ku-control text-ku-danger">
               {messages.logout}
             </Text>
           </Pressable>
@@ -277,20 +277,20 @@ export default function SettingsScreen() {
           />
           <View
             accessibilityViewIsModal
-            className="bg-white max-w-[420px] rounded-[20px] p-[20px] w-full"
+            className="w-full max-w-[420px] rounded-[20px] bg-white p-[20px]"
           >
             <Text
               accessibilityRole="header"
-              className="text-ku-text-strong font-ku-bold text-ku-title-small"
+              className="font-ku-bold text-ku-title-small text-ku-text-strong"
             >
               {messages.selectLanguage}
             </Text>
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ selected: locale === "th" }}
-              className={`items-center border flex-row justify-between min-h-[52px] mt-[16px] px-[16px] rounded-[14px] ${
+              className={`mt-[16px] min-h-[52px] flex-row items-center justify-between rounded-[14px] border px-[16px] ${
                 locale === "th"
-                  ? "bg-ku-primary/10 border-ku-primary"
+                  ? "border-ku-primary bg-ku-primary/10"
                   : "border-ku-border"
               }`}
               onPress={async () => {
@@ -299,7 +299,7 @@ export default function SettingsScreen() {
               }}
               testID="settings-language-th"
             >
-              <Text className="text-ku-text-strong font-ku-semibold text-ku-control">
+              <Text className="font-ku-semibold text-ku-control text-ku-text-strong">
                 {messages.thaiLanguage}
               </Text>
               {locale === "th" ? (
@@ -309,9 +309,9 @@ export default function SettingsScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ selected: locale === "en" }}
-              className={`items-center border flex-row justify-between min-h-[52px] mt-[8px] px-[16px] rounded-[14px] ${
+              className={`mt-[8px] min-h-[52px] flex-row items-center justify-between rounded-[14px] border px-[16px] ${
                 locale === "en"
-                  ? "bg-ku-primary/10 border-ku-primary"
+                  ? "border-ku-primary bg-ku-primary/10"
                   : "border-ku-border"
               }`}
               onPress={async () => {
@@ -320,7 +320,7 @@ export default function SettingsScreen() {
               }}
               testID="settings-language-en"
             >
-              <Text className="text-ku-text-strong font-ku-semibold text-ku-control">
+              <Text className="font-ku-semibold text-ku-control text-ku-text-strong">
                 {messages.englishLanguage}
               </Text>
               {locale === "en" ? (
@@ -329,11 +329,11 @@ export default function SettingsScreen() {
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              className="items-center justify-center min-h-[48px] mt-[12px] rounded-[14px] active:bg-ku-surface"
+              className="mt-[12px] min-h-[48px] items-center justify-center rounded-[14px] active:bg-ku-surface"
               onPress={() => setLanguageModalVisible(false)}
               testID="settings-language-modal-cancel"
             >
-              <Text className="text-ku-primary font-ku-semibold text-ku-control">
+              <Text className="font-ku-semibold text-ku-control text-ku-primary">
                 {messages.cancel}
               </Text>
             </Pressable>

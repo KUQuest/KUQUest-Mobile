@@ -28,8 +28,8 @@ export function QuestProofStatusCard({
   lockDescription,
 }: QuestProofStatusCardProps) {
   return (
-    <View className="bg-ku-card border-ku-border rounded-[18px] border mt-[16px] p-[16px]">
-      <View className="items-center flex-row">
+    <View className="mt-[16px] rounded-[18px] border border-ku-border bg-ku-card p-[16px]">
+      <View className="flex-row items-center">
         {icon === "approved" ? (
           <CheckCircle2 color={colors.success} size={22} />
         ) : icon === "not-approved" ? (
@@ -39,27 +39,27 @@ export function QuestProofStatusCard({
         ) : (
           <FileCheck2 color={colors.primary} size={22} />
         )}
-        <Text className="text-ku-text-strong font-ku-bold text-ku-subtitle ml-[8px]">
+        <Text className="ml-[8px] font-ku-bold text-ku-subtitle text-ku-text-strong">
           {label}
         </Text>
       </View>
       {description ? (
-        <Text className="text-ku-text-secondary text-ku-body-small mt-[12px]">
+        <Text className="mt-[12px] text-ku-body-small text-ku-text-secondary">
           {description}
         </Text>
       ) : null}
       {pendingDescription ? (
-        <Text className="text-ku-text-secondary text-ku-body-small mt-[10px]">
+        <Text className="mt-[10px] text-ku-body-small text-ku-text-secondary">
           {pendingDescription}
         </Text>
       ) : null}
       {terminalDescription ? (
-        <Text className="text-ku-text-secondary text-ku-body-small mt-[10px]">
+        <Text className="mt-[10px] text-ku-body-small text-ku-text-secondary">
           {terminalDescription}
         </Text>
       ) : null}
       {lockDescription ? (
-        <Text className="text-ku-text-secondary text-ku-body-small mt-[10px]">
+        <Text className="mt-[10px] text-ku-body-small text-ku-text-secondary">
           {lockDescription}
         </Text>
       ) : null}

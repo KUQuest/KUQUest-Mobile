@@ -163,10 +163,10 @@ export default function ChatConversationScreen({
           </Text>
           <Pressable
             accessibilityRole="button"
-            className="bg-ku-primary rounded-ku-pill mt-[16px] min-h-[48px] justify-center px-[20px]"
+            className="mt-[16px] min-h-[48px] justify-center rounded-ku-pill bg-ku-primary px-[20px]"
             onPress={() => router.replace("/chat")}
           >
-            <Text className="text-ku-white font-ku-semibold text-ku-body-small">
+            <Text className="font-ku-semibold text-ku-body-small text-ku-white">
               {messages.backToChat}
             </Text>
           </Pressable>
