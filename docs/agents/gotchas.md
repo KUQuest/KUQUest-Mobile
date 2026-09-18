@@ -11,6 +11,38 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 ## Entries
 
+### 2026-09-18 — Debug-build deep links use a different URI scheme than app.json
+
+**What happened**: `adb shell am start -a android.intent.action.VIEW -d "kuquestmobile://..."` (the scheme in `app.json`) never opened the target route on the dev-client build; it landed on unrelated default screens.
+
+**Root cause**: The debug build registers `kuquestmobile-debug://`, not `app.json`'s `"scheme": "kuquestmobile"`.
+
+**Rule**: Before deep-linking into a dev-client/debug build, confirm the registered scheme with `adb shell dumpsys package <applicationId> | grep -A3 "android.intent.action.VIEW"` rather than assuming the manifest value.
+
+### 2026-09-18 — `adb shell am force-stop` breaks the Metro connection on a dev-client app
+
+**What happened**: Force-stopping the app before a cold-start deep link caused a ~90 second freeze on the splash screen, traced to a lost Metro/dev-server websocket that only recovered after a retry backoff.
+
+**Root cause**: Force-stop kills the dev client's live Metro connection; reconnecting on cold start is slow and not guaranteed.
+
+**Rule**: Don't `force-stop` a running dev-client app as a debugging shortcut. Retry a deep link with a warm `adb shell am start -a android.intent.action.VIEW -d "<uri>" <applicationId>` against the already-running instance instead.
+
+### 2026-09-18 — A double-tap near the profile tab silently switches Hirer/Worker workspace
+
+**What happened**: During on-device automation, the app unexpectedly flipped from the Hirer to the Worker home screen with no tap on that control intended.
+
+**Root cause**: `BottomNav.tsx` treats two taps on the profile tab within 400ms as a request to call `switchWorkspace()`, toggling the persisted `RoleWorkspaceContext` workspace. Closely-timed automated taps near that control can misfire it.
+
+**Rule**: After any accidental double-tap near the profile tab during device automation, check which workspace is showing before continuing; recover with `switch-to-hirer-button` (on `WorkerHomeScreen`) or a deliberate `switchWorkspace("hirer")` path.
+
+### 2026-09-18 — `scroll`/`swipe` don't reliably page a horizontal paged carousel
+
+**What happened**: Repeated `scroll` and `swipe` tool calls against `hirer-quest-carousel` (a `pagingEnabled` horizontal `ScrollView`) appeared to not move it.
+
+**Root cause**: Those tools didn't carry enough velocity/travel to cross the carousel's snap threshold.
+
+**Rule**: Page a `pagingEnabled` horizontal `ScrollView` with the `gesture` tool, `kind: "fling"`, an explicit `origin` near the leading/trailing edge, and `distance: 900`.
+
 ### 2026-09-17 — Keep file recovery scoped to the current worktree
 
 **What happened**: A screen migration required repeated restoration after extraction artifacts changed tracked screens. One recovery attempt used `git show ... | sponge`, which could overwrite active edits.
