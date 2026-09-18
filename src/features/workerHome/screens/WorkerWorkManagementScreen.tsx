@@ -100,9 +100,7 @@ export default function WorkerWorkManagementScreen() {
       setHistoryQuests(history);
       setAppliedQuests(applied);
 
-      const questIds = [
-        ...new Set(allAssignments.map((item) => item.questId)),
-      ];
+      const questIds = [...new Set(allAssignments.map((item) => item.questId))];
       void Promise.allSettled(
         questIds.map(async (questId) => {
           const detail = await questApi.getParticipationDetail(questId);

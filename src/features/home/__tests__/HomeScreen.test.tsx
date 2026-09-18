@@ -31,11 +31,15 @@ jest.mock("@/api/QuestApi", () => ({
   },
 }));
 
-jest.mock("@/api/StudentApi", () => ({
-  studentApi: {
-    getPublicProfile: jest.fn(),
-  },
-}));
+jest.mock("@/api/StudentApi", () => {
+  const actual = jest.requireActual("@/api/StudentApi");
+  return {
+    ...actual,
+    studentApi: {
+      getPublicProfile: jest.fn(),
+    },
+  };
+});
 
 describe("HomeScreen live active quests syncing", () => {
   beforeEach(() => {
