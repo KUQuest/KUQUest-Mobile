@@ -2,7 +2,7 @@ import React from "react";
 import { cn } from "@/tw/cn";
 import { useColorScheme, useWindowDimensions } from "react-native";
 import { useAnimatedStyle, withTiming } from "react-native-reanimated";
-import { Pressable, Text, View } from "@/tw";
+import { Image, Pressable, Text, View } from "@/tw";
 import { Animated } from "@/tw/animated";
 import {
   BriefcaseBusiness,
@@ -10,7 +10,7 @@ import {
   LayoutDashboard,
   MessageSquare,
   Plus,
-  WalletCards,
+  Wallet,
 } from "lucide-react-native";
 import { useLocale } from "@/locales/LocaleProvider";
 import { navigationMessages } from "@/locales/navigationMessages";
@@ -18,6 +18,7 @@ import { getAppChromeMetrics } from "@/theme/layout";
 import { useNavigationVisibility } from "./NavigationVisibilityContext";
 import styles, { getBottomNavigationColors } from "./bottomNavStyles";
 import { useRoleWorkspace } from "./RoleWorkspaceContext";
+import { authService } from "@/features/auth/AuthService";
 
 type NavigationItem = {
   routeName: string;
@@ -46,7 +47,7 @@ export const hirerNavigationItems: readonly NavigationItem[] = [
     routeName: "money",
     labelKey: "money",
     shortLabelKey: "moneyShort",
-    icon: WalletCards,
+    icon: Wallet,
   },
   {
     routeName: "create",
@@ -80,7 +81,7 @@ export const workerNavigationItems: readonly NavigationItem[] = [
     routeName: "money",
     labelKey: "money",
     shortLabelKey: "moneyShort",
-    icon: WalletCards,
+    icon: Wallet,
   },
   {
     routeName: "my-quests",
@@ -124,6 +125,22 @@ export function BottomNav({
   const focusedRouteKey = state.routes[state.index]?.key;
   const { workspace, switchWorkspace } = useRoleWorkspace();
   const { navigationVisible, showNavigation } = useNavigationVisibility();
+  const [avatarUri, setAvatarUri] = React.useState<string | null>(null);
+  const lastProfilePressRef = React.useRef<number>(0);
+
+  React.useEffect(() => {
+    let active = true;
+    void authService
+      .getStudentApi()
+      .then((api) => api.getProfile())
+      .then((profile) => {
+        if (active) setAvatarUri(profile.avatar?.url ?? null);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
   const activeItems =
     workspace === "worker" ? workerNavigationItems : hirerNavigationItems;
   const shouldHide = !metrics.isTablet && !navigationVisible;
@@ -187,9 +204,20 @@ export function BottomNav({
           const options = descriptors[route.key]?.options;
           const label = messages[item.labelKey];
           const Icon = item.icon;
+          const isProfileTab = item.routeName === "profile";
 
           const onPress = () => {
             showNavigation();
+            if (isProfileTab) {
+              const now = Date.now();
+              if (now - lastProfilePressRef.current < 400) {
+                lastProfilePressRef.current = 0;
+                void switchWorkspace();
+                return;
+              }
+              lastProfilePressRef.current = now;
+            }
+
             const event = navigation.emit({
               type: "tabPress",
               target: route.key,
@@ -201,12 +229,11 @@ export function BottomNav({
             }
           };
 
-          const onLongPress =
-            item.routeName === "profile"
-              ? () => {
-                  void switchWorkspace();
-                }
-              : undefined;
+          const onLongPress = isProfileTab
+            ? () => {
+                void switchWorkspace();
+              }
+            : undefined;
           return (
             <Pressable
               key={route.key}
@@ -218,10 +245,10 @@ export function BottomNav({
               onPress={onPress}
               onLongPress={onLongPress}
               accessibilityHint={
-                item.routeName === "profile"
+                isProfileTab
                   ? locale === "th"
-                    ? "กดค้างเพื่อสลับพื้นที่ทำงาน"
-                    : "Long press to switch workspace"
+                    ? "แตะสองครั้งหรือกดค้างเพื่อสลับพื้นที่ทำงาน"
+                    : "Double tap or long press to switch workspace"
                   : undefined
               }
               className={cn(
@@ -237,24 +264,76 @@ export function BottomNav({
               <View
                 className={styles.iconSlot}
                 style={{
-                  height: metrics.createButtonSize,
-                  width: metrics.createButtonSize,
+                  height: Math.max(
+                    metrics.createButtonSize,
+                    metrics.iconSize + 10
+                  ),
+                  width: Math.max(
+                    metrics.createButtonSize,
+                    metrics.iconSize + 10
+                  ),
                 }}
               >
                 {item.isCreate ? (
                   <View
                     className={styles.createIcon}
                     style={{
-                      height: metrics.createButtonSize,
-                      width: metrics.createButtonSize,
+                      height: metrics.createButtonSize + 4,
+                      width: metrics.createButtonSize + 4,
                     }}
                   >
                     <Icon
                       color={navigationColors.white}
-                      size={metrics.createIconSize}
+                      size={metrics.createIconSize + 2}
                       strokeWidth={2.5}
                     />
                   </View>
+                ) : isProfileTab ? (
+                  avatarUri ? (
+                    <View
+                      className="overflow-hidden rounded-ku-pill"
+                      style={{
+                        height: metrics.iconSize + 8,
+                        width: metrics.iconSize + 8,
+                        borderWidth: isFocused ? 2 : 1.5,
+                        borderColor: isFocused
+                          ? navigationColors.primaryDeep
+                          : navigationColors.navIconMuted,
+                      }}
+                    >
+                      <Image
+                        accessibilityLabel={label}
+                        source={{ uri: avatarUri }}
+                        style={{ height: "100%", width: "100%" }}
+                        testID="tab-profile-avatar"
+                      />
+                    </View>
+                  ) : (
+                    <View
+                      className="items-center justify-center overflow-hidden rounded-ku-pill"
+                      style={{
+                        height: metrics.iconSize + 8,
+                        width: metrics.iconSize + 8,
+                        borderWidth: isFocused ? 2 : 1.5,
+                        borderColor: isFocused
+                          ? navigationColors.primaryDeep
+                          : navigationColors.navIconMuted,
+                        backgroundColor: isFocused
+                          ? navigationColors.primaryDeep
+                          : "transparent",
+                      }}
+                    >
+                      <CircleUserRound
+                        color={
+                          isFocused
+                            ? navigationColors.white
+                            : navigationColors.navIconMuted
+                        }
+                        size={metrics.iconSize + 2}
+                        strokeWidth={2.5}
+                      />
+                    </View>
+                  )
                 ) : (
                   <Icon
                     color={
@@ -262,24 +341,26 @@ export function BottomNav({
                         ? navigationColors.primaryDeep
                         : navigationColors.navIconMuted
                     }
-                    size={metrics.iconSize}
+                    size={metrics.iconSize + 4}
                     strokeWidth={2.5}
                   />
                 )}
               </View>
-              <Text
-                className={cn(styles.label, isFocused && styles.activeLabel)}
-                style={{
-                  fontSize: metrics.labelFontSize,
-                  includeFontPadding: false,
-                  lineHeight: metrics.labelLineHeight,
-                  color: isFocused
-                    ? navigationColors.primaryDeep
-                    : navigationColors.textSecondary,
-                }}
-              >
-                {messages[item.shortLabelKey]}
-              </Text>
+              {item.isCreate ? (
+                <Text
+                  className={cn(styles.label, isFocused && styles.activeLabel)}
+                  style={{
+                    fontSize: metrics.labelFontSize,
+                    includeFontPadding: false,
+                    lineHeight: metrics.labelLineHeight,
+                    color: isFocused
+                      ? navigationColors.primaryDeep
+                      : navigationColors.textSecondary,
+                  }}
+                >
+                  {messages[item.shortLabelKey]}
+                </Text>
+              ) : null}
               {!item.isCreate && isFocused ? (
                 <View
                   accessibilityLabel={`${label} selected`}

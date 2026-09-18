@@ -18,9 +18,9 @@ const styles = {
   conversationRow:
     "items-center bg-ku-white border-ku-border-accent rounded-[16px] border flex-row min-h-[88px] p-[12px] active:bg-ku-surface-muted",
   avatar:
-    "items-center rounded-ku-pill shrink-0 h-[48px] justify-center w-[48px]",
+    "items-center overflow-hidden rounded-ku-pill shrink-0 h-[48px] justify-center w-[48px]",
   avatarText: "text-ku-primary-deep font-ku-bold text-ku-body-small",
-  avatarSmall: "h-[36px] w-[36px]",
+  avatarSmall: "h-[36px] w-[36px] overflow-hidden rounded-ku-pill",
   avatarSmallText: "text-ku-primary-deep font-ku-bold text-ku-label",
   rowCopy: "flex-1 min-w-0 ml-[12px]",
   questTitle: "text-ku-text-strong font-ku-semibold text-ku-body-small",

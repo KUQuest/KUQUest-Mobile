@@ -22,12 +22,13 @@ import type {
   LocalizedText,
 } from "./chatTypes";
 import {
+  toDisplayMessage,
   type DisplayChatMessage,
   type PendingAttachmentItem,
   type RenderAttachment,
-  toDisplayMessage,
 } from "./ChatConversationPresentation";
 import { attachmentLinkCache } from "./attachmentLinkCache";
+import { enrichChatConversation } from "./chatProfile";
 import { useCalmRefresh } from "@/hooks/useCalmRefresh";
 import { useChatSocket, type ChatSocketEvent } from "./useChatSocket";
 
@@ -57,6 +58,7 @@ function candidateInquiryToChatConversation(
     id: inquiry.id,
     questId: inquiry.quest.id,
     questTitle: localizedTitle,
+    ...(otherParticipant?.id ? { participantId: otherParticipant.id } : {}),
     participantName: otherParticipant?.displayName ?? inquiry.quest.title,
     participantRole: otherParticipant?.role === "HIRER" ? "owner" : "member",
     initials: (otherParticipant?.displayName ?? inquiry.quest.title)
@@ -188,9 +190,11 @@ export function useChatConversationController(
           });
           return null;
         }
-        const candidate = candidateInquiryToChatConversation(
-          { ...inquiry, participants },
-          viewerId
+        const candidate = await enrichChatConversation(
+          candidateInquiryToChatConversation(
+            { ...inquiry, participants },
+            viewerId
+          )
         );
         const displayMessages = messagePage.items.map((message) =>
           toDisplayMessage(message, viewerId)
@@ -257,8 +261,9 @@ export function useChatConversationController(
         TERMINAL_QUEST_STATES[liveSnapshot.state] === true
           ? "TERMINAL"
           : undefined;
-      const workChat: ChatConversation = {
+      const workChat = await enrichChatConversation({
         ...converted,
+        ...(otherParticipant?.id ? { participantId: otherParticipant.id } : {}),
         participantName:
           otherParticipant?.displayName ?? converted.participantName,
         participantRole:
@@ -273,7 +278,7 @@ export function useChatConversationController(
           readOnly: !canWrite,
           ...(readOnlyReason ? { readOnlyReason } : {}),
         },
-      };
+      });
       const displayMessages = messagePage.items.map((message) =>
         toDisplayMessage(message, viewerId)
       );

@@ -6,6 +6,8 @@ import {
   navigationItems,
   workerNavigationItems,
 } from "../BottomNav";
+import { authService } from "@/features/auth/AuthService";
+import * as SecureStore from "expo-secure-store";
 import { RoleWorkspaceProvider } from "../RoleWorkspaceContext";
 import styles from "../bottomNavStyles";
 import { navigationMessages } from "../../../locales/navigationMessages";
@@ -21,6 +23,7 @@ jest.mock("lucide-react-native", () => ({
   LayoutDashboard: () => null,
   MessageSquare: () => null,
   Plus: () => null,
+  Wallet: () => null,
   WalletCards: () => null,
 }));
 
@@ -220,5 +223,127 @@ describe("authenticated primary navigation", () => {
     expect(view.getByTestId("tab-money")).toBeTruthy();
     expect(view.getByTestId("tab-chat")).toBeTruthy();
     expect(view.getByTestId("tab-profile")).toBeTruthy();
+  });
+
+  it("renders text only for primary action (Create / Work Management) and omits text for all other tabs", async () => {
+    const routes = navigationItems.map((item) => ({
+      key: `${item.routeName}-key`,
+      name: item.routeName,
+    }));
+    const view = await render(
+      React.createElement(BottomNav, {
+        state: { index: 0, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate: jest.fn(),
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
+    );
+
+    // Primary button has text
+    expect(view.getByText("Create Quest")).toBeTruthy();
+    // Other tabs do NOT have visible text
+    expect(view.queryByText("Home")).toBeNull();
+    expect(view.queryByText("Money")).toBeNull();
+    expect(view.queryByText("Chat")).toBeNull();
+    expect(view.queryByText("Profile")).toBeNull();
+    // But all tabs maintain accessibility labels
+    expect(view.getByLabelText("Home")).toBeTruthy();
+    expect(view.getByLabelText("Money")).toBeTruthy();
+    expect(view.getByLabelText("Chat")).toBeTruthy();
+    expect(view.getByLabelText("Profile")).toBeTruthy();
+  });
+
+  it("renders the app profile avatar instead of the Google session avatar", async () => {
+    jest.spyOn(authService, "getSession").mockResolvedValueOnce({
+      user: {
+        id: "user-123",
+        name: "Test User",
+        email: "test@ku.th",
+        emailVerified: true,
+        firstName: "Test",
+        lastName: "User",
+        image: "https://accounts.google.com/google-avatar.png",
+        createdAt: "2026-01-01T00:00:00Z",
+        updatedAt: "2026-01-01T00:00:00Z",
+      },
+    });
+    const getProfile = jest.fn().mockResolvedValue({
+      avatar: {
+        fileId: "profile-avatar-1",
+        url: "https://cdn.example.com/profile-avatar.png",
+      },
+    });
+    jest
+      .spyOn(authService, "getStudentApi")
+      .mockResolvedValueOnce({ getProfile } as never);
+
+    const routes = navigationItems.map((item) => ({
+      key: `${item.routeName}-key`,
+      name: item.routeName,
+    }));
+    const view = await render(
+      React.createElement(BottomNav, {
+        state: { index: 0, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate: jest.fn(),
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
+    );
+
+    const avatar = await view.findByTestId("tab-profile-avatar");
+    expect(avatar.props.source).toEqual([
+      { uri: "https://cdn.example.com/profile-avatar.png" },
+    ]);
+    expect(getProfile).toHaveBeenCalledTimes(1);
+  });
+
+  it("switches role workspace on double-tap of the profile tab", async () => {
+    const routes = navigationItems.map((item) => ({
+      key: `${item.routeName}-key`,
+      name: item.routeName,
+    }));
+    const navigate = jest.fn();
+    const setItemSpy = jest.spyOn(SecureStore, "setItemAsync");
+
+    const view = await render(
+      React.createElement(
+        RoleWorkspaceProvider,
+        { initialWorkspace: "hirer" },
+        React.createElement(BottomNav, {
+          state: { index: 0, routes } as never,
+          descriptors: Object.fromEntries(
+            routes.map((route) => [route.key, { options: {} }])
+          ) as never,
+          navigation: {
+            emit: jest.fn(() => ({ defaultPrevented: false })),
+            navigate,
+          } as never,
+          insets: { top: 0, right: 0, bottom: 0, left: 0 },
+        })
+      )
+    );
+
+    const profileTab = view.getByTestId("tab-profile");
+
+    // First tap -> navigates to profile
+    await fireEvent.press(profileTab);
+    expect(navigate).toHaveBeenCalledWith("profile", undefined);
+
+    // Second tap immediately -> switches workspace
+    await fireEvent.press(profileTab);
+    expect(setItemSpy).toHaveBeenCalledWith(
+      "kuquest_active_workspace",
+      "worker"
+    );
   });
 });
