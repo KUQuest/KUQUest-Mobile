@@ -285,9 +285,9 @@ export const workerHomeStyles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  // Feed Card (Quest A, Quest B)
+  // Quest Board feed cards
   feedCard: {
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     padding: 16,
   },
@@ -295,12 +295,43 @@ export const workerHomeStyles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 8,
+    gap: 12,
+  },
+  feedCardIdentity: {
+    flex: 1,
+    minWidth: 0,
+  },
+  feedCardTitle: {
+    fontFamily: fontFamily.semiBold,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  feedCardOwner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 8,
+  },
+  feedCardOwnerText: {
+    flex: 1,
+    fontFamily: fontFamily.regular,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  feedRewardBlock: {
+    alignItems: "flex-end",
+    minWidth: 80,
   },
   feedRewardText: {
     fontFamily: fontFamily.bold,
-    fontSize: 17,
+    fontSize: 18,
     lineHeight: 24,
+  },
+  feedRewardUnit: {
+    fontFamily: fontFamily.regular,
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: 1,
   },
   tagChip: {
     borderRadius: 6,
@@ -313,6 +344,37 @@ export const workerHomeStyles = StyleSheet.create({
     fontFamily: fontFamily.medium,
     fontSize: 11,
     lineHeight: 15,
+  },
+  feedMetaGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginTop: 16,
+  },
+  feedMetaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    maxWidth: "100%",
+  },
+  feedMetaText: {
+    flexShrink: 1,
+    fontFamily: fontFamily.medium,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  feedCardFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    marginTop: 14,
+    paddingTop: 12,
+  },
+  feedCardFooterText: {
+    fontFamily: fontFamily.semiBold,
+    fontSize: 13,
+    lineHeight: 18,
   },
 
   // Empty state

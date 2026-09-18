@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -17,6 +23,7 @@ import { questApi, type TagItem } from "@/api/QuestApi";
 import type {
   QuestV2Assignment,
   QuestV2BoardCard,
+  QuestV2ParticipationDetail,
 } from "@/api/questV2Contracts";
 import { useLocale } from "@/locales/LocaleProvider";
 import { getThemeColors } from "@/theme/colors";
@@ -44,20 +51,30 @@ export default function WorkerHomeScreen() {
   const [activeAssignments, setActiveAssignments] = useState<
     QuestV2Assignment[]
   >([]);
+  const [activeQuestDetail, setActiveQuestDetail] =
+    useState<QuestV2ParticipationDetail | null>(null);
   const [availableQuests, setAvailableQuests] = useState<QuestV2BoardCard[]>(
     []
   );
   const [tags, setTags] = useState<TagItem[]>([]);
+  const activeQuestDetailCache = useRef<
+    Record<string, QuestV2ParticipationDetail>
+  >({});
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<boolean>(false);
 
-  // Active ongoing quest for Grab-like floating bar
+  // Show the quick-access bar for assigned and in-progress work.
   const activeOngoingAssignment = useMemo(() => {
     return (
-      activeAssignments.find((a) => a.state === "ASSIGNMENT_ACTIVE") ?? null
+      activeAssignments.find(
+        (assignment) =>
+          assignment.state === "ASSIGNMENT_ACTIVE" &&
+          (assignment.questState === "QUEST_ASSIGNED" ||
+            assignment.questState === "QUEST_IN_PROGRESS")
+      ) ?? null
     );
   }, [activeAssignments]);
 
@@ -80,7 +97,34 @@ export default function WorkerHomeScreen() {
           ]);
 
         if (activeResult.status === "fulfilled") {
-          setActiveAssignments(activeResult.value);
+          const assignments = activeResult.value;
+          setActiveAssignments(assignments);
+          const currentAssignment = assignments.find(
+            (assignment) =>
+              assignment.state === "ASSIGNMENT_ACTIVE" &&
+              (assignment.questState === "QUEST_ASSIGNED" ||
+                assignment.questState === "QUEST_IN_PROGRESS")
+          );
+          if (currentAssignment) {
+            const cachedDetail =
+              activeQuestDetailCache.current[currentAssignment.questId];
+            if (cachedDetail) {
+              setActiveQuestDetail(cachedDetail);
+            } else {
+              try {
+                const detail = await questApi.getParticipationDetail(
+                  currentAssignment.questId
+                );
+                activeQuestDetailCache.current[currentAssignment.questId] =
+                  detail;
+                setActiveQuestDetail(detail);
+              } catch {
+                setActiveQuestDetail(null);
+              }
+            }
+          } else {
+            setActiveQuestDetail(null);
+          }
         }
         if (boardResult.status === "fulfilled") {
           setAvailableQuests(boardResult.value.items);
@@ -286,6 +330,22 @@ export default function WorkerHomeScreen() {
             </View>
           ) : null}
 
+          <View style={styles.sectionHeader}>
+            <Text
+              style={[styles.sectionTitle, { color: themeColors.textStrong }]}
+            >
+              {messages.feedSectionTitle}
+            </Text>
+            <Text
+              style={[
+                styles.sectionSubtitle,
+                { color: themeColors.textSecondary },
+              ]}
+            >
+              {messages.feedSectionSubtitle}
+            </Text>
+          </View>
+
           {/* Quests from Quest Board */}
           {loading && availableQuests.length === 0 ? (
             <View style={{ paddingVertical: 40, alignItems: "center" }}>
@@ -344,18 +404,16 @@ export default function WorkerHomeScreen() {
         </View>
       </ScrollView>
 
-      {/* Grab-like Quick Access Floating Bar: (only pops up if quest that user accepted is going on) */}
       <WorkerQuickAccessBar
         assignment={activeOngoingAssignment}
         bottomInset={bottomNavInset}
         onPress={() => {
-          if (activeOngoingAssignment) {
-            router.push({
-              pathname: "/quest/[id]/proof",
-              params: { id: activeOngoingAssignment.questId },
-            });
-          }
+          router.push("/my-quests");
         }}
+        questState={
+          activeQuestDetail?.state ?? activeOngoingAssignment?.questState
+        }
+        questTitle={activeQuestDetail?.title}
       />
     </ScreenLayout>
   );

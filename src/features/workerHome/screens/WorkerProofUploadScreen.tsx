@@ -125,9 +125,16 @@ export default function WorkerProofUploadScreen({
     setSelectedImage(null);
   };
 
+  const isProofRequired = snapshot?.proofRequired !== false;
+
+  // The server capability projection is the source of truth for the start gate.
+  const canSubmitAction = isProofRequired
+    ? snapshot?.capabilities.canSubmitProof === true
+    : snapshot?.capabilities.canConfirmCompletion === true;
+
   // Case A: Doesn't require proof -> just end the quest (complete)
   const handleConfirmCompletionDirectly = async () => {
-    if (!resolvedQuestId || submitting) return;
+    if (!resolvedQuestId || submitting || !canSubmitAction) return;
     setSubmitting(true);
     setError(undefined);
     try {
@@ -157,10 +164,9 @@ export default function WorkerProofUploadScreen({
       setSubmitting(false);
     }
   };
-
   // Case B: Requires proof -> upload image & submit
   const handleSubmitProof = async () => {
-    if (!resolvedQuestId || submitting) return;
+    if (!resolvedQuestId || submitting || !canSubmitAction) return;
     if (!selectedImage) {
       Alert.alert(messages.errorTitle, messages.imageRequiredAlert);
       return;
@@ -209,8 +215,6 @@ export default function WorkerProofUploadScreen({
     }
   };
 
-  const isProofRequired = snapshot?.proofRequired !== false;
-
   return (
     <ScreenLayout edges={["top", "left", "right"]} className="bg-ku-background">
       <TopBar onBackPress={() => router.back()} title={messages.workTitle} />
@@ -253,16 +257,6 @@ export default function WorkerProofUploadScreen({
                 }}
               >
                 {snapshot.quest.title}
-              </Text>
-              <Text
-                style={{
-                  fontFamily: fontFamily.regular,
-                  fontSize: 13,
-                  color: themeColors.textSecondary,
-                  marginTop: 4,
-                }}
-              >
-                Quest #{resolvedQuestId?.slice(0, 8)}
               </Text>
             </View>
           ) : null}
@@ -321,11 +315,25 @@ export default function WorkerProofUploadScreen({
               >
                 {messages.confirmCompleteDesc}
               </Text>
+              {!canSubmitAction ? (
+                <Text
+                  style={{
+                    color: themeColors.textSecondary,
+                    fontFamily: fontFamily.medium,
+                    fontSize: 13,
+                    marginTop: 10,
+                    textAlign: "center",
+                  }}
+                  testID="worker-submit-locked-hint"
+                >
+                  {messages.submitLockedUntilStart}
+                </Text>
+              ) : null}
 
               <Pressable
                 accessibilityLabel={messages.completeQuestDirectly}
                 accessibilityRole="button"
-                disabled={submitting}
+                disabled={submitting || !canSubmitAction}
                 onPress={handleConfirmCompletionDirectly}
                 style={{
                   backgroundColor: themeColors.primaryDeep,
@@ -335,7 +343,7 @@ export default function WorkerProofUploadScreen({
                   alignItems: "center",
                   marginTop: 24,
                   minHeight: 48,
-                  opacity: submitting ? 0.6 : 1,
+                  opacity: submitting || !canSubmitAction ? 0.6 : 1,
                 }}
                 testID="worker-direct-complete-button"
               >
@@ -357,6 +365,19 @@ export default function WorkerProofUploadScreen({
           ) : (
             /* Case B: Requires proof -> "+ Image upload" & "Submit" */
             <View testID="worker-proof-required-section">
+              {!canSubmitAction ? (
+                <Text
+                  style={{
+                    color: themeColors.textSecondary,
+                    fontFamily: fontFamily.medium,
+                    fontSize: 13,
+                    marginBottom: 14,
+                  }}
+                  testID="worker-submit-locked-hint"
+                >
+                  {messages.submitLockedUntilStart}
+                </Text>
+              ) : null}
               {/* Image Upload Box as in sketch */}
               <View style={{ marginBottom: 16 }}>
                 {!selectedImage ? (
@@ -518,7 +539,7 @@ export default function WorkerProofUploadScreen({
               <Pressable
                 accessibilityLabel={messages.submitWork}
                 accessibilityRole="button"
-                disabled={submitting || !selectedImage}
+                disabled={submitting || !selectedImage || !canSubmitAction}
                 onPress={handleSubmitProof}
                 style={{
                   backgroundColor: themeColors.primaryDeep,
@@ -527,7 +548,8 @@ export default function WorkerProofUploadScreen({
                   alignItems: "center",
                   justifyContent: "center",
                   minHeight: 50,
-                  opacity: submitting || !selectedImage ? 0.5 : 1,
+                  opacity:
+                    submitting || !selectedImage || !canSubmitAction ? 0.5 : 1,
                 }}
                 testID="worker-proof-submit-button"
               >

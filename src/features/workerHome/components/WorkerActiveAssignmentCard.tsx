@@ -12,11 +12,13 @@ import { workerHomeStyles as styles } from "../workerHomeStyles";
 
 interface WorkerActiveAssignmentCardProps {
   assignment: QuestV2Assignment;
+  title?: string;
   onPress?: () => void;
 }
 
 export function WorkerActiveAssignmentCard({
   assignment,
+  title,
   onPress,
 }: WorkerActiveAssignmentCardProps) {
   const router = useRouter();
@@ -24,6 +26,7 @@ export function WorkerActiveAssignmentCard({
   const themeColors = getThemeColors(colorScheme);
   const { locale } = useLocale();
   const messages = workerHomeMessages[locale];
+  const questTitle = title ?? messages.workTitle;
 
   const handlePress = () => {
     if (onPress) {
@@ -89,7 +92,7 @@ export function WorkerActiveAssignmentCard({
             numberOfLines={1}
             style={[styles.cardTitle, { color: themeColors.textStrong }]}
           >
-            Quest #{assignment.questId.slice(0, 8)}
+            {questTitle}
           </Text>
         </View>
         <View
@@ -117,9 +120,8 @@ export function WorkerActiveAssignmentCard({
           </Text>
         </View>
       </View>
-
       <Pressable
-        accessibilityLabel={`${messages.viewWork} Quest ${assignment.questId.slice(0, 8)}`}
+        accessibilityLabel={`${messages.viewWork}: ${questTitle}`}
         accessibilityRole="button"
         onPress={handlePress}
         style={[

@@ -1,11 +1,18 @@
 import React from "react";
 import { useColorScheme } from "react-native";
 import { useRouter } from "expo-router";
-import { MapPin, UserRound, Users } from "lucide-react-native";
+import {
+  CalendarDays,
+  ChevronRight,
+  Clock3,
+  MapPin,
+  UserRound,
+  Users,
+} from "lucide-react-native";
 
 import { Pressable, Text, View } from "@/tw";
 import type { QuestV2BoardCard } from "@/api/questV2Contracts";
-import { formatSatang } from "@/domain/satang";
+import { SATANG_PER_BAHT, formatSatang } from "@/domain/satang";
 import { useLocale } from "@/locales/LocaleProvider";
 import { getThemeColors } from "@/theme/colors";
 import { workerHomeMessages } from "../workerHomeMessages";
@@ -14,6 +21,25 @@ import { workerHomeStyles as styles } from "../workerHomeStyles";
 interface WorkerQuestFeedCardProps {
   quest: QuestV2BoardCard;
   onPress?: () => void;
+}
+
+function formatQuestDate(value: string, locale: "en" | "th"): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat(
+    locale === "th" ? "th-TH-u-ca-buddhist" : "en-GB",
+    { day: "numeric", month: "short", timeZone: "Asia/Bangkok" }
+  ).format(date);
+}
+
+function formatQuestTime(value: string, locale: "en" | "th"): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Bangkok",
+  }).format(date);
 }
 
 export function WorkerQuestFeedCard({
@@ -37,8 +63,11 @@ export function WorkerQuestFeedCard({
     });
   };
 
+  // Quest V2 board rewards are Baht; formatSatang requires integer Satang.
+  const rewardSatang = Math.round(quest.questReward * SATANG_PER_BAHT);
   const rewardFormatted =
-    quest.questReward > 0 ? formatSatang(quest.questReward) : "—";
+    rewardSatang > 0 ? formatSatang(rewardSatang, locale) : "—";
+  const location = quest.location ?? messages.online;
 
   return (
     <Pressable
@@ -55,7 +84,7 @@ export function WorkerQuestFeedCard({
       testID={`worker-feed-card-${quest.id}`}
     >
       <View style={styles.feedCardTop}>
-        <View style={{ flex: 1, marginRight: 8 }}>
+        <View style={styles.feedCardIdentity}>
           {quest.tag?.name ? (
             <View
               style={[
@@ -72,57 +101,98 @@ export function WorkerQuestFeedCard({
           ) : null}
           <Text
             numberOfLines={2}
-            style={[styles.cardTitle, { color: themeColors.textStrong }]}
+            style={[styles.feedCardTitle, { color: themeColors.textStrong }]}
           >
             {quest.title}
           </Text>
-        </View>
-        <Text
-          style={[styles.feedRewardText, { color: themeColors.primaryDeep }]}
-        >
-          {rewardFormatted}
-        </Text>
-      </View>
-
-      <View style={styles.cardMetaRow}>
-        {quest.hirerName ? (
-          <View style={styles.cardMetaItem}>
+          <View style={styles.feedCardOwner}>
             <UserRound size={13} color={themeColors.textSecondary} />
             <Text
               numberOfLines={1}
               style={[
-                styles.cardMetaText,
+                styles.feedCardOwnerText,
                 { color: themeColors.textSecondary },
               ]}
             >
               {quest.hirerName}
             </Text>
           </View>
-        ) : null}
-
-        {quest.location ? (
-          <View style={styles.cardMetaItem}>
-            <MapPin size={13} color={themeColors.textSecondary} />
-            <Text
-              numberOfLines={1}
-              style={[
-                styles.cardMetaText,
-                { color: themeColors.textSecondary },
-              ]}
-            >
-              {quest.location}
-            </Text>
-          </View>
-        ) : null}
-
-        <View style={styles.cardMetaItem}>
-          <Users size={13} color={themeColors.textSecondary} />
+        </View>
+        <View style={styles.feedRewardBlock}>
           <Text
-            style={[styles.cardMetaText, { color: themeColors.textSecondary }]}
+            style={[styles.feedRewardText, { color: themeColors.primaryDeep }]}
           >
-            {quest.headcount}
+            {rewardFormatted}
+          </Text>
+          <Text
+            style={[
+              styles.feedRewardUnit,
+              { color: themeColors.textSecondary },
+            ]}
+          >
+            {messages.perPerson}
           </Text>
         </View>
+      </View>
+
+      <View style={styles.feedMetaGrid}>
+        <View style={styles.feedMetaItem}>
+          <CalendarDays size={15} color={themeColors.primaryDeep} />
+          <Text
+            numberOfLines={1}
+            style={[styles.feedMetaText, { color: themeColors.textStrong }]}
+          >
+            {formatQuestDate(quest.startTime, locale)}
+          </Text>
+        </View>
+        <View style={styles.feedMetaItem}>
+          <Clock3 size={15} color={themeColors.primaryDeep} />
+          <Text
+            numberOfLines={1}
+            style={[styles.feedMetaText, { color: themeColors.textStrong }]}
+          >
+            {formatQuestTime(quest.startTime, locale)}
+          </Text>
+        </View>
+        <View style={styles.feedMetaItem}>
+          <MapPin size={15} color={themeColors.primaryDeep} />
+          <Text
+            numberOfLines={1}
+            style={[styles.feedMetaText, { color: themeColors.textStrong }]}
+          >
+            {location}
+          </Text>
+        </View>
+        <View style={styles.feedMetaItem}>
+          <Users size={15} color={themeColors.primaryDeep} />
+          <Text
+            numberOfLines={1}
+            style={[styles.feedMetaText, { color: themeColors.textStrong }]}
+          >
+            {`${quest.activeWorkerCount}/${quest.headcount}`}
+          </Text>
+        </View>
+      </View>
+
+      <View
+        style={[
+          styles.feedCardFooter,
+          { borderTopColor: themeColors.borderSubtle },
+        ]}
+      >
+        <Text
+          style={[
+            styles.feedCardFooterText,
+            { color: themeColors.primaryDeep },
+          ]}
+        >
+          {messages.viewDetails}
+        </Text>
+        <ChevronRight
+          color={themeColors.primaryDeep}
+          size={18}
+          strokeWidth={2.2}
+        />
       </View>
     </Pressable>
   );
