@@ -1,0 +1,198 @@
+import React from "react";
+import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { questApi } from "@/api/QuestApi";
+import WorkerHomeScreen from "../WorkerHomeScreen";
+
+const mockPush = jest.fn();
+const mockSwitchWorkspace = jest.fn();
+
+jest.mock("expo-router", () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
+jest.mock("@/locales/LocaleProvider", () => ({
+  useLocale: () => ({ locale: "en" }),
+}));
+
+jest.mock("@/components/navigation/RoleWorkspaceContext", () => ({
+  useRoleWorkspace: () => ({
+    workspace: "worker",
+    isWorker: true,
+    isHirer: false,
+    switchWorkspace: mockSwitchWorkspace,
+    setWorkspace: jest.fn(),
+  }),
+}));
+
+jest.mock("@/api/QuestApi", () => ({
+  questApi: {
+    listMyAssignments: jest.fn(),
+    listBoard: jest.fn(),
+    listTags: jest.fn(),
+  },
+}));
+
+describe("WorkerHomeScreen", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (questApi.listMyAssignments as jest.Mock).mockResolvedValue([]);
+    (questApi.listBoard as jest.Mock).mockResolvedValue({
+      items: [],
+      nextCursor: null,
+    });
+    (questApi.listTags as jest.Mock).mockResolvedValue([
+      { id: "tag-1", name: "Printing" },
+      { id: "tag-2", name: "Design" },
+    ]);
+  });
+
+  it("renders the header with Work title and Worker badge", async () => {
+    const view = await render(<WorkerHomeScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("worker-home-title")).toBeTruthy();
+      expect(view.getByTestId("worker-workspace-badge")).toBeTruthy();
+    });
+
+    expect(view.getByText("Work")).toBeTruthy();
+    expect(view.getByText("Worker")).toBeTruthy();
+  });
+
+  it("renders the search bar and quick tag filters", async () => {
+    const view = await render(<WorkerHomeScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("worker-quest-search-input")).toBeTruthy();
+      expect(view.getByTestId("tag-pill-all")).toBeTruthy();
+      expect(view.getByTestId("tag-pill-tag-1")).toBeTruthy();
+      expect(view.getByTestId("tag-pill-tag-2")).toBeTruthy();
+    });
+
+    expect(view.getByText("Printing")).toBeTruthy();
+    expect(view.getByText("Design")).toBeTruthy();
+  });
+
+  it("queries the board with search text when typing in search input", async () => {
+    const view = await render(<WorkerHomeScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("worker-quest-search-input")).toBeTruthy();
+    });
+
+    fireEvent.changeText(
+      view.getByTestId("worker-quest-search-input"),
+      "poster"
+    );
+
+    await waitFor(() => {
+      expect(questApi.listBoard).toHaveBeenCalledWith(
+        expect.objectContaining({ q: "poster" })
+      );
+    });
+  });
+
+  it("queries the board with tagId when a quick tag pill is pressed", async () => {
+    const view = await render(<WorkerHomeScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("tag-pill-tag-1")).toBeTruthy();
+    });
+
+    fireEvent.press(view.getByTestId("tag-pill-tag-1"));
+
+    await waitFor(() => {
+      expect(questApi.listBoard).toHaveBeenCalledWith(
+        expect.objectContaining({ tagId: "tag-1" })
+      );
+    });
+  });
+
+  it("renders quest board cards and navigates to quest details on press", async () => {
+    (questApi.listBoard as jest.Mock).mockResolvedValue({
+      items: [
+        {
+          id: "quest-100",
+          title: "Library Book Scanning",
+          questReward: 25000,
+          tag: { id: "tag-1", name: "Campus" },
+          mode: "FIRST_COME_FIRST_SERVED",
+          participation: "SINGLE",
+          headcount: 1,
+          activeWorkerCount: 0,
+          startTime: "2026-09-18T12:00:00Z",
+          dueAt: "2026-09-19T12:00:00Z",
+          hirerName: "Prof. Somchai",
+          location: "Main Library",
+        },
+      ],
+      nextCursor: null,
+    });
+
+    const view = await render(<WorkerHomeScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("worker-feed-card-quest-100")).toBeTruthy();
+      expect(view.getByText("Library Book Scanning")).toBeTruthy();
+      expect(view.getByText("฿250")).toBeTruthy();
+    });
+
+    fireEvent.press(view.getByTestId("worker-feed-card-quest-100"));
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]",
+      params: { id: "quest-100" },
+    });
+  });
+
+  it("does NOT show Grab-like quick access bar when user has no active assignment", async () => {
+    (questApi.listMyAssignments as jest.Mock).mockResolvedValue([]);
+
+    const view = await render(<WorkerHomeScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("worker-home-title")).toBeTruthy();
+    });
+
+    expect(view.queryByTestId("worker-quick-access-bar")).toBeNull();
+  });
+
+  it("shows Grab-like quick access bar when user has an active ongoing quest, and navigates on press", async () => {
+    (questApi.listMyAssignments as jest.Mock).mockResolvedValue([
+      {
+        id: "assign-active-1",
+        questId: "quest-active-12345678",
+        workerId: "worker-1",
+        state: "ASSIGNMENT_ACTIVE",
+        questState: "QUEST_IN_PROGRESS",
+        startedAt: "2026-09-18T10:00:00Z",
+        createdAt: "2026-09-18T09:00:00Z",
+      },
+    ]);
+
+    const view = await render(<WorkerHomeScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("worker-quick-access-bar")).toBeTruthy();
+      expect(view.getByText("Working in progress")).toBeTruthy();
+    });
+
+    fireEvent.press(view.getByTestId("worker-quick-access-bar"));
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]/proof",
+      params: { id: "quest-active-12345678" },
+    });
+  });
+
+  it("calls switchWorkspace when Switch to Hirer is pressed", async () => {
+    const view = await render(<WorkerHomeScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("switch-to-hirer-button")).toBeTruthy();
+    });
+
+    fireEvent.press(view.getByTestId("switch-to-hirer-button"));
+
+    expect(mockSwitchWorkspace).toHaveBeenCalledWith("hirer");
+  });
+});

@@ -68,6 +68,7 @@ The route tree currently has no dedicated route file for Sent Work, Candidate In
 - `settings/` — account/settings/help/preferences surface.
 - `report/` — Report form, categories, validation and submit state.
 - `home/` — home composition where used by the route shell.
+- `workerHome/` — Worker Workspace Home screen with real assignment and board endpoints, quick stats, and available quests feed.
 - `wallet/` — four-compartment wallet overview (spending, earnings, funding reserved, payout reserve), Top-up quote and payment flow, transaction history modal, `walletModule.ts` Top-up and Earnings Conversion rules.
 - `roleplay/` — development-only Roleplay prototype screen, prototype persona switching, four quest fixture scenarios, mock view-model store, candidate/team/consent actions dispatched through the questBoard fixture adapter.
 

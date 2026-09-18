@@ -83,24 +83,58 @@ export function ChatAvatar({
   initials,
   color,
   name,
+  profileId,
+  avatarUrl,
+  avatarFileId,
+  onPress,
   small = false,
 }: {
   initials: string;
   color: string;
   name: string;
+  profileId?: string;
+  avatarUrl?: string;
+  avatarFileId?: string;
+  onPress?: () => void;
   small?: boolean;
 }) {
-  return (
+  const avatar = (
     <View
-      accessible
+      accessible={!onPress}
       accessibilityLabel={name}
       className={cn(styles.avatar, small && styles.avatarSmall)}
       style={{ backgroundColor: color }}
     >
-      <Text className={small ? styles.avatarSmallText : styles.avatarText}>
-        {initials}
-      </Text>
+      {avatarUrl ? (
+        <Image
+          accessibilityLabel={name}
+          source={
+            avatarFileId
+              ? { uri: avatarUrl, cacheKey: avatarFileId }
+              : { uri: avatarUrl }
+          }
+          cachePolicy="memory-disk"
+          contentFit="cover"
+          style={{ height: "100%", width: "100%" }}
+          testID={`chat-avatar-image-${profileId ?? name}`}
+        />
+      ) : (
+        <Text className={small ? styles.avatarSmallText : styles.avatarText}>
+          {initials}
+        </Text>
+      )}
     </View>
+  );
+  if (!onPress) return avatar;
+  return (
+    <Pressable
+      accessibilityLabel={`View profile of ${name}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      testID={`chat-avatar-${profileId ?? name}`}
+    >
+      {avatar}
+    </Pressable>
   );
 }
 
@@ -246,6 +280,7 @@ export function MessageBubble({
   messages,
   onFilePress,
   onImagePress = () => undefined,
+  onProfilePress,
   isCandidateInquiry = false,
 }: {
   message: DisplayChatMessage;
@@ -254,6 +289,7 @@ export function MessageBubble({
   messages: ChatMessages;
   onFilePress: (attachment: RenderAttachment) => void;
   onImagePress?: (url: string, name: string) => void;
+  onProfilePress?: () => void;
   isCandidateInquiry?: boolean;
 }) {
   const mine = message.sender === "me";
@@ -265,6 +301,10 @@ export function MessageBubble({
           initials={conversation.initials}
           color={conversation.avatarColor}
           name={conversation.participantName}
+          profileId={conversation.participantId}
+          avatarUrl={conversation.participantAvatarUrl}
+          avatarFileId={conversation.participantAvatarFileId}
+          onPress={onProfilePress}
           small
         />
       ) : null}

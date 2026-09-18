@@ -42,6 +42,7 @@ import type { ConversationMode } from "./useChatConversationController";
 
 export {
   AttachmentRow,
+  ChatAvatar,
   InlineImageAttachment,
   MessageBubble,
   PendingAttachmentsBar,
@@ -100,6 +101,9 @@ export default function ChatConversationScreen({
     handleImagePress,
     openFile,
   } = controller;
+  const openParticipantProfile = conversation?.participantId
+    ? () => router.push(`/profile/${conversation.participantId}`)
+    : undefined;
 
   if (conversationPending) {
     return (
@@ -200,6 +204,10 @@ export default function ChatConversationScreen({
               initials={conversation.initials}
               color={conversation.avatarColor}
               name={conversation.participantName}
+              profileId={conversation.participantId}
+              avatarUrl={conversation.participantAvatarUrl}
+              avatarFileId={conversation.participantAvatarFileId}
+              onPress={openParticipantProfile}
             />
             <View className={styles.identityCopy}>
               <Text className={styles.identityTitle} numberOfLines={1}>
@@ -491,6 +499,7 @@ export default function ChatConversationScreen({
                   messages={messages}
                   onFilePress={openFile}
                   onImagePress={handleImagePress}
+                  onProfilePress={openParticipantProfile}
                   isCandidateInquiry={conversationType === "CANDIDATE_INQUIRY"}
                 />
               ))}

@@ -10,6 +10,7 @@ import { useFonts } from "expo-font";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { LocaleProvider } from "../locales/LocaleProvider";
 import AuthMiddleware from "@/features/auth/AuthMiddleware";
+import { RoleWorkspaceProvider } from "@/components/navigation/RoleWorkspaceContext";
 import { colors, darkColors } from "../theme/colors";
 
 import {
@@ -47,7 +48,9 @@ export default function RootLayout() {
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <LocaleProvider>
         <AuthMiddleware>
-          <Stack screenOptions={{ headerShown: false }} />
+          <RoleWorkspaceProvider>
+            <Stack screenOptions={{ headerShown: false }} />
+          </RoleWorkspaceProvider>
         </AuthMiddleware>
       </LocaleProvider>
     </SafeAreaProvider>

@@ -40,6 +40,10 @@ export default function TabsLayout() {
         <Tabs.Screen name="index" options={{ title: messages.board }} />
         <Tabs.Screen name="money" options={{ title: messages.money }} />
         <Tabs.Screen name="create" options={{ title: messages.create }} />
+        <Tabs.Screen
+          name="my-quests"
+          options={{ title: messages.workManagement }}
+        />
         <Tabs.Screen name="chat" options={{ title: messages.chat }} />
         <Tabs.Screen name="profile" options={{ title: messages.profile }} />
       </Tabs>
