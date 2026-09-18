@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -19,13 +13,13 @@ import { Pressable, ScrollView, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import { useRoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
-import { questApi, type TagItem } from "@/api/QuestApi";
-import type {
-  QuestV2Assignment,
-  QuestV2BoardCard,
-  QuestV2ParticipationDetail,
-} from "@/api/questV2Contracts";
 import { useLocale } from "@/features/preferences/localeStore";
+import {
+  useWorkerAssignmentsQuery,
+  useWorkerBoardQuery,
+  useWorkerParticipationDetailQuery,
+  useWorkerTagsQuery,
+} from "./api/workerHomeQueries";
 import { getThemeColors } from "@/theme/colors";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
@@ -48,141 +42,63 @@ export default function WorkerHomeScreen() {
   const messages = workerHomeMessages[locale];
   const { switchWorkspace } = useRoleWorkspace();
 
-  const [activeAssignments, setActiveAssignments] = useState<
-    QuestV2Assignment[]
-  >([]);
-  const [activeQuestDetail, setActiveQuestDetail] =
-    useState<QuestV2ParticipationDetail | null>(null);
-  const [availableQuests, setAvailableQuests] = useState<QuestV2BoardCard[]>(
-    []
-  );
-  const [tags, setTags] = useState<TagItem[]>([]);
-  const activeQuestDetailCache = useRef<
-    Record<string, QuestV2ParticipationDetail>
-  >({});
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(true);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [error, setError] = useState<boolean>(false);
-
-  // Show the quick-access bar for assigned and in-progress work.
-  const activeOngoingAssignment = useMemo(() => {
-    return (
+  const assignmentsQuery = useWorkerAssignmentsQuery("active");
+  const boardQuery = useWorkerBoardQuery({
+    q: searchQuery,
+    tagId: selectedTagId,
+  });
+  const tagsQuery = useWorkerTagsQuery();
+  const activeAssignments = useMemo(
+    () => assignmentsQuery.data ?? [],
+    [assignmentsQuery.data]
+  );
+  const availableQuests = boardQuery.data?.items ?? [];
+  const tags = tagsQuery.data ?? [];
+  const activeOngoingAssignment = useMemo(
+    () =>
       activeAssignments.find(
         (assignment) =>
           assignment.state === "ASSIGNMENT_ACTIVE" &&
           (assignment.questState === "QUEST_ASSIGNED" ||
             assignment.questState === "QUEST_IN_PROGRESS")
-      ) ?? null
-    );
-  }, [activeAssignments]);
-
-  const loadData = useCallback(
-    async (q?: string, tagId?: string | null) => {
-      setError(false);
-      try {
-        const [activeResult, boardResult, tagsResult] =
-          await Promise.allSettled([
-            questApi.listMyAssignments("active"),
-            questApi.listBoard({
-              q: q !== undefined ? q : searchQuery || undefined,
-              tagId:
-                tagId !== undefined
-                  ? (tagId ?? undefined)
-                  : (selectedTagId ?? undefined),
-              limit: 20,
-            }),
-            tags.length === 0 ? questApi.listTags() : Promise.resolve(tags),
-          ]);
-
-        if (activeResult.status === "fulfilled") {
-          const assignments = activeResult.value;
-          setActiveAssignments(assignments);
-          const currentAssignment = assignments.find(
-            (assignment) =>
-              assignment.state === "ASSIGNMENT_ACTIVE" &&
-              (assignment.questState === "QUEST_ASSIGNED" ||
-                assignment.questState === "QUEST_IN_PROGRESS")
-          );
-          if (currentAssignment) {
-            const cachedDetail =
-              activeQuestDetailCache.current[currentAssignment.questId];
-            if (cachedDetail) {
-              setActiveQuestDetail(cachedDetail);
-            } else {
-              try {
-                const detail = await questApi.getParticipationDetail(
-                  currentAssignment.questId
-                );
-                activeQuestDetailCache.current[currentAssignment.questId] =
-                  detail;
-                setActiveQuestDetail(detail);
-              } catch {
-                setActiveQuestDetail(null);
-              }
-            }
-          } else {
-            setActiveQuestDetail(null);
-          }
-        }
-        if (boardResult.status === "fulfilled") {
-          setAvailableQuests(boardResult.value.items);
-        }
-        if (
-          tagsResult.status === "fulfilled" &&
-          Array.isArray(tagsResult.value)
-        ) {
-          setTags(tagsResult.value);
-        }
-
-        if (
-          activeResult.status === "rejected" &&
-          boardResult.status === "rejected"
-        ) {
-          setError(true);
-        }
-      } catch {
-        setError(true);
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [searchQuery, selectedTagId, tags]
+      ) ?? null,
+    [activeAssignments]
   );
-
-  /* eslint-disable react-hooks/set-state-in-effect -- initial async load updates worker home state */
-  useEffect(() => {
-    void loadData();
-  }, [loadData]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+  const activeQuestDetailQuery = useWorkerParticipationDetailQuery(
+    activeOngoingAssignment?.questId ?? null
+  );
+  const activeQuestDetail = activeQuestDetailQuery.data ?? null;
 
   const handleRefresh = useCallback(() => {
-    setRefreshing(true);
-    void loadData();
-  }, [loadData]);
+    void Promise.all([
+      assignmentsQuery.refetch(),
+      boardQuery.refetch(),
+      tagsQuery.refetch(),
+      activeOngoingAssignment
+        ? activeQuestDetailQuery.refetch()
+        : Promise.resolve(),
+    ]);
+  }, [
+    activeOngoingAssignment,
+    activeQuestDetailQuery,
+    assignmentsQuery,
+    boardQuery,
+    tagsQuery,
+  ]);
 
-  const handleSearchChange = useCallback(
-    (text: string) => {
-      setSearchQuery(text);
-      void loadData(text, selectedTagId);
-    },
-    [loadData, selectedTagId]
-  );
+  const handleSearchChange = useCallback((text: string) => {
+    setSearchQuery(text);
+  }, []);
 
   const handleClearSearch = useCallback(() => {
     setSearchQuery("");
-    void loadData("", selectedTagId);
-  }, [loadData, selectedTagId]);
+  }, []);
 
-  const handleSelectTag = useCallback(
-    (tagId: string | null) => {
-      setSelectedTagId(tagId);
-      void loadData(searchQuery, tagId);
-    },
-    [loadData, searchQuery]
-  );
+  const handleSelectTag = useCallback((tagId: string | null) => {
+    setSelectedTagId(tagId);
+  }, []);
 
   const handleSwitchToHirer = useCallback(() => {
     void switchWorkspace("hirer");
@@ -193,7 +109,6 @@ export default function WorkerHomeScreen() {
   // Extra padding when the Grab-like quick access bar is showing
   const scrollBottomPadding =
     bottomNavInset + (activeOngoingAssignment ? 76 : 16) + spacing.xl;
-
   return (
     <ScreenLayout edges={["top", "left", "right"]} className="bg-ku-background">
       <ScrollView
@@ -205,7 +120,12 @@ export default function WorkerHomeScreen() {
           <RefreshControl
             colors={[themeColors.primaryDeep]}
             onRefresh={handleRefresh}
-            refreshing={refreshing}
+            refreshing={
+              assignmentsQuery.isRefetching ||
+              boardQuery.isRefetching ||
+              tagsQuery.isRefetching ||
+              activeQuestDetailQuery.isRefetching
+            }
             tintColor={themeColors.primaryDeep}
           />
         }
@@ -297,7 +217,7 @@ export default function WorkerHomeScreen() {
           />
 
           {/* Error Notice */}
-          {error ? (
+          {assignmentsQuery.isError && boardQuery.isError ? (
             <View
               style={[
                 styles.errorState,
@@ -347,7 +267,7 @@ export default function WorkerHomeScreen() {
           </View>
 
           {/* Quests from Quest Board */}
-          {loading && availableQuests.length === 0 ? (
+          {boardQuery.isPending && availableQuests.length === 0 ? (
             <View style={{ paddingVertical: 40, alignItems: "center" }}>
               <ActivityIndicator color={themeColors.primaryDeep} />
             </View>

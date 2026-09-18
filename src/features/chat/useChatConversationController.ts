@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Linking } from "react-native";
+import { useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { chatApi, serverConversationToChatConversation } from "@/api/ChatApi";
-import type { ServerCandidateInquiry } from "@/api/ChatApi";
+import { chatApi } from "@/api/ChatApi";
 import { ApiError } from "@/api/ApiClient";
 import {
   fileNameFromUri,
@@ -16,11 +16,7 @@ import { authService } from "@/features/auth/AuthService";
 import { liveQuestService } from "@/features/questBoard/liveQuestService";
 import { useLocale } from "@/features/preferences/localeStore";
 import { chatMessages } from "@/locales/chatMessages";
-import type {
-  ChatConversation,
-  ChatRouteParams,
-  LocalizedText,
-} from "./chatTypes";
+import type { ChatConversation, ChatRouteParams } from "./chatTypes";
 import {
   isImageAttachment,
   toDisplayMessage,
@@ -29,55 +25,20 @@ import {
   type RenderAttachment,
 } from "./ChatConversationPresentation";
 import { attachmentLinkCache } from "./attachmentLinkCache";
-import { enrichChatConversation } from "./chatProfile";
-import { useCalmRefresh } from "@/hooks/useCalmRefresh";
+import {
+  chatKeys,
+  useCandidateConversationQuery,
+  useListConversationsQuery,
+  useMessagesQuery,
+  useSendChatMessageMutation,
+  useUploadChatAttachmentMutation,
+  useWorkConversationQuery,
+} from "./api/chatQueries";
 import { useChatSocket, type ChatSocketEvent } from "./useChatSocket";
 
 export type ConversationMode = "WORK" | "CANDIDATE_INQUIRY";
 export const MAX_MESSAGE_LENGTH = 1000;
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
-
-const TERMINAL_QUEST_STATES: Record<string, true> = {
-  QUEST_COMPLETED: true,
-  QUEST_CANCELLED: true,
-  QUEST_FAILED: true,
-};
-
-function candidateInquiryToChatConversation(
-  inquiry: ServerCandidateInquiry,
-  viewerId: string
-): ChatConversation {
-  const otherParticipant =
-    inquiry.participants.find((participant) => participant.id !== viewerId) ??
-    inquiry.participants[0];
-  const latestPreview = inquiry.latestMessage?.preview ?? "";
-  const localizedTitle: LocalizedText = {
-    en: inquiry.quest.title,
-    th: inquiry.quest.title,
-  };
-  return {
-    id: inquiry.id,
-    questId: inquiry.quest.id,
-    questTitle: localizedTitle,
-    ...(otherParticipant?.id ? { participantId: otherParticipant.id } : {}),
-    participantName: otherParticipant?.displayName ?? inquiry.quest.title,
-    participantRole: otherParticipant?.role === "HIRER" ? "owner" : "member",
-    initials: (otherParticipant?.displayName ?? inquiry.quest.title)
-      .slice(0, 2)
-      .toUpperCase(),
-    avatarColor: "#208AEF",
-    latestMessage: { en: latestPreview, th: latestPreview },
-    latestTime: inquiry.latestMessage?.createdAt ?? "",
-    unreadCount: inquiry.unreadCount,
-    messages: [],
-    capability: {
-      conversationId: inquiry.id,
-      canRead: true,
-      canWrite: inquiry.state === "INQUIRY_OPEN",
-      readOnly: inquiry.state !== "INQUIRY_OPEN",
-    },
-  };
-}
 
 type ChatRouteSearchParams = Partial<
   Record<keyof ChatRouteParams, string | string[]>
@@ -89,14 +50,6 @@ function getSingleRouteParam(value: unknown): string | undefined {
   if (Array.isArray(value)) return getSingleRouteParam(value[0]);
   return undefined;
 }
-
-type ConversationLoadState = {
-  key: string;
-  status: "pending" | "settled" | "error";
-  conversation: ChatConversation | null;
-  messages: DisplayChatMessage[];
-  canPost?: boolean;
-};
 
 export function useChatConversationController(
   conversationType: ConversationMode
@@ -129,236 +82,136 @@ export function useChatConversationController(
     };
   }, []);
   const viewerId = routeViewerId || sessionUserId || "";
-  const conversationRouteKey = `${conversationType}:${routeQuestId ?? ""}:${routeConversationId ?? ""}:${viewerId}`;
-  const [loadState, setLoadState] = useState<ConversationLoadState>(() => ({
-    key: conversationRouteKey,
-    status: routeConversationId && viewerId ? "pending" : "settled",
-    conversation: null,
-    messages: [],
-    canPost: false,
-  }));
-  const conversationRouteKeyRef = useRef(conversationRouteKey);
+  const queryClient = useQueryClient();
+  const listConversationsQuery = useListConversationsQuery(
+    viewerId,
+    conversationType === "WORK" && !routeQuestId
+  );
+  const fallbackQuestId =
+    routeQuestId ??
+    listConversationsQuery.data?.find(
+      (conversation) => conversation.id === routeConversationId
+    )?.questId;
+  const workConversationQuery = useWorkConversationQuery(
+    routeConversationId ?? "",
+    fallbackQuestId,
+    viewerId,
+    conversationType === "WORK"
+  );
+  const candidateConversationQuery = useCandidateConversationQuery(
+    routeConversationId ?? "",
+    viewerId,
+    conversationType === "CANDIDATE_INQUIRY"
+  );
+  const messagesQuery = useMessagesQuery(
+    routeConversationId ?? "",
+    viewerId,
+    conversationType,
+    Boolean(routeConversationId && viewerId)
+  );
+  const conversation =
+    conversationType === "CANDIDATE_INQUIRY"
+      ? (candidateConversationQuery.data ?? null)
+      : (workConversationQuery.data ?? null);
+  const conversationMessages = useMemo(
+    () => messagesQuery.data ?? [],
+    [messagesQuery.data]
+  );
+  const conversationPending =
+    Boolean(routeConversationId && viewerId) &&
+    (messagesQuery.isPending ||
+      (conversationType === "CANDIDATE_INQUIRY"
+        ? candidateConversationQuery.isPending
+        : Boolean(fallbackQuestId) && workConversationQuery.isPending));
+  const conversationLoadFailed =
+    Boolean(routeConversationId && viewerId) &&
+    (messagesQuery.isError ||
+      (conversationType === "CANDIDATE_INQUIRY"
+        ? candidateConversationQuery.isError
+        : workConversationQuery.isError));
+  const refreshing =
+    messagesQuery.isRefetching ||
+    (conversationType === "CANDIDATE_INQUIRY"
+      ? candidateConversationQuery.isRefetching
+      : workConversationQuery.isRefetching);
+  const refresh = async () => {
+    await Promise.all([
+      messagesQuery.refetch(),
+      conversationType === "CANDIDATE_INQUIRY"
+        ? candidateConversationQuery.refetch()
+        : workConversationQuery.refetch(),
+    ]);
+  };
   useEffect(() => {
-    conversationRouteKeyRef.current = conversationRouteKey;
-  }, [conversationRouteKey]);
-
-  const loadConversation = useCallback(async () => {
-    if (!routeConversationId || !viewerId) {
-      if (conversationRouteKeyRef.current === conversationRouteKey) {
-        setLoadState({
-          key: conversationRouteKey,
-          status: "settled",
-          conversation: null,
-          messages: [],
-        });
-      }
-      return null;
-    }
-
-    try {
-      if (conversationType === "CANDIDATE_INQUIRY") {
-        const inquiry =
-          await liveQuestService.getCandidateInquiry(routeConversationId);
-        if (
-          inquiry.id !== routeConversationId ||
-          inquiry.state !== "INQUIRY_OPEN"
-        ) {
-          setLoadState({
-            key: conversationRouteKey,
-            status: "settled",
-            conversation: null,
-            messages: [],
-          });
-          return null;
-        }
-        const [participants, messagePage] = await Promise.all([
-          liveQuestService.listCandidateInquiryParticipants(
-            routeConversationId
-          ),
-          liveQuestService.getCandidateInquiryMessages(routeConversationId, {
-            limit: 50,
-          }),
-        ]);
-        if (conversationRouteKeyRef.current !== conversationRouteKey) {
-          return undefined;
-        }
-        if (!participants.some((participant) => participant.id === viewerId)) {
-          setLoadState({
-            key: conversationRouteKey,
-            status: "settled",
-            conversation: null,
-            messages: [],
-          });
-          return null;
-        }
-        const candidate = await enrichChatConversation(
-          candidateInquiryToChatConversation(
-            { ...inquiry, participants },
-            viewerId
-          )
-        );
-        const displayMessages = messagePage.items.map((message) =>
-          toDisplayMessage(message, viewerId)
-        );
-        setLoadState({
-          key: conversationRouteKey,
-          status: "settled",
-          conversation: candidate,
-          messages: displayMessages,
-        });
-        const lastMessage = messagePage.items.at(-1);
-        if (lastMessage) {
-          await liveQuestService.markCandidateInquiryRead(
-            routeConversationId,
-            lastMessage.id
-          );
-        }
-        return messagePage;
-      }
-
-      let questId = routeQuestId;
-      if (!questId) {
-        const page = await chatApi.listConversations({ limit: 20 });
-        questId = page.items.find((item) => item.id === routeConversationId)
-          ?.quest.id;
-      }
-      if (!questId) return null;
-      const liveSnapshot = await liveQuestService.getLiveSnapshot(
-        questId,
-        viewerId
-      );
-      const workConversation = liveSnapshot.workConversation;
-      if (
-        !workConversation ||
-        workConversation.id !== routeConversationId ||
-        !liveSnapshot.capabilities.canReadWorkChat
-      ) {
-        setLoadState({
-          key: conversationRouteKey,
-          status: "settled",
-          conversation: null,
-          messages: [],
-        });
-        return null;
-      }
-      const [participants, messagePage] = await Promise.all([
-        chatApi.listParticipants(routeConversationId),
-        chatApi.getMessages(routeConversationId, { limit: 50 }),
-      ]);
-      if (conversationRouteKeyRef.current !== conversationRouteKey) {
-        return undefined;
-      }
-      const converted = serverConversationToChatConversation(
-        workConversation,
-        viewerId
-      );
-      const otherParticipant =
-        participants.find((participant) => participant.id !== viewerId) ??
-        participants[0];
-      const canWrite = Boolean(
-        liveSnapshot.capabilities.canWriteWorkChat && !workConversation.readOnly
-      );
-      const readOnlyReason =
-        TERMINAL_QUEST_STATES[liveSnapshot.state] === true
-          ? "TERMINAL"
-          : undefined;
-      const workChat = await enrichChatConversation({
-        ...converted,
-        ...(otherParticipant?.id ? { participantId: otherParticipant.id } : {}),
-        participantName:
-          otherParticipant?.displayName ?? converted.participantName,
-        participantRole:
-          otherParticipant?.role === "HIRER" ? "owner" : "member",
-        initials: (otherParticipant?.displayName ?? converted.participantName)
-          .slice(0, 2)
-          .toUpperCase(),
-        capability: {
-          conversationId: routeConversationId,
-          canRead: liveSnapshot.capabilities.canReadWorkChat,
-          canWrite,
-          readOnly: !canWrite,
-          ...(readOnlyReason ? { readOnlyReason } : {}),
-        },
-      });
-      const displayMessages = messagePage.items.map((message) =>
-        toDisplayMessage(message, viewerId)
-      );
-      setLoadState({
-        key: conversationRouteKey,
-        status: "settled",
-        conversation: workChat,
-        messages: displayMessages,
-      });
-      const lastMessage = messagePage.items.at(-1);
-      if (lastMessage) {
-        await chatApi.markRead(routeConversationId, lastMessage.id);
-      }
-      return messagePage;
-    } catch (error) {
-      if (conversationRouteKeyRef.current === conversationRouteKey) {
-        setLoadState((current) =>
-          current.key === conversationRouteKey && current.conversation
-            ? { ...current, status: "settled" }
-            : {
-                key: conversationRouteKey,
-                status: "error",
-                conversation: null,
-                messages: [],
-              }
-        );
-      }
-      throw error;
-    }
+    if (!routeConversationId || !conversation?.capability?.canRead) return;
+    const lastMessage = conversationMessages.at(-1);
+    if (!lastMessage) return;
+    void (conversationType === "CANDIDATE_INQUIRY"
+      ? liveQuestService.markCandidateInquiryRead(
+          routeConversationId,
+          lastMessage.id
+        )
+      : chatApi.markRead(routeConversationId, lastMessage.id));
   }, [
-    conversationRouteKey,
+    conversation,
+    conversationMessages,
     conversationType,
     routeConversationId,
-    routeQuestId,
-    viewerId,
   ]);
-  const { refreshing, refresh, refreshOnFocus } =
-    useCalmRefresh(loadConversation);
-  useEffect(() => {
-    if (!routeConversationId || !viewerId) return;
-    void refresh(true).catch(() => undefined);
-  }, [conversationRouteKey, refresh, routeConversationId, viewerId]);
-  useFocusEffect(
-    useCallback(() => {
-      refreshOnFocus();
-    }, [refreshOnFocus])
-  );
-  const currentLoadState =
-    loadState.key === conversationRouteKey
-      ? loadState
-      : {
-          key: conversationRouteKey,
-          status:
-            routeConversationId && viewerId
-              ? ("pending" as const)
-              : ("settled" as const),
-          conversation: null,
-          messages: [],
-          canPost: false,
-        };
-
-  const conversation = currentLoadState.conversation;
-  const conversationMessages = currentLoadState.messages;
   const handleChatSocketEvent = useCallback(
     (event: ChatSocketEvent) => {
       if (
         event.type === "chat.message.created" &&
         event.data.conversationId === routeConversationId
       ) {
-        void refresh(true).catch(() => undefined);
+        const queryKey = chatKeys.messages(
+          routeConversationId,
+          conversationType
+        );
+        const incomingMessage = toDisplayMessage(event.data.message, viewerId);
+        queryClient.setQueryData<DisplayChatMessage[]>(queryKey, (current) => {
+          if (current?.some((message) => message.id === incomingMessage.id)) {
+            return current;
+          }
+          return [...(current ?? []), incomingMessage];
+        });
+        const conversationKey = chatKeys.conversation(
+          routeConversationId,
+          viewerId,
+          conversationType
+        );
+        queryClient.setQueryData<ChatConversation | null>(
+          conversationKey,
+          (current) => {
+            if (!current) return current;
+            const preview = event.data.message.text ?? "";
+            const createdAt = new Date(event.data.message.createdAt);
+            const latestTime = `${String(createdAt.getHours()).padStart(
+              2,
+              "0"
+            )}:${String(createdAt.getMinutes()).padStart(2, "0")}`;
+            return {
+              ...current,
+              latestMessage: { en: preview, th: preview },
+              latestTime,
+            };
+          }
+        );
       }
       if (
         event.type === "quest.state.changed" &&
         event.data.questId === routeQuestId
       ) {
-        void refresh(true).catch(() => undefined);
+        void queryClient.invalidateQueries({
+          queryKey: chatKeys.conversation(
+            routeConversationId ?? "",
+            viewerId,
+            "WORK"
+          ),
+        });
       }
     },
-    [refresh, routeConversationId, routeQuestId]
+    [conversationType, queryClient, routeConversationId, routeQuestId, viewerId]
   );
   useChatSocket({
     conversationId: routeConversationId ?? "",
@@ -366,6 +219,8 @@ export function useChatConversationController(
     enabled: Boolean(routeConversationId && conversation?.capability?.canRead),
     onEvent: handleChatSocketEvent,
   });
+  const sendMessageMutation = useSendChatMessageMutation();
+  const uploadAttachmentMutation = useUploadChatAttachmentMutation();
   const [draft, setDraft] = useState("");
   const [pendingAttachmentIds, setPendingAttachmentIds] = useState<string[]>(
     []
@@ -432,25 +287,6 @@ export function useChatConversationController(
         ),
     [displayedMessages, normalizedQuery]
   );
-  const conversationPending =
-    Boolean(routeConversationId && viewerId) &&
-    currentLoadState.status === "pending";
-  const conversationLoadFailed =
-    Boolean(routeConversationId && viewerId) &&
-    currentLoadState.status === "error";
-  useEffect(() => {
-    if (
-      conversationType !== "WORK" ||
-      !conversation ||
-      conversation.capability?.canWrite
-    ) {
-      return;
-    }
-    const interval = setInterval(() => {
-      void refresh(true).catch(() => undefined);
-    }, 30_000);
-    return () => clearInterval(interval);
-  }, [conversation, conversationType, refresh]);
 
   const role = conversation
     ? conversationType === "CANDIDATE_INQUIRY"
@@ -540,13 +376,11 @@ export function useChatConversationController(
       type: mimeType,
     };
     try {
-      const uploaded =
-        conversationType === "CANDIDATE_INQUIRY"
-          ? await liveQuestService.uploadCandidateInquiryAttachment(
-              conversation.id,
-              uploadAsset
-            )
-          : await chatApi.uploadAttachment(conversation.id, uploadAsset);
+      const uploaded = await uploadAttachmentMutation.mutateAsync({
+        conversationId: conversation.id,
+        mode: conversationType,
+        asset: uploadAsset,
+      });
       setPendingAttachments((current) => {
         const item = current.find((it) => it.id === tempId);
         if (!item) return current;
@@ -557,7 +391,6 @@ export function useChatConversationController(
           it.id === tempId ? { ...it, id: uploaded.id, uploading: false } : it
         );
       });
-      void refresh(true).catch(() => undefined);
     } catch (error) {
       setPendingAttachments((current) =>
         current.filter((item) => item.id !== tempId)
@@ -621,33 +454,30 @@ export function useChatConversationController(
       .toString(36)
       .slice(2, 8)}`;
     const attachmentIds = pendingAttachmentIds;
-    const sendPromise =
-      conversationType === "CANDIDATE_INQUIRY"
-        ? liveQuestService.sendCandidateInquiryMessage(
-            conversation.id,
-            value,
-            clientMessageId,
-            attachmentIds
-          )
-        : chatApi.sendMessage(
-            conversation.id,
-            value,
-            clientMessageId,
-            attachmentIds
-          );
-    void sendPromise
-      .then((sentMessage) => {
-        setLoadState((current) => ({
-          ...current,
-          messages: [
-            ...current.messages,
-            toDisplayMessage(sentMessage, viewerId),
-          ],
-        }));
+    const optimisticMessage: DisplayChatMessage = {
+      id: clientMessageId,
+      sender: "me",
+      text: { en: value, th: value },
+      time: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      attachments: [],
+    };
+    void sendMessageMutation
+      .mutateAsync({
+        conversationId: conversation.id,
+        mode: conversationType,
+        text: value,
+        clientMessageId,
+        attachmentIds,
+        viewerId,
+        optimisticMessage,
+      })
+      .then(() => {
         setDraft("");
         setPendingAttachmentIds([]);
         setPendingAttachments([]);
-        void refresh(true).catch(() => undefined);
       })
       .catch((error: unknown) => {
         const rateLimited = error instanceof ApiError && error.status === 429;
@@ -693,14 +523,7 @@ export function useChatConversationController(
     }
   };
   const retryLoad = () => {
-    setLoadState({
-      key: conversationRouteKey,
-      status: "pending",
-      conversation: null,
-      messages: [],
-      canPost: false,
-    });
-    void refresh(true).catch(() => undefined);
+    void refresh().catch(() => undefined);
   };
 
   return {

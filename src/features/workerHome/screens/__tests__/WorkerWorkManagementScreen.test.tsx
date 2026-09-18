@@ -1,10 +1,5 @@
-import React from "react";
-import {
-  cleanup,
-  fireEvent,
-  render,
-  waitFor,
-} from "@testing-library/react-native";
+import { cleanup, fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { questApi } from "@/api/QuestApi";
 import { liveQuestService } from "@/features/questBoard/liveQuestService";
 import WorkerWorkManagementScreen from "../WorkerWorkManagementScreen";
@@ -57,7 +52,7 @@ describe("WorkerWorkManagementScreen", () => {
   it("renders NoWorkPromptCard when user has no active work, and navigates to Home on press", async () => {
     (questApi.listMyAssignments as jest.Mock).mockResolvedValue([]);
 
-    const view = await render(<WorkerWorkManagementScreen />);
+    const view = await renderWithQueryClient(<WorkerWorkManagementScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("work-management-title")).toBeTruthy();
@@ -100,7 +95,7 @@ describe("WorkerWorkManagementScreen", () => {
       state: "QUEST_IN_PROGRESS",
     });
 
-    const view = await render(<WorkerWorkManagementScreen />);
+    const view = await renderWithQueryClient(<WorkerWorkManagementScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("current-quest-card")).toBeTruthy();
@@ -158,7 +153,7 @@ describe("WorkerWorkManagementScreen", () => {
       },
     ]);
 
-    const view = await render(<WorkerWorkManagementScreen />);
+    const view = await renderWithQueryClient(<WorkerWorkManagementScreen />);
     await waitFor(() => {
       expect(view.getByTestId("applied-quests-list")).toBeTruthy();
       expect(view.getByTestId("applied-quest-item-assign-app-1")).toBeTruthy();

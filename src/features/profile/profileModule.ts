@@ -176,13 +176,16 @@ function mapApiExperienceToDraft(entry: ExperienceEntry): Experience {
 export class ProfileModule {
   async loadProfile(options?: {
     locale?: SupportedLocale;
+    signal?: AbortSignal;
   }): Promise<ProfileViewData> {
     const locale = options?.locale ?? "en";
     const session = await authService.getSession();
     if (!session) throw new AuthError("SESSION_EXPIRED", "No active session");
 
     const api = await authService.getStudentApi();
-    const profile = await readRequired(() => api.getProfile());
+    const profile = await readRequired(() =>
+      api.getProfile({ signal: options?.signal })
+    );
     const [
       statusResult,
       optionsResult,
@@ -192,13 +195,17 @@ export class ProfileModule {
       reputationResult,
       reviewsResult,
     ] = await Promise.all([
-      readOptional(() => api.getAcademicRegistrationStatus()),
-      readOptional(() => api.getAcademicRegistrationOptions()),
-      readOptional(() => api.listCertificates()),
-      readOptional(() => api.listPortfolio()),
-      readOptional(() => api.listExperience()),
-      readOptional(() => api.getReputation()),
-      readOptional(() => api.listReviews()),
+      readOptional(() =>
+        api.getAcademicRegistrationStatus({ signal: options?.signal })
+      ),
+      readOptional(() =>
+        api.getAcademicRegistrationOptions({ signal: options?.signal })
+      ),
+      readOptional(() => api.listCertificates({ signal: options?.signal })),
+      readOptional(() => api.listPortfolio({ signal: options?.signal })),
+      readOptional(() => api.listExperience({ signal: options?.signal })),
+      readOptional(() => api.getReputation({ signal: options?.signal })),
+      readOptional(() => api.listReviews("all", { signal: options?.signal })),
     ]);
 
     const status =
@@ -281,9 +288,11 @@ export class ProfileModule {
     };
   }
 
-  async getEditData(): Promise<ProfileEditData> {
+  async getEditData(options?: {
+    signal?: AbortSignal;
+  }): Promise<ProfileEditData> {
     const studentApi = await authService.getStudentApi();
-    return studentApi.getEditData();
+    return studentApi.getEditData(options);
   }
 
   async updateBasics(update: ProfileBasicsUpdate): Promise<ProfileResponse> {

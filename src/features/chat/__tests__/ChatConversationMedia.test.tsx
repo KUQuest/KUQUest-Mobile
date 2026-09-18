@@ -3,6 +3,7 @@ import type ReactModule from "react";
 import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import ChatConversationScreen, {
   AttachmentRow,
@@ -472,7 +473,7 @@ describe("ChatConversationMedia", () => {
         hasMore: false,
       } as unknown as ServerChatMessagePage);
 
-      const view = await render(<ChatConversationScreen />);
+      const view = await renderWithQueryClient(<ChatConversationScreen />);
 
       await waitFor(() => {
         expect(view.getByTestId("inline-image-att-screen-img")).toBeTruthy();
@@ -575,7 +576,7 @@ describe("ChatConversationMedia", () => {
         createdAt: new Date().toISOString(),
       });
 
-      const view = await render(<ChatConversationScreen />);
+      const view = await renderWithQueryClient(<ChatConversationScreen />);
 
       await waitFor(() => {
         expect(view.getAllByLabelText("Add attachment")[0]).toBeTruthy();

@@ -1,5 +1,6 @@
 import React from "react";
-import { render, waitFor } from "@testing-library/react-native";
+import { waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import ProfileScreen from "../ProfileScreen";
 import { profileModule } from "../profileModule";
@@ -43,7 +44,7 @@ jest.mock("../profileModule", () => ({
 const mockedLoad = profileModule.loadProfile as jest.MockedFunction<
   typeof profileModule.loadProfile
 >;
-const renderScreen = async () => await render(<ProfileScreen />);
+const renderScreen = async () => await renderWithQueryClient(<ProfileScreen />);
 
 describe("Student Profile screen — expired session", () => {
   beforeEach(() => {

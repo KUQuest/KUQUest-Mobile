@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useWindowDimensions } from "react-native";
 import {
@@ -18,11 +18,10 @@ import { getProfileLayoutMetrics } from "@/theme/profileLayout";
 import { useLocale } from "@/features/preferences/localeStore";
 import type { SupportedLocale } from "@/locales/locale";
 import { profileMessages } from "@/locales/profileMessages";
-import { authService } from "@/features/auth/AuthService";
-import type {
-  PublicProfileResponse,
-  PublicProfileReviewsData,
-} from "@/api/contracts";
+import {
+  usePublicProfileQuery,
+  usePublicProfileReviewsQuery,
+} from "./api/profileQueries";
 import {
   AboutMe,
   Certificates,
@@ -85,59 +84,18 @@ export default function PublicProfileScreen() {
   const layoutMetrics = getProfileLayoutMetrics(width, fontScale);
 
   const [activeTab, setActiveTab] = useState<PublicProfileTab>("about");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [profile, setProfile] = useState<PublicProfileResponse | null>(null);
-  const [reviewsData, setReviewsData] =
-    useState<PublicProfileReviewsData | null>(null);
-  const [reviewsUnavailable, setReviewsUnavailable] = useState(false);
-  const [loadAttempt, setLoadAttempt] = useState(0);
-
-  useEffect(() => {
-    let active = true;
-    async function loadPublicData() {
-      if (!userId) {
-        setError("User ID is required");
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      setError(null);
-      setReviewsUnavailable(false);
-      try {
-        const api = await authService.getStudentApi();
-        const [profileRes, reviewsRes] = await Promise.allSettled([
-          api.getPublicProfile(userId),
-          api.listPublicReviews(userId),
-        ]);
-
-        if (!active) return;
-
-        if (profileRes.status === "fulfilled") {
-          setProfile(profileRes.value);
-          if (reviewsRes.status === "fulfilled") {
-            setReviewsData(reviewsRes.value);
-          } else {
-            setReviewsData(null);
-            setReviewsUnavailable(true);
-          }
-        } else {
-          const err = profileRes.reason;
-          setError(err instanceof Error ? err.message : messages.error);
-        }
-      } catch (err) {
-        if (!active) return;
-        setError(err instanceof Error ? err.message : messages.error);
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
-    void loadPublicData();
-    return () => {
-      active = false;
-    };
-  }, [userId, loadAttempt, messages.error]);
+  const profileQuery = usePublicProfileQuery(userId);
+  const reviewsQuery = usePublicProfileReviewsQuery(userId);
+  const profile = profileQuery.data;
+  const reviewsData = reviewsQuery.isError ? undefined : reviewsQuery.data;
+  const profileErrorMessage = !userId
+    ? "User ID is required"
+    : profileQuery.isError
+      ? profileQuery.error instanceof Error
+        ? profileQuery.error.message
+        : messages.error
+      : null;
+  const reviewsUnavailable = Boolean(profile) && reviewsQuery.isError;
 
   const displayName = useMemo(() => {
     if (!profile) return "";
@@ -372,7 +330,7 @@ export default function PublicProfileScreen() {
     </View>
   );
 
-  if (loading) {
+  if (profileQuery.isPending) {
     return (
       <ScreenLayout
         edges={["top", "left", "right"]}
@@ -389,7 +347,7 @@ export default function PublicProfileScreen() {
     );
   }
 
-  if (error && !profile) {
+  if (profileErrorMessage && !profile) {
     return (
       <ScreenLayout
         edges={["top", "left", "right"]}
@@ -398,11 +356,11 @@ export default function PublicProfileScreen() {
         {topBar}
         <View className="flex-1 items-center justify-center p-6">
           <Text className="mb-4 text-center text-ku-text-secondary">
-            {error}
+            {profileErrorMessage}
           </Text>
           <Pressable
             accessibilityRole="button"
-            onPress={() => setLoadAttempt((prev) => prev + 1)}
+            onPress={() => void profileQuery.refetch()}
             className="min-h-[48px] min-w-[140px] items-center justify-center rounded-ku-pill bg-ku-primary px-6 active:opacity-90"
           >
             <Text className="font-ku-semibold text-ku-white">

@@ -418,7 +418,7 @@ export default function ChatConversationScreen({
             <RefreshControl
               colors={[colors.primary]}
               onRefresh={() => {
-                void refresh(true).catch(() => undefined);
+                void refresh().catch(() => undefined);
               }}
               refreshing={refreshing}
               tintColor={colors.primary}
