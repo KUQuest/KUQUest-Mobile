@@ -22,6 +22,7 @@ import type {
   LocalizedText,
 } from "./chatTypes";
 import {
+  isImageAttachment,
   toDisplayMessage,
   type DisplayChatMessage,
   type PendingAttachmentItem,
@@ -373,13 +374,14 @@ export function useChatConversationController(
     visible: boolean;
     url: string | null;
     name?: string;
+    timestamp?: string;
   }>({ visible: false, url: null });
   const [pendingAttachments, setPendingAttachments] = useState<
     PendingAttachmentItem[]
   >([]);
 
-  const handleImagePress = (url: string, name?: string) => {
-    setViewerState({ visible: true, url, name });
+  const handleImagePress = (url: string, name?: string, timestamp?: string) => {
+    setViewerState({ visible: true, url, name, timestamp });
   };
 
   const handleRemovePendingAttachment = (idToRemove: string) => {
@@ -674,6 +676,14 @@ export function useChatConversationController(
         return chatApi.getAttachmentLink(conversation.id, attachment.id);
       };
       const url = await attachmentLinkCache.getOrFetch(attachment.id, fetcher);
+      if (isImageAttachment(attachment)) {
+        const timestamp =
+          "time" in attachment && typeof attachment.time === "string"
+            ? attachment.time
+            : undefined;
+        handleImagePress(url, attachment.name, timestamp);
+        return;
+      }
       await Linking.openURL(url);
     } catch (error) {
       Alert.alert(

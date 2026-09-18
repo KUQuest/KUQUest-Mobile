@@ -9,7 +9,7 @@ export type LocalizedText = Record<SupportedLocale, string>;
 export interface ChatAttachment {
   name: string;
   meta: string;
-  kind: "pdf" | "image";
+  kind: "pdf" | "image" | "file";
 }
 
 export interface ChatMessage {
