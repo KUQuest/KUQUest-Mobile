@@ -96,14 +96,16 @@ import {
   type PublishedQuestRefValue,
 } from "./useQuestPersistence";
 import { useQuestPublish } from "./useQuestPublish";
+import { useQuestEdit } from "./useQuestEdit";
 import { MAX_QUEST_IMAGES } from "../questBoard/types";
-
 export interface CreateQuestScreenProps {
   editQuestId?: string;
+  editMode?: boolean;
 }
 
 export default function CreateQuestScreen({
   editQuestId,
+  editMode = false,
 }: CreateQuestScreenProps = {}) {
   const router = useRouter();
   const { locale } = useLocale();
@@ -121,8 +123,10 @@ export default function CreateQuestScreen({
   const deadlineRef = useRef<React.ComponentRef<typeof RNPressable>>(null);
   const locationRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
   const headcountRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
+  const [step, setStep] = useState<Step>(() =>
+    editMode ? 1 : editQuestId ? 2 : 1
+  );
   const rewardRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
-  const [step, setStep] = useState<Step>(() => (editQuestId ? 2 : 1));
   const [draft, setDraft] = useState<QuestDraft>(initialDraft);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [validationSummary, setValidationSummary] = useState<string | null>(
@@ -141,25 +145,25 @@ export default function CreateQuestScreen({
   const publishedQuestRef = useRef<PublishedQuestRefValue | null>(null);
 
   const {
-    draftIdRef,
-    draftHydrated,
-    draftStorageKey,
-    draftLoadError,
-    retryDraftLoad,
-    saveState,
-    setSaveState,
-    saveErrorIntent,
-    setSaveErrorIntent,
-    saveErrorMessage,
-    setSaveErrorMessage,
-    savingAction,
-    setSavingAction,
+    draftIdRef: localDraftIdRef,
+    draftHydrated: localDraftHydrated,
+    draftStorageKey: localDraftStorageKey,
+    draftLoadError: localDraftLoadError,
+    retryDraftLoad: retryLocalDraftLoad,
+    saveState: localSaveState,
+    setSaveState: setLocalSaveState,
+    saveErrorIntent: localSaveErrorIntent,
+    setSaveErrorIntent: setLocalSaveErrorIntent,
+    saveErrorMessage: localSaveErrorMessage,
+    setSaveErrorMessage: setLocalSaveErrorMessage,
+    savingAction: localSavingAction,
+    setSavingAction: setLocalSavingAction,
     skipPersistRef,
     saveTimerRef,
     saveRequestRef,
-    saveDraft,
+    saveDraft: saveLocalDraft,
   } = useQuestPersistence({
-    editQuestId,
+    editQuestId: editMode ? undefined : editQuestId,
     step,
     completedState,
     draft,
@@ -168,7 +172,39 @@ export default function CreateQuestScreen({
     setDraft,
     setStep,
     setCompletedState,
+    enabled: !editMode,
   });
+
+  const editState = useQuestEdit({
+    questId: editMode ? editQuestId : undefined,
+    draftChangedRef,
+    setDraft,
+    setStep,
+  });
+  const draftIdRef = localDraftIdRef;
+  const draftHydrated = editMode ? editState.draftHydrated : localDraftHydrated;
+  const draftStorageKey = localDraftStorageKey;
+  const draftLoadError = editMode
+    ? editState.draftLoadError
+    : localDraftLoadError;
+  const retryDraftLoad = editMode
+    ? editState.retryDraftLoad
+    : retryLocalDraftLoad;
+  const saveState = editMode ? editState.saveState : localSaveState;
+  const setSaveState = editMode ? editState.setSaveState : setLocalSaveState;
+  const saveErrorIntent = localSaveErrorIntent;
+  const setSaveErrorIntent = setLocalSaveErrorIntent;
+  const saveErrorMessage = editMode
+    ? editState.saveErrorMessage
+    : localSaveErrorMessage;
+  const setSaveErrorMessage = editMode
+    ? editState.setSaveErrorMessage
+    : setLocalSaveErrorMessage;
+  const savingAction = editMode ? editState.savingAction : localSavingAction;
+  const setSavingAction = editMode
+    ? editState.setSavingAction
+    : setLocalSavingAction;
+  const saveDraft = editMode ? editState.saveDraft : saveLocalDraft;
 
   const {
     publishCheck,
@@ -178,7 +214,7 @@ export default function CreateQuestScreen({
     publishQuest,
     refreshPublishCheck,
   } = useQuestPublish({
-    editQuestId,
+    editQuestId: editMode ? undefined : editQuestId,
     step,
     completedState,
     draftHydrated,
@@ -192,6 +228,7 @@ export default function CreateQuestScreen({
     setSaveErrorIntent,
     setSaveErrorMessage,
     setSavingAction,
+    enabled: !editMode,
   });
 
   const [liveTags, setLiveTags] = useState<TagItem[]>([]);
@@ -474,8 +511,8 @@ export default function CreateQuestScreen({
   const finishQuest = async (state: CompletionState) => {
     if (!validateStep(2)) return;
     const check = reviewPublishCheck;
-    setPublishCheck(check);
-    if (state === "OPEN" && !check.canPublish) {
+    if (!editMode) setPublishCheck(check);
+    if (!editMode && state === "OPEN" && !check.canPublish) {
       const firstBlocker = check.blockers[0];
       if (firstBlocker) setValidationSummary(messages.publishCheckBlocked);
       return;
@@ -485,7 +522,7 @@ export default function CreateQuestScreen({
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
-    if (state === "OPEN") {
+    if (!editMode && state === "OPEN") {
       const published = await publishQuest(draft);
       if (published) setCompletedState("OPEN");
       return;
@@ -495,6 +532,12 @@ export default function CreateQuestScreen({
   };
 
   const retrySave = () => {
+    if (editMode) {
+      void saveDraft(draft, "DRAFT", true).then((saved) => {
+        if (saved) setCompletedState("DRAFT");
+      });
+      return;
+    }
     const intent = saveErrorIntent;
     if (intent?.state === "OPEN") {
       void publishQuest(draft).then((published) => {
@@ -509,7 +552,16 @@ export default function CreateQuestScreen({
     );
   };
 
-  const leaveCreateFlow = () => router.replace("/(tabs)");
+  const leaveCreateFlow = () => {
+    if (editMode && editQuestId) {
+      router.replace({
+        pathname: "/quest/[id]",
+        params: { id: editQuestId, mode: "post" },
+      });
+      return;
+    }
+    router.replace("/(tabs)");
+  };
 
   const showHelp = () =>
     Alert.alert(messages.helpTitle, messages.helpDescription);
@@ -696,6 +748,8 @@ export default function CreateQuestScreen({
           onBackPress={goBack}
           onHelpPress={showHelp}
           onStepPress={goToStep}
+          title={editMode ? messages.editTitle : undefined}
+          subtitle={editMode ? messages.editHeaderSubtitle : undefined}
         />
         <View className={styles.surface}>
           {draftLoadError ? (
@@ -731,7 +785,7 @@ export default function CreateQuestScreen({
   }
 
   if (completedState) {
-    const published = completedState === "OPEN";
+    const published = !editMode && completedState === "OPEN";
     return (
       <ScreenLayout
         edges={["top", "left", "right"]}
@@ -744,6 +798,8 @@ export default function CreateQuestScreen({
           onBackPress={() => setCompletedState(null)}
           onHelpPress={showHelp}
           onStepPress={goToStep}
+          title={editMode ? messages.editTitle : undefined}
+          subtitle={editMode ? messages.editHeaderSubtitle : undefined}
         />
         <View className={styles.surface}>
           <View className={styles.successState}>
@@ -751,34 +807,45 @@ export default function CreateQuestScreen({
               <Check color={colors.primary} size={32} strokeWidth={2.5} />
             </View>
             <Text accessibilityRole="header" className={styles.successTitle}>
-              {published
-                ? messages.publishedQuestTitle
-                : messages.savedDraftTitle}
+              {editMode
+                ? messages.updatedQuestTitle
+                : published
+                  ? messages.publishedQuestTitle
+                  : messages.savedDraftTitle}
             </Text>
             <Text className={styles.successDescription}>
-              {published
-                ? messages.publishedQuestDescription
-                : messages.savedDraftDescription}
+              {editMode
+                ? messages.updatedQuestDescription
+                : published
+                  ? messages.publishedQuestDescription
+                  : messages.savedDraftDescription}
             </Text>
-            <Button
-              onPress={() => void resetDraft()}
-              className={styles.fullButton}
-            >
-              {messages.createAnotherDraft}
-            </Button>
-            <Button
-              variant="secondary"
-              onPress={leaveCreateFlow}
-              className={styles.fullButton}
-            >
-              {messages.viewQuestBoard}
-            </Button>
+            {editMode ? (
+              <Button onPress={leaveCreateFlow} className={styles.fullButton}>
+                {messages.backToQuest}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  onPress={() => void resetDraft()}
+                  className={styles.fullButton}
+                >
+                  {messages.createAnotherDraft}
+                </Button>
+                <Button
+                  variant="secondary"
+                  onPress={leaveCreateFlow}
+                  className={styles.fullButton}
+                >
+                  {messages.viewQuestBoard}
+                </Button>
+              </>
+            )}
           </View>
         </View>
       </ScreenLayout>
     );
   }
-
   const isSaving = saveState === "saving";
   const nextLabel = step === 2 ? messages.reviewQuest : messages.next;
 
@@ -791,6 +858,8 @@ export default function CreateQuestScreen({
         onBackPress={goBack}
         onHelpPress={showHelp}
         onStepPress={goToStep}
+        title={editMode ? messages.editTitle : undefined}
+        subtitle={editMode ? messages.editHeaderSubtitle : undefined}
       />
       <View className={styles.surface}>
         <KeyboardAvoidingView
@@ -1113,40 +1182,62 @@ export default function CreateQuestScreen({
               </Button>
             ) : (
               <>
-                <ReviewActionButton
-                  accessibilityLabel={
-                    savingAction === "DRAFT"
-                      ? messages.savingDraft
-                      : messages.saveDraft
-                  }
-                  disabled={isSaving}
-                  label={
-                    savingAction === "DRAFT"
-                      ? messages.savingDraft
-                      : messages.saveDraft
-                  }
-                  onPress={() => void finishQuest("DRAFT")}
-                  stacked={useStackedActions}
-                  testID="create-quest-save-draft"
-                  variant="secondary"
-                />
-                <ReviewActionButton
-                  accessibilityLabel={
-                    savingAction === "OPEN"
-                      ? messages.publishingQuest
-                      : messages.publishQuest
-                  }
-                  disabled={isSaving || !reviewPublishCheck.canPublish}
-                  label={
-                    savingAction === "OPEN"
-                      ? messages.publishingQuest
-                      : messages.publishQuest
-                  }
-                  onPress={() => void finishQuest("OPEN")}
-                  stacked={useStackedActions}
-                  testID="create-quest-save-preview"
-                  variant="primary"
-                />
+                {editMode ? (
+                  <ReviewActionButton
+                    accessibilityLabel={
+                      savingAction === "DRAFT"
+                        ? messages.savingChanges
+                        : messages.saveChanges
+                    }
+                    disabled={isSaving}
+                    label={
+                      savingAction === "DRAFT"
+                        ? messages.savingChanges
+                        : messages.saveChanges
+                    }
+                    onPress={() => void finishQuest("DRAFT")}
+                    stacked={useStackedActions}
+                    testID="edit-quest-save"
+                    variant="primary"
+                  />
+                ) : (
+                  <>
+                    <ReviewActionButton
+                      accessibilityLabel={
+                        savingAction === "DRAFT"
+                          ? messages.savingDraft
+                          : messages.saveDraft
+                      }
+                      disabled={isSaving}
+                      label={
+                        savingAction === "DRAFT"
+                          ? messages.savingDraft
+                          : messages.saveDraft
+                      }
+                      onPress={() => void finishQuest("DRAFT")}
+                      stacked={useStackedActions}
+                      testID="create-quest-save-draft"
+                      variant="secondary"
+                    />
+                    <ReviewActionButton
+                      accessibilityLabel={
+                        savingAction === "OPEN"
+                          ? messages.publishingQuest
+                          : messages.publishQuest
+                      }
+                      disabled={isSaving || !reviewPublishCheck.canPublish}
+                      label={
+                        savingAction === "OPEN"
+                          ? messages.publishingQuest
+                          : messages.publishQuest
+                      }
+                      onPress={() => void finishQuest("OPEN")}
+                      stacked={useStackedActions}
+                      testID="create-quest-save-preview"
+                      variant="primary"
+                    />
+                  </>
+                )}
               </>
             )}
           </View>

@@ -2,8 +2,10 @@ import type { SupportedLocale } from "./LocaleProvider";
 
 export interface CreateQuestMessages {
   title: string;
-  step: (current: number, total: number) => string;
   headerSubtitle: string;
+  editTitle: string;
+  editHeaderSubtitle: string;
+  step: (current: number, total: number) => string;
   helpLabel: string;
   helpTitle: string;
   helpDescription: string;
@@ -125,15 +127,20 @@ export interface CreateQuestMessages {
   reviewQuest: string;
   saveDraft: string;
   savingDraft: string;
+  saveChanges: string;
+  savingChanges: string;
   publishQuest: string;
   publishingQuest: string;
   loadingDraft: string;
   loadingTags: string;
   savedDraftTitle: string;
   savedDraftDescription: string;
+  updatedQuestTitle: string;
+  updatedQuestDescription: string;
   publishedQuestTitle: string;
   publishedQuestDescription: string;
   createAnotherDraft: string;
+  backToQuest: string;
   notSelected: string;
   onlineOrAgreed: string;
   noImages: string;
@@ -209,6 +216,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       title: "Create Quest",
       step: (current, total) => `Step ${current} of ${total}`,
       headerSubtitle: "Set up your Quest step by step",
+      editTitle: "Edit Quest",
+      editHeaderSubtitle: "Update your Quest before it is published",
       helpLabel: "Quest creation help",
       helpTitle: "Create a Quest",
       helpDescription:
@@ -344,6 +353,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       reviewQuest: "Review Quest",
       saveDraft: "Save draft",
       savingDraft: "Saving draft…",
+      saveChanges: "Save changes",
+      savingChanges: "Saving changes…",
       publishQuest: "Publish Quest",
       publishingQuest: "Publishing Quest…",
       loadingDraft: "Restoring your draft…",
@@ -351,10 +362,13 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       savedDraftTitle: "Quest draft saved locally",
       savedDraftDescription:
         "Your draft is stored securely on this device and is not visible on the Quest Board yet.",
+      updatedQuestTitle: "Quest updated",
+      updatedQuestDescription: "Your Quest changes were saved to the server.",
       publishedQuestTitle: "Quest published",
       publishedQuestDescription:
         "Your Quest is now published on the Quest Board and will appear in My Quests for the Hirer.",
       createAnotherDraft: "Create another draft",
+      backToQuest: "Back to Quest",
       notSelected: "Not selected",
       onlineOrAgreed: "Online or to be agreed",
       noImages: "None",
@@ -467,6 +481,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       title: "สร้างเควสต์",
       step: (current, total) => `ขั้นตอนที่ ${current} จาก ${total}`,
       headerSubtitle: "สร้างเควสต์ทีละขั้นตอน",
+      editTitle: "แก้ไขเควสต์",
+      editHeaderSubtitle: "อัปเดตเควสต์ก่อนเผยแพร่",
       helpLabel: "ความช่วยเหลือในการสร้างเควสต์",
       helpTitle: "สร้างเควสต์",
       helpDescription:
@@ -598,6 +614,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       reviewQuest: "ตรวจสอบเควสต์",
       saveDraft: "บันทึกฉบับร่าง",
       savingDraft: "กำลังบันทึกฉบับร่าง…",
+      saveChanges: "บันทึกการแก้ไข",
+      savingChanges: "กำลังบันทึกการแก้ไข…",
       publishQuest: "เผยแพร่เควสต์",
       publishingQuest: "กำลังเผยแพร่เควสต์…",
       loadingDraft: "กำลังกู้คืนฉบับร่าง…",
@@ -605,10 +623,13 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       savedDraftTitle: "บันทึกฉบับร่างเควสต์แล้ว",
       savedDraftDescription:
         "ฉบับร่างถูกเก็บไว้อย่างปลอดภัยในอุปกรณ์นี้ และยังไม่แสดงบนกระดานเควสต์",
+      updatedQuestTitle: "อัปเดตเควสต์แล้ว",
+      updatedQuestDescription: "บันทึกการแก้ไขเควสต์ไปยังเซิร์ฟเวอร์แล้ว",
       publishedQuestTitle: "เผยแพร่เควสต์แล้ว",
       publishedQuestDescription:
         "เควสต์ของคุณเผยแพร่บนกระดานเควสต์แล้ว และจะแสดงใน My Quests ของผู้ว่าจ้าง",
       createAnotherDraft: "สร้างฉบับร่างใหม่",
+      backToQuest: "กลับไปที่เควสต์",
       notSelected: "ยังไม่ได้เลือก",
       onlineOrAgreed: "ออนไลน์หรือรอตกลงกัน",
       noImages: "ไม่มี",
