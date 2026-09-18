@@ -10,7 +10,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { profileMessages } from "../../locales/profileMessages";
-import { useLocale } from "../../locales/LocaleProvider";
+import { handleNavigationScroll as handleNavigationScrollEvent } from "@/features/navigation/navigationUiStore";
 import styles from "./styles/profileStyles";
 import {
   AboutMe,
@@ -33,7 +33,7 @@ import {
 import { getProfileLayoutMetrics } from "../../theme/profileLayout";
 import { spacing } from "../../theme/spacing";
 import { AuthError } from "../auth/types";
-import { useNavigationVisibility } from "../../components/navigation/NavigationVisibilityContext";
+import { useLocale } from "@/features/preferences/localeStore";
 import { ProfileTopBar } from "./components/ProfileTopBar";
 import { ScreenLayout } from "../../components/layout/ScreenLayout";
 
@@ -45,7 +45,7 @@ export default function Profile() {
   const layoutMetrics = getProfileLayoutMetrics(width, fontScale);
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
   const messages = profileMessages[locale];
-  const { handleScroll: handleNavigationScroll } = useNavigationVisibility();
+  const handleNavigationScroll = handleNavigationScrollEvent;
   const [viewData, setViewData] = useState<ProfileViewData | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>("about");
   const [loadError, setLoadError] = useState(false);

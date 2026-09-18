@@ -4,7 +4,7 @@ import type HomeScreenComponent from "../HomeScreen";
 
 const mockPush = jest.fn();
 
-jest.doMock("@/components/navigation/RoleWorkspaceContext", () => ({
+jest.doMock("@/features/workspace/roleWorkspaceStore", () => ({
   useRoleWorkspace: () => ({
     workspace: "worker",
     isHirer: false,
@@ -22,7 +22,7 @@ jest.doMock("expo-router", () => ({
     }, [cb]);
   },
 }));
-jest.doMock("@/locales/LocaleProvider", () => ({
+jest.doMock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 jest.doMock("@/features/auth/authEnvironment", () => ({

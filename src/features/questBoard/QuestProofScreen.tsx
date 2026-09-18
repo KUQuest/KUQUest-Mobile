@@ -7,7 +7,7 @@ import { type UploadAsset } from "@/api/fileUpload";
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
 import { ScrollView, Text, View } from "@/tw";

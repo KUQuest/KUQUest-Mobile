@@ -20,7 +20,7 @@ import {
   liveQuestService,
   type LiveQuestSnapshot,
 } from "@/features/questBoard/liveQuestService";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { getThemeColors } from "@/theme/colors";
 import { fontFamily } from "@/theme/typography";
 import { workerHomeMessages } from "../workerHomeMessages";

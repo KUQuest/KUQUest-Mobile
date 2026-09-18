@@ -12,12 +12,15 @@ import {
   Plus,
   Wallet,
 } from "lucide-react-native";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { navigationMessages } from "@/locales/navigationMessages";
 import { getAppChromeMetrics } from "@/theme/layout";
-import { useNavigationVisibility } from "./NavigationVisibilityContext";
+import {
+  useNavigationVisible,
+  showNavigation,
+} from "@/features/navigation/navigationUiStore";
 import styles, { getBottomNavigationColors } from "./bottomNavStyles";
-import { useRoleWorkspace } from "./RoleWorkspaceContext";
+import { useRoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
 import { authService } from "@/features/auth/AuthService";
 
 type NavigationItem = {
@@ -124,7 +127,7 @@ export function BottomNav({
   const messages = navigationMessages[locale];
   const focusedRouteKey = state.routes[state.index]?.key;
   const { workspace, switchWorkspace } = useRoleWorkspace();
-  const { navigationVisible, showNavigation } = useNavigationVisibility();
+  const navigationVisible = useNavigationVisible();
   const [avatarUri, setAvatarUri] = React.useState<string | null>(null);
   const lastProfilePressRef = React.useRef<number>(0);
 

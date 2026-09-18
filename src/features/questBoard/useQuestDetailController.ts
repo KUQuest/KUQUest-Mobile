@@ -11,7 +11,7 @@ import { ApiError } from "@/api/ApiClient";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import type { UploadAsset } from "@/api/fileUpload";
 import { useCalmRefresh } from "@/hooks/useCalmRefresh";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import {
   questBoardMessages,

@@ -114,7 +114,7 @@ jest.mock("expo-status-bar", () => ({
   StatusBar: () => null,
 }));
 
-jest.mock("../../../locales/LocaleProvider", () => ({
+jest.mock("../../../features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "th" }),
 }));
 

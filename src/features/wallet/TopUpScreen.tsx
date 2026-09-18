@@ -27,7 +27,8 @@ import {
 import { type TopUpData, type TopUpQuote } from "@/api/WalletApi";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { formatSatang } from "@/domain/satang";
-import { useLocale, type SupportedLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
+import type { SupportedLocale } from "@/locales/locale";
 import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
 import { fontFamily } from "@/theme/typography";

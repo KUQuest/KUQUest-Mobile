@@ -36,7 +36,7 @@ Current code can intentionally lag the rulebook. Treat that as an implementation
 
 `src/app/` is the Expo Router entry layer. Route files should compose the owning feature and navigation shell; domain rules do not belong only in a route component.
 
-- `src/app/_layout.tsx` — fonts, splash, safe-area provider, locale provider, status bar, and root stack.
+- `src/app/_layout.tsx` — fonts, splash, safe-area provider, store hydration, status bar, and root stack.
 - `src/app/index.tsx` — root/auth entry.
 - `src/app/(tabs)/_layout.tsx` — authenticated tab shell.
 - `src/app/(tabs)/index.tsx` — Quest Board.
@@ -77,19 +77,24 @@ The route tree currently has no dedicated route file for Sent Work, Wallet/Conve
 - `workerHome/` — Worker Workspace Home screen with real assignment and board endpoints, quick stats, and available quests feed.
 - `wallet/` — four-compartment wallet overview (spending, earnings, funding reserved, payout reserve), Top-up quote and payment flow, transaction history modal, `walletModule.ts` Top-up and Earnings Conversion rules.
 - `roleplay/` — development-only Roleplay prototype screen, prototype persona switching, four quest fixture scenarios, mock view-model store, candidate/team/consent actions dispatched through the questBoard fixture adapter.
+- `preferences/` — locale preference store (`localeStore.ts`); owns the persisted `kuquest_user_locale` value.
+- `workspace/` — Hirer/Worker role workspace store (`roleWorkspaceStore.ts`); owns the persisted `kuquest_active_workspace` value.
+- `navigation/` — navigation chrome UI store (`navigationUiStore.ts`); owns bottom-nav visibility and the scroll accumulators that drive it.
 
 ### Shared and transport layer
 
 - `src/api/` — `ApiClient`, request/error boundary, Zod/API contracts, `StudentApi`, `ProfileApi`. Network behavior belongs here, not in screen render code.
 - `src/components/ui/` — shared UI primitives, loading/placeholder/button, TopBar, Quest Funding Summary, Prototype Menu.
-- `src/components/navigation/` — BottomNav and navigation visibility context.
+- `src/components/navigation/` — BottomNav. Navigation visibility state lives in `src/features/navigation/navigationUiStore.ts`.
 - `src/components/layout/` — shared screen roots and safe-area ownership (`ScreenLayout`).
 - `src/domain/` — cross-slice domain primitives; `satang.ts` owns Integer Satang parsing and display.
-- `src/locales/` — Thai/English dictionaries and `LocaleProvider`; user-visible strings belong here.
+- `src/locales/` — Thai/English dictionaries plus `locale.ts` (`SupportedLocale`, `DEFAULT_LOCALE`, storage key); user-visible strings belong here. Locale state lives in `src/features/preferences/localeStore.ts`.
 - `src/theme/` — colors, spacing, typography, layout/profile metrics.
 - `src/tw/` — NativeWind primitives and class-name/image/animation helpers.
 - `src/data/questPrototype/` — prototype data entry point.
 - `src/global.css` — global NativeWind/CSS setup.
+- `src/infrastructure/storage/` — the persistence boundary. `keyValueStorage.ts` exports the `KeyValueStorage` interface and the SecureStore-backed `secureStorage` adapter. Feature code persists through an adapter, not through `expo-secure-store` directly.
+- `src/app/providers/` — `QueryProvider` and `createQueryClient`: TanStack Query owns server state, including focus/online integration for React Native.
 
 ## Quest implementation seams
 

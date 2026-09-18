@@ -1,34 +1,33 @@
-import React from "react";
 import { fireEvent, render } from "@testing-library/react-native";
 import { Pressable, ScrollView, Text } from "react-native";
 
 import {
-  NavigationVisibilityProvider,
-  useNavigationVisibility,
-} from "../NavigationVisibilityContext";
+  handleNavigationScroll,
+  resetNavigationVisibility,
+  showNavigation,
+  useNavigationVisible,
+} from "@/features/navigation/navigationUiStore";
 
 function NavigationVisibilityProbe() {
-  const { navigationVisible, handleScroll, showNavigation } =
-    useNavigationVisibility();
-
+  const navigationVisible = useNavigationVisible();
   return (
     <>
       <Text testID="visibility">
         {navigationVisible ? "visible" : "hidden"}
       </Text>
-      <ScrollView testID="scroll" onScroll={handleScroll} />
+      <ScrollView testID="scroll" onScroll={handleNavigationScroll} />
       <Pressable testID="show" onPress={showNavigation} />
     </>
   );
 }
 
-describe("NavigationVisibilityContext", () => {
+describe("navigationUiStore", () => {
+  beforeEach(() => {
+    resetNavigationVisibility();
+  });
+
   it("hides after downward movement and shows after upward movement", async () => {
-    const view = await render(
-      <NavigationVisibilityProvider>
-        <NavigationVisibilityProbe />
-      </NavigationVisibilityProvider>
-    );
+    const view = await render(<NavigationVisibilityProbe />);
     const scrollView = view.getByTestId("scroll");
 
     await fireEvent.scroll(scrollView, {
@@ -46,11 +45,7 @@ describe("NavigationVisibilityContext", () => {
   });
 
   it("shows immediately when requested", async () => {
-    const view = await render(
-      <NavigationVisibilityProvider>
-        <NavigationVisibilityProbe />
-      </NavigationVisibilityProvider>
-    );
+    const view = await render(<NavigationVisibilityProbe />);
     const scrollView = view.getByTestId("scroll");
 
     await fireEvent.scroll(scrollView, {

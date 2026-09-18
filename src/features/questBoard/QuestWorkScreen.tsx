@@ -16,7 +16,7 @@ import { ApiError } from "@/api/ApiClient";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import { authService } from "@/features/auth/AuthService";
 import { getChatRouteParams } from "@/features/chat/chatData";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import {
   questWorkMessages,

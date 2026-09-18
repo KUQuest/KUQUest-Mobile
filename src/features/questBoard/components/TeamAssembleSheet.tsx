@@ -23,7 +23,8 @@ import {
   TextInput,
   View,
 } from "@/tw";
-import { useLocale, type SupportedLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
+import type { SupportedLocale } from "@/locales/locale";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import { colors } from "@/theme/colors";
 import {

@@ -49,7 +49,7 @@ jest.mock("expo-router", () => {
   };
 });
 
-jest.mock("@/locales/LocaleProvider", () => ({
+jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 
@@ -74,6 +74,10 @@ jest.mock("@/api/ChatApi", () => {
       getAttachmentLink: jest.fn(),
       uploadAttachment: jest.fn(),
       sendMessage: jest.fn(),
+      getWorkConversationEventsPath: (conversationId: string) =>
+        `/api/v1/chat/conversations/${conversationId}/events`,
+      getCandidateInquiryEventsPath: (conversationId: string) =>
+        `/api/v1/chat/candidate-inquiries/${conversationId}/events`,
     },
   };
 });

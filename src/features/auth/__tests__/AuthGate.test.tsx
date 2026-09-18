@@ -31,7 +31,7 @@ jest.mock("../LoginScreen", () => {
   };
 });
 
-jest.mock("../../../locales/LocaleProvider", () => ({
+jest.mock("../../../features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 

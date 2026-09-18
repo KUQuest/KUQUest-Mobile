@@ -31,7 +31,7 @@ import {
   simulateTopUpPayment,
   toCompartments,
 } from "@/features/wallet/walletModule";
-import type { SupportedLocale } from "@/locales/LocaleProvider";
+import type { SupportedLocale } from "@/locales/locale";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
 import { getActionBarPaddingBottom } from "@/theme/layout";

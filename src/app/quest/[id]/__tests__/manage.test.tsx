@@ -11,7 +11,7 @@ jest.mock("expo-router", () => ({
   useLocalSearchParams: () => ({ id: "quest-1" }),
 }));
 
-jest.mock("@/locales/LocaleProvider", () => ({
+jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 

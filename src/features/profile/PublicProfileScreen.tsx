@@ -15,7 +15,8 @@ import { ScreenLayout } from "../../components/layout/ScreenLayout";
 import { cn } from "@/tw/cn";
 import { colors } from "@/theme/colors";
 import { getProfileLayoutMetrics } from "@/theme/profileLayout";
-import { useLocale, type SupportedLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
+import type { SupportedLocale } from "@/locales/locale";
 import { profileMessages } from "@/locales/profileMessages";
 import { authService } from "@/features/auth/AuthService";
 import type {

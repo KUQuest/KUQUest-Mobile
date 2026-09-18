@@ -13,7 +13,7 @@ import {
 import { Pressable, Text, View } from "@/tw";
 import type { QuestV2BoardCard } from "@/api/questV2Contracts";
 import { SATANG_PER_BAHT, formatSatang } from "@/domain/satang";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { getThemeColors } from "@/theme/colors";
 import { workerHomeMessages } from "../workerHomeMessages";
 import { workerHomeStyles as styles } from "../workerHomeStyles";

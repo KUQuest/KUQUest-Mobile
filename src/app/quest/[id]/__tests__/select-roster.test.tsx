@@ -5,7 +5,6 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { studentApi } from "@/api/StudentApi";
 import { liveQuestService } from "@/features/questBoard/liveQuestService";
 import type { LiveQuestSnapshot } from "@/features/questBoard/liveQuestService";
-import { LocaleProvider } from "@/locales/LocaleProvider";
 import SelectRosterRoute from "../select-roster";
 
 const mockBack = jest.fn();
@@ -148,11 +147,7 @@ describe("SelectRosterRoute", () => {
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
     const alertSpy = jest.spyOn(Alert, "alert");
 
-    const { getByTestId, getByText } = await render(
-      <LocaleProvider>
-        <SelectRosterRoute />
-      </LocaleProvider>
-    );
+    const { getByTestId, getByText } = await render(<SelectRosterRoute />);
 
     await waitFor(() => {
       expect(getByText("Nina Candidate")).toBeTruthy();
@@ -202,11 +197,7 @@ describe("SelectRosterRoute", () => {
     (liveQuestService.rejectCandidateTeam as jest.Mock).mockResolvedValue({});
     const alertSpy = jest.spyOn(Alert, "alert");
 
-    const { getByTestId, getByText } = await render(
-      <LocaleProvider>
-        <SelectRosterRoute />
-      </LocaleProvider>
-    );
+    const { getByTestId, getByText } = await render(<SelectRosterRoute />);
 
     await waitFor(() => {
       expect(getByText("Nina Candidate")).toBeTruthy();
@@ -237,11 +228,7 @@ describe("SelectRosterRoute", () => {
     });
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
 
-    const { getByText } = await render(
-      <LocaleProvider>
-        <SelectRosterRoute />
-      </LocaleProvider>
-    );
+    const { getByText } = await render(<SelectRosterRoute />);
 
     await waitFor(() => {
       expect(
@@ -254,11 +241,7 @@ describe("SelectRosterRoute", () => {
     const snapshot = createSnapshot({ applications: [] });
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
 
-    const { getByText } = await render(
-      <LocaleProvider>
-        <SelectRosterRoute />
-      </LocaleProvider>
-    );
+    const { getByText } = await render(<SelectRosterRoute />);
 
     await waitFor(() => {
       expect(getByText("ยังไม่มีข้อเสนอผู้สมัครที่ส่งแล้ว")).toBeTruthy();

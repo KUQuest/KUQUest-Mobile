@@ -8,11 +8,11 @@ import {
 } from "../BottomNav";
 import { authService } from "@/features/auth/AuthService";
 import * as SecureStore from "expo-secure-store";
-import { RoleWorkspaceProvider } from "../RoleWorkspaceContext";
+import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
 import styles from "../bottomNavStyles";
 import { navigationMessages } from "../../../locales/navigationMessages";
 
-jest.mock("../../../locales/LocaleProvider", () => ({
+jest.mock("../../../features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en", setLocale: jest.fn() }),
 }));
 
@@ -28,6 +28,9 @@ jest.mock("lucide-react-native", () => ({
 }));
 
 describe("authenticated primary navigation", () => {
+  beforeEach(() => {
+    useRoleWorkspaceStore.setState({ workspace: "hirer" });
+  });
   it("keeps the approved five-destination order", () => {
     expect(hirerNavigationItems).toBe(navigationItems);
     expect(navigationItems.map((item) => item.routeName)).toEqual([
@@ -199,22 +202,19 @@ describe("authenticated primary navigation", () => {
       { key: "profile-key", name: "profile" },
     ];
 
+    useRoleWorkspaceStore.setState({ workspace: "worker" });
     const view = await render(
-      React.createElement(
-        RoleWorkspaceProvider,
-        { initialWorkspace: "worker" },
-        React.createElement(BottomNav, {
-          state: { index: 0, routes } as never,
-          descriptors: Object.fromEntries(
-            routes.map((route) => [route.key, { options: {} }])
-          ) as never,
-          navigation: {
-            emit: jest.fn(() => ({ defaultPrevented: false })),
-            navigate: jest.fn(),
-          } as never,
-          insets: { top: 0, right: 0, bottom: 0, left: 0 },
-        })
-      )
+      React.createElement(BottomNav, {
+        state: { index: 0, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate: jest.fn(),
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
     );
 
     expect(view.getByTestId("tab-my-quests")).toBeTruthy();
@@ -315,22 +315,19 @@ describe("authenticated primary navigation", () => {
     const navigate = jest.fn();
     const setItemSpy = jest.spyOn(SecureStore, "setItemAsync");
 
+    useRoleWorkspaceStore.setState({ workspace: "hirer" });
     const view = await render(
-      React.createElement(
-        RoleWorkspaceProvider,
-        { initialWorkspace: "hirer" },
-        React.createElement(BottomNav, {
-          state: { index: 0, routes } as never,
-          descriptors: Object.fromEntries(
-            routes.map((route) => [route.key, { options: {} }])
-          ) as never,
-          navigation: {
-            emit: jest.fn(() => ({ defaultPrevented: false })),
-            navigate,
-          } as never,
-          insets: { top: 0, right: 0, bottom: 0, left: 0 },
-        })
-      )
+      React.createElement(BottomNav, {
+        state: { index: 0, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate,
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
     );
 
     const profileTab = view.getByTestId("tab-profile");

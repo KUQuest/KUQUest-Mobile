@@ -22,15 +22,15 @@ jest.mock("expo-router", () => ({
     jest.requireActual("react").useEffect(effect, []),
 }));
 
-jest.mock("@/components/navigation/NavigationVisibilityContext", () => ({
-  useNavigationVisibility: () => ({ handleScroll: jest.fn() }),
+jest.mock("@/features/navigation/navigationUiStore", () => ({
+  handleNavigationScroll: jest.fn(),
 }));
 
 jest.mock("@/features/wallet/HomeWalletOverview", () => ({
   HomeWalletOverview: () => null,
 }));
 
-jest.mock("@/locales/LocaleProvider", () => ({
+jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 jest.mock("@/features/auth/AuthService", () => ({

@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "@/locales/LocaleProvider";
+import type { SupportedLocale } from "@/locales/locale";
 import type { QuestBoardQuest } from "./types";
 
 const questImageByTag: Record<string, string> = {

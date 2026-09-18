@@ -4,7 +4,7 @@ import { FileText, ImageIcon, ShieldCheck, X } from "lucide-react-native";
 
 import { Button } from "@/components/ui/Button";
 import { TextArea } from "@/features/onboarding/components/TextArea";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
 import { Image, Pressable, SafeAreaView, ScrollView, Text, View } from "@/tw";

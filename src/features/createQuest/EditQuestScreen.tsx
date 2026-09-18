@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 
 import { Button } from "@/components/ui/Button";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { createQuestMessages } from "@/locales/createQuestMessages";
 import { Text, View } from "@/tw";
 

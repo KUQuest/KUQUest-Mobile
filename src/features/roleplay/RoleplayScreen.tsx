@@ -14,7 +14,7 @@ import {
   type PrototypePersonaId,
 } from "@/components/ui/prototypeMenuData";
 import { QuestTeamStatus } from "@/features/questBoard/types";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import { Pressable, ScrollView, Text, View } from "@/tw";

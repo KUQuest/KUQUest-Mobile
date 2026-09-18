@@ -11,7 +11,7 @@ import { CheckCircle2, CircleX, Clock, RefreshCw } from "lucide-react-native";
 
 import { Pressable, ScrollView, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
+import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import { questApi } from "@/api/QuestApi";
 import type { QuestV2Assignment } from "@/api/questV2Contracts";
 import { authService } from "@/features/auth/AuthService";
@@ -19,7 +19,7 @@ import {
   liveQuestService,
   type LiveQuestSnapshot,
 } from "@/features/questBoard/liveQuestService";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { getThemeColors } from "@/theme/colors";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
@@ -38,7 +38,7 @@ export default function WorkerWorkManagementScreen() {
   const colorScheme = useColorScheme();
   const themeColors = getThemeColors(colorScheme);
   const metrics = getAppChromeMetrics(width, fontScale);
-  const { handleScroll } = useNavigationVisibility();
+  const handleScroll = handleNavigationScroll;
   const { locale } = useLocale();
   const messages = workerHomeMessages[locale];
 

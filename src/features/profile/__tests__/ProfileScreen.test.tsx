@@ -3,7 +3,6 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import ProfileScreen from "../ProfileScreen";
 import { profileModule } from "../profileModule";
-import { NavigationVisibilityProvider } from "../../../components/navigation/NavigationVisibilityContext";
 
 const mockPush = jest.fn();
 
@@ -17,7 +16,7 @@ jest.mock("../../auth/AuthService", () => ({
   authService: { signOut: jest.fn() },
 }));
 
-jest.mock("../../../locales/LocaleProvider", () => ({
+jest.mock("../../../features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 
@@ -236,11 +235,7 @@ describe("Student Profile screen", () => {
   });
 
   it("hides the transparent profile top bar with navigation while scrolling down", async () => {
-    const view = await render(
-      <NavigationVisibilityProvider>
-        <ProfileScreen />
-      </NavigationVisibilityProvider>
-    );
+    const view = await render(<ProfileScreen />);
 
     await waitFor(() =>
       expect(view.getByTestId("profile-content-scroll")).toBeTruthy()

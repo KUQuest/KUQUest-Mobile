@@ -6,7 +6,7 @@ import type {
 import { liveQuestService } from "@/features/questBoard/liveQuestService";
 import type { LiveQuestSnapshot } from "@/features/questBoard/liveQuestService";
 import type { WorkConversationCapability } from "@/features/questBoard/types";
-import type { SupportedLocale } from "@/locales/LocaleProvider";
+import type { SupportedLocale } from "@/locales/locale";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 /** The v2 endpoint accepts limits from 1 through 50. */
 const PAGE_LIMIT = 50;

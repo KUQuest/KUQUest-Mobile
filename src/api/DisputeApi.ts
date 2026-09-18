@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ApiClient } from "./ApiClient";
+import type { RequestOptions } from "./WalletApi";
 
 export const disputeReasonSchema = z.enum([
   "PROOF_REJECTED_UNFAIRLY",
@@ -73,11 +74,15 @@ export class DisputeApi {
     return disputeCaseResponseSchema.parse(body).data.dispute;
   }
 
-  async getDispute(questId: string): Promise<DisputeCase | null> {
+  async getDispute(
+    questId: string,
+    options?: RequestOptions
+  ): Promise<DisputeCase | null> {
     const body = await this.client.request<unknown>(
       `/api/v1/quests/${questId}/disputes`,
       {
         method: "GET",
+        signal: options?.signal,
       }
     );
     return disputeQueryResponseSchema.parse(body).data.dispute;

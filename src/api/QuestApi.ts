@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { RequestOptions } from "./WalletApi";
 import { ApiClient } from "./ApiClient";
 import {
   questV2ApplicationListResponseSchema,
@@ -196,7 +197,8 @@ export class QuestApi {
       startTo?: string;
       limit?: number;
       cursor?: string;
-    } = {}
+    } = {},
+    options?: RequestOptions
   ): Promise<{ items: QuestV2BoardCard[]; nextCursor: string | null }> {
     const query = new URLSearchParams();
     if (params.tagId) query.set("tagId", params.tagId);
@@ -216,34 +218,48 @@ export class QuestApi {
 
     const queryString = query.toString();
     const endpoint = `/api/v2/quests${queryString ? `?${queryString}` : ""}`;
-    const body = await this.client.request<unknown>(endpoint);
+    const body = await this.client.request<unknown>(endpoint, {
+      signal: options?.signal,
+    });
     return questV2BoardResponseSchema.parse(body).data;
   }
 
-  async listTags(): Promise<TagItem[]> {
-    const body = await this.client.request<unknown>("/api/v1/tags");
+  async listTags(options?: RequestOptions): Promise<TagItem[]> {
+    const body = await this.client.request<unknown>("/api/v1/tags", {
+      signal: options?.signal,
+    });
     return tagListResponseSchema.parse(body).data;
   }
 
-  async getPublicDetail(questId: string): Promise<QuestV2PublicDetail> {
+  async getPublicDetail(
+    questId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2PublicDetail> {
     const body = await this.client.request<unknown>(
-      `/api/v2/quests/${questId}/public`
+      `/api/v2/quests/${questId}/public`,
+      { signal: options?.signal }
     );
     return questV2PublicDetailResponseSchema.parse(body).data;
   }
 
   async getParticipationDetail(
-    questId: string
+    questId: string,
+    options?: RequestOptions
   ): Promise<QuestV2ParticipationDetail> {
     const body = await this.client.request<unknown>(
-      `/api/v2/quests/${questId}/participation`
+      `/api/v2/quests/${questId}/participation`,
+      { signal: options?.signal }
     );
     return questV2ParticipationDetailResponseSchema.parse(body).data;
   }
 
-  async getDetail(questId: string): Promise<QuestV2Detail> {
+  async getDetail(
+    questId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2Detail> {
     const body = await this.client.request<unknown>(
-      `/api/v2/quests/${questId}`
+      `/api/v2/quests/${questId}`,
+      { signal: options?.signal }
     );
     return questV2DetailResponseSchema.parse(body).data;
   }
@@ -286,7 +302,8 @@ export class QuestApi {
     params: {
       cursor?: string;
       limit?: number;
-    } = {}
+    } = {},
+    options?: RequestOptions
   ): Promise<{ items: QuestV2CanonicalQuest[]; nextCursor: string | null }> {
     const query = new URLSearchParams();
     if (params.cursor) query.set("cursor", params.cursor);
@@ -294,23 +311,30 @@ export class QuestApi {
 
     const queryString = query.toString();
     const endpoint = `/api/v2/quests/mine${queryString ? `?${queryString}` : ""}`;
-    const body = await this.client.request<unknown>(endpoint);
+    const body = await this.client.request<unknown>(endpoint, {
+      signal: options?.signal,
+    });
     return questV2MineResponseSchema.parse(body).data;
   }
-
   async listMyAssignments(
-    status?: QuestV2AssignmentMineStatus
+    status?: QuestV2AssignmentMineStatus,
+    options?: RequestOptions
   ): Promise<QuestV2Assignment[]> {
     const query = status ? `?status=${status}` : "";
     const body = await this.client.request<unknown>(
-      `/api/v2/assignments/mine${query}`
+      `/api/v2/assignments/mine${query}`,
+      { signal: options?.signal }
     );
     return questV2AssignmentsMineResponseSchema.parse(body).data.items;
   }
 
-  async listQuestAssignments(questId: string): Promise<QuestV2Assignment[]> {
+  async listQuestAssignments(
+    questId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2Assignment[]> {
     const body = await this.client.request<unknown>(
-      `/api/v2/quests/${questId}/assignments`
+      `/api/v2/quests/${questId}/assignments`,
+      { signal: options?.signal }
     );
     return questV2AssignmentsResponseSchema.parse(body).data.items;
   }
@@ -380,9 +404,13 @@ export class QuestApi {
     return questV2CanonicalQuestResponseSchema.parse(body).data;
   }
 
-  async getPublishCheck(questId: string): Promise<QuestV2PublishCheck> {
+  async getPublishCheck(
+    questId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2PublishCheck> {
     const body = await this.client.request<unknown>(
-      `/api/v2/quests/${questId}/publish-check`
+      `/api/v2/quests/${questId}/publish-check`,
+      { signal: options?.signal }
     );
     return questV2PublishCheckResponseSchema.parse(body).data;
   }
@@ -462,19 +490,25 @@ export class QuestApi {
     return questV2ApplicationResponseSchema.parse(body).data;
   }
 
-  async listApplications(questId: string): Promise<QuestV2Application[]> {
+  async listApplications(
+    questId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2Application[]> {
     const body = await this.client.request<unknown>(
-      `/api/v2/quests/${questId}/applications`
+      `/api/v2/quests/${questId}/applications`,
+      { signal: options?.signal }
     );
     return questV2ApplicationListResponseSchema.parse(body).data.items;
   }
 
   async getApplication(
     questId: string,
-    applicationId: string
+    applicationId: string,
+    options?: RequestOptions
   ): Promise<QuestV2Application> {
     const body = await this.client.request<unknown>(
-      `/api/v2/quests/${questId}/applications/${applicationId}`
+      `/api/v2/quests/${questId}/applications/${applicationId}`,
+      { signal: options?.signal }
     );
     return questV2ApplicationResponseSchema.parse(body).data;
   }
@@ -531,19 +565,25 @@ export class QuestApi {
     return questV2TeamResponseSchema.parse(body).data;
   }
 
-  async listCandidateTeams(questId: string): Promise<QuestV2Team[]> {
+  async listCandidateTeams(
+    questId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2Team[]> {
     const body = await this.client.request<unknown>(
-      `/api/v2/quests/${questId}/teams`
+      `/api/v2/quests/${questId}/teams`,
+      { signal: options?.signal }
     );
     return questV2TeamListResponseSchema.parse(body).data.items;
   }
 
   async getCandidateTeam(
     questId: string,
-    teamId: string
+    teamId: string,
+    options?: RequestOptions
   ): Promise<QuestV2Team> {
     const body = await this.client.request<unknown>(
-      `/api/v2/quests/${questId}/teams/${teamId}`
+      `/api/v2/quests/${questId}/teams/${teamId}`,
+      { signal: options?.signal }
     );
     return questV2TeamResponseSchema.parse(body).data;
   }
@@ -674,9 +714,13 @@ export class QuestApi {
     return questV2TeamResponseSchema.parse(body).data;
   }
 
-  async getUnderfilled(questId: string): Promise<QuestV2Underfilled> {
+  async getUnderfilled(
+    questId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2Underfilled> {
     const body = await this.client.request<unknown>(
-      `/api/v2/quests/${questId}/underfilled`
+      `/api/v2/quests/${questId}/underfilled`,
+      { signal: options?.signal }
     );
     return questV2UnderfilledResponseSchema.parse(body).data;
   }
@@ -728,9 +772,13 @@ export class QuestApi {
     return questV2EditRequestResponseSchema.parse(body).data;
   }
 
-  async getEditRequest(requestId: string): Promise<QuestV2EditRequest> {
+  async getEditRequest(
+    requestId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2EditRequest> {
     const body = await this.client.request<unknown>(
-      `/api/v2/quests/edit-requests/${requestId}`
+      `/api/v2/quests/edit-requests/${requestId}`,
+      { signal: options?.signal }
     );
     return questV2EditRequestResponseSchema.parse(body).data;
   }
@@ -875,10 +923,12 @@ export class QuestApi {
   }
 
   async listProofSubmissions(
-    questId: string
+    questId: string,
+    options?: RequestOptions
   ): Promise<QuestV2ProofSubmission[]> {
     const body = await this.client.request<unknown>(
-      `/api/v2/quests/${questId}/proof-submissions`
+      `/api/v2/quests/${questId}/proof-submissions`,
+      { signal: options?.signal }
     );
     return questV2ProofListResponseSchema.parse(body).data.items;
   }

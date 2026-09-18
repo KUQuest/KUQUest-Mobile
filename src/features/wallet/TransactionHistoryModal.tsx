@@ -13,7 +13,7 @@ import {
   type UserTransaction,
   type UserTransactionHistoryResult,
 } from "@/api/WalletApi";
-import type { SupportedLocale } from "@/locales/LocaleProvider";
+import type { SupportedLocale } from "@/locales/locale";
 import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
 import { walletStyles as s } from "./walletStyles";

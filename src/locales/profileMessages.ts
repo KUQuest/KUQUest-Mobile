@@ -1,4 +1,4 @@
-import { SupportedLocale } from "./LocaleProvider";
+import { SupportedLocale } from "./locale";
 
 export interface ProfileMessages {
   loading: string;

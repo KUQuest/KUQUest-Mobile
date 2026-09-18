@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckCircle2, CircleUserRound, Users, X } from "lucide-react-native";
 
 import { Image, Pressable, ScrollView, Text, View } from "@/tw";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { getThemeColors } from "@/theme/colors";
 
 import type {

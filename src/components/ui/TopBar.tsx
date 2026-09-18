@@ -2,7 +2,7 @@ import React from "react";
 import { cn } from "@/tw/cn";
 import { Image, Text, TouchableOpacity, View } from "@/tw";
 import { ChevronLeft } from "lucide-react-native";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { navigationMessages } from "@/locales/navigationMessages";
 import { useWindowDimensions } from "react-native";
 import { colors } from "@/theme/colors";

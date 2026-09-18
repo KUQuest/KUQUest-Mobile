@@ -64,7 +64,7 @@ import { formatSatang } from "@/domain/satang";
 import { Input } from "@/features/onboarding/components/Input";
 import { Select } from "@/features/onboarding/components/Select";
 import { TextArea } from "@/features/onboarding/components/TextArea";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { createQuestMessages } from "@/locales/createQuestMessages";
 import { colors } from "@/theme/colors";
 import { getCreateQuestLayoutMetrics } from "@/theme/layout";

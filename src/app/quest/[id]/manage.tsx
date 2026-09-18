@@ -24,7 +24,7 @@ import {
   ProofReviewModal,
 } from "@/features/questBoard/components";
 import { getChatRouteParams } from "@/features/chat/chatData";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
 

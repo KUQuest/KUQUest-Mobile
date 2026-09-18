@@ -25,7 +25,7 @@ import { Button } from "../../../components/ui/Button";
 import { getProfileLayoutMetrics } from "../../../theme/profileLayout";
 import type { ProfileLayoutMetrics } from "../../../theme/profileLayout";
 import { colors } from "../../../theme/colors";
-import type { SupportedLocale } from "../../../locales/LocaleProvider";
+import type { SupportedLocale } from "@/locales/locale";
 import styles from "../styles/profileComponentStyles";
 import {
   LoadingSkeleton,

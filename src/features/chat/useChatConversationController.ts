@@ -14,7 +14,7 @@ import {
 } from "@/api/fileUpload";
 import { authService } from "@/features/auth/AuthService";
 import { liveQuestService } from "@/features/questBoard/liveQuestService";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { chatMessages } from "@/locales/chatMessages";
 import type {
   ChatConversation,

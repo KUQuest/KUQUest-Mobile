@@ -18,7 +18,7 @@ import {
   type PayoutDestination,
   type PayoutRecord,
 } from "@/api/WalletApi";
-import type { SupportedLocale } from "@/locales/LocaleProvider";
+import type { SupportedLocale } from "@/locales/locale";
 import { colors } from "@/theme/colors";
 import { fontFamily } from "@/theme/typography";
 

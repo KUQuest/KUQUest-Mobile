@@ -11,9 +11,9 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { QuestList } from "@/components/ui/QuestList";
-import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
+import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import { authService } from "@/features/auth/AuthService";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { useCalmRefresh } from "@/hooks/useCalmRefresh";
 import { spacing } from "@/theme/spacing";
 import { getAppChromeMetrics } from "@/theme/layout";
@@ -89,7 +89,7 @@ export default function QuestBoardScreen({
   const { width, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
-  const { handleScroll } = useNavigationVisibility();
+  const handleScroll = handleNavigationScroll;
   const messages = questBoardMessages[locale];
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<QuestBoardFilter>(

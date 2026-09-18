@@ -3,7 +3,6 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import { questApi } from "@/api/QuestApi";
 import { studentApi } from "@/api/StudentApi";
-import { LocaleProvider } from "@/locales/LocaleProvider";
 import HomeScreen from "../HomeScreen";
 
 const mockPush = jest.fn();
@@ -81,11 +80,7 @@ describe("HomeScreen live active quests syncing", () => {
       },
     });
 
-    const { getByText, getByTestId } = await render(
-      <LocaleProvider>
-        <HomeScreen />
-      </LocaleProvider>
-    );
+    const { getByText, getByTestId } = await render(<HomeScreen />);
 
     await waitFor(() => {
       expect(getByText("Science Exhibition Booth Setup")).toBeTruthy();
@@ -128,11 +123,7 @@ describe("HomeScreen live active quests syncing", () => {
       department: { faculty: { name: "Engineering" } },
     });
 
-    const { getByText, getByTestId } = await render(
-      <LocaleProvider>
-        <HomeScreen />
-      </LocaleProvider>
-    );
+    const { getByText, getByTestId } = await render(<HomeScreen />);
 
     await waitFor(() => {
       expect(getByText("Science Exhibition Booth Setup")).toBeTruthy();
@@ -185,11 +176,7 @@ describe("HomeScreen live active quests syncing", () => {
       department: { faculty: { name: "Design" } },
     });
 
-    const { getByText, getByTestId } = await render(
-      <LocaleProvider>
-        <HomeScreen />
-      </LocaleProvider>
-    );
+    const { getByText, getByTestId } = await render(<HomeScreen />);
 
     await waitFor(() => {
       expect(getByText("Poster Design Sprint")).toBeTruthy();
@@ -246,11 +233,7 @@ describe("HomeScreen live active quests syncing", () => {
       department: { faculty: { name: "Art" } },
     });
 
-    const { getByText, getByTestId } = await render(
-      <LocaleProvider>
-        <HomeScreen />
-      </LocaleProvider>
-    );
+    const { getByText, getByTestId } = await render(<HomeScreen />);
 
     await waitFor(() => {
       expect(getByText("Campus Mural Team Project")).toBeTruthy();
@@ -277,11 +260,7 @@ describe("HomeScreen live active quests syncing", () => {
       nextCursor: null,
     });
 
-    const { getByTestId, queryByTestId } = await render(
-      <LocaleProvider>
-        <HomeScreen />
-      </LocaleProvider>
-    );
+    const { getByTestId, queryByTestId } = await render(<HomeScreen />);
 
     await waitFor(() => {
       expect(getByTestId("hirer-home-empty")).toBeTruthy();
@@ -295,11 +274,7 @@ describe("HomeScreen live active quests syncing", () => {
       nextCursor: null,
     });
 
-    const { getByTestId } = await render(
-      <LocaleProvider>
-        <HomeScreen />
-      </LocaleProvider>
-    );
+    const { getByTestId } = await render(<HomeScreen />);
 
     await waitFor(() => {
       expect(getByTestId("hirer-home-quick-access")).toBeTruthy();

@@ -20,7 +20,7 @@ import {
 } from "lucide-react-native";
 import { type TopUpData, type TopUpQuote } from "@/api/WalletApi";
 import { formatSatang } from "@/domain/satang";
-import type { SupportedLocale } from "@/locales/LocaleProvider";
+import type { SupportedLocale } from "@/locales/locale";
 import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
 import {

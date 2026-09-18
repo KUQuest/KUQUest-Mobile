@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "./LocaleProvider";
+import type { SupportedLocale } from "./locale";
 
 export interface SettingsMessages {
   title: string;

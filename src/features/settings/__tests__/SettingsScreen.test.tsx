@@ -19,7 +19,7 @@ jest.mock("../../auth/AuthService", () => ({
 const mockSetLocale = jest.fn();
 let mockLocale: "th" | "en" = "en";
 
-jest.mock("../../../locales/LocaleProvider", () => ({
+jest.mock("../../../features/preferences/localeStore", () => ({
   useLocale: () => ({
     locale: mockLocale,
     setLocale: mockSetLocale,

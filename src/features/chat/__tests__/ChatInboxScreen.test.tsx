@@ -19,12 +19,12 @@ jest.mock("@/features/auth/AuthService", () => ({
   },
 }));
 
-jest.mock("@/locales/LocaleProvider", () => ({
+jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 
-jest.mock("@/components/navigation/NavigationVisibilityContext", () => ({
-  useNavigationVisibility: () => ({ handleScroll: jest.fn() }),
+jest.mock("@/features/navigation/navigationUiStore", () => ({
+  handleNavigationScroll: jest.fn(),
 }));
 
 jest.mock("@/api/ChatApi", () => {

@@ -6,7 +6,7 @@ import LoginScreen from "./LoginScreen";
 import { authService } from "./AuthService";
 import { RoutingDestination } from "./types";
 import { authMessages } from "../../locales/authMessages";
-import { useLocale } from "../../locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 
 export default function Index() {
   const [status, setStatus] = useState<"loading" | "unauthenticated" | "error">(

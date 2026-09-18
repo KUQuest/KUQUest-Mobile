@@ -48,7 +48,7 @@ import { Checkbox } from "../components/Checkbox";
 import { TextArea } from "../components/TextArea";
 import { FileTooLargeModal } from "../components/FileTooLargeModal";
 import { onboardingMessages } from "../../../locales/registrationOnboarding";
-import { useLocale } from "../../../locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { createEmptyProfile } from "../../profile/types";
 import type {
   Certificate,

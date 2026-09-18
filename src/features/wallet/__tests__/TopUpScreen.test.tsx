@@ -9,7 +9,7 @@ jest.mock("expo-router", () => ({
   useRouter: () => ({ back: mockBack, push: mockPush }),
 }));
 
-jest.mock("@/locales/LocaleProvider", () => ({
+jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "th" }),
 }));
 

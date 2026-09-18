@@ -9,7 +9,7 @@ import {
 import { Pressable, Text, View } from "@/tw";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { navigationMessages } from "@/locales/navigationMessages";
 import { colors } from "@/theme/colors";
 interface FeaturePlaceholderProps {

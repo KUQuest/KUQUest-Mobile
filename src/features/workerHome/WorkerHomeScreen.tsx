@@ -17,15 +17,15 @@ import { ArrowRightLeft, Search } from "lucide-react-native";
 
 import { Pressable, ScrollView, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
-import { useRoleWorkspace } from "@/components/navigation/RoleWorkspaceContext";
+import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
+import { useRoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
 import { questApi, type TagItem } from "@/api/QuestApi";
 import type {
   QuestV2Assignment,
   QuestV2BoardCard,
   QuestV2ParticipationDetail,
 } from "@/api/questV2Contracts";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { getThemeColors } from "@/theme/colors";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
@@ -43,7 +43,7 @@ export default function WorkerHomeScreen() {
   const colorScheme = useColorScheme();
   const themeColors = getThemeColors(colorScheme);
   const metrics = getAppChromeMetrics(width, fontScale);
-  const { handleScroll } = useNavigationVisibility();
+  const handleScroll = handleNavigationScroll;
   const { locale } = useLocale();
   const messages = workerHomeMessages[locale];
   const { switchWorkspace } = useRoleWorkspace();

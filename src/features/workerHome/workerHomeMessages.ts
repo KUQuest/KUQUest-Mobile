@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "@/locales/LocaleProvider";
+import type { SupportedLocale } from "@/locales/locale";
 
 export interface WorkerHomeMessages {
   title: string;

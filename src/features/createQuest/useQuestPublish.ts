@@ -3,7 +3,7 @@ import type { Dispatch, RefObject, SetStateAction } from "react";
 
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import { walletApi, type WalletBalances } from "@/api/WalletApi";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import {
   adaptV2PublishCheck,
   getHeadcountForParticipation,

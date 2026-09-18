@@ -14,7 +14,7 @@ import {
 } from "./types";
 import { authService } from "./AuthService";
 import { authMessages, getAuthErrorText } from "../../locales/authMessages";
-import { useLocale } from "../../locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { colors } from "@/theme/colors";
 import styles from "./styles/loginStyles";
 

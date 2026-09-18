@@ -2,7 +2,6 @@ import React from "react";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
-import { LocaleProvider } from "@/locales/LocaleProvider";
 
 import { ProofReviewModal } from "../ProofReviewModal";
 
@@ -41,15 +40,13 @@ const proof: QuestV2ProofSubmission = {
 
 async function renderModal(onReview: jest.Mock, onClose = jest.fn()) {
   return await render(
-    <LocaleProvider>
-      <ProofReviewModal
-        dueAt="2026-09-15T12:00:00Z"
-        onClose={onClose}
-        onReview={onReview}
-        proof={proof}
-        visible
-      />
-    </LocaleProvider>
+    <ProofReviewModal
+      dueAt="2026-09-15T12:00:00Z"
+      onClose={onClose}
+      onReview={onReview}
+      proof={proof}
+      visible
+    />
   );
 }
 

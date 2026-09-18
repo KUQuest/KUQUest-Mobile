@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ApiClient } from "./ApiClient";
+import type { RequestOptions } from "./WalletApi";
 import { appendUploadFile, type UploadAsset } from "./fileUpload";
 import type {
   ChatConversation,
@@ -330,7 +331,8 @@ export class ChatApi {
     params: {
       limit?: number;
       cursor?: string;
-    } = {}
+    } = {},
+    options?: RequestOptions
   ): Promise<ServerChatConversationPage> {
     const query = new URLSearchParams();
     if (params.limit) query.set("limit", String(params.limit));
@@ -338,13 +340,16 @@ export class ChatApi {
 
     const queryString = query.toString();
     const endpoint = `/api/v1/chat/conversations${queryString ? `?${queryString}` : ""}`;
-    const body = await this.client.request<unknown>(endpoint);
+    const body = await this.client.request<unknown>(endpoint, {
+      signal: options?.signal,
+    });
     return chatConversationListResponseSchema.parse(body).data;
   }
 
   async getMessages(
     conversationId: string,
-    params: { limit?: number; before?: string; after?: string } = {}
+    params: { limit?: number; before?: string; after?: string } = {},
+    options?: RequestOptions
   ): Promise<ServerChatMessagePage> {
     const query = new URLSearchParams();
     if (params.limit) query.set("limit", String(params.limit));
@@ -353,16 +358,19 @@ export class ChatApi {
 
     const queryString = query.toString();
     const endpoint = `/api/v1/chat/conversations/${conversationId}/messages${queryString ? `?${queryString}` : ""}`;
-    const body = await this.client.request<unknown>(endpoint);
+    const body = await this.client.request<unknown>(endpoint, {
+      signal: options?.signal,
+    });
     return chatMessageListResponseSchema.parse(body).data;
   }
 
   async loadConversation(
-    conversationId: string
+    conversationId: string,
+    options?: RequestOptions
   ): Promise<ChatConversationSnapshot> {
     const [conversationResult, messageResult] = await Promise.allSettled([
-      this.listConversations({ limit: 20 }),
-      this.getMessages(conversationId, { limit: 50 }),
+      this.listConversations({ limit: 20 }, options),
+      this.getMessages(conversationId, { limit: 50 }, options),
     ]);
     if (conversationResult.status === "rejected") {
       throw conversationResult.reason;
@@ -401,10 +409,12 @@ export class ChatApi {
   }
 
   async listParticipants(
-    conversationId: string
+    conversationId: string,
+    options?: RequestOptions
   ): Promise<ServerChatParticipant[]> {
     const body = await this.client.request<unknown>(
-      `/api/v1/chat/conversations/${conversationId}/participants`
+      `/api/v1/chat/conversations/${conversationId}/participants`,
+      { signal: options?.signal }
     );
     return chatParticipantsResponseSchema.parse(body).data.participants;
   }
@@ -426,7 +436,7 @@ export class ChatApi {
   async getAttachmentLink(
     conversationId: string,
     attachmentId: string,
-    options?: { skipCache?: boolean }
+    options?: RequestOptions & { skipCache?: boolean }
   ): Promise<ServerChatAttachmentLink> {
     if (!options?.skipCache) {
       const cached = this.getCachedAttachmentLink(attachmentId);
@@ -435,7 +445,8 @@ export class ChatApi {
       }
     }
     const body = await this.client.request<unknown>(
-      `/api/v1/chat/conversations/${conversationId}/attachments/${attachmentId}/link`
+      `/api/v1/chat/conversations/${conversationId}/attachments/${attachmentId}/link`,
+      { signal: options?.signal }
     );
     const link = chatAttachmentLinkResponseSchema.parse(body).data;
     this.cacheAttachmentLink(attachmentId, link);
@@ -482,39 +493,44 @@ export class ChatApi {
   }
 
   async listCandidateInquiries(
-    params: { limit?: number; cursor?: string } = {}
+    params: { limit?: number; cursor?: string } = {},
+    options?: RequestOptions
   ): Promise<ServerCandidateInquiryPage> {
     const query = new URLSearchParams();
     if (params.limit !== undefined) query.set("limit", String(params.limit));
     if (params.cursor) query.set("cursor", params.cursor);
     const queryString = query.toString();
     const endpoint = `/api/v1/chat/candidate-inquiries${queryString ? `?${queryString}` : ""}`;
-    const body = await this.client.request<unknown>(endpoint);
+    const body = await this.client.request<unknown>(endpoint, {
+      signal: options?.signal,
+    });
     return candidateInquiryListResponseSchema.parse(body).data;
   }
-
   async getCandidateInquiry(
-    conversationId: string
+    conversationId: string,
+    options?: RequestOptions
   ): Promise<ServerCandidateInquiry> {
     const body = await this.client.request<unknown>(
-      `/api/v1/chat/candidate-inquiries/${conversationId}`
+      `/api/v1/chat/candidate-inquiries/${conversationId}`,
+      { signal: options?.signal }
     );
     return candidateInquiryResponseSchema.parse(body).data.inquiry;
   }
-
   async listCandidateInquiryParticipants(
-    conversationId: string
+    conversationId: string,
+    options?: RequestOptions
   ): Promise<CandidateInquiryParticipant[]> {
     const body = await this.client.request<unknown>(
-      `/api/v1/chat/candidate-inquiries/${conversationId}/participants`
+      `/api/v1/chat/candidate-inquiries/${conversationId}/participants`,
+      { signal: options?.signal }
     );
     return candidateInquiryParticipantsResponseSchema.parse(body).data
       .participants;
   }
-
   async getCandidateInquiryMessages(
     conversationId: string,
-    params: { limit?: number; before?: string; after?: string } = {}
+    params: { limit?: number; before?: string; after?: string } = {},
+    options?: RequestOptions
   ): Promise<ServerChatMessagePage> {
     const query = new URLSearchParams();
     if (params.limit !== undefined) query.set("limit", String(params.limit));
@@ -522,7 +538,9 @@ export class ChatApi {
     if (params.after) query.set("after", params.after);
     const queryString = query.toString();
     const endpoint = `/api/v1/chat/candidate-inquiries/${conversationId}/messages${queryString ? `?${queryString}` : ""}`;
-    const body = await this.client.request<unknown>(endpoint);
+    const body = await this.client.request<unknown>(endpoint, {
+      signal: options?.signal,
+    });
     return chatMessageListResponseSchema.parse(body).data;
   }
 
@@ -573,7 +591,7 @@ export class ChatApi {
   async getCandidateInquiryAttachmentLink(
     conversationId: string,
     attachmentId: string,
-    options?: { skipCache?: boolean }
+    options?: RequestOptions & { skipCache?: boolean }
   ): Promise<ServerChatAttachmentLink> {
     if (!options?.skipCache) {
       const cached = this.getCachedAttachmentLink(attachmentId);
@@ -582,7 +600,8 @@ export class ChatApi {
       }
     }
     const body = await this.client.request<unknown>(
-      `/api/v1/chat/candidate-inquiries/${conversationId}/attachments/${attachmentId}/link`
+      `/api/v1/chat/candidate-inquiries/${conversationId}/attachments/${attachmentId}/link`,
+      { signal: options?.signal }
     );
     const link = chatAttachmentLinkResponseSchema.parse(body).data;
     this.cacheAttachmentLink(attachmentId, link);

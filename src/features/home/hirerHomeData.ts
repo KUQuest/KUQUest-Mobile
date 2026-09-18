@@ -1,5 +1,5 @@
 import { QuestStatus } from "@/features/questBoard/types";
-import type { SupportedLocale } from "@/locales/LocaleProvider";
+import type { SupportedLocale } from "@/locales/locale";
 
 export const canonicalHirerQuestStatuses = [
   QuestStatus.QUEST_DRAFT,

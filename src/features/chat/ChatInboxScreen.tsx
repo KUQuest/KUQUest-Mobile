@@ -11,14 +11,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RefreshControl, useWindowDimensions } from "react-native";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
+import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import { authService } from "@/features/auth/AuthService";
 import {
   LoadingSkeleton,
   SkeletonBlock,
 } from "@/components/ui/LoadingSkeleton";
 import { Image, ScrollView, Pressable, Text, TextInput, View } from "@/tw";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { chatMessages } from "@/locales/chatMessages";
 import { colors } from "@/theme/colors";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
@@ -264,7 +264,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
   const insets = useSafeAreaInsets();
   const messages = chatMessages[locale];
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
-  const { handleScroll } = useNavigationVisibility();
+  const handleScroll = handleNavigationScroll;
   const [query, setQuery] = useState("");
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
   useEffect(() => {

@@ -5,7 +5,7 @@ import { ChevronRight, Clock } from "lucide-react-native";
 
 import { Pressable, Text, View } from "@/tw";
 import type { QuestV2Assignment } from "@/api/questV2Contracts";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { getThemeColors } from "@/theme/colors";
 import { workerHomeMessages } from "../workerHomeMessages";
 import { workerHomeStyles as styles } from "../workerHomeStyles";

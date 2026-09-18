@@ -9,7 +9,7 @@ jest.mock("expo-router", () => ({
   useFocusEffect: (effect: () => (() => void) | void) =>
     jest.requireActual("react").useEffect(effect, []),
 }));
-jest.mock("@/locales/LocaleProvider", () => ({
+jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "th" }),
 }));
 jest.mock("react-native/Libraries/Modal/Modal", () => ({

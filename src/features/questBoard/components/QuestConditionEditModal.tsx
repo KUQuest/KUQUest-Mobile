@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react-native";
 
 import { Button } from "@/components/ui/Button";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
 import { Pressable, ScrollView, Text, TextInput, View } from "@/tw";

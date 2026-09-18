@@ -23,7 +23,7 @@ import {
 import { disputeApi, type DisputeReason } from "@/api/DisputeApi";
 import { Button } from "@/components/ui/Button";
 import { TopBar } from "@/components/ui/TopBar";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { colors } from "@/theme/colors";
 
 function routeValue(value: string | string[] | undefined): string | undefined {

@@ -14,7 +14,8 @@ import {
   liveQuestService,
   type LiveQuestSnapshot,
 } from "@/features/questBoard/liveQuestService";
-import { useLocale, type SupportedLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
+import type { SupportedLocale } from "@/locales/locale";
 import { hirerHomeMessages } from "@/features/home/hirerHomeMessages";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import { getThemeColors, type ThemeColors } from "@/theme/colors";

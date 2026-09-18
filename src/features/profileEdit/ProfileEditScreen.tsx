@@ -31,7 +31,7 @@ import {
   profileEditMessages,
   type ProfileEditMessages,
 } from "../../locales/profileEditMessages";
-import { useLocale } from "../../locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { Button } from "../../components/ui/Button";
 import {
   LoadingSkeleton,

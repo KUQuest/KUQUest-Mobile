@@ -12,7 +12,7 @@ import type {
   PortfolioCreate,
   UploadAsset,
 } from "../../api/StudentApi";
-import type { SupportedLocale } from "../../locales/LocaleProvider";
+import type { SupportedLocale } from "@/locales/locale";
 import { authService } from "../auth/AuthService";
 import { AuthError } from "../auth/types";
 import type {

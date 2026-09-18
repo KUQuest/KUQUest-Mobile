@@ -19,12 +19,12 @@ import {
 import { questApi } from "@/api/QuestApi";
 import { studentApi } from "@/api/StudentApi";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { useRoleWorkspace } from "@/components/navigation/RoleWorkspaceContext";
+import { useRoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
 
-import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
+import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import WorkerHomeScreen from "@/features/workerHome/WorkerHomeScreen";
 import { isPrototypeDemoEnabled } from "@/features/auth/authEnvironment";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { getThemeColors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
@@ -46,7 +46,7 @@ export default function HomeScreen() {
   const { width, fontScale } = useWindowDimensions();
   const colorScheme = useColorScheme();
   const insets = useSafeAreaInsets();
-  const { handleScroll } = useNavigationVisibility();
+  const handleScroll = handleNavigationScroll;
   const metrics = getAppChromeMetrics(width, fontScale);
   const themeColors = getThemeColors(colorScheme);
   const messages = hirerHomeMessages[locale];

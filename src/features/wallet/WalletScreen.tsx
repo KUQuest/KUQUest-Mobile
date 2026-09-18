@@ -18,7 +18,7 @@ import {
   type WalletBalances,
 } from "@/api/WalletApi";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";

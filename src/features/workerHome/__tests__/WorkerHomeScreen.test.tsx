@@ -10,11 +10,11 @@ jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-jest.mock("@/locales/LocaleProvider", () => ({
+jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 
-jest.mock("@/components/navigation/RoleWorkspaceContext", () => ({
+jest.mock("@/features/workspace/roleWorkspaceStore", () => ({
   useRoleWorkspace: () => ({
     workspace: "worker",
     isWorker: true,
