@@ -21,6 +21,7 @@ import {
 } from "lucide-react-native";
 
 import { disputeApi, type DisputeReason } from "@/api/DisputeApi";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/Button";
 import { TopBar } from "@/components/ui/TopBar";
 import { useLocale } from "@/features/preferences/localeStore";
@@ -80,14 +81,25 @@ export default function QuestDisputeScreen() {
     "PROOF_REJECTED_UNFAIRLY"
   );
   const [statement, setStatement] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const fileDisputeMutation = useMutation({
+    mutationFn: ({
+      questId: id,
+      reason,
+      statement: value,
+    }: {
+      questId: string;
+      reason: DisputeReason;
+      statement: string;
+    }) => disputeApi.fileDispute(id, { reason, statement: value }),
+  });
 
   const isTh = locale === "th";
   const trimmedStatement = statement.trim();
   const isStatementValid =
     trimmedStatement.length > 0 && trimmedStatement.length <= 1000;
-  const canSubmit = isStatementValid && !submitting && Boolean(questId);
+  const canSubmit =
+    isStatementValid && !fileDisputeMutation.isPending && Boolean(questId);
 
   const handleSubmit = async () => {
     if (!questId) {
@@ -109,11 +121,11 @@ export default function QuestDisputeScreen() {
       return;
     }
 
-    setSubmitting(true);
     setErrorMessage(null);
 
     try {
-      await disputeApi.fileDispute(questId, {
+      await fileDisputeMutation.mutateAsync({
+        questId,
         reason: selectedReason,
         statement: trimmedStatement,
       });
@@ -139,8 +151,6 @@ export default function QuestDisputeScreen() {
             : "Failed to submit dispute. Please try again.";
       setErrorMessage(message);
       Alert.alert(isTh ? "เกิดข้อผิดพลาด" : "Submission Failed", message);
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -257,7 +267,7 @@ export default function QuestDisputeScreen() {
                 onChangeText={setStatement}
                 className="min-h-[140px] text-sm leading-5 text-slate-900"
                 textAlignVertical="top"
-                editable={!submitting}
+                editable={!fileDisputeMutation.isPending}
               />
             </View>
             {statement.length > 1000 ? (
@@ -287,7 +297,7 @@ export default function QuestDisputeScreen() {
             className="w-full"
             accessibilityLabel={isTh ? "ยื่นคำร้องข้อพิพาท" : "Submit Dispute"}
           >
-            {submitting ? (
+            {fileDisputeMutation.isPending ? (
               <ActivityIndicator color="white" />
             ) : isTh ? (
               "ยื่นคำร้องข้อพิพาท"

@@ -1,16 +1,24 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef } from "react";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 
-import { createQuestIdempotencyKey, questApi } from "@/api/QuestApi";
+import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import type { QuestV2Image } from "@/api/questV2Contracts";
 
+import {
+  useCancelQuestMutation,
+  useDeleteQuestImageMutation,
+  useEditQuestMutation,
+  useQuestDetailQuery,
+  useUploadQuestImagesMutation,
+} from "./api/createQuestQueries";
 import {
   getHeadcountForParticipation,
   questDetailToDraft,
   toQuestV2Payload,
   type QuestDraft,
 } from "./createQuestModel";
-import type { CompletionState, SaveState, Step } from "./createQuestTypes";
+import type { CompletionState, Step } from "./createQuestTypes";
 
 export interface UseQuestEditOptions {
   questId?: string;
@@ -21,61 +29,44 @@ export interface UseQuestEditOptions {
 
 export type CancelQuestResult = { ok: true } | { ok: false; message: string };
 
+type SaveVariables = {
+  draft: QuestDraft;
+  state: CompletionState;
+  idempotencyKey: string;
+};
+
 export function useQuestEdit({
   questId,
   draftChangedRef,
   setDraft,
   setStep,
 }: UseQuestEditOptions) {
-  const [draftHydrated, setDraftHydrated] = useState(false);
-  const [draftLoadError, setDraftLoadError] = useState(false);
-  const [draftLoadAttempt, setDraftLoadAttempt] = useState(0);
-  const [saveState, setSaveState] = useState<SaveState>("idle");
-  const [cancelState, setCancelState] = useState<
-    "idle" | "cancelling" | "error"
-  >("idle");
-  const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
-  const [savingAction, setSavingAction] = useState<CompletionState | null>(
-    null
-  );
   const versionRef = useRef<number | null>(null);
   const existingImagesRef = useRef<QuestV2Image[]>([]);
-  const saveRequestRef = useRef(0);
-
-  const loadQuest = useCallback(async () => {
-    if (!questId) return;
-
-    setDraftHydrated(false);
-    setDraftLoadError(false);
-    draftChangedRef.current = false;
-
-    try {
-      const detail = await questApi.getDetail(questId);
-      versionRef.current = detail.version;
-      existingImagesRef.current = detail.images
-        .slice()
-        .sort((left, right) => left.position - right.position);
-      setDraft(questDetailToDraft(detail));
-      setStep(1);
-      setDraftHydrated(true);
-    } catch {
-      setDraftLoadError(true);
-      setDraftHydrated(false);
-    }
-  }, [draftChangedRef, questId, setDraft, setStep]);
+  const detailQuery = useQuestDetailQuery(questId);
+  const deleteImageMutation = useDeleteQuestImageMutation();
+  const uploadImagesMutation = useUploadQuestImagesMutation();
+  const editMutation = useEditQuestMutation();
+  const cancelMutation = useCancelQuestMutation();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void loadQuest();
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [draftLoadAttempt, loadQuest]);
+    if (!questId) return;
+    draftChangedRef.current = false;
+    if (!detailQuery.data) return;
+    versionRef.current = detailQuery.data.version;
+    existingImagesRef.current = detailQuery.data.images
+      .slice()
+      .sort((left, right) => left.position - right.position);
+    setDraft(questDetailToDraft(detailQuery.data));
+    setStep(1);
+  }, [detailQuery.data, draftChangedRef, questId, setDraft, setStep]);
+
+  const draftHydrated =
+    Boolean(questId) && Boolean(detailQuery.data) && !detailQuery.isFetching;
 
   const retryDraftLoad = useCallback(() => {
-    setDraftLoadError(false);
-    setDraftHydrated(false);
-    setDraftLoadAttempt((attempt) => attempt + 1);
-  }, []);
+    void detailQuery.refetch();
+  }, [detailQuery]);
 
   const syncImages = useCallback(
     async (imageUris: string[]): Promise<QuestV2Image[]> => {
@@ -91,28 +82,55 @@ export function useQuestEdit({
       );
 
       for (const image of removedImages) {
-        gallery = await questApi.deleteQuestImage(
+        gallery = await deleteImageMutation.mutateAsync({
           questId,
-          image.imageId,
-          createQuestIdempotencyKey()
-        );
+          imageId: image.imageId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
         existingImagesRef.current = gallery;
       }
 
       const localUris = imageUris.filter((uri) => !originalUrls.has(uri));
       if (localUris.length > 0) {
-        gallery = await questApi.uploadQuestImages(
+        gallery = await uploadImagesMutation.mutateAsync({
           questId,
-          localUris.map((uri) => ({ uri })),
-          createQuestIdempotencyKey()
-        );
+          assets: localUris.map((uri) => ({ uri })),
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
         existingImagesRef.current = gallery;
       }
 
       return gallery;
     },
-    [questId]
+    [deleteImageMutation, questId, uploadImagesMutation]
   );
+
+  const saveMutation = useMutation({
+    mutationFn: async ({
+      draft: draftToSave,
+      state,
+      idempotencyKey,
+    }: SaveVariables) => {
+      if (!questId || versionRef.current === null) {
+        throw new Error("The Quest is not ready to be saved.");
+      }
+      const normalizedDraft = {
+        ...draftToSave,
+        headcount: getHeadcountForParticipation(
+          draftToSave.participation,
+          draftToSave.headcount
+        ),
+      };
+      const updated = await editMutation.mutateAsync({
+        questId,
+        version: versionRef.current,
+        payload: toQuestV2Payload(normalizedDraft),
+        idempotencyKey,
+      });
+      const gallery = await syncImages(normalizedDraft.imageUris);
+      return { updated, gallery, state };
+    },
+  });
 
   const saveDraft = useCallback(
     async (
@@ -120,69 +138,37 @@ export function useQuestEdit({
       state: CompletionState = "DRAFT",
       _completesFlow = false
     ): Promise<boolean> => {
-      const requestId = ++saveRequestRef.current;
-      setSaveState("saving");
-      setSavingAction(state);
-      setSaveErrorMessage(null);
-
-      const version = versionRef.current;
-      if (!questId || version === null) {
-        setSaveState("error");
-        setSaveErrorMessage("The Quest is not ready to be saved.");
-        setSavingAction(null);
-        return false;
-      }
-
       try {
-        const normalizedDraft = {
-          ...draftToSave,
-          headcount: getHeadcountForParticipation(
-            draftToSave.participation,
-            draftToSave.headcount
-          ),
-        };
-        const updated = await questApi.editQuest(
-          questId,
-          version,
-          toQuestV2Payload(normalizedDraft),
-          createQuestIdempotencyKey()
-        );
-        const gallery = await syncImages(normalizedDraft.imageUris);
-        if (requestId !== saveRequestRef.current) return false;
-
-        versionRef.current = updated.version;
+        const result = await saveMutation.mutateAsync({
+          draft: draftToSave,
+          state,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+        versionRef.current = result.updated.version;
         setDraft((current) => ({
           ...current,
-          imageUris: gallery.map((image) => image.url),
+          imageUris: result.gallery.map((image) => image.url),
         }));
-        setSaveState("saved");
-        setSaveErrorMessage(null);
-        setSavingAction(null);
         return true;
-      } catch (error) {
-        if (requestId !== saveRequestRef.current) return false;
-        setSaveState("error");
-        setSaveErrorMessage(
-          error instanceof Error ? error.message : "Unable to save the Quest."
-        );
-        setSavingAction(null);
+      } catch {
         return false;
       }
     },
-    [questId, setDraft, syncImages]
+    [saveMutation, setDraft]
   );
+
   const cancelQuest = useCallback(async (): Promise<CancelQuestResult> => {
     if (!questId) {
       return { ok: false, message: "The Quest ID is missing." };
     }
 
-    setCancelState("cancelling");
     try {
-      await questApi.cancelQuest(questId, createQuestIdempotencyKey());
-      setCancelState("idle");
+      await cancelMutation.mutateAsync({
+        questId,
+        idempotencyKey: createQuestIdempotencyKey(),
+      });
       return { ok: true };
     } catch (error) {
-      setCancelState("error");
       return {
         ok: false,
         message:
@@ -191,20 +177,32 @@ export function useQuestEdit({
             : "Unable to cancel the Quest.",
       };
     }
-  }, [questId]);
+  }, [cancelMutation, questId]);
+
+  const saveState = saveMutation.isPending
+    ? "saving"
+    : saveMutation.isSuccess
+      ? "saved"
+      : saveMutation.isError
+        ? "error"
+        : "idle";
 
   return {
     draftHydrated,
-    draftLoadError,
+    draftLoadError: Boolean(detailQuery.error),
     retryDraftLoad,
     saveState,
-    setSaveState,
-    saveErrorMessage,
-    setSaveErrorMessage,
-    savingAction,
-    setSavingAction,
-    cancelState,
+    saveErrorMessage: saveMutation.error?.message ?? null,
+    savingAction: saveMutation.isPending
+      ? (saveMutation.variables?.state ?? null)
+      : null,
+    cancelState: cancelMutation.isPending
+      ? "cancelling"
+      : cancelMutation.isError
+        ? "error"
+        : "idle",
     cancelQuest,
     saveDraft,
+    resetSaveState: saveMutation.reset,
   };
 }

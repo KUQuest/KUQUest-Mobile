@@ -1,10 +1,6 @@
 import React from "react";
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react-native";
+import { fireEvent, screen, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import LoginScreen from "../LoginScreen";
 import { AuthAdapter, AuthError, type AuthSession } from "../types";
@@ -42,7 +38,7 @@ function createAdapter(): jest.Mocked<AuthAdapter> {
 describe("LoginScreen", () => {
   test("offers one Google sign-in action in Thai", async () => {
     const authAdapter = createAdapter();
-    await render(<LoginScreen authAdapter={authAdapter} />);
+    await renderWithQueryClient(<LoginScreen authAdapter={authAdapter} />);
 
     expect(screen.getByTestId("signin-button")).toBeTruthy();
     expect(screen.queryByTestId("signup-button")).toBeNull();
@@ -54,7 +50,7 @@ describe("LoginScreen", () => {
     authAdapter.authenticate.mockResolvedValue(createSession());
     authAdapter.getRoutingDestination.mockResolvedValue({ type: "HOME" });
     const onNavigate = jest.fn();
-    await render(
+    await renderWithQueryClient(
       <LoginScreen authAdapter={authAdapter} onNavigate={onNavigate} />
     );
 
@@ -74,7 +70,7 @@ describe("LoginScreen", () => {
       step: 1,
     });
     const onNavigate = jest.fn();
-    await render(
+    await renderWithQueryClient(
       <LoginScreen authAdapter={authAdapter} onNavigate={onNavigate} />
     );
 
@@ -88,7 +84,7 @@ describe("LoginScreen", () => {
   test("shows a retry action for an authentication failure", async () => {
     const authAdapter = createAdapter();
     authAdapter.authenticate.mockRejectedValue(new AuthError("OAUTH_FAILED"));
-    await render(<LoginScreen authAdapter={authAdapter} />);
+    await renderWithQueryClient(<LoginScreen authAdapter={authAdapter} />);
 
     await fireEvent.press(screen.getByTestId("signin-button"));
 

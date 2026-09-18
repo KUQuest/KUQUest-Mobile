@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   RefreshControl,
   StyleSheet,
@@ -21,7 +21,7 @@ import { Pressable, Text, View } from "@/tw";
 
 import { QuestList } from "@/components/ui/QuestList";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { authService } from "@/features/auth/AuthService";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import {
   useMyHirerQuestsQuery,
@@ -630,17 +630,8 @@ export default function MyQuestListScreen({
   const [tab, setTab] = useState<MyQuestTab>(() =>
     initialTabForRole(initialRole, initialTab)
   );
-  const [sessionUserId, setSessionUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    void authService
-      .getSession()
-      .then((session) => {
-        if (session?.user?.id) setSessionUserId(session.user.id);
-      })
-      .catch(() => undefined);
-  }, []);
-
+  const sessionQuery = useSessionQuery();
+  const sessionUserId = sessionQuery.data?.user.id ?? null;
   const hirerQuery = useMyHirerQuestsQuery(role === "hirer");
   const workerQuery = useMyWorkerQuestSnapshotsQuery(
     role === "worker" ? sessionUserId : null

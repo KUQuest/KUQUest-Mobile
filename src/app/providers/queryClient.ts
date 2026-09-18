@@ -20,7 +20,7 @@ export function createQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: QUERY_STALE_TIME_MS, // Match useCalmRefresh's 30-second freshness window.
+        staleTime: QUERY_STALE_TIME_MS, // Preserves the 30-second freshness window screens relied on.
         refetchOnWindowFocus: true, // Refresh focused screens after that window expires.
         retry: shouldRetryRequest,
       },

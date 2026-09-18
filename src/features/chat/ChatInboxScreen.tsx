@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, type Href } from "expo-router";
 import { MessageCircle, Search } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -6,7 +6,7 @@ import { RefreshControl, useWindowDimensions } from "react-native";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
-import { authService } from "@/features/auth/AuthService";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
 import {
   LoadingSkeleton,
   SkeletonBlock,
@@ -215,20 +215,8 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
   const handleScroll = handleNavigationScroll;
   const [query, setQuery] = useState("");
-  const [sessionUserId, setSessionUserId] = useState<string | null>(null);
-  useEffect(() => {
-    let active = true;
-    void authService
-      .getSession()
-      .then((session) => {
-        if (active && session?.user?.id) setSessionUserId(session.user.id);
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
-  const resolvedViewerId = viewerId || sessionUserId || "";
+  const sessionQuery = useSessionQuery();
+  const resolvedViewerId = viewerId || sessionQuery.data?.user.id || "";
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const conversationsQuery = useListConversationsQuery(resolvedViewerId);
   const candidateInquiriesQuery =

@@ -14,8 +14,10 @@ import {
   Plus,
   Trash2,
 } from "lucide-react-native";
+import { useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "../../api/ApiClient";
 import { authService } from "../auth/AuthService";
+import { clearSessionCache } from "../auth/sessionQueries";
 import type { ProfileEditData } from "../../api/StudentApi";
 import {
   useCreateCertificateMutation,
@@ -128,14 +130,19 @@ function isSessionExpired(error: unknown): boolean {
   );
 }
 
-async function redirectIfSessionExpired(
-  error: unknown,
-  router: ReturnType<typeof useRouter>
-): Promise<boolean> {
-  if (!isSessionExpired(error)) return false;
-  await authService.signOut().catch(() => undefined);
-  router.replace("/");
-  return true;
+function useSessionExpiryRedirect(): (error: unknown) => Promise<boolean> {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  return React.useCallback(
+    async (error: unknown) => {
+      if (!isSessionExpired(error)) return false;
+      await authService.signOut().catch(() => undefined);
+      clearSessionCache(queryClient);
+      router.replace("/");
+      return true;
+    },
+    [queryClient, router]
+  );
 }
 
 function ScreenHeader({
@@ -769,6 +776,7 @@ function BasicsEditor({
   onBack: () => void;
 }) {
   const router = useRouter();
+  const redirectIfSessionExpired = useSessionExpiryRedirect();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
   const [form, setForm] = useState<BasicsForm>(() =>
@@ -815,7 +823,7 @@ function BasicsEditor({
             type: form.profileImageMimeType ?? undefined,
           });
         } catch (error) {
-          if (await redirectIfSessionExpired(error, router)) return;
+          if (await redirectIfSessionExpired(error)) return;
           setSaveError(messages.avatarUploadError);
           return;
         }
@@ -823,7 +831,7 @@ function BasicsEditor({
       allowNavigation();
       router.back();
     } catch (error) {
-      if (await redirectIfSessionExpired(error, router)) return;
+      if (await redirectIfSessionExpired(error)) return;
       setSaveError(getErrorText(error, messages));
     }
   };
@@ -1161,6 +1169,7 @@ function ProfileEditDataLoader({
   onBack: () => void;
 }) {
   const router = useRouter();
+  const redirectIfSessionExpired = useSessionExpiryRedirect();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
   const {
@@ -1178,8 +1187,8 @@ function ProfileEditDataLoader({
     )
       return;
     redirectedToRoot.current = true;
-    void redirectIfSessionExpired(queryError, router);
-  }, [queryError, router]);
+    void redirectIfSessionExpired(queryError);
+  }, [queryError, redirectIfSessionExpired]);
   if (queryError && !data && !isSessionExpired(queryError))
     return (
       <ScreenLayout
@@ -1219,6 +1228,7 @@ function ExperienceEditor({
   onBack: () => void;
 }) {
   const router = useRouter();
+  const redirectIfSessionExpired = useSessionExpiryRedirect();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
   const employmentTypes = onboardingMessages[locale].employmentTypes;
@@ -1266,7 +1276,7 @@ function ExperienceEditor({
       allowNavigation();
       router.back();
     } catch (error) {
-      if (await redirectIfSessionExpired(error, router)) return;
+      if (await redirectIfSessionExpired(error)) return;
       setSaveError(getErrorText(error, messages));
     }
   };
@@ -1284,7 +1294,7 @@ function ExperienceEditor({
               allowNavigation();
               router.back();
             } catch (error) {
-              if (!(await redirectIfSessionExpired(error, router)))
+              if (!(await redirectIfSessionExpired(error)))
                 setSaveError(getErrorText(error, messages));
             }
           })();
@@ -1405,6 +1415,7 @@ function PortfolioEditor({
   onBack: () => void;
 }) {
   const router = useRouter();
+  const redirectIfSessionExpired = useSessionExpiryRedirect();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
   const [form, setForm] = useState<PortfolioForm>(() => toPortfolioForm(entry));
@@ -1462,7 +1473,7 @@ function PortfolioEditor({
       allowNavigation();
       router.back();
     } catch (error) {
-      if (await redirectIfSessionExpired(error, router)) return;
+      if (await redirectIfSessionExpired(error)) return;
       setSaveError(getErrorText(error, messages));
     }
   };
@@ -1480,7 +1491,7 @@ function PortfolioEditor({
               allowNavigation();
               router.back();
             } catch (error) {
-              if (!(await redirectIfSessionExpired(error, router)))
+              if (!(await redirectIfSessionExpired(error)))
                 setSaveError(getErrorText(error, messages));
             }
           })();
@@ -1577,6 +1588,7 @@ function CertificateEditor({
   onBack: () => void;
 }) {
   const router = useRouter();
+  const redirectIfSessionExpired = useSessionExpiryRedirect();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
   const [form, setForm] = useState<CertificateForm>(() =>
@@ -1642,7 +1654,7 @@ function CertificateEditor({
       allowNavigation();
       router.back();
     } catch (error) {
-      if (await redirectIfSessionExpired(error, router)) return;
+      if (await redirectIfSessionExpired(error)) return;
       setSaveError(getErrorText(error, messages));
     }
   };
@@ -1660,7 +1672,7 @@ function CertificateEditor({
               allowNavigation();
               router.back();
             } catch (error) {
-              if (!(await redirectIfSessionExpired(error, router)))
+              if (!(await redirectIfSessionExpired(error)))
                 setSaveError(getErrorText(error, messages));
             }
           })();

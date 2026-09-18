@@ -1,4 +1,5 @@
-import { render, waitFor } from "@testing-library/react-native";
+import { waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient as render } from "@/testing/queryTestUtils";
 import { questFixtureAdapter } from "../questFixtureAdapter";
 import QuestDetailScreen from "../QuestDetailScreen";
 
@@ -27,7 +28,10 @@ describe("QuestDetailScreen smoke", () => {
     const view = await render(<QuestDetailScreen questId={fixture.id} />);
 
     await waitFor(() => {
-      expect(mockGetQuestDetail).toHaveBeenCalledWith(fixture.id);
+      expect(mockGetQuestDetail).toHaveBeenCalledWith(
+        fixture.id,
+        expect.objectContaining({ signal: expect.anything() })
+      );
     });
     expect(await view.findByText(fixture.title)).toBeTruthy();
   });

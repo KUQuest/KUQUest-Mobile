@@ -1,6 +1,7 @@
 import React from "react";
 import { Alert } from "react-native";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient as render } from "@/testing/queryTestUtils";
 
 import QuestBoardScreen from "../QuestBoardScreen";
 import QuestDetailScreen from "../QuestDetailScreen";
@@ -313,7 +314,8 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
     await waitFor(() => {
       expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledWith(
         "quest-live-1",
-        "current-worker-1"
+        "current-worker-1",
+        expect.objectContaining({ signal: expect.anything() })
       );
       expect(view.getByTestId("quest-apply-button")).toBeTruthy();
     });

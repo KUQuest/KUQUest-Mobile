@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -13,7 +13,7 @@ import { Pressable, ScrollView, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import { useLocale } from "@/features/preferences/localeStore";
-import { authService } from "@/features/auth/AuthService";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
 import {
   useWorkerAssignmentTitlesQuery,
   useWorkerAssignmentsQuery,
@@ -42,16 +42,8 @@ export default function WorkerWorkManagementScreen() {
   const messages = workerHomeMessages[locale];
 
   const [activeTab, setActiveTab] = useState<ManagementTab>("applied");
-  const [sessionUserId, setSessionUserId] = useState<string>();
-
-  useEffect(() => {
-    void authService
-      .getSession()
-      .then((session) => {
-        if (session?.user.id) setSessionUserId(session.user.id);
-      })
-      .catch(() => undefined);
-  }, []);
+  const sessionQuery = useSessionQuery();
+  const sessionUserId = sessionQuery.data?.user.id;
 
   const assignmentsQuery = useWorkerAssignmentsQuery("all");
   const allAssignments = useMemo(

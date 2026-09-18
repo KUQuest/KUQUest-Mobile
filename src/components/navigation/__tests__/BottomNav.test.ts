@@ -1,4 +1,5 @@
-import { fireEvent, render } from "@testing-library/react-native";
+import { fireEvent } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import React from "react";
 import {
   BottomNav,
@@ -6,14 +7,15 @@ import {
   navigationItems,
   workerNavigationItems,
 } from "../BottomNav";
-import { authService } from "@/features/auth/AuthService";
 import * as SecureStore from "expo-secure-store";
 import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
 import styles from "../bottomNavStyles";
 import { navigationMessages } from "../../../locales/navigationMessages";
 
-jest.mock("../../../features/preferences/localeStore", () => ({
-  useLocale: () => ({ locale: "en", setLocale: jest.fn() }),
+const mockUseProfileQuery = jest.fn();
+
+jest.mock("@/features/profile/api/profileQueries", () => ({
+  useProfileQuery: (...args: unknown[]) => mockUseProfileQuery(...args),
 }));
 
 jest.mock("lucide-react-native", () => ({
@@ -27,10 +29,17 @@ jest.mock("lucide-react-native", () => ({
   WalletCards: () => null,
 }));
 
+jest.mock("@/features/preferences/localeStore", () => ({
+  useLocale: () => ({ locale: "en", setLocale: jest.fn() }),
+}));
+
 describe("authenticated primary navigation", () => {
   beforeEach(() => {
     useRoleWorkspaceStore.setState({ workspace: "hirer" });
+    mockUseProfileQuery.mockReset();
+    mockUseProfileQuery.mockReturnValue({ data: undefined });
   });
+
   it("keeps the approved five-destination order", () => {
     expect(hirerNavigationItems).toBe(navigationItems);
     expect(navigationItems.map((item) => item.routeName)).toEqual([
@@ -109,7 +118,7 @@ describe("authenticated primary navigation", () => {
       key: `${item.routeName}-key`,
       name: item.routeName,
     }));
-    const view = await render(
+    const view = await renderWithQueryClient(
       React.createElement(BottomNav, {
         state: { index: 0, routes } as never,
         descriptors: Object.fromEntries(
@@ -145,7 +154,7 @@ describe("authenticated primary navigation", () => {
       name: item.routeName,
     }));
     const navigate = jest.fn();
-    const view = await render(
+    const view = await renderWithQueryClient(
       React.createElement(BottomNav, {
         state: { index: 2, routes } as never,
         descriptors: Object.fromEntries(
@@ -169,7 +178,7 @@ describe("authenticated primary navigation", () => {
       key: `${item.routeName}-key`,
       name: item.routeName,
     }));
-    const view = await render(
+    const view = await renderWithQueryClient(
       React.createElement(BottomNav, {
         state: { index: 4, routes } as never,
         descriptors: Object.fromEntries(
@@ -203,7 +212,7 @@ describe("authenticated primary navigation", () => {
     ];
 
     useRoleWorkspaceStore.setState({ workspace: "worker" });
-    const view = await render(
+    const view = await renderWithQueryClient(
       React.createElement(BottomNav, {
         state: { index: 0, routes } as never,
         descriptors: Object.fromEntries(
@@ -230,7 +239,7 @@ describe("authenticated primary navigation", () => {
       key: `${item.routeName}-key`,
       name: item.routeName,
     }));
-    const view = await render(
+    const view = await renderWithQueryClient(
       React.createElement(BottomNav, {
         state: { index: 0, routes } as never,
         descriptors: Object.fromEntries(
@@ -259,34 +268,20 @@ describe("authenticated primary navigation", () => {
   });
 
   it("renders the app profile avatar instead of the Google session avatar", async () => {
-    jest.spyOn(authService, "getSession").mockResolvedValueOnce({
-      user: {
-        id: "user-123",
-        name: "Test User",
-        email: "test@ku.th",
-        emailVerified: true,
-        firstName: "Test",
-        lastName: "User",
-        image: "https://accounts.google.com/google-avatar.png",
-        createdAt: "2026-01-01T00:00:00Z",
-        updatedAt: "2026-01-01T00:00:00Z",
+    mockUseProfileQuery.mockReturnValue({
+      data: {
+        profileImage: {
+          uri: "https://cdn.example.com/profile-avatar.png",
+          cacheKey: "profile-avatar-1",
+        },
       },
     });
-    const getProfile = jest.fn().mockResolvedValue({
-      avatar: {
-        fileId: "profile-avatar-1",
-        url: "https://cdn.example.com/profile-avatar.png",
-      },
-    });
-    jest
-      .spyOn(authService, "getStudentApi")
-      .mockResolvedValueOnce({ getProfile } as never);
 
     const routes = navigationItems.map((item) => ({
       key: `${item.routeName}-key`,
       name: item.routeName,
     }));
-    const view = await render(
+    const view = await renderWithQueryClient(
       React.createElement(BottomNav, {
         state: { index: 0, routes } as never,
         descriptors: Object.fromEntries(
@@ -304,7 +299,35 @@ describe("authenticated primary navigation", () => {
     expect(avatar.props.source).toEqual([
       { uri: "https://cdn.example.com/profile-avatar.png" },
     ]);
-    expect(getProfile).toHaveBeenCalledTimes(1);
+    expect(mockUseProfileQuery).toHaveBeenCalledWith("en");
+  });
+
+  it("renders no avatar when the profile has none, rather than the Google session image", async () => {
+    mockUseProfileQuery.mockReturnValue({
+      data: {
+        profileImage: "https://accounts.google.com/google-avatar.png",
+      },
+    });
+
+    const routes = navigationItems.map((item) => ({
+      key: `${item.routeName}-key`,
+      name: item.routeName,
+    }));
+    const view = await renderWithQueryClient(
+      React.createElement(BottomNav, {
+        state: { index: 0, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate: jest.fn(),
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
+    );
+
+    expect(view.queryByTestId("tab-profile-avatar")).toBeNull();
   });
 
   it("switches role workspace on double-tap of the profile tab", async () => {
@@ -316,7 +339,7 @@ describe("authenticated primary navigation", () => {
     const setItemSpy = jest.spyOn(SecureStore, "setItemAsync");
 
     useRoleWorkspaceStore.setState({ workspace: "hirer" });
-    const view = await render(
+    const view = await renderWithQueryClient(
       React.createElement(BottomNav, {
         state: { index: 0, routes } as never,
         descriptors: Object.fromEntries(

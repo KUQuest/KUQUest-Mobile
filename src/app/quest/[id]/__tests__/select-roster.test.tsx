@@ -1,8 +1,10 @@
 import React from "react";
 import { Alert } from "react-native";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import { studentApi } from "@/api/StudentApi";
+import { authService } from "@/features/auth/AuthService";
 import { liveQuestService } from "@/features/questBoard/liveQuestService";
 import type { LiveQuestSnapshot } from "@/features/questBoard/liveQuestService";
 import SelectRosterRoute from "../select-roster";
@@ -17,6 +19,7 @@ jest.mock("expo-router", () => ({
 jest.mock("@/features/auth/AuthService", () => ({
   authService: {
     getSession: jest.fn().mockResolvedValue({ user: { id: "hirer-1" } }),
+    getStudentApi: jest.fn(),
   },
 }));
 
@@ -115,10 +118,10 @@ function createSnapshot(
     ...overrides,
   };
 }
-
 describe("SelectRosterRoute", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (authService.getStudentApi as jest.Mock).mockResolvedValue(studentApi);
     (studentApi.getPublicProfile as jest.Mock).mockResolvedValue({
       firstName: "Nina",
       lastName: "Candidate",
@@ -147,7 +150,9 @@ describe("SelectRosterRoute", () => {
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
     const alertSpy = jest.spyOn(Alert, "alert");
 
-    const { getByTestId, getByText } = await render(<SelectRosterRoute />);
+    const { getByTestId, getByText } = await renderWithQueryClient(
+      <SelectRosterRoute />
+    );
 
     await waitFor(() => {
       expect(getByText("Nina Candidate")).toBeTruthy();
@@ -197,7 +202,9 @@ describe("SelectRosterRoute", () => {
     (liveQuestService.rejectCandidateTeam as jest.Mock).mockResolvedValue({});
     const alertSpy = jest.spyOn(Alert, "alert");
 
-    const { getByTestId, getByText } = await render(<SelectRosterRoute />);
+    const { getByTestId, getByText } = await renderWithQueryClient(
+      <SelectRosterRoute />
+    );
 
     await waitFor(() => {
       expect(getByText("Nina Candidate")).toBeTruthy();
@@ -228,7 +235,7 @@ describe("SelectRosterRoute", () => {
     });
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
 
-    const { getByText } = await render(<SelectRosterRoute />);
+    const { getByText } = await renderWithQueryClient(<SelectRosterRoute />);
 
     await waitFor(() => {
       expect(
@@ -241,7 +248,7 @@ describe("SelectRosterRoute", () => {
     const snapshot = createSnapshot({ applications: [] });
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
 
-    const { getByText } = await render(<SelectRosterRoute />);
+    const { getByText } = await renderWithQueryClient(<SelectRosterRoute />);
 
     await waitFor(() => {
       expect(getByText("ยังไม่มีข้อเสนอผู้สมัครที่ส่งแล้ว")).toBeTruthy();

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ActivityIndicator, Alert, useColorScheme } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -14,7 +14,7 @@ import { Image, Pressable, ScrollView, Text, TextInput, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
 import type { UploadAsset } from "@/api/fileUpload";
-import { authService } from "@/features/auth/AuthService";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import {
   useConfirmCompletionMutation,
@@ -56,8 +56,8 @@ export default function WorkerProofUploadScreen({
     (Array.isArray(params.viewerId) ? params.viewerId[0] : params.viewerId) ??
     (Array.isArray(params.studentId) ? params.studentId[0] : params.studentId);
 
-  const [sessionUserId, setSessionUserId] = useState<string>();
-  const resolvedViewerId = explicitViewerId ?? sessionUserId;
+  const sessionQuery = useSessionQuery();
+  const resolvedViewerId = explicitViewerId ?? sessionQuery.data?.user.id;
 
   const snapshotQuery = useWorkerLiveSnapshotQuery(
     resolvedQuestId ?? null,
@@ -69,15 +69,6 @@ export default function WorkerProofUploadScreen({
   const [selectedImage, setSelectedImage] =
     useState<ImagePicker.ImagePickerAsset | null>(null);
   const [description, setDescription] = useState("");
-
-  useEffect(() => {
-    void authService
-      .getSession()
-      .then((session) => {
-        if (session?.user.id) setSessionUserId(session.user.id);
-      })
-      .catch(() => undefined);
-  }, []);
 
   const isProofRequired = snapshot?.proofRequired !== false;
   const canSubmitAction = isProofRequired

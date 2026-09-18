@@ -1,4 +1,4 @@
-import * as SecureStore from "expo-secure-store";
+import { secureStorage } from "@/infrastructure/storage/keyValueStorage";
 
 import { authService } from "@/features/auth/AuthService";
 import {
@@ -33,9 +33,7 @@ export function createQuestDraftId(): string {
 }
 
 async function readDraftIds(storageKey: string): Promise<string[]> {
-  const storedIndex = await SecureStore.getItemAsync(
-    getDraftIndexKey(storageKey)
-  );
+  const storedIndex = await secureStorage.get(getDraftIndexKey(storageKey));
   if (!storedIndex) return [];
 
   try {
@@ -49,7 +47,7 @@ async function readDraftIds(storageKey: string): Promise<string[]> {
 }
 
 async function writeDraftIds(storageKey: string, draftIds: string[]) {
-  await SecureStore.setItemAsync(
+  await secureStorage.set(
     getDraftIndexKey(storageKey),
     JSON.stringify([...new Set(draftIds)])
   );
@@ -71,9 +69,7 @@ export async function loadQuestDraft(
   draftId?: string
 ): Promise<QuestDraftSnapshot | null> {
   if (!draftId) return null;
-  const storedDraft = await SecureStore.getItemAsync(
-    getDraftKey(storageKey, draftId)
-  );
+  const storedDraft = await secureStorage.get(getDraftKey(storageKey, draftId));
   return storedDraft ? parseStoredQuestSnapshot(storedDraft) : null;
 }
 
@@ -82,7 +78,7 @@ export async function listQuestDrafts(
 ): Promise<QuestDraftListItem[]> {
   const draftIds = await readDraftIds(storageKey);
   if (draftIds.length === 0) {
-    const legacyValue = await SecureStore.getItemAsync(storageKey);
+    const legacyValue = await secureStorage.get(storageKey);
     const legacySnapshot = legacyValue
       ? parseStoredQuestSnapshot(legacyValue)
       : null;
@@ -95,7 +91,7 @@ export async function listQuestDrafts(
         legacySnapshot.step,
         legacySnapshot.state
       );
-      await SecureStore.deleteItemAsync(storageKey);
+      await secureStorage.remove(storageKey);
       return [{ id: migratedId, snapshot: legacySnapshot }];
     }
   }
@@ -117,7 +113,7 @@ export async function persistQuestDraft(
   state: QuestDraftState = "DRAFT"
 ): Promise<void> {
   const draftIds = await readDraftIds(storageKey);
-  await SecureStore.setItemAsync(
+  await secureStorage.set(
     getDraftKey(storageKey, draftId),
     JSON.stringify({ draft, step, state })
   );
@@ -130,7 +126,7 @@ export async function deleteQuestDraft(
   storageKey: string,
   draftId: string
 ): Promise<void> {
-  await SecureStore.deleteItemAsync(getDraftKey(storageKey, draftId));
+  await secureStorage.remove(getDraftKey(storageKey, draftId));
   const draftIds = await readDraftIds(storageKey);
   await writeDraftIds(
     storageKey,

@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Dispatch, RefObject, SetStateAction } from "react";
+import type { RefObject } from "react";
 
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
-import { walletApi, type WalletBalances } from "@/api/WalletApi";
+import { useWalletQuery } from "@/features/wallet/api/walletQueries";
 import { useLocale } from "@/features/preferences/localeStore";
+import {
+  useCreateQuestMutation,
+  usePublishEditQuestMutation,
+  usePublishImageUploadMutation,
+  usePublishQuestMutation,
+} from "./api/createQuestQueries";
 import {
   adaptV2PublishCheck,
   getHeadcountForParticipation,
@@ -16,12 +22,19 @@ import { deleteQuestDraft } from "./createQuestPersistence";
 import type {
   CompletionState,
   SaveErrorIntent,
-  SaveState,
   Step,
 } from "./createQuestTypes";
-import type { QuestPublishCheck } from "../questBoard/types";
-import { liveQuestService } from "../questBoard/liveQuestService";
 import type { PublishedQuestRefValue } from "./useQuestPersistence";
+import { liveQuestService } from "../questBoard/liveQuestService";
+import type { QuestPublishCheck } from "../questBoard/types";
+function getPublishErrorMessage(error: unknown, locale: "en" | "th"): string {
+  const errorCode = (error as { code?: unknown } | null)?.code;
+  if (typeof errorCode === "string" && errorCode)
+    return getQuestApiErrorMessage(errorCode, locale);
+  return error instanceof Error
+    ? error.message
+    : "Unable to publish the Quest.";
+}
 
 export function useQuestPublish({
   editQuestId,
@@ -34,10 +47,7 @@ export function useQuestPublish({
   draftChangedRef,
   publishedQuestRef,
   saveRequestRef,
-  setSaveState,
   setSaveErrorIntent,
-  setSaveErrorMessage,
-  setSavingAction,
   enabled = true,
 }: {
   editQuestId?: string;
@@ -50,34 +60,30 @@ export function useQuestPublish({
   draftChangedRef: RefObject<boolean>;
   publishedQuestRef: RefObject<PublishedQuestRefValue | null>;
   saveRequestRef: RefObject<number>;
-  setSaveState: Dispatch<SetStateAction<SaveState>>;
-  setSaveErrorIntent: Dispatch<SetStateAction<SaveErrorIntent | null>>;
-  setSaveErrorMessage: Dispatch<SetStateAction<string | null>>;
-  setSavingAction: Dispatch<SetStateAction<CompletionState | null>>;
+  setSaveErrorIntent: (intent: SaveErrorIntent | null) => void;
   enabled?: boolean;
 }) {
   const { locale } = useLocale();
+  const walletQuery = useWalletQuery();
+  const [cleanupError, setCleanupError] = useState<string | null>(null);
   const [publishCheck, setPublishCheck] = useState<QuestPublishCheck | null>(
-    null
-  );
-  const [walletBalances, setWalletBalances] = useState<WalletBalances | null>(
     null
   );
   const [isCheckingPublish, setIsCheckingPublish] = useState(false);
   const publishCheckRequestRef = useRef(0);
+  const createMutation = useCreateQuestMutation();
+  const imageUploadMutation = usePublishImageUploadMutation();
+  const editMutation = usePublishEditQuestMutation();
+  const publishMutation = usePublishQuestMutation();
 
   const publishQuest = useCallback(
     async (draftToPublish: QuestDraft): Promise<boolean> => {
       const requestId = ++saveRequestRef.current;
-      setSaveState("saving");
-      setSavingAction("OPEN");
       setSaveErrorIntent(null);
-      setSaveErrorMessage(null);
+      setCleanupError(null);
       try {
         if (!draftStorageKey) {
-          setSaveState("error");
           setSaveErrorIntent({ state: "OPEN", completesFlow: true });
-          setSavingAction(null);
           return false;
         }
 
@@ -104,20 +110,20 @@ export function useQuestPublish({
             ),
           };
           createIdempotencyKey = createQuestIdempotencyKey();
-          const created = await liveQuestService.createQuest(
-            toQuestV2Payload(normalizedDraft),
-            createIdempotencyKey
-          );
+          const created = await createMutation.mutateAsync({
+            payload: toQuestV2Payload(normalizedDraft),
+            idempotencyKey: createIdempotencyKey,
+          });
           publishedQuestId = created.id;
           if (
             normalizedDraft.imageUris &&
             normalizedDraft.imageUris.length > 0
           ) {
             try {
-              await liveQuestService.uploadImages(
-                publishedQuestId,
-                normalizedDraft.imageUris
-              );
+              await imageUploadMutation.mutateAsync({
+                questId: publishedQuestId,
+                imageUris: normalizedDraft.imageUris,
+              });
             } catch (imageError) {
               console.warn("Failed to upload quest images:", imageError);
             }
@@ -153,68 +159,56 @@ export function useQuestPublish({
           throw new Error(reason);
         }
 
-        const published = await liveQuestService.publishQuest(
-          publishedQuestId,
-          publishIdempotencyKey
-        );
+        const published = await publishMutation.mutateAsync({
+          questId: publishedQuestId,
+          idempotencyKey: publishIdempotencyKey,
+        });
         if (published.state !== "QUEST_OPEN") {
           throw new Error("The server did not open the Quest.");
         }
 
-        if (!publishedQuestId) {
-          throw new Error("The Quest could not be published.");
-        }
-
         const activeDraftId = draftIdRef.current;
-        if (activeDraftId)
-          await deleteQuestDraft(draftStorageKey, activeDraftId);
+        if (activeDraftId) {
+          try {
+            await deleteQuestDraft(draftStorageKey, activeDraftId);
+          } catch (error) {
+            setCleanupError(
+              error instanceof Error
+                ? error.message
+                : "Unable to clear the Quest draft."
+            );
+            setSaveErrorIntent({ state: "OPEN", completesFlow: true });
+            return false;
+          }
+        }
         if (requestId !== saveRequestRef.current) return false;
         publishedQuestRef.current = null;
-        setSaveState("saved");
         setSaveErrorIntent(null);
-        setSaveErrorMessage(null);
-        setSavingAction(null);
         return true;
-      } catch (error) {
+      } catch {
         if (requestId !== saveRequestRef.current) return false;
-        setSaveState("error");
-        const errorCode = (error as { code?: unknown } | null)?.code;
-        setSaveErrorMessage(
-          typeof errorCode === "string" && errorCode
-            ? getQuestApiErrorMessage(errorCode, locale)
-            : error instanceof Error
-              ? error.message
-              : "Unable to publish the Quest."
-        );
         setSaveErrorIntent({ state: "OPEN", completesFlow: true });
-        setSavingAction(null);
         return false;
       }
     },
     [
+      createMutation,
       draftIdRef,
       draftStorageKey,
       editQuestId,
-      locale,
+      imageUploadMutation,
+      publishMutation,
       publishedQuestRef,
       saveRequestRef,
       setSaveErrorIntent,
-      setSaveErrorMessage,
-      setSavingAction,
-      setSaveState,
     ]
   );
+
   const refreshPublishCheck = useCallback(async () => {
     if (!enabled || !draftHydrated || !draftStorageKey) return;
     const requestId = ++publishCheckRequestRef.current;
     setIsCheckingPublish(true);
     try {
-      try {
-        setWalletBalances(await walletApi.getWallet());
-      } catch {
-        setWalletBalances(null);
-      }
-
       const normalizedDraft = {
         ...draft,
         headcount: getHeadcountForParticipation(
@@ -231,28 +225,28 @@ export function useQuestPublish({
           draftChangedRef.current &&
           existing.version != null
         ) {
-          const edited = await liveQuestService.editQuest(
+          const edited = await editMutation.mutateAsync({
             questId,
-            existing.version,
-            toQuestV2Payload(normalizedDraft)
-          );
+            version: existing.version,
+            payload: toQuestV2Payload(normalizedDraft),
+          });
           if (requestId !== publishCheckRequestRef.current) return;
           publishedQuestRef.current = { ...existing, version: edited.version };
         }
       } else {
         const createIdempotencyKey = createQuestIdempotencyKey();
-        const created = await liveQuestService.createQuest(
-          toQuestV2Payload(normalizedDraft),
-          createIdempotencyKey
-        );
+        const created = await createMutation.mutateAsync({
+          payload: toQuestV2Payload(normalizedDraft),
+          idempotencyKey: createIdempotencyKey,
+        });
         if (requestId !== publishCheckRequestRef.current) return;
         questId = created.id;
         if (normalizedDraft.imageUris && normalizedDraft.imageUris.length > 0) {
           try {
-            await liveQuestService.uploadImages(
+            await imageUploadMutation.mutateAsync({
               questId,
-              normalizedDraft.imageUris
-            );
+              imageUris: normalizedDraft.imageUris,
+            });
           } catch (imageError) {
             console.warn("Failed to upload quest images:", imageError);
           }
@@ -271,7 +265,6 @@ export function useQuestPublish({
       setPublishCheck(adaptV2PublishCheck(check));
     } catch {
       if (requestId !== publishCheckRequestRef.current) return;
-      // Prototype/offline mode: fall back to the local publish check.
       setPublishCheck(getQuestPublishCheck(draft));
     } finally {
       if (requestId === publishCheckRequestRef.current)
@@ -282,9 +275,12 @@ export function useQuestPublish({
     draftChangedRef,
     draftHydrated,
     draftStorageKey,
+    editMutation,
     editQuestId,
     enabled,
+    imageUploadMutation,
     publishedQuestRef,
+    createMutation,
   ]);
 
   useEffect(() => {
@@ -295,12 +291,38 @@ export function useQuestPublish({
     return () => clearTimeout(timer);
   }, [completedState, draftHydrated, enabled, refreshPublishCheck, step]);
 
+  const publishPending =
+    createMutation.isPending ||
+    imageUploadMutation.isPending ||
+    publishMutation.isPending;
+  const publishError =
+    publishMutation.error ?? createMutation.error ?? imageUploadMutation.error;
+
   return {
     publishCheck,
     setPublishCheck,
-    walletBalances,
+    walletBalances: walletQuery.data ?? null,
     isCheckingPublish,
     publishQuest,
     refreshPublishCheck,
+    saveState: publishPending
+      ? "saving"
+      : cleanupError || publishError
+        ? "error"
+        : publishMutation.isSuccess
+          ? "saved"
+          : "idle",
+    saveErrorMessage: cleanupError
+      ? cleanupError
+      : publishError
+        ? getPublishErrorMessage(publishError, locale)
+        : null,
+    savingAction: publishPending ? ("OPEN" as const) : null,
+    resetSaveState: () => {
+      setCleanupError(null);
+      createMutation.reset();
+      imageUploadMutation.reset();
+      publishMutation.reset();
+    },
   };
 }

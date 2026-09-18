@@ -8,8 +8,8 @@ import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
 import { authService } from "@/features/auth/AuthService";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
-import { studentApi } from "@/api/StudentApi";
 import type { QuestV2Application, QuestV2Team } from "@/api/questV2Contracts";
+import { usePublicProfileQuery } from "@/features/profile/api/profileQueries";
 import {
   liveQuestService,
   type LiveQuestSnapshot,
@@ -44,39 +44,17 @@ interface MemberProfile {
   faculty?: string;
 }
 
-const profileCache = new Map<string, MemberProfile>();
-
 function useMemberProfile(memberId: string): MemberProfile | undefined {
-  const [profile, setProfile] = useState<MemberProfile | undefined>(
-    profileCache.get(memberId)
-  );
-
-  useEffect(() => {
-    if (profileCache.has(memberId)) return;
-    let active = true;
-    void studentApi
-      .getPublicProfile(memberId)
-      .then((p) => {
-        const name = [p.firstName, p.lastName].filter(Boolean).join(" ");
-        const resolved: MemberProfile = {
-          displayName: name || "KU Student",
-          avatarUri: p.avatar?.url,
-          faculty: p.department?.faculty?.name,
-        };
-        profileCache.set(memberId, resolved);
-        if (active) setProfile(resolved);
-      })
-      .catch(() => {
-        const fallback: MemberProfile = { displayName: "KU Student" };
-        profileCache.set(memberId, fallback);
-        if (active) setProfile(fallback);
-      });
-    return () => {
-      active = false;
-    };
-  }, [memberId]);
-
-  return profile;
+  const { data, error } = usePublicProfileQuery(memberId);
+  if (!data) {
+    return error ? { displayName: "KU Student" } : undefined;
+  }
+  const name = [data.firstName, data.lastName].filter(Boolean).join(" ");
+  return {
+    displayName: name || "KU Student",
+    avatarUri: data.avatar?.url,
+    faculty: data.department?.faculty?.name,
+  };
 }
 
 function MemberAvatar({

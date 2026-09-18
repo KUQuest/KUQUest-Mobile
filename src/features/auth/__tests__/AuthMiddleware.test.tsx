@@ -1,4 +1,6 @@
 import { act, render, screen, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Text } from "@/tw";
 
@@ -62,7 +64,7 @@ describe("AuthMiddleware", () => {
     mockSegments = ["(tabs)"];
     mockIsDemoEnabled.mockReturnValue(true);
 
-    const view = await render(
+    const view = await renderWithQueryClient(
       <AuthMiddleware>
         <ProtectedContent />
       </AuthMiddleware>
@@ -77,7 +79,7 @@ describe("AuthMiddleware", () => {
     mockGetSession.mockResolvedValue({ user: { id: "student-1" } });
 
     await act(async () => {
-      render(
+      renderWithQueryClient(
         <AuthMiddleware>
           <ProtectedContent />
         </AuthMiddleware>
@@ -95,10 +97,15 @@ describe("AuthMiddleware", () => {
     mockSegments = ["(tabs)"];
     mockGetSession.mockResolvedValue({ user: { id: "student-1" } });
 
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
     const view = await render(
-      <AuthMiddleware>
-        <ProtectedContent />
-      </AuthMiddleware>
+      <QueryClientProvider client={queryClient}>
+        <AuthMiddleware>
+          <ProtectedContent />
+        </AuthMiddleware>
+      </QueryClientProvider>
     );
 
     await waitFor(() => expect(mockGetSession).toHaveBeenCalledTimes(1));
@@ -106,9 +113,11 @@ describe("AuthMiddleware", () => {
 
     await act(async () => {
       await view.rerender(
-        <AuthMiddleware>
-          <ProtectedContent />
-        </AuthMiddleware>
+        <QueryClientProvider client={queryClient}>
+          <AuthMiddleware>
+            <ProtectedContent />
+          </AuthMiddleware>
+        </QueryClientProvider>
       );
       await Promise.resolve();
     });
@@ -121,7 +130,7 @@ describe("AuthMiddleware", () => {
     mockSegments = ["(tabs)"];
     mockGetSession.mockResolvedValue(null);
 
-    render(
+    renderWithQueryClient(
       <AuthMiddleware>
         <ProtectedContent />
       </AuthMiddleware>
@@ -134,7 +143,7 @@ describe("AuthMiddleware", () => {
     mockSegments = ["settings"];
     mockGetSession.mockRejectedValue(new Error("Backend unavailable"));
 
-    render(
+    renderWithQueryClient(
       <AuthMiddleware>
         <ProtectedContent />
       </AuthMiddleware>

@@ -1,5 +1,6 @@
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import React from "react";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import AuthGate from "../AuthGate";
 
 const mockReplace = jest.fn();
@@ -46,7 +47,7 @@ describe("AuthGate real user authentication flow", () => {
     });
     mockGetRoutingDestination.mockResolvedValueOnce({ type: "HOME" });
 
-    await render(<AuthGate />);
+    await renderWithQueryClient(<AuthGate />);
 
     await waitFor(() => {
       expect(mockReplace).toHaveBeenCalledWith("/(tabs)");
@@ -62,7 +63,7 @@ describe("AuthGate real user authentication flow", () => {
       step: 1,
     });
 
-    await render(<AuthGate />);
+    await renderWithQueryClient(<AuthGate />);
 
     await waitFor(() => {
       expect(mockReplace).toHaveBeenCalledWith({
@@ -75,7 +76,7 @@ describe("AuthGate real user authentication flow", () => {
   it("renders the LoginScreen when no active session exists", async () => {
     mockGetSession.mockResolvedValueOnce(null);
 
-    const view = await render(<AuthGate />);
+    const view = await renderWithQueryClient(<AuthGate />);
 
     await waitFor(() => {
       expect(view.getByTestId("login-screen")).toBeTruthy();
@@ -85,7 +86,7 @@ describe("AuthGate real user authentication flow", () => {
   it("displays the error surface and supports retry on session load failure", async () => {
     mockGetSession.mockRejectedValueOnce(new Error("Network failure"));
 
-    const view = await render(<AuthGate />);
+    const view = await renderWithQueryClient(<AuthGate />);
 
     await waitFor(() => {
       expect(view.getByTestId("auth-gate-error")).toBeTruthy();

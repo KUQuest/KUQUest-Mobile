@@ -12,7 +12,7 @@ import {
   mimeTypeFromUri,
   type UploadAsset,
 } from "@/api/fileUpload";
-import { authService } from "@/features/auth/AuthService";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { liveQuestService } from "@/features/questBoard/liveQuestService";
 import { useLocale } from "@/features/preferences/localeStore";
 import { chatMessages } from "@/locales/chatMessages";
@@ -68,20 +68,8 @@ export function useChatConversationController(
       ? getSingleRouteParam(params.conversationId)
       : getSingleRouteParam(params.id);
   const routeViewerId = getSingleRouteParam(params.viewerId);
-  const [sessionUserId, setSessionUserId] = useState<string | null>(null);
-  useEffect(() => {
-    let active = true;
-    void authService
-      .getSession()
-      .then((session) => {
-        if (active && session?.user?.id) setSessionUserId(session.user.id);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, []);
-  const viewerId = routeViewerId || sessionUserId || "";
+  const sessionQuery = useSessionQuery();
+  const viewerId = routeViewerId || sessionQuery.data?.user.id || "";
   const queryClient = useQueryClient();
   const listConversationsQuery = useListConversationsQuery(
     viewerId,

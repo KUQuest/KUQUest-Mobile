@@ -133,20 +133,11 @@ export const authEnvironment = {
   },
 };
 
-export const getActivePrototypePersonaId = (): PrototypePersonaId =>
-  useAuthEnvironmentStore.getState().activePersonaId;
-export const setActivePrototypePersona = (
-  personaId: PrototypePersonaId
-): void => {
+const setActivePrototypePersona = (personaId: PrototypePersonaId): void => {
   useAuthEnvironmentStore.getState().selectPersona(personaId);
 };
+
 export const isPrototypeDemoEnabled = (): boolean => isDemoEnabled();
-export const enableOfflinePrototypeDemo = (): void => {
-  useAuthEnvironmentStore.getState().enableOfflineDemo();
-};
-export const resetOfflinePrototypeDemo = (): void => {
-  useAuthEnvironmentStore.getState().resetOfflineDemo();
-};
 
 export function useAuthEnvironment(): AuthEnvironmentState {
   const activePersonaId = useAuthEnvironmentStore(

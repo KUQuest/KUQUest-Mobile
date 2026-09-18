@@ -151,13 +151,11 @@ export default function CreateQuestScreen({
     draftLoadError: localDraftLoadError,
     retryDraftLoad: retryLocalDraftLoad,
     saveState: localSaveState,
-    setSaveState: setLocalSaveState,
+    resetSaveState: resetLocalSaveState,
     saveErrorIntent: localSaveErrorIntent,
     setSaveErrorIntent: setLocalSaveErrorIntent,
     saveErrorMessage: localSaveErrorMessage,
-    setSaveErrorMessage: setLocalSaveErrorMessage,
     savingAction: localSavingAction,
-    setSavingAction: setLocalSavingAction,
     skipPersistRef,
     saveTimerRef,
     saveRequestRef,
@@ -190,20 +188,15 @@ export default function CreateQuestScreen({
   const retryDraftLoad = editMode
     ? editState.retryDraftLoad
     : retryLocalDraftLoad;
-  const saveState = editMode ? editState.saveState : localSaveState;
-  const setSaveState = editMode ? editState.setSaveState : setLocalSaveState;
-  const saveErrorIntent = localSaveErrorIntent;
-  const setSaveErrorIntent = setLocalSaveErrorIntent;
-  const saveErrorMessage = editMode
+  const localOrEditSaveState = editMode ? editState.saveState : localSaveState;
+  const localOrEditSaveErrorMessage = editMode
     ? editState.saveErrorMessage
     : localSaveErrorMessage;
-  const setSaveErrorMessage = editMode
-    ? editState.setSaveErrorMessage
-    : setLocalSaveErrorMessage;
-  const savingAction = editMode ? editState.savingAction : localSavingAction;
-  const setSavingAction = editMode
-    ? editState.setSavingAction
-    : setLocalSavingAction;
+  const localOrEditSavingAction = editMode
+    ? editState.savingAction
+    : localSavingAction;
+  const saveErrorIntent = localSaveErrorIntent;
+  const setSaveErrorIntent = setLocalSaveErrorIntent;
   const saveDraft = editMode ? editState.saveDraft : saveLocalDraft;
 
   const {
@@ -213,6 +206,10 @@ export default function CreateQuestScreen({
     isCheckingPublish,
     publishQuest,
     refreshPublishCheck,
+    saveState: publishSaveState,
+    saveErrorMessage: publishSaveErrorMessage,
+    savingAction: publishSavingAction,
+    resetSaveState: resetPublishSaveState,
   } = useQuestPublish({
     editQuestId: editMode ? undefined : editQuestId,
     step,
@@ -224,13 +221,27 @@ export default function CreateQuestScreen({
     draftChangedRef,
     publishedQuestRef,
     saveRequestRef,
-    setSaveState,
     setSaveErrorIntent,
-    setSaveErrorMessage,
-    setSavingAction,
     enabled: !editMode,
   });
 
+  const saveState =
+    !editMode && publishSaveState !== "idle"
+      ? publishSaveState
+      : localOrEditSaveState;
+  const saveErrorMessage =
+    !editMode && publishSaveErrorMessage
+      ? publishSaveErrorMessage
+      : localOrEditSaveErrorMessage;
+  const savingAction =
+    !editMode && publishSavingAction
+      ? publishSavingAction
+      : localOrEditSavingAction;
+  const resetSaveState = () => {
+    resetLocalSaveState();
+    resetPublishSaveState();
+    editState.resetSaveState();
+  };
   const [liveTags, setLiveTags] = useState<TagItem[]>([]);
 
   useEffect(() => {
@@ -323,7 +334,7 @@ export default function CreateQuestScreen({
     skipPersistRef.current = false;
     publishedQuestRef.current = null;
     setDraft((current) => ({ ...current, [field]: value }));
-    setSaveState("idle");
+    resetSaveState();
     setSaveErrorIntent(null);
     setPublishCheck(null);
     setValidationSummary(null);
@@ -356,9 +367,8 @@ export default function CreateQuestScreen({
       participation: value,
       headcount: getHeadcountForParticipation(value, current.headcount),
     }));
-    setSaveState("idle");
+    resetSaveState();
     setSaveErrorIntent(null);
-    setSavingAction(null);
     setPublishCheck(null);
     setValidationSummary(null);
     setPendingInvalidField(null);
@@ -657,16 +667,14 @@ export default function CreateQuestScreen({
         }
       }
     } catch {
-      setSaveState("error");
+      setSaveErrorIntent({ state: "DRAFT", completesFlow: false });
     }
     draftIdRef.current = null;
     setDraft(initialDraft);
     setErrors({});
     setValidationSummary(null);
     setImageError(undefined);
-    setSaveState("idle");
-    setSaveErrorIntent(null);
-    setSavingAction(null);
+    resetSaveState();
     setPublishCheck(null);
     setLogisticsExpanded(false);
     setPendingInvalidField(null);

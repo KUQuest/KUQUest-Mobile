@@ -1,3 +1,4 @@
+import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 
@@ -14,7 +15,6 @@ import {
 import type {
   CompletionState,
   SaveErrorIntent,
-  SaveState,
   Step,
 } from "./createQuestTypes";
 
@@ -51,75 +51,49 @@ export function useQuestPersistence({
   enabled?: boolean;
 }) {
   const draftIdRef = useRef<string | null>(editQuestId ?? null);
-  const [draftHydrated, setDraftHydrated] = useState(false);
-  const [draftStorageKey, setDraftStorageKey] = useState<string | null>(null);
-  const [draftLoadAttempt, setDraftLoadAttempt] = useState(0);
-  const [draftLoadError, setDraftLoadError] = useState(false);
-  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [loadState, setLoadState] = useState<{
+    storageKey: string | null;
+    hydrated: boolean;
+    error: boolean;
+  }>({ storageKey: null, hydrated: false, error: false });
+  const draftHydrated = loadState.hydrated;
+  const draftStorageKey = loadState.storageKey;
+  const draftLoadError = loadState.error;
   const [saveErrorIntent, setSaveErrorIntent] =
     useState<SaveErrorIntent | null>(null);
-  const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
-  const [savingAction, setSavingAction] = useState<CompletionState | null>(
-    null
-  );
   const skipPersistRef = useRef(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveRequestRef = useRef(0);
-
-  const saveDraft = useCallback(
-    async (
-      draftToSave: QuestDraft,
-      state: CompletionState = "DRAFT",
-      completesFlow = false
-    ): Promise<boolean> => {
-      const requestId = ++saveRequestRef.current;
-      setSaveState("saving");
-      setSavingAction(state);
-      setSaveErrorIntent(null);
-      setSaveErrorMessage(null);
-      try {
-        if (!draftStorageKey) {
-          setSaveState("error");
-          setSaveErrorIntent({ state, completesFlow });
-          setSavingAction(null);
-          return false;
-        }
-        const activeDraftId = draftIdRef.current ?? createQuestDraftId();
-        draftIdRef.current = activeDraftId;
-        const normalizedDraft = {
-          ...draftToSave,
-          headcount: getHeadcountForParticipation(
-            draftToSave.participation,
-            draftToSave.headcount
-          ),
-        };
-        await persistQuestDraft(
-          draftStorageKey,
-          activeDraftId,
-          normalizedDraft,
-          step,
-          state
-        );
-        if (requestId !== saveRequestRef.current) return false;
-        setSaveState("saved");
-        setSaveErrorIntent(null);
-        setSavingAction(null);
-        return true;
-      } catch (error) {
-        if (requestId !== saveRequestRef.current) return false;
-        setSaveState("error");
-        setSaveErrorMessage(
-          error instanceof Error
-            ? error.message
-            : "Unable to save the Quest draft."
-        );
-        setSaveErrorIntent({ state, completesFlow });
-        setSavingAction(null);
-        return false;
+  const saveMutation = useMutation<
+    void,
+    Error,
+    {
+      draftId: string;
+      draft: QuestDraft;
+      state: CompletionState;
+      step: Step;
+    }
+  >({
+    mutationFn: async ({
+      draftId,
+      draft: draftToSave,
+      state,
+      step: saveStep,
+    }) => {
+      if (!draftStorageKey) {
+        throw new Error("The Quest draft is not ready to be saved.");
       }
+      await persistQuestDraft(
+        draftStorageKey,
+        draftId,
+        draftToSave,
+        saveStep,
+        state
+      );
     },
-    [draftStorageKey, step]
-  );
+  });
+
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
     if (!enabled) return undefined;
@@ -134,9 +108,6 @@ export function useQuestPersistence({
     }
 
     void (async () => {
-      setDraftHydrated(false);
-      setDraftLoadError(false);
-      setDraftStorageKey(null);
       try {
         const storageKey = await getQuestDraftStorageKey();
         const snapshot = await loadQuestDraft(
@@ -144,8 +115,6 @@ export function useQuestPersistence({
           draftIdRef.current ?? undefined
         );
         if (!active) return;
-
-        setDraftStorageKey(storageKey);
         if (snapshot && !draftChangedRef.current) {
           setDraft({
             ...snapshot.draft,
@@ -157,12 +126,11 @@ export function useQuestPersistence({
           setStep(snapshot.step);
           setCompletedState(snapshot.state === "OPEN" ? "OPEN" : null);
         }
-        setDraftHydrated(true);
+        setLoadState({ storageKey, hydrated: true, error: false });
       } catch {
         if (!active) return;
         skipPersistRef.current = false;
-        setDraftLoadError(true);
-        setDraftHydrated(false);
+        setLoadState({ storageKey: null, hydrated: false, error: true });
       }
     })();
 
@@ -171,14 +139,51 @@ export function useQuestPersistence({
     };
   }, [
     draftChangedRef,
-    draftLoadAttempt,
     editQuestId,
     enabled,
+    loadAttempt,
     publishedQuestRef,
     setCompletedState,
     setDraft,
     setStep,
   ]);
+
+  const saveDraft = useCallback(
+    async (
+      draftToSave: QuestDraft,
+      state: CompletionState = "DRAFT",
+      completesFlow = false
+    ): Promise<boolean> => {
+      const requestId = ++saveRequestRef.current;
+      saveMutation.reset();
+      setSaveErrorIntent(null);
+      const activeDraftId = draftIdRef.current ?? createQuestDraftId();
+      draftIdRef.current = activeDraftId;
+      const normalizedDraft = {
+        ...draftToSave,
+        headcount: getHeadcountForParticipation(
+          draftToSave.participation,
+          draftToSave.headcount
+        ),
+      };
+      try {
+        await saveMutation.mutateAsync({
+          draftId: activeDraftId,
+          draft: normalizedDraft,
+          state,
+          step,
+        });
+        if (requestId !== saveRequestRef.current) return false;
+        setSaveErrorIntent(null);
+        return true;
+      } catch {
+        if (requestId !== saveRequestRef.current) return false;
+        setSaveErrorIntent({ state, completesFlow });
+        return false;
+      }
+    },
+    [saveMutation, setSaveErrorIntent, step]
+  );
 
   useEffect(() => {
     if (!enabled || !draftHydrated || !draftStorageKey || completedState)
@@ -207,15 +212,24 @@ export function useQuestPersistence({
     draftStorageKey,
     enabled,
     saveDraft,
-    skipPersistRef,
     step,
   ]);
 
-  const retryDraftLoad = () => {
-    setDraftLoadError(false);
-    setDraftHydrated(false);
-    setDraftLoadAttempt((attempt) => attempt + 1);
-  };
+  const retryDraftLoad = useCallback(() => {
+    setLoadAttempt((value) => value + 1);
+  }, []);
+
+  const saveState = saveMutation.isPending
+    ? "saving"
+    : saveMutation.isSuccess
+      ? "saved"
+      : saveMutation.isError
+        ? "error"
+        : "idle";
+  const saveErrorMessage = saveMutation.error?.message ?? null;
+  const savingAction = saveMutation.isPending
+    ? (saveMutation.variables?.state ?? null)
+    : null;
 
   return {
     draftIdRef,
@@ -224,16 +238,14 @@ export function useQuestPersistence({
     draftLoadError,
     retryDraftLoad,
     saveState,
-    setSaveState,
     saveErrorIntent,
     setSaveErrorIntent,
     saveErrorMessage,
-    setSaveErrorMessage,
     savingAction,
-    setSavingAction,
     skipPersistRef,
     saveTimerRef,
     saveRequestRef,
     saveDraft,
+    resetSaveState: saveMutation.reset,
   };
 }

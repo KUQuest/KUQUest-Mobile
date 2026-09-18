@@ -1,7 +1,6 @@
 import { Modal, StyleSheet, useColorScheme } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useState } from "react";
-import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   ArrowLeft,
@@ -16,12 +15,7 @@ import {
 } from "lucide-react-native";
 
 import { Image, Pressable, ScrollView, Text, TextInput, View } from "@/tw";
-import {
-  walletApi,
-  type TopUpData,
-  type TopUpQuote,
-  type WalletBalances,
-} from "@/api/WalletApi";
+import { type TopUpData, type TopUpQuote } from "@/api/WalletApi";
 import { formatSatang } from "@/domain/satang";
 import {
   checkTopUpAmount,
@@ -31,6 +25,11 @@ import {
   simulateTopUpPayment,
   toCompartments,
 } from "@/features/wallet/walletModule";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useWalletQuery,
+  walletKeys,
+} from "@/features/wallet/api/walletQueries";
 import type { SupportedLocale } from "@/locales/locale";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
@@ -1197,7 +1196,8 @@ function useTopUpFlow({ locale, onBackFromAmount, onPaid }: TopUpFlowOptions) {
   const messages = questBoardMessages[locale];
   const [topUpStep, setTopUpStep] = useState<TopUpStep>("amount");
   const [topUpAmount, setTopUpAmount] = useState("");
-  const [liveWallet, setLiveWallet] = useState<WalletBalances | null>(null);
+  const { data: liveWallet } = useWalletQuery();
+  const queryClient = useQueryClient();
   const [topUpQuote, setTopUpQuote] = useState<TopUpQuote | null>(null);
   const [activeTopUp, setActiveTopUp] = useState<TopUpData | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
@@ -1206,14 +1206,6 @@ function useTopUpFlow({ locale, onBackFromAmount, onPaid }: TopUpFlowOptions) {
   const [verificationError, setVerificationError] = useState<string | null>(
     null
   );
-
-  const loadWallet = useCallback(async () => {
-    try {
-      setLiveWallet(await walletApi.getWallet());
-    } catch {
-      // Keep the last successful wallet snapshot visible.
-    }
-  }, []);
 
   const resetTopUp = useCallback(() => {
     setTopUpQuote(null);
@@ -1297,7 +1289,7 @@ function useTopUpFlow({ locale, onBackFromAmount, onPaid }: TopUpFlowOptions) {
       return;
     }
     setPaymentVerified(true);
-    await loadWallet();
+    await queryClient.invalidateQueries({ queryKey: walletKeys.detail() });
     onPaid?.();
   };
   const handleVerifyPayment = async () => {
@@ -1341,7 +1333,6 @@ function useTopUpFlow({ locale, onBackFromAmount, onPaid }: TopUpFlowOptions) {
     isVerifying,
     paymentVerified,
     verificationError,
-    loadWallet,
     resetTopUp,
     openTopUp,
     handleTopUpBack,
@@ -1506,14 +1497,6 @@ export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
 
   useColorScheme();
 
-  const { loadWallet } = flow;
-  useFocusEffect(
-    useCallback(() => {
-      void loadWallet();
-      return undefined;
-    }, [loadWallet])
-  );
-
   const openFundingDetails = () => setModal("details");
   const openTopUp = () => {
     flow.openTopUp();
@@ -1652,13 +1635,12 @@ export function QuestTopUpModal({
     onBackFromAmount: onClose,
     onPaid: finish,
   });
-  const { loadWallet, openTopUp } = flow;
+  const { openTopUp } = flow;
 
   useEffect(() => {
     if (!visible) return;
     openTopUp(suggestedAmountSatang);
-    void loadWallet();
-  }, [visible, suggestedAmountSatang, openTopUp, loadWallet]);
+  }, [visible, suggestedAmountSatang, openTopUp]);
 
   if (!visible) return null;
 

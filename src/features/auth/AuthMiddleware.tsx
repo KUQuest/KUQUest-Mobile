@@ -5,7 +5,7 @@ import { ActivityIndicator, View } from "@/tw";
 import { colors } from "@/theme/colors";
 
 import { authEnvironment } from "./authEnvironment";
-import { authService } from "./AuthService";
+import { useSessionQuery } from "./sessionQueries";
 
 export function isPublicAuthRoute(
   segments: readonly string[],
@@ -37,31 +37,28 @@ function AuthRouteCheck({
     symbol | null
   >(() => (isPublicRoute ? routeVisit : null));
 
+  const { refetch: refetchSession } = useSessionQuery({ enabled: false });
+
   useEffect(() => {
     if (isPublicRoute) return;
 
     let active = true;
 
-    void authService
-      .getSession()
-      .then((session) => {
-        if (!active) return;
+    void refetchSession().then(({ data, error }) => {
+      if (!active) return;
 
-        if (!session) {
-          router.replace("/");
-          return;
-        }
+      if (error || !data) {
+        router.replace("/");
+        return;
+      }
 
-        setAuthorizedRouteVisit(routeVisit);
-      })
-      .catch(() => {
-        if (active) router.replace("/");
-      });
+      setAuthorizedRouteVisit(routeVisit);
+    });
 
     return () => {
       active = false;
     };
-  }, [isPublicRoute, routeVisit, router]);
+  }, [isPublicRoute, refetchSession, routeVisit, router]);
 
   const isAuthorized = isPublicRoute || authorizedRouteVisit === routeVisit;
 

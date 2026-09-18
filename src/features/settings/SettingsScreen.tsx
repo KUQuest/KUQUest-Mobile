@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { Modal } from "react-native";
 import { Host, Switch } from "@expo/ui";
@@ -25,6 +26,7 @@ import { useLocale } from "@/features/preferences/localeStore";
 import { settingsMessages } from "@/locales/settingsMessages";
 import { authService } from "@/features/auth/AuthService";
 import { authEnvironment } from "@/features/auth/authEnvironment";
+import { clearSessionCache } from "@/features/auth/sessionQueries";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import styles from "./styles/settingsStyles";
@@ -93,6 +95,7 @@ function SettingsRow({
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { locale, setLocale } = useLocale();
   const messages = settingsMessages[locale];
   const insets = useSafeAreaInsets();
@@ -102,14 +105,16 @@ export default function SettingsScreen() {
   const [switchingAccount, setSwitchingAccount] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const devOverlayEnabled = authEnvironment.isDemoEnabled();
-
   const switchAccount = () => {
     if (switchingAccount) return;
     setSwitchingAccount(true);
     void authService
       .signOut()
       .catch(() => undefined)
-      .finally(() => router.replace("/"));
+      .finally(() => {
+        clearSessionCache(queryClient);
+        router.replace("/");
+      });
   };
 
   const logout = () => {
@@ -118,7 +123,10 @@ export default function SettingsScreen() {
     void authService
       .signOut()
       .catch(() => undefined)
-      .finally(() => router.replace("/"));
+      .finally(() => {
+        clearSessionCache(queryClient);
+        router.replace("/");
+      });
   };
 
   return (

@@ -1,5 +1,6 @@
 import React from "react";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import { questApi } from "@/api/QuestApi";
 import { studentApi } from "@/api/StudentApi";
@@ -80,7 +81,9 @@ describe("HomeScreen live active quests syncing", () => {
       },
     });
 
-    const { getByText, getByTestId } = await render(<HomeScreen />);
+    const { getByText, getByTestId } = await renderWithQueryClient(
+      <HomeScreen />
+    );
 
     await waitFor(() => {
       expect(getByText("Science Exhibition Booth Setup")).toBeTruthy();
@@ -123,7 +126,9 @@ describe("HomeScreen live active quests syncing", () => {
       department: { faculty: { name: "Engineering" } },
     });
 
-    const { getByText, getByTestId } = await render(<HomeScreen />);
+    const { getByText, getByTestId } = await renderWithQueryClient(
+      <HomeScreen />
+    );
 
     await waitFor(() => {
       expect(getByText("Science Exhibition Booth Setup")).toBeTruthy();
@@ -176,7 +181,9 @@ describe("HomeScreen live active quests syncing", () => {
       department: { faculty: { name: "Design" } },
     });
 
-    const { getByText, getByTestId } = await render(<HomeScreen />);
+    const { getByText, getByTestId } = await renderWithQueryClient(
+      <HomeScreen />
+    );
 
     await waitFor(() => {
       expect(getByText("Poster Design Sprint")).toBeTruthy();
@@ -233,7 +240,9 @@ describe("HomeScreen live active quests syncing", () => {
       department: { faculty: { name: "Art" } },
     });
 
-    const { getByText, getByTestId } = await render(<HomeScreen />);
+    const { getByText, getByTestId } = await renderWithQueryClient(
+      <HomeScreen />
+    );
 
     await waitFor(() => {
       expect(getByText("Campus Mural Team Project")).toBeTruthy();
@@ -260,7 +269,9 @@ describe("HomeScreen live active quests syncing", () => {
       nextCursor: null,
     });
 
-    const { getByTestId, queryByTestId } = await render(<HomeScreen />);
+    const { getByTestId, queryByTestId } = await renderWithQueryClient(
+      <HomeScreen />
+    );
 
     await waitFor(() => {
       expect(getByTestId("hirer-home-empty")).toBeTruthy();
@@ -274,7 +285,7 @@ describe("HomeScreen live active quests syncing", () => {
       nextCursor: null,
     });
 
-    const { getByTestId } = await render(<HomeScreen />);
+    const { getByTestId } = await renderWithQueryClient(<HomeScreen />);
 
     await waitFor(() => {
       expect(getByTestId("hirer-home-quick-access")).toBeTruthy();
