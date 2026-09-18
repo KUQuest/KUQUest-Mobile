@@ -16,13 +16,16 @@ export default function TabsLayout() {
   const isTablet = metrics.isTablet;
   const isCreateQuest = segments[segments.length - 1] === "create";
   const isChatConversation = segments[segments.length - 2] === "chat";
+  const isMyQuests = segments[segments.length - 1] === "my-quests";
 
   return (
     <NavigationVisibilityProvider>
       <Tabs
         initialRouteName="index"
         tabBar={(props) =>
-          isCreateQuest || isChatConversation ? null : <BottomNav {...props} />
+          isCreateQuest || isChatConversation || isMyQuests ? null : (
+            <BottomNav {...props} />
+          )
         }
         screenOptions={{
           headerShown: false,

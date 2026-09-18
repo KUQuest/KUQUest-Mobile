@@ -170,7 +170,10 @@ describe("TopUpScreen", () => {
 
     await waitFor(() => {
       expect(walletApi.getTopUpStatus).toHaveBeenCalledWith(mockTopUpRecord.id);
+      expect(view.getByTestId("top-up-success-view")).toBeTruthy();
       expect(view.getByTestId("top-up-verified-badge")).toBeTruthy();
+      expect(view.getByText("เติมเงินสำเร็จ")).toBeTruthy();
+      expect(view.getByText("฿100.00")).toBeTruthy();
       expect(view.getByTestId("top-up-done-btn")).toBeTruthy();
     });
 

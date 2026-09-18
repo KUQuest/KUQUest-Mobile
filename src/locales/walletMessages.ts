@@ -30,6 +30,8 @@ export interface WalletMessages {
   topUpConfirm: string;
   paymentVerified: string;
   paymentCredited: (credit: string) => string;
+  topUpSuccessTitle: string;
+  topUpSuccessDescription: string;
   verifyPayment: string;
   verifyingPayment: string;
   done: string;
@@ -143,6 +145,8 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     topUpConfirm: "Confirm and create QR",
     paymentVerified: "Payment Verified (PAID)",
     paymentCredited: (credit) => `${credit} credited to your Spending Balance`,
+    topUpSuccessTitle: "Top-up complete",
+    topUpSuccessDescription: "The funds are now in your Spending Balance.",
     verifyPayment: "Verify Payment",
     verifyingPayment: "Verifying payment with provider…",
     done: "Done",
@@ -261,6 +265,8 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     topUpConfirm: "ยืนยันและสร้าง QR",
     paymentVerified: "ยืนยันการชำระเงินแล้ว (PAID)",
     paymentCredited: (credit) => `เครดิต ${credit} เข้ายอดเงินพร้อมใช้แล้ว`,
+    topUpSuccessTitle: "เติมเงินสำเร็จ",
+    topUpSuccessDescription: "เงินเข้ายอดเงินพร้อมใช้ของคุณแล้ว",
     verifyPayment: "ตรวจสอบการชำระเงิน",
     verifyingPayment: "กำลังตรวจสอบการชำระเงิน…",
     done: "เสร็จสิ้น",
