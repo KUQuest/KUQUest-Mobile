@@ -248,6 +248,29 @@ export interface QuestBoardMessages {
   escrowTotal: string;
   terminalBannerTitle: string;
   terminalDescription: string;
+  conditionEditTitle: string;
+  conditionEditSubtitle: string;
+  conditionEditWarning: string;
+  proposeConditionChanges: string;
+  conditionItemPlaceholder: string;
+  conditionItemLabel: (index: number) => string;
+  addConditionItem: string;
+  moveConditionItemUp: (index: number) => string;
+  moveConditionItemDown: (index: number) => string;
+  removeConditionItem: (index: number) => string;
+  conditionItemRequired: string;
+  conditionDiffTitle: string;
+  conditionDiffAdded: string;
+  conditionDiffRemoved: string;
+  conditionDiffReordered: string;
+  conditionNoChanges: string;
+  submitConditionEdit: string;
+  submittingConditionEdit: string;
+  conditionEditSubmitError: string;
+  conditionEditPendingTitle: string;
+  conditionEditPendingDescription: string;
+  conditionEditCountdownLabel: string;
+  conditionEditVotingProgress: (accepted: number, total: number) => string;
 }
 
 export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
@@ -588,6 +611,33 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     terminalBannerTitle: "Quest closed",
     terminalDescription:
       "This Quest is terminal. It cannot be reopened or accepted again.",
+    conditionEditTitle: "Propose condition changes",
+    conditionEditSubtitle:
+      "Review the current conditions, then edit, add, remove, or reorder them below.",
+    conditionEditWarning:
+      "Every Active Worker must respond within 10 minutes. If anyone declines or time runs out, the Quest keeps its current conditions.",
+    proposeConditionChanges: "Propose condition changes",
+    conditionItemPlaceholder: "Describe a condition",
+    conditionItemLabel: (index) => `Condition ${index}`,
+    addConditionItem: "Add condition",
+    moveConditionItemUp: (index) => `Move condition ${index} up`,
+    moveConditionItemDown: (index) => `Move condition ${index} down`,
+    removeConditionItem: (index) => `Remove condition ${index}`,
+    conditionItemRequired: "Condition text cannot be empty.",
+    conditionDiffTitle: "Changes",
+    conditionDiffAdded: "Added",
+    conditionDiffRemoved: "Removed",
+    conditionDiffReordered: "Order changed",
+    conditionNoChanges: "No changes yet.",
+    submitConditionEdit: "Send to Workers",
+    submittingConditionEdit: "Sending…",
+    conditionEditSubmitError: "Unable to submit the condition edit. Try again.",
+    conditionEditPendingTitle: "Condition changes pending",
+    conditionEditPendingDescription:
+      "Active Workers are reviewing your proposed conditions. Current conditions stay in effect until everyone responds or time runs out.",
+    conditionEditCountdownLabel: "Time remaining",
+    conditionEditVotingProgress: (accepted, total) =>
+      `${accepted} of ${total} Workers responded`,
   },
   th: {
     title: "กระดานเควสต์",
@@ -917,5 +967,32 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     terminalBannerTitle: "ปิดเควสต์แล้ว",
     terminalDescription:
       "เควสต์นี้อยู่ในสถานะสิ้นสุด ไม่สามารถเปิดใหม่หรือรับผู้เข้าร่วมเพิ่มได้",
+    conditionEditTitle: "เสนอแก้ไขเงื่อนไข",
+    conditionEditSubtitle:
+      "ตรวจสอบเงื่อนไขปัจจุบัน แล้วแก้ไข เพิ่ม ลบ หรือจัดลำดับใหม่ด้านล่าง",
+    conditionEditWarning:
+      "ผู้ทำงานที่ยังปฏิบัติงานอยู่ทุกคนต้องตอบภายใน 10 นาที หากมีผู้ปฏิเสธหรือหมดเวลา เควสต์จะยังคงใช้เงื่อนไขเดิม",
+    proposeConditionChanges: "เสนอแก้ไขเงื่อนไข",
+    conditionItemPlaceholder: "อธิบายเงื่อนไข",
+    conditionItemLabel: (index) => `เงื่อนไขที่ ${index}`,
+    addConditionItem: "เพิ่มเงื่อนไข",
+    moveConditionItemUp: (index) => `เลื่อนเงื่อนไขที่ ${index} ขึ้น`,
+    moveConditionItemDown: (index) => `เลื่อนเงื่อนไขที่ ${index} ลง`,
+    removeConditionItem: (index) => `ลบเงื่อนไขที่ ${index}`,
+    conditionItemRequired: "ข้อความเงื่อนไขต้องไม่ว่างเปล่า",
+    conditionDiffTitle: "การเปลี่ยนแปลง",
+    conditionDiffAdded: "เพิ่มแล้ว",
+    conditionDiffRemoved: "ลบแล้ว",
+    conditionDiffReordered: "ลำดับเปลี่ยนไป",
+    conditionNoChanges: "ยังไม่มีการเปลี่ยนแปลง",
+    submitConditionEdit: "ส่งให้ผู้ทำงาน",
+    submittingConditionEdit: "กำลังส่ง…",
+    conditionEditSubmitError: "ไม่สามารถส่งคำขอแก้ไขเงื่อนไขได้ ลองอีกครั้ง",
+    conditionEditPendingTitle: "รอการตอบรับการแก้ไขเงื่อนไข",
+    conditionEditPendingDescription:
+      "ผู้ทำงานที่ยังปฏิบัติงานอยู่กำลังพิจารณาเงื่อนไขที่เสนอ เงื่อนไขปัจจุบันจะยังมีผลจนกว่าทุกคนจะตอบหรือหมดเวลา",
+    conditionEditCountdownLabel: "เวลาที่เหลือ",
+    conditionEditVotingProgress: (accepted, total) =>
+      `ผู้ทำงานตอบแล้ว ${accepted} จาก ${total} คน`,
   },
 };
