@@ -184,7 +184,7 @@ export default function HomeScreen() {
   const handleOpenDetails = useCallback(
     (questId: string) => {
       router.push({
-        pathname: "/quest/[id]/manage",
+        pathname: "/quest/[id]",
         params: { id: questId },
       });
     },

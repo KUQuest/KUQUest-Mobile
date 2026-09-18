@@ -91,7 +91,7 @@ describe("HomeScreen live active quests syncing", () => {
     expect(getByTestId("hirer-quest-card-worker-live-q1")).toBeTruthy();
   });
 
-  it("opens the general manage screen from the roster modal when there is no pending Candidate selection", async () => {
+  it("opens the quest detail screen from the roster modal when there is no pending Candidate selection", async () => {
     (questApi.listMine as jest.Mock).mockResolvedValue({
       items: [
         {
@@ -141,7 +141,7 @@ describe("HomeScreen live active quests syncing", () => {
     fireEvent.press(getByTestId("hirer-roster-manage-button"));
 
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/quest/[id]/manage",
+      pathname: "/quest/[id]",
       params: { id: "live-q1" },
     });
   });
