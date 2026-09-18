@@ -21,6 +21,8 @@ export interface WorkerHomeMessages {
   viewDetails: string;
   viewWork: string;
   reward: string;
+  perPerson: string;
+  online: string;
   errorTitle: string;
   errorRetry: string;
   refreshing: string;
@@ -48,9 +50,19 @@ export interface WorkerHomeMessages {
   imageRequiredAlert: string;
   currentQuest: string;
   questState: string;
+  stateAssigned: string;
+  stateInProgress: string;
+  stateCompleted: string;
+  stateCancelled: string;
+  stateFailed: string;
   stageAssigned: string;
   stageInProgress: string;
   stageReview: string;
+  proofRequiredLabel: string;
+  proofNotRequiredLabel: string;
+  submitLockedUntilStart: string;
+  submitUnavailable: string;
+  submissionPending: string;
   appliedTab: string;
   historyTab: string;
   workingNow: string;
@@ -61,6 +73,7 @@ export interface WorkerHomeMessages {
   noAppliedQuests: string;
   noHistoryQuests: string;
   waitingForHirer: string;
+  questDetailsUnavailable: string;
 }
 
 export const workerHomeMessages: Record<SupportedLocale, WorkerHomeMessages> = {
@@ -87,6 +100,8 @@ export const workerHomeMessages: Record<SupportedLocale, WorkerHomeMessages> = {
     viewDetails: "View Details",
     viewWork: "Open Work",
     reward: "Reward",
+    perPerson: "/ person",
+    online: "Online",
     errorTitle: "Couldn't load worker workspace data",
     errorRetry: "Try Again",
     refreshing: "Refreshing...",
@@ -115,9 +130,19 @@ export const workerHomeMessages: Record<SupportedLocale, WorkerHomeMessages> = {
     imageRequiredAlert: "Please select an image before submitting.",
     currentQuest: "Current Quest",
     questState: "Quest State",
+    stateAssigned: "Waiting to start",
+    stateInProgress: "In Progress",
+    stateCompleted: "Completed",
+    stateCancelled: "Cancelled",
+    stateFailed: "Failed",
     stageAssigned: "Assigned",
     stageInProgress: "In Progress",
     stageReview: "Review / Done",
+    proofRequiredLabel: "Proof required",
+    proofNotRequiredLabel: "No proof required",
+    submitLockedUntilStart: "Submit unlocks when the Quest starts.",
+    submitUnavailable: "Submission is unavailable for this Quest.",
+    submissionPending: "Submitted — waiting for Hirer review.",
     appliedTab: "Applied Quest",
     historyTab: "History",
     workingNow: "Working Now",
@@ -128,6 +153,7 @@ export const workerHomeMessages: Record<SupportedLocale, WorkerHomeMessages> = {
     findQuestsAction: "Find Quests",
     noAppliedQuests: "No pending applications right now.",
     noHistoryQuests: "No completed or past quests yet.",
+    questDetailsUnavailable: "Quest details unavailable",
     waitingForHirer: "Waiting for Hirer",
   },
   th: {
@@ -153,6 +179,8 @@ export const workerHomeMessages: Record<SupportedLocale, WorkerHomeMessages> = {
     viewDetails: "ดูรายละเอียด",
     viewWork: "เปิดห้องทำงาน",
     reward: "ค่าตอบแทน",
+    perPerson: "/ คน",
+    online: "ออนไลน์",
     errorTitle: "ไม่สามารถโหลดข้อมูลพื้นที่ทำงานได้",
     errorRetry: "ลองใหม่",
     refreshing: "กำลังอัปเดต...",
@@ -181,9 +209,19 @@ export const workerHomeMessages: Record<SupportedLocale, WorkerHomeMessages> = {
     imageRequiredAlert: "โปรดเลือกรูปภาพหลักฐานก่อนส่งงาน",
     currentQuest: "เควสต์ปัจจุบัน",
     questState: "สถานะเควสต์",
+    stateAssigned: "รอเริ่มเควสต์",
+    stateInProgress: "กำลังทำ",
+    stateCompleted: "เสร็จสิ้น",
+    stateCancelled: "ยกเลิก",
+    stateFailed: "ไม่สำเร็จ",
     stageAssigned: "มอบหมายแล้ว",
     stageInProgress: "กำลังทำ",
     stageReview: "ตรวจงาน / เสร็จสิ้น",
+    proofRequiredLabel: "ต้องส่งหลักฐาน",
+    proofNotRequiredLabel: "ไม่ต้องส่งหลักฐาน",
+    submitLockedUntilStart: "ปุ่มส่งงานจะใช้งานได้เมื่อเควสต์เริ่ม",
+    submitUnavailable: "เควสต์นี้ไม่เปิดให้ส่งงานแล้ว",
+    submissionPending: "ส่งงานแล้ว — รอผู้ว่าจ้างตรวจรับ",
     appliedTab: "เควสต์ที่สมัครไว้",
     historyTab: "ประวัติเควสต์",
     workingNow: "กำลังทำงานอยู่",
@@ -193,6 +231,7 @@ export const workerHomeMessages: Record<SupportedLocale, WorkerHomeMessages> = {
     findQuestsAction: "ไปค้นหาเควสต์",
     noAppliedQuests: "ไม่มีใบสมัครที่กำลังรอการตอบรับในขณะนี้",
     noHistoryQuests: "ยังไม่มีประวัติเควสต์ที่ผ่านมา",
+    questDetailsUnavailable: "ไม่พบรายละเอียดเควสต์",
     waitingForHirer: "รอผู้ว่าจ้างตอบรับ",
   },
 };

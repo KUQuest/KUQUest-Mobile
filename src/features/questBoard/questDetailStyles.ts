@@ -43,6 +43,28 @@ const styles = {
     "items-start border-ku-border-accent border-t flex-row gap-[10px] mt-[14px] pt-[14px]",
   heroLocationCopy: "flex-1 min-w-0",
   heroLocationValue: "text-ku-text-strong font-ku-medium text-ku-body mt-[2px]",
+  participantRosterCard:
+    "bg-ku-surface border-ku-border-subtle rounded-[16px] border mt-[16px] p-[14px]",
+  participantRosterHeader: "items-center flex-row justify-between",
+  participantRosterTitle: "text-ku-text-strong font-ku-bold text-ku-body",
+  participantRosterCount: "text-ku-primary font-ku-bold text-ku-body-small",
+  participantRosterList: "gap-[10px] pt-[12px]",
+  participantRosterItem: "items-center min-h-[56px] w-[64px]",
+  participantRosterAvatar:
+    "items-center bg-ku-surface-success border-ku-border-accent border rounded-ku-pill h-[44px] justify-center overflow-hidden w-[44px]",
+  participantRosterAvatarText: "text-ku-primary font-ku-bold text-ku-label",
+  participantRosterName:
+    "text-ku-text-secondary font-ku-medium text-ku-label mt-[4px] max-w-[64px] text-center",
+  participationCard:
+    "bg-ku-primary rounded-[18px] flex-row items-center justify-between mt-[16px] p-[16px]",
+  participationCopy: "flex-1 min-w-0 mr-[12px]",
+  participationTitle: "text-ku-white font-ku-bold text-ku-body",
+  participationDescription:
+    "text-ku-white font-ku-regular text-ku-label mt-[4px]",
+  participationAction:
+    "items-center bg-ku-white rounded-ku-pill flex-row gap-[6px] justify-center min-h-[44px] px-[12px]",
+  participationActionDisabled: "opacity-60",
+  participationActionText: "text-ku-primary font-ku-semibold text-ku-label",
   scheduleCard:
     "bg-ku-surface border-ku-border-subtle rounded-[16px] border mt-[24px] p-[16px]",
   scheduleHeader: "items-center flex-row",

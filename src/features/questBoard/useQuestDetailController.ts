@@ -62,6 +62,7 @@ import {
 } from "./questWorkflow";
 import type { QuestDetailBodyProps } from "./components/QuestDetailBody";
 import type { QuestDetailSheetsProps } from "./components/QuestDetailSheets";
+import type { QuestParticipant } from "./components/QuestParticipantRoster";
 
 export interface QuestDetailScreenProps {
   previewState?: BoardPreviewState;
@@ -158,6 +159,12 @@ export function useQuestDetailController({
     }
     router.replace("/(tabs)");
   }, [router]);
+  const openParticipantProfile = React.useCallback(
+    (participantId: string) => {
+      router.push(`/profile/${participantId}`);
+    },
+    [router]
+  );
   useFocusEffect(
     React.useCallback(() => {
       // Native Modal surfaces consume Android Back through onRequestClose before this focused-screen listener.
@@ -194,6 +201,9 @@ export function useQuestDetailController({
   const [sessionStudentId, setSessionStudentId] = useState<
     string | undefined
   >();
+  const [sessionResolved, setSessionResolved] = useState(
+    Boolean(explicitStudentId)
+  );
   const [liveQuest, setLiveQuest] = useState<QuestBoardQuest | null>(null);
   const [liveSnapshot, setLiveSnapshot] = useState<LiveQuestSnapshot | null>(
     null
@@ -201,6 +211,7 @@ export function useQuestDetailController({
   const [liveError, setLiveError] = useState<Error | null>(null);
   const [loadedQuestId, setLoadedQuestId] = useState<string | undefined>();
   const applicationStudentId = explicitStudentId ?? sessionStudentId ?? "";
+  const sessionReady = sessionResolved || Boolean(explicitStudentId);
   const isJoinView = resolvedMode === "join";
   const isPostView = resolvedMode === "post";
   const prototypeViewerId = applicationStudentId;
@@ -218,7 +229,10 @@ export function useQuestDetailController({
         const id = parseStudentId(session?.user.id);
         if (id) setSessionStudentId(id);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (active) setSessionResolved(true);
+      });
     return () => {
       active = false;
     };
@@ -245,10 +259,7 @@ export function useQuestDetailController({
       setLoadedQuestId(id);
       return fixture;
     }
-    if (
-      typeof liveQuestService.getLiveSnapshot !== "function" ||
-      !applicationStudentId
-    ) {
+    if (typeof liveQuestService.getLiveSnapshot !== "function") {
       if (typeof liveQuestService.getQuestDetail === "function") {
         const quest = await liveQuestService.getQuestDetail(id);
         if (latestQuestIdRef.current === id) {
@@ -257,6 +268,9 @@ export function useQuestDetailController({
         }
         return quest;
       }
+      throw new Error("Member session is required");
+    }
+    if (!applicationStudentId) {
       throw new Error("Member session is required");
     }
     setLiveError(null);
@@ -283,11 +297,12 @@ export function useQuestDetailController({
   const { refreshing, refresh, refreshOnFocus } = useCalmRefresh(loadQuest);
   useFocusEffect(
     React.useCallback(() => {
+      const liveSnapshotAvailable =
+        typeof liveQuestService.getLiveSnapshot === "function";
       if (
         !resolvedQuestId ||
         explicitPreview ||
-        (!applicationStudentId &&
-          typeof liveQuestService.getQuestDetail !== "function")
+        (liveSnapshotAvailable && !sessionReady)
       )
         return;
       if (loadedQuestIdRef.current !== resolvedQuestId) {
@@ -296,19 +311,26 @@ export function useQuestDetailController({
       }
       refreshOnFocus();
     }, [
-      applicationStudentId,
       explicitPreview,
       refresh,
       refreshOnFocus,
       resolvedQuestId,
+      sessionReady,
     ])
   );
   useEffect(() => {
-    if (!resolvedQuestId || explicitPreview) return;
+    const liveSnapshotAvailable =
+      typeof liveQuestService.getLiveSnapshot === "function";
+    if (
+      !resolvedQuestId ||
+      explicitPreview ||
+      (liveSnapshotAvailable && !sessionReady)
+    )
+      return;
     if (loadedQuestIdRef.current !== resolvedQuestId) {
       void refresh(true).catch(() => undefined);
     }
-  }, [explicitPreview, refresh, resolvedQuestId]);
+  }, [explicitPreview, refresh, resolvedQuestId, sessionReady]);
 
   const [, setPrototypeState] = useState<QuestDetailState | null>(null);
   const activePrototypeState =
@@ -324,6 +346,35 @@ export function useQuestDetailController({
           prototypeViewerId
         )
       : null;
+  const prototypeParticipants: QuestParticipant[] =
+    activePrototypeState?.assignments
+      .filter((assignment) => assignment.status !== "ASSIGNMENT_CANCELLED")
+      .map((assignment) => ({
+        id: assignment.workerId,
+        displayName: assignment.workerId,
+      })) ?? [];
+  const liveParticipants: QuestParticipant[] =
+    liveSnapshot?.participants ??
+    liveSnapshot?.assignments
+      .filter((assignment) => assignment.state !== "ASSIGNMENT_CANCELLED")
+      .map((assignment) => ({
+        id: assignment.workerId,
+        displayName: assignment.workerId,
+      })) ??
+    [];
+  const participants = explicitPreview
+    ? prototypeParticipants
+    : liveParticipants;
+  const liveParticipantCount = liveSnapshot
+    ? "activeWorkerCount" in liveSnapshot.quest
+      ? liveSnapshot.quest.activeWorkerCount
+      : liveSnapshot.assignments.filter(
+          (assignment) => assignment.state !== "ASSIGNMENT_CANCELLED"
+        ).length
+    : 0;
+  const participantCount = explicitPreview
+    ? (activePrototypeState?.actualHeadcount ?? prototypeParticipants.length)
+    : liveParticipantCount;
   const [liveAction, setLiveAction] = useState<string | null>(null);
   const runLiveAction = React.useCallback(
     async <T>(
@@ -1170,6 +1221,13 @@ export function useQuestDetailController({
   };
   const bodyProps: QuestDetailBodyProps | null = quest
     ? {
+        canParticipate: canApply,
+        participationFirstCome: Boolean(firstCome),
+        onOpenParticipation: () => setManualConfirmationOpen(true),
+        participationBusy: Boolean(liveAction),
+        participants,
+        participantCount,
+        onOpenParticipantProfile: openParticipantProfile,
         canReportQuest,
         canonicalStatus,
         imageUris,

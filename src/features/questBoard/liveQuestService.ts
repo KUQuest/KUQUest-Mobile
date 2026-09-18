@@ -12,6 +12,7 @@ import {
   type QuestV2ReviewPayload,
 } from "@/api/QuestApi";
 import { ApiError } from "@/api/ApiClient";
+import { authService } from "../auth/AuthService";
 import { chatApi } from "@/api/ChatApi";
 import type {
   CandidateInquiryParticipant,
@@ -115,6 +116,12 @@ export type LiveQuestAssignment = Omit<
   id?: string;
   createdAt?: string;
 };
+export interface LiveQuestParticipant {
+  id: string;
+  displayName: string;
+  avatarUrl?: string;
+  avatarFileId?: string;
+}
 
 export interface LiveQuestSnapshot {
   viewerId: string;
@@ -125,6 +132,7 @@ export interface LiveQuestSnapshot {
   participation: QuestV2Participation;
   assignment: LiveQuestAssignment | null;
   assignments: LiveQuestAssignment[];
+  participants?: LiveQuestParticipant[];
   application: QuestV2Application | null;
   applications: QuestV2Application[];
   team: QuestV2Team | null;
@@ -599,7 +607,64 @@ function deriveNextAction(
 
 export class LiveQuestService {
   private hirerCache = new Map<string, { id: string; displayName: string }>();
+  private participantCache = new Map<string, LiveQuestParticipant>();
+  private participantRequests = new Map<
+    string,
+    Promise<LiveQuestParticipant>
+  >();
 
+  private async getParticipantProfile(
+    participantId: string
+  ): Promise<LiveQuestParticipant> {
+    const cached = this.participantCache.get(participantId);
+    if (cached) return cached;
+
+    const pending = this.participantRequests.get(participantId);
+    if (pending) return pending;
+
+    const request = (async () => {
+      try {
+        const api = await authService.getStudentApi();
+        const profile = await api.getPublicProfile(participantId);
+        const displayName =
+          `${profile.firstName} ${profile.lastName}`.trim() || participantId;
+        const result: LiveQuestParticipant = {
+          id: participantId,
+          displayName,
+          ...(profile.avatar?.url ? { avatarUrl: profile.avatar.url } : {}),
+          ...(profile.avatar?.fileId
+            ? { avatarFileId: profile.avatar.fileId }
+            : {}),
+        };
+        this.participantCache.set(participantId, result);
+        return result;
+      } catch {
+        return { id: participantId, displayName: participantId };
+      } finally {
+        this.participantRequests.delete(participantId);
+      }
+    })();
+
+    this.participantRequests.set(participantId, request);
+    return request;
+  }
+
+  private async loadParticipantProfiles(
+    assignments: readonly LiveQuestAssignment[]
+  ): Promise<LiveQuestParticipant[]> {
+    const participantIds = [
+      ...new Set(
+        assignments
+          .filter((assignment) => assignment.state !== "ASSIGNMENT_CANCELLED")
+          .map((assignment) => assignment.workerId)
+      ),
+    ];
+    return Promise.all(
+      participantIds.map((participantId) =>
+        this.getParticipantProfile(participantId)
+      )
+    );
+  }
   async getHirerParticipant(
     questId: string
   ): Promise<{ id: string; displayName: string } | null> {
@@ -821,6 +886,10 @@ export class LiveQuestService {
       listedAssignment || !participationAssignment
         ? assignments
         : [...assignments, participationAssignment];
+    const participants =
+      quest.participation === "GROUP"
+        ? await this.loadParticipantProfiles(resolvedAssignments)
+        : [];
     const application = ownApplication(applications, viewerId);
     const team = ownTeam(teams, viewerId);
     const actor = deriveActor(routeActor, assignment, application, team);
@@ -861,6 +930,7 @@ export class LiveQuestService {
       actor,
       quest,
       state: quest.state,
+      participants,
       mode: quest.mode,
       participation: quest.participation,
       assignment,

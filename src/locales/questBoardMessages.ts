@@ -133,6 +133,7 @@ export interface QuestBoardMessages {
   applyForReview: string;
   participation: string;
   participants: string;
+  participantProfile: (name: string) => string;
   singlePerson: string;
   team: string;
   applyNow: string;
@@ -378,6 +379,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     applyForReview: "Apply for review",
     participation: "Participation",
     participants: "Participants",
+    participantProfile: (name) => `View profile of ${name}`,
     singlePerson: "Single person",
     team: "Team",
     applyNow: "Apply now",
@@ -686,6 +688,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     applyForReview: "สมัครเพื่อรอการคัดเลือก",
     participation: "การเข้าร่วม",
     participants: "ผู้เข้าร่วม",
+    participantProfile: (name) => `ดูโปรไฟล์ของ ${name}`,
     singlePerson: "คนเดียว",
     team: "ทีม",
     applyNow: "สมัครเลย",

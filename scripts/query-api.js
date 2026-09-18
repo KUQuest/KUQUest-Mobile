@@ -13,6 +13,11 @@ const readline = require("readline");
 const SPEC_FILE = path.resolve(__dirname, "../docs/api/api.yaml");
 const CACHE_DIR = path.resolve(__dirname, "../node_modules/.cache");
 const CACHE_FILE = path.resolve(CACHE_DIR, "kuquest-api-spec.json");
+const STAGING_SPEC_URL = "https://kuquest-dev-api.kubits.org/openapi/json";
+const STAGING_CACHE_FILE = path.resolve(
+  CACHE_DIR,
+  "kuquest-staging-openapi.json"
+);
 
 // Color helpers
 const useColor =
@@ -114,7 +119,50 @@ function loadSpec(options = {}) {
       // Ignore cache write errors (e.g. read-only filesystem)
     }
   }
+  return { doc, operations: extractOperations(doc) };
+}
+/**
+ * Load the live staging OpenAPI JSON document.
+ *
+ * The repository YAML remains the default source. Staging is intentionally
+ * opt-in because its published contract can lag or differ from the checked-in
+ * mobile contract.
+ */
+async function loadStagingSpec(options = {}) {
+  const cachePath = options.cachePath || STAGING_CACHE_FILE;
+  const refresh = Boolean(options.refresh || options.noCache);
+  if (!refresh && fs.existsSync(cachePath)) {
+    try {
+      const doc = JSON.parse(fs.readFileSync(cachePath, "utf8"));
+      return { doc, operations: extractOperations(doc) };
+    } catch {
+      // Cache invalid or unreadable; fetch the live document.
+    }
+  }
 
+  const fetchImpl = options.fetchImpl || globalThis.fetch;
+  if (typeof fetchImpl !== "function") {
+    throw new Error("Global fetch is unavailable; use Node 18 or newer.");
+  }
+  const response = await fetchImpl(STAGING_SPEC_URL);
+  if (!response.ok) {
+    throw new Error(
+      `Staging OpenAPI request failed with HTTP ${response.status}`
+    );
+  }
+  const doc = await response.json();
+  if (!doc || typeof doc !== "object" || typeof doc.openapi !== "string") {
+    throw new Error("Staging OpenAPI response is not a valid OpenAPI document");
+  }
+
+  try {
+    if (!fs.existsSync(path.dirname(cachePath))) {
+      fs.mkdirSync(path.dirname(cachePath), { recursive: true });
+    }
+    fs.writeFileSync(cachePath, JSON.stringify(doc));
+  } catch {
+    // Ignore cache write errors; the fetched document is still usable.
+  }
   return { doc, operations: extractOperations(doc) };
 }
 
@@ -498,7 +546,7 @@ function renderOperationDetail(op, doc) {
 function printHelp() {
   console.log(`
 ${c.bold("KUQuest API Query CLI")}
-Fast inspector for OpenAPI specification (${c.cyan("docs/api/api.yaml")})
+Inspect the checked-in OpenAPI or the live staging OpenAPI source.
 
 ${c.bold("USAGE:")}
   bun run query-api <command> [options]
@@ -514,17 +562,19 @@ ${c.bold("COMMANDS:")}
   ${c.cyan("help")}                        Show this manual
 
 ${c.bold("OPTIONS:")}
+  ${c.yellow("--staging")}                  Query the live staging OpenAPI JSON
   ${c.yellow("--tag <tag>")}                 Filter search by tag
-  ${c.yellow("--method <METHOD>")}           Filter by HTTP method (GET, POST, etc.)
+  ${c.yellow("--method <METHOD>")}           Filter search by method
   ${c.yellow("--response <status>")}         Select response status for schema command (default: 200)
   ${c.yellow("--request")}                   Select requestBody schema instead of response
   ${c.yellow("--raw")}                       Output unformatted JSON
-  ${c.yellow("--no-cache")}                  Bypass cache and re-parse YAML
-  ${c.yellow("--no-color")}                  Disable ANSI color formatting
+  ${c.yellow("--no-cache")}                  Bypass the selected source cache
+  ${c.yellow("--no-color")}                 Disable ANSI color formatting
 
 ${c.bold("EXAMPLES:")}
   bun run query-api search "wallet"
   bun run query-api search "candidate" --tag "Quest Candidates v2"
+  bun run query-api search "quests" --staging --no-cache
   bun run query-api get getOwnWallet
   bun run query-api get "POST /api/v1/wallet/earnings-conversions"
   bun run query-api schema getOwnWallet --response 200
@@ -555,6 +605,7 @@ async function runCli(args = process.argv.slice(2)) {
 
   // Parse common flags
   const flags = {
+    staging: false,
     tag: "",
     method: "",
     response: "200",
@@ -566,7 +617,9 @@ async function runCli(args = process.argv.slice(2)) {
   const positional = [];
   for (let i = 0; i < rest.length; i++) {
     const arg = rest[i];
-    if (arg === "--tag" && i + 1 < rest.length) {
+    if (arg === "--staging") {
+      flags.staging = true;
+    } else if (arg === "--tag" && i + 1 < rest.length) {
       flags.tag = rest[++i];
     } else if (arg === "--method" && i + 1 < rest.length) {
       flags.method = rest[++i];
@@ -585,7 +638,10 @@ async function runCli(args = process.argv.slice(2)) {
     }
   }
 
-  const { doc, operations } = loadSpec({ noCache: flags.noCache });
+  const source = flags.staging
+    ? await loadStagingSpec({ noCache: flags.noCache })
+    : loadSpec({ noCache: flags.noCache });
+  const { doc, operations } = source;
 
   switch (cmd) {
     case "tags": {
@@ -904,7 +960,9 @@ async function runInteractive() {
 
 // Export for programmatic use and unit tests
 module.exports = {
+  STAGING_SPEC_URL,
   loadSpec,
+  loadStagingSpec,
   extractOperations,
   searchOperations,
   findOperation,

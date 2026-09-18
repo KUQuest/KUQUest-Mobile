@@ -5,6 +5,7 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import QuestBoardScreen from "../QuestBoardScreen";
 import QuestDetailScreen from "../QuestDetailScreen";
 import { liveQuestService } from "../liveQuestService";
+import { authService } from "@/features/auth/AuthService";
 import type { LiveQuestSnapshot } from "../liveQuestService";
 import type { QuestBoardQuest } from "../types";
 
@@ -293,6 +294,29 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
           .refreshing
       ).toBe(false)
     );
+  });
+  it("hydrates the live join CTA after session loading without refresh", async () => {
+    let resolveSession!: (value: { user: { id: string } }) => void;
+    (authService.getSession as jest.Mock).mockReturnValueOnce(
+      new Promise<{ user: { id: string } }>((resolve) => {
+        resolveSession = resolve;
+      })
+    );
+    const snapshot = createLiveSnapshot();
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
+
+    const view = await render(<QuestDetailScreen questId="quest-live-1" />);
+
+    expect(view.queryByTestId("quest-apply-button")).toBeNull();
+    resolveSession({ user: { id: "current-worker-1" } });
+
+    await waitFor(() => {
+      expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledWith(
+        "quest-live-1",
+        "current-worker-1"
+      );
+      expect(view.getByTestId("quest-apply-button")).toBeTruthy();
+    });
   });
   it("navigates to Work Hub after a live FCFS join succeeds", async () => {
     const snapshot = createLiveSnapshot();
