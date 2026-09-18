@@ -241,6 +241,39 @@ describe("QuestApi", () => {
     );
   });
 
+  it("cancels a Quest with an idempotency key", async () => {
+    fetchMock.mockResolvedValue(
+      okJson({
+        success: true,
+        data: {
+          questStatus: "QUEST_CANCELLED",
+          outcome: "CANCELLED",
+          paidSatang: 0,
+          refundedSatang: 10000,
+        },
+      })
+    );
+
+    await expect(api.cancelQuest("quest-1", "cancel-quest-1")).resolves.toEqual(
+      {
+        questStatus: "QUEST_CANCELLED",
+        outcome: "CANCELLED",
+        paidSatang: 0,
+        refundedSatang: 10000,
+      }
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v2/quests/quest-1/cancel",
+      expect.objectContaining({
+        method: "POST",
+        body: "{}",
+        headers: expect.objectContaining({
+          "Idempotency-Key": "cancel-quest-1",
+        }),
+      })
+    );
+  });
+
   it("fetches server publish check validation", async () => {
     const data = {
       success: true,

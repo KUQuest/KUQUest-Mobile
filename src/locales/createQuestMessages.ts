@@ -129,6 +129,14 @@ export interface CreateQuestMessages {
   savingDraft: string;
   saveChanges: string;
   savingChanges: string;
+  cancelQuest: string;
+  cancellingQuest: string;
+  cancelQuestTitle: string;
+  cancelQuestDescription: string;
+  cancelQuestConfirm: string;
+  cancelQuestKeep: string;
+  cancelledQuestTitle: string;
+  cancelledQuestDescription: string;
   publishQuest: string;
   publishingQuest: string;
   loadingDraft: string;
@@ -347,6 +355,16 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       rewardHelper:
         "This inclusive amount covers the worker reward and Platform Fee for each place.",
       questSummaryLabel: "Quest Summary",
+      cancelQuest: "Cancel Quest",
+      cancellingQuest: "Cancelling Quest…",
+      cancelQuestTitle: "Cancel this Quest?",
+      cancelQuestDescription:
+        "This will cancel the Quest and apply the server settlement rules. This action cannot be undone.",
+      cancelQuestConfirm: "Cancel Quest",
+      cancelQuestKeep: "Keep editing",
+      cancelledQuestTitle: "Quest cancelled",
+      cancelledQuestDescription:
+        "The Quest was cancelled and the server completed its settlement.",
       singleHeadcountHint: "Single format always has one participant.",
       back: "Back",
       next: "Next",
@@ -616,6 +634,16 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       savingDraft: "กำลังบันทึกฉบับร่าง…",
       saveChanges: "บันทึกการแก้ไข",
       savingChanges: "กำลังบันทึกการแก้ไข…",
+      cancelQuest: "ยกเลิกเควสต์",
+      cancellingQuest: "กำลังยกเลิกเควสต์…",
+      cancelQuestTitle: "ยกเลิกเควสต์นี้หรือไม่?",
+      cancelQuestDescription:
+        "ระบบจะยกเลิกเควสต์และคำนวณการชำระเงินตามกฎของเซิร์ฟเวอร์ การกระทำนี้ย้อนกลับไม่ได้",
+      cancelQuestConfirm: "ยกเลิกเควสต์",
+      cancelQuestKeep: "แก้ไขต่อ",
+      cancelledQuestTitle: "ยกเลิกเควสต์แล้ว",
+      cancelledQuestDescription:
+        "เควสต์ถูกยกเลิกและระบบดำเนินการ settlement เรียบร้อยแล้ว",
       publishQuest: "เผยแพร่เควสต์",
       publishingQuest: "กำลังเผยแพร่เควสต์…",
       loadingDraft: "กำลังกู้คืนฉบับร่าง…",

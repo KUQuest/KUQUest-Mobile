@@ -19,6 +19,8 @@ export interface UseQuestEditOptions {
   setStep: Dispatch<SetStateAction<Step>>;
 }
 
+export type CancelQuestResult = { ok: true } | { ok: false; message: string };
+
 export function useQuestEdit({
   questId,
   draftChangedRef,
@@ -29,6 +31,9 @@ export function useQuestEdit({
   const [draftLoadError, setDraftLoadError] = useState(false);
   const [draftLoadAttempt, setDraftLoadAttempt] = useState(0);
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [cancelState, setCancelState] = useState<
+    "idle" | "cancelling" | "error"
+  >("idle");
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   const [savingAction, setSavingAction] = useState<CompletionState | null>(
     null
@@ -166,6 +171,27 @@ export function useQuestEdit({
     },
     [questId, setDraft, syncImages]
   );
+  const cancelQuest = useCallback(async (): Promise<CancelQuestResult> => {
+    if (!questId) {
+      return { ok: false, message: "The Quest ID is missing." };
+    }
+
+    setCancelState("cancelling");
+    try {
+      await questApi.cancelQuest(questId, createQuestIdempotencyKey());
+      setCancelState("idle");
+      return { ok: true };
+    } catch (error) {
+      setCancelState("error");
+      return {
+        ok: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to cancel the Quest.",
+      };
+    }
+  }, [questId]);
 
   return {
     draftHydrated,
@@ -177,6 +203,8 @@ export function useQuestEdit({
     setSaveErrorMessage,
     savingAction,
     setSavingAction,
+    cancelState,
+    cancelQuest,
     saveDraft,
   };
 }

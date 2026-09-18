@@ -563,6 +563,30 @@ export default function CreateQuestScreen({
     router.replace("/(tabs)");
   };
 
+  const confirmCancel = () => {
+    if (!editMode) return;
+    Alert.alert(messages.cancelQuestTitle, messages.cancelQuestDescription, [
+      { text: messages.cancelQuestKeep, style: "cancel" },
+      {
+        text: messages.cancelQuestConfirm,
+        style: "destructive",
+        onPress: () => {
+          void editState.cancelQuest().then((result) => {
+            if (!result.ok) {
+              Alert.alert(messages.cancelQuestTitle, result.message);
+              return;
+            }
+            Alert.alert(
+              messages.cancelledQuestTitle,
+              messages.cancelledQuestDescription,
+              [{ text: messages.back, onPress: leaveCreateFlow }]
+            );
+          });
+        },
+      },
+    ]);
+  };
+
   const showHelp = () =>
     Alert.alert(messages.helpTitle, messages.helpDescription);
 
@@ -1164,6 +1188,32 @@ export default function CreateQuestScreen({
               paddingBottom: Math.max(spacing.sm, insets.bottom + spacing.xs),
             }}
           >
+            {editMode ? (
+              <Pressable
+                accessibilityLabel={
+                  editState.cancelState === "cancelling"
+                    ? messages.cancellingQuest
+                    : messages.cancelQuest
+                }
+                accessibilityRole="button"
+                accessibilityState={{
+                  disabled: isSaving || editState.cancelState === "cancelling",
+                }}
+                className={cn(
+                  "items-center justify-center rounded-[12px] border border-ku-danger min-h-[44px] px-[12px]",
+                  useStackedActions ? "w-full" : "flex-1"
+                )}
+                disabled={isSaving || editState.cancelState === "cancelling"}
+                onPress={confirmCancel}
+                testID="edit-quest-cancel"
+              >
+                <Text className="text-ku-danger font-ku-semibold">
+                  {editState.cancelState === "cancelling"
+                    ? messages.cancellingQuest
+                    : messages.cancelQuest}
+                </Text>
+              </Pressable>
+            ) : null}
             {step < 3 ? (
               <Button
                 disabled={isSaving}
