@@ -120,6 +120,12 @@ describe("WorkerWorkManagementScreen", () => {
     expect(mockPush).toHaveBeenCalledWith("/my-quests");
   });
   it("switches tabs between Applied Quest and History", async () => {
+    (questApi.getParticipationDetail as jest.Mock).mockImplementation(
+      async (questId: string) => ({
+        title:
+          questId === "quest-app-1" ? "Campus Cleanup" : "Completed Quest",
+      })
+    );
     (questApi.listMyAssignments as jest.Mock).mockResolvedValue([
       {
         id: "assign-app-1",
@@ -145,6 +151,7 @@ describe("WorkerWorkManagementScreen", () => {
     await waitFor(() => {
       expect(view.getByTestId("applied-quests-list")).toBeTruthy();
       expect(view.getByTestId("applied-quest-item-assign-app-1")).toBeTruthy();
+      expect(view.getByText("Campus Cleanup")).toBeTruthy();
     });
     fireEvent.press(view.getByTestId("tab-history-quest"));
 
