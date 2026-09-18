@@ -12,6 +12,10 @@ export interface SettingsMessages {
   notificationsDescription: string;
   language: string;
   languageDescription: string;
+  selectLanguage: string;
+  thaiLanguage: string;
+  englishLanguage: string;
+  cancel: string;
   systemLanguage: string;
   appearance: string;
   appearanceDescription: string;
@@ -43,7 +47,11 @@ export const settingsMessages: Record<SupportedLocale, SettingsMessages> = {
     notifications: "Quest notifications",
     notificationsDescription: "Updates about applications and assignments",
     language: "Language",
-    languageDescription: "Use the language selected by your device",
+    languageDescription: "Select your preferred display language",
+    selectLanguage: "Select Language",
+    thaiLanguage: "ไทย (Thai)",
+    englishLanguage: "English",
+    cancel: "Cancel",
     systemLanguage: "English",
     appearance: "Appearance",
     appearanceDescription: "Follow your device appearance",
@@ -72,7 +80,11 @@ export const settingsMessages: Record<SupportedLocale, SettingsMessages> = {
     notifications: "การแจ้งเตือนเควสต์",
     notificationsDescription: "อัปเดตเกี่ยวกับการสมัครและงานที่ได้รับ",
     language: "ภาษา",
-    languageDescription: "ใช้ภาษาที่เลือกไว้ในอุปกรณ์",
+    languageDescription: "เลือกภาษาที่คุณต้องการใช้งาน",
+    selectLanguage: "เลือกภาษา",
+    thaiLanguage: "ไทย (Thai)",
+    englishLanguage: "English",
+    cancel: "ยกเลิก",
     systemLanguage: "ไทย",
     appearance: "รูปแบบการแสดงผล",
     appearanceDescription: "ใช้รูปแบบตามอุปกรณ์",

@@ -6,6 +6,7 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import ChatConversationScreen, {
   AttachmentRow,
+  ChatAvatar,
   InlineImageAttachment,
   MessageBubble,
   PendingAttachmentsBar,
@@ -109,6 +110,26 @@ const mockConversation: ChatConversation = {
   messages: [],
 };
 
+it("renders the participant avatar and opens the participant public profile", async () => {
+  const onPress = jest.fn();
+  const view = await render(
+    <ChatAvatar
+      initials="SO"
+      color="#059669"
+      name="Sora"
+      profileId="worker-1"
+      avatarUrl="https://example.test/sora.png"
+      avatarFileId="avatar-1"
+      onPress={onPress}
+    />
+  );
+
+  expect(view.getByTestId("chat-avatar-image-worker-1")).toBeTruthy();
+  await fireEvent.press(
+    view.getByRole("button", { name: "View profile of Sora" })
+  );
+  expect(onPress).toHaveBeenCalledTimes(1);
+});
 describe("ChatConversationMedia", () => {
   beforeEach(() => {
     jest.restoreAllMocks();
