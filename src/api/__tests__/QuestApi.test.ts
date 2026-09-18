@@ -1092,6 +1092,76 @@ describe("QuestApi", () => {
       })
     );
   });
+  it("edits an existing proof draft with newly selected multipart files", async () => {
+    const proof = {
+      id: "proof-1",
+      questId: "quest-1",
+      workerId: "worker-1",
+      teamId: null,
+      submittedByUserId: "user-1",
+      description: "Updated evidence",
+      status: null,
+      submittedAt: null,
+      createdAt: "2026-09-15T10:00:00Z",
+      updatedAt: "2026-09-15T10:00:00Z",
+      visibility: "FULL",
+      fileIds: ["file-1"],
+      files: [
+        {
+          fileId: "file-1",
+          contentType: "image/png",
+          sizeBytes: 100,
+          position: 0,
+          uploadStatus: "PROOF_FILE_READY",
+          failureCode: null,
+        },
+      ],
+    };
+    fetchMock.mockResolvedValue(okJson({ success: true, data: proof }));
+
+    await expect(
+      api.updateProofDraft(
+        "quest-1",
+        "proof-1",
+        {
+          assets: [
+            {
+              uri: "file:///tmp/new-evidence.pdf",
+              name: "new-evidence.pdf",
+              type: "application/pdf",
+            },
+          ],
+          description: "Updated evidence",
+        },
+        "proof-file-update-1"
+      )
+    ).resolves.toEqual(proof);
+
+    const request = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(request.method).toBe("PATCH");
+    expect(request.headers).toEqual(
+      expect.objectContaining({ "idempotency-key": "proof-file-update-1" })
+    );
+    expect((request.body as FormData).get("description")).toBe(
+      "Updated evidence"
+    );
+    expect((request.body as FormData).get("files")).toEqual(expect.any(Blob));
+  });
+
+  it("rejects non-approval reasons longer than 1000 characters", async () => {
+    await expect(
+      api.reviewProof(
+        "quest-1",
+        "proof-1",
+        {
+          decision: "PROOF_NOT_APPROVED",
+          reason: "x".repeat(1001),
+        },
+        "proof-review-too-long"
+      )
+    ).rejects.toThrow("Reason must be at most 1000 characters");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 
   it("creates and updates typed Quest reviews", async () => {
     const review = {

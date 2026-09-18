@@ -64,9 +64,9 @@ function ownProof(
     ) ?? null
   );
 }
-
-const PRIVATE_FILE_ID_BLOCKER =
-  "This draft includes newly selected files, but the documented API does not provide a private File ID upload endpoint. Your selected files were kept in this draft.";
+function toUploadAssets(assets: ProofDraftAsset[]): UploadAsset[] {
+  return assets.map(({ uri, name, type }) => ({ uri, name, type }));
+}
 
 export default function QuestProofScreen({
   questId,
@@ -194,31 +194,37 @@ export default function QuestProofScreen({
         throw new Error(messages.errorDescription);
       }
       const key = createQuestIdempotencyKey();
+      const normalizedNote = note.trim();
       if (proof && isDraft) {
-        if (assets.length > 0) throw new Error(PRIVATE_FILE_ID_BLOCKER);
         await liveQuestService.updateProofDraft(
           resolvedQuestId,
           proof.id,
-          {
-            description: note,
-            fileIds: proof.fileIds,
-          },
+          assets.length > 0
+            ? {
+                assets: toUploadAssets(assets),
+                description: normalizedNote || undefined,
+              }
+            : {
+                description: normalizedNote,
+                fileIds: proof.fileIds,
+              },
           key
         );
       } else {
-        const uploadAssets: UploadAsset[] = assets.map(
-          ({ uri, name, type }) => ({ uri, name, type })
-        );
+        const uploadAssets = toUploadAssets(assets);
         if (uploadAssets.length > 0) {
           await liveQuestService.createProofDraft(
             resolvedQuestId,
-            { assets: uploadAssets, description: note },
+            {
+              assets: uploadAssets,
+              description: normalizedNote || undefined,
+            },
             key
           );
         } else {
           await liveQuestService.createProofDraft(
             resolvedQuestId,
-            { description: note },
+            { description: normalizedNote },
             key
           );
         }
@@ -256,33 +262,45 @@ export default function QuestProofScreen({
         throw new Error(messages.errorDescription);
       }
       let submission = proof;
+      const normalizedNote = pendingNote.trim();
       if (submission && isDraft) {
-        if (pendingAssets.length > 0) throw new Error(PRIVATE_FILE_ID_BLOCKER);
-        submission = await liveQuestService.updateProofDraft(
-          resolvedQuestId,
-          submission.id,
-          {
-            description: pendingNote,
-            fileIds: submission.fileIds,
-          },
-          createQuestIdempotencyKey()
-        );
+        submission =
+          pendingAssets.length > 0
+            ? await liveQuestService.updateProofDraft(
+                resolvedQuestId,
+                submission.id,
+                {
+                  assets: toUploadAssets(pendingAssets),
+                  description: normalizedNote || undefined,
+                },
+                createQuestIdempotencyKey()
+              )
+            : await liveQuestService.updateProofDraft(
+                resolvedQuestId,
+                submission.id,
+                {
+                  description: normalizedNote,
+                  fileIds: submission.fileIds,
+                },
+                createQuestIdempotencyKey()
+              );
       } else if (!submission) {
-        const uploadAssets: UploadAsset[] = pendingAssets.map(
-          ({ uri, name, type }) => ({ uri, name, type })
-        );
-        if (uploadAssets.length === 0 && !pendingNote.trim())
+        const uploadAssets = toUploadAssets(pendingAssets);
+        if (uploadAssets.length === 0 && !normalizedNote)
           throw new Error(messages.proofContentRequired);
         submission =
           uploadAssets.length > 0
             ? await liveQuestService.createProofDraft(
                 resolvedQuestId,
-                { assets: uploadAssets, description: pendingNote },
+                {
+                  assets: uploadAssets,
+                  description: normalizedNote || undefined,
+                },
                 createQuestIdempotencyKey()
               )
             : await liveQuestService.createProofDraft(
                 resolvedQuestId,
-                { description: pendingNote },
+                { description: normalizedNote },
                 createQuestIdempotencyKey()
               );
       }

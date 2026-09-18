@@ -6,6 +6,7 @@ import {
   type QuestV2CreateEditRequestPayload,
   type QuestV2EditRequestResponsePayload,
   type QuestV2ProofCreatePayload,
+  type QuestV2ProofFileUploadPayload,
   type QuestV2ProofReviewPayload,
   type QuestV2ProofRetryPayload,
   type QuestV2ProofUpdatePayload,
@@ -419,6 +420,7 @@ function deriveCapabilities(input: {
   const open = state === "QUEST_OPEN";
   const assigned = state === "QUEST_ASSIGNED";
   const inProgress = state === "QUEST_IN_PROGRESS";
+  const reviewableProofState = inProgress || state === "QUEST_FAILED";
   const terminal =
     state === "QUEST_COMPLETED" ||
     state === "QUEST_CANCELLED" ||
@@ -544,7 +546,7 @@ function deriveCapabilities(input: {
       state !== "QUEST_COMPLETED" &&
       state !== "QUEST_CANCELLED" &&
       state !== "QUEST_FAILED",
-    canReviewProof: isHirer && inProgress && pendingProof,
+    canReviewProof: isHirer && reviewableProofState && pendingProof,
     canCreateReview: (isHirer || isWorker) && terminal,
     canUpdateReview: false,
   };
@@ -590,8 +592,12 @@ function deriveNextAction(
     return editRequest?.status === "EDIT_REQUEST_PENDING"
       ? "RESPOND_TO_EDIT"
       : "WAIT_FOR_START";
+  if (
+    (state === "QUEST_IN_PROGRESS" || state === "QUEST_FAILED") &&
+    capabilities.canReviewProof
+  )
+    return "REVIEW_PROOF";
   if (state === "QUEST_IN_PROGRESS") {
-    if (capabilities.canReviewProof) return "REVIEW_PROOF";
     if (capabilities.canSubmitProof) return "SUBMIT_PROOF";
     if (capabilities.canConfirmCompletion) return "CONFIRM_COMPLETION";
   }
@@ -1253,7 +1259,8 @@ export class LiveQuestService {
     proofSubmissionId: string,
     payload:
       | QuestV2ProofUpdatePayload
-      | (QuestV2ProofRetryPayload & { assets: [{ uri: string }] }),
+      | QuestV2ProofRetryPayload
+      | QuestV2ProofFileUploadPayload,
     idempotencyKey?: string
   ): Promise<QuestV2ProofSubmission> {
     return questApi.updateProofDraft(
