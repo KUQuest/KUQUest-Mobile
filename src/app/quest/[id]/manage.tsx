@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Alert, RefreshControl } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { MessageSquare, ShieldCheck, X } from "lucide-react-native";
+
 import { ScrollView, Text, View, Pressable } from "@/tw";
+import { FileEdit, MessageSquare, ShieldCheck, X } from "lucide-react-native";
+
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
 import { authService } from "@/features/auth/AuthService";
@@ -14,9 +16,12 @@ import {
 import {
   CandidateReviewSheet,
   PartialGroupStartConsentSheet,
+  QuestConditionEditModal,
+  QuestConditionEditStatusCard,
 } from "@/features/questBoard/components";
 import { getChatRouteParams } from "@/features/chat/chatData";
 import { useLocale } from "@/locales/LocaleProvider";
+import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
 
 function routeValue(value: string | string[] | undefined): string | undefined {
@@ -35,6 +40,11 @@ export default function HirerQuestManageRoute() {
   const [error, setError] = useState<string>();
   const [candidateOpen, setCandidateOpen] = useState(false);
   const [underfilledOpen, setUnderfilledOpen] = useState(false);
+  const [conditionEditOpen, setConditionEditOpen] = useState(false);
+  const [editRequestId, setEditRequestId] = useState<string>();
+  const [conditionEditSubmitting, setConditionEditSubmitting] = useState(false);
+  const [conditionEditError, setConditionEditError] = useState<string>();
+  const messages = questBoardMessages[locale];
 
   useEffect(() => {
     void authService
@@ -52,7 +62,11 @@ export default function HirerQuestManageRoute() {
         setLoading(true);
       }
       try {
-        const next = await liveQuestService.getLiveSnapshot(questId, viewerId);
+        const next = await liveQuestService.getLiveSnapshot(
+          questId,
+          viewerId,
+          editRequestId ? { editRequestId } : undefined
+        );
         setSnapshot(next);
         setError(undefined);
       } catch (caught) {
@@ -64,7 +78,7 @@ export default function HirerQuestManageRoute() {
         setRefreshing(false);
       }
     },
-    [questId, viewerId]
+    [questId, viewerId, editRequestId]
   );
 
   useEffect(() => {
@@ -147,6 +161,10 @@ export default function HirerQuestManageRoute() {
     );
 
   const quest = snapshot.quest;
+  const originalConditionItems = quest.condition.items
+    .slice()
+    .sort((a, b) => a.position - b.position)
+    .map((item) => item.text);
   const pendingProof = snapshot.proofs.find(
     (proof) => proof.status === "PROOF_PENDING"
   );
@@ -161,6 +179,11 @@ export default function HirerQuestManageRoute() {
     (snapshot.participation === "GROUP"
       ? snapshot.capabilities.canSelectTeam
       : snapshot.capabilities.canSelectCandidate);
+  const canProposeConditionEdit =
+    snapshot.actor === "HIRER" &&
+    snapshot.state === "QUEST_ASSIGNED" &&
+    snapshot.capabilities.canRequestEdit &&
+    snapshot.editRequest?.status !== "EDIT_REQUEST_PENDING";
   const openChat = () => {
     if (!snapshot.workConversation || !viewerId) return;
     router.push({
@@ -224,6 +247,30 @@ export default function HirerQuestManageRoute() {
           ),
       },
     ]);
+  };
+  const submitConditionEdit = (items: string[]) => {
+    setConditionEditSubmitting(true);
+    setConditionEditError(undefined);
+    liveQuestService
+      .createEditRequest(
+        quest.id,
+        { condition: { items } },
+        createQuestIdempotencyKey()
+      )
+      .then((request) => {
+        setEditRequestId(request.requestId);
+        setConditionEditOpen(false);
+        return load(true);
+      })
+      .catch((caught) => {
+        setConditionEditError(
+          caught instanceof Error
+            ? caught.message
+            : messages.conditionEditSubmitError
+        );
+        return load(true);
+      })
+      .finally(() => setConditionEditSubmitting(false));
   };
 
   return (
@@ -292,6 +339,26 @@ export default function HirerQuestManageRoute() {
               Decide underfilled Quest
             </Text>
           </Pressable>
+        ) : null}
+        {canProposeConditionEdit ? (
+          <Pressable
+            testID="hirer-manage-condition-edit"
+            className="mt-3 flex-row items-center rounded-2xl border border-ku-primary p-4"
+            onPress={() => setConditionEditOpen(true)}
+          >
+            <FileEdit color={colors.primary} size={20} />
+            <Text className="ml-3 text-ku-primary font-ku-bold">
+              {messages.proposeConditionChanges}
+            </Text>
+          </Pressable>
+        ) : null}
+        {snapshot.editRequest?.status === "EDIT_REQUEST_PENDING" ? (
+          <View className="mt-3">
+            <QuestConditionEditStatusCard
+              editRequest={snapshot.editRequest}
+              messages={messages}
+            />
+          </View>
         ) : null}
         {pendingProof && snapshot.capabilities.canReviewProof ? (
           <Pressable
@@ -366,6 +433,14 @@ export default function HirerQuestManageRoute() {
         }}
         onClose={() => setUnderfilledOpen(false)}
         locale={locale}
+      />
+      <QuestConditionEditModal
+        visible={conditionEditOpen}
+        originalItems={originalConditionItems}
+        onClose={() => setConditionEditOpen(false)}
+        onSubmit={submitConditionEdit}
+        submitting={conditionEditSubmitting}
+        error={conditionEditError}
       />
     </ScreenLayout>
   );
