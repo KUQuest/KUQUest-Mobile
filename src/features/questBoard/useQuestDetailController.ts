@@ -23,8 +23,11 @@ import {
   canonicalToQuestBoardQuest,
   liveQuestService,
   publicDetailToQuestBoardQuest,
+  isReviewWindowActive,
   type LiveQuestSnapshot,
 } from "./liveQuestService";
+import type { QuestV2Review } from "@/api/questV2Contracts";
+import type { RevieweeProfile } from "./components/RatingReviewModal";
 import type { QuestFixtureError } from "./questFixtureAdapter";
 import {
   getQuestDetailFixture,
@@ -96,6 +99,10 @@ export interface QuestDetailControllerResult {
     firstCome: boolean;
     onOpenApply: () => void;
     onEditPost: () => void;
+    canRateReview?: boolean;
+    hasReviewed?: boolean;
+    isReviewExpired?: boolean;
+    onOpenReview?: () => void;
     busy: boolean;
   } | null;
 }
@@ -594,6 +601,145 @@ export function useQuestDetailController({
   const [selectedProposalId, setSelectedProposalId] = useState<string | null>(
     null
   );
+
+  // Rating Review state
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [submittedReview, setSubmittedReview] = useState<QuestV2Review | null>(
+    null
+  );
+  const [revieweeProfile, setRevieweeProfile] =
+    useState<RevieweeProfile | null>(null);
+
+  // Check if quest is terminal
+  const isTerminalQuest = Boolean(
+    liveSnapshot
+      ? liveSnapshot.state === "QUEST_COMPLETED" ||
+          liveSnapshot.state === "QUEST_CANCELLED" ||
+          liveSnapshot.state === "QUEST_FAILED"
+      : quest?.status === QuestStatus.QUEST_COMPLETED ||
+          quest?.status === QuestStatus.QUEST_CANCELLED ||
+          quest?.status === QuestStatus.QUEST_FAILED
+  );
+
+  const terminalTimestamp = liveSnapshot
+    ? "updatedAt" in liveSnapshot.quest
+      ? liveSnapshot.quest.updatedAt
+      : null
+    : null;
+  const isReviewExpired =
+    typeof liveQuestService.isReviewWindowActive === "function"
+      ? !liveQuestService.isReviewWindowActive(terminalTimestamp)
+      : typeof isReviewWindowActive === "function"
+        ? !isReviewWindowActive(terminalTimestamp)
+        : false;
+
+  // Eligibility: Viewer must be Hirer or assigned Worker on a terminal quest
+  const isEligibleReviewer = Boolean(
+    isTerminalQuest &&
+    (isHirerView ||
+      (liveSnapshot && liveSnapshot.assignment !== null) ||
+      joinedStatus === "accepted" ||
+      joinedStatus === "history")
+  );
+
+  // Resolve reviewee (If viewer is worker -> reviewee is hirer; if viewer is hirer -> reviewee is worker)
+  useEffect(() => {
+    if (!isEligibleReviewer || !resolvedQuestId) return;
+    let active = true;
+
+    async function resolveReviewee() {
+      try {
+        if (!isHirerView) {
+          // Viewer is worker -> reviewee is hirer
+          const hirer = resolvedQuestId
+            ? await liveQuestService.getHirerParticipant(resolvedQuestId)
+            : null;
+          if (!active) return;
+          setRevieweeProfile({
+            id: hirer?.id ?? "hirer",
+            displayName: hirer?.displayName ?? quest?.creator?.name ?? "Hirer",
+            avatarUrl: quest?.creator?.avatarUri ?? null,
+            role: "HIRER",
+          });
+        } else {
+          // Viewer is hirer -> reviewee is assigned worker
+          const assignment =
+            liveSnapshot?.assignments?.find(
+              (a) => a.state !== "ASSIGNMENT_CANCELLED"
+            ) ?? liveSnapshot?.assignment;
+          const workerId = assignment?.workerId;
+          if (workerId) {
+            const participant =
+              await liveQuestService.getParticipantProfile(workerId);
+            if (!active) return;
+            setRevieweeProfile({
+              id: workerId,
+              displayName: participant.displayName,
+              avatarUrl: participant.avatarUrl ?? null,
+              role: "WORKER",
+            });
+          } else {
+            setRevieweeProfile({
+              id: "worker",
+              displayName: "Worker",
+              role: "WORKER",
+            });
+          }
+        }
+      } catch {
+        if (active) {
+          setRevieweeProfile({
+            id: "participant",
+            displayName: "Participant",
+            role: isHirerView ? "WORKER" : "HIRER",
+          });
+        }
+      }
+    }
+
+    void resolveReviewee();
+    return () => {
+      active = false;
+    };
+  }, [isEligibleReviewer, isHirerView, liveSnapshot, quest, resolvedQuestId]);
+
+  const handleSubmitReview = async (payload: {
+    rating: number;
+    comment?: string;
+    reviewId?: string;
+  }) => {
+    if (!resolvedQuestId) return;
+    await runLiveAction(
+      "submit-review",
+      async () => {
+        if (payload.reviewId) {
+          const updated = await liveQuestService.updateReview(
+            resolvedQuestId,
+            payload.reviewId,
+            { rating: payload.rating, comment: payload.comment }
+          );
+          setSubmittedReview(updated);
+        } else {
+          const created = await liveQuestService.createReview(resolvedQuestId, {
+            revieweeId:
+              revieweeProfile?.id !== "hirer" &&
+              revieweeProfile?.id !== "worker"
+                ? revieweeProfile?.id
+                : undefined,
+            rating: payload.rating,
+            comment: payload.comment,
+          });
+          setSubmittedReview(created);
+        }
+        setReviewModalOpen(false);
+        Alert.alert(
+          payload.reviewId ? messages.editReview : messages.rateAndReview,
+          payload.reviewId ? messages.reviewUpdated : messages.reviewSubmitted
+        );
+      },
+      "Failed to submit review"
+    );
+  };
 
   const teamSheetTeam = (() => {
     if (!activePrototypeState || !candidateGroup || isHirerView)
@@ -1280,10 +1426,33 @@ export function useQuestDetailController({
               iconColor: statusIconColor,
             }
           : undefined,
+        reviewAction: isEligibleReviewer
+          ? {
+              canReview: true,
+              hasReviewed: Boolean(submittedReview),
+              rating: submittedReview?.rating,
+              isExpired: isReviewExpired,
+              onOpenReview: () => setReviewModalOpen(true),
+            }
+          : undefined,
       }
     : null;
   const sheets: QuestDetailSheetsProps = quest
     ? {
+        ratingReviewModal:
+          isEligibleReviewer && revieweeProfile
+            ? {
+                visible: reviewModalOpen,
+                questId: resolvedQuestId ?? quest.id,
+                questTitle: quest.title,
+                reviewee: revieweeProfile,
+                initialReview: submittedReview,
+                isReadOnly: isReviewExpired,
+                busy: liveAction === "submit-review",
+                onSubmit: handleSubmitReview,
+                onClose: () => setReviewModalOpen(false),
+              }
+            : undefined,
         confirmationSheet: confirmationOpen
           ? {
               locale,
@@ -1543,6 +1712,10 @@ export function useQuestDetailController({
         firstCome: Boolean(firstCome),
         onOpenApply: () => setManualConfirmationOpen(true),
         onEditPost: handleEditPost,
+        canRateReview: isEligibleReviewer,
+        hasReviewed: Boolean(submittedReview),
+        isReviewExpired,
+        onOpenReview: () => setReviewModalOpen(true),
         busy: Boolean(liveAction),
       }
     : null;

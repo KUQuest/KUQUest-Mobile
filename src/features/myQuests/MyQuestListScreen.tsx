@@ -16,6 +16,7 @@ import {
   Clock3,
   MapPin,
   Pencil,
+  Star,
 } from "lucide-react-native";
 import { Pressable, Text, View } from "@/tw";
 
@@ -602,6 +603,13 @@ function QuestSummaryCard({
         >
           {quest.actionType === "edit" ? (
             <Pencil color={palette.white} size={16} strokeWidth={2.2} />
+          ) : quest.actionType === "review" ? (
+            <Star
+              color={palette.white}
+              fill={palette.white}
+              size={16}
+              strokeWidth={2}
+            />
           ) : null}
           <Text style={[styles.actionText, { color: palette.white }]}>
             {quest.actionType === "edit" ? messages.edit : quest.action}
@@ -727,6 +735,13 @@ export default function MyQuestListScreen({
 
   const openQuest = useCallback(
     (quest: QuestSummary) => {
+      if (quest.actionType === "review") {
+        router.push({
+          pathname: "/quest/[id]",
+          params: { id: quest.id, mode: role === "hirer" ? "post" : "join" },
+        });
+        return;
+      }
       if (role === "worker") {
         if (!sessionUserId) return;
         router.push({

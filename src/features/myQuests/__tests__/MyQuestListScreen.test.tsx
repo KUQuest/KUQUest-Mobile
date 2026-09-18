@@ -162,4 +162,25 @@ describe("MyQuestListScreen", () => {
       params: { editQuestId: "draft-1" },
     });
   });
+  it("routes completed Quest in Worker history to review/detail", async () => {
+    mockWorkerList.mockResolvedValue([
+      snapshot("QUEST_COMPLETED", "Completed Quest", "ASSIGNMENT_COMPLETED"),
+    ] as never);
+
+    const screen = await render(
+      <MyQuestListScreen initialRole="worker" initialTab="history" />
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("my-quest-list-action-completed-quest")
+      ).toBeTruthy()
+    );
+
+    fireEvent.press(screen.getByTestId("my-quest-list-action-completed-quest"));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]",
+      params: { id: "completed-quest", mode: "join" },
+    });
+  });
 });

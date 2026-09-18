@@ -224,6 +224,25 @@ export interface QuestBoardMessages {
   escrowTotal: string;
   terminalBannerTitle: string;
   terminalDescription: string;
+  rateAndReview: string;
+  editReview: string;
+  reviewQuest: string;
+  reviewSubmitted: string;
+  reviewUpdated: string;
+  reviewWindowExpired: string;
+  ratingRequired: string;
+  reviewRatingPrompt: string;
+  reviewCommentLabel: string;
+  reviewCommentPlaceholder: string;
+  reviewCharacterCount: (current: number, max: number) => string;
+  reviewSubmitButton: string;
+  reviewUpdateButton: string;
+  reviewReadOnlyNotice: string;
+  reviewEligibilityNotice: string;
+  reviewingUserLabel: (name: string, role: string) => string;
+  selectWorkerToReview: string;
+  hirerRoleLabel: string;
+  workerRoleLabel: string;
 }
 
 export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
@@ -534,6 +553,28 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     terminalBannerTitle: "Quest closed",
     terminalDescription:
       "This Quest is terminal. It cannot be reopened or accepted again.",
+    rateAndReview: "Rate & Review",
+    editReview: "Edit Review",
+    reviewQuest: "Review Quest",
+    reviewSubmitted: "Review submitted successfully.",
+    reviewUpdated: "Review updated successfully.",
+    reviewWindowExpired: "The 7-day review window has closed.",
+    ratingRequired: "Please select a star rating (1–5 stars).",
+    reviewRatingPrompt: "How was your experience working together?",
+    reviewCommentLabel: "Feedback (optional)",
+    reviewCommentPlaceholder:
+      "Share constructive thoughts about the collaboration…",
+    reviewCharacterCount: (current, max) => `${current}/${max}`,
+    reviewSubmitButton: "Submit Review",
+    reviewUpdateButton: "Save Changes",
+    reviewReadOnlyNotice:
+      "This review was submitted and can no longer be edited (7-day edit window has expired).",
+    reviewEligibilityNotice:
+      "Only assigned participants and the quest hirer can leave a review.",
+    reviewingUserLabel: (name, role) => `Reviewing ${name} (${role})`,
+    selectWorkerToReview: "Select a worker to review",
+    hirerRoleLabel: "Hirer",
+    workerRoleLabel: "Worker",
   },
   th: {
     title: "กระดานเควสต์",
@@ -835,5 +876,27 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     terminalBannerTitle: "ปิดเควสต์แล้ว",
     terminalDescription:
       "เควสต์นี้อยู่ในสถานะสิ้นสุด ไม่สามารถเปิดใหม่หรือรับผู้เข้าร่วมเพิ่มได้",
+    rateAndReview: "ให้คะแนนและรีวิว",
+    editReview: "แก้ไขรีวิว",
+    reviewQuest: "รีวิวเควสต์",
+    reviewSubmitted: "ส่งรีวิวเรียบร้อยแล้ว",
+    reviewUpdated: "อัปเดตรีวิวเรียบร้อยแล้ว",
+    reviewWindowExpired: "พ้นกำหนดเวลาส่งรีวิว 7 วันแล้ว",
+    ratingRequired: "โปรดเลือกคะแนนดาว (1–5 ดาว)",
+    reviewRatingPrompt: "ประสบการณ์การทำงานร่วมกันเป็นอย่างไร?",
+    reviewCommentLabel: "ข้อเสนอแนะเพิ่มเติม (ไม่บังคับ)",
+    reviewCommentPlaceholder:
+      "แบ่งปันความคิดเห็นอย่างสร้างสรรค์เกี่ยวกับการทำงานร่วมกัน…",
+    reviewCharacterCount: (current, max) => `${current}/${max}`,
+    reviewSubmitButton: "ส่งรีวิว",
+    reviewUpdateButton: "บันทึกการแก้ไข",
+    reviewReadOnlyNotice:
+      "รีวิวนี้ส่งแล้วและหมดเวลาแก้ไข (พ้นระยะเวลาแก้ไข 7 วันแล้ว)",
+    reviewEligibilityNotice:
+      "เฉพาะผู้เข้าร่วมที่ได้รับมอบหมายและเจ้าของเควสต์เท่านั้นที่สามารถรีวิวได้",
+    reviewingUserLabel: (name, role) => `รีวิว ${name} (${role})`,
+    selectWorkerToReview: "เลือก Worker ที่ต้องการรีวิว",
+    hirerRoleLabel: "ผู้ว่าจ้าง",
+    workerRoleLabel: "ผู้ทำงาน",
   },
 };

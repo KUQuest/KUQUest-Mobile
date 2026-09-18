@@ -23,6 +23,10 @@ import {
   TeamAssembleSheet,
   type TeamAssembleSheetProps,
 } from "./TeamAssembleSheet";
+import {
+  RatingReviewModal,
+  type RatingReviewModalProps,
+} from "./RatingReviewModal";
 
 type ConfirmationSheetProps = {
   locale: "en" | "th";
@@ -141,6 +145,7 @@ export interface QuestDetailSheetsProps {
   prototypeConsentSheet?: PartialGroupStartConsentSheetProps;
   liveConsentSheet?: PartialGroupStartConsentSheetProps;
   confirmationSheet?: ConfirmationSheetProps;
+  ratingReviewModal?: RatingReviewModalProps;
 }
 
 export function QuestDetailSheets({
@@ -151,6 +156,7 @@ export function QuestDetailSheets({
   prototypeConsentSheet,
   liveConsentSheet,
   confirmationSheet,
+  ratingReviewModal,
 }: QuestDetailSheetsProps) {
   return (
     <>
@@ -171,6 +177,7 @@ export function QuestDetailSheets({
         <PartialGroupStartConsentSheet {...liveConsentSheet} />
       ) : null}
       {confirmationSheet ? <ConfirmationSheet {...confirmationSheet} /> : null}
+      {ratingReviewModal ? <RatingReviewModal {...ratingReviewModal} /> : null}
     </>
   );
 }

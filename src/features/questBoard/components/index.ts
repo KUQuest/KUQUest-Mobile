@@ -22,3 +22,8 @@ export type {
   TeamAssembleSurfaceState,
   TeamDirectoryMember,
 } from "./TeamAssembleSheet";
+export { RatingReviewModal } from "./RatingReviewModal";
+export type {
+  RatingReviewModalProps,
+  RevieweeProfile,
+} from "./RatingReviewModal";

@@ -10,6 +10,7 @@ import {
   ImageOff,
   MapPin,
   Plus,
+  Star,
   UsersRound,
   type LucideIcon,
 } from "lucide-react-native";
@@ -254,6 +255,13 @@ export interface QuestDetailBodyProps {
   };
   canReportQuest: boolean;
   onReportQuest: () => void;
+  reviewAction?: {
+    canReview: boolean;
+    hasReviewed: boolean;
+    rating?: number;
+    isExpired: boolean;
+    onOpenReview: () => void;
+  };
 }
 
 export function QuestDetailBody({
@@ -277,6 +285,7 @@ export function QuestDetailBody({
   liveEntry,
   canReportQuest,
   onReportQuest,
+  reviewAction,
 }: QuestDetailBodyProps) {
   const StatusIcon = status?.Icon;
   return (
@@ -521,6 +530,82 @@ export function QuestDetailBody({
               </Text>
             </Pressable>
           ) : null}
+        </View>
+      ) : null}
+      {reviewAction && reviewAction.canReview ? (
+        <View
+          className="bg-ku-surface-subtle border border-ku-border-subtle rounded-2xl p-4 mt-6"
+          testID="quest-review-card"
+        >
+          <View className="flex-row items-center justify-between mb-2">
+            <View className="flex-row items-center gap-2">
+              <View className="h-8 w-8 rounded-full bg-ku-surface-accent items-center justify-center">
+                <Star
+                  color="#EAA023"
+                  fill="#EAA023"
+                  size={18}
+                  strokeWidth={2}
+                />
+              </View>
+              <Text className="text-ku-text font-ku-bold text-base">
+                {reviewAction.hasReviewed
+                  ? messages.editReview
+                  : messages.rateAndReview}
+              </Text>
+            </View>
+            {reviewAction.hasReviewed && reviewAction.rating ? (
+              <View className="flex-row items-center gap-1 bg-ku-surface-accent px-2.5 py-1 rounded-full">
+                <Star color="#EAA023" fill="#EAA023" size={14} />
+                <Text className="text-ku-primary-dark font-ku-bold text-xs">
+                  {reviewAction.rating} / 5
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          <Text className="text-ku-text-secondary font-ku-regular text-xs mb-3.5">
+            {reviewAction.isExpired
+              ? messages.reviewWindowExpired
+              : reviewAction.hasReviewed
+                ? messages.reviewUpdated
+                : messages.reviewRatingPrompt}
+          </Text>
+          <Pressable
+            accessibilityLabel={
+              reviewAction.hasReviewed
+                ? messages.editReview
+                : messages.rateAndReview
+            }
+            accessibilityRole="button"
+            className={cn(
+              "h-11 flex-row items-center justify-center rounded-ku-pill bg-ku-primary px-4",
+              reviewAction.isExpired &&
+                "bg-ku-surface-subtle border border-ku-border-subtle"
+            )}
+            onPress={reviewAction.onOpenReview}
+            testID="quest-rate-review-button"
+          >
+            <Star
+              color={
+                reviewAction.isExpired ? colors.textSecondary : colors.white
+              }
+              size={16}
+              strokeWidth={2}
+            />
+            <Text
+              className={cn(
+                "font-ku-semibold text-sm ml-2",
+                reviewAction.isExpired
+                  ? "text-ku-text-secondary"
+                  : "text-ku-white"
+              )}
+            >
+              {reviewAction.isExpired
+                ? messages.reviewQuest
+                : reviewAction.hasReviewed
+                  ? messages.editReview
+                  : messages.rateAndReview}
+            </Text>
+          </Pressable>
         </View>
       ) : null}
       {prototypeEntry ? (

@@ -29,7 +29,7 @@ export type QuestSummary = {
   status: string;
   statusTone: StatusTone;
   action: string;
-  actionType?: "edit" | "applicants" | "detail";
+  actionType?: "edit" | "applicants" | "detail" | "review";
   secondaryAction?: string;
   groupChatId?: string;
   groupChatCapability?: WorkConversationCapability;
@@ -194,7 +194,10 @@ export function getLiveWorkerItems(
         status,
         statusTone: liveQuestStatusTone(statusValue),
         action: getLiveWorkerAction(snapshot, locale),
-        actionType: "detail",
+        actionType:
+          snapshot.nextAction === "CREATE_REVIEW" || isCompleted
+            ? ("review" as const)
+            : ("detail" as const),
         groupChatId,
         groupChatCapability,
         groupChatViewerId: viewerId,
@@ -244,11 +247,15 @@ export function getLiveHirerItems(
         action:
           quest.state === "QUEST_DRAFT"
             ? actionLabels[locale].edit
-            : actionLabels[locale].detail,
+            : terminal
+              ? questBoardMessages[locale].rateAndReview
+              : actionLabels[locale].detail,
         actionType:
           quest.state === "QUEST_DRAFT"
             ? ("edit" as const)
-            : ("detail" as const),
+            : terminal
+              ? ("review" as const)
+              : ("detail" as const),
       },
     ];
   });
