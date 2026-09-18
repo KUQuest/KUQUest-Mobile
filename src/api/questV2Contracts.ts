@@ -549,6 +549,7 @@ export const questV2ProofFileSchema = z.object({
   position: z.number().int().nonnegative(),
   uploadStatus: questV2ProofFileStatusSchema,
   failureCode: z.string().nullable(),
+  url: z.string().url().nullable().optional(),
 });
 export const questV2ProofSubmissionSchema = z.object({
   id: questV2IdSchema,
@@ -824,6 +825,7 @@ export const questV2ProofReviewPayloadSchema = z
     decision: z.enum(["PROOF_APPROVED", "PROOF_NOT_APPROVED"]),
     reason: z
       .string()
+      .max(1000, "Reason must be at most 1000 characters")
       .refine((value) => value.trim().length > 0, "Expected a non-blank reason")
       .optional(),
   })

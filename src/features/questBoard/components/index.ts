@@ -13,6 +13,8 @@ export type {
 } from "./PartialGroupStartConsentSheet";
 export { ProofSubmissionSheet } from "./ProofSubmissionSheet";
 export type { ProofSubmissionSheetProps } from "./ProofSubmissionSheet";
+export { ProofReviewModal } from "./ProofReviewModal";
+export type { ProofReviewModalProps } from "./ProofReviewModal";
 
 export { QuestBottomSheet } from "./QuestBottomSheet";
 export type { QuestBottomSheetProps } from "./QuestBottomSheet";

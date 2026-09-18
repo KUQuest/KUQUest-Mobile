@@ -138,6 +138,11 @@ export interface QuestV2ProofUpdatePayload {
   description?: string;
   fileIds?: string[];
 }
+export interface QuestV2ProofFileUploadPayload {
+  assets: UploadAsset[];
+  description?: string;
+  retryPosition?: number;
+}
 export interface QuestV2ProofRetryPayload {
   assets: [UploadAsset];
   retryPosition: number;
@@ -793,22 +798,41 @@ export class QuestApi {
   async updateProofDraft(
     questId: string,
     proofSubmissionId: string,
-    payload: QuestV2ProofUpdatePayload | QuestV2ProofRetryPayload,
+    payload:
+      | QuestV2ProofUpdatePayload
+      | QuestV2ProofRetryPayload
+      | QuestV2ProofFileUploadPayload,
     idempotencyKey?: string
   ): Promise<QuestV2ProofSubmission> {
     if ("assets" in payload) {
-      if (payload.assets.length !== 1) {
+      if (payload.assets.length < 1 || payload.assets.length > 5) {
+        throw new Error("Proof submissions allow one to five files");
+      }
+      if (
+        payload.description !== undefined &&
+        payload.description.length > 1000
+      ) {
+        throw new Error("Proof descriptions must be at most 1000 characters");
+      }
+      if (payload.retryPosition !== undefined && payload.assets.length !== 1) {
         throw new Error("Proof retries require exactly one file");
       }
-      const validatedPayload = questV2ProofRetryPayloadSchema.parse({
-        description: payload.description,
-        retryPosition: payload.retryPosition,
-      });
+      if (payload.retryPosition !== undefined) {
+        questV2ProofRetryPayloadSchema.parse({
+          description: payload.description,
+          retryPosition: payload.retryPosition,
+        });
+      }
       const formData = new FormData();
-      if (validatedPayload.description !== undefined)
-        formData.append("description", validatedPayload.description);
-      formData.append("retryPosition", String(validatedPayload.retryPosition));
-      appendUploadFile(formData, "files", payload.assets[0], "proof-retry");
+      if (payload.description !== undefined) {
+        formData.append("description", payload.description);
+      }
+      if (payload.retryPosition !== undefined) {
+        formData.append("retryPosition", String(payload.retryPosition));
+      }
+      payload.assets.forEach((asset, index) =>
+        appendUploadFile(formData, "files", asset, `proof-${index}`)
+      );
       const body = await this.client.requestForm<unknown>(
         `/api/v2/quests/${questId}/proof-submissions/${proofSubmissionId}`,
         formData,
