@@ -4,8 +4,8 @@ import {
   BriefcaseBusiness,
   Check,
   ChevronRight,
-  CircleUserRound,
   Clock3,
+  Users,
 } from "lucide-react-native";
 import { useColorScheme } from "react-native";
 
@@ -15,6 +15,7 @@ import {
   formatHirerDueAt,
   getQuestProgressStages,
   type CanonicalHirerQuestStatus,
+  type QuestMemberProfile,
 } from "../hirerHomeData";
 import { hirerHomeMessages } from "../hirerHomeMessages";
 import {
@@ -27,15 +28,20 @@ export interface HirerQuestProgressCardProps {
   title: string;
   tag?: string;
   status: CanonicalHirerQuestStatus;
-  worker: {
+  mode?: "FIRST_COME_FIRST_SERVED" | "CANDIDATE";
+  headcount?: number;
+  worker?: {
     id: string;
     displayName: string;
     avatarUri?: string;
     faculty?: string;
   };
-  dueAt: string;
+  assignedWorkers?: QuestMemberProfile[];
+  applicants?: QuestMemberProfile[];
+  dueAt?: string | null;
   onOpenDetails: () => void;
-  onOpenWorkerProfile: () => void;
+  onOpenWorkerProfile?: (workerId: string) => void;
+  onViewRoster?: () => void;
 }
 
 export function HirerQuestProgressCard({
@@ -44,9 +50,13 @@ export function HirerQuestProgressCard({
   tag,
   status,
   worker,
+  assignedWorkers,
+  applicants,
+  headcount,
   dueAt,
   onOpenDetails,
   onOpenWorkerProfile,
+  onViewRoster,
 }: HirerQuestProgressCardProps) {
   const { locale } = useLocale();
   const colorScheme = useColorScheme();
@@ -87,10 +97,18 @@ export function HirerQuestProgressCard({
       return `${stage.label}, ${messages.terminalStageLabel}`;
     return stage.label;
   });
+  const primaryWorker =
+    assignedWorkers && assignedWorkers.length > 0 ? assignedWorkers[0] : worker;
+  const hasMultipleWorkers = Boolean(
+    assignedWorkers && assignedWorkers.length > 1
+  );
+  const hasApplicants = Boolean(applicants && applicants.length > 0);
+  const applicantCount = applicants?.length ?? 0;
+
   const accessibilityLabel = [
     statusLabel,
     title,
-    worker.displayName,
+    primaryWorker?.displayName ?? messages.waitingForApplicants,
     messages.timelineTitle,
     ...timelineAccessibility,
     dueLabel,
@@ -184,80 +202,292 @@ export function HirerQuestProgressCard({
 
       {/* Body */}
       <View style={styles.cardBody}>
-        {/* Who do it: Worker Card Banner */}
-        <Pressable
-          accessibilityLabel={`${messages.workerProfile}: ${worker.displayName}`}
-          accessibilityRole="button"
-          onPress={(event) => {
-            event.stopPropagation();
-            onOpenWorkerProfile();
-          }}
-          style={[
-            styles.workerBanner,
-            {
-              backgroundColor: palette.workerBg,
-              borderColor: palette.workerBorder,
-            },
-          ]}
-          testID={`hirer-quest-card-worker-${questId}`}
-        >
-          <View style={styles.workerLeading}>
-            <View
-              style={[
-                styles.workerAvatar,
-                {
-                  backgroundColor: palette.avatarBg,
-                  borderColor: palette.tagBorder,
-                },
-              ]}
-            >
-              {worker.avatarUri ? (
-                <Image
-                  contentFit="cover"
-                  source={{ uri: worker.avatarUri }}
-                  style={{ height: "100%", width: "100%" }}
-                />
-              ) : (
-                <Text
-                  style={[
-                    styles.workerAvatarText,
-                    { color: palette.avatarText },
-                  ]}
-                >
-                  {worker.displayName.slice(0, 1).toUpperCase()}
-                </Text>
-              )}
-            </View>
-            <View style={styles.workerCopy}>
-              <Text
-                numberOfLines={1}
-                style={[styles.workerName, { color: palette.ink }]}
-              >
-                {worker.displayName}
-              </Text>
-              <Text
-                numberOfLines={1}
-                style={[styles.workerRole, { color: palette.secondaryText }]}
-              >
-                {worker.faculty
-                  ? `${worker.faculty} · ${messages.assignedWorkerRole}`
-                  : messages.assignedWorkerRole}
-              </Text>
-            </View>
-          </View>
-          <View
-            style={styles.workerProfileButton}
-            testID={`hirer-quest-card-worker-profile-${questId}`}
+        {/* Who do it / Roster banner */}
+        {primaryWorker && !hasMultipleWorkers ? (
+          <Pressable
+            accessibilityLabel={`${messages.workerProfile}: ${primaryWorker.displayName}`}
+            accessibilityRole="button"
+            onPress={(event) => {
+              event.stopPropagation();
+              if (onViewRoster) {
+                onViewRoster();
+              } else if (onOpenWorkerProfile) {
+                onOpenWorkerProfile(primaryWorker.id);
+              }
+            }}
+            style={[
+              styles.workerBanner,
+              {
+                backgroundColor: palette.workerBg,
+                borderColor: palette.workerBorder,
+              },
+            ]}
+            testID={`hirer-quest-card-worker-${questId}`}
           >
-            <Text
-              style={[styles.workerProfileText, { color: palette.primary }]}
+            <View style={styles.workerLeading}>
+              <View
+                style={[
+                  styles.workerAvatar,
+                  {
+                    backgroundColor: palette.avatarBg,
+                    borderColor: palette.tagBorder,
+                  },
+                ]}
+              >
+                {primaryWorker.avatarUri ? (
+                  <Image
+                    contentFit="cover"
+                    source={{ uri: primaryWorker.avatarUri }}
+                    style={{ height: "100%", width: "100%" }}
+                  />
+                ) : (
+                  <Text
+                    style={[
+                      styles.workerAvatarText,
+                      { color: palette.avatarText },
+                    ]}
+                  >
+                    {primaryWorker.displayName.slice(0, 1).toUpperCase()}
+                  </Text>
+                )}
+              </View>
+              <View style={styles.workerCopy}>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.workerName, { color: palette.ink }]}
+                >
+                  {primaryWorker.displayName}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.workerRole, { color: palette.secondaryText }]}
+                >
+                  {primaryWorker.faculty
+                    ? `${primaryWorker.faculty} · ${messages.assignedWorkerRole}`
+                    : messages.assignedWorkerRole}
+                </Text>
+              </View>
+            </View>
+            <Pressable
+              accessibilityLabel={`${messages.workerProfile}: ${primaryWorker.displayName}`}
+              accessibilityRole="button"
+              onPress={(event) => {
+                event.stopPropagation();
+                if (onOpenWorkerProfile) {
+                  onOpenWorkerProfile(primaryWorker.id);
+                } else if (onViewRoster) {
+                  onViewRoster();
+                }
+              }}
+              style={styles.workerProfileButton}
+              testID={`hirer-quest-card-worker-profile-${questId}`}
             >
-              {messages.workerProfile}
-            </Text>
-            <ChevronRight color={palette.primary} size={15} strokeWidth={2.4} />
-          </View>
-        </Pressable>
-
+              <Text
+                style={[styles.workerProfileText, { color: palette.primary }]}
+              >
+                {messages.workerProfile}
+              </Text>
+              <ChevronRight
+                color={palette.primary}
+                size={15}
+                strokeWidth={2.4}
+              />
+            </Pressable>
+          </Pressable>
+        ) : hasMultipleWorkers ? (
+          <Pressable
+            accessibilityLabel={messages.joinedLabel(
+              assignedWorkers?.length ?? 0,
+              headcount
+            )}
+            accessibilityRole="button"
+            onPress={(event) => {
+              event.stopPropagation();
+              onViewRoster?.();
+            }}
+            style={[
+              styles.workerBanner,
+              {
+                backgroundColor: palette.workerBg,
+                borderColor: palette.workerBorder,
+              },
+            ]}
+            testID={`hirer-quest-card-workers-${questId}`}
+          >
+            <View style={styles.workerLeading}>
+              <View
+                style={[
+                  styles.workerAvatar,
+                  {
+                    backgroundColor: palette.avatarBg,
+                    borderColor: palette.tagBorder,
+                  },
+                ]}
+              >
+                <Users color={palette.avatarText} size={18} strokeWidth={2.2} />
+              </View>
+              <View style={styles.workerCopy}>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.workerName, { color: palette.ink }]}
+                >
+                  {messages.joinedLabel(
+                    assignedWorkers?.length ?? 0,
+                    headcount
+                  )}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.workerRole, { color: palette.secondaryText }]}
+                >
+                  {assignedWorkers
+                    ?.map((w) => w.displayName)
+                    .slice(0, 2)
+                    .join(", ")}
+                </Text>
+              </View>
+            </View>
+            <View
+              style={styles.workerProfileButton}
+              testID={`hirer-quest-card-view-roster-${questId}`}
+            >
+              <Text
+                style={[styles.workerProfileText, { color: palette.primary }]}
+              >
+                {messages.viewParticipants}
+              </Text>
+              <ChevronRight
+                color={palette.primary}
+                size={15}
+                strokeWidth={2.4}
+              />
+            </View>
+          </Pressable>
+        ) : hasApplicants ? (
+          <Pressable
+            accessibilityLabel={messages.applicantsLabel(applicantCount)}
+            accessibilityRole="button"
+            onPress={(event) => {
+              event.stopPropagation();
+              onViewRoster?.();
+            }}
+            style={[
+              styles.workerBanner,
+              {
+                backgroundColor: palette.workerBg,
+                borderColor: palette.workerBorder,
+              },
+            ]}
+            testID={`hirer-quest-card-applicants-${questId}`}
+          >
+            <View style={styles.workerLeading}>
+              <View
+                style={[
+                  styles.workerAvatar,
+                  {
+                    backgroundColor: palette.avatarBg,
+                    borderColor: palette.tagBorder,
+                  },
+                ]}
+              >
+                <Users color={palette.primary} size={18} strokeWidth={2.2} />
+              </View>
+              <View style={styles.workerCopy}>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.workerName, { color: palette.ink }]}
+                >
+                  {messages.applicantsLabel(applicantCount)}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.workerRole, { color: palette.secondaryText }]}
+                >
+                  {messages.waitingForApplicants}
+                </Text>
+              </View>
+            </View>
+            <View
+              style={styles.workerProfileButton}
+              testID={`hirer-quest-card-view-applicants-${questId}`}
+            >
+              <Text
+                style={[styles.workerProfileText, { color: palette.primary }]}
+              >
+                {messages.viewApplicants}
+              </Text>
+              <ChevronRight
+                color={palette.primary}
+                size={15}
+                strokeWidth={2.4}
+              />
+            </View>
+          </Pressable>
+        ) : (
+          <Pressable
+            accessibilityLabel={messages.waitingForApplicants}
+            accessibilityRole="button"
+            onPress={(event) => {
+              event.stopPropagation();
+              onOpenDetails();
+            }}
+            style={[
+              styles.workerBanner,
+              {
+                backgroundColor: palette.workerBg,
+                borderColor: palette.workerBorder,
+              },
+            ]}
+            testID={`hirer-quest-card-waiting-${questId}`}
+          >
+            <View style={styles.workerLeading}>
+              <View
+                style={[
+                  styles.workerAvatar,
+                  {
+                    backgroundColor: palette.avatarBg,
+                    borderColor: palette.tagBorder,
+                  },
+                ]}
+              >
+                <Clock3 color={palette.muted} size={18} strokeWidth={2} />
+              </View>
+              <View style={styles.workerCopy}>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.workerName, { color: palette.ink }]}
+                >
+                  {status === "QUEST_DRAFT"
+                    ? messages.statusLabels.QUEST_DRAFT
+                    : messages.statusLabels.QUEST_OPEN}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.workerRole, { color: palette.secondaryText }]}
+                >
+                  {status === "QUEST_DRAFT"
+                    ? messages.quickDraftDesc
+                    : messages.noApplicantsYet}
+                </Text>
+              </View>
+            </View>
+            <View
+              style={styles.workerProfileButton}
+              testID={`hirer-quest-card-manage-${questId}`}
+            >
+              <Text
+                style={[styles.workerProfileText, { color: palette.primary }]}
+              >
+                {messages.manageQuest}
+              </Text>
+              <ChevronRight
+                color={palette.primary}
+                size={15}
+                strokeWidth={2.4}
+              />
+            </View>
+          </Pressable>
+        )}
         {/* Progress of work: 5-Stage Step Track */}
         <View style={styles.progressSection}>
           <View style={styles.progressHeaderRow}>

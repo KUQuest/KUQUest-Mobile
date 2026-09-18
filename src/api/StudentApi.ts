@@ -178,7 +178,7 @@ async function readCollection<T>(
 }
 
 export class StudentApi {
-  constructor(private readonly client: ApiClient) {}
+  constructor(private readonly client: ApiClient = new ApiClient()) {}
 
   private async trace<T>(
     operation: string,
@@ -688,3 +688,4 @@ export class StudentApi {
     successResponseSchema.parse(body);
   }
 }
+export const studentApi = new StudentApi();

@@ -148,6 +148,7 @@ export interface CreateQuestMessages {
   publishedQuestTitle: string;
   publishedQuestDescription: string;
   createAnotherDraft: string;
+  createNewQuest: string;
   backToQuest: string;
   notSelected: string;
   onlineOrAgreed: string;
@@ -386,6 +387,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       publishedQuestDescription:
         "Your Quest is now published on the Quest Board and will appear in My Quests for the Hirer.",
       createAnotherDraft: "Create another draft",
+      createNewQuest: "Create new quest",
       backToQuest: "Back to Quest",
       notSelected: "Not selected",
       onlineOrAgreed: "Online or to be agreed",
@@ -404,7 +406,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       retryLoadDraft: "Try again",
       savePreview: "Save Quest preview",
       savingPreview: "Saving preview…",
-      viewQuestBoard: "Back to Quest Board",
+      viewQuestBoard: "To Home",
       publishCheckTitle: "Publish check & Escrow",
       publishCheckReady: "Ready to publish",
       publishCheckBlocked: "Resolve the publish blockers before publishing.",
@@ -657,6 +659,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       publishedQuestDescription:
         "เควสต์ของคุณเผยแพร่บนกระดานเควสต์แล้ว และจะแสดงใน My Quests ของผู้ว่าจ้าง",
       createAnotherDraft: "สร้างฉบับร่างใหม่",
+      createNewQuest: "สร้างเควสต์ใหม่",
       backToQuest: "กลับไปที่เควสต์",
       notSelected: "ยังไม่ได้เลือก",
       onlineOrAgreed: "ออนไลน์หรือรอตกลงกัน",
@@ -675,7 +678,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       retryLoadDraft: "ลองอีกครั้ง",
       savePreview: "บันทึกตัวอย่างเควสต์",
       savingPreview: "กำลังบันทึกตัวอย่าง…",
-      viewQuestBoard: "กลับไปกระดานเควสต์",
+      viewQuestBoard: "กลับหน้าหลัก",
       publishCheckTitle: "ตรวจสอบการเผยแพร่และ Escrow",
       publishCheckReady: "พร้อมเผยแพร่",
       publishCheckBlocked: "แก้ไขข้อขัดข้องก่อนเผยแพร่เควสต์",

@@ -45,13 +45,19 @@ Current code can intentionally lag the rulebook. Treat that as an implementation
 - `src/app/(tabs)/chat.tsx` and `src/app/(tabs)/chat/[id].tsx` — Chat inbox and conversation.
 - `src/app/(tabs)/profile.tsx` — Student Profile.
 - `src/app/quest/[id].tsx` — Quest Detail.
+- `src/app/quest/[id]/manage.tsx` — Hirer quest management (cancel, chat, proof review, candidate/team selection fallback). Reached only from My Quests (`MyQuestsScreen.openManageQuest`); the Home Active Quest carousel opens `quest/[id].tsx` instead.
+- `src/app/quest/[id]/select-roster.tsx` — Hirer candidate/team selection for a CANDIDATE-mode quest with pending applicants. Reached from `HirerQuestRosterModal`'s manage action.
+- `src/app/quest/[id]/dispute.tsx` — Dispute case submission.
+- `src/app/quest/[id]/work.tsx` — Worker work-in-progress screen.
+- `src/app/quest/[id]/proof.tsx` — Worker proof submission.
+- `src/app/quest/[id]/inquiry/[conversationId].tsx` — Candidate Inquiry conversation detail.
 - `src/app/onboarding/index.tsx` — Academic Registration entry.
 - `src/app/profile/edit/index.tsx` and `src/app/profile/edit/[section].tsx` — Profile editing.
 - `src/app/settings.tsx` — Settings.
 - `src/app/report.tsx` — Report flow.
 - `src/app/dev/import-session.tsx` — development-only session import; never treat it as a production flow.
 
-The route tree currently has no dedicated route file for Sent Work, Candidate Inquiry detail, Wallet/Conversion/Payout, Rating Review action, Dispute Case, or Admin operations. Verify code and fixtures before claiming one exists; the QA checklist records unverified surfaces as explicit gaps.
+The route tree currently has no dedicated route file for Sent Work, Wallet/Conversion/Payout, Rating Review action, or Admin operations. Verify code and fixtures before claiming one exists; the QA checklist records unverified surfaces as explicit gaps.
 
 ### Feature layer
 

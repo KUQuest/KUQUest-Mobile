@@ -49,6 +49,25 @@ export interface HirerHomeQuestFixture {
   };
   dueAt: string;
 }
+export interface QuestMemberProfile {
+  id: string;
+  displayName: string;
+  avatarUri?: string;
+  faculty?: string;
+}
+
+export interface LiveHirerQuestCardData {
+  id: string;
+  title: string;
+  tag?: string;
+  status: CanonicalHirerQuestStatus;
+  mode: "FIRST_COME_FIRST_SERVED" | "CANDIDATE";
+  participation: "SINGLE" | "GROUP";
+  headcount: number;
+  dueAt?: string | null;
+  assignedWorkers: QuestMemberProfile[];
+  applicants: QuestMemberProfile[];
+}
 
 const activeStageByStatus: Record<CanonicalHirerQuestStatus, TimelineStageKey> =
   {
@@ -99,9 +118,10 @@ export function getQuestProgressStages(
 }
 
 export function formatHirerDueAt(
-  dueAt: string,
+  dueAt: string | null | undefined,
   locale: SupportedLocale
 ): string {
+  if (!dueAt) return "—";
   const date = new Date(dueAt);
   if (Number.isNaN(date.getTime())) return dueAt;
 

@@ -15,12 +15,30 @@ jest.doMock("@/components/navigation/RoleWorkspaceContext", () => ({
 }));
 jest.doMock("expo-router", () => ({
   useRouter: () => ({ push: mockPush }),
+  useFocusEffect: (cb: () => void) => {
+    const ReactActual = jest.requireActual("react");
+    ReactActual.useEffect(() => {
+      cb();
+    }, [cb]);
+  },
 }));
 jest.doMock("@/locales/LocaleProvider", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 jest.doMock("@/features/auth/authEnvironment", () => ({
   isPrototypeDemoEnabled: () => false,
+}));
+jest.doMock("@/api/QuestApi", () => ({
+  questApi: {
+    listMine: jest.fn().mockResolvedValue({ items: [], nextCursor: null }),
+    listQuestAssignments: jest.fn().mockResolvedValue([]),
+    listApplications: jest.fn().mockResolvedValue([]),
+  },
+}));
+jest.doMock("@/api/StudentApi", () => ({
+  studentApi: {
+    getPublicProfile: jest.fn(),
+  },
 }));
 jest.doMock("@/features/workerHome/WorkerHomeScreen", () => {
   const ReactActual = jest.requireActual("react");

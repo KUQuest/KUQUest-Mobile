@@ -78,6 +78,7 @@
     "staging:start": "node ./scripts/start-staging.js",
     "dev:local": "node ./scripts/update-api-env.js --local && expo start --dev-client",
     "verify:staging": "node ./scripts/verify-staging-backend.js",
+    "find-quest": "node ./scripts/find-quest.js",
     "build:apk": "eas build --platform android --profile preview",
     "web": "expo start --web",
     "lint": "expo lint",
@@ -86,6 +87,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
     "verify": "bun run typecheck && bun run lint && bun run format:check && bun run test",
+    "check-routes": "node ./scripts/check-orphaned-routes.js",
     "deadcode": "knip --include files,exports",
     "prepare": "husky"
   },
