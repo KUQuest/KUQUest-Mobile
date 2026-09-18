@@ -13,14 +13,15 @@ import {
   View,
 } from "react-native";
 
-import {
-  walletApi,
-  type PayoutDestination,
-  type PayoutRecord,
-} from "@/api/WalletApi";
+import type { PayoutRecord } from "@/api/WalletApi";
 import type { SupportedLocale } from "@/locales/locale";
 import { colors } from "@/theme/colors";
 import { fontFamily } from "@/theme/typography";
+import {
+  useCreatePayoutDestinationMutation,
+  usePayoutDestinationsQuery,
+  useRequestPayoutMutation,
+} from "./api/walletQueries";
 
 export interface PayoutModalProps {
   visible: boolean;
@@ -67,21 +68,29 @@ export function PayoutModal({
 }: PayoutModalProps) {
   const isThai = locale === "th";
   const [amountText, setAmountText] = useState("");
-  const [destinations, setDestinations] = useState<PayoutDestination[]>([]);
   const [selectedDestinationId, setSelectedDestinationId] = useState<
     string | null
   >(null);
-  const [loadingDestinations, setLoadingDestinations] = useState(false);
   const [addingDestination, setAddingDestination] = useState(false);
   const [accountHolderName, setAccountHolderName] = useState("");
   const [promptPayAccount, setPromptPayAccount] = useState("");
-  const [savingDestination, setSavingDestination] = useState(false);
-  const [submittingPayout, setSubmittingPayout] = useState(false);
   const [successfulPayout, setSuccessfulPayout] = useState<PayoutRecord | null>(
     null
   );
-
+  const destinationsQuery = usePayoutDestinationsQuery(visible);
+  const destinations = destinationsQuery.data ?? [];
+  const loadingDestinations =
+    destinationsQuery.isPending || destinationsQuery.isRefetching;
+  const createDestinationMutation = useCreatePayoutDestinationMutation();
+  const requestPayoutMutation = useRequestPayoutMutation();
+  const savingDestination = createDestinationMutation.isPending;
+  const submittingPayout = requestPayoutMutation.isPending;
   const amountSatang = parseAmountSatang(amountText);
+  const effectiveDestinationId =
+    selectedDestinationId ??
+    destinations.find((destination) => destination.isDefault)?.id ??
+    destinations[0]?.id ??
+    null;
   /* eslint-disable react-hooks/set-state-in-effect -- resetting payout modal state on open/close */
   useEffect(() => {
     if (!visible) {
@@ -91,46 +100,19 @@ export function PayoutModal({
       return;
     }
 
-    let active = true;
-    setLoadingDestinations(true);
     setAddingDestination(false);
     setSelectedDestinationId(null);
     setSuccessfulPayout(null);
+  }, [visible]);
 
-    walletApi
-      .listPayoutDestinations()
-      .then((loadedDestinations) => {
-        if (!active) return;
-
-        setDestinations(loadedDestinations);
-        const defaultDestination =
-          loadedDestinations.find((destination) => destination.isDefault) ??
-          loadedDestinations[0];
-        setSelectedDestinationId(defaultDestination?.id ?? null);
-        setAddingDestination(loadedDestinations.length === 0);
-      })
-      .catch((error: unknown) => {
-        if (!active) return;
-        Alert.alert(
-          isThai
-            ? "ไม่สามารถโหลดบัญชีรับเงินได้"
-            : "Unable to load destinations",
-          errorMessage(
-            isThai
-              ? "ระบบไม่สามารถโหลดบัญชีรับเงินได้ โปรดลองอีกครั้งหลังจากบริการพร้อมใช้งาน"
-              : "Payout destinations could not be loaded. The payout service may not be deployed yet.",
-            error
-          )
-        );
-      })
-      .finally(() => {
-        if (active) setLoadingDestinations(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [isThai, visible]);
+  useEffect(() => {
+    const loaded = destinationsQuery.data;
+    if (!visible || !loaded) return;
+    const defaultDestination =
+      loaded.find((destination) => destination.isDefault) ?? loaded[0];
+    setSelectedDestinationId(defaultDestination?.id ?? null);
+    setAddingDestination(loaded.length === 0);
+  }, [destinationsQuery.data, visible]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleCreateDestination = async () => {
@@ -155,12 +137,11 @@ export function PayoutModal({
       return;
     }
 
-    setSavingDestination(true);
     try {
       const names = holderName.split(/\s+/);
       const givenName = names[0] || "Member";
       const surname = names.slice(1).join(" ") || "Student";
-      const destination = await walletApi.createPayoutDestination({
+      const destination = await createDestinationMutation.mutateAsync({
         type: "PROMPTPAY",
         routingType: "PROMPTPAY",
         givenName,
@@ -169,7 +150,6 @@ export function PayoutModal({
         bankCode: "PROMPTPAY",
         accountNumber,
       });
-      setDestinations((current) => [...current, destination]);
       setSelectedDestinationId(destination.id);
       setAccountHolderName("");
       setPromptPayAccount("");
@@ -186,13 +166,11 @@ export function PayoutModal({
           error
         )
       );
-    } finally {
-      setSavingDestination(false);
     }
   };
 
   const handleRequestPayout = async () => {
-    if (!selectedDestinationId) {
+    if (!effectiveDestinationId) {
       Alert.alert(
         isThai ? "กรุณาเลือกบัญชีรับเงิน" : "Select a payout destination",
         isThai
@@ -201,6 +179,7 @@ export function PayoutModal({
       );
       return;
     }
+    const destinationId = effectiveDestinationId;
 
     if (amountSatang === null) {
       Alert.alert(
@@ -232,28 +211,11 @@ export function PayoutModal({
       return;
     }
 
-    setSubmittingPayout(true);
     try {
-      let payout: PayoutRecord;
-      if (
-        typeof walletApi.quotePayout === "function" &&
-        typeof walletApi.createPayout === "function"
-      ) {
-        try {
-          const quote = await walletApi.quotePayout(amountSatang);
-          payout = await walletApi.createPayout(quote.id);
-        } catch {
-          payout = await walletApi.requestPayout(
-            amountSatang,
-            selectedDestinationId
-          );
-        }
-      } else {
-        payout = await walletApi.requestPayout(
-          amountSatang,
-          selectedDestinationId
-        );
-      }
+      const payout = await requestPayoutMutation.mutateAsync({
+        amountSatang,
+        destinationId,
+      });
       setSuccessfulPayout(payout);
       onPayoutSuccess();
     } catch (error: unknown) {
@@ -266,8 +228,6 @@ export function PayoutModal({
           error
         )
       );
-    } finally {
-      setSubmittingPayout(false);
     }
   };
 
@@ -447,7 +407,8 @@ export function PayoutModal({
                 ) : (
                   <View style={styles.destinationList}>
                     {destinations.map((destination) => {
-                      const selected = destination.id === selectedDestinationId;
+                      const selected =
+                        destination.id === effectiveDestinationId;
                       return (
                         <Pressable
                           key={destination.id}

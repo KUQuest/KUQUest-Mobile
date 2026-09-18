@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet } from "react-native";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { HomeWalletOverview } from "../HomeWalletOverview";
 import { walletApi } from "@/api/WalletApi";
 
@@ -50,7 +51,9 @@ describe("HomeWalletOverview", () => {
   });
 
   it("renders wallet balances properly", async () => {
-    const view = await render(<HomeWalletOverview locale="en" />);
+    const view = await renderWithQueryClient(
+      <HomeWalletOverview locale="en" />
+    );
 
     await waitFor(() => {
       expect(view.getByTestId("wallet-spending-balance")).toBeTruthy();
@@ -63,7 +66,9 @@ describe("HomeWalletOverview", () => {
   });
 
   it("keeps Money controls at the Android touch-target minimum", async () => {
-    const view = await render(<HomeWalletOverview locale="en" />);
+    const view = await renderWithQueryClient(
+      <HomeWalletOverview locale="en" />
+    );
 
     await waitFor(() => {
       expect(view.getByTestId("wallet-spending-balance")).toBeTruthy();
@@ -107,7 +112,9 @@ describe("HomeWalletOverview", () => {
       topUpStatus: "PAID",
     });
 
-    const view = await render(<HomeWalletOverview locale="en" />);
+    const view = await renderWithQueryClient(
+      <HomeWalletOverview locale="en" />
+    );
 
     await waitFor(() => {
       expect(view.getByTestId("wallet-topup-button")).toBeTruthy();
@@ -156,7 +163,9 @@ describe("HomeWalletOverview", () => {
   });
 
   it("opens history modal with ledger-backed activities when History is pressed", async () => {
-    const view = await render(<HomeWalletOverview locale="en" />);
+    const view = await renderWithQueryClient(
+      <HomeWalletOverview locale="en" />
+    );
 
     await waitFor(() => {
       expect(view.getByTestId("wallet-history-button")).toBeTruthy();
@@ -193,7 +202,9 @@ describe("HomeWalletOverview", () => {
       createdAt: "2026-09-17T10:00:00Z",
     });
 
-    const view = await render(<HomeWalletOverview locale="en" />);
+    const view = await renderWithQueryClient(
+      <HomeWalletOverview locale="en" />
+    );
 
     await waitFor(() => {
       expect(view.getByTestId("wallet-withdraw-button")).toBeTruthy();

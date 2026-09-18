@@ -25,6 +25,7 @@ jest.mock("../AuthService", () => ({
 jest.mock("../authEnvironment", () => ({
   authEnvironment: {
     isDemoEnabled: () => mockIsDemoEnabled(),
+    hydratePersona: jest.fn().mockResolvedValue(undefined),
   },
 }));
 

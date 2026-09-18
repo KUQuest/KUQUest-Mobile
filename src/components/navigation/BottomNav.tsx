@@ -164,7 +164,7 @@ export function BottomNav({
 
   React.useEffect(() => {
     showNavigation();
-  }, [focusedRouteKey, showNavigation]);
+  }, [focusedRouteKey]);
 
   return (
     <Animated.View

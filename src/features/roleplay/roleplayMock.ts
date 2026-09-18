@@ -1,4 +1,4 @@
-import { authEnvironment } from "@/features/auth/authEnvironment";
+import { useAuthEnvironmentStore } from "@/features/auth/authEnvironmentStore";
 import {
   questWorkflow,
   type QuestFixtureAction,
@@ -47,7 +47,7 @@ function getScenario(scenarioId: RoleplayScenarioId) {
 }
 
 function getCurrentState(scenarioId: RoleplayScenarioId): QuestDetailState {
-  const activePersonaId = authEnvironment.getActivePersonaId();
+  const activePersonaId = useAuthEnvironmentStore.getState().activePersonaId;
   const state = questWorkflow.getQuestDetailState(scenarioId, activePersonaId);
   if (!state) {
     throw new Error(`Missing roleplay fixture state: ${scenarioId}`);
@@ -154,7 +154,7 @@ function toWorkflowAction(
 function createRoleplayViewModel(
   scenarioId: RoleplayScenarioId
 ): RoleplayViewModel {
-  const activePersonaId = authEnvironment.getActivePersonaId();
+  const activePersonaId = useAuthEnvironmentStore.getState().activePersonaId;
   const state = getCurrentState(scenarioId);
   return {
     scenario: {
@@ -179,7 +179,7 @@ export function createRoleplayMock(): RoleplayMock {
     listeners.add(listener);
     if (listeners.size === 1) {
       workflowUnsubscribe = questWorkflow.subscribe(notify);
-      authUnsubscribe = authEnvironment.subscribe(notify);
+      authUnsubscribe = useAuthEnvironmentStore.subscribe(notify);
     }
     return () => {
       listeners.delete(listener);
@@ -198,7 +198,7 @@ export function createRoleplayMock(): RoleplayMock {
       return createRoleplayViewModel(activeScenarioId);
     },
     setPersona: (personaId) => {
-      authEnvironment.setActivePersona(personaId);
+      useAuthEnvironmentStore.getState().selectPersona(personaId);
       return createRoleplayViewModel(activeScenarioId);
     },
     dispatch: (action) => {
@@ -210,7 +210,7 @@ export function createRoleplayMock(): RoleplayMock {
         toWorkflowAction(
           action,
           activeScenarioId,
-          authEnvironment.getActivePersonaId()
+          useAuthEnvironmentStore.getState().activePersonaId
         )
       );
     },

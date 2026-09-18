@@ -20,11 +20,12 @@ import {
   Wallet,
   X,
 } from "lucide-react-native";
-import { walletApi, type WalletBalances } from "@/api/WalletApi";
+import { type WalletBalances } from "@/api/WalletApi";
 import { formatSatang } from "@/domain/satang";
 import type { WalletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
 import { fontFamily } from "@/theme/typography";
+import { useConvertEarningsMutation } from "../api/walletQueries";
 import { formatHirerCardAmount } from "../walletModule";
 
 interface TransferEarningsModalProps {
@@ -44,10 +45,10 @@ export function TransferEarningsModal({
 }: TransferEarningsModalProps) {
   const earningsSatang = balances?.earningsBalanceSatang ?? 0;
   const spendingSatang = balances?.spendingBalanceSatang ?? 0;
-
   const [inputAmount, setInputAmount] = useState("");
-  const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const convertMutation = useConvertEarningsMutation();
+  const loading = convertMutation.isPending;
 
   // Parse input amount to satang
   const parsedSatang = Math.round((parseFloat(inputAmount) || 0) * 100);
@@ -76,10 +77,9 @@ export function TransferEarningsModal({
     if (!isValidAmount || loading) return;
 
     setErrorMsg(null);
-    setLoading(true);
 
     try {
-      await walletApi.convertEarnings(parsedSatang);
+      await convertMutation.mutateAsync(parsedSatang);
       Alert.alert(
         m.transferSuccessTitle,
         m.transferSuccessDesc(formatSatang(parsedSatang))
@@ -90,8 +90,6 @@ export function TransferEarningsModal({
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : m.convertError;
       setErrorMsg(message);
-    } finally {
-      setLoading(false);
     }
   };
 

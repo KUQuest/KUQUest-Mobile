@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -10,13 +10,8 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { AlertCircle, FileText, RefreshCw } from "lucide-react-native";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  walletApi,
-  type UserTransaction,
-  type WalletBalances,
-} from "@/api/WalletApi";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { useLocale } from "@/features/preferences/localeStore";
 import { walletMessages } from "@/locales/walletMessages";
@@ -25,6 +20,10 @@ import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 import { fontFamily } from "@/theme/typography";
 
+import {
+  useTransactionHistoryQuery,
+  useWalletQuery,
+} from "./api/walletQueries";
 import { HirerBalanceCards } from "./components/HirerBalanceCards";
 import {
   HirerHistoryFilter,
@@ -48,47 +47,28 @@ export default function WalletScreen() {
   const insets = useSafeAreaInsets();
   const metrics = getAppChromeMetrics(width, fontScale);
 
-  const [balances, setBalances] = useState<WalletBalances | null>(null);
-  const [transactions, setTransactions] = useState<UserTransaction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const walletQuery = useWalletQuery();
+  const historyQuery = useTransactionHistoryQuery(50);
+  const hasLoadedWalletData = Boolean(walletQuery.data && historyQuery.data);
+  const balances = hasLoadedWalletData ? (walletQuery.data ?? null) : null;
+  const transactions = hasLoadedWalletData
+    ? (historyQuery.data?.items ?? [])
+    : [];
+  const loading = walletQuery.isPending || historyQuery.isPending;
+  const refreshing = walletQuery.isRefetching || historyQuery.isRefetching;
+  const error =
+    walletQuery.error?.message ??
+    historyQuery.error?.message ??
+    (walletQuery.isError || historyQuery.isError ? m.errorLoadingWallet : null);
   const [filter, setFilter] = useState<HirerHistoryFilterOption>("all");
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
     useState<ClassifiedHirerTransaction | null>(null);
-  const fetchData = useCallback(async () => {
-    try {
-      const [walletRes, historyRes] = await Promise.all([
-        walletApi.getWallet(),
-        walletApi.getTransactionHistory(50),
-      ]);
-      setBalances(walletRes);
-      setTransactions(historyRes.items);
-      setError(null);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : m.errorLoadingWallet);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [m.errorLoadingWallet]);
-
-  /* eslint-disable react-hooks/set-state-in-effect -- initial async load updates wallet balances and history */
-  useEffect(() => {
-    void fetchData();
-  }, [fetchData]);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  useFocusEffect(
-    useCallback(() => {
-      void fetchData();
-    }, [fetchData])
-  );
+  const refetchWallet = walletQuery.refetch;
+  const refetchHistory = historyQuery.refetch;
   const handleRefresh = useCallback(() => {
-    setRefreshing(true);
-    void fetchData();
-  }, [fetchData]);
+    void Promise.all([refetchWallet(), refetchHistory()]);
+  }, [refetchHistory, refetchWallet]);
 
   const classifiedList = transactions.map((tx) =>
     classifyHirerTransaction(tx, locale)
@@ -239,9 +219,7 @@ export default function WalletScreen() {
         balances={balances}
         messages={m}
         onClose={() => setTransferModalOpen(false)}
-        onSuccess={() => {
-          void fetchData();
-        }}
+        onSuccess={handleRefresh}
         visible={transferModalOpen}
       />
     </ScreenLayout>

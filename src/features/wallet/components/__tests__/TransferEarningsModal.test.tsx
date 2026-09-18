@@ -1,6 +1,7 @@
 import React from "react";
 import { Alert } from "react-native";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { walletApi, type WalletBalances } from "@/api/WalletApi";
 import { walletMessages } from "@/locales/walletMessages";
 import { TransferEarningsModal } from "../TransferEarningsModal";
@@ -38,7 +39,7 @@ describe("TransferEarningsModal", () => {
   });
 
   it("renders modal with compartment flow, policy note, and available balances", async () => {
-    const view = await render(
+    const view = await renderWithQueryClient(
       <TransferEarningsModal
         balances={mockBalances}
         messages={m}
@@ -61,7 +62,7 @@ describe("TransferEarningsModal", () => {
   });
 
   it("sets maximum available earnings when 'โอนทั้งหมด' (Max) is pressed", async () => {
-    const view = await render(
+    const view = await renderWithQueryClient(
       <TransferEarningsModal
         balances={mockBalances}
         messages={m}
@@ -80,7 +81,7 @@ describe("TransferEarningsModal", () => {
   });
 
   it("sets preset amount when preset chip is pressed", async () => {
-    const view = await render(
+    const view = await renderWithQueryClient(
       <TransferEarningsModal
         balances={mockBalances}
         messages={m}
@@ -107,7 +108,7 @@ describe("TransferEarningsModal", () => {
     const onSuccess = jest.fn();
     const onClose = jest.fn();
 
-    const view = await render(
+    const view = await renderWithQueryClient(
       <TransferEarningsModal
         balances={mockBalances}
         messages={m}
@@ -145,7 +146,7 @@ describe("TransferEarningsModal", () => {
       earningsBalanceSatang: 0,
     };
 
-    const view = await render(
+    const view = await renderWithQueryClient(
       <TransferEarningsModal
         balances={zeroBalances}
         messages={m}
@@ -167,7 +168,7 @@ describe("TransferEarningsModal", () => {
       new Error("Wallet is frozen")
     );
 
-    const view = await render(
+    const view = await renderWithQueryClient(
       <TransferEarningsModal
         balances={mockBalances}
         messages={m}
@@ -190,7 +191,7 @@ describe("TransferEarningsModal", () => {
 
   it("calls onClose when close button is pressed", async () => {
     const onClose = jest.fn();
-    const view = await render(
+    const view = await renderWithQueryClient(
       <TransferEarningsModal
         balances={mockBalances}
         messages={m}

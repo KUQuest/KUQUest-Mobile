@@ -1,6 +1,7 @@
 import React from "react";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
 import { walletApi } from "@/api/WalletApi";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import WalletScreen from "../WalletScreen";
 
 const mockPush = jest.fn();
@@ -90,7 +91,7 @@ describe("Hirer WalletScreen", () => {
   });
 
   it("renders header, slogan badge, banner, balances, and transaction history", async () => {
-    const view = await render(<WalletScreen />);
+    const view = await renderWithQueryClient(<WalletScreen />);
 
     // Header
     await waitFor(() => {
@@ -136,10 +137,10 @@ describe("Hirer WalletScreen", () => {
     expect(view.getByText("- ฿10.00")).toBeTruthy();
   });
   it("swaps balance cards separately on individual card press", async () => {
-    const view = await render(<WalletScreen />);
+    const view = await renderWithQueryClient(<WalletScreen />);
 
     await waitFor(() => {
-      expect(view.getByTestId("hirer-balance-cards")).toBeTruthy();
+      expect(view.getByText("฿ 2,450.00")).toBeTruthy();
     });
 
     // Initial state: Both in Hirer perspective
@@ -196,7 +197,7 @@ describe("Hirer WalletScreen", () => {
   });
 
   it("filters transactions when a filter is chosen", async () => {
-    const view = await render(<WalletScreen />);
+    const view = await renderWithQueryClient(<WalletScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("hirer-wallet-transactions-list")).toBeTruthy();
@@ -219,7 +220,7 @@ describe("Hirer WalletScreen", () => {
     });
   });
   it("opens transaction detail modal with full endpoint data when a transaction item is tapped", async () => {
-    const view = await render(<WalletScreen />);
+    const view = await renderWithQueryClient(<WalletScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("hirer-tx-tx-2")).toBeTruthy();
@@ -253,7 +254,7 @@ describe("Hirer WalletScreen", () => {
   });
 
   it("filters transactions by top_up", async () => {
-    const view = await render(<WalletScreen />);
+    const view = await renderWithQueryClient(<WalletScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("hirer-wallet-transactions-list")).toBeTruthy();
@@ -277,7 +278,7 @@ describe("Hirer WalletScreen", () => {
   });
 
   it("navigates to /top-up when banner action button is pressed", async () => {
-    const view = await render(<WalletScreen />);
+    const view = await renderWithQueryClient(<WalletScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("hirer-wallet-banner-action-btn")).toBeTruthy();
@@ -288,7 +289,7 @@ describe("Hirer WalletScreen", () => {
     expect(mockPush).toHaveBeenCalledWith("/top-up");
   });
   it("opens transfer earnings modal when switcher bar shortcut button is pressed", async () => {
-    const view = await render(<WalletScreen />);
+    const view = await renderWithQueryClient(<WalletScreen />);
 
     await waitFor(() => {
       expect(
@@ -305,7 +306,7 @@ describe("Hirer WalletScreen", () => {
   });
 
   it("opens transfer earnings modal from Card 1 when swapped to earnings mode", async () => {
-    const view = await render(<WalletScreen />);
+    const view = await renderWithQueryClient(<WalletScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("hirer-card-1")).toBeTruthy();
@@ -333,7 +334,7 @@ describe("Hirer WalletScreen", () => {
       items: [],
     });
 
-    const view = await render(<WalletScreen />);
+    const view = await renderWithQueryClient(<WalletScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("hirer-wallet-empty")).toBeTruthy();
@@ -346,7 +347,7 @@ describe("Hirer WalletScreen", () => {
       new Error("Network connection failed")
     );
 
-    const view = await render(<WalletScreen />);
+    const view = await renderWithQueryClient(<WalletScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("hirer-wallet-error")).toBeTruthy();
