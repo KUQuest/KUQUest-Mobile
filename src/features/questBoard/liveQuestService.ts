@@ -81,6 +81,18 @@ export type LiveQuestNextAction =
   | "CANCEL"
   | "CREATE_REVIEW";
 
+export const REVIEW_EDIT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // 7 days post-terminal
+
+export function isReviewWindowActive(
+  terminalTimestamp?: string | null,
+  now: number = Date.now()
+): boolean {
+  if (!terminalTimestamp) return true;
+  const terminalTime = new Date(terminalTimestamp).getTime();
+  if (Number.isNaN(terminalTime)) return true;
+  return now - terminalTime <= REVIEW_EDIT_WINDOW_MS;
+}
+
 export interface LiveQuestCapabilities {
   canJoin: boolean;
   canApply: boolean;
@@ -612,6 +624,13 @@ function deriveNextAction(
 }
 
 export class LiveQuestService {
+  isReviewWindowActive(
+    terminalTimestamp?: string | null,
+    now: number = Date.now()
+  ): boolean {
+    return isReviewWindowActive(terminalTimestamp, now);
+  }
+
   private hirerCache = new Map<string, { id: string; displayName: string }>();
   private participantCache = new Map<string, LiveQuestParticipant>();
   private participantRequests = new Map<
@@ -619,7 +638,7 @@ export class LiveQuestService {
     Promise<LiveQuestParticipant>
   >();
 
-  private async getParticipantProfile(
+  async getParticipantProfile(
     participantId: string
   ): Promise<LiveQuestParticipant> {
     const cached = this.participantCache.get(participantId);

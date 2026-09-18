@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from "@/tw";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { LogOut, MessageCircle, Pencil } from "lucide-react-native";
+import { LogOut, MessageCircle, Pencil, Star } from "lucide-react-native";
 import { cn } from "@/tw/cn";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
@@ -109,13 +109,60 @@ export default function QuestDetailScreen(props: QuestDetailScreenProps) {
           </Pressable>
         </View>
       ) : actionBar &&
-        (actionBar.canMessageOwner || actionBar.canShowWithdraw) ? (
+        (actionBar.canMessageOwner ||
+          actionBar.canShowWithdraw ||
+          actionBar.canRateReview) ? (
         <View
           className={styles.actionBar}
           style={{ paddingBottom: getActionBarPaddingBottom(insets.bottom) }}
           testID="quest-action-bar"
         >
           <View className={styles.actionRow}>
+            {actionBar.canRateReview ? (
+              <Pressable
+                accessibilityLabel={
+                  actionBar.hasReviewed
+                    ? messages.editReview
+                    : messages.rateAndReview
+                }
+                accessibilityRole="button"
+                className={cn(
+                  styles.primaryAction,
+                  actionBar.isReviewExpired &&
+                    "bg-ku-surface-subtle border border-ku-border-subtle",
+                  actionBar.busy && styles.primaryActionDisabled
+                )}
+                disabled={actionBar.busy}
+                onPress={actionBar.onOpenReview}
+                testID="quest-rate-review-action-button"
+              >
+                <Star
+                  color={
+                    actionBar.isReviewExpired
+                      ? colors.textSecondary
+                      : colors.white
+                  }
+                  fill={
+                    actionBar.isReviewExpired ? "transparent" : colors.white
+                  }
+                  size={18}
+                  strokeWidth={2.2}
+                />
+                <Text
+                  className={cn(
+                    styles.primaryActionText,
+                    actionBar.isReviewExpired && "text-ku-text-secondary"
+                  )}
+                  numberOfLines={1}
+                >
+                  {actionBar.isReviewExpired
+                    ? messages.reviewQuest
+                    : actionBar.hasReviewed
+                      ? messages.editReview
+                      : messages.rateAndReview}
+                </Text>
+              </Pressable>
+            ) : null}
             {actionBar.canMessageOwner ? (
               <Pressable
                 accessibilityLabel={messages.messageOwner}
