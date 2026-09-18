@@ -38,6 +38,7 @@ export function useQuestPublish({
   setSaveErrorIntent,
   setSaveErrorMessage,
   setSavingAction,
+  enabled = true,
 }: {
   editQuestId?: string;
   step: Step;
@@ -53,6 +54,7 @@ export function useQuestPublish({
   setSaveErrorIntent: Dispatch<SetStateAction<SaveErrorIntent | null>>;
   setSaveErrorMessage: Dispatch<SetStateAction<string | null>>;
   setSavingAction: Dispatch<SetStateAction<CompletionState | null>>;
+  enabled?: boolean;
 }) {
   const { locale } = useLocale();
   const [publishCheck, setPublishCheck] = useState<QuestPublishCheck | null>(
@@ -202,9 +204,8 @@ export function useQuestPublish({
       setSaveState,
     ]
   );
-
   const refreshPublishCheck = useCallback(async () => {
-    if (!draftHydrated || !draftStorageKey) return;
+    if (!enabled || !draftHydrated || !draftStorageKey) return;
     const requestId = ++publishCheckRequestRef.current;
     setIsCheckingPublish(true);
     try {
@@ -282,16 +283,17 @@ export function useQuestPublish({
     draftHydrated,
     draftStorageKey,
     editQuestId,
+    enabled,
     publishedQuestRef,
   ]);
 
   useEffect(() => {
-    if (step !== 3 || !draftHydrated || completedState) return;
+    if (!enabled || step !== 3 || !draftHydrated || completedState) return;
     const timer = setTimeout(() => {
       void refreshPublishCheck();
     }, 0);
     return () => clearTimeout(timer);
-  }, [completedState, draftHydrated, refreshPublishCheck, step]);
+  }, [completedState, draftHydrated, enabled, refreshPublishCheck, step]);
 
   return {
     publishCheck,

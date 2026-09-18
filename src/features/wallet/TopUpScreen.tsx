@@ -50,6 +50,50 @@ function formatExpiry(expiresAt: string, locale: SupportedLocale): string {
   }).format(date);
 }
 
+function TopUpSuccessState({
+  creditSatang,
+  locale,
+  onDone,
+}: {
+  creditSatang: number;
+  locale: SupportedLocale;
+  onDone: () => void;
+}) {
+  const m = walletMessages[locale];
+  const credit = formatSatang(creditSatang, locale, "exact");
+
+  return (
+    <View style={styles.successState} testID="top-up-success-view">
+      <View style={styles.successIconWrap} testID="top-up-verified-badge">
+        <CheckCircle2 color={colors.success} size={48} strokeWidth={2.2} />
+      </View>
+      <Text style={styles.successTitle}>{m.topUpSuccessTitle}</Text>
+      <Text style={styles.successDescription}>{m.topUpSuccessDescription}</Text>
+      <View style={styles.successAmountCard}>
+        <View style={styles.successAmountHeader}>
+          <Wallet color={colors.primaryDeep} size={20} strokeWidth={2.2} />
+          <Text style={styles.successAmountLabel}>{m.topUpCredit}</Text>
+        </View>
+        <Text style={styles.successAmount}>{credit}</Text>
+      </View>
+      <View style={styles.successNote}>
+        <ShieldCheck color={colors.success} size={18} strokeWidth={2.2} />
+        <Text style={styles.successNoteText}>{m.paymentSuccess}</Text>
+      </View>
+      <TouchableOpacity
+        accessibilityLabel={m.done}
+        accessibilityRole="button"
+        activeOpacity={0.8}
+        onPress={onDone}
+        style={styles.successActionButton}
+        testID="top-up-done-btn"
+      >
+        <Text style={styles.successActionText}>{m.done}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 export default function TopUpScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -464,6 +508,12 @@ export default function TopUpScreen() {
                 <Text style={styles.secondaryButtonText}>แก้ไขจำนวนเงิน</Text>
               </TouchableOpacity>
             </View>
+          ) : activeTopUp && paymentVerified ? (
+            <TopUpSuccessState
+              creditSatang={activeTopUp.creditSatang}
+              locale={locale}
+              onDone={handleFinish}
+            />
           ) : activeTopUp ? (
             /* Step 3: PromptPay QR Presentation */
             <View
@@ -520,89 +570,53 @@ export default function TopUpScreen() {
                 </View>
               </View>
 
-              {/* Status Message / Verification Badge */}
-              {paymentVerified ? (
-                <View
-                  style={styles.verifiedCard}
-                  testID="top-up-verified-badge"
-                >
-                  <CheckCircle2
-                    color={colors.success}
-                    size={28}
-                    strokeWidth={2.4}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.verifiedTitle}>
-                      {m.paymentVerified}
-                    </Text>
-                    <Text style={styles.verifiedDesc}>
-                      {m.paymentCredited(
-                        formatSatang(activeTopUp.creditSatang, locale, "exact")
-                      )}
-                    </Text>
-                  </View>
-                </View>
-              ) : statusMessage ? (
+              {/* Status Message */}
+              {statusMessage ? (
                 <View style={styles.statusBanner}>
                   <Text style={styles.statusBannerText}>{statusMessage}</Text>
                 </View>
               ) : null}
 
               {/* Payment Action Controls */}
-              {paymentVerified ? (
+              <View style={styles.promptPayActions}>
                 <TouchableOpacity
-                  accessibilityLabel={m.done}
+                  accessibilityLabel={m.checkStatus}
                   accessibilityRole="button"
                   activeOpacity={0.8}
-                  onPress={handleFinish}
-                  style={styles.primaryActionButton}
-                  testID="top-up-done-btn"
+                  disabled={checkingStatus}
+                  onPress={handleVerifyPayment}
+                  style={styles.checkStatusButton}
+                  testID="top-up-check-status-btn"
                 >
-                  <Text style={styles.primaryActionButtonText}>{m.done}</Text>
-                </TouchableOpacity>
-              ) : (
-                <View style={styles.promptPayActions}>
-                  {/* Verify Status Button */}
-                  <TouchableOpacity
-                    accessibilityLabel={m.checkStatus}
-                    accessibilityRole="button"
-                    activeOpacity={0.8}
-                    disabled={checkingStatus}
-                    onPress={handleVerifyPayment}
-                    style={styles.checkStatusButton}
-                    testID="top-up-check-status-btn"
-                  >
-                    {checkingStatus ? (
-                      <ActivityIndicator color={colors.white} size="small" />
-                    ) : (
-                      <>
-                        <RefreshCw color={colors.white} size={16} />
-                        <Text style={styles.checkStatusButtonText}>
-                          {m.checkStatus}
-                        </Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-
-                  {/* Dev / Test Simulation Button */}
-                  {__DEV__ ? (
-                    <TouchableOpacity
-                      accessibilityLabel={m.simulateSuccess}
-                      accessibilityRole="button"
-                      activeOpacity={0.7}
-                      disabled={checkingStatus}
-                      onPress={handleSimulatePayment}
-                      style={styles.simulateButton}
-                      testID="top-up-simulate-btn"
-                    >
-                      <Sparkles color={colors.primaryDeep} size={15} />
-                      <Text style={styles.simulateButtonText}>
-                        {m.simulateSuccess}
+                  {checkingStatus ? (
+                    <ActivityIndicator color={colors.white} size="small" />
+                  ) : (
+                    <>
+                      <RefreshCw color={colors.white} size={16} />
+                      <Text style={styles.checkStatusButtonText}>
+                        {m.checkStatus}
                       </Text>
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
-              )}
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                {__DEV__ ? (
+                  <TouchableOpacity
+                    accessibilityLabel={m.simulateSuccess}
+                    accessibilityRole="button"
+                    activeOpacity={0.7}
+                    disabled={checkingStatus}
+                    onPress={handleSimulatePayment}
+                    style={styles.simulateButton}
+                    testID="top-up-simulate-btn"
+                  >
+                    <Sparkles color={colors.primaryDeep} size={15} />
+                    <Text style={styles.simulateButtonText}>
+                      {m.simulateSuccess}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             </View>
           ) : null}
         </ScrollView>
@@ -1009,28 +1023,93 @@ const styles = StyleSheet.create({
     color: colors.textStrong,
     marginTop: 2,
   },
-  verifiedCard: {
-    flexDirection: "row",
+  successState: {
     alignItems: "center",
-    gap: 12,
-    width: "100%",
+    paddingBottom: 24,
+    paddingTop: 24,
+  },
+  successIconWrap: {
+    alignItems: "center",
     backgroundColor: colors.surfaceSuccess,
-    borderRadius: 16,
-    borderWidth: 1,
     borderColor: colors.borderSuccess,
-    padding: 16,
-    marginBottom: 20,
+    borderRadius: 48,
+    borderWidth: 1,
+    height: 88,
+    justifyContent: "center",
+    width: 88,
   },
-  verifiedTitle: {
+  successTitle: {
+    color: colors.textStrong,
     fontFamily: fontFamily.bold,
-    fontSize: 14,
-    color: colors.success,
-    marginBottom: 2,
+    fontSize: 24,
+    marginTop: 16,
+    textAlign: "center",
   },
-  verifiedDesc: {
-    fontFamily: fontFamily.medium,
-    fontSize: 12,
+  successDescription: {
     color: colors.textSecondary,
+    fontFamily: fontFamily.regular,
+    fontSize: 14,
+    lineHeight: 21,
+    marginTop: 4,
+    textAlign: "center",
+  },
+  successAmountCard: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.borderAccent,
+    borderRadius: 18,
+    borderWidth: 1,
+    marginTop: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    width: "100%",
+  },
+  successAmountHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  successAmountLabel: {
+    color: colors.textSecondary,
+    fontFamily: fontFamily.medium,
+    fontSize: 13,
+  },
+  successAmount: {
+    color: colors.primaryDeep,
+    fontFamily: fontFamily.bold,
+    fontSize: 32,
+    marginTop: 4,
+  },
+  successNote: {
+    alignItems: "flex-start",
+    backgroundColor: colors.surfaceAccent,
+    borderRadius: 14,
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 12,
+    padding: 12,
+    width: "100%",
+  },
+  successNoteText: {
+    color: colors.textSecondary,
+    flex: 1,
+    fontFamily: fontFamily.regular,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  successActionButton: {
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderRadius: 9999,
+    height: 52,
+    justifyContent: "center",
+    marginTop: 24,
+    width: "100%",
+  },
+  successActionText: {
+    color: colors.white,
+    fontFamily: fontFamily.semiBold,
+    fontSize: 15,
   },
   statusBanner: {
     width: "100%",

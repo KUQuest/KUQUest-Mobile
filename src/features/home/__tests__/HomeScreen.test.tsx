@@ -323,6 +323,6 @@ describe("HomeScreen live active quests syncing", () => {
     expect(mockPush).toHaveBeenCalledWith("/quest-board");
 
     fireEvent.press(getByTestId("hirer-quick-access-topup"));
-    expect(mockPush).toHaveBeenCalledWith("/top-up");
+    expect(mockPush).toHaveBeenCalledWith("/money");
   });
 });

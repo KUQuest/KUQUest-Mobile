@@ -14,12 +14,16 @@ export function CreateQuestHeader({
   onBackPress,
   onHelpPress,
   onStepPress,
+  title,
+  subtitle,
 }: {
   messages: typeof createQuestMessages.en;
   step: Step;
   onBackPress: () => void;
   onHelpPress: () => void;
   onStepPress: (step: Step) => void;
+  title?: string;
+  subtitle?: string;
 }) {
   const stepLabels = [
     messages.missionInfo,
@@ -42,9 +46,11 @@ export function CreateQuestHeader({
         </Pressable>
         <View className={styles.heroTitleGroup}>
           <Text accessibilityRole="header" className={styles.heroTitle}>
-            {messages.title}
+            {title ?? messages.title}
           </Text>
-          <Text className={styles.heroSubtitle}>{messages.headerSubtitle}</Text>
+          <Text className={styles.heroSubtitle}>
+            {subtitle ?? messages.headerSubtitle}
+          </Text>
         </View>
         <Pressable
           accessibilityLabel={messages.helpLabel}

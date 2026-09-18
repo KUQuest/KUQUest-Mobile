@@ -2,8 +2,10 @@ import type { SupportedLocale } from "./LocaleProvider";
 
 export interface CreateQuestMessages {
   title: string;
-  step: (current: number, total: number) => string;
   headerSubtitle: string;
+  editTitle: string;
+  editHeaderSubtitle: string;
+  step: (current: number, total: number) => string;
   helpLabel: string;
   helpTitle: string;
   helpDescription: string;
@@ -125,16 +127,29 @@ export interface CreateQuestMessages {
   reviewQuest: string;
   saveDraft: string;
   savingDraft: string;
+  saveChanges: string;
+  savingChanges: string;
+  cancelQuest: string;
+  cancellingQuest: string;
+  cancelQuestTitle: string;
+  cancelQuestDescription: string;
+  cancelQuestConfirm: string;
+  cancelQuestKeep: string;
+  cancelledQuestTitle: string;
+  cancelledQuestDescription: string;
   publishQuest: string;
   publishingQuest: string;
   loadingDraft: string;
   loadingTags: string;
   savedDraftTitle: string;
   savedDraftDescription: string;
+  updatedQuestTitle: string;
+  updatedQuestDescription: string;
   publishedQuestTitle: string;
   publishedQuestDescription: string;
   createAnotherDraft: string;
   createNewQuest: string;
+  backToQuest: string;
   notSelected: string;
   onlineOrAgreed: string;
   noImages: string;
@@ -152,7 +167,6 @@ export interface CreateQuestMessages {
   savePreview: string;
   savingPreview: string;
   viewQuestBoard: string;
-  toHome: string;
   publishCheckTitle: string;
   publishCheckReady: string;
   publishCheckBlocked: string;
@@ -211,6 +225,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       title: "Create Quest",
       step: (current, total) => `Step ${current} of ${total}`,
       headerSubtitle: "Set up your Quest step by step",
+      editTitle: "Edit Quest",
+      editHeaderSubtitle: "Update your Quest before it is published",
       helpLabel: "Quest creation help",
       helpTitle: "Create a Quest",
       helpDescription:
@@ -340,12 +356,24 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       rewardHelper:
         "This inclusive amount covers the worker reward and Platform Fee for each place.",
       questSummaryLabel: "Quest Summary",
+      cancelQuest: "Cancel Quest",
+      cancellingQuest: "Cancelling Quest…",
+      cancelQuestTitle: "Cancel this Quest?",
+      cancelQuestDescription:
+        "This will cancel the Quest and apply the server settlement rules. This action cannot be undone.",
+      cancelQuestConfirm: "Cancel Quest",
+      cancelQuestKeep: "Keep editing",
+      cancelledQuestTitle: "Quest cancelled",
+      cancelledQuestDescription:
+        "The Quest was cancelled and the server completed its settlement.",
       singleHeadcountHint: "Single format always has one participant.",
       back: "Back",
       next: "Next",
       reviewQuest: "Review Quest",
       saveDraft: "Save draft",
       savingDraft: "Saving draft…",
+      saveChanges: "Save changes",
+      savingChanges: "Saving changes…",
       publishQuest: "Publish Quest",
       publishingQuest: "Publishing Quest…",
       loadingDraft: "Restoring your draft…",
@@ -353,11 +381,14 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       savedDraftTitle: "Quest draft saved locally",
       savedDraftDescription:
         "Your draft is stored securely on this device and is not visible on the Quest Board yet.",
+      updatedQuestTitle: "Quest updated",
+      updatedQuestDescription: "Your Quest changes were saved to the server.",
       publishedQuestTitle: "Quest published",
       publishedQuestDescription:
         "Your Quest is now published on the Quest Board and will appear in My Quests for the Hirer.",
       createAnotherDraft: "Create another draft",
       createNewQuest: "Create new quest",
+      backToQuest: "Back to Quest",
       notSelected: "Not selected",
       onlineOrAgreed: "Online or to be agreed",
       noImages: "None",
@@ -376,7 +407,6 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       savePreview: "Save Quest preview",
       savingPreview: "Saving preview…",
       viewQuestBoard: "To Home",
-      toHome: "To Home",
       publishCheckTitle: "Publish check & Escrow",
       publishCheckReady: "Ready to publish",
       publishCheckBlocked: "Resolve the publish blockers before publishing.",
@@ -471,6 +501,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       title: "สร้างเควสต์",
       step: (current, total) => `ขั้นตอนที่ ${current} จาก ${total}`,
       headerSubtitle: "สร้างเควสต์ทีละขั้นตอน",
+      editTitle: "แก้ไขเควสต์",
+      editHeaderSubtitle: "อัปเดตเควสต์ก่อนเผยแพร่",
       helpLabel: "ความช่วยเหลือในการสร้างเควสต์",
       helpTitle: "สร้างเควสต์",
       helpDescription:
@@ -602,6 +634,18 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       reviewQuest: "ตรวจสอบเควสต์",
       saveDraft: "บันทึกฉบับร่าง",
       savingDraft: "กำลังบันทึกฉบับร่าง…",
+      saveChanges: "บันทึกการแก้ไข",
+      savingChanges: "กำลังบันทึกการแก้ไข…",
+      cancelQuest: "ยกเลิกเควสต์",
+      cancellingQuest: "กำลังยกเลิกเควสต์…",
+      cancelQuestTitle: "ยกเลิกเควสต์นี้หรือไม่?",
+      cancelQuestDescription:
+        "ระบบจะยกเลิกเควสต์และคำนวณการชำระเงินตามกฎของเซิร์ฟเวอร์ การกระทำนี้ย้อนกลับไม่ได้",
+      cancelQuestConfirm: "ยกเลิกเควสต์",
+      cancelQuestKeep: "แก้ไขต่อ",
+      cancelledQuestTitle: "ยกเลิกเควสต์แล้ว",
+      cancelledQuestDescription:
+        "เควสต์ถูกยกเลิกและระบบดำเนินการ settlement เรียบร้อยแล้ว",
       publishQuest: "เผยแพร่เควสต์",
       publishingQuest: "กำลังเผยแพร่เควสต์…",
       loadingDraft: "กำลังกู้คืนฉบับร่าง…",
@@ -609,11 +653,14 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       savedDraftTitle: "บันทึกฉบับร่างเควสต์แล้ว",
       savedDraftDescription:
         "ฉบับร่างถูกเก็บไว้อย่างปลอดภัยในอุปกรณ์นี้ และยังไม่แสดงบนกระดานเควสต์",
+      updatedQuestTitle: "อัปเดตเควสต์แล้ว",
+      updatedQuestDescription: "บันทึกการแก้ไขเควสต์ไปยังเซิร์ฟเวอร์แล้ว",
       publishedQuestTitle: "เผยแพร่เควสต์แล้ว",
       publishedQuestDescription:
         "เควสต์ของคุณเผยแพร่บนกระดานเควสต์แล้ว และจะแสดงใน My Quests ของผู้ว่าจ้าง",
       createAnotherDraft: "สร้างฉบับร่างใหม่",
       createNewQuest: "สร้างเควสต์ใหม่",
+      backToQuest: "กลับไปที่เควสต์",
       notSelected: "ยังไม่ได้เลือก",
       onlineOrAgreed: "ออนไลน์หรือรอตกลงกัน",
       noImages: "ไม่มี",
@@ -632,7 +679,6 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       savePreview: "บันทึกตัวอย่างเควสต์",
       savingPreview: "กำลังบันทึกตัวอย่าง…",
       viewQuestBoard: "กลับหน้าหลัก",
-      toHome: "กลับหน้าหลัก",
       publishCheckTitle: "ตรวจสอบการเผยแพร่และ Escrow",
       publishCheckReady: "พร้อมเผยแพร่",
       publishCheckBlocked: "แก้ไขข้อขัดข้องก่อนเผยแพร่เควสต์",

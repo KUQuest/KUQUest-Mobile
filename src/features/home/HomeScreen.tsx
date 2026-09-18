@@ -20,9 +20,9 @@ import { questApi } from "@/api/QuestApi";
 import { studentApi } from "@/api/StudentApi";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { useRoleWorkspace } from "@/components/navigation/RoleWorkspaceContext";
-import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
 import WorkerHomeScreen from "@/features/workerHome/WorkerHomeScreen";
 import { isPrototypeDemoEnabled } from "@/features/auth/authEnvironment";
+import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
 import { useLocale } from "@/locales/LocaleProvider";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { getThemeColors } from "@/theme/colors";
@@ -596,7 +596,7 @@ export default function HomeScreen() {
               <Pressable
                 accessibilityLabel={`${messages.quickTopUpTitle}: ${messages.quickTopUpDesc}`}
                 accessibilityRole="button"
-                onPress={() => router.push("/top-up")}
+                onPress={() => router.push("/money")}
                 style={[
                   styles.quickAccessCard,
                   {

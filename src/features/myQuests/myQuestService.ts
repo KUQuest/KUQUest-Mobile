@@ -12,6 +12,7 @@ import { questBoardMessages } from "@/locales/questBoardMessages";
 const PAGE_LIMIT = 50;
 
 export type HirerTab = "active" | "draft" | "completed";
+export type WorkerTab = "pending" | "accepted" | "history";
 export type StatusTone = "success" | "warning" | "danger" | "neutral";
 export type CategoryTone = "green" | "blue" | "purple";
 
@@ -105,6 +106,106 @@ export function liveQuestStatusLabel(
   if (status === "QUEST_FAILED") return locale === "th" ? "ล้มเหลว" : "Failed";
   return questBoardMessages[locale].statusLabel(status);
 }
+function getLiveWorkerAction(
+  snapshot: LiveQuestSnapshot,
+  locale: SupportedLocale
+): string {
+  const thai = locale === "th";
+  switch (snapshot.nextAction) {
+    case "WAIT_FOR_START":
+      return actionLabels[locale].start;
+    case "SUBMIT_PROOF":
+      return thai ? "ส่งหลักฐาน" : "Submit proof";
+    case "CONFIRM_COMPLETION":
+      return thai ? "ยืนยันการเสร็จสิ้น" : "Confirm completion";
+    case "RESPOND_TO_EDIT":
+      return thai ? "ตอบกลับคำขอแก้ไข" : "Respond to edit";
+    case "CREATE_REVIEW":
+      return thai ? "เขียนรีวิว" : "Write review";
+    default:
+      return actionLabels[locale].detail;
+  }
+}
+
+export function getLiveWorkerItems(
+  snapshots: LiveQuestSnapshot[],
+  tab: WorkerTab,
+  locale: SupportedLocale,
+  viewerId: string
+): QuestSummary[] {
+  return snapshots.flatMap((snapshot) => {
+    const quest = snapshot.quest;
+    const isCompleted = snapshot.state === "QUEST_COMPLETED";
+    const isCancelledOrFailed =
+      snapshot.state === "QUEST_CANCELLED" || snapshot.state === "QUEST_FAILED";
+    const isInactiveAssignment =
+      snapshot.assignment?.state !== "ASSIGNMENT_ACTIVE";
+
+    if (isCancelledOrFailed || (!isCompleted && isInactiveAssignment)) {
+      return [];
+    }
+
+    const pending =
+      !isCompleted &&
+      (snapshot.state === "QUEST_ASSIGNED" ||
+        snapshot.nextAction === "WAIT_FOR_START");
+    const snapshotTab: WorkerTab = isCompleted
+      ? "history"
+      : pending
+        ? "pending"
+        : "accepted";
+    if (snapshotTab !== tab) return [];
+
+    const tag = quest.tag?.name ?? "Quest";
+    const statusValue =
+      "hiddenAt" in quest && quest.hiddenAt ? "QUEST_HIDDEN" : snapshot.state;
+    const status = liveQuestStatusLabel(statusValue, locale);
+    const acceptedCount =
+      snapshot.team?.members.length ??
+      (quest as QuestV2CanonicalQuest & { activeWorkerCount?: number })
+        .activeWorkerCount ??
+      (snapshot.assignment ? 1 : 0);
+    const groupChatId =
+      snapshot.capabilities.canReadWorkChat && snapshot.workConversation
+        ? snapshot.workConversation.id
+        : undefined;
+    const groupChatCapability = groupChatId
+      ? {
+          conversationId: groupChatId,
+          canRead: snapshot.capabilities.canReadWorkChat,
+          canWrite: snapshot.capabilities.canWriteWorkChat,
+          readOnly: !snapshot.capabilities.canWriteWorkChat,
+        }
+      : undefined;
+
+    return [
+      {
+        id: quest.id,
+        title: quest.title,
+        tag,
+        categoryTone: getCategoryTone(tag),
+        date: `${formatQuestDate(quest.startTime, locale)}${
+          quest.dueAt ? ` · ${formatQuestDate(quest.dueAt, locale)}` : ""
+        }`,
+        location: quest.locations[0]?.label ?? "—",
+        description: quest.description ?? "",
+        detail: status,
+        teamSize: `${acceptedCount} / ${quest.headcount}`,
+        status,
+        statusTone: liveQuestStatusTone(statusValue),
+        action: getLiveWorkerAction(snapshot, locale),
+        actionType: "detail",
+        groupChatId,
+        groupChatCapability,
+        groupChatViewerId: viewerId,
+        host: "hirerName" in quest ? quest.hirerName : undefined,
+        appliedOn: snapshot.assignment?.createdAt
+          ? formatQuestDate(snapshot.assignment.createdAt, locale)
+          : undefined,
+      },
+    ];
+  });
+}
 
 export function getLiveHirerItems(
   quests: QuestV2CanonicalQuest[],
@@ -120,7 +221,7 @@ export function getLiveHirerItems(
       tab === "draft"
         ? quest.state === "QUEST_DRAFT"
         : tab === "completed"
-          ? terminal
+          ? quest.state === "QUEST_COMPLETED"
           : !terminal && quest.state !== "QUEST_DRAFT";
     if (!matchesTab) return [];
 
