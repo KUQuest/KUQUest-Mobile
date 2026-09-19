@@ -29,7 +29,7 @@ export const authMessages: Record<SupportedLocale, AuthMessages> = {
     termsOfService: "Terms of Service",
     privacyPolicy: "Privacy Policy",
     contactUs: "Contact Us",
-    retryButton: "Retry",
+    retryButton: "Try again",
     loadingAuth: "Authenticating...",
     errors: {
       INVALID_EMAIL_DOMAIN:
@@ -53,7 +53,7 @@ export const authMessages: Record<SupportedLocale, AuthMessages> = {
     termsOfService: "ข้อตกลงการใช้งาน",
     privacyPolicy: "นโยบายความเป็นส่วนตัว",
     contactUs: "ติดต่อเรา",
-    retryButton: "ลองใหม่อีกครั้ง",
+    retryButton: "ลองอีกครั้ง",
     loadingAuth: "กำลังตรวจสอบสิทธิ์...",
     errors: {
       INVALID_EMAIL_DOMAIN:

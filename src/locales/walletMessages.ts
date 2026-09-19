@@ -183,7 +183,7 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     noTransactions: "No transactions found.",
     refresh: "Refresh",
     close: "Close",
-    back: "Back",
+    back: "Go back",
     confirm: "Confirm",
     cancel: "Cancel",
     placeholderBadge: "Placeholder",
@@ -233,7 +233,7 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     emptyHistoryDesc:
       "Your transactions will appear here once you top up or post quests.",
     errorLoadingWallet: "Failed to load wallet data",
-    retry: "Retry",
+    retry: "Try again",
     transferEarningsTitle: "Transfer to Spending",
     transferEarningsDesc:
       "Transfer accumulated earnings into your spending balance instantly to post quests.",
@@ -363,7 +363,7 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     emptyHistoryTitle: "ยังไม่มีประวัติการทำธุรกรรม",
     emptyHistoryDesc: "เมื่อคุณเติมเงินหรือลงภารกิจ ประวัติจะแสดงที่นี่",
     errorLoadingWallet: "เกิดข้อผิดพลาดในการโหลดข้อมูลกระเป๋าเงิน",
-    retry: "ลองใหม่อีกครั้ง",
+    retry: "ลองอีกครั้ง",
     transferEarningsTitle: "โอนรายได้เข้าเงินพร้อมใช้",
     transferEarningsDesc:
       "โอนเงินจากรายได้สะสมเข้าสู่ยอดเงินพร้อมใช้เพื่อใช้จ้างงานต่อได้ทันที",

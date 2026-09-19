@@ -367,7 +367,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       cancelledQuestDescription:
         "The Quest was cancelled and the server completed its settlement.",
       singleHeadcountHint: "Single format always has one participant.",
-      back: "Back",
+      back: "Go back",
       next: "Next",
       reviewQuest: "Review Quest",
       saveDraft: "Save draft",
@@ -634,7 +634,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       reviewQuest: "ตรวจสอบเควสต์",
       saveDraft: "บันทึกฉบับร่าง",
       savingDraft: "กำลังบันทึกฉบับร่าง…",
-      saveChanges: "บันทึกการแก้ไข",
+      saveChanges: "บันทึกการเปลี่ยนแปลง",
       savingChanges: "กำลังบันทึกการแก้ไข…",
       cancelQuest: "ยกเลิกเควสต์",
       cancellingQuest: "กำลังยกเลิกเควสต์…",

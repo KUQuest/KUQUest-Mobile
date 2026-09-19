@@ -13,10 +13,10 @@ import {
   Pressable,
   SafeAreaView,
   Text,
-  TextInput,
   View,
 } from "@/tw";
-import { Check, ChevronDown, CircleX, Search, X } from "lucide-react-native";
+import { Check, ChevronDown, X } from "lucide-react-native";
+import { SearchInput } from "./SearchInput";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "@/theme/colors";
 import styles from "./selectStyles";
@@ -157,42 +157,37 @@ export const Select = React.forwardRef<
   };
 
   const pickerSearch = searchable ? (
-    <View
+    <SearchInput
+      accessibilityLabel={searchPlaceholder ?? fieldAccessibilityLabel}
+      autoFocus
+      clearAccessibilityLabel={clearSearchLabel}
+      clearButtonClassName={styles.clearButton}
+      clearButtonTestID="clear-search-button"
+      clearIcon="circleX"
+      clearIconColor={colors.textMuted}
+      clearIconSize={18}
+      clearIconStrokeWidth={2}
       className={cn(
         styles.searchContainer,
         dropdown ? styles.dropdownSearchContainer : null
       )}
-    >
-      <Search color={colors.textMuted} size={18} strokeWidth={2} />
-      <TextInput
-        autoFocus
-        value={searchQuery}
-        onChangeText={(value) => {
-          setSearchQuery(value);
-          onSearchChange?.(value);
-        }}
-        placeholder={searchPlaceholder}
-        placeholderTextColor={colors.textFaint}
-        className={styles.searchInput}
-        accessibilityRole="search"
-        accessibilityLabel={searchPlaceholder ?? fieldAccessibilityLabel}
-        testID="select-search-input"
-      />
-      {searchQuery ? (
-        <Pressable
-          className={styles.clearButton}
-          onPress={() => {
-            setSearchQuery("");
-            onSearchChange?.("");
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={clearSearchLabel}
-          testID="clear-search-button"
-        >
-          <CircleX color={colors.textMuted} size={18} strokeWidth={2} />
-        </Pressable>
-      ) : null}
-    </View>
+      iconColor={colors.textMuted}
+      iconSize={18}
+      iconStrokeWidth={2}
+      inputClassName={styles.searchInput}
+      onChangeText={(value) => {
+        setSearchQuery(value);
+        onSearchChange?.(value);
+      }}
+      onClear={() => {
+        setSearchQuery("");
+        onSearchChange?.("");
+      }}
+      placeholder={searchPlaceholder}
+      placeholderTextColor={colors.textFaint}
+      testID="select-search-input"
+      value={searchQuery}
+    />
   ) : null;
 
   const pickerOptions = (

@@ -1,7 +1,7 @@
-import React from "react";
-import { ArrowDownUp, Search, SlidersHorizontal, X } from "lucide-react-native";
+import { ArrowDownUp, SlidersHorizontal, X } from "lucide-react-native";
 
-import { Pressable, Text, TextInput, View } from "@/tw";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { HomeWalletOverview } from "@/features/wallet/HomeWalletOverview";
 import { colors } from "@/theme/colors";
@@ -70,31 +70,27 @@ export function QuestBoardListHeader({
         </View>
       </View>
       <HomeWalletOverview locale={locale} />
-      <View className={styles.searchField}>
-        <Search color={colors.textMuted} size={23} strokeWidth={2} />
-        <TextInput
-          accessibilityLabel={messages.searchPlaceholder}
-          accessibilityRole="search"
-          autoCapitalize="none"
-          onChangeText={onQueryChange}
-          placeholder={messages.searchPlaceholder}
-          placeholderTextColor={colors.textMuted}
-          className={styles.searchInput}
-          testID="quest-board-search"
-          value={query}
-        />
-        {query ? (
-          <Pressable
-            accessibilityLabel={messages.clearSearch}
-            accessibilityRole="button"
-            onPress={onClearQuery}
-            className={styles.iconButton}
-            testID="clear-quest-search"
-          >
-            <X color={colors.textMuted} size={20} />
-          </Pressable>
-        ) : null}
-      </View>
+      <SearchInput
+        accessibilityLabel={messages.searchPlaceholder}
+        autoCapitalize="none"
+        clearAccessibilityLabel={messages.clearSearch}
+        clearButtonClassName={styles.iconButton}
+        clearButtonTestID="clear-quest-search"
+        clearIconColor={colors.textMuted}
+        clearIconSize={20}
+        clearIconStrokeWidth={2}
+        className={styles.searchField}
+        iconColor={colors.textMuted}
+        iconSize={23}
+        iconStrokeWidth={2}
+        inputClassName={styles.searchInput}
+        onChangeText={onQueryChange}
+        onClear={onClearQuery}
+        placeholder={messages.searchPlaceholder}
+        placeholderTextColor={colors.textMuted}
+        testID="quest-board-search"
+        value={query}
+      />
       <View className={styles.toolbar}>
         <Pressable
           accessibilityLabel={`${messages.filter}${hasActiveFilters ? `, ${messages.selectedFilters(activeFilterCount)}` : ""}`}

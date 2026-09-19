@@ -147,7 +147,7 @@ describe("Edit Profile hub", () => {
   it("offers a native Back action from the hub", async () => {
     const view = await renderWithQueryClient(<EditProfileHubScreen />);
     await waitFor(() => expect(view.getByText("Edit Profile")).toBeTruthy());
-    fireEvent.press(view.getByRole("button", { name: "Back" }));
+    fireEvent.press(view.getByRole("button", { name: "Go back" }));
   });
 
   it("shows a recoverable section error without offering Add", async () => {
