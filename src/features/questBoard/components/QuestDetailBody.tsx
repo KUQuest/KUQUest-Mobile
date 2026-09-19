@@ -22,7 +22,7 @@ import { formatSatang } from "@/domain/satang";
 import type { GroupQuestMessages } from "@/locales/groupQuestMessages";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 import { getQuestRewardSatang } from "../questWorkflow";
-import { formatDeadline } from "../questDetailFormat";
+import { formatDate } from "@/domain/datetime";
 import type { LiveQuestSnapshot } from "../liveQuestService";
 import type { QuestBoardQuest, QuestDetailState } from "../types";
 import styles from "../questDetailStyles";
@@ -183,7 +183,7 @@ function ScheduleTimeline({
           <View className={styles.timelineEvent}>
             <Text className={styles.timelineLabel}>{messages.startWork}</Text>
             <Text className={styles.timelineDate}>
-              {formatDeadline(quest.startDate, locale)}
+              {formatDate(quest.startDate, locale, "")}
             </Text>
             <View className={styles.timelineTimeRow}>
               <Clock3 color={colors.primary} size={15} strokeWidth={2} />
@@ -198,7 +198,7 @@ function ScheduleTimeline({
           <View className={styles.timelineEvent}>
             <Text className={styles.timelineLabel}>{messages.finishBy}</Text>
             <Text className={styles.timelineDate}>
-              {formatDeadline(quest.deadline, locale)}
+              {formatDate(quest.deadline, locale, "")}
             </Text>
             <Text className={styles.timelineDescription}>
               {messages.finishByDescription}

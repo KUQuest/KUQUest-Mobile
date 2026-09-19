@@ -21,7 +21,7 @@ import { createQuestMessages } from "@/locales/createQuestMessages";
 import type { SupportedLocale } from "@/locales/locale";
 import { colors } from "@/theme/colors";
 import styles from "../createQuestStyles";
-import { formatDate, formatDateTime } from "../createQuestDates";
+import { formatDate, formatDateTime } from "@/domain/datetime";
 import {
   addDaysToDate,
   addHoursToTime,

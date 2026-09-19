@@ -12,8 +12,8 @@ import {
   TextInput,
   View,
 } from "react-native";
-
 import type { PayoutRecord } from "@/api/WalletApi";
+import { formatSatang } from "@/domain/satang";
 import type { SupportedLocale } from "@/locales/locale";
 import { colors } from "@/theme/colors";
 import { fontFamily } from "@/theme/typography";
@@ -44,13 +44,6 @@ function parseAmountSatang(value: string): number | null {
   return Number.isSafeInteger(amountSatang) && amountSatang > 0
     ? amountSatang
     : null;
-}
-
-function formatBaht(satang: number): string {
-  return (satang / 100).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
 }
 
 function errorMessage(prefix: string, error: unknown): string {
@@ -295,7 +288,7 @@ export function PayoutModal({
                   style={styles.balanceAmount}
                   testID="payout-available-balance"
                 >
-                  ฿{formatBaht(earningsSatang)}
+                  {formatSatang(earningsSatang, locale, "exact")}
                 </Text>
                 <Text style={styles.hint}>
                   {isThai

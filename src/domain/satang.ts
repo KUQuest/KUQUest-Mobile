@@ -15,21 +15,24 @@ export function parseSatangInput(value: string): number | null {
   return Number.isSafeInteger(satang) ? satang : null;
 }
 
-export type SatangFormat = "compact" | "exact";
+export type SatangFormat = "compact" | "exact" | "signed";
 
 export function formatSatang(
   value: number,
   locale: "en" | "th" = "en",
   format: SatangFormat = "compact"
 ): string {
-  if (!isValidSatang(value)) return "฿0";
-  const baht = Math.floor(value / SATANG_PER_BAHT);
-  const satang = value % SATANG_PER_BAHT;
+  const signed = format === "signed";
+  const sign = signed ? (value < 0 ? "-" : "+") : "";
+  const absoluteValue = signed ? Math.abs(value) : value;
+  if (!isValidSatang(absoluteValue)) return "฿0";
+  const baht = Math.floor(absoluteValue / SATANG_PER_BAHT);
+  const satang = absoluteValue % SATANG_PER_BAHT;
   const formattedBaht = baht.toLocaleString(
     locale === "th" ? "th-TH" : "en-US"
   );
-  if (format === "exact") {
-    return `฿${formattedBaht}.${String(satang).padStart(2, "0")}`;
+  if (format === "exact" || signed) {
+    return `${sign}฿${formattedBaht}.${String(satang).padStart(2, "0")}`;
   }
   return satang === 0
     ? `฿${formattedBaht}`

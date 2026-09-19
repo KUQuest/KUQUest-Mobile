@@ -499,7 +499,7 @@ function projectChatMessage(
   return {
     id: message.id,
     sender: message.senderId === viewerId ? "me" : "other",
-    time: message.time,
+    createdAt: message.sentAt,
     ...(message.text ? { text: clone(message.text) } : {}),
     ...(message.attachment ? { attachment: clone(message.attachment) } : {}),
   };
@@ -560,7 +560,7 @@ function projectChatConversation(
     initials: conversation.initials,
     avatarColor: conversation.avatarColor,
     latestMessage,
-    latestTime: latest?.time ?? "Now",
+    latestAt: latest?.sentAt ?? "",
     unreadCount: chatUnreadCount(conversation, viewerId),
     messages: conversation.messages
       .slice()

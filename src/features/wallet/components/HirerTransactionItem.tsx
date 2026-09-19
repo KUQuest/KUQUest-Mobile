@@ -12,6 +12,7 @@ import {
 } from "lucide-react-native";
 import { colors } from "@/theme/colors";
 import { fontFamily } from "@/theme/typography";
+import { formatSatang } from "@/domain/satang";
 import type { ClassifiedHirerTransaction } from "../walletModule";
 
 interface HirerTransactionItemProps {
@@ -59,13 +60,18 @@ export function HirerTransactionItem({
 
   const isPending = tx.statusKind === "pending";
   const isFailed = tx.statusKind === "failed" || tx.statusKind === "expired";
+  const formattedAmount = formatSatang(
+    tx.isInflow ? tx.amountSatang : -tx.amountSatang,
+    "en",
+    "signed"
+  );
 
   const CardComponent = onPress ? TouchableOpacity : View;
 
   return (
     <CardComponent
       accessibilityHint="แตะเพื่อดูรายละเอียดธุรกรรม"
-      accessibilityLabel={`${tx.title}, ${tx.amountText}`}
+      accessibilityLabel={`${tx.title}, ${formattedAmount}`}
       accessibilityRole={onPress ? "button" : undefined}
       activeOpacity={0.75}
       onPress={onPress ? () => onPress(tx) : undefined}
@@ -114,7 +120,7 @@ export function HirerTransactionItem({
             tx.isInflow ? styles.amountInflow : styles.amountOutflow,
           ]}
         >
-          {tx.amountText}
+          {formattedAmount}
         </Text>
         {onPress ? (
           <ChevronRight color={colors.textMuted} size={16} strokeWidth={2} />

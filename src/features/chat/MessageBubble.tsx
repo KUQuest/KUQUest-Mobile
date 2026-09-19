@@ -16,6 +16,8 @@ import {
   type RenderAttachment,
 } from "./ChatConversationPresentation";
 import { attachmentLinkCache } from "./attachmentLinkCache";
+import { formatTimeInBangkok } from "@/domain/datetime";
+
 import styles from "./chatStyles";
 
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".heic"];
@@ -244,6 +246,8 @@ export function MessageBubble({
 }) {
   const mine = message.sender === "me";
   const text = message.text ? localizedText(message.text, locale) : undefined;
+  const messageTime = formatTimeInBangkok(message.createdAt);
+
   return (
     <View className={cn(styles.messageRow, mine && styles.messageRowMe)}>
       {!mine ? (
@@ -275,7 +279,8 @@ export function MessageBubble({
               isCandidateInquiry={isCandidateInquiry}
               mine={mine}
               messages={messages}
-              messageTime={message.time}
+              messageTime={messageTime}
+
               onFilePress={() => onFilePress(attachment)}
               onImagePress={onImagePress}
             />
@@ -289,7 +294,7 @@ export function MessageBubble({
             />
           )
         )}
-        <Text className={styles.messageMeta}>{message.time}</Text>
+        <Text className={styles.messageMeta}>{messageTime}</Text>
       </View>
     </View>
   );

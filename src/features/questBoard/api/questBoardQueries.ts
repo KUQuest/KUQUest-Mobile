@@ -23,7 +23,6 @@ export const questBoardKeys = {
   board: () => [...questBoardKeys.all, "board"] as const,
   detail: (questId: string) =>
     [...questBoardKeys.all, "detail", questId] as const,
-  myHirer: () => [...questBoardKeys.all, "my-hirer"] as const,
   liveSnapshot: (questId: string, viewerId: string, editRequestId?: string) =>
     [
       ...questBoardKeys.all,
@@ -39,14 +38,6 @@ export function useQuestBoardQuery(enabled = true) {
     enabled,
     queryKey: questBoardKeys.board(),
     queryFn: ({ signal }) => liveQuestService.listBoardQuests({ signal }),
-  });
-}
-
-export function useMyHirerQuestBoardQuery(enabled = true) {
-  return useQuery({
-    enabled,
-    queryKey: questBoardKeys.myHirer(),
-    queryFn: ({ signal }) => liveQuestService.listMyHirerQuests({ signal }),
   });
 }
 

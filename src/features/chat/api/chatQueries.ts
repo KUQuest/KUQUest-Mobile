@@ -66,7 +66,7 @@ function candidateInquiryToConversation(
       .toUpperCase(),
     avatarColor: "#208AEF",
     latestMessage: { en: latestPreview, th: latestPreview },
-    latestTime: inquiry.latestMessage?.createdAt ?? "",
+    latestAt: inquiry.latestMessage?.createdAt ?? "",
     unreadCount: inquiry.unreadCount,
     messages: [],
     capability: {

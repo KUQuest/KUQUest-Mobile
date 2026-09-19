@@ -5,6 +5,8 @@ import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { formatTimeInBangkok } from "@/domain/datetime";
+
 import { chatApi } from "@/api/ChatApi";
 import { ApiError } from "@/api/ApiClient";
 import {
@@ -175,15 +177,10 @@ export function useChatConversationController(
           (current) => {
             if (!current) return current;
             const preview = event.data.message.text ?? "";
-            const createdAt = new Date(event.data.message.createdAt);
-            const latestTime = `${String(createdAt.getHours()).padStart(
-              2,
-              "0"
-            )}:${String(createdAt.getMinutes()).padStart(2, "0")}`;
             return {
               ...current,
               latestMessage: { en: preview, th: preview },
-              latestTime,
+              latestAt: event.data.message.createdAt,
             };
           }
         );
@@ -273,7 +270,7 @@ export function useChatConversationController(
         .flatMap((message) =>
           message.attachments.map((attachment) => ({
             ...attachment,
-            time: message.time,
+            time: formatTimeInBangkok(message.createdAt),
           }))
         )
         .filter(
@@ -456,10 +453,7 @@ export function useChatConversationController(
       id: clientMessageId,
       sender: "me",
       text: { en: value, th: value },
-      time: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      createdAt: new Date().toISOString(),
       attachments: [],
     };
     void sendMessageMutation

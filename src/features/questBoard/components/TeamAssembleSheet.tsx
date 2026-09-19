@@ -27,6 +27,7 @@ import { useLocale } from "@/features/preferences/localeStore";
 import type { SupportedLocale } from "@/locales/locale";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import { colors } from "@/theme/colors";
+import { formatTimestampDateTime } from "@/domain/datetime";
 import {
   QuestInvitationStatus,
   QuestTeamStatus,
@@ -147,17 +148,6 @@ function initialsFor(value: string): string {
     .slice(0, 2)
     .map((word) => word[0]?.toUpperCase() ?? "")
     .join("");
-}
-
-function formatExpiry(value: string, locale: SupportedLocale): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
 }
 
 function LoadingState({ label }: { label: string }) {
@@ -304,7 +294,7 @@ function InvitationRow({
           </Text>
           <Text className={styles.invitationExpiry}>
             {messages.invitationExpires(
-              formatExpiry(invitation.expiresAt, locale)
+              formatTimestampDateTime(invitation.expiresAt, locale)
             )}
           </Text>
         </View>
@@ -692,22 +682,14 @@ export function TeamAssembleSheet({
               {codeExpiry ? (
                 <Text className={styles.sectionMeta}>
                   {locale === "th"
-                    ? `หมดอายุ ${formatExpiry(codeExpiry, locale)}`
-                    : `Expires ${formatExpiry(codeExpiry, locale)}`}
+                    ? `หมดอายุ ${formatTimestampDateTime(codeExpiry, locale)}`
+                    : `Expires ${formatTimestampDateTime(codeExpiry, locale)}`}
                 </Text>
               ) : null}
             </View>
             {viewerIsMember ? (
               <View className={styles.reviewCard}>
-                <Text
-                  selectable
-                  accessibilityLabel={
-                    code
-                      ? `${locale === "th" ? "รหัสเข้าร่วมทีม" : "Team Join Code"}: ${code}`
-                      : undefined
-                  }
-                  className={styles.proposalSummaryTitle}
-                >
+                <Text selectable className={styles.proposalSummaryTitle}>
                   {code ??
                     (locale === "th" ? "ยังไม่มีรหัส" : "No code available")}
                 </Text>

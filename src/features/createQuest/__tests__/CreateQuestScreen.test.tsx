@@ -88,6 +88,16 @@ jest.mock("../../questBoard/liveQuestService", () => ({
   },
 }));
 
+jest.mock("@/api/QuestApi", () => {
+  const actual = jest.requireActual("@/api/QuestApi");
+  return {
+    ...actual,
+    questApi: {
+      ...actual.questApi,
+      getPublishCheck: (...args: unknown[]) => mockLiveGetPublishCheck(...args),
+    },
+  };
+});
 jest.mock("@/api/WalletApi", () => ({
   walletApi: {
     getWallet: (...args: unknown[]) => mockWalletGetWallet(...args),

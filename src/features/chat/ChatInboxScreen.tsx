@@ -21,6 +21,8 @@ import { useLocale } from "@/features/preferences/localeStore";
 import { chatMessages } from "@/locales/chatMessages";
 import { colors } from "@/theme/colors";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
+import { formatTimeInBangkok } from "@/domain/datetime";
+
 import { spacing } from "@/theme/spacing";
 import { getChatRouteParams } from "./chatData";
 import type { ChatConversation } from "./chatTypes";
@@ -146,7 +148,9 @@ const ConversationRow = memo(function ConversationRow({
         </Text>
       </View>
       <View className={styles.rowMeta}>
-        <Text className={styles.rowTime}>{conversation.latestTime}</Text>
+        <Text className={styles.rowTime}>
+          {formatTimeInBangkok(conversation.latestAt)}
+        </Text>
         {conversation.unreadCount > 0 ? (
           <View
             accessibilityLabel={messages.unreadCount(conversation.unreadCount)}

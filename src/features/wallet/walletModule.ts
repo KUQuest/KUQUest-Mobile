@@ -139,33 +139,6 @@ export async function convertEarnings(
   return { ok: true, satang: amountSatang };
 }
 
-export function formatHirerCardAmount(satang: number): string {
-  const safeSatang = Math.max(0, satang || 0);
-  const baht = Math.floor(safeSatang / 100);
-  const cents = safeSatang % 100;
-  const formattedBaht = baht.toLocaleString("en-US");
-  return `฿ ${formattedBaht}.${String(cents).padStart(2, "0")}`;
-}
-
-export function formatHirerTransactionAmount(
-  satang: number,
-  direction: "INFLOW" | "OUTFLOW"
-): {
-  text: string;
-  isInflow: boolean;
-} {
-  const isInflow = direction === "INFLOW";
-  const sign = isInflow ? "+" : "-";
-  const safeSatang = Math.max(0, satang || 0);
-  const baht = Math.floor(safeSatang / 100);
-  const cents = safeSatang % 100;
-  const formattedBaht = baht.toLocaleString("en-US");
-  return {
-    text: `${sign} ฿${formattedBaht}.${String(cents).padStart(2, "0")}`,
-    isInflow,
-  };
-}
-
 export function formatTransactionDate(
   dateInput: string | Date,
   locale: "th" | "en" = "th"
@@ -263,7 +236,6 @@ export interface ClassifiedHirerTransaction {
   subtitle?: string;
   dateFormatted: string;
   timeFormatted: string;
-  amountText: string;
   amountSatang: number;
   isInflow: boolean;
   iconKind: HirerTransactionIconKind;
@@ -350,10 +322,7 @@ export function classifyHirerTransaction(
     direction = "OUTFLOW";
   }
 
-  const { text: amountText, isInflow } = formatHirerTransactionAmount(
-    tx.amountSatang,
-    direction
-  );
+  const isInflow = direction === "INFLOW";
   const dateFormatted = formatTransactionDate(tx.createdAt, locale);
   const timeFormatted = formatTransactionTime(tx.createdAt);
   const { label: statusLabel, kind: statusKind } = formatTransactionStatus(
@@ -395,7 +364,6 @@ export function classifyHirerTransaction(
     subtitle,
     dateFormatted,
     timeFormatted,
-    amountText,
     amountSatang: tx.amountSatang,
     isInflow,
     iconKind,

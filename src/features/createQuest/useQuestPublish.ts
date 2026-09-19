@@ -9,6 +9,7 @@ import {
   usePublishEditQuestMutation,
   usePublishImageUploadMutation,
   usePublishQuestMutation,
+  useQuestPublishCheckQuery,
 } from "./api/createQuestQueries";
 import {
   adaptV2PublishCheck,
@@ -34,6 +35,17 @@ function getPublishErrorMessage(error: unknown, locale: "en" | "th"): string {
   return error instanceof Error
     ? error.message
     : "Unable to publish the Quest.";
+}
+function derivePublishCheck(
+  data: Parameters<typeof adaptV2PublishCheck>[0] | undefined,
+  draft: QuestDraft
+): QuestPublishCheck | null {
+  if (!data) return null;
+  try {
+    return adaptV2PublishCheck(data);
+  } catch {
+    return getQuestPublishCheck(draft);
+  }
 }
 
 export function useQuestPublish({
@@ -66,15 +78,130 @@ export function useQuestPublish({
   const { locale } = useLocale();
   const walletQuery = useWalletQuery();
   const [cleanupError, setCleanupError] = useState<string | null>(null);
-  const [publishCheck, setPublishCheck] = useState<QuestPublishCheck | null>(
+  const [publishCheckQuestId, setPublishCheckQuestId] = useState<string | null>(
     null
   );
-  const [isCheckingPublish, setIsCheckingPublish] = useState(false);
+  const publishCheckQuestIdRef = useRef<string | null>(null);
+  const [isPreparingPublishCheck, setIsPreparingPublishCheck] = useState(false);
   const publishCheckRequestRef = useRef(0);
+  const publishCheckEnabled =
+    enabled && step === 3 && draftHydrated && !completedState;
+  const publishCheckQuery = useQuestPublishCheckQuery(
+    publishCheckQuestId,
+    publishCheckEnabled
+  );
+  const publishCheck =
+    derivePublishCheck(publishCheckQuery.data, draft) ??
+    (publishCheckQuery.error ? getQuestPublishCheck(draft) : null);
+  const setPublishCheck = useCallback((next: QuestPublishCheck | null) => {
+    if (next !== null) return;
+    publishCheckRequestRef.current += 1;
+    publishCheckQuestIdRef.current = null;
+    setPublishCheckQuestId(null);
+  }, []);
+  const isCheckingPublish =
+    isPreparingPublishCheck ||
+    publishCheckQuery.isFetching ||
+    (publishCheckQuestId !== null &&
+      publishCheckQuery.data == null &&
+      publishCheckQuery.error == null);
   const createMutation = useCreateQuestMutation();
   const imageUploadMutation = usePublishImageUploadMutation();
   const editMutation = usePublishEditQuestMutation();
   const publishMutation = usePublishQuestMutation();
+
+  const refreshPublishCheck = useCallback(async () => {
+    if (!enabled || !draftHydrated || !draftStorageKey) return;
+    const requestId = ++publishCheckRequestRef.current;
+    setIsPreparingPublishCheck(true);
+    try {
+      const normalizedDraft = {
+        ...draft,
+        headcount: getHeadcountForParticipation(
+          draft.participation,
+          draft.headcount
+        ),
+      };
+      const existing = publishedQuestRef.current;
+      let questId = existing?.questId ?? editQuestId;
+      if (questId) {
+        if (
+          existing &&
+          existing.questId === questId &&
+          draftChangedRef.current &&
+          existing.version != null
+        ) {
+          const edited = await editMutation.mutateAsync({
+            questId,
+            version: existing.version,
+            payload: toQuestV2Payload(normalizedDraft),
+          });
+          if (requestId !== publishCheckRequestRef.current) return;
+          publishedQuestRef.current = { ...existing, version: edited.version };
+        }
+      } else {
+        const createIdempotencyKey = createQuestIdempotencyKey();
+        const created = await createMutation.mutateAsync({
+          payload: toQuestV2Payload(normalizedDraft),
+          idempotencyKey: createIdempotencyKey,
+        });
+        if (requestId !== publishCheckRequestRef.current) return;
+        questId = created.id;
+        if (normalizedDraft.imageUris && normalizedDraft.imageUris.length > 0) {
+          try {
+            await imageUploadMutation.mutateAsync({
+              questId,
+              imageUris: normalizedDraft.imageUris,
+            });
+          } catch (imageError) {
+            console.warn("Failed to upload quest images:", imageError);
+          }
+        }
+        publishedQuestRef.current = {
+          questId,
+          version: created.version,
+          storageKey: draftStorageKey,
+          editQuestId,
+          createIdempotencyKey,
+        };
+      }
+
+      if (requestId !== publishCheckRequestRef.current) return;
+      if (publishCheckQuestIdRef.current === questId) {
+        const result = await publishCheckQuery.refetch();
+        if (requestId !== publishCheckRequestRef.current) return;
+        if (result.error) throw result.error;
+        setIsPreparingPublishCheck(false);
+      } else {
+        publishCheckQuestIdRef.current = questId;
+        setPublishCheckQuestId(questId);
+        setIsPreparingPublishCheck(false);
+      }
+    } catch {
+      if (requestId !== publishCheckRequestRef.current) return;
+      setIsPreparingPublishCheck(false);
+    }
+  }, [
+    createMutation,
+    draft,
+    draftChangedRef,
+    draftHydrated,
+    draftStorageKey,
+    editMutation,
+    editQuestId,
+    enabled,
+    imageUploadMutation,
+    publishCheckQuery.refetch,
+    publishedQuestRef,
+  ]);
+
+  useEffect(() => {
+    if (!enabled || step !== 3 || !draftHydrated || completedState) return;
+    const timer = setTimeout(() => {
+      void refreshPublishCheck();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [completedState, draftHydrated, enabled, refreshPublishCheck, step]);
 
   const publishQuest = useCallback(
     async (draftToPublish: QuestDraft): Promise<boolean> => {
@@ -203,93 +330,6 @@ export function useQuestPublish({
       setSaveErrorIntent,
     ]
   );
-
-  const refreshPublishCheck = useCallback(async () => {
-    if (!enabled || !draftHydrated || !draftStorageKey) return;
-    const requestId = ++publishCheckRequestRef.current;
-    setIsCheckingPublish(true);
-    try {
-      const normalizedDraft = {
-        ...draft,
-        headcount: getHeadcountForParticipation(
-          draft.participation,
-          draft.headcount
-        ),
-      };
-      const existing = publishedQuestRef.current;
-      let questId = existing?.questId ?? editQuestId;
-      if (questId) {
-        if (
-          existing &&
-          existing.questId === questId &&
-          draftChangedRef.current &&
-          existing.version != null
-        ) {
-          const edited = await editMutation.mutateAsync({
-            questId,
-            version: existing.version,
-            payload: toQuestV2Payload(normalizedDraft),
-          });
-          if (requestId !== publishCheckRequestRef.current) return;
-          publishedQuestRef.current = { ...existing, version: edited.version };
-        }
-      } else {
-        const createIdempotencyKey = createQuestIdempotencyKey();
-        const created = await createMutation.mutateAsync({
-          payload: toQuestV2Payload(normalizedDraft),
-          idempotencyKey: createIdempotencyKey,
-        });
-        if (requestId !== publishCheckRequestRef.current) return;
-        questId = created.id;
-        if (normalizedDraft.imageUris && normalizedDraft.imageUris.length > 0) {
-          try {
-            await imageUploadMutation.mutateAsync({
-              questId,
-              imageUris: normalizedDraft.imageUris,
-            });
-          } catch (imageError) {
-            console.warn("Failed to upload quest images:", imageError);
-          }
-        }
-        publishedQuestRef.current = {
-          questId,
-          version: created.version,
-          storageKey: draftStorageKey,
-          editQuestId,
-          createIdempotencyKey,
-        };
-      }
-
-      const check = await liveQuestService.getPublishCheck(questId);
-      if (requestId !== publishCheckRequestRef.current) return;
-      setPublishCheck(adaptV2PublishCheck(check));
-    } catch {
-      if (requestId !== publishCheckRequestRef.current) return;
-      setPublishCheck(getQuestPublishCheck(draft));
-    } finally {
-      if (requestId === publishCheckRequestRef.current)
-        setIsCheckingPublish(false);
-    }
-  }, [
-    draft,
-    draftChangedRef,
-    draftHydrated,
-    draftStorageKey,
-    editMutation,
-    editQuestId,
-    enabled,
-    imageUploadMutation,
-    publishedQuestRef,
-    createMutation,
-  ]);
-
-  useEffect(() => {
-    if (!enabled || step !== 3 || !draftHydrated || completedState) return;
-    const timer = setTimeout(() => {
-      void refreshPublishCheck();
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [completedState, draftHydrated, enabled, refreshPublishCheck, step]);
 
   const publishPending =
     createMutation.isPending ||

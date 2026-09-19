@@ -63,7 +63,9 @@ export function useCreateTopUpMutation() {
   return useMutation({
     mutationFn: (quoteId: string) => walletApi.createTopUp(quoteId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: walletKeys.all });
+      void queryClient.invalidateQueries({
+        queryKey: [...walletKeys.all, "transactions"],
+      });
     },
   });
 }
@@ -73,7 +75,10 @@ export function useSimulateTopUpMutation() {
   return useMutation({
     mutationFn: (topUpId: string) => walletApi.simulateTopUp(topUpId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: walletKeys.all });
+      void queryClient.invalidateQueries({ queryKey: walletKeys.detail() });
+      void queryClient.invalidateQueries({
+        queryKey: [...walletKeys.all, "transactions"],
+      });
     },
   });
 }
@@ -84,7 +89,10 @@ export function useConvertEarningsMutation() {
     mutationFn: (amountSatang: number) =>
       walletApi.convertEarnings(amountSatang),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: walletKeys.all });
+      void queryClient.invalidateQueries({ queryKey: walletKeys.detail() });
+      void queryClient.invalidateQueries({
+        queryKey: [...walletKeys.all, "transactions"],
+      });
     },
   });
 }
@@ -146,7 +154,10 @@ export function useRequestPayoutMutation() {
       destinationId: string;
     }) => submitPayout(amountSatang, destinationId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: walletKeys.all });
+      void queryClient.invalidateQueries({ queryKey: walletKeys.detail() });
+      void queryClient.invalidateQueries({
+        queryKey: [...walletKeys.all, "transactions"],
+      });
     },
   });
 }

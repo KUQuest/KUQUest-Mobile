@@ -21,7 +21,7 @@ const conversation: ChatConversation = {
   initials: "SO",
   avatarColor: "#059669",
   latestMessage: { en: "Hello", th: "สวัสดี" },
-  latestTime: "10:30 AM",
+  latestAt: "2026-09-15T03:30:00Z",
   unreadCount: 0,
   messages: [],
 };

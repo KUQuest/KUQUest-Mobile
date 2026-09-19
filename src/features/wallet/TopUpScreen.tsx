@@ -359,7 +359,7 @@ export default function TopUpScreen() {
                             isSelected ? styles.quickChipTextSelected : null,
                           ]}
                         >
-                          ฿{amt.toLocaleString("en-US")}
+                          {formatSatang(amt * 100, locale)}
                         </Text>
                       </TouchableOpacity>
                     );

@@ -12,6 +12,7 @@ import { Image, Pressable, SafeAreaView, ScrollView, Text, View } from "@/tw";
 import type { QuestV2ProofReviewPayload } from "@/api/QuestApi";
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
 import styles from "../questDetailStyles";
+import { formatTimestamp } from "@/domain/datetime";
 
 const MAX_REVIEW_REASON_LENGTH = 1000;
 
@@ -23,19 +24,6 @@ export interface ProofReviewModalProps {
   onReview: (
     payload: QuestV2ProofReviewPayload
   ) => Promise<boolean | void> | boolean | void;
-}
-
-function formatTimestamp(
-  value: string | null | undefined,
-  locale: "en" | "th"
-) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
 }
 
 function formatFileSize(sizeBytes: number | null): string {
@@ -78,11 +66,11 @@ export function ProofReviewModal({
   }, [proof?.id, visible]);
   /* eslint-enable react-hooks/set-state-in-effect */
   const submittedAt = useMemo(
-    () => formatTimestamp(proof?.submittedAt, locale),
+    () => formatTimestamp(proof?.submittedAt, locale, "—"),
     [locale, proof?.submittedAt]
   );
   const deadline = useMemo(
-    () => formatTimestamp(dueAt, locale),
+    () => formatTimestamp(dueAt, locale, "—"),
     [dueAt, locale]
   );
 

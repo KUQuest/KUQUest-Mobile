@@ -10,6 +10,7 @@ import {
 
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "@/tw";
 import { formatSatang } from "@/domain/satang";
+import { formatTimestampDate } from "@/domain/datetime";
 import { useLocale } from "@/features/preferences/localeStore";
 import type { SupportedLocale } from "@/locales/locale";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
@@ -88,20 +89,6 @@ export interface CandidateReviewSheetProps {
   bottomInset?: number;
   locale?: SupportedLocale;
   fullScreen?: boolean;
-}
-
-function formatSubmittedAt(
-  value: string | undefined,
-  locale: SupportedLocale
-): string | undefined {
-  if (!value) return undefined;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(date);
 }
 
 function StatusPill({
@@ -469,7 +456,7 @@ function ProposalRow({
       ? proposal.status === QuestTeamStatus.TEAM_SUBMITTED
       : proposal.status === QuestApplicationStatus.APPLICATION_APPLIED);
   const name = proposal.displayName;
-  const submitted = formatSubmittedAt(proposal.submittedAt, locale);
+  const submitted = formatTimestampDate(proposal.submittedAt, locale);
   return (
     <View
       className={`${styles.proposalRow} ${selected || statusSelected ? styles.proposalRowSelected : ""} ${rejected ? styles.proposalRowRejected : ""}`}

@@ -19,7 +19,7 @@ const conversation: ChatConversation = {
   initials: "AL",
   avatarColor: "#208AEF",
   latestMessage: { en: "", th: "" },
-  latestTime: "",
+  latestAt: "",
   unreadCount: 0,
   messages: [],
 };
@@ -50,7 +50,7 @@ describe("MessageBubble", () => {
     const message: DisplayChatMessage = {
       id: "message-1",
       sender: "me",
-      time: "11:05 AM",
+      createdAt: "2026-09-15T04:05:00Z",
       attachments: [image],
     };
     const onImagePress = jest.fn();
@@ -74,7 +74,7 @@ describe("MessageBubble", () => {
     expect(onImagePress).toHaveBeenCalledWith(
       "https://cdn.example.test/photo.jpg",
       "photo.jpg",
-      "11:05 AM"
+      "11:05"
     );
   });
 });

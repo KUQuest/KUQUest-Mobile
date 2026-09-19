@@ -16,7 +16,7 @@ export interface ChatMessage {
   id: string;
   sender: "me" | "other";
   text?: LocalizedText;
-  time: string;
+  createdAt: string;
   attachment?: ChatAttachment;
 }
 
@@ -35,7 +35,7 @@ export interface ChatConversation {
   initials: string;
   avatarColor: string;
   latestMessage: LocalizedText;
-  latestTime: string;
+  latestAt: string;
   unreadCount: number;
   messages: ChatMessage[];
 }

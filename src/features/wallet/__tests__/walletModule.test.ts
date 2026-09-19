@@ -1,5 +1,6 @@
 import { walletApi } from "@/api/WalletApi";
 import type { TopUpData, TopUpQuote, WalletBalances } from "@/api/WalletApi";
+import { formatSatang } from "@/domain/satang";
 
 import {
   checkConversionAmount,
@@ -8,8 +9,6 @@ import {
   classifyHirerTransaction,
   convertEarnings,
   createTopUpFromQuote,
-  formatHirerCardAmount,
-  formatHirerTransactionAmount,
   formatTransactionDate,
   type WalletCompartments,
   MAX_WALLET_SATANG,
@@ -255,25 +254,10 @@ describe("simulateTopUpPayment", () => {
 });
 
 describe("Hirer wallet formatting and classification", () => {
-  it("formats card amounts with currency prefix and space", () => {
-    expect(formatHirerCardAmount(245_000)).toBe("฿ 2,450.00");
-    expect(formatHirerCardAmount(120_000)).toBe("฿ 1,200.00");
-    expect(formatHirerCardAmount(0)).toBe("฿ 0.00");
-  });
-
-  it("formats transaction amounts with sign and baht symbol", () => {
-    expect(formatHirerTransactionAmount(50_000, "OUTFLOW")).toEqual({
-      text: "- ฿500.00",
-      isInflow: false,
-    });
-    expect(formatHirerTransactionAmount(100_000, "INFLOW")).toEqual({
-      text: "+ ฿1,000.00",
-      isInflow: true,
-    });
-    expect(formatHirerTransactionAmount(1_000, "OUTFLOW")).toEqual({
-      text: "- ฿10.00",
-      isInflow: false,
-    });
+  it("uses the canonical formatter for exact and signed amounts", () => {
+    expect(formatSatang(245_000, "en", "exact")).toBe("฿2,450.00");
+    expect(formatSatang(-50_000, "en", "signed")).toBe("-฿500.00");
+    expect(formatSatang(100_000, "en", "signed")).toBe("+฿1,000.00");
   });
 
   it("formats dates in Thai Buddhist calendar", () => {
@@ -301,7 +285,8 @@ describe("Hirer wallet formatting and classification", () => {
     );
     expect(classified.title).toBe("พักเงินสำหรับเควสต์");
     expect(classified.subtitle).toBe("กวาดขยะรอบมหาลัย");
-    expect(classified.amountText).toBe("- ฿500.00");
+    expect(classified.amountSatang).toBe(50_000);
+    expect(classified).not.toHaveProperty("amountText");
     expect(classified.isInflow).toBe(false);
     expect(classified.iconKind).toBe("escrow_pay");
   });
@@ -321,7 +306,8 @@ describe("Hirer wallet formatting and classification", () => {
       "th"
     );
     expect(classified.title).toBe("เติมเงินเข้า Wallet");
-    expect(classified.amountText).toBe("+ ฿1,000.00");
+    expect(classified.amountSatang).toBe(100_000);
+    expect(classified).not.toHaveProperty("amountText");
     expect(classified.isInflow).toBe(true);
     expect(classified.iconKind).toBe("top_up");
   });
@@ -342,7 +328,8 @@ describe("Hirer wallet formatting and classification", () => {
       "th"
     );
     expect(classified.title).toBe("ค่าธรรมเนียมระบบ");
-    expect(classified.amountText).toBe("- ฿10.00");
+    expect(classified.amountSatang).toBe(1_000);
+    expect(classified).not.toHaveProperty("amountText");
     expect(classified.isInflow).toBe(false);
     expect(classified.iconKind).toBe("fee");
   });

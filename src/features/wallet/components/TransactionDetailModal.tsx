@@ -23,6 +23,7 @@ import {
 } from "lucide-react-native";
 import { colors } from "@/theme/colors";
 import { fontFamily } from "@/theme/typography";
+import { formatSatang } from "@/domain/satang";
 import type { WalletMessages } from "@/locales/walletMessages";
 import type { ClassifiedHirerTransaction } from "../walletModule";
 
@@ -100,6 +101,11 @@ export function TransactionDetailModal({
   };
 
   const statusBadge = getStatusBadge();
+  const formattedAmount = formatSatang(
+    tx.isInflow ? tx.amountSatang : -tx.amountSatang,
+    "en",
+    "signed"
+  );
 
   return (
     <Modal
@@ -153,7 +159,7 @@ export function TransactionDetailModal({
                 ]}
                 testID="tx-detail-amount"
               >
-                {tx.amountText}
+                {formattedAmount}
               </Text>
 
               <Text style={styles.txTitle} testID="tx-detail-title">

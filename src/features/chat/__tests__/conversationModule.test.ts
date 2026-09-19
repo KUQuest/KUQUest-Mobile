@@ -99,7 +99,7 @@ describe("conversationModule", () => {
       canWrite: true,
       readOnly: false,
     });
-    expect(conversations[0].latestTime).toMatch(/^\d{2}:\d{2}$/);
+    expect(conversations[0].latestAt).toBe("2026-09-15T12:00:00Z");
   });
 
   it("maps server message payloads, marking the viewer's own messages", async () => {
@@ -131,13 +131,13 @@ describe("conversationModule", () => {
         id: "msg-mine",
         sender: "me",
         text: { en: "First message", th: "First message" },
-        time: expect.stringMatching(/^\d{2}:\d{2}$/),
+        createdAt: "2026-09-15T12:05:00Z",
       },
       {
         id: "msg-other",
         sender: "other",
         text: { en: "Second message", th: "Second message" },
-        time: expect.stringMatching(/^\d{2}:\d{2}$/),
+        createdAt: "2026-09-15T12:05:00Z",
       },
     ]);
   });
@@ -163,7 +163,7 @@ describe("conversationModule", () => {
       id: "msg-new",
       sender: "me",
       text: { en: "New message", th: "New message" },
-      time: expect.stringMatching(/^\d{2}:\d{2}$/),
+      createdAt: "2026-09-15T12:05:00Z",
     });
   });
 
