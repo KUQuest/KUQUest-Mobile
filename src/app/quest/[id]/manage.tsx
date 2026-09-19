@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert, RefreshControl } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
@@ -7,15 +7,13 @@ import { FileEdit, MessageSquare, ShieldCheck, X } from "lucide-react-native";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
-import { authService } from "@/features/auth/AuthService";
 import {
   createQuestIdempotencyKey,
   type QuestV2ProofReviewPayload,
 } from "@/api/QuestApi";
-import {
-  liveQuestService,
-  type LiveQuestSnapshot,
-} from "@/features/questBoard/liveQuestService";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
+import { useLiveQuestSnapshotQuery } from "@/features/questBoard/api/questBoardQueries";
+import { liveQuestService } from "@/features/questBoard/liveQuestService";
 import {
   CandidateReviewSheet,
   PartialGroupStartConsentSheet,
@@ -37,11 +35,8 @@ export default function HirerQuestManageRoute() {
   const { locale } = useLocale();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const questId = routeValue(params.id);
-  const [viewerId, setViewerId] = useState<string>();
-  const [snapshot, setSnapshot] = useState<LiveQuestSnapshot>();
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string>();
+  const sessionQuery = useSessionQuery();
+  const viewerId = sessionQuery.data?.user.id || "";
   const [candidateOpen, setCandidateOpen] = useState(false);
   const [underfilledOpen, setUnderfilledOpen] = useState(false);
   const [conditionEditOpen, setConditionEditOpen] = useState(false);
@@ -51,79 +46,28 @@ export default function HirerQuestManageRoute() {
   const messages = questBoardMessages[locale];
   const [proofReviewOpen, setProofReviewOpen] = useState(false);
 
-  useEffect(() => {
-    void authService
-      .getSession()
-      .then((session) => setViewerId(session?.user.id))
-      .catch(() => undefined);
-  }, []);
-
-  const load = useCallback(
-    async (background = false) => {
-      if (!questId || !viewerId) return;
-      if (background) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      try {
-        const next = await liveQuestService.getLiveSnapshot(
-          questId,
-          viewerId,
-          editRequestId ? { editRequestId } : undefined
-        );
-        setSnapshot(next);
-        setError(undefined);
-      } catch (caught) {
-        setError(
-          caught instanceof Error ? caught.message : "Unable to load Quest"
-        );
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [questId, viewerId, editRequestId]
+  const snapshotQuery = useLiveQuestSnapshotQuery(
+    questId ?? null,
+    viewerId || null,
+    editRequestId ? { editRequestId } : undefined
   );
-
-  useEffect(() => {
-    let mounted = true;
-    if (questId && viewerId) {
-      void (async () => {
-        try {
-          const next = await liveQuestService.getLiveSnapshot(
-            questId,
-            viewerId
-          );
-          if (mounted) {
-            setSnapshot(next);
-            setError(undefined);
-            setLoading(false);
-          }
-        } catch (caught) {
-          if (mounted) {
-            setError(
-              caught instanceof Error ? caught.message : "Unable to load Quest"
-            );
-            setLoading(false);
-          }
-        }
-      })();
-    }
-    return () => {
-      mounted = false;
-    };
-  }, [questId, viewerId]);
-
+  const snapshot = snapshotQuery.data;
+  const refetchSnapshot = snapshotQuery.refetch;
+  const error =
+    snapshotQuery.error instanceof Error
+      ? snapshotQuery.error.message
+      : snapshotQuery.error
+        ? "Unable to load Quest"
+        : undefined;
   const command = useCallback(
     async (run: (key: string) => Promise<unknown>): Promise<boolean> => {
       if (!questId || !viewerId) return false;
       try {
         await run(createQuestIdempotencyKey());
-        await load(true);
+        await refetchSnapshot();
         return true;
       } catch (caught) {
-        await load(true);
+        await refetchSnapshot();
         Alert.alert(
           "Quest",
           caught instanceof Error ? caught.message : "Action failed"
@@ -131,10 +75,10 @@ export default function HirerQuestManageRoute() {
         return false;
       }
     },
-    [load, questId, viewerId]
+    [questId, refetchSnapshot, viewerId]
   );
 
-  if (loading)
+  if (snapshotQuery.isPending)
     return (
       <ScreenLayout className="bg-ku-bg flex-1">
         <TopBar
@@ -159,14 +103,13 @@ export default function HirerQuestManageRoute() {
           <Text>{error ?? "Quest not found"}</Text>
           <Pressable
             className="mt-4 rounded-xl bg-ku-primary p-4"
-            onPress={() => void load()}
+            onPress={() => void snapshotQuery.refetch()}
           >
             <Text className="text-center text-white">Retry</Text>
           </Pressable>
         </View>
       </ScreenLayout>
     );
-
   const quest = snapshot.quest;
   const originalConditionItems = quest.condition.items
     .slice()
@@ -254,7 +197,7 @@ export default function HirerQuestManageRoute() {
       .then((request) => {
         setEditRequestId(request.requestId);
         setConditionEditOpen(false);
-        return load(true);
+        return snapshotQuery.refetch();
       })
       .catch((caught) => {
         setConditionEditError(
@@ -262,7 +205,7 @@ export default function HirerQuestManageRoute() {
             ? caught.message
             : messages.conditionEditSubmitError
         );
-        return load(true);
+        return snapshotQuery.refetch();
       })
       .finally(() => setConditionEditSubmitting(false));
   };
@@ -277,8 +220,8 @@ export default function HirerQuestManageRoute() {
       <ScrollView
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => void load(true)}
+            refreshing={snapshotQuery.isRefetching}
+            onRefresh={() => void snapshotQuery.refetch()}
           />
         }
         contentContainerClassName="p-5 pb-12"

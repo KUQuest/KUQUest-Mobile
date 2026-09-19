@@ -229,6 +229,46 @@ the reason the repo's `react-hooks/exhaustive-deps` warnings are worth keeping a
   1s interval forever, including after their deadline had passed. The interval now stops once
   the deadline is behind `now`; the rendered value is identical because it is clamped at zero.
 
+### Phase 6 — audit closeout: the screens phases 1-5 missed
+
+Four read-only audits (fetch effects, persistence/mock coupling, render path, docs drift) were
+run against the finished migration. They found that the phase-4 claim "the session has exactly
+one owner" was true only of the five files phase 4 inspected. Six more sites still ran their own
+`authService.getSession()` effect, and four screens had never been migrated at all.
+
+- `src/app/quest/[id]/manage.tsx`, `src/app/quest/[id]/select-roster.tsx`,
+  `QuestProofScreen`, `QuestWorkScreen` each hand-rolled snapshot/loading/refreshing/error
+  `useState` plus a fetching effect. They now read `useLiveQuestSnapshotQuery`.
+  `QuestBoardScreen` and `useQuestDetailController` lost their session effects;
+  `CreateQuestScreen` lost its `questApi.listTags()` effect in favour of `useWorkerTagsQuery`.
+- Manual polling became `refetchInterval`. `useLiveQuestSnapshotQuery` gained one optional
+  trailing argument accepting `number | false | ((snapshot) => number | false)`; the predicate
+  form exists because both screens' cadence depended on the snapshot itself. QuestProof polls
+  at 10s only while `nextAction === "WAIT_FOR_START"` or the viewer's proof is pending;
+  QuestWork returns the remaining delay until `startTime - 60s`, then 5s until
+  `startTime + 120s`. The old attempt cap (`MAX_START_POLLS = 36`) was dropped because
+  180s / 5s is exactly 36: the time window already implies it, and keeping a counter would
+  have meant reading a ref during render, which `react-hooks/refs` correctly rejects.
+- Command errors stay in component-local `useState`. Only the _fetch_ lifecycle belongs to
+  Query; an error raised by a user-triggered action is local UI state, and the banner now
+  renders `commandError ?? fetchError` with the original precedence.
+- Persistence defect: the legacy `kuquest.create-quest-draft` migration ran only inside
+  `listQuestDrafts`, but the create/edit flow mounts through `loadQuestDraft`, so an upgrading
+  user with an in-progress draft saw an empty form. The read path now migrates too - gated on
+  the draft index key being _absent_, not merely empty. An empty index means the user already
+  used the multi-draft flow and deleted their drafts; probing the legacy key in that state
+  resurrected deleted drafts and broke `deletes the exact draft from SecureStore`. Both
+  properties are now pinned by tests.
+- Render path: two `Intl.DateTimeFormat` instances were being constructed per list item in
+  `ProfileComponents` (review dates, experience months) and are now module-scope caches keyed
+  by locale; `QuestWorkScreen`'s sorted condition items are memoized; its 1s countdown stops
+  at the deadline like its two sibling cards; `select-roster`'s two `renderItem` closures are
+  `useCallback`s.
+- Verified clean by audit, worth recording: no unauthorized `expo-secure-store` import, no
+  non-secure persistence of anything sensitive, no duplicated storage-key literal, no Zustand
+  selector that constructs an object or array (the v5 re-render trap), no whole-store
+  subscription without a selector, and every `FlatList` has a stable `keyExtractor`.
+
 ## Known debt
 
 - Startup hydration flash: locale defaults to `th` and workspace to `hirer` while the
@@ -236,3 +276,19 @@ the reason the repo's `react-hooks/exhaustive-deps` warnings are worth keeping a
   default. Pre-existing behavior, preserved deliberately.
 - `attachmentLinkCache` is read synchronously in `MessageBubble` render, so replacing it with
   Query requires restructuring that component's render path.
+- Fixture data ships in the production bundle. `QuestBoardScreen` and `useQuestDetailController`
+  import `questWorkflow`, which imports `questFixtureAdapter` and its seeds at module scope:
+  3,610 lines of demo data (`questFixtureAdapter.ts` 1,544, `questFixtures.ts` 947,
+  `fixtures/questSeeds.ts` 781, `fixtures/chatSeeds.ts` 298, `fixtures/memberDirectory.ts` 40).
+  Both screens still branch on `previewState !== "populated"`. `HomeScreen` likewise branches
+  on `isPrototypeDemoEnabled()` and imports `hirerHomeQuestFixtures`. Removing this is a
+  product decision about the preview/demo mode, not a state-ownership change, so it was left
+  alone deliberately.
+- `WalletScreen` renders its transaction list and `WorkerHomeScreen` its available-quest feed
+  with `.map()` inside a `ScrollView` rather than a virtualized list. Converting them risks
+  layout and scroll regressions for a benefit that only appears at list sizes the product does
+  not yet produce; recorded rather than changed.
+- ADR 0005 (`system-locale-only`) no longer describes what ships and is now marked superseded:
+  `getDeviceLocale()` in `src/locales/locale.ts` returns `DEFAULT_LOCALE` ('th') rather than
+  reading the OS, and `localeStore` hydrates a user-selected locale from `kuquest_user_locale`.
+  The ADR text itself is left intact as a record.

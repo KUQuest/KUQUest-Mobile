@@ -611,13 +611,34 @@ export function AboutMe({
   );
 }
 
+const monthFormatters: Record<SupportedLocale, Intl.DateTimeFormat> = {
+  en: new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "short",
+  }),
+  th: new Intl.DateTimeFormat("th-TH", {
+    year: "numeric",
+    month: "short",
+  }),
+};
+
+const reviewDateFormatters: Record<SupportedLocale, Intl.DateTimeFormat> = {
+  en: new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }),
+  th: new Intl.DateTimeFormat("th-TH", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }),
+};
+
 function formatMonth(value: string, locale: SupportedLocale = "en"): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", {
-    year: "numeric",
-    month: "short",
-  }).format(date);
+  return monthFormatters[locale].format(date);
 }
 
 function imageSource(
@@ -1229,11 +1250,7 @@ function formatReviewDate(
 ): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(date);
+  return reviewDateFormatters[locale].format(date);
 }
 
 function ReviewCard({

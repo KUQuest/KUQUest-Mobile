@@ -41,7 +41,6 @@ import {
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { questApi, type TagItem } from "@/api/QuestApi";
 import { StatusBar } from "expo-status-bar";
 
 import { Button } from "@/components/ui/Button";
@@ -65,6 +64,7 @@ import { Input } from "@/features/onboarding/components/Input";
 import { Select } from "@/features/onboarding/components/Select";
 import { TextArea } from "@/features/onboarding/components/TextArea";
 import { useLocale } from "@/features/preferences/localeStore";
+import { useWorkerTagsQuery } from "@/features/workerHome/api/workerHomeQueries";
 import { createQuestMessages } from "@/locales/createQuestMessages";
 import { colors } from "@/theme/colors";
 import { getCreateQuestLayoutMetrics } from "@/theme/layout";
@@ -242,22 +242,11 @@ export default function CreateQuestScreen({
     resetPublishSaveState();
     editState.resetSaveState();
   };
-  const [liveTags, setLiveTags] = useState<TagItem[]>([]);
-
-  useEffect(() => {
-    let mounted = true;
-    void questApi
-      .listTags()
-      .then((tags) => {
-        if (mounted && tags.length > 0) setLiveTags(tags);
-      })
-      .catch(() => {
-        // Keep fallback tags
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const workerTagsQuery = useWorkerTagsQuery();
+  const liveTags = useMemo(
+    () => workerTagsQuery.data ?? [],
+    [workerTagsQuery.data]
+  );
 
   const tagOptions = useMemo(() => {
     if (liveTags.length > 0) {

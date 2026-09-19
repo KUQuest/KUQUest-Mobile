@@ -63,6 +63,10 @@ The route tree currently has no dedicated route file for Sent Work, Wallet/Conve
 
 `src/features/` owns vertical slices. Keep feature-local components, types, styles, adapters, and tests together.
 
+- `src/features/*/api/` — per-feature TanStack Query key factories and hooks; `src/features/wallet/api/walletQueries.ts` is the canonical example.
+- `src/features/questBoard/domain/` — pure Quest reducer and selectors with no I/O.
+- `src/features/questBoard/fixtures/` — demo and seed data consumed by `questFixtureAdapter.ts`.
+- `src/features/questBoard/store/` — Zustand/vanilla ownership of current Quest state (`questStore.ts`) and injectable clock state (`questClockStore.ts`).
 - `auth/` — Better Auth session, SecureStore, native Google Sign-In, auth gate, login, routing destination.
 - `onboarding/` — Academic Registration validation, steps, persistence coordinator, inputs/selects/checkbox/file-size modal.
 - `questBoard/` — Quest Board, Quest Detail, Quest lifecycle adapter, workflow projections, fixtures, prototype harness, proof/team/candidate/partial-consent sheets.
@@ -95,6 +99,7 @@ The route tree currently has no dedicated route file for Sent Work, Wallet/Conve
 - `src/global.css` — global NativeWind/CSS setup.
 - `src/infrastructure/storage/` — the persistence boundary. `keyValueStorage.ts` exports the `KeyValueStorage` interface and the SecureStore-backed `secureStorage` adapter. Feature code persists through an adapter, not through `expo-secure-store` directly.
 - `src/app/providers/` — `QueryProvider` and `createQueryClient`: TanStack Query owns server state, including focus/online integration for React Native.
+- `src/testing/` — shared test harnesses such as `renderWithQueryClient` in `queryTestUtils.tsx`; keep helpers here, outside any `__tests__/` directory, because Jest auto-collects every file under `__tests__/` as a test suite.
 
 ## Quest implementation seams
 

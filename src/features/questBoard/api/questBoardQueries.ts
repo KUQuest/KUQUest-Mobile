@@ -13,6 +13,7 @@ import type {
 } from "@/api/QuestApi";
 import {
   liveQuestService,
+  type LiveQuestSnapshot,
   type LiveQuestSnapshotOptions,
 } from "../liveQuestService";
 
@@ -63,10 +64,20 @@ export function useLiveQuestSnapshotQuery(
   questId: string | null,
   viewerId: string | null,
   options: Omit<LiveQuestSnapshotOptions, "signal"> = {},
-  enabled = true
+  enabled = true,
+  // This optional interval replaces the screens' former manual polling.
+  refetchIntervalMs?:
+    | number
+    | false
+    | ((snapshot: LiveQuestSnapshot | undefined) => number | false)
 ) {
-  return useQuery({
+  return useQuery<LiveQuestSnapshot>({
     enabled: Boolean(questId && viewerId) && enabled,
+    refetchInterval:
+      typeof refetchIntervalMs === "function"
+        ? (query) =>
+            refetchIntervalMs(query.state.data as LiveQuestSnapshot | undefined)
+        : refetchIntervalMs,
     queryKey: questBoardKeys.liveSnapshot(
       questId ?? "",
       viewerId ?? "",

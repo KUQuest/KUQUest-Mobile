@@ -1,9 +1,9 @@
-import React from "react";
-import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, waitFor } from "@testing-library/react-native";
 
 import QuestWorkScreen from "../QuestWorkScreen";
 import { liveQuestService, type LiveQuestSnapshot } from "../liveQuestService";
 import type { QuestV2Detail } from "@/api/questV2Contracts";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 const mockBack = jest.fn();
 const mockPush = jest.fn();
@@ -196,8 +196,7 @@ describe("QuestWorkScreen", () => {
 
   it("renders an assigned wait state with canonical conditions and due countdown", async () => {
     mockedGetSnapshot.mockResolvedValue(makeSnapshot());
-
-    const view = await render(
+    const view = await renderWithQueryClient(
       <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
     );
 
@@ -212,7 +211,7 @@ describe("QuestWorkScreen", () => {
     expect(mockedGetSnapshot).toHaveBeenCalledWith(
       "quest-work-1",
       "worker-1",
-      undefined
+      expect.objectContaining({ signal: expect.anything() })
     );
   });
 
@@ -234,8 +233,7 @@ describe("QuestWorkScreen", () => {
         snapshotRequestCount === 1 ? assigned : inProgress
       );
     });
-
-    const view = await render(
+    const view = await renderWithQueryClient(
       <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
     );
     await waitFor(() =>
@@ -263,8 +261,7 @@ describe("QuestWorkScreen", () => {
         capabilities: { ...makeSnapshot().capabilities, canSubmitProof: true },
       })
     );
-
-    const view = await render(
+    const view = await renderWithQueryClient(
       <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
     );
 
@@ -291,8 +288,7 @@ describe("QuestWorkScreen", () => {
         },
       })
     );
-
-    const view = await render(
+    const view = await renderWithQueryClient(
       <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
     );
 
@@ -311,8 +307,7 @@ describe("QuestWorkScreen", () => {
         capabilities: { ...makeSnapshot().capabilities, canSubmitProof: true },
       })
     );
-
-    const view = await render(
+    const view = await renderWithQueryClient(
       <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
     );
 
@@ -366,8 +361,7 @@ describe("QuestWorkScreen", () => {
       .mockResolvedValueOnce(active)
       .mockResolvedValueOnce(completed);
     mockedConfirmCompletion.mockResolvedValue({} as never);
-
-    const view = await render(
+    const view = await renderWithQueryClient(
       <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
     );
     await waitFor(() =>
@@ -409,8 +403,7 @@ describe("QuestWorkScreen", () => {
         },
       })
     );
-
-    const view = await render(
+    const view = await renderWithQueryClient(
       <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
     );
 

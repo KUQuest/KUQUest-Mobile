@@ -12,7 +12,8 @@ import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
 import { ScrollView, Text, View } from "@/tw";
 
-import { authService } from "../auth/AuthService";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
+import { useLiveQuestSnapshotQuery } from "./api/questBoardQueries";
 import { QuestProofActionSection } from "./components/QuestProofActionSection";
 import { QuestProofStatusCard } from "./components/QuestProofStatusCard";
 import { QuestProofSummaryCard } from "./components/QuestProofSummaryCard";
@@ -84,62 +85,41 @@ export default function QuestProofScreen({
   const resolvedQuestId = questId ?? routeValue(params.id);
   const explicitViewerId =
     viewerId ?? routeValue(params.viewerId) ?? routeValue(params.studentId);
-  const [sessionViewerId, setSessionViewerId] = useState<string>();
-  const resolvedViewerId = explicitViewerId ?? sessionViewerId;
-  const [snapshot, setSnapshot] = useState<LiveQuestSnapshot>();
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string>();
+  const sessionQuery = useSessionQuery();
+  const resolvedViewerId = explicitViewerId ?? sessionQuery.data?.user.id;
+  const snapshotPollingInterval = useCallback(
+    (currentSnapshot: LiveQuestSnapshot | undefined): number | false => {
+      if (!currentSnapshot || !resolvedViewerId) return false;
+      const currentStatus = ownProof(currentSnapshot, resolvedViewerId)?.status;
+      return currentSnapshot.nextAction === "WAIT_FOR_START" ||
+        currentStatus === "PROOF_PENDING"
+        ? 10_000
+        : false;
+    },
+    [resolvedViewerId]
+  );
+  const snapshotQuery = useLiveQuestSnapshotQuery(
+    resolvedQuestId ?? null,
+    resolvedViewerId ?? null,
+    {},
+    true,
+    snapshotPollingInterval
+  );
+  const snapshot = snapshotQuery.data;
+  const loading = snapshotQuery.isPending;
+  const refreshing = snapshotQuery.isRefetching;
+  const { refetch: refetchSnapshot } = snapshotQuery;
   const [sheetOpen, setSheetOpen] = useState(false);
   const [draftAssets, setDraftAssets] = useState<ProofDraftAsset[]>([]);
   const [retryAssets, setRetryAssets] = useState<
     Record<number, ProofDraftAsset>
   >({});
   const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    if (explicitViewerId) return undefined;
-    let active = true;
-    void authService
-      .getSession()
-      .then((session) => {
-        if (active && session?.user.id) setSessionViewerId(session.user.id);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, [explicitViewerId]);
-
-  const loadSnapshot = useCallback(
-    async (background = false): Promise<LiveQuestSnapshot | undefined> => {
-      if (!resolvedQuestId || !resolvedViewerId) return undefined;
-      if (background) setRefreshing(true);
-      else setLoading(true);
-      try {
-        const next = await liveQuestService.getLiveSnapshot(
-          resolvedQuestId,
-          resolvedViewerId
-        );
-        setSnapshot(next);
-        setError(undefined);
-        return next;
-      } catch (caught) {
-        setError(errorMessage(caught, messages.errorDescription));
-        return undefined;
-      } finally {
-        if (background) setRefreshing(false);
-        else setLoading(false);
-      }
-    },
-    [messages.errorDescription, resolvedQuestId, resolvedViewerId]
-  );
-
-  /* eslint-disable react-hooks/set-state-in-effect -- the initial async load intentionally updates request state. */
-  useEffect(() => {
-    void loadSnapshot();
-  }, [loadSnapshot]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+  const [commandError, setCommandError] = useState<string | null>(null);
+  const snapshotError = snapshotQuery.error
+    ? errorMessage(snapshotQuery.error, messages.errorDescription)
+    : undefined;
+  const error = commandError ?? snapshotError;
 
   useEffect(() => {
     if (!snapshot?.dueAt) return undefined;
@@ -160,31 +140,22 @@ export default function QuestProofScreen({
   const status = proof?.status;
   const isLocked = Boolean(proof?.submittedAt);
   const countdown = formatRemaining(snapshot?.dueAt ?? null, now);
-  useEffect(() => {
-    if (
-      !snapshot ||
-      (snapshot.nextAction !== "WAIT_FOR_START" && status !== "PROOF_PENDING")
-    ) {
-      return undefined;
-    }
-    const timer = setInterval(() => {
-      void loadSnapshot(true);
-    }, 10_000);
-    return () => clearInterval(timer);
-  }, [loadSnapshot, snapshot, status]);
 
   const refreshAuthoritatively =
     useCallback(async (): Promise<LiveQuestSnapshot> => {
       if (!resolvedQuestId || !resolvedViewerId)
         throw new Error(messages.errorDescription);
-      const next = await liveQuestService.refreshLiveSnapshot(
-        resolvedQuestId,
-        resolvedViewerId
-      );
-      setSnapshot(next);
-      setError(undefined);
-      return next;
-    }, [messages.errorDescription, resolvedQuestId, resolvedViewerId]);
+      const result = await refetchSnapshot();
+      if (result.error) throw result.error;
+      if (!result.data) throw new Error(messages.errorDescription);
+      setCommandError(null);
+      return result.data;
+    }, [
+      messages.errorDescription,
+      refetchSnapshot,
+      resolvedQuestId,
+      resolvedViewerId,
+    ]);
 
   const saveDraft = useCallback(
     async (assets: ProofDraftAsset[], note: string) => {
@@ -407,7 +378,6 @@ export default function QuestProofScreen({
         {
           text: messages.confirmCompletion,
           onPress: () => {
-            setRefreshing(true);
             void liveQuestService
               .confirmCompletion(questIdForService, createQuestIdempotencyKey())
               .then(() => refreshAuthoritatively())
@@ -416,9 +386,8 @@ export default function QuestProofScreen({
                 if (!onReturnToWorkHub) router.replace("/my-quests");
               })
               .catch((caught) =>
-                setError(errorMessage(caught, messages.errorDescription))
-              )
-              .finally(() => setRefreshing(false));
+                setCommandError(errorMessage(caught, messages.errorDescription))
+              );
           },
         },
       ]
@@ -525,7 +494,7 @@ export default function QuestProofScreen({
                 snapshot.capabilities.canSubmitProof && (isDraft || !proof)
               }
               onOpenSubmission={() => setSheetOpen(true)}
-              onRefresh={() => void loadSnapshot(true)}
+              onRefresh={() => void refreshAuthoritatively()}
               refreshing={refreshing}
               retryLabel={messages.retry}
               submitLabel={messages.submitProof}

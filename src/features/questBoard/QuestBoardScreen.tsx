@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { QuestList } from "@/components/ui/QuestList";
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
-import { authService } from "@/features/auth/AuthService";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import { spacing } from "@/theme/spacing";
 import { getAppChromeMetrics } from "@/theme/layout";
@@ -65,19 +65,8 @@ export default function QuestBoardScreen({
 }: QuestBoardScreenProps) {
   const router = useRouter();
   const { locale } = useLocale();
-  const [sessionUserId, setSessionUserId] = useState<string | null>(null);
-  useEffect(() => {
-    let active = true;
-    void authService
-      .getSession()
-      .then((session) => {
-        if (active && session?.user?.id) setSessionUserId(session.user.id);
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
+  const sessionQuery = useSessionQuery();
+  const sessionUserId = sessionQuery.data?.user.id ?? null;
   const resolvedStudentId = currentStudentId?.trim() || sessionUserId || "";
   const { width, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();

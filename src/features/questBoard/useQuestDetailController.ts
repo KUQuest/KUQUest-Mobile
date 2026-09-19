@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { AccessibilityInfo, Alert, BackHandler } from "react-native";
 import {
@@ -11,13 +11,13 @@ import { ApiError } from "@/api/ApiClient";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import type { UploadAsset } from "@/api/fileUpload";
 import { useLocale } from "@/features/preferences/localeStore";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import {
   questBoardMessages,
   type QuestBoardMessages,
 } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
-import { authService } from "../auth/AuthService";
 import {
   canonicalToQuestBoardQuest,
   liveQuestService,
@@ -219,38 +219,15 @@ export function useQuestDetailController({
   const resolvedPreview =
     previewState ?? parseBoardPreviewState(params.preview);
   const explicitPreview = resolvedPreview !== undefined;
-  const [sessionStudentId, setSessionStudentId] = useState<
-    string | undefined
-  >();
-  const [sessionResolved, setSessionResolved] = useState(
-    Boolean(explicitStudentId)
-  );
+  const sessionQuery = useSessionQuery();
+  const sessionStudentId = parseStudentId(sessionQuery.data?.user.id);
   const applicationStudentId = explicitStudentId ?? sessionStudentId ?? "";
-  const sessionReady = sessionResolved || Boolean(explicitStudentId);
+  const sessionReady = Boolean(explicitStudentId) || !sessionQuery.isPending;
   const isJoinView = resolvedMode === "join";
   const isPostView = resolvedMode === "post";
   const prototypeViewerId = applicationStudentId;
   const liveSnapshotAvailable =
     typeof liveQuestService.getLiveSnapshot === "function";
-
-  useEffect(() => {
-    if (explicitStudentId) return undefined;
-    let active = true;
-    void authService
-      .getSession()
-      .then((session) => {
-        if (!active) return;
-        const id = parseStudentId(session?.user.id);
-        if (id) setSessionStudentId(id);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setSessionResolved(true);
-      });
-    return () => {
-      active = false;
-    };
-  }, [explicitStudentId]);
 
   const liveSnapshotQuery = useLiveQuestSnapshotQuery(
     resolvedQuestId ?? null,

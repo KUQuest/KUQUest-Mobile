@@ -1,19 +1,17 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Alert, useColorScheme } from "react-native";
+import { useCallback } from "react";
+import { Alert, useColorScheme, type ListRenderItemInfo } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { CircleUserRound, Users } from "lucide-react-native";
 
 import { FlatList, Image, Pressable, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
-import { authService } from "@/features/auth/AuthService";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import type { QuestV2Application, QuestV2Team } from "@/api/questV2Contracts";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { usePublicProfileQuery } from "@/features/profile/api/profileQueries";
-import {
-  liveQuestService,
-  type LiveQuestSnapshot,
-} from "@/features/questBoard/liveQuestService";
+import { useLiveQuestSnapshotQuery } from "@/features/questBoard/api/questBoardQueries";
+import { liveQuestService } from "@/features/questBoard/liveQuestService";
 import { useLocale } from "@/features/preferences/localeStore";
 import type { SupportedLocale } from "@/locales/locale";
 import { hirerHomeMessages } from "@/features/home/hirerHomeMessages";
@@ -249,73 +247,24 @@ export default function SelectRosterRoute() {
   const messages = hirerHomeMessages[locale];
   const groupMessages = groupQuestMessages[locale];
 
-  const [viewerId, setViewerId] = useState<string>();
-  const [snapshot, setSnapshot] = useState<LiveQuestSnapshot>();
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string>();
-
-  useEffect(() => {
-    void authService
-      .getSession()
-      .then((session) => setViewerId(session?.user.id))
-      .catch(() => undefined);
-  }, []);
-
-  const load = useCallback(
-    async (background = false) => {
-      if (!questId || !viewerId) return;
-      if (background) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      try {
-        const next = await liveQuestService.getLiveSnapshot(questId, viewerId);
-        setSnapshot(next);
-        setError(undefined);
-      } catch (caught) {
-        setError(
-          caught instanceof Error ? caught.message : groupMessages.errorTitle
-        );
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [questId, viewerId, groupMessages.errorTitle]
+  const sessionQuery = useSessionQuery();
+  const viewerId = sessionQuery.data?.user.id || "";
+  const snapshotQuery = useLiveQuestSnapshotQuery(
+    questId ?? null,
+    viewerId || null,
+    {},
+    Boolean(questId && viewerId)
   );
-
-  useEffect(() => {
-    let mounted = true;
-    if (questId && viewerId) {
-      void (async () => {
-        try {
-          const next = await liveQuestService.getLiveSnapshot(
-            questId,
-            viewerId
-          );
-          if (mounted) {
-            setSnapshot(next);
-            setError(undefined);
-            setLoading(false);
-          }
-        } catch (caught) {
-          if (mounted) {
-            setError(
-              caught instanceof Error
-                ? caught.message
-                : groupMessages.errorTitle
-            );
-            setLoading(false);
-          }
-        }
-      })();
-    }
-    return () => {
-      mounted = false;
-    };
-  }, [questId, viewerId, groupMessages.errorTitle]);
+  const snapshot = snapshotQuery.data;
+  const refetchSnapshot = snapshotQuery.refetch;
+  const loading = snapshotQuery.isPending;
+  const refreshing = snapshotQuery.isRefetching;
+  const error =
+    snapshotQuery.error instanceof Error
+      ? snapshotQuery.error.message
+      : snapshotQuery.isError
+        ? groupMessages.errorTitle
+        : undefined;
 
   const performSelect = useCallback(
     async (run: (key: string) => Promise<unknown>) => {
@@ -342,10 +291,10 @@ export default function SelectRosterRoute() {
           caught instanceof Error ? caught.message : messages.actionFailedTitle
         );
       } finally {
-        await load(true);
+        await refetchSnapshot();
       }
     },
-    [load, messages.actionFailedTitle]
+    [messages.actionFailedTitle, refetchSnapshot]
   );
 
   const handleSelectApplication = useCallback(
@@ -438,6 +387,71 @@ export default function SelectRosterRoute() {
     [messages, groupMessages, questId, performReject]
   );
 
+  const isGroup = snapshot?.participation === "GROUP";
+  const canSelect = snapshot
+    ? isGroup
+      ? snapshot.capabilities.canSelectTeam
+      : snapshot.capabilities.canSelectCandidate
+    : false;
+  const canReject = snapshot
+    ? isGroup
+      ? snapshot.capabilities.canRejectTeam
+      : snapshot.capabilities.canRejectCandidate
+    : false;
+
+  const renderTeam = useCallback(
+    ({ item }: ListRenderItemInfo<QuestV2Team>) => (
+      <TeamRow
+        team={item}
+        canSelect={canSelect}
+        canReject={canReject}
+        locale={locale}
+        colors={colors}
+        selectLabel={groupMessages.selectProposal}
+        rejectLabel={groupMessages.reject}
+        teamProposalLabel={groupMessages.teamProposal}
+        memberCount={groupMessages.memberCount}
+        onSelect={handleSelectTeam}
+        onReject={handleRejectTeam}
+      />
+    ),
+    [
+      canReject,
+      canSelect,
+      colors,
+      groupMessages,
+      handleRejectTeam,
+      handleSelectTeam,
+      locale,
+    ]
+  );
+
+  const renderCandidate = useCallback(
+    ({ item }: ListRenderItemInfo<QuestV2Application>) => (
+      <CandidateRow
+        application={item}
+        canSelect={canSelect}
+        canReject={canReject}
+        locale={locale}
+        colors={colors}
+        selectLabel={groupMessages.selectProposal}
+        rejectLabel={groupMessages.reject}
+        submittedLabel={groupMessages.submittedLabel}
+        onSelect={handleSelectApplication}
+        onReject={handleRejectApplication}
+      />
+    ),
+    [
+      canReject,
+      canSelect,
+      colors,
+      groupMessages,
+      handleRejectApplication,
+      handleSelectApplication,
+      locale,
+    ]
+  );
+
   if (loading) {
     return (
       <ScreenLayout className="bg-ku-bg flex-1">
@@ -471,7 +485,7 @@ export default function SelectRosterRoute() {
           <Pressable
             className="mt-4 rounded-xl p-4"
             style={{ backgroundColor: colors.primary }}
-            onPress={() => void load()}
+            onPress={() => void refetchSnapshot()}
           >
             <Text className="text-center font-ku-bold text-white">
               {groupMessages.retry}
@@ -483,13 +497,6 @@ export default function SelectRosterRoute() {
   }
 
   const quest = snapshot.quest;
-  const isGroup = snapshot.participation === "GROUP";
-  const canSelect = isGroup
-    ? snapshot.capabilities.canSelectTeam
-    : snapshot.capabilities.canSelectCandidate;
-  const canReject = isGroup
-    ? snapshot.capabilities.canRejectTeam
-    : snapshot.capabilities.canRejectCandidate;
 
   if (snapshot.mode !== "CANDIDATE") {
     return (
@@ -579,7 +586,7 @@ export default function SelectRosterRoute() {
           data={pendingTeams}
           keyExtractor={(team) => team.id}
           refreshing={refreshing}
-          onRefresh={() => void load(true)}
+          onRefresh={() => void refetchSnapshot()}
           ListHeaderComponent={header}
           ListEmptyComponent={
             <Text
@@ -589,21 +596,7 @@ export default function SelectRosterRoute() {
               {groupMessages.noProposals}
             </Text>
           }
-          renderItem={({ item }) => (
-            <TeamRow
-              team={item}
-              canSelect={canSelect}
-              canReject={canReject}
-              locale={locale}
-              colors={colors}
-              selectLabel={groupMessages.selectProposal}
-              rejectLabel={groupMessages.reject}
-              teamProposalLabel={groupMessages.teamProposal}
-              memberCount={groupMessages.memberCount}
-              onSelect={handleSelectTeam}
-              onReject={handleRejectTeam}
-            />
-          )}
+          renderItem={renderTeam}
           contentContainerClassName="p-5 pb-12"
           initialNumToRender={12}
           windowSize={7}
@@ -614,7 +607,7 @@ export default function SelectRosterRoute() {
           data={pendingApplications}
           keyExtractor={(application) => application.id}
           refreshing={refreshing}
-          onRefresh={() => void load(true)}
+          onRefresh={() => void refetchSnapshot()}
           ListHeaderComponent={header}
           ListEmptyComponent={
             <Text
@@ -624,20 +617,7 @@ export default function SelectRosterRoute() {
               {groupMessages.noProposals}
             </Text>
           }
-          renderItem={({ item }) => (
-            <CandidateRow
-              application={item}
-              canSelect={canSelect}
-              canReject={canReject}
-              locale={locale}
-              colors={colors}
-              selectLabel={groupMessages.selectProposal}
-              rejectLabel={groupMessages.reject}
-              submittedLabel={groupMessages.submittedLabel}
-              onSelect={handleSelectApplication}
-              onReject={handleRejectApplication}
-            />
-          )}
+          renderItem={renderCandidate}
           contentContainerClassName="p-5 pb-12"
           initialNumToRender={12}
           windowSize={7}

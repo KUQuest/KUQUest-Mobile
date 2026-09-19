@@ -64,13 +64,49 @@ export async function getQuestDraftStorageKey(): Promise<string> {
   }
 }
 
+async function loadOrMigrateLegacyDraft(
+  storageKey: string,
+  draftId: string
+): Promise<QuestDraftSnapshot | null> {
+  const draftKey = getDraftKey(storageKey, draftId);
+  const storedDraft = await secureStorage.get(draftKey);
+  if (storedDraft) return parseStoredQuestSnapshot(storedDraft);
+
+  if ((await secureStorage.get(getDraftIndexKey(storageKey))) !== null) {
+    return null;
+  }
+
+  const legacyKeys =
+    storageKey === CREATE_QUEST_DRAFT_KEY
+      ? [storageKey]
+      : [storageKey, CREATE_QUEST_DRAFT_KEY];
+  for (const legacyKey of legacyKeys) {
+    const legacyValue = await secureStorage.get(legacyKey);
+    const legacySnapshot = legacyValue
+      ? parseStoredQuestSnapshot(legacyValue)
+      : null;
+    if (!legacySnapshot) continue;
+
+    await persistQuestDraft(
+      storageKey,
+      draftId,
+      legacySnapshot.draft,
+      legacySnapshot.step,
+      legacySnapshot.state
+    );
+    await secureStorage.remove(legacyKey);
+    return legacySnapshot;
+  }
+
+  return null;
+}
+
 export async function loadQuestDraft(
   storageKey: string,
   draftId?: string
 ): Promise<QuestDraftSnapshot | null> {
   if (!draftId) return null;
-  const storedDraft = await secureStorage.get(getDraftKey(storageKey, draftId));
-  return storedDraft ? parseStoredQuestSnapshot(storedDraft) : null;
+  return loadOrMigrateLegacyDraft(storageKey, draftId);
 }
 
 export async function listQuestDrafts(

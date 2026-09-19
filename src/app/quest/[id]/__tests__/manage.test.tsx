@@ -1,5 +1,7 @@
 import React from "react";
-import { act, fireEvent, render } from "@testing-library/react-native";
+import { act, fireEvent } from "@testing-library/react-native";
+
+import { renderWithQueryClient as render } from "@/testing/queryTestUtils";
 
 import { liveQuestService } from "@/features/questBoard/liveQuestService";
 import type { QuestV2EditRequest } from "@/api/questV2Contracts";
@@ -160,7 +162,7 @@ describe("HirerQuestManageRoute condition edit", () => {
       createSnapshot()
     );
     const view = await render(<HirerQuestManageRoute />);
-    await act(async () => undefined);
+    await view.findByTestId("hirer-manage-condition-edit");
 
     expect(view.getByTestId("hirer-manage-condition-edit")).toBeTruthy();
     expect(view.queryByTestId("hirer-condition-edit-pending-title")).toBeNull();
@@ -178,7 +180,7 @@ describe("HirerQuestManageRoute condition edit", () => {
     );
 
     const view = await render(<HirerQuestManageRoute />);
-    await act(async () => undefined);
+    await view.findByTestId("hirer-manage-condition-edit");
 
     await fireEvent.press(view.getByTestId("hirer-manage-condition-edit"));
     await fireEvent.changeText(
@@ -211,7 +213,7 @@ describe("HirerQuestManageRoute condition edit", () => {
       })
     );
     const view = await render(<HirerQuestManageRoute />);
-    await act(async () => undefined);
+    await view.findByTestId("hirer-condition-edit-progress");
 
     expect(view.queryByTestId("hirer-manage-condition-edit")).toBeNull();
     expect(
@@ -230,6 +232,7 @@ describe("HirerQuestManageRoute condition edit", () => {
       })
     );
     const view = await render(<HirerQuestManageRoute />);
+    await act(async () => undefined);
     await act(async () => undefined);
 
     expect(view.queryByTestId("hirer-manage-condition-edit")).toBeNull();
