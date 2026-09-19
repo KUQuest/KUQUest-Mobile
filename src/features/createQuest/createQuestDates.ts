@@ -1,5 +1,18 @@
 import { TIME_PATTERN } from "./createQuestModel";
 
+const dateFormatters: Partial<Record<"en" | "th", Intl.DateTimeFormat>> = {};
+
+function getDateFormatter(locale: "en" | "th"): Intl.DateTimeFormat {
+  const cached = dateFormatters[locale];
+  if (cached) return cached;
+  const formatter = new Intl.DateTimeFormat(
+    locale === "th" ? "th-TH" : "en-GB",
+    { day: "2-digit", month: "short", year: "numeric" }
+  );
+  dateFormatters[locale] = formatter;
+  return formatter;
+}
+
 export function formatDate(
   value: string,
   locale: "en" | "th",
@@ -8,11 +21,7 @@ export function formatDate(
   if (!value) return emptyLabel;
   const date = new Date(`${value}T12:00:00`);
   if (Number.isNaN(date.getTime())) return emptyLabel;
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
+  return getDateFormatter(locale).format(date);
 }
 
 export function formatDateTime(
