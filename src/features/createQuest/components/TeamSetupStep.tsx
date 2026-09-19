@@ -16,7 +16,7 @@ import type {
 
 import { Image, Pressable, Text, TextInput, View } from "@/tw";
 import { cn } from "@/tw/cn";
-import { Input } from "@/features/onboarding/components/Input";
+import { Input } from "@/components/ui/Input";
 import { createQuestMessages } from "@/locales/createQuestMessages";
 import type { SupportedLocale } from "@/locales/locale";
 import { colors } from "@/theme/colors";

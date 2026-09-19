@@ -3,6 +3,7 @@ import { ActivityIndicator } from "react-native";
 import { Download, FileText, ImagePlus } from "lucide-react-native";
 
 import { Image, Pressable, Text, View } from "@/tw";
+import { Avatar } from "@/components/ui/Avatar";
 import { cn } from "@/tw/cn";
 import { colors } from "@/theme/colors";
 import { chatApi } from "@/api/ChatApi";
@@ -10,7 +11,6 @@ import { liveQuestService } from "@/features/questBoard/liveQuestService";
 import type { ChatMessages } from "@/locales/chatMessages";
 import type { ChatConversation } from "./chatTypes";
 import {
-  ChatAvatar,
   localizedText,
   type DisplayChatMessage,
   type RenderAttachment,
@@ -251,15 +251,22 @@ export function MessageBubble({
   return (
     <View className={cn(styles.messageRow, mine && styles.messageRowMe)}>
       {!mine ? (
-        <ChatAvatar
-          initials={conversation.initials}
-          color={conversation.avatarColor}
+        <Avatar
+          accessibilityLabel={
+            onProfilePress
+              ? `View profile of ${conversation.participantName}`
+              : undefined
+          }
+          cacheKey={conversation.participantAvatarFileId}
+          className={styles.messageAvatar}
+          imageTestID={`chat-avatar-image-${conversation.participantId ?? conversation.participantName}`}
           name={conversation.participantName}
-          profileId={conversation.participantId}
-          avatarUrl={conversation.participantAvatarUrl}
-          avatarFileId={conversation.participantAvatarFileId}
           onPress={onProfilePress}
-          small
+          size={32}
+          style={{ backgroundColor: conversation.avatarColor }}
+          testID={`chat-avatar-${conversation.participantId ?? conversation.participantName}`}
+          textClassName={styles.messageAvatarText}
+          uri={conversation.participantAvatarUrl}
         />
       ) : null}
       <View className={cn(styles.messageStack, mine && styles.messageStackMe)}>

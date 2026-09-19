@@ -1,6 +1,6 @@
 import { fireEvent, render } from "@testing-library/react-native";
 import mockReact, { type ReactNode } from "react";
-import { Select } from "../components/Select";
+import { Select } from "@/components/ui/Select";
 
 jest.mock("react-native/Libraries/Modal/Modal", () => {
   return {

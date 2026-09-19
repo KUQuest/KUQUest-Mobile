@@ -1,5 +1,7 @@
 import React, { useMemo } from "react";
-import { Image, Pressable, Text, View } from "@/tw";
+import { Pressable, Text, View } from "@/tw";
+import { Avatar } from "@/components/ui/Avatar";
+import { Chip } from "@/components/ui/Chip";
 import {
   BriefcaseBusiness,
   Check,
@@ -134,7 +136,15 @@ export function HirerQuestProgressCard({
       <View style={styles.cardHeader}>
         <View style={styles.cardHeaderMetaRow}>
           {tag ? (
-            <View
+            <Chip
+              label={tag}
+              leadingIcon={
+                <BriefcaseBusiness
+                  color={palette.tagText}
+                  size={12}
+                  strokeWidth={2.2}
+                />
+              }
               style={[
                 styles.tagBadge,
                 {
@@ -142,21 +152,14 @@ export function HirerQuestProgressCard({
                   borderColor: palette.tagBorder,
                 },
               ]}
-            >
-              <BriefcaseBusiness
-                color={palette.tagText}
-                size={12}
-                strokeWidth={2.2}
-              />
-              <Text style={[styles.tagText, { color: palette.tagText }]}>
-                {tag}
-              </Text>
-            </View>
+              textStyle={[styles.tagText, { color: palette.tagText }]}
+              tone="accent"
+            />
           ) : (
             <View />
           )}
-
-          <View
+          <Chip
+            label={statusLabel}
             style={[
               styles.statusBadge,
               {
@@ -168,18 +171,14 @@ export function HirerQuestProgressCard({
                   : palette.statusBorder,
               },
             ]}
-          >
-            <Text
-              style={[
-                styles.statusLabel,
-                {
-                  color: isTerminal ? palette.terminalText : palette.statusText,
-                },
-              ]}
-            >
-              {statusLabel}
-            </Text>
-          </View>
+            textStyle={[
+              styles.statusLabel,
+              {
+                color: isTerminal ? palette.terminalText : palette.statusText,
+              },
+            ]}
+            tone="primary"
+          />
         </View>
 
         <View style={styles.cardTitleRow}>
@@ -225,7 +224,9 @@ export function HirerQuestProgressCard({
             testID={`hirer-quest-card-worker-${questId}`}
           >
             <View style={styles.workerLeading}>
-              <View
+              <Avatar
+                name={primaryWorker.displayName}
+                size={40}
                 style={[
                   styles.workerAvatar,
                   {
@@ -233,24 +234,12 @@ export function HirerQuestProgressCard({
                     borderColor: palette.tagBorder,
                   },
                 ]}
-              >
-                {primaryWorker.avatarUri ? (
-                  <Image
-                    contentFit="cover"
-                    source={{ uri: primaryWorker.avatarUri }}
-                    style={{ height: "100%", width: "100%" }}
-                  />
-                ) : (
-                  <Text
-                    style={[
-                      styles.workerAvatarText,
-                      { color: palette.avatarText },
-                    ]}
-                  >
-                    {primaryWorker.displayName.slice(0, 1).toUpperCase()}
-                  </Text>
-                )}
-              </View>
+                textStyle={[
+                  styles.workerAvatarText,
+                  { color: palette.avatarText },
+                ]}
+                uri={primaryWorker.avatarUri}
+              />
               <View style={styles.workerCopy}>
                 <Text
                   numberOfLines={1}

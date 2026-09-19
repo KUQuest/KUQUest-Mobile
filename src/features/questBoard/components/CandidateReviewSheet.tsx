@@ -25,7 +25,7 @@ import {
 } from "../types";
 import type { QuestV2Application, QuestV2Team } from "@/api/questV2Contracts";
 import styles from "./groupQuestStyles";
-import { QuestBottomSheet } from "./QuestBottomSheet";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 
 export interface CandidateReviewIdentity {
   id: string;
@@ -806,7 +806,7 @@ export function CandidateReviewSheet({
     );
 
   return (
-    <QuestBottomSheet
+    <BottomSheet
       bottomInset={bottomInset}
       closeLabel={messages.close}
       onClose={onClose}
@@ -817,7 +817,7 @@ export function CandidateReviewSheet({
       fullScreen={fullScreen}
     >
       {content}
-    </QuestBottomSheet>
+    </BottomSheet>
   );
 }
 

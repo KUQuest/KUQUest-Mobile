@@ -43,10 +43,10 @@ import {
 import styles from "@/features/onboarding/styles/registrationStyles";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
-import { Input } from "../components/Input";
-import { Select } from "../components/Select";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import { Checkbox } from "../components/Checkbox";
-import { TextArea } from "../components/TextArea";
+import { TextArea } from "@/components/ui/TextArea";
 import { FileTooLargeModal } from "../components/FileTooLargeModal";
 import { onboardingMessages } from "../../../locales/registrationOnboarding";
 import { useLocale } from "@/features/preferences/localeStore";

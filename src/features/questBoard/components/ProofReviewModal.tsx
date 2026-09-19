@@ -3,7 +3,7 @@ import { Linking, Modal } from "react-native";
 import { FileText, ImageIcon, ShieldCheck, X } from "lucide-react-native";
 
 import { Button } from "@/components/ui/Button";
-import { TextArea } from "@/features/onboarding/components/TextArea";
+import { TextArea } from "@/components/ui/TextArea";
 import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";

@@ -50,9 +50,9 @@ import {
   LoadingSkeleton,
   SkeletonBlock,
 } from "../../components/ui/LoadingSkeleton";
-import { Input } from "../onboarding/components/Input";
-import { Select } from "../onboarding/components/Select";
-import { TextArea } from "../onboarding/components/TextArea";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { TextArea } from "@/components/ui/TextArea";
 import {
   Image,
   KeyboardAvoidingView,

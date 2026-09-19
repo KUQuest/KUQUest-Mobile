@@ -10,13 +10,14 @@ import {
 } from "react-native";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
+import { Avatar } from "@/components/ui/Avatar";
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import {
   LoadingSkeleton,
   SkeletonBlock,
 } from "@/components/ui/LoadingSkeleton";
-import { Image, Pressable, Text, TextInput, View } from "@/tw";
+import { Pressable, Text, TextInput, View } from "@/tw";
 import { useLocale } from "@/features/preferences/localeStore";
 import { chatMessages } from "@/locales/chatMessages";
 import { colors } from "@/theme/colors";
@@ -61,41 +62,30 @@ function ConversationAvatar({
   conversation: ChatConversation;
   onPress?: (participantId: string) => void;
 }) {
-  const avatar = (
-    <View
-      accessible={!onPress || !conversation.participantId}
-      accessibilityLabel={conversation.participantName}
-      className={styles.avatar}
-      style={{ backgroundColor: conversation.avatarColor }}
-    >
-      {conversation.participantAvatarUrl ? (
-        <Image
-          accessibilityLabel={conversation.participantName}
-          cachePolicy="memory-disk"
-          contentFit="cover"
-          source={{ uri: conversation.participantAvatarUrl }}
-          style={{ height: "100%", width: "100%" }}
-          testID={`chat-avatar-image-${conversation.participantId ?? conversation.id}`}
-        />
-      ) : (
-        <Text className={styles.avatarText}>{conversation.initials}</Text>
-      )}
-    </View>
-  );
   const participantId = conversation.participantId;
-  if (!onPress || !participantId) return avatar;
   return (
-    <Pressable
-      accessibilityLabel={`View profile of ${conversation.participantName}`}
-      accessibilityRole="button"
-      onPress={(event) => {
-        event.stopPropagation();
-        onPress(participantId);
-      }}
+    <Avatar
+      accessibilityLabel={
+        participantId
+          ? `View profile of ${conversation.participantName}`
+          : undefined
+      }
+      className={styles.avatar}
+      imageTestID={`chat-avatar-image-${conversation.participantId ?? conversation.id}`}
+      name={conversation.participantName}
+      onPress={
+        participantId && onPress
+          ? (event) => {
+              event.stopPropagation();
+              onPress(participantId);
+            }
+          : undefined
+      }
+      style={{ backgroundColor: conversation.avatarColor }}
       testID={`chat-avatar-${conversation.participantId ?? conversation.id}`}
-    >
-      {avatar}
-    </Pressable>
+      textClassName={styles.avatarText}
+      uri={conversation.participantAvatarUrl}
+    />
   );
 }
 

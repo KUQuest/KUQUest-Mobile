@@ -36,7 +36,7 @@ import {
 } from "../types";
 import type { QuestV2Team } from "@/api/questV2Contracts";
 import styles from "./groupQuestStyles";
-import { QuestBottomSheet } from "./QuestBottomSheet";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 
 export interface TeamDirectoryMember {
   id: string;
@@ -1341,7 +1341,7 @@ export function TeamAssembleSheet({
     );
 
   return (
-    <QuestBottomSheet
+    <BottomSheet
       bottomInset={bottomInset}
       closeLabel={messages.close}
       onClose={onClose}
@@ -1351,7 +1351,7 @@ export function TeamAssembleSheet({
       visible={visible}
     >
       {sheetContent}
-    </QuestBottomSheet>
+    </BottomSheet>
   );
 }
 

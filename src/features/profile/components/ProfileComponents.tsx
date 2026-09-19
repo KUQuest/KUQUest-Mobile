@@ -9,6 +9,8 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import { FlatList, Image, Pressable, ScrollView, Text, View } from "@/tw";
+import { Avatar } from "../../../components/ui/Avatar";
+import { Chip } from "../../../components/ui/Chip";
 import {
   BriefcaseBusiness,
   Building2,
@@ -187,18 +189,6 @@ interface ProfileHeaderProps {
   >;
 }
 
-function getInitials(name: string): string {
-  const initials = name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("");
-
-  return initials.toUpperCase() || "?";
-}
-
 function ProfileMeta({
   icon: Icon,
   children,
@@ -226,11 +216,21 @@ export function ProfileHeader({
   const { width, fontScale } = useWindowDimensions();
   const metrics = getProfileLayoutMetrics(width, fontScale);
   const labels = { ...defaultAccessibilityLabels, ...accessibilityLabels };
-  const [failedProfileImage, setFailedProfileImage] = useState<
-    ProfileViewData["profileImage"] | null
-  >(null);
   const profileImage = imageSource(data.profileImage);
-  const profileImageFailed = failedProfileImage === data.profileImage;
+  const profileImageUri =
+    profileImage &&
+    typeof profileImage === "object" &&
+    "uri" in profileImage &&
+    typeof profileImage.uri === "string"
+      ? profileImage.uri
+      : undefined;
+  const profileImageCacheKey =
+    profileImage &&
+    typeof profileImage === "object" &&
+    "cacheKey" in profileImage &&
+    typeof profileImage.cacheKey === "string"
+      ? profileImage.cacheKey
+      : undefined;
 
   return (
     <View
@@ -239,30 +239,15 @@ export function ProfileHeader({
       style={{ padding: metrics.cardPadding }}
     >
       <View className={styles.headerRow}>
-        <View
+        <Avatar
+          accessibilityLabel={labels.profileImageLabel(data.name)}
+          cacheKey={profileImageCacheKey}
           className={styles.photoFrame}
-          style={{
-            borderRadius: metrics.photoSize / 2,
-            height: metrics.photoSize,
-            width: metrics.photoSize,
-          }}
-        >
-          {profileImage && !profileImageFailed ? (
-            <Image
-              accessibilityLabel={labels.profileImageLabel(data.name)}
-              source={profileImage}
-              onError={() => setFailedProfileImage(data.profileImage)}
-              className={styles.photo}
-            />
-          ) : (
-            <Text
-              accessibilityLabel={labels.profileImageLabel(data.name)}
-              className={styles.initials}
-            >
-              {getInitials(data.name)}
-            </Text>
-          )}
-        </View>
+          name={data.name}
+          size={metrics.photoSize}
+          textClassName={styles.initials}
+          uri={profileImageUri}
+        />
         <View className={styles.identityContent}>
           <Text
             className={styles.name}
@@ -304,11 +289,13 @@ export function ProfileHeader({
           </Text>
           <View className={styles.tagList}>
             {(data.tags ?? []).map((tag) => (
-              <View key={tag.id ?? tag.name} className={styles.tag}>
-                <Text className={styles.tagText} maxFontSizeMultiplier={2}>
-                  {tag.name}
-                </Text>
-              </View>
+              <Chip
+                className="px-[10px] py-[4px]"
+                key={tag.id ?? tag.name}
+                label={tag.name}
+                textClassName="font-ku-semibold text-ku-label"
+                tone="tag"
+              />
             ))}
           </View>
         </View>
@@ -717,35 +704,6 @@ function CertificateImage({
       style={{ height: previewHeight, width: "100%" }}
       contentFit="contain"
     />
-  );
-}
-
-function ReviewAvatar({
-  name,
-  uri,
-  accessibilityLabel,
-}: {
-  name: string;
-  uri: string;
-  accessibilityLabel: string;
-}) {
-  const [failed, setFailed] = useState(false);
-  if (uri && !failed)
-    return (
-      <Image
-        accessibilityLabel={accessibilityLabel}
-        source={{ uri }}
-        onError={() => setFailed(true)}
-        className={styles.reviewAvatar}
-      />
-    );
-  return (
-    <View
-      accessibilityLabel={accessibilityLabel}
-      className={styles.reviewAvatarFallback}
-    >
-      <Text className={styles.reviewAvatarInitials}>{getInitials(name)}</Text>
-    </View>
   );
 }
 
@@ -1267,10 +1225,14 @@ function ReviewCard({
   return (
     <View className={styles.reviewCard}>
       <View className={styles.reviewHeader}>
-        <ReviewAvatar
-          name={review.reviewerName}
-          uri={review.reviewerAvatar}
+        <Avatar
           accessibilityLabel={reviewerAvatarLabel(review.reviewerName)}
+          className={styles.reviewAvatarFallback}
+          imageClassName={styles.reviewAvatar}
+          name={review.reviewerName}
+          size={36}
+          textClassName={styles.reviewAvatarInitials}
+          uri={review.reviewerAvatar}
         />
         <View className={styles.reviewHeaderText}>
           <Text className={styles.itemTitle}>{review.reviewerName}</Text>

@@ -19,15 +19,17 @@ import {
 import { Check, ChevronDown, CircleX, Search, X } from "lucide-react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "@/theme/colors";
-import styles from "../styles/selectStyles";
+import styles from "./selectStyles";
 
 export interface Option {
   label: string;
   value: string;
 }
 
-interface SelectProps {
+export interface SelectProps {
   label: string;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
   options: Option[];
   value: string;
   onValueChange: (value: string) => void;
@@ -60,6 +62,8 @@ export const Select = React.forwardRef<
 >(function Select(
   {
     label,
+    accessibilityLabel,
+    accessibilityHint,
     options,
     value,
     onValueChange,
@@ -86,6 +90,7 @@ export const Select = React.forwardRef<
     useState<DropdownPosition | null>(null);
   const triggerRef = React.useRef<React.ComponentRef<typeof RNPressable>>(null);
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const fieldAccessibilityLabel = accessibilityLabel ?? label;
   const selectedOption = options.find((opt) => opt.value === value);
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
   const filteredOptions = normalizedQuery
@@ -170,7 +175,7 @@ export const Select = React.forwardRef<
         placeholderTextColor={colors.textFaint}
         className={styles.searchInput}
         accessibilityRole="search"
-        accessibilityLabel={searchPlaceholder ?? label}
+        accessibilityLabel={searchPlaceholder ?? fieldAccessibilityLabel}
         testID="select-search-input"
       />
       {searchQuery ? (
@@ -203,7 +208,7 @@ export const Select = React.forwardRef<
             closeModal();
           }}
           accessibilityRole="radio"
-          accessibilityLabel={`${label}: ${item.label}`}
+          accessibilityLabel={`${fieldAccessibilityLabel}: ${item.label}`}
           accessibilityState={{ selected: item.value === value }}
         >
           <Text
@@ -245,8 +250,13 @@ export const Select = React.forwardRef<
         onPress={openModal}
         disabled={disabled}
         accessibilityRole="button"
-        accessibilityLabel={`${label}: ${selectedOption?.label ?? placeholder ?? "Not selected"}`}
-        accessibilityState={{ disabled, expanded: modalVisible }}
+        accessibilityLabel={`${fieldAccessibilityLabel}: ${selectedOption?.label ?? placeholder ?? "Not selected"}`}
+        accessibilityHint={accessibilityHint ?? error}
+        accessibilityState={{
+          disabled,
+          expanded: modalVisible,
+          ...(error ? { invalid: true } : {}),
+        }}
         testID="select-trigger"
       >
         <Text

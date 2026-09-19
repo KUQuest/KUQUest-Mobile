@@ -5,9 +5,9 @@ import type { TextInput as RNTextInput } from "react-native";
 
 import { Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
-import { Input } from "@/features/onboarding/components/Input";
-import { Select } from "@/features/onboarding/components/Select";
-import { TextArea } from "@/features/onboarding/components/TextArea";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { TextArea } from "@/components/ui/TextArea";
 import { createQuestMessages } from "@/locales/createQuestMessages";
 import { colors } from "@/theme/colors";
 import styles from "../createQuestStyles";

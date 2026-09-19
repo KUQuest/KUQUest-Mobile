@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Pressable, ScrollView, Text, View } from "@/tw";
+import { Chip } from "@/components/ui/Chip";
 import {
   Clock3,
   FileText,
@@ -27,10 +28,8 @@ import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { getThemeColors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 
-import {
-  QuestBoardSkeleton,
-  StateView,
-} from "@/features/questBoard/components/QuestBoardStates";
+import { StateView } from "@/components/ui/StateView";
+import { QuestBoardSkeleton } from "@/features/questBoard/components/QuestBoardStates";
 import { useHirerHomeQuery } from "./api/homeQueries";
 import { HirerQuestProgressCard } from "./components/HirerQuestProgressCard";
 import { HirerQuestRosterModal } from "./components/HirerQuestRosterModal";
@@ -130,9 +129,9 @@ export default function HomeScreen() {
           <StateView
             actionLabel={messages.retry}
             description={messages.errorDescription}
-            error
             onAction={() => void refetch()}
             title={messages.errorTitle}
+            variant="error"
           />
         </View>
       </ScreenLayout>
@@ -192,7 +191,11 @@ export default function HomeScreen() {
                   {messages.activeQuestTitle}
                 </Text>
                 {displayQuests.length > 1 ? (
-                  <View
+                  <Chip
+                    label={messages.activeQuestCounter(
+                      activeCardIndex + 1,
+                      displayQuests.length
+                    )}
                     style={[
                       styles.sectionCounterBadge,
                       {
@@ -201,19 +204,12 @@ export default function HomeScreen() {
                       },
                     ]}
                     testID="hirer-quest-counter"
-                  >
-                    <Text
-                      style={[
-                        styles.sectionCounterText,
-                        { color: themeColors.primary },
-                      ]}
-                    >
-                      {messages.activeQuestCounter(
-                        activeCardIndex + 1,
-                        displayQuests.length
-                      )}
-                    </Text>
-                  </View>
+                    textStyle={[
+                      styles.sectionCounterText,
+                      { color: themeColors.primary },
+                    ]}
+                    tone="accent"
+                  />
                 ) : null}
               </View>
 

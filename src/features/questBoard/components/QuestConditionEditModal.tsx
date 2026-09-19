@@ -7,7 +7,7 @@ import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
 import { Pressable, ScrollView, Text, TextInput, View } from "@/tw";
 
-import { QuestBottomSheet } from "./QuestBottomSheet";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 
 export const MAX_CONDITION_ITEM_LENGTH = 255;
 
@@ -98,7 +98,7 @@ export function QuestConditionEditModal({
   };
 
   return (
-    <QuestBottomSheet
+    <BottomSheet
       visible={visible}
       title={messages.conditionEditTitle}
       subtitle={messages.conditionEditSubtitle}
@@ -243,7 +243,7 @@ export function QuestConditionEditModal({
           ? messages.submittingConditionEdit
           : messages.submitConditionEdit}
       </Button>
-    </QuestBottomSheet>
+    </BottomSheet>
   );
 }
 
