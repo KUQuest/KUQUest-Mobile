@@ -284,11 +284,48 @@ one owner" was true only of the five files phase 4 inspected. Six more sites sti
   on `isPrototypeDemoEnabled()` and imports `hirerHomeQuestFixtures`. Removing this is a
   product decision about the preview/demo mode, not a state-ownership change, so it was left
   alone deliberately.
-- `WalletScreen` renders its transaction list and `WorkerHomeScreen` its available-quest feed
-  with `.map()` inside a `ScrollView` rather than a virtualized list. Converting them risks
-  layout and scroll regressions for a benefit that only appears at list sizes the product does
-  not yet produce; recorded rather than changed.
+- Onboarding, chat and profile keep bespoke empty/error presentations rather than the shared
+  `StateView`: their icons, copy placement and surrounding layout genuinely differ, and
+  forcing them through one component would have changed what users see.
 - ADR 0005 (`system-locale-only`) no longer describes what ships and is now marked superseded:
   `getDeviceLocale()` in `src/locales/locale.ts` returns `DEFAULT_LOCALE` ('th') rather than
   reading the OS, and `localeStore` hydrates a user-selected locale from `kuquest_user_locale`.
   The ADR text itself is left intact as a record.
+
+## Quality pass (post-migration)
+
+Ran as six waves on top of the state migration. Every wave was verified with
+`bun run typecheck`, `bun run test` (99 suites / 656 tests) and `bunx eslint src` at zero
+errors before it was committed.
+
+- **Query honesty** (`f6ba513`): `chatKeys.conversation` carries the `questId` it actually
+  varies on; dead `useCandidateInquiryQuery` and the duplicate `useMyHirerQuestBoardQuery`
+  deleted rather than re-keyed; the dispute mutation moved into the query layer with precise
+  invalidation; `HomeScreen` and `WorkerWorkManagementScreen` gained the loading and error
+  states they were missing; `HomeWalletOverview` lost its data-push effect.
+- **List virtualization** (`2e1a08a`, `0154479`): wallet transactions, the worker quest feed,
+  the chat inbox and the conversation history are `FlatList`s keyed by domain id. The
+  conversation had no auto-scroll effect before the change, so none was added.
+- **One formatter per concept** (`2c5d586`): `src/domain/satang.ts` is the only baht formatter
+  and `src/domain/datetime.ts` the only date/time formatter, pinned to `Asia/Bangkok` and Thai
+  Gregorian. This fixed a real conflict where a Quest card showed a Thai deadline as
+  `15/10/69` (Buddhist) and its detail screen showed `15 ต.ค. 2026`. Display strings no longer
+  live in data: chat carries `createdAt`/`latestAt`, not `"14:30"`.
+- **Accessibility** (`918fab4`): every icon-only control has a localized name, modal shells set
+  `accessibilityViewIsModal`, touch targets reach 44x44 through `hitSlop` without moving
+  layout, and the hirer-home carousel reports position through `accessibilityValue`.
+- **Shared UI** (`e3437f6`): `Input`, `TextArea` and `Select` left the onboarding feature for
+  `src/components/ui/`, joining `StateView`, `Avatar`, `Chip`, `SearchInput` and `BottomSheet`.
+  Each was adopted only where the markup genuinely matched — four sheets moved onto the shared
+  shell, four centered card modals stayed put.
+- **Decomposition** (`409c5f8`, `eff690c`, `0154479`): the `ProfileComponents` bucket is gone,
+  split into one file per component. `ProfileEditScreen` 1,870 → 1,358; `TopUpScreen`
+  1,161 → 299; `OnboardingScreen` 1,675 → 1,082; `TeamAssembleSheet` 1,360 → 577;
+  `MyQuestListScreen` 881 → 453 with its inline copy moved into a bilingual locale module.
+- **Copy** (`eff690c`): one wording per action per locale — Retry/Try Again/Try again became
+  "Try again", three Thai renderings became one. Context-specific labels such as "Cancel Quest"
+  were deliberately left specific.
+
+One real bug surfaced and was fixed on the way (`0154479`): `CandidateReviewSheet` appended
+every team application to its rows after already deriving rows from submitted teams, so a
+proposal represented by both rendered twice — React's duplicate-key warning was the symptom.
