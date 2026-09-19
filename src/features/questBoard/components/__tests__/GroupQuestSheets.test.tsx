@@ -240,8 +240,8 @@ describe("group Quest sheets", () => {
 
     expect(view.queryByText("Forming Team")).toBeNull();
     expect(view.getByText("Submitted Leader")).toBeTruthy();
-    expect(view.getAllByText("Selected")).toHaveLength(2);
-    expect(view.getAllByText("Rejected")).toHaveLength(2);
+    expect(view.getAllByText("Selected")).toHaveLength(1);
+    expect(view.getAllByText("Rejected")).toHaveLength(1);
     expect(view.getByText("Requested headcount")).toBeTruthy();
     expect(view.getByText("Actual headcount")).toBeTruthy();
     expect(view.getByTestId("candidate-review-settlement")).toBeTruthy();

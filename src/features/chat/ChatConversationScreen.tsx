@@ -1,4 +1,10 @@
-import { Alert, Platform, RefreshControl } from "react-native";
+import { useCallback } from "react";
+import {
+  Alert,
+  Platform,
+  RefreshControl,
+  type ListRenderItemInfo,
+} from "react-native";
 import {
   Camera,
   ChevronLeft,
@@ -13,8 +19,8 @@ import {
   X,
 } from "lucide-react-native";
 
-import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import {
+  FlatList,
   KeyboardAvoidingView,
   Pressable,
   ScrollView,
@@ -26,6 +32,7 @@ import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import styles from "./chatStyles";
 import { cn } from "@/tw/cn";
+import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { ImageViewerModal } from "./ImageViewerModal";
 import {
   ChatAvatar,
@@ -33,6 +40,7 @@ import {
   MessageBubble,
   PendingAttachmentsBar,
   localizedText,
+  type DisplayChatMessage,
 } from "./ChatConversationPresentation";
 import {
   MAX_MESSAGE_LENGTH,
@@ -104,6 +112,32 @@ export default function ChatConversationScreen({
   const openParticipantProfile = conversation?.participantId
     ? () => router.push(`/profile/${conversation.participantId}`)
     : undefined;
+  const renderMessage = useCallback(
+    ({ item }: ListRenderItemInfo<DisplayChatMessage>) => {
+      if (!conversation) return null;
+      return (
+        <MessageBubble
+          message={item}
+          conversation={conversation}
+          locale={locale}
+          messages={messages}
+          onFilePress={openFile}
+          onImagePress={handleImagePress}
+          onProfilePress={openParticipantProfile}
+          isCandidateInquiry={conversationType === "CANDIDATE_INQUIRY"}
+        />
+      );
+    },
+    [
+      conversation,
+      conversationType,
+      handleImagePress,
+      locale,
+      messages,
+      openFile,
+      openParticipantProfile,
+    ]
+  );
 
   if (conversationPending) {
     return (
@@ -411,22 +445,22 @@ export default function ChatConversationScreen({
             )}
           </Text>
         ) : null}
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: spacing.md }}
-          refreshControl={
-            <RefreshControl
-              colors={[colors.primary]}
-              onRefresh={() => {
-                void refresh().catch(() => undefined);
-              }}
-              refreshing={refreshing}
-              tintColor={colors.primary}
-            />
-          }
-        >
-          {searchOpen && searchScope === "files" ? (
-            files.length > 0 ? (
+        {searchOpen && searchScope === "files" ? (
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: spacing.md }}
+            refreshControl={
+              <RefreshControl
+                colors={[colors.primary]}
+                onRefresh={() => {
+                  void refresh().catch(() => undefined);
+                }}
+                refreshing={refreshing}
+                tintColor={colors.primary}
+              />
+            }
+          >
+            {files.length > 0 ? (
               <View className={styles.fileList}>
                 {files.map((file) => (
                   <Pressable
@@ -476,36 +510,48 @@ export default function ChatConversationScreen({
                   {messages.noFileResults}
                 </Text>
               </View>
-            )
-          ) : searchOpen && searchedMessages.length === 0 ? (
-            <View className={styles.searchEmpty}>
-              <Text className={styles.searchEmptyText}>
-                {messages.noMessageResults}
-              </Text>
-            </View>
-          ) : (
-            <View className={styles.messageContent}>
-              {!searchOpen ? (
+            )}
+          </ScrollView>
+        ) : (
+          <FlatList
+            contentContainerClassName={
+              searchOpen && searchedMessages.length === 0
+                ? undefined
+                : styles.messageContent
+            }
+            contentContainerStyle={{ paddingBottom: spacing.md }}
+            data={searchedMessages}
+            keyExtractor={(message) => message.id}
+            ListEmptyComponent={
+              searchOpen ? (
+                <View className={styles.searchEmpty}>
+                  <Text className={styles.searchEmptyText}>
+                    {messages.noMessageResults}
+                  </Text>
+                </View>
+              ) : null
+            }
+            ListHeaderComponent={
+              !searchOpen ? (
                 <View className={styles.dateSeparator}>
                   <Text className={styles.dateText}>{messages.today}</Text>
                 </View>
-              ) : null}
-              {searchedMessages.map((message) => (
-                <MessageBubble
-                  key={message.id}
-                  message={message}
-                  conversation={conversation}
-                  locale={locale}
-                  messages={messages}
-                  onFilePress={openFile}
-                  onImagePress={handleImagePress}
-                  onProfilePress={openParticipantProfile}
-                  isCandidateInquiry={conversationType === "CANDIDATE_INQUIRY"}
-                />
-              ))}
-            </View>
-          )}
-        </ScrollView>
+              ) : null
+            }
+            refreshControl={
+              <RefreshControl
+                colors={[colors.primary]}
+                onRefresh={() => {
+                  void refresh().catch(() => undefined);
+                }}
+                refreshing={refreshing}
+                tintColor={colors.primary}
+              />
+            }
+            renderItem={renderMessage}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
 
         {!searchOpen && canWrite ? (
           <View className="bg-ku-background">

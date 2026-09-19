@@ -341,16 +341,23 @@ function normalizeProposals({
       (application): application is QuestApplication & { teamId: string } =>
         hasLegacyTeamId(application) && !isWithdrawnApplication(application)
     );
+    const submittedProposalIds = new Set(
+      submittedProposals.map((proposal) => proposal.id)
+    );
     return submittedProposals.concat(
-      fallbackTeamApplications.map<NormalizedProposal>((application) => ({
-        id: applicationId(application),
-        type: "team",
-        status: applicationStatus(application),
-        displayName: application.teamId ?? application.id,
-        detail: messages.teamProposal,
-        submittedAt: applicationSubmittedAt(application),
-        members: [],
-      }))
+      fallbackTeamApplications
+        .filter(
+          (application) => !submittedProposalIds.has(applicationId(application))
+        )
+        .map<NormalizedProposal>((application) => ({
+          id: applicationId(application),
+          type: "team",
+          status: applicationStatus(application),
+          displayName: application.teamId ?? application.id,
+          detail: messages.teamProposal,
+          submittedAt: applicationSubmittedAt(application),
+          members: [],
+        }))
     );
   }
 
