@@ -1,7 +1,6 @@
 import React from "react";
 import { fireEvent, render } from "@testing-library/react-native";
 
-import { LocaleProvider } from "@/locales/LocaleProvider";
 import { HirerQuestRosterModal } from "../components/HirerQuestRosterModal";
 
 describe("HirerQuestRosterModal", () => {
@@ -31,9 +30,7 @@ describe("HirerQuestRosterModal", () => {
   };
   it("renders assigned workers and applicants with their names and faculties", async () => {
     const { getByText, getByTestId } = await render(
-      <LocaleProvider>
-        <HirerQuestRosterModal {...defaultProps} />
-      </LocaleProvider>
+      <HirerQuestRosterModal {...defaultProps} />
     );
 
     expect(getByText("Science Exhibition Booth Setup")).toBeTruthy();
@@ -50,13 +47,11 @@ describe("HirerQuestRosterModal", () => {
     const onClose = jest.fn();
 
     const { getByTestId } = await render(
-      <LocaleProvider>
-        <HirerQuestRosterModal
-          {...defaultProps}
-          onClose={onClose}
-          onOpenWorkerProfile={onOpenWorkerProfile}
-        />
-      </LocaleProvider>
+      <HirerQuestRosterModal
+        {...defaultProps}
+        onClose={onClose}
+        onOpenWorkerProfile={onOpenWorkerProfile}
+      />
     );
 
     fireEvent.press(getByTestId("roster-worker-profile-worker-1"));
@@ -69,13 +64,11 @@ describe("HirerQuestRosterModal", () => {
     const onClose = jest.fn();
 
     const { getByTestId } = await render(
-      <LocaleProvider>
-        <HirerQuestRosterModal
-          {...defaultProps}
-          onClose={onClose}
-          onOpenManageQuest={onOpenManageQuest}
-        />
-      </LocaleProvider>
+      <HirerQuestRosterModal
+        {...defaultProps}
+        onClose={onClose}
+        onOpenManageQuest={onOpenManageQuest}
+      />
     );
 
     fireEvent.press(getByTestId("hirer-roster-manage-button"));

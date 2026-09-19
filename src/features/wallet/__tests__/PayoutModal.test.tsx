@@ -1,5 +1,6 @@
 import React from "react";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { PayoutModal } from "../PayoutModal";
 import { walletApi } from "@/api/WalletApi";
 
@@ -35,7 +36,7 @@ describe("PayoutModal", () => {
       },
     ]);
 
-    const view = await render(
+    const view = await renderWithQueryClient(
       <PayoutModal
         earningsSatang={50000}
         locale="en"
@@ -71,7 +72,7 @@ describe("PayoutModal", () => {
       },
     ]);
 
-    const view = await render(
+    const view = await renderWithQueryClient(
       <PayoutModal
         earningsSatang={50000}
         locale="en"
@@ -105,7 +106,7 @@ describe("PayoutModal", () => {
       createdAt: "2026-09-17T11:00:00Z",
     });
 
-    const view = await render(
+    const view = await renderWithQueryClient(
       <PayoutModal
         earningsSatang={50000}
         locale="en"
@@ -176,7 +177,7 @@ describe("PayoutModal", () => {
       createdAt: "2026-09-17T10:00:00Z",
     });
 
-    const view = await render(
+    const view = await renderWithQueryClient(
       <PayoutModal
         earningsSatang={50000}
         locale="en"

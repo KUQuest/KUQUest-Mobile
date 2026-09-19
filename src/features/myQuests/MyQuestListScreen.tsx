@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   RefreshControl,
   StyleSheet,
   type ListRenderItemInfo,
   useColorScheme,
 } from "react-native";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   ArrowLeft,
@@ -21,18 +21,19 @@ import { Pressable, Text, View } from "@/tw";
 
 import { QuestList } from "@/components/ui/QuestList";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { authService } from "@/features/auth/AuthService";
-import type { LiveQuestSnapshot } from "@/features/questBoard/liveQuestService";
-import { useCalmRefresh } from "@/hooks/useCalmRefresh";
-import { useLocale, type SupportedLocale } from "@/locales/LocaleProvider";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
+import { useLocale } from "@/features/preferences/localeStore";
+import {
+  useMyHirerQuestsQuery,
+  useMyWorkerQuestSnapshotsQuery,
+} from "./api/myQuestsQueries";
+import type { SupportedLocale } from "@/locales/locale";
 import { getThemeColors, type ThemeColors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import { fontFamily } from "@/theme/typography";
-import type { QuestV2CanonicalQuest } from "@/api/questV2Contracts";
 import {
   getLiveHirerItems,
   getLiveWorkerItems,
-  myQuestService,
   type HirerTab,
   type QuestSummary,
   type StatusTone,
@@ -629,74 +630,14 @@ export default function MyQuestListScreen({
   const [tab, setTab] = useState<MyQuestTab>(() =>
     initialTabForRole(initialRole, initialTab)
   );
-  const [sessionUserId, setSessionUserId] = useState<string | null>(null);
-  const [hirerQuests, setHirerQuests] = useState<
-    QuestV2CanonicalQuest[] | null
-  >(null);
-  const [hirerError, setHirerError] = useState(false);
-  const [workerSnapshots, setWorkerSnapshots] = useState<
-    LiveQuestSnapshot[] | null
-  >(null);
-  const [workerError, setWorkerError] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    void authService
-      .getSession()
-      .then((session) => {
-        if (active && session?.user?.id) setSessionUserId(session.user.id);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const loadHirerQuests = useCallback(async () => {
-    setHirerError(false);
-    try {
-      const quests = await myQuestService.listAllMyHirerQuests();
-      setHirerQuests(quests);
-      return quests;
-    } catch (error) {
-      setHirerError(true);
-      throw error;
-    }
-  }, []);
-  const loadWorkerSnapshots = useCallback(async () => {
-    if (!sessionUserId) return [];
-    setWorkerError(false);
-    try {
-      const snapshots =
-        await myQuestService.listMyWorkerQuestSnapshots(sessionUserId);
-      setWorkerSnapshots(snapshots);
-      return snapshots;
-    } catch (error) {
-      setWorkerError(true);
-      throw error;
-    }
-  }, [sessionUserId]);
-  const {
-    refreshing: hirerRefreshing,
-    refresh: refreshHirer,
-    refreshOnFocus: refreshHirerOnFocus,
-  } = useCalmRefresh(loadHirerQuests);
-  const {
-    refreshing: workerRefreshing,
-    refresh: refreshWorker,
-    refreshOnFocus: refreshWorkerOnFocus,
-  } = useCalmRefresh(loadWorkerSnapshots);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (role === "hirer") {
-        refreshHirerOnFocus();
-      } else if (sessionUserId) {
-        refreshWorkerOnFocus();
-      }
-      return undefined;
-    }, [refreshHirerOnFocus, refreshWorkerOnFocus, role, sessionUserId])
+  const sessionQuery = useSessionQuery();
+  const sessionUserId = sessionQuery.data?.user.id ?? null;
+  const hirerQuery = useMyHirerQuestsQuery(role === "hirer");
+  const workerQuery = useMyWorkerQuestSnapshotsQuery(
+    role === "worker" ? sessionUserId : null
   );
+  const hirerQuests = hirerQuery.data ?? null;
+  const workerSnapshots = workerQuery.data ?? null;
 
   const items = useMemo(() => {
     if (role === "hirer") {
@@ -715,14 +656,9 @@ export default function MyQuestListScreen({
   }, [hirerQuests, locale, role, sessionUserId, tab, workerSnapshots]);
   const tabs = role === "hirer" ? hirerTabs : workerTabs;
   const isLoading =
-    role === "hirer"
-      ? hirerQuests === null && !hirerError
-      : workerSnapshots === null && !workerError;
-  const hasError =
-    role === "hirer"
-      ? hirerQuests === null && hirerError
-      : workerSnapshots === null && workerError;
-  const refreshing = role === "hirer" ? hirerRefreshing : workerRefreshing;
+    role === "hirer" ? hirerQuery.isPending : workerQuery.isPending;
+  const refreshing =
+    role === "hirer" ? hirerQuery.isRefetching : workerQuery.isRefetching;
   const bottomPadding = insets.bottom + spacing.xl;
 
   const openQuest = useCallback(
@@ -759,15 +695,15 @@ export default function MyQuestListScreen({
   );
   const keyExtractor = useCallback((item: QuestSummary) => item.id, []);
   const onRefresh = useCallback(() => {
-    void (role === "hirer" ? refreshHirer(true) : refreshWorker(true)).catch(
-      () => undefined
-    );
-  }, [refreshHirer, refreshWorker, role]);
+    void (
+      role === "hirer" ? hirerQuery.refetch() : workerQuery.refetch()
+    ).catch(() => undefined);
+  }, [hirerQuery, role, workerQuery]);
   const selectedTabLabel = tabLabel(messages, role, tab);
 
   return (
     <ScreenLayout
-      className="bg-ku-background flex-1"
+      className="flex-1 bg-ku-background"
       edges={["top", "left", "right"]}
     >
       <View style={[styles.root, { backgroundColor: palette.background }]}>
@@ -855,7 +791,7 @@ export default function MyQuestListScreen({
               {messages.loading}
             </Text>
           </View>
-        ) : hasError ? (
+        ) : (role === "hirer" ? hirerQuery.isError : workerQuery.isError) ? (
           <View style={styles.error}>
             <Text style={[styles.errorText, { color: palette.dangerDark }]}>
               {messages.error}

@@ -1,24 +1,18 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { useFocusEffect, useRouter, type Href } from "expo-router";
+import { useMemo, useState } from "react";
+import { useRouter, type Href } from "expo-router";
 import { MessageCircle, Search } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RefreshControl, useWindowDimensions } from "react-native";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
-import { authService } from "@/features/auth/AuthService";
+import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
 import {
   LoadingSkeleton,
   SkeletonBlock,
 } from "@/components/ui/LoadingSkeleton";
 import { Image, ScrollView, Pressable, Text, TextInput, View } from "@/tw";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { chatMessages } from "@/locales/chatMessages";
 import { colors } from "@/theme/colors";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
@@ -26,54 +20,16 @@ import { spacing } from "@/theme/spacing";
 import { getChatRouteParams } from "./chatData";
 import type { ChatConversation } from "./chatTypes";
 import styles from "./chatStyles";
-import { chatApi, serverConversationToChatConversation } from "@/api/ChatApi";
-import { useCalmRefresh } from "@/hooks/useCalmRefresh";
-import type { ServerCandidateInquiry } from "@/api/ChatApi";
-import { enrichChatConversation } from "./chatProfile";
+import {
+  useListCandidateInquiriesQuery,
+  useListConversationsQuery,
+} from "./api/chatQueries";
 
 function localizedText(
   value: Record<"en" | "th", string>,
   locale: "en" | "th"
 ): string {
   return value[locale];
-}
-
-function candidateInquiryToConversation(
-  inquiry: ServerCandidateInquiry,
-  viewerId: string
-): ChatConversation {
-  const otherParticipant =
-    inquiry.participants.find((participant) => participant.id !== viewerId) ??
-    inquiry.participants.find((participant) => participant.role === "HIRER");
-  const title = { en: inquiry.quest.title, th: inquiry.quest.title };
-  const preview = inquiry.latestMessage?.preview ?? "";
-  const participantName = otherParticipant?.displayName ?? inquiry.quest.title;
-  const latestTime = inquiry.latestMessage?.createdAt
-    ? new Date(inquiry.latestMessage.createdAt).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : "";
-  return {
-    id: inquiry.id,
-    questId: inquiry.quest.id,
-    questTitle: title,
-    ...(otherParticipant?.id ? { participantId: otherParticipant.id } : {}),
-    participantName,
-    participantRole: "owner",
-    initials: participantName.slice(0, 2).toUpperCase(),
-    avatarColor: "#208AEF",
-    latestMessage: { en: preview, th: preview },
-    latestTime,
-    unreadCount: inquiry.unreadCount,
-    messages: [],
-    capability: {
-      conversationId: inquiry.id,
-      canRead: true,
-      canWrite: inquiry.state === "INQUIRY_OPEN",
-      readOnly: inquiry.state !== "INQUIRY_OPEN",
-    },
-  };
 }
 
 function filterChatConversations(
@@ -250,13 +206,6 @@ export interface ChatInboxScreenProps {
   viewerId?: string;
 }
 
-type InboxLoadState = {
-  viewerId: string;
-  status: "pending" | "settled" | "error";
-  conversations: ChatConversation[];
-  candidateInquiries: ChatConversation[];
-  inquiryStatus: "pending" | "settled" | "error";
-};
 export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
   const router = useRouter();
   const { locale } = useLocale();
@@ -264,153 +213,38 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
   const insets = useSafeAreaInsets();
   const messages = chatMessages[locale];
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
-  const { handleScroll } = useNavigationVisibility();
+  const handleScroll = handleNavigationScroll;
   const [query, setQuery] = useState("");
-  const [sessionUserId, setSessionUserId] = useState<string | null>(null);
-  useEffect(() => {
-    let active = true;
-    void authService
-      .getSession()
-      .then((session) => {
-        if (active && session?.user?.id) setSessionUserId(session.user.id);
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
-  const resolvedViewerId = viewerId || sessionUserId || "";
+  const sessionQuery = useSessionQuery();
+  const resolvedViewerId = viewerId || sessionQuery.data?.user.id || "";
   const normalizedQuery = query.trim().toLocaleLowerCase();
-  const [loadState, setLoadState] = useState<InboxLoadState>(() => ({
-    viewerId: resolvedViewerId,
-    status: "pending",
-    conversations: [],
-    candidateInquiries: [],
-    inquiryStatus: "pending",
-  }));
-  const resolvedViewerIdRef = useRef(resolvedViewerId);
-  useEffect(() => {
-    resolvedViewerIdRef.current = resolvedViewerId;
-  }, [resolvedViewerId]);
-  const loadConversations = useCallback(async () => {
-    const [workResult, inquiryResult] = await Promise.allSettled([
-      chatApi.listConversations({ limit: 20 }),
-      chatApi.listCandidateInquiries({ limit: 20 }),
+  const conversationsQuery = useListConversationsQuery(resolvedViewerId);
+  const candidateInquiriesQuery =
+    useListCandidateInquiriesQuery(resolvedViewerId);
+  const refreshing =
+    conversationsQuery.isRefetching || candidateInquiriesQuery.isRefetching;
+  const refresh = async () => {
+    await Promise.all([
+      conversationsQuery.refetch(),
+      candidateInquiriesQuery.refetch(),
     ]);
-    if (workResult.status === "rejected") {
-      if (resolvedViewerIdRef.current === resolvedViewerId) {
-        setLoadState((current) =>
-          current.viewerId === resolvedViewerId &&
-          (current.conversations.length > 0 ||
-            current.candidateInquiries.length > 0)
-            ? current
-            : {
-                viewerId: resolvedViewerId,
-                status: "error",
-                conversations: [],
-                candidateInquiries: [],
-                inquiryStatus: "error",
-              }
-        );
-      }
-      throw workResult.reason;
-    }
-    const inquiryStatus =
-      inquiryResult.status === "fulfilled"
-        ? ("settled" as const)
-        : ("error" as const);
-    const candidateInquiries =
-      inquiryResult.status === "fulfilled"
-        ? await Promise.all(
-            inquiryResult.value.items.map((inquiry) =>
-              enrichChatConversation(
-                candidateInquiryToConversation(inquiry, resolvedViewerId)
-              )
-            )
-          )
-        : [];
-    const workConversations = await Promise.all(
-      workResult.value.items.map(async (conversation) => {
-        const converted = serverConversationToChatConversation(
-          conversation,
-          resolvedViewerId
-        );
-        try {
-          const participants = await chatApi.listParticipants(conversation.id);
-          const otherParticipant =
-            participants.find(
-              (participant) => participant.id !== resolvedViewerId
-            ) ?? participants[0];
-          return enrichChatConversation({
-            ...converted,
-            ...(otherParticipant?.id
-              ? { participantId: otherParticipant.id }
-              : {}),
-            participantName:
-              otherParticipant?.displayName ?? converted.participantName,
-            participantRole:
-              otherParticipant?.role === "HIRER" ? "owner" : "member",
-            initials: (
-              otherParticipant?.displayName ?? converted.participantName
-            )
-              .slice(0, 2)
-              .toUpperCase(),
-          });
-        } catch {
-          return converted;
-        }
-      })
-    );
-    if (resolvedViewerIdRef.current === resolvedViewerId) {
-      setLoadState({
-        viewerId: resolvedViewerId,
-        status: "settled",
-        conversations: workConversations,
-        candidateInquiries,
-        inquiryStatus,
-      });
-    }
-    return {
-      work: workResult.value,
-      candidateInquiries,
-      inquiryStatus,
-    };
-  }, [resolvedViewerId, setLoadState]);
-  const { refreshing, refresh, refreshOnFocus } =
-    useCalmRefresh(loadConversations);
-  useEffect(() => {
-    if (!resolvedViewerId) return;
-    void refresh(true).catch(() => undefined);
-  }, [refresh, resolvedViewerId]);
-  useFocusEffect(
-    useCallback(() => {
-      if (!resolvedViewerId) return;
-      refreshOnFocus();
-    }, [refreshOnFocus, resolvedViewerId])
-  );
+  };
   const bottomPadding =
     getBottomNavigationInset(chromeMetrics, insets.bottom) + spacing.lg;
-  const loadStateForViewer =
-    loadState.viewerId === resolvedViewerId
-      ? loadState
-      : {
-          viewerId: resolvedViewerId,
-          status: "pending" as const,
-          conversations: [],
-          candidateInquiries: [],
-          inquiryStatus: "pending" as const,
-        };
-  const inquiryLoadFailed = loadStateForViewer.inquiryStatus === "error";
-  const conversationsPending = loadStateForViewer.status === "pending";
-  const conversationsLoadFailed = loadStateForViewer.status === "error";
+  const inquiryLoadFailed =
+    Boolean(resolvedViewerId) && candidateInquiriesQuery.isError;
+  const conversationsPending =
+    !resolvedViewerId || conversationsQuery.isPending;
+  const conversationsLoadFailed =
+    Boolean(resolvedViewerId) && conversationsQuery.isError;
   const conversations = useMemo(
     () =>
       filterChatConversations(
-        loadStateForViewer.conversations,
+        conversationsQuery.data ?? [],
         normalizedQuery,
         locale
       ),
-    [loadStateForViewer.conversations, locale, normalizedQuery]
+    [conversationsQuery.data, locale, normalizedQuery]
   );
   const candidateInquiryTitle =
     locale === "th"
@@ -419,11 +253,11 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
   const candidateInquiries = useMemo(
     () =>
       filterChatConversations(
-        loadStateForViewer.candidateInquiries,
+        candidateInquiriesQuery.data ?? [],
         normalizedQuery,
         locale
       ),
-    [loadStateForViewer.candidateInquiries, locale, normalizedQuery]
+    [candidateInquiriesQuery.data, locale, normalizedQuery]
   );
 
   return (
@@ -437,7 +271,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
           <RefreshControl
             colors={[colors.primary]}
             onRefresh={() => {
-              void refresh(true).catch(() => undefined);
+              void refresh().catch(() => undefined);
             }}
             refreshing={refreshing}
             tintColor={colors.primary}
@@ -499,14 +333,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => {
-                    setLoadState({
-                      viewerId: resolvedViewerId,
-                      status: "pending",
-                      conversations: [],
-                      candidateInquiries: [],
-                      inquiryStatus: "pending",
-                    });
-                    void refresh(true).catch(() => undefined);
+                    void refresh().catch(() => undefined);
                   }}
                 >
                   <Text className={styles.loadErrorActionText}>
@@ -586,11 +413,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
                   <Pressable
                     accessibilityRole="button"
                     onPress={() => {
-                      setLoadState((current) => ({
-                        ...current,
-                        inquiryStatus: "pending",
-                      }));
-                      void refresh(true).catch(() => undefined);
+                      void refresh().catch(() => undefined);
                     }}
                   >
                     <Text className={styles.loadErrorActionText}>

@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/tw/cn";
 import {
   useWindowDimensions,
@@ -6,11 +6,11 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import { Pressable, ScrollView, Text, View } from "@/tw";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { profileMessages } from "../../locales/profileMessages";
-import { useLocale } from "../../locales/LocaleProvider";
+import { handleNavigationScroll as handleNavigationScrollEvent } from "@/features/navigation/navigationUiStore";
 import styles from "./styles/profileStyles";
 import {
   AboutMe,
@@ -23,9 +23,8 @@ import {
   Reviews,
   ProfileSkeleton,
   type ProfileTab,
-  type ProfileViewData,
 } from "./components/ProfileComponents";
-import { profileModule } from "./profileModule";
+import { useProfileQuery } from "./api/profileQueries";
 import {
   getAppChromeMetrics,
   getBottomNavigationInset,
@@ -33,7 +32,7 @@ import {
 import { getProfileLayoutMetrics } from "../../theme/profileLayout";
 import { spacing } from "../../theme/spacing";
 import { AuthError } from "../auth/types";
-import { useNavigationVisibility } from "../../components/navigation/NavigationVisibilityContext";
+import { useLocale } from "@/features/preferences/localeStore";
 import { ProfileTopBar } from "./components/ProfileTopBar";
 import { ScreenLayout } from "../../components/layout/ScreenLayout";
 
@@ -45,11 +44,15 @@ export default function Profile() {
   const layoutMetrics = getProfileLayoutMetrics(width, fontScale);
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
   const messages = profileMessages[locale];
-  const { handleScroll: handleNavigationScroll } = useNavigationVisibility();
-  const [viewData, setViewData] = useState<ProfileViewData | null>(null);
+  const handleNavigationScroll = handleNavigationScrollEvent;
+  const {
+    data: viewData,
+    isPending,
+    isError,
+    error: queryError,
+    refetch,
+  } = useProfileQuery(locale);
   const [activeTab, setActiveTab] = useState<ProfileTab>("about");
-  const [loadError, setLoadError] = useState(false);
-  const [loadAttempt, setLoadAttempt] = useState(0);
   const profileScrollOffset = useRef(0);
   const redirectedToRoot = useRef(false);
   const [initialScrollOffset, setInitialScrollOffset] = useState(0);
@@ -68,37 +71,18 @@ export default function Profile() {
     setActiveTab(nextTab);
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-      async function loadProfile(_attempt: number) {
-        if (redirectedToRoot.current) return;
-        setLoadError(false);
-        try {
-          const data = await profileModule.loadProfile({ locale });
-          if (active) setViewData(data);
-        } catch (error) {
-          if (error instanceof AuthError && error.code === "SESSION_EXPIRED") {
-            // There is no session left to end, so signing out here would be a
-            // round-trip that cannot clear its own trigger. Redirect once: the
-            // focus effect re-runs whenever the navigator hands focus back.
-            if (active && !redirectedToRoot.current) {
-              redirectedToRoot.current = true;
-              router.replace("/");
-            }
-            return;
-          }
-          if (active) setLoadError(true);
-        }
-      }
-      void loadProfile(loadAttempt);
-      return () => {
-        active = false;
-      };
-    }, [locale, loadAttempt, router])
-  );
+  useEffect(() => {
+    if (
+      !isError ||
+      !(queryError instanceof AuthError) ||
+      queryError.code !== "SESSION_EXPIRED" ||
+      redirectedToRoot.current
+    )
+      return;
+    redirectedToRoot.current = true;
+    router.replace("/");
+  }, [queryError, isError, router]);
 
-  const content = viewData;
   const tabLabels: Record<ProfileTab, string> = {
     about: messages.about,
     experience: messages.experience,
@@ -112,7 +96,7 @@ export default function Profile() {
   const horizontalPadding = layoutMetrics.pagePadding;
   const openEditProfile = () => router.push("/profile/edit");
   const profileTopBar = <ProfileTopBar />;
-  if (loadError && !content) {
+  if (isError && !viewData) {
     return (
       <ScreenLayout edges={["left", "right"]} className={styles.safeArea}>
         {profileTopBar}
@@ -122,7 +106,7 @@ export default function Profile() {
             <Pressable
               accessibilityRole="button"
               className={styles.retryButton}
-              onPress={() => setLoadAttempt((attempt) => attempt + 1)}
+              onPress={() => void refetch()}
             >
               <Text className={styles.retryButtonText}>{messages.retry}</Text>
             </Pressable>
@@ -131,7 +115,7 @@ export default function Profile() {
       </ScreenLayout>
     );
   }
-  if (!content) {
+  if (isPending || !viewData) {
     return (
       <ScreenLayout edges={["left", "right"]} className={styles.safeArea}>
         {profileTopBar}
@@ -146,7 +130,7 @@ export default function Profile() {
       </ScreenLayout>
     );
   }
-
+  const content = viewData;
   const profileStats = (
     <ProfileStats
       stats={content.stats}
@@ -165,9 +149,7 @@ export default function Profile() {
         content.sectionUnavailable.reputation ? undefined : messages.retry
       }
       onRetry={
-        content.sectionUnavailable.reputation
-          ? undefined
-          : () => setLoadAttempt((attempt) => attempt + 1)
+        content.sectionUnavailable.reputation ? undefined : () => void refetch()
       }
     />
   );
@@ -227,7 +209,7 @@ export default function Profile() {
           onRatingRetry={
             content.sectionUnavailable.reputation
               ? undefined
-              : () => setLoadAttempt((attempt) => attempt + 1)
+              : () => void refetch()
           }
           accessibilityLabels={{
             ratingSummaryLabel: messages.ratingSummaryLabel,
@@ -252,7 +234,7 @@ export default function Profile() {
           onRetry={
             content.sectionUnavailable.reviews
               ? undefined
-              : () => setLoadAttempt((attempt) => attempt + 1)
+              : () => void refetch()
           }
         />
       ) : (
@@ -317,7 +299,7 @@ export default function Profile() {
               onRetry={
                 content.sectionUnavailable.experience
                   ? undefined
-                  : () => setLoadAttempt((attempt) => attempt + 1)
+                  : () => void refetch()
               }
             />
           ) : null}
@@ -345,7 +327,7 @@ export default function Profile() {
               onRetry={
                 content.sectionUnavailable.works
                   ? undefined
-                  : () => setLoadAttempt((attempt) => attempt + 1)
+                  : () => void refetch()
               }
             />
           ) : null}
@@ -378,7 +360,7 @@ export default function Profile() {
               onRetry={
                 content.sectionUnavailable.certificates
                   ? undefined
-                  : () => setLoadAttempt((attempt) => attempt + 1)
+                  : () => void refetch()
               }
             />
           ) : null}

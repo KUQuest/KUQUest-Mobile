@@ -1,20 +1,13 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RefreshControl, View } from "react-native";
 import { AccessibilityInfo, useWindowDimensions } from "react-native";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { QuestList } from "@/components/ui/QuestList";
-import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
-import { authService } from "@/features/auth/AuthService";
-import { useLocale } from "@/locales/LocaleProvider";
-import { useCalmRefresh } from "@/hooks/useCalmRefresh";
+import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
+import { useLocale } from "@/features/preferences/localeStore";
 import { spacing } from "@/theme/spacing";
 import { getAppChromeMetrics } from "@/theme/layout";
 import { questBoardMessages } from "@/locales/questBoardMessages";
@@ -29,7 +22,7 @@ import {
 } from "./questBoardViewData";
 import type { BoardPreviewState } from "./questBoardHarness";
 import { questWorkflow } from "./questWorkflow";
-import { liveQuestService } from "./liveQuestService";
+import { useQuestBoardQuery } from "./api/questBoardQueries";
 import {
   emptyQuestBoardFilter,
   type QuestBoardFilter,
@@ -72,24 +65,13 @@ export default function QuestBoardScreen({
 }: QuestBoardScreenProps) {
   const router = useRouter();
   const { locale } = useLocale();
-  const [sessionUserId, setSessionUserId] = useState<string | null>(null);
-  useEffect(() => {
-    let active = true;
-    void authService
-      .getSession()
-      .then((session) => {
-        if (active && session?.user?.id) setSessionUserId(session.user.id);
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
+  const sessionQuery = useSessionQuery();
+  const sessionUserId = sessionQuery.data?.user.id ?? null;
   const resolvedStudentId = currentStudentId?.trim() || sessionUserId || "";
   const { width, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
-  const { handleScroll } = useNavigationVisibility();
+  const handleScroll = handleNavigationScroll;
   const messages = questBoardMessages[locale];
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<QuestBoardFilter>(
@@ -114,44 +96,15 @@ export default function QuestBoardScreen({
     }, 250);
     return () => clearTimeout(timeout);
   }, [previewState, retrying]);
-  const [liveQuests, setLiveQuests] = useState<QuestBoardQuest[] | null>(null);
-  const [liveError, setLiveError] = useState<Error | null>(null);
-  const hasSuccessfulBoardDataRef = useRef(false);
-  const loadBoard = useCallback(async (): Promise<QuestBoardQuest[]> => {
-    try {
-      const items = await liveQuestService.listBoardQuests();
-      hasSuccessfulBoardDataRef.current = true;
-      setLiveQuests(items);
-      setLiveError(null);
-      return items;
-    } catch (error: unknown) {
-      const normalizedError =
-        error instanceof Error
-          ? error
-          : new Error("Quest Board request failed");
-      if (!hasSuccessfulBoardDataRef.current) {
-        setLiveError(normalizedError);
-      }
-      throw normalizedError;
-    }
-  }, []);
-  const { refreshing, refresh, refreshOnFocus } = useCalmRefresh(loadBoard);
+
+  const boardQuery = useQuestBoardQuery(previewState === "populated");
+  const liveQuests = useMemo(() => boardQuery.data ?? null, [boardQuery.data]);
+  const refreshing = boardQuery.isRefetching;
   const refreshBoard = useCallback(() => {
     if (previewState !== "populated") return;
-    void refresh(true).catch(() => undefined);
-  }, [previewState, refresh]);
+    void boardQuery.refetch({ cancelRefetch: false }).catch(() => undefined);
+  }, [boardQuery, previewState]);
   const workflowNow = useMemo(() => new Date(), []);
-  useEffect(() => {
-    if (previewState !== "populated") return;
-    void refresh(retryAttempt > 0).catch(() => undefined);
-  }, [previewState, refresh, retryAttempt]);
-  useFocusEffect(
-    useCallback(() => {
-      if (previewState !== "populated") return undefined;
-      refreshOnFocus();
-      return undefined;
-    }, [previewState, refreshOnFocus])
-  );
 
   const boardModel = useMemo(() => {
     if (previewState !== "populated") {
@@ -160,7 +113,7 @@ export default function QuestBoardScreen({
         previewState
       );
     }
-    if (liveError) return { kind: "error" as const };
+    if (boardQuery.isError) return { kind: "error" as const };
     if (liveQuests !== null) {
       const quests = getVisibleQuests(liveQuests, {
         currentStudentId: resolvedStudentId,
@@ -171,7 +124,7 @@ export default function QuestBoardScreen({
         : { kind: "empty" as const };
     }
     return { kind: "loading" as const };
-  }, [liveError, liveQuests, previewState, resolvedStudentId]);
+  }, [boardQuery.isError, liveQuests, previewState, resolvedStudentId]);
   const localizedQuests = useMemo(
     () =>
       boardModel.kind === "ready"
@@ -262,9 +215,6 @@ export default function QuestBoardScreen({
   );
 
   const retryBoard = () => {
-    hasSuccessfulBoardDataRef.current = false;
-    setLiveQuests(null);
-    setLiveError(null);
     setRetryAttempt((attempt) => attempt + 1);
     setRetrying(true);
     setPreviewState("loading");

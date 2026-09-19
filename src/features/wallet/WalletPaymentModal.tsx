@@ -20,16 +20,16 @@ import {
 } from "lucide-react-native";
 import { type TopUpData, type TopUpQuote } from "@/api/WalletApi";
 import { formatSatang } from "@/domain/satang";
-import type { SupportedLocale } from "@/locales/LocaleProvider";
+import type { SupportedLocale } from "@/locales/locale";
 import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
 import {
-  checkTopUpAmount,
-  checkTopUpPayment,
-  createTopUpFromQuote,
-  requestTopUpQuote,
-  simulateTopUpPayment,
-} from "./walletModule";
+  useCreateTopUpMutation,
+  useQuoteTopUpMutation,
+  useSimulateTopUpMutation,
+  useTopUpStatusQuery,
+} from "./api/walletQueries";
+import { checkTopUpAmount, isQuoteExpired } from "./walletModule";
 import { walletStyles as s } from "./walletStyles";
 
 interface WalletPaymentModalProps {
@@ -61,13 +61,17 @@ export function WalletPaymentModal({
     "amount"
   );
   const [amountStr, setAmountStr] = useState("100");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [quote, setQuote] = useState<TopUpQuote | null>(null);
   const [activeTopUp, setActiveTopUp] = useState<TopUpData | null>(null);
-  const [checkingStatus, setCheckingStatus] = useState(false);
   const [paymentVerified, setPaymentVerified] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const quoteMutation = useQuoteTopUpMutation();
+  const createMutation = useCreateTopUpMutation();
+  const simulateMutation = useSimulateTopUpMutation();
+  const statusQuery = useTopUpStatusQuery(activeTopUp?.id ?? null);
+  const loading = quoteMutation.isPending || createMutation.isPending;
+  const checkingStatus = statusQuery.isFetching || simulateMutation.isPending;
 
   const amountCheck = checkTopUpAmount(amountStr);
   const isAmountValid = amountCheck.ok;
@@ -98,38 +102,33 @@ export function WalletPaymentModal({
       );
       return;
     }
-    setLoading(true);
     setError(null);
     setStatusMessage(null);
 
     try {
-      const nextQuote = await requestTopUpQuote(amountCheck.satang);
+      const nextQuote = await quoteMutation.mutateAsync(amountCheck.satang);
       setQuote(nextQuote);
       setStep("confirmation");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : m.paymentFailed);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleConfirm = async () => {
     if (!quote || loading) return;
-    setLoading(true);
     setError(null);
 
+    if (isQuoteExpired(quote, new Date())) {
+      setError(m.paymentFailed);
+      return;
+    }
+
     try {
-      const result = await createTopUpFromQuote(quote, new Date());
-      if (!result.ok) {
-        setError(m.paymentFailed);
-        return;
-      }
-      setActiveTopUp(result.topUp);
+      const topUp = await createMutation.mutateAsync(quote.id);
+      setActiveTopUp(topUp);
       setStep("promptPay");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : m.paymentFailed);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -146,28 +145,24 @@ export function WalletPaymentModal({
 
   const handleVerifyPayment = async () => {
     if (!activeTopUp || checkingStatus) return;
-    setCheckingStatus(true);
     setStatusMessage(null);
     try {
-      applyPaymentStatus(await checkTopUpPayment(activeTopUp.id));
+      const result = await statusQuery.refetch();
+      if (result.error) throw result.error;
+      if (result.data) applyPaymentStatus(result.data);
     } catch (err: unknown) {
       setStatusMessage(err instanceof Error ? err.message : m.paymentFailed);
-    } finally {
-      setCheckingStatus(false);
     }
   };
 
   const handleSimulatePayment = async () => {
     if (!activeTopUp || checkingStatus) return;
-    setCheckingStatus(true);
     setStatusMessage(null);
     try {
-      const latest = await simulateTopUpPayment(activeTopUp.id);
-      if (latest) applyPaymentStatus(latest);
+      const latest = await simulateMutation.mutateAsync(activeTopUp.id);
+      applyPaymentStatus(latest);
     } catch (err: unknown) {
       setStatusMessage(err instanceof Error ? err.message : m.paymentFailed);
-    } finally {
-      setCheckingStatus(false);
     }
   };
 

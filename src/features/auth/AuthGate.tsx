@@ -4,18 +4,18 @@ import { useRouter } from "expo-router";
 import { colors } from "@/theme/colors";
 import LoginScreen from "./LoginScreen";
 import { authService } from "./AuthService";
-import { RoutingDestination } from "./types";
+import { useSessionQuery } from "./sessionQueries";
 import { authMessages } from "../../locales/authMessages";
-import { useLocale } from "../../locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
+import { RoutingDestination } from "./types";
 
 export default function Index() {
-  const [status, setStatus] = useState<"loading" | "unauthenticated" | "error">(
-    "loading"
-  );
+  const [routingFailed, setRoutingFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const router = useRouter();
   const { locale } = useLocale();
   const messages = authMessages[locale];
+  const sessionQuery = useSessionQuery();
 
   const handleNavigate = React.useCallback(
     (dest: RoutingDestination) => {
@@ -32,40 +32,32 @@ export default function Index() {
   );
 
   useEffect(() => {
+    if (!sessionQuery.data) return;
     let mounted = true;
-
-    async function checkSession() {
-      let session;
-      try {
-        session = await authService.getSession();
-      } catch {
-        if (mounted) setStatus("error");
-        return;
-      }
-
-      if (session && mounted) {
-        try {
-          const dest = await authService.getRoutingDestination();
-          handleNavigate(dest);
-        } catch {
-          if (mounted) setStatus("error");
-        }
-        return;
-      }
-
-      if (mounted) setStatus("unauthenticated");
-    }
-
-    void checkSession();
+    void authService
+      .getRoutingDestination()
+      .then((dest) => {
+        if (mounted) handleNavigate(dest);
+      })
+      .catch(() => {
+        if (mounted) setRoutingFailed(true);
+      });
     return () => {
       mounted = false;
     };
-  }, [attempt, handleNavigate]);
+  }, [attempt, handleNavigate, sessionQuery.data]);
+
+  const status =
+    sessionQuery.isError || routingFailed
+      ? "error"
+      : sessionQuery.isPending || sessionQuery.isFetching || sessionQuery.data
+        ? "loading"
+        : "unauthenticated";
 
   if (status === "loading") {
     return (
       <View
-        className="flex-1 justify-center items-center bg-ku-background"
+        className="flex-1 items-center justify-center bg-ku-background"
         testID="auth-gate-loading"
       >
         <ActivityIndicator size="large" color={colors.primary} />
@@ -76,26 +68,27 @@ export default function Index() {
   if (status === "error") {
     return (
       <View
-        className="flex-1 justify-center items-center p-[24px] bg-ku-background"
+        className="flex-1 items-center justify-center bg-ku-background p-[24px]"
         accessibilityRole="alert"
         testID="auth-gate-error"
       >
-        <Text className="text-ku-text-strong text-ku-subtitle font-ku-bold text-center">
+        <Text className="text-center font-ku-bold text-ku-subtitle text-ku-text-strong">
           {messages.sessionLoadTitle}
         </Text>
-        <Text className="text-ku-text-secondary mt-[8px] text-center">
+        <Text className="mt-[8px] text-center text-ku-text-secondary">
           {messages.sessionLoadDescription}
         </Text>
         <Pressable
           accessibilityRole="button"
-          className="mt-[20px] rounded-ku-pill bg-ku-primary min-h-[44px] px-[24px] justify-center"
+          className="mt-[20px] min-h-[44px] justify-center rounded-ku-pill bg-ku-primary px-[24px]"
           onPress={() => {
-            setStatus("loading");
+            setRoutingFailed(false);
             setAttempt((value) => value + 1);
+            void sessionQuery.refetch();
           }}
           testID="auth-gate-retry"
         >
-          <Text className="text-ku-white font-ku-semibold">
+          <Text className="font-ku-semibold text-ku-white">
             {messages.retryButton}
           </Text>
         </Pressable>

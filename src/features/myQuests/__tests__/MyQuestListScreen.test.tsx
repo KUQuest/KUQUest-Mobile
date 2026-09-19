@@ -1,6 +1,5 @@
-import React from "react";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
-
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import MyQuestListScreen from "../MyQuestListScreen";
 
 const mockPush = jest.fn();
@@ -10,14 +9,12 @@ const mockHirerList = jest.fn();
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({ back: mockBack, push: mockPush }),
-  useFocusEffect: (effect: () => (() => void) | void) =>
-    jest.requireActual("react").useEffect(effect, [effect]),
 }));
-jest.mock("@/locales/LocaleProvider", () => ({
+jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
-jest.mock("@/components/navigation/NavigationVisibilityContext", () => ({
-  useNavigationVisibility: () => ({ handleScroll: jest.fn() }),
+jest.mock("@/features/navigation/navigationUiStore", () => ({
+  handleNavigationScroll: jest.fn(),
 }));
 jest.mock("@/features/auth/AuthService", () => ({
   authService: {
@@ -130,7 +127,7 @@ describe("MyQuestListScreen", () => {
       snapshot("QUEST_FAILED", "Failed Quest", "ASSIGNMENT_CANCELLED"),
     ] as never);
 
-    const screen = await render(
+    const screen = await renderWithQueryClient(
       <MyQuestListScreen initialRole="worker" initialTab="history" />
     );
 
@@ -148,7 +145,7 @@ describe("MyQuestListScreen", () => {
       draftQuest("open-1", "Published Quest", "QUEST_OPEN"),
     ] as never);
 
-    const screen = await render(
+    const screen = await renderWithQueryClient(
       <MyQuestListScreen initialRole="hirer" initialTab="draft" />
     );
 

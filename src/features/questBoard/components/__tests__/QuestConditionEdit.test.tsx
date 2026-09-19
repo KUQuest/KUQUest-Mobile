@@ -6,7 +6,7 @@ import { QuestConditionEditStatusCard } from "../QuestConditionEditStatusCard";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import type { QuestV2EditRequest } from "@/api/questV2Contracts";
 
-jest.mock("@/locales/LocaleProvider", () => ({
+jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 

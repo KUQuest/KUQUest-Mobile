@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ApiClient } from "./ApiClient";
+export type RequestOptions = { signal?: AbortSignal };
 
 export const walletBalancesSchema = z.object({
   spendingBalanceSatang: z.number().int().nonnegative(),
@@ -495,8 +496,10 @@ export const payoutsListResponseSchema = z.object({
 export class WalletApi {
   constructor(private readonly client: ApiClient = new ApiClient()) {}
 
-  async getWallet(): Promise<WalletBalances> {
-    const body = await this.client.request<unknown>("/api/v1/wallet");
+  async getWallet(options?: RequestOptions): Promise<WalletBalances> {
+    const body = await this.client.request<unknown>("/api/v1/wallet", {
+      signal: options?.signal,
+    });
     return walletResponseSchema.parse(body).data.wallet;
   }
 
@@ -547,27 +550,41 @@ export class WalletApi {
     return topUpResponseSchema.parse(body).data;
   }
 
-  async getTopUpStatus(topUpId: string): Promise<TopUpData> {
+  async getTopUpStatus(
+    topUpId: string,
+    options?: RequestOptions
+  ): Promise<TopUpData> {
     const body = await this.client.request<unknown>(
-      `/api/v1/top-ups/${topUpId}`
+      `/api/v1/top-ups/${topUpId}`,
+      { signal: options?.signal }
     );
     return topUpResponseSchema.parse(body).data;
   }
 
-  async listTopUps(limit?: number): Promise<TopUpListItem[]> {
+  async listTopUps(
+    limit?: number,
+    options?: RequestOptions
+  ): Promise<TopUpListItem[]> {
     try {
       const path = limit ? `/api/v1/top-ups?limit=${limit}` : "/api/v1/top-ups";
-      const body = await this.client.request<unknown>(path);
+      const body = await this.client.request<unknown>(path, {
+        signal: options?.signal,
+      });
       return topUpsListResponseSchema.parse(body).data.items;
     } catch {
       return [];
     }
   }
 
-  async listPayouts(limit?: number): Promise<PayoutListItem[]> {
+  async listPayouts(
+    limit?: number,
+    options?: RequestOptions
+  ): Promise<PayoutListItem[]> {
     try {
       const path = limit ? `/api/v1/payouts?limit=${limit}` : "/api/v1/payouts";
-      const body = await this.client.request<unknown>(path);
+      const body = await this.client.request<unknown>(path, {
+        signal: options?.signal,
+      });
       const parsed = payoutsListResponseSchema.parse(body).data;
       return "items" in parsed
         ? (parsed.items as unknown as PayoutListItem[])
@@ -578,16 +595,19 @@ export class WalletApi {
   }
 
   async getTransactionHistory(
-    limit = 30
+    limit = 30,
+    options?: RequestOptions
   ): Promise<UserTransactionHistoryResult> {
     const [activitiesRes, topUpsRes, payoutsRes] = await Promise.allSettled([
       this.client
-        .request<unknown>(`/api/v1/wallet/activities?limit=${limit}`)
+        .request<unknown>(`/api/v1/wallet/activities?limit=${limit}`, {
+          signal: options?.signal,
+        })
         .then(
           (body) => walletActivitiesResponseSchema.parse(body).data.activities
         ),
-      this.listTopUps(limit),
-      this.listPayouts(limit),
+      this.listTopUps(limit, options),
+      this.listPayouts(limit, options),
     ]);
 
     const activities =
@@ -769,16 +789,21 @@ export class WalletApi {
     return { items: uniqueItems };
   }
 
-  async getActivePayoutDestination(): Promise<PayoutDestination | null> {
+  async getActivePayoutDestination(
+    options?: RequestOptions
+  ): Promise<PayoutDestination | null> {
     const body = await this.client.request<unknown>(
-      "/api/v1/payout-destinations"
+      "/api/v1/payout-destinations",
+      { signal: options?.signal }
     );
     const parsed = activePayoutDestinationResponseSchema.parse(body);
     return parsed.data ? normalizePayoutDestination(parsed.data) : null;
   }
 
-  async listPayoutDestinations(): Promise<PayoutDestination[]> {
-    const destination = await this.getActivePayoutDestination();
+  async listPayoutDestinations(
+    options?: RequestOptions
+  ): Promise<PayoutDestination[]> {
+    const destination = await this.getActivePayoutDestination(options);
     return destination ? [destination] : [];
   }
 
@@ -927,9 +952,13 @@ export class WalletApi {
     return this.createPayout(quote.id, idempotencyKey);
   }
 
-  async getPayout(payoutId: string): Promise<PayoutRecord> {
+  async getPayout(
+    payoutId: string,
+    options?: RequestOptions
+  ): Promise<PayoutRecord> {
     const body = await this.client.request<unknown>(
-      `/api/v1/payouts/${payoutId}`
+      `/api/v1/payouts/${payoutId}`,
+      { signal: options?.signal }
     );
     const raw = payoutResponseSchema.parse(body).data;
     const resolvedStatus = (raw.status ??
@@ -945,12 +974,13 @@ export class WalletApi {
       payoutStatus: resolvedStatus,
     };
   }
-
   async listPayoutStatusHistory(
-    payoutId: string
+    payoutId: string,
+    options?: RequestOptions
   ): Promise<PayoutStatusHistoryItem[]> {
     const body = await this.client.request<unknown>(
-      `/api/v1/payouts/${payoutId}/status-history`
+      `/api/v1/payouts/${payoutId}/status-history`,
+      { signal: options?.signal }
     );
     return payoutStatusHistoryResponseSchema.parse(body).data;
   }

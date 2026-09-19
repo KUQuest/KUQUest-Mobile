@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { AccessibilityInfo, Alert, BackHandler } from "react-native";
 import {
@@ -10,21 +10,42 @@ import {
 import { ApiError } from "@/api/ApiClient";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import type { UploadAsset } from "@/api/fileUpload";
-import { useCalmRefresh } from "@/hooks/useCalmRefresh";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import {
   questBoardMessages,
   type QuestBoardMessages,
 } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
-import { authService } from "../auth/AuthService";
 import {
   canonicalToQuestBoardQuest,
   liveQuestService,
   publicDetailToQuestBoardQuest,
   type LiveQuestSnapshot,
 } from "./liveQuestService";
+import {
+  useApplyQuestMutation,
+  useCreateCandidateInquiryMutation,
+  useCreateCandidateTeamMutation,
+  useDecideUnderfilledMutation,
+  useJoinCandidateTeamMutation,
+  useJoinQuestMutation,
+  useLeaveCandidateTeamMutation,
+  useLiveQuestSnapshotQuery,
+  useQuestDetailQuery,
+  useRejectApplicationMutation,
+  useRejectCandidateTeamMutation,
+  useRegenerateCandidateTeamCodeMutation,
+  useRemoveCandidateTeamMemberMutation,
+  useRespondUnderfilledConsentMutation,
+  useSelectApplicationMutation,
+  useSelectCandidateTeamMutation,
+  useSubmitCandidateTeamMutation,
+  useUpdateCandidateTeamMutation,
+  useUploadCandidateTeamFileMutation,
+  useWithdrawApplicationMutation,
+} from "./api/questBoardQueries";
 import type { QuestFixtureError } from "./questFixtureAdapter";
 import {
   getQuestDetailFixture,
@@ -198,139 +219,52 @@ export function useQuestDetailController({
   const resolvedPreview =
     previewState ?? parseBoardPreviewState(params.preview);
   const explicitPreview = resolvedPreview !== undefined;
-  const [sessionStudentId, setSessionStudentId] = useState<
-    string | undefined
-  >();
-  const [sessionResolved, setSessionResolved] = useState(
-    Boolean(explicitStudentId)
-  );
-  const [liveQuest, setLiveQuest] = useState<QuestBoardQuest | null>(null);
-  const [liveSnapshot, setLiveSnapshot] = useState<LiveQuestSnapshot | null>(
-    null
-  );
-  const [liveError, setLiveError] = useState<Error | null>(null);
-  const [loadedQuestId, setLoadedQuestId] = useState<string | undefined>();
+  const sessionQuery = useSessionQuery();
+  const sessionStudentId = parseStudentId(sessionQuery.data?.user.id);
   const applicationStudentId = explicitStudentId ?? sessionStudentId ?? "";
-  const sessionReady = sessionResolved || Boolean(explicitStudentId);
+  const sessionReady = Boolean(explicitStudentId) || !sessionQuery.isPending;
   const isJoinView = resolvedMode === "join";
   const isPostView = resolvedMode === "post";
   const prototypeViewerId = applicationStudentId;
+  const liveSnapshotAvailable =
+    typeof liveQuestService.getLiveSnapshot === "function";
+
+  const liveSnapshotQuery = useLiveQuestSnapshotQuery(
+    resolvedQuestId ?? null,
+    applicationStudentId || null,
+    {},
+    !explicitPreview && liveSnapshotAvailable && sessionReady
+  );
+  const questDetailQuery = useQuestDetailQuery(
+    resolvedQuestId ?? null,
+    !explicitPreview && !liveSnapshotAvailable
+  );
+  const liveSnapshot = liveSnapshotQuery.data ?? null;
+  const liveQuest = useMemo(
+    () =>
+      liveSnapshot
+        ? toQuestBoardQuest(liveSnapshot)
+        : (questDetailQuery.data ?? null),
+    [liveSnapshot, questDetailQuery.data]
+  );
+  const liveError = liveSnapshotAvailable
+    ? liveSnapshotQuery.error
+    : questDetailQuery.error;
   const loadingQuest = explicitPreview
     ? resolvedPreview === "loading"
-    : Boolean(resolvedQuestId && loadedQuestId !== resolvedQuestId);
-
-  useEffect(() => {
-    if (explicitStudentId) return undefined;
-    let active = true;
-    void authService
-      .getSession()
-      .then((session) => {
-        if (!active) return;
-        const id = parseStudentId(session?.user.id);
-        if (id) setSessionStudentId(id);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setSessionResolved(true);
-      });
-    return () => {
-      active = false;
-    };
-  }, [explicitStudentId]);
-
-  const latestQuestIdRef = React.useRef(resolvedQuestId);
-  const loadedQuestIdRef = React.useRef(loadedQuestId);
-  useEffect(() => {
-    latestQuestIdRef.current = resolvedQuestId;
-    return () => {
-      latestQuestIdRef.current = undefined;
-    };
-  }, [resolvedQuestId]);
-  useEffect(() => {
-    loadedQuestIdRef.current = loadedQuestId;
-  }, [loadedQuestId]);
-
-  const loadQuest = React.useCallback(async (): Promise<QuestBoardQuest> => {
-    const id = resolvedQuestId;
-    if (!id) throw new Error("Quest ID is required");
-    if (explicitPreview) {
-      const fixture = getQuestDetailFixture(id, resolvedPreview);
-      if (!fixture) throw new Error("Quest not found");
-      setLoadedQuestId(id);
-      return fixture;
-    }
-    if (typeof liveQuestService.getLiveSnapshot !== "function") {
-      if (typeof liveQuestService.getQuestDetail === "function") {
-        const quest = await liveQuestService.getQuestDetail(id);
-        if (latestQuestIdRef.current === id) {
-          setLiveQuest(quest);
-          setLoadedQuestId(id);
-        }
-        return quest;
-      }
-      throw new Error("Member session is required");
-    }
-    if (!applicationStudentId) {
-      throw new Error("Member session is required");
-    }
-    setLiveError(null);
-    try {
-      const snapshot = await liveQuestService.getLiveSnapshot(
-        id,
-        applicationStudentId
+    : Boolean(
+        resolvedQuestId &&
+        (liveSnapshotAvailable
+          ? !sessionReady || liveSnapshotQuery.isPending
+          : questDetailQuery.isPending)
       );
-      if (latestQuestIdRef.current === id) {
-        setLiveSnapshot(snapshot);
-        setLiveQuest(toQuestBoardQuest(snapshot));
-        setLoadedQuestId(id);
-      }
-      return toQuestBoardQuest(snapshot);
-    } catch (error) {
-      if (latestQuestIdRef.current === id) {
-        setLiveError(error instanceof Error ? error : new Error("Load failed"));
-        setLoadedQuestId(id);
-      }
-      throw error;
-    }
-  }, [applicationStudentId, explicitPreview, resolvedPreview, resolvedQuestId]);
-
-  const { refreshing, refresh, refreshOnFocus } = useCalmRefresh(loadQuest);
-  useFocusEffect(
-    React.useCallback(() => {
-      const liveSnapshotAvailable =
-        typeof liveQuestService.getLiveSnapshot === "function";
-      if (
-        !resolvedQuestId ||
-        explicitPreview ||
-        (liveSnapshotAvailable && !sessionReady)
-      )
-        return;
-      if (loadedQuestIdRef.current !== resolvedQuestId) {
-        void refresh(true).catch(() => undefined);
-        return;
-      }
-      refreshOnFocus();
-    }, [
-      explicitPreview,
-      refresh,
-      refreshOnFocus,
-      resolvedQuestId,
-      sessionReady,
-    ])
-  );
-  useEffect(() => {
-    const liveSnapshotAvailable =
-      typeof liveQuestService.getLiveSnapshot === "function";
-    if (
-      !resolvedQuestId ||
-      explicitPreview ||
-      (liveSnapshotAvailable && !sessionReady)
-    )
-      return;
-    if (loadedQuestIdRef.current !== resolvedQuestId) {
-      void refresh(true).catch(() => undefined);
-    }
-  }, [explicitPreview, refresh, resolvedQuestId, sessionReady]);
+  const refreshLive = React.useCallback(() => {
+    if (liveSnapshotAvailable) return liveSnapshotQuery.refetch();
+    return questDetailQuery.refetch();
+  }, [liveSnapshotAvailable, liveSnapshotQuery, questDetailQuery]);
+  const refreshing = liveSnapshotAvailable
+    ? liveSnapshotQuery.isRefetching
+    : questDetailQuery.isRefetching;
 
   const [, setPrototypeState] = useState<QuestDetailState | null>(null);
   const activePrototypeState =
@@ -376,6 +310,27 @@ export function useQuestDetailController({
     ? (activePrototypeState?.actualHeadcount ?? prototypeParticipants.length)
     : liveParticipantCount;
   const [liveAction, setLiveAction] = useState<string | null>(null);
+  const joinQuestMutation = useJoinQuestMutation();
+  const applyQuestMutation = useApplyQuestMutation();
+  const withdrawApplicationMutation = useWithdrawApplicationMutation();
+  const createCandidateInquiryMutation = useCreateCandidateInquiryMutation();
+  const selectApplicationMutation = useSelectApplicationMutation();
+  const rejectApplicationMutation = useRejectApplicationMutation();
+  const selectCandidateTeamMutation = useSelectCandidateTeamMutation();
+  const rejectCandidateTeamMutation = useRejectCandidateTeamMutation();
+  const createCandidateTeamMutation = useCreateCandidateTeamMutation();
+  const joinCandidateTeamMutation = useJoinCandidateTeamMutation();
+  const leaveCandidateTeamMutation = useLeaveCandidateTeamMutation();
+  const removeCandidateTeamMemberMutation =
+    useRemoveCandidateTeamMemberMutation();
+  const regenerateCandidateTeamCodeMutation =
+    useRegenerateCandidateTeamCodeMutation();
+  const updateCandidateTeamMutation = useUpdateCandidateTeamMutation();
+  const submitCandidateTeamMutation = useSubmitCandidateTeamMutation();
+  const uploadCandidateTeamFileMutation = useUploadCandidateTeamFileMutation();
+  const decideUnderfilledMutation = useDecideUnderfilledMutation();
+  const respondUnderfilledConsentMutation =
+    useRespondUnderfilledConsentMutation();
   const runLiveAction = React.useCallback(
     async <T>(
       actionName: string,
@@ -384,13 +339,9 @@ export function useQuestDetailController({
     ): Promise<T | undefined> => {
       if (liveAction) return undefined;
       setLiveAction(actionName);
-      setLiveError(null);
       try {
-        const result = await action();
-        await refresh(true).catch(() => undefined);
-        return result;
+        return await action();
       } catch (error) {
-        await refresh(true).catch(() => undefined);
         const message = getLiveActionError(error, fallbackError);
         Alert.alert(messages.details, message);
         return undefined;
@@ -398,7 +349,7 @@ export function useQuestDetailController({
         setLiveAction(null);
       }
     },
-    [liveAction, messages.details, refresh]
+    [liveAction, messages.details]
   );
   const quest = explicitPreview
     ? (getQuestDetailFixture(resolvedQuestId, resolvedPreview) ?? null)
@@ -677,7 +628,11 @@ export function useQuestDetailController({
     if (firstCome && !explicitPreview) {
       const result = await runLiveAction(
         "join",
-        () => liveQuestService.joinQuest(quest.id),
+        () =>
+          joinQuestMutation.mutateAsync({
+            questId: quest.id,
+            viewerId: applicationStudentId,
+          }),
         "Failed to join quest"
       );
       if (!result) return;
@@ -695,7 +650,11 @@ export function useQuestDetailController({
       const result = await runLiveAction(
         "apply",
         () =>
-          liveQuestService.applyQuest(quest.id, createQuestIdempotencyKey()),
+          applyQuestMutation.mutateAsync({
+            questId: quest.id,
+            viewerId: applicationStudentId,
+            idempotencyKey: createQuestIdempotencyKey(),
+          }),
         "Failed to apply"
       );
       if (!result) return;
@@ -744,11 +703,12 @@ export function useQuestDetailController({
               const result = await runLiveAction(
                 "withdraw",
                 () =>
-                  liveQuestService.withdrawApplication(
-                    quest.id,
-                    liveSnapshot.application!.id,
-                    createQuestIdempotencyKey()
-                  ),
+                  withdrawApplicationMutation.mutateAsync({
+                    questId: quest.id,
+                    applicationId: liveSnapshot.application!.id,
+                    viewerId: applicationStudentId,
+                    idempotencyKey: createQuestIdempotencyKey(),
+                  }),
                 "Failed to withdraw application"
               );
               if (!result) return;
@@ -801,8 +761,8 @@ export function useQuestDetailController({
       });
       return;
     }
-    void liveQuestService
-      .createCandidateInquiry(quest.id)
+    void createCandidateInquiryMutation
+      .mutateAsync(quest.id)
       .then((inquiry) => {
         router.push({
           pathname: "/quest/[id]/inquiry/[conversationId]",
@@ -894,11 +854,12 @@ export function useQuestDetailController({
       void runLiveAction(
         "underfilled-consent",
         () =>
-          liveQuestService.respondUnderfilledConsent(
-            resolvedQuestId,
-            approve ? "ACCEPT" : "DECLINE",
-            createQuestIdempotencyKey()
-          ),
+          respondUnderfilledConsentMutation.mutateAsync({
+            questId: resolvedQuestId,
+            decision: approve ? "ACCEPT" : "DECLINE",
+            viewerId: applicationStudentId,
+            idempotencyKey: createQuestIdempotencyKey(),
+          }),
         "Failed to respond to underfilled consent"
       );
       return;
@@ -918,17 +879,19 @@ export function useQuestDetailController({
       const operation =
         liveSnapshot.participation === "GROUP"
           ? () =>
-              liveQuestService.selectCandidateTeam(
-                resolvedQuestId,
-                proposalId,
-                createQuestIdempotencyKey()
-              )
+              selectCandidateTeamMutation.mutateAsync({
+                questId: resolvedQuestId,
+                teamId: proposalId,
+                viewerId: applicationStudentId,
+                idempotencyKey: createQuestIdempotencyKey(),
+              })
           : () =>
-              liveQuestService.selectApplication(
-                resolvedQuestId,
-                proposalId,
-                createQuestIdempotencyKey()
-              );
+              selectApplicationMutation.mutateAsync({
+                questId: resolvedQuestId,
+                applicationId: proposalId,
+                viewerId: applicationStudentId,
+                idempotencyKey: createQuestIdempotencyKey(),
+              });
       void runLiveAction(
         "select-candidate",
         operation,
@@ -968,17 +931,19 @@ export function useQuestDetailController({
             const operation =
               liveSnapshot.participation === "GROUP"
                 ? () =>
-                    liveQuestService.rejectCandidateTeam(
-                      resolvedQuestId,
-                      proposalId,
-                      createQuestIdempotencyKey()
-                    )
+                    rejectCandidateTeamMutation.mutateAsync({
+                      questId: resolvedQuestId,
+                      teamId: proposalId,
+                      viewerId: applicationStudentId,
+                      idempotencyKey: createQuestIdempotencyKey(),
+                    })
                 : () =>
-                    liveQuestService.rejectApplication(
-                      resolvedQuestId,
-                      proposalId,
-                      createQuestIdempotencyKey()
-                    );
+                    rejectApplicationMutation.mutateAsync({
+                      questId: resolvedQuestId,
+                      applicationId: proposalId,
+                      viewerId: applicationStudentId,
+                      idempotencyKey: createQuestIdempotencyKey(),
+                    });
             void runLiveAction<unknown>(
               "reject-candidate",
               operation,
@@ -1013,7 +978,12 @@ export function useQuestDetailController({
       return;
     void runLiveAction(
       "underfilled-load",
-      () => liveQuestService.getUnderfilled(resolvedQuestId),
+      async () => {
+        const result = await refreshLive();
+        return result.data && "underfilled" in result.data
+          ? result.data.underfilled
+          : null;
+      },
       "Failed to load underfilled Quest status"
     );
   };
@@ -1027,11 +997,12 @@ export function useQuestDetailController({
     void runLiveAction(
       "underfilled-decision",
       () =>
-        liveQuestService.decideUnderfilled(
-          resolvedQuestId,
+        decideUnderfilledMutation.mutateAsync({
+          questId: resolvedQuestId,
           decision,
-          createQuestIdempotencyKey()
-        ),
+          viewerId: applicationStudentId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        }),
       "Failed to update underfilled Quest decision"
     );
   };
@@ -1045,11 +1016,12 @@ export function useQuestDetailController({
     void runLiveAction(
       "underfilled-consent",
       () =>
-        liveQuestService.respondUnderfilledConsent(
-          resolvedQuestId,
+        respondUnderfilledConsentMutation.mutateAsync({
+          questId: resolvedQuestId,
           decision,
-          createQuestIdempotencyKey()
-        ),
+          viewerId: applicationStudentId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        }),
       "Failed to respond to underfilled consent"
     );
   };
@@ -1063,14 +1035,15 @@ export function useQuestDetailController({
     void runLiveAction(
       "create-team",
       () =>
-        liveQuestService.createCandidateTeam(
-          resolvedQuestId,
-          {
+        createCandidateTeamMutation.mutateAsync({
+          questId: resolvedQuestId,
+          payload: {
             name: `${quest?.title ?? "Quest"} Team`,
             headcount: quest?.headcount ?? 2,
           },
-          createQuestIdempotencyKey()
-        ),
+          viewerId: applicationStudentId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        }),
       "Failed to create Quest Team"
     );
   };
@@ -1085,12 +1058,13 @@ export function useQuestDetailController({
     void runLiveAction(
       "join-team",
       () =>
-        liveQuestService.joinCandidateTeam(
-          resolvedQuestId,
-          liveTeamSheetTeam.id,
+        joinCandidateTeamMutation.mutateAsync({
+          questId: resolvedQuestId,
+          teamId: liveTeamSheetTeam.id,
           joinCode,
-          createQuestIdempotencyKey()
-        ),
+          viewerId: applicationStudentId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        }),
       "Failed to join Quest Team"
     );
   };
@@ -1104,11 +1078,12 @@ export function useQuestDetailController({
     void runLiveAction(
       "leave-team",
       () =>
-        liveQuestService.leaveCandidateTeam(
-          resolvedQuestId,
+        leaveCandidateTeamMutation.mutateAsync({
+          questId: resolvedQuestId,
           teamId,
-          createQuestIdempotencyKey()
-        ),
+          viewerId: applicationStudentId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        }),
       "Failed to leave Quest Team"
     );
   };
@@ -1122,12 +1097,13 @@ export function useQuestDetailController({
     void runLiveAction(
       "remove-team-member",
       () =>
-        liveQuestService.removeCandidateTeamMember(
-          resolvedQuestId,
+        removeCandidateTeamMemberMutation.mutateAsync({
+          questId: resolvedQuestId,
           teamId,
           memberId,
-          createQuestIdempotencyKey()
-        ),
+          viewerId: applicationStudentId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        }),
       "Failed to remove team member"
     );
   };
@@ -1141,11 +1117,12 @@ export function useQuestDetailController({
     void runLiveAction(
       "regenerate-team-code",
       () =>
-        liveQuestService.regenerateCandidateTeamJoinCode(
-          resolvedQuestId,
+        regenerateCandidateTeamCodeMutation.mutateAsync({
+          questId: resolvedQuestId,
           teamId,
-          createQuestIdempotencyKey()
-        ),
+          viewerId: applicationStudentId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        }),
       "Failed to regenerate team join code"
     );
   };
@@ -1161,12 +1138,13 @@ export function useQuestDetailController({
     void runLiveAction(
       "update-team",
       () =>
-        liveQuestService.updateCandidateTeam(
-          resolvedQuestId,
+        updateCandidateTeamMutation.mutateAsync({
+          questId: resolvedQuestId,
           teamId,
-          { name: trimmedName },
-          createQuestIdempotencyKey()
-        ),
+          payload: { name: trimmedName },
+          viewerId: applicationStudentId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        }),
       "Failed to update Quest Team name"
     );
   };
@@ -1178,12 +1156,13 @@ export function useQuestDetailController({
     void runLiveAction(
       "submit-team",
       async () => {
-        const result = await liveQuestService.submitCandidateTeam(
-          resolvedQuestId,
+        const result = await submitCandidateTeamMutation.mutateAsync({
+          questId: resolvedQuestId,
           teamId,
-          payload ?? {},
-          createQuestIdempotencyKey()
-        );
+          payload,
+          viewerId: applicationStudentId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
         setTeamSheetOpen(false);
         setTeamReviewing(false);
         return result;
@@ -1196,28 +1175,32 @@ export function useQuestDetailController({
       if (!resolvedQuestId || !liveTeamSheetTeam) {
         throw new Error("No active team");
       }
-      const uploaded = await liveQuestService.uploadCandidateTeamFile(
-        resolvedQuestId,
-        liveTeamSheetTeam.id,
+      const uploaded = await uploadCandidateTeamFileMutation.mutateAsync({
+        questId: resolvedQuestId,
+        teamId: liveTeamSheetTeam.id,
         asset,
-        createQuestIdempotencyKey()
-      );
+        viewerId: applicationStudentId,
+        idempotencyKey: createQuestIdempotencyKey(),
+      });
       return {
         id: uploaded.fileId,
         name: uploaded.fileName,
         sizeBytes: uploaded.sizeBytes,
       };
     },
-    [liveTeamSheetTeam, resolvedQuestId]
+    [
+      applicationStudentId,
+      liveTeamSheetTeam,
+      resolvedQuestId,
+      uploadCandidateTeamFileMutation,
+    ]
   );
   const canonicalStatus =
     liveSnapshot?.state ?? activePrototypeState?.quest.status;
   const questPending = loadingQuest || resolvedPreview === "loading";
   const errorState = Boolean(liveError) || resolvedPreview === "error";
   const onRetry = () => {
-    setLiveError(null);
-    setLoadedQuestId(undefined);
-    void refresh(true).catch(() => undefined);
+    void refreshLive().catch(() => undefined);
   };
   const bodyProps: QuestDetailBodyProps | null = quest
     ? {
@@ -1249,7 +1232,7 @@ export function useQuestDetailController({
         locale,
         onOpenWorkHub: handleOpenWorkHub,
         onRefresh: () => {
-          void refresh(true).catch(() => undefined);
+          void refreshLive().catch(() => undefined);
         },
         onReportQuest: handleReportQuest,
         prototypeEntry: activePrototypeState

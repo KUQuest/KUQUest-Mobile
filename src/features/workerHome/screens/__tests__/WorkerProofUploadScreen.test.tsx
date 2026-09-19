@@ -1,8 +1,8 @@
-import React from "react";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import * as ImagePicker from "expo-image-picker";
-import { liveQuestService } from "@/features/questBoard/liveQuestService";
 import WorkerProofUploadScreen from "../WorkerProofUploadScreen";
+import { liveQuestService } from "@/features/questBoard/liveQuestService";
 
 const mockBack = jest.fn();
 const mockReplace = jest.fn();
@@ -12,7 +12,7 @@ jest.mock("expo-router", () => ({
   useLocalSearchParams: () => ({ id: "quest-test-1", viewerId: "worker-1" }),
 }));
 
-jest.mock("@/locales/LocaleProvider", () => ({
+jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 
@@ -59,7 +59,7 @@ describe("WorkerProofUploadScreen", () => {
       success: true,
     });
 
-    const view = await render(
+    const view = await renderWithQueryClient(
       <WorkerProofUploadScreen questId="quest-test-1" viewerId="worker-1" />
     );
 
@@ -111,7 +111,7 @@ describe("WorkerProofUploadScreen", () => {
       id: "proof-submission-1",
     });
 
-    const view = await render(
+    const view = await renderWithQueryClient(
       <WorkerProofUploadScreen questId="quest-test-1" viewerId="worker-1" />
     );
 

@@ -7,12 +7,12 @@ import { useAnimatedStyle, withTiming } from "react-native-reanimated";
 
 import { Animated } from "@/tw/animated";
 import { Pressable, Text, View } from "@/tw";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { navigationMessages } from "@/locales/navigationMessages";
 import { settingsMessages } from "@/locales/settingsMessages";
 import { colors } from "@/theme/colors";
 import { getAppChromeMetrics } from "@/theme/layout";
-import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
+import { useNavigationVisibility } from "@/features/navigation/navigationUiStore";
 
 const styles = {
   container: "absolute left-0 right-0 top-0 items-stretch",

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -11,15 +11,14 @@ import { CheckCircle2, CircleX, Clock, RefreshCw } from "lucide-react-native";
 
 import { Pressable, ScrollView, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
-import { questApi } from "@/api/QuestApi";
-import type { QuestV2Assignment } from "@/api/questV2Contracts";
-import { authService } from "@/features/auth/AuthService";
+import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
+import { useLocale } from "@/features/preferences/localeStore";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
 import {
-  liveQuestService,
-  type LiveQuestSnapshot,
-} from "@/features/questBoard/liveQuestService";
-import { useLocale } from "@/locales/LocaleProvider";
+  useWorkerAssignmentTitlesQuery,
+  useWorkerAssignmentsQuery,
+  useWorkerLiveSnapshotQuery,
+} from "../api/workerHomeQueries";
 import { getThemeColors } from "@/theme/colors";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
@@ -38,134 +37,76 @@ export default function WorkerWorkManagementScreen() {
   const colorScheme = useColorScheme();
   const themeColors = getThemeColors(colorScheme);
   const metrics = getAppChromeMetrics(width, fontScale);
-  const { handleScroll } = useNavigationVisibility();
+  const handleScroll = handleNavigationScroll;
   const { locale } = useLocale();
   const messages = workerHomeMessages[locale];
 
   const [activeTab, setActiveTab] = useState<ManagementTab>("applied");
-  const [sessionUserId, setSessionUserId] = useState<string>();
-  const [currentAssignment, setCurrentAssignment] =
-    useState<QuestV2Assignment | null>(null);
-  const [currentSnapshot, setCurrentSnapshot] =
-    useState<LiveQuestSnapshot | null>(null);
-  const [appliedQuests, setAppliedQuests] = useState<QuestV2Assignment[]>([]);
-  const [historyQuests, setHistoryQuests] = useState<QuestV2Assignment[]>([]);
-  const [questTitles, setQuestTitles] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const mountedRef = useRef(true);
+  const sessionQuery = useSessionQuery();
+  const sessionUserId = sessionQuery.data?.user.id;
 
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    void authService
-      .getSession()
-      .then((session) => {
-        if (active && session?.user.id) setSessionUserId(session.user.id);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const loadData = useCallback(async () => {
-    try {
-      const allAssignments = await questApi.listMyAssignments("all");
-      if (!mountedRef.current) return;
-
-      const active = allAssignments.filter(
-        (a) => a.state === "ASSIGNMENT_ACTIVE"
-      );
-      const history = allAssignments.filter(
-        (a) =>
-          a.state === "ASSIGNMENT_COMPLETED" ||
-          a.state === "ASSIGNMENT_CANCELLED" ||
-          a.state === "ASSIGNMENT_INCOMPLETE" ||
-          a.questState === "QUEST_COMPLETED" ||
-          a.questState === "QUEST_CANCELLED" ||
-          a.questState === "QUEST_FAILED"
-      );
-      const applied = allAssignments.filter(
-        (a) =>
-          a.questState === "QUEST_ASSIGNED" || a.questState === "QUEST_OPEN"
-      );
-
-      setHistoryQuests(history);
-      setAppliedQuests(applied);
-
-      const questIds = [...new Set(allAssignments.map((item) => item.questId))];
-      void Promise.allSettled(
-        questIds.map(async (questId) => {
-          const detail = await questApi.getParticipationDetail(questId);
-          return [questId, detail.title] as const;
-        })
-      ).then((titleResults) => {
-        if (!mountedRef.current) return;
-        const nextQuestTitles: Record<string, string> = {};
-        titleResults.forEach((result) => {
-          if (result.status === "fulfilled" && result.value[1]) {
-            nextQuestTitles[result.value[0]] = result.value[1];
-          }
-        });
-        if (Object.keys(nextQuestTitles).length > 0) {
-          setQuestTitles(nextQuestTitles);
-        }
-      });
-
-      if (active.length > 0) {
-        const topActive = active[0];
-        setCurrentAssignment(topActive);
-
-        if (sessionUserId) {
-          try {
-            const snap = await liveQuestService.getLiveSnapshot(
-              topActive.questId,
-              sessionUserId
-            );
-            if (mountedRef.current) {
-              setCurrentSnapshot(snap);
-              if (snap?.quest?.title) {
-                setQuestTitles((titles) => ({
-                  ...titles,
-                  [topActive.questId]: snap.quest.title,
-                }));
-              }
-            }
-          } catch {
-            // keep topActive without snapshot
-          }
-        }
-      } else {
-        setCurrentAssignment(null);
-        setCurrentSnapshot(null);
-      }
-    } catch {
-      // fallback
-    } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    }
-  }, [sessionUserId]);
-
-  /* eslint-disable react-hooks/set-state-in-effect -- initial async load updates screen */
-  useEffect(() => {
-    void loadData();
-  }, [loadData]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+  const assignmentsQuery = useWorkerAssignmentsQuery("all");
+  const allAssignments = useMemo(
+    () => assignmentsQuery.data ?? [],
+    [assignmentsQuery.data]
+  );
+  const activeAssignments = useMemo(
+    () =>
+      allAssignments.filter(
+        (assignment) => assignment.state === "ASSIGNMENT_ACTIVE"
+      ),
+    [allAssignments]
+  );
+  const historyQuests = useMemo(
+    () =>
+      allAssignments.filter(
+        (assignment) =>
+          assignment.state === "ASSIGNMENT_COMPLETED" ||
+          assignment.state === "ASSIGNMENT_CANCELLED" ||
+          assignment.state === "ASSIGNMENT_INCOMPLETE" ||
+          assignment.questState === "QUEST_COMPLETED" ||
+          assignment.questState === "QUEST_CANCELLED" ||
+          assignment.questState === "QUEST_FAILED"
+      ),
+    [allAssignments]
+  );
+  const appliedQuests = useMemo(
+    () =>
+      allAssignments.filter(
+        (assignment) =>
+          assignment.questState === "QUEST_ASSIGNED" ||
+          assignment.questState === "QUEST_OPEN"
+      ),
+    [allAssignments]
+  );
+  const currentAssignment = activeAssignments[0] ?? null;
+  const questIds = useMemo(
+    () => allAssignments.map((assignment) => assignment.questId),
+    [allAssignments]
+  );
+  const titlesQuery = useWorkerAssignmentTitlesQuery(questIds);
+  const questTitles = titlesQuery.data ?? {};
+  const snapshotQuery = useWorkerLiveSnapshotQuery(
+    currentAssignment?.questId ?? null,
+    sessionUserId ?? null
+  );
+  const currentSnapshot = snapshotQuery.data ?? null;
 
   const handleRefresh = useCallback(() => {
-    setRefreshing(true);
-    void loadData();
-  }, [loadData]);
+    void Promise.all([
+      assignmentsQuery.refetch(),
+      titlesQuery.refetch(),
+      currentAssignment && sessionUserId
+        ? snapshotQuery.refetch()
+        : Promise.resolve(),
+    ]);
+  }, [
+    assignmentsQuery,
+    currentAssignment,
+    sessionUserId,
+    snapshotQuery,
+    titlesQuery,
+  ]);
 
   const bottomNavInset = getBottomNavigationInset(metrics, insets.bottom);
   const scrollBottomPadding =
@@ -195,7 +136,11 @@ export default function WorkerWorkManagementScreen() {
           <RefreshControl
             colors={[themeColors.primaryDeep]}
             onRefresh={handleRefresh}
-            refreshing={refreshing}
+            refreshing={
+              assignmentsQuery.isRefetching ||
+              titlesQuery.isRefetching ||
+              snapshotQuery.isRefetching
+            }
             tintColor={themeColors.primaryDeep}
           />
         }
@@ -215,7 +160,7 @@ export default function WorkerWorkManagementScreen() {
         </View>
 
         {/* Section 1: Current Quest Card OR No Work Prompt */}
-        {loading && !currentAssignment ? (
+        {assignmentsQuery.isPending && !currentAssignment ? (
           <View style={{ paddingVertical: 24, alignItems: "center" }}>
             <ActivityIndicator color={themeColors.primaryDeep} />
           </View>

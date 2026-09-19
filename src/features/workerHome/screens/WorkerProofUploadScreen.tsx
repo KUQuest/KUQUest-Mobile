@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { ActivityIndicator, Alert, useColorScheme } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,17 +13,17 @@ import {
 import { Image, Pressable, ScrollView, Text, TextInput, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
-import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import type { UploadAsset } from "@/api/fileUpload";
-import { authService } from "@/features/auth/AuthService";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
+import { useLocale } from "@/features/preferences/localeStore";
 import {
-  liveQuestService,
-  type LiveQuestSnapshot,
-} from "@/features/questBoard/liveQuestService";
-import { useLocale } from "@/locales/LocaleProvider";
+  useConfirmCompletionMutation,
+  useSubmitProofMutation,
+  useWorkerLiveSnapshotQuery,
+} from "../api/workerHomeQueries";
+import { workerHomeMessages } from "../workerHomeMessages";
 import { getThemeColors } from "@/theme/colors";
 import { fontFamily } from "@/theme/typography";
-import { workerHomeMessages } from "../workerHomeMessages";
 
 export interface WorkerProofUploadScreenProps {
   questId?: string;
@@ -56,54 +56,36 @@ export default function WorkerProofUploadScreen({
     (Array.isArray(params.viewerId) ? params.viewerId[0] : params.viewerId) ??
     (Array.isArray(params.studentId) ? params.studentId[0] : params.studentId);
 
-  const [sessionUserId, setSessionUserId] = useState<string>();
-  const resolvedViewerId = explicitViewerId ?? sessionUserId;
+  const sessionQuery = useSessionQuery();
+  const resolvedViewerId = explicitViewerId ?? sessionQuery.data?.user.id;
 
-  const [snapshot, setSnapshot] = useState<LiveQuestSnapshot | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string>();
+  const snapshotQuery = useWorkerLiveSnapshotQuery(
+    resolvedQuestId ?? null,
+    resolvedViewerId ?? null
+  );
+  const snapshot = snapshotQuery.data ?? null;
+  const completionMutation = useConfirmCompletionMutation();
+  const proofMutation = useSubmitProofMutation();
   const [selectedImage, setSelectedImage] =
     useState<ImagePicker.ImagePickerAsset | null>(null);
   const [description, setDescription] = useState("");
 
-  useEffect(() => {
-    let active = true;
-    void authService
-      .getSession()
-      .then((session) => {
-        if (active && session?.user.id) setSessionUserId(session.user.id);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const loadSnapshot = useCallback(async () => {
-    if (!resolvedQuestId || !resolvedViewerId) return;
-    setLoading(true);
-    setError(undefined);
-    try {
-      const snap = await liveQuestService.getLiveSnapshot(
-        resolvedQuestId,
-        resolvedViewerId
-      );
-      setSnapshot(snap);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : messages.errorTitle);
-    } finally {
-      setLoading(false);
-    }
-  }, [messages.errorTitle, resolvedQuestId, resolvedViewerId]);
-
-  /* eslint-disable react-hooks/set-state-in-effect -- initial async load updates screen state */
-  useEffect(() => {
-    if (resolvedQuestId && resolvedViewerId) {
-      void loadSnapshot();
-    }
-  }, [loadSnapshot, resolvedQuestId, resolvedViewerId]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+  const isProofRequired = snapshot?.proofRequired !== false;
+  const canSubmitAction = isProofRequired
+    ? snapshot?.capabilities.canSubmitProof === true
+    : snapshot?.capabilities.canConfirmCompletion === true;
+  const submitting = completionMutation.isPending || proofMutation.isPending;
+  const mutationError = completionMutation.error ?? proofMutation.error;
+  const errorMessage =
+    snapshotQuery.error instanceof Error
+      ? snapshotQuery.error.message
+      : snapshotQuery.error
+        ? messages.errorTitle
+        : mutationError instanceof Error
+          ? mutationError.message
+          : mutationError
+            ? messages.errorTitle
+            : undefined;
 
   const handlePickImage = async () => {
     try {
@@ -125,23 +107,21 @@ export default function WorkerProofUploadScreen({
     setSelectedImage(null);
   };
 
-  const isProofRequired = snapshot?.proofRequired !== false;
-
-  // The server capability projection is the source of truth for the start gate.
-  const canSubmitAction = isProofRequired
-    ? snapshot?.capabilities.canSubmitProof === true
-    : snapshot?.capabilities.canConfirmCompletion === true;
-
-  // Case A: Doesn't require proof -> just end the quest (complete)
   const handleConfirmCompletionDirectly = async () => {
-    if (!resolvedQuestId || submitting || !canSubmitAction) return;
-    setSubmitting(true);
-    setError(undefined);
+    if (
+      !resolvedQuestId ||
+      !resolvedViewerId ||
+      submitting ||
+      !canSubmitAction
+    ) {
+      return;
+    }
+    completionMutation.reset();
     try {
-      await liveQuestService.confirmCompletion(
-        resolvedQuestId,
-        createQuestIdempotencyKey()
-      );
+      await completionMutation.mutateAsync({
+        questId: resolvedQuestId,
+        viewerId: resolvedViewerId,
+      });
       Alert.alert(
         messages.confirmCompleteTitle,
         messages.proofSubmittedSuccess,
@@ -158,44 +138,38 @@ export default function WorkerProofUploadScreen({
           },
         ]
       );
-    } catch (e) {
-      setError(e instanceof Error ? e.message : messages.errorTitle);
-    } finally {
-      setSubmitting(false);
+    } catch {
+      // The mutation error is rendered in the existing error banner.
     }
   };
-  // Case B: Requires proof -> upload image & submit
+
   const handleSubmitProof = async () => {
-    if (!resolvedQuestId || submitting || !canSubmitAction) return;
+    if (
+      !resolvedQuestId ||
+      !resolvedViewerId ||
+      submitting ||
+      !canSubmitAction
+    ) {
+      return;
+    }
     if (!selectedImage) {
       Alert.alert(messages.errorTitle, messages.imageRequiredAlert);
       return;
     }
 
-    setSubmitting(true);
-    setError(undefined);
+    proofMutation.reset();
+    const uploadAsset: UploadAsset = {
+      uri: selectedImage.uri,
+      name: selectedImage.fileName ?? `proof-${Date.now()}.jpg`,
+      type: selectedImage.mimeType ?? "image/jpeg",
+    };
     try {
-      const uploadAsset: UploadAsset = {
-        uri: selectedImage.uri,
-        name: selectedImage.fileName ?? `proof-${Date.now()}.jpg`,
-        type: selectedImage.mimeType ?? "image/jpeg",
-      };
-
-      const proofDraft = await liveQuestService.createProofDraft(
-        resolvedQuestId,
-        {
-          assets: [uploadAsset],
-          description: description.trim() || undefined,
-        },
-        createQuestIdempotencyKey()
-      );
-
-      await liveQuestService.submitProofDraft(
-        resolvedQuestId,
-        proofDraft.id,
-        createQuestIdempotencyKey()
-      );
-
+      await proofMutation.mutateAsync({
+        questId: resolvedQuestId,
+        viewerId: resolvedViewerId,
+        asset: uploadAsset,
+        description: description.trim() || undefined,
+      });
       Alert.alert(messages.workTitle, messages.proofSubmittedSuccess, [
         {
           text: "OK",
@@ -208,10 +182,8 @@ export default function WorkerProofUploadScreen({
           },
         },
       ]);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : messages.errorTitle);
-    } finally {
-      setSubmitting(false);
+    } catch {
+      // The mutation error is rendered in the existing error banner.
     }
   };
 
@@ -219,7 +191,7 @@ export default function WorkerProofUploadScreen({
     <ScreenLayout edges={["top", "left", "right"]} className="bg-ku-background">
       <TopBar onBackPress={() => router.back()} title={messages.workTitle} />
 
-      {loading ? (
+      {snapshotQuery.isPending ? (
         <View
           className="flex-1 items-center justify-center p-6"
           testID="worker-proof-loading"
@@ -261,7 +233,7 @@ export default function WorkerProofUploadScreen({
             </View>
           ) : null}
 
-          {error ? (
+          {errorMessage ? (
             <View
               style={{
                 backgroundColor: themeColors.surfaceMuted,
@@ -274,7 +246,7 @@ export default function WorkerProofUploadScreen({
               testID="worker-proof-error-banner"
             >
               <Text style={{ color: themeColors.textStrong, fontSize: 13 }}>
-                {error}
+                {errorMessage}
               </Text>
             </View>
           ) : null}

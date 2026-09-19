@@ -18,7 +18,7 @@ import { Image, Pressable, Text, TextInput, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { Input } from "@/features/onboarding/components/Input";
 import { createQuestMessages } from "@/locales/createQuestMessages";
-import type { SupportedLocale } from "@/locales/LocaleProvider";
+import type { SupportedLocale } from "@/locales/locale";
 import { colors } from "@/theme/colors";
 import styles from "../createQuestStyles";
 import { formatDate, formatDateTime } from "../createQuestDates";
@@ -313,7 +313,7 @@ export function TeamSetupStep({
                       styles.durationBadgeError
                     )}
                   >
-                    <View className="flex-row items-center gap-[6px] flex-1">
+                    <View className="flex-1 flex-row items-center gap-[6px]">
                       <CircleAlert
                         color={colors.danger}
                         size={16}

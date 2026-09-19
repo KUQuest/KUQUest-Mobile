@@ -1,5 +1,6 @@
 import React from "react";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import ProfileEditSectionScreen, {
   EditProfileHubScreen,
@@ -32,7 +33,7 @@ jest.mock("../../auth/AuthService", () => ({
   },
 }));
 
-jest.mock("../../../locales/LocaleProvider", () => ({
+jest.mock("../../../features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 
@@ -81,7 +82,7 @@ describe("Edit Profile hub", () => {
     );
     mockedGetStudentApi.mockResolvedValue({ getEditData } as never);
 
-    const view = await render(<EditProfileHubScreen />);
+    const view = await renderWithQueryClient(<EditProfileHubScreen />);
 
     expect(view.getByLabelText("Loading profile editor...")).toBeTruthy();
     expect(view.queryByTestId("profile-edit-section-basics")).toBeNull();
@@ -93,9 +94,11 @@ describe("Edit Profile hub", () => {
   });
 
   it("shows focused public profile editing sections and their empty summaries", async () => {
-    const view = await render(<EditProfileHubScreen />);
+    const view = await renderWithQueryClient(<EditProfileHubScreen />);
 
-    await waitFor(() => expect(view.getByText("Edit Profile")).toBeTruthy());
+    await waitFor(() =>
+      expect(view.getByTestId("profile-edit-section-basics")).toBeTruthy()
+    );
     expect(view.getByTestId("profile-edit-section-basics")).toBeTruthy();
     expect(view.getAllByText("Name, avatar, and bio")).toHaveLength(2);
     expect(view.getByText("0 entries")).toBeTruthy();
@@ -104,7 +107,7 @@ describe("Edit Profile hub", () => {
   });
 
   it("routes academic identity edits through Academic Registration", async () => {
-    const view = await render(<EditProfileHubScreen />);
+    const view = await renderWithQueryClient(<EditProfileHubScreen />);
 
     await waitFor(() =>
       expect(
@@ -121,7 +124,7 @@ describe("Edit Profile hub", () => {
     const previousDemoValue = process.env.EXPO_PUBLIC_PROFILE_DEMO;
     process.env.EXPO_PUBLIC_PROFILE_DEMO = "true";
     try {
-      const view = await render(<EditProfileHubScreen />);
+      const view = await renderWithQueryClient(<EditProfileHubScreen />);
       await waitFor(() =>
         expect(
           view.getByTestId("profile-edit-section-academic-registration")
@@ -142,7 +145,7 @@ describe("Edit Profile hub", () => {
   });
 
   it("offers a native Back action from the hub", async () => {
-    const view = await render(<EditProfileHubScreen />);
+    const view = await renderWithQueryClient(<EditProfileHubScreen />);
     await waitFor(() => expect(view.getByText("Edit Profile")).toBeTruthy());
     fireEvent.press(view.getByRole("button", { name: "Back" }));
   });
@@ -154,7 +157,7 @@ describe("Edit Profile hub", () => {
         .fn()
         .mockResolvedValue({ ...editData, sectionErrors: { portfolio: true } }),
     } as never);
-    const view = await render(<ProfileEditSectionScreen />);
+    const view = await renderWithQueryClient(<ProfileEditSectionScreen />);
 
     await waitFor(() =>
       expect(
@@ -173,7 +176,7 @@ describe("Edit Profile hub", () => {
         sectionUnavailable: { portfolio: true },
       }),
     } as never);
-    const view = await render(<ProfileEditSectionScreen />);
+    const view = await renderWithQueryClient(<ProfileEditSectionScreen />);
 
     await waitFor(() => expect(view.getByText("Unavailable")).toBeTruthy());
     expect(view.queryByText("Add")).toBeNull();
@@ -189,7 +192,7 @@ describe("Edit Profile hub", () => {
         sectionUnavailable: { portfolio: true },
       }),
     } as never);
-    const view = await render(<ProfileEditSectionScreen />);
+    const view = await renderWithQueryClient(<ProfileEditSectionScreen />);
 
     await waitFor(() => expect(view.getByText("Unavailable")).toBeTruthy());
     expect(view.queryByText("Save changes")).toBeNull();
@@ -198,7 +201,7 @@ describe("Edit Profile hub", () => {
   it("opens a focused new Experience editor from Add", async () => {
     mockRouteParams.section = "experience";
     mockRouteParams.itemId = "new";
-    const view = await render(<ProfileEditSectionScreen />);
+    const view = await renderWithQueryClient(<ProfileEditSectionScreen />);
 
     await waitFor(() =>
       expect(view.getByLabelText("Role or experience title")).toBeTruthy()
@@ -225,7 +228,7 @@ describe("Edit Profile hub", () => {
       ),
     } as never);
 
-    const view = await render(<ProfileEditSectionScreen />);
+    const view = await renderWithQueryClient(<ProfileEditSectionScreen />);
 
     expect(
       view.getByTestId("profile-edit-loading-skeleton-certificates-editor")
@@ -266,7 +269,7 @@ describe("Edit Profile hub", () => {
       ),
     } as never);
 
-    const view = await render(<ProfileEditSectionScreen />);
+    const view = await renderWithQueryClient(<ProfileEditSectionScreen />);
 
     expect(
       view.getByTestId("profile-edit-loading-skeleton-certificates-editor")
@@ -283,9 +286,9 @@ describe("Edit Profile hub", () => {
   it("does not create a new item when an existing route id is stale", async () => {
     mockRouteParams.section = "experience";
     mockRouteParams.itemId = "missing-experience";
-    const view = await render(<ProfileEditSectionScreen />);
+    const view = await renderWithQueryClient(<ProfileEditSectionScreen />);
 
-    await waitFor(() => expect(view.getByText("Experience")).toBeTruthy());
+    await waitFor(() => expect(view.getByText("Add")).toBeTruthy());
     expect(view.queryByLabelText("Title")).toBeNull();
     expect(view.getByText("Add")).toBeTruthy();
   });
@@ -298,7 +301,7 @@ describe("Edit Profile hub", () => {
       updateBasics,
       uploadAvatar: jest.fn(),
     } as never);
-    const view = await render(<ProfileEditSectionScreen />);
+    const view = await renderWithQueryClient(<ProfileEditSectionScreen />);
 
     await waitFor(() =>
       expect(view.getByLabelText("Display name")).toBeTruthy()
@@ -334,7 +337,7 @@ describe("Edit Profile hub", () => {
       updateBasics,
       uploadAvatar: jest.fn(),
     } as never);
-    const view = await render(<ProfileEditSectionScreen />);
+    const view = await renderWithQueryClient(<ProfileEditSectionScreen />);
 
     await waitFor(() => expect(view.getByLabelText("About you")).toBeTruthy());
     await fireEvent.changeText(view.getByLabelText("About you"), "");

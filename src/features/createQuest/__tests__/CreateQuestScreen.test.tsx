@@ -1,10 +1,6 @@
-import {
-  fireEvent,
-  render,
-  waitFor,
-  within,
-} from "@testing-library/react-native";
-import mockReact, { type ReactNode } from "react";
+import { fireEvent, waitFor, within } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
+import mockReact, { type ReactElement, type ReactNode } from "react";
 import { StyleSheet, TextInput as RNTextInput } from "react-native";
 import CreateQuestScreen from "../CreateQuestScreen";
 import { measureFieldRelativeToScroll } from "../createQuestFocus";
@@ -105,6 +101,13 @@ jest.mock("../createQuestPersistence", () => ({
   persistQuestDraft: (...args: unknown[]) => mockPersistQuestDraft(...args),
   deleteQuestDraft: (...args: unknown[]) => mockDeleteQuestDraft(...args),
 }));
+jest.mock("@/features/wallet/api/walletQueries", () => {
+  const actual = jest.requireActual("@/features/wallet/api/walletQueries");
+  return {
+    ...actual,
+    useQueryClient: require("@tanstack/react-query").useQueryClient,
+  };
+});
 
 jest.mock("expo-router", () => ({
   useRouter: () => mockRouter,
@@ -114,9 +117,10 @@ jest.mock("expo-status-bar", () => ({
   StatusBar: () => null,
 }));
 
-jest.mock("../../../locales/LocaleProvider", () => ({
+jest.mock("../../../features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "th" }),
 }));
+const render = (ui: ReactElement) => renderWithQueryClient(ui);
 
 async function fillQuestDetails(view: Awaited<ReturnType<typeof render>>) {
   await fireEvent.changeText(

@@ -12,13 +12,16 @@ import {
   Plus,
   Wallet,
 } from "lucide-react-native";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { navigationMessages } from "@/locales/navigationMessages";
 import { getAppChromeMetrics } from "@/theme/layout";
-import { useNavigationVisibility } from "./NavigationVisibilityContext";
+import {
+  useNavigationVisible,
+  showNavigation,
+} from "@/features/navigation/navigationUiStore";
 import styles, { getBottomNavigationColors } from "./bottomNavStyles";
-import { useRoleWorkspace } from "./RoleWorkspaceContext";
-import { authService } from "@/features/auth/AuthService";
+import { useRoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
+import { useProfileQuery } from "@/features/profile/api/profileQueries";
 
 type NavigationItem = {
   routeName: string;
@@ -124,23 +127,17 @@ export function BottomNav({
   const messages = navigationMessages[locale];
   const focusedRouteKey = state.routes[state.index]?.key;
   const { workspace, switchWorkspace } = useRoleWorkspace();
-  const { navigationVisible, showNavigation } = useNavigationVisibility();
-  const [avatarUri, setAvatarUri] = React.useState<string | null>(null);
+  const navigationVisible = useNavigationVisible();
+  const profileQuery = useProfileQuery(locale);
+  const profileImage = profileQuery.data?.profileImage;
+  const avatarUri =
+    typeof profileImage === "object" &&
+    profileImage !== null &&
+    "uri" in profileImage &&
+    typeof profileImage.uri === "string"
+      ? profileImage.uri
+      : null;
   const lastProfilePressRef = React.useRef<number>(0);
-
-  React.useEffect(() => {
-    let active = true;
-    void authService
-      .getStudentApi()
-      .then((api) => api.getProfile())
-      .then((profile) => {
-        if (active) setAvatarUri(profile.avatar?.url ?? null);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, []);
   const activeItems =
     workspace === "worker" ? workerNavigationItems : hirerNavigationItems;
   const shouldHide = !metrics.isTablet && !navigationVisible;
@@ -161,7 +158,7 @@ export function BottomNav({
 
   React.useEffect(() => {
     showNavigation();
-  }, [focusedRouteKey, showNavigation]);
+  }, [focusedRouteKey]);
 
   return (
     <Animated.View

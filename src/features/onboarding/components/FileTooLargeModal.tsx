@@ -3,7 +3,7 @@ import { Modal } from "react-native";
 import { Pressable, Text, View } from "@/tw";
 import { CircleX, RefreshCw } from "lucide-react-native";
 import { onboardingMessages } from "../../../locales/registrationOnboarding";
-import { useLocale } from "../../../locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { colors } from "@/theme/colors";
 import styles from "../styles/fileTooLargeModalStyles";
 

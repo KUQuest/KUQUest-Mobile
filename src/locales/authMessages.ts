@@ -1,5 +1,5 @@
 import { AuthErrorCode } from "../features/auth/types";
-import { SupportedLocale } from "./LocaleProvider";
+import { SupportedLocale } from "./locale";
 
 export interface AuthMessages {
   signInWithGoogle: string;

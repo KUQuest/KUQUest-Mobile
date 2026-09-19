@@ -14,14 +14,18 @@ import {
   RefreshCw,
   WalletCards,
 } from "lucide-react-native";
-import { walletApi, type WalletBalances } from "@/api/WalletApi";
 import { formatSatang } from "@/domain/satang";
-import type { SupportedLocale } from "@/locales/LocaleProvider";
+import type { WalletBalances } from "@/api/WalletApi";
+import type { SupportedLocale } from "@/locales/locale";
 import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
+import {
+  useConvertEarningsMutation,
+  useWalletQuery,
+} from "./api/walletQueries";
 import { TransactionHistoryModal } from "./TransactionHistoryModal";
 import { WalletPaymentModal } from "./WalletPaymentModal";
-import { convertEarnings, toCompartments } from "./walletModule";
+import { checkConversionAmount, toCompartments } from "./walletModule";
 import { PayoutModal } from "./PayoutModal";
 import { walletStyles as s } from "./walletStyles";
 
@@ -35,36 +39,21 @@ export function HomeWalletOverview({
   onBalanceChange,
 }: HomeWalletOverviewProps) {
   const m = walletMessages[locale];
-  const [balances, setBalances] = useState<WalletBalances | null>(null);
-  const [loading, setLoading] = useState(false);
+  const walletQuery = useWalletQuery();
+  const balances = walletQuery.data ?? null;
+  const loading = walletQuery.isPending || walletQuery.isRefetching;
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [payoutModalOpen, setPayoutModalOpen] = useState(false);
-  const [converting, setConverting] = useState(false);
-  const [refreshIndex, setRefreshIndex] = useState(0);
+  const convertMutation = useConvertEarningsMutation();
+  const converting = convertMutation.isPending;
 
   useEffect(() => {
-    let active = true;
-    walletApi
-      .getWallet()
-      .then((data) => {
-        if (active) {
-          setBalances(data);
-          onBalanceChange?.(data);
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [onBalanceChange, refreshIndex]);
+    if (walletQuery.data) onBalanceChange?.(walletQuery.data);
+  }, [onBalanceChange, walletQuery.data]);
 
   const refreshWallet = () => {
-    setLoading(true);
-    setRefreshIndex((idx) => idx + 1);
+    void walletQuery.refetch();
   };
 
   const handleRefresh = refreshWallet;
@@ -76,26 +65,23 @@ export function HomeWalletOverview({
       {
         text: m.confirm,
         onPress: async () => {
-          setConverting(true);
+          const compartments = toCompartments(balances);
+          const result = checkConversionAmount(
+            balances.earningsBalanceSatang,
+            compartments
+          );
+          if (!result.ok) {
+            Alert.alert(m.convertEarnings, m.convertError);
+            return;
+          }
           try {
-            const compartments = toCompartments(balances);
-            const result = await convertEarnings(
-              balances.earningsBalanceSatang,
-              compartments
-            );
-            if (!result.ok) {
-              Alert.alert(m.convertEarnings, m.convertError);
-              return;
-            }
+            await convertMutation.mutateAsync(balances.earningsBalanceSatang);
             Alert.alert(m.convertEarnings, m.convertSuccess);
-            setRefreshIndex((idx) => idx + 1);
           } catch (err: unknown) {
             Alert.alert(
               m.convertEarnings,
               err instanceof Error ? err.message : m.convertError
             );
-          } finally {
-            setConverting(false);
           }
         },
       },
@@ -311,9 +297,7 @@ export function HomeWalletOverview({
       <WalletPaymentModal
         locale={locale}
         onClose={() => setPaymentModalOpen(false)}
-        onSuccess={() => {
-          setRefreshIndex((idx) => idx + 1);
-        }}
+        onSuccess={refreshWallet}
         visible={paymentModalOpen}
       />
 

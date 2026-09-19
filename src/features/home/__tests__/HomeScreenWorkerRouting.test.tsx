@@ -1,10 +1,10 @@
 import React from "react";
-import { render } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import type HomeScreenComponent from "../HomeScreen";
 
 const mockPush = jest.fn();
 
-jest.doMock("@/components/navigation/RoleWorkspaceContext", () => ({
+jest.doMock("@/features/workspace/roleWorkspaceStore", () => ({
   useRoleWorkspace: () => ({
     workspace: "worker",
     isHirer: false,
@@ -22,7 +22,7 @@ jest.doMock("expo-router", () => ({
     }, [cb]);
   },
 }));
-jest.doMock("@/locales/LocaleProvider", () => ({
+jest.doMock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 jest.doMock("@/features/auth/authEnvironment", () => ({
@@ -57,7 +57,7 @@ const HomeScreen = require("../HomeScreen")
 
 describe("HomeScreen workspace routing", () => {
   it("renders Worker Home for the Worker workspace", async () => {
-    const view = await render(<HomeScreen />);
+    const view = await renderWithQueryClient(<HomeScreen />);
 
     expect(view.getByTestId("worker-home-route")).toBeTruthy();
     expect(view.queryByTestId("hirer-home-title")).toBeNull();

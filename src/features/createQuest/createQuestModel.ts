@@ -14,7 +14,7 @@ import type {
 } from "@/api/questV2Contracts";
 
 import { createQuestMessages } from "@/locales/createQuestMessages";
-import type { SupportedLocale } from "@/locales/LocaleProvider";
+import type { SupportedLocale } from "@/locales/locale";
 import { formatSatang, parseSatangInput } from "@/domain/satang";
 
 export type QuestDraftCandidateMode = "FIRST_COME_FIRST_SERVED" | "CANDIDATE";

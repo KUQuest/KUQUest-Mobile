@@ -79,6 +79,18 @@ describe("create quest persistence", () => {
     });
     expect(SecureStore.getItemAsync).toHaveBeenCalledWith(draftKey);
   });
+  test("loads a legacy single draft through the mount read path", async () => {
+    const legacySnapshot = { draft, step: 2, state: "DRAFT" as const };
+    await SecureStore.setItemAsync(
+      CREATE_QUEST_DRAFT_KEY,
+      JSON.stringify(legacySnapshot)
+    );
+
+    await expect(loadQuestDraft(storageKey, draftId)).resolves.toEqual(
+      legacySnapshot
+    );
+  });
+
   test("lists indexed drafts for the chooser", async () => {
     await persistQuestDraft(storageKey, draftId, draft, 2, "DRAFT");
 
@@ -99,5 +111,16 @@ describe("create quest persistence", () => {
 
     await expect(loadQuestDraft(storageKey, draftId)).resolves.toBeNull();
     expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith(draftKey);
+  });
+
+  test("does not resurrect a deleted draft from legacy storage", async () => {
+    await persistQuestDraft(storageKey, draftId, draft, 1);
+    await SecureStore.setItemAsync(
+      CREATE_QUEST_DRAFT_KEY,
+      JSON.stringify({ draft, step: 1, state: "DRAFT" })
+    );
+    await deleteQuestDraft(storageKey, draftId);
+
+    await expect(loadQuestDraft(storageKey, draftId)).resolves.toBeNull();
   });
 });

@@ -1,5 +1,5 @@
-import React from "react";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { questApi } from "@/api/QuestApi";
 import WorkerHomeScreen from "../WorkerHomeScreen";
 
@@ -10,11 +10,11 @@ jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-jest.mock("@/locales/LocaleProvider", () => ({
+jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 
-jest.mock("@/components/navigation/RoleWorkspaceContext", () => ({
+jest.mock("@/features/workspace/roleWorkspaceStore", () => ({
   useRoleWorkspace: () => ({
     workspace: "worker",
     isWorker: true,
@@ -48,7 +48,7 @@ describe("WorkerHomeScreen", () => {
   });
 
   it("renders the header with Work title and Worker badge", async () => {
-    const view = await render(<WorkerHomeScreen />);
+    const view = await renderWithQueryClient(<WorkerHomeScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("worker-home-title")).toBeTruthy();
@@ -60,7 +60,7 @@ describe("WorkerHomeScreen", () => {
   });
 
   it("renders the search bar and quick tag filters", async () => {
-    const view = await render(<WorkerHomeScreen />);
+    const view = await renderWithQueryClient(<WorkerHomeScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("worker-quest-search-input")).toBeTruthy();
@@ -74,7 +74,7 @@ describe("WorkerHomeScreen", () => {
   });
 
   it("queries the board with search text when typing in search input", async () => {
-    const view = await render(<WorkerHomeScreen />);
+    const view = await renderWithQueryClient(<WorkerHomeScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("worker-quest-search-input")).toBeTruthy();
@@ -87,13 +87,14 @@ describe("WorkerHomeScreen", () => {
 
     await waitFor(() => {
       expect(questApi.listBoard).toHaveBeenCalledWith(
-        expect.objectContaining({ q: "poster" })
+        expect.objectContaining({ q: "poster" }),
+        expect.anything()
       );
     });
   });
 
   it("queries the board with tagId when a quick tag pill is pressed", async () => {
-    const view = await render(<WorkerHomeScreen />);
+    const view = await renderWithQueryClient(<WorkerHomeScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("tag-pill-tag-1")).toBeTruthy();
@@ -103,7 +104,8 @@ describe("WorkerHomeScreen", () => {
 
     await waitFor(() => {
       expect(questApi.listBoard).toHaveBeenCalledWith(
-        expect.objectContaining({ tagId: "tag-1" })
+        expect.objectContaining({ tagId: "tag-1" }),
+        expect.anything()
       );
     });
   });
@@ -129,7 +131,7 @@ describe("WorkerHomeScreen", () => {
       nextCursor: null,
     });
 
-    const view = await render(<WorkerHomeScreen />);
+    const view = await renderWithQueryClient(<WorkerHomeScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("worker-feed-card-quest-100")).toBeTruthy();
@@ -148,7 +150,7 @@ describe("WorkerHomeScreen", () => {
   it("does NOT show Grab-like quick access bar when user has no active assignment", async () => {
     (questApi.listMyAssignments as jest.Mock).mockResolvedValue([]);
 
-    const view = await render(<WorkerHomeScreen />);
+    const view = await renderWithQueryClient(<WorkerHomeScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("worker-home-title")).toBeTruthy();
@@ -175,7 +177,7 @@ describe("WorkerHomeScreen", () => {
       state: "QUEST_IN_PROGRESS",
     });
 
-    const view = await render(<WorkerHomeScreen />);
+    const view = await renderWithQueryClient(<WorkerHomeScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("worker-quick-access-bar")).toBeTruthy();
@@ -206,7 +208,7 @@ describe("WorkerHomeScreen", () => {
       state: "QUEST_ASSIGNED",
     });
 
-    const view = await render(<WorkerHomeScreen />);
+    const view = await renderWithQueryClient(<WorkerHomeScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("worker-quick-access-bar")).toBeTruthy();
@@ -215,7 +217,7 @@ describe("WorkerHomeScreen", () => {
   });
 
   it("calls switchWorkspace when Switch to Hirer is pressed", async () => {
-    const view = await render(<WorkerHomeScreen />);
+    const view = await renderWithQueryClient(<WorkerHomeScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("switch-to-hirer-button")).toBeTruthy();

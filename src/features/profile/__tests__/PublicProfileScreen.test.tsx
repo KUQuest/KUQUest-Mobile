@@ -1,5 +1,6 @@
 import React from "react";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import PublicProfileScreen from "../PublicProfileScreen";
 import { authService } from "../../auth/AuthService";
@@ -18,7 +19,7 @@ jest.mock("../../auth/AuthService", () => ({
   },
 }));
 
-jest.mock("../../../locales/LocaleProvider", () => ({
+jest.mock("../../../features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 
@@ -103,7 +104,7 @@ describe("PublicProfileScreen", () => {
   });
 
   it("renders the public profile data and does not render an edit profile button", async () => {
-    const view = await render(<PublicProfileScreen />);
+    const view = await renderWithQueryClient(<PublicProfileScreen />);
 
     await waitFor(() => {
       expect(view.getAllByText("Jane Doe").length).toBeGreaterThan(0);
@@ -131,7 +132,7 @@ describe("PublicProfileScreen", () => {
   });
 
   it("switches tabs and displays experience, works, certificates, and reviews", async () => {
-    const view = await render(<PublicProfileScreen />);
+    const view = await renderWithQueryClient(<PublicProfileScreen />);
 
     await waitFor(() => {
       expect(view.getAllByText("Jane Doe").length).toBeGreaterThan(0);

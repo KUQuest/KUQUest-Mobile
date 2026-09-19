@@ -1,5 +1,6 @@
 import React from "react";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import SettingsScreen from "../SettingsScreen";
 import { authService } from "../../auth/AuthService";
@@ -19,7 +20,7 @@ jest.mock("../../auth/AuthService", () => ({
 const mockSetLocale = jest.fn();
 let mockLocale: "th" | "en" = "en";
 
-jest.mock("../../../locales/LocaleProvider", () => ({
+jest.mock("../../../features/preferences/localeStore", () => ({
   useLocale: () => ({
     locale: mockLocale,
     setLocale: mockSetLocale,
@@ -34,7 +35,7 @@ describe("Settings screen", () => {
   });
 
   it("renders grouped account, preference, support, and about content", async () => {
-    const view = await render(<SettingsScreen />);
+    const view = await renderWithQueryClient(<SettingsScreen />);
 
     expect(view.getByRole("header", { name: "Settings" })).toBeTruthy();
     expect(view.getByText("Account")).toBeTruthy();
@@ -53,7 +54,7 @@ describe("Settings screen", () => {
   });
 
   it("renders language row with current language and opens modal when pressed", async () => {
-    const view = await render(<SettingsScreen />);
+    const view = await renderWithQueryClient(<SettingsScreen />);
 
     expect(view.getByText("English")).toBeTruthy();
 
@@ -67,7 +68,7 @@ describe("Settings screen", () => {
   });
 
   it("switches language to Thai when Thai option is pressed in modal", async () => {
-    const view = await render(<SettingsScreen />);
+    const view = await renderWithQueryClient(<SettingsScreen />);
 
     fireEvent.press(view.getByTestId("settings-language"));
     await waitFor(() =>
@@ -80,7 +81,7 @@ describe("Settings screen", () => {
 
   it("switches language to English when English option is pressed in modal", async () => {
     mockLocale = "th";
-    const view = await render(<SettingsScreen />);
+    const view = await renderWithQueryClient(<SettingsScreen />);
 
     fireEvent.press(view.getByTestId("settings-language"));
     await waitFor(() =>
@@ -92,7 +93,7 @@ describe("Settings screen", () => {
   });
 
   it("closes modal when cancel button is pressed without calling setLocale", async () => {
-    const view = await render(<SettingsScreen />);
+    const view = await renderWithQueryClient(<SettingsScreen />);
 
     fireEvent.press(view.getByTestId("settings-language"));
     await waitFor(() =>
@@ -107,7 +108,7 @@ describe("Settings screen", () => {
   });
 
   it("renders a red logout button at the bottom and returns to the start screen", async () => {
-    const view = await render(<SettingsScreen />);
+    const view = await renderWithQueryClient(<SettingsScreen />);
 
     fireEvent.press(view.getByTestId("settings-logout"));
 
@@ -118,7 +119,7 @@ describe("Settings screen", () => {
   });
 
   it("renders a red logout button at the bottom and returns to the start screen", async () => {
-    const view = await render(<SettingsScreen />);
+    const view = await renderWithQueryClient(<SettingsScreen />);
 
     fireEvent.press(view.getByTestId("settings-logout"));
 
@@ -129,7 +130,7 @@ describe("Settings screen", () => {
   });
 
   it("toggles quest notifications", async () => {
-    const view = await render(<SettingsScreen />);
+    const view = await renderWithQueryClient(<SettingsScreen />);
     const toggle = view.getByTestId("settings-notifications");
 
     expect(toggle.props.accessibilityState.checked).toBe(true);
@@ -143,7 +144,7 @@ describe("Settings screen", () => {
   });
 
   it("does not render account switcher", async () => {
-    const view = await render(<SettingsScreen />);
+    const view = await renderWithQueryClient(<SettingsScreen />);
 
     expect(view.queryByTestId("settings-switch-account")).toBeNull();
     expect(view.queryByText("Switch account")).toBeNull();
@@ -151,7 +152,7 @@ describe("Settings screen", () => {
   });
 
   it("opens Edit Profile from settings", async () => {
-    const view = await render(<SettingsScreen />);
+    const view = await renderWithQueryClient(<SettingsScreen />);
 
     fireEvent.press(view.getByTestId("settings-edit-profile"));
 

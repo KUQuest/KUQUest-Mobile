@@ -1,15 +1,10 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Alert, Platform } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
-import {
-  useLocalSearchParams,
-  useRouter,
-  useFocusEffect,
-  useNavigation,
-} from "expo-router";
+import { useLocalSearchParams, useRouter, useNavigation } from "expo-router";
 import {
   ArrowLeft,
   CalendarDays,
@@ -19,11 +14,29 @@ import {
   Plus,
   Trash2,
 } from "lucide-react-native";
-
+import { useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "../../api/ApiClient";
-import type { ProfileEditData } from "../../api/StudentApi";
-import { profileModule } from "../profile/profileModule";
 import { authService } from "../auth/AuthService";
+import { clearSessionCache } from "../auth/sessionQueries";
+import type { ProfileEditData } from "../../api/StudentApi";
+import {
+  useCreateCertificateMutation,
+  useCreateExperienceMutation,
+  useCreatePortfolioMutation,
+  useDeleteCertificateImageMutation,
+  useDeleteCertificateMutation,
+  useDeleteExperienceMutation,
+  useDeletePortfolioImageMutation,
+  useDeletePortfolioMutation,
+  useProfileEditDataQuery,
+  useUpdateBasicsMutation,
+  useUpdateCertificateMutation,
+  useUpdateExperienceMutation,
+  useUpdatePortfolioMutation,
+  useUploadAvatarMutation,
+  useUploadCertificateImageMutation,
+  useUploadPortfolioImageMutation,
+} from "../profile/api/profileQueries";
 import { AuthError } from "../auth/types";
 import { isPrototypeDemoEnabled } from "../auth/authEnvironment";
 import { onboardingMessages } from "../../locales/registrationOnboarding";
@@ -31,7 +44,7 @@ import {
   profileEditMessages,
   type ProfileEditMessages,
 } from "../../locales/profileEditMessages";
-import { useLocale } from "../../locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { Button } from "../../components/ui/Button";
 import {
   LoadingSkeleton,
@@ -117,14 +130,19 @@ function isSessionExpired(error: unknown): boolean {
   );
 }
 
-async function redirectIfSessionExpired(
-  error: unknown,
-  router: ReturnType<typeof useRouter>
-): Promise<boolean> {
-  if (!isSessionExpired(error)) return false;
-  await authService.signOut().catch(() => undefined);
-  router.replace("/");
-  return true;
+function useSessionExpiryRedirect(): (error: unknown) => Promise<boolean> {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  return React.useCallback(
+    async (error: unknown) => {
+      if (!isSessionExpired(error)) return false;
+      await authService.signOut().catch(() => undefined);
+      clearSessionCache(queryClient);
+      router.replace("/");
+      return true;
+    },
+    [queryClient, router]
+  );
 }
 
 function ScreenHeader({
@@ -516,7 +534,7 @@ function ImagePickerField({
 
   return (
     <View className="gap-ku-sm">
-      <Text className="font-ku-semibold text-ku-text-secondary text-ku-label">
+      <Text className="font-ku-semibold text-ku-label text-ku-text-secondary">
         {label}
       </Text>
       <Pressable
@@ -544,10 +562,10 @@ function ImagePickerField({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={removeLabel}
-          className="min-h-[48px] self-start justify-center"
+          className="min-h-[48px] justify-center self-start"
           onPress={() => onChange("")}
         >
-          <Text className="font-ku-semibold text-ku-primary text-ku-meta">
+          <Text className="font-ku-semibold text-ku-meta text-ku-primary">
             {removeLabel}
           </Text>
         </Pressable>
@@ -587,7 +605,7 @@ function DateField({
     : new Date();
   return (
     <View className={styles.dateField}>
-      <Text className="font-ku-semibold text-ku-text-secondary text-ku-label mb-[6px]">
+      <Text className="mb-[6px] font-ku-semibold text-ku-label text-ku-text-secondary">
         {label}
       </Text>
       <Pressable
@@ -605,7 +623,7 @@ function DateField({
       {error ? (
         <Text
           accessibilityRole="alert"
-          className="font-ku-regular text-ku-danger text-ku-label mt-[4px]"
+          className="mt-[4px] font-ku-regular text-ku-label text-ku-danger"
         >
           {error}
         </Text>
@@ -758,6 +776,7 @@ function BasicsEditor({
   onBack: () => void;
 }) {
   const router = useRouter();
+  const redirectIfSessionExpired = useSessionExpiryRedirect();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
   const [form, setForm] = useState<BasicsForm>(() =>
@@ -766,7 +785,10 @@ function BasicsEditor({
   const [dirty, setDirty] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const updateBasicsMutation = useUpdateBasicsMutation();
+  const uploadAvatarMutation = useUploadAvatarMutation();
+  const saving =
+    updateBasicsMutation.isPending || uploadAvatarMutation.isPending;
   const [avatarImageFailed, setAvatarImageFailed] = useState(false);
   const leave = useLeaveConfirmation(messages, dirty, onBack);
   const allowNavigation = useUnsavedNavigationGuard(messages, dirty);
@@ -785,24 +807,23 @@ function BasicsEditor({
     );
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
-    setSaving(true);
     setSaveError(null);
     try {
       const { firstName, lastName } = splitDisplayName(form.name);
-      await profileModule.updateBasics({
+      await updateBasicsMutation.mutateAsync({
         firstName,
         lastName,
         bio: form.bio.trim() || undefined,
       });
       if (isLocalAsset(form.profileImage)) {
         try {
-          await profileModule.uploadAvatar({
+          await uploadAvatarMutation.mutateAsync({
             uri: form.profileImage,
             name: form.profileImageFileName ?? undefined,
             type: form.profileImageMimeType ?? undefined,
           });
         } catch (error) {
-          if (await redirectIfSessionExpired(error, router)) return;
+          if (await redirectIfSessionExpired(error)) return;
           setSaveError(messages.avatarUploadError);
           return;
         }
@@ -810,10 +831,8 @@ function BasicsEditor({
       allowNavigation();
       router.back();
     } catch (error) {
-      if (await redirectIfSessionExpired(error, router)) return;
+      if (await redirectIfSessionExpired(error)) return;
       setSaveError(getErrorText(error, messages));
-    } finally {
-      setSaving(false);
     }
   };
   const profileName = form.name || data.profile.firstName;
@@ -1150,42 +1169,27 @@ function ProfileEditDataLoader({
   onBack: () => void;
 }) {
   const router = useRouter();
+  const redirectIfSessionExpired = useSessionExpiryRedirect();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
-  const [data, setData] = useState<ProfileEditData | null>(null);
-  const [error, setError] = useState(false);
-  const [attempt, setAttempt] = useState(0);
-  // The focus effect re-runs whenever the navigator hands focus back, so an
-  // unguarded redirect here would loop: redirect -> refocus -> redirect.
+  const {
+    data,
+    error: queryError,
+    isPending,
+    refetch,
+  } = useProfileEditDataQuery();
   const redirectedToRoot = useRef(false);
-  useFocusEffect(
-    useCallback(() => {
-      void attempt;
-      if (redirectedToRoot.current) return;
-      let active = true;
-      setError(false);
-      setData(null);
-      void profileModule
-        .getEditData()
-        .then((nextData) => {
-          if (active) setData(nextData);
-        })
-        .catch(async (loadError) => {
-          if (isSessionExpired(loadError)) {
-            if (active && !redirectedToRoot.current) {
-              redirectedToRoot.current = true;
-              await redirectIfSessionExpired(loadError, router);
-            }
-            return;
-          }
-          if (active) setError(true);
-        });
-      return () => {
-        active = false;
-      };
-    }, [attempt, router])
-  );
-  if (error && !data)
+  useEffect(() => {
+    if (
+      !queryError ||
+      redirectedToRoot.current ||
+      !isSessionExpired(queryError)
+    )
+      return;
+    redirectedToRoot.current = true;
+    void redirectIfSessionExpired(queryError);
+  }, [queryError, redirectIfSessionExpired]);
+  if (queryError && !data && !isSessionExpired(queryError))
     return (
       <ScreenLayout
         edges={["top", "left", "right"]}
@@ -1199,13 +1203,13 @@ function ProfileEditDataLoader({
           />
           <ErrorState
             message={messages.loadError}
-            retry={() => setAttempt((value) => value + 1)}
+            retry={() => void refetch()}
             retryLabel={messages.retry}
           />
         </ScrollView>
       </ScreenLayout>
     );
-  if (!data)
+  if (isPending || !data)
     return (
       <ProfileEditLoadingState
         messages={messages}
@@ -1224,6 +1228,7 @@ function ExperienceEditor({
   onBack: () => void;
 }) {
   const router = useRouter();
+  const redirectIfSessionExpired = useSessionExpiryRedirect();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
   const employmentTypes = onboardingMessages[locale].employmentTypes;
@@ -1233,8 +1238,12 @@ function ExperienceEditor({
   const [dirty, setDirty] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const createExperienceMutation = useCreateExperienceMutation();
+  const updateExperienceMutation = useUpdateExperienceMutation();
+  const deleteExperienceMutation = useDeleteExperienceMutation();
+  const saving =
+    createExperienceMutation.isPending || updateExperienceMutation.isPending;
+  const deleting = deleteExperienceMutation.isPending;
   const leave = useLeaveConfirmation(messages, dirty, onBack);
   const allowNavigation = useUnsavedNavigationGuard(messages, dirty);
   const setField = <K extends keyof ExperienceForm>(
@@ -1248,7 +1257,6 @@ function ExperienceEditor({
     const nextErrors = validateExperience(form, messages);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
-    setSaving(true);
     setSaveError(null);
     try {
       const payload = {
@@ -1259,15 +1267,17 @@ function ExperienceEditor({
         startedAt: form.startedAt,
         endedAt: form.endedAt || null,
       };
-      if (entry?.id) await profileModule.updateExperience(entry.id, payload);
-      else await profileModule.createExperience(payload);
+      if (entry?.id)
+        await updateExperienceMutation.mutateAsync({
+          id: entry.id,
+          update: payload,
+        });
+      else await createExperienceMutation.mutateAsync(payload);
       allowNavigation();
       router.back();
     } catch (error) {
-      if (await redirectIfSessionExpired(error, router)) return;
+      if (await redirectIfSessionExpired(error)) return;
       setSaveError(getErrorText(error, messages));
-    } finally {
-      setSaving(false);
     }
   };
   const remove = () => {
@@ -1278,17 +1288,14 @@ function ExperienceEditor({
         text: messages.confirmDelete,
         style: "destructive",
         onPress: () => {
-          setDeleting(true);
           void (async () => {
             try {
-              await profileModule.deleteExperience(entry.id as string);
+              await deleteExperienceMutation.mutateAsync(entry.id as string);
               allowNavigation();
               router.back();
             } catch (error) {
-              if (!(await redirectIfSessionExpired(error, router)))
+              if (!(await redirectIfSessionExpired(error)))
                 setSaveError(getErrorText(error, messages));
-            } finally {
-              setDeleting(false);
             }
           })();
         },
@@ -1408,14 +1415,24 @@ function PortfolioEditor({
   onBack: () => void;
 }) {
   const router = useRouter();
+  const redirectIfSessionExpired = useSessionExpiryRedirect();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
   const [form, setForm] = useState<PortfolioForm>(() => toPortfolioForm(entry));
   const [dirty, setDirty] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const createPortfolioMutation = useCreatePortfolioMutation();
+  const updatePortfolioMutation = useUpdatePortfolioMutation();
+  const uploadPortfolioImageMutation = useUploadPortfolioImageMutation();
+  const deletePortfolioImageMutation = useDeletePortfolioImageMutation();
+  const deletePortfolioMutation = useDeletePortfolioMutation();
+  const saving =
+    createPortfolioMutation.isPending ||
+    updatePortfolioMutation.isPending ||
+    uploadPortfolioImageMutation.isPending ||
+    deletePortfolioImageMutation.isPending;
+  const deleting = deletePortfolioMutation.isPending;
   const leave = useLeaveConfirmation(messages, dirty, onBack);
   const allowNavigation = useUnsavedNavigationGuard(messages, dirty);
   const setField = <K extends keyof PortfolioForm>(
@@ -1429,22 +1446,25 @@ function PortfolioEditor({
     const nextErrors = validatePortfolio(form, messages);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
-    setSaving(true);
     setSaveError(null);
     try {
       if (entry?.id) {
-        await profileModule.updatePortfolio(entry.id, {
-          title: form.title.trim(),
-          description: form.description.trim() || null,
+        await updatePortfolioMutation.mutateAsync({
+          id: entry.id,
+          update: {
+            title: form.title.trim(),
+            description: form.description.trim() || null,
+          },
         });
         if (isLocalAsset(form.imageUri))
-          await profileModule.uploadPortfolioImage(entry.id, {
-            uri: form.imageUri,
+          await uploadPortfolioImageMutation.mutateAsync({
+            id: entry.id,
+            asset: { uri: form.imageUri },
           });
         else if (!form.imageUri && entry.images[0]?.url)
-          await profileModule.deletePortfolioImage(entry.id);
+          await deletePortfolioImageMutation.mutateAsync(entry.id);
       } else {
-        await profileModule.createPortfolio({
+        await createPortfolioMutation.mutateAsync({
           title: form.title.trim(),
           description: form.description.trim() || undefined,
           imageUris: isLocalAsset(form.imageUri) ? [form.imageUri] : [],
@@ -1453,10 +1473,8 @@ function PortfolioEditor({
       allowNavigation();
       router.back();
     } catch (error) {
-      if (await redirectIfSessionExpired(error, router)) return;
+      if (await redirectIfSessionExpired(error)) return;
       setSaveError(getErrorText(error, messages));
-    } finally {
-      setSaving(false);
     }
   };
   const remove = () => {
@@ -1467,17 +1485,14 @@ function PortfolioEditor({
         text: messages.confirmDelete,
         style: "destructive",
         onPress: () => {
-          setDeleting(true);
           void (async () => {
             try {
-              await profileModule.deletePortfolio(entry.id as string);
+              await deletePortfolioMutation.mutateAsync(entry.id as string);
               allowNavigation();
               router.back();
             } catch (error) {
-              if (!(await redirectIfSessionExpired(error, router)))
+              if (!(await redirectIfSessionExpired(error)))
                 setSaveError(getErrorText(error, messages));
-            } finally {
-              setDeleting(false);
             }
           })();
         },
@@ -1573,6 +1588,7 @@ function CertificateEditor({
   onBack: () => void;
 }) {
   const router = useRouter();
+  const redirectIfSessionExpired = useSessionExpiryRedirect();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
   const [form, setForm] = useState<CertificateForm>(() =>
@@ -1581,8 +1597,17 @@ function CertificateEditor({
   const [dirty, setDirty] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const updateCertificateMutation = useUpdateCertificateMutation();
+  const createCertificateMutation = useCreateCertificateMutation();
+  const uploadCertificateImageMutation = useUploadCertificateImageMutation();
+  const deleteCertificateImageMutation = useDeleteCertificateImageMutation();
+  const deleteCertificateMutation = useDeleteCertificateMutation();
+  const saving =
+    createCertificateMutation.isPending ||
+    updateCertificateMutation.isPending ||
+    uploadCertificateImageMutation.isPending ||
+    deleteCertificateImageMutation.isPending;
+  const deleting = deleteCertificateMutation.isPending;
   const [createdId, setCreatedId] = useState<string | undefined>(entry?.id);
   const leave = useLeaveConfirmation(messages, dirty, onBack);
   const allowNavigation = useUnsavedNavigationGuard(messages, dirty);
@@ -1597,7 +1622,6 @@ function CertificateEditor({
     const nextErrors = validateCertificate(form, messages);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
-    setSaving(true);
     setSaveError(null);
     try {
       const payload = {
@@ -1607,28 +1631,31 @@ function CertificateEditor({
       };
       let certificateId = createdId;
       if (certificateId) {
-        await profileModule.updateCertificate(certificateId, payload);
+        await updateCertificateMutation.mutateAsync({
+          id: certificateId,
+          update: payload,
+        });
         if (isLocalAsset(form.imageUri))
-          await profileModule.uploadCertificateImage(certificateId, {
-            uri: form.imageUri,
+          await uploadCertificateImageMutation.mutateAsync({
+            id: certificateId,
+            asset: { uri: form.imageUri },
           });
         else if (!form.imageUri && entry?.image)
-          await profileModule.deleteCertificateImage(certificateId);
+          await deleteCertificateImageMutation.mutateAsync(certificateId);
       } else {
-        certificateId = await profileModule.createCertificate(payload);
+        certificateId = await createCertificateMutation.mutateAsync(payload);
         setCreatedId(certificateId);
         if (isLocalAsset(form.imageUri))
-          await profileModule.uploadCertificateImage(certificateId, {
-            uri: form.imageUri,
+          await uploadCertificateImageMutation.mutateAsync({
+            id: certificateId,
+            asset: { uri: form.imageUri },
           });
       }
       allowNavigation();
       router.back();
     } catch (error) {
-      if (await redirectIfSessionExpired(error, router)) return;
+      if (await redirectIfSessionExpired(error)) return;
       setSaveError(getErrorText(error, messages));
-    } finally {
-      setSaving(false);
     }
   };
   const remove = () => {
@@ -1639,17 +1666,14 @@ function CertificateEditor({
         text: messages.confirmDelete,
         style: "destructive",
         onPress: () => {
-          setDeleting(true);
           void (async () => {
             try {
-              await profileModule.deleteCertificate(entry.id as string);
+              await deleteCertificateMutation.mutateAsync(entry.id as string);
               allowNavigation();
               router.back();
             } catch (error) {
-              if (!(await redirectIfSessionExpired(error, router)))
+              if (!(await redirectIfSessionExpired(error)))
                 setSaveError(getErrorText(error, messages));
-            } finally {
-              setDeleting(false);
             }
           })();
         },

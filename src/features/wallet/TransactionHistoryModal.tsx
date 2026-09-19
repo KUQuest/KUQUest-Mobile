@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -8,14 +8,11 @@ import {
   View,
 } from "react-native";
 import { ArrowDownLeft, ArrowUpRight, RefreshCw, X } from "lucide-react-native";
-import {
-  walletApi,
-  type UserTransaction,
-  type UserTransactionHistoryResult,
-} from "@/api/WalletApi";
-import type { SupportedLocale } from "@/locales/LocaleProvider";
+import { type UserTransaction } from "@/api/WalletApi";
+import type { SupportedLocale } from "@/locales/locale";
 import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
+import { useTransactionHistoryQuery } from "./api/walletQueries";
 import { walletStyles as s } from "./walletStyles";
 
 interface TransactionHistoryModalProps {
@@ -30,31 +27,11 @@ export function TransactionHistoryModal({
   onClose,
 }: TransactionHistoryModalProps) {
   const m = walletMessages[locale];
-  const [loading, setLoading] = useState(false);
-  const [historyResult, setHistoryResult] =
-    useState<UserTransactionHistoryResult | null>(null);
-  const [refreshIndex, setRefreshIndex] = useState(0);
-
-  useEffect(() => {
-    if (!visible) return undefined;
-    let active = true;
-    walletApi
-      .getTransactionHistory(30)
-      .then((result) => {
-        if (active) setHistoryResult(result);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [visible, refreshIndex]);
-
+  const historyQuery = useTransactionHistoryQuery(30, visible);
+  const loading = historyQuery.isPending || historyQuery.isRefetching;
+  const historyResult = historyQuery.data ?? null;
   const handleRefresh = () => {
-    setLoading(true);
-    setRefreshIndex((idx) => idx + 1);
+    void historyQuery.refetch();
   };
 
   const formatAmount = (satang: number) => {

@@ -1,9 +1,9 @@
 import React from "react";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import ProfileScreen from "../ProfileScreen";
 import { profileModule } from "../profileModule";
-import { NavigationVisibilityProvider } from "../../../components/navigation/NavigationVisibilityContext";
 
 const mockPush = jest.fn();
 
@@ -17,7 +17,7 @@ jest.mock("../../auth/AuthService", () => ({
   authService: { signOut: jest.fn() },
 }));
 
-jest.mock("../../../locales/LocaleProvider", () => ({
+jest.mock("../../../features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 
@@ -87,7 +87,7 @@ describe("Student Profile screen", () => {
     mockedLoadProfile.mockResolvedValue(profileData);
   });
   const renderLoadedProfile = async () => {
-    const view = await render(<ProfileScreen />);
+    const view = await renderWithQueryClient(<ProfileScreen />);
     await waitFor(() =>
       expect(view.getByTestId("profile-tab-about")).toBeTruthy()
     );
@@ -102,7 +102,7 @@ describe("Student Profile screen", () => {
       })
     );
 
-    const view = await render(<ProfileScreen />);
+    const view = await renderWithQueryClient(<ProfileScreen />);
 
     expect(view.getByLabelText("Loading profile...")).toBeTruthy();
     expect(view.queryByTestId("profile-header")).toBeNull();
@@ -181,7 +181,7 @@ describe("Student Profile screen", () => {
   });
 
   it("preserves the profile scroll position when opening Reviews", async () => {
-    const view = await render(<ProfileScreen />);
+    const view = await renderWithQueryClient(<ProfileScreen />);
 
     await waitFor(() =>
       expect(view.getByTestId("profile-tab-about")).toBeTruthy()
@@ -208,7 +208,7 @@ describe("Student Profile screen", () => {
   it("offers an Edit Profile recovery action when About is empty", async () => {
     mockedLoadProfile.mockResolvedValue({ ...profileData, about: "" });
 
-    const view = await render(<ProfileScreen />);
+    const view = await renderWithQueryClient(<ProfileScreen />);
 
     await waitFor(() =>
       expect(view.getByTestId("profile-tab-about")).toBeTruthy()
@@ -225,7 +225,7 @@ describe("Student Profile screen", () => {
       sectionUnavailable: { reputation: true },
     });
 
-    const view = await render(<ProfileScreen />);
+    const view = await renderWithQueryClient(<ProfileScreen />);
 
     await waitFor(() =>
       expect(
@@ -236,11 +236,7 @@ describe("Student Profile screen", () => {
   });
 
   it("hides the transparent profile top bar with navigation while scrolling down", async () => {
-    const view = await render(
-      <NavigationVisibilityProvider>
-        <ProfileScreen />
-      </NavigationVisibilityProvider>
-    );
+    const view = await renderWithQueryClient(<ProfileScreen />);
 
     await waitFor(() =>
       expect(view.getByTestId("profile-content-scroll")).toBeTruthy()

@@ -14,7 +14,7 @@ import {
   type QuestTeam,
 } from "../../types";
 
-jest.mock("../../../..//locales/LocaleProvider", () => ({
+jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 

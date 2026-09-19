@@ -1,5 +1,6 @@
 import React from "react";
-import { act, render, waitFor } from "@testing-library/react-native";
+import { act, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import ChatInboxScreen from "../ChatInboxScreen";
 import { chatApi } from "@/api/ChatApi";
@@ -19,12 +20,12 @@ jest.mock("@/features/auth/AuthService", () => ({
   },
 }));
 
-jest.mock("@/locales/LocaleProvider", () => ({
+jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 
-jest.mock("@/components/navigation/NavigationVisibilityContext", () => ({
-  useNavigationVisibility: () => ({ handleScroll: jest.fn() }),
+jest.mock("@/features/navigation/navigationUiStore", () => ({
+  handleNavigationScroll: jest.fn(),
 }));
 
 jest.mock("@/api/ChatApi", () => {
@@ -73,7 +74,7 @@ describe("ChatInboxScreen initial loading", () => {
       Promise.withResolvers<unknown>();
     mockGetSession.mockReturnValue(sessionPromise);
 
-    const view = await render(<ChatInboxScreen />);
+    const view = await renderWithQueryClient(<ChatInboxScreen />);
 
     expect(chatApi.listConversations).not.toHaveBeenCalled();
     expect(chatApi.listCandidateInquiries).not.toHaveBeenCalled();
@@ -83,10 +84,14 @@ describe("ChatInboxScreen initial loading", () => {
     });
 
     await waitFor(() => {
-      expect(chatApi.listConversations).toHaveBeenCalledWith({ limit: 20 });
-      expect(chatApi.listCandidateInquiries).toHaveBeenCalledWith({
-        limit: 20,
-      });
+      expect(chatApi.listConversations).toHaveBeenCalledWith(
+        { limit: 20 },
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      );
+      expect(chatApi.listCandidateInquiries).toHaveBeenCalledWith(
+        { limit: 20 },
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      );
       expect(view.getByText("Campus cleanup")).toBeTruthy();
     });
   });

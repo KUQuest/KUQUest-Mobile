@@ -18,6 +18,7 @@ import {
   type QuestFixtureValueResult,
   type QuestWorkflowAction,
 } from "./questFixtureAdapter";
+import { createQuestClockStore } from "./store/questClockStore";
 import { liveQuestService } from "./liveQuestService";
 import type {
   LiveQuestSnapshot,
@@ -302,38 +303,73 @@ export function createQuestWorkflow(
   adapter: QuestFixtureAdapter = questFixtureAdapter,
   options: { refreshIntervalMs?: number } = {}
 ): QuestWorkflow {
-  let currentNow = new Date(adapter.now.getTime());
+  const clockEnabled = options.refreshIntervalMs !== undefined;
+  const clockStore = createQuestClockStore(adapter.now);
   let adapterUnsubscribe: (() => void) | undefined;
   let refreshTimer: ReturnType<typeof setInterval> | undefined;
-  const listeners = new Set<() => void>();
+  let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
+  let subscriberCount = 0;
 
-  const notify = () => listeners.forEach((listener) => listener());
+  const scheduleNextDeadline = (): void => {
+    clearTimeout(deadlineTimer);
+    deadlineTimer = undefined;
+    if (subscriberCount === 0) return;
+    const nowMs = clockStore.getState().nowMs;
+    const deadlines = adapter
+      .listStates(DEFAULT_PROTOTYPE_VIEWER_ID, new Date(nowMs))
+      .flatMap((state) => [
+        state.quest.startAt,
+        state.partialStartConsent?.responseDeadlineAt,
+        state.editConsent?.responseDeadlineAt,
+      ])
+      .filter((value): value is string => Boolean(value))
+      .map((value) => new Date(value).getTime())
+      .filter((value) => Number.isFinite(value) && value >= nowMs);
+    const nextDeadlineMs = Math.min(...deadlines);
+    if (!Number.isFinite(nextDeadlineMs)) return;
+    deadlineTimer = setTimeout(
+      () => {
+        notify();
+        scheduleNextDeadline();
+      },
+      Math.max(0, nextDeadlineMs - nowMs)
+    );
+  };
+  const notify = () => {
+    clockStore.getState().advance(0);
+    scheduleNextDeadline();
+  };
   const at = (): Date => {
-    if (listeners.size === 0) currentNow = new Date(adapter.now.getTime());
-    return new Date(currentNow.getTime());
+    if (subscriberCount === 0)
+      clockStore.getState().setNow(adapter.now.getTime());
+    return new Date(clockStore.getState().nowMs);
   };
   const startRefresh = () => {
-    if (listeners.size !== 1) return;
-    currentNow = new Date(adapter.now.getTime());
+    if (subscriberCount !== 1) return;
+    clockStore.getState().setNow(adapter.now.getTime());
     adapterUnsubscribe = adapter.subscribe(notify);
+    scheduleNextDeadline();
+    if (!clockEnabled) return;
     const interval = Math.max(1, options.refreshIntervalMs ?? 1000);
     refreshTimer = setInterval(() => {
-      currentNow = new Date(currentNow.getTime() + interval);
-      notify();
+      clockStore.getState().advance(interval);
     }, interval);
   };
   const stopRefresh = () => {
-    if (listeners.size !== 0) return;
+    if (subscriberCount !== 0) return;
     adapterUnsubscribe?.();
     adapterUnsubscribe = undefined;
-    if (refreshTimer) clearInterval(refreshTimer);
+    clearInterval(refreshTimer);
     refreshTimer = undefined;
+    clearTimeout(deadlineTimer);
+    deadlineTimer = undefined;
   };
 
   return {
     getNow: (seed) => {
-      if (seed && listeners.size === 0) currentNow = new Date(seed.getTime());
-      return new Date(currentNow.getTime());
+      if (seed && subscriberCount === 0)
+        clockStore.getState().setNow(seed.getTime());
+      return new Date(clockStore.getState().nowMs);
     },
     getQuestBoardModel: (viewerId = DEFAULT_PROTOTYPE_VIEWER_ID) => {
       const now = at();
@@ -412,15 +448,17 @@ export function createQuestWorkflow(
     searchMembers: (questId, query, leaderId) =>
       adapter.searchMembers(questId, query, leaderId, at()),
     subscribe: (listener) => {
-      listeners.add(listener);
+      subscriberCount += 1;
       startRefresh();
+      const unsubscribeClock = clockStore.subscribe(() => listener());
       return () => {
-        listeners.delete(listener);
+        unsubscribeClock();
+        subscriberCount -= 1;
         stopRefresh();
       };
     },
     reset: () => {
-      currentNow = new Date(adapter.now.getTime());
+      clockStore.getState().setNow(adapter.now.getTime());
       adapter.reset();
     },
     dispatch: ((action: QuestWorkflowAction) =>

@@ -4,7 +4,7 @@ import {
   useColorScheme,
   useWindowDimensions,
 } from "react-native";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Pressable, ScrollView, Text, View } from "@/tw";
@@ -16,26 +16,23 @@ import {
   WalletCards,
 } from "lucide-react-native";
 
-import { questApi } from "@/api/QuestApi";
-import { studentApi } from "@/api/StudentApi";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { useRoleWorkspace } from "@/components/navigation/RoleWorkspaceContext";
+import { useRoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
 
-import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
+import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import WorkerHomeScreen from "@/features/workerHome/WorkerHomeScreen";
 import { isPrototypeDemoEnabled } from "@/features/auth/authEnvironment";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { getThemeColors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 
+import { useHirerHomeQuery } from "./api/homeQueries";
 import { HirerQuestProgressCard } from "./components/HirerQuestProgressCard";
 import { HirerQuestRosterModal } from "./components/HirerQuestRosterModal";
 import {
   hirerHomeQuestFixtures,
-  type CanonicalHirerQuestStatus,
   type LiveHirerQuestCardData,
-  type QuestMemberProfile,
 } from "./hirerHomeData";
 import { hirerHomeMessages } from "./hirerHomeMessages";
 import { hirerHomeStyles as styles } from "./hirerHomeStyles";
@@ -46,114 +43,14 @@ export default function HomeScreen() {
   const { width, fontScale } = useWindowDimensions();
   const colorScheme = useColorScheme();
   const insets = useSafeAreaInsets();
-  const { handleScroll } = useNavigationVisibility();
+  const handleScroll = handleNavigationScroll;
   const metrics = getAppChromeMetrics(width, fontScale);
   const themeColors = getThemeColors(colorScheme);
   const messages = hirerHomeMessages[locale];
   const [activeCardIndex, setActiveCardIndex] = useState(0);
-  const [liveQuests, setLiveQuests] = useState<LiveHirerQuestCardData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const { data: liveQuests = [], isRefetching, refetch } = useHirerHomeQuery();
   const [rosterModalQuest, setRosterModalQuest] =
     useState<LiveHirerQuestCardData | null>(null);
-
-  const fetchActiveQuests = useCallback(async () => {
-    try {
-      const res = await questApi.listMine({ limit: 50 });
-      const mineQuests = res.items;
-
-      // Active and open quests created by this Hirer (exclude cancelled & completed)
-      const activeQuests = mineQuests.filter(
-        (q) => q.state !== "QUEST_CANCELLED" && q.state !== "QUEST_COMPLETED"
-      );
-
-      const cardPromises = activeQuests.map(async (q) => {
-        const isSingleCandidate =
-          q.mode === "CANDIDATE" && q.participation !== "GROUP";
-        const isGroupCandidate =
-          q.mode === "CANDIDATE" && q.participation === "GROUP";
-        const [assignments, applications, teams] = await Promise.all([
-          questApi.listQuestAssignments(q.id).catch(() => []),
-          isSingleCandidate
-            ? questApi.listApplications(q.id).catch(() => [])
-            : Promise.resolve([]),
-          isGroupCandidate
-            ? questApi.listCandidateTeams(q.id).catch(() => [])
-            : Promise.resolve([]),
-        ]);
-
-        const memberIds = Array.from(
-          new Set([
-            ...assignments.map((a) => a.workerId),
-            ...applications.map((a) => a.memberId),
-            ...teams.map((t) => t.leaderId),
-          ])
-        );
-
-        const profileMap = new Map<string, QuestMemberProfile>();
-        await Promise.all(
-          memberIds.map(async (id) => {
-            try {
-              const p = await studentApi.getPublicProfile(id);
-              const name = [p.firstName, p.lastName].filter(Boolean).join(" ");
-              profileMap.set(id, {
-                id,
-                displayName: name || "KU Student",
-                avatarUri: p.avatar?.url,
-                faculty: p.department?.faculty?.name,
-              });
-            } catch {
-              profileMap.set(id, {
-                id,
-                displayName: "KU Student",
-              });
-            }
-          })
-        );
-
-        const assignedWorkers = assignments
-          .map((a) => profileMap.get(a.workerId))
-          .filter((p): p is QuestMemberProfile => Boolean(p));
-
-        const applicantsList = isGroupCandidate
-          ? teams
-              .filter((t) => t.state === "TEAM_SUBMITTED")
-              .map((t) => profileMap.get(t.leaderId))
-              .filter((p): p is QuestMemberProfile => Boolean(p))
-          : applications
-              .filter((app) => app.state === "APPLICATION_APPLIED")
-              .map((app) => profileMap.get(app.memberId))
-              .filter((p): p is QuestMemberProfile => Boolean(p));
-
-        return {
-          id: q.id,
-          title: q.title,
-          tag: q.tag?.name,
-          status: q.state as CanonicalHirerQuestStatus,
-          mode: q.mode,
-          participation: q.participation,
-          headcount: q.headcount,
-          dueAt: q.dueAt,
-          assignedWorkers,
-          applicants: applicantsList,
-        };
-      });
-
-      const cards = await Promise.all(cardPromises);
-      setLiveQuests(cards);
-    } catch (err) {
-      console.warn("[HomeScreen] Failed to load active quests:", err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      void fetchActiveQuests();
-    }, [fetchActiveQuests])
-  );
 
   const isPrototypeDemo = isPrototypeDemoEnabled();
   const displayQuests =
@@ -209,10 +106,9 @@ export default function HomeScreen() {
         onScroll={handleScroll}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
+            refreshing={isRefetching}
             onRefresh={() => {
-              setRefreshing(true);
-              void fetchActiveQuests();
+              void refetch();
             }}
             colors={[themeColors.primary]}
             tintColor={themeColors.primary}

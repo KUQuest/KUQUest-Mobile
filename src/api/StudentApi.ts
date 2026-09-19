@@ -1,4 +1,5 @@
 import { ApiClient, ApiError } from "./ApiClient";
+import type { RequestOptions } from "./WalletApi";
 import {
   appendUploadFile,
   fileNameFromUri,
@@ -199,16 +200,22 @@ export class StudentApi {
     }
   }
 
-  async getAcademicRegistrationOptions(): Promise<AcademicRegistrationOptions> {
+  async getAcademicRegistrationOptions(
+    options?: RequestOptions
+  ): Promise<AcademicRegistrationOptions> {
     const body = await this.client.request<unknown>(
-      "/api/v1/academic-registration/options"
+      "/api/v1/academic-registration/options",
+      { signal: options?.signal }
     );
     return academicRegistrationOptionsResponseSchema.parse(body).data;
   }
 
-  async getAcademicRegistrationStatus(): Promise<AcademicRegistrationStatus> {
+  async getAcademicRegistrationStatus(
+    options?: RequestOptions
+  ): Promise<AcademicRegistrationStatus> {
     const body = await this.client.request<unknown>(
-      "/api/v1/academic-registration/status"
+      "/api/v1/academic-registration/status",
+      { signal: options?.signal }
     );
     return academicRegistrationStatusResponseSchema.parse(body).data;
   }
@@ -246,24 +253,32 @@ export class StudentApi {
     );
   }
 
-  async getProfile(): Promise<ProfileResponse> {
-    const body = await this.client.request<unknown>("/api/v1/profile");
+  async getProfile(options?: RequestOptions): Promise<ProfileResponse> {
+    const body = await this.client.request<unknown>("/api/v1/profile", {
+      signal: options?.signal,
+    });
     return profileResponseSchema.parse(body).data;
   }
-  async getPublicProfile(userId: string): Promise<PublicProfileResponse> {
+  async getPublicProfile(
+    userId: string,
+    options?: RequestOptions
+  ): Promise<PublicProfileResponse> {
     const body = await this.client.request<unknown>(
-      `/api/v1/profile/${userId}`
+      `/api/v1/profile/${userId}`,
+      { signal: options?.signal }
     );
     return publicProfileResponseSchema.parse(body).data;
   }
 
   async listPublicReviews(
     userId: string,
-    rating?: number
+    rating?: number,
+    options?: RequestOptions
   ): Promise<PublicProfileReviewsData> {
     const query = rating ? `?rating=${rating}` : "";
     const body = await this.client.request<unknown>(
-      `/api/v1/profile/${userId}/reviews${query}`
+      `/api/v1/profile/${userId}/reviews${query}`,
+      { signal: options?.signal }
     );
     return publicProfileReviewsResponseSchema.parse(body).data;
   }
@@ -307,12 +322,12 @@ export class StudentApi {
     );
   }
 
-  async getEditData(): Promise<ProfileEditData> {
+  async getEditData(options?: RequestOptions): Promise<ProfileEditData> {
     const [profile, experiences, portfolio, certificates] = await Promise.all([
-      this.getProfile(),
-      readCollection(() => this.listExperience()),
-      readCollection(() => this.listPortfolio()),
-      readCollection(() => this.listCertificates()),
+      this.getProfile(options),
+      readCollection(() => this.listExperience(options)),
+      readCollection(() => this.listPortfolio(options)),
+      readCollection(() => this.listCertificates(options)),
     ]);
 
     const sectionErrors: ProfileEditSectionErrors = {
@@ -354,9 +369,10 @@ export class StudentApi {
     return this.getProfile();
   }
 
-  async listExperience(): Promise<ExperienceEntry[]> {
+  async listExperience(options?: RequestOptions): Promise<ExperienceEntry[]> {
     const body = await this.client.request<unknown>(
-      "/api/v1/profile/experience"
+      "/api/v1/profile/experience",
+      { signal: options?.signal }
     );
     return experienceResponseSchema.parse(body).data;
   }
@@ -394,21 +410,26 @@ export class StudentApi {
     successResponseSchema.parse(body);
   }
 
-  async getReputation(): Promise<Reputation> {
+  async getReputation(options?: RequestOptions): Promise<Reputation> {
     const body = await this.client.request<unknown>(
-      "/api/v1/profile/reputation"
+      "/api/v1/profile/reputation",
+      { signal: options?.signal }
     );
     return reputationResponseSchema.parse(body).data;
   }
 
-  async listReviews(rating: "all" | 5 | 4 | 3 | 2 | 1 = "all"): Promise<{
+  async listReviews(
+    rating: "all" | 5 | 4 | 3 | 2 | 1 = "all",
+    options?: RequestOptions
+  ): Promise<{
     items: ProfileReview[];
     total: number;
     nextCursor?: string | null;
   }> {
     const query = rating === "all" ? "" : `?rating=${rating}`;
     const body = await this.client.request<unknown>(
-      `/api/v1/profile/reviews${query}`
+      `/api/v1/profile/reviews${query}`,
+      { signal: options?.signal }
     );
     const parsed = reviewsResponseSchema.parse(body).data;
     return {
@@ -453,9 +474,10 @@ export class StudentApi {
     );
   }
 
-  async listPortfolio(): Promise<PortfolioEntry[]> {
+  async listPortfolio(options?: RequestOptions): Promise<PortfolioEntry[]> {
     const body = await this.client.request<unknown>(
-      "/api/v1/profile/portfolio"
+      "/api/v1/profile/portfolio",
+      { signal: options?.signal }
     );
     return portfolioResponseSchema.parse(body).data;
   }
@@ -579,9 +601,12 @@ export class StudentApi {
     });
   }
 
-  async listCertificates(): Promise<CertificateEntry[]> {
+  async listCertificates(
+    options?: RequestOptions
+  ): Promise<CertificateEntry[]> {
     const body = await this.client.request<unknown>(
-      "/api/v1/profile/certificates"
+      "/api/v1/profile/certificates",
+      { signal: options?.signal }
     );
     return certificateResponseSchema.parse(body).data.certificates;
   }

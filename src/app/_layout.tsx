@@ -8,9 +8,10 @@ import { useEffect } from "react";
 import { useColorScheme } from "react-native";
 import { useFonts } from "expo-font";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { LocaleProvider } from "../locales/LocaleProvider";
+import { useLocaleStore } from "@/features/preferences/localeStore";
+import { QueryProvider } from "@/app/providers/QueryProvider";
 import AuthMiddleware from "@/features/auth/AuthMiddleware";
-import { RoleWorkspaceProvider } from "@/components/navigation/RoleWorkspaceContext";
+import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
 import { colors, darkColors } from "../theme/colors";
 
 import {
@@ -33,6 +34,10 @@ export default function RootLayout() {
     NotoSansThai_700Bold,
   });
   useEffect(() => {
+    void useLocaleStore.getState().hydrateLocale();
+    void useRoleWorkspaceStore.getState().hydrateWorkspace();
+  }, []);
+  useEffect(() => {
     void SystemUI.setBackgroundColorAsync(backgroundColor);
   }, [backgroundColor]);
   useEffect(() => {
@@ -46,13 +51,11 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-      <LocaleProvider>
+      <QueryProvider>
         <AuthMiddleware>
-          <RoleWorkspaceProvider>
-            <Stack screenOptions={{ headerShown: false }} />
-          </RoleWorkspaceProvider>
+          <Stack screenOptions={{ headerShown: false }} />
         </AuthMiddleware>
-      </LocaleProvider>
+      </QueryProvider>
     </SafeAreaProvider>
   );
 }

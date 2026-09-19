@@ -1,9 +1,9 @@
 import React from "react";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import { questApi } from "@/api/QuestApi";
 import { studentApi } from "@/api/StudentApi";
-import { LocaleProvider } from "@/locales/LocaleProvider";
 import HomeScreen from "../HomeScreen";
 
 const mockPush = jest.fn();
@@ -81,10 +81,8 @@ describe("HomeScreen live active quests syncing", () => {
       },
     });
 
-    const { getByText, getByTestId } = await render(
-      <LocaleProvider>
-        <HomeScreen />
-      </LocaleProvider>
+    const { getByText, getByTestId } = await renderWithQueryClient(
+      <HomeScreen />
     );
 
     await waitFor(() => {
@@ -128,10 +126,8 @@ describe("HomeScreen live active quests syncing", () => {
       department: { faculty: { name: "Engineering" } },
     });
 
-    const { getByText, getByTestId } = await render(
-      <LocaleProvider>
-        <HomeScreen />
-      </LocaleProvider>
+    const { getByText, getByTestId } = await renderWithQueryClient(
+      <HomeScreen />
     );
 
     await waitFor(() => {
@@ -185,10 +181,8 @@ describe("HomeScreen live active quests syncing", () => {
       department: { faculty: { name: "Design" } },
     });
 
-    const { getByText, getByTestId } = await render(
-      <LocaleProvider>
-        <HomeScreen />
-      </LocaleProvider>
+    const { getByText, getByTestId } = await renderWithQueryClient(
+      <HomeScreen />
     );
 
     await waitFor(() => {
@@ -246,10 +240,8 @@ describe("HomeScreen live active quests syncing", () => {
       department: { faculty: { name: "Art" } },
     });
 
-    const { getByText, getByTestId } = await render(
-      <LocaleProvider>
-        <HomeScreen />
-      </LocaleProvider>
+    const { getByText, getByTestId } = await renderWithQueryClient(
+      <HomeScreen />
     );
 
     await waitFor(() => {
@@ -277,10 +269,8 @@ describe("HomeScreen live active quests syncing", () => {
       nextCursor: null,
     });
 
-    const { getByTestId, queryByTestId } = await render(
-      <LocaleProvider>
-        <HomeScreen />
-      </LocaleProvider>
+    const { getByTestId, queryByTestId } = await renderWithQueryClient(
+      <HomeScreen />
     );
 
     await waitFor(() => {
@@ -295,11 +285,7 @@ describe("HomeScreen live active quests syncing", () => {
       nextCursor: null,
     });
 
-    const { getByTestId } = await render(
-      <LocaleProvider>
-        <HomeScreen />
-      </LocaleProvider>
-    );
+    const { getByTestId } = await renderWithQueryClient(<HomeScreen />);
 
     await waitFor(() => {
       expect(getByTestId("hirer-home-quick-access")).toBeTruthy();

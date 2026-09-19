@@ -9,7 +9,7 @@ import {
 } from "lucide-react-native";
 import { useColorScheme } from "react-native";
 
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 
 import {
   formatHirerDueAt,

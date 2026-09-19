@@ -1,6 +1,7 @@
 import React from "react";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
 import { walletApi } from "@/api/WalletApi";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import TopUpScreen from "../TopUpScreen";
 
 const mockBack = jest.fn();
@@ -9,7 +10,7 @@ jest.mock("expo-router", () => ({
   useRouter: () => ({ back: mockBack, push: mockPush }),
 }));
 
-jest.mock("@/locales/LocaleProvider", () => ({
+jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "th" }),
 }));
 
@@ -56,7 +57,7 @@ describe("TopUpScreen", () => {
   });
 
   it("renders Step 1 (amount selection) with default amount and quick options", async () => {
-    const view = await render(<TopUpScreen />);
+    const view = await renderWithQueryClient(<TopUpScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("top-up-amount-step")).toBeTruthy();
@@ -67,7 +68,7 @@ describe("TopUpScreen", () => {
   });
 
   it("updates amount when quick chip is tapped", async () => {
-    const view = await render(<TopUpScreen />);
+    const view = await renderWithQueryClient(<TopUpScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("top-up-quick-500")).toBeTruthy();
@@ -81,7 +82,7 @@ describe("TopUpScreen", () => {
   });
 
   it("shows error and disables continue when amount is below minimum", async () => {
-    const view = await render(<TopUpScreen />);
+    const view = await renderWithQueryClient(<TopUpScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("top-up-amount-input")).toBeTruthy();
@@ -96,7 +97,7 @@ describe("TopUpScreen", () => {
   });
 
   it("requests quote and navigates through confirmation to QR payment", async () => {
-    const view = await render(<TopUpScreen />);
+    const view = await renderWithQueryClient(<TopUpScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("top-up-continue-btn")).toBeTruthy();
@@ -126,7 +127,7 @@ describe("TopUpScreen", () => {
   });
 
   it("returns to amount step when 'แก้ไขจำนวนเงิน' is tapped in confirmation", async () => {
-    const view = await render(<TopUpScreen />);
+    const view = await renderWithQueryClient(<TopUpScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("top-up-continue-btn")).toBeTruthy();
@@ -149,7 +150,7 @@ describe("TopUpScreen", () => {
       topUpStatus: "PAID",
     });
 
-    const view = await render(<TopUpScreen />);
+    const view = await renderWithQueryClient(<TopUpScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("top-up-continue-btn")).toBeTruthy();
@@ -169,7 +170,10 @@ describe("TopUpScreen", () => {
     await fireEvent.press(view.getByTestId("top-up-check-status-btn"));
 
     await waitFor(() => {
-      expect(walletApi.getTopUpStatus).toHaveBeenCalledWith(mockTopUpRecord.id);
+      expect(walletApi.getTopUpStatus).toHaveBeenCalledWith(
+        mockTopUpRecord.id,
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      );
       expect(view.getByTestId("top-up-success-view")).toBeTruthy();
       expect(view.getByTestId("top-up-verified-badge")).toBeTruthy();
       expect(view.getByText("เติมเงินสำเร็จ")).toBeTruthy();
@@ -183,7 +187,7 @@ describe("TopUpScreen", () => {
   });
 
   it("calls router.back when header back button is pressed on Step 1", async () => {
-    const view = await render(<TopUpScreen />);
+    const view = await renderWithQueryClient(<TopUpScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("top-up-screen-back-btn")).toBeTruthy();

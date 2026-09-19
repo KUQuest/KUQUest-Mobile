@@ -1,12 +1,7 @@
 import mockReact from "react";
 import { BackHandler } from "react-native";
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react-native";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import { ApiError } from "@/api/ApiClient";
 
@@ -46,7 +41,7 @@ jest.mock("expo-localization", () => ({
   getLocales: () => [{ languageCode: "en" }],
 }));
 
-jest.mock("../../../locales/LocaleProvider", () => ({
+jest.mock("../../../features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 
@@ -176,7 +171,7 @@ describe("OnboardingScreen Academic Registration selections", () => {
     });
     prepareAuth(api);
 
-    const view = await render(<OnboardingScreen />);
+    const view = await renderWithQueryClient(<OnboardingScreen />);
 
     expect(view.getByLabelText("Loading profile...")).toBeTruthy();
     expect(view.queryByLabelText("Name-Surname")).toBeNull();
@@ -202,7 +197,7 @@ describe("OnboardingScreen Academic Registration selections", () => {
     });
     prepareAuth(api);
 
-    await render(<OnboardingScreen />);
+    await renderWithQueryClient(<OnboardingScreen />);
 
     await waitFor(() => {
       expect(
@@ -227,7 +222,7 @@ describe("OnboardingScreen Academic Registration selections", () => {
   test("keeps Department disabled until Faculty is selected and clears it when Faculty changes", async () => {
     const api = createApi();
     prepareAuth(api);
-    await render(<OnboardingScreen />);
+    await renderWithQueryClient(<OnboardingScreen />);
 
     await waitFor(() =>
       expect(screen.getAllByTestId("select-trigger")).toHaveLength(3)
@@ -261,7 +256,7 @@ describe("OnboardingScreen Academic Registration selections", () => {
   test("opens searchable dropdowns for occupation, faculty, and department", async () => {
     const api = createApi();
     prepareAuth(api);
-    await render(<OnboardingScreen />);
+    await renderWithQueryClient(<OnboardingScreen />);
 
     await waitFor(() =>
       expect(screen.getAllByTestId("select-trigger")).toHaveLength(3)
@@ -318,7 +313,7 @@ describe("OnboardingScreen Academic Registration selections", () => {
       }),
     });
     prepareAuth(api);
-    await render(<OnboardingScreen />);
+    await renderWithQueryClient(<OnboardingScreen />);
 
     await waitFor(() =>
       expect(screen.getByText("Faculty of Engineering")).toBeTruthy()
@@ -383,7 +378,7 @@ describe("OnboardingScreen Academic Registration selections", () => {
       updateExperience: jest.fn().mockResolvedValue(undefined),
     });
     prepareAuth(api);
-    await render(<OnboardingScreen />);
+    await renderWithQueryClient(<OnboardingScreen />);
 
     await waitFor(() =>
       expect(screen.getByText("Faculty of Engineering")).toBeTruthy()
@@ -419,7 +414,7 @@ describe("OnboardingScreen Academic Registration selections", () => {
   test("clears field and dependent validation errors as values change", async () => {
     const api = createApi();
     prepareAuth(api);
-    await render(<OnboardingScreen />);
+    await renderWithQueryClient(<OnboardingScreen />);
 
     await waitFor(() =>
       expect(screen.getAllByTestId("select-trigger")).toHaveLength(3)
@@ -452,7 +447,7 @@ describe("OnboardingScreen Academic Registration selections", () => {
       .spyOn(BackHandler, "addEventListener")
       .mockImplementation(() => ({ remove: jest.fn() }) as never);
 
-    await render(<OnboardingScreen />);
+    await renderWithQueryClient(<OnboardingScreen />);
     await waitFor(() => expect(screen.getByText("Step 3 of 3")).toBeTruthy());
 
     const getBackHandler = () => {
@@ -482,7 +477,7 @@ describe("OnboardingScreen Academic Registration selections", () => {
     mockRouteParams = { step: "3" };
     const api = createApi();
     prepareAuth(api);
-    await render(<OnboardingScreen />);
+    await renderWithQueryClient(<OnboardingScreen />);
     await waitFor(() => expect(screen.getByText("Step 3 of 3")).toBeTruthy());
 
     await fireEvent.press(screen.getByText("+ Add another certificate"));
@@ -510,7 +505,7 @@ describe("OnboardingScreen Academic Registration selections", () => {
     });
     prepareAuth(api);
     mockRouteParams = { step: "3" };
-    await render(<OnboardingScreen />);
+    await renderWithQueryClient(<OnboardingScreen />);
     await waitFor(() => expect(screen.getByText("Step 3 of 3")).toBeTruthy());
 
     expect(screen.getByRole("button", { name: "Complete" })).toBeTruthy();

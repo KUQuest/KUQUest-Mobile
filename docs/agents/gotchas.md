@@ -11,6 +11,30 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 ## Entries
 
+### 2026-09-19 — Shared Jest helpers do not belong under `__tests__/`
+
+**What happened**: A shared test helper placed under `__tests__/` was auto-collected and failed with “Your test suite must contain at least one test.”
+
+**Root cause**: Jest treats every file under a `__tests__/` directory as a test suite.
+
+**Rule**: Put shared test helpers in `src/testing/`, such as `src/testing/queryTestUtils.tsx`, rather than under `__tests__/`.
+
+### 2026-09-19 — Query keys must match the inputs read by their query functions
+
+**What happened**: Chat message queries omitted `viewerId` and could serve another user's cached presentation, while Quest Board queries included unused filters and fragmented identical server data across cache entries.
+
+**Root cause**: The query keys did not contain exactly the inputs their `queryFn` used.
+
+**Rule**: Include every input read by `queryFn` and exclude every input the fetch ignores; follow `src/features/chat/api/chatQueries.ts` and `src/features/questBoard/api/questBoardQueries.ts`.
+
+### 2026-09-19 — Inline empty-array fallbacks break dependency identity
+
+**What happened**: `const xs = query.data ?? []` created a new array on every render and silently retriggered downstream `useMemo` and `useEffect` dependencies.
+
+**Root cause**: The inline `[]` fallback has a new identity on every evaluation.
+
+**Rule**: Preserve the fallback identity with `useMemo(() => query.data ?? [], [query.data])`.
+
 ### 2026-09-18 — Debug-build deep links use a different URI scheme than app.json
 
 **What happened**: `adb shell am start -a android.intent.action.VIEW -d "kuquestmobile://..."` (the scheme in `app.json`) never opened the target route on the dev-client build; it landed on unrelated default screens.
@@ -31,7 +55,7 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 **What happened**: During on-device automation, the app unexpectedly flipped from the Hirer to the Worker home screen with no tap on that control intended.
 
-**Root cause**: `BottomNav.tsx` treats two taps on the profile tab within 400ms as a request to call `switchWorkspace()`, toggling the persisted `RoleWorkspaceContext` workspace. Closely-timed automated taps near that control can misfire it.
+**Root cause**: `BottomNav.tsx` treats two taps on the profile tab within 400ms as a request to call `switchWorkspace()`, toggling the persisted `roleWorkspaceStore` workspace. Closely-timed automated taps near that control can misfire it.
 
 **Rule**: After any accidental double-tap near the profile tab during device automation, check which workspace is showing before continuing; recover with `switch-to-hirer-button` (on `WorkerHomeScreen`) or a deliberate `switchWorkspace("hirer")` path.
 

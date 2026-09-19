@@ -19,6 +19,7 @@ import {
 } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import Animated, * as Reanimated from "react-native-reanimated";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import DateTimePicker, {
@@ -48,7 +49,7 @@ import { Checkbox } from "../components/Checkbox";
 import { TextArea } from "../components/TextArea";
 import { FileTooLargeModal } from "../components/FileTooLargeModal";
 import { onboardingMessages } from "../../../locales/registrationOnboarding";
-import { useLocale } from "../../../locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { createEmptyProfile } from "../../profile/types";
 import type {
   Certificate,
@@ -57,14 +58,15 @@ import type {
   Work,
 } from "../../profile/types";
 import { authService } from "../../auth/AuthService";
+import { clearSessionCache } from "../../auth/sessionQueries";
 import { AuthError, type OnboardingStep } from "../../auth/types";
-import { ApiError } from "../../../api/ApiClient";
-import type { AcademicRegistrationOptions } from "../../../api/contracts";
-import { profileModule } from "../../profile/profileModule";
+import {
+  useOnboardingQuery,
+  isOnboardingSessionExpired,
+} from "../api/onboardingQueries";
 import {
   ProfilePersistenceCoordinator,
   ProfilePersistenceError,
-  type UnavailableProfileCollections,
 } from "../profilePersistenceCoordinator";
 import { parseOnboardingStep } from "../steps";
 import { validateProfileBasics, validateProfileDetails } from "../validation";
@@ -115,36 +117,6 @@ function formatDate(value: string, locale: "en" | "th"): string {
         month: "short",
         day: "numeric",
       }).format(date);
-}
-
-type OptionalCollectionResult<T> = {
-  data: T[];
-  unavailable: boolean;
-};
-
-async function readOptionalCollection<T>(
-  request: () => Promise<T[]>
-): Promise<OptionalCollectionResult<T>> {
-  try {
-    return { data: await request(), unavailable: false };
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) {
-      return { data: [], unavailable: true };
-    }
-    throw error;
-  }
-}
-
-function unavailableCollectionsFromResults(
-  certificates: OptionalCollectionResult<unknown>,
-  portfolio: OptionalCollectionResult<unknown>,
-  experience: OptionalCollectionResult<unknown>
-): UnavailableProfileCollections {
-  return {
-    ...(certificates.unavailable ? { certificates: true } : {}),
-    ...(portfolio.unavailable ? { portfolio: true } : {}),
-    ...(experience.unavailable ? { experience: true } : {}),
-  };
 }
 
 function optionalCollectionMessage(
@@ -369,6 +341,7 @@ export default function OnboardingScreen() {
   const colorScheme = useColorScheme();
 
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { locale } = useLocale();
   const msg = onboardingMessages[locale];
   const { mode, step } = useLocalSearchParams<{
@@ -380,14 +353,10 @@ export default function OnboardingScreen() {
   const routeStep = parseOnboardingStep(step);
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(routeStep);
   const [form, setForm] = useState<ProfileDraft>(createOnboardingForm);
-  const [options, setOptions] = useState<AcademicRegistrationOptions | null>(
-    null
-  );
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [loadAttempt, setLoadAttempt] = useState(0);
-  const [unavailableCollections, setUnavailableCollections] =
-    useState<UnavailableProfileCollections>({});
+  const onboardingQuery = useOnboardingQuery();
+  const options = onboardingQuery.data?.options ?? null;
+  const unavailableCollections =
+    onboardingQuery.data?.unavailableCollections ?? {};
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -403,7 +372,7 @@ export default function OnboardingScreen() {
   const [today] = useState(() => new Date());
   const persistenceCoordinator = useRef(new ProfilePersistenceCoordinator());
   const reduceMotion = useReducedMotionPreference();
-  const initialLoadPending = isLoadingProfile && options === null;
+  const initialLoadPending = onboardingQuery.isPending && options === null;
   const leaveRegistration = useCallback(() => {
     if (isEditMode) {
       router.back();
@@ -415,7 +384,10 @@ export default function OnboardingScreen() {
         text: msg.cancelRegistration,
         style: "destructive",
         onPress: () =>
-          void authService.signOut().then(() => router.replace("/")),
+          void authService.signOut().then(() => {
+            clearSessionCache(queryClient);
+            router.replace("/");
+          }),
       },
     ]);
   }, [
@@ -424,6 +396,7 @@ export default function OnboardingScreen() {
     msg.cancelRegistration,
     msg.cancelRegistrationMessage,
     msg.cancelRegistrationTitle,
+    queryClient,
     router,
   ]);
 
@@ -454,81 +427,22 @@ export default function OnboardingScreen() {
     router,
   ]);
 
+  const [seededFrom, setSeededFrom] = useState<object | null>(null);
+  if (onboardingQuery.data && seededFrom !== onboardingQuery.data) {
+    setSeededFrom(onboardingQuery.data);
+    setForm(onboardingQuery.data.form);
+  }
+
   useEffect(() => {
-    let active = true;
-
-    async function load() {
-      setLoadError(false);
-      setIsLoadingProfile(true);
-      setUnavailableCollections({});
-      try {
-        const session = await authService.getSession();
-        if (!session) throw new Error("No active session");
-        const api = await authService.getStudentApi();
-        const certificatesPromise = readOptionalCollection(() =>
-          api.listCertificates()
-        );
-        const portfolioPromise = readOptionalCollection(() =>
-          api.listPortfolio()
-        );
-        const experiencesPromise =
-          typeof api.listExperience === "function"
-            ? readOptionalCollection(() => api.listExperience())
-            : Promise.resolve({ data: [], unavailable: true });
-        const [
-          academicOptions,
-          status,
-          profile,
-          certificatesResult,
-          portfolioResult,
-          experiencesResult,
-        ] = await Promise.all([
-          api.getAcademicRegistrationOptions(),
-          api.getAcademicRegistrationStatus(),
-          api.getProfile(),
-          certificatesPromise,
-          portfolioPromise,
-          experiencesPromise,
-        ]);
-        const mappedForm = profileModule.mapProfileRecordsToDraft({
-          profile,
-          status,
-          options: academicOptions,
-          certificates: certificatesResult.data,
-          portfolio: portfolioResult.data,
-          experiences: experiencesResult.data,
-          fallbackName: session.user.name,
-          fallbackImage: session.user.image ?? "",
-        });
-
-        if (active) {
-          setOptions(academicOptions);
-          setForm(mappedForm);
-          setUnavailableCollections(
-            unavailableCollectionsFromResults(
-              certificatesResult,
-              portfolioResult,
-              experiencesResult
-            )
-          );
-        }
-      } catch (error) {
-        if (error instanceof AuthError && error.code === "SESSION_EXPIRED") {
-          await authService.signOut().catch(() => undefined);
-          if (active) routerRef.current.replace("/");
-          return;
-        }
-        if (active) setLoadError(true);
-      } finally {
-        if (active) setIsLoadingProfile(false);
-      }
-    }
-
-    void load();
-    return () => {
-      active = false;
-    };
-  }, [loadAttempt, locale, msg.loadingProfile, msg.submitErrorMsg]);
+    if (!isOnboardingSessionExpired(onboardingQuery.error)) return;
+    void authService
+      .signOut()
+      .catch(() => undefined)
+      .then(() => {
+        clearSessionCache(queryClient);
+        routerRef.current.replace("/");
+      });
+  }, [onboardingQuery.error, queryClient]);
 
   const occupationOptions = (options?.occupations ?? []).map((occupation) => ({
     label: occupation.name,
@@ -633,6 +547,7 @@ export default function OnboardingScreen() {
     } catch (error) {
       if (error instanceof AuthError && error.code === "SESSION_EXPIRED") {
         await authService.signOut().catch(() => undefined);
+        clearSessionCache(queryClient);
         router.replace("/");
         return;
       }
@@ -851,7 +766,7 @@ export default function OnboardingScreen() {
     );
   }
 
-  if (loadError && options === null) {
+  if (onboardingQuery.isError && options === null) {
     return (
       <ScreenLayout className={styles.safeArea}>
         <View className={styles.loadErrorCard} accessibilityRole="alert">
@@ -860,7 +775,7 @@ export default function OnboardingScreen() {
           <Pressable
             accessibilityRole="button"
             className={styles.addMoreBtn}
-            onPress={() => setLoadAttempt((attempt) => attempt + 1)}
+            onPress={() => void onboardingQuery.refetch()}
           >
             <Text className={styles.addMoreBtnText}>{msg.retrySubmitBtn}</Text>
           </Pressable>

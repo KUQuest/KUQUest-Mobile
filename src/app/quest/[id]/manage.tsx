@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert, RefreshControl } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
@@ -7,15 +7,13 @@ import { FileEdit, MessageSquare, ShieldCheck, X } from "lucide-react-native";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
-import { authService } from "@/features/auth/AuthService";
 import {
   createQuestIdempotencyKey,
   type QuestV2ProofReviewPayload,
 } from "@/api/QuestApi";
-import {
-  liveQuestService,
-  type LiveQuestSnapshot,
-} from "@/features/questBoard/liveQuestService";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
+import { useLiveQuestSnapshotQuery } from "@/features/questBoard/api/questBoardQueries";
+import { liveQuestService } from "@/features/questBoard/liveQuestService";
 import {
   CandidateReviewSheet,
   PartialGroupStartConsentSheet,
@@ -24,7 +22,7 @@ import {
   ProofReviewModal,
 } from "@/features/questBoard/components";
 import { getChatRouteParams } from "@/features/chat/chatData";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
 
@@ -37,11 +35,8 @@ export default function HirerQuestManageRoute() {
   const { locale } = useLocale();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const questId = routeValue(params.id);
-  const [viewerId, setViewerId] = useState<string>();
-  const [snapshot, setSnapshot] = useState<LiveQuestSnapshot>();
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string>();
+  const sessionQuery = useSessionQuery();
+  const viewerId = sessionQuery.data?.user.id || "";
   const [candidateOpen, setCandidateOpen] = useState(false);
   const [underfilledOpen, setUnderfilledOpen] = useState(false);
   const [conditionEditOpen, setConditionEditOpen] = useState(false);
@@ -51,79 +46,28 @@ export default function HirerQuestManageRoute() {
   const messages = questBoardMessages[locale];
   const [proofReviewOpen, setProofReviewOpen] = useState(false);
 
-  useEffect(() => {
-    void authService
-      .getSession()
-      .then((session) => setViewerId(session?.user.id))
-      .catch(() => undefined);
-  }, []);
-
-  const load = useCallback(
-    async (background = false) => {
-      if (!questId || !viewerId) return;
-      if (background) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      try {
-        const next = await liveQuestService.getLiveSnapshot(
-          questId,
-          viewerId,
-          editRequestId ? { editRequestId } : undefined
-        );
-        setSnapshot(next);
-        setError(undefined);
-      } catch (caught) {
-        setError(
-          caught instanceof Error ? caught.message : "Unable to load Quest"
-        );
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [questId, viewerId, editRequestId]
+  const snapshotQuery = useLiveQuestSnapshotQuery(
+    questId ?? null,
+    viewerId || null,
+    editRequestId ? { editRequestId } : undefined
   );
-
-  useEffect(() => {
-    let mounted = true;
-    if (questId && viewerId) {
-      void (async () => {
-        try {
-          const next = await liveQuestService.getLiveSnapshot(
-            questId,
-            viewerId
-          );
-          if (mounted) {
-            setSnapshot(next);
-            setError(undefined);
-            setLoading(false);
-          }
-        } catch (caught) {
-          if (mounted) {
-            setError(
-              caught instanceof Error ? caught.message : "Unable to load Quest"
-            );
-            setLoading(false);
-          }
-        }
-      })();
-    }
-    return () => {
-      mounted = false;
-    };
-  }, [questId, viewerId]);
-
+  const snapshot = snapshotQuery.data;
+  const refetchSnapshot = snapshotQuery.refetch;
+  const error =
+    snapshotQuery.error instanceof Error
+      ? snapshotQuery.error.message
+      : snapshotQuery.error
+        ? "Unable to load Quest"
+        : undefined;
   const command = useCallback(
     async (run: (key: string) => Promise<unknown>): Promise<boolean> => {
       if (!questId || !viewerId) return false;
       try {
         await run(createQuestIdempotencyKey());
-        await load(true);
+        await refetchSnapshot();
         return true;
       } catch (caught) {
-        await load(true);
+        await refetchSnapshot();
         Alert.alert(
           "Quest",
           caught instanceof Error ? caught.message : "Action failed"
@@ -131,12 +75,12 @@ export default function HirerQuestManageRoute() {
         return false;
       }
     },
-    [load, questId, viewerId]
+    [questId, refetchSnapshot, viewerId]
   );
 
-  if (loading)
+  if (snapshotQuery.isPending)
     return (
-      <ScreenLayout className="flex-1 bg-ku-bg">
+      <ScreenLayout className="bg-ku-bg flex-1">
         <TopBar
           title="Manage Quest"
           onBackPress={() => router.back()}
@@ -149,7 +93,7 @@ export default function HirerQuestManageRoute() {
     );
   if (error || !snapshot)
     return (
-      <ScreenLayout className="flex-1 bg-ku-bg">
+      <ScreenLayout className="bg-ku-bg flex-1">
         <TopBar
           title="Manage Quest"
           onBackPress={() => router.back()}
@@ -159,14 +103,13 @@ export default function HirerQuestManageRoute() {
           <Text>{error ?? "Quest not found"}</Text>
           <Pressable
             className="mt-4 rounded-xl bg-ku-primary p-4"
-            onPress={() => void load()}
+            onPress={() => void snapshotQuery.refetch()}
           >
             <Text className="text-center text-white">Retry</Text>
           </Pressable>
         </View>
       </ScreenLayout>
     );
-
   const quest = snapshot.quest;
   const originalConditionItems = quest.condition.items
     .slice()
@@ -254,7 +197,7 @@ export default function HirerQuestManageRoute() {
       .then((request) => {
         setEditRequestId(request.requestId);
         setConditionEditOpen(false);
-        return load(true);
+        return snapshotQuery.refetch();
       })
       .catch((caught) => {
         setConditionEditError(
@@ -262,13 +205,13 @@ export default function HirerQuestManageRoute() {
             ? caught.message
             : messages.conditionEditSubmitError
         );
-        return load(true);
+        return snapshotQuery.refetch();
       })
       .finally(() => setConditionEditSubmitting(false));
   };
 
   return (
-    <ScreenLayout className="flex-1 bg-ku-bg">
+    <ScreenLayout className="bg-ku-bg flex-1">
       <TopBar
         title="Manage Quest"
         onBackPress={() => router.back()}
@@ -277,26 +220,26 @@ export default function HirerQuestManageRoute() {
       <ScrollView
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => void load(true)}
+            refreshing={snapshotQuery.isRefetching}
+            onRefresh={() => void snapshotQuery.refetch()}
           />
         }
         contentContainerClassName="p-5 pb-12"
       >
         <Text
           accessibilityRole="header"
-          className="text-ku-text-strong text-2xl font-ku-bold"
+          className="font-ku-bold text-2xl text-ku-text-strong"
         >
           {quest.title}
         </Text>
         <Text
           testID="hirer-manage-state"
-          className="mt-2 text-ku-primary font-ku-bold"
+          className="mt-2 font-ku-bold text-ku-primary"
         >
           {snapshot.state} · {snapshot.mode}
         </Text>
         <View className="mt-5 rounded-2xl bg-white p-4">
-          <Text className="text-ku-text-strong font-ku-bold">Roster</Text>
+          <Text className="font-ku-bold text-ku-text-strong">Roster</Text>
           <Text className="mt-2 text-ku-text-secondary">
             {snapshot.assignments.length} assigned · {snapshot.quest.headcount}{" "}
             requested
@@ -317,7 +260,7 @@ export default function HirerQuestManageRoute() {
             className="mt-3 rounded-2xl bg-ku-primary p-4"
             onPress={() => setCandidateOpen(true)}
           >
-            <Text className="text-center text-white font-ku-bold">
+            <Text className="text-center font-ku-bold text-white">
               Review candidates and teams
             </Text>
           </Pressable>
@@ -326,10 +269,10 @@ export default function HirerQuestManageRoute() {
         snapshot.capabilities.canDecideUnderfilled ? (
           <Pressable
             testID="hirer-manage-underfilled"
-            className="mt-3 rounded-2xl bg-ku-warning p-4"
+            className="bg-ku-warning mt-3 rounded-2xl p-4"
             onPress={() => setUnderfilledOpen(true)}
           >
-            <Text className="text-center text-ku-text-strong font-ku-bold">
+            <Text className="text-center font-ku-bold text-ku-text-strong">
               Decide underfilled Quest
             </Text>
           </Pressable>
@@ -341,7 +284,7 @@ export default function HirerQuestManageRoute() {
             onPress={() => setConditionEditOpen(true)}
           >
             <FileEdit color={colors.primary} size={20} />
-            <Text className="ml-3 text-ku-primary font-ku-bold">
+            <Text className="ml-3 font-ku-bold text-ku-primary">
               {messages.proposeConditionChanges}
             </Text>
           </Pressable>
@@ -361,7 +304,7 @@ export default function HirerQuestManageRoute() {
             onPress={reviewProof}
           >
             <ShieldCheck color={colors.primary} size={20} />
-            <Text className="mt-2 text-ku-primary font-ku-bold">
+            <Text className="mt-2 font-ku-bold text-ku-primary">
               Review pending proof
             </Text>
           </Pressable>
@@ -373,7 +316,7 @@ export default function HirerQuestManageRoute() {
             onPress={openChat}
           >
             <MessageSquare color={colors.primary} size={20} />
-            <Text className="ml-3 text-ku-primary font-ku-bold">
+            <Text className="ml-3 font-ku-bold text-ku-primary">
               Open Work Chat
             </Text>
           </Pressable>
@@ -385,7 +328,7 @@ export default function HirerQuestManageRoute() {
             onPress={cancel}
           >
             <X color={colors.danger} size={20} />
-            <Text className="ml-3 text-ku-danger font-ku-bold">
+            <Text className="ml-3 font-ku-bold text-ku-danger">
               Cancel Quest
             </Text>
           </Pressable>

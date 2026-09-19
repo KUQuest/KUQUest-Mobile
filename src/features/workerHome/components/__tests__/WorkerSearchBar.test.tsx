@@ -2,7 +2,7 @@ import React from "react";
 import { fireEvent, render } from "@testing-library/react-native";
 import { WorkerSearchBar } from "../WorkerSearchBar";
 
-jest.mock("@/locales/LocaleProvider", () => ({
+jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 

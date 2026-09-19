@@ -25,7 +25,7 @@ export function Button({
     <TouchableOpacity
       activeOpacity={0.8}
       className={cn(
-        "w-full min-h-[48px] flex-row items-center justify-center gap-ku-sm rounded-ku-pill px-ku-md py-[14px]",
+        "min-h-[48px] w-full flex-row items-center justify-center gap-ku-sm rounded-ku-pill px-ku-md py-[14px]",
         isPrimary
           ? "bg-ku-primary"
           : "border-2 border-ku-primary bg-transparent",

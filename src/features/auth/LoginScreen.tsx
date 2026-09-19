@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/tw/cn";
 import { useColorScheme, useWindowDimensions } from "react-native";
 import { Pressable, Text, View } from "@/tw";
@@ -13,8 +14,9 @@ import {
   RoutingDestination,
 } from "./types";
 import { authService } from "./AuthService";
+import { clearSessionCache } from "./sessionQueries";
 import { authMessages, getAuthErrorText } from "../../locales/authMessages";
-import { useLocale } from "../../locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { colors } from "@/theme/colors";
 import styles from "./styles/loginStyles";
 
@@ -39,11 +41,11 @@ export default function LoginScreen({
   const buttonWidth = Math.min(width - 48, 420);
 
   const { locale: currentLocale } = useLocale();
+  const queryClient = useQueryClient();
+  const messages = authMessages[currentLocale];
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<LoginErrorState | null>(null);
-
-  const messages = authMessages[currentLocale];
 
   const handleAuth = async () => {
     if (isLoading) return;
@@ -52,6 +54,7 @@ export default function LoginScreen({
 
     try {
       await authAdapter.authenticate();
+      clearSessionCache(queryClient);
       const destination = await authAdapter.getRoutingDestination();
 
       setIsLoading(false);
@@ -121,7 +124,7 @@ export default function LoginScreen({
                     <Text
                       className={cn(
                         styles.errorText,
-                        "text-ku-label mt-[4px] text-ku-danger-light"
+                        "mt-[4px] text-ku-label text-ku-danger-light"
                       )}
                     >
                       {error.message}

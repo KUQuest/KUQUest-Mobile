@@ -1,11 +1,11 @@
 import React from "react";
-import { render, waitFor } from "@testing-library/react-native";
+import { waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import ProfileScreen from "../ProfileScreen";
 import { profileModule } from "../profileModule";
 import { AuthError } from "../../auth/types";
 import { authService } from "../../auth/AuthService";
-import { NavigationVisibilityProvider } from "../../../components/navigation/NavigationVisibilityContext";
 
 // The suite in ProfileScreen.test.tsx mocks useFocusEffect as a one-shot
 // useEffect(effect, []), so it can never observe a refocus. These cases exist
@@ -32,7 +32,7 @@ jest.mock("expo-router", () => ({
 jest.mock("../../auth/AuthService", () => ({
   authService: { signOut: jest.fn().mockResolvedValue(undefined) },
 }));
-jest.mock("../../../locales/LocaleProvider", () => ({
+jest.mock("../../../features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 jest.mock("../profileModule", () => ({
@@ -44,12 +44,7 @@ jest.mock("../profileModule", () => ({
 const mockedLoad = profileModule.loadProfile as jest.MockedFunction<
   typeof profileModule.loadProfile
 >;
-const renderScreen = async () =>
-  await render(
-    <NavigationVisibilityProvider>
-      <ProfileScreen />
-    </NavigationVisibilityProvider>
-  );
+const renderScreen = async () => await renderWithQueryClient(<ProfileScreen />);
 
 describe("Student Profile screen — expired session", () => {
   beforeEach(() => {

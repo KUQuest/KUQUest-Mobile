@@ -1,7 +1,6 @@
 import { Modal, StyleSheet, useColorScheme } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useState } from "react";
-import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   ArrowLeft,
@@ -16,12 +15,7 @@ import {
 } from "lucide-react-native";
 
 import { Image, Pressable, ScrollView, Text, TextInput, View } from "@/tw";
-import {
-  walletApi,
-  type TopUpData,
-  type TopUpQuote,
-  type WalletBalances,
-} from "@/api/WalletApi";
+import { type TopUpData, type TopUpQuote } from "@/api/WalletApi";
 import { formatSatang } from "@/domain/satang";
 import {
   checkTopUpAmount,
@@ -31,7 +25,12 @@ import {
   simulateTopUpPayment,
   toCompartments,
 } from "@/features/wallet/walletModule";
-import type { SupportedLocale } from "@/locales/LocaleProvider";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useWalletQuery,
+  walletKeys,
+} from "@/features/wallet/api/walletQueries";
+import type { SupportedLocale } from "@/locales/locale";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
 import { getActionBarPaddingBottom } from "@/theme/layout";
@@ -456,8 +455,8 @@ function FundingDetailsContent({
                 strokeWidth={2.2}
               />
             </View>
-            <View className="flex-1 min-w-0">
-              <Text className="text-ku-text-muted font-ku-semibold text-ku-label">
+            <View className="min-w-0 flex-1">
+              <Text className="font-ku-semibold text-ku-label text-ku-text-muted">
                 {messages.fundingStatusLabel}
               </Text>
               <Text
@@ -484,10 +483,10 @@ function FundingDetailsContent({
             ]}
             testID="quest-funding-reservation-info"
           >
-            <Text className="text-ku-text-secondary font-ku-medium text-ku-label">
+            <Text className="font-ku-medium text-ku-label text-ku-text-secondary">
               {messages.fundingHeld}
             </Text>
-            <Text className="text-ku-text-secondary font-ku-regular text-ku-body-small mt-[4px]">
+            <Text className="mt-[4px] font-ku-regular text-ku-body-small text-ku-text-secondary">
               {messages.fundingReservationDescription}
             </Text>
           </View>
@@ -512,7 +511,7 @@ function FundingDetailsContent({
                 size={18}
                 strokeWidth={2.2}
               />
-              <Text className="text-ku-primary font-ku-semibold text-ku-label ml-[4px]">
+              <Text className="ml-[4px] font-ku-semibold text-ku-label text-ku-primary">
                 {messages.fundingTopUp}
               </Text>
             </Pressable>
@@ -538,7 +537,7 @@ function FundingDetailsContent({
                 size={18}
                 strokeWidth={2.2}
               />
-              <Text className="text-ku-text-muted font-ku-semibold text-ku-label ml-[4px]">
+              <Text className="ml-[4px] font-ku-semibold text-ku-label text-ku-text-muted">
                 {messages.fundingTransfer}
               </Text>
             </Pressable>
@@ -546,7 +545,7 @@ function FundingDetailsContent({
           <Text
             accessible
             accessibilityRole="text"
-            className="text-ku-text-muted font-ku-regular text-ku-caption mt-[8px] text-center"
+            className="mt-[8px] text-center font-ku-regular text-ku-caption text-ku-text-muted"
             testID="quest-funding-actions-unavailable"
           >
             {messages.fundingActionsUnavailable}
@@ -572,11 +571,11 @@ function FundingDetailsContent({
                 strokeWidth={2.1}
               />
             </View>
-            <View className="flex-1 min-w-0">
-              <Text className="text-ku-text-strong font-ku-semibold text-ku-label">
+            <View className="min-w-0 flex-1">
+              <Text className="font-ku-semibold text-ku-label text-ku-text-strong">
                 {messages.settlement}
               </Text>
-              <Text className="text-ku-text-secondary font-ku-regular text-ku-label">
+              <Text className="font-ku-regular text-ku-label text-ku-text-secondary">
                 {messages.settlementDescription}
               </Text>
             </View>
@@ -593,11 +592,11 @@ function FundingDetailsContent({
                 strokeWidth={2.1}
               />
             </View>
-            <View className="flex-1 min-w-0">
-              <Text className="text-ku-text-strong font-ku-semibold text-ku-label">
+            <View className="min-w-0 flex-1">
+              <Text className="font-ku-semibold text-ku-label text-ku-text-strong">
                 {messages.refunds}
               </Text>
-              <Text className="text-ku-text-secondary font-ku-regular text-ku-label">
+              <Text className="font-ku-regular text-ku-label text-ku-text-secondary">
                 {messages.refundsDescription}
               </Text>
             </View>
@@ -943,10 +942,10 @@ function TopUpFlowContent({
             </Text>
             {verificationError ? (
               <View
-                className="bg-ku-surface-danger border border-ku-border-danger rounded-[12px] p-[12px] mt-[10px]"
+                className="mt-[10px] rounded-[12px] border border-ku-border-danger bg-ku-surface-danger p-[12px]"
                 testID="quest-funding-verify-error"
               >
-                <Text className="text-ku-danger-dark font-ku-medium text-[12px]">
+                <Text className="font-ku-medium text-[12px] text-ku-danger-dark">
                   {verificationError}
                 </Text>
               </View>
@@ -1064,7 +1063,7 @@ function TopUpFlowContent({
             </View>
             {paymentVerified ? (
               <View
-                className="bg-ku-surface-success border border-ku-border-success rounded-[16px] p-[16px] flex-row items-center gap-[12px] mt-[12px]"
+                className="mt-[12px] flex-row items-center gap-[12px] rounded-[16px] border border-ku-border-success bg-ku-surface-success p-[16px]"
                 testID="quest-funding-verified-badge"
               >
                 <ShieldCheck
@@ -1073,10 +1072,10 @@ function TopUpFlowContent({
                   strokeWidth={2.2}
                 />
                 <View className="flex-1">
-                  <Text className="font-ku-bold text-ku-text-strong text-[14px]">
+                  <Text className="font-ku-bold text-[14px] text-ku-text-strong">
                     {messages.topUpPaymentVerified}
                   </Text>
-                  <Text className="font-ku-regular text-ku-text-secondary text-[12px]">
+                  <Text className="font-ku-regular text-[12px] text-ku-text-secondary">
                     {messages.topUpPaymentCredited(
                       formatSatang(topUp!.creditSatang, locale, "exact")
                     )}
@@ -1087,10 +1086,10 @@ function TopUpFlowContent({
 
             {verificationError ? (
               <View
-                className="bg-ku-surface-danger border border-ku-border-danger rounded-[12px] p-[12px] mt-[10px]"
+                className="mt-[10px] rounded-[12px] border border-ku-border-danger bg-ku-surface-danger p-[12px]"
                 testID="quest-funding-verify-error"
               >
-                <Text className="text-ku-danger-dark font-ku-medium text-[12px]">
+                <Text className="font-ku-medium text-[12px] text-ku-danger-dark">
                   {verificationError}
                 </Text>
               </View>
@@ -1197,7 +1196,8 @@ function useTopUpFlow({ locale, onBackFromAmount, onPaid }: TopUpFlowOptions) {
   const messages = questBoardMessages[locale];
   const [topUpStep, setTopUpStep] = useState<TopUpStep>("amount");
   const [topUpAmount, setTopUpAmount] = useState("");
-  const [liveWallet, setLiveWallet] = useState<WalletBalances | null>(null);
+  const { data: liveWallet } = useWalletQuery();
+  const queryClient = useQueryClient();
   const [topUpQuote, setTopUpQuote] = useState<TopUpQuote | null>(null);
   const [activeTopUp, setActiveTopUp] = useState<TopUpData | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
@@ -1206,14 +1206,6 @@ function useTopUpFlow({ locale, onBackFromAmount, onPaid }: TopUpFlowOptions) {
   const [verificationError, setVerificationError] = useState<string | null>(
     null
   );
-
-  const loadWallet = useCallback(async () => {
-    try {
-      setLiveWallet(await walletApi.getWallet());
-    } catch {
-      // Keep the last successful wallet snapshot visible.
-    }
-  }, []);
 
   const resetTopUp = useCallback(() => {
     setTopUpQuote(null);
@@ -1297,7 +1289,7 @@ function useTopUpFlow({ locale, onBackFromAmount, onPaid }: TopUpFlowOptions) {
       return;
     }
     setPaymentVerified(true);
-    await loadWallet();
+    await queryClient.invalidateQueries({ queryKey: walletKeys.detail() });
     onPaid?.();
   };
   const handleVerifyPayment = async () => {
@@ -1341,7 +1333,6 @@ function useTopUpFlow({ locale, onBackFromAmount, onPaid }: TopUpFlowOptions) {
     isVerifying,
     paymentVerified,
     verificationError,
-    loadWallet,
     resetTopUp,
     openTopUp,
     handleTopUpBack,
@@ -1506,14 +1497,6 @@ export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
 
   useColorScheme();
 
-  const { loadWallet } = flow;
-  useFocusEffect(
-    useCallback(() => {
-      void loadWallet();
-      return undefined;
-    }, [loadWallet])
-  );
-
   const openFundingDetails = () => setModal("details");
   const openTopUp = () => {
     flow.openTopUp();
@@ -1542,7 +1525,7 @@ export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
           onPress={openFundingDetails}
           testID="quest-funding-summary-toggle"
         >
-          <View className="flex-1 flex-row items-center min-w-0">
+          <View className="min-w-0 flex-1 flex-row items-center">
             <View
               style={[
                 fundingLayout.icon,
@@ -1561,7 +1544,7 @@ export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
                 strokeWidth={2.1}
               />
             </View>
-            <View className="flex-1 min-w-0 ml-[10px]">
+            <View className="ml-[10px] min-w-0 flex-1">
               <Text
                 numberOfLines={1}
                 style={{
@@ -1574,7 +1557,7 @@ export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
                 {messages.fundingTitle}
               </Text>
               <Text
-                className="text-ku-text-secondary font-ku-regular text-ku-caption"
+                className="font-ku-regular text-ku-caption text-ku-text-secondary"
                 numberOfLines={1}
                 testID="quest-funding-collapsed-status"
               >
@@ -1652,13 +1635,12 @@ export function QuestTopUpModal({
     onBackFromAmount: onClose,
     onPaid: finish,
   });
-  const { loadWallet, openTopUp } = flow;
+  const { openTopUp } = flow;
 
   useEffect(() => {
     if (!visible) return;
     openTopUp(suggestedAmountSatang);
-    void loadWallet();
-  }, [visible, suggestedAmountSatang, openTopUp, loadWallet]);
+  }, [visible, suggestedAmountSatang, openTopUp]);
 
   if (!visible) return null;
 

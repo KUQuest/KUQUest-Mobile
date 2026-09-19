@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { TextArea } from "@/features/onboarding/components/TextArea";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
 import { cn } from "@/tw/cn";
@@ -307,15 +307,15 @@ export function ProofSubmissionSheet({
                 )}
               </Text>
               {assets.length > 0 ? (
-                <View className="gap-[8px] mt-[10px]">
+                <View className="mt-[10px] gap-[8px]">
                   {assets.map((asset, index) => (
                     <View
-                      className="items-center flex-row bg-ku-surface-muted rounded-[12px] px-[10px] py-[9px]"
+                      className="flex-row items-center rounded-[12px] bg-ku-surface-muted px-[10px] py-[9px]"
                       key={asset.uri}
                     >
                       <FileText color={colors.primary} size={18} />
                       <Text
-                        className="text-ku-text-strong flex-1 font-ku-medium text-ku-label ml-[8px]"
+                        className="ml-[8px] flex-1 font-ku-medium text-ku-label text-ku-text-strong"
                         numberOfLines={1}
                       >
                         {fileLabel(asset)}
@@ -343,10 +343,10 @@ export function ProofSubmissionSheet({
                 </View>
               ) : null}
               {serverFiles.length > 0 ? (
-                <View className="gap-[8px] mt-[10px]">
+                <View className="mt-[10px] gap-[8px]">
                   {serverFiles.map((file) => (
                     <View
-                      className="items-center flex-row bg-ku-surface-muted rounded-[12px] px-[10px] py-[9px]"
+                      className="flex-row items-center rounded-[12px] bg-ku-surface-muted px-[10px] py-[9px]"
                       key={file.fileId}
                     >
                       <FileText
@@ -358,7 +358,7 @@ export function ProofSubmissionSheet({
                         size={18}
                       />
                       <Text
-                        className="text-ku-text-strong flex-1 font-ku-medium text-ku-label ml-[8px]"
+                        className="ml-[8px] flex-1 font-ku-medium text-ku-label text-ku-text-strong"
                         numberOfLines={1}
                       >
                         {file.contentType || "Proof file"} ·{" "}
@@ -394,7 +394,7 @@ export function ProofSubmissionSheet({
                 </View>
               ) : null}
               {failedFiles.length > 0 ? (
-                <Text className="text-ku-danger font-ku-medium text-ku-label mt-[8px]">
+                <Text className="mt-[8px] font-ku-medium text-ku-label text-ku-danger">
                   {messages.retry}
                 </Text>
               ) : null}

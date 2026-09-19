@@ -4,7 +4,7 @@ import { Search, SlidersHorizontal, X } from "lucide-react-native";
 
 import { Pressable, ScrollView, Text, TextInput, View } from "@/tw";
 import type { TagItem } from "@/api/QuestApi";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { getThemeColors } from "@/theme/colors";
 import { workerHomeMessages } from "../workerHomeMessages";
 import { workerHomeStyles as styles } from "../workerHomeStyles";

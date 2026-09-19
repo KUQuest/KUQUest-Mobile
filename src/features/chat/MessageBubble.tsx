@@ -189,7 +189,7 @@ export function InlineImageAttachment({
         accessibilityLabel={`${messages.openFile}: ${attachment.name}`}
         className={cn(
           styles.inlineImageWrap,
-          "items-center justify-center min-h-[140px] bg-ku-surface-muted"
+          "min-h-[140px] items-center justify-center bg-ku-surface-muted"
         )}
       >
         <ActivityIndicator size="small" color={colors.primary} />

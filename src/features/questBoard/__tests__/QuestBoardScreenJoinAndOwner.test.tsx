@@ -1,6 +1,7 @@
 import React from "react";
 import { Alert } from "react-native";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient as render } from "@/testing/queryTestUtils";
 
 import QuestBoardScreen from "../QuestBoardScreen";
 import QuestDetailScreen from "../QuestDetailScreen";
@@ -22,15 +23,15 @@ jest.mock("expo-router", () => ({
     jest.requireActual("react").useEffect(effect, []),
 }));
 
-jest.mock("@/components/navigation/NavigationVisibilityContext", () => ({
-  useNavigationVisibility: () => ({ handleScroll: jest.fn() }),
+jest.mock("@/features/navigation/navigationUiStore", () => ({
+  handleNavigationScroll: jest.fn(),
 }));
 
 jest.mock("@/features/wallet/HomeWalletOverview", () => ({
   HomeWalletOverview: () => null,
 }));
 
-jest.mock("@/locales/LocaleProvider", () => ({
+jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 jest.mock("@/features/auth/AuthService", () => ({
@@ -313,7 +314,8 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
     await waitFor(() => {
       expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledWith(
         "quest-live-1",
-        "current-worker-1"
+        "current-worker-1",
+        expect.objectContaining({ signal: expect.anything() })
       );
       expect(view.getByTestId("quest-apply-button")).toBeTruthy();
     });

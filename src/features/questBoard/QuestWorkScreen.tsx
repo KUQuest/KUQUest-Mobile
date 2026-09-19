@@ -1,12 +1,6 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { RefreshControl } from "react-native";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, RefreshCw } from "lucide-react-native";
 
@@ -14,9 +8,9 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { ApiError } from "@/api/ApiClient";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
-import { authService } from "@/features/auth/AuthService";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { getChatRouteParams } from "@/features/chat/chatData";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import {
   questWorkMessages,
@@ -25,6 +19,7 @@ import {
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 
+import { useLiveQuestSnapshotQuery } from "./api/questBoardQueries";
 import {
   liveQuestService,
   type LiveQuestNextAction,
@@ -36,9 +31,6 @@ import QuestWorkStatusCard from "./components/QuestWorkStatusCard";
 const POLL_INTERVAL_MS = 5_000;
 const POLL_WINDOW_BEFORE_START_MS = 60_000;
 const POLL_WINDOW_AFTER_START_MS = 120_000;
-const MAX_START_POLLS = 36;
-
-type WorkLoadState = "pending" | "ready" | "error";
 
 export interface QuestWorkScreenProps {
   questId?: string;
@@ -168,197 +160,72 @@ export default function QuestWorkScreen({
     routeValue(params.studentId);
   const resolvedEditRequestId =
     editRequestId ?? routeValue(params.editRequestId);
-  const [sessionViewerId, setSessionViewerId] = useState<string>();
-  const [sessionResolved, setSessionResolved] = useState(
-    Boolean(routeViewerId)
+  const sessionQuery = useSessionQuery();
+  const resolvedViewerId = routeViewerId ?? sessionQuery.data?.user.id;
+  const snapshotPollingInterval = useCallback(
+    (currentSnapshot: LiveQuestSnapshot | undefined): number | false => {
+      if (!currentSnapshot || currentSnapshot.state !== "QUEST_ASSIGNED")
+        return false;
+      const startAt = new Date(currentSnapshot.quest.startTime).getTime();
+      if (!Number.isFinite(startAt)) return false;
+      const nowAt = Date.now();
+      const pollStartAt = startAt - POLL_WINDOW_BEFORE_START_MS;
+      const pollDeadline = startAt + POLL_WINDOW_AFTER_START_MS;
+      if (nowAt < pollStartAt) return pollStartAt - nowAt;
+      if (nowAt > pollDeadline) return false;
+
+      const elapsedPolls = Math.floor((nowAt - pollStartAt) / POLL_INTERVAL_MS);
+      const maxPolls =
+        (POLL_WINDOW_BEFORE_START_MS + POLL_WINDOW_AFTER_START_MS) /
+        POLL_INTERVAL_MS;
+      if (elapsedPolls >= maxPolls - 1) return false;
+      return POLL_INTERVAL_MS;
+    },
+    []
   );
-  const [snapshot, setSnapshot] = useState<LiveQuestSnapshot | null>(null);
-  const snapshotRef = useRef<LiveQuestSnapshot | null>(null);
-  const [loadState, setLoadState] = useState<WorkLoadState>("pending");
-  const [refreshing, setRefreshing] = useState(false);
-  const [stale, setStale] = useState(false);
-  const [errorText, setErrorText] = useState<string>();
+
+  const snapshotOptions = resolvedEditRequestId
+    ? { editRequestId: resolvedEditRequestId }
+    : {};
+  const snapshotQuery = useLiveQuestSnapshotQuery(
+    resolvedQuestId ?? null,
+    resolvedViewerId ?? null,
+    snapshotOptions,
+    Boolean(routeViewerId || !sessionQuery.isPending),
+    snapshotPollingInterval
+  );
+  const snapshot = snapshotQuery.data ?? null;
+  const loading =
+    (!routeViewerId && sessionQuery.isPending) || snapshotQuery.isPending;
+  const refreshing = snapshotQuery.isRefetching;
+  const { refetch: refetchSnapshot } = snapshotQuery;
   const [now, setNow] = useState(() => Date.now());
   const [editSending, setEditSending] = useState(false);
   const [editFeedback, setEditFeedback] = useState<string>();
   const [confirmationSending, setConfirmationSending] = useState(false);
-  const latestRouteRef = useRef(
-    `${resolvedQuestId ?? ""}:${routeViewerId ?? ""}`
-  );
-  const routeMountedRef = useRef(false);
-  const loadedAtRef = useRef<number | null>(null);
-  const pollAttemptsRef = useRef(0);
-  const pollDeadlineRef = useRef<number | null>(null);
+  const [commandError, setCommandError] = useState<string | null>(null);
+  const snapshotErrorText = snapshotQuery.error
+    ? getErrorText(snapshotQuery.error, messages)
+    : undefined;
+  const errorText = commandError ?? snapshotErrorText;
+  const stale = Boolean(snapshot && (snapshotQuery.isError || commandError));
 
+  const refreshSnapshot = useCallback(async () => {
+    const result = await refetchSnapshot();
+    if (result.error) throw result.error;
+    setCommandError(null);
+    return result.data;
+  }, [refetchSnapshot]);
+
+  const dueAtMs = snapshot?.dueAt
+    ? new Date(snapshot.dueAt).getTime()
+    : Number.NaN;
+  const hasLiveDeadline = Number.isFinite(dueAtMs) && dueAtMs > now;
   useEffect(() => {
-    let active = true;
-    const resetTimer = setTimeout(() => {
-      if (!active) return;
-      if (routeViewerId) {
-        setSessionViewerId(undefined);
-        setSessionResolved(true);
-      } else {
-        setSessionResolved(false);
-      }
-    }, 0);
-    if (!routeViewerId) {
-      void authService
-        .getSession()
-        .then((session) => {
-          if (!active) return;
-          setSessionViewerId(session?.user.id);
-          setSessionResolved(true);
-        })
-        .catch(() => {
-          if (active) setSessionResolved(true);
-        });
-    }
-    return () => {
-      active = false;
-      clearTimeout(resetTimer);
-    };
-  }, [routeViewerId]);
-  const resolvedViewerId = routeViewerId ?? sessionViewerId;
-  const routeKey = `${resolvedQuestId ?? ""}:${resolvedViewerId ?? ""}`;
-  useEffect(() => {
-    const isInitialRoute = !routeMountedRef.current;
-    routeMountedRef.current = true;
-    latestRouteRef.current = routeKey;
-    snapshotRef.current = null;
-    loadedAtRef.current = null;
-    pollAttemptsRef.current = 0;
-    pollDeadlineRef.current = null;
-    if (isInitialRoute) return undefined;
-    const resetTimer = setTimeout(() => {
-      if (latestRouteRef.current !== routeKey) return;
-      setSnapshot(null);
-      setStale(false);
-      setErrorText(undefined);
-      setLoadState("pending");
-    }, 0);
-    return () => clearTimeout(resetTimer);
-  }, [routeKey]);
-
-  const loadSnapshot = useCallback(
-    async (force = false): Promise<LiveQuestSnapshot | undefined> => {
-      if (!resolvedQuestId || !resolvedViewerId) {
-        if (sessionResolved) {
-          setLoadState("error");
-          setErrorText(messages.missingRoute);
-        }
-        return undefined;
-      }
-      if (
-        !force &&
-        loadedAtRef.current &&
-        Date.now() - loadedAtRef.current < 10_000
-      )
-        return snapshotRef.current ?? undefined;
-      setRefreshing(true);
-      try {
-        const nextSnapshot = await liveQuestService.getLiveSnapshot(
-          resolvedQuestId,
-          resolvedViewerId,
-          resolvedEditRequestId
-            ? { editRequestId: resolvedEditRequestId }
-            : undefined
-        );
-        if (latestRouteRef.current !== `${resolvedQuestId}:${resolvedViewerId}`)
-          return nextSnapshot;
-        snapshotRef.current = nextSnapshot;
-        setSnapshot(nextSnapshot);
-        setLoadState("ready");
-        setStale(false);
-        setErrorText(undefined);
-        loadedAtRef.current = Date.now();
-        return nextSnapshot;
-      } catch (error) {
-        if (latestRouteRef.current !== `${resolvedQuestId}:${resolvedViewerId}`)
-          return undefined;
-        const previousSnapshot = snapshotRef.current;
-        setStale(Boolean(previousSnapshot));
-        setLoadState(previousSnapshot ? "ready" : "error");
-        setErrorText(getErrorText(error, messages));
-        throw error;
-      } finally {
-        if (latestRouteRef.current === `${resolvedQuestId}:${resolvedViewerId}`)
-          setRefreshing(false);
-      }
-    },
-    [
-      messages,
-      resolvedEditRequestId,
-      resolvedQuestId,
-      resolvedViewerId,
-      sessionResolved,
-    ]
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      if (!resolvedQuestId || !resolvedViewerId) {
-        if (sessionResolved) void loadSnapshot(false).catch(() => undefined);
-        return undefined;
-      }
-      void loadSnapshot(false).catch(() => undefined);
-      return undefined;
-    }, [loadSnapshot, resolvedQuestId, resolvedViewerId, sessionResolved])
-  );
-
-  useEffect(() => {
-    if (!snapshot?.dueAt) return undefined;
+    if (!hasLiveDeadline) return undefined;
     const timer = setInterval(() => setNow(Date.now()), 1_000);
     return () => clearInterval(timer);
-  }, [snapshot?.dueAt]);
-
-  useEffect(() => {
-    if (!snapshot || snapshot.state !== "QUEST_ASSIGNED") return undefined;
-    const startAt = new Date(snapshot.quest.startTime).getTime();
-    if (!Number.isFinite(startAt)) return undefined;
-    const nowAt = Date.now();
-    const pollDeadline =
-      pollDeadlineRef.current ?? startAt + POLL_WINDOW_AFTER_START_MS;
-    pollDeadlineRef.current = pollDeadline;
-    if (nowAt > pollDeadline) return undefined;
-    let startTimer: ReturnType<typeof setTimeout> | undefined;
-    let pollTimer: ReturnType<typeof setInterval> | undefined;
-    const startPolling = () => {
-      if (
-        pollAttemptsRef.current < MAX_START_POLLS &&
-        Date.now() <= pollDeadline
-      ) {
-        pollAttemptsRef.current += 1;
-        void loadSnapshot(true).catch(() => undefined);
-      }
-      pollTimer = setInterval(() => {
-        if (
-          pollAttemptsRef.current >= MAX_START_POLLS ||
-          Date.now() > pollDeadline
-        ) {
-          if (pollTimer) clearInterval(pollTimer);
-          return;
-        }
-        pollAttemptsRef.current += 1;
-        void loadSnapshot(true).catch(() => undefined);
-      }, POLL_INTERVAL_MS);
-    };
-    const pollStartAt = startAt - POLL_WINDOW_BEFORE_START_MS;
-    if (nowAt >= pollStartAt) {
-      startPolling();
-    } else {
-      startTimer = setTimeout(startPolling, pollStartAt - nowAt);
-    }
-    return () => {
-      if (startTimer) {
-        clearTimeout(startTimer);
-        startTimer = undefined;
-      }
-      if (pollTimer) {
-        clearInterval(pollTimer);
-        pollTimer = undefined;
-      }
-    };
-  }, [loadSnapshot, snapshot]);
+  }, [hasLiveDeadline]);
 
   const handleBack = useCallback(() => {
     if (router.canGoBack()) router.back();
@@ -378,15 +245,14 @@ export default function QuestWorkScreen({
           createQuestIdempotencyKey()
         );
         setEditFeedback(messages.editUpdated);
-        await loadSnapshot(true).catch(() => undefined);
+        await refreshSnapshot().catch(() => undefined);
       } catch (error) {
-        setErrorText(getErrorText(error, messages));
-        setStale(Boolean(snapshot));
+        setCommandError(getErrorText(error, messages));
       } finally {
         setEditSending(false);
       }
     },
-    [loadSnapshot, messages, snapshot]
+    [messages, refreshSnapshot, snapshot]
   );
   const confirmCompletion = useCallback(async () => {
     if (
@@ -396,26 +262,25 @@ export default function QuestWorkScreen({
     )
       return;
     setConfirmationSending(true);
-    setErrorText(undefined);
+    setCommandError(null);
     try {
       await liveQuestService.confirmCompletion(
         resolvedQuestId,
         createQuestIdempotencyKey()
       );
-      const refreshedSnapshot = await loadSnapshot(true);
+      const refreshedSnapshot = await refreshSnapshot();
       if (refreshedSnapshot && terminalStates[refreshedSnapshot.state]) {
         router.replace("/my-quests");
       }
     } catch (error) {
-      setStale(Boolean(snapshot));
-      setErrorText(getErrorText(error, messages));
+      setCommandError(getErrorText(error, messages));
     } finally {
       setConfirmationSending(false);
     }
   }, [
     confirmationSending,
-    loadSnapshot,
     messages,
+    refreshSnapshot,
     resolvedQuestId,
     router,
     snapshot,
@@ -439,15 +304,18 @@ export default function QuestWorkScreen({
     () => formatCountdown(snapshot?.dueAt ?? null, now, messages),
     [messages, now, snapshot?.dueAt]
   );
-  const conditions =
-    snapshot?.quest.condition.items
-      .slice()
-      .sort(
-        (
-          a: LiveQuestSnapshot["quest"]["condition"]["items"][number],
-          b: LiveQuestSnapshot["quest"]["condition"]["items"][number]
-        ) => a.position - b.position
-      ) ?? [];
+  const conditions = useMemo(
+    () =>
+      snapshot?.quest.condition.items
+        .slice()
+        .sort(
+          (
+            a: LiveQuestSnapshot["quest"]["condition"]["items"][number],
+            b: LiveQuestSnapshot["quest"]["condition"]["items"][number]
+          ) => a.position - b.position
+        ) ?? [],
+    [snapshot?.quest.condition.items]
+  );
   const conversationId = snapshot?.workConversation?.id;
   const canOpenChat = Boolean(
     snapshot?.capabilities.canReadWorkChat && conversationId && resolvedViewerId
@@ -469,7 +337,7 @@ export default function QuestWorkScreen({
   }, [conversationId, resolvedQuestId, resolvedViewerId, router]);
   const contentBottom = Math.max(spacing.lg, insets.bottom + spacing.md);
 
-  if (loadState === "pending" && !snapshot) {
+  if (loading && !snapshot) {
     return (
       <ScreenLayout
         edges={["top", "left", "right", "bottom"]}
@@ -505,7 +373,7 @@ export default function QuestWorkScreen({
             accessibilityRole="button"
             accessibilityLabel={messages.retry}
             className="mt-5 rounded-xl bg-slate-950 px-4 py-3"
-            onPress={() => void loadSnapshot(true).catch(() => undefined)}
+            onPress={() => void refreshSnapshot().catch(() => undefined)}
           >
             <Text className="text-center font-semibold text-white">
               {messages.retry}
@@ -525,7 +393,7 @@ export default function QuestWorkScreen({
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() => void loadSnapshot(true).catch(() => undefined)}
+            onRefresh={() => void refreshSnapshot().catch(() => undefined)}
             tintColor={colors.primary}
           />
         }
@@ -549,7 +417,7 @@ export default function QuestWorkScreen({
               accessibilityRole="button"
               accessibilityLabel={messages.refresh}
               className="h-10 w-10 items-center justify-center rounded-full bg-white"
-              onPress={() => void loadSnapshot(true).catch(() => undefined)}
+              onPress={() => void refreshSnapshot().catch(() => undefined)}
             >
               <RefreshCw color={colors.primaryDeep} size={18} />
             </Pressable>

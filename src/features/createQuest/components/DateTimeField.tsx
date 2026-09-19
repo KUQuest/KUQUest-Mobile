@@ -53,8 +53,8 @@ export function DateTimeField({
           <Text className={styles.scheduleCardTitle}>{label}</Text>
         </View>
         {hasDate && hasTime ? (
-          <View className="bg-ku-surface-success px-[8px] py-[2px] rounded-ku-pill">
-            <Text className="text-ku-success font-ku-bold text-ku-label">
+          <View className="rounded-ku-pill bg-ku-surface-success px-[8px] py-[2px]">
+            <Text className="font-ku-bold text-ku-label text-ku-success">
               {timeValue}
             </Text>
           </View>

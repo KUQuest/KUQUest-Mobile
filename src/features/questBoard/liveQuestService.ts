@@ -13,6 +13,7 @@ import {
   type QuestV2ReviewPayload,
 } from "@/api/QuestApi";
 import { ApiError } from "@/api/ApiClient";
+import type { RequestOptions } from "@/api/WalletApi";
 import { authService } from "../auth/AuthService";
 import { chatApi } from "@/api/ChatApi";
 import type {
@@ -148,7 +149,7 @@ export interface LiveQuestSnapshot {
   capabilities: LiveQuestCapabilities;
 }
 
-export interface LiveQuestSnapshotOptions {
+export interface LiveQuestSnapshotOptions extends RequestOptions {
   /** Supply the request id when the assigned flow has a pending edit. */
   editRequestId?: string;
 }
@@ -706,22 +707,25 @@ export class LiveQuestService {
   }
 
   async getCandidateInquiry(
-    conversationId: string
+    conversationId: string,
+    options?: RequestOptions
   ): Promise<ServerCandidateInquiry> {
-    return chatApi.getCandidateInquiry(conversationId);
+    return chatApi.getCandidateInquiry(conversationId, options);
   }
 
   async listCandidateInquiryParticipants(
-    conversationId: string
+    conversationId: string,
+    options?: RequestOptions
   ): Promise<CandidateInquiryParticipant[]> {
-    return chatApi.listCandidateInquiryParticipants(conversationId);
+    return chatApi.listCandidateInquiryParticipants(conversationId, options);
   }
 
   async getCandidateInquiryMessages(
     conversationId: string,
-    params: { limit?: number; before?: string; after?: string } = {}
+    params: { limit?: number; before?: string; after?: string } = {},
+    options?: RequestOptions
   ): Promise<ServerChatMessagePage> {
-    return chatApi.getCandidateInquiryMessages(conversationId, params);
+    return chatApi.getCandidateInquiryMessages(conversationId, params, options);
   }
 
   async sendCandidateInquiryMessage(
@@ -772,14 +776,15 @@ export class LiveQuestService {
     );
   }
 
-  async listBoardQuests(): Promise<QuestBoardQuest[]> {
+  async listBoardQuests(options?: RequestOptions): Promise<QuestBoardQuest[]> {
     const items: QuestBoardQuest[] = [];
     const seenCursors = new Set<string>();
     let cursor: string | undefined;
 
     do {
       const result = await questApi.listBoard(
-        cursor ? { cursor, limit: 50 } : { limit: 50 }
+        cursor ? { cursor, limit: 50 } : { limit: 50 },
+        options
       );
       items.push(...result.items.map(cardToQuestBoardQuest));
       if (!result.nextCursor || seenCursors.has(result.nextCursor)) break;
@@ -790,35 +795,51 @@ export class LiveQuestService {
     return items;
   }
 
-  async listMyHirerQuests(): Promise<QuestBoardQuest[]> {
-    const result = await questApi.listMine();
+  async listMyHirerQuests(
+    options?: RequestOptions
+  ): Promise<QuestBoardQuest[]> {
+    const result = await questApi.listMine({}, options);
     return result.items.map((q) => canonicalToQuestBoardQuest(q, "Me"));
   }
   async listMyWorkerAssignments(
-    status?: QuestV2AssignmentMineStatus
+    status?: QuestV2AssignmentMineStatus,
+    options?: RequestOptions
   ): Promise<QuestV2Assignment[]> {
-    return questApi.listMyAssignments(status);
+    return options
+      ? questApi.listMyAssignments(status, options)
+      : questApi.listMyAssignments(status);
   }
-  async listQuestAssignments(questId: string): Promise<QuestV2Assignment[]> {
-    return questApi.listQuestAssignments(questId);
+  async listQuestAssignments(
+    questId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2Assignment[]> {
+    return questApi.listQuestAssignments(questId, options);
   }
 
-  async getQuestDetail(questId: string): Promise<QuestBoardQuest> {
+  async getQuestDetail(
+    questId: string,
+    options?: RequestOptions
+  ): Promise<QuestBoardQuest> {
+    const requestOptions = options?.signal ? options : undefined;
     try {
-      const detail = await questApi.getDetail(questId);
+      const detail = requestOptions
+        ? await questApi.getDetail(questId, requestOptions)
+        : await questApi.getDetail(questId);
       return canonicalToQuestBoardQuest(detail);
     } catch {
       try {
-        const publicDetail = await questApi.getPublicDetail(questId);
+        const publicDetail = requestOptions
+          ? await questApi.getPublicDetail(questId, requestOptions)
+          : await questApi.getPublicDetail(questId);
         return publicDetailToQuestBoardQuest(publicDetail);
       } catch {
-        const participationDetail =
-          await questApi.getParticipationDetail(questId);
+        const participationDetail = requestOptions
+          ? await questApi.getParticipationDetail(questId, requestOptions)
+          : await questApi.getParticipationDetail(questId);
         return publicDetailToQuestBoardQuest(participationDetail);
       }
     }
   }
-
   async getLiveSnapshot(
     questId: string,
     viewerId: string,
@@ -827,13 +848,13 @@ export class LiveQuestService {
     let quest: QuestV2Detail | QuestV2PublicDetail | QuestV2ParticipationDetail;
     let routeActor: LiveQuestActor = "PROSPECTIVE_WORKER";
     try {
-      quest = await questApi.getDetail(questId);
+      quest = await questApi.getDetail(questId, options);
       routeActor = "HIRER";
     } catch {
       try {
-        quest = await questApi.getPublicDetail(questId);
+        quest = await questApi.getPublicDetail(questId, options);
       } catch {
-        quest = await questApi.getParticipationDetail(questId);
+        quest = await questApi.getParticipationDetail(questId, options);
       }
     }
 
@@ -847,28 +868,28 @@ export class LiveQuestService {
       editRequest,
     ] = await Promise.all([
       optionalResource(
-        () => this.listQuestAssignments(questId),
+        () => this.listQuestAssignments(questId, options),
         [] as QuestV2Assignment[]
       ),
       optionalResource(
-        () => questApi.listApplications(questId),
+        () => questApi.listApplications(questId, options),
         [] as QuestV2Application[]
       ),
       optionalResource(
-        () => questApi.listCandidateTeams(questId),
+        () => questApi.listCandidateTeams(questId, options),
         [] as QuestV2Team[]
       ),
       optionalResource(
-        () => questApi.getUnderfilled(questId),
+        () => questApi.getUnderfilled(questId, options),
         null as QuestV2Underfilled | null
       ),
       optionalResource(
-        () => questApi.listProofSubmissions(questId),
+        () => questApi.listProofSubmissions(questId, options),
         [] as QuestV2ProofSubmission[]
       ),
       optionalResource(
         async () => {
-          const page = await chatApi.listConversations({ limit: 20 });
+          const page = await chatApi.listConversations({ limit: 20 }, options);
           return (
             page.items.find(
               (conversation) => conversation.quest.id === questId
@@ -879,7 +900,7 @@ export class LiveQuestService {
       ),
       options.editRequestId
         ? optionalResource(
-            () => questApi.getEditRequest(options.editRequestId!),
+            () => questApi.getEditRequest(options.editRequestId!, options),
             null as QuestV2EditRequest | null
           )
         : Promise.resolve(null as QuestV2EditRequest | null),
@@ -1184,6 +1205,7 @@ export class LiveQuestService {
       idempotencyKey
     );
   }
+
   async selectCandidateTeam(
     questId: string,
     teamId: string,
@@ -1200,8 +1222,11 @@ export class LiveQuestService {
     return questApi.rejectCandidateTeam(questId, teamId, idempotencyKey);
   }
 
-  async getUnderfilled(questId: string): Promise<QuestV2Underfilled> {
-    return questApi.getUnderfilled(questId);
+  async getUnderfilled(
+    questId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2Underfilled> {
+    return questApi.getUnderfilled(questId, options);
   }
 
   async decideUnderfilled(
@@ -1232,8 +1257,11 @@ export class LiveQuestService {
     return questApi.createEditRequest(questId, payload, idempotencyKey);
   }
 
-  async getEditRequest(requestId: string): Promise<QuestV2EditRequest> {
-    return questApi.getEditRequest(requestId);
+  async getEditRequest(
+    requestId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2EditRequest> {
+    return questApi.getEditRequest(requestId, options);
   }
 
   async respondToEditRequest(

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useWindowDimensions } from "react-native";
 import {
@@ -15,13 +15,13 @@ import { ScreenLayout } from "../../components/layout/ScreenLayout";
 import { cn } from "@/tw/cn";
 import { colors } from "@/theme/colors";
 import { getProfileLayoutMetrics } from "@/theme/profileLayout";
-import { useLocale, type SupportedLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
+import type { SupportedLocale } from "@/locales/locale";
 import { profileMessages } from "@/locales/profileMessages";
-import { authService } from "@/features/auth/AuthService";
-import type {
-  PublicProfileResponse,
-  PublicProfileReviewsData,
-} from "@/api/contracts";
+import {
+  usePublicProfileQuery,
+  usePublicProfileReviewsQuery,
+} from "./api/profileQueries";
 import {
   AboutMe,
   Certificates,
@@ -84,59 +84,18 @@ export default function PublicProfileScreen() {
   const layoutMetrics = getProfileLayoutMetrics(width, fontScale);
 
   const [activeTab, setActiveTab] = useState<PublicProfileTab>("about");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [profile, setProfile] = useState<PublicProfileResponse | null>(null);
-  const [reviewsData, setReviewsData] =
-    useState<PublicProfileReviewsData | null>(null);
-  const [reviewsUnavailable, setReviewsUnavailable] = useState(false);
-  const [loadAttempt, setLoadAttempt] = useState(0);
-
-  useEffect(() => {
-    let active = true;
-    async function loadPublicData() {
-      if (!userId) {
-        setError("User ID is required");
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      setError(null);
-      setReviewsUnavailable(false);
-      try {
-        const api = await authService.getStudentApi();
-        const [profileRes, reviewsRes] = await Promise.allSettled([
-          api.getPublicProfile(userId),
-          api.listPublicReviews(userId),
-        ]);
-
-        if (!active) return;
-
-        if (profileRes.status === "fulfilled") {
-          setProfile(profileRes.value);
-          if (reviewsRes.status === "fulfilled") {
-            setReviewsData(reviewsRes.value);
-          } else {
-            setReviewsData(null);
-            setReviewsUnavailable(true);
-          }
-        } else {
-          const err = profileRes.reason;
-          setError(err instanceof Error ? err.message : messages.error);
-        }
-      } catch (err) {
-        if (!active) return;
-        setError(err instanceof Error ? err.message : messages.error);
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
-    void loadPublicData();
-    return () => {
-      active = false;
-    };
-  }, [userId, loadAttempt, messages.error]);
+  const profileQuery = usePublicProfileQuery(userId);
+  const reviewsQuery = usePublicProfileReviewsQuery(userId);
+  const profile = profileQuery.data;
+  const reviewsData = reviewsQuery.isError ? undefined : reviewsQuery.data;
+  const profileErrorMessage = !userId
+    ? "User ID is required"
+    : profileQuery.isError
+      ? profileQuery.error instanceof Error
+        ? profileQuery.error.message
+        : messages.error
+      : null;
+  const reviewsUnavailable = Boolean(profile) && reviewsQuery.isError;
 
   const displayName = useMemo(() => {
     if (!profile) return "";
@@ -244,14 +203,14 @@ export default function PublicProfileScreen() {
   );
 
   const topBar = (
-    <View className="flex-row items-center justify-between px-4 py-2 border-b border-ku-border-subtle bg-ku-surface">
+    <View className="flex-row items-center justify-between border-b border-ku-border-subtle bg-ku-surface px-4 py-2">
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={messages.back ?? "Back"}
         testID="public-profile-back-button"
         hitSlop={8}
         onPress={() => router.back()}
-        className="items-center justify-center rounded-ku-pill h-[44px] w-[44px] active:bg-ku-surface-muted"
+        className="h-[44px] w-[44px] items-center justify-center rounded-ku-pill active:bg-ku-surface-muted"
       >
         <ChevronLeft color={colors.primaryDeep} size={24} strokeWidth={2.5} />
       </Pressable>
@@ -264,7 +223,7 @@ export default function PublicProfileScreen() {
         />
         <Text
           numberOfLines={1}
-          className="text-ku-text-strong font-ku-semibold text-ku-caption mt-0.5"
+          className="mt-0.5 font-ku-semibold text-ku-caption text-ku-text-strong"
           testID="public-profile-header-name"
         >
           {displayName || messages.title}
@@ -276,7 +235,7 @@ export default function PublicProfileScreen() {
 
   const stickyProfileTabs = (
     <View
-      className="bg-ku-surface py-2 border-b border-ku-border-subtle"
+      className="border-b border-ku-border-subtle bg-ku-surface py-2"
       testID="public-profile-tabs"
     >
       <ScrollView
@@ -296,10 +255,10 @@ export default function PublicProfileScreen() {
               accessibilityState={{ selected: isSelected }}
               onPress={() => setActiveTab(key)}
               className={cn(
-                "flex-row items-center gap-1.5 px-4 py-2 rounded-ku-pill border min-h-[40px]",
+                "min-h-[40px] flex-row items-center gap-1.5 rounded-ku-pill border px-4 py-2",
                 isSelected
-                  ? "bg-ku-primary border-ku-primary"
-                  : "bg-ku-surface-muted border-ku-border-subtle"
+                  ? "border-ku-primary bg-ku-primary"
+                  : "border-ku-border-subtle bg-ku-surface-muted"
               )}
             >
               <Icon
@@ -309,7 +268,7 @@ export default function PublicProfileScreen() {
               />
               <Text
                 className={cn(
-                  "text-xs font-ku-semibold",
+                  "font-ku-semibold text-xs",
                   isSelected ? "text-ku-white" : "text-ku-text-secondary"
                 )}
                 maxFontSizeMultiplier={2}
@@ -342,8 +301,8 @@ export default function PublicProfileScreen() {
         }}
       />
       {bio ? (
-        <View className="bg-ku-surface border border-ku-border-subtle rounded-ku-card p-3 mt-3">
-          <Text className="text-ku-text-secondary font-ku-regular text-ku-body-small">
+        <View className="rounded-ku-card mt-3 border border-ku-border-subtle bg-ku-surface p-3">
+          <Text className="font-ku-regular text-ku-body-small text-ku-text-secondary">
             {bio}
           </Text>
         </View>
@@ -371,7 +330,7 @@ export default function PublicProfileScreen() {
     </View>
   );
 
-  if (loading) {
+  if (profileQuery.isPending) {
     return (
       <ScreenLayout
         edges={["top", "left", "right"]}
@@ -388,7 +347,7 @@ export default function PublicProfileScreen() {
     );
   }
 
-  if (error && !profile) {
+  if (profileErrorMessage && !profile) {
     return (
       <ScreenLayout
         edges={["top", "left", "right"]}
@@ -396,15 +355,15 @@ export default function PublicProfileScreen() {
       >
         {topBar}
         <View className="flex-1 items-center justify-center p-6">
-          <Text className="text-ku-text-secondary text-center mb-4">
-            {error}
+          <Text className="mb-4 text-center text-ku-text-secondary">
+            {profileErrorMessage}
           </Text>
           <Pressable
             accessibilityRole="button"
-            onPress={() => setLoadAttempt((prev) => prev + 1)}
+            onPress={() => void profileQuery.refetch()}
             className="min-h-[48px] min-w-[140px] items-center justify-center rounded-ku-pill bg-ku-primary px-6 active:opacity-90"
           >
-            <Text className="text-ku-white font-ku-semibold">
+            <Text className="font-ku-semibold text-ku-white">
               {messages.retry}
             </Text>
           </Pressable>

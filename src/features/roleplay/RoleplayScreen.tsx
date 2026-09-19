@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import { useStore } from "zustand";
 import { useRouter } from "expo-router";
 import {
   Check,
@@ -14,7 +15,7 @@ import {
   type PrototypePersonaId,
 } from "@/components/ui/prototypeMenuData";
 import { QuestTeamStatus } from "@/features/questBoard/types";
-import { useLocale } from "@/locales/LocaleProvider";
+import { useLocale } from "@/features/preferences/localeStore";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import { Pressable, ScrollView, Text, View } from "@/tw";
@@ -26,13 +27,17 @@ import {
   type RoleplayActionButtonVariant,
 } from "./components/RoleplayActionButton";
 import { RoleplayPersonaSwitcher } from "./components/RoleplayPersonaSwitcher";
-import { roleplayMock } from "./roleplayMock";
-import type {
-  RoleplayAction,
-  RoleplayActionType,
-  RoleplayViewModel,
+import {
+  roleplayMock,
+  roleplayStore,
+  selectRoleplayViewModel,
+} from "./roleplayMock";
+import {
+  ROLEPLAY_SCENARIOS,
+  type RoleplayAction,
+  type RoleplayActionType,
+  type RoleplayScenarioId,
 } from "./roleplayTypes";
-import { ROLEPLAY_SCENARIOS, type RoleplayScenarioId } from "./roleplayTypes";
 import styles from "./roleplayStyles";
 
 interface RoleplayMessages {
@@ -285,16 +290,9 @@ export default function RoleplayScreen() {
 
     router.replace("/(tabs)");
   };
-  const [viewModel, setViewModel] = useState<RoleplayViewModel>(() =>
-    roleplayMock.getViewModel()
-  );
+  useStore(roleplayStore, (state) => state.revision);
+  const viewModel = selectRoleplayViewModel(roleplayStore.getState());
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-
-  useEffect(() => {
-    return roleplayMock.subscribe(() => {
-      setViewModel(roleplayMock.getViewModel());
-    });
-  }, []);
 
   const selectedScenario = ROLEPLAY_SCENARIOS.find(
     (scenario) => scenario.id === viewModel.scenario.id
@@ -305,13 +303,8 @@ export default function RoleplayScreen() {
   const teams = viewModel.state.teams;
   const invitations = viewModel.state.invitations;
 
-  const updateFromMock = () => {
-    setViewModel(roleplayMock.getViewModel());
-  };
-
   const handlePersonaChange = (personaId: PrototypePersonaId) => {
-    const next = roleplayMock.setPersona(personaId);
-    setViewModel(next);
+    roleplayMock.setPersona(personaId);
     setFeedback({
       kind: "success",
       message: messages.switchedPersona(getPersonaLabel(personaId, locale)),
@@ -319,8 +312,7 @@ export default function RoleplayScreen() {
   };
 
   const handleScenarioChange = (scenarioId: RoleplayScenarioId) => {
-    const next = roleplayMock.setScenario(scenarioId);
-    setViewModel(next);
+    roleplayMock.setScenario(scenarioId);
     setFeedback(null);
   };
 
@@ -331,7 +323,6 @@ export default function RoleplayScreen() {
     }
 
     const result = roleplayMock.dispatch(action);
-    updateFromMock();
     if (result.ok) {
       setFeedback({
         kind: "success",
@@ -350,8 +341,7 @@ export default function RoleplayScreen() {
   };
 
   const handleReset = () => {
-    const next = roleplayMock.reset();
-    setViewModel(next);
+    roleplayMock.reset();
     setFeedback({ kind: "success", message: messages.resetFeedback });
   };
 

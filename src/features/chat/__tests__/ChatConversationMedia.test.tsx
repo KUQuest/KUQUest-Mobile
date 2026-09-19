@@ -3,6 +3,7 @@ import type ReactModule from "react";
 import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import ChatConversationScreen, {
   AttachmentRow,
@@ -49,7 +50,7 @@ jest.mock("expo-router", () => {
   };
 });
 
-jest.mock("@/locales/LocaleProvider", () => ({
+jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 
@@ -74,6 +75,10 @@ jest.mock("@/api/ChatApi", () => {
       getAttachmentLink: jest.fn(),
       uploadAttachment: jest.fn(),
       sendMessage: jest.fn(),
+      getWorkConversationEventsPath: (conversationId: string) =>
+        `/api/v1/chat/conversations/${conversationId}/events`,
+      getCandidateInquiryEventsPath: (conversationId: string) =>
+        `/api/v1/chat/candidate-inquiries/${conversationId}/events`,
     },
   };
 });
@@ -468,7 +473,7 @@ describe("ChatConversationMedia", () => {
         hasMore: false,
       } as unknown as ServerChatMessagePage);
 
-      const view = await render(<ChatConversationScreen />);
+      const view = await renderWithQueryClient(<ChatConversationScreen />);
 
       await waitFor(() => {
         expect(view.getByTestId("inline-image-att-screen-img")).toBeTruthy();
@@ -571,7 +576,7 @@ describe("ChatConversationMedia", () => {
         createdAt: new Date().toISOString(),
       });
 
-      const view = await render(<ChatConversationScreen />);
+      const view = await renderWithQueryClient(<ChatConversationScreen />);
 
       await waitFor(() => {
         expect(view.getAllByLabelText("Add attachment")[0]).toBeTruthy();
