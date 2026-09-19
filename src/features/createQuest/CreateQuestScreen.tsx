@@ -55,7 +55,7 @@ import { SectionHeading } from "./components/SectionHeading";
 import { TeamSetupStep } from "./components/TeamSetupStep";
 import { SchedulePickerModal } from "./components/SchedulePickerModal";
 import { useSchedulePicker } from "./useSchedulePicker";
-import { QuestTopUpModal } from "@/components/ui/QuestFundingSummary";
+import { QuestTopUpModal } from "@/features/wallet/components/QuestFundingSummary";
 import { CreateQuestSkeleton } from "./components/CreateQuestSkeleton";
 import { QuestSetupOverview } from "./components/QuestSetupOverview";
 import { ReviewActionButton } from "./components/ReviewActionButton";

@@ -167,7 +167,8 @@ export function useChatConversationController(
         const conversationKey = chatKeys.conversation(
           routeConversationId,
           viewerId,
-          conversationType
+          conversationType,
+          conversationType === "WORK" ? fallbackQuestId : undefined
         );
         queryClient.setQueryData<ChatConversation | null>(
           conversationKey,
@@ -195,12 +196,20 @@ export function useChatConversationController(
           queryKey: chatKeys.conversation(
             routeConversationId ?? "",
             viewerId,
-            "WORK"
+            "WORK",
+            fallbackQuestId
           ),
         });
       }
     },
-    [conversationType, queryClient, routeConversationId, routeQuestId, viewerId]
+    [
+      conversationType,
+      fallbackQuestId,
+      queryClient,
+      routeConversationId,
+      routeQuestId,
+      viewerId,
+    ]
   );
   useChatSocket({
     conversationId: routeConversationId ?? "",

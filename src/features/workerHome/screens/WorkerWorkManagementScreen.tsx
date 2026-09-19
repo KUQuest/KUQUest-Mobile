@@ -160,8 +160,40 @@ export default function WorkerWorkManagementScreen() {
         </View>
 
         {/* Section 1: Current Quest Card OR No Work Prompt */}
-        {assignmentsQuery.isPending && !currentAssignment ? (
-          <View style={{ paddingVertical: 24, alignItems: "center" }}>
+        {assignmentsQuery.isError ? (
+          <View
+            style={[
+              styles.errorState,
+              {
+                backgroundColor: themeColors.surfaceMuted,
+                borderColor: themeColors.borderSubtle,
+              },
+            ]}
+            testID="worker-work-management-error"
+          >
+            <Text style={[styles.errorText, { color: themeColors.textStrong }]}>
+              {messages.errorTitle}
+            </Text>
+            <Pressable
+              accessibilityLabel={messages.errorRetry}
+              accessibilityRole="button"
+              onPress={() => void assignmentsQuery.refetch()}
+              style={[
+                styles.retryButton,
+                { backgroundColor: themeColors.primaryDeep },
+              ]}
+              testID="worker-work-management-retry"
+            >
+              <Text style={[styles.retryText, { color: themeColors.white }]}>
+                {messages.errorRetry}
+              </Text>
+            </Pressable>
+          </View>
+        ) : assignmentsQuery.isPending && !currentAssignment ? (
+          <View
+            style={{ paddingVertical: 24, alignItems: "center" }}
+            testID="worker-work-management-loading"
+          >
             <ActivityIndicator color={themeColors.primaryDeep} />
           </View>
         ) : currentAssignment ? (
@@ -201,7 +233,6 @@ export default function WorkerWorkManagementScreen() {
           />
         )}
 
-        {/* Section 2: Tabs Row: [Applied quest] [History] + (⟳) */}
         <View style={styles.managementTabsRow}>
           <View style={styles.tabsGroup}>
             {/* Tab 1: Applied quest */}

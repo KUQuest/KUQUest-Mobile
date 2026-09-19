@@ -27,6 +27,10 @@ import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { getThemeColors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 
+import {
+  QuestBoardSkeleton,
+  StateView,
+} from "@/features/questBoard/components/QuestBoardStates";
 import { useHirerHomeQuery } from "./api/homeQueries";
 import { HirerQuestProgressCard } from "./components/HirerQuestProgressCard";
 import { HirerQuestRosterModal } from "./components/HirerQuestRosterModal";
@@ -48,7 +52,13 @@ export default function HomeScreen() {
   const themeColors = getThemeColors(colorScheme);
   const messages = hirerHomeMessages[locale];
   const [activeCardIndex, setActiveCardIndex] = useState(0);
-  const { data: liveQuests = [], isRefetching, refetch } = useHirerHomeQuery();
+  const {
+    data: liveQuests = [],
+    isError,
+    isPending,
+    isRefetching,
+    refetch,
+  } = useHirerHomeQuery();
   const [rosterModalQuest, setRosterModalQuest] =
     useState<LiveHirerQuestCardData | null>(null);
 
@@ -96,6 +106,39 @@ export default function HomeScreen() {
     [router]
   );
   if (workspace === "worker") return <WorkerHomeScreen />;
+
+  if (isPending) {
+    return (
+      <ScreenLayout
+        edges={["top", "left", "right"]}
+        className="bg-ku-background"
+      >
+        <View className="flex-1 px-4 pt-6" testID="hirer-home-loading">
+          <QuestBoardSkeleton loadingLabel={messages.loading} />
+        </View>
+      </ScreenLayout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <ScreenLayout
+        edges={["top", "left", "right"]}
+        className="bg-ku-background"
+      >
+        <View className="flex-1 px-4 pt-6" testID="hirer-home-error">
+          <StateView
+            actionLabel={messages.retry}
+            description={messages.errorDescription}
+            error
+            onAction={() => void refetch()}
+            title={messages.errorTitle}
+          />
+        </View>
+      </ScreenLayout>
+    );
+  }
+
   return (
     <ScreenLayout edges={["top", "left", "right"]} className="bg-ku-background">
       <ScrollView
