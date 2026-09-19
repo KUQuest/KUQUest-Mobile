@@ -15,15 +15,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { cn } from "@/tw/cn";
-import {
-  Image,
-  KeyboardAvoidingView,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "@/tw";
+import { KeyboardAvoidingView, Pressable, ScrollView, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import * as ImagePicker from "expo-image-picker";
 import {
@@ -31,38 +23,25 @@ import {
   ChevronRight,
   CircleAlert,
   Clock3,
-  ImagePlus,
-  MapPin,
-  Tag,
   UserRound,
   UserRoundCheck,
   UsersRound,
-  X,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 
 import { Button } from "@/components/ui/Button";
-import { ChoiceGroup } from "./components/ChoiceGroup";
 import { CreateQuestHeader } from "./components/CreateQuestHeader";
-import { DateTimeField } from "./components/DateTimeField";
-import { FieldLabel } from "./components/FieldLabel";
-import { LogisticsSection } from "./components/LogisticsSection";
-import { ModeSummary } from "./components/ModeSummary";
 import { QuestDetailsStep } from "./components/QuestDetailsStep";
-import { SectionHeading } from "./components/SectionHeading";
 import { TeamSetupStep } from "./components/TeamSetupStep";
 import { SchedulePickerModal } from "./components/SchedulePickerModal";
 import { useSchedulePicker } from "./useSchedulePicker";
 import { QuestTopUpModal } from "@/features/wallet/components/QuestFundingSummary";
 import { CreateQuestSkeleton } from "./components/CreateQuestSkeleton";
 import { QuestSetupOverview } from "./components/QuestSetupOverview";
+import { ReviewStep } from "./components/ReviewStep";
 import { ReviewActionButton } from "./components/ReviewActionButton";
-import { formatSatang } from "@/domain/satang";
-import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
-import { TextArea } from "@/components/ui/TextArea";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useWorkerTagsQuery } from "@/features/workerHome/api/workerHomeQueries";
 import { createQuestMessages } from "@/locales/createQuestMessages";
@@ -77,13 +56,12 @@ import {
   initialDraft,
   isQuestDraftDirty,
   MAX_REWARD_THB,
-  TIME_PATTERN,
   validateQuestDraftStep,
   type QuestDraft,
 } from "./createQuestModel";
 import { deleteQuestDraft } from "./createQuestPersistence";
 import { measureFieldRelativeToScroll } from "./createQuestFocus";
-import { formatDate, formatDateTime } from "@/domain/datetime";
+import { formatDate } from "@/domain/datetime";
 import {
   LOGISTICS_FIELDS,
   QUEST_DETAIL_FIELDS,
@@ -1036,141 +1014,16 @@ export default function CreateQuestScreen({
                     acceptanceMethod={selectedAcceptanceMethod}
                     wide={useWideSummary}
                   />
-                  <View className={styles.sectionCard}>
-                    <SectionHeading
-                      icon={Check}
-                      title={messages.review}
-                      description={messages.questSummaryLabel}
-                    />
-                    <View className={styles.summaryCard}>
-                      {summary.map((item) => (
-                        <View key={item.label} className={styles.summaryRow}>
-                          <Text className={styles.summaryLabel}>
-                            {item.label}
-                          </Text>
-                          <Text className={styles.summaryValue}>
-                            {item.value}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                    <View
-                      accessibilityRole={
-                        reviewPublishCheck.canPublish ? undefined : "alert"
-                      }
-                      accessibilityLiveRegion={
-                        reviewPublishCheck.canPublish ? "polite" : "assertive"
-                      }
-                      accessibilityState={{ busy: isCheckingPublish }}
-                      className={cn(
-                        styles.publishCheckCard,
-                        !reviewPublishCheck.canPublish &&
-                          styles.publishCheckCardBlocked
-                      )}
-                      testID="create-quest-publish-check"
-                    >
-                      <Text className={styles.publishCheckTitle}>
-                        {messages.publishCheckTitle}
-                      </Text>
-                      <Text
-                        className={cn(
-                          styles.publishCheckStatus,
-                          !reviewPublishCheck.canPublish &&
-                            styles.publishCheckStatusBlocked
-                        )}
-                      >
-                        {reviewPublishCheck.canPublish
-                          ? messages.publishCheckReady
-                          : messages.publishCheckBlocked}
-                      </Text>
-                      <View className={styles.escrowRows}>
-                        <View className={styles.escrowRow}>
-                          <Text className={styles.escrowLabel}>
-                            {messages.rewardPool}
-                          </Text>
-                          <Text className={styles.escrowValue}>
-                            {formatDraftReward(draft, locale)} ×{" "}
-                            {reviewPublishCheck.escrow.headcount} ={" "}
-                            {formatSatang(
-                              reviewPublishCheck.escrow.rewardPoolSatang,
-                              locale
-                            )}
-                          </Text>
-                        </View>
-                        <View className={styles.escrowRow}>
-                          <Text className={styles.escrowLabel}>
-                            {messages.platformFee}
-                          </Text>
-                          <Text className={styles.escrowValue}>
-                            {formatSatang(
-                              reviewPublishCheck.escrow.platformFeeSatang,
-                              locale
-                            )}
-                          </Text>
-                        </View>
-                        <View className={styles.escrowRow}>
-                          <Text className={styles.escrowLabel}>
-                            {messages.escrowTotal}
-                          </Text>
-                          <Text className={styles.escrowValue}>
-                            {formatSatang(
-                              reviewPublishCheck.escrow.totalRequiredSatang,
-                              locale
-                            )}
-                          </Text>
-                        </View>
-                      </View>
-                      <Text className={styles.publishCheckNote}>
-                        {messages.escrowDescription}
-                      </Text>
-                      {reviewPublishCheck.warnings.length > 0 ? (
-                        <Text className={styles.publishCheckNote}>
-                          {messages.publishCheckWarning}
-                        </Text>
-                      ) : null}
-                      {!reviewPublishCheck.canPublish ? (
-                        <View testID="create-quest-blocking-guidance">
-                          {reviewPublishCheck.blockers.map((blocker) =>
-                            blocker === "INSUFFICIENT_SPENDING_BALANCE" ? (
-                              <View key={blocker}>
-                                <Text className={styles.publishCheckNote}>
-                                  {messages.blockingGuidance.INSUFFICIENT_SPENDING_BALANCE(
-                                    formatSatang(missingSatang, locale)
-                                  )}
-                                </Text>
-                                <Pressable
-                                  accessibilityRole="button"
-                                  accessibilityLabel={messages.topUpAction}
-                                  className={cn(
-                                    styles.retryButton,
-                                    styles.publishCheckNote
-                                  )}
-                                  onPress={() => setShowTopUpModal(true)}
-                                  testID="create-quest-top-up-button"
-                                >
-                                  <Text className={styles.retryButtonText}>
-                                    {messages.topUpAction}
-                                  </Text>
-                                </Pressable>
-                              </View>
-                            ) : (
-                              <Text
-                                className={styles.publishCheckNote}
-                                key={blocker}
-                              >
-                                {(
-                                  messages.blockingGuidance as unknown as Record<
-                                    string,
-                                    string
-                                  >
-                                )[blocker] ?? blocker}
-                              </Text>
-                            )
-                          )}
-                        </View>
-                      ) : null}
-                    </View>
-                  </View>
+                  <ReviewStep
+                    messages={messages}
+                    locale={locale}
+                    summary={summary}
+                    rewardPerPerson={formatDraftReward(draft, locale)}
+                    publishCheck={reviewPublishCheck}
+                    missingSatang={missingSatang}
+                    isCheckingPublish={isCheckingPublish}
+                    onTopUp={() => setShowTopUpModal(true)}
+                  />
                 </>
               ) : null}
             </View>

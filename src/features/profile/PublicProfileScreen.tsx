@@ -22,21 +22,21 @@ import {
   usePublicProfileQuery,
   usePublicProfileReviewsQuery,
 } from "./api/profileQueries";
-import {
-  AboutMe,
-  Certificates,
-  Experience,
-  MyWork,
-  ProfileHeader,
-  ProfileSkeleton,
-  ProfileStats,
-  Reviews,
-  type ProfileCertificate,
-  type ProfileExperience,
-  type ProfileReview,
-  type ProfileStatsData,
-  type ProfileWork,
-} from "./components/ProfileComponents";
+import { AboutMe } from "./components/AboutMe";
+import { Certificates } from "./components/Certificates";
+import { Experience } from "./components/Experience";
+import { MyWork } from "./components/MyWork";
+import { ProfileHeader } from "./components/ProfileHeader";
+import { ProfileSkeleton } from "./components/ProfileSkeleton";
+import { ProfileStats } from "./components/ProfileStats";
+import { Reviews } from "./components/Reviews";
+import type {
+  ProfileCertificate,
+  ProfileExperience,
+  ProfileReview,
+  ProfileStatsData,
+  ProfileWork,
+} from "./components/profileTypes";
 
 type PublicProfileTab =
   "about" | "experience" | "works" | "certificates" | "reviews";

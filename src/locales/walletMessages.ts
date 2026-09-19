@@ -19,9 +19,19 @@ export interface WalletMessages {
   continue: string;
   topUpAmountTitle: string;
   topUpAmountDescription: string;
+  topUpAmountStepSubtitle: string;
+  topUpConfirmationStepSubtitle: string;
+  topUpPromptPayStepSubtitle: string;
   topUpPromptPayTitle: string;
   topUpPromptPayDescription: string;
+  quickAmountLabel: string;
+  quickAmountAccessibilityLabel: (amount: number) => string;
+  topUpSafetyNotice: string;
+  clearAmount: string;
+  editAmount: string;
+  promptPayScanLabel: string;
   topUpConfirmationTitle: string;
+  promptPayQrCode: string;
   topUpCredit: string;
   topUpFee: string;
   topUpTax: string;
@@ -133,9 +143,20 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     topUpAmountTitle: "Top-Up via PromptPay QR",
     topUpAmountDescription:
       "Enter the amount in Thai Baht (฿) to credit into your Spending Balance.",
+    topUpAmountStepSubtitle: "Step 1/3 • Enter amount",
+    topUpConfirmationStepSubtitle: "Step 2/3 • Confirm details",
+    topUpPromptPayStepSubtitle: "Step 3/3 • Scan to pay",
     topUpPromptPayTitle: "Scan PromptPay QR",
     topUpPromptPayDescription:
       "Scan this QR code with any mobile banking app to complete your transfer.",
+    quickAmountLabel: "Choose a quick amount",
+    quickAmountAccessibilityLabel: (amount) => `Top up ${amount} baht`,
+    topUpSafetyNotice:
+      "Your top-up will be added to your Spending Balance immediately after a successful PromptPay payment and can be used to hire workers right away.",
+    clearAmount: "Clear amount",
+    editAmount: "Edit amount",
+    promptPayScanLabel: "Scan to pay",
+    promptPayQrCode: "PromptPay QR Code",
     topUpConfirmationTitle: "Confirm top-up",
     topUpCredit: "Credit to Spending Balance",
     topUpFee: "Payment fee",
@@ -253,9 +274,20 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     topUpAmountTitle: "เติมเงินผ่าน PromptPay QR",
     topUpAmountDescription:
       "ระบุจำนวนเงินบาท (฿) ที่ต้องการเติมเข้าสู่ยอดเงินพร้อมใช้ของคุณ",
+    topUpAmountStepSubtitle: "ขั้นตอนที่ 1/3 • ระบุจำนวนเงิน",
+    topUpConfirmationStepSubtitle: "ขั้นตอนที่ 2/3 • ยืนยันข้อมูล",
+    topUpPromptPayStepSubtitle: "ขั้นตอนที่ 3/3 • สแกนชำระเงิน",
     topUpPromptPayTitle: "สแกน PromptPay QR",
     topUpPromptPayDescription:
       "สแกน QR Code นี้ด้วยแอปพลิเคชันธนาคารใดก็ได้เพื่อชำระเงิน",
+    quickAmountLabel: "เลือกจำนวนเงินด่วน",
+    quickAmountAccessibilityLabel: (amount) => `เติมเงิน ${amount} บาท`,
+    topUpSafetyNotice:
+      "ยอดเงินที่เติมจะเข้าสู่ยอดเงินพร้อมใช้ของคุณทันทีหลังจากชำระเงินผ่าน PromptPay สำเร็จ และใช้จ้างงานได้ทันที",
+    clearAmount: "ล้าง",
+    editAmount: "แก้ไขจำนวนเงิน",
+    promptPayScanLabel: "สแกนเพื่อชำระเงิน",
+    promptPayQrCode: "PromptPay QR Code",
     topUpConfirmationTitle: "ยืนยันการเติมเงิน",
     topUpCredit: "เครดิตเข้ายอดเงินพร้อมใช้",
     topUpFee: "ค่าธรรมเนียมการชำระเงิน",

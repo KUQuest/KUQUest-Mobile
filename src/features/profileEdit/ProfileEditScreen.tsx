@@ -1,19 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Platform } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
+import { Alert } from "react-native";
 import { useLocalSearchParams, useRouter, useNavigation } from "expo-router";
-import {
-  ArrowLeft,
-  CalendarDays,
-  ChevronRight,
-  Image as ImageIcon,
-  Pencil,
-  Plus,
-  Trash2,
-} from "lucide-react-native";
+import { ChevronRight, Pencil, Plus } from "lucide-react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "../../api/ApiClient";
 import { authService } from "../auth/AuthService";
@@ -50,23 +38,12 @@ import {
   LoadingSkeleton,
   SkeletonBlock,
 } from "../../components/ui/LoadingSkeleton";
-import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
-import { TextArea } from "@/components/ui/TextArea";
-import {
-  Image,
-  KeyboardAvoidingView,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "../../tw";
+import { Image, Pressable, ScrollView, Text, View } from "../../tw";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "../../theme/colors";
 import { ScreenLayout } from "../../components/layout/ScreenLayout";
 import styles from "./profileEditStyles";
 import {
-  formatDateForApi,
   validateBasics,
   validateCertificate,
   validateExperience,
@@ -88,6 +65,11 @@ import type {
   ExperienceEntry,
   PortfolioEntry,
 } from "../../api/contracts";
+import { BasicsEditor } from "./components/BasicsEditor";
+import { CertificateEditor } from "./components/CertificateEditor";
+import { ExperienceEditor } from "./components/ExperienceEditor";
+import { PortfolioEditor } from "./components/PortfolioEditor";
+import { ScreenHeader } from "./components/ProfileEditFormParts";
 type EditSection = "basics" | "experience" | "portfolio" | "certificates";
 type HubSectionKey = EditSection | "academic-registration";
 
@@ -97,19 +79,6 @@ function getParam(value: string | string[] | undefined): string | undefined {
 
 function isLocalAsset(uri: string): boolean {
   return Boolean(uri) && !/^https?:\/\//i.test(uri);
-}
-
-function getInitials(name: string): string {
-  return (
-    name
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase() || "?"
-  );
 }
 
 function getErrorText(error: unknown, messages: ProfileEditMessages): string {
@@ -142,35 +111,6 @@ function useSessionExpiryRedirect(): (error: unknown) => Promise<boolean> {
       return true;
     },
     [queryClient, router]
-  );
-}
-
-function ScreenHeader({
-  title,
-  backLabel,
-  onBack,
-  action,
-}: {
-  title: string;
-  backLabel: string;
-  onBack: () => void;
-  action?: React.ReactNode;
-}) {
-  return (
-    <View className={styles.header}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={backLabel}
-        className={styles.backButton}
-        onPress={onBack}
-      >
-        <ArrowLeft color={colors.primaryDeep} size={24} strokeWidth={2.2} />
-      </Pressable>
-      <Text accessibilityRole="header" className={styles.headerTitle}>
-        {title}
-      </Text>
-      {action ?? <View className={styles.headerAction} />}
-    </View>
   );
 }
 
@@ -412,30 +352,6 @@ function ProfileEditLoadingState({
   );
 }
 
-function SaveBar({
-  label,
-  disabled,
-  onPress,
-}: {
-  label: string;
-  disabled: boolean;
-  onPress: () => void;
-}) {
-  const insets = useSafeAreaInsets();
-  return (
-    <View
-      className={styles.saveBar}
-      style={{ paddingBottom: Math.max(insets.bottom, 24) }}
-    >
-      <View className={styles.saveBarInner}>
-        <Button disabled={disabled} onPress={onPress}>
-          {label}
-        </Button>
-      </View>
-    </View>
-  );
-}
-
 function useLeaveConfirmation(
   messages: ProfileEditMessages,
   dirty: boolean,
@@ -494,160 +410,442 @@ function useUnsavedNavigationGuard(
   };
 }
 
-function ImagePickerField({
-  label,
-  uri,
-  placeholder,
-  removeLabel,
-  onChange,
-  onError,
+function BasicsEditorScreen({
+  data,
+  onBack,
 }: {
-  label: string;
-  uri: string;
-  placeholder: string;
-  removeLabel: string;
-  onChange: (uri: string) => void;
-  onError: (message: string) => void;
+  data: ProfileEditData;
+  onBack: () => void;
 }) {
+  const router = useRouter();
+  const redirectIfSessionExpired = useSessionExpiryRedirect();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
-  const [failedUri, setFailedUri] = useState<string | null>(null);
-  const chooseImage = async () => {
+  const [form, setForm] = useState<BasicsForm>(() =>
+    toBasicsForm(data.profile)
+  );
+  const [dirty, setDirty] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const updateBasicsMutation = useUpdateBasicsMutation();
+  const uploadAvatarMutation = useUploadAvatarMutation();
+  const saving =
+    updateBasicsMutation.isPending || uploadAvatarMutation.isPending;
+  const [avatarImageFailed, setAvatarImageFailed] = useState(false);
+  const leave = useLeaveConfirmation(messages, dirty, onBack);
+  const allowNavigation = useUnsavedNavigationGuard(messages, dirty);
+  const setField = <K extends keyof BasicsForm>(
+    field: K,
+    value: BasicsForm[K]
+  ) => {
+    setDirty(true);
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+  const save = async () => {
+    const nextErrors = validateBasics(
+      form.name,
+      messages.required,
+      messages.invalidName
+    );
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+    setSaveError(null);
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.7,
+      const { firstName, lastName } = splitDisplayName(form.name);
+      await updateBasicsMutation.mutateAsync({
+        firstName,
+        lastName,
+        bio: form.bio.trim() || undefined,
       });
-      if (result.canceled || !result.assets?.[0]) return;
-      const asset = result.assets[0];
-      if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-        onError(messages.fileTooLarge);
-        return;
+      if (isLocalAsset(form.profileImage)) {
+        try {
+          await uploadAvatarMutation.mutateAsync({
+            uri: form.profileImage,
+            name: form.profileImageFileName ?? undefined,
+            type: form.profileImageMimeType ?? undefined,
+          });
+        } catch (error) {
+          if (await redirectIfSessionExpired(error)) return;
+          setSaveError(messages.avatarUploadError);
+          return;
+        }
       }
-      onChange(asset.uri);
-    } catch {
-      onError(messages.filePickerError);
+      allowNavigation();
+      router.back();
+    } catch (error) {
+      if (await redirectIfSessionExpired(error)) return;
+      setSaveError(getErrorText(error, messages));
     }
   };
-
+  const profileName = form.name || data.profile.firstName;
+  const profileImageSource = form.profileImage
+    ? form.profileImageCacheKey
+      ? { uri: form.profileImage, cacheKey: form.profileImageCacheKey }
+      : { uri: form.profileImage }
+    : undefined;
   return (
-    <View className="gap-ku-sm">
-      <Text className="font-ku-semibold text-ku-label text-ku-text-secondary">
-        {label}
-      </Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={uri ? label : placeholder}
-        className={styles.imagePicker}
-        style={{ aspectRatio: 4 / 3 }}
-        onPress={() => void chooseImage()}
-      >
-        {uri && failedUri !== uri ? (
-          <Image
-            source={{ uri }}
-            onError={() => setFailedUri(uri)}
-            className={styles.imagePreview}
-            contentFit="cover"
-          />
-        ) : (
-          <View className="flex-1 items-center justify-center gap-[4px]">
-            <ImageIcon color={colors.textMuted} size={24} />
-            <Text className={styles.imagePickerText}>{placeholder}</Text>
-          </View>
-        )}
-      </Pressable>
-      {uri ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={removeLabel}
-          className="min-h-[48px] justify-center self-start"
-          onPress={() => onChange("")}
-        >
-          <Text className="font-ku-semibold text-ku-meta text-ku-primary">
-            {removeLabel}
-          </Text>
-        </Pressable>
-      ) : null}
-    </View>
+    <BasicsEditor
+      form={form}
+      messages={messages}
+      errors={errors}
+      saveError={saveError}
+      saving={saving}
+      profileName={profileName}
+      profileImageSource={profileImageSource}
+      avatarImageFailed={avatarImageFailed}
+      onBack={leave}
+      onFieldChange={setField}
+      onAvatarImageError={() => setAvatarImageFailed(true)}
+      onAvatarChange={(asset) => {
+        setAvatarImageFailed(false);
+        setDirty(true);
+        setForm((current) => ({
+          ...current,
+          profileImage: asset.uri,
+          profileImageCacheKey: undefined,
+          profileImageMimeType: asset.mimeType,
+          profileImageFileName: asset.fileName,
+        }));
+      }}
+      onAvatarError={setSaveError}
+      onSave={() => void save()}
+    />
   );
 }
 
-function DateField({
-  label,
-  value,
-  placeholder,
-  onChange,
-  error,
-  clearLabel,
-  onClear,
+function ExperienceEditorScreen({
+  entry,
+  onBack,
 }: {
-  label: string;
-  value: string;
-  placeholder: string;
-  onChange: (value: string) => void;
-  error?: string;
-  clearLabel?: string;
-  onClear?: () => void;
+  entry?: ExperienceEntry;
+  onBack: () => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const handleChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (event.type === "dismissed" || !selectedDate) {
-      setOpen(false);
-      return;
-    }
-    onChange(formatDateForApi(selectedDate));
-    setOpen(false);
+  const router = useRouter();
+  const redirectIfSessionExpired = useSessionExpiryRedirect();
+  const { locale } = useLocale();
+  const messages = profileEditMessages[locale];
+  const employmentTypes = onboardingMessages[locale].employmentTypes;
+  const [form, setForm] = useState<ExperienceForm>(() =>
+    toExperienceForm(entry)
+  );
+  const [dirty, setDirty] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const createExperienceMutation = useCreateExperienceMutation();
+  const updateExperienceMutation = useUpdateExperienceMutation();
+  const deleteExperienceMutation = useDeleteExperienceMutation();
+  const saving =
+    createExperienceMutation.isPending || updateExperienceMutation.isPending;
+  const deleting = deleteExperienceMutation.isPending;
+  const leave = useLeaveConfirmation(messages, dirty, onBack);
+  const allowNavigation = useUnsavedNavigationGuard(messages, dirty);
+  const setField = <K extends keyof ExperienceForm>(
+    field: K,
+    value: ExperienceForm[K]
+  ) => {
+    setDirty(true);
+    setForm((current) => ({ ...current, [field]: value }));
   };
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(value)
-    ? new Date(`${value}T12:00:00`)
-    : new Date();
+  const save = async () => {
+    const nextErrors = validateExperience(form, messages);
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+    setSaveError(null);
+    try {
+      const payload = {
+        title: form.title.trim(),
+        employmentType: form.employmentType,
+        organization: form.organization.trim() || null,
+        description: form.description.trim() || null,
+        startedAt: form.startedAt,
+        endedAt: form.endedAt || null,
+      };
+      if (entry?.id)
+        await updateExperienceMutation.mutateAsync({
+          id: entry.id,
+          update: payload,
+        });
+      else await createExperienceMutation.mutateAsync(payload);
+      allowNavigation();
+      router.back();
+    } catch (error) {
+      if (await redirectIfSessionExpired(error)) return;
+      setSaveError(getErrorText(error, messages));
+    }
+  };
+  const remove = () => {
+    if (!entry?.id || saving || deleting) return;
+    Alert.alert(messages.deleteTitle, messages.deleteMessage(entry.title), [
+      { text: messages.cancel, style: "cancel" },
+      {
+        text: messages.confirmDelete,
+        style: "destructive",
+        onPress: () => {
+          void (async () => {
+            try {
+              await deleteExperienceMutation.mutateAsync(entry.id as string);
+              allowNavigation();
+              router.back();
+            } catch (error) {
+              if (!(await redirectIfSessionExpired(error)))
+                setSaveError(getErrorText(error, messages));
+            }
+          })();
+        },
+      },
+    ]);
+  };
   return (
-    <View className={styles.dateField}>
-      <Text className="mb-[6px] font-ku-semibold text-ku-label text-ku-text-secondary">
-        {label}
-      </Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${label}: ${value || placeholder}`}
-        accessibilityState={{ expanded: open }}
-        className={styles.dateButton}
-        onPress={() => setOpen(true)}
-      >
-        <Text className={value ? styles.dateText : styles.datePlaceholder}>
-          {value || placeholder}
-        </Text>
-        <CalendarDays color={colors.textMuted} size={18} />
-      </Pressable>
-      {error ? (
-        <Text
-          accessibilityRole="alert"
-          className="mt-[4px] font-ku-regular text-ku-label text-ku-danger"
-        >
-          {error}
-        </Text>
-      ) : null}
-      {value && onClear && clearLabel ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={clearLabel}
-          className={styles.clearDate}
-          onPress={onClear}
-        >
-          <Text className={styles.clearDateText}>{clearLabel}</Text>
-        </Pressable>
-      ) : null}
-      {open ? (
-        <DateTimePicker
-          value={date}
-          mode="date"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          maximumDate={new Date()}
-          onChange={handleChange}
-        />
-      ) : null}
-    </View>
+    <ExperienceEditor
+      isExisting={Boolean(entry)}
+      form={form}
+      messages={messages}
+      employmentTypes={employmentTypes}
+      errors={errors}
+      saveError={saveError}
+      saving={saving}
+      deleting={deleting}
+      onBack={leave}
+      onRemove={remove}
+      onFieldChange={setField}
+      onSave={() => void save()}
+    />
+  );
+}
+
+function PortfolioEditorScreen({
+  entry,
+  onBack,
+}: {
+  entry?: PortfolioEntry;
+  onBack: () => void;
+}) {
+  const router = useRouter();
+  const redirectIfSessionExpired = useSessionExpiryRedirect();
+  const { locale } = useLocale();
+  const messages = profileEditMessages[locale];
+  const [form, setForm] = useState<PortfolioForm>(() => toPortfolioForm(entry));
+  const [dirty, setDirty] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const createPortfolioMutation = useCreatePortfolioMutation();
+  const updatePortfolioMutation = useUpdatePortfolioMutation();
+  const uploadPortfolioImageMutation = useUploadPortfolioImageMutation();
+  const deletePortfolioImageMutation = useDeletePortfolioImageMutation();
+  const deletePortfolioMutation = useDeletePortfolioMutation();
+  const saving =
+    createPortfolioMutation.isPending ||
+    updatePortfolioMutation.isPending ||
+    uploadPortfolioImageMutation.isPending ||
+    deletePortfolioImageMutation.isPending;
+  const deleting = deletePortfolioMutation.isPending;
+  const leave = useLeaveConfirmation(messages, dirty, onBack);
+  const allowNavigation = useUnsavedNavigationGuard(messages, dirty);
+  const setField = <K extends keyof PortfolioForm>(
+    field: K,
+    value: PortfolioForm[K]
+  ) => {
+    setDirty(true);
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+  const save = async () => {
+    const nextErrors = validatePortfolio(form, messages);
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+    setSaveError(null);
+    try {
+      if (entry?.id) {
+        await updatePortfolioMutation.mutateAsync({
+          id: entry.id,
+          update: {
+            title: form.title.trim(),
+            description: form.description.trim() || null,
+          },
+        });
+        if (isLocalAsset(form.imageUri))
+          await uploadPortfolioImageMutation.mutateAsync({
+            id: entry.id,
+            asset: { uri: form.imageUri },
+          });
+        else if (!form.imageUri && entry.images[0]?.url)
+          await deletePortfolioImageMutation.mutateAsync(entry.id);
+      } else {
+        await createPortfolioMutation.mutateAsync({
+          title: form.title.trim(),
+          description: form.description.trim() || undefined,
+          imageUris: isLocalAsset(form.imageUri) ? [form.imageUri] : [],
+        });
+      }
+      allowNavigation();
+      router.back();
+    } catch (error) {
+      if (await redirectIfSessionExpired(error)) return;
+      setSaveError(getErrorText(error, messages));
+    }
+  };
+  const remove = () => {
+    if (!entry?.id || saving || deleting) return;
+    Alert.alert(messages.deleteTitle, messages.deleteMessage(entry.title), [
+      { text: messages.cancel, style: "cancel" },
+      {
+        text: messages.confirmDelete,
+        style: "destructive",
+        onPress: () => {
+          void (async () => {
+            try {
+              await deletePortfolioMutation.mutateAsync(entry.id as string);
+              allowNavigation();
+              router.back();
+            } catch (error) {
+              if (!(await redirectIfSessionExpired(error)))
+                setSaveError(getErrorText(error, messages));
+            }
+          })();
+        },
+      },
+    ]);
+  };
+  return (
+    <PortfolioEditor
+      isExisting={Boolean(entry)}
+      form={form}
+      messages={messages}
+      errors={errors}
+      saveError={saveError}
+      saving={saving}
+      deleting={deleting}
+      onBack={leave}
+      onRemove={remove}
+      onFieldChange={setField}
+      onImageChange={(uri) => {
+        setDirty(true);
+        setForm((current) => ({ ...current, imageUri: uri }));
+      }}
+      onImageError={setSaveError}
+      onSave={() => void save()}
+    />
+  );
+}
+
+function CertificateEditorScreen({
+  entry,
+  onBack,
+}: {
+  entry?: CertificateEntry;
+  onBack: () => void;
+}) {
+  const router = useRouter();
+  const redirectIfSessionExpired = useSessionExpiryRedirect();
+  const { locale } = useLocale();
+  const messages = profileEditMessages[locale];
+  const [form, setForm] = useState<CertificateForm>(() =>
+    toCertificateForm(entry)
+  );
+  const [dirty, setDirty] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const updateCertificateMutation = useUpdateCertificateMutation();
+  const createCertificateMutation = useCreateCertificateMutation();
+  const uploadCertificateImageMutation = useUploadCertificateImageMutation();
+  const deleteCertificateImageMutation = useDeleteCertificateImageMutation();
+  const deleteCertificateMutation = useDeleteCertificateMutation();
+  const saving =
+    createCertificateMutation.isPending ||
+    updateCertificateMutation.isPending ||
+    uploadCertificateImageMutation.isPending ||
+    deleteCertificateImageMutation.isPending;
+  const deleting = deleteCertificateMutation.isPending;
+  const [createdId, setCreatedId] = useState<string | undefined>(entry?.id);
+  const leave = useLeaveConfirmation(messages, dirty, onBack);
+  const allowNavigation = useUnsavedNavigationGuard(messages, dirty);
+  const setField = <K extends keyof CertificateForm>(
+    field: K,
+    value: CertificateForm[K]
+  ) => {
+    setDirty(true);
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+  const save = async () => {
+    const nextErrors = validateCertificate(form, messages);
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+    setSaveError(null);
+    try {
+      const payload = {
+        name: form.name.trim(),
+        issuer: form.issuer.trim(),
+        issuedAt: form.issuedAt,
+      };
+      let certificateId = createdId;
+      if (certificateId) {
+        await updateCertificateMutation.mutateAsync({
+          id: certificateId,
+          update: payload,
+        });
+        if (isLocalAsset(form.imageUri))
+          await uploadCertificateImageMutation.mutateAsync({
+            id: certificateId,
+            asset: { uri: form.imageUri },
+          });
+        else if (!form.imageUri && entry?.image)
+          await deleteCertificateImageMutation.mutateAsync(certificateId);
+      } else {
+        certificateId = await createCertificateMutation.mutateAsync(payload);
+        setCreatedId(certificateId);
+        if (isLocalAsset(form.imageUri))
+          await uploadCertificateImageMutation.mutateAsync({
+            id: certificateId,
+            asset: { uri: form.imageUri },
+          });
+      }
+      allowNavigation();
+      router.back();
+    } catch (error) {
+      if (await redirectIfSessionExpired(error)) return;
+      setSaveError(getErrorText(error, messages));
+    }
+  };
+  const remove = () => {
+    if (!entry?.id || saving || deleting) return;
+    Alert.alert(messages.deleteTitle, messages.deleteMessage(entry.name), [
+      { text: messages.cancel, style: "cancel" },
+      {
+        text: messages.confirmDelete,
+        style: "destructive",
+        onPress: () => {
+          void (async () => {
+            try {
+              await deleteCertificateMutation.mutateAsync(entry.id as string);
+              allowNavigation();
+              router.back();
+            } catch (error) {
+              if (!(await redirectIfSessionExpired(error)))
+                setSaveError(getErrorText(error, messages));
+            }
+          })();
+        },
+      },
+    ]);
+  };
+  return (
+    <CertificateEditor
+      isExisting={Boolean(entry)}
+      form={form}
+      messages={messages}
+      errors={errors}
+      saveError={saveError}
+      saving={saving}
+      deleting={deleting}
+      onBack={leave}
+      onRemove={remove}
+      onFieldChange={setField}
+      onImageChange={(uri) => {
+        setDirty(true);
+        setForm((current) => ({ ...current, imageUri: uri }));
+      }}
+      onImageError={setSaveError}
+      onSave={() => void save()}
+    />
   );
 }
 
@@ -765,193 +963,6 @@ export function EditProfileHubScreen() {
     <ProfileEditDataLoader loadingVariant="hub" onBack={() => router.back()}>
       {(data) => <HubContent data={data} />}
     </ProfileEditDataLoader>
-  );
-}
-
-function BasicsEditor({
-  data,
-  onBack,
-}: {
-  data: ProfileEditData;
-  onBack: () => void;
-}) {
-  const router = useRouter();
-  const redirectIfSessionExpired = useSessionExpiryRedirect();
-  const { locale } = useLocale();
-  const messages = profileEditMessages[locale];
-  const [form, setForm] = useState<BasicsForm>(() =>
-    toBasicsForm(data.profile)
-  );
-  const [dirty, setDirty] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const updateBasicsMutation = useUpdateBasicsMutation();
-  const uploadAvatarMutation = useUploadAvatarMutation();
-  const saving =
-    updateBasicsMutation.isPending || uploadAvatarMutation.isPending;
-  const [avatarImageFailed, setAvatarImageFailed] = useState(false);
-  const leave = useLeaveConfirmation(messages, dirty, onBack);
-  const allowNavigation = useUnsavedNavigationGuard(messages, dirty);
-  const setField = <K extends keyof BasicsForm>(
-    field: K,
-    value: BasicsForm[K]
-  ) => {
-    setDirty(true);
-    setForm((current) => ({ ...current, [field]: value }));
-  };
-  const save = async () => {
-    const nextErrors = validateBasics(
-      form.name,
-      messages.required,
-      messages.invalidName
-    );
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
-    setSaveError(null);
-    try {
-      const { firstName, lastName } = splitDisplayName(form.name);
-      await updateBasicsMutation.mutateAsync({
-        firstName,
-        lastName,
-        bio: form.bio.trim() || undefined,
-      });
-      if (isLocalAsset(form.profileImage)) {
-        try {
-          await uploadAvatarMutation.mutateAsync({
-            uri: form.profileImage,
-            name: form.profileImageFileName ?? undefined,
-            type: form.profileImageMimeType ?? undefined,
-          });
-        } catch (error) {
-          if (await redirectIfSessionExpired(error)) return;
-          setSaveError(messages.avatarUploadError);
-          return;
-        }
-      }
-      allowNavigation();
-      router.back();
-    } catch (error) {
-      if (await redirectIfSessionExpired(error)) return;
-      setSaveError(getErrorText(error, messages));
-    }
-  };
-  const profileName = form.name || data.profile.firstName;
-  const profileImageSource = form.profileImage
-    ? form.profileImageCacheKey
-      ? { uri: form.profileImage, cacheKey: form.profileImageCacheKey }
-      : { uri: form.profileImage }
-    : undefined;
-
-  return (
-    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
-      <KeyboardAvoidingView
-        className={styles.screen}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView
-          contentContainerClassName={styles.formContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <ScreenHeader
-            title={messages.basicsSection}
-            backLabel={messages.back}
-            onBack={leave}
-          />
-          <View className={styles.formGroup}>
-            <Text className={styles.formGroupTitle}>{messages.basics}</Text>
-            <View className={styles.avatarPicker}>
-              {profileImageSource && !avatarImageFailed ? (
-                <Image
-                  source={profileImageSource}
-                  onError={() => setAvatarImageFailed(true)}
-                  className={styles.avatar}
-                  contentFit="cover"
-                />
-              ) : (
-                <View className={styles.avatarFallback}>
-                  <Text className={styles.avatarInitials}>
-                    {getInitials(profileName)}
-                  </Text>
-                </View>
-              )}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={messages.changeAvatar}
-                className={styles.avatarButton}
-                onPress={() => {
-                  void ImagePicker.launchImageLibraryAsync({
-                    mediaTypes: ["images"],
-                    allowsEditing: true,
-                    aspect: [1, 1],
-                    quality: 0.7,
-                  })
-                    .then((result) => {
-                      const asset = result.assets?.[0];
-                      if (result.canceled || !asset) return;
-                      if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-                        setSaveError(messages.fileTooLarge);
-                        return;
-                      }
-                      setAvatarImageFailed(false);
-                      setDirty(true);
-                      setForm((current) => ({
-                        ...current,
-                        profileImage: asset.uri,
-                        profileImageCacheKey: undefined,
-                        profileImageMimeType: asset.mimeType,
-                        profileImageFileName: asset.fileName,
-                      }));
-                    })
-                    .catch(() => setSaveError(messages.filePickerError));
-                }}
-              >
-                <Pencil color={colors.primary} size={15} />
-                <Text className={styles.avatarButtonText}>
-                  {messages.changeAvatar}
-                </Text>
-              </Pressable>
-              <Text
-                accessibilityRole={avatarImageFailed ? "alert" : undefined}
-                className={
-                  avatarImageFailed ? styles.avatarError : styles.avatarHelp
-                }
-              >
-                {avatarImageFailed
-                  ? messages.avatarPreviewError
-                  : messages.avatarHelp}
-              </Text>
-            </View>
-            <Input
-              label={messages.name}
-              placeholder={messages.namePlaceholder}
-              value={form.name}
-              onChangeText={(value) => setField("name", value)}
-              error={errors.name}
-              maxLength={201}
-              autoCapitalize="words"
-            />
-            <TextArea
-              label={messages.bio}
-              placeholder={messages.bioPlaceholder}
-              value={form.bio}
-              onChangeText={(value) => setField("bio", value)}
-              maxLength={1000}
-            />
-          </View>
-          {saveError ? (
-            <View className={styles.errorCard} accessibilityRole="alert">
-              <Text className={styles.errorText}>{saveError}</Text>
-            </View>
-          ) : null}
-        </ScrollView>
-        <SaveBar
-          label={saving ? messages.saving : messages.save}
-          disabled={saving}
-          onPress={() => void save()}
-        />
-      </KeyboardAvoidingView>
-    </ScreenLayout>
   );
 }
 
@@ -1168,7 +1179,6 @@ function ProfileEditDataLoader({
   loadingVariant: ProfileEditLoadingVariant;
   onBack: () => void;
 }) {
-  const router = useRouter();
   const redirectIfSessionExpired = useSessionExpiryRedirect();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
@@ -1220,548 +1230,6 @@ function ProfileEditDataLoader({
   return <>{children(data)}</>;
 }
 
-function ExperienceEditor({
-  entry,
-  onBack,
-}: {
-  entry?: ExperienceEntry;
-  onBack: () => void;
-}) {
-  const router = useRouter();
-  const redirectIfSessionExpired = useSessionExpiryRedirect();
-  const { locale } = useLocale();
-  const messages = profileEditMessages[locale];
-  const employmentTypes = onboardingMessages[locale].employmentTypes;
-  const [form, setForm] = useState<ExperienceForm>(() =>
-    toExperienceForm(entry)
-  );
-  const [dirty, setDirty] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const createExperienceMutation = useCreateExperienceMutation();
-  const updateExperienceMutation = useUpdateExperienceMutation();
-  const deleteExperienceMutation = useDeleteExperienceMutation();
-  const saving =
-    createExperienceMutation.isPending || updateExperienceMutation.isPending;
-  const deleting = deleteExperienceMutation.isPending;
-  const leave = useLeaveConfirmation(messages, dirty, onBack);
-  const allowNavigation = useUnsavedNavigationGuard(messages, dirty);
-  const setField = <K extends keyof ExperienceForm>(
-    field: K,
-    value: ExperienceForm[K]
-  ) => {
-    setDirty(true);
-    setForm((current) => ({ ...current, [field]: value }));
-  };
-  const save = async () => {
-    const nextErrors = validateExperience(form, messages);
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
-    setSaveError(null);
-    try {
-      const payload = {
-        title: form.title.trim(),
-        employmentType: form.employmentType,
-        organization: form.organization.trim() || null,
-        description: form.description.trim() || null,
-        startedAt: form.startedAt,
-        endedAt: form.endedAt || null,
-      };
-      if (entry?.id)
-        await updateExperienceMutation.mutateAsync({
-          id: entry.id,
-          update: payload,
-        });
-      else await createExperienceMutation.mutateAsync(payload);
-      allowNavigation();
-      router.back();
-    } catch (error) {
-      if (await redirectIfSessionExpired(error)) return;
-      setSaveError(getErrorText(error, messages));
-    }
-  };
-  const remove = () => {
-    if (!entry?.id || saving || deleting) return;
-    Alert.alert(messages.deleteTitle, messages.deleteMessage(entry.title), [
-      { text: messages.cancel, style: "cancel" },
-      {
-        text: messages.confirmDelete,
-        style: "destructive",
-        onPress: () => {
-          void (async () => {
-            try {
-              await deleteExperienceMutation.mutateAsync(entry.id as string);
-              allowNavigation();
-              router.back();
-            } catch (error) {
-              if (!(await redirectIfSessionExpired(error)))
-                setSaveError(getErrorText(error, messages));
-            }
-          })();
-        },
-      },
-    ]);
-  };
-
-  return (
-    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
-      <KeyboardAvoidingView
-        className={styles.screen}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView
-          contentContainerClassName={styles.formContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          <ScreenHeader
-            title={
-              entry ? messages.experienceEditTitle : messages.experienceAddTitle
-            }
-            backLabel={messages.back}
-            onBack={leave}
-            action={
-              entry ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={messages.remove}
-                  accessibilityState={{ disabled: saving || deleting }}
-                  disabled={saving || deleting}
-                  className={styles.headerAction}
-                  onPress={remove}
-                >
-                  <Trash2 color={colors.danger} size={20} />
-                </Pressable>
-              ) : undefined
-            }
-          />
-          <View className={styles.formGroup}>
-            <Text className={styles.formGroupTitle}>
-              {messages.experienceSection}
-            </Text>
-            <Text className={styles.formGroupHint}>
-              {messages.experienceFormHint}
-            </Text>
-            <Input
-              label={messages.experienceTitleLabel}
-              placeholder={messages.experienceTitlePlaceholder}
-              value={form.title}
-              onChangeText={(value) => setField("title", value)}
-              error={errors.title}
-              maxLength={120}
-            />
-            <Select
-              label={messages.employmentType}
-              placeholder={messages.employmentTypePlaceholder}
-              options={employmentTypes}
-              value={form.employmentType}
-              onValueChange={(value) => setField("employmentType", value)}
-              error={errors.employmentType}
-              closeLabel={messages.closeEmploymentType}
-            />
-            <Input
-              label={messages.organizationOptional}
-              placeholder={messages.organizationPlaceholder}
-              value={form.organization}
-              onChangeText={(value) => setField("organization", value)}
-              maxLength={120}
-            />
-            <TextArea
-              label={messages.detailOptional}
-              placeholder={messages.detailPlaceholder}
-              value={form.description}
-              onChangeText={(value) => setField("description", value)}
-              maxLength={1000}
-            />
-            <View className={styles.dateRow}>
-              <DateField
-                label={messages.startDate}
-                placeholder={messages.startDatePlaceholder}
-                value={form.startedAt}
-                onChange={(value) => setField("startedAt", value)}
-                error={errors.startedAt}
-              />
-              <DateField
-                label={messages.endDateOptional}
-                placeholder={messages.ongoingDatePlaceholder}
-                value={form.endedAt}
-                onChange={(value) => setField("endedAt", value)}
-                onClear={() => setField("endedAt", "")}
-                clearLabel={messages.markOngoing}
-                error={errors.endedAt}
-              />
-            </View>
-          </View>
-          {saveError ? (
-            <View className={styles.errorCard} accessibilityRole="alert">
-              <Text className={styles.errorText}>{saveError}</Text>
-            </View>
-          ) : null}
-        </ScrollView>
-        <SaveBar
-          label={saving ? messages.saving : messages.save}
-          disabled={saving || deleting}
-          onPress={() => void save()}
-        />
-      </KeyboardAvoidingView>
-    </ScreenLayout>
-  );
-}
-
-function PortfolioEditor({
-  entry,
-  onBack,
-}: {
-  entry?: PortfolioEntry;
-  onBack: () => void;
-}) {
-  const router = useRouter();
-  const redirectIfSessionExpired = useSessionExpiryRedirect();
-  const { locale } = useLocale();
-  const messages = profileEditMessages[locale];
-  const [form, setForm] = useState<PortfolioForm>(() => toPortfolioForm(entry));
-  const [dirty, setDirty] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const createPortfolioMutation = useCreatePortfolioMutation();
-  const updatePortfolioMutation = useUpdatePortfolioMutation();
-  const uploadPortfolioImageMutation = useUploadPortfolioImageMutation();
-  const deletePortfolioImageMutation = useDeletePortfolioImageMutation();
-  const deletePortfolioMutation = useDeletePortfolioMutation();
-  const saving =
-    createPortfolioMutation.isPending ||
-    updatePortfolioMutation.isPending ||
-    uploadPortfolioImageMutation.isPending ||
-    deletePortfolioImageMutation.isPending;
-  const deleting = deletePortfolioMutation.isPending;
-  const leave = useLeaveConfirmation(messages, dirty, onBack);
-  const allowNavigation = useUnsavedNavigationGuard(messages, dirty);
-  const setField = <K extends keyof PortfolioForm>(
-    field: K,
-    value: PortfolioForm[K]
-  ) => {
-    setDirty(true);
-    setForm((current) => ({ ...current, [field]: value }));
-  };
-  const save = async () => {
-    const nextErrors = validatePortfolio(form, messages);
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
-    setSaveError(null);
-    try {
-      if (entry?.id) {
-        await updatePortfolioMutation.mutateAsync({
-          id: entry.id,
-          update: {
-            title: form.title.trim(),
-            description: form.description.trim() || null,
-          },
-        });
-        if (isLocalAsset(form.imageUri))
-          await uploadPortfolioImageMutation.mutateAsync({
-            id: entry.id,
-            asset: { uri: form.imageUri },
-          });
-        else if (!form.imageUri && entry.images[0]?.url)
-          await deletePortfolioImageMutation.mutateAsync(entry.id);
-      } else {
-        await createPortfolioMutation.mutateAsync({
-          title: form.title.trim(),
-          description: form.description.trim() || undefined,
-          imageUris: isLocalAsset(form.imageUri) ? [form.imageUri] : [],
-        });
-      }
-      allowNavigation();
-      router.back();
-    } catch (error) {
-      if (await redirectIfSessionExpired(error)) return;
-      setSaveError(getErrorText(error, messages));
-    }
-  };
-  const remove = () => {
-    if (!entry?.id || saving || deleting) return;
-    Alert.alert(messages.deleteTitle, messages.deleteMessage(entry.title), [
-      { text: messages.cancel, style: "cancel" },
-      {
-        text: messages.confirmDelete,
-        style: "destructive",
-        onPress: () => {
-          void (async () => {
-            try {
-              await deletePortfolioMutation.mutateAsync(entry.id as string);
-              allowNavigation();
-              router.back();
-            } catch (error) {
-              if (!(await redirectIfSessionExpired(error)))
-                setSaveError(getErrorText(error, messages));
-            }
-          })();
-        },
-      },
-    ]);
-  };
-  const setImage = (uri: string) => {
-    setDirty(true);
-    setForm((current) => ({ ...current, imageUri: uri }));
-  };
-  return (
-    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
-      <KeyboardAvoidingView
-        className={styles.screen}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView
-          contentContainerClassName={styles.formContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          <ScreenHeader
-            title={entry ? messages.edit : messages.add}
-            backLabel={messages.back}
-            onBack={leave}
-            action={
-              entry ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={messages.remove}
-                  accessibilityState={{ disabled: saving || deleting }}
-                  disabled={saving || deleting}
-                  className={styles.headerAction}
-                  onPress={remove}
-                >
-                  <Trash2 color={colors.danger} size={20} />
-                </Pressable>
-              ) : undefined
-            }
-          />
-          <View className={styles.formGroup}>
-            <Text className={styles.formGroupTitle}>
-              {messages.portfolioSection}
-            </Text>
-            <ImagePickerField
-              label={messages.image}
-              uri={form.imageUri}
-              placeholder={messages.addImage}
-              removeLabel={messages.removeImage}
-              onChange={setImage}
-              onError={setSaveErrorMessage(setSaveError)}
-            />
-            <Input
-              label={messages.titleLabel}
-              placeholder={messages.titlePlaceholder}
-              value={form.title}
-              onChangeText={(value) => setField("title", value)}
-              error={errors.title}
-              maxLength={120}
-            />
-            <TextArea
-              label={messages.detail}
-              placeholder={messages.detailPlaceholder}
-              value={form.description}
-              onChangeText={(value) => setField("description", value)}
-              maxLength={1000}
-            />
-          </View>
-          {saveError ? (
-            <View className={styles.errorCard} accessibilityRole="alert">
-              <Text className={styles.errorText}>{saveError}</Text>
-            </View>
-          ) : null}
-        </ScrollView>
-        <SaveBar
-          label={saving ? messages.saving : messages.save}
-          disabled={saving || deleting}
-          onPress={() => void save()}
-        />
-      </KeyboardAvoidingView>
-    </ScreenLayout>
-  );
-}
-
-function setSaveErrorMessage(setter: (value: string | null) => void) {
-  return (message: string) => setter(message);
-}
-
-function CertificateEditor({
-  entry,
-  onBack,
-}: {
-  entry?: CertificateEntry;
-  onBack: () => void;
-}) {
-  const router = useRouter();
-  const redirectIfSessionExpired = useSessionExpiryRedirect();
-  const { locale } = useLocale();
-  const messages = profileEditMessages[locale];
-  const [form, setForm] = useState<CertificateForm>(() =>
-    toCertificateForm(entry)
-  );
-  const [dirty, setDirty] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const updateCertificateMutation = useUpdateCertificateMutation();
-  const createCertificateMutation = useCreateCertificateMutation();
-  const uploadCertificateImageMutation = useUploadCertificateImageMutation();
-  const deleteCertificateImageMutation = useDeleteCertificateImageMutation();
-  const deleteCertificateMutation = useDeleteCertificateMutation();
-  const saving =
-    createCertificateMutation.isPending ||
-    updateCertificateMutation.isPending ||
-    uploadCertificateImageMutation.isPending ||
-    deleteCertificateImageMutation.isPending;
-  const deleting = deleteCertificateMutation.isPending;
-  const [createdId, setCreatedId] = useState<string | undefined>(entry?.id);
-  const leave = useLeaveConfirmation(messages, dirty, onBack);
-  const allowNavigation = useUnsavedNavigationGuard(messages, dirty);
-  const setField = <K extends keyof CertificateForm>(
-    field: K,
-    value: CertificateForm[K]
-  ) => {
-    setDirty(true);
-    setForm((current) => ({ ...current, [field]: value }));
-  };
-  const save = async () => {
-    const nextErrors = validateCertificate(form, messages);
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
-    setSaveError(null);
-    try {
-      const payload = {
-        name: form.name.trim(),
-        issuer: form.issuer.trim(),
-        issuedAt: form.issuedAt,
-      };
-      let certificateId = createdId;
-      if (certificateId) {
-        await updateCertificateMutation.mutateAsync({
-          id: certificateId,
-          update: payload,
-        });
-        if (isLocalAsset(form.imageUri))
-          await uploadCertificateImageMutation.mutateAsync({
-            id: certificateId,
-            asset: { uri: form.imageUri },
-          });
-        else if (!form.imageUri && entry?.image)
-          await deleteCertificateImageMutation.mutateAsync(certificateId);
-      } else {
-        certificateId = await createCertificateMutation.mutateAsync(payload);
-        setCreatedId(certificateId);
-        if (isLocalAsset(form.imageUri))
-          await uploadCertificateImageMutation.mutateAsync({
-            id: certificateId,
-            asset: { uri: form.imageUri },
-          });
-      }
-      allowNavigation();
-      router.back();
-    } catch (error) {
-      if (await redirectIfSessionExpired(error)) return;
-      setSaveError(getErrorText(error, messages));
-    }
-  };
-  const remove = () => {
-    if (!entry?.id || saving || deleting) return;
-    Alert.alert(messages.deleteTitle, messages.deleteMessage(entry.name), [
-      { text: messages.cancel, style: "cancel" },
-      {
-        text: messages.confirmDelete,
-        style: "destructive",
-        onPress: () => {
-          void (async () => {
-            try {
-              await deleteCertificateMutation.mutateAsync(entry.id as string);
-              allowNavigation();
-              router.back();
-            } catch (error) {
-              if (!(await redirectIfSessionExpired(error)))
-                setSaveError(getErrorText(error, messages));
-            }
-          })();
-        },
-      },
-    ]);
-  };
-  return (
-    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
-      <KeyboardAvoidingView
-        className={styles.screen}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView
-          contentContainerClassName={styles.formContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          <ScreenHeader
-            title={entry ? messages.edit : messages.add}
-            backLabel={messages.back}
-            onBack={leave}
-            action={
-              entry ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={messages.remove}
-                  accessibilityState={{ disabled: saving || deleting }}
-                  disabled={saving || deleting}
-                  className={styles.headerAction}
-                  onPress={remove}
-                >
-                  <Trash2 color={colors.danger} size={20} />
-                </Pressable>
-              ) : undefined
-            }
-          />
-          <View className={styles.formGroup}>
-            <Text className={styles.formGroupTitle}>
-              {messages.certificatesSection}
-            </Text>
-            <ImagePickerField
-              label={messages.image}
-              uri={form.imageUri}
-              placeholder={messages.addImage}
-              removeLabel={messages.removeImage}
-              onChange={(uri) => {
-                setDirty(true);
-                setForm((current) => ({ ...current, imageUri: uri }));
-              }}
-              onError={setSaveErrorMessage(setSaveError)}
-            />
-            <Input
-              label={messages.titleLabel}
-              placeholder={messages.titlePlaceholder}
-              value={form.name}
-              onChangeText={(value) => setField("name", value)}
-              error={errors.name}
-            />
-            <Input
-              label={messages.issuer}
-              placeholder={messages.issuerPlaceholder}
-              value={form.issuer}
-              onChangeText={(value) => setField("issuer", value)}
-              error={errors.issuer}
-            />
-            <DateField
-              label={messages.issuedAt}
-              placeholder="YYYY-MM-DD"
-              value={form.issuedAt}
-              onChange={(value) => setField("issuedAt", value)}
-              error={errors.issuedAt}
-            />
-          </View>
-          {saveError ? (
-            <View className={styles.errorCard} accessibilityRole="alert">
-              <Text className={styles.errorText}>{saveError}</Text>
-            </View>
-          ) : null}
-        </ScrollView>
-        <SaveBar
-          label={saving ? messages.saving : messages.save}
-          disabled={saving || deleting}
-          onPress={() => void save()}
-        />
-      </KeyboardAvoidingView>
-    </ScreenLayout>
-  );
-}
-
 export default function ProfileEditSectionScreen() {
   const router = useRouter();
   const { section: rawSection, itemId: rawItemId } = useLocalSearchParams<{
@@ -1791,7 +1259,7 @@ export default function ProfileEditSectionScreen() {
     <ProfileEditDataLoader loadingVariant={loadingVariant} onBack={onBack}>
       {(data) => {
         if (section === "basics")
-          return <BasicsEditor data={data} onBack={onBack} />;
+          return <BasicsEditorScreen data={data} onBack={onBack} />;
         if (section === "experience") {
           if (data.sectionUnavailable.experience) {
             return (
@@ -1804,9 +1272,9 @@ export default function ProfileEditSectionScreen() {
           }
           const entry = data.experiences.find((item) => item.id === itemId);
           return itemId === "new" ? (
-            <ExperienceEditor onBack={onBack} />
+            <ExperienceEditorScreen onBack={onBack} />
           ) : itemId && entry ? (
-            <ExperienceEditor entry={entry} onBack={onBack} />
+            <ExperienceEditorScreen entry={entry} onBack={onBack} />
           ) : (
             <SectionListScreen
               section="experience"
@@ -1827,9 +1295,9 @@ export default function ProfileEditSectionScreen() {
           }
           const entry = data.portfolio.find((item) => item.id === itemId);
           return itemId === "new" ? (
-            <PortfolioEditor onBack={onBack} />
+            <PortfolioEditorScreen onBack={onBack} />
           ) : itemId && entry ? (
-            <PortfolioEditor entry={entry} onBack={onBack} />
+            <PortfolioEditorScreen entry={entry} onBack={onBack} />
           ) : (
             <SectionListScreen
               section="portfolio"
@@ -1850,9 +1318,9 @@ export default function ProfileEditSectionScreen() {
           }
           const entry = data.certificates.find((item) => item.id === itemId);
           return itemId === "new" ? (
-            <CertificateEditor onBack={onBack} />
+            <CertificateEditorScreen onBack={onBack} />
           ) : itemId && entry ? (
-            <CertificateEditor entry={entry} onBack={onBack} />
+            <CertificateEditorScreen entry={entry} onBack={onBack} />
           ) : (
             <SectionListScreen
               section="certificates"

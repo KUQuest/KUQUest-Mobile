@@ -30,7 +30,7 @@ export interface SelectProps {
   label: string;
   accessibilityLabel?: string;
   accessibilityHint?: string;
-  options: Option[];
+  options: readonly Option[];
   value: string;
   onValueChange: (value: string) => void;
   placeholder?: string;

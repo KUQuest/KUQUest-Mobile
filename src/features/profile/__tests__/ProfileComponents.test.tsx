@@ -1,13 +1,11 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
-import {
-  AboutMe,
-  Certificates,
-  Experience,
-  MyWork,
-  ProfileHeader,
-  ProfileStats,
-  Reviews,
-} from "../components/ProfileComponents";
+import { AboutMe } from "../components/AboutMe";
+import { Certificates } from "../components/Certificates";
+import { Experience } from "../components/Experience";
+import { MyWork } from "../components/MyWork";
+import { ProfileHeader } from "../components/ProfileHeader";
+import { ProfileStats } from "../components/ProfileStats";
+import { Reviews } from "../components/Reviews";
 
 describe("Student Profile presentation", () => {
   it("gives an empty About section a clear Settings recovery action", async () => {
