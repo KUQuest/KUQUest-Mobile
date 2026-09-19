@@ -107,11 +107,11 @@ export function useWorkerLiveSnapshotQuery(
   return useQuery({
     enabled: Boolean(questId && viewerId),
     queryKey: workerHomeKeys.liveSnapshot(questId ?? "", viewerId ?? ""),
-    queryFn: () => {
+    queryFn: ({ signal }) => {
       if (!questId || !viewerId) {
         throw new Error("A quest ID and viewer ID are required");
       }
-      return liveQuestService.getLiveSnapshot(questId, viewerId);
+      return liveQuestService.getLiveSnapshot(questId, viewerId, { signal });
     },
   });
 }

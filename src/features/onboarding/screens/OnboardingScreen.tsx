@@ -353,7 +353,7 @@ export default function OnboardingScreen() {
   const routeStep = parseOnboardingStep(step);
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(routeStep);
   const [form, setForm] = useState<ProfileDraft>(createOnboardingForm);
-  const onboardingQuery = useOnboardingQuery(locale);
+  const onboardingQuery = useOnboardingQuery();
   const options = onboardingQuery.data?.options ?? null;
   const unavailableCollections =
     onboardingQuery.data?.unavailableCollections ?? {};

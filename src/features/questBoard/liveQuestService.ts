@@ -707,22 +707,25 @@ export class LiveQuestService {
   }
 
   async getCandidateInquiry(
-    conversationId: string
+    conversationId: string,
+    options?: RequestOptions
   ): Promise<ServerCandidateInquiry> {
-    return chatApi.getCandidateInquiry(conversationId);
+    return chatApi.getCandidateInquiry(conversationId, options);
   }
 
   async listCandidateInquiryParticipants(
-    conversationId: string
+    conversationId: string,
+    options?: RequestOptions
   ): Promise<CandidateInquiryParticipant[]> {
-    return chatApi.listCandidateInquiryParticipants(conversationId);
+    return chatApi.listCandidateInquiryParticipants(conversationId, options);
   }
 
   async getCandidateInquiryMessages(
     conversationId: string,
-    params: { limit?: number; before?: string; after?: string } = {}
+    params: { limit?: number; before?: string; after?: string } = {},
+    options?: RequestOptions
   ): Promise<ServerChatMessagePage> {
-    return chatApi.getCandidateInquiryMessages(conversationId, params);
+    return chatApi.getCandidateInquiryMessages(conversationId, params, options);
   }
 
   async sendCandidateInquiryMessage(

@@ -27,16 +27,16 @@ export function QuestConditionEditStatusCard({
   messages,
 }: QuestConditionEditStatusCardProps) {
   const [now, setNow] = useState(() => Date.now());
+  const deadlineMs = new Date(editRequest.expiresAt).getTime();
+  const hasLiveDeadline = Number.isFinite(deadlineMs) && deadlineMs > now;
 
   useEffect(() => {
+    if (!hasLiveDeadline) return undefined;
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [hasLiveDeadline]);
 
-  const remaining = Math.max(
-    0,
-    new Date(editRequest.expiresAt).getTime() - now
-  );
+  const remaining = Math.max(0, deadlineMs - now);
   const { totalCount, acceptedCount } = editRequest.responseSummary;
 
   return (

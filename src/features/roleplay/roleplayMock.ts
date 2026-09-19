@@ -1,3 +1,5 @@
+import { createStore, type StoreApi } from "zustand/vanilla";
+
 import { useAuthEnvironmentStore } from "@/features/auth/authEnvironmentStore";
 import {
   questWorkflow,
@@ -168,58 +170,96 @@ function createRoleplayViewModel(
   };
 }
 
-export function createRoleplayMock(): RoleplayMock {
-  const listeners = new Set<() => void>();
-  let activeScenarioId: RoleplayScenarioId = ROLEPLAY_SCENARIO.id;
-  let workflowUnsubscribe: (() => void) | undefined;
-  let authUnsubscribe: (() => void) | undefined;
-  const notify = () => listeners.forEach((listener) => listener());
+export interface RoleplayStoreState {
+  activeScenarioId: RoleplayScenarioId;
+  revision: number;
+  setScenario(scenarioId: RoleplayScenarioId): void;
+  refresh(): void;
+}
 
-  const subscribe = (listener: () => void): (() => void) => {
-    listeners.add(listener);
-    if (listeners.size === 1) {
-      workflowUnsubscribe = questWorkflow.subscribe(notify);
-      authUnsubscribe = useAuthEnvironmentStore.subscribe(notify);
-    }
-    return () => {
-      listeners.delete(listener);
-      if (listeners.size > 0) return;
-      workflowUnsubscribe?.();
-      workflowUnsubscribe = undefined;
-      authUnsubscribe?.();
-      authUnsubscribe = undefined;
-    };
-  };
+export type RoleplayStore = StoreApi<RoleplayStoreState>;
 
-  return {
-    getViewModel: () => createRoleplayViewModel(activeScenarioId),
-    setScenario: (scenarioId) => {
-      activeScenarioId = scenarioId;
-      return createRoleplayViewModel(activeScenarioId);
-    },
-    setPersona: (personaId) => {
-      useAuthEnvironmentStore.getState().selectPersona(personaId);
-      return createRoleplayViewModel(activeScenarioId);
-    },
-    dispatch: (action) => {
-      const state = getCurrentState(activeScenarioId);
-      if (!state.capabilities.availableActions.includes(action.type)) {
-        return roleIneligible(state, action);
-      }
-      return questWorkflow.dispatch(
-        toWorkflowAction(
-          action,
-          activeScenarioId,
-          useAuthEnvironmentStore.getState().activePersonaId
-        )
-      );
-    },
-    reset: () => {
-      questWorkflow.reset();
-      return createRoleplayViewModel(activeScenarioId);
-    },
-    subscribe,
+export function selectRoleplayViewModel(
+  state: RoleplayStoreState
+): RoleplayViewModel {
+  return createRoleplayViewModel(state.activeScenarioId);
+}
+
+const stateStore = createStore<RoleplayStoreState>((set) => ({
+  activeScenarioId: ROLEPLAY_SCENARIO.id,
+  revision: 0,
+  setScenario: (activeScenarioId) =>
+    set((state) => ({
+      activeScenarioId,
+      revision: state.revision + 1,
+    })),
+  refresh: () => set((state) => ({ revision: state.revision + 1 })),
+}));
+
+let subscriberCount = 0;
+let workflowUnsubscribe: (() => void) | undefined;
+let authUnsubscribe: (() => void) | undefined;
+
+/**
+ * The view model is derived from the quest workflow and the auth environment, so the store
+ * mirrors their changes as a revision bump. The upstream subscriptions - and therefore the
+ * workflow's deadline timer - exist only while this store has subscribers.
+ */
+function subscribe(
+  listener: (
+    state: RoleplayStoreState,
+    previousState: RoleplayStoreState
+  ) => void
+): () => void {
+  const unsubscribeStore = stateStore.subscribe(listener);
+  subscriberCount += 1;
+  if (subscriberCount === 1) {
+    const refresh = stateStore.getState().refresh;
+    workflowUnsubscribe = questWorkflow.subscribe(refresh);
+    authUnsubscribe = useAuthEnvironmentStore.subscribe(refresh);
+  }
+
+  let subscribed = true;
+  return () => {
+    if (!subscribed) return;
+    subscribed = false;
+    unsubscribeStore();
+    subscriberCount -= 1;
+    if (subscriberCount > 0) return;
+    workflowUnsubscribe?.();
+    workflowUnsubscribe = undefined;
+    authUnsubscribe?.();
+    authUnsubscribe = undefined;
   };
 }
 
-export const roleplayMock = createRoleplayMock();
+export const roleplayStore: RoleplayStore = { ...stateStore, subscribe };
+
+export const roleplayMock: RoleplayMock = {
+  getViewModel: () => selectRoleplayViewModel(roleplayStore.getState()),
+  setScenario: (scenarioId) => {
+    roleplayStore.getState().setScenario(scenarioId);
+    return selectRoleplayViewModel(roleplayStore.getState());
+  },
+  setPersona: (personaId) => {
+    useAuthEnvironmentStore.getState().selectPersona(personaId);
+    return selectRoleplayViewModel(roleplayStore.getState());
+  },
+  dispatch: (action) => {
+    const state = getCurrentState(roleplayStore.getState().activeScenarioId);
+    if (!state.capabilities.availableActions.includes(action.type)) {
+      return roleIneligible(state, action);
+    }
+    return questWorkflow.dispatch(
+      toWorkflowAction(
+        action,
+        roleplayStore.getState().activeScenarioId,
+        useAuthEnvironmentStore.getState().activePersonaId
+      )
+    );
+  },
+  reset: () => {
+    questWorkflow.reset();
+    return selectRoleplayViewModel(roleplayStore.getState());
+  },
+};

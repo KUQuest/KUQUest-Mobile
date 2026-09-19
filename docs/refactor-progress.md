@@ -205,6 +205,30 @@ downstream `useMemo`. Where the value feeds a memo or effect it must be
 (`WorkerHomeScreen`, `WorkerWorkManagementScreen`, `useChatConversationController`) and is
 the reason the repo's `react-hooks/exhaustive-deps` warnings are worth keeping at zero-delta.
 
+### Phase 5 — last hand-rolled store, cache-key honesty, timer hygiene
+
+- `roleplayMock` held the final bespoke observable (`Set<listener>` + manual `notify`). Its
+  state now lives in a Zustand vanilla store (`roleplayStore`) and `RoleplayScreen` reads it
+  through `useStore`, so the screen no longer mirrors the view model into `useState` and
+  re-pushes it from four handlers. The store keeps a custom `subscribe` because the roleplay
+  view model is derived from `questWorkflow` and the auth environment: the upstream
+  subscriptions - and therefore the workflow's deadline timer - must exist only while the
+  store has subscribers. `createRoleplayMock` had no callers and is gone.
+- A query key must contain exactly the inputs its `queryFn` reads, or the cache lies.
+  Three keys were wrong and are fixed: `questBoardKeys.board(filters)` keyed on filters the
+  board read never applied; `onboardingKeys.profile(locale)` keyed on a locale the payload
+  does not depend on (every localized string is chosen at render time); and
+  `chatKeys.messages` omitted `viewerId`, so two accounts on one device could read each
+  other's message page. The inverse - one key, two payload shapes - was also present:
+  `createQuestKeys.detail` served both the raw `QuestV2Detail` and the mapped
+  `QuestBoardQuest`; the raw read moved to `createQuestKeys.editSource(questId)`.
+- `{ signal }` now reaches the remaining composed reads
+  (`getCandidateInquiry`, `listCandidateInquiryParticipants`, `getCandidateInquiryMessages`,
+  the live snapshot), so an unmounted chat screen stops its in-flight work.
+- Two countdown cards (`PartialGroupStartConsentSheet`, `QuestConditionEditStatusCard`) ran a
+  1s interval forever, including after their deadline had passed. The interval now stops once
+  the deadline is behind `now`; the rendered value is identical because it is clamped at zero.
+
 ## Known debt
 
 - Startup hydration flash: locale defaults to `th` and workspace to `hirer` while the

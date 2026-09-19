@@ -165,11 +165,6 @@ export function PartialGroupStartConsentSheet({
   const locale = localeProp ?? contextLocale;
   const messages = getMessages(locale);
   const [clock, setClock] = useState(() => Date.now());
-  useEffect(() => {
-    if (!visible) return undefined;
-    const interval = setInterval(() => setClock(Date.now()), 1000);
-    return () => clearInterval(interval);
-  }, [visible]);
 
   const voterMap = useMemo(
     () => new Map(voters.map((voter) => [voter.id, voter])),
@@ -222,6 +217,12 @@ export function PartialGroupStartConsentSheet({
     : consent
       ? new Date(consent.responseDeadlineAt).getTime()
       : Number.NaN;
+  const hasLiveDeadline = Number.isFinite(deadline) && deadline > clock;
+  useEffect(() => {
+    if (!visible || !hasLiveDeadline) return undefined;
+    const interval = setInterval(() => setClock(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [hasLiveDeadline, visible]);
   const remaining = Number.isFinite(deadline)
     ? Math.max(0, deadline - clock)
     : 0;

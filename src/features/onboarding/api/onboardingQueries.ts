@@ -6,13 +6,15 @@ import { authService } from "@/features/auth/AuthService";
 import { AuthError } from "@/features/auth/types";
 import { profileModule } from "@/features/profile/profileModule";
 import type { ProfileDraft } from "@/features/profile/types";
-import type { SupportedLocale } from "@/locales/locale";
 import type { UnavailableProfileCollections } from "../profilePersistenceCoordinator";
 
 export const onboardingKeys = {
   all: ["onboarding"] as const,
-  profile: (locale: SupportedLocale) =>
-    [...onboardingKeys.all, "profile", locale] as const,
+  /**
+   * The onboarding payload is locale-independent: the API sends no language
+   * preference and every localized string is picked at render time.
+   */
+  profile: () => [...onboardingKeys.all, "profile"] as const,
 };
 
 type OptionalCollectionResult<T> = {
@@ -39,9 +41,9 @@ async function readOptionalCollection<T>(
   }
 }
 
-export function useOnboardingQuery(locale: SupportedLocale) {
+export function useOnboardingQuery() {
   return useQuery({
-    queryKey: onboardingKeys.profile(locale),
+    queryKey: onboardingKeys.profile(),
     queryFn: ({ signal }) => loadOnboardingData(signal),
   });
 }

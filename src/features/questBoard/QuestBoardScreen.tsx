@@ -108,7 +108,7 @@ export default function QuestBoardScreen({
     return () => clearTimeout(timeout);
   }, [previewState, retrying]);
 
-  const boardQuery = useQuestBoardQuery({}, previewState === "populated");
+  const boardQuery = useQuestBoardQuery(previewState === "populated");
   const liveQuests = useMemo(() => boardQuery.data ?? null, [boardQuery.data]);
   const refreshing = boardQuery.isRefetching;
   const refreshBoard = useCallback(() => {

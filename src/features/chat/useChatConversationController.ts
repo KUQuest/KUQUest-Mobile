@@ -154,6 +154,7 @@ export function useChatConversationController(
       ) {
         const queryKey = chatKeys.messages(
           routeConversationId,
+          viewerId,
           conversationType
         );
         const incomingMessage = toDisplayMessage(event.data.message, viewerId);

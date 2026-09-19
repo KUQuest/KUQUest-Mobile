@@ -14,6 +14,13 @@ import { workerHomeKeys } from "@/features/workerHome/api/workerHomeQueries";
 
 export const createQuestKeys = {
   all: ["createQuest"] as const,
+  /**
+   * The edit flow reads the raw `QuestV2Detail` payload, while the Quest board's
+   * detail key holds the mapped `QuestBoardQuest`. They must not share a key:
+   * one shape would be served where the other is expected.
+   */
+  editSource: (questId: string) =>
+    [...createQuestKeys.all, "edit-source", questId] as const,
   publishCheck: (questId: string) =>
     [...createQuestKeys.all, "publish-check", questId] as const,
 };
@@ -24,7 +31,7 @@ export function useQuestDetailQuery(
 ) {
   return useQuery({
     enabled: Boolean(questId) && enabled,
-    queryKey: questBoardKeys.detail(questId ?? ""),
+    queryKey: createQuestKeys.editSource(questId ?? ""),
     queryFn: ({ signal }) => {
       if (!questId) throw new Error("A Quest ID is required");
       return questApi.getDetail(questId, { signal });
@@ -49,6 +56,9 @@ export function useQuestPublishCheckQuery(
 function invalidateQuestReads(queryClient: QueryClient, questId: string) {
   void queryClient.invalidateQueries({
     queryKey: questBoardKeys.detail(questId),
+  });
+  void queryClient.invalidateQueries({
+    queryKey: createQuestKeys.editSource(questId),
   });
   void queryClient.invalidateQueries({ queryKey: myQuestsKeys.hirer() });
   void queryClient.invalidateQueries({ queryKey: workerHomeKeys.all });

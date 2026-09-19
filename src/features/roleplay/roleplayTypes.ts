@@ -83,5 +83,4 @@ export interface RoleplayMock {
   setPersona(personaId: PrototypePersonaId): RoleplayViewModel;
   dispatch(action: RoleplayAction): RoleplayActionResult;
   reset(): RoleplayViewModel;
-  subscribe(listener: () => void): () => void;
 }

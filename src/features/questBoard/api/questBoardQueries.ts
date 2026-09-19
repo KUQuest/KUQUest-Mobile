@@ -16,17 +16,12 @@ import {
   type LiveQuestSnapshotOptions,
 } from "../liveQuestService";
 
-export type QuestBoardQueryFilters = Readonly<
-  Record<string, string | number | null>
->;
-
 export const questBoardKeys = {
   all: ["questBoard"] as const,
-  boardRoot: () => [...questBoardKeys.all, "board"] as const,
-  board: (filters: QuestBoardQueryFilters = {}) =>
-    [...questBoardKeys.boardRoot(), filters] as const,
+  board: () => [...questBoardKeys.all, "board"] as const,
   detail: (questId: string) =>
     [...questBoardKeys.all, "detail", questId] as const,
+  myHirer: () => [...questBoardKeys.all, "my-hirer"] as const,
   liveSnapshot: (questId: string, viewerId: string, editRequestId?: string) =>
     [
       ...questBoardKeys.all,
@@ -37,13 +32,10 @@ export const questBoardKeys = {
     ] as const,
 };
 
-export function useQuestBoardQuery(
-  filters: QuestBoardQueryFilters = {},
-  enabled = true
-) {
+export function useQuestBoardQuery(enabled = true) {
   return useQuery({
     enabled,
-    queryKey: questBoardKeys.board(filters),
+    queryKey: questBoardKeys.board(),
     queryFn: ({ signal }) => liveQuestService.listBoardQuests({ signal }),
   });
 }
@@ -51,7 +43,7 @@ export function useQuestBoardQuery(
 export function useMyHirerQuestBoardQuery(enabled = true) {
   return useQuery({
     enabled,
-    queryKey: [...questBoardKeys.all, "my-hirer"] as const,
+    queryKey: questBoardKeys.myHirer(),
     queryFn: ({ signal }) => liveQuestService.listMyHirerQuests({ signal }),
   });
 }
@@ -101,7 +93,7 @@ function invalidateQuestReads(
     queryKey: questBoardKeys.detail(questId),
   });
   void queryClient.invalidateQueries({
-    queryKey: questBoardKeys.boardRoot(),
+    queryKey: questBoardKeys.board(),
   });
   if (viewerId) {
     void queryClient.invalidateQueries({

@@ -31,8 +31,11 @@ export const chatKeys = {
     [...chatKeys.all, "participants", conversationId] as const,
   candidateParticipants: (conversationId: string) =>
     [...chatKeys.all, "candidate-participants", conversationId] as const,
-  messages: (conversationId: string, mode: ChatConversationMode = "WORK") =>
-    [...chatKeys.all, "messages", mode, conversationId] as const,
+  messages: (
+    conversationId: string,
+    viewerId: string,
+    mode: ChatConversationMode = "WORK"
+  ) => [...chatKeys.all, "messages", mode, conversationId, viewerId] as const,
 };
 
 function candidateInquiryToConversation(
@@ -155,7 +158,8 @@ export function useCandidateInquiryQuery(
   return useQuery({
     enabled: Boolean(conversationId) && enabled,
     queryKey: chatKeys.conversation(conversationId, "", "CANDIDATE_INQUIRY"),
-    queryFn: () => liveQuestService.getCandidateInquiry(conversationId),
+    queryFn: ({ signal }) =>
+      liveQuestService.getCandidateInquiry(conversationId, { signal }),
   });
 }
 
@@ -166,8 +170,10 @@ export function useCandidateInquiryParticipantsQuery(
   return useQuery({
     enabled: Boolean(conversationId) && enabled,
     queryKey: chatKeys.candidateParticipants(conversationId),
-    queryFn: () =>
-      liveQuestService.listCandidateInquiryParticipants(conversationId),
+    queryFn: ({ signal }) =>
+      liveQuestService.listCandidateInquiryParticipants(conversationId, {
+        signal,
+      }),
   });
 }
 
@@ -179,13 +185,15 @@ export function useMessagesQuery(
 ) {
   return useQuery({
     enabled: Boolean(conversationId && viewerId) && enabled,
-    queryKey: chatKeys.messages(conversationId, mode),
+    queryKey: chatKeys.messages(conversationId, viewerId, mode),
     queryFn: async ({ signal }) => {
       const page =
         mode === "CANDIDATE_INQUIRY"
-          ? await liveQuestService.getCandidateInquiryMessages(conversationId, {
-              limit: 50,
-            })
+          ? await liveQuestService.getCandidateInquiryMessages(
+              conversationId,
+              { limit: 50 },
+              { signal }
+            )
           : await chatApi.getMessages(
               conversationId,
               { limit: 50 },
@@ -208,7 +216,8 @@ export function useWorkConversationQuery(
     queryFn: async ({ signal }) => {
       const liveSnapshot = await liveQuestService.getLiveSnapshot(
         questId as string,
-        viewerId
+        viewerId,
+        { signal }
       );
       const workConversation = liveSnapshot.workConversation;
       if (
@@ -269,10 +278,12 @@ export function useCandidateConversationQuery(
       viewerId,
       "CANDIDATE_INQUIRY"
     ),
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const [inquiry, participants] = await Promise.all([
-        liveQuestService.getCandidateInquiry(conversationId),
-        liveQuestService.listCandidateInquiryParticipants(conversationId),
+        liveQuestService.getCandidateInquiry(conversationId, { signal }),
+        liveQuestService.listCandidateInquiryParticipants(conversationId, {
+          signal,
+        }),
       ]);
       if (
         inquiry.id !== conversationId ||
@@ -324,6 +335,7 @@ export function useSendChatMessageMutation() {
     onMutate: async (variables) => {
       const queryKey = chatKeys.messages(
         variables.conversationId,
+        variables.viewerId,
         variables.mode
       );
       await queryClient.cancelQueries({ queryKey });
@@ -341,7 +353,11 @@ export function useSendChatMessageMutation() {
       const sent = toDisplayMessage(sentMessage, variables.viewerId);
       queryClient.setQueryData<DisplayChatMessage[]>(
         context?.queryKey ??
-          chatKeys.messages(variables.conversationId, variables.mode),
+          chatKeys.messages(
+            variables.conversationId,
+            variables.viewerId,
+            variables.mode
+          ),
         (current) =>
           (current ?? []).map((message) =>
             message.id === variables.clientMessageId ? sent : message
