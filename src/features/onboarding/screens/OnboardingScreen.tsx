@@ -854,6 +854,8 @@ export default function OnboardingScreen() {
                   <Image
                     source={{ uri: form.profileImage }}
                     className={styles.avatarImage}
+                    accessibilityRole="image"
+                    accessibilityLabel={msg.profileImageLabel}
                   />
                 ) : (
                   <UserRound
@@ -1081,6 +1083,10 @@ export default function OnboardingScreen() {
                           <Image
                             source={{ uri: cert.imageUri }}
                             className={styles.uploadedImage}
+                            accessibilityRole="image"
+                            accessibilityLabel={msg.certificateImageLabel(
+                              index + 1
+                            )}
                           />
                         ) : (
                           <View className={styles.imagePlaceholderContent}>
@@ -1444,6 +1450,8 @@ export default function OnboardingScreen() {
                           <Image
                             source={{ uri: work.imageUri }}
                             className={styles.uploadedImage}
+                            accessibilityRole="image"
+                            accessibilityLabel={msg.workImageLabel(index + 1)}
                           />
                         ) : (
                           <View className={styles.imagePlaceholderContent}>

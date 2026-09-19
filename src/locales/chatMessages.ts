@@ -37,6 +37,7 @@ export interface ChatMessages {
   chooseFile: string;
   cancel: string;
   mockAttachmentDescription: string;
+  removeAttachment: (name: string) => string;
   conversationNotFound: string;
   backToChat: string;
   openFile: string;
@@ -86,6 +87,7 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     choosePhoto: "Choose photo",
     chooseFile: "Choose file",
     cancel: "Cancel",
+    removeAttachment: (name) => `Remove attachment ${name}`,
     mockAttachmentDescription:
       "Attachment actions are ready for the API connection.",
     conversationNotFound: "This Quest conversation could not be found.",
@@ -138,6 +140,7 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     choosePhoto: "เลือกรูปภาพ",
     chooseFile: "เลือกไฟล์",
     cancel: "ยกเลิก",
+    removeAttachment: (name) => `ลบไฟล์แนบ ${name}`,
     mockAttachmentDescription: "เมนูไฟล์แนบพร้อมเชื่อมต่อกับ API ในขั้นถัดไป",
     conversationNotFound: "ไม่พบบทสนทนาของเควสต์นี้",
     backToChat: "กลับไปหน้าแชต",

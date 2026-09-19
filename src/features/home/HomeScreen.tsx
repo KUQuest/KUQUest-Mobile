@@ -262,6 +262,11 @@ export default function HomeScreen() {
                       displayQuests.length
                     )}
                     accessibilityRole="progressbar"
+                    accessibilityValue={{
+                      min: 1,
+                      max: displayQuests.length,
+                      now: activeCardIndex + 1,
+                    }}
                     style={styles.carouselPagination}
                     testID="hirer-quest-carousel-dots"
                   >

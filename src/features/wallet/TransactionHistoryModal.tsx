@@ -69,6 +69,7 @@ export function TransactionHistoryModal({
               maxHeight: "90%",
             },
           ]}
+          accessibilityViewIsModal
         >
           {/* Modal Header */}
           <View style={s.modalHeader}>
@@ -80,6 +81,7 @@ export function TransactionHistoryModal({
             <TouchableOpacity
               accessibilityLabel={m.refresh}
               accessibilityRole="button"
+              accessibilityState={{ disabled: loading }}
               disabled={loading}
               onPress={handleRefresh}
               style={[s.closeBtn, { marginRight: 6 }]}

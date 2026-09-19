@@ -57,6 +57,7 @@ export function HirerQuestRosterModal({
         <Pressable
           className="absolute inset-0"
           onPress={onClose}
+          accessibilityRole="button"
           accessibilityLabel={messages.close}
         />
         <View
@@ -66,6 +67,7 @@ export function HirerQuestRosterModal({
             maxHeight: "85%",
             paddingBottom: Math.max(insets.bottom, 20),
           }}
+          accessibilityViewIsModal
         >
           <View className="mb-4 flex-row items-center justify-between">
             <View className="flex-1 pr-4">
@@ -89,6 +91,7 @@ export function HirerQuestRosterModal({
               className="rounded-full p-2"
               style={{ backgroundColor: themeColors.surfaceAccent }}
               testID="hirer-roster-close"
+              accessibilityRole="button"
               accessibilityLabel={messages.close}
             >
               <X size={18} color={themeColors.textSecondary} />
@@ -194,6 +197,8 @@ export function HirerQuestRosterModal({
                       className="rounded-lg px-3 py-1.5"
                       style={{ backgroundColor: themeColors.surfaceAccent }}
                       testID={`roster-worker-profile-${worker.id}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={messages.viewProfile}
                     >
                       <Text
                         className="font-ku-bold text-xs"
@@ -272,6 +277,8 @@ export function HirerQuestRosterModal({
                       className="rounded-lg px-3 py-1.5"
                       style={{ backgroundColor: themeColors.surfaceAccent }}
                       testID={`roster-applicant-profile-${applicant.id}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={messages.viewProfile}
                     >
                       <Text
                         className="font-ku-bold text-xs"
@@ -308,6 +315,8 @@ export function HirerQuestRosterModal({
             className="mt-2 w-full items-center rounded-2xl p-4"
             style={{ backgroundColor: themeColors.primary }}
             testID="hirer-roster-manage-button"
+            accessibilityRole="button"
+            accessibilityLabel={messages.openManageQuest}
           >
             <Text className="font-ku-bold text-base text-white">
               {messages.openManageQuest}
