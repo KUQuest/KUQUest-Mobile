@@ -269,7 +269,7 @@ export default function HirerQuestManageRoute() {
         snapshot.capabilities.canDecideUnderfilled ? (
           <Pressable
             testID="hirer-manage-underfilled"
-            className="bg-ku-warning mt-3 rounded-2xl p-4"
+            className="mt-3 rounded-2xl bg-ku-warning p-4"
             onPress={() => setUnderfilledOpen(true)}
           >
             <Text className="text-center font-ku-bold text-ku-text-strong">

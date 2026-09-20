@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   pendingChip: {
-    backgroundColor: "#FEF9C3",
+    backgroundColor: colors.surfaceWarning,
     paddingVertical: 1,
     paddingHorizontal: 6,
     borderRadius: 4,
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   pendingText: {
     fontFamily: fontFamily.medium,
     fontSize: 10,
-    color: "#854D0E",
+    color: colors.warningDark,
   },
   failedChip: {
     backgroundColor: colors.surfaceDanger,

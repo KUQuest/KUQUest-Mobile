@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     marginBottom: 20,
-    shadowColor: "#000000",
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.08,
     shadowRadius: 10,
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   qrHeaderPromptPay: {
     fontFamily: fontFamily.bold,
     fontSize: 18,
-    color: "#003417",
+    color: colors.primaryDark,
     letterSpacing: 0.5,
   },
   qrHeaderSubtitle: {

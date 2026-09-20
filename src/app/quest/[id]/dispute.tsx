@@ -181,7 +181,7 @@ export default function QuestDisputeScreen() {
           {/* Header & Escrow Notice */}
           <View className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
             <View className="flex-row items-center gap-2">
-              <AlertTriangle color="#B45309" size={20} />
+              <AlertTriangle color={colors.warningDark} size={20} />
               <Text className="text-base font-bold text-amber-950">
                 {isTh ? "ข้อกำหนดการยื่นข้อพิพาท" : "Dispute Case Filing"}
               </Text>
@@ -218,7 +218,7 @@ export default function QuestDisputeScreen() {
                     {isSelected ? (
                       <CheckCircle2 color={colors.primary} size={20} />
                     ) : (
-                      <Circle color="#94A3B8" size={20} />
+                      <Circle color={colors.textSubtle} size={20} />
                     )}
                   </View>
                   <View className="flex-1">
@@ -269,7 +269,7 @@ export default function QuestDisputeScreen() {
                     ? "อธิบายเหตุการณ์และข้อเท็จจริงโดยละเอียด..."
                     : "Describe the situation, conditions, and relevant facts in detail..."
                 }
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textSubtle}
                 value={statement}
                 onChangeText={setStatement}
                 className="min-h-[140px] text-sm leading-5 text-slate-900"
@@ -287,7 +287,7 @@ export default function QuestDisputeScreen() {
           {/* Error notice if present */}
           {errorMessage ? (
             <View className="mb-4 flex-row items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3">
-              <AlertCircle color="#DC2626" size={18} />
+              <AlertCircle color={colors.danger} size={18} />
               <Text className="flex-1 text-xs text-red-700">
                 {errorMessage}
               </Text>

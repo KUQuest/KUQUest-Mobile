@@ -388,13 +388,13 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: "88%",
     paddingBottom: 24,
     elevation: 24,
-    shadowColor: "#000000",
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.2,
     shadowRadius: 12,
@@ -592,7 +592,7 @@ const styles = StyleSheet.create({
   hintWarning: {
     fontFamily: fontFamily.medium,
     fontSize: 12,
-    color: "#B45309",
+    color: colors.warningDark,
     marginTop: 6,
   },
   hintError: {

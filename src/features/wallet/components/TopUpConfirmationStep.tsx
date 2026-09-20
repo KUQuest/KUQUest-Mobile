@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     borderColor: colors.borderSubtle,
     padding: 18,
     marginBottom: 20,
-    shadowColor: "#000000",
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,

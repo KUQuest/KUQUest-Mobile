@@ -45,9 +45,9 @@ function toneColors(tone: StatusTone, palette: ThemeColors): StatusPalette {
   }
   if (tone === "warning") {
     return {
-      background: "#FFF4D9",
-      border: "#F2D18A",
-      foreground: "#B86B00",
+      background: palette.surfaceWarning,
+      border: palette.borderWarning,
+      foreground: palette.warningDark,
     };
   }
   return {

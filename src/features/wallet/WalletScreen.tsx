@@ -189,14 +189,14 @@ export default function WalletScreen() {
           style={styles.retryButton}
           testID="hirer-wallet-retry-button"
         >
-          <RefreshCw color="#FFFFFF" size={16} />
+          <RefreshCw color={colors.white} size={16} />
           <Text style={styles.retryButtonText}>{m.retry}</Text>
         </TouchableOpacity>
       </View>
     ) : (
       <View style={styles.emptyCard} testID="hirer-wallet-empty">
         <View style={styles.emptyIconBox}>
-          <FileText color="#9CA3AF" size={28} />
+          <FileText color={colors.textSubtle} size={28} />
         </View>
         <Text style={styles.emptyTitle}>{m.emptyHistoryTitle}</Text>
         <Text style={styles.emptyDesc}>{m.emptyHistoryDesc}</Text>

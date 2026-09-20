@@ -66,7 +66,7 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
             style={styles.closeButton}
             hitSlop={8}
           >
-            <X size={24} color="#FFFFFF" />
+            <X size={24} color={colors.white} />
           </Pressable>
         </View>
 

@@ -2,44 +2,60 @@
 name: KUQuest
 description: A trusted community job board for people with @ku.th accounts.
 colors:
-  background: "#FFFCFA"
-  surface: "#FCF9F8"
-  surface-muted: "#F5F2F0"
-  surface-subtle: "#F9F9F9"
-  surface-accent: "#F0F4F1"
-  surface-success: "#EAF6ED"
-  surface-danger: "#FDECEF"
-  surface-image: "#DDE9D9"
-  surface-placeholder: "#E8E8E8"
-  surface-nav-translucent: "rgba(252, 249, 248, 0.92)"
-  border-nav: "rgba(64, 73, 65, 0.14)"
-  nav-icon-muted: "#66716A"
-  primary: "#014925"
-  primary-dark: "#004D25"
-  primary-deep: "#003417"
-  text: "#1B1B1B"
-  text-strong: "#111111"
-  text-secondary: "#404941"
-  text-muted: "#666666"
-  text-subtle: "#5F6B62"
-  text-faint: "#626D65"
-  border: "#C0C9BE"
-  border-subtle: "#E5E2E1"
-  border-muted: "#E0E0E0"
-  border-accent: "#D0E3D5"
-  border-danger: "#F5C2C7"
-  border-success: "#C5E1C9"
-  danger: "#D32F2F"
-  danger-dark: "#842029"
-  danger-light: "#FCA5A5"
-  danger-icon: "#C41C1C"
-  success: "#2E7238"
-  success-bright: "#4CAF50"
-  success-light: "#A8F3AA"
-  black: "#122018"
-  white: "#FFFEFD"
-  card: "#FFFEFD"
-  overlay: "rgba(18, 32, 24, 0.4)"
+  background: "#F7F9F8"
+  surface: "#FFFFFF"
+  surface-muted: "#F0F3F1"
+  surface-subtle: "#F0F3F1"
+  surface-accent: "#E5F1F0"
+  surface-success: "#E2EEE7"
+  surface-danger: "#F2E6E6"
+  surface-image: "#DEEAE9"
+  surface-placeholder: "#DDE3DF"
+  surface-nav-translucent: "rgba(255, 255, 255, 0.92)"
+  border-nav: "rgba(24, 32, 27, 0.14)"
+  nav-icon-muted: "#89928C"
+  primary: "#006664"
+  primary-dark: "#004D4B"
+  primary-deep: "#004D4B"
+  hirer-primary: "#006664"
+  hirer-primary-dark: "#004D4B"
+  hirer-primary-subtle: "#E5F1F0"
+  hirer-accent-border: "#B9D5D2"
+  hirer-on-primary: "#FFFFFF"
+  worker-primary: "#B2BB1E"
+  worker-primary-dark: "#7D8615"
+  worker-primary-subtle: "#F4F5DF"
+  worker-accent-border: "#D9DDA5"
+  worker-on-primary: "#1B2106"
+  text: "#18201B"
+  text-strong: "#18201B"
+  text-secondary: "#5F6962"
+  text-muted: "#5F6962"
+  text-subtle: "#89928C"
+  text-faint: "#89928C"
+  border: "#DDE3DF"
+  border-subtle: "#DDE3DF"
+  border-muted: "#DDE3DF"
+  border-accent: "#B9D5D2"
+  border-danger: "#E6BDBE"
+  border-success: "#B3D4C2"
+  danger: "#C13D43"
+  danger-dark: "#8B2C30"
+  danger-light: "#E6BDBE"
+  danger-icon: "#C13D43"
+  success: "#21864F"
+  success-bright: "#21864F"
+  success-light: "#B3D4C2"
+  warning: "#B7791F"
+  warning-dark: "#845716"
+  surface-warning: "#F1ECE2"
+  border-warning: "#E3D0B3"
+  info: "#356CA5"
+  disabled: "#C8CECA"
+  black: "#18201B"
+  white: "#FFFFFF"
+  overlay: "rgba(24, 32, 27, 0.4)"
+  card: "#FFFFFF"
 typography:
   display:
     fontFamily: "NotoSansThai_700Bold, sans-serif"
@@ -147,43 +163,38 @@ components:
 
 **Creative North Star: "The Green Noticeboard"**
 
-KUQuest is a trusted community job board for people with `@ku.th` accounts. Its visual system treats the **Quest Board** as a clear, welcoming noticeboard: useful information comes first, actions are easy to find, and the green identity feels connected to the KU community rather than to a generic marketplace.
+KUQuest is a trusted community job board for people with `@ku.th` accounts. Its visual system treats the **Quest Board** as a clear, welcoming noticeboard: useful information comes first, actions are easy to find, and the KU identity feels connected to the community rather than to a generic marketplace.
 
-The atmosphere is warm, grounded, friendly, and quietly energetic in light appearance. Warm paper surfaces keep long lists and **Quest Detail** information comfortable to read. In dark appearance, the same system moves to deep green-black layers with pale text and softened green signals. Deep green marks important actions and active states. Fresh Lime appears as a focused signal for selected navigation and success, not as decoration. Cards, filters, and inputs use soft edges and calm layers so the interface feels friendly, soft, and confident.
+The atmosphere is calm, grounded, and quietly energetic in light appearance. Cool neutral surfaces keep long lists and **Quest Detail** information comfortable to read. In dark appearance the same system moves to deep green-black layers with pale text and softened signals. KU Teal marks important actions and active states in the Hirer workspace; KU Lime is the Worker workspace counterpart. Cards, filters, and inputs use soft edges and calm layers so the interface feels friendly, soft, and confident.
 
 **Key Characteristics:**
 
-- Warm paper background with quiet off-white surface layers.
-- Deep Forest Green for primary actions and important product identity.
-- Fresh Lime for active navigation and success signals.
+- Cool neutral canvas with quiet white surface layers.
+- KU Teal for primary actions and Hirer identity.
+- KU Lime as the Worker persona ramp.
 - Compact, scannable information for Quest discovery and comparison.
-- Rounded controls with light borders and restrained shadows.
 - Clear mobile behavior with safe-area-aware navigation.
 
 ## Colors
 
-The palette uses warm neutrals as the light canvas and a disciplined green range as the voice of the community. Dark appearance uses deep green-black surfaces and pale semantic text while preserving the same action and status roles. Status colors stay semantic and should not become decorative accents.
+The palette is built from two persona ramps, one neutral ramp, and one semantic ramp. Light and dark appearance carry the same roles. Status colors stay semantic and should not become decorative accents.
 
-### Primary
+### Persona ramps
 
-- **Deep Forest Green:** The main action color for applying, creating, confirming, and selected controls.
-- **Deep Forest Dark:** The darker action state for pressed or high-emphasis green content.
-- **Deep Forest Deep:** The strongest green for back icons, initials, and high-contrast identity details.
+Each ramp is five roles: **Primary**, **Primary Dark**, **Primary Subtle**, **Accent Border**, **On Primary**.
 
-### Secondary
+- **Hirer (KU Teal, `#006664` light / `#2FA39B` dark):** the app-wide `primary` tokens resolve to this ramp today.
+- **Worker (KU Lime, `#B2BB1E` light / `#C8D34A` dark):** defined as `worker*` tokens so the Worker workspace can adopt it without inventing values. Nothing resolves to it yet.
 
-- **Fresh Lime:** The active navigation and success signal. Use it for selected destination labels, active indicators, and positive outcomes.
-- **Success Green:** Supporting positive text and certificate or completion metadata.
+A surface never mixes the two ramps. The persona in view owns its primary, its subtle tint, and its accent border together.
 
 ### Neutral
 
-- **Warm Paper:** The main app canvas. It gives the mobile interface a warm, calm base.
-- **Quiet Surface:** A slightly separated surface for sheets, profile areas, and grouped content.
-- **Content Card:** The primary card surface. It is warm white in light appearance and deep green-black in dark appearance.
-- **Muted Surface:** Low-emphasis controls, skeletons, and pressed backgrounds.
-- **Subtle Surface:** Review content and other low-contrast containers.
-- **Accent Surface:** A pale green tint for selected filters, avatar fallbacks, and positive notices.
-- **Image Surface:** A soft green image fallback surface.
+- **Canvas:** The main app background, a cool off-white in light appearance and a green-black in dark.
+- **Surface:** The card and sheet surface, pure white in light appearance.
+- **Surface Raised:** Low-emphasis controls, skeletons, grouped content, and pressed backgrounds.
+- **Accent Surface:** The persona's Primary Subtle tint, used for selected filters, avatar fallbacks, and positive notices.
+- **Image Surface:** A soft tinted image fallback surface.
 - **Placeholder Surface:** Neutral image and certificate placeholders.
 - **Strong Text:** Main headings, Quest titles, and important values.
 - **Secondary Text:** Supporting descriptions, metadata, and body copy.
@@ -191,22 +202,25 @@ The palette uses warm neutrals as the light canvas and a disciplined green range
 - **Faint Text:** Placeholder and tertiary copy.
 - **Quiet Border:** The default field and option border.
 - **Subtle Border:** Dividers and the outline around cards and profile sections.
-- **Accent Border:** Selected controls and positive notice outlines.
+- **Accent Border:** Selected controls and positive notice outlines; the persona's Accent Border.
+- **Disabled:** Inactive controls and step indicators that are not yet reached.
 
 ### Status
 
-- **Danger Red:** Invalid fields and urgent error states.
-- **Danger Dark:** Error copy and recovery actions on danger surfaces.
-- **Danger Light:** Supporting error tint.
-- **Danger Icon:** Error and unread indicators.
-- **Success Surface:** Positive notice backgrounds.
-- **Danger Surface:** Error notice backgrounds.
+Four semantic hues, each with a subtle surface, a border, and a darker on-surface text tone:
+
+- **Success `#21864F` / `#42B873`** — completion, positive outcomes, certificate metadata.
+- **Warning `#B7791F` / `#E4A83B`** — pending settlement, expiring holds, dispute notices.
+- **Danger `#C13D43` / `#EF6469`** — invalid fields, failures, cancellation.
+- **Info `#356CA5` / `#659AD0`** — neutral informational notices.
+
+**Contrast notes.** Three pairs sit below 4.5:1 and are deliberate. Muted Text (`#89928C`) reaches 3.2:1 on light surfaces, so it is for placeholder and tertiary copy only, never body text. Success (`#21864F`) cannot reach 4.5:1 on any tint of itself, so success _text_ uses the strong text color on a success surface and the hue carries icons and borders. In dark appearance On Primary over Primary is 3.0:1, which is fine for the large, bold button labels it is used for.
 
 ### Named Rules
 
-**The Green Signal Rule.** Green marks an action, an active state, or a positive result. Do not use it as a general decoration on every element.
+**The Persona Signal Rule.** The primary ramp marks an action, an active state, or a positive result for the workspace in view. Do not use it as a general decoration on every element, and do not mix the Hirer and Worker ramps on one surface.
 
-**The Warm Canvas Rule.** Keep the app canvas warm and quiet so the information in a Quest Card or Quest Detail view remains the focus.
+**The Quiet Canvas Rule.** Keep the app canvas neutral and quiet so the information in a Quest Card or Quest Detail view remains the focus.
 
 ## Typography
 
@@ -266,9 +280,9 @@ Components should feel friendly, soft, and confident. They should make the next 
 ### Buttons
 
 - **Shape:** Full pills for primary and secondary actions; minimum height 48px.
-- **Primary:** Deep Forest Green background, white label, semibold type, and 16px horizontal padding.
-- **Secondary:** Transparent background with a 2px Deep Forest Green outline and Deep Forest Green label.
-- **Pressed / Disabled:** Pressed actions move to the darker green state or a muted active surface. Disabled buttons use reduced opacity and keep their label readable.
+- **Primary:** persona primary background, white label, semibold type, and 16px horizontal padding.
+- **Secondary:** Transparent background with a 2px persona primary outline and label.
+- **Pressed / Disabled:** Pressed actions move to the persona Primary Dark state or a muted active surface. Disabled buttons use reduced opacity and keep their label readable.
 - **Use:** Use a clear action label such as Apply now, Create Quest, Next, or Retry. Do not hide the action in an icon alone.
 
 ### Chips
@@ -289,7 +303,7 @@ Components should feel friendly, soft, and confident. They should make the next 
 ### Inputs / Fields
 
 - **Style:** White field surface, quiet 1px border, 8px radius, 48px minimum height, and 12px horizontal padding.
-- **Focus:** Replace the quiet border with Deep Forest Green while keeping the field shape stable.
+- **Focus:** Replace the quiet border with the persona primary while keeping the field shape stable.
 - **Error / Success:** Use the semantic danger or success border and helper text. Error copy must explain the problem and how to recover.
 - **Disabled:** Use the muted surface and reduced opacity. Keep the label and value legible.
 - **Select and Text Area:** Use the same field language. Select options open in a bottom sheet on mobile.
@@ -298,7 +312,7 @@ Components should feel friendly, soft, and confident. They should make the next 
 
 - **Style:** Five authenticated destinations: Quest Board, My Quests, Create, Chat, and Student Profile.
 - **Default:** Translucent warm surface, 28px radius, quiet border, and muted green-gray icons.
-- **Active:** Fresh Lime icon and label with a short active indicator. The central Create action uses a raised Deep Forest Green circular control.
+- **Active:** persona primary icon and label with a short active indicator. The central Create action uses a raised persona primary circular control.
 - **Mobile treatment:** Keep the bar at the bottom, respect the safe area, and preserve at least 48px navigation targets.
 - **Tablet treatment:** Use a vertical rail on expanded widths and reserve horizontal content space for it.
 
@@ -318,8 +332,8 @@ Components should feel friendly, soft, and confident. They should make the next 
 
 ### Do:
 
-- **Do** use Deep Forest Green for primary actions, selected controls, and the main KUQuest identity.
-- **Do** keep the Warm Paper canvas and quiet surface layers behind Quest Board content.
+- **Do** use the persona primary for primary actions, selected controls, and the main KUQuest identity.
+- **Do** keep the neutral canvas and quiet surface layers behind Quest Board content.
 - **Do** preserve the compact Quest Card order: title, reward, category, creator, metadata, then actions.
 - **Do** keep interactive controls at least 48px high and safe-area aware on native Android and iOS.
 - **Do** provide a first-class dark appearance with the same semantic color roles.

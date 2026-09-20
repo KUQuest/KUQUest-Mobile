@@ -80,9 +80,9 @@ export function TransactionDetailModal({
         };
       case "pending":
         return {
-          bg: "#FEF9C3",
-          text: "#854D0E",
-          icon: <Clock color="#854D0E" size={14} />,
+          bg: colors.surfaceWarning,
+          text: colors.warningDark,
+          icon: <Clock color={colors.warningDark} size={14} />,
         };
       case "expired":
         return {
@@ -248,13 +248,13 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: "85%",
     paddingBottom: 24,
     elevation: 24,
-    shadowColor: "#000000",
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.2,
     shadowRadius: 12,
