@@ -21,11 +21,13 @@ import { chatMessages } from "@/locales/chatMessages";
 import type { ChatConversation, ChatRouteParams } from "./chatTypes";
 import {
   isImageAttachment,
+  type PendingAttachmentItem,
+} from "./ChatConversationPresentation";
+import {
   toDisplayMessage,
   type DisplayChatMessage,
-  type PendingAttachmentItem,
   type RenderAttachment,
-} from "./ChatConversationPresentation";
+} from "./conversationModule";
 import { attachmentLinkCache } from "./attachmentLinkCache";
 import {
   chatKeys,

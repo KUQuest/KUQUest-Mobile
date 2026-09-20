@@ -1,43 +1,12 @@
-import type {
-  ServerChatConversation,
-  ServerChatMessage,
-} from "../../../api/ChatApi";
-import {
-  ConversationModule,
-  type ConversationTransport,
-} from "../conversationModule";
-
-function makeServerConversation(
-  overrides: Partial<ServerChatConversation> = {}
-): ServerChatConversation {
-  return {
-    id: "conv-1",
-    type: "CONVERSATION_WORK",
-    quest: {
-      id: "quest-1",
-      title: "Campus Survey Crew",
-      status: "QUEST_IN_PROGRESS",
-    },
-    latestMessage: {
-      id: "msg-1",
-      kind: "USER",
-      preview: "Hello from staging",
-      createdAt: "2026-09-15T12:00:00Z",
-    },
-    lastActivityAt: "2026-09-15T12:00:00Z",
-    archived: false,
-    readOnly: false,
-    unreadCount: 2,
-    ...overrides,
-  };
-}
+import type { ServerChatMessage } from "../../../api/ChatApi";
+import { toDisplayMessage } from "../conversationModule";
 
 function makeServerMessage(
   overrides: Partial<ServerChatMessage> = {}
 ): ServerChatMessage {
   return {
-    id: "msg-1",
-    conversationId: "conv-1",
+    id: "server-message-1",
+    conversationId: "conversation-1",
     sequence: 1,
     kind: "USER",
     sender: { id: "user-1", displayName: "Somchai" },
@@ -49,168 +18,113 @@ function makeServerMessage(
   };
 }
 
-function makeFakeTransport({
-  conversations = [],
-  messages = [],
-  sentMessage = makeServerMessage(),
-}: {
-  conversations?: ServerChatConversation[];
-  messages?: ServerChatMessage[];
-  sentMessage?: ServerChatMessage;
-} = {}): ConversationTransport {
-  return {
-    async listConversations() {
-      return { items: conversations, nextCursor: null };
-    },
-    async getMessages() {
-      return { items: messages, nextCursor: null, hasMore: false };
-    },
-    async sendMessage() {
-      return sentMessage;
-    },
-  };
-}
-
-describe("conversationModule", () => {
-  it("maps a server conversation payload to the domain shape the screens render", async () => {
-    const conversationModule = new ConversationModule(
-      makeFakeTransport({ conversations: [makeServerConversation()] })
-    );
-
-    const conversations = await conversationModule.listConversations("user-1");
-
-    expect(conversations).toHaveLength(1);
-    expect(conversations[0]).toMatchObject({
-      id: "conv-1",
-      questId: "quest-1",
-      status: "QUEST_IN_PROGRESS",
-      questTitle: { en: "Campus Survey Crew", th: "Campus Survey Crew" },
-      participantName: "Campus Survey Crew",
-      participantRole: "member",
-      initials: "CA",
-      avatarColor: "#208AEF",
-      latestMessage: { en: "Hello from staging", th: "Hello from staging" },
-      unreadCount: 2,
-      messages: [],
+describe("conversationModule Canonical Adapter", () => {
+  it("normalizes a raw message into the active presentation shape", () => {
+    expect(toDisplayMessage(makeServerMessage(), "user-1")).toEqual({
+      id: "server-message-1",
+      sender: "me",
+      text: { en: "First message", th: "First message" },
+      createdAt: "2026-09-15T12:05:00Z",
+      attachments: [],
     });
-    expect(conversations[0].capability).toEqual({
-      conversationId: "conv-1",
-      canRead: true,
-      canWrite: true,
-      readOnly: false,
-    });
-    expect(conversations[0].latestAt).toBe("2026-09-15T12:00:00Z");
   });
 
-  it("maps server message payloads, marking the viewer's own messages", async () => {
-    const conversationModule = new ConversationModule(
-      makeFakeTransport({
-        conversations: [makeServerConversation()],
-        messages: [
-          makeServerMessage({
-            id: "msg-mine",
-            sender: { id: "user-1", displayName: "Somchai" },
-          }),
-          makeServerMessage({
-            id: "msg-other",
-            sender: { id: "user-2", displayName: "Suda" },
-            text: "Second message",
-          }),
-        ],
-      })
-    );
-
-    const loaded = await conversationModule.loadConversation(
-      "conv-1",
+  it("preserves server message identifiers for optimistic and socket reconciliation", () => {
+    const normalized = toDisplayMessage(
+      makeServerMessage({
+        id: "server-accepted-id",
+        sender: { id: "user-2", displayName: "Suda" },
+      }),
       "user-1"
     );
 
-    expect(loaded.conversation).not.toBeNull();
-    expect(loaded.messages).toEqual([
+    expect(normalized.id).toBe("server-accepted-id");
+    expect(normalized.sender).toBe("other");
+  });
+
+  it("normalizes attachment metadata, dimensions, and presentation kind", () => {
+    const normalized = toDisplayMessage(
+      makeServerMessage({
+        attachments: [
+          {
+            id: "image-1",
+            fileName: "brief.HEIC",
+            mediaType: "application/octet-stream",
+            sizeBytes: 1_572_864,
+            width: 1200,
+            height: 800,
+            createdAt: "2026-09-15T12:05:00Z",
+          },
+          {
+            id: "pdf-1",
+            fileName: "brief.pdf",
+            mediaType: "application/pdf",
+            sizeBytes: 1536,
+            createdAt: "2026-09-15T12:05:00Z",
+          },
+          {
+            id: "file-1",
+            fileName: "notes.txt",
+            mediaType: "text/plain",
+            sizeBytes: 1,
+            createdAt: "2026-09-15T12:05:00Z",
+          },
+        ],
+      }),
+      "user-1"
+    );
+
+    expect(normalized.attachments).toEqual([
       {
-        id: "msg-mine",
-        sender: "me",
-        text: { en: "First message", th: "First message" },
-        createdAt: "2026-09-15T12:05:00Z",
+        id: "image-1",
+        name: "brief.HEIC",
+        mediaType: "application/octet-stream",
+        width: 1200,
+        height: 800,
+        meta: "1.5 MB",
+        kind: "image",
       },
       {
-        id: "msg-other",
-        sender: "other",
-        text: { en: "Second message", th: "Second message" },
-        createdAt: "2026-09-15T12:05:00Z",
+        id: "pdf-1",
+        name: "brief.pdf",
+        mediaType: "application/pdf",
+        width: undefined,
+        height: undefined,
+        meta: "2 KB",
+        kind: "pdf",
+      },
+      {
+        id: "file-1",
+        name: "notes.txt",
+        mediaType: "text/plain",
+        width: undefined,
+        height: undefined,
+        meta: "1 KB",
+        kind: "file",
       },
     ]);
+    expect(normalized.attachment).toEqual(normalized.attachments[0]);
   });
 
-  it("maps the server response of a sent message for the composer append", async () => {
-    const conversationModule = new ConversationModule(
-      makeFakeTransport({
-        sentMessage: makeServerMessage({
-          id: "msg-new",
-          text: "New message",
-          sender: { id: "user-1", displayName: "Somchai" },
-        }),
-      })
-    );
-
-    const message = await conversationModule.sendMessage(
-      "conv-1",
-      "New message",
+  it("keeps optional text and attachment arrays usable for attachment-only messages", () => {
+    const normalized = toDisplayMessage(
+      makeServerMessage({
+        text: null,
+        attachments: [
+          {
+            id: "attachment-only",
+            fileName: "photo.jpg",
+            mediaType: "image/jpeg",
+            sizeBytes: 2048,
+            createdAt: "2026-09-15T12:05:00Z",
+          },
+        ],
+      }),
       "user-1"
     );
 
-    expect(message).toEqual({
-      id: "msg-new",
-      sender: "me",
-      text: { en: "New message", th: "New message" },
-      createdAt: "2026-09-15T12:05:00Z",
-    });
-  });
-
-  it("derives canPost true for a member of a writable conversation", async () => {
-    const conversationModule = new ConversationModule(
-      makeFakeTransport({ conversations: [makeServerConversation()] })
-    );
-
-    const loaded = await conversationModule.loadConversation(
-      "conv-1",
-      "user-1"
-    );
-
-    expect(loaded.conversation?.capability?.canWrite).toBe(true);
-    expect(loaded.canPost).toBe(true);
-  });
-
-  it("derives canPost false when the conversation is read-only", async () => {
-    const conversationModule = new ConversationModule(
-      makeFakeTransport({
-        conversations: [makeServerConversation({ readOnly: true })],
-      })
-    );
-
-    const loaded = await conversationModule.loadConversation(
-      "conv-1",
-      "user-1"
-    );
-
-    expect(loaded.conversation?.capability?.readOnly).toBe(true);
-    expect(loaded.canPost).toBe(false);
-  });
-
-  it("derives canPost false for a viewer who is not a member", async () => {
-    const conversationModule = new ConversationModule(
-      makeFakeTransport({
-        conversations: [makeServerConversation({ id: "other-conv" })],
-      })
-    );
-
-    const loaded = await conversationModule.loadConversation(
-      "conv-1",
-      "user-1"
-    );
-
-    expect(loaded.conversation).toBeNull();
-    expect(loaded.messages).toEqual([]);
-    expect(loaded.canPost).toBe(false);
+    expect(normalized.text).toEqual({ en: "", th: "" });
+    expect(normalized.attachments).toHaveLength(1);
+    expect(normalized.attachments[0].kind).toBe("image");
   });
 });

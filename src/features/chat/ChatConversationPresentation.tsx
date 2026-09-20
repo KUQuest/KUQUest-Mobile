@@ -7,11 +7,8 @@ import {
   LoadingSkeleton,
   SkeletonBlock,
 } from "@/components/ui/LoadingSkeleton";
-import { serverMessageToChatMessage } from "@/api/ChatApi";
-import type { ServerChatAttachment, ServerChatMessage } from "@/api/ChatApi";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
-import type { ChatAttachment, ChatMessage } from "./chatTypes";
 import styles from "./chatStyles";
 import { cn } from "@/tw/cn";
 import {
@@ -32,65 +29,16 @@ export {
   isImageAttachment,
 };
 export { PendingAttachmentsBar, type PendingAttachmentItem };
+export type {
+  DisplayChatMessage,
+  RenderAttachment,
+} from "./conversationModule";
 
 export function localizedText(
   value: Record<"en" | "th", string>,
   locale: "en" | "th"
 ): string {
   return value[locale];
-}
-
-export type RenderAttachment = ChatAttachment & {
-  id: string;
-  mediaType?: string;
-  width?: number;
-  height?: number;
-};
-export type DisplayChatMessage = ChatMessage & {
-  attachment?: RenderAttachment;
-  attachments: RenderAttachment[];
-};
-
-function attachmentToChatAttachment(
-  attachment: ServerChatAttachment
-): RenderAttachment {
-  const isImg = isImageAttachment({
-    mediaType: attachment.mediaType,
-    fileName: attachment.fileName,
-  });
-  return {
-    id: attachment.id,
-    name: attachment.fileName,
-    mediaType: attachment.mediaType,
-    width: attachment.width,
-    height: attachment.height,
-    meta:
-      attachment.sizeBytes >= 1024 * 1024
-        ? `${(attachment.sizeBytes / (1024 * 1024)).toFixed(1)} MB`
-        : `${Math.max(1, Math.round(attachment.sizeBytes / 1024))} KB`,
-    kind: isImg
-      ? "image"
-      : attachment.mediaType === "application/pdf"
-        ? "pdf"
-        : "file",
-  };
-}
-
-export function toDisplayMessage(
-  message: ServerChatMessage,
-  viewerId: string
-): DisplayChatMessage {
-  const converted = serverMessageToChatMessage(message, viewerId);
-  const attachments: RenderAttachment[] = message.attachments.map(
-    attachmentToChatAttachment
-  );
-  const { attachment: _legacyAttachment, ...convertedWithoutAttachment } =
-    converted;
-  return {
-    ...convertedWithoutAttachment,
-    attachments,
-    ...(attachments[0] ? { attachment: attachments[0] } : {}),
-  };
 }
 
 export function ChatAvatar({

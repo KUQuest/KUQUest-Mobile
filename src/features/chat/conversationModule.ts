@@ -1,78 +1,67 @@
 import {
-  chatApi,
-  serverConversationToChatConversation,
   serverMessageToChatMessage,
+  type ServerChatAttachment,
+  type ServerChatMessage,
 } from "@/api/ChatApi";
-import type { ServerChatConversation, ServerChatMessage } from "@/api/ChatApi";
-import type { ChatConversation, ChatMessage } from "./chatTypes";
+import type { ChatAttachment, ChatMessage } from "./chatTypes";
 
-/** The one chat data entry point for the chat screens; `chatApi` sits behind it. */
-export interface ConversationTransport {
-  listConversations(): Promise<{
-    items: ServerChatConversation[];
-    nextCursor: string | null;
-  }>;
-  getMessages(conversationId: string): Promise<{
-    items: ServerChatMessage[];
-    nextCursor: string | null;
-    hasMore: boolean;
-  }>;
-  sendMessage(conversationId: string, body: string): Promise<ServerChatMessage>;
+/** Canonical Adapter for pure conversation-message and attachment projections. */
+export type RenderAttachment = ChatAttachment & {
+  id: string;
+  mediaType?: string;
+  width?: number;
+  height?: number;
+};
+
+export type DisplayChatMessage = ChatMessage & {
+  attachment?: RenderAttachment;
+  attachments: RenderAttachment[];
+};
+
+const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".heic"];
+
+function isImageAttachmentMetadata(attachment: {
+  mediaType?: string;
+  fileName?: string;
+}): boolean {
+  if (attachment.mediaType?.toLowerCase().startsWith("image/")) return true;
+  const fileName = attachment.fileName?.toLowerCase() ?? "";
+  return IMAGE_EXTENSIONS.some((extension) => fileName.endsWith(extension));
 }
 
-export interface LoadedConversation {
-  conversation: ChatConversation | null;
-  messages: ChatMessage[];
-  canPost: boolean;
+function attachmentToRenderAttachment(
+  attachment: ServerChatAttachment
+): RenderAttachment {
+  const isImage = isImageAttachmentMetadata(attachment);
+  return {
+    id: attachment.id,
+    name: attachment.fileName,
+    mediaType: attachment.mediaType,
+    width: attachment.width,
+    height: attachment.height,
+    meta:
+      attachment.sizeBytes >= 1024 * 1024
+        ? `${(attachment.sizeBytes / (1024 * 1024)).toFixed(1)} MB`
+        : `${Math.max(1, Math.round(attachment.sizeBytes / 1024))} KB`,
+    kind: isImage
+      ? "image"
+      : attachment.mediaType === "application/pdf"
+        ? "pdf"
+        : "file",
+  };
 }
 
-export class ConversationModule {
-  constructor(private readonly transport: ConversationTransport = chatApi) {}
-
-  async listConversations(viewerId: string): Promise<ChatConversation[]> {
-    const data = await this.transport.listConversations();
-    return data.items.map((conversation) =>
-      serverConversationToChatConversation(conversation, viewerId)
-    );
-  }
-
-  async loadConversation(
-    conversationId: string,
-    viewerId: string
-  ): Promise<LoadedConversation> {
-    const conversationData = await this.transport.listConversations();
-    const serverConversation = conversationData.items.find(
-      (item) => item.id === conversationId
-    );
-    if (!serverConversation) {
-      return { conversation: null, messages: [], canPost: false };
-    }
-    const messageData = await this.transport.getMessages(conversationId);
-    const conversation = serverConversationToChatConversation(
-      serverConversation,
-      viewerId
-    );
-    return {
-      conversation,
-      messages: messageData.items.map((message) =>
-        serverMessageToChatMessage(message, viewerId)
-      ),
-      canPost: Boolean(
-        conversation.capability?.canRead &&
-        conversation.capability.canWrite &&
-        !conversation.capability.readOnly
-      ),
-    };
-  }
-
-  async sendMessage(
-    conversationId: string,
-    body: string,
-    viewerId: string
-  ): Promise<ChatMessage> {
-    const sentMessage = await this.transport.sendMessage(conversationId, body);
-    return serverMessageToChatMessage(sentMessage, viewerId);
-  }
+export function toDisplayMessage(
+  message: ServerChatMessage,
+  viewerId: string
+): DisplayChatMessage {
+  const converted = serverMessageToChatMessage(message, viewerId);
+  const attachments = message.attachments.map(attachmentToRenderAttachment);
+  const { attachment: _legacyAttachment, ...convertedWithoutAttachment } =
+    converted;
+  return {
+    ...convertedWithoutAttachment,
+    attachments,
+    ...(attachments[0] ? { attachment: attachments[0] } : {}),
+  };
 }
-
-export const conversationModule = new ConversationModule();

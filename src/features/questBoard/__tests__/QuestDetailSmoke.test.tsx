@@ -1,8 +1,11 @@
 import { waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient as render } from "@/testing/queryTestUtils";
-import { questFixtureAdapter } from "../questFixtureAdapter";
+import { getQuestDetailProjection } from "../questDetailProjection";
+import {
+  DEFAULT_PROTOTYPE_VIEWER_ID,
+  questFixtureAdapter,
+} from "../questFixtureAdapter";
 import QuestDetailScreen from "../QuestDetailScreen";
-
 const mockGetQuestDetail = jest.fn();
 
 jest.mock("../liveQuestService", () => ({
@@ -23,6 +26,22 @@ describe("QuestDetailScreen smoke", () => {
       "student-001",
       questFixtureAdapter.now
     )[0];
+    const state = questFixtureAdapter.getQuestDetail(
+      fixture.id,
+      DEFAULT_PROTOTYPE_VIEWER_ID,
+      questFixtureAdapter.now
+    );
+    expect(state).not.toBeNull();
+    expect(
+      getQuestDetailProjection(
+        state!,
+        DEFAULT_PROTOTYPE_VIEWER_ID,
+        questFixtureAdapter.now
+      )
+    ).toMatchObject({
+      quest: { id: fixture.id, title: fixture.title },
+      participantCount: expect.any(Number),
+    });
     mockGetQuestDetail.mockResolvedValue(fixture);
 
     const view = await render(<QuestDetailScreen questId={fixture.id} />);

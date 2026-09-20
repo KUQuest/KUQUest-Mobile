@@ -3,6 +3,10 @@ import { fireEvent, waitFor } from "@testing-library/react-native";
 import { walletApi } from "@/api/WalletApi";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import WalletScreen from "../WalletScreen";
+import {
+  resetNavigationVisibility,
+  useNavigationUiStore,
+} from "@/features/navigation/navigationUiStore";
 
 const mockPush = jest.fn();
 jest.mock("expo-router", () => ({
@@ -84,10 +88,29 @@ const mockTransactions = [
 describe("Hirer WalletScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    resetNavigationVisibility();
     (walletApi.getWallet as jest.Mock).mockResolvedValue(mockBalances);
     (walletApi.getTransactionHistory as jest.Mock).mockResolvedValue({
       items: mockTransactions,
     });
+  });
+  it("collapses the navbar when the wallet list scrolls", async () => {
+    const view = await renderWithQueryClient(<WalletScreen />);
+    const list = view.getByTestId("hirer-wallet-transactions-list");
+
+    await waitFor(() => {
+      expect(view.getByText("การเงิน")).toBeTruthy();
+    });
+    await fireEvent.scroll(list, {
+      nativeEvent: { contentOffset: { x: 0, y: 0 } },
+    });
+    await fireEvent.scroll(list, {
+      nativeEvent: { contentOffset: { x: 0, y: 10 } },
+    });
+
+    const navigationState = useNavigationUiStore.getState();
+    expect(navigationState.navigationVisible).toBe(false);
+    expect(navigationState.navigationCompact).toBe(true);
   });
 
   it("renders header, slogan badge, banner, balances, and transaction history", async () => {

@@ -3,7 +3,7 @@ import {
   getQuestPublishCheck as getDraftPublishCheck,
   type QuestDraft,
 } from "../createQuest/createQuestModel";
-import { getVisibleQuests, getQuestAvailability } from "./questBoardViewData";
+import { getVisibleQuests } from "./questBoardViewData";
 import { questFixtures } from "./questFixtures";
 import {
   DEFAULT_PROTOTYPE_VIEWER_ID,
@@ -24,9 +24,8 @@ import type {
   LiveQuestSnapshot,
   LiveQuestSnapshotOptions,
 } from "./liveQuestService";
-import { QuestApplicationStatus as CanonicalApplicationStatus } from "./types";
+import { QuestApplicationStatus } from "./types";
 import type {
-  QuestAvailability,
   QuestBoardQuest,
   QuestDetailState,
   QuestEditConsent,
@@ -46,21 +45,6 @@ export type {
 
 export const getQuestRewardSatang = adapterGetQuestRewardSatang;
 export const formatConsentCountdown = adapterFormatConsentCountdown;
-
-export type QuestViewerApplicationStatus = "none" | "pending" | "accepted";
-
-export interface QuestDetailProjection {
-  state: QuestDetailState;
-  quest: QuestBoardQuest;
-  availability: QuestAvailability;
-  applicationStatus: QuestViewerApplicationStatus;
-  isOwner: boolean;
-  isAssigned: boolean;
-  hasPendingApplication: boolean;
-  partialStartPending: boolean;
-  settlement: QuestSettlementSummary | null;
-  conversationCapability: WorkConversationCapability;
-}
 
 export type QuestMyQuestRelationship = "hirer" | "applicant" | "worker";
 export type QuestMyQuestTab =
@@ -132,10 +116,6 @@ export interface QuestWorkflow {
     questId: string,
     viewerId?: string
   ): QuestDetailState | null;
-  getQuestDetailProjection(
-    questId: string,
-    viewerId?: string
-  ): QuestDetailProjection | null;
   /**
    * Reads the production Quest boundary. Existing synchronous methods remain
    * fixture-only so preview and roleplay callers stay deterministic.
@@ -210,40 +190,6 @@ function enrichBoardQuest(quest: QuestBoardQuest): QuestBoardQuest {
   return fixture ? { ...quest, creator: fixture.creator } : quest;
 }
 
-function createDetailProjection(
-  state: QuestDetailState,
-  viewerId: string,
-  now: Date
-): QuestDetailProjection {
-  const quest = toQuestBoardQuest(state);
-  const isAssigned = state.assignments.some(
-    (item) =>
-      item.workerId === viewerId && item.status !== "ASSIGNMENT_CANCELLED"
-  );
-  const hasPendingApplication = state.applications.some(
-    (item) =>
-      item.applicantId === viewerId &&
-      item.status === CanonicalApplicationStatus.APPLICATION_APPLIED
-  );
-  return {
-    state,
-    quest,
-    availability: getQuestAvailability(quest, now),
-    applicationStatus: isAssigned
-      ? "accepted"
-      : hasPendingApplication
-        ? "pending"
-        : "none",
-    isOwner: state.quest.hirerId === viewerId,
-    isAssigned,
-    hasPendingApplication,
-    partialStartPending:
-      state.partialStartConsent?.status === "PARTIAL_START_PENDING",
-    settlement: state.settlement ?? null,
-    conversationCapability: state.conversation,
-  };
-}
-
 function createMyQuestProjection(
   state: QuestDetailState,
   viewerId: string
@@ -256,7 +202,7 @@ function createMyQuestProjection(
   const hasPendingApplication = state.applications.some(
     (item) =>
       item.applicantId === viewerId &&
-      item.status === CanonicalApplicationStatus.APPLICATION_APPLIED
+      item.status === QuestApplicationStatus.APPLICATION_APPLIED
   );
   const isTerminal =
     state.quest.status === "QUEST_COMPLETED" ||
@@ -409,14 +355,6 @@ export function createQuestWorkflow(
     },
     getQuestDetailState: (questId, viewerId = DEFAULT_PROTOTYPE_VIEWER_ID) =>
       adapter.getQuestDetail(questId, viewerId, at()),
-    getQuestDetailProjection: (
-      questId,
-      viewerId = DEFAULT_PROTOTYPE_VIEWER_ID
-    ) => {
-      const now = at();
-      const state = adapter.getQuestDetail(questId, viewerId, now);
-      return state ? createDetailProjection(state, viewerId, now) : null;
-    },
     getLiveQuestSnapshot: (questId, viewerId, options) =>
       liveQuestService.getLiveSnapshot(questId, viewerId, options),
     getMyQuestsModel: (viewerId = DEFAULT_PROTOTYPE_VIEWER_ID) =>

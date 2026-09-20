@@ -15,6 +15,7 @@ import { AlertCircle, FileText, RefreshCw } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
+import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import { useLocale } from "@/features/preferences/localeStore";
 import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
@@ -216,6 +217,8 @@ export default function WalletScreen() {
         keyExtractor={keyExtractor}
         ListEmptyComponent={emptyState}
         ListHeaderComponent={listHeader}
+        onScroll={handleNavigationScroll}
+        scrollEventThrottle={16}
         onRefresh={handleRefresh}
         refreshControl={
           <RefreshControl

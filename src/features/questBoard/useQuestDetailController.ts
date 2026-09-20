@@ -18,12 +18,7 @@ import {
   type QuestBoardMessages,
 } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
-import {
-  canonicalToQuestBoardQuest,
-  liveQuestService,
-  publicDetailToQuestBoardQuest,
-  type LiveQuestSnapshot,
-} from "./liveQuestService";
+import { liveQuestService } from "./liveQuestService";
 import {
   useApplyQuestMutation,
   useCreateCandidateInquiryMutation,
@@ -79,10 +74,14 @@ import {
   getQuestRewardSatang,
   type QuestActionResult,
   questWorkflow,
-  type QuestViewerApplicationStatus,
 } from "./questWorkflow";
 import type { QuestDetailBodyProps } from "./components/QuestDetailBody";
 import type { QuestDetailSheetsProps } from "./components/QuestDetailSheets";
+import {
+  getQuestDetailProjection,
+  type QuestDetailProjection,
+  type QuestDetailApplicationStatus,
+} from "./questDetailProjection";
 import type { QuestParticipant } from "./components/QuestParticipantRoster";
 
 export interface QuestDetailScreenProps {
@@ -96,7 +95,7 @@ export interface QuestDetailControllerParams extends QuestDetailScreenProps {
   bottomInset: number;
 }
 
-type DisplayApplicationStatus = QuestViewerApplicationStatus;
+type DisplayApplicationStatus = QuestDetailApplicationStatus;
 
 export interface QuestDetailControllerResult {
   handleBack: () => void;
@@ -133,35 +132,6 @@ function getQuestFixtureError(
 }
 function announce(message: string): void {
   AccessibilityInfo.announceForAccessibility(message);
-}
-
-function toQuestBoardQuest(snapshot: LiveQuestSnapshot): QuestBoardQuest {
-  return "questFundingTotal" in snapshot.quest
-    ? canonicalToQuestBoardQuest(snapshot.quest)
-    : publicDetailToQuestBoardQuest(snapshot.quest);
-}
-
-function getLiveApplicationStatus(
-  snapshot: LiveQuestSnapshot | null
-): DisplayApplicationStatus {
-  if (snapshot?.assignment?.state === "ASSIGNMENT_ACTIVE") return "accepted";
-  if (snapshot?.application?.state === "APPLICATION_APPLIED") return "pending";
-  return "none";
-}
-
-function getLiveJoinStatus(
-  snapshot: LiveQuestSnapshot | null
-): QuestJoinStatus | undefined {
-  if (!snapshot) return undefined;
-  if (
-    snapshot.assignment?.state === "ASSIGNMENT_COMPLETED" ||
-    snapshot.assignment?.state === "ASSIGNMENT_INCOMPLETE" ||
-    snapshot.assignment?.state === "ASSIGNMENT_CANCELLED"
-  )
-    return "history";
-  if (snapshot.assignment?.state === "ASSIGNMENT_ACTIVE") return "accepted";
-  if (snapshot.application?.state === "APPLICATION_APPLIED") return "pending";
-  return undefined;
 }
 
 export function useQuestDetailController({
@@ -240,12 +210,12 @@ export function useQuestDetailController({
     !explicitPreview && !liveSnapshotAvailable
   );
   const liveSnapshot = liveSnapshotQuery.data ?? null;
+  const liveProjection = liveSnapshot
+    ? getQuestDetailProjection(liveSnapshot, applicationStudentId)
+    : null;
   const liveQuest = useMemo(
-    () =>
-      liveSnapshot
-        ? toQuestBoardQuest(liveSnapshot)
-        : (questDetailQuery.data ?? null),
-    [liveSnapshot, questDetailQuery.data]
+    () => liveProjection?.quest ?? questDetailQuery.data ?? null,
+    [liveProjection, questDetailQuery.data]
   );
   const liveError = liveSnapshotAvailable
     ? liveSnapshotQuery.error
@@ -271,44 +241,22 @@ export function useQuestDetailController({
     explicitPreview && resolvedQuestId
       ? questWorkflow.getQuestDetailState(resolvedQuestId, prototypeViewerId)
       : null;
-  const liveQuestForRoute =
-    liveQuest?.id === resolvedQuestId ? liveQuest : null;
-  const detailProjection =
-    explicitPreview && resolvedQuestId
-      ? questWorkflow.getQuestDetailProjection(
-          resolvedQuestId,
-          prototypeViewerId
-        )
-      : null;
-  const prototypeParticipants: QuestParticipant[] =
-    activePrototypeState?.assignments
-      .filter((assignment) => assignment.status !== "ASSIGNMENT_CANCELLED")
-      .map((assignment) => ({
-        id: assignment.workerId,
-        displayName: assignment.workerId,
-      })) ?? [];
-  const liveParticipants: QuestParticipant[] =
-    liveSnapshot?.participants ??
-    liveSnapshot?.assignments
-      .filter((assignment) => assignment.state !== "ASSIGNMENT_CANCELLED")
-      .map((assignment) => ({
-        id: assignment.workerId,
-        displayName: assignment.workerId,
-      })) ??
-    [];
-  const participants = explicitPreview
-    ? prototypeParticipants
-    : liveParticipants;
-  const liveParticipantCount = liveSnapshot
-    ? "activeWorkerCount" in liveSnapshot.quest
-      ? liveSnapshot.quest.activeWorkerCount
-      : liveSnapshot.assignments.filter(
-          (assignment) => assignment.state !== "ASSIGNMENT_CANCELLED"
-        ).length
-    : 0;
-  const participantCount = explicitPreview
-    ? (activePrototypeState?.actualHeadcount ?? prototypeParticipants.length)
-    : liveParticipantCount;
+  const prototypeProjection = activePrototypeState
+    ? getQuestDetailProjection(
+        activePrototypeState,
+        prototypeViewerId,
+        questWorkflow.getNow()
+      )
+    : null;
+  const detailProjection: QuestDetailProjection | null = explicitPreview
+    ? prototypeProjection
+    : liveProjection;
+  const participants: QuestParticipant[] =
+    detailProjection?.participants.map((participant) => ({
+      id: participant.id,
+      displayName: participant.displayName,
+    })) ?? [];
+  const participantCount = detailProjection?.participantCount ?? 0;
   const [liveAction, setLiveAction] = useState<string | null>(null);
   const joinQuestMutation = useJoinQuestMutation();
   const applyQuestMutation = useApplyQuestMutation();
@@ -353,13 +301,13 @@ export function useQuestDetailController({
   );
   const quest = explicitPreview
     ? (getQuestDetailFixture(resolvedQuestId, resolvedPreview) ?? null)
-    : liveQuestForRoute;
-  const applicationState = activePrototypeState;
+    : liveQuest?.id === resolvedQuestId
+      ? liveQuest
+      : null;
   const applicationProjection = detailProjection;
   const applicationStatusHydrated = explicitPreview || liveSnapshot !== null;
-  const applicationStatus = explicitPreview
-    ? (applicationProjection?.applicationStatus ?? "none")
-    : getLiveApplicationStatus(liveSnapshot);
+  const applicationStatus: DisplayApplicationStatus =
+    applicationProjection?.applicationStatus ?? "none";
   const previewApplicationStatus: DisplayApplicationStatus =
     resolvedPreview === "application-pending"
       ? "pending"
@@ -371,11 +319,12 @@ export function useQuestDetailController({
       ? "full"
       : resolvedPreview === "closed"
         ? "closed"
-        : quest
-          ? quest.status === QuestStatus.QUEST_OPEN
-            ? "available"
-            : "closed"
-          : undefined;
+        : (detailProjection?.availability ??
+          (quest
+            ? quest.status === QuestStatus.QUEST_OPEN
+              ? "available"
+              : "closed"
+            : undefined));
   const imageUris = quest?.imageUris?.slice(0, MAX_QUEST_IMAGES) ?? [];
   const [localJoinedStatus, setJoinedStatus] = useState<
     QuestJoinStatus | undefined
@@ -388,36 +337,22 @@ export function useQuestDetailController({
           (applicationStatus === "pending" || applicationStatus === "accepted"
             ? applicationStatus
             : "accepted"))
-        : getLiveJoinStatus(liveSnapshot)
+        : detailProjection?.joinStatus
       : undefined);
   const firstCome = quest?.candidateMode === "NO_CANDIDATE";
   const candidateGroup = Boolean(
     quest && !firstCome && quest.participationMode === "team"
   );
-  const canonicalOpen = quest?.status === QuestStatus.QUEST_OPEN;
-  const partialStartPending = explicitPreview
-    ? (detailProjection?.partialStartPending ?? false)
-    : liveSnapshot?.nextAction === "CONSENT_UNDERFILLED";
-  const liveCanApply = Boolean(
-    liveSnapshot?.nextAction === "APPLY" && liveSnapshot.capabilities.canApply
-  );
-  const liveCanJoin = Boolean(
-    liveSnapshot?.nextAction === "JOIN" && liveSnapshot.capabilities.canJoin
-  );
+  const canonicalOpen =
+    detailProjection?.lifecycleState === QuestStatus.QUEST_OPEN ||
+    (!detailProjection && quest?.status === QuestStatus.QUEST_OPEN);
+  const partialStartPending = detailProjection?.partialStartPending ?? false;
+  const capability = detailProjection?.capabilities;
+  const liveCanJoin = Boolean(capability?.canJoin);
   const legacyCanApply = Boolean(
-    applicationState?.capabilities.availableActions.includes(
-      firstCome ? "DIRECT_JOIN" : "APPLY"
-    )
+    firstCome ? capability?.canJoin : capability?.canApply
   );
-  const serverCanJoin = explicitPreview
-    ? Boolean(
-        firstCome &&
-        applicationStudentId &&
-        quest &&
-        quest.hasJoined === false &&
-        quest.acceptedParticipants < quest.headcount
-      )
-    : liveCanJoin;
+  const serverCanJoin = liveCanJoin;
   const canApply =
     !isJoinView &&
     !isPostView &&
@@ -427,19 +362,12 @@ export function useQuestDetailController({
     previewApplicationStatus === "none" &&
     !candidateGroup &&
     applicationStatusHydrated &&
-    (firstCome
-      ? serverCanJoin
-      : explicitPreview
-        ? legacyCanApply
-        : liveCanApply);
-  const canWithdrawApplication =
+    (firstCome ? serverCanJoin : legacyCanApply);
+  const canWithdrawApplication = Boolean(
     applicationStatusHydrated &&
     !isPostView &&
-    Boolean(
-      explicitPreview
-        ? applicationStatus === "pending"
-        : liveSnapshot?.capabilities.canWithdrawApplication
-    );
+    capability?.canWithdrawApplication
+  );
   const [manualConfirmationOpen, setManualConfirmationOpen] = useState(false);
   const [leftQuest, setLeftQuest] = useState(false);
   const canShowWithdraw =
@@ -455,23 +383,13 @@ export function useQuestDetailController({
       dismissedIntent !== routeIntentKey &&
       canApply);
   const canMessageOwner = Boolean(
-    quest &&
-    !isPostView &&
-    quest.ownerStudentId !== applicationStudentId &&
-    (explicitPreview
-      ? detailProjection?.conversationCapability.conversationId &&
-        detailProjection.conversationCapability.canRead
-      : liveSnapshot?.state === "QUEST_OPEN" &&
-        liveSnapshot.actor !== "HIRER" &&
-        liveSnapshot.assignment === null)
+    quest && !isPostView && capability?.canMessageOwner
   );
   const canReportQuest = Boolean(
     isJoinView &&
     !leftQuest &&
     (joinedStatus === "accepted" || joinedStatus === "history") &&
-    (explicitPreview
-      ? applicationProjection?.isAssigned
-      : liveSnapshot?.assignment !== null)
+    capability?.canReportQuest
   );
   const statusTitle = isPostView
     ? messages.postOwnerView
@@ -606,9 +524,7 @@ export function useQuestDetailController({
   const liveTeamSurface = Boolean(
     liveCandidateGroup &&
     liveSnapshot &&
-    (liveSnapshot.team ||
-      liveSnapshot.capabilities.canCreateTeam ||
-      liveSnapshot.capabilities.canJoinTeam)
+    (liveSnapshot.team || capability?.canCreateTeam || capability?.canJoinTeam)
   );
   const livePartialVoters: PartialGroupStartVoter[] =
     !liveSnapshot?.underfilled || !liveSnapshot.underfilled.responses
@@ -646,7 +562,7 @@ export function useQuestDetailController({
       return;
     }
 
-    if (!explicitPreview && liveSnapshot?.capabilities.canApply) {
+    if (!explicitPreview && capability?.canApply) {
       const result = await runLiveAction(
         "apply",
         () =>
@@ -688,6 +604,7 @@ export function useQuestDetailController({
       return;
     const label = messages.withdrawApplication;
     const description = messages.withdrawApplicationDescription;
+    const liveApplication = liveSnapshot?.application;
     Alert.alert(label, description, [
       { text: messages.cancel, style: "cancel" },
       {
@@ -697,15 +614,16 @@ export function useQuestDetailController({
           void (async () => {
             if (
               !explicitPreview &&
-              liveSnapshot?.capabilities.canWithdrawApplication &&
-              liveSnapshot.application
+              capability?.canWithdrawApplication &&
+              liveApplication
             ) {
+              const liveApplicationId = liveApplication.id;
               const result = await runLiveAction(
                 "withdraw",
                 () =>
                   withdrawApplicationMutation.mutateAsync({
                     questId: quest.id,
-                    applicationId: liveSnapshot.application!.id,
+                    applicationId: liveApplicationId,
                     viewerId: applicationStudentId,
                     idempotencyKey: createQuestIdempotencyKey(),
                   }),
@@ -850,7 +768,7 @@ export function useQuestDetailController({
   };
   const handlePartialStartVote = (approve: boolean) => {
     if (!resolvedQuestId) return;
-    if (!explicitPreview && liveSnapshot?.capabilities.canConsentUnderfilled) {
+    if (!explicitPreview && capability?.canConsentUnderfilled) {
       void runLiveAction(
         "underfilled-consent",
         () =>
@@ -991,7 +909,7 @@ export function useQuestDetailController({
     if (
       !resolvedQuestId ||
       explicitPreview ||
-      !liveSnapshot?.capabilities.canDecideUnderfilled
+      !capability?.canDecideUnderfilled
     )
       return;
     void runLiveAction(
@@ -1010,7 +928,7 @@ export function useQuestDetailController({
     if (
       !resolvedQuestId ||
       explicitPreview ||
-      !liveSnapshot?.capabilities.canConsentUnderfilled
+      !capability?.canConsentUnderfilled
     )
       return;
     void runLiveAction(
@@ -1026,11 +944,7 @@ export function useQuestDetailController({
     );
   };
   const handleLiveCreateTeam = () => {
-    if (
-      !resolvedQuestId ||
-      !liveCandidateGroup ||
-      !liveSnapshot?.capabilities.canCreateTeam
-    )
+    if (!resolvedQuestId || !liveCandidateGroup || !capability?.canCreateTeam)
       return;
     void runLiveAction(
       "create-team",
@@ -1052,7 +966,7 @@ export function useQuestDetailController({
       !resolvedQuestId ||
       !liveCandidateGroup ||
       !liveTeamSheetTeam ||
-      !liveSnapshot?.capabilities.canJoinTeam
+      !capability?.canJoinTeam
     )
       return;
     void runLiveAction(
@@ -1069,11 +983,7 @@ export function useQuestDetailController({
     );
   };
   const handleLiveLeaveTeam = (teamId: string) => {
-    if (
-      !resolvedQuestId ||
-      !liveCandidateGroup ||
-      !liveSnapshot?.capabilities.canLeaveTeam
-    )
+    if (!resolvedQuestId || !liveCandidateGroup || !capability?.canLeaveTeam)
       return;
     void runLiveAction(
       "leave-team",
@@ -1091,7 +1001,7 @@ export function useQuestDetailController({
     if (
       !resolvedQuestId ||
       !liveCandidateGroup ||
-      !liveSnapshot?.capabilities.canRemoveTeamMember
+      !capability?.canRemoveTeamMember
     )
       return;
     void runLiveAction(
@@ -1111,7 +1021,7 @@ export function useQuestDetailController({
     if (
       !resolvedQuestId ||
       !liveCandidateGroup ||
-      !liveSnapshot?.capabilities.canRegenerateTeamCode
+      !capability?.canRegenerateTeamCode
     )
       return;
     void runLiveAction(
@@ -1127,11 +1037,7 @@ export function useQuestDetailController({
     );
   };
   const handleLiveUpdateTeamName = (teamId: string, name: string) => {
-    if (
-      !resolvedQuestId ||
-      !liveCandidateGroup ||
-      !liveSnapshot?.capabilities.canUpdateTeam
-    )
+    if (!resolvedQuestId || !liveCandidateGroup || !capability?.canUpdateTeam)
       return;
     const trimmedName = name.trim();
     if (!trimmedName) return;
@@ -1195,8 +1101,7 @@ export function useQuestDetailController({
       uploadCandidateTeamFileMutation,
     ]
   );
-  const canonicalStatus =
-    liveSnapshot?.state ?? activePrototypeState?.quest.status;
+  const canonicalStatus = detailProjection?.lifecycleState;
   const questPending = loadingQuest || resolvedPreview === "loading";
   const errorState = Boolean(liveError) || resolvedPreview === "error";
   const onRetry = () => {
@@ -1285,12 +1190,12 @@ export function useQuestDetailController({
           liveSnapshot &&
           liveSnapshot.actor === "HIRER" &&
           liveSnapshot.mode === "CANDIDATE" &&
-          (liveSnapshot.capabilities.canSelectCandidate ||
-            liveSnapshot.capabilities.canSelectTeam ||
-            liveSnapshot.capabilities.canRejectCandidate ||
-            liveSnapshot.capabilities.canRejectTeam)
+          (capability?.canSelectCandidate ||
+            capability?.canSelectTeam ||
+            capability?.canRejectCandidate ||
+            capability?.canRejectTeam)
             ? {
-                actualHeadcount: liveSnapshot.assignments.length,
+                actualHeadcount: participantCount,
                 applications: liveSnapshot.applications,
                 bottomInset,
                 fullScreen: true,
@@ -1331,11 +1236,12 @@ export function useQuestDetailController({
             ? {
                 actualHeadcount: liveSnapshot.underfilled.activeWorkerCount,
                 bottomInset,
-                canConsent: liveSnapshot.capabilities.canConsentUnderfilled,
-                canDecide: liveSnapshot.capabilities.canDecideUnderfilled,
-                canRespond:
-                  liveSnapshot.capabilities.canConsentUnderfilled ||
-                  liveSnapshot.capabilities.canDecideUnderfilled,
+                canConsent: capability?.canConsentUnderfilled ?? false,
+                canDecide: capability?.canDecideUnderfilled ?? false,
+                canRespond: Boolean(
+                  capability?.canConsentUnderfilled ||
+                  capability?.canDecideUnderfilled
+                ),
                 error: undefined,
                 loading:
                   liveAction === "underfilled-decision" ||
@@ -1350,8 +1256,10 @@ export function useQuestDetailController({
                 viewerId: applicationStudentId,
                 visible:
                   !partialStartSheetDismissed &&
-                  (liveSnapshot.nextAction === "DECIDE_UNDERFILLED" ||
-                    liveSnapshot.nextAction === "CONSENT_UNDERFILLED"),
+                  Boolean(
+                    capability?.canDecideUnderfilled ||
+                    capability?.canConsentUnderfilled
+                  ),
                 voters: livePartialVoters,
               }
             : undefined,
@@ -1359,11 +1267,11 @@ export function useQuestDetailController({
           liveTeamSurface && liveSnapshot
             ? {
                 bottomInset,
-                canLeaveTeam: liveSnapshot.capabilities.canLeaveTeam,
-                canRemoveMember: liveSnapshot.capabilities.canRemoveTeamMember,
+                canLeaveTeam: capability?.canLeaveTeam ?? false,
+                canRemoveMember: capability?.canRemoveTeamMember ?? false,
                 canRegenerateJoinCode:
-                  liveSnapshot.capabilities.canRegenerateTeamCode,
-                canUpdateTeam: liveSnapshot.capabilities.canUpdateTeam,
+                  capability?.canRegenerateTeamCode ?? false,
+                canUpdateTeam: capability?.canUpdateTeam ?? false,
                 eligibleMembers: [],
                 joinCode: liveTeamSheetTeam?.joinCode,
                 joinCodeExpiresAt: liveTeamSheetTeam?.joinCodeExpiresAt,
@@ -1374,10 +1282,10 @@ export function useQuestDetailController({
                   setTeamSelectedMemberIds([]);
                   setTeamSearchQuery("");
                 },
-                onCreateTeam: liveSnapshot.capabilities.canCreateTeam
+                onCreateTeam: capability?.canCreateTeam
                   ? handleLiveCreateTeam
                   : undefined,
-                onJoinTeam: liveSnapshot.capabilities.canJoinTeam
+                onJoinTeam: capability?.canJoinTeam
                   ? handleLiveJoinTeam
                   : undefined,
                 onLeaveTeam: handleLiveLeaveTeam,
@@ -1401,27 +1309,23 @@ export function useQuestDetailController({
           isHirerView &&
           quest.candidateMode === QuestCandidateMode.CANDIDATE
             ? {
-                actualHeadcount: activePrototypeState.actualHeadcount,
+                actualHeadcount: participantCount,
                 applications: activePrototypeState.applications,
                 bottomInset,
                 locale,
                 mode: candidateGroup ? "team" : "individual",
-                onAcceptProposal:
-                  activePrototypeState.capabilities.availableActions.includes(
-                    "SELECT_CANDIDATE"
-                  )
-                    ? handleSelectCandidate
-                    : undefined,
+                onAcceptProposal: capability?.canSelectCandidate
+                  ? handleSelectCandidate
+                  : undefined,
                 onClose: () => {
                   setCandidateReviewSheetOpen(false);
                   setSelectedProposalId(null);
                 },
-                onRejectProposal:
-                  activePrototypeState.capabilities.availableActions.includes(
-                    candidateGroup ? "REJECT_TEAM" : "REJECT_CANDIDATE"
-                  )
-                    ? handleRejectCandidate
-                    : undefined,
+                onRejectProposal: capability?.[
+                  candidateGroup ? "canRejectTeam" : "canRejectCandidate"
+                ]
+                  ? handleRejectCandidate
+                  : undefined,
                 onSelectProposal: setSelectedProposalId,
                 questTitle: quest.title,
                 requestedHeadcount: activePrototypeState.quest.headcount,
@@ -1446,12 +1350,9 @@ export function useQuestDetailController({
             QuestCandidateMode.NO_CANDIDATE &&
           activePrototypeState.partialStartConsent
             ? {
-                actualHeadcount: activePrototypeState.actualHeadcount,
+                actualHeadcount: participantCount,
                 bottomInset,
-                canRespond:
-                  activePrototypeState.capabilities.availableActions.includes(
-                    "VOTE_PARTIAL_GROUP_START_CONSENT"
-                  ),
+                canRespond: capability?.canRespondPartialStart ?? false,
                 consent: activePrototypeState.partialStartConsent,
                 hirerId: activePrototypeState.quest.hirerId,
                 locale,
@@ -1477,33 +1378,21 @@ export function useQuestDetailController({
                   setTeamSelectedMemberIds([]);
                   setTeamSearchQuery("");
                 },
-                onCreateTeam:
-                  activePrototypeState.capabilities.availableActions.includes(
-                    "CREATE_TEAM"
-                  )
-                    ? handleCreateTeam
-                    : undefined,
-                onInviteMembers:
-                  activePrototypeState.capabilities.availableActions.includes(
-                    "INVITE_WORKER"
-                  )
-                    ? handleInviteMembers
-                    : undefined,
-                onRespondInvitation:
-                  activePrototypeState.capabilities.availableActions.includes(
-                    "RESPOND_INVITATION"
-                  )
-                    ? handleInvitation
-                    : undefined,
+                onCreateTeam: capability?.canCreateTeam
+                  ? handleCreateTeam
+                  : undefined,
+                onInviteMembers: capability?.canInviteWorker
+                  ? handleInviteMembers
+                  : undefined,
+                onRespondInvitation: capability?.canRespondInvitation
+                  ? handleInvitation
+                  : undefined,
                 onSearchQueryChange: setTeamSearchQuery,
                 onSelectedMemberIdsChange: setTeamSelectedMemberIds,
                 onReviewChange: setTeamReviewing,
-                onSubmit:
-                  activePrototypeState.capabilities.availableActions.includes(
-                    "SUBMIT_TEAM"
-                  )
-                    ? handleSubmitTeam
-                    : undefined,
+                onSubmit: capability?.canSubmitTeam
+                  ? handleSubmitTeam
+                  : undefined,
                 requestedHeadcount: activePrototypeState.quest.headcount,
                 reviewing: teamReviewing,
                 searchQuery: teamSearchQuery,
