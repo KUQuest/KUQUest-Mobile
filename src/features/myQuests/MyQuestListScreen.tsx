@@ -163,7 +163,10 @@ export default function MyQuestListScreen({
         return;
       }
       if (quest.actionType === "edit") {
-        router.push({ pathname: "/create", params: { editQuestId: quest.id } });
+        router.push({
+          pathname: "/quest/[id]/edit",
+          params: { id: quest.id },
+        });
         return;
       }
       router.push({

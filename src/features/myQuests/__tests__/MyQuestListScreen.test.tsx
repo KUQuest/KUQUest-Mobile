@@ -155,8 +155,8 @@ describe("MyQuestListScreen", () => {
 
     fireEvent.press(screen.getByTestId("my-quest-list-action-draft-1"));
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/create",
-      params: { editQuestId: "draft-1" },
+      pathname: "/quest/[id]/edit",
+      params: { id: "draft-1" },
     });
   });
 });
