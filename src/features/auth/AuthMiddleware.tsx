@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type PropsWithChildren } from "react";
+import { useEffect, type PropsWithChildren } from "react";
 import { useRouter, useSegments } from "expo-router";
 
 import { ActivityIndicator, View } from "@/tw";
@@ -26,41 +26,21 @@ export function isPublicAuthRoute(
 function AuthRouteCheck({
   children,
   isPublicRoute,
-  routeKey,
 }: PropsWithChildren<{
   isPublicRoute: boolean;
-  routeKey: string;
 }>) {
   const router = useRouter();
-  const routeVisit = useRouteVisit(routeKey);
-  const [authorizedRouteVisit, setAuthorizedRouteVisit] = useState<
-    symbol | null
-  >(() => (isPublicRoute ? routeVisit : null));
-
-  const { refetch: refetchSession } = useSessionQuery({ enabled: false });
+  const sessionQuery = useSessionQuery({ enabled: !isPublicRoute });
+  const sessionInvalid =
+    !isPublicRoute &&
+    !sessionQuery.isPending &&
+    (sessionQuery.isError || !sessionQuery.data);
 
   useEffect(() => {
-    if (isPublicRoute) return;
+    if (sessionInvalid) router.replace("/");
+  }, [router, sessionInvalid]);
 
-    let active = true;
-
-    void refetchSession().then(({ data, error }) => {
-      if (!active) return;
-
-      if (error || !data) {
-        router.replace("/");
-        return;
-      }
-
-      setAuthorizedRouteVisit(routeVisit);
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [isPublicRoute, refetchSession, routeVisit, router]);
-
-  const isAuthorized = isPublicRoute || authorizedRouteVisit === routeVisit;
+  const isAuthorized = isPublicRoute || Boolean(sessionQuery.data);
 
   return (
     <View className="flex-1">
@@ -74,10 +54,6 @@ function AuthRouteCheck({
   );
 }
 
-function useRouteVisit(routeKey: string): symbol {
-  return useMemo(() => Symbol(routeKey), [routeKey]);
-}
-
 export default function AuthMiddleware({ children }: PropsWithChildren) {
   useEffect(() => {
     void authEnvironment.hydratePersona();
@@ -86,11 +62,8 @@ export default function AuthMiddleware({ children }: PropsWithChildren) {
   const segments = useSegments();
   const isDemo = authEnvironment.isDemoEnabled();
   const isPublicRoute = isDemo || isPublicAuthRoute(segments);
-  const routeKey = `${isDemo}:${segments.join("/")}`;
 
   return (
-    <AuthRouteCheck isPublicRoute={isPublicRoute} routeKey={routeKey}>
-      {children}
-    </AuthRouteCheck>
+    <AuthRouteCheck isPublicRoute={isPublicRoute}>{children}</AuthRouteCheck>
   );
 }
