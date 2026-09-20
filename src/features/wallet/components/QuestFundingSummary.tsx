@@ -808,7 +808,7 @@ function TopUpFlowContent({
                         },
                       ]}
                     >
-                      ฿{quickAmount.toLocaleString("en-US")}
+                      {formatSatang(quickAmount * 100, locale)}
                     </Text>
                   </Pressable>
                 );
@@ -1562,7 +1562,7 @@ export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
                 testID="quest-funding-collapsed-status"
               >
                 {flow.liveWallet
-                  ? `฿${(flow.liveWallet.spendingBalanceSatang / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })} available`
+                  ? `${formatSatang(flow.liveWallet.spendingBalanceSatang, locale, "exact")} available`
                   : messages.fundingUnavailable}
               </Text>
             </View>

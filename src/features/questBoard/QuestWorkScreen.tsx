@@ -17,6 +17,7 @@ import {
   type QuestWorkMessages,
 } from "@/locales/questWorkMessages";
 import { colors } from "@/theme/colors";
+import { formatTimestamp } from "@/domain/datetime";
 import { spacing } from "@/theme/spacing";
 
 import { useLiveQuestSnapshotQuery } from "./api/questBoardQueries";
@@ -49,20 +50,6 @@ const terminalStates: Record<string, true> = {
 function routeValue(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) return value[0];
   return value;
-}
-
-function formatDateTime(
-  value: string | null | undefined,
-  locale: "en" | "th"
-): string {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "Asia/Bangkok",
-  }).format(date);
 }
 
 function formatCountdown(
@@ -435,7 +422,7 @@ export default function QuestWorkScreen({
             countdown={countdown}
             dueAtDetail={
               snapshot.dueAt
-                ? formatDateTime(snapshot.dueAt, locale)
+                ? formatTimestamp(snapshot.dueAt, locale, "")
                 : undefined
             }
             isTerminal={isTerminal}

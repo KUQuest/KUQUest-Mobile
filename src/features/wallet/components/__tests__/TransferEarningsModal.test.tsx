@@ -52,10 +52,10 @@ describe("TransferEarningsModal", () => {
     expect(view.getByTestId("transfer-earnings-modal")).toBeTruthy();
     expect(view.getByText(m.transferEarningsTitle)).toBeTruthy();
     expect(view.getByTestId("transfer-current-earnings")).toHaveTextContent(
-      "฿ 500.00"
+      "฿500.00"
     );
     expect(view.getByTestId("transfer-current-spending")).toHaveTextContent(
-      "฿ 2,000.00"
+      "฿2,000.00"
     );
     expect(view.getByText(m.transferFeeFree)).toBeTruthy();
     expect(view.getByText(m.transferPolicyNote)).toBeTruthy();

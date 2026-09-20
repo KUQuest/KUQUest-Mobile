@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Pressable, ScrollView, Text, View } from "@/tw";
+import { Chip } from "@/components/ui/Chip";
 import {
   Clock3,
   FileText,
@@ -27,6 +28,8 @@ import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { getThemeColors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 
+import { StateView } from "@/components/ui/StateView";
+import { QuestBoardSkeleton } from "@/features/questBoard/components/QuestBoardStates";
 import { useHirerHomeQuery } from "./api/homeQueries";
 import { HirerQuestProgressCard } from "./components/HirerQuestProgressCard";
 import { HirerQuestRosterModal } from "./components/HirerQuestRosterModal";
@@ -48,7 +51,13 @@ export default function HomeScreen() {
   const themeColors = getThemeColors(colorScheme);
   const messages = hirerHomeMessages[locale];
   const [activeCardIndex, setActiveCardIndex] = useState(0);
-  const { data: liveQuests = [], isRefetching, refetch } = useHirerHomeQuery();
+  const {
+    data: liveQuests = [],
+    isError,
+    isPending,
+    isRefetching,
+    refetch,
+  } = useHirerHomeQuery();
   const [rosterModalQuest, setRosterModalQuest] =
     useState<LiveHirerQuestCardData | null>(null);
 
@@ -96,6 +105,39 @@ export default function HomeScreen() {
     [router]
   );
   if (workspace === "worker") return <WorkerHomeScreen />;
+
+  if (isPending) {
+    return (
+      <ScreenLayout
+        edges={["top", "left", "right"]}
+        className="bg-ku-background"
+      >
+        <View className="flex-1 px-4 pt-6" testID="hirer-home-loading">
+          <QuestBoardSkeleton loadingLabel={messages.loading} />
+        </View>
+      </ScreenLayout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <ScreenLayout
+        edges={["top", "left", "right"]}
+        className="bg-ku-background"
+      >
+        <View className="flex-1 px-4 pt-6" testID="hirer-home-error">
+          <StateView
+            actionLabel={messages.retry}
+            description={messages.errorDescription}
+            onAction={() => void refetch()}
+            title={messages.errorTitle}
+            variant="error"
+          />
+        </View>
+      </ScreenLayout>
+    );
+  }
+
   return (
     <ScreenLayout edges={["top", "left", "right"]} className="bg-ku-background">
       <ScrollView
@@ -149,7 +191,11 @@ export default function HomeScreen() {
                   {messages.activeQuestTitle}
                 </Text>
                 {displayQuests.length > 1 ? (
-                  <View
+                  <Chip
+                    label={messages.activeQuestCounter(
+                      activeCardIndex + 1,
+                      displayQuests.length
+                    )}
                     style={[
                       styles.sectionCounterBadge,
                       {
@@ -158,19 +204,12 @@ export default function HomeScreen() {
                       },
                     ]}
                     testID="hirer-quest-counter"
-                  >
-                    <Text
-                      style={[
-                        styles.sectionCounterText,
-                        { color: themeColors.primary },
-                      ]}
-                    >
-                      {messages.activeQuestCounter(
-                        activeCardIndex + 1,
-                        displayQuests.length
-                      )}
-                    </Text>
-                  </View>
+                    textStyle={[
+                      styles.sectionCounterText,
+                      { color: themeColors.primary },
+                    ]}
+                    tone="accent"
+                  />
                 ) : null}
               </View>
 
@@ -219,6 +258,11 @@ export default function HomeScreen() {
                       displayQuests.length
                     )}
                     accessibilityRole="progressbar"
+                    accessibilityValue={{
+                      min: 1,
+                      max: displayQuests.length,
+                      now: activeCardIndex + 1,
+                    }}
                     style={styles.carouselPagination}
                     testID="hirer-quest-carousel-dots"
                   >

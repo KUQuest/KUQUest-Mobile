@@ -20,7 +20,7 @@ import {
 } from "../types";
 import type { QuestV2Underfilled } from "@/api/questV2Contracts";
 import styles from "./groupQuestStyles";
-import { QuestBottomSheet } from "./QuestBottomSheet";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 
 export interface PartialGroupStartVoter {
   id: string;
@@ -604,7 +604,7 @@ export function PartialGroupStartConsentSheet({
     );
 
   return (
-    <QuestBottomSheet
+    <BottomSheet
       bottomInset={bottomInset}
       closeLabel={messages.close}
       onClose={onClose}
@@ -614,7 +614,7 @@ export function PartialGroupStartConsentSheet({
       visible={visible}
     >
       {content}
-    </QuestBottomSheet>
+    </BottomSheet>
   );
 }
 

@@ -3,6 +3,7 @@ import { Calendar, CalendarClock, Clock } from "lucide-react-native";
 import type { Pressable as RNPressable } from "react-native";
 
 import { Pressable, Text, View } from "@/tw";
+import { Chip } from "@/components/ui/Chip";
 import { cn } from "@/tw/cn";
 import { colors } from "@/theme/colors";
 import styles from "../createQuestStyles";
@@ -143,17 +144,16 @@ export function DateTimeField({
       {quickPresets && quickPresets.length > 0 ? (
         <View className={styles.scheduleQuickChips}>
           {quickPresets.map((preset) => (
-            <Pressable
-              key={preset.label}
-              accessibilityRole="button"
+            <Chip
               accessibilityLabel={preset.label}
+              className="px-[10px] py-[4px]"
+              key={preset.label}
+              label={preset.label}
               onPress={preset.onPress}
-              className={styles.quickChip}
-              hitSlop={4}
               testID={`quick-preset-${preset.label}`}
-            >
-              <Text className={styles.quickChipText}>{preset.label}</Text>
-            </Pressable>
+              textClassName="text-ku-primary font-ku-semibold text-ku-meta"
+              tone="accent"
+            />
           ))}
         </View>
       ) : null}

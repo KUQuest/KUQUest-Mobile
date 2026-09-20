@@ -7,16 +7,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  ArrowLeft,
-  BriefcaseBusiness,
-  CalendarDays,
-  Check,
-  CircleX,
-  Clock3,
-  MapPin,
-  Pencil,
-} from "lucide-react-native";
+import { ArrowLeft, Clock3 } from "lucide-react-native";
 import { Pressable, Text, View } from "@/tw";
 
 import { QuestList } from "@/components/ui/QuestList";
@@ -24,19 +15,22 @@ import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import {
+  myQuestMessages,
+  type MyQuestMessages,
+} from "@/locales/myQuestMessages";
+import { getThemeColors } from "@/theme/colors";
+import { spacing } from "@/theme/spacing";
+import { fontFamily } from "@/theme/typography";
+import { MyQuestSummaryCard } from "./components/MyQuestSummaryCard";
+import {
   useMyHirerQuestsQuery,
   useMyWorkerQuestSnapshotsQuery,
 } from "./api/myQuestsQueries";
-import type { SupportedLocale } from "@/locales/locale";
-import { getThemeColors, type ThemeColors } from "@/theme/colors";
-import { spacing } from "@/theme/spacing";
-import { fontFamily } from "@/theme/typography";
 import {
   getLiveHirerItems,
   getLiveWorkerItems,
   type HirerTab,
   type QuestSummary,
-  type StatusTone,
   type WorkerTab,
 } from "./myQuestService";
 
@@ -47,125 +41,6 @@ export interface MyQuestListScreenProps {
   initialRole?: MyQuestRole;
   initialTab?: string;
 }
-
-type ScreenCopy = {
-  back: string;
-  title: Record<MyQuestRole, string>;
-  subtitle: Record<MyQuestRole, string>;
-  tabs: {
-    hirer: Record<HirerTab, string>;
-    worker: Record<WorkerTab, string>;
-  };
-  listTitle: string;
-  listHint: string;
-  loading: string;
-  error: string;
-  retry: string;
-  emptyTitle: {
-    hirer: Record<HirerTab, string>;
-    worker: Record<WorkerTab, string>;
-  };
-  emptyDescription: Record<MyQuestRole, string>;
-  edit: string;
-  detail: string;
-  statusLabel: string;
-  workerLabel: string;
-  locationLabel: string;
-  scheduleLabel: string;
-};
-
-const screenCopy: Record<SupportedLocale, ScreenCopy> = {
-  th: {
-    back: "ย้อนกลับ",
-    title: { hirer: "เควสต์ของฉัน", worker: "เควสต์ที่ฉันเข้าร่วม" },
-    subtitle: {
-      hirer: "จัดการเควสต์ทั้งหมดที่คุณสร้างไว้",
-      worker: "ติดตามเควสต์ที่คุณเข้าร่วม",
-    },
-    tabs: {
-      hirer: {
-        active: "กำลังดำเนินการ",
-        draft: "ฉบับร่าง",
-        completed: "ประวัติ",
-      },
-      worker: {
-        pending: "รอตรวจสอบ",
-        accepted: "กำลังทำ",
-        history: "ประวัติ",
-      },
-    },
-    listTitle: "รายการเควสต์",
-    listHint: "เลือกเควสต์เพื่อดูรายละเอียดหรือทำงานต่อ",
-    loading: "กำลังโหลดเควสต์…",
-    error: "ไม่สามารถโหลดเควสต์ได้",
-    retry: "ลองอีกครั้ง",
-    emptyTitle: {
-      hirer: {
-        active: "ยังไม่มีเควสต์ที่กำลังดำเนินการ",
-        draft: "ยังไม่มีฉบับร่าง",
-        completed: "ยังไม่มีเควสต์ที่จบแล้ว",
-      },
-      worker: {
-        pending: "ยังไม่มีเควสต์ที่รอตรวจสอบ",
-        accepted: "ยังไม่มีเควสต์ที่กำลังทำ",
-        history: "ยังไม่มีประวัติเควสต์ที่จบแล้ว",
-      },
-    },
-    emptyDescription: {
-      hirer: "เควสต์ที่ตรงกับสถานะนี้จะแสดงที่นี่",
-      worker: "เควสต์ที่ตรงกับสถานะนี้จะแสดงที่นี่",
-    },
-    edit: "แก้ไข",
-    detail: "ดูรายละเอียด",
-    statusLabel: "สถานะ",
-    workerLabel: "ผู้ทำงาน",
-    locationLabel: "สถานที่",
-    scheduleLabel: "กำหนดการ",
-  },
-  en: {
-    back: "Go back",
-    title: { hirer: "My Quests", worker: "Quests I joined" },
-    subtitle: {
-      hirer: "Manage every Quest you have created",
-      worker: "Track the Quests you have joined",
-    },
-    tabs: {
-      hirer: { active: "Active", draft: "Drafts", completed: "History" },
-      worker: {
-        pending: "Pending",
-        accepted: "In progress",
-        history: "History",
-      },
-    },
-    listTitle: "Quest list",
-    listHint: "Choose a Quest to view details or continue working",
-    loading: "Loading Quests…",
-    error: "We couldn't load your Quests",
-    retry: "Try again",
-    emptyTitle: {
-      hirer: {
-        active: "No active Quests",
-        draft: "No Quest drafts",
-        completed: "No completed Quests",
-      },
-      worker: {
-        pending: "No pending Quests",
-        accepted: "No Quests in progress",
-        history: "No completed Quest history",
-      },
-    },
-    emptyDescription: {
-      hirer: "Quests in this status will appear here",
-      worker: "Quests in this status will appear here",
-    },
-    edit: "Edit",
-    detail: "View details",
-    statusLabel: "Status",
-    workerLabel: "Workers",
-    locationLabel: "Location",
-    scheduleLabel: "Schedule",
-  },
-};
 
 const workerTabs: WorkerTab[] = ["pending", "accepted", "history"];
 const hirerTabs: HirerTab[] = ["active", "draft", "completed"];
@@ -220,108 +95,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: 2,
   },
-  card: { borderRadius: 16, borderWidth: 1, overflow: "hidden" },
-  cardBody: { padding: 16 },
-  cardTop: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-    justifyContent: "space-between",
-  },
-  tag: {
-    alignItems: "center",
-    borderRadius: 9999,
-    flexDirection: "row",
-    flexShrink: 1,
-    minHeight: 28,
-    paddingHorizontal: 8,
-  },
-  tagText: {
-    flexShrink: 1,
-    fontFamily: fontFamily.semiBold,
-    fontSize: 12,
-    lineHeight: 18,
-    marginLeft: 4,
-  },
-  status: {
-    alignItems: "center",
-    borderRadius: 9999,
-    borderWidth: 1,
-    flexDirection: "row",
-    flexShrink: 0,
-    gap: 4,
-    minHeight: 28,
-    justifyContent: "center",
-    paddingHorizontal: 9,
-  },
-  statusText: { fontFamily: fontFamily.semiBold, fontSize: 12, lineHeight: 18 },
-  cardTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 18,
-    lineHeight: 24,
-    marginTop: 12,
-  },
-  description: {
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    lineHeight: 21,
-    marginTop: 4,
-  },
-  metaList: { gap: 8, marginTop: 14 },
-  metaRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-    minHeight: 28,
-  },
-  metaIcon: {
-    alignItems: "center",
-    borderRadius: 9999,
-    height: 28,
-    justifyContent: "center",
-    width: 28,
-  },
-  metaCopy: { flex: 1, minWidth: 0 },
-  metaLabel: { fontFamily: fontFamily.regular, fontSize: 10, lineHeight: 14 },
-  metaValue: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 1,
-  },
-  detailRow: {
-    borderTopWidth: 1,
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 14,
-    paddingTop: 12,
-  },
-  detail: { flex: 1, flexShrink: 1, minWidth: 0 },
-  detailLabel: { fontFamily: fontFamily.regular, fontSize: 10, lineHeight: 14 },
-  detailValue: {
-    flexShrink: 1,
-    fontFamily: fontFamily.bold,
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 2,
-  },
-  footer: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  actionButton: {
-    alignItems: "center",
-    borderRadius: 9999,
-    flexDirection: "row",
-    gap: 5,
-    justifyContent: "center",
-    minHeight: 40,
-    paddingHorizontal: 14,
-  },
-  actionText: { fontFamily: fontFamily.semiBold, fontSize: 12, lineHeight: 18 },
   empty: {
     alignItems: "center",
     borderRadius: 16,
@@ -381,7 +154,7 @@ const styles = StyleSheet.create({
 });
 
 function tabLabel(
-  messages: ScreenCopy,
+  messages: MyQuestMessages,
   role: MyQuestRole,
   tab: MyQuestTab
 ): string {
@@ -391,7 +164,7 @@ function tabLabel(
 }
 
 function emptyLabel(
-  messages: ScreenCopy,
+  messages: MyQuestMessages,
   role: MyQuestRole,
   tab: MyQuestTab
 ): string {
@@ -410,209 +183,6 @@ function initialTabForRole(
   return value === "accepted" || value === "history" ? value : "pending";
 }
 
-function toneColors(tone: StatusTone, palette: ThemeColors) {
-  if (tone === "success") {
-    return {
-      background: palette.surfaceSuccess,
-      border: palette.borderSuccess,
-      foreground: palette.success,
-    };
-  }
-  if (tone === "danger") {
-    return {
-      background: palette.surfaceDanger,
-      border: palette.borderDanger,
-      foreground: palette.dangerDark,
-    };
-  }
-  if (tone === "warning") {
-    return {
-      background: "#FFF4D9",
-      border: "#F2D18A",
-      foreground: "#B86B00",
-    };
-  }
-  return {
-    background: palette.surfaceMuted,
-    border: palette.border,
-    foreground: palette.textSecondary,
-  };
-}
-
-function StatusIcon({ tone, color }: { tone: StatusTone; color: string }) {
-  const Icon =
-    tone === "success" ? Check : tone === "danger" ? CircleX : Clock3;
-  return <Icon color={color} size={14} strokeWidth={2.2} />;
-}
-
-function QuestSummaryCard({
-  quest,
-  messages,
-  palette,
-  onOpen,
-}: {
-  quest: QuestSummary;
-  messages: ScreenCopy;
-  palette: ThemeColors;
-  onOpen: () => void;
-}) {
-  const status = toneColors(quest.statusTone, palette);
-  const description = quest.description.trim();
-  return (
-    <View
-      style={[
-        styles.card,
-        { backgroundColor: palette.white, borderColor: palette.borderAccent },
-      ]}
-    >
-      <Pressable
-        accessibilityHint={messages.listHint}
-        accessibilityLabel={`${quest.title}. ${quest.status}. ${messages.detail}`}
-        accessibilityRole="button"
-        onPress={onOpen}
-        style={({ pressed }) => [
-          styles.cardBody,
-          pressed && { backgroundColor: palette.surfaceAccent },
-        ]}
-        testID={`my-quest-list-card-${quest.id}`}
-      >
-        <View style={styles.cardTop}>
-          <View
-            style={[styles.tag, { backgroundColor: palette.surfaceAccent }]}
-          >
-            <BriefcaseBusiness
-              color={palette.primary}
-              size={14}
-              strokeWidth={2}
-            />
-            <Text
-              numberOfLines={1}
-              style={[styles.tagText, { color: palette.primary }]}
-            >
-              {quest.tag}
-            </Text>
-          </View>
-          <View
-            style={[
-              styles.status,
-              {
-                backgroundColor: status.background,
-                borderColor: status.border,
-              },
-            ]}
-          >
-            <StatusIcon color={status.foreground} tone={quest.statusTone} />
-            <Text style={[styles.statusText, { color: status.foreground }]}>
-              {quest.status}
-            </Text>
-          </View>
-        </View>
-        <Text
-          numberOfLines={2}
-          style={[styles.cardTitle, { color: palette.textStrong }]}
-        >
-          {quest.title}
-        </Text>
-        {description ? (
-          <Text
-            numberOfLines={2}
-            style={[styles.description, { color: palette.textSecondary }]}
-          >
-            {description}
-          </Text>
-        ) : null}
-        <View style={styles.metaList}>
-          <View style={styles.metaRow}>
-            <View
-              style={[
-                styles.metaIcon,
-                { backgroundColor: palette.surfaceAccent },
-              ]}
-            >
-              <CalendarDays color={palette.primary} size={15} strokeWidth={2} />
-            </View>
-            <View style={styles.metaCopy}>
-              <Text style={[styles.metaLabel, { color: palette.textMuted }]}>
-                {messages.scheduleLabel}
-              </Text>
-              <Text
-                numberOfLines={1}
-                style={[styles.metaValue, { color: palette.textSecondary }]}
-              >
-                {quest.date}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.metaRow}>
-            <View
-              style={[
-                styles.metaIcon,
-                { backgroundColor: palette.surfaceAccent },
-              ]}
-            >
-              <MapPin color={palette.primary} size={15} strokeWidth={2} />
-            </View>
-            <View style={styles.metaCopy}>
-              <Text style={[styles.metaLabel, { color: palette.textMuted }]}>
-                {messages.locationLabel}
-              </Text>
-              <Text
-                numberOfLines={1}
-                style={[styles.metaValue, { color: palette.textSecondary }]}
-              >
-                {quest.location}
-              </Text>
-            </View>
-          </View>
-        </View>
-        <View
-          style={[styles.detailRow, { borderTopColor: palette.borderSubtle }]}
-        >
-          <View style={styles.detail}>
-            <Text style={[styles.detailLabel, { color: palette.textMuted }]}>
-              {messages.workerLabel}
-            </Text>
-            <Text style={[styles.detailValue, { color: palette.textStrong }]}>
-              {quest.teamSize}
-            </Text>
-          </View>
-          <View style={styles.detail}>
-            <Text style={[styles.detailLabel, { color: palette.textMuted }]}>
-              {messages.statusLabel}
-            </Text>
-            <Text
-              numberOfLines={1}
-              style={[styles.detailValue, { color: palette.textStrong }]}
-            >
-              {quest.status}
-            </Text>
-          </View>
-        </View>
-      </Pressable>
-      <View style={[styles.footer, { backgroundColor: palette.surface }]}>
-        <Pressable
-          accessibilityLabel={`${quest.action}: ${quest.title}`}
-          accessibilityRole="button"
-          onPress={onOpen}
-          style={({ pressed }) => [
-            styles.actionButton,
-            { backgroundColor: palette.primary },
-            pressed && { backgroundColor: palette.primaryDark },
-          ]}
-          testID={`my-quest-list-action-${quest.id}`}
-        >
-          {quest.actionType === "edit" ? (
-            <Pencil color={palette.white} size={16} strokeWidth={2.2} />
-          ) : null}
-          <Text style={[styles.actionText, { color: palette.white }]}>
-            {quest.actionType === "edit" ? messages.edit : quest.action}
-          </Text>
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
 function Separator() {
   return <View style={{ height: spacing.sm }} />;
 }
@@ -623,7 +193,7 @@ export default function MyQuestListScreen({
 }: MyQuestListScreenProps = {}) {
   const router = useRouter();
   const { locale } = useLocale();
-  const messages = screenCopy[locale];
+  const messages = myQuestMessages[locale];
   const palette = getThemeColors(useColorScheme());
   const insets = useSafeAreaInsets();
   const role = initialRole;
@@ -684,7 +254,7 @@ export default function MyQuestListScreen({
   );
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<QuestSummary>) => (
-      <QuestSummaryCard
+      <MyQuestSummaryCard
         messages={messages}
         onOpen={() => openQuest(item)}
         palette={palette}

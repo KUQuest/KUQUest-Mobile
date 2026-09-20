@@ -2,6 +2,8 @@ import React from "react";
 import { ActivityIndicator } from "react-native";
 import { X } from "lucide-react-native";
 
+import { useLocale } from "@/features/preferences/localeStore";
+import { chatMessages } from "@/locales/chatMessages";
 import { Image, Pressable, ScrollView, View } from "@/tw";
 import { colors } from "@/theme/colors";
 import styles from "../chatStyles";
@@ -20,10 +22,12 @@ export function PendingAttachmentsBar({
   attachments: PendingAttachmentItem[];
   onRemove: (id: string) => void;
 }) {
+  const { locale } = useLocale();
+  const messages = chatMessages[locale];
+
   if (attachments.length === 0) {
     return null;
   }
-
   return (
     <ScrollView
       horizontal
@@ -43,8 +47,9 @@ export function PendingAttachmentsBar({
             </View>
           ) : null}
           <Pressable
-            accessibilityLabel={`Remove ${item.name}`}
+            accessibilityLabel={messages.removeAttachment(item.name)}
             accessibilityRole="button"
+            hitSlop={14}
             testID={"remove-pending-attachment-" + item.id}
             className={styles.pendingAttachmentRemove}
             onPress={() => onRemove(item.id)}

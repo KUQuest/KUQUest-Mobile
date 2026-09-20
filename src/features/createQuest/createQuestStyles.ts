@@ -126,11 +126,6 @@ const styles = {
   timeDisplayLabelActive: "text-ku-primary font-ku-semibold",
   timeColon: "text-ku-text-strong font-ku-bold text-[32px] leading-[40px]",
   timePresetsScroll: "py-[4px] mb-[12px]",
-  timePresetChip:
-    "bg-ku-surface-accent border border-ku-border-accent rounded-ku-pill px-[12px] py-[6px] mr-[6px] items-center justify-center",
-  timePresetChipActive: "bg-ku-primary border-ku-primary",
-  timePresetText: "text-ku-primary font-ku-semibold text-ku-body-small",
-  timePresetTextActive: "text-white font-ku-bold",
   timeSectionLabel:
     "text-ku-text-secondary font-ku-semibold text-ku-body-small mb-[8px] mt-[4px]",
   hourGrid: "flex-row flex-wrap justify-between gap-[6px] mb-[12px]",
@@ -175,9 +170,6 @@ const styles = {
   scheduleSplitBtnValue:
     "text-ku-text-strong font-ku-semibold text-ku-body-small mt-[1px]",
   scheduleQuickChips: "flex-row flex-wrap gap-[6px] mt-[8px]",
-  quickChip:
-    "bg-ku-surface-accent border border-ku-border-accent rounded-ku-pill px-[10px] py-[4px] items-center justify-center",
-  quickChipText: "text-ku-primary font-ku-semibold text-ku-meta",
   durationBadge:
     "bg-ku-surface-accent border border-ku-border-accent rounded-[12px] p-[10px] my-[8px] flex-row items-center justify-between",
   durationBadgeError: "bg-ku-surface-danger border-ku-border-danger",

@@ -8,6 +8,10 @@ import type {
 export interface HirerHomeMessages {
   title: string;
   subtitle: string;
+  loading: string;
+  errorTitle: string;
+  errorDescription: string;
+  retry: string;
   prototypeLabel: string;
   emptyTitle: string;
   emptyDescription: string;
@@ -67,6 +71,10 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
   en: {
     title: "Hirer Home",
     subtitle: "Keep an eye on the Quests you posted.",
+    loading: "Loading your active Quests",
+    errorTitle: "Hirer Home unavailable",
+    errorDescription: "We could not load your active Quests. Try again.",
+    retry: "Try again",
     prototypeLabel: "Prototype preview",
     emptyTitle: "No active Quests yet",
     emptyDescription:
@@ -80,7 +88,7 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
       `Step ${current} of ${total}`,
     currentStageLabel: "current",
     terminalStageLabel: "terminal",
-    openDetails: "Open details",
+    openDetails: "View details",
     dueAt: (value) => value,
     quickAccessTitle: "Quick Actions",
     quickActiveTitle: "In Progress",
@@ -145,6 +153,10 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
   th: {
     title: "หน้าหลักผู้ว่าจ้าง",
     subtitle: "ติดตามเควสต์ที่คุณโพสต์ไว้",
+    loading: "กำลังโหลดเควสต์ที่กำลังดำเนินการ",
+    errorTitle: "ไม่สามารถโหลดหน้าหลักผู้ว่าจ้างได้",
+    errorDescription: "ไม่สามารถโหลดเควสต์ที่กำลังดำเนินการได้ ลองอีกครั้ง",
+    retry: "ลองอีกครั้ง",
     prototypeLabel: "ตัวอย่างหน้าจอ",
     emptyTitle: "ยังไม่มีเควสต์ที่กำลังดำเนินการ",
     emptyDescription: "เควสต์ที่เผยแพร่และมีผู้ทำงานตอบรับจะแสดงที่นี่",
@@ -157,7 +169,7 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
       `ขั้นตอนที่ ${current} จาก ${total}`,
     currentStageLabel: "สถานะปัจจุบัน",
     terminalStageLabel: "สถานะสิ้นสุด",
-    openDetails: "เปิดรายละเอียด",
+    openDetails: "ดูรายละเอียด",
     dueAt: (value) => value,
     quickAccessTitle: "เมนูลัด",
     quickActiveTitle: "กำลังทำงาน",

@@ -1,7 +1,8 @@
 import { ChevronLeft } from "lucide-react-native";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { Image, Pressable, ScrollView, Text, View } from "@/tw";
+import { Avatar } from "@/components/ui/Avatar";
+import { Pressable, ScrollView, View } from "@/tw";
 import {
   LoadingSkeleton,
   SkeletonBlock,
@@ -93,7 +94,7 @@ export function toDisplayMessage(
 }
 
 export function ChatAvatar({
-  initials,
+  initials: _initials,
   color,
   name,
   profileId,
@@ -111,43 +112,20 @@ export function ChatAvatar({
   onPress?: () => void;
   small?: boolean;
 }) {
-  const avatar = (
-    <View
-      accessible={!onPress}
-      accessibilityLabel={name}
-      className={cn(styles.avatar, small && styles.avatarSmall)}
-      style={{ backgroundColor: color }}
-    >
-      {avatarUrl ? (
-        <Image
-          accessibilityLabel={name}
-          source={
-            avatarFileId
-              ? { uri: avatarUrl, cacheKey: avatarFileId }
-              : { uri: avatarUrl }
-          }
-          cachePolicy="memory-disk"
-          contentFit="cover"
-          style={{ height: "100%", width: "100%" }}
-          testID={`chat-avatar-image-${profileId ?? name}`}
-        />
-      ) : (
-        <Text className={small ? styles.avatarSmallText : styles.avatarText}>
-          {initials}
-        </Text>
-      )}
-    </View>
-  );
-  if (!onPress) return avatar;
   return (
-    <Pressable
-      accessibilityLabel={`View profile of ${name}`}
-      accessibilityRole="button"
+    <Avatar
+      accessibilityLabel={onPress ? `View profile of ${name}` : undefined}
+      cacheKey={avatarFileId}
+      className={cn(styles.avatar, small && styles.avatarSmall)}
+      imageTestID={`chat-avatar-image-${profileId ?? name}`}
+      name={name}
       onPress={onPress}
+      size={small ? "small" : "medium"}
+      style={{ backgroundColor: color }}
       testID={`chat-avatar-${profileId ?? name}`}
-    >
-      {avatar}
-    </Pressable>
+      textClassName={small ? styles.avatarSmallText : styles.avatarText}
+      uri={avatarUrl}
+    />
   );
 }
 

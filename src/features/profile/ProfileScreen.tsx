@@ -12,18 +12,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { profileMessages } from "../../locales/profileMessages";
 import { handleNavigationScroll as handleNavigationScrollEvent } from "@/features/navigation/navigationUiStore";
 import styles from "./styles/profileStyles";
-import {
-  AboutMe,
-  Certificates,
-  Experience,
-  MyWork,
-  ProfileHeader,
-  ProfileStats,
-  ProfileTabs,
-  Reviews,
-  ProfileSkeleton,
-  type ProfileTab,
-} from "./components/ProfileComponents";
+import { AboutMe } from "./components/AboutMe";
+import { Certificates } from "./components/Certificates";
+import { Experience } from "./components/Experience";
+import { MyWork } from "./components/MyWork";
+import { ProfileHeader } from "./components/ProfileHeader";
+import { ProfileSkeleton } from "./components/ProfileSkeleton";
+import { ProfileStats } from "./components/ProfileStats";
+import { ProfileTabs } from "./components/ProfileTabs";
+import { Reviews } from "./components/Reviews";
+import type { ProfileTab } from "./components/profileTypes";
 import { useProfileQuery } from "./api/profileQueries";
 import {
   getAppChromeMetrics,

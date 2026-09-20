@@ -15,7 +15,7 @@ import {
 } from "lucide-react-native";
 import { colors } from "@/theme/colors";
 import { fontFamily } from "@/theme/typography";
-import { formatHirerCardAmount } from "../walletModule";
+import { formatSatang } from "@/domain/satang";
 
 interface HirerBalanceCardsProps {
   spendingBalanceSatang: number;
@@ -215,7 +215,7 @@ export function HirerBalanceCards({
           >
             <TouchableOpacity
               accessibilityHint={swapHint}
-              accessibilityLabel={`${currentCard1Title}, ${formatHirerCardAmount(currentCard1Amount)}`}
+              accessibilityLabel={`${currentCard1Title}, ${formatSatang(currentCard1Amount, "en", "exact")}`}
               accessibilityRole="button"
               activeOpacity={0.85}
               onPress={toggleCard1}
@@ -258,7 +258,7 @@ export function HirerBalanceCards({
                 style={styles.spendingAmount}
                 testID="hirer-spending-balance"
               >
-                {formatHirerCardAmount(currentCard1Amount)}
+                {formatSatang(currentCard1Amount, "en", "exact")}
               </Text>
               <Text numberOfLines={1} style={styles.spendingDesc}>
                 {currentCard1Desc}
@@ -302,7 +302,7 @@ export function HirerBalanceCards({
         >
           <TouchableOpacity
             accessibilityHint={swapHint}
-            accessibilityLabel={`${currentCard2Title}, ${formatHirerCardAmount(currentCard2Amount)}`}
+            accessibilityLabel={`${currentCard2Title}, ${formatSatang(currentCard2Amount, "en", "exact")}`}
             accessibilityRole="button"
             activeOpacity={0.85}
             onPress={toggleCard2}
@@ -341,7 +341,7 @@ export function HirerBalanceCards({
               style={styles.escrowAmount}
               testID="hirer-escrow-balance"
             >
-              {formatHirerCardAmount(currentCard2Amount)}
+              {formatSatang(currentCard2Amount, "en", "exact")}
             </Text>
             <Text numberOfLines={1} style={styles.escrowDesc}>
               {currentCard2Desc}

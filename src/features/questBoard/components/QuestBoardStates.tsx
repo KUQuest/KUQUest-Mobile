@@ -1,70 +1,20 @@
-import React from "react";
-import { AlertCircle } from "lucide-react-native";
-import { cn } from "@/tw/cn";
-
-import { Pressable, View, Text } from "@/tw";
-import {
-  LoadingSkeleton,
-  SkeletonBlock,
-} from "@/components/ui/LoadingSkeleton";
-import { colors } from "@/theme/colors";
+import { View } from "@/tw";
+import { SkeletonBlock } from "@/components/ui/LoadingSkeleton";
+import { StateView } from "@/components/ui/StateView";
 import { spacing } from "@/theme/spacing";
 import styles from "../questBoardStyles";
-
-export interface StateViewProps {
-  title: string;
-  description: string;
-  actionLabel?: string;
-  onAction?: () => void;
-  error?: boolean;
-}
-
-export function StateView({
-  title,
-  description,
-  actionLabel,
-  onAction,
-  error = false,
-}: StateViewProps) {
-  return (
-    <View
-      accessibilityRole={error ? "alert" : undefined}
-      accessibilityLiveRegion={error ? "assertive" : "polite"}
-      className={styles.state}
-    >
-      <View className={cn(styles.stateIcon, error && styles.alertIcon)}>
-        <AlertCircle
-          color={error ? colors.dangerDark : colors.textMuted}
-          size={34}
-          strokeWidth={1.8}
-        />
-      </View>
-      <Text className={styles.stateTitle}>{title}</Text>
-      <Text className={styles.stateDescription}>{description}</Text>
-      {actionLabel && onAction ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={onAction}
-          className={styles.stateAction}
-        >
-          <Text className={styles.stateActionText}>{actionLabel}</Text>
-        </Pressable>
-      ) : null}
-    </View>
-  );
-}
-
 export interface QuestBoardSkeletonProps {
   loadingLabel: string;
 }
 
 export function QuestBoardSkeleton({ loadingLabel }: QuestBoardSkeletonProps) {
   return (
-    <LoadingSkeleton
+    <StateView
+      contentStyle={{ gap: spacing.sm }}
       loadingLabel={loadingLabel}
       style={{ width: "100%" }}
-      contentStyle={{ gap: spacing.sm }}
       testID="quest-board-loading-skeleton"
+      variant="loading"
     >
       {[1, 2, 3].map((item) => (
         <View
@@ -129,6 +79,6 @@ export function QuestBoardSkeleton({ loadingLabel }: QuestBoardSkeletonProps) {
           </View>
         </View>
       ))}
-    </LoadingSkeleton>
+    </StateView>
   );
 }

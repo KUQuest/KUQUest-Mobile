@@ -20,11 +20,13 @@ import {
   Circle,
 } from "lucide-react-native";
 
-import { disputeApi, type DisputeReason } from "@/api/DisputeApi";
-import { useMutation } from "@tanstack/react-query";
+import type { DisputeReason } from "@/api/DisputeApi";
 import { Button } from "@/components/ui/Button";
 import { TopBar } from "@/components/ui/TopBar";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
+import { useFileDisputeMutation } from "@/features/questBoard/api/questBoardQueries";
 import { useLocale } from "@/features/preferences/localeStore";
+import { questWorkMessages } from "@/locales/questWorkMessages";
 import { colors } from "@/theme/colors";
 
 function routeValue(value: string | string[] | undefined): string | undefined {
@@ -76,30 +78,32 @@ export default function QuestDisputeScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const questId = routeValue(params.id);
   const { locale } = useLocale();
+  const sessionQuery = useSessionQuery();
+  const viewerId = sessionQuery.data?.user.id ?? "";
+  const messages = questWorkMessages[locale];
 
   const [selectedReason, setSelectedReason] = useState<DisputeReason>(
     "PROOF_REJECTED_UNFAIRLY"
   );
   const [statement, setStatement] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const fileDisputeMutation = useMutation({
-    mutationFn: ({
-      questId: id,
-      reason,
-      statement: value,
-    }: {
-      questId: string;
-      reason: DisputeReason;
-      statement: string;
-    }) => disputeApi.fileDispute(id, { reason, statement: value }),
-  });
+  const fileDisputeMutation = useFileDisputeMutation();
 
   const isTh = locale === "th";
   const trimmedStatement = statement.trim();
   const isStatementValid =
     trimmedStatement.length > 0 && trimmedStatement.length <= 1000;
+  const statementTooLongMessage =
+    statement.length > 1000
+      ? isTh
+        ? "คำชี้แจงมีความยาวเกิน 1,000 ตัวอักษร"
+        : "Statement exceeds the 1000 character limit."
+      : undefined;
   const canSubmit =
-    isStatementValid && !fileDisputeMutation.isPending && Boolean(questId);
+    isStatementValid &&
+    !fileDisputeMutation.isPending &&
+    Boolean(questId) &&
+    Boolean(viewerId);
 
   const handleSubmit = async () => {
     if (!questId) {
@@ -126,6 +130,7 @@ export default function QuestDisputeScreen() {
     try {
       await fileDisputeMutation.mutateAsync({
         questId,
+        viewerId,
         reason: selectedReason,
         statement: trimmedStatement,
       });
@@ -257,6 +262,8 @@ export default function QuestDisputeScreen() {
                 multiline
                 numberOfLines={6}
                 maxLength={1000}
+                accessibilityLabel={messages.fileDispute}
+                accessibilityHint={errorMessage ?? statementTooLongMessage}
                 placeholder={
                   isTh
                     ? "อธิบายเหตุการณ์และข้อเท็จจริงโดยละเอียด..."
@@ -270,11 +277,9 @@ export default function QuestDisputeScreen() {
                 editable={!fileDisputeMutation.isPending}
               />
             </View>
-            {statement.length > 1000 ? (
+            {statementTooLongMessage ? (
               <Text className="mt-1 text-xs text-red-500">
-                {isTh
-                  ? "คำชี้แจงมีความยาวเกิน 1,000 ตัวอักษร"
-                  : "Statement exceeds the 1000 character limit."}
+                {statementTooLongMessage}
               </Text>
             ) : null}
           </View>

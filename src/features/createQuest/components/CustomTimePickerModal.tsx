@@ -3,6 +3,7 @@ import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { Check, X } from "lucide-react-native";
 
 import { colors } from "@/theme/colors";
+import { Chip } from "@/components/ui/Chip";
 import { cn } from "@/tw/cn";
 import styles from "../createQuestStyles";
 import { getNearestQuarterHour } from "../createQuestModel";
@@ -258,26 +259,21 @@ export default function CustomTimePickerModal({
               {quickPresets.map((preset) => {
                 const isSelected = preset.time === formattedTime;
                 return (
-                  <Pressable
-                    key={preset.label}
-                    accessibilityRole="button"
+                  <Chip
                     accessibilityLabel={`${preset.label}: ${preset.time}`}
+                    className="mr-[6px] px-[12px] py-[6px]"
+                    key={preset.label}
+                    label={`${preset.label} (${preset.time})`}
                     onPress={() => handleApplyPreset(preset.time)}
-                    className={cn(
-                      styles.timePresetChip,
-                      isSelected && styles.timePresetChipActive
-                    )}
+                    selected={isSelected}
                     testID={`time-preset-${preset.time}`}
-                  >
-                    <Text
-                      className={cn(
-                        styles.timePresetText,
-                        isSelected && styles.timePresetTextActive
-                      )}
-                    >
-                      {preset.label} ({preset.time})
-                    </Text>
-                  </Pressable>
+                    textClassName={
+                      isSelected
+                        ? "font-ku-bold text-white"
+                        : "font-ku-semibold text-ku-body-small text-ku-primary"
+                    }
+                    tone="accent"
+                  />
                 );
               })}
             </ScrollView>

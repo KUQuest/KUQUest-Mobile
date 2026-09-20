@@ -37,7 +37,8 @@ import {
   QuestBoardSortSheet,
 } from "./components/QuestBoardFilters";
 import { QuestBoardListHeader } from "./components/QuestBoardListHeader";
-import { QuestBoardSkeleton, StateView } from "./components/QuestBoardStates";
+import { QuestBoardSkeleton } from "./components/QuestBoardStates";
+import { StateView } from "@/components/ui/StateView";
 
 export type { BoardPreviewState } from "./questBoardHarness";
 
@@ -332,16 +333,21 @@ export default function QuestBoardScreen({
       <QuestBoardSkeleton loadingLabel={messages.loading} />
     ) : boardModel.kind === "error" ? (
       <StateView
-        error
+        variant="error"
         title={messages.errorTitle}
         description={messages.errorDescription}
         actionLabel={messages.retry}
         onAction={retryBoard}
       />
     ) : boardModel.kind === "empty" ? (
-      <StateView title={messages.noQuests} description={messages.subtitle} />
+      <StateView
+        variant="empty"
+        title={messages.noQuests}
+        description={messages.subtitle}
+      />
     ) : boardModel.kind === "unavailable" ? (
       <StateView
+        variant="empty"
         title={
           boardModel.availability === "full"
             ? messages.stateFull
@@ -353,6 +359,7 @@ export default function QuestBoardScreen({
       />
     ) : noMatch ? (
       <StateView
+        variant="empty"
         title={messages.noMatches}
         description={
           hasActiveFilters || query ? messages.subtitle : messages.noQuests

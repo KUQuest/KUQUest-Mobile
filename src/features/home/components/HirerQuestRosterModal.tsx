@@ -1,9 +1,11 @@
 import React from "react";
 import { Modal, TouchableOpacity, useColorScheme } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { CheckCircle2, CircleUserRound, Users, X } from "lucide-react-native";
+import { CheckCircle2, Users, X } from "lucide-react-native";
 
-import { Image, Pressable, ScrollView, Text, View } from "@/tw";
+import { Avatar } from "@/components/ui/Avatar";
+import { Pressable, ScrollView, Text, View } from "@/tw";
+import { Chip } from "@/components/ui/Chip";
 import { useLocale } from "@/features/preferences/localeStore";
 import { getThemeColors } from "@/theme/colors";
 
@@ -57,6 +59,7 @@ export function HirerQuestRosterModal({
         <Pressable
           className="absolute inset-0"
           onPress={onClose}
+          accessibilityRole="button"
           accessibilityLabel={messages.close}
         />
         <View
@@ -66,6 +69,7 @@ export function HirerQuestRosterModal({
             maxHeight: "85%",
             paddingBottom: Math.max(insets.bottom, 20),
           }}
+          accessibilityViewIsModal
         >
           <View className="mb-4 flex-row items-center justify-between">
             <View className="flex-1 pr-4">
@@ -89,6 +93,7 @@ export function HirerQuestRosterModal({
               className="rounded-full p-2"
               style={{ backgroundColor: themeColors.surfaceAccent }}
               testID="hirer-roster-close"
+              accessibilityRole="button"
               accessibilityLabel={messages.close}
             >
               <X size={18} color={themeColors.textSecondary} />
@@ -97,29 +102,29 @@ export function HirerQuestRosterModal({
 
           {/* Quick Counter Pills */}
           <View className="mt-2 flex-row gap-2">
-            <View
+            <Chip
               className="rounded-full px-3 py-1"
-              style={{ backgroundColor: themeColors.surfaceAccent }}
-            >
-              <Text
-                className="font-ku-medium text-xs"
-                style={{ color: themeColors.primary }}
-              >
-                {messages.joinedLabel(assignedWorkers.length, headcount)}
-              </Text>
-            </View>
+              label={messages.joinedLabel(assignedWorkers.length, headcount)}
+              style={{
+                backgroundColor: themeColors.surfaceAccent,
+                borderWidth: 0,
+              }}
+              textClassName="font-ku-medium text-xs"
+              textStyle={{ color: themeColors.primary }}
+              tone="accent"
+            />
             {applicants.length > 0 && (
-              <View
+              <Chip
                 className="rounded-full px-3 py-1"
-                style={{ backgroundColor: themeColors.surfaceMuted }}
-              >
-                <Text
-                  className="font-ku-medium text-xs"
-                  style={{ color: themeColors.textStrong }}
-                >
-                  {messages.applicantsLabel(applicants.length)}
-                </Text>
-              </View>
+                label={messages.applicantsLabel(applicants.length)}
+                style={{
+                  backgroundColor: themeColors.surfaceMuted,
+                  borderWidth: 0,
+                }}
+                textClassName="font-ku-medium text-xs"
+                textStyle={{ color: themeColors.textStrong }}
+                tone="accent"
+              />
             )}
           </View>
 
@@ -152,23 +157,14 @@ export function HirerQuestRosterModal({
                     testID={`roster-worker-${worker.id}`}
                   >
                     <View className="flex-1 flex-row items-center">
-                      <View
+                      <Avatar
                         className="mr-3 h-10 w-10 items-center justify-center overflow-hidden rounded-full"
+                        name={worker.displayName}
+                        size={40}
                         style={{ backgroundColor: themeColors.surfaceAccent }}
-                      >
-                        {worker.avatarUri ? (
-                          <Image
-                            source={{ uri: worker.avatarUri }}
-                            className="h-full w-full"
-                            contentFit="cover"
-                          />
-                        ) : (
-                          <CircleUserRound
-                            size={24}
-                            color={themeColors.primary}
-                          />
-                        )}
-                      </View>
+                        textClassName="font-ku-bold text-sm"
+                        uri={worker.avatarUri}
+                      />
                       <View className="flex-1 pr-2">
                         <Text
                           className="font-ku-bold"
@@ -194,6 +190,8 @@ export function HirerQuestRosterModal({
                       className="rounded-lg px-3 py-1.5"
                       style={{ backgroundColor: themeColors.surfaceAccent }}
                       testID={`roster-worker-profile-${worker.id}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={messages.viewProfile}
                     >
                       <Text
                         className="font-ku-bold text-xs"
@@ -230,23 +228,14 @@ export function HirerQuestRosterModal({
                     testID={`roster-applicant-${applicant.id}`}
                   >
                     <View className="flex-1 flex-row items-center">
-                      <View
+                      <Avatar
                         className="mr-3 h-10 w-10 items-center justify-center overflow-hidden rounded-full"
+                        name={applicant.displayName}
+                        size={40}
                         style={{ backgroundColor: themeColors.surfaceAccent }}
-                      >
-                        {applicant.avatarUri ? (
-                          <Image
-                            source={{ uri: applicant.avatarUri }}
-                            className="h-full w-full"
-                            contentFit="cover"
-                          />
-                        ) : (
-                          <CircleUserRound
-                            size={24}
-                            color={themeColors.primary}
-                          />
-                        )}
-                      </View>
+                        textClassName="font-ku-bold text-sm"
+                        uri={applicant.avatarUri}
+                      />
                       <View className="flex-1 pr-2">
                         <Text
                           className="font-ku-bold"
@@ -272,6 +261,8 @@ export function HirerQuestRosterModal({
                       className="rounded-lg px-3 py-1.5"
                       style={{ backgroundColor: themeColors.surfaceAccent }}
                       testID={`roster-applicant-profile-${applicant.id}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={messages.viewProfile}
                     >
                       <Text
                         className="font-ku-bold text-xs"
@@ -308,6 +299,8 @@ export function HirerQuestRosterModal({
             className="mt-2 w-full items-center rounded-2xl p-4"
             style={{ backgroundColor: themeColors.primary }}
             testID="hirer-roster-manage-button"
+            accessibilityRole="button"
+            accessibilityLabel={messages.openManageQuest}
           >
             <Text className="font-ku-bold text-base text-white">
               {messages.openManageQuest}

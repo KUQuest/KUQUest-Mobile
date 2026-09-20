@@ -3,24 +3,29 @@ import { cn } from "@/tw/cn";
 import { TextInput as RNTextInput, TextInputProps } from "react-native";
 import { Text, TextInput, View } from "@/tw";
 import { colors } from "@/theme/colors";
-import styles from "../styles/inputStyles";
+import styles from "./textAreaStyles";
 
-interface InputProps extends TextInputProps {
+export interface TextAreaProps extends TextInputProps {
   label: string;
   error?: string;
+  maxLength?: number;
+  value: string;
   success?: boolean;
 }
 
-export const Input = React.forwardRef<
+export const TextArea = React.forwardRef<
   React.ComponentRef<typeof RNTextInput>,
-  InputProps
->(function Input(
+  TextAreaProps
+>(function TextArea(
   {
     label,
     error,
+    maxLength,
+    value,
     success = false,
     style,
     accessibilityLabel,
+    accessibilityHint,
     editable = true,
     onFocus,
     onBlur,
@@ -44,8 +49,16 @@ export const Input = React.forwardRef<
         )}
         style={style}
         placeholderTextColor={colors.textFaint}
+        multiline
+        textAlignVertical="top"
+        maxLength={maxLength}
+        value={value}
         accessibilityLabel={accessibilityLabel ?? label}
-        accessibilityState={{ disabled: !editable }}
+        accessibilityHint={accessibilityHint ?? error}
+        accessibilityState={{
+          disabled: !editable,
+          ...(error ? { invalid: true } : {}),
+        }}
         editable={editable}
         onFocus={(event) => {
           setFocused(true);
@@ -57,16 +70,27 @@ export const Input = React.forwardRef<
         }}
         {...props}
       />
-      {error ? (
-        <Text
-          accessibilityRole="alert"
-          accessibilityLiveRegion="assertive"
-          className={styles.errorText}
-        >
-          {error}
-        </Text>
+      {error || maxLength !== undefined ? (
+        <View className={styles.footerRow}>
+          {error ? (
+            <Text
+              accessibilityRole="alert"
+              accessibilityLiveRegion="assertive"
+              className={styles.errorText}
+            >
+              {error}
+            </Text>
+          ) : (
+            <View className="flex-1" />
+          )}
+          {maxLength !== undefined && (
+            <Text className={styles.counterText}>
+              {value.length} / {maxLength}
+            </Text>
+          )}
+        </View>
       ) : null}
     </View>
   );
 });
-Input.displayName = "Input";
+TextArea.displayName = "TextArea";

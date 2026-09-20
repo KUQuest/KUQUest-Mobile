@@ -1,13 +1,14 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  FlatList,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
   useWindowDimensions,
+  type ListRenderItemInfo,
 } from "react-native";
 import { AlertCircle, FileText, RefreshCw } from "lucide-react-native";
 import { useRouter } from "expo-router";
@@ -38,6 +39,8 @@ import {
 } from "./walletModule";
 import { TransactionDetailModal } from "./components/TransactionDetailModal";
 import { TransferEarningsModal } from "./components/TransferEarningsModal";
+
+const MemoizedHirerTransactionItem = React.memo(HirerTransactionItem);
 
 export default function WalletScreen() {
   const router = useRouter();
@@ -70,30 +73,35 @@ export default function WalletScreen() {
     void Promise.all([refetchWallet(), refetchHistory()]);
   }, [refetchHistory, refetchWallet]);
 
-  const classifiedList = transactions.map((tx) =>
-    classifyHirerTransaction(tx, locale)
+  const classifiedList = useMemo(
+    () => transactions.map((tx) => classifyHirerTransaction(tx, locale)),
+    [transactions, locale]
   );
 
-  const filteredList = classifiedList.filter((item) => {
-    if (filter === "inflow") return item.isInflow;
-    if (filter === "outflow") return !item.isInflow;
-    if (filter === "top_up") {
-      return item.type === "TOP_UP" || item.sourceApi === "TOP_UPS";
-    }
-    if (filter === "payout") {
-      return item.type === "PAYOUT" || item.sourceApi === "PAYOUTS";
-    }
-    if (filter === "escrow") {
-      return (
-        item.iconKind === "escrow_pay" ||
-        item.iconKind === "unlock_pay" ||
-        item.iconKind === "refund" ||
-        item.type === "HOLD" ||
-        item.type === "RELEASE"
-      );
-    }
-    return true;
-  });
+  const filteredList = useMemo(
+    () =>
+      classifiedList.filter((item) => {
+        if (filter === "inflow") return item.isInflow;
+        if (filter === "outflow") return !item.isInflow;
+        if (filter === "top_up") {
+          return item.type === "TOP_UP" || item.sourceApi === "TOP_UPS";
+        }
+        if (filter === "payout") {
+          return item.type === "PAYOUT" || item.sourceApi === "PAYOUTS";
+        }
+        if (filter === "escrow") {
+          return (
+            item.iconKind === "escrow_pay" ||
+            item.iconKind === "unlock_pay" ||
+            item.iconKind === "refund" ||
+            item.type === "HOLD" ||
+            item.type === "RELEASE"
+          );
+        }
+        return true;
+      }),
+    [classifiedList, filter]
+  );
 
   const filterOptions = [
     { key: "all" as const, label: m.filterAll },
@@ -104,15 +112,111 @@ export default function WalletScreen() {
     { key: "outflow" as const, label: m.filterOutflow },
   ];
 
+  const renderItem = useCallback(
+    ({ item }: ListRenderItemInfo<ClassifiedHirerTransaction>) => (
+      <MemoizedHirerTransactionItem
+        onPress={setSelectedTransaction}
+        transaction={item}
+      />
+    ),
+    [setSelectedTransaction]
+  );
+
+  const keyExtractor = useCallback(
+    (item: ClassifiedHirerTransaction) => item.id,
+    []
+  );
+
+  const listHeader = (
+    <>
+      {/* Screen Header */}
+      <HirerWalletHeader
+        subtitle={m.walletSubtitle}
+        title={m.financeSubtitle}
+      />
+      {/* Action Banner "เติมเงิน" */}
+      <HirerWalletBanner
+        label={m.sendMoneyAction}
+        onPress={() => router.push("/top-up")}
+      />
+
+      {/* Balance Compartment Cards: Spending Balance & Money in Escrow (Swappable Separately) */}
+      <HirerBalanceCards
+        balanceCardsHint={m.balanceCardsHint}
+        earningsBalanceSatang={balances?.earningsBalanceSatang ?? 0}
+        earningsDesc={m.earningsCardDesc}
+        earningsTitle={m.earningsCardTitle}
+        escrowDesc={m.escrowCardDesc}
+        escrowTitle={m.escrowCardTitle}
+        fundingReservedSatang={balances?.fundingReservedSatang ?? 0}
+        hirerViewLabel={m.hirerViewLabel}
+        payoutDesc={m.payoutCardDesc}
+        payoutTitle={m.payoutCardTitle}
+        reservedForPayoutsSatang={balances?.reservedForPayoutsSatang ?? 0}
+        spendingBalanceSatang={balances?.spendingBalanceSatang ?? 0}
+        spendingDesc={m.spendingBalanceCardDesc}
+        spendingTitle={m.spendingBalanceCardTitle}
+        swapAllButton={m.swapAllButton}
+        swapHint={m.swapHint}
+        workerViewLabel={m.workerViewLabel}
+        onTransferEarnings={() => setTransferModalOpen(true)}
+        transferButtonLabel={m.convertEarnings}
+      />
+
+      {/* History Section: Header & Filter Dropdown */}
+      <HirerHistoryFilter
+        onSelectFilter={setFilter}
+        options={filterOptions}
+        selectedFilter={filter}
+        title={m.historySectionTitle}
+      />
+    </>
+  );
+
+  const emptyState =
+    loading && !refreshing ? (
+      <View style={styles.centerContainer} testID="hirer-wallet-loading">
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    ) : error && !balances ? (
+      <View style={styles.errorCard} testID="hirer-wallet-error">
+        <AlertCircle color={colors.danger} size={32} />
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity
+          accessibilityLabel={m.retry}
+          accessibilityRole="button"
+          onPress={handleRefresh}
+          style={styles.retryButton}
+          testID="hirer-wallet-retry-button"
+        >
+          <RefreshCw color="#FFFFFF" size={16} />
+          <Text style={styles.retryButtonText}>{m.retry}</Text>
+        </TouchableOpacity>
+      </View>
+    ) : (
+      <View style={styles.emptyCard} testID="hirer-wallet-empty">
+        <View style={styles.emptyIconBox}>
+          <FileText color="#9CA3AF" size={28} />
+        </View>
+        <Text style={styles.emptyTitle}>{m.emptyHistoryTitle}</Text>
+        <Text style={styles.emptyDesc}>{m.emptyHistoryDesc}</Text>
+      </View>
+    );
+
   return (
     <ScreenLayout edges={["top", "left", "right"]} style={styles.screen}>
-      <ScrollView
+      <FlatList
         contentContainerStyle={{
           paddingBottom:
             getBottomNavigationInset(metrics, insets.bottom) + spacing.xl,
           paddingHorizontal: spacing.md,
           paddingTop: spacing.xs,
         }}
+        data={filteredList}
+        keyExtractor={keyExtractor}
+        ListEmptyComponent={emptyState}
+        ListHeaderComponent={listHeader}
+        onRefresh={handleRefresh}
         refreshControl={
           <RefreshControl
             colors={[colors.primary]}
@@ -121,91 +225,11 @@ export default function WalletScreen() {
             tintColor={colors.primary}
           />
         }
+        refreshing={refreshing}
+        renderItem={renderItem}
         showsVerticalScrollIndicator={false}
-        testID="money-screen"
-      >
-        {/* Screen Header */}
-        <HirerWalletHeader
-          subtitle={m.walletSubtitle}
-          title={m.financeSubtitle}
-        />
-        {/* Action Banner "เติมเงิน" */}
-        <HirerWalletBanner
-          label={m.sendMoneyAction}
-          onPress={() => router.push("/top-up")}
-        />
-
-        {/* Balance Compartment Cards: Spending Balance & Money in Escrow (Swappable Separately) */}
-        <HirerBalanceCards
-          balanceCardsHint={m.balanceCardsHint}
-          earningsBalanceSatang={balances?.earningsBalanceSatang ?? 0}
-          earningsDesc={m.earningsCardDesc}
-          earningsTitle={m.earningsCardTitle}
-          escrowDesc={m.escrowCardDesc}
-          escrowTitle={m.escrowCardTitle}
-          fundingReservedSatang={balances?.fundingReservedSatang ?? 0}
-          hirerViewLabel={m.hirerViewLabel}
-          payoutDesc={m.payoutCardDesc}
-          payoutTitle={m.payoutCardTitle}
-          reservedForPayoutsSatang={balances?.reservedForPayoutsSatang ?? 0}
-          spendingBalanceSatang={balances?.spendingBalanceSatang ?? 0}
-          spendingDesc={m.spendingBalanceCardDesc}
-          spendingTitle={m.spendingBalanceCardTitle}
-          swapAllButton={m.swapAllButton}
-          swapHint={m.swapHint}
-          workerViewLabel={m.workerViewLabel}
-          onTransferEarnings={() => setTransferModalOpen(true)}
-          transferButtonLabel={m.convertEarnings}
-        />
-
-        {/* History Section: Header & Filter Dropdown */}
-        <HirerHistoryFilter
-          onSelectFilter={setFilter}
-          options={filterOptions}
-          selectedFilter={filter}
-          title={m.historySectionTitle}
-        />
-
-        {/* Transactions List / Loading / Error / Empty States */}
-        {loading && !refreshing ? (
-          <View style={styles.centerContainer} testID="hirer-wallet-loading">
-            <ActivityIndicator color={colors.primary} size="large" />
-          </View>
-        ) : error && !balances ? (
-          <View style={styles.errorCard} testID="hirer-wallet-error">
-            <AlertCircle color={colors.danger} size={32} />
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity
-              accessibilityLabel={m.retry}
-              accessibilityRole="button"
-              onPress={handleRefresh}
-              style={styles.retryButton}
-              testID="hirer-wallet-retry-button"
-            >
-              <RefreshCw color="#FFFFFF" size={16} />
-              <Text style={styles.retryButtonText}>{m.retry}</Text>
-            </TouchableOpacity>
-          </View>
-        ) : filteredList.length > 0 ? (
-          <View testID="hirer-wallet-transactions-list">
-            {filteredList.map((tx) => (
-              <HirerTransactionItem
-                key={tx.id}
-                onPress={setSelectedTransaction}
-                transaction={tx}
-              />
-            ))}
-          </View>
-        ) : (
-          <View style={styles.emptyCard} testID="hirer-wallet-empty">
-            <View style={styles.emptyIconBox}>
-              <FileText color="#9CA3AF" size={28} />
-            </View>
-            <Text style={styles.emptyTitle}>{m.emptyHistoryTitle}</Text>
-            <Text style={styles.emptyDesc}>{m.emptyHistoryDesc}</Text>
-          </View>
-        )}
-      </ScrollView>
+        testID="hirer-wallet-transactions-list"
+      />
 
       {/* Transaction Detail Modal */}
       <TransactionDetailModal

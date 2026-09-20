@@ -8,6 +8,7 @@ export const onboardingMessages = {
     homeWelcome: "ยินดีต้อนรับสู่ KUQuest!",
     logout: "ออกจากระบบ",
     editProfile: "แก้ไขโปรไฟล์",
+    profileImageLabel: "รูปโปรไฟล์ที่อัปโหลด",
     saveChanges: "บันทึกการเปลี่ยนแปลง",
     stepTitle: "ข้อมูลส่วนตัว",
     stepIndicator: "ขั้นตอนที่ 1 จาก 3",
@@ -127,6 +128,9 @@ export const onboardingMessages = {
     workDesc:
       "รวบรวมผลงานที่คุณภาคภูมิใจ เพื่อเป็นเครื่องยืนยันทักษะและความสำเร็จของคุณ",
     addImage: "+ เพิ่มรูปภาพ",
+    certificateImageLabel: (index: number) =>
+      `รูปเกียรติบัตรที่อัปโหลดรายการที่ ${index}`,
+    workImageLabel: (index: number) => `รูปผลงานที่อัปโหลดรายการที่ ${index}`,
     workTitle: "ชื่อผลงาน",
     workDetailLabel: "รายละเอียดผลงาน",
     addMoreWorks: "+ เพิ่มตัวอย่างผลงาน",
@@ -161,6 +165,7 @@ export const onboardingMessages = {
     homeWelcome: "Welcome to KUQuest!",
     logout: "Logout",
     editProfile: "Edit Profile",
+    profileImageLabel: "Uploaded profile photo",
     saveChanges: "Save Changes",
     stepTitle: "PERSONAL INFORMATION",
     stepIndicator: "Step 1 of 3",
@@ -283,6 +288,8 @@ Your data will be stored securely in accordance with applicable Personal Data Pr
     workDesc:
       "Showcase the projects you are proud of to demonstrate your skills and achievements.",
     addImage: "+ Add Image",
+    certificateImageLabel: (index: number) => `Uploaded certificate ${index}`,
+    workImageLabel: (index: number) => `Uploaded work sample ${index}`,
     workTitle: "Title",
     workDetailLabel: "Description",
     addMoreWorks: "+ Add more works",

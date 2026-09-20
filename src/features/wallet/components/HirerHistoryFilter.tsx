@@ -68,6 +68,9 @@ export function HirerHistoryFilter({
               const isSelected = opt.key === selectedFilter;
               return (
                 <TouchableOpacity
+                  accessibilityLabel={opt.label}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
                   key={opt.key}
                   activeOpacity={0.7}
                   onPress={() => {

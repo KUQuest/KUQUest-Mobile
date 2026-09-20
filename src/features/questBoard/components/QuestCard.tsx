@@ -13,6 +13,7 @@ import {
 import { Pressable, Image, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { formatSatang } from "@/domain/satang";
+import { formatDate } from "@/domain/datetime";
 import { colors } from "@/theme/colors";
 import {
   questBoardMessages,
@@ -22,20 +23,6 @@ import { liveQuestService } from "../liveQuestService";
 import { getQuestRewardSatang } from "../questWorkflow";
 import type { QuestBoardQuest } from "../types";
 import styles from "../questBoardStyles";
-
-function formatDeadline(value: string, locale: "en" | "th"): string {
-  if (locale === "th") {
-    return new Intl.DateTimeFormat("th-TH-u-ca-buddhist", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "2-digit",
-    }).format(new Date(`${value}T12:00:00`));
-  }
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-  }).format(new Date(`${value}T12:00:00`));
-}
 
 function participationLabel(
   quest: QuestBoardQuest,
@@ -60,7 +47,7 @@ function questCardAccessibilityLabel(
     `${messages.reward}: ${formatSatang(getQuestRewardSatang(quest), locale)} ${messages.perPerson}`,
     participationLabel(quest, messages),
     messages.participantsSummary(quest.acceptedParticipants, quest.headcount),
-    `${messages.schedule}: ${quest.timeRange ? `${quest.timeRange} · ` : ""}${formatDeadline(quest.startDate, locale)}`,
+    `${messages.schedule}: ${quest.timeRange ? `${quest.timeRange} · ` : ""}${formatDate(quest.startDate, locale, "")}`,
     `${messages.location}: ${quest.location}`,
     messages.viewDetails,
   ]
@@ -90,8 +77,8 @@ export function QuestCard({ quest, locale, onDetail }: QuestCardProps) {
   const tags = [...new Set(quest.tags)].slice(0, 1);
   const spotsRemaining = quest.headcount - quest.acceptedParticipants;
   const scheduleLabel = quest.timeRange
-    ? `${quest.timeRange} · ${formatDeadline(quest.startDate, locale)}`
-    : formatDeadline(quest.startDate, locale);
+    ? `${quest.timeRange} · ${formatDate(quest.startDate, locale, "")}`
+    : formatDate(quest.startDate, locale, "");
 
   const ownerDisplayName = quest.creator.name || quest.hirerName || "Hirer";
   const ownerInitials =

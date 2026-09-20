@@ -24,6 +24,7 @@ export interface NavigationMessages {
   placeholderDescription: string;
   logout: string;
   back: string;
+  unreadMessages: string;
 }
 
 export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
@@ -53,6 +54,7 @@ export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
     placeholderDescription: "This area is ready for its feature content.",
     logout: "Log out",
     back: "Go back",
+    unreadMessages: "Unread messages",
   },
   th: {
     board: "หน้าหลัก",
@@ -78,5 +80,6 @@ export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
     placeholderDescription: "พื้นที่นี้พร้อมสำหรับเนื้อหาของฟีเจอร์แล้ว",
     logout: "ออกจากระบบ",
     back: "ย้อนกลับ",
+    unreadMessages: "ข้อความที่ยังไม่ได้อ่าน",
   },
 };

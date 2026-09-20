@@ -6,9 +6,26 @@ import { X } from "lucide-react-native";
 import { Pressable, Text, View } from "@/tw";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
-import styles from "./groupQuestStyles";
 
-export interface QuestBottomSheetProps {
+const styles = {
+  overlay: "bg-ku-overlay flex-1 justify-end",
+  overlayFullScreen: "bg-ku-card flex-1",
+  backdrop: "absolute bottom-0 left-0 right-0 top-0",
+  sheet:
+    "bg-ku-card max-h-[92%] min-h-[360px] rounded-tl-[24px] rounded-tr-[24px] px-[20px] pt-[12px]",
+  sheetFullScreen: "bg-ku-card flex-1 px-[20px] pt-[12px]",
+  handle:
+    "self-center bg-ku-border-accent rounded-ku-pill h-[4px] mb-[14px] w-[40px]",
+  header: "items-start flex-row justify-between",
+  heading: "flex-1 min-w-0 pr-[12px]",
+  title: "text-ku-text-strong font-ku-bold text-ku-title-small",
+  subtitle:
+    "text-ku-text-secondary font-ku-regular text-ku-body-small mt-[3px]",
+  close:
+    "items-center bg-ku-surface-muted rounded-ku-pill h-[44px] justify-center w-[44px]",
+} as const;
+
+export interface BottomSheetProps {
   visible: boolean;
   title: string;
   subtitle?: string;
@@ -20,13 +37,7 @@ export interface QuestBottomSheetProps {
   fullScreen?: boolean;
 }
 
-/**
- * The small native sheet seam shared by the group Quest surfaces.
- *
- * It deliberately stays on React Native Modal rather than introducing a
- * gesture/dependency layer. Domain state and actions remain owned by callers.
- */
-export function QuestBottomSheet({
+export function BottomSheet({
   visible,
   title,
   subtitle,
@@ -36,7 +47,7 @@ export function QuestBottomSheet({
   testID,
   bottomInset,
   fullScreen = false,
-}: QuestBottomSheetProps) {
+}: BottomSheetProps) {
   const insets = useSafeAreaInsets();
   const paddingBottom = Math.max(
     spacing.md,
@@ -50,16 +61,12 @@ export function QuestBottomSheet({
       transparent={!fullScreen}
       visible={visible}
     >
-      <View
-        className={
-          fullScreen ? styles.sheetOverlayFullScreen : styles.sheetOverlay
-        }
-      >
+      <View className={fullScreen ? styles.overlayFullScreen : styles.overlay}>
         {fullScreen ? null : (
           <Pressable
             accessibilityLabel={closeLabel}
             accessibilityRole="button"
-            className={styles.sheetBackdrop}
+            className={styles.backdrop}
             onPress={onClose}
             testID={`${testID}-backdrop`}
           />
@@ -74,20 +81,20 @@ export function QuestBottomSheet({
           }}
           testID={testID}
         >
-          {fullScreen ? null : <View className={styles.sheetHandle} />}
-          <View className={styles.sheetHeader}>
-            <View className={styles.sheetHeading}>
-              <Text accessibilityRole="header" className={styles.sheetTitle}>
+          {fullScreen ? null : <View className={styles.handle} />}
+          <View className={styles.header}>
+            <View className={styles.heading}>
+              <Text accessibilityRole="header" className={styles.title}>
                 {title}
               </Text>
               {subtitle ? (
-                <Text className={styles.sheetSubtitle}>{subtitle}</Text>
+                <Text className={styles.subtitle}>{subtitle}</Text>
               ) : null}
             </View>
             <Pressable
               accessibilityLabel={closeLabel}
               accessibilityRole="button"
-              className={styles.sheetClose}
+              className={styles.close}
               onPress={onClose}
               testID={`${testID}-close`}
             >
@@ -101,4 +108,4 @@ export function QuestBottomSheet({
   );
 }
 
-QuestBottomSheet.displayName = "QuestBottomSheet";
+BottomSheet.displayName = "BottomSheet";

@@ -353,7 +353,7 @@ export function WalletPaymentModal({
                             },
                           ]}
                         >
-                          ฿{amt.toLocaleString("en-US")}
+                          {formatSatang(amt * 100, locale)}
                         </Text>
                       </TouchableOpacity>
                     );

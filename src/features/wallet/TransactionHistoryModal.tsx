@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { ArrowDownLeft, ArrowUpRight, RefreshCw, X } from "lucide-react-native";
 import { type UserTransaction } from "@/api/WalletApi";
+import { formatSatang } from "@/domain/satang";
 import type { SupportedLocale } from "@/locales/locale";
 import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
@@ -32,10 +33,6 @@ export function TransactionHistoryModal({
   const historyResult = historyQuery.data ?? null;
   const handleRefresh = () => {
     void historyQuery.refetch();
-  };
-
-  const formatAmount = (satang: number) => {
-    return (satang / 100).toLocaleString("en-US", { minimumFractionDigits: 2 });
   };
 
   const getStatusBadgeStyle = (status: string, isPlaceholder?: boolean) => {
@@ -72,6 +69,7 @@ export function TransactionHistoryModal({
               maxHeight: "90%",
             },
           ]}
+          accessibilityViewIsModal
         >
           {/* Modal Header */}
           <View style={s.modalHeader}>
@@ -83,6 +81,7 @@ export function TransactionHistoryModal({
             <TouchableOpacity
               accessibilityLabel={m.refresh}
               accessibilityRole="button"
+              accessibilityState={{ disabled: loading }}
               disabled={loading}
               onPress={handleRefresh}
               style={[s.closeBtn, { marginRight: 6 }]}
@@ -190,8 +189,11 @@ export function TransactionHistoryModal({
                             },
                           ]}
                         >
-                          {isInflow ? "+" : "-"}฿
-                          {formatAmount(item.amountSatang)}
+                          {formatSatang(
+                            isInflow ? item.amountSatang : -item.amountSatang,
+                            locale,
+                            "signed"
+                          )}
                         </Text>
                         <View
                           style={[s.txBadge, { backgroundColor: badge.bg }]}

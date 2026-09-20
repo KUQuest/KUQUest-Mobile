@@ -110,7 +110,7 @@ const mockConversation: ChatConversation = {
   initials: "SO",
   avatarColor: "#059669",
   latestMessage: { en: "Hello", th: "สวัสดี" },
-  latestTime: "10:30 AM",
+  latestAt: "2026-09-15T03:30:00Z",
   unreadCount: 0,
   messages: [],
 };
@@ -296,7 +296,7 @@ describe("ChatConversationMedia", () => {
       const message: DisplayChatMessage = {
         id: "msg-1",
         sender: "other",
-        time: "11:00 AM",
+        createdAt: "2026-09-15T04:00:00Z",
         attachments: [pdfAttachment],
       };
       const onFilePress = jest.fn();
@@ -335,7 +335,7 @@ describe("ChatConversationMedia", () => {
       const message: DisplayChatMessage = {
         id: "msg-2",
         sender: "me",
-        time: "11:05 AM",
+        createdAt: "2026-09-15T04:05:00Z",
         attachments: [imgAttachment],
       };
 

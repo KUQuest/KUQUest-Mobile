@@ -26,7 +26,6 @@ import type { WalletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
 import { fontFamily } from "@/theme/typography";
 import { useConvertEarningsMutation } from "../api/walletQueries";
-import { formatHirerCardAmount } from "../walletModule";
 
 interface TransferEarningsModalProps {
   visible: boolean;
@@ -157,7 +156,7 @@ export function TransferEarningsModal({
                     style={styles.flowAmount}
                     testID="transfer-current-earnings"
                   >
-                    {formatHirerCardAmount(earningsSatang)}
+                    {formatSatang(earningsSatang, "en", "exact")}
                   </Text>
                 </View>
               </View>
@@ -190,7 +189,7 @@ export function TransferEarningsModal({
                     style={styles.flowAmount}
                     testID="transfer-current-spending"
                   >
-                    {formatHirerCardAmount(spendingSatang)}
+                    {formatSatang(spendingSatang, "en", "exact")}
                   </Text>
                 </View>
               </View>
@@ -259,7 +258,7 @@ export function TransferEarningsModal({
                             !isAvailable ? styles.presetChipTextDisabled : null,
                           ]}
                         >
-                          ฿{presetBaht}
+                          {formatSatang(presetSatang, "en")}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -321,13 +320,13 @@ export function TransferEarningsModal({
                     ยอดเงินพร้อมใช้หลังโอน:
                   </Text>
                   <Text style={styles.previewValueSuccess}>
-                    {formatHirerCardAmount(newSpendingSatang)}
+                    {formatSatang(newSpendingSatang, "en", "exact")}
                   </Text>
                 </View>
                 <View style={styles.previewRow}>
                   <Text style={styles.previewLabel}>รายได้สะสมคงเหลือ:</Text>
                   <Text style={styles.previewValue}>
-                    {formatHirerCardAmount(newEarningsSatang)}
+                    {formatSatang(newEarningsSatang, "en", "exact")}
                   </Text>
                 </View>
               </View>

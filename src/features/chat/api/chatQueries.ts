@@ -17,16 +17,24 @@ export type ChatConversationMode = "WORK" | "CANDIDATE_INQUIRY";
 
 export const chatKeys = {
   all: ["chat"] as const,
-  conversations: (viewerId: string, limit = 20) =>
-    [...chatKeys.all, "conversations", viewerId, limit] as const,
-  candidateInquiries: (viewerId: string, limit = 20) =>
-    [...chatKeys.all, "candidate-inquiries", viewerId, limit] as const,
+  conversations: (viewerId: string) =>
+    [...chatKeys.all, "conversations", viewerId] as const,
+  candidateInquiries: (viewerId: string) =>
+    [...chatKeys.all, "candidate-inquiries", viewerId] as const,
   conversation: (
     conversationId: string,
     viewerId: string,
-    mode: ChatConversationMode
+    mode: ChatConversationMode,
+    questId?: string
   ) =>
-    [...chatKeys.all, "conversation", mode, conversationId, viewerId] as const,
+    [
+      ...chatKeys.all,
+      "conversation",
+      mode,
+      conversationId,
+      viewerId,
+      ...(mode === "WORK" ? [questId] : []),
+    ] as const,
   participants: (conversationId: string) =>
     [...chatKeys.all, "participants", conversationId] as const,
   candidateParticipants: (conversationId: string) =>
@@ -58,7 +66,7 @@ function candidateInquiryToConversation(
       .toUpperCase(),
     avatarColor: "#208AEF",
     latestMessage: { en: latestPreview, th: latestPreview },
-    latestTime: inquiry.latestMessage?.createdAt ?? "",
+    latestAt: inquiry.latestMessage?.createdAt ?? "",
     unreadCount: inquiry.unreadCount,
     messages: [],
     capability: {
@@ -151,18 +159,6 @@ export function useListParticipantsQuery(
   });
 }
 
-export function useCandidateInquiryQuery(
-  conversationId: string,
-  enabled = true
-) {
-  return useQuery({
-    enabled: Boolean(conversationId) && enabled,
-    queryKey: chatKeys.conversation(conversationId, "", "CANDIDATE_INQUIRY"),
-    queryFn: ({ signal }) =>
-      liveQuestService.getCandidateInquiry(conversationId, { signal }),
-  });
-}
-
 export function useCandidateInquiryParticipantsQuery(
   conversationId: string,
   enabled = true
@@ -212,7 +208,7 @@ export function useWorkConversationQuery(
 ) {
   return useQuery({
     enabled: Boolean(conversationId && viewerId && questId) && enabled,
-    queryKey: chatKeys.conversation(conversationId, viewerId, "WORK"),
+    queryKey: chatKeys.conversation(conversationId, viewerId, "WORK", questId),
     queryFn: async ({ signal }) => {
       const liveSnapshot = await liveQuestService.getLiveSnapshot(
         questId as string,
@@ -276,7 +272,8 @@ export function useCandidateConversationQuery(
     queryKey: chatKeys.conversation(
       conversationId,
       viewerId,
-      "CANDIDATE_INQUIRY"
+      "CANDIDATE_INQUIRY",
+      undefined
     ),
     queryFn: async ({ signal }) => {
       const [inquiry, participants] = await Promise.all([

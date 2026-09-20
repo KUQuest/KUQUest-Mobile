@@ -489,10 +489,9 @@ export interface RewardValidationMessages {
 }
 
 const defaultRewardValidationMessages: RewardValidationMessages = {
-  empty: "Enter a reward amount in THB.",
-  format: "Enter a valid amount in THB with up to 2 decimal places.",
-  bounds: (maximum) =>
-    `Reward must be between ฿0 and ฿${maximum.toLocaleString("en-US")}.`,
+  empty: createQuestMessages.en.rewardEmptyError,
+  format: createQuestMessages.en.rewardFormatError,
+  bounds: createQuestMessages.en.rewardBoundsError,
 };
 
 export function getRewardValidationError(

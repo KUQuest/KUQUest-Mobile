@@ -206,17 +206,6 @@ export function parseChatEvent(payload: unknown): ServerChatEvent {
   return chatEventSchema.parse(payload);
 }
 
-function formatTime(isoString: string): string {
-  try {
-    const date = new Date(isoString);
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    return `${hours}:${minutes}`;
-  } catch {
-    return "";
-  }
-}
-
 export function serverMessageToChatMessage(
   msg: ServerChatMessage,
   currentUserId?: string
@@ -229,7 +218,7 @@ export function serverMessageToChatMessage(
     id: msg.id,
     sender: isMe ? "me" : "other",
     text: localizedText,
-    time: formatTime(msg.createdAt),
+    createdAt: msg.createdAt,
   };
 }
 
@@ -260,9 +249,7 @@ export function serverConversationToChatConversation(
     initials: conv.quest.title.slice(0, 2).toUpperCase(),
     avatarColor: "#208AEF",
     latestMessage: localizedPreview,
-    latestTime: conv.latestMessage
-      ? formatTime(conv.latestMessage.createdAt)
-      : "",
+    latestAt: conv.latestMessage?.createdAt ?? "",
     unreadCount: conv.unreadCount,
     messages: [],
   };

@@ -367,7 +367,7 @@ export function BottomNav({
               ) : null}
               {item.hasUnread ? (
                 <View
-                  accessibilityLabel="Unread messages"
+                  accessibilityLabel={messages.unreadMessages}
                   className={styles.unreadBadge}
                 />
               ) : null}

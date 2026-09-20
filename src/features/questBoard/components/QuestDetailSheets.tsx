@@ -10,7 +10,7 @@ import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 import { getQuestRewardSatang } from "../questWorkflow";
 import type { QuestBoardQuest } from "../types";
 import styles from "../questDetailStyles";
-import { formatDeadline } from "../questDetailFormat";
+import { formatDate } from "@/domain/datetime";
 import {
   CandidateReviewSheet,
   type CandidateReviewSheetProps,
@@ -96,10 +96,10 @@ function ConfirmationSheet({
             >{`${formatSatang(getQuestRewardSatang(quest), locale)} ${messages.perPerson}`}</Text>
             <Text
               className={styles.confirmSummaryText}
-            >{`${messages.schedule}: ${formatDeadline(quest.startDate, locale)}${quest.timeRange ? ` · ${quest.timeRange}` : ""}`}</Text>
+            >{`${messages.schedule}: ${formatDate(quest.startDate, locale, "")}${quest.timeRange ? ` · ${quest.timeRange}` : ""}`}</Text>
             <Text
               className={styles.confirmSummaryText}
-            >{`${messages.deadline}: ${formatDeadline(quest.deadline, locale)}`}</Text>
+            >{`${messages.deadline}: ${formatDate(quest.deadline, locale, "")}`}</Text>
             <Text
               className={styles.confirmSummaryText}
             >{`${messages.location}: ${quest.location}`}</Text>

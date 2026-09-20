@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 
 import type { UploadAsset } from "@/api/fileUpload";
+import { disputeApi, type DisputeReason } from "@/api/DisputeApi";
 import type {
   QuestV2CreateEditRequestPayload,
   QuestV2ProofCreatePayload,
@@ -22,7 +23,6 @@ export const questBoardKeys = {
   board: () => [...questBoardKeys.all, "board"] as const,
   detail: (questId: string) =>
     [...questBoardKeys.all, "detail", questId] as const,
-  myHirer: () => [...questBoardKeys.all, "my-hirer"] as const,
   liveSnapshot: (questId: string, viewerId: string, editRequestId?: string) =>
     [
       ...questBoardKeys.all,
@@ -38,14 +38,6 @@ export function useQuestBoardQuery(enabled = true) {
     enabled,
     queryKey: questBoardKeys.board(),
     queryFn: ({ signal }) => liveQuestService.listBoardQuests({ signal }),
-  });
-}
-
-export function useMyHirerQuestBoardQuery(enabled = true) {
-  return useQuery({
-    enabled,
-    queryKey: questBoardKeys.myHirer(),
-    queryFn: ({ signal }) => liveQuestService.listMyHirerQuests({ signal }),
   });
 }
 
@@ -509,6 +501,33 @@ export function useCancelQuestMutation() {
     }) => liveQuestService.cancelQuest(questId, idempotencyKey),
     onSuccess: (_, variables) =>
       invalidateQuestReads(queryClient, variables.questId),
+  });
+}
+
+export function useFileDisputeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      questId,
+      reason,
+      statement,
+    }: {
+      questId: string;
+      viewerId: string;
+      reason: DisputeReason;
+      statement: string;
+    }) => disputeApi.fileDispute(questId, { reason, statement }),
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: questBoardKeys.liveSnapshot(
+          variables.questId,
+          variables.viewerId
+        ),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: questBoardKeys.detail(variables.questId),
+      });
+    },
   });
 }
 

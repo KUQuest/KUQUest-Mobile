@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -15,7 +15,6 @@ import {
   WalletCards,
 } from "lucide-react-native";
 import { formatSatang } from "@/domain/satang";
-import type { WalletBalances } from "@/api/WalletApi";
 import type { SupportedLocale } from "@/locales/locale";
 import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
@@ -31,13 +30,9 @@ import { walletStyles as s } from "./walletStyles";
 
 interface HomeWalletOverviewProps {
   locale: SupportedLocale;
-  onBalanceChange?: (balances: WalletBalances) => void;
 }
 
-export function HomeWalletOverview({
-  locale,
-  onBalanceChange,
-}: HomeWalletOverviewProps) {
+export function HomeWalletOverview({ locale }: HomeWalletOverviewProps) {
   const m = walletMessages[locale];
   const walletQuery = useWalletQuery();
   const balances = walletQuery.data ?? null;
@@ -47,10 +42,6 @@ export function HomeWalletOverview({
   const [payoutModalOpen, setPayoutModalOpen] = useState(false);
   const convertMutation = useConvertEarningsMutation();
   const converting = convertMutation.isPending;
-
-  useEffect(() => {
-    if (walletQuery.data) onBalanceChange?.(walletQuery.data);
-  }, [onBalanceChange, walletQuery.data]);
 
   const refreshWallet = () => {
     void walletQuery.refetch();

@@ -11,8 +11,8 @@ import {
 } from "lucide-react-native";
 
 import { Image, Pressable, ScrollView, Text, View } from "@/tw";
+import { Chip } from "@/components/ui/Chip";
 import { ScreenLayout } from "../../components/layout/ScreenLayout";
-import { cn } from "@/tw/cn";
 import { colors } from "@/theme/colors";
 import { getProfileLayoutMetrics } from "@/theme/profileLayout";
 import { useLocale } from "@/features/preferences/localeStore";
@@ -22,21 +22,21 @@ import {
   usePublicProfileQuery,
   usePublicProfileReviewsQuery,
 } from "./api/profileQueries";
-import {
-  AboutMe,
-  Certificates,
-  Experience,
-  MyWork,
-  ProfileHeader,
-  ProfileSkeleton,
-  ProfileStats,
-  Reviews,
-  type ProfileCertificate,
-  type ProfileExperience,
-  type ProfileReview,
-  type ProfileStatsData,
-  type ProfileWork,
-} from "./components/ProfileComponents";
+import { AboutMe } from "./components/AboutMe";
+import { Certificates } from "./components/Certificates";
+import { Experience } from "./components/Experience";
+import { MyWork } from "./components/MyWork";
+import { ProfileHeader } from "./components/ProfileHeader";
+import { ProfileSkeleton } from "./components/ProfileSkeleton";
+import { ProfileStats } from "./components/ProfileStats";
+import { Reviews } from "./components/Reviews";
+import type {
+  ProfileCertificate,
+  ProfileExperience,
+  ProfileReview,
+  ProfileStatsData,
+  ProfileWork,
+} from "./components/profileTypes";
 
 type PublicProfileTab =
   "about" | "experience" | "works" | "certificates" | "reviews";
@@ -247,35 +247,24 @@ export default function PublicProfileScreen() {
         {tabs.map(({ key, label, icon: Icon }) => {
           const isSelected = activeTab === key;
           return (
-            <Pressable
-              key={key}
-              testID={`public-profile-tab-${key}`}
-              accessibilityRole="tab"
+            <Chip
               accessibilityLabel={label}
-              accessibilityState={{ selected: isSelected }}
+              className="min-h-[40px] gap-1.5 px-4 py-2"
+              key={key}
+              label={label}
+              leadingIcon={
+                <Icon
+                  size={16}
+                  color={isSelected ? colors.white : colors.textSecondary}
+                  strokeWidth={2}
+                />
+              }
               onPress={() => setActiveTab(key)}
-              className={cn(
-                "min-h-[40px] flex-row items-center gap-1.5 rounded-ku-pill border px-4 py-2",
-                isSelected
-                  ? "border-ku-primary bg-ku-primary"
-                  : "border-ku-border-subtle bg-ku-surface-muted"
-              )}
-            >
-              <Icon
-                size={16}
-                color={isSelected ? colors.white : colors.textSecondary}
-                strokeWidth={2}
-              />
-              <Text
-                className={cn(
-                  "font-ku-semibold text-xs",
-                  isSelected ? "text-ku-white" : "text-ku-text-secondary"
-                )}
-                maxFontSizeMultiplier={2}
-              >
-                {label}
-              </Text>
-            </Pressable>
+              selected={isSelected}
+              testID={`public-profile-tab-${key}`}
+              textClassName="font-ku-semibold text-xs"
+              tone="tab"
+            />
           );
         })}
       </ScrollView>
