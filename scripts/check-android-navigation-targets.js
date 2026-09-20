@@ -7,7 +7,7 @@ const NAVIGATION_TARGET_GROUPS = [
   { label: "chat", ids: ["tab-chat"] },
   { label: "profile", ids: ["tab-profile"] },
 ];
-const MIN_TARGET_DP = Number(process.env.MIN_NAVIGATION_TARGET_DP ?? 44);
+const MIN_TARGET_DP = 44;
 
 function runAdb(serial, args) {
   try {
@@ -172,7 +172,7 @@ function main() {
       widthDp = width / density;
       heightDp = height / density;
       enabled = attributes.enabled === "true";
-      hittable = true;
+      hittable = attributes.clickable === "true";
     }
 
     if (!enabled) {
