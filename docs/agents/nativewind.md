@@ -2,7 +2,7 @@
 
 `className` is the default styling system in this repo. This file is the reference for writing it correctly _here_.
 
-Neighbouring authorities, not repeated below: `DESIGN.md` owns what the palette, type scale and components mean; `src/global.css` owns the token values; `docs/agents/gotchas.md` owns non-styling repo traps.
+Neighbouring authorities, not repeated below: `DESIGN.md` owns what the palette, type scale and components mean; `docs/agents/ui-design-rules.md` owns platform targets, accessibility semantics, contrast, responsive layout, and native proof; `src/global.css` owns the token values; `docs/agents/gotchas.md` owns non-styling repo traps.
 
 Installed stack: NativeWind 5 preview on top of `react-native-css`, Tailwind CSS v4, CSS-first theme. Read `package.json` for exact versions.
 

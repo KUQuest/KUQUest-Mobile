@@ -1,4 +1,7 @@
 const { execFileSync } = require("child_process");
+const METRO_PORT = Number(
+  process.env.METRO_PORT ?? process.env.EXPO_PORT ?? 8081
+);
 
 function runAdb(args) {
   try {
@@ -46,12 +49,12 @@ function resolveSerial() {
 
 try {
   const serial = resolveSerial();
-  runAdb(["-s", serial, "reverse", "tcp:8081", "tcp:8081"]);
+  runAdb(["-s", serial, "reverse", `tcp:${METRO_PORT}`, `tcp:${METRO_PORT}`]);
   console.log(`Android device prepared: ${serial}`);
   console.log("Metro device configuration:");
   console.log("  metroHost=127.0.0.1");
-  console.log("  metroPort=8081");
-  console.log("  bundleUrl=http://127.0.0.1:8081");
+  console.log(`  metroPort=${METRO_PORT}`);
+  console.log(`  bundleUrl=http://127.0.0.1:${METRO_PORT}`);
 } catch (error) {
   console.error(error.message);
   process.exitCode = 1;

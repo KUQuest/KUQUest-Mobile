@@ -1,7 +1,7 @@
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import MyQuestListScreen from "../MyQuestListScreen";
-
+import { projectMyQuestWorkspace } from "../myQuestWorkspaceProjection";
 const mockPush = jest.fn();
 const mockBack = jest.fn();
 const mockWorkerList = jest.fn();
@@ -155,8 +155,67 @@ describe("MyQuestListScreen", () => {
 
     fireEvent.press(screen.getByTestId("my-quest-list-action-draft-1"));
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/create",
-      params: { editQuestId: "draft-1" },
+      pathname: "/quest/[id]/edit",
+      params: { id: "draft-1" },
     });
+  });
+  it("projects Worker tabs, history items, and empty-state labels", () => {
+    const projection = projectMyQuestWorkspace({
+      role: "worker",
+      requestedTab: "history",
+      locale: "en",
+      hirerQuests: null,
+      workerSnapshots: [
+        snapshot("QUEST_COMPLETED", "Completed Quest", "ASSIGNMENT_COMPLETED"),
+        snapshot("QUEST_ASSIGNED", "Pending Quest", "ASSIGNMENT_ACTIVE"),
+      ] as never,
+      viewerId: "worker-1",
+    });
+
+    expect(projection.tabs).toEqual(["pending", "accepted", "history"]);
+    expect(projection.selectedTab).toBe("history");
+    expect(projection.selectedTabLabel).toBe("History");
+    expect(projection.emptyTitle).toBe("No completed Quest history");
+    expect(projection.emptyDescription).toBe(
+      "Quests in this status will appear here"
+    );
+    expect(projection.items.map((item) => item.title)).toEqual([
+      "Completed Quest",
+    ]);
+  });
+
+  it("projects Hirer tabs, normalizes invalid tabs, and projects drafts", () => {
+    const projection = projectMyQuestWorkspace({
+      role: "hirer",
+      requestedTab: "history",
+      locale: "en",
+      hirerQuests: [
+        draftQuest("draft-1", "Draft Quest", "QUEST_DRAFT"),
+        draftQuest("open-1", "Published Quest", "QUEST_OPEN"),
+      ] as never,
+      workerSnapshots: null,
+      viewerId: "hirer-1",
+    });
+
+    expect(projection.tabs).toEqual(["active", "draft", "completed"]);
+    expect(projection.selectedTab).toBe("active");
+    expect(projection.selectedTabLabel).toBe("Active");
+
+    const draftProjection = projectMyQuestWorkspace({
+      role: "hirer",
+      requestedTab: "draft",
+      locale: "en",
+      hirerQuests: [
+        draftQuest("draft-1", "Draft Quest", "QUEST_DRAFT"),
+        draftQuest("open-1", "Published Quest", "QUEST_OPEN"),
+      ] as never,
+      workerSnapshots: null,
+      viewerId: "hirer-1",
+    });
+
+    expect(draftProjection.selectedTab).toBe("draft");
+    expect(draftProjection.emptyTitle).toBe("No Quest drafts");
+    expect(draftProjection.items).toHaveLength(1);
+    expect(draftProjection.items[0]?.actionType).toBe("edit");
   });
 });

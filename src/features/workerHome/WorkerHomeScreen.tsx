@@ -8,12 +8,11 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowRightLeft, Search } from "lucide-react-native";
+import { Search } from "lucide-react-native";
 
 import { FlatList, Pressable, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
-import { useRoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
 import { useLocale } from "@/features/preferences/localeStore";
 import {
   useWorkerAssignmentsQuery,
@@ -50,7 +49,6 @@ export default function WorkerHomeScreen() {
   const handleScroll = handleNavigationScroll;
   const { locale } = useLocale();
   const messages = workerHomeMessages[locale];
-  const { switchWorkspace } = useRoleWorkspace();
 
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -110,10 +108,6 @@ export default function WorkerHomeScreen() {
     setSelectedTagId(tagId);
   }, []);
 
-  const handleSwitchToHirer = useCallback(() => {
-    void switchWorkspace("hirer");
-  }, [switchWorkspace]);
-
   const handleOpenFilter = useCallback(() => {
     // Open filter or toggle search options
   }, []);
@@ -154,8 +148,11 @@ export default function WorkerHomeScreen() {
   return (
     <ScreenLayout edges={["top", "left", "right"]} className="bg-ku-background">
       <FlatList
-        contentContainerClassName={styles.screenContent}
-        contentContainerStyle={{ paddingBottom: scrollBottomPadding }}
+        contentContainerStyle={{
+          paddingBottom: scrollBottomPadding,
+          paddingHorizontal: spacing.md,
+          paddingTop: 14,
+        }}
         data={availableQuests}
         ItemSeparatorComponent={WorkerQuestFeedSeparator}
         keyExtractor={keyExtractor}
@@ -191,32 +188,6 @@ export default function WorkerHomeScreen() {
         ListHeaderComponent={
           <View>
             <View className={styles.screenHeader}>
-              <View className={styles.headerTopRow}>
-                <View
-                  className={`${styles.roleBadge} border-ku-border-success bg-ku-surface-success`}
-                  testID="worker-workspace-badge"
-                >
-                  <View className={`${styles.roleBadgeDot} bg-ku-success`} />
-                  <Text className={`${styles.roleBadgeText} text-ku-success`}>
-                    {messages.badge}
-                  </Text>
-                </View>
-                <Pressable
-                  accessibilityHint="Switches role to Hirer workspace"
-                  accessibilityLabel={messages.switchToHirer}
-                  accessibilityRole="button"
-                  className={`${styles.switchRoleButton} border-ku-border-subtle bg-ku-surface`}
-                  onPress={handleSwitchToHirer}
-                  testID="switch-to-hirer-button"
-                >
-                  <ArrowRightLeft size={13} color={themeColors.primaryDeep} />
-                  <Text
-                    className={`${styles.switchRoleText} text-ku-primary-dark`}
-                  >
-                    {messages.switchToHirer}
-                  </Text>
-                </Pressable>
-              </View>
               <Text
                 accessibilityRole="header"
                 className={`${styles.screenTitle} text-ku-text-strong`}

@@ -3,6 +3,9 @@
 Entry point for agent-to-agent routing in this repo.
 
 - **Domain, spec, rulebook, and ADR routing**: read [`docs/agents/routing.md`](docs/agents/routing.md) before planning or coding. It routes by feature area, actor, and quest lifecycle state.
+- **Native UI, accessibility, and adaptive layout routing**: read
+  [`docs/agents/ui-design-rules.md`](docs/agents/ui-design-rules.md) with
+  [`DESIGN.md`](DESIGN.md) before the owning feature and ADR.
 - **Handoffs between agents** (implementer → tester, subagent → orchestrator): emit the **Handoff v1** format below.
 
 ## Handoff v1

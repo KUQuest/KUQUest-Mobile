@@ -73,7 +73,11 @@ function runStagingStart({
   spawn = spawnSync,
 } = {}) {
   const stagingEnvironment = createStagingEnvironment(environment);
-  const result = spawn("bun", ["x", "expo", "start", "--dev-client"], {
+  const expoArgs = ["x", "expo", "start", "--dev-client"];
+  if (stagingEnvironment.EXPO_PORT) {
+    expoArgs.push("--port", stagingEnvironment.EXPO_PORT);
+  }
+  const result = spawn("bun", expoArgs, {
     env: stagingEnvironment,
     stdio: "inherit",
     shell: process.platform === "win32",

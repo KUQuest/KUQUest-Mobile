@@ -110,7 +110,7 @@ spacing:
 components:
   button-primary:
     backgroundColor: "{colors.primary}"
-    textColor: "{colors.white}"
+    textColor: "{colors.on-primary}"
     typography: "{typography.body}"
     rounded: "{rounded.pill}"
     padding: "14px 16px"
@@ -215,7 +215,7 @@ Four semantic hues, each with a subtle surface, a border, and a darker on-surfac
 - **Danger `#C13D43` / `#EF6469`** — invalid fields, failures, cancellation.
 - **Info `#356CA5` / `#659AD0`** — neutral informational notices.
 
-**Contrast notes.** Three pairs sit below 4.5:1 and are deliberate. Muted Text (`#89928C`) reaches 3.2:1 on light surfaces, so it is for placeholder and tertiary copy only, never body text. Success (`#21864F`) cannot reach 4.5:1 on any tint of itself, so success _text_ uses the strong text color on a success surface and the hue carries icons and borders. In dark appearance On Primary over Primary is 3.0:1, which is fine for the large, bold button labels it is used for.
+**Contrast policy.** WCAG AA requires 4.5:1 for ordinary text, 3:1 for large text (at least 18pt regular or 14pt bold in the web baseline), and 3:1 for meaningful non-text controls and state indicators. The current Muted Text (`#89928C`, 3.2:1 on light surfaces) and self-colored Success hue are documented token gaps: do not use them for body, placeholder, control, focus, or stand-alone status text. Use strong text on semantic surfaces; use the hue with text or icon cues. Verify both appearances before adding or changing a token. See [`docs/agents/ui-design-rules.md`](docs/agents/ui-design-rules.md).
 
 ### Named Rules
 
@@ -254,6 +254,11 @@ The spacing rhythm is 4px, 8px, 16px, 24px, and 32px. Use the smaller steps insi
 
 The implementation changes app chrome below 400px, expands profile content from 600px, and changes the authenticated navigation to a vertical rail at expanded tablet widths. The bottom navigation is absolute on phones and becomes an in-flow rail on tablets, with safe-area-aware spacing. Scrollable content calculates its bottom clearance from the actual navigation height and safe-area inset so the final Quest Card or profile section is not hidden.
 
+Platform behavior, accessibility semantics, responsive windows, text scaling,
+motion preferences, navigation, forms, and sheets are governed by
+[`docs/agents/ui-design-rules.md`](docs/agents/ui-design-rules.md). This file
+defines the visual system and does not weaken that contract.
+
 ## Elevation & Depth
 
 Depth is layered and calm. Warm and pale green surface changes separate groups before a shadow is added. Cards and the bottom navigation use soft, low-contrast shadows. Sheets use an overlay and a raised bottom surface. Avoid large offsets, glossy effects, and decorative blur.
@@ -272,7 +277,7 @@ Depth is layered and calm. Warm and pale green surface changes separate groups b
 
 The form language is soft and approachable. Text fields and choice rows use an 8px radius. Quest Cards and Student Profile sections use a 16px radius. Search fields use an 18px radius, bottom sheets use a 24px top radius, and the bottom navigation uses a 28px radius. Pills are reserved for small actions, filters, tags, progress segments, and the central Create control.
 
-Borders are light and functional. Keep them thin and quiet. Use rounded hit areas of at least 48px for interactive controls, including back, close, filter, and tab actions. Images use 8px to 12px clipping depending on their size.
+Borders are light and functional. Keep them thin and quiet. Use rounded hit areas of at least 48 logical units for interactive controls, including back, close, filter, and tab actions. Images use 8px to 12px clipping depending on their size.
 
 ## Components
 
@@ -281,7 +286,7 @@ Components should feel friendly, soft, and confident. They should make the next 
 ### Buttons
 
 - **Shape:** Full pills for primary and secondary actions; minimum height 48px.
-- **Primary:** persona primary background, white label, semibold type, and 16px horizontal padding.
+- **Primary:** persona primary background, `on-primary` label, semibold type, and 16px horizontal padding.
 - **Secondary:** Transparent background with a 2px persona primary outline and label.
 - **Pressed / Disabled:** Pressed actions move to the persona Primary Dark state or a muted active surface. Disabled buttons use reduced opacity and keep their label readable.
 - **Use:** Use a clear action label such as Apply now, Create Quest, Next, or Retry. Do not hide the action in an icon alone.
@@ -289,7 +294,7 @@ Components should feel friendly, soft, and confident. They should make the next 
 ### Chips
 
 - **Style:** Rounded pills with a pale green or quiet neutral surface, compact padding, and small semibold labels.
-- **State:** Selected Quest Board filters use the accent surface and primary green text. Selected review filters use the primary green surface and white text.
+- **State:** Selected Quest Board filters use the accent surface and primary green text. Selected review filters use the primary green surface and `on-primary` text.
 - **Use:** Use chips for Quest Tags, active Quest Board filters, and small profile categories. They are not a replacement for a full section heading.
 
 ### Cards / Containers
@@ -311,10 +316,10 @@ Components should feel friendly, soft, and confident. They should make the next 
 
 ### Navigation
 
-- **Style:** Five authenticated destinations: Quest Board, My Quests, Create, Chat, and Student Profile.
+- **Style:** The current authenticated shell exposes five same-level destinations: Quest Board, My Quests, Create, Chat, and Student Profile.
 - **Default:** Translucent warm surface, 28px radius, quiet border, and muted green-gray icons.
-- **Active:** persona primary icon and label with a short active indicator. The central Create action uses a raised persona primary circular control.
-- **Mobile treatment:** Keep the bar at the bottom, respect the safe area, and preserve at least 48px navigation targets.
+- **Active:** persona primary icon and label with a short active indicator. If Create launches an action rather than a destination, its product contract must keep it distinct from selected-tab semantics.
+- **Mobile treatment:** Keep the bar at the bottom, respect the safe area, preserve labels, and give each navigation target at least a 48 logical-unit frame.
 - **Tablet treatment:** Use a vertical rail on expanded widths and reserve horizontal content space for it.
 
 ### Quest Board Filter Sheet
@@ -336,7 +341,7 @@ Components should feel friendly, soft, and confident. They should make the next 
 - **Do** use the persona primary for primary actions, selected controls, and the main KUQuest identity.
 - **Do** keep the neutral canvas and quiet surface layers behind Quest Board content.
 - **Do** preserve the compact Quest Card order: title, reward, category, creator, metadata, then actions.
-- **Do** keep interactive controls at least 48px high and safe-area aware on native Android and iOS.
+- **Do** keep interactive controls at least 48 logical units high and safe-area aware on native Android and iOS; give them accessible names and states.
 - **Do** provide a first-class dark appearance with the same semantic color roles.
 - **Do** use the domain language from `CONTEXT.md`: Quest, Quest Board, Quest Detail, Quest Application, Student Profile, Academic Registration, and Review.
 - **Do** provide clear loading, empty, error, unavailable, pending, and accepted states.

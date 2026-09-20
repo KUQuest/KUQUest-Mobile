@@ -11,6 +11,14 @@
 - **Inference** means a project-specific conclusion derived from those facts and observations.
 - **Recommendation** means the proposed direction for a later implementation; this report does not change app source code.
 
+## Current authority
+
+The operational rules derived from this research live in
+[`docs/agents/ui-design-rules.md`](../agents/ui-design-rules.md). Use that file
+for implementation and review; keep this report as supporting evidence. If a
+recommendation here conflicts with the current rules or source documentation,
+the rules and source win.
+
 ## Executive recommendation
 
 Treat the real phone as a compact **logical window**, not as a miniature version of the reference image. Keep touch targets large enough for reliable interaction, but make the visual chrome and content composition responsive.
@@ -18,7 +26,7 @@ Treat the real phone as a compact **logical window**, not as a miniature version
 For this repo, the later implementation should:
 
 1. Use React Native logical layout dimensions from `useWindowDimensions()` and classify the available window width, with Android's compact-width boundary of `<600dp` as the broad phone class. Keep any narrower `<400` tuning as a repo-specific visual variant, not as a device-density rule.
-2. Separate **visual size**, **layout reservation**, and **touch target**. A 24–30 logical-pixel icon can sit inside a 48dp/44pt-or-larger pressable area; shrinking the hit area to make the UI look smaller would be the wrong fix.
+2. Separate **visual size**, **layout reservation**, and **touch target**. A 24–30 logical-unit icon can sit inside a 48 logical-unit pressable area; Apple's 44pt value is a platform baseline, not a reason to shrink a KUQuest control.
 3. Make the header and profile content content-driven where possible. Avoid scaling every dimension by one global factor. Constrain large images and text by available width, allow text to wrap, and use flex/percentage/max-width layout for cards and sections.
 4. Establish one owner for each safe-area edge. Either a screen/container applies the top/bottom inset or a component applies it—not both. The bottom navigation's measured outer height should be used only when content can actually pass behind an overlaid bar.
 5. Preserve font scaling. Do not disable `Text` font scaling to make the screenshot fit. Verify the header, tab labels, profile name, and buttons at large Android font settings and with iOS larger text.
@@ -30,7 +38,7 @@ The likely fix is therefore a layout audit and ownership correction, followed by
 ## Current repository context (read-only)
 
 - **Repo observation:** [`package.json`](../../package.json) uses Expo `~57.0.9`, React Native `0.86.2`, Expo Router `~57.0.9`, and `react-native-safe-area-context` `~5.7.0`. Expo’s SDK 57 reference associates SDK 57 with React Native 0.86 and React 19.2.3 ([Expo SDK 57 reference](https://docs.expo.dev/versions/v57.0.0/)).
-- **Repo observation:** [`src/theme/layout.ts`](../../src/theme/layout.ts) uses a `<400` width branch with a `68` logical-unit header, `112×56` logo, `72` minimum navigation height, `60` navigation-item height, `56` Create circle, and `11/14` tab label font/line height. The default branch uses larger values.
+- **Repo observation:** [`src/theme/layout.ts`](../../src/theme/layout.ts) uses a `<400` width branch with a `68` logical-unit header, `96×48` logo, `48` back button, `60` navigation height, `48` navigation-item height, `36` Create circle, and `22` icon size. The default branch uses `80` header, `108×54` logo, `48` back button, `64` navigation height, `52` navigation-item height, `40` Create circle, and `24` icon size; navigation height grows with the clamped font scale.
 - **Repo observation:** [`TopBar.tsx`](../../src/components/ui/TopBar.tsx) consumes those fixed dimensions. It is rendered inside screens whose `SafeAreaView` uses the default edges, so the screen safe-area padding and the header’s fixed height are separate layout contributions.
 - **Repo observation:** [`BottomNav.tsx`](../../src/components/navigation/BottomNav.tsx) derives responsive dimensions from [`src/theme/layout.ts`](../../src/theme/layout.ts), applies safe-area-aware bottom padding, and positions the phone bar absolutely. Screens reserve `getBottomNavigationInset(...)` from `layout.ts` instead of sharing a measured height through React Context.
 - **Repo observation:** [`HomeScreen.tsx`](../../src/features/home/HomeScreen.tsx) and [`ProfileScreen.tsx`](../../src/features/profile/ProfileScreen.tsx) reserve the responsive navigation inset plus feature spacing in `ScrollView` content padding. The custom tab bar is absolute on phones and relative on tablets in [`src/app/(tabs)/_layout.tsx`](<../../src/app/(tabs)/_layout.tsx>).
@@ -126,7 +134,7 @@ Keep font scaling enabled. Use named typography roles with flexible line height 
 
 ### Inference for this repo
 
-The current compact nav’s `56` Create circle and `60` item minimum are compatible with the Android 48dp floor, but the visible label/icon arrangement, safe-area padding, and active pill all contribute to the bar’s total visual height. Shrinking the circle below 48 logical units would not be justified merely to recover space. The active profile pill should be checked for spacing and hit-target overlap rather than reduced blindly.
+The current compact nav's `36` Create circle and `48` item minimum are compatible with the Android 48dp floor, but the visible label/icon arrangement, safe-area padding, and active pill all contribute to the bar's total `60`-unit visual height. Shrinking the pressable frame below 48 logical units would not be justified merely to recover space. The active profile pill should be checked for spacing and hit-target overlap rather than reduced blindly.
 
 The reference’s centered Create control is a strong visual action pattern, but the current implementation exposes it inside the tab route list and gives every item tab semantics. That is a product/accessibility modeling concern independent of sizing.
 

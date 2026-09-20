@@ -1,18 +1,10 @@
 import type { ViewStyle } from "react-native";
 
 export const workerHomeStyles = {
-  screenContent: "px-ku-md pt-[14px]",
-  screenHeader: "px-[4px] pb-[14px]",
-  headerTopRow: "mb-ku-sm flex-row items-center justify-between",
-  roleBadge:
-    "flex-row items-center gap-ku-xs rounded-ku-pill border border-ku-border px-ku-sm py-[5px]",
-  roleBadgeDot: "h-[7px] w-[7px] rounded-[4px]",
-  roleBadgeText: "font-ku-semibold text-ku-label leading-[18px]",
-  switchRoleButton:
-    "min-h-[34px] flex-row items-center gap-ku-xs rounded-ku-pill border border-ku-border px-ku-sm py-[6px]",
-  switchRoleText: "font-ku-medium text-ku-label leading-[16px]",
+  screenHeader: "px-[4px] pb-[22px]",
   screenTitle: "font-ku-bold text-[26px] leading-[34px]",
   screenSubtitle: "mt-[2px] font-ku-regular text-ku-body-small leading-[20px]",
+  roleBadgeDot: "h-[7px] w-[7px] rounded-[4px]",
   searchBarContainer:
     "mb-[10px] h-[48px] flex-row items-center gap-ku-sm rounded-[14px] border border-ku-border px-ku-sm",
   searchInput: "h-full flex-1 py-0 font-ku-regular text-ku-body-small",

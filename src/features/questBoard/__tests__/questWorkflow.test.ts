@@ -1,4 +1,5 @@
 import { createQuestWorkflow, questWorkflow } from "../questWorkflow";
+import { getQuestDetailProjection } from "../questDetailProjection";
 import {
   DEFAULT_PROTOTYPE_VIEWER_ID,
   createQuestFixtureAdapter,
@@ -85,9 +86,15 @@ describe("QuestWorkflow", () => {
   });
 
   it("derives detail and settlement projections for the explicit viewer", () => {
-    const detail = questWorkflow.getQuestDetailProjection(
+    const state = questWorkflow.getQuestDetailState(
       "print-documents",
       DEFAULT_PROTOTYPE_VIEWER_ID
+    );
+    expect(state).not.toBeNull();
+    const detail = getQuestDetailProjection(
+      state!,
+      DEFAULT_PROTOTYPE_VIEWER_ID,
+      questWorkflow.getNow()
     );
     expect(detail).toMatchObject({
       quest: { id: "print-documents" },

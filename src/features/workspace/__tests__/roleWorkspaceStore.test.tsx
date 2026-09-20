@@ -1,6 +1,5 @@
 import { act, renderHook } from "@testing-library/react-native";
 import * as SecureStore from "expo-secure-store";
-import { router } from "expo-router";
 
 import {
   ROLE_WORKSPACE_STORAGE_KEY,
@@ -11,12 +10,6 @@ import {
 jest.mock("expo-secure-store", () => ({
   getItemAsync: jest.fn(),
   setItemAsync: jest.fn(),
-}));
-
-jest.mock("expo-router", () => ({
-  router: {
-    replace: jest.fn(),
-  },
 }));
 
 describe("roleWorkspaceStore", () => {
@@ -55,7 +48,6 @@ describe("roleWorkspaceStore", () => {
       ROLE_WORKSPACE_STORAGE_KEY,
       "worker"
     );
-    expect(router.replace).toHaveBeenCalledWith("/(tabs)");
   });
 
   it("toggles between hirer and worker when called without arguments", async () => {

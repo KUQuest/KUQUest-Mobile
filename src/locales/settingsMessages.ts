@@ -5,6 +5,11 @@ export interface SettingsMessages {
   account: string;
   editProfile: string;
   editProfileDescription: string;
+  workspace: string;
+  workspaceDescription: string;
+  hirerWorkspace: string;
+  workerWorkspace: string;
+  switchingWorkspace: string;
   devOverlay: string;
   devOverlayDescription: string;
   preferences: string;
@@ -40,6 +45,11 @@ export const settingsMessages: Record<SupportedLocale, SettingsMessages> = {
     editProfile: "Edit Profile",
     editProfileDescription:
       "Update your details, experience, work, and certificates",
+    workspace: "Workspace",
+    workspaceDescription: "Switch between Hirer and Worker workspaces",
+    hirerWorkspace: "Hirer",
+    workerWorkspace: "Worker",
+    switchingWorkspace: "Switching workspace...",
     devOverlay: "Developer launch options",
     devOverlayDescription:
       "Revoke the current session and choose a demo launch target",
@@ -73,6 +83,11 @@ export const settingsMessages: Record<SupportedLocale, SettingsMessages> = {
     account: "บัญชี",
     editProfile: "แก้ไขโปรไฟล์",
     editProfileDescription: "แก้ไขข้อมูล ประสบการณ์ ผลงาน และใบรับรอง",
+    workspace: "พื้นที่ทำงาน",
+    workspaceDescription: "สลับระหว่างพื้นที่ผู้ว่าจ้างและผู้รับงาน",
+    hirerWorkspace: "ผู้ว่าจ้าง",
+    workerWorkspace: "ผู้รับงาน",
+    switchingWorkspace: "กำลังสลับพื้นที่ทำงาน...",
     devOverlay: "ตัวเลือกสำหรับนักพัฒนา",
     devOverlayDescription:
       "ยกเลิก session แล้วกลับไปเลือกหน้าเริ่มต้นสำหรับทดสอบ",

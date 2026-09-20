@@ -11,7 +11,7 @@ import { enrichChatConversation } from "../chatProfile";
 import {
   type DisplayChatMessage,
   toDisplayMessage,
-} from "../ChatConversationPresentation";
+} from "../conversationModule";
 
 export type ChatConversationMode = "WORK" | "CANDIDATE_INQUIRY";
 

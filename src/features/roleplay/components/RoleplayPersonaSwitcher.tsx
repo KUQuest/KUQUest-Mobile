@@ -16,7 +16,7 @@ const ROLEPLAY_PERSONA_IDS: readonly PrototypePersonaId[] = [
 
 interface RoleplayPersonaSwitcherProps {
   activePersonaId: PrototypePersonaId;
-  locale: "en" | "th";
+  personaLabels: Record<PrototypePersonaId, string>;
   title: string;
   description: string;
   onPersonaChange: (personaId: PrototypePersonaId) => void;
@@ -24,7 +24,7 @@ interface RoleplayPersonaSwitcherProps {
 
 export function RoleplayPersonaSwitcher({
   activePersonaId,
-  locale,
+  personaLabels,
   title,
   description,
   onPersonaChange,
@@ -45,7 +45,7 @@ export function RoleplayPersonaSwitcher({
       <View className={styles.applicationList}>
         {personas.map((persona) => {
           const selected = activePersonaId === persona.id;
-          const label = persona.label[locale];
+          const label = personaLabels[persona.id] ?? persona.id;
 
           return (
             <Pressable

@@ -112,4 +112,20 @@ describe("staging:start", () => {
       })
     );
   });
+
+  test("passes an explicit Expo port to avoid an occupied Metro port", () => {
+    const spawn = jest.fn().mockReturnValue({ status: 0 });
+
+    expect(
+      runStagingStart({
+        environment: { ...environment, EXPO_PORT: "8082" },
+        spawn,
+      })
+    ).toBe(0);
+    expect(spawn).toHaveBeenCalledWith(
+      "bun",
+      ["x", "expo", "start", "--dev-client", "--port", "8082"],
+      expect.anything()
+    );
+  });
 });

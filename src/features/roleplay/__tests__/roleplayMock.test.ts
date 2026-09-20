@@ -14,9 +14,8 @@ describe("roleplayMock", () => {
 
   it("exposes the four rulebook participation and selection modes", () => {
     const singleFcfs = roleplayMock.setScenario("print-documents");
-    expect(singleFcfs.scenario.label.en).toBe(
-      "2. Single First Come First Serve"
-    );
+    expect(singleFcfs.scenario.id).toBe("print-documents");
+    expect(singleFcfs.scenario.route).toBe("/quest/print-documents");
     expect(singleFcfs.state.quest.participation).toBe("SINGLE");
     expect(singleFcfs.state.quest.candidateMode).toBe("NO_CANDIDATE");
     expect(singleFcfs.visibleActions).toEqual(["DIRECT_JOIN"]);

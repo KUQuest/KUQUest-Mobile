@@ -2,9 +2,7 @@ import { fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { questApi } from "@/api/QuestApi";
 import WorkerHomeScreen from "../WorkerHomeScreen";
-
 const mockPush = jest.fn();
-const mockSwitchWorkspace = jest.fn();
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush }),
@@ -12,16 +10,6 @@ jest.mock("expo-router", () => ({
 
 jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
-}));
-
-jest.mock("@/features/workspace/roleWorkspaceStore", () => ({
-  useRoleWorkspace: () => ({
-    workspace: "worker",
-    isWorker: true,
-    isHirer: false,
-    switchWorkspace: mockSwitchWorkspace,
-    setWorkspace: jest.fn(),
-  }),
 }));
 
 jest.mock("@/api/QuestApi", () => ({
@@ -47,16 +35,17 @@ describe("WorkerHomeScreen", () => {
     ]);
   });
 
-  it("renders the header with Work title and Worker badge", async () => {
+  it("renders the Work header without a workspace status badge", async () => {
     const view = await renderWithQueryClient(<WorkerHomeScreen />);
 
     await waitFor(() => {
       expect(view.getByTestId("worker-home-title")).toBeTruthy();
-      expect(view.getByTestId("worker-workspace-badge")).toBeTruthy();
     });
 
     expect(view.getByText("Work")).toBeTruthy();
-    expect(view.getByText("Worker")).toBeTruthy();
+    expect(view.queryByTestId("worker-workspace-badge")).toBeNull();
+    expect(view.queryByText("Worker")).toBeNull();
+    expect(view.queryByTestId("switch-to-hirer-button")).toBeNull();
   });
 
   it("renders the search bar and quick tag filters", async () => {
@@ -214,17 +203,5 @@ describe("WorkerHomeScreen", () => {
       expect(view.getByTestId("worker-quick-access-bar")).toBeTruthy();
       expect(view.getByText(/Campus Cleanup/)).toBeTruthy();
     });
-  });
-
-  it("calls switchWorkspace when Switch to Hirer is pressed", async () => {
-    const view = await renderWithQueryClient(<WorkerHomeScreen />);
-
-    await waitFor(() => {
-      expect(view.getByTestId("switch-to-hirer-button")).toBeTruthy();
-    });
-
-    fireEvent.press(view.getByTestId("switch-to-hirer-button"));
-
-    expect(mockSwitchWorkspace).toHaveBeenCalledWith("hirer");
   });
 });
