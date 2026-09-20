@@ -4,6 +4,7 @@ import { useColorScheme, useWindowDimensions } from "react-native";
 import { useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { Image, Pressable, View } from "@/tw";
 import { Animated } from "@/tw/animated";
+
 import { useLocale } from "@/features/preferences/localeStore";
 import { navigationMessages } from "@/locales/navigationMessages";
 import { getAppChromeMetrics } from "@/theme/layout";

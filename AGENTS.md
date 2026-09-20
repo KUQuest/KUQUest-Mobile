@@ -27,7 +27,8 @@ files, read:
 2. `CONTEXT.md` — canonical domain language.
 3. `docs/agents/routing.md` — route to the relevant specification, rulebook,
    and ADR.
-4. `CODE_STYLES.md` — review standards, composition, NativeWind, and tests.
+4. `CODE_STYLES.md` — review standards, composition, NativeWind, accessibility,
+   and test conventions.
 5. `docs/agents/ui-design-rules.md` — platform UI behavior, accessibility,
    responsive layout, navigation, forms, sheets, and native proof.
 6. `docs/agents/gotchas.md` — repository-specific traps.
