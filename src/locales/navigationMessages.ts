@@ -7,12 +7,6 @@ export interface NavigationMessages {
   workManagement: string;
   chat: string;
   profile: string;
-  boardShort: string;
-  moneyShort: string;
-  createShort: string;
-  workManagementShort: string;
-  chatShort: string;
-  profileShort: string;
   boardTitle: string;
   boardDescription: string;
   myQuestsTitle: string;
@@ -32,15 +26,9 @@ export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
     board: "Home",
     money: "Money",
     create: "Create Quest",
+    workManagement: "Work Management",
     chat: "Chat",
     profile: "Profile",
-    boardShort: "Home",
-    moneyShort: "Money",
-    createShort: "Create Quest",
-    workManagement: "Work Management",
-    workManagementShort: "Work",
-    chatShort: "Chat",
-    profileShort: "Profile",
     boardTitle: "Quest Board",
     boardDescription:
       "Available Quests will appear here when they are ready to discover.",
@@ -60,15 +48,9 @@ export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
     board: "หน้าหลัก",
     money: "กระเป๋าเงิน",
     create: "สร้างเควสต์",
+    workManagement: "จัดการงาน",
     chat: "แชต",
     profile: "โปรไฟล์นักศึกษา",
-    boardShort: "หน้าหลัก",
-    moneyShort: "กระเป๋าเงิน",
-    createShort: "สร้างเควสต์",
-    workManagement: "จัดการงาน",
-    workManagementShort: "จัดการงาน",
-    chatShort: "แชต",
-    profileShort: "โปรไฟล์",
     boardTitle: "กระดานเควสต์",
     boardDescription: "เควสต์ที่พร้อมให้ค้นหาจะแสดงที่นี่เมื่อระบบเปิดใช้งาน",
     myQuestsTitle: "เควสต์ของฉัน",

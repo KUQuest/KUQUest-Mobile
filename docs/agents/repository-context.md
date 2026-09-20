@@ -85,13 +85,13 @@ The route tree currently has no dedicated route file for Sent Work, Wallet/Conve
 - `roleplay/` — development-only Roleplay prototype screen, prototype persona switching, four quest fixture scenarios, mock view-model store, candidate/team/consent actions dispatched through the questBoard fixture adapter.
 - `preferences/` — locale preference store (`localeStore.ts`); owns the persisted `kuquest_user_locale` value.
 - `workspace/` — Hirer/Worker role workspace store (`roleWorkspaceStore.ts`); owns the persisted `kuquest_active_workspace` value.
-- `navigation/` — navigation chrome UI store (`navigationUiStore.ts`); owns bottom-nav visibility and the scroll accumulators that drive it.
+- `navigation/` — navigation chrome UI store (`navigationUiStore.ts`); owns bottom-nav compactness, profile top-bar visibility, and scroll accumulation. Scroll owners: `home/`, `questBoard/`, `chat/`, `profile/`, `workerHome/`, and `myQuests/screens/`.
 
 ### Shared and transport layer
 
 - `src/api/` — `ApiClient`, request/error boundary, Zod/API contracts, `StudentApi`, `ProfileApi`. Network behavior belongs here, not in screen render code.
 - `src/components/ui/` — shared UI primitives, loading/placeholder/button, TopBar, Quest Funding Summary, Prototype Menu.
-- `src/components/navigation/` — BottomNav. Navigation visibility state lives in `src/features/navigation/navigationUiStore.ts`.
+- `src/components/navigation/` — BottomNav; `src/features/profile/components/ProfileTopBar.tsx` owns profile top chrome. Both consume navigation state from `src/features/navigation/navigationUiStore.ts`.
 - `src/components/layout/` — shared screen roots and safe-area ownership (`ScreenLayout`).
 - `src/domain/` — cross-slice domain primitives; `satang.ts` owns Integer Satang parsing and display.
 - `src/locales/` — Thai/English dictionaries plus `locale.ts` (`SupportedLocale`, `DEFAULT_LOCALE`, storage key); user-visible strings belong here. Locale state lives in `src/features/preferences/localeStore.ts`.

@@ -59,38 +59,38 @@ colors:
   card: "#FFFFFF"
 typography:
   display:
-    fontFamily: "NotoSansThai_700Bold, sans-serif"
+    fontFamily: "KuriousSemiBold, sans-serif"
     fontSize: "44px"
-    fontWeight: 700
+    fontWeight: 600
   headline:
-    fontFamily: "NotoSansThai_700Bold, sans-serif"
+    fontFamily: "KuriousSemiBold, sans-serif"
     fontSize: "30px"
-    fontWeight: 700
+    fontWeight: 600
     lineHeight: "38px"
   title:
-    fontFamily: "NotoSansThai_700Bold, sans-serif"
+    fontFamily: "KuriousSemiBold, sans-serif"
     fontSize: "24px"
-    fontWeight: 700
+    fontWeight: 600
     lineHeight: "29px"
   body:
-    fontFamily: "NotoSansThai_400Regular, sans-serif"
+    fontFamily: "KuriousMedium, sans-serif"
     fontSize: "16px"
     fontWeight: 400
     lineHeight: "24px"
   body-small:
-    fontFamily: "NotoSansThai_400Regular, sans-serif"
+    fontFamily: "KuriousMedium, sans-serif"
     fontSize: "14px"
     fontWeight: 400
     lineHeight: "21px"
   label:
-    fontFamily: "NotoSansThai_400Regular, sans-serif"
+    fontFamily: "KuriousMedium, sans-serif"
     fontSize: "12px"
     fontWeight: 400
     lineHeight: "18px"
   label-strong:
-    fontFamily: "NotoSansThai_700Bold, sans-serif"
+    fontFamily: "KuriousSemiBold, sans-serif"
     fontSize: "12px"
-    fontWeight: 700
+    fontWeight: 600
     lineHeight: "18px"
 rounded:
   field: "8px"
@@ -225,11 +225,11 @@ Four semantic hues, each with a subtle surface, a border, and a darker on-surfac
 
 ## Typography
 
-**Display Font:** Noto Sans Thai (`NotoSansThai_700Bold`, with a sans-serif fallback)
-**Body Font:** Noto Sans Thai (`NotoSansThai_400Regular`, with a sans-serif fallback)
-**Label/Strong Font:** Noto Sans Thai medium, semibold, and bold weights.
+**Display Font:** Kurious (`KuriousSemiBold`, with a sans-serif fallback)
+**Body Font:** Kurious (`KuriousMedium`, with a sans-serif fallback)
+**Label/Strong Font:** Kurious medium and semibold weights.
 
-**Character:** The type system is direct and readable. Bold Noto Sans Thai gives the interface a confident KUQuest voice, while regular text keeps requirements, schedules, rewards, and profile information easy to scan in both supported locales.
+**Character:** The type system is direct and readable. Semibold Kurious gives the interface a confident KUQuest voice, while medium Kurious keeps requirements, schedules, rewards, and profile information easy to scan in both supported locales.
 
 ### Hierarchy
 

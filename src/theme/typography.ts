@@ -1,8 +1,8 @@
 export const fontFamily = {
-  regular: "NotoSansThai_400Regular",
-  medium: "NotoSansThai_500Medium",
-  semiBold: "NotoSansThai_600SemiBold",
-  bold: "NotoSansThai_700Bold",
+  regular: "KuriousMedium",
+  medium: "KuriousMedium",
+  semiBold: "KuriousSemiBold",
+  bold: "KuriousSemiBold",
 } as const;
 
 export const typography = {

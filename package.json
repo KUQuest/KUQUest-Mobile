@@ -5,7 +5,6 @@
   "dependencies": {
     "@better-auth/expo": "1.6.26",
     "@expo-google-fonts/be-vietnam-pro": "^0.4.1",
-    "@expo-google-fonts/noto-sans-thai": "^0.4.2",
     "@expo/ui": "~57.0.8",
     "@expo/vector-icons": "^15.0.2",
     "@react-native-community/datetimepicker": "9.1.0",
@@ -91,6 +90,8 @@
     "format:check": "prettier --check .",
     "check-nativewind": "node ./scripts/check-nativewind.js",
     "check-routes": "node ./scripts/check-orphaned-routes.js",
+    "check-android-navigation-targets": "node ./scripts/check-android-navigation-targets.js",
+    "mobile:android:prepare": "node ./scripts/prepare-android-device.js",
     "verify": "bun run check-nativewind && bun run check-routes && bun run typecheck && bun run lint && bun run format:check && bun run test",
     "deadcode": "knip --include files,exports",
     "prepare": "husky"

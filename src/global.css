@@ -56,10 +56,10 @@
     --spacing-ku-lg: 24px;
     --spacing-ku-xl: 32px;
 
-    --font-ku-regular: "NotoSansThai_400Regular";
-    --font-ku-medium: "NotoSansThai_500Medium";
-    --font-ku-semibold: "NotoSansThai_600SemiBold";
-    --font-ku-bold: "NotoSansThai_700Bold";
+    --font-ku-regular: "KuriousMedium";
+    --font-ku-medium: "KuriousMedium";
+    --font-ku-semibold: "KuriousSemiBold";
+    --font-ku-bold: "KuriousSemiBold";
     --text-ku-display: 44px;
     --text-ku-display--line-height: 1.181818;
     --text-ku-display-small: 32px;

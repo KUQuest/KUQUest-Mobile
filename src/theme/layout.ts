@@ -12,8 +12,6 @@ export interface AppChromeMetrics {
   createButtonSize: number;
   iconSize: number;
   createIconSize: number;
-  labelFontSize: number;
-  labelLineHeight: number;
 }
 
 export interface CreateQuestLayoutMetrics {
@@ -50,47 +48,34 @@ export function getAppChromeMetrics(
           logoWidth: 96,
           logoHeight: 48,
           backButtonSize: 48,
-          navHeight: 64,
-          navItemHeight: 56,
-          createButtonSize: 38,
+          navHeight: 60,
+          navItemHeight: 48,
+          createButtonSize: 36,
           iconSize: 22,
-          createIconSize: 26,
-          labelFontSize: 11,
-          labelLineHeight: 14,
+          createIconSize: 25,
         }
       : {
           headerHeight: 80,
           logoWidth: 108,
           logoHeight: 54,
           backButtonSize: 48,
-          navHeight: 68,
-          navItemHeight: 60,
-          createButtonSize: 42,
+          navHeight: 64,
+          navItemHeight: 52,
+          createButtonSize: 40,
           iconSize: 24,
           createIconSize: 28,
-          labelFontSize: 12,
-          labelLineHeight: 16,
         };
 
-  const accessibleFontScale = Math.max(1, fontScale);
-  const labelFontSize = Math.ceil(
-    baseMetrics.labelFontSize * accessibleFontScale
-  );
-  const labelLineHeight = Math.max(
-    baseMetrics.labelLineHeight,
-    Math.ceil(baseMetrics.labelLineHeight * accessibleFontScale)
-  );
+  const accessibleFontScale = Math.min(Math.max(1, fontScale), 1.25);
   const navItemHeight = Math.max(
     baseMetrics.navItemHeight,
-    baseMetrics.iconSize + labelLineHeight * 2 + 8
+    Math.ceil(baseMetrics.navItemHeight * accessibleFontScale)
   );
 
   return {
     isTablet,
     tabletNavWidth: isTablet ? 88 : 0,
     ...baseMetrics,
-    labelFontSize,
-    labelLineHeight,
     navItemHeight,
     navHeight:
       baseMetrics.navHeight +

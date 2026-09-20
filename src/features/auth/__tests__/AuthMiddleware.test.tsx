@@ -93,7 +93,7 @@ describe("AuthMiddleware", () => {
     expect(mockReplace).not.toHaveBeenCalled();
   });
 
-  test("keeps protected content mounted when the route changes", async () => {
+  test("does not refetch the session when the route changes", async () => {
     mockSegments = ["(tabs)"];
     mockGetSession.mockResolvedValue({ user: { id: "student-1" } });
 
@@ -122,8 +122,9 @@ describe("AuthMiddleware", () => {
       await Promise.resolve();
     });
 
-    await waitFor(() => expect(mockGetSession).toHaveBeenCalledTimes(2));
+    expect(mockGetSession).toHaveBeenCalledTimes(1);
     expect(mockProtectedMount).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("protected-content")).toBeTruthy();
   });
 
   test("redirects unauthenticated routes to the auth entry", async () => {

@@ -2,109 +2,86 @@ import React from "react";
 import { cn } from "@/tw/cn";
 import { useColorScheme, useWindowDimensions } from "react-native";
 import { useAnimatedStyle, withTiming } from "react-native-reanimated";
-import { Image, Pressable, Text, View } from "@/tw";
+import { Image, Pressable, View } from "@/tw";
 import { Animated } from "@/tw/animated";
-import {
-  BriefcaseBusiness,
-  CircleUserRound,
-  LayoutDashboard,
-  MessageSquare,
-  Plus,
-  Wallet,
-} from "lucide-react-native";
+import { BriefcaseBusiness, MessageSquare } from "lucide-react-native";
 import { useLocale } from "@/features/preferences/localeStore";
 import { navigationMessages } from "@/locales/navigationMessages";
 import { getAppChromeMetrics } from "@/theme/layout";
 import {
-  useNavigationVisible,
+  useNavigationCompact,
   showNavigation,
 } from "@/features/navigation/navigationUiStore";
 import styles, { getBottomNavigationColors } from "./bottomNavStyles";
 import { useRoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
 import { useProfileQuery } from "@/features/profile/api/profileQueries";
 
+const navigationHomeIcon = require("@/assets/icons/navigation-home.svg");
+const navigationWalletIcon = require("@/assets/icons/navigation-wallet.svg");
+const navigationProfileIcon = require("@/assets/icons/navigation-profile.svg");
+const navigationCreateIcon = require("@/assets/icons/navigation-create.svg");
+
+type NavigationAsset = number;
+
+type NavigationIcon = typeof BriefcaseBusiness;
+
 type NavigationItem = {
   routeName: string;
   labelKey:
     "board" | "money" | "create" | "workManagement" | "chat" | "profile";
-  shortLabelKey:
-    | "boardShort"
-    | "moneyShort"
-    | "createShort"
-    | "workManagementShort"
-    | "chatShort"
-    | "profileShort";
-  icon: typeof LayoutDashboard;
+  icon?: NavigationIcon;
+  asset?: NavigationAsset;
   isCreate?: boolean;
   hasUnread?: boolean;
 };
 
-export const hirerNavigationItems: readonly NavigationItem[] = [
-  {
+const baseNavigationItems = {
+  home: {
     routeName: "index",
     labelKey: "board",
-    shortLabelKey: "boardShort",
-    icon: LayoutDashboard,
+    asset: navigationHomeIcon,
   },
-  {
+  money: {
     routeName: "money",
     labelKey: "money",
-    shortLabelKey: "moneyShort",
-    icon: Wallet,
+    asset: navigationWalletIcon,
   },
+  chat: {
+    routeName: "chat",
+    labelKey: "chat",
+    icon: MessageSquare,
+  },
+  profile: {
+    routeName: "profile",
+    labelKey: "profile",
+    asset: navigationProfileIcon,
+  },
+} satisfies Record<string, NavigationItem>;
+
+export const hirerNavigationItems: readonly NavigationItem[] = [
+  baseNavigationItems.home,
+  baseNavigationItems.money,
   {
     routeName: "create",
     labelKey: "create",
-    shortLabelKey: "createShort",
-    icon: Plus,
+    asset: navigationCreateIcon,
     isCreate: true,
   },
-  {
-    routeName: "chat",
-    labelKey: "chat",
-    shortLabelKey: "chatShort",
-    icon: MessageSquare,
-  },
-  {
-    routeName: "profile",
-    labelKey: "profile",
-    shortLabelKey: "profileShort",
-    icon: CircleUserRound,
-  },
+  baseNavigationItems.chat,
+  baseNavigationItems.profile,
 ];
 
 export const workerNavigationItems: readonly NavigationItem[] = [
-  {
-    routeName: "index",
-    labelKey: "board",
-    shortLabelKey: "boardShort",
-    icon: LayoutDashboard,
-  },
-  {
-    routeName: "money",
-    labelKey: "money",
-    shortLabelKey: "moneyShort",
-    icon: Wallet,
-  },
+  baseNavigationItems.home,
+  baseNavigationItems.money,
   {
     routeName: "my-quests",
     labelKey: "workManagement",
-    shortLabelKey: "workManagementShort",
     icon: BriefcaseBusiness,
     isCreate: true,
   },
-  {
-    routeName: "chat",
-    labelKey: "chat",
-    shortLabelKey: "chatShort",
-    icon: MessageSquare,
-  },
-  {
-    routeName: "profile",
-    labelKey: "profile",
-    shortLabelKey: "profileShort",
-    icon: CircleUserRound,
-  },
+  baseNavigationItems.chat,
+  baseNavigationItems.profile,
 ];
 
 export const navigationItems: readonly NavigationItem[] = hirerNavigationItems;
@@ -127,7 +104,7 @@ export function BottomNav({
   const messages = navigationMessages[locale];
   const focusedRouteKey = state.routes[state.index]?.key;
   const { workspace, switchWorkspace } = useRoleWorkspace();
-  const navigationVisible = useNavigationVisible();
+  const navigationCompact = useNavigationCompact();
   const profileQuery = useProfileQuery(locale);
   const profileImage = profileQuery.data?.profileImage;
   const avatarUri =
@@ -140,20 +117,56 @@ export function BottomNav({
   const lastProfilePressRef = React.useRef<number>(0);
   const activeItems =
     workspace === "worker" ? workerNavigationItems : hirerNavigationItems;
-  const shouldHide = !metrics.isTablet && !navigationVisible;
-  const hiddenTranslateY = metrics.navHeight + Math.max(insets.bottom, 10) + 24;
+  const workspaceLabel =
+    workspace === "worker"
+      ? locale === "th"
+        ? "พื้นที่ทำงานผู้ปฏิบัติงาน"
+        : "Worker workspace"
+      : locale === "th"
+        ? "พื้นที่ทำงานผู้ว่าจ้าง"
+        : "Hirer workspace";
+  const compactNavigationPadding = Math.max(
+    32,
+    Math.min(56, (width - 248) / 2)
+  );
+  const isCompact = navigationCompact && !metrics.isTablet;
   const navigationAnimationStyle = useAnimatedStyle(
     () => ({
-      opacity: withTiming(shouldHide ? 0 : 1, { duration: 180 }),
-      transform: [
-        {
-          translateY: withTiming(shouldHide ? hiddenTranslateY : 0, {
-            duration: 220,
-          }),
-        },
-      ],
+      paddingLeft: withTiming(
+        metrics.isTablet
+          ? Math.max(insets.left, 8)
+          : isCompact
+            ? compactNavigationPadding
+            : 32,
+        { duration: 220 }
+      ),
+      paddingRight: withTiming(
+        metrics.isTablet
+          ? Math.max(insets.right, 8)
+          : isCompact
+            ? compactNavigationPadding
+            : 32,
+        { duration: 220 }
+      ),
     }),
-    [hiddenTranslateY, shouldHide]
+    [
+      compactNavigationPadding,
+      insets.left,
+      insets.right,
+      isCompact,
+      metrics.isTablet,
+    ]
+  );
+  const navigationBarAnimationStyle = useAnimatedStyle(
+    () => ({
+      minHeight: withTiming(
+        isCompact ? metrics.navItemHeight : metrics.navHeight,
+        { duration: 220 }
+      ),
+      paddingBottom: withTiming(isCompact ? 0 : 3, { duration: 220 }),
+      paddingTop: withTiming(isCompact ? 0 : 3, { duration: 220 }),
+    }),
+    [isCompact, metrics.navHeight, metrics.navItemHeight]
   );
 
   React.useEffect(() => {
@@ -162,6 +175,8 @@ export function BottomNav({
 
   return (
     <Animated.View
+      accessibilityLabel={workspaceLabel}
+      accessibilityRole="toolbar"
       className={cn(
         styles.container,
         metrics.isTablet && styles.tabletContainer
@@ -182,14 +197,13 @@ export function BottomNav({
         },
         navigationAnimationStyle,
       ]}
-      pointerEvents={shouldHide ? "none" : "auto"}
-      accessibilityElementsHidden={shouldHide}
-      importantForAccessibility={shouldHide ? "no-hide-descendants" : "auto"}
-      accessibilityRole="toolbar"
     >
-      <View
+      <Animated.View
         className={cn(styles.bar, metrics.isTablet && styles.tabletBar)}
-        style={{ minHeight: metrics.isTablet ? undefined : metrics.navHeight }}
+        style={[
+          { minHeight: metrics.isTablet ? undefined : metrics.navHeight },
+          !metrics.isTablet && navigationBarAnimationStyle,
+        ]}
       >
         {activeItems.map((item) => {
           const route = state.routes.find(
@@ -202,6 +216,9 @@ export function BottomNav({
           const label = messages[item.labelKey];
           const Icon = item.icon;
           const isProfileTab = item.routeName === "profile";
+          const iconColor = isFocused
+            ? navigationColors.primaryDeep
+            : navigationColors.navIconMuted;
 
           const onPress = () => {
             showNavigation();
@@ -231,6 +248,7 @@ export function BottomNav({
                 void switchWorkspace();
               }
             : undefined;
+
           return (
             <Pressable
               key={route.key}
@@ -273,25 +291,39 @@ export function BottomNav({
               >
                 {item.isCreate ? (
                   <View
-                    className={styles.createIcon}
+                    className={cn(
+                      styles.createIcon,
+                      item.routeName === "my-quests" && styles.workIcon
+                    )}
                     style={{
-                      height: metrics.createButtonSize + 4,
-                      width: metrics.createButtonSize + 4,
+                      height: metrics.createButtonSize + 2,
+                      width: metrics.createButtonSize + 2,
                     }}
                   >
-                    <Icon
-                      color={navigationColors.white}
-                      size={metrics.createIconSize + 2}
-                      strokeWidth={2.5}
-                    />
+                    {item.asset ? (
+                      <Image
+                        contentFit="contain"
+                        source={item.asset}
+                        style={{
+                          height: metrics.createIconSize,
+                          width: metrics.createIconSize,
+                        }}
+                      />
+                    ) : Icon ? (
+                      <Icon
+                        color={navigationColors.onPrimary}
+                        size={metrics.createIconSize}
+                        strokeWidth={2.5}
+                      />
+                    ) : null}
                   </View>
                 ) : isProfileTab ? (
                   avatarUri ? (
                     <View
                       className="overflow-hidden rounded-ku-pill"
                       style={{
-                        height: metrics.iconSize + 8,
-                        width: metrics.iconSize + 8,
+                        height: metrics.iconSize + 6,
+                        width: metrics.iconSize + 6,
                         borderWidth: isFocused ? 2 : 1.5,
                         borderColor: isFocused
                           ? navigationColors.primaryDeep
@@ -309,8 +341,8 @@ export function BottomNav({
                     <View
                       className="items-center justify-center overflow-hidden rounded-ku-pill"
                       style={{
-                        height: metrics.iconSize + 8,
-                        width: metrics.iconSize + 8,
+                        height: metrics.iconSize + 6,
+                        width: metrics.iconSize + 6,
                         borderWidth: isFocused ? 2 : 1.5,
                         borderColor: isFocused
                           ? navigationColors.primaryDeep
@@ -320,44 +352,37 @@ export function BottomNav({
                           : "transparent",
                       }}
                     >
-                      <CircleUserRound
-                        color={
-                          isFocused
-                            ? navigationColors.white
-                            : navigationColors.navIconMuted
-                        }
-                        size={metrics.iconSize + 2}
-                        strokeWidth={2.5}
+                      <Image
+                        contentFit="contain"
+                        source={navigationProfileIcon}
+                        style={{
+                          height: metrics.iconSize,
+                          width: metrics.iconSize,
+                          tintColor: isFocused
+                            ? navigationColors.onPrimary
+                            : navigationColors.navIconMuted,
+                        }}
                       />
                     </View>
                   )
-                ) : (
+                ) : item.asset ? (
+                  <Image
+                    contentFit="contain"
+                    source={item.asset}
+                    style={{
+                      height: metrics.iconSize + 2,
+                      width: metrics.iconSize + 2,
+                      tintColor: iconColor,
+                    }}
+                  />
+                ) : Icon ? (
                   <Icon
-                    color={
-                      isFocused
-                        ? navigationColors.primaryDeep
-                        : navigationColors.navIconMuted
-                    }
-                    size={metrics.iconSize + 4}
+                    color={iconColor}
+                    size={metrics.iconSize}
                     strokeWidth={2.5}
                   />
-                )}
+                ) : null}
               </View>
-              {item.isCreate ? (
-                <Text
-                  className={cn(styles.label, isFocused && styles.activeLabel)}
-                  style={{
-                    fontSize: metrics.labelFontSize,
-                    includeFontPadding: false,
-                    lineHeight: metrics.labelLineHeight,
-                    color: isFocused
-                      ? navigationColors.primaryDeep
-                      : navigationColors.textSecondary,
-                  }}
-                >
-                  {messages[item.shortLabelKey]}
-                </Text>
-              ) : null}
               {!item.isCreate && isFocused ? (
                 <View
                   accessibilityLabel={`${label} selected`}
@@ -374,7 +399,7 @@ export function BottomNav({
             </Pressable>
           );
         })}
-      </View>
+      </Animated.View>
     </Animated.View>
   );
 }

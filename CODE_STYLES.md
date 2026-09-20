@@ -34,3 +34,8 @@ Read `docs/agents/nativewind.md` for the installed NativeWind v5 behavior and to
 - Jest mocks CSS, so tests cannot observe compiled NativeWind styles. Use the NativeWind audit and native smoke checks for styling behavior.
 - Use repository scripts: `bun run typecheck`, `bun run lint`, `bun run format:check`, `bun run test`, and `bun run verify`.
 - Native-facing changes require light/dark validation on a development build. Android and iOS are product targets; document the platform that was actually exercised.
+
+## 5. Animated interactive surfaces
+
+- Do not scale an animated parent that contains interactive controls. Animate spacing or dimensions, or isolate the visual layer, so compact states preserve at least 44dp accessibility bounds.
+- Scroll-driven chrome transitions require native smoke evidence for expanded and compact states; verify every interactive descendant remains enabled and hittable.

@@ -108,9 +108,10 @@ literals are `kuquest_user_locale` and `kuquest_active_workspace`. Repository ev
 - Optional `{ signal }` added to every read method of `WalletApi`, `StudentApi`, `QuestApi`,
   `ChatApi`, `DisputeApi`. Writes deliberately unchanged: cancelling a write is not safe.
 - All three application Contexts deleted and replaced by `localeStore`, `roleWorkspaceStore`,
-  `navigationUiStore`. `grep createContext src` is empty. Scroll accumulators that drove
-  nav auto-hide stay in module-level variables — they change per frame and must not be
-  reactive state.
+  `navigationUiStore`. `grep createContext src` is empty. Scroll accumulators that drive
+  navigation chrome transitions stay in module-level variables — they change per frame and
+  must not be reactive state. The store exposes separate bottom-nav compactness and
+  profile top-bar visibility state.
 
 ### Phase 2 — Query pilot, quest decomposition, auth env store
 
