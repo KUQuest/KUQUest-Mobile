@@ -818,7 +818,7 @@ export default function OnboardingScreen() {
                   />
                 )}
                 <View className={styles.editBadge}>
-                  <Pencil size={16} color={colors.white} strokeWidth={2} />
+                  <Pencil size={16} color={colors.onPrimary} strokeWidth={2} />
                 </View>
               </Pressable>
             )}

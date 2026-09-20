@@ -541,7 +541,7 @@ export function PartialGroupStartConsentSheet({
               onPress={() => decide("PROCEED")}
               testID="partial-group-start-proceed"
             >
-              <Check color={colors.white} size={17} strokeWidth={2.7} />
+              <Check color={colors.onPrimary} size={17} strokeWidth={2.7} />
               <Text
                 className={`${styles.consentActionText} ${styles.consentActionTextApprove}`}
               >
@@ -577,7 +577,7 @@ export function PartialGroupStartConsentSheet({
               onPress={() => vote(true)}
               testID="partial-group-start-approve"
             >
-              <Check color={colors.white} size={17} strokeWidth={2.7} />
+              <Check color={colors.onPrimary} size={17} strokeWidth={2.7} />
               <Text
                 className={`${styles.consentActionText} ${styles.consentActionTextApprove}`}
               >

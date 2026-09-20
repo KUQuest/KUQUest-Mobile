@@ -1,657 +1,148 @@
-import { StyleSheet } from "react-native";
-import { fontFamily } from "@/theme/typography";
+import type { ViewStyle } from "react-native";
 
-export const workerHomeStyles = StyleSheet.create({
-  screenContent: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
-  },
-  screenHeader: {
-    paddingHorizontal: 4,
-    paddingBottom: 14,
-  },
-  headerTopRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  roleBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 9999,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    gap: 6,
-  },
-  roleBadgeDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  roleBadgeText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  switchRoleButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 9999,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    minHeight: 34,
-    gap: 6,
-  },
-  switchRoleText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  screenTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 26,
-    lineHeight: 34,
-  },
-  screenSubtitle: {
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 2,
-  },
+export const workerHomeStyles = {
+  screenContent: "px-ku-md pt-[14px]",
+  screenHeader: "px-[4px] pb-[14px]",
+  headerTopRow: "mb-ku-sm flex-row items-center justify-between",
+  roleBadge:
+    "flex-row items-center gap-ku-xs rounded-ku-pill border border-ku-border px-ku-sm py-[5px]",
+  roleBadgeDot: "h-[7px] w-[7px] rounded-[4px]",
+  roleBadgeText: "font-ku-semibold text-ku-label leading-[18px]",
+  switchRoleButton:
+    "min-h-[34px] flex-row items-center gap-ku-xs rounded-ku-pill border border-ku-border px-ku-sm py-[6px]",
+  switchRoleText: "font-ku-medium text-ku-label leading-[16px]",
+  screenTitle: "font-ku-bold text-[26px] leading-[34px]",
+  screenSubtitle: "mt-[2px] font-ku-regular text-ku-body-small leading-[20px]",
+  searchBarContainer:
+    "mb-[10px] h-[48px] flex-row items-center gap-ku-sm rounded-[14px] border border-ku-border px-ku-sm",
+  searchInput: "h-full flex-1 py-0 font-ku-regular text-ku-body-small",
+  filterIconButton:
+    "h-[34px] w-[34px] items-center justify-center rounded-[8px]",
+  tagFilterScrollView: "mb-[14px]",
+  tagFilterRow: "flex-row items-center gap-ku-sm px-[2px]",
+  tagPill:
+    "min-h-[34px] items-center justify-center rounded-ku-pill border border-ku-border px-[14px] py-[7px]",
+  tagPillText: "font-ku-medium text-ku-meta leading-[18px]",
+  quickAccessFloatingContainer:
+    "absolute left-ku-md right-ku-md z-50 rounded-[16px] border-[1.5px] border-ku-border px-ku-md py-ku-sm",
+  quickAccessTopRow: "flex-row items-center justify-between",
+  quickAccessLeft: "mr-[10px] flex-1 flex-row items-center",
+  quickAccessIndicator: "mr-[10px] h-[9px] w-[9px] rounded-[5px]",
+  quickAccessTitle: "font-ku-semibold text-ku-body-small leading-[19px]",
+  quickAccessSubtitle: "mt-[2px] font-ku-regular text-ku-label leading-[16px]",
+  quickAccessProgressBar:
+    "mt-ku-sm h-[3px] w-full overflow-hidden rounded-[2px]",
+  quickAccessProgressFill: "h-full w-[70%] rounded-[2px]",
+  statsContainer:
+    "mb-ku-lg flex-row gap-[10px] rounded-[16px] border border-ku-border p-[14px]",
+  statBox: "flex-1 items-center justify-center py-[4px]",
+  statValue: "font-ku-bold text-ku-title-small leading-[28px]",
+  statLabel: "mt-[2px] font-ku-medium text-ku-label text-center leading-[16px]",
+  statDivider: "h-[70%] w-px self-center",
+  sectionHeader: "mb-ku-md mt-[4px]",
+  sectionTitle: "font-ku-semibold text-ku-subtitle leading-[24px]",
+  sectionSubtitle: "mt-[2px] font-ku-regular text-ku-meta leading-[18px]",
+  cardList: "mb-ku-lg gap-[12px]",
+  assignmentCard: "rounded-[16px] border border-ku-border p-ku-md",
+  cardHeader: "mb-ku-sm flex-row items-center justify-between",
+  cardTitle: "mr-ku-sm flex-1 font-ku-semibold text-ku-body leading-[22px]",
+  badgePill: "rounded-ku-pill border border-ku-border px-[10px] py-[3px]",
+  badgeText: "font-ku-semibold text-ku-caption leading-[16px]",
+  cardMetaRow: "mb-[12px] mt-[6px] flex-row items-center gap-[14px]",
+  cardMetaItem: "flex-row items-center gap-[5px]",
+  cardMetaText: "font-ku-regular text-ku-label leading-[16px]",
+  actionButton:
+    "min-h-[44px] items-center justify-center rounded-[10px] px-ku-md py-[10px]",
+  actionButtonText: "font-ku-semibold text-ku-body-small leading-[20px]",
+  feedCard: "rounded-[18px] border border-ku-border p-ku-md",
+  feedCardTop: "flex-row items-start justify-between gap-[12px]",
+  feedCardIdentity: "min-w-0 flex-1",
+  feedCardTitle: "font-ku-semibold text-ku-body leading-[22px]",
+  feedCardOwner: "mt-ku-sm flex-row items-center gap-[5px]",
+  feedCardOwnerText: "flex-1 font-ku-regular text-ku-label leading-[16px]",
+  feedRewardBlock: "min-w-[80px] items-end",
+  feedRewardText: "font-ku-bold text-ku-subtitle leading-[24px]",
+  feedRewardUnit: "mt-[1px] font-ku-regular text-ku-caption leading-[15px]",
+  tagChip: "mb-[6px] self-start rounded-[6px] px-ku-sm py-[2px]",
+  tagText: "font-ku-medium text-ku-caption leading-[15px]",
+  feedMetaGrid: "mt-ku-md flex-row flex-wrap gap-[10px]",
+  feedMetaItem: "max-w-full flex-row items-center gap-[5px]",
+  feedMetaText: "shrink font-ku-medium text-ku-label leading-[16px]",
+  feedCardFooter:
+    "mt-[14px] flex-row items-center justify-between border-t border-ku-border pt-ku-sm",
+  feedCardFooterText: "font-ku-semibold text-ku-meta leading-[18px]",
+  emptyState:
+    "mb-ku-lg min-h-[160px] items-center justify-center rounded-[16px] border border-ku-border px-ku-md py-ku-md",
+  emptyIconCircle:
+    "mb-[10px] h-[44px] w-[44px] items-center justify-center rounded-[22px]",
+  emptyTitle: "font-ku-semibold text-ku-control text-center leading-[20px]",
+  emptyDescription:
+    "mt-[4px] font-ku-regular text-ku-meta text-center leading-[18px]",
+  emptyActionBtn:
+    "mt-[14px] min-h-[38px] items-center justify-center rounded-ku-pill border border-ku-border px-ku-md py-ku-sm",
+  emptyActionBtnText: "font-ku-semibold text-ku-meta leading-[18px]",
+  errorState:
+    "mb-ku-md items-center rounded-[16px] border border-ku-border p-[18px]",
+  errorText:
+    "mb-ku-sm font-ku-medium text-ku-body-small text-center leading-[20px]",
+  retryButton:
+    "min-h-[38px] items-center justify-center rounded-[8px] px-ku-md py-ku-sm",
+  retryText: "font-ku-semibold text-ku-meta leading-[18px]",
+  currentQuestCard:
+    "mb-ku-md rounded-[18px] border-[1.5px] border-ku-border p-ku-md",
+  currentQuestTop: "mb-[10px] flex-row items-center justify-between",
+  currentQuestLabel:
+    "font-ku-semibold text-ku-label uppercase leading-[16px] tracking-[0.5px]",
+  currentQuestBody: "flex-row gap-[12px]",
+  currentQuestLeft: "flex-[1.2] justify-between",
+  currentQuestRight:
+    "flex-[0.9] justify-center border-l border-ku-border pl-[12px]",
+  hirerRow: "mt-ku-sm flex-row items-center gap-ku-sm",
+  hirerAvatar: "h-[34px] w-[34px] items-center justify-center rounded-[17px]",
+  hirerName: "font-ku-medium text-ku-meta leading-[18px]",
+  timelineTitle:
+    "mb-[6px] font-ku-semibold text-ku-caption uppercase leading-[15px] tracking-[0.3px]",
+  timelineStepRow: "my-[3px] flex-row items-center gap-ku-sm",
+  timelineDot: "h-[10px] w-[10px] rounded-[5px] border-2",
+  timelineStepText: "font-ku-medium text-ku-caption leading-[15px]",
+  noWorkPromptCard:
+    "mb-[18px] items-center rounded-[18px] border border-ku-border p-[22px]",
+  noWorkIconCircle:
+    "mb-[10px] h-[48px] w-[48px] items-center justify-center rounded-[24px]",
+  noWorkTitle: "font-ku-semibold text-ku-body text-center leading-[22px]",
+  noWorkDesc:
+    "mt-[4px] font-ku-regular text-ku-meta text-center leading-[18px]",
+  findQuestsBtn:
+    "mt-[14px] min-h-[42px] items-center justify-center rounded-[10px] px-ku-lg py-[10px]",
+  findQuestsBtnText: "font-ku-semibold text-ku-body-small leading-[20px]",
+  managementTabsRow: "mb-[14px] flex-row items-center justify-between",
+  tabsGroup: "flex-row items-center gap-ku-sm",
+  managementTabItem:
+    "min-h-[36px] flex-row items-center gap-ku-xs rounded-ku-pill border border-ku-border px-[14px] py-ku-sm",
+  managementTabText: "font-ku-semibold text-ku-meta leading-[18px]",
+  tabCountBadge:
+    "rounded-[10px] px-[6px] py-[1px] font-ku-bold text-ku-caption",
+  refreshIconButton:
+    "h-[36px] w-[36px] items-center justify-center rounded-[18px]",
+  workingNowBar:
+    "absolute left-ku-md right-ku-md z-50 flex-row items-center justify-between rounded-[16px] border-[1.5px] border-ku-border px-ku-md py-ku-sm",
+  workingNowLeft: "flex-1 flex-row items-center gap-[10px]",
+  workingNowTitle: "font-ku-semibold text-ku-body-small leading-[19px]",
+  workingNowElapsed: "mt-[2px] font-ku-regular text-ku-label leading-[16px]",
+} as const;
 
-  // Search Bar
-  searchBarContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    height: 48,
-    marginBottom: 10,
-    gap: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    height: "100%",
-    paddingVertical: 0,
-  },
-  filterIconButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+export const workerHomeQuickAccessShadow = {
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.12,
+  shadowRadius: 10,
+  elevation: 8,
+} satisfies ViewStyle;
 
-  // Quick Tag Filter Row
-  tagFilterScrollView: {
-    marginBottom: 14,
-  },
-  tagFilterRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 2,
-  },
-  tagPill: {
-    borderRadius: 9999,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 34,
-  },
-  tagPillText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-
-  // Grab-like Quick Access Bar (floating bottom ongoing work tracker)
-  quickAccessFloatingContainer: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 8,
-    zIndex: 50,
-  },
-  quickAccessTopRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  quickAccessLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    marginRight: 10,
-  },
-  quickAccessIndicator: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    marginRight: 10,
-  },
-  quickAccessTitle: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 14,
-    lineHeight: 19,
-  },
-  quickAccessSubtitle: {
-    fontFamily: fontFamily.regular,
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 2,
-  },
-  quickAccessProgressBar: {
-    height: 3,
-    borderRadius: 2,
-    marginTop: 8,
-    width: "100%",
-    overflow: "hidden",
-  },
-  quickAccessProgressFill: {
-    height: "100%",
-    borderRadius: 2,
-    width: "70%",
-  },
-
-  // Stats Grid
-  statsContainer: {
-    flexDirection: "row",
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 14,
-    marginBottom: 20,
-    gap: 10,
-  },
-  statBox: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 4,
-  },
-  statValue: {
-    fontFamily: fontFamily.bold,
-    fontSize: 22,
-    lineHeight: 28,
-  },
-  statLabel: {
-    fontFamily: fontFamily.medium,
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 2,
-    textAlign: "center",
-  },
-  statDivider: {
-    width: 1,
-    height: "70%",
-    alignSelf: "center",
-  },
-
-  // Sections
-  sectionHeader: {
-    marginBottom: 12,
-    marginTop: 4,
-  },
-  sectionTitle: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 18,
-    lineHeight: 24,
-  },
-  sectionSubtitle: {
-    fontFamily: fontFamily.regular,
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 2,
-  },
-
-  // Assignment & Feed Cards
-  cardList: {
-    gap: 12,
-    marginBottom: 24,
-  },
-  assignmentCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  cardTitle: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 16,
-    lineHeight: 22,
-    flex: 1,
-    marginRight: 8,
-  },
-  badgePill: {
-    borderRadius: 9999,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderWidth: 1,
-  },
-  badgeText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  cardMetaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    marginTop: 6,
-    marginBottom: 12,
-  },
-  cardMetaItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  cardMetaText: {
-    fontFamily: fontFamily.regular,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  actionButton: {
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 44,
-  },
-  actionButtonText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-
-  // Quest Board feed cards
-  feedCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 16,
-  },
-  feedCardTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 12,
-  },
-  feedCardIdentity: {
-    flex: 1,
-    minWidth: 0,
-  },
-  feedCardTitle: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  feedCardOwner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    marginTop: 8,
-  },
-  feedCardOwnerText: {
-    flex: 1,
-    fontFamily: fontFamily.regular,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  feedRewardBlock: {
-    alignItems: "flex-end",
-    minWidth: 80,
-  },
-  feedRewardText: {
-    fontFamily: fontFamily.bold,
-    fontSize: 18,
-    lineHeight: 24,
-  },
-  feedRewardUnit: {
-    fontFamily: fontFamily.regular,
-    fontSize: 11,
-    lineHeight: 15,
-    marginTop: 1,
-  },
-  tagChip: {
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    alignSelf: "flex-start",
-    marginBottom: 6,
-  },
-  tagText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 11,
-    lineHeight: 15,
-  },
-  feedMetaGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginTop: 16,
-  },
-  feedMetaItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    maxWidth: "100%",
-  },
-  feedMetaText: {
-    flexShrink: 1,
-    fontFamily: fontFamily.medium,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  feedCardFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderTopWidth: 1,
-    marginTop: 14,
-    paddingTop: 12,
-  },
-  feedCardFooterText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-
-  // Empty state
-  emptyState: {
-    alignItems: "center",
-    borderRadius: 16,
-    borderWidth: 1,
-    justifyContent: "center",
-    minHeight: 160,
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-    marginBottom: 20,
-  },
-  emptyIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
-  },
-  emptyTitle: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 15,
-    lineHeight: 20,
-    textAlign: "center",
-  },
-  emptyDescription: {
-    fontFamily: fontFamily.regular,
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 4,
-    textAlign: "center",
-  },
-  emptyActionBtn: {
-    borderRadius: 9999,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginTop: 14,
-    minHeight: 38,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyActionBtnText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-
-  // Error State
-  errorState: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 18,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  errorText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 14,
-    lineHeight: 20,
-    textAlign: "center",
-    marginBottom: 10,
-  },
-  retryButton: {
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    minHeight: 38,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  retryText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-
-  // Work Management: Current Quest Card
-  currentQuestCard: {
-    borderRadius: 18,
-    borderWidth: 1.5,
-    padding: 16,
-    marginBottom: 16,
-  },
-  currentQuestTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  currentQuestLabel: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 12,
-    lineHeight: 16,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  currentQuestBody: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  currentQuestLeft: {
-    flex: 1.2,
-    justifyContent: "space-between",
-  },
-  currentQuestRight: {
-    flex: 0.9,
-    borderLeftWidth: 1,
-    paddingLeft: 12,
-    justifyContent: "center",
-  },
-  hirerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 10,
-  },
-  hirerAvatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  hirerName: {
-    fontFamily: fontFamily.medium,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  timelineTitle: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 11,
-    lineHeight: 15,
-    marginBottom: 6,
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-  },
-  timelineStepRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginVertical: 3,
-  },
-  timelineDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    borderWidth: 2,
-  },
-  timelineStepText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 11,
-    lineHeight: 15,
-  },
-
-  // No Work Prompt Card
-  noWorkPromptCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 22,
-    alignItems: "center",
-    marginBottom: 18,
-  },
-  noWorkIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
-  },
-  noWorkTitle: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 16,
-    lineHeight: 22,
-    textAlign: "center",
-  },
-  noWorkDesc: {
-    fontFamily: fontFamily.regular,
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 4,
-    textAlign: "center",
-  },
-  findQuestsBtn: {
-    borderRadius: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    marginTop: 14,
-    minHeight: 42,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  findQuestsBtnText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-
-  // Tabs Row
-  managementTabsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 14,
-  },
-  tabsGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  managementTabItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 9999,
-    borderWidth: 1,
-    gap: 6,
-    minHeight: 36,
-  },
-  managementTabText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  tabCountBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 10,
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  refreshIconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  // Working Now Floating Bar (bottom above nav)
-  workingNowBar: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 8,
-    zIndex: 50,
-  },
-  workingNowLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    gap: 10,
-  },
-  workingNowTitle: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 14,
-    lineHeight: 19,
-  },
-  workingNowElapsed: {
-    fontFamily: fontFamily.regular,
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 2,
-  },
-});
+export const workerHomeWorkingNowShadow = {
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.15,
+  shadowRadius: 10,
+  elevation: 8,
+} satisfies ViewStyle;

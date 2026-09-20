@@ -134,10 +134,10 @@ export function TeamAssembleSubmissionPanel({
           testID="team-assemble-confirm-submit"
         >
           {submitting ? (
-            <ActivityIndicator color={colors.white} size="small" />
+            <ActivityIndicator color={colors.onPrimary} size="small" />
           ) : (
             <Check
-              color={!submissionReady ? colors.textMuted : colors.white}
+              color={!submissionReady ? colors.textMuted : colors.onPrimary}
               size={18}
               strokeWidth={2.7}
             />
@@ -171,7 +171,7 @@ export function TeamAssembleSubmissionPanel({
       testID="team-assemble-review-roster"
     >
       <UsersRound
-        color={!submissionReady ? colors.textMuted : colors.white}
+        color={!submissionReady ? colors.textMuted : colors.onPrimary}
         size={18}
         strokeWidth={2.3}
       />

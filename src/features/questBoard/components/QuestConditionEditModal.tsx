@@ -108,8 +108,8 @@ export function QuestConditionEditModal({
       fullScreen
     >
       <ScrollView className="flex-1" testID="quest-condition-edit-scroll">
-        <View className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-4">
-          <Text className="text-ku-body-small leading-5 text-amber-900">
+        <View className="mt-4 rounded-2xl border border-ku-border-warning bg-ku-surface-warning p-4">
+          <Text className="text-ku-body-small text-ku-warning-dark">
             {messages.conditionEditWarning}
           </Text>
         </View>
@@ -125,7 +125,7 @@ export function QuestConditionEditModal({
                 maxLength={MAX_CONDITION_ITEM_LENGTH}
                 accessibilityLabel={messages.conditionItemLabel(index + 1)}
                 testID={`quest-condition-item-${index}`}
-                className="flex-1 rounded-xl border border-ku-border bg-white p-3 text-ku-text-strong"
+                className="flex-1 rounded-xl border border-ku-border bg-ku-surface p-3 text-ku-text-strong"
               />
               <View className="gap-1">
                 <Pressable
@@ -134,7 +134,7 @@ export function QuestConditionEditModal({
                   disabled={index === 0}
                   onPress={() => moveItem(index, -1)}
                   testID={`quest-condition-move-up-${index}`}
-                  className="h-9 w-9 items-center justify-center rounded-full bg-white disabled:opacity-40"
+                  className="h-9 w-9 items-center justify-center rounded-full bg-ku-surface disabled:opacity-40"
                 >
                   <ArrowUp size={16} color={colors.textStrong} />
                 </Pressable>
@@ -144,7 +144,7 @@ export function QuestConditionEditModal({
                   disabled={index === items.length - 1}
                   onPress={() => moveItem(index, 1)}
                   testID={`quest-condition-move-down-${index}`}
-                  className="h-9 w-9 items-center justify-center rounded-full bg-white disabled:opacity-40"
+                  className="h-9 w-9 items-center justify-center rounded-full bg-ku-surface disabled:opacity-40"
                 >
                   <ArrowDown size={16} color={colors.textStrong} />
                 </Pressable>
@@ -154,7 +154,7 @@ export function QuestConditionEditModal({
                   disabled={items.length <= 1}
                   onPress={() => removeItem(index)}
                   testID={`quest-condition-remove-${index}`}
-                  className="h-9 w-9 items-center justify-center rounded-full bg-white disabled:opacity-40"
+                  className="h-9 w-9 items-center justify-center rounded-full bg-ku-surface disabled:opacity-40"
                 >
                   <Trash2 size={16} color={colors.danger} />
                 </Pressable>
@@ -166,7 +166,7 @@ export function QuestConditionEditModal({
             accessibilityLabel={messages.addConditionItem}
             onPress={addItem}
             testID="quest-condition-add"
-            className="flex-row items-center justify-center gap-2 rounded-xl border border-dashed border-ku-border bg-white p-3"
+            className="flex-row items-center justify-center gap-2 rounded-xl border border-dashed border-ku-border bg-ku-surface p-3"
           >
             <Plus size={16} color={colors.primary} />
             <Text className="font-ku-semibold text-ku-primary">
@@ -188,7 +188,7 @@ export function QuestConditionEditModal({
                 <Text
                   key={`added-${index}-${text}`}
                   accessibilityLabel={`${messages.conditionDiffAdded}: ${text}`}
-                  className="text-ku-body-small text-emerald-700"
+                  className="text-ku-body-small text-ku-success"
                 >
                   + {text}
                 </Text>

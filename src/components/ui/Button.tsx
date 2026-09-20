@@ -41,7 +41,7 @@ export function Button({
         <Text
           className={cn(
             "font-ku-semibold text-ku-body",
-            isPrimary ? "text-ku-white" : "text-ku-primary"
+            isPrimary ? "text-ku-on-primary" : "text-ku-primary"
           )}
         >
           {children}

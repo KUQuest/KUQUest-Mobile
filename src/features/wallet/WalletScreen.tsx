@@ -1,15 +1,16 @@
 import React, { useCallback, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
   RefreshControl,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
   useWindowDimensions,
   type ListRenderItemInfo,
 } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Text,
+  TouchableOpacity,
+  View,
+} from "@/tw";
 import { AlertCircle, FileText, RefreshCw } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -19,7 +20,6 @@ import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
-import { fontFamily } from "@/theme/typography";
 
 import {
   useTransactionHistoryQuery,
@@ -175,42 +175,41 @@ export default function WalletScreen() {
 
   const emptyState =
     loading && !refreshing ? (
-      <View style={styles.centerContainer} testID="hirer-wallet-loading">
+      <View className={styles.centerContainer} testID="hirer-wallet-loading">
         <ActivityIndicator color={colors.primary} size="large" />
       </View>
     ) : error && !balances ? (
-      <View style={styles.errorCard} testID="hirer-wallet-error">
+      <View className={styles.errorCard} testID="hirer-wallet-error">
         <AlertCircle color={colors.danger} size={32} />
-        <Text style={styles.errorText}>{error}</Text>
+        <Text className={styles.errorText}>{error}</Text>
         <TouchableOpacity
           accessibilityLabel={m.retry}
           accessibilityRole="button"
+          className={styles.retryButton}
           onPress={handleRefresh}
-          style={styles.retryButton}
           testID="hirer-wallet-retry-button"
         >
-          <RefreshCw color="#FFFFFF" size={16} />
-          <Text style={styles.retryButtonText}>{m.retry}</Text>
+          <RefreshCw color={colors.onPrimary} size={16} />
+          <Text className={styles.retryButtonText}>{m.retry}</Text>
         </TouchableOpacity>
       </View>
     ) : (
-      <View style={styles.emptyCard} testID="hirer-wallet-empty">
-        <View style={styles.emptyIconBox}>
-          <FileText color="#9CA3AF" size={28} />
+      <View className={styles.emptyCard} testID="hirer-wallet-empty">
+        <View className={styles.emptyIconBox}>
+          <FileText color={colors.textSubtle} size={28} />
         </View>
-        <Text style={styles.emptyTitle}>{m.emptyHistoryTitle}</Text>
-        <Text style={styles.emptyDesc}>{m.emptyHistoryDesc}</Text>
+        <Text className={styles.emptyTitle}>{m.emptyHistoryTitle}</Text>
+        <Text className={styles.emptyDesc}>{m.emptyHistoryDesc}</Text>
       </View>
     );
 
   return (
-    <ScreenLayout edges={["top", "left", "right"]} style={styles.screen}>
+    <ScreenLayout className={styles.screen} edges={["top", "left", "right"]}>
       <FlatList
+        contentContainerClassName="px-ku-md pt-ku-xs"
         contentContainerStyle={{
           paddingBottom:
             getBottomNavigationInset(metrics, insets.bottom) + spacing.xl,
-          paddingHorizontal: spacing.md,
-          paddingTop: spacing.xs,
         }}
         data={filteredList}
         keyExtractor={keyExtractor}
@@ -250,76 +249,22 @@ export default function WalletScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    backgroundColor: colors.background,
-  },
-  centerContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 40,
-  },
-  errorCard: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.borderDanger,
-    alignItems: "center",
-    padding: 24,
-    marginTop: 8,
-  },
-  errorText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 14,
-    color: colors.danger,
-    marginTop: 10,
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  retryButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 9999,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-  },
-  retryButtonText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 14,
-    color: colors.white,
-  },
-  emptyCard: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    alignItems: "center",
-    padding: 32,
-    marginTop: 4,
-  },
-  emptyIconBox: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 14,
-  },
-  emptyTitle: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 16,
-    color: colors.textStrong,
-    marginBottom: 6,
-    textAlign: "center",
-  },
-  emptyDesc: {
-    fontFamily: fontFamily.regular,
-    fontSize: 13,
-    color: colors.textSecondary,
-    textAlign: "center",
-    lineHeight: 18,
-  },
-});
+const styles = {
+  screen: "bg-ku-background",
+  centerContainer: "items-center justify-center py-[40px]",
+  errorCard:
+    "mt-ku-sm items-center rounded-[16px] border border-ku-border-danger bg-ku-card p-ku-lg",
+  errorText:
+    "mb-ku-md mt-[10px] text-center font-ku-medium text-ku-body-small text-ku-danger",
+  retryButton:
+    "flex-row items-center gap-ku-sm rounded-ku-pill bg-ku-primary px-[18px] py-[10px]",
+  retryButtonText: "font-ku-semibold text-ku-body-small text-ku-on-primary",
+  emptyCard:
+    "mt-ku-xs items-center rounded-[16px] border border-ku-border-subtle bg-ku-card p-ku-xl",
+  emptyIconBox:
+    "mb-[14px] h-[56px] w-[56px] items-center justify-center rounded-[28px] bg-ku-surface-muted",
+  emptyTitle:
+    "mb-ku-sm text-center font-ku-semibold text-ku-body text-ku-text-strong",
+  emptyDesc:
+    "text-center font-ku-regular text-ku-meta leading-[18px] text-ku-text-secondary",
+} as const;

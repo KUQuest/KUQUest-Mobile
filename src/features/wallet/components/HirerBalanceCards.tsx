@@ -1,11 +1,7 @@
 import React, { useState } from "react";
-import {
-  Animated,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Animated } from "react-native";
+
+import { Text, TouchableOpacity, View } from "@/tw";
 import {
   ArrowRightLeft,
   Clock,
@@ -14,8 +10,12 @@ import {
   Wallet,
 } from "lucide-react-native";
 import { colors } from "@/theme/colors";
-import { fontFamily } from "@/theme/typography";
 import { formatSatang } from "@/domain/satang";
+
+// `Animated.View` from react-native does not pass through `className`; wrapping
+// the NativeWind `View` keeps the class path while the animation stays on the
+// RN Animated driver these cards already use.
+const AnimatedView = Animated.createAnimatedComponent(View);
 
 interface HirerBalanceCardsProps {
   spendingBalanceSatang: number;
@@ -152,22 +152,22 @@ export function HirerBalanceCards({
   const currentCard2Desc = isCard2Payout ? payoutDesc : escrowDesc;
 
   return (
-    <View style={styles.container} testID="hirer-balance-cards">
+    <View className={styles.container} testID="hirer-balance-cards">
       {/* Top hint & Swap All bar */}
-      <View style={styles.switcherBar}>
-        <View style={styles.hintBadge}>
+      <View className={styles.switcherBar}>
+        <View className={styles.hintBadge}>
           <ArrowRightLeft color={colors.primary} size={12} strokeWidth={2.4} />
-          <Text style={styles.hintText}>{balanceCardsHint}</Text>
+          <Text className={styles.hintText}>{balanceCardsHint}</Text>
         </View>
 
-        <View style={styles.switcherActions}>
+        <View className={styles.switcherActions}>
           {onTransferEarnings ? (
             <TouchableOpacity
               accessibilityLabel={transferButtonLabel ?? "โอนรายได้"}
               accessibilityRole="button"
               activeOpacity={0.7}
               onPress={onTransferEarnings}
-              style={styles.transferShortcutBtn}
+              className={styles.transferShortcutBtn}
               testID="hirer-balance-transfer-shortcut-btn"
             >
               <ArrowRightLeft
@@ -175,7 +175,7 @@ export function HirerBalanceCards({
                 size={11}
                 strokeWidth={2.4}
               />
-              <Text style={styles.transferShortcutBtnText}>
+              <Text className={styles.transferShortcutBtnText}>
                 {transferButtonLabel ?? "โอนรายได้"}
               </Text>
             </TouchableOpacity>
@@ -186,32 +186,26 @@ export function HirerBalanceCards({
             accessibilityRole="button"
             activeOpacity={0.7}
             onPress={toggleAll}
-            style={styles.swapAllButton}
+            className={styles.swapAllButton}
             testID="hirer-balance-swap-all-btn"
           >
-            <Text style={styles.swapAllButtonText}>{swapAllButton}</Text>
+            <Text className={styles.swapAllButtonText}>{swapAllButton}</Text>
           </TouchableOpacity>
         </View>
       </View>
-      <View style={styles.row}>
+      <View className={styles.row}>
         {/* Card 1: Spending Balance <-> Earnings */}
-        <Animated.View
-          style={[
-            styles.cardWrapper,
-            {
-              opacity: card1Opacity,
-              transform: [
-                { scale: card1Scale },
-                { translateY: card1TranslateY },
-              ],
-            },
-          ]}
+        <AnimatedView
+          className={styles.cardWrapper}
+          style={{
+            opacity: card1Opacity,
+            transform: [{ scale: card1Scale }, { translateY: card1TranslateY }],
+          }}
         >
           <View
-            style={[
-              styles.card,
-              isCard1Earnings ? styles.earningsCard : styles.spendingCard,
-            ]}
+            className={`${styles.card} ${
+              isCard1Earnings ? styles.earningsCard : styles.spendingCard
+            }`}
           >
             <TouchableOpacity
               accessibilityHint={swapHint}
@@ -219,20 +213,21 @@ export function HirerBalanceCards({
               accessibilityRole="button"
               activeOpacity={0.85}
               onPress={toggleCard1}
-              style={styles.cardContent}
+              className={styles.cardContent}
               testID="hirer-card-1"
             >
-              <View style={styles.cardHeader}>
+              <View className={styles.cardHeader}>
                 <Text
                   numberOfLines={1}
-                  style={styles.cardLabel}
+                  className={styles.cardLabel}
                   testID="hirer-card1-title"
                 >
                   {currentCard1Title}
                 </Text>
-                <View style={styles.iconGroup}>
+                <View className={styles.iconGroup}>
                   <View
-                    style={styles.cardSwapChip}
+                    className={styles.cardSwapChip}
+                    style={cardSwapChipColor}
                     testID="hirer-card-1-swap-btn"
                   >
                     <ArrowRightLeft
@@ -255,12 +250,12 @@ export function HirerBalanceCards({
               <Text
                 adjustsFontSizeToFit
                 numberOfLines={1}
-                style={styles.spendingAmount}
+                className={styles.spendingAmount}
                 testID="hirer-spending-balance"
               >
                 {formatSatang(currentCard1Amount, "en", "exact")}
               </Text>
-              <Text numberOfLines={1} style={styles.spendingDesc}>
+              <Text numberOfLines={1} className={styles.spendingDesc}>
                 {currentCard1Desc}
               </Text>
             </TouchableOpacity>
@@ -272,54 +267,50 @@ export function HirerBalanceCards({
                 accessibilityRole="button"
                 activeOpacity={0.8}
                 onPress={onTransferEarnings}
-                style={styles.cardTransferBtn}
+                className={styles.cardTransferBtn}
                 testID="hirer-card1-transfer-btn"
               >
                 <ArrowRightLeft
-                  color={colors.white}
+                  color={colors.onPrimary}
                   size={11}
                   strokeWidth={2.4}
                 />
-                <Text style={styles.cardTransferBtnText}>
+                <Text className={styles.cardTransferBtnText}>
                   {transferButtonLabel ?? "โอนเข้าเงินพร้อมใช้"}
                 </Text>
               </TouchableOpacity>
             ) : null}
           </View>
-        </Animated.View>
+        </AnimatedView>
         {/* Card 2: Escrow <-> Pending Payout */}
-        <Animated.View
-          style={[
-            styles.cardWrapper,
-            {
-              opacity: card2Opacity,
-              transform: [
-                { scale: card2Scale },
-                { translateY: card2TranslateY },
-              ],
-            },
-          ]}
+        <AnimatedView
+          className={styles.cardWrapper}
+          style={{
+            opacity: card2Opacity,
+            transform: [{ scale: card2Scale }, { translateY: card2TranslateY }],
+          }}
         >
           <TouchableOpacity
             accessibilityHint={swapHint}
             accessibilityLabel={`${currentCard2Title}, ${formatSatang(currentCard2Amount, "en", "exact")}`}
             accessibilityRole="button"
             activeOpacity={0.85}
+            className={`${styles.card} ${styles.escrowCard}`}
             onPress={toggleCard2}
-            style={[styles.card, styles.escrowCard]}
             testID="hirer-card-2"
           >
-            <View style={styles.cardHeader}>
+            <View className={styles.cardHeader}>
               <Text
                 numberOfLines={1}
-                style={styles.cardLabel}
+                className={styles.cardLabel}
                 testID="hirer-card2-title"
               >
                 {currentCard2Title}
               </Text>
-              <View style={styles.iconGroup}>
+              <View className={styles.iconGroup}>
                 <View
-                  style={styles.cardSwapChip}
+                  className={styles.cardSwapChip}
+                  style={cardSwapChipColor}
                   testID="hirer-card-2-swap-btn"
                 >
                   <ArrowRightLeft
@@ -338,175 +329,58 @@ export function HirerBalanceCards({
             <Text
               adjustsFontSizeToFit
               numberOfLines={1}
-              style={styles.escrowAmount}
+              className={styles.escrowAmount}
               testID="hirer-escrow-balance"
             >
               {formatSatang(currentCard2Amount, "en", "exact")}
             </Text>
-            <Text numberOfLines={1} style={styles.escrowDesc}>
+            <Text numberOfLines={1} className={styles.escrowDesc}>
               {currentCard2Desc}
             </Text>
           </TouchableOpacity>
-        </Animated.View>
+        </AnimatedView>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 24,
-  },
-  switcherBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
-    paddingHorizontal: 2,
-  },
-  hintBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  hintText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  switcherActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  transferShortcutBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingVertical: 3,
-    paddingHorizontal: 9,
-    borderRadius: 999,
-    backgroundColor: colors.surfaceSuccess,
-    borderWidth: 1,
-    borderColor: colors.borderSuccess,
-  },
-  transferShortcutBtnText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 11,
-    color: colors.primaryDeep,
-  },
-  swapAllButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 3,
-    paddingHorizontal: 9,
-    borderRadius: 999,
-    backgroundColor: colors.surfaceSuccess,
-    borderWidth: 1,
-    borderColor: colors.borderSuccess,
-  },
-  swapAllButtonText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 11,
-    color: colors.primaryDeep,
-  },
-  cardTransferBtn: {
-    backgroundColor: colors.primaryDeep,
-    borderRadius: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-    paddingVertical: 5,
-    paddingHorizontal: 8,
-    marginTop: 6,
-  },
-  cardTransferBtnText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 11,
-    color: colors.white,
-  },
-  cardContent: {
-    flex: 1,
-    justifyContent: "space-between",
-  },
-  row: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  cardWrapper: {
-    flex: 1,
-  },
-  card: {
-    flex: 1,
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
-    justifyContent: "space-between",
-    minHeight: 126,
-  },
-  spendingCard: {
-    backgroundColor: colors.surfaceSuccess,
-    borderColor: colors.borderSuccess,
-  },
-  earningsCard: {
-    backgroundColor: colors.surfaceSuccess,
-    borderColor: colors.borderSuccess,
-  },
-  escrowCard: {
-    backgroundColor: colors.surfaceMuted,
-    borderColor: colors.borderSubtle,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 6,
-  },
-  cardLabel: {
-    fontFamily: fontFamily.medium,
-    fontSize: 13,
-    color: colors.textStrong,
-    flex: 1,
-    marginRight: 4,
-  },
-  iconGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  cardSwapChip: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: "rgba(0,0,0,0.05)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  spendingAmount: {
-    fontFamily: fontFamily.bold,
-    fontSize: 22,
-    lineHeight: 28,
-    color: colors.primaryDeep,
-    marginVertical: 4,
-  },
-  escrowAmount: {
-    fontFamily: fontFamily.bold,
-    fontSize: 22,
-    lineHeight: 28,
-    color: colors.textStrong,
-    marginVertical: 4,
-  },
-  spendingDesc: {
-    fontFamily: fontFamily.regular,
-    fontSize: 11,
-    lineHeight: 15,
-    color: colors.success,
-  },
-  escrowDesc: {
-    fontFamily: fontFamily.regular,
-    fontSize: 11,
-    lineHeight: 15,
-    color: colors.textMuted,
-  },
-});
+const styles = {
+  container: "mb-ku-lg",
+  switcherBar: "mb-[10px] flex-row items-center justify-between px-[2px]",
+  hintBadge: "flex-row items-center gap-[6px]",
+  hintText: "font-ku-medium text-ku-label text-ku-text-secondary",
+  switcherActions: "flex-row items-center gap-[6px]",
+  transferShortcutBtn:
+    "flex-row items-center gap-ku-xs rounded-ku-pill border border-ku-border-success bg-ku-surface-success px-[9px] py-[3px]",
+  transferShortcutBtnText:
+    "font-ku-medium text-ku-caption text-ku-primary-dark",
+  swapAllButton:
+    "flex-row items-center rounded-ku-pill border border-ku-border-success bg-ku-surface-success px-[9px] py-[3px]",
+  swapAllButtonText: "font-ku-medium text-ku-caption text-ku-primary-dark",
+  cardTransferBtn:
+    "mt-ku-xs flex-row items-center justify-center gap-ku-xs rounded-[8px] bg-ku-primary-dark px-ku-sm py-[5px]",
+  cardTransferBtnText: "font-ku-semibold text-ku-caption text-ku-on-primary",
+  cardContent: "flex-1 justify-between",
+  row: "flex-row gap-[12px]",
+  cardWrapper: "flex-1",
+  cardHeader: "mb-[6px] flex-row items-center justify-between",
+  card: "min-h-[126px] flex-1 justify-between rounded-[16px] border p-ku-md",
+  spendingCard: "border-ku-border-success bg-ku-surface-success",
+  earningsCard: "border-ku-border-success bg-ku-surface-success",
+  escrowCard: "border-ku-border-subtle bg-ku-surface-muted",
+  cardLabel: "mr-ku-xs flex-1 font-ku-medium text-ku-meta text-ku-text-strong",
+  iconGroup: "flex-row items-center gap-ku-sm",
+  cardSwapChip: "h-[22px] w-[22px] items-center justify-center rounded-[11px]",
+  spendingAmount:
+    "my-ku-xs font-ku-bold text-[22px] leading-[28px] text-ku-primary-dark",
+  escrowAmount:
+    "my-ku-xs font-ku-bold text-[22px] leading-[28px] text-ku-text-strong",
+  spendingDesc:
+    "font-ku-regular text-ku-caption leading-[15px] text-ku-success",
+  escrowDesc:
+    "font-ku-regular text-ku-caption leading-[15px] text-ku-text-muted",
+} as const;
+
+const cardSwapChipColor = {
+  backgroundColor: "rgba(0,0,0,0.05)",
+} as const;

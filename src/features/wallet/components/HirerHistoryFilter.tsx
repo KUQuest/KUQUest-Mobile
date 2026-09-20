@@ -1,15 +1,8 @@
 import React, { useState } from "react";
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Modal } from "react-native";
 import { Check, ChevronDown } from "lucide-react-native";
 import { colors } from "@/theme/colors";
-import { fontFamily } from "@/theme/typography";
+import { Pressable, Text, TouchableOpacity, View } from "@/tw";
 
 export type HirerHistoryFilterOption =
   "all" | "top_up" | "payout" | "escrow" | "inflow" | "outflow";
@@ -37,21 +30,19 @@ export function HirerHistoryFilter({
     options[0].label;
 
   return (
-    <View style={styles.headerRow}>
-      <Text style={styles.title}>{title}</Text>
+    <View className={styles.headerRow}>
+      <Text className={styles.title}>{title}</Text>
       <TouchableOpacity
         accessibilityLabel={`กรองรายการ: ${selectedLabel}`}
         accessibilityRole="button"
         activeOpacity={0.8}
+        className={styles.filterPill}
         onPress={() => setMenuOpen(true)}
-        style={styles.filterPill}
         testID="hirer-history-filter-button"
       >
-        <Text style={styles.filterText}>{selectedLabel}</Text>
+        <Text className={styles.filterText}>{selectedLabel}</Text>
         <ChevronDown color={colors.textSecondary} size={16} strokeWidth={2.2} />
       </TouchableOpacity>
-
-      {/* Filter Options Modal */}
       <Modal
         animationType="fade"
         transparent
@@ -59,11 +50,11 @@ export function HirerHistoryFilter({
         onRequestClose={() => setMenuOpen(false)}
       >
         <Pressable
-          style={styles.modalBackdrop}
+          className={styles.modalBackdrop}
           onPress={() => setMenuOpen(false)}
           testID="filter-modal-backdrop"
         >
-          <View style={styles.menuCard}>
+          <View className={styles.menuCard} style={menuCardShadow}>
             {options.map((opt) => {
               const isSelected = opt.key === selectedFilter;
               return (
@@ -73,21 +64,19 @@ export function HirerHistoryFilter({
                   accessibilityState={{ selected: isSelected }}
                   key={opt.key}
                   activeOpacity={0.7}
+                  className={`${styles.menuOption} ${
+                    isSelected ? styles.menuOptionSelected : ""
+                  }`}
                   onPress={() => {
                     onSelectFilter(opt.key);
                     setMenuOpen(false);
                   }}
-                  style={[
-                    styles.menuOption,
-                    isSelected && styles.menuOptionSelected,
-                  ]}
                   testID={`filter-opt-${opt.key}`}
                 >
                   <Text
-                    style={[
-                      styles.menuOptionText,
-                      isSelected && styles.menuOptionTextSelected,
-                    ]}
+                    className={`${styles.menuOptionText} ${
+                      isSelected ? styles.menuOptionTextSelected : ""
+                    }`}
                   >
                     {opt.label}
                   </Text>
@@ -104,71 +93,25 @@ export function HirerHistoryFilter({
   );
 }
 
-const styles = StyleSheet.create({
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 14,
-  },
-  title: {
-    fontFamily: fontFamily.bold,
-    fontSize: 22,
-    lineHeight: 28,
-    color: colors.textStrong,
-  },
-  filterPill: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 9999,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  filterText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  menuCard: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    width: "80%",
-    maxWidth: 280,
-    paddingVertical: 8,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  menuOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  menuOptionSelected: {
-    backgroundColor: colors.surfaceSuccess,
-  },
-  menuOptionText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  menuOptionTextSelected: {
-    fontFamily: fontFamily.semiBold,
-    color: colors.primaryDeep,
-  },
-});
+const styles = {
+  headerRow: "mb-[14px] flex-row items-center justify-between",
+  title: "font-ku-bold text-[22px] leading-[28px] text-ku-text-strong",
+  filterPill:
+    "flex-row items-center gap-ku-sm rounded-ku-pill bg-ku-surface-muted px-[14px] py-[7px]",
+  filterText: "font-ku-medium text-ku-meta text-ku-text-secondary",
+  modalBackdrop: "flex-1 items-center justify-center bg-ku-overlay p-ku-md",
+  menuCard:
+    "w-[80%] max-w-[280px] rounded-[16px] border border-ku-border-subtle bg-ku-card py-ku-sm",
+  menuOption: "flex-row items-center justify-between px-ku-md py-[12px]",
+  menuOptionSelected: "bg-ku-surface-success",
+  menuOptionText: "font-ku-medium text-ku-body-small text-ku-text-secondary",
+  menuOptionTextSelected: "font-ku-semibold text-ku-primary-dark",
+} as const;
+
+const menuCardShadow = {
+  shadowColor: colors.black,
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.15,
+  shadowRadius: 10,
+  elevation: 5,
+} as const;

@@ -364,7 +364,7 @@ export default function RoleplayScreen() {
                               icon={
                                 <Check
                                   accessible={false}
-                                  color={colors.white}
+                                  color={colors.onPrimary}
                                   size={18}
                                   strokeWidth={2.7}
                                 />
@@ -470,7 +470,7 @@ export default function RoleplayScreen() {
                               icon={
                                 <Check
                                   accessible={false}
-                                  color={colors.white}
+                                  color={colors.onPrimary}
                                   size={18}
                                   strokeWidth={2.7}
                                 />

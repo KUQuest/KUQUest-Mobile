@@ -9,7 +9,7 @@ const styles = {
     "font-ku-regular text-ku-body-small text-ku-text-muted text-center mb-[24px]",
   tryAgainButton:
     "bg-ku-primary flex-row items-center justify-center py-[14px] rounded-[24px] w-full mb-[12px]",
-  tryAgainText: "font-ku-bold text-ku-body text-ku-white",
+  tryAgainText: "font-ku-bold text-ku-body text-ku-on-primary",
   btnIcon: "mr-[8px]",
   backButton:
     "bg-transparent border border-ku-text-muted items-center justify-center py-[14px] rounded-[24px] w-full",

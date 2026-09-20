@@ -1076,7 +1076,7 @@ export default function CreateQuestScreen({
                 <View className={styles.buttonContent}>
                   <Text className={styles.primaryButtonText}>{nextLabel}</Text>
                   <ChevronRight
-                    color={colors.white}
+                    color={colors.onPrimary}
                     size={20}
                     strokeWidth={2.5}
                   />

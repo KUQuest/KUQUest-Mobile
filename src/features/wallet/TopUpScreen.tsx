@@ -1,13 +1,12 @@
 import React, { useState } from "react";
+import { Platform } from "react-native";
 import {
   KeyboardAvoidingView,
-  Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
-} from "react-native";
+} from "@/tw";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft } from "lucide-react-native";
@@ -16,7 +15,6 @@ import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { useLocale } from "@/features/preferences/localeStore";
 import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
-import { fontFamily } from "@/theme/typography";
 import { TopUpAmountStep } from "./components/TopUpAmountStep";
 import { TopUpConfirmationStep } from "./components/TopUpConfirmationStep";
 import { TopUpPromptPayStep } from "./components/TopUpPromptPayStep";
@@ -159,33 +157,35 @@ export default function TopUpScreen() {
   };
 
   return (
-    <ScreenLayout edges={["top", "left", "right"]} style={styles.screen}>
+    <ScreenLayout className="bg-ku-background" edges={["top", "left", "right"]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.keyboardContainer}
+        className="flex-1"
       >
-        {/* Top Header */}
-        <View style={styles.topBar}>
+        <View className="flex-row items-center justify-between border-b border-ku-border-subtle bg-ku-surface px-ku-md pt-[12px] pb-[14px]">
           <TouchableOpacity
             accessibilityLabel={m.back}
             accessibilityRole="button"
             activeOpacity={0.7}
             onPress={handleBack}
-            style={styles.backButton}
+            className="h-[40px] w-[40px] items-center justify-center rounded-[20px] bg-ku-surface-muted"
             testID="top-up-screen-back-btn"
           >
             <ArrowLeft color={colors.textStrong} size={22} strokeWidth={2.4} />
           </TouchableOpacity>
 
-          <View style={styles.headerTitleWrap}>
-            <Text numberOfLines={1} style={styles.headerTitle}>
+          <View className="flex-1 items-center px-ku-sm">
+            <Text
+              numberOfLines={1}
+              className="text-center font-ku-bold text-ku-body text-ku-text-strong"
+            >
               {step === "amount"
                 ? m.topUpAmountTitle
                 : step === "confirmation"
                   ? m.topUpConfirmationTitle
                   : m.topUpPromptPayTitle}
             </Text>
-            <Text style={styles.headerSubtitle}>
+            <Text className="mt-[2px] font-ku-medium text-[11px] text-ku-text-secondary">
               {step === "amount"
                 ? m.topUpAmountStepSubtitle
                 : step === "confirmation"
@@ -194,14 +194,12 @@ export default function TopUpScreen() {
             </Text>
           </View>
 
-          <View style={{ width: 40 }} />
+          <View className="w-[40px]" />
         </View>
 
         <ScrollView
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingBottom: insets.bottom + 32 },
-          ]}
+          contentContainerClassName="px-[18px] pt-[18px]"
+          contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           testID="top-up-screen-scroll"
@@ -247,53 +245,3 @@ export default function TopUpScreen() {
     </ScreenLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  keyboardContainer: {
-    flex: 1,
-  },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 14,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderSubtle,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.surfaceMuted,
-  },
-  headerTitleWrap: {
-    flex: 1,
-    alignItems: "center",
-    paddingHorizontal: 8,
-  },
-  headerTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 16,
-    color: colors.textStrong,
-    textAlign: "center",
-  },
-  headerSubtitle: {
-    fontFamily: fontFamily.medium,
-    fontSize: 11,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  scrollContent: {
-    paddingHorizontal: 18,
-    paddingTop: 18,
-  },
-});

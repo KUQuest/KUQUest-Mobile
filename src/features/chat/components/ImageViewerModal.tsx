@@ -1,16 +1,12 @@
 import React from "react";
-import {
-  Image,
-  Modal,
-  Pressable,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Image, Modal, StatusBar } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { X } from "lucide-react-native";
+
+// The viewer image is sized and fitted imperatively and carries no class, so it
+// stays on react-native's `Image`. `@/tw`'s `Image` is expo-image, which
+// normalises `source` to an array and ignores `resizeMode`.
+import { Pressable, ScrollView, Text, View } from "@/tw";
 
 import { colors } from "@/theme/colors";
 
@@ -44,16 +40,19 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
       onRequestClose={onClose}
     >
       <StatusBar barStyle="light-content" backgroundColor="rgba(0,0,0,0.95)" />
-      <View style={styles.container}>
-        <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 16) }]}>
-          <View style={styles.fileNameContainer}>
+      <View className={styles.container} style={containerBackground}>
+        <View
+          className={styles.topBar}
+          style={{ paddingTop: Math.max(insets.top, 16) }}
+        >
+          <View className={styles.fileNameContainer}>
             {fileName ? (
-              <Text numberOfLines={1} style={styles.fileName}>
+              <Text numberOfLines={1} className={styles.fileName}>
                 {fileName}
               </Text>
             ) : null}
             {timestamp ? (
-              <Text numberOfLines={1} style={styles.timestamp}>
+              <Text numberOfLines={1} className={styles.timestamp}>
                 {timestamp}
               </Text>
             ) : null}
@@ -63,10 +62,10 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
             accessibilityLabel="Close"
             testID="image-viewer-close-button"
             onPress={onClose}
-            style={styles.closeButton}
+            className={styles.closeButton}
             hitSlop={8}
           >
-            <X size={24} color="#FFFFFF" />
+            <X size={24} color={colors.white} />
           </Pressable>
         </View>
 
@@ -95,37 +94,13 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
 
 export default ImageViewerModal;
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.95)",
-  },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    zIndex: 10,
-  },
-  fileNameContainer: {
-    flex: 1,
-    marginRight: 12,
-  },
-  fileName: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  timestamp: {
-    color: colors.textMuted,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  closeButton: {
-    padding: 8,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+const containerBackground = { backgroundColor: "rgba(0, 0, 0, 0.95)" };
+
+const styles = {
+  container: "flex-1",
+  topBar: "items-center flex-row justify-between px-ku-md pb-[12px] z-10",
+  fileNameContainer: "flex-1 mr-[12px]",
+  fileName: "text-ku-white text-[16px] font-semibold",
+  timestamp: "mt-[2px] text-ku-text-muted text-[12px]",
+  closeButton: "items-center justify-center p-ku-sm rounded-[20px]",
+} as const;

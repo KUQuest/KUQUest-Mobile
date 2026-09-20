@@ -1,7 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { colors } from "@/theme/colors";
-import { fontFamily } from "@/theme/typography";
+import { Text, View } from "@/tw";
 
 interface HirerWalletHeaderProps {
   title: string;
@@ -10,35 +8,24 @@ interface HirerWalletHeaderProps {
 
 export function HirerWalletHeader({ subtitle, title }: HirerWalletHeaderProps) {
   return (
-    <View style={styles.screenHeader} testID="hirer-wallet-header">
+    <View className={styles.screenHeader} testID="hirer-wallet-header">
       <Text
         accessibilityRole="header"
-        style={styles.screenTitle}
+        className={styles.screenTitle}
         testID="hirer-wallet-title"
       >
         {title}
       </Text>
-      {subtitle ? <Text style={styles.screenSubtitle}>{subtitle}</Text> : null}
+      {subtitle ? (
+        <Text className={styles.screenSubtitle}>{subtitle}</Text>
+      ) : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  screenHeader: {
-    paddingHorizontal: 4,
-    paddingBottom: 20,
-  },
-  screenTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 28,
-    lineHeight: 36,
-    color: colors.textStrong,
-  },
-  screenSubtitle: {
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    lineHeight: 21,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
-});
+const styles = {
+  screenHeader: "px-[4px] pb-[20px]",
+  screenTitle: "font-ku-bold text-[28px] leading-[36px] text-ku-text-strong",
+  screenSubtitle:
+    "mt-ku-xs font-ku-regular text-ku-body-small leading-[21px] text-ku-text-secondary",
+} as const;

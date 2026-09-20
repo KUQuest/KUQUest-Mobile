@@ -39,10 +39,9 @@ export function CreateQuestHeader({
           accessibilityRole="button"
           className={styles.heroButton}
           onPress={onBackPress}
-          style={{ borderColor: "rgba(255,255,255,0.42)" }}
           testID="create-quest-header-back"
         >
-          <ArrowLeft color={colors.white} size={28} strokeWidth={2.4} />
+          <ArrowLeft color={colors.onPrimary} size={28} strokeWidth={2.4} />
         </Pressable>
         <View className={styles.heroTitleGroup}>
           <Text accessibilityRole="header" className={styles.heroTitle}>
@@ -57,10 +56,9 @@ export function CreateQuestHeader({
           accessibilityRole="button"
           className={styles.heroButton}
           onPress={onHelpPress}
-          style={{ borderColor: "rgba(255,255,255,0.42)" }}
           testID="create-quest-help"
         >
-          <CircleHelp color={colors.white} size={30} strokeWidth={2.2} />
+          <CircleHelp color={colors.onPrimary} size={30} strokeWidth={2.2} />
         </Pressable>
       </View>
 
@@ -83,16 +81,15 @@ export function CreateQuestHeader({
               onPress={() => onStepPress(item as Step)}
             >
               <View
-                className={styles.progressNode}
-                style={{
-                  backgroundColor:
-                    item <= step
-                      ? colors.successBright
-                      : "rgba(255,255,255,0.34)",
-                }}
+                className={cn(
+                  styles.progressNode,
+                  item <= step
+                    ? "bg-ku-success-bright"
+                    : "bg-ku-on-primary/[0.34]"
+                )}
               >
                 {item < step ? (
-                  <Check color={colors.white} size={26} strokeWidth={2.8} />
+                  <Check color={colors.onPrimary} size={26} strokeWidth={2.8} />
                 ) : (
                   <Text className={styles.progressNodeText}>{item}</Text>
                 )}
@@ -100,13 +97,12 @@ export function CreateQuestHeader({
             </Pressable>
             {index < 2 ? (
               <View
-                className={styles.progressConnector}
-                style={{
-                  backgroundColor:
-                    item < step
-                      ? colors.successBright
-                      : "rgba(255,255,255,0.3)",
-                }}
+                className={cn(
+                  styles.progressConnector,
+                  item < step
+                    ? "bg-ku-success-bright"
+                    : "bg-ku-on-primary/[0.3]"
+                )}
               />
             ) : null}
           </React.Fragment>
@@ -118,16 +114,12 @@ export function CreateQuestHeader({
             key={label}
             className={cn(
               styles.stepLabel,
-              index + 1 === step && styles.stepLabelActive
+              index + 1 === step
+                ? styles.stepLabelActive
+                : index + 1 < step
+                  ? "text-ku-on-primary/[0.86]"
+                  : "text-ku-on-primary/[0.62]"
             )}
-            style={{
-              color:
-                index + 1 === step
-                  ? colors.white
-                  : index + 1 < step
-                    ? "rgba(255,255,255,0.86)"
-                    : "rgba(255,255,255,0.62)",
-            }}
           >
             {label}
           </Text>

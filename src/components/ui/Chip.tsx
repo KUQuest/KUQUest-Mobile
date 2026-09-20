@@ -34,25 +34,25 @@ const toneStyles: Record<
     container: "bg-ku-surface-accent border-ku-border-accent",
     text: "text-ku-primary",
     selectedContainer: "bg-ku-primary border-ku-primary",
-    selectedText: "text-ku-white",
+    selectedText: "text-ku-on-primary",
   },
   tag: {
     container: "bg-ku-surface-accent border-ku-border-accent",
     text: "text-ku-primary-dark",
     selectedContainer: "bg-ku-primary border-ku-primary",
-    selectedText: "text-ku-white",
+    selectedText: "text-ku-on-primary",
   },
   tab: {
     container: "bg-ku-surface-muted border-ku-border-subtle",
     text: "text-ku-text-secondary",
     selectedContainer: "bg-ku-primary border-ku-primary",
-    selectedText: "text-ku-white",
+    selectedText: "text-ku-on-primary",
   },
   primary: {
     container: "bg-ku-primary border-ku-primary",
-    text: "text-ku-white",
+    text: "text-ku-on-primary",
     selectedContainer: "bg-ku-primary border-ku-primary",
-    selectedText: "text-ku-white",
+    selectedText: "text-ku-on-primary",
   },
 };
 

@@ -129,7 +129,7 @@ function ProposalRow({
           </Text>
           {detail ? (
             <Text
-              className="mt-0.5 text-xs"
+              className="mt-0.5 text-ku-label"
               style={{ color: colors.textSecondary }}
               numberOfLines={1}
             >
@@ -148,7 +148,9 @@ function ProposalRow({
               onPress={onSelect}
               testID={`${testID}-select`}
             >
-              <Text className="font-ku-bold text-white">{selectLabel}</Text>
+              <Text className="font-ku-bold text-ku-on-primary">
+                {selectLabel}
+              </Text>
             </Pressable>
           ) : null}
           {canReject ? (
@@ -454,7 +456,7 @@ export default function SelectRosterRoute() {
 
   if (loading) {
     return (
-      <ScreenLayout className="bg-ku-bg flex-1">
+      <ScreenLayout className="flex-1 bg-ku-background">
         <TopBar
           title={messages.selectRosterTitle}
           onBackPress={() => router.back()}
@@ -470,7 +472,7 @@ export default function SelectRosterRoute() {
 
   if (error || !snapshot) {
     return (
-      <ScreenLayout className="bg-ku-bg flex-1">
+      <ScreenLayout className="flex-1 bg-ku-background">
         <TopBar
           title={messages.selectRosterTitle}
           onBackPress={() => router.back()}
@@ -487,7 +489,7 @@ export default function SelectRosterRoute() {
             style={{ backgroundColor: colors.primary }}
             onPress={() => void refetchSnapshot()}
           >
-            <Text className="text-center font-ku-bold text-white">
+            <Text className="text-center font-ku-bold text-ku-on-primary">
               {groupMessages.retry}
             </Text>
           </Pressable>
@@ -500,7 +502,7 @@ export default function SelectRosterRoute() {
 
   if (snapshot.mode !== "CANDIDATE") {
     return (
-      <ScreenLayout className="bg-ku-bg flex-1">
+      <ScreenLayout className="flex-1 bg-ku-background">
         <TopBar
           title={messages.selectRosterTitle}
           onBackPress={() => router.back()}
@@ -532,7 +534,7 @@ export default function SelectRosterRoute() {
     <View className="mb-4">
       <Text
         accessibilityRole="header"
-        className="font-ku-bold text-2xl"
+        className="font-ku-bold text-ku-title"
         style={{ color: colors.textStrong }}
       >
         {quest.title}
@@ -545,7 +547,10 @@ export default function SelectRosterRoute() {
         style={{ backgroundColor: colors.surfaceMuted }}
       >
         <View>
-          <Text className="text-xs" style={{ color: colors.textSecondary }}>
+          <Text
+            className="text-ku-label"
+            style={{ color: colors.textSecondary }}
+          >
             {groupMessages.requestedHeadcount}
           </Text>
           <Text
@@ -556,7 +561,10 @@ export default function SelectRosterRoute() {
           </Text>
         </View>
         <View>
-          <Text className="text-xs" style={{ color: colors.textSecondary }}>
+          <Text
+            className="text-ku-label"
+            style={{ color: colors.textSecondary }}
+          >
             {groupMessages.actualHeadcount}
           </Text>
           <Text
@@ -567,7 +575,10 @@ export default function SelectRosterRoute() {
           </Text>
         </View>
         <View>
-          <Text className="text-xs" style={{ color: colors.textSecondary }}>
+          <Text
+            className="text-ku-label"
+            style={{ color: colors.textSecondary }}
+          >
             {groupMessages.proposalCount(pendingCount)}
           </Text>
         </View>
@@ -576,7 +587,10 @@ export default function SelectRosterRoute() {
   );
 
   return (
-    <ScreenLayout edges={["top", "left", "right"]} className="bg-ku-bg flex-1">
+    <ScreenLayout
+      edges={["top", "left", "right"]}
+      className="flex-1 bg-ku-background"
+    >
       <TopBar
         title={messages.selectRosterTitle}
         onBackPress={() => router.back()}

@@ -1,16 +1,15 @@
 import React, { useState } from "react";
+import { Alert, Modal, StyleSheet } from "react-native";
+import type { ViewStyle } from "react-native";
 import {
   ActivityIndicator,
-  Alert,
-  Modal,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+} from "@/tw";
 import {
   ArrowDown,
   ArrowRightLeft,
@@ -24,7 +23,7 @@ import { type WalletBalances } from "@/api/WalletApi";
 import { formatSatang } from "@/domain/satang";
 import type { WalletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
-import { fontFamily } from "@/theme/typography";
+import { cn } from "@/tw/cn";
 import { useConvertEarningsMutation } from "../api/walletQueries";
 
 interface TransferEarningsModalProps {
@@ -94,6 +93,7 @@ export function TransferEarningsModal({
 
   const newSpendingSatang = spendingSatang + (isValidAmount ? parsedSatang : 0);
   const newEarningsSatang = earningsSatang - (isValidAmount ? parsedSatang : 0);
+  const confirmDisabled = !isValidAmount || loading;
 
   return (
     <Modal
@@ -102,7 +102,7 @@ export function TransferEarningsModal({
       transparent
       visible={visible}
     >
-      <View style={styles.modalOverlay}>
+      <View className={styles.modalOverlay}>
         <Pressable
           accessibilityLabel={m.closeButton}
           onPress={onClose}
@@ -110,25 +110,30 @@ export function TransferEarningsModal({
           testID="transfer-earnings-backdrop"
         />
 
-        <View style={styles.modalCard} testID="transfer-earnings-modal">
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerTitleRow}>
-              <View style={styles.headerIconWrap}>
+        <View
+          className={styles.modalCard}
+          style={modalCardShadow}
+          testID="transfer-earnings-modal"
+        >
+          <View className={styles.header}>
+            <View className={styles.headerTitleRow}>
+              <View className={styles.headerIconWrap}>
                 <ArrowRightLeft
                   color={colors.primaryDeep}
                   size={18}
                   strokeWidth={2.4}
                 />
               </View>
-              <Text style={styles.headerTitle}>{m.transferEarningsTitle}</Text>
+              <Text className={styles.headerTitle}>
+                {m.transferEarningsTitle}
+              </Text>
             </View>
             <TouchableOpacity
               accessibilityLabel={m.closeButton}
               accessibilityRole="button"
               activeOpacity={0.7}
               onPress={onClose}
-              style={styles.closeBtn}
+              className={styles.closeBtn}
               testID="transfer-modal-close-btn"
             >
               <X color={colors.textSecondary} size={20} strokeWidth={2} />
@@ -136,24 +141,21 @@ export function TransferEarningsModal({
           </View>
 
           <ScrollView
-            contentContainerStyle={styles.scrollContent}
+            contentContainerClassName={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {/* Description */}
-            <Text style={styles.modalDesc}>{m.transferEarningsDesc}</Text>
+            <Text className={styles.modalDesc}>{m.transferEarningsDesc}</Text>
 
-            {/* Compartment Flow Card */}
-            <View style={styles.flowCard}>
-              {/* From: Earnings */}
-              <View style={styles.flowRow}>
-                <View style={styles.flowIconBoxEarnings}>
+            <View className={styles.flowCard}>
+              <View className={styles.flowRow}>
+                <View className={styles.flowIconBoxEarnings}>
                   <Sparkles color={colors.primary} size={18} strokeWidth={2} />
                 </View>
-                <View style={styles.flowInfo}>
-                  <Text style={styles.flowLabel}>{m.fromEarnings}</Text>
+                <View className={styles.flowInfo}>
+                  <Text className={styles.flowLabel}>{m.fromEarnings}</Text>
                   <Text
-                    style={styles.flowAmount}
+                    className={styles.flowAmount}
                     testID="transfer-current-earnings"
                   >
                     {formatSatang(earningsSatang, "en", "exact")}
@@ -161,32 +163,30 @@ export function TransferEarningsModal({
                 </View>
               </View>
 
-              {/* Arrow Divider */}
-              <View style={styles.flowDivider}>
-                <View style={styles.flowLine} />
-                <View style={styles.flowArrowCircle}>
+              <View className={styles.flowDivider}>
+                <View className={styles.flowLine} />
+                <View className={styles.flowArrowCircle}>
                   <ArrowDown
                     color={colors.primaryDeep}
                     size={14}
                     strokeWidth={2.5}
                   />
                 </View>
-                <View style={styles.flowLine} />
+                <View className={styles.flowLine} />
               </View>
 
-              {/* To: Spending */}
-              <View style={styles.flowRow}>
-                <View style={styles.flowIconBoxSpending}>
+              <View className={styles.flowRow}>
+                <View className={styles.flowIconBoxSpending}>
                   <Wallet
                     color={colors.primaryDeep}
                     size={18}
                     strokeWidth={2}
                   />
                 </View>
-                <View style={styles.flowInfo}>
-                  <Text style={styles.flowLabel}>{m.toSpending}</Text>
+                <View className={styles.flowInfo}>
+                  <Text className={styles.flowLabel}>{m.toSpending}</Text>
                   <Text
-                    style={styles.flowAmount}
+                    className={styles.flowAmount}
                     testID="transfer-current-spending"
                   >
                     {formatSatang(spendingSatang, "en", "exact")}
@@ -195,17 +195,16 @@ export function TransferEarningsModal({
               </View>
             </View>
 
-            {/* Input Section */}
-            <View style={styles.inputSection}>
-              <Text style={styles.inputLabel}>{m.transferAmountLabel}</Text>
+            <View className={styles.inputSection}>
+              <Text className={styles.inputLabel}>{m.transferAmountLabel}</Text>
               <View
-                style={[
+                className={cn(
                   styles.inputWrap,
-                  errorMsg ? styles.inputWrapError : null,
-                  earningsSatang <= 0 ? styles.inputWrapDisabled : null,
-                ]}
+                  errorMsg && styles.inputWrapError,
+                  earningsSatang <= 0 && styles.inputWrapDisabled
+                )}
               >
-                <Text style={styles.inputPrefix}>฿</Text>
+                <Text className={styles.inputPrefix}>฿</Text>
                 <TextInput
                   editable={earningsSatang > 0 && !loading}
                   keyboardType="decimal-pad"
@@ -215,7 +214,7 @@ export function TransferEarningsModal({
                   }}
                   placeholder="0.00"
                   placeholderTextColor={colors.textMuted}
-                  style={styles.textInput}
+                  className={styles.textInput}
                   testID="transfer-amount-input"
                   value={inputAmount}
                 />
@@ -225,19 +224,18 @@ export function TransferEarningsModal({
                   activeOpacity={0.7}
                   disabled={earningsSatang <= 0 || loading}
                   onPress={handleSetMax}
-                  style={[
+                  className={cn(
                     styles.maxButton,
-                    earningsSatang <= 0 ? styles.maxButtonDisabled : null,
-                  ]}
+                    earningsSatang <= 0 && styles.maxButtonDisabled
+                  )}
                   testID="transfer-amount-max-btn"
                 >
-                  <Text style={styles.maxButtonText}>{m.transferAll}</Text>
+                  <Text className={styles.maxButtonText}>{m.transferAll}</Text>
                 </TouchableOpacity>
               </View>
 
-              {/* Quick Presets */}
               {earningsSatang > 0 ? (
-                <View style={styles.presetRow}>
+                <View className={styles.presetRow}>
                   {[50, 100, 500].map((presetBaht) => {
                     const presetSatang = presetBaht * 100;
                     const isAvailable = presetSatang <= earningsSatang;
@@ -246,17 +244,17 @@ export function TransferEarningsModal({
                         disabled={!isAvailable || loading}
                         key={presetBaht}
                         onPress={() => handleSelectPreset(presetBaht)}
-                        style={[
+                        className={cn(
                           styles.presetChip,
-                          !isAvailable ? styles.presetChipDisabled : null,
-                        ]}
+                          !isAvailable && styles.presetChipDisabled
+                        )}
                         testID={`transfer-preset-${presetBaht}`}
                       >
                         <Text
-                          style={[
+                          className={cn(
                             styles.presetChipText,
-                            !isAvailable ? styles.presetChipTextDisabled : null,
-                          ]}
+                            !isAvailable && styles.presetChipTextDisabled
+                          )}
                         >
                           {formatSatang(presetSatang, "en")}
                         </Text>
@@ -266,96 +264,101 @@ export function TransferEarningsModal({
                   <TouchableOpacity
                     disabled={earningsSatang <= 0 || loading}
                     onPress={handleSetMax}
-                    style={styles.presetChip}
+                    className={styles.presetChip}
                     testID="transfer-preset-all"
                   >
-                    <Text style={styles.presetChipText}>{m.transferAll}</Text>
+                    <Text className={styles.presetChipText}>
+                      {m.transferAll}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               ) : null}
 
-              {/* Validation / Helper text */}
               {errorMsg ? (
-                <Text style={styles.hintError}>{errorMsg}</Text>
+                <Text className={styles.hintError}>{errorMsg}</Text>
               ) : earningsSatang <= 0 ? (
                 <Text
-                  style={styles.hintWarning}
+                  className={styles.hintWarning}
                   testID="transfer-no-earnings-hint"
                 >
                   {m.noEarningsAvailable}
                 </Text>
               ) : inputAmount.length > 0 && parsedSatang < 100 ? (
-                <Text style={styles.hintWarning}>{m.minTransferHint}</Text>
+                <Text className={styles.hintWarning}>{m.minTransferHint}</Text>
               ) : inputAmount.length > 0 && parsedSatang > earningsSatang ? (
-                <Text style={styles.hintError}>{m.insufficientEarnings}</Text>
+                <Text className={styles.hintError}>
+                  {m.insufficientEarnings}
+                </Text>
               ) : null}
             </View>
 
-            {/* Rulebook Guarantee Callout */}
-            <View style={styles.policyCard}>
-              <View style={styles.policyHeader}>
+            <View className={styles.policyCard}>
+              <View className={styles.policyHeader}>
                 <CheckCircle2
                   color={colors.success}
                   size={16}
                   strokeWidth={2.4}
                 />
-                <Text style={styles.policyTitle}>{m.transferFeeFree}</Text>
+                <Text className={styles.policyTitle}>{m.transferFeeFree}</Text>
               </View>
-              <View style={styles.policyBody}>
+              <View className={styles.policyBody}>
                 <Info
                   color={colors.textSecondary}
                   size={14}
                   strokeWidth={2}
-                  style={styles.policyInfoIcon}
+                  style={policyInfoIcon}
                 />
-                <Text style={styles.policyNote}>{m.transferPolicyNote}</Text>
+                <Text className={styles.policyNote}>
+                  {m.transferPolicyNote}
+                </Text>
               </View>
             </View>
 
-            {/* Calculation Preview if amount entered */}
             {isValidAmount ? (
-              <View style={styles.previewCard}>
-                <View style={styles.previewRow}>
-                  <Text style={styles.previewLabel}>
+              <View className={styles.previewCard}>
+                <View className={styles.previewRow}>
+                  <Text className={styles.previewLabel}>
                     ยอดเงินพร้อมใช้หลังโอน:
                   </Text>
-                  <Text style={styles.previewValueSuccess}>
+                  <Text className={styles.previewValueSuccess}>
                     {formatSatang(newSpendingSatang, "en", "exact")}
                   </Text>
                 </View>
-                <View style={styles.previewRow}>
-                  <Text style={styles.previewLabel}>รายได้สะสมคงเหลือ:</Text>
-                  <Text style={styles.previewValue}>
+                <View className={styles.previewRow}>
+                  <Text className={styles.previewLabel}>
+                    รายได้สะสมคงเหลือ:
+                  </Text>
+                  <Text className={styles.previewValue}>
                     {formatSatang(newEarningsSatang, "en", "exact")}
                   </Text>
                 </View>
               </View>
             ) : null}
 
-            {/* Action Buttons */}
-            <View style={styles.actionRow}>
+            <View className={styles.actionRow}>
               <TouchableOpacity
                 accessibilityLabel={m.transferConfirmBtn}
                 accessibilityRole="button"
                 activeOpacity={0.8}
-                disabled={!isValidAmount || loading}
+                disabled={confirmDisabled}
                 onPress={handleTransfer}
-                style={[
+                className={cn(
                   styles.confirmBtn,
-                  !isValidAmount || loading ? styles.confirmBtnDisabled : null,
-                ]}
+                  confirmDisabled && styles.confirmBtnDisabled
+                )}
+                style={confirmDisabled ? confirmShadowDisabled : confirmShadow}
                 testID="transfer-confirm-btn"
               >
                 {loading ? (
-                  <ActivityIndicator color={colors.white} size="small" />
+                  <ActivityIndicator color={colors.onPrimary} size="small" />
                 ) : (
                   <>
                     <ArrowRightLeft
-                      color={colors.white}
+                      color={colors.onPrimary}
                       size={17}
                       strokeWidth={2.4}
                     />
-                    <Text style={styles.confirmBtnText}>
+                    <Text className={styles.confirmBtnText}>
                       {m.transferConfirmBtn}
                     </Text>
                   </>
@@ -368,10 +371,10 @@ export function TransferEarningsModal({
                 activeOpacity={0.7}
                 disabled={loading}
                 onPress={onClose}
-                style={styles.cancelBtn}
+                className={styles.cancelBtn}
                 testID="transfer-cancel-btn"
               >
-                <Text style={styles.cancelBtnText}>{m.closeButton}</Text>
+                <Text className={styles.cancelBtnText}>{m.closeButton}</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -381,325 +384,99 @@ export function TransferEarningsModal({
   );
 }
 
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.55)",
-    justifyContent: "flex-end",
-  },
-  modalCard: {
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: "88%",
-    paddingBottom: 24,
-    elevation: 24,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderSubtle,
-  },
-  headerTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  headerIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.surfaceAccent,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 17,
-    color: colors.textStrong,
-  },
-  closeBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.surfaceMuted,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 20,
-  },
-  modalDesc: {
-    fontFamily: fontFamily.regular,
-    fontSize: 13,
-    color: colors.textSecondary,
-    lineHeight: 18,
-    marginBottom: 16,
-  },
-  flowCard: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    padding: 14,
-    marginBottom: 18,
-  },
-  flowRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  flowIconBoxEarnings: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: colors.surfaceAccent,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  flowIconBoxSpending: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: colors.surfaceSuccess,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  flowInfo: {
-    flex: 1,
-  },
-  flowLabel: {
-    fontFamily: fontFamily.medium,
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginBottom: 2,
-  },
-  flowAmount: {
-    fontFamily: fontFamily.bold,
-    fontSize: 16,
-    color: colors.textStrong,
-  },
-  flowDivider: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 8,
-    paddingHorizontal: 10,
-  },
-  flowLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.borderSubtle,
-  },
-  flowArrowCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.surfaceAccent,
-    alignItems: "center",
-    justifyContent: "center",
-    marginHorizontal: 8,
-  },
-  inputSection: {
-    marginBottom: 16,
-  },
-  inputLabel: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 14,
-    color: colors.textStrong,
-    marginBottom: 8,
-  },
-  inputWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    height: 52,
-  },
-  inputWrapError: {
-    borderColor: colors.danger,
-  },
-  inputWrapDisabled: {
-    backgroundColor: colors.surfaceMuted,
-    opacity: 0.7,
-  },
-  inputPrefix: {
-    fontFamily: fontFamily.bold,
-    fontSize: 18,
-    color: colors.textStrong,
-    marginRight: 6,
-  },
-  textInput: {
-    flex: 1,
-    fontFamily: fontFamily.bold,
-    fontSize: 18,
-    color: colors.textStrong,
-    paddingVertical: 0,
-  },
-  maxButton: {
-    backgroundColor: colors.surfaceAccent,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  maxButtonDisabled: {
-    opacity: 0.4,
-  },
-  maxButtonText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 12,
-    color: colors.primaryDeep,
-  },
-  presetRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 10,
-  },
-  presetChip: {
-    flex: 1,
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    paddingVertical: 7,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  presetChipDisabled: {
-    opacity: 0.35,
-  },
-  presetChipText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  presetChipTextDisabled: {
-    color: colors.textMuted,
-  },
-  hintWarning: {
-    fontFamily: fontFamily.medium,
-    fontSize: 12,
-    color: "#B45309",
-    marginTop: 6,
-  },
-  hintError: {
-    fontFamily: fontFamily.medium,
-    fontSize: 12,
-    color: colors.danger,
-    marginTop: 6,
-  },
-  policyCard: {
-    backgroundColor: colors.surfaceSuccess,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.borderSuccess,
-    padding: 12,
-    marginBottom: 16,
-  },
-  policyHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 4,
-  },
-  policyTitle: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 13,
-    color: colors.success,
-  },
-  policyBody: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 6,
-  },
-  policyInfoIcon: {
-    marginTop: 2,
-  },
-  policyNote: {
-    flex: 1,
-    fontFamily: fontFamily.regular,
-    fontSize: 12,
-    color: colors.textSecondary,
-    lineHeight: 16,
-  },
-  previewCard: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 18,
-    gap: 6,
-  },
-  previewRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  previewLabel: {
-    fontFamily: fontFamily.medium,
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  previewValue: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 13,
-    color: colors.textStrong,
-  },
-  previewValueSuccess: {
-    fontFamily: fontFamily.bold,
-    fontSize: 13,
-    color: colors.success,
-  },
-  actionRow: {
-    gap: 10,
-    marginTop: 4,
-  },
-  confirmBtn: {
-    backgroundColor: colors.primaryDeep,
-    borderRadius: 14,
-    height: 50,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    shadowColor: colors.primaryDeep,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  confirmBtnDisabled: {
-    backgroundColor: colors.textMuted,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  confirmBtnText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 15,
-    color: colors.white,
-  },
-  cancelBtn: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 14,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cancelBtnText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-});
+const styles = {
+  modalOverlay: "flex-1 justify-end bg-ku-overlay",
+  modalCard:
+    "max-h-[88%] rounded-tl-[24px] rounded-tr-[24px] bg-ku-surface pb-ku-lg",
+  header:
+    "flex-row items-center justify-between border-b border-ku-border-subtle px-[20px] pb-[14px] pt-[18px]",
+  headerTitleRow: "flex-row items-center gap-[10px]",
+  headerIconWrap:
+    "h-[32px] w-[32px] items-center justify-center rounded-[16px] bg-ku-surface-accent",
+  headerTitle: "font-ku-bold text-ku-emphasis text-ku-text-strong",
+  closeBtn:
+    "h-[34px] w-[34px] items-center justify-center rounded-[17px] bg-ku-surface-muted",
+  scrollContent: "px-[20px] pb-ku-md pt-ku-md",
+  modalDesc:
+    "mb-ku-md font-ku-regular text-[13px] leading-[18px] text-ku-text-secondary",
+  flowCard:
+    "mb-[18px] rounded-[16px] border border-ku-border-subtle bg-ku-surface-muted p-[14px]",
+  flowRow: "flex-row items-center gap-ku-sm",
+  flowIconBoxEarnings:
+    "h-[38px] w-[38px] items-center justify-center rounded-[12px] bg-ku-surface-accent",
+  flowIconBoxSpending:
+    "h-[38px] w-[38px] items-center justify-center rounded-[12px] bg-ku-surface-success",
+  flowInfo: "flex-1",
+  flowLabel: "mb-[2px] font-ku-medium text-[12px] text-ku-text-secondary",
+  flowAmount: "font-ku-bold text-ku-body text-ku-text-strong",
+  flowDivider: "my-ku-sm flex-row items-center px-[10px]",
+  flowLine: "h-[1px] flex-1 bg-ku-border-subtle",
+  flowArrowCircle:
+    "mx-ku-sm h-[24px] w-[24px] items-center justify-center rounded-[12px] bg-ku-surface-accent",
+  inputSection: "mb-ku-md",
+  inputLabel:
+    "mb-ku-sm font-ku-semibold text-ku-body-small text-ku-text-strong",
+  inputWrap:
+    "h-[52px] flex-row items-center rounded-[14px] border-[1.5px] border-ku-border bg-ku-surface px-[14px]",
+  inputWrapError: "border-ku-danger",
+  inputWrapDisabled: "bg-ku-surface-muted opacity-70",
+  inputPrefix: "mr-[6px] font-ku-bold text-ku-subtitle text-ku-text-strong",
+  textInput: "flex-1 py-0 font-ku-bold text-ku-subtitle text-ku-text-strong",
+  maxButton: "rounded-[8px] bg-ku-surface-accent px-[10px] py-[6px]",
+  maxButtonDisabled: "opacity-40",
+  maxButtonText: "font-ku-semibold text-[12px] text-ku-primary-deep",
+  presetRow: "mt-[10px] flex-row gap-ku-sm",
+  presetChip:
+    "flex-1 items-center justify-center rounded-[10px] border border-ku-border-subtle bg-ku-surface-muted py-[7px]",
+  presetChipDisabled: "opacity-35",
+  presetChipText: "font-ku-medium text-[12px] text-ku-text-secondary",
+  presetChipTextDisabled: "text-ku-text-muted",
+  hintWarning: "mt-[6px] font-ku-medium text-[12px] text-ku-warning-dark",
+  hintError: "mt-[6px] font-ku-medium text-[12px] text-ku-danger",
+  policyCard:
+    "mb-ku-md rounded-[14px] border border-ku-border-success bg-ku-surface-success p-ku-sm",
+  policyHeader: "mb-ku-xs flex-row items-center gap-[6px]",
+  policyTitle: "font-ku-semibold text-[13px] text-ku-success",
+  policyBody: "flex-row items-start gap-[6px]",
+  policyNote:
+    "flex-1 font-ku-regular text-[12px] leading-[16px] text-ku-text-secondary",
+  previewCard: "mb-[18px] gap-[6px] rounded-[12px] bg-ku-surface-muted p-ku-sm",
+  previewRow: "flex-row items-center justify-between",
+  previewLabel: "font-ku-medium text-[12px] text-ku-text-secondary",
+  previewValue: "font-ku-semibold text-[13px] text-ku-text-strong",
+  previewValueSuccess: "font-ku-bold text-[13px] text-ku-success",
+  actionRow: "mt-ku-xs gap-[10px]",
+  confirmBtn:
+    "h-[50px] flex-row items-center justify-center gap-ku-sm rounded-[14px] bg-ku-primary-deep",
+  confirmBtnDisabled: "bg-ku-text-muted",
+  confirmBtnText: "font-ku-semibold text-ku-control text-ku-on-primary",
+  cancelBtn:
+    "h-[44px] items-center justify-center rounded-[14px] bg-ku-surface-muted",
+  cancelBtnText: "font-ku-medium text-ku-body-small text-ku-text-secondary",
+} as const;
+
+const modalCardShadow = {
+  elevation: 24,
+  shadowColor: colors.black,
+  shadowOffset: { width: 0, height: -4 },
+  shadowOpacity: 0.2,
+  shadowRadius: 12,
+} satisfies ViewStyle;
+
+const confirmShadow = {
+  shadowColor: colors.primaryDeep,
+  shadowOffset: { width: 0, height: 3 },
+  shadowOpacity: 0.25,
+  shadowRadius: 6,
+  elevation: 3,
+} satisfies ViewStyle;
+
+const confirmShadowDisabled = {
+  shadowColor: colors.primaryDeep,
+  shadowOffset: { width: 0, height: 3 },
+  shadowOpacity: 0,
+  shadowRadius: 6,
+  elevation: 0,
+} satisfies ViewStyle;
+
+const policyInfoIcon = { marginTop: 2 } as const;

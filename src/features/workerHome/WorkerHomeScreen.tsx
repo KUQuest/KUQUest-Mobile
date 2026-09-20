@@ -33,11 +33,11 @@ import { workerHomeMessages } from "./workerHomeMessages";
 import { workerHomeStyles as styles } from "./workerHomeStyles";
 
 function WorkerQuestFeedSeparator() {
-  return <View style={{ height: 12 }} />;
+  return <View className="h-[12px]" />;
 }
 
 function WorkerQuestFeedFooter() {
-  return <View style={{ height: 24 }} />;
+  return <View className="h-ku-lg" />;
 }
 
 export default function WorkerHomeScreen() {
@@ -154,49 +154,31 @@ export default function WorkerHomeScreen() {
   return (
     <ScreenLayout edges={["top", "left", "right"]} className="bg-ku-background">
       <FlatList
-        contentContainerStyle={[
-          styles.screenContent,
-          { paddingBottom: scrollBottomPadding },
-        ]}
+        contentContainerClassName={styles.screenContent}
+        contentContainerStyle={{ paddingBottom: scrollBottomPadding }}
         data={availableQuests}
         ItemSeparatorComponent={WorkerQuestFeedSeparator}
         keyExtractor={keyExtractor}
         keyboardShouldPersistTaps="never"
         ListEmptyComponent={
           boardQuery.isPending ? (
-            <View style={{ paddingVertical: 40, alignItems: "center" }}>
+            <View className="items-center py-ku-xl">
               <ActivityIndicator color={themeColors.primaryDeep} />
             </View>
           ) : (
             <View
               accessibilityRole="text"
-              style={[
-                styles.emptyState,
-                {
-                  backgroundColor: themeColors.surfaceMuted,
-                  borderColor: themeColors.borderSubtle,
-                },
-              ]}
+              className={`${styles.emptyState} border-ku-border-subtle bg-ku-surface-muted`}
               testID="worker-feed-empty"
             >
-              <View
-                style={[
-                  styles.emptyIconCircle,
-                  { backgroundColor: themeColors.surface },
-                ]}
-              >
+              <View className={`${styles.emptyIconCircle} bg-ku-surface`}>
                 <Search size={22} color={themeColors.textSecondary} />
               </View>
-              <Text
-                style={[styles.emptyTitle, { color: themeColors.textStrong }]}
-              >
+              <Text className={`${styles.emptyTitle} text-ku-text-strong`}>
                 {messages.noAvailableQuestsTitle}
               </Text>
               <Text
-                style={[
-                  styles.emptyDescription,
-                  { color: themeColors.textSecondary },
-                ]}
+                className={`${styles.emptyDescription} text-ku-text-secondary`}
               >
                 {messages.noAvailableQuestsDesc}
               </Text>
@@ -208,79 +190,46 @@ export default function WorkerHomeScreen() {
         }
         ListHeaderComponent={
           <View>
-            {/* Header with Title: Work */}
-            <View style={styles.screenHeader}>
-              <View style={styles.headerTopRow}>
+            <View className={styles.screenHeader}>
+              <View className={styles.headerTopRow}>
                 <View
-                  style={[
-                    styles.roleBadge,
-                    {
-                      backgroundColor: themeColors.surfaceSuccess,
-                      borderColor: themeColors.borderSuccess,
-                    },
-                  ]}
+                  className={`${styles.roleBadge} border-ku-border-success bg-ku-surface-success`}
                   testID="worker-workspace-badge"
                 >
-                  <View
-                    style={[
-                      styles.roleBadgeDot,
-                      { backgroundColor: themeColors.success },
-                    ]}
-                  />
-                  <Text
-                    style={[
-                      styles.roleBadgeText,
-                      { color: themeColors.success },
-                    ]}
-                  >
+                  <View className={`${styles.roleBadgeDot} bg-ku-success`} />
+                  <Text className={`${styles.roleBadgeText} text-ku-success`}>
                     {messages.badge}
                   </Text>
                 </View>
-
                 <Pressable
                   accessibilityHint="Switches role to Hirer workspace"
                   accessibilityLabel={messages.switchToHirer}
                   accessibilityRole="button"
+                  className={`${styles.switchRoleButton} border-ku-border-subtle bg-ku-surface`}
                   onPress={handleSwitchToHirer}
-                  style={[
-                    styles.switchRoleButton,
-                    {
-                      backgroundColor: themeColors.surface,
-                      borderColor: themeColors.borderSubtle,
-                    },
-                  ]}
                   testID="switch-to-hirer-button"
                 >
                   <ArrowRightLeft size={13} color={themeColors.primaryDeep} />
                   <Text
-                    style={[
-                      styles.switchRoleText,
-                      { color: themeColors.primaryDeep },
-                    ]}
+                    className={`${styles.switchRoleText} text-ku-primary-dark`}
                   >
                     {messages.switchToHirer}
                   </Text>
                 </Pressable>
               </View>
-
               <Text
                 accessibilityRole="header"
-                style={[styles.screenTitle, { color: themeColors.textStrong }]}
+                className={`${styles.screenTitle} text-ku-text-strong`}
                 testID="worker-home-title"
               >
                 {messages.workTitle}
               </Text>
               <Text
-                style={[
-                  styles.screenSubtitle,
-                  { color: themeColors.textSecondary },
-                ]}
+                className={`${styles.screenSubtitle} text-ku-text-secondary`}
               >
                 {messages.subtitle}
               </Text>
             </View>
-
-            {/* Search / Filter & Quick Tag Filter */}
             <WorkerSearchBar
               onClearQuery={handleClearSearch}
               onOpenFilter={handleOpenFilter}
@@ -290,54 +239,33 @@ export default function WorkerHomeScreen() {
               selectedTagId={selectedTagId}
               tags={tags}
             />
-
-            {/* Error Notice */}
             {assignmentsQuery.isError && boardQuery.isError ? (
               <View
-                style={[
-                  styles.errorState,
-                  {
-                    backgroundColor: themeColors.surfaceMuted,
-                    borderColor: themeColors.borderSubtle,
-                  },
-                ]}
+                className={`${styles.errorState} border-ku-border-subtle bg-ku-surface-muted`}
                 testID="worker-home-error"
               >
-                <Text
-                  style={[styles.errorText, { color: themeColors.textStrong }]}
-                >
+                <Text className={`${styles.errorText} text-ku-text-strong`}>
                   {messages.errorTitle}
                 </Text>
                 <Pressable
                   accessibilityLabel={messages.errorRetry}
                   accessibilityRole="button"
+                  className={`${styles.retryButton} bg-ku-primary-dark`}
                   onPress={handleRefresh}
-                  style={[
-                    styles.retryButton,
-                    { backgroundColor: themeColors.primaryDeep },
-                  ]}
                   testID="worker-home-retry-btn"
                 >
-                  <Text
-                    style={[styles.retryText, { color: themeColors.white }]}
-                  >
+                  <Text className={`${styles.retryText} text-ku-on-primary`}>
                     {messages.errorRetry}
                   </Text>
                 </Pressable>
               </View>
             ) : null}
-
-            <View style={styles.sectionHeader}>
-              <Text
-                style={[styles.sectionTitle, { color: themeColors.textStrong }]}
-              >
+            <View className={styles.sectionHeader}>
+              <Text className={`${styles.sectionTitle} text-ku-text-strong`}>
                 {messages.feedSectionTitle}
               </Text>
               <Text
-                style={[
-                  styles.sectionSubtitle,
-                  { color: themeColors.textSecondary },
-                ]}
+                className={`${styles.sectionSubtitle} text-ku-text-secondary`}
               >
                 {messages.feedSectionSubtitle}
               </Text>

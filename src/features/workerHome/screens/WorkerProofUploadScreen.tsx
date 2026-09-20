@@ -23,7 +23,6 @@ import {
 } from "../api/workerHomeQueries";
 import { workerHomeMessages } from "../workerHomeMessages";
 import { getThemeColors } from "@/theme/colors";
-import { fontFamily } from "@/theme/typography";
 
 export interface WorkerProofUploadScreenProps {
   questId?: string;
@@ -200,34 +199,18 @@ export default function WorkerProofUploadScreen({
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={{
-            paddingHorizontal: 20,
-            paddingTop: 16,
-            paddingBottom: insets.bottom + 32,
-          }}
+          contentContainerClassName="px-[20px] pt-ku-md"
+          contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
           showsVerticalScrollIndicator={false}
           testID="worker-proof-scroll"
         >
           {/* Quest Context Banner */}
           {snapshot ? (
             <View
-              style={{
-                backgroundColor: themeColors.surface,
-                borderColor: themeColors.borderSubtle,
-                borderRadius: 16,
-                borderWidth: 1,
-                padding: 16,
-                marginBottom: 20,
-              }}
+              className="mb-ku-lg rounded-[16px] border border-ku-border-subtle bg-ku-surface p-ku-md"
               testID="worker-proof-quest-summary"
             >
-              <Text
-                style={{
-                  fontFamily: fontFamily.semiBold,
-                  fontSize: 16,
-                  color: themeColors.textStrong,
-                }}
-              >
+              <Text className="font-ku-semibold text-ku-body text-ku-text-strong">
                 {snapshot.quest.title}
               </Text>
             </View>
@@ -235,17 +218,10 @@ export default function WorkerProofUploadScreen({
 
           {errorMessage ? (
             <View
-              style={{
-                backgroundColor: themeColors.surfaceMuted,
-                borderColor: themeColors.borderSubtle,
-                borderRadius: 12,
-                borderWidth: 1,
-                padding: 12,
-                marginBottom: 16,
-              }}
+              className="mb-ku-md rounded-[12px] border border-ku-border-subtle bg-ku-surface-muted p-ku-sm"
               testID="worker-proof-error-banner"
             >
-              <Text style={{ color: themeColors.textStrong, fontSize: 13 }}>
+              <Text className="text-ku-meta text-ku-text-strong">
                 {errorMessage}
               </Text>
             </View>
@@ -254,81 +230,37 @@ export default function WorkerProofUploadScreen({
           {/* Case A: Does not require proof */}
           {!isProofRequired ? (
             <View
-              style={{
-                backgroundColor: themeColors.surface,
-                borderColor: themeColors.borderSubtle,
-                borderRadius: 16,
-                borderWidth: 1,
-                padding: 20,
-                alignItems: "center",
-              }}
+              className="items-center rounded-[16px] border border-ku-border-subtle bg-ku-surface p-ku-lg"
               testID="worker-proof-not-required-section"
             >
               <CheckCircle2 size={40} color={themeColors.success} />
-              <Text
-                style={{
-                  fontFamily: fontFamily.semiBold,
-                  fontSize: 17,
-                  color: themeColors.textStrong,
-                  marginTop: 12,
-                  textAlign: "center",
-                }}
-              >
+              <Text className="mt-ku-sm text-center font-ku-semibold text-ku-emphasis text-ku-text-strong">
                 {messages.proofNotRequiredNote}
               </Text>
-              <Text
-                style={{
-                  fontFamily: fontFamily.regular,
-                  fontSize: 13,
-                  color: themeColors.textSecondary,
-                  marginTop: 6,
-                  textAlign: "center",
-                }}
-              >
+              <Text className="mt-[6px] text-center font-ku-regular text-ku-meta text-ku-text-secondary">
                 {messages.confirmCompleteDesc}
               </Text>
               {!canSubmitAction ? (
                 <Text
-                  style={{
-                    color: themeColors.textSecondary,
-                    fontFamily: fontFamily.medium,
-                    fontSize: 13,
-                    marginTop: 10,
-                    textAlign: "center",
-                  }}
+                  className="mt-[10px] text-center font-ku-medium text-ku-meta text-ku-text-secondary"
                   testID="worker-submit-locked-hint"
                 >
                   {messages.submitLockedUntilStart}
                 </Text>
               ) : null}
-
               <Pressable
                 accessibilityLabel={messages.completeQuestDirectly}
                 accessibilityRole="button"
+                className="mt-ku-lg min-h-[48px] w-full items-center rounded-[12px] bg-ku-primary-dark py-[14px]"
                 disabled={submitting || !canSubmitAction}
                 onPress={handleConfirmCompletionDirectly}
-                style={{
-                  backgroundColor: themeColors.primaryDeep,
-                  borderRadius: 12,
-                  width: "100%",
-                  paddingVertical: 14,
-                  alignItems: "center",
-                  marginTop: 24,
-                  minHeight: 48,
-                  opacity: submitting || !canSubmitAction ? 0.6 : 1,
-                }}
+                style={{ opacity: submitting || !canSubmitAction ? 0.6 : 1 }}
                 testID="worker-direct-complete-button"
               >
                 {submitting ? (
-                  <ActivityIndicator color={themeColors.white} />
+                  <ActivityIndicator color={themeColors.onPrimary} />
                 ) : (
-                  <Text
-                    style={{
-                      fontFamily: fontFamily.semiBold,
-                      fontSize: 15,
-                      color: themeColors.white,
-                    }}
-                  >
+                  <Text className="font-ku-semibold text-ku-control text-ku-on-primary">
                     {messages.completeQuestDirectly}
                   </Text>
                 )}
@@ -339,109 +271,50 @@ export default function WorkerProofUploadScreen({
             <View testID="worker-proof-required-section">
               {!canSubmitAction ? (
                 <Text
-                  style={{
-                    color: themeColors.textSecondary,
-                    fontFamily: fontFamily.medium,
-                    fontSize: 13,
-                    marginBottom: 14,
-                  }}
+                  className="mb-[14px] font-ku-medium text-ku-meta text-ku-text-secondary"
                   testID="worker-submit-locked-hint"
                 >
                   {messages.submitLockedUntilStart}
                 </Text>
               ) : null}
               {/* Image Upload Box as in sketch */}
-              <View style={{ marginBottom: 16 }}>
+              <View className="mb-ku-md">
                 {!selectedImage ? (
                   <Pressable
                     accessibilityLabel={messages.uploadImagePrompt}
                     accessibilityRole="button"
+                    className="h-[220px] items-center justify-center gap-[10px] rounded-[18px] border-2 border-dashed border-ku-border-subtle bg-ku-surface"
                     onPress={handlePickImage}
-                    style={{
-                      backgroundColor: themeColors.surface,
-                      borderColor: themeColors.borderSubtle,
-                      borderWidth: 2,
-                      borderStyle: "dashed",
-                      borderRadius: 18,
-                      height: 220,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 10,
-                    }}
                     testID="worker-image-upload-box"
                   >
-                    <View
-                      style={{
-                        width: 54,
-                        height: 54,
-                        borderRadius: 27,
-                        backgroundColor: themeColors.surfaceMuted,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
+                    <View className="h-[54px] w-[54px] items-center justify-center rounded-[27px] bg-ku-surface-muted">
                       <ImagePlus size={26} color={themeColors.primaryDeep} />
                     </View>
-                    <Text
-                      style={{
-                        fontFamily: fontFamily.semiBold,
-                        fontSize: 16,
-                        color: themeColors.primaryDeep,
-                      }}
-                    >
+                    <Text className="font-ku-semibold text-ku-body text-ku-primary-dark">
                       {messages.uploadImagePrompt}
                     </Text>
                   </Pressable>
                 ) : (
                   <View
-                    style={{
-                      borderRadius: 18,
-                      overflow: "hidden",
-                      borderWidth: 1,
-                      borderColor: themeColors.borderSubtle,
-                      backgroundColor: themeColors.surface,
-                    }}
+                    className="overflow-hidden rounded-[18px] border border-ku-border-subtle bg-ku-surface"
                     testID="worker-image-preview-container"
                   >
                     <Image
                       accessibilityLabel="Proof preview"
                       contentFit="cover"
-                      source={{ uri: selectedImage.uri }}
-                      style={{ width: "100%", height: 220 }}
+                      className="h-[220px] w-full"
                       testID="worker-proof-image-preview"
                     />
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        justifyContent: "space-between",
-                        padding: 12,
-                        borderTopWidth: 1,
-                        borderColor: themeColors.borderSubtle,
-                      }}
-                    >
+                    <View className="flex-row justify-between border-t border-ku-border-subtle p-ku-sm">
                       <Pressable
                         accessibilityLabel={messages.changeImage}
                         accessibilityRole="button"
+                        className="flex-row items-center gap-[6px] rounded-[8px] bg-ku-surface-muted px-ku-sm py-[6px]"
                         onPress={handlePickImage}
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 6,
-                          paddingVertical: 6,
-                          paddingHorizontal: 12,
-                          borderRadius: 8,
-                          backgroundColor: themeColors.surfaceMuted,
-                        }}
                         testID="worker-change-image-btn"
                       >
                         <RefreshCw size={14} color={themeColors.primaryDeep} />
-                        <Text
-                          style={{
-                            fontFamily: fontFamily.medium,
-                            fontSize: 13,
-                            color: themeColors.primaryDeep,
-                          }}
-                        >
+                        <Text className="font-ku-medium text-ku-meta text-ku-primary-dark">
                           {messages.changeImage}
                         </Text>
                       </Pressable>
@@ -449,28 +322,15 @@ export default function WorkerProofUploadScreen({
                       <Pressable
                         accessibilityLabel={messages.removeImage}
                         accessibilityRole="button"
+                        className="flex-row items-center gap-[6px] rounded-[8px] px-ku-sm py-[6px]"
                         onPress={handleRemoveImage}
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 6,
-                          paddingVertical: 6,
-                          paddingHorizontal: 12,
-                          borderRadius: 8,
-                        }}
                         testID="worker-remove-image-btn"
                       >
                         <Trash2
                           size={14}
                           color={themeColors.danger ?? "#ef4444"}
                         />
-                        <Text
-                          style={{
-                            fontFamily: fontFamily.medium,
-                            fontSize: 13,
-                            color: themeColors.danger ?? "#ef4444",
-                          }}
-                        >
+                        <Text className="font-ku-medium text-ku-meta text-ku-danger">
                           {messages.removeImage}
                         </Text>
                       </Pressable>
@@ -480,61 +340,37 @@ export default function WorkerProofUploadScreen({
               </View>
 
               {/* Note / Description */}
-              <View style={{ marginBottom: 24 }}>
+              <View className="mb-ku-lg">
                 <TextInput
                   accessibilityLabel={messages.proofDescriptionPlaceholder}
+                  className="min-h-[100px] rounded-[14px] border border-ku-border-subtle bg-ku-surface px-[14px] py-ku-sm text-ku-body-small text-ku-text-strong"
                   multiline
                   numberOfLines={4}
                   onChangeText={setDescription}
                   placeholder={messages.proofDescriptionPlaceholder}
                   placeholderTextColor={themeColors.textSecondary}
-                  style={{
-                    backgroundColor: themeColors.surface,
-                    borderColor: themeColors.borderSubtle,
-                    borderRadius: 14,
-                    borderWidth: 1,
-                    color: themeColors.textStrong,
-                    fontFamily: fontFamily.regular,
-                    fontSize: 14,
-                    minHeight: 100,
-                    paddingHorizontal: 14,
-                    paddingTop: 12,
-                    paddingBottom: 12,
-                    textAlignVertical: "top",
-                  }}
+                  style={{ textAlignVertical: "top" }}
                   testID="worker-proof-description-input"
                   value={description}
                 />
               </View>
 
-              {/* Submit Button */}
               <Pressable
                 accessibilityLabel={messages.submitWork}
                 accessibilityRole="button"
+                className="min-h-[50px] items-center justify-center rounded-[14px] bg-ku-primary-dark py-[14px]"
                 disabled={submitting || !selectedImage || !canSubmitAction}
                 onPress={handleSubmitProof}
                 style={{
-                  backgroundColor: themeColors.primaryDeep,
-                  borderRadius: 14,
-                  paddingVertical: 14,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  minHeight: 50,
                   opacity:
                     submitting || !selectedImage || !canSubmitAction ? 0.5 : 1,
                 }}
                 testID="worker-proof-submit-button"
               >
                 {submitting ? (
-                  <ActivityIndicator color={themeColors.white} />
+                  <ActivityIndicator color={themeColors.onPrimary} />
                 ) : (
-                  <Text
-                    style={{
-                      fontFamily: fontFamily.semiBold,
-                      fontSize: 16,
-                      color: themeColors.white,
-                    }}
-                  >
+                  <Text className="font-ku-semibold text-ku-body text-ku-on-primary">
                     {messages.submitWork}
                   </Text>
                 )}

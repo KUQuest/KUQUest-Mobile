@@ -35,7 +35,7 @@ export function TeamAssembleEmptyState({
           onPress={onCreateTeam}
           testID="team-assemble-create"
         >
-          <Plus color={colors.white} size={18} strokeWidth={2.5} />
+          <Plus color={colors.onPrimary} size={18} strokeWidth={2.5} />
           <Text className={styles.retryButtonText}>{createLabel}</Text>
         </Pressable>
       ) : null}

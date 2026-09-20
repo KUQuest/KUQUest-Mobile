@@ -1,6 +1,9 @@
-import { Platform, StyleSheet, Text, type TextProps } from "react-native";
+import { Platform, type TextProps } from "react-native";
 
-import { Fonts, ThemeColor } from "@/constants/theme";
+import { Text } from "@/tw";
+import { cn } from "@/tw/cn";
+
+import { ThemeColor } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
 export type ThemedTextProps = TextProps & {
@@ -16,26 +19,26 @@ export type ThemedTextProps = TextProps & {
   themeColor?: ThemeColor;
 };
 
+type ThemedTextType = NonNullable<ThemedTextProps["type"]>;
+
 export function ThemedText({
   style,
   type = "default",
   themeColor,
+  className,
   ...rest
 }: ThemedTextProps) {
   const theme = useTheme();
 
   return (
     <Text
+      className={cn(styles[type], className)}
       style={[
         { color: theme[themeColor ?? "text"] },
-        type === "default" && styles.default,
-        type === "title" && styles.title,
-        type === "small" && styles.small,
-        type === "smallBold" && styles.smallBold,
-        type === "subtitle" && styles.subtitle,
-        type === "link" && styles.link,
-        type === "linkPrimary" && styles.linkPrimary,
-        type === "code" && styles.code,
+        type === "linkPrimary" && { color: "#3c87f7" },
+        type === "code" && {
+          fontWeight: Platform.select({ android: 700 }) ?? 500,
+        },
         style,
       ]}
       {...rest}
@@ -43,44 +46,13 @@ export function ThemedText({
   );
 }
 
-const styles = StyleSheet.create({
-  small: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 500,
-  },
-  smallBold: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 700,
-  },
-  default: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: 500,
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: 600,
-    lineHeight: 52,
-  },
-  subtitle: {
-    fontSize: 32,
-    lineHeight: 44,
-    fontWeight: 600,
-  },
-  link: {
-    lineHeight: 30,
-    fontSize: 14,
-  },
-  linkPrimary: {
-    lineHeight: 30,
-    fontSize: 14,
-    color: "#3c87f7",
-  },
-  code: {
-    fontFamily: Fonts.mono,
-    fontWeight: Platform.select({ android: 700 }) ?? 500,
-    fontSize: 12,
-  },
-});
+const styles: Record<ThemedTextType, string> = {
+  small: "font-medium text-[14px] leading-[20px]",
+  smallBold: "font-bold text-[14px] leading-[20px]",
+  default: "font-medium text-[16px] leading-[24px]",
+  title: "font-semibold text-[48px] leading-[52px]",
+  subtitle: "font-semibold text-[32px] leading-[44px]",
+  link: "text-[14px] leading-[30px]",
+  linkPrimary: "text-[14px] leading-[30px]",
+  code: "font-mono text-[12px]",
+};

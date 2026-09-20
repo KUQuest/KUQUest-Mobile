@@ -1,10 +1,10 @@
 import React from "react";
-import { Modal, TouchableOpacity, useColorScheme } from "react-native";
+import { Modal, useColorScheme } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckCircle2, Users, X } from "lucide-react-native";
 
 import { Avatar } from "@/components/ui/Avatar";
-import { Pressable, ScrollView, Text, View } from "@/tw";
+import { Pressable, ScrollView, Text, TouchableOpacity, View } from "@/tw";
 import { Chip } from "@/components/ui/Chip";
 import { useLocale } from "@/features/preferences/localeStore";
 import { getThemeColors } from "@/theme/colors";
@@ -53,7 +53,7 @@ export function HirerQuestRosterModal({
       onRequestClose={onClose}
     >
       <View
-        className="flex-1 justify-end bg-black/50"
+        className="flex-1 justify-end bg-ku-overlay"
         testID="hirer-roster-modal-backdrop"
       >
         <Pressable
@@ -63,9 +63,8 @@ export function HirerQuestRosterModal({
           accessibilityLabel={messages.close}
         />
         <View
-          className="w-full rounded-t-3xl px-6 pt-6"
+          className="w-full rounded-t-3xl bg-ku-surface px-6 pt-6"
           style={{
-            backgroundColor: themeColors.surface,
             maxHeight: "85%",
             paddingBottom: Math.max(insets.bottom, 20),
           }}
@@ -74,15 +73,13 @@ export function HirerQuestRosterModal({
           <View className="mb-4 flex-row items-center justify-between">
             <View className="flex-1 pr-4">
               <Text
-                className="font-ku-bold text-lg"
-                style={{ color: themeColors.textStrong }}
+                className="font-ku-bold text-ku-subtitle text-ku-text-strong"
                 numberOfLines={1}
               >
                 {messages.rosterModalTitle}
               </Text>
               <Text
-                className="mt-1 text-sm"
-                style={{ color: themeColors.textSecondary }}
+                className="mt-1 text-ku-body-small text-ku-text-secondary"
                 numberOfLines={1}
               >
                 {questTitle}
@@ -90,8 +87,7 @@ export function HirerQuestRosterModal({
             </View>
             <TouchableOpacity
               onPress={onClose}
-              className="rounded-full p-2"
-              style={{ backgroundColor: themeColors.surfaceAccent }}
+              className="rounded-full bg-ku-surface-accent p-2"
               testID="hirer-roster-close"
               accessibilityRole="button"
               accessibilityLabel={messages.close}
@@ -103,26 +99,16 @@ export function HirerQuestRosterModal({
           {/* Quick Counter Pills */}
           <View className="mt-2 flex-row gap-2">
             <Chip
-              className="rounded-full px-3 py-1"
+              className="rounded-full border-0 bg-ku-surface-accent px-3 py-1"
               label={messages.joinedLabel(assignedWorkers.length, headcount)}
-              style={{
-                backgroundColor: themeColors.surfaceAccent,
-                borderWidth: 0,
-              }}
-              textClassName="font-ku-medium text-xs"
-              textStyle={{ color: themeColors.primary }}
+              textClassName="font-ku-medium text-ku-label text-ku-primary"
               tone="accent"
             />
             {applicants.length > 0 && (
               <Chip
-                className="rounded-full px-3 py-1"
+                className="rounded-full border-0 bg-ku-surface-muted px-3 py-1"
                 label={messages.applicantsLabel(applicants.length)}
-                style={{
-                  backgroundColor: themeColors.surfaceMuted,
-                  borderWidth: 0,
-                }}
-                textClassName="font-ku-medium text-xs"
-                textStyle={{ color: themeColors.textStrong }}
+                textClassName="font-ku-medium text-ku-label text-ku-text-strong"
                 tone="accent"
               />
             )}
@@ -139,43 +125,33 @@ export function HirerQuestRosterModal({
               <View className="mb-5">
                 <View className="mb-2.5 flex-row items-center gap-1.5">
                   <CheckCircle2 size={16} color={themeColors.primary} />
-                  <Text
-                    className="font-ku-bold text-sm"
-                    style={{ color: themeColors.textStrong }}
-                  >
+                  <Text className="font-ku-bold text-ku-body-small text-ku-text-strong">
                     {messages.joinedSectionTitle} ({assignedWorkers.length})
                   </Text>
                 </View>
                 {assignedWorkers.map((worker) => (
                   <View
                     key={worker.id}
-                    className="mb-2 flex-row items-center justify-between rounded-xl border p-3"
-                    style={{
-                      backgroundColor: themeColors.surfaceMuted,
-                      borderColor: themeColors.borderSubtle,
-                    }}
+                    className="mb-2 flex-row items-center justify-between rounded-xl border border-ku-border bg-ku-surface-muted p-3"
                     testID={`roster-worker-${worker.id}`}
                   >
                     <View className="flex-1 flex-row items-center">
                       <Avatar
-                        className="mr-3 h-10 w-10 items-center justify-center overflow-hidden rounded-full"
                         name={worker.displayName}
                         size={40}
-                        style={{ backgroundColor: themeColors.surfaceAccent }}
+                        className="mr-3 h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-ku-surface-accent"
                         textClassName="font-ku-bold text-sm"
                         uri={worker.avatarUri}
                       />
                       <View className="flex-1 pr-2">
                         <Text
-                          className="font-ku-bold"
-                          style={{ color: themeColors.textStrong }}
+                          className="font-ku-bold text-ku-text-strong"
                           numberOfLines={1}
                         >
                           {worker.displayName}
                         </Text>
                         <Text
-                          className="text-xs"
-                          style={{ color: themeColors.textSecondary }}
+                          className="text-ku-body-small text-ku-text-secondary"
                           numberOfLines={1}
                         >
                           {worker.faculty || messages.assignedWorkerRole}
@@ -187,16 +163,12 @@ export function HirerQuestRosterModal({
                         onClose();
                         onOpenWorkerProfile(worker.id);
                       }}
-                      className="rounded-lg px-3 py-1.5"
-                      style={{ backgroundColor: themeColors.surfaceAccent }}
+                      className="rounded-lg bg-ku-surface-accent px-3 py-1.5"
                       testID={`roster-worker-profile-${worker.id}`}
                       accessibilityRole="button"
                       accessibilityLabel={messages.viewProfile}
                     >
-                      <Text
-                        className="font-ku-bold text-xs"
-                        style={{ color: themeColors.primary }}
-                      >
+                      <Text className="font-ku-bold text-ku-label text-ku-primary">
                         {messages.viewProfile}
                       </Text>
                     </TouchableOpacity>
@@ -210,43 +182,33 @@ export function HirerQuestRosterModal({
               <View className="mb-4">
                 <View className="mb-2.5 flex-row items-center gap-1.5">
                   <Users size={16} color={themeColors.primary} />
-                  <Text
-                    className="font-ku-bold text-sm"
-                    style={{ color: themeColors.textStrong }}
-                  >
+                  <Text className="font-ku-bold text-ku-body-small text-ku-text-strong">
                     {messages.applicantsSectionTitle} ({applicants.length})
                   </Text>
                 </View>
                 {applicants.map((applicant) => (
                   <View
                     key={applicant.id}
-                    className="mb-2 flex-row items-center justify-between rounded-xl border p-3"
-                    style={{
-                      backgroundColor: themeColors.surfaceMuted,
-                      borderColor: themeColors.borderSubtle,
-                    }}
+                    className="mb-2 flex-row items-center justify-between rounded-xl border border-ku-border bg-ku-surface-muted p-3"
                     testID={`roster-applicant-${applicant.id}`}
                   >
                     <View className="flex-1 flex-row items-center">
                       <Avatar
-                        className="mr-3 h-10 w-10 items-center justify-center overflow-hidden rounded-full"
+                        className="mr-3 h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-ku-surface-accent"
                         name={applicant.displayName}
                         size={40}
-                        style={{ backgroundColor: themeColors.surfaceAccent }}
                         textClassName="font-ku-bold text-sm"
                         uri={applicant.avatarUri}
                       />
                       <View className="flex-1 pr-2">
                         <Text
-                          className="font-ku-bold"
-                          style={{ color: themeColors.textStrong }}
+                          className="font-ku-bold text-ku-text-strong"
                           numberOfLines={1}
                         >
                           {applicant.displayName}
                         </Text>
                         <Text
-                          className="text-xs"
-                          style={{ color: themeColors.textSecondary }}
+                          className="text-ku-body-small text-ku-text-secondary"
                           numberOfLines={1}
                         >
                           {applicant.faculty || messages.applicantsSectionTitle}
@@ -258,16 +220,12 @@ export function HirerQuestRosterModal({
                         onClose();
                         onOpenWorkerProfile(applicant.id);
                       }}
-                      className="rounded-lg px-3 py-1.5"
-                      style={{ backgroundColor: themeColors.surfaceAccent }}
+                      className="rounded-lg bg-ku-surface-accent px-3 py-1.5"
                       testID={`roster-applicant-profile-${applicant.id}`}
                       accessibilityRole="button"
                       accessibilityLabel={messages.viewProfile}
                     >
-                      <Text
-                        className="font-ku-bold text-xs"
-                        style={{ color: themeColors.primary }}
-                      >
+                      <Text className="font-ku-bold text-ku-label text-ku-primary">
                         {messages.viewProfile}
                       </Text>
                     </TouchableOpacity>
@@ -280,10 +238,7 @@ export function HirerQuestRosterModal({
             {assignedWorkers.length === 0 && applicants.length === 0 && (
               <View className="items-center justify-center py-8">
                 <Users size={36} color={themeColors.textSecondary} />
-                <Text
-                  className="mt-3 text-center font-ku-medium text-sm"
-                  style={{ color: themeColors.textSecondary }}
-                >
+                <Text className="mt-3 text-center text-ku-body-small text-ku-text-secondary">
                   {messages.noRosterYet}
                 </Text>
               </View>
@@ -296,13 +251,12 @@ export function HirerQuestRosterModal({
               onClose();
               onOpenManageQuest(questId);
             }}
-            className="mt-2 w-full items-center rounded-2xl p-4"
-            style={{ backgroundColor: themeColors.primary }}
+            className="mt-2 w-full items-center rounded-2xl bg-ku-primary p-4"
             testID="hirer-roster-manage-button"
             accessibilityRole="button"
             accessibilityLabel={messages.openManageQuest}
           >
-            <Text className="font-ku-bold text-base text-white">
+            <Text className="font-ku-bold text-ku-body text-ku-on-primary">
               {messages.openManageQuest}
             </Text>
           </TouchableOpacity>

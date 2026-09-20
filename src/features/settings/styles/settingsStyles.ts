@@ -4,7 +4,7 @@ const styles = {
   section: "gap-[8px]",
   sectionTitle: "text-ku-text-secondary font-ku-semibold text-ku-meta px-[4px]",
   sectionBody:
-    "bg-ku-white border-ku-border-subtle rounded-[16px] border overflow-hidden",
+    "bg-ku-card border-ku-border-subtle rounded-[16px] border overflow-hidden",
   row: "items-center flex-row min-h-[76px] px-[16px] py-[12px] active:bg-ku-surface-muted",
   rowWithDivider: "border-b-ku-border-subtle border-b",
   iconContainer:

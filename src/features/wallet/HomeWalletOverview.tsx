@@ -1,11 +1,6 @@
 import React, { useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Alert } from "react-native";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "@/tw";
 import {
   ArrowRightLeft,
   ArrowUpRight,
@@ -81,23 +76,20 @@ export function HomeWalletOverview({ locale }: HomeWalletOverviewProps) {
 
   return (
     <View
-      style={[
-        s.card,
-        { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
-      ]}
+      className={`${s.card} border-ku-border-subtle bg-ku-surface`}
       testID="home-wallet-overview"
     >
       {/* Header */}
-      <View style={s.headerRow}>
-        <View style={s.headerLeading}>
-          <View style={[s.iconBox, { backgroundColor: colors.surfaceAccent }]}>
+      <View className={s.headerRow}>
+        <View className={s.headerLeading}>
+          <View className={`${s.iconBox} bg-ku-surface-accent`}>
             <WalletCards color={colors.primary} size={20} strokeWidth={2.2} />
           </View>
-          <View style={s.headerTextWrap}>
-            <Text style={[s.headerTitle, { color: colors.textStrong }]}>
+          <View className={s.headerTextWrap}>
+            <Text className={`${s.headerTitle} text-ku-text-strong`}>
               {m.walletTitle}
             </Text>
-            <Text style={[s.headerSubtitle, { color: colors.textSecondary }]}>
+            <Text className={`${s.headerSubtitle} text-ku-text-secondary`}>
               {m.walletSubtitle}
             </Text>
           </View>
@@ -105,9 +97,9 @@ export function HomeWalletOverview({ locale }: HomeWalletOverviewProps) {
         <TouchableOpacity
           accessibilityLabel={m.refresh}
           accessibilityRole="button"
+          className={`${s.refreshButton} bg-ku-surface-muted`}
           disabled={loading}
           onPress={handleRefresh}
-          style={[s.refreshButton, { backgroundColor: colors.surfaceMuted }]}
           testID="wallet-refresh-button"
         >
           {loading ? (
@@ -120,20 +112,13 @@ export function HomeWalletOverview({ locale }: HomeWalletOverviewProps) {
 
       {/* Primary Balance: Spending Balance */}
       <View
-        style={[
-          s.balanceSection,
-          {
-            backgroundColor: colors.surfaceAccent,
-            borderColor: colors.borderAccent,
-            borderWidth: 1,
-          },
-        ]}
+        className={`${s.balanceSection} border border-ku-border-accent bg-ku-surface-accent`}
       >
-        <Text style={[s.balanceLabel, { color: colors.primaryDeep }]}>
+        <Text className={`${s.balanceLabel} text-ku-primary-dark`}>
           {m.spendingBalance}
         </Text>
         <Text
-          style={[s.spendingAmount, { color: colors.primaryDeep }]}
+          className={`${s.spendingAmount} text-ku-primary-dark`}
           testID="wallet-spending-balance"
         >
           {balances
@@ -143,15 +128,13 @@ export function HomeWalletOverview({ locale }: HomeWalletOverviewProps) {
       </View>
 
       {/* Sub-compartments: Earnings, In Escrow, Reserved for Payouts */}
-      <View style={s.compartmentRow}>
-        <View
-          style={[s.compartmentCol, { backgroundColor: colors.surfaceMuted }]}
-        >
-          <Text style={[s.compartmentLabel, { color: colors.textMuted }]}>
+      <View className={s.compartmentRow}>
+        <View className={`${s.compartmentCol} bg-ku-surface-muted`}>
+          <Text className={`${s.compartmentLabel} text-ku-text-muted`}>
             {m.earningsBalance}
           </Text>
           <Text
-            style={[s.compartmentValue, { color: colors.textStrong }]}
+            className={`${s.compartmentValue} text-ku-text-strong`}
             testID="wallet-earnings-balance"
           >
             {balances
@@ -160,14 +143,12 @@ export function HomeWalletOverview({ locale }: HomeWalletOverviewProps) {
           </Text>
         </View>
 
-        <View
-          style={[s.compartmentCol, { backgroundColor: colors.surfaceMuted }]}
-        >
-          <Text style={[s.compartmentLabel, { color: colors.textMuted }]}>
+        <View className={`${s.compartmentCol} bg-ku-surface-muted`}>
+          <Text className={`${s.compartmentLabel} text-ku-text-muted`}>
             {m.escrowReserved}
           </Text>
           <Text
-            style={[s.compartmentValue, { color: colors.textStrong }]}
+            className={`${s.compartmentValue} text-ku-text-strong`}
             testID="wallet-escrow-balance"
           >
             {balances
@@ -176,14 +157,12 @@ export function HomeWalletOverview({ locale }: HomeWalletOverviewProps) {
           </Text>
         </View>
 
-        <View
-          style={[s.compartmentCol, { backgroundColor: colors.surfaceMuted }]}
-        >
-          <Text style={[s.compartmentLabel, { color: colors.textMuted }]}>
+        <View className={`${s.compartmentCol} bg-ku-surface-muted`}>
+          <Text className={`${s.compartmentLabel} text-ku-text-muted`}>
             {m.payoutReserved}
           </Text>
           <Text
-            style={[s.compartmentValue, { color: colors.textStrong }]}
+            className={`${s.compartmentValue} text-ku-text-strong`}
             testID="wallet-payout-balance"
           >
             {balances
@@ -194,16 +173,16 @@ export function HomeWalletOverview({ locale }: HomeWalletOverviewProps) {
       </View>
 
       {/* Actions Row */}
-      <View style={s.actionsRow}>
+      <View className={s.actionsRow}>
         <TouchableOpacity
           accessibilityLabel={m.topUp}
           accessibilityRole="button"
+          className={`${s.actionButtonPrimary} bg-ku-primary`}
           onPress={() => setPaymentModalOpen(true)}
-          style={[s.actionButtonPrimary, { backgroundColor: colors.primary }]}
           testID="wallet-topup-button"
         >
-          <Plus color={colors.white} size={17} strokeWidth={2.4} />
-          <Text style={[s.actionButtonLabelPrimary, { color: colors.white }]}>
+          <Plus color={colors.onPrimary} size={17} strokeWidth={2.4} />
+          <Text className={`${s.actionButtonLabelPrimary} text-ku-on-primary`}>
             {m.topUp}
           </Text>
         </TouchableOpacity>
@@ -211,20 +190,12 @@ export function HomeWalletOverview({ locale }: HomeWalletOverviewProps) {
         <TouchableOpacity
           accessibilityLabel={locale === "th" ? "ถอนเงิน" : "Withdraw"}
           accessibilityRole="button"
+          className={`${s.actionButtonSecondary} border-ku-border-accent bg-ku-surface`}
           onPress={() => setPayoutModalOpen(true)}
-          style={[
-            s.actionButtonSecondary,
-            {
-              borderColor: colors.borderAccent,
-              backgroundColor: colors.surface,
-            },
-          ]}
           testID="wallet-withdraw-button"
         >
           <ArrowUpRight color={colors.primary} size={15} />
-          <Text
-            style={[s.actionButtonLabelSecondary, { color: colors.primary }]}
-          >
+          <Text className={`${s.actionButtonLabelSecondary} text-ku-primary`}>
             {locale === "th" ? "ถอนเงิน" : "Withdraw"}
           </Text>
         </TouchableOpacity>
@@ -232,19 +203,13 @@ export function HomeWalletOverview({ locale }: HomeWalletOverviewProps) {
         <TouchableOpacity
           accessibilityLabel={m.transactions}
           accessibilityRole="button"
+          className={`${s.actionButtonSecondary} border-ku-border-accent bg-ku-surface`}
           onPress={() => setHistoryModalOpen(true)}
-          style={[
-            s.actionButtonSecondary,
-            {
-              borderColor: colors.borderAccent,
-              backgroundColor: colors.surface,
-            },
-          ]}
           testID="wallet-history-button"
         >
           <History color={colors.textStrong} size={17} />
           <Text
-            style={[s.actionButtonLabelSecondary, { color: colors.textStrong }]}
+            className={`${s.actionButtonLabelSecondary} text-ku-text-strong`}
           >
             {m.transactions}
           </Text>
@@ -254,15 +219,9 @@ export function HomeWalletOverview({ locale }: HomeWalletOverviewProps) {
           <TouchableOpacity
             accessibilityLabel={m.convertEarnings}
             accessibilityRole="button"
+            className={`${s.actionButtonSecondary} border-ku-border-accent bg-ku-surface`}
             disabled={converting}
             onPress={handleConvertEarnings}
-            style={[
-              s.actionButtonSecondary,
-              {
-                borderColor: colors.borderAccent,
-                backgroundColor: colors.surface,
-              },
-            ]}
             testID="wallet-convert-button"
           >
             {converting ? (
@@ -271,10 +230,7 @@ export function HomeWalletOverview({ locale }: HomeWalletOverviewProps) {
               <>
                 <ArrowRightLeft color={colors.primary} size={15} />
                 <Text
-                  style={[
-                    s.actionButtonLabelSecondary,
-                    { color: colors.primary },
-                  ]}
+                  className={`${s.actionButtonLabelSecondary} text-ku-primary`}
                 >
                   {m.convertEarnings}
                 </Text>

@@ -1,18 +1,18 @@
 import React from "react";
+import { Modal } from "react-native";
 import {
   ActivityIndicator,
-  Modal,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
-} from "react-native";
+} from "@/tw";
 import { ArrowDownLeft, ArrowUpRight, RefreshCw, X } from "lucide-react-native";
 import { type UserTransaction } from "@/api/WalletApi";
 import { formatSatang } from "@/domain/satang";
+import { colors } from "@/theme/colors";
 import type { SupportedLocale } from "@/locales/locale";
 import { walletMessages } from "@/locales/walletMessages";
-import { colors } from "@/theme/colors";
 import { useTransactionHistoryQuery } from "./api/walletQueries";
 import { walletStyles as s } from "./walletStyles";
 
@@ -37,19 +37,34 @@ export function TransactionHistoryModal({
 
   const getStatusBadgeStyle = (status: string, isPlaceholder?: boolean) => {
     if (isPlaceholder) {
-      return { bg: colors.surfaceMuted, text: colors.textMuted };
+      return {
+        bgClass: "bg-ku-surface-muted",
+        textClass: "text-ku-text-muted",
+      };
     }
     const upper = status.toUpperCase();
     if (upper === "PAID" || upper === "SUCCEEDED" || upper === "SETTLED") {
-      return { bg: colors.surfaceSuccess, text: colors.success };
+      return {
+        bgClass: "bg-ku-surface-success",
+        textClass: "text-ku-success",
+      };
     }
     if (upper.includes("PENDING")) {
-      return { bg: colors.surfaceAccent, text: colors.primary };
+      return {
+        bgClass: "bg-ku-surface-accent",
+        textClass: "text-ku-primary",
+      };
     }
     if (upper === "FAILED" || upper === "REJECTED") {
-      return { bg: colors.surfaceDanger, text: colors.danger };
+      return {
+        bgClass: "bg-ku-surface-danger",
+        textClass: "text-ku-danger",
+      };
     }
-    return { bg: colors.surfaceMuted, text: colors.textSecondary };
+    return {
+      bgClass: "bg-ku-surface-muted",
+      textClass: "text-ku-text-secondary",
+    };
   };
 
   return (
@@ -59,22 +74,15 @@ export function TransactionHistoryModal({
       visible={visible}
       onRequestClose={onClose}
     >
-      <View style={s.modalOverlay}>
+      <View className={s.modalOverlay}>
         <View
-          style={[
-            s.modalCard,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.borderSubtle,
-              maxHeight: "90%",
-            },
-          ]}
           accessibilityViewIsModal
+          className={`${s.modalCard} max-h-[90%] border-ku-border-subtle bg-ku-surface`}
         >
           {/* Modal Header */}
-          <View style={s.modalHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={[s.modalTitle, { color: colors.textStrong }]}>
+          <View className={s.modalHeader}>
+            <View className="flex-1">
+              <Text className={`${s.modalTitle} text-ku-text-strong`}>
                 {m.historyTitle}
               </Text>
             </View>
@@ -82,34 +90,28 @@ export function TransactionHistoryModal({
               accessibilityLabel={m.refresh}
               accessibilityRole="button"
               accessibilityState={{ disabled: loading }}
+              className={`${s.closeBtn} mr-[6px]`}
               disabled={loading}
               onPress={handleRefresh}
-              style={[s.closeBtn, { marginRight: 6 }]}
             >
               <RefreshCw color={colors.primary} size={18} />
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityLabel={m.close}
               accessibilityRole="button"
+              className={`${s.closeBtn} bg-ku-surface-muted`}
               onPress={onClose}
-              style={[s.closeBtn, { backgroundColor: colors.surfaceMuted }]}
             >
               <X color={colors.textMuted} size={20} />
             </TouchableOpacity>
           </View>
 
-          {/* Ledger-backed activity feed */}
-
-          {/* Transaction List */}
           {loading && !historyResult ? (
-            <View style={{ paddingVertical: 32, alignItems: "center" }}>
+            <View className="items-center py-[32px]">
               <ActivityIndicator color={colors.primary} size="large" />
             </View>
           ) : (
-            <ScrollView
-              style={{ flexShrink: 1 }}
-              showsVerticalScrollIndicator={false}
-            >
+            <ScrollView className="shrink" showsVerticalScrollIndicator={false}>
               {historyResult && historyResult.items.length > 0 ? (
                 historyResult.items.map((item: UserTransaction) => {
                   const isInflow = item.direction === "INFLOW";
@@ -127,33 +129,15 @@ export function TransactionHistoryModal({
                   return (
                     <View
                       key={item.id}
-                      style={[
-                        s.txItem,
-                        {
-                          backgroundColor: colors.surfaceMuted,
-                          borderColor: colors.borderSubtle,
-                        },
-                      ]}
+                      className={`${s.txItem} border-ku-border-subtle bg-ku-surface-muted`}
                     >
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          flex: 1,
-                        }}
-                      >
+                      <View className="flex-1 flex-row items-center">
                         <View
-                          style={{
-                            alignItems: "center",
-                            backgroundColor: isInflow
-                              ? colors.surfaceSuccess
-                              : colors.surfaceMuted,
-                            borderRadius: 10,
-                            height: 34,
-                            justifyContent: "center",
-                            marginRight: 10,
-                            width: 34,
-                          }}
+                          className={`mr-[10px] h-[34px] w-[34px] items-center justify-center rounded-[10px] ${
+                            isInflow
+                              ? "bg-ku-surface-success"
+                              : "bg-ku-surface-muted"
+                          }`}
                         >
                           {isInflow ? (
                             <ArrowDownLeft color={colors.success} size={18} />
@@ -164,30 +148,25 @@ export function TransactionHistoryModal({
                             />
                           )}
                         </View>
-                        <View style={s.txLeading}>
+                        <View className={s.txLeading}>
                           <Text
                             numberOfLines={1}
-                            style={[s.txTitle, { color: colors.textStrong }]}
+                            className={`${s.txTitle} text-ku-text-strong`}
                           >
                             {title}
                           </Text>
-                          <Text style={[s.txDate, { color: colors.textMuted }]}>
+                          <Text className={`${s.txDate} text-ku-text-muted`}>
                             {dateFormatted}{" "}
                             {item.reference ? `• ${item.reference}` : ""}
                           </Text>
                         </View>
                       </View>
 
-                      <View style={s.txTrailing}>
+                      <View className={s.txTrailing}>
                         <Text
-                          style={[
-                            s.txAmount,
-                            {
-                              color: isInflow
-                                ? colors.success
-                                : colors.textStrong,
-                            },
-                          ]}
+                          className={`${s.txAmount} ${
+                            isInflow ? "text-ku-success" : "text-ku-text-strong"
+                          }`}
                         >
                           {formatSatang(
                             isInflow ? item.amountSatang : -item.amountSatang,
@@ -195,10 +174,10 @@ export function TransactionHistoryModal({
                             "signed"
                           )}
                         </Text>
-                        <View
-                          style={[s.txBadge, { backgroundColor: badge.bg }]}
-                        >
-                          <Text style={[s.txBadgeText, { color: badge.text }]}>
+                        <View className={`${s.txBadge} ${badge.bgClass}`}>
+                          <Text
+                            className={`${s.txBadgeText} ${badge.textClass}`}
+                          >
                             {item.status}
                           </Text>
                         </View>
@@ -207,10 +186,8 @@ export function TransactionHistoryModal({
                   );
                 })
               ) : (
-                <View style={{ paddingVertical: 24, alignItems: "center" }}>
-                  <Text style={{ color: colors.textMuted }}>
-                    {m.noTransactions}
-                  </Text>
+                <View className="items-center py-[24px]">
+                  <Text className="text-ku-text-muted">{m.noTransactions}</Text>
                 </View>
               )}
             </ScrollView>

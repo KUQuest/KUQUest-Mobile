@@ -20,7 +20,7 @@ const styles = {
   statusText: "font-ku-regular text-ku-danger-dark text-ku-body-small flex-1",
   retryButton:
     "min-h-[48px] self-start px-ku-md items-center justify-center rounded-ku-pill bg-ku-primary",
-  retryButtonText: "font-ku-semibold text-ku-white",
+  retryButtonText: "font-ku-semibold text-ku-on-primary",
   emptyState:
     "bg-ku-surface-subtle border border-ku-border-subtle rounded-ku-card p-ku-lg items-center gap-ku-sm",
   emptyText:

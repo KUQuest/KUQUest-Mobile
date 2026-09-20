@@ -108,7 +108,7 @@ function StatusPill({
       ? labels.rejected
       : labels.submittedLabel;
   const foreground = selected
-    ? colors.white
+    ? colors.onPrimary
     : rejected
       ? colors.dangerDark
       : colors.primary;
@@ -483,7 +483,7 @@ function ProposalRow({
             className={`${styles.proposalSelectionBox} ${selected || statusSelected ? styles.proposalSelectionBoxSelected : ""}`}
           >
             {selected || statusSelected ? (
-              <Check color={colors.white} size={15} strokeWidth={3} />
+              <Check color={colors.onPrimary} size={15} strokeWidth={3} />
             ) : null}
           </View>
           <View className={styles.proposalCopy}>
@@ -535,7 +535,7 @@ function ProposalRow({
               onPress={() => onAccept(proposal.id)}
               testID={`candidate-review-accept-${proposal.id}`}
             >
-              <Check color={colors.white} size={16} strokeWidth={2.7} />
+              <Check color={colors.onPrimary} size={16} strokeWidth={2.7} />
               <Text
                 className={`${styles.proposalActionText} ${styles.proposalActionTextAccept}`}
               >

@@ -7,7 +7,6 @@ import { Pressable, Text, View } from "@/tw";
 import { useLocale } from "@/features/preferences/localeStore";
 import { getThemeColors } from "@/theme/colors";
 import { workerHomeMessages } from "../workerHomeMessages";
-import { workerHomeStyles as styles } from "../workerHomeStyles";
 
 interface NoWorkPromptCardProps {
   onFindQuests?: () => void;
@@ -31,48 +30,32 @@ export function NoWorkPromptCard({ onFindQuests }: NoWorkPromptCardProps) {
   return (
     <View
       accessibilityRole="summary"
-      style={[
-        styles.noWorkPromptCard,
-        {
-          backgroundColor: themeColors.surface,
-          borderColor: themeColors.borderSubtle,
-        },
-      ]}
+      className="mb-[18px] items-center rounded-[18px] border border-ku-border-subtle bg-ku-surface p-[22px]"
       testID="no-work-prompt-card"
     >
-      <View
-        style={[
-          styles.noWorkIconCircle,
-          { backgroundColor: themeColors.surfaceMuted },
-        ]}
-      >
+      <View className="mb-[10px] h-[48px] w-[48px] items-center justify-center rounded-[24px] bg-ku-surface-muted">
         <Search size={24} color={themeColors.primaryDeep} />
       </View>
-
       <Text
-        style={[styles.noWorkTitle, { color: themeColors.textStrong }]}
+        className="text-center font-ku-semibold text-ku-body leading-[22px]"
         testID="no-work-prompt-title"
       >
         {messages.noWorkPromptTitle}
       </Text>
       <Text
-        style={[styles.noWorkDesc, { color: themeColors.textSecondary }]}
+        className="mt-[4px] text-center font-ku-regular text-ku-meta leading-[18px]"
         testID="no-work-prompt-desc"
       >
         {messages.noWorkPromptDesc}
       </Text>
-
       <Pressable
         accessibilityLabel={messages.findQuestsAction}
         accessibilityRole="button"
+        className="mt-[14px] min-h-[42px] items-center justify-center rounded-[10px] bg-ku-primary-dark px-ku-lg py-[10px]"
         onPress={handlePress}
-        style={[
-          styles.findQuestsBtn,
-          { backgroundColor: themeColors.primaryDeep },
-        ]}
         testID="find-quests-button"
       >
-        <Text style={[styles.findQuestsBtnText, { color: themeColors.white }]}>
+        <Text className="font-ku-semibold text-ku-body-small leading-[20px] text-ku-on-primary">
           {messages.findQuestsAction}
         </Text>
       </Pressable>

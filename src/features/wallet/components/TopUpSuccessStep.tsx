@@ -1,11 +1,10 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { CheckCircle2, ShieldCheck, Wallet } from "lucide-react-native";
+import { TouchableOpacity, Text, View } from "@/tw";
 import { formatSatang } from "@/domain/satang";
 import type { SupportedLocale } from "@/locales/locale";
 import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
-import { fontFamily } from "@/theme/typography";
 
 export interface TopUpSuccessStepProps {
   creditSatang: number;
@@ -22,124 +21,51 @@ export function TopUpSuccessStep({
   const credit = formatSatang(creditSatang, locale, "exact");
 
   return (
-    <View style={styles.successState} testID="top-up-success-view">
-      <View style={styles.successIconWrap} testID="top-up-verified-badge">
+    <View
+      className="items-center pt-ku-lg pb-ku-lg"
+      testID="top-up-success-view"
+    >
+      <View
+        className="h-[88px] w-[88px] items-center justify-center rounded-[48px] border border-ku-border-success bg-ku-surface-success"
+        testID="top-up-verified-badge"
+      >
         <CheckCircle2 color={colors.success} size={48} strokeWidth={2.2} />
       </View>
-      <Text style={styles.successTitle}>{m.topUpSuccessTitle}</Text>
-      <Text style={styles.successDescription}>{m.topUpSuccessDescription}</Text>
-      <View style={styles.successAmountCard}>
-        <View style={styles.successAmountHeader}>
+      <Text className="mt-ku-md text-center font-ku-bold text-ku-title text-ku-text-strong">
+        {m.topUpSuccessTitle}
+      </Text>
+      <Text className="mt-ku-xs text-center font-ku-regular text-ku-body-small leading-[21px] text-ku-text-secondary">
+        {m.topUpSuccessDescription}
+      </Text>
+      <View className="mt-ku-lg w-full items-center rounded-[18px] border border-ku-border-accent bg-ku-surface px-[20px] py-[18px]">
+        <View className="flex-row items-center gap-ku-sm">
           <Wallet color={colors.primaryDeep} size={20} strokeWidth={2.2} />
-          <Text style={styles.successAmountLabel}>{m.topUpCredit}</Text>
+          <Text className="font-ku-medium text-ku-meta text-ku-text-secondary">
+            {m.topUpCredit}
+          </Text>
         </View>
-        <Text style={styles.successAmount}>{credit}</Text>
+        <Text className="mt-ku-xs font-ku-bold text-ku-display-small text-ku-primary-deep">
+          {credit}
+        </Text>
       </View>
-      <View style={styles.successNote}>
+      <View className="mt-ku-sm w-full flex-row items-start gap-ku-sm rounded-[14px] bg-ku-surface-accent p-ku-sm">
         <ShieldCheck color={colors.success} size={18} strokeWidth={2.2} />
-        <Text style={styles.successNoteText}>{m.paymentSuccess}</Text>
+        <Text className="flex-1 font-ku-regular text-[12px] leading-[18px] text-ku-text-secondary">
+          {m.paymentSuccess}
+        </Text>
       </View>
       <TouchableOpacity
         accessibilityLabel={m.done}
         accessibilityRole="button"
         activeOpacity={0.8}
         onPress={onDone}
-        style={styles.successActionButton}
+        className="mt-ku-lg h-[52px] w-full items-center justify-center rounded-ku-pill bg-ku-primary"
         testID="top-up-done-btn"
       >
-        <Text style={styles.successActionText}>{m.done}</Text>
+        <Text className="font-ku-semibold text-ku-control text-ku-on-primary">
+          {m.done}
+        </Text>
       </TouchableOpacity>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  successState: {
-    alignItems: "center",
-    paddingBottom: 24,
-    paddingTop: 24,
-  },
-  successIconWrap: {
-    alignItems: "center",
-    backgroundColor: colors.surfaceSuccess,
-    borderColor: colors.borderSuccess,
-    borderRadius: 48,
-    borderWidth: 1,
-    height: 88,
-    justifyContent: "center",
-    width: 88,
-  },
-  successTitle: {
-    color: colors.textStrong,
-    fontFamily: fontFamily.bold,
-    fontSize: 24,
-    marginTop: 16,
-    textAlign: "center",
-  },
-  successDescription: {
-    color: colors.textSecondary,
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    lineHeight: 21,
-    marginTop: 4,
-    textAlign: "center",
-  },
-  successAmountCard: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.borderAccent,
-    borderRadius: 18,
-    borderWidth: 1,
-    marginTop: 24,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    width: "100%",
-  },
-  successAmountHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-  },
-  successAmountLabel: {
-    color: colors.textSecondary,
-    fontFamily: fontFamily.medium,
-    fontSize: 13,
-  },
-  successAmount: {
-    color: colors.primaryDeep,
-    fontFamily: fontFamily.bold,
-    fontSize: 32,
-    marginTop: 4,
-  },
-  successNote: {
-    alignItems: "flex-start",
-    backgroundColor: colors.surfaceAccent,
-    borderRadius: 14,
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 12,
-    padding: 12,
-    width: "100%",
-  },
-  successNoteText: {
-    color: colors.textSecondary,
-    flex: 1,
-    fontFamily: fontFamily.regular,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  successActionButton: {
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: 9999,
-    height: 52,
-    justifyContent: "center",
-    marginTop: 24,
-    width: "100%",
-  },
-  successActionText: {
-    color: colors.white,
-    fontFamily: fontFamily.semiBold,
-    fontSize: 15,
-  },
-});

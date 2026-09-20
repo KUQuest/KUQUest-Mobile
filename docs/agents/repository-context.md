@@ -25,10 +25,12 @@ Current code can intentionally lag the rulebook. Treat that as an implementation
 
 - `package.json` — Bun scripts, Expo SDK 57 dependencies, Jest configuration.
 - `app.json`, `app.config.ts`, `eas.json` — Expo/native configuration and build profiles.
-- `README.md` — development-build setup, environment variables, demo mode, and verification commands.
-- `CODE_STYLES.md` — formatting, feature boundaries, NativeWind, accessibility, and test conventions.
+- `README.md` — staging environment, development-build setup, and verification commands.
+- `CODE_STYLES.md` — review standards, feature boundaries, accessibility, and test conventions.
+- `docs/agents/nativewind.md` — NativeWind/Tailwind styling: token naming, dark mode, role accent, and v5-vs-v4 traps.
+- `docs/agents/mobile-validation.md` — canonical staging and native device smoke flow.
+- `docs/agents/engineering-workflow.md` — detailed planning, delegation, safety, testing, and delivery workflow.
 - `AGENTS.md` / `CLAUDE.md` — agent operating rules and pointers.
-- `scripts/` — environment setup, staging, demo-account, native build, and signing helpers. `scripts/__tests__/` tests script behavior.
 - `android/` — native/generated Android build project. Change it only for an explicit native Android task; do not use generated build output as application source.
 - `.expo/`, `node_modules/`, build outputs, and caches are generated state. They are not source-of-truth files.
 

@@ -1,4 +1,4 @@
-import { Modal, StyleSheet, useColorScheme } from "react-native";
+import { Modal, useColorScheme } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -51,10 +51,8 @@ function formatExpiry(expiresAt: string, locale: SupportedLocale): string {
   }).format(date);
 }
 
-const fundingLayout = StyleSheet.create({
-  summary: {
-    marginBottom: 16,
-  },
+const fundingLayout = {
+  summary: "mb-[16px]",
   collapsedSummary: {
     borderRadius: 16,
     borderWidth: 1,
@@ -155,20 +153,10 @@ const fundingLayout = StyleSheet.create({
     marginRight: 4,
     width: 48,
   },
-  modalScroll: {
-    flexShrink: 1,
-  },
-  topUpScroll: {
-    flex: 1,
-  },
-  modalContent: {
-    gap: 12,
-    paddingBottom: 4,
-  },
-  topUpContent: {
-    gap: 16,
-    paddingBottom: 24,
-  },
+  modalScroll: "shrink",
+  topUpScroll: "flex-1",
+  modalContent: "gap-[12px] pb-[4px]",
+  topUpContent: "gap-ku-md pb-ku-md",
   statusCard: {
     borderRadius: 16,
     borderWidth: 1,
@@ -364,7 +352,7 @@ const fundingLayout = StyleSheet.create({
     marginTop: 12,
     textAlign: "center",
   },
-});
+} as const;
 
 interface FundingDetailsContentProps {
   locale: SupportedLocale;
@@ -420,10 +408,10 @@ function FundingDetailsContent({
       </View>
 
       <ScrollView
-        contentContainerStyle={fundingLayout.modalContent}
+        contentContainerClassName={fundingLayout.modalContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        style={fundingLayout.modalScroll}
+        className={fundingLayout.modalScroll}
       >
         <View
           style={[
@@ -706,10 +694,10 @@ function TopUpFlowContent({
       </View>
 
       <ScrollView
-        contentContainerStyle={fundingLayout.topUpContent}
+        contentContainerClassName={fundingLayout.topUpContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        style={[fundingLayout.modalScroll, fundingLayout.topUpScroll]}
+        className={`${fundingLayout.modalScroll} ${fundingLayout.topUpScroll}`}
       >
         {step === "amount" ? (
           <>
@@ -835,10 +823,9 @@ function TopUpFlowContent({
               testID="quest-funding-top-up-continue"
             >
               <Text
-                style={[
-                  fundingLayout.continueButtonText,
-                  { color: amountValid ? colors.white : colors.textMuted },
-                ]}
+                className={`font-ku-semibold text-[15px] leading-[22px] ${
+                  amountValid ? "text-ku-on-primary" : "text-ku-text-muted"
+                }`}
               >
                 {messages.topUpContinue}
               </Text>
@@ -879,10 +866,10 @@ function TopUpFlowContent({
                   justifyContent: "space-between",
                 }}
               >
-                <Text style={{ color: colors.textSecondary }}>
+                <Text className="text-ku-text-secondary">
                   {messages.topUpCredit}
                 </Text>
-                <Text style={{ color: colors.textStrong, fontWeight: "700" }}>
+                <Text className="font-ku-bold text-ku-text-strong">
                   {formatSatang(quote.creditSatang, locale, "exact")}
                 </Text>
               </View>
@@ -892,10 +879,10 @@ function TopUpFlowContent({
                   justifyContent: "space-between",
                 }}
               >
-                <Text style={{ color: colors.textSecondary }}>
+                <Text className="text-ku-text-secondary">
                   {messages.topUpFee}
                 </Text>
-                <Text style={{ color: colors.textStrong }}>
+                <Text className="text-ku-text-strong">
                   {formatSatang(quote.chargedFeeSatang, locale, "exact")}
                 </Text>
               </View>
@@ -905,39 +892,31 @@ function TopUpFlowContent({
                   justifyContent: "space-between",
                 }}
               >
-                <Text style={{ color: colors.textSecondary }}>
+                <Text className="text-ku-text-secondary">
                   {messages.topUpTax}
                 </Text>
-                <Text style={{ color: colors.textStrong }}>
+                <Text className="text-ku-text-strong">
                   {formatSatang(quote.chargedTaxSatang, locale, "exact")}
                 </Text>
               </View>
               <View
+                className="border-t-ku-border-subtle"
                 style={{
-                  borderTopColor: colors.borderSubtle,
                   borderTopWidth: 1,
                   flexDirection: "row",
                   justifyContent: "space-between",
                   paddingTop: 12,
                 }}
               >
-                <Text style={{ color: colors.textStrong, fontWeight: "700" }}>
+                <Text className="font-ku-bold text-ku-text-strong">
                   {messages.topUpPaymentTotal}
                 </Text>
-                <Text
-                  style={{
-                    color: colors.textStrong,
-                    fontSize: 18,
-                    fontWeight: "800",
-                  }}
-                >
+                <Text className="font-ku-bold text-[18px] text-ku-text-strong">
                   {formatSatang(quote.paymentTotalSatang, locale, "exact")}
                 </Text>
               </View>
             </View>
-            <Text
-              style={{ color: colors.textMuted, fontSize: 12, marginTop: 12 }}
-            >
+            <Text className="mt-[12px] text-[12px] text-ku-text-muted">
               {messages.topUpExpiresAt}: {formatExpiry(quote.expiresAt, locale)}
             </Text>
             {verificationError ? (
@@ -965,12 +944,7 @@ function TopUpFlowContent({
               onPress={onConfirm}
               testID="quest-funding-top-up-confirm"
             >
-              <Text
-                style={[
-                  fundingLayout.continueButtonText,
-                  { color: colors.white },
-                ]}
-              >
+              <Text className="font-ku-semibold text-[15px] leading-[22px] text-ku-on-primary">
                 {messages.topUpConfirm}
               </Text>
             </Pressable>
@@ -1021,7 +995,7 @@ function TopUpFlowContent({
                     resizeMode="contain"
                   />
                 ) : (
-                  <Text style={{ color: colors.textMuted }}>
+                  <Text className="text-ku-text-muted">
                     {messages.topUpPromptPayQrUnavailable}
                   </Text>
                 )}
@@ -1168,12 +1142,7 @@ function TopUpFlowContent({
                 onPress={onClose}
                 testID="quest-funding-top-up-promptpay-close"
               >
-                <Text
-                  style={[
-                    fundingLayout.continueButtonText,
-                    { color: colors.white },
-                  ]}
-                >
+                <Text className="font-ku-semibold text-[15px] leading-[22px] text-ku-on-primary">
                   {paymentVerified ? messages.topUpDone : messages.topUpClose}
                 </Text>
               </Pressable>
@@ -1505,8 +1474,8 @@ export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
   return (
     <>
       <View
+        className={fundingLayout.summary}
         style={[
-          fundingLayout.summary,
           fundingLayout.collapsedSummary,
           { backgroundColor: colors.surface, borderColor: colors.borderAccent },
         ]}
@@ -1547,12 +1516,7 @@ export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
             <View className="ml-[10px] min-w-0 flex-1">
               <Text
                 numberOfLines={1}
-                style={{
-                  color: colors.textStrong,
-                  fontFamily: fontFamily.semiBold,
-                  fontSize: 14,
-                  lineHeight: 21,
-                }}
+                className="font-ku-semibold text-[14px] leading-[21px] text-ku-text-strong"
               >
                 {messages.fundingTitle}
               </Text>

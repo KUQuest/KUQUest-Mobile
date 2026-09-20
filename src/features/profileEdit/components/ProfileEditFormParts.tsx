@@ -68,7 +68,7 @@ export function SaveBar({
           className="min-h-[48px] items-center justify-center rounded-ku-pill bg-ku-primary"
           onPress={onPress}
         >
-          <Text className="font-ku-semibold text-ku-body text-ku-white">
+          <Text className="font-ku-semibold text-ku-body text-ku-on-primary">
             {label}
           </Text>
         </Pressable>

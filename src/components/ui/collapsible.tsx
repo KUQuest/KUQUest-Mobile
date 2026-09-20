@@ -1,12 +1,10 @@
-import { SymbolView } from "expo-symbols";
 import { PropsWithChildren, useState } from "react";
-import { Pressable, StyleSheet } from "react-native";
+import { SymbolView } from "expo-symbols";
 import Animated, { FadeIn } from "react-native-reanimated";
 
 import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
-import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { Pressable, View } from "@/tw";
 
 export function Collapsible({
   children,
@@ -16,15 +14,16 @@ export function Collapsible({
   const theme = useTheme();
 
   return (
-    <ThemedView>
+    <View style={{ backgroundColor: theme.background }}>
       <Pressable
-        style={({ pressed }) => [
-          styles.heading,
-          pressed && styles.pressedHeading,
-        ]}
+        className={styles.heading}
+        style={({ pressed }) => pressed && { opacity: 0.7 }}
         onPress={() => setIsOpen((value) => !value)}
       >
-        <ThemedView type="backgroundElement" style={styles.button}>
+        <View
+          className={styles.button}
+          style={{ backgroundColor: theme.backgroundElement }}
+        >
           <SymbolView
             name={{
               ios: "chevron.right",
@@ -36,41 +35,26 @@ export function Collapsible({
             tintColor={theme.text}
             style={{ transform: [{ rotate: isOpen ? "-90deg" : "90deg" }] }}
           />
-        </ThemedView>
+        </View>
 
         <ThemedText type="small">{title}</ThemedText>
       </Pressable>
       {isOpen && (
         <Animated.View entering={FadeIn.duration(200)}>
-          <ThemedView type="backgroundElement" style={styles.content}>
+          <View
+            className={styles.content}
+            style={{ backgroundColor: theme.backgroundElement }}
+          >
             {children}
-          </ThemedView>
+          </View>
         </Animated.View>
       )}
-    </ThemedView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  heading: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.two,
-  },
-  pressedHeading: {
-    opacity: 0.7,
-  },
-  button: {
-    width: Spacing.four,
-    height: Spacing.four,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  content: {
-    marginTop: Spacing.three,
-    borderRadius: Spacing.three,
-    marginLeft: Spacing.four,
-    padding: Spacing.four,
-  },
-});
+const styles = {
+  heading: "items-center flex-row gap-ku-sm",
+  button: "items-center h-[24px] justify-center rounded-[12px] w-[24px]",
+  content: "ml-ku-lg mt-ku-md rounded-[16px] p-ku-lg",
+} as const;
