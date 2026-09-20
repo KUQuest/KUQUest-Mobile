@@ -14,13 +14,11 @@ describe("app chrome sizing", () => {
       logoWidth: 96,
       logoHeight: 48,
       backButtonSize: 48,
-      navHeight: 66,
-      navItemHeight: 58,
-      createButtonSize: 38,
+      navHeight: 60,
+      navItemHeight: 48,
+      createButtonSize: 36,
       iconSize: 22,
-      createIconSize: 26,
-      labelFontSize: 11,
-      labelLineHeight: 14,
+      createIconSize: 25,
     });
   });
 
@@ -32,13 +30,11 @@ describe("app chrome sizing", () => {
       logoWidth: 108,
       logoHeight: 54,
       backButtonSize: 48,
-      navHeight: 72,
-      navItemHeight: 64,
-      createButtonSize: 42,
+      navHeight: 64,
+      navItemHeight: 52,
+      createButtonSize: 40,
       iconSize: 24,
       createIconSize: 28,
-      labelFontSize: 12,
-      labelLineHeight: 16,
     });
   });
 
@@ -49,13 +45,11 @@ describe("app chrome sizing", () => {
     });
   });
 
-  it("gives navigation labels and their container room to grow with large text", () => {
+  it("keeps compact navigation targets usable with large text settings", () => {
     const metrics = getAppChromeMetrics(384, 2);
 
-    expect(metrics.labelFontSize).toBe(22);
-    expect(metrics.labelLineHeight).toBe(28);
-    expect(metrics.navItemHeight).toBeGreaterThan(50);
-    expect(metrics.navHeight).toBeGreaterThan(60);
+    expect(metrics.navItemHeight).toBe(60);
+    expect(metrics.navHeight).toBe(72);
   });
 
   it("keeps the Create Quest form readable on compact and expanded widths", () => {

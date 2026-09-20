@@ -15,13 +15,6 @@ import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
 import { RoleAccentProvider } from "@/features/workspace/RoleAccentProvider";
 import { colors, darkColors } from "../theme/colors";
 
-import {
-  NotoSansThai_400Regular,
-  NotoSansThai_500Medium,
-  NotoSansThai_600SemiBold,
-  NotoSansThai_700Bold,
-} from "@expo-google-fonts/noto-sans-thai";
-
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -29,10 +22,8 @@ export default function RootLayout() {
   const backgroundColor =
     colorScheme === "dark" ? darkColors.background : colors.background;
   const [fontsLoaded, fontError] = useFonts({
-    NotoSansThai_400Regular,
-    NotoSansThai_500Medium,
-    NotoSansThai_600SemiBold,
-    NotoSansThai_700Bold,
+    KuriousMedium: require("../../assets/fonts/Kurious-Medium.otf"),
+    KuriousSemiBold: require("../../assets/fonts/Kurious-SemiBold.otf"),
   });
   useEffect(() => {
     void useLocaleStore.getState().hydrateLocale();

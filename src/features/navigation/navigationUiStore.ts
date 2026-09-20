@@ -9,18 +9,27 @@ type NavigationScrollHandler = (
 
 interface NavigationUiState {
   navigationVisible: boolean;
+  navigationCompact: boolean;
 }
 
 export const useNavigationUiStore = create<NavigationUiState>(() => ({
   navigationVisible: true,
+  navigationCompact: false,
 }));
 
 let lastScrollOffset: number | null = null;
 let accumulatedScrollDelta = 0;
 
-function updateVisibility(visible: boolean): void {
-  if (useNavigationUiStore.getState().navigationVisible !== visible) {
-    useNavigationUiStore.setState({ navigationVisible: visible });
+function updateNavigationState(
+  navigationVisible: boolean,
+  navigationCompact: boolean
+): void {
+  const currentState = useNavigationUiStore.getState();
+  if (
+    currentState.navigationVisible !== navigationVisible ||
+    currentState.navigationCompact !== navigationCompact
+  ) {
+    useNavigationUiStore.setState({ navigationVisible, navigationCompact });
   }
 }
 
@@ -30,7 +39,7 @@ export const handleNavigationScroll: NavigationScrollHandler = (event) => {
   if (offset === 0) {
     lastScrollOffset = 0;
     accumulatedScrollDelta = 0;
-    updateVisibility(true);
+    updateNavigationState(true, false);
     return;
   }
 
@@ -49,10 +58,10 @@ export const handleNavigationScroll: NavigationScrollHandler = (event) => {
     : delta;
 
   if (accumulatedScrollDelta >= SCROLL_DIRECTION_THRESHOLD) {
-    updateVisibility(false);
+    updateNavigationState(false, true);
     accumulatedScrollDelta = 0;
   } else if (accumulatedScrollDelta <= -SCROLL_DIRECTION_THRESHOLD) {
-    updateVisibility(true);
+    updateNavigationState(true, false);
     accumulatedScrollDelta = 0;
   }
 };
@@ -60,17 +69,20 @@ export const handleNavigationScroll: NavigationScrollHandler = (event) => {
 export const showNavigation = (): void => {
   lastScrollOffset = null;
   accumulatedScrollDelta = 0;
-  updateVisibility(true);
+  updateNavigationState(true, false);
 };
 
 export function resetNavigationVisibility(): void {
   lastScrollOffset = null;
   accumulatedScrollDelta = 0;
-  updateVisibility(true);
+  updateNavigationState(true, false);
 }
 
 export function useNavigationVisible(): boolean {
   return useNavigationUiStore((state) => state.navigationVisible);
+}
+export function useNavigationCompact(): boolean {
+  return useNavigationUiStore((state) => state.navigationCompact);
 }
 
 export function useNavigationVisibility() {

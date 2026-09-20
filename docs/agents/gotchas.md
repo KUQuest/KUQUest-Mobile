@@ -11,6 +11,14 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 ## Entries
 
+### 2026-09-20 — Agent-device MCP paths use one mounted prefix
+
+**What happened**: Calls addressed `xd://mcp__mcp__agent_device_*` and failed before reaching the device tool.
+
+**Root cause**: The mounted route already includes the `mcp__` prefix.
+
+**Rule**: Use `xd://mcp__agent_device_<command>` exactly once; retry a duplicated-prefix failure with the corrected route.
+
 ### 2026-09-19 — Shared Jest helpers do not belong under `__tests__/`
 
 **What happened**: A shared test helper placed under `__tests__/` was auto-collected and failed with “Your test suite must contain at least one test.”

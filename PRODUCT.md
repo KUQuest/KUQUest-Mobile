@@ -31,9 +31,17 @@ A job board restricted to the `@ku.th` community, using structured Quests with c
 
 ## Capabilities and Constraints
 
+- Members are Staff, Lecturers, or Students. Academic Registration records the occupation and required academic details before main-app use.
 - A Quest is a structured job opportunity with requirements, schedule, location, participation mode, candidate-selection mode, capacity, and reward per person.
+- Quests use a canonical seven-state lifecycle from draft through open, assigned, in progress, completed, cancelled, or failed.
+- Selection modes are `FIRST_COME_FIRST_SERVED` and `CANDIDATE`; participation is `SINGLE` or `GROUP` with a maximum headcount of 20.
+- `GROUP + CANDIDATE` Quests support Candidate Teams formed with temporary Join Codes.
+- `dueAt` and proof conditions govern required Worker actions and settlement outcomes.
 - The Quest Board shows discoverable Quests; Quest Detail owns full requirements and lifecycle-aware application actions.
 - First-come Quests can produce an accepted participation outcome when capacity remains. Reviewed-candidate Quests produce an Application Pending outcome.
+- Candidate Inquiries are private one-to-one conversations available only while a Quest is open; assigned work uses a shared Work Conversation.
+- Proof may require 1–5 files, followed by a 24-hour Hirer review window with server auto-approval; terminal Quests support reciprocal Rating Reviews.
+- Wallets separate Spending, Earnings, Funding Reserved, and Payout Reserve; Quest Escrow, PromptPay top-up, earnings conversion, and Admin-approved payouts are supported.
 - Public Student Profile information includes reputation and background such as Profile Rating, completed Quest count, Experience, Portfolio Work, Certificates, and eligible Reviews.
 - Private contact details and Student ID are excluded from public Student Profiles.
 - Google Sign-In requires an installed native development build; Expo Go is insufficient for native authentication validation.

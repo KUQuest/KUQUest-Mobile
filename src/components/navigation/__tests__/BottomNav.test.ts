@@ -73,47 +73,39 @@ describe("authenticated primary navigation", () => {
     ).toMatchObject({ isCreate: true });
   });
 
-  it("provides the approved English and Thai labels", () => {
+  it("provides the approved English and Thai accessibility labels", () => {
     expect(navigationMessages.en).toMatchObject({
       board: "Home",
-      boardShort: "Home",
       boardTitle: "Quest Board",
       money: "Money",
-      moneyShort: "Money",
       create: "Create Quest",
-      createShort: "Create Quest",
       chat: "Chat",
       profile: "Profile",
       workManagement: "Work Management",
-      workManagementShort: "Work",
     });
     expect(navigationMessages.th).toMatchObject({
       board: "หน้าหลัก",
-      boardShort: "หน้าหลัก",
       boardTitle: "กระดานเควสต์",
       money: "กระเป๋าเงิน",
-      moneyShort: "กระเป๋าเงิน",
       create: "สร้างเควสต์",
-      createShort: "สร้างเควสต์",
       chat: "แชต",
       profile: "โปรไฟล์นักศึกษา",
       workManagement: "จัดการงาน",
-      workManagementShort: "จัดการงาน",
     });
   });
 
-  it("floats above the screen instead of occupying a visible host strip", () => {
+  it("floats above the screen with compact horizontal margins", () => {
     expect(styles.container).toEqual(expect.stringContaining("absolute"));
     expect(styles.container).toEqual(expect.stringContaining("bottom-0"));
+    expect(styles.container).toEqual(expect.stringContaining("px-[32px]"));
     expect(styles.container).not.toEqual(expect.stringContaining("bg-"));
   });
-
   it("centers the tablet rail actions as one balanced vertical group", () => {
     expect(styles.tabletBar).toEqual(expect.stringContaining("justify-center"));
-    expect(styles.tabletBar).toEqual(expect.stringContaining("gap-[8px]"));
+    expect(styles.tabletBar).toEqual(expect.stringContaining("gap-[4px]"));
   });
 
-  it("exposes destinations as tabs and Create as an action", async () => {
+  it("exposes icon-only destinations as accessible tabs and actions", async () => {
     const routes = navigationItems.map((item) => ({
       key: `${item.routeName}-key`,
       name: item.routeName,
@@ -145,7 +137,10 @@ describe("authenticated primary navigation", () => {
     expect(
       view.getByTestId("tab-create").props.accessibilityState.selected
     ).toBeUndefined();
-    expect(view.getByText(navigationMessages.en.createShort)).toBeTruthy();
+    expect(view.getByTestId("tab-create").props.accessibilityLabel).toBe(
+      "Create Quest"
+    );
+    expect(view.getByLabelText("Hirer workspace")).toBeTruthy();
   });
 
   it("launches Create when it is already the current route", async () => {
@@ -232,9 +227,10 @@ describe("authenticated primary navigation", () => {
     expect(view.getByTestId("tab-money")).toBeTruthy();
     expect(view.getByTestId("tab-chat")).toBeTruthy();
     expect(view.getByTestId("tab-profile")).toBeTruthy();
+    expect(view.getByLabelText("Worker workspace")).toBeTruthy();
   });
 
-  it("renders text only for primary action (Create / Work Management) and omits text for all other tabs", async () => {
+  it("removes visible navigation text while preserving labels for assistive technology", async () => {
     const routes = navigationItems.map((item) => ({
       key: `${item.routeName}-key`,
       name: item.routeName,
@@ -253,18 +249,19 @@ describe("authenticated primary navigation", () => {
       })
     );
 
-    // Primary button has text
-    expect(view.getByText("Create Quest")).toBeTruthy();
-    // Other tabs do NOT have visible text
+    expect(view.queryByText("Create Quest")).toBeNull();
     expect(view.queryByText("Home")).toBeNull();
     expect(view.queryByText("Money")).toBeNull();
     expect(view.queryByText("Chat")).toBeNull();
     expect(view.queryByText("Profile")).toBeNull();
-    // But all tabs maintain accessibility labels
-    expect(view.getByLabelText("Home")).toBeTruthy();
-    expect(view.getByLabelText("Money")).toBeTruthy();
-    expect(view.getByLabelText("Chat")).toBeTruthy();
-    expect(view.getByLabelText("Profile")).toBeTruthy();
+    expect(view.getByTestId("tab-index").props.accessibilityLabel).toBe("Home");
+    expect(view.getByTestId("tab-money").props.accessibilityLabel).toBe(
+      "Money"
+    );
+    expect(view.getByTestId("tab-chat").props.accessibilityLabel).toBe("Chat");
+    expect(view.getByTestId("tab-profile").props.accessibilityLabel).toBe(
+      "Profile"
+    );
   });
 
   it("renders the app profile avatar instead of the Google session avatar", async () => {
