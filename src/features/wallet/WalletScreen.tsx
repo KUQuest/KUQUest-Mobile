@@ -206,10 +206,11 @@ export default function WalletScreen() {
   return (
     <ScreenLayout className={styles.screen} edges={["top", "left", "right"]}>
       <FlatList
-        contentContainerClassName="px-ku-md pt-ku-xs"
         contentContainerStyle={{
           paddingBottom:
             getBottomNavigationInset(metrics, insets.bottom) + spacing.xl,
+          paddingHorizontal: spacing.md,
+          paddingTop: spacing.xs,
         }}
         data={filteredList}
         keyExtractor={keyExtractor}
