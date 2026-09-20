@@ -34,6 +34,8 @@ Deterministic routing table for agents to navigate directly to mobile specificat
 | **Failure 7-Day Money Hold**                          | [`wallet-and-payments.md`](../specs/wallet-and-payments.md) §5                 | [`admin-dispute-case-contract.md`](../rulebook/admin/admin-dispute-case-contract.md)       | —                                                                                                                                           |
 | **Post-Terminal Rating Reviews**                      | [`proof-and-rating-reviews.md`](../specs/proof-and-rating-reviews.md) §2       | [`rating-review-contract.md`](../rulebook/quest/rating-review-contract.md)                 | —                                                                                                                                           |
 | **Primary Navigation & Shell**                        | [`system-design-specification.md`](../system-design-specification.md) §3       | —                                                                                          | [ADR 0007](../adr/0007-authenticated-primary-navigation.md)                                                                                 |
+| **Role Workspace navigation**                         | [`system-design-specification.md`](../system-design-specification.md) §3       | —                                                                                          | [ADR 0011](../adr/0011-role-workspace-navigation.md), [ADR 0012](../adr/0012-state-ownership-boundaries.md)                                 |
+| **Client state ownership & persistence**              | —                                                                              | —                                                                                          | [ADR 0012](../adr/0012-state-ownership-boundaries.md)                                                                                       |
 | **Cross-cutting UI, Accessibility & Adaptive Layout** | [`ui-design-rules.md`](ui-design-rules.md) and [`DESIGN.md`](../../DESIGN.md)  | —                                                                                          | Relevant navigation ADR and owning feature spec                                                                                             |
 
 ---
@@ -76,3 +78,15 @@ color token, or accessibility change, read [`ui-design-rules.md`](ui-design-rule
 and [`DESIGN.md`](../../DESIGN.md) before the owning feature. Use the feature
 specification and ADR to resolve product-specific behavior; use the UI rules
 for platform behavior and native evidence.
+
+## 5. Role Workspace implementation pointers
+
+Use these paths after reading ADR 0011:
+
+- Home route seam: [`src/app/(tabs)/index.tsx`](<../../src/app/(tabs)/index.tsx>)
+- Hirer Home: [`src/features/home/HomeScreen.tsx`](../../src/features/home/HomeScreen.tsx)
+- Worker Home: [`src/features/workerHome/WorkerHomeScreen.tsx`](../../src/features/workerHome/WorkerHomeScreen.tsx)
+- Shared Money route: [`src/app/(tabs)/money.tsx`](<../../src/app/(tabs)/money.tsx>)
+- Shared Chat route: [`src/app/(tabs)/chat.tsx`](<../../src/app/(tabs)/chat.tsx>)
+- Shared Profile and Settings: [`src/app/(tabs)/profile.tsx`](<../../src/app/(tabs)/profile.tsx>), [`src/app/settings.tsx`](../../src/app/settings.tsx)
+- Role-adapted Work Management: [`src/app/(tabs)/my-quests.tsx`](<../../src/app/(tabs)/my-quests.tsx>), [`src/features/myQuests/myQuestWorkspaceProjection.ts`](../../src/features/myQuests/myQuestWorkspaceProjection.ts)

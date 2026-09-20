@@ -6,28 +6,18 @@ export const ROLEPLAY_SCENARIOS = [
   {
     id: "single-candidate-demo",
     route: "/quest/single-candidate-demo",
-    label: { en: "1. Single Candidate", th: "1. Single Candidate" },
   },
   {
     id: "print-documents",
     route: "/quest/print-documents",
-    label: {
-      en: "2. Single First Come First Serve",
-      th: "2. Single First Come First Serve",
-    },
   },
   {
     id: "team-selection-demo",
     route: "/quest/team-selection-demo",
-    label: { en: "3. Team Candidate", th: "3. Team Candidate" },
   },
   {
     id: "clean-fan",
     route: "/quest/clean-fan",
-    label: {
-      en: "4. Team First Come First Serve",
-      th: "4. Team First Come First Serve",
-    },
   },
 ] as const;
 
@@ -41,7 +31,6 @@ export const ROLEPLAY_SCENARIO_ROUTE = ROLEPLAY_SCENARIOS[0].route;
 export interface RoleplayScenario {
   id: RoleplayScenarioId;
   route: RoleplayScenarioRoute;
-  label: (typeof ROLEPLAY_SCENARIOS)[number]["label"];
   prototypeOnly: true;
 }
 
@@ -49,7 +38,6 @@ export interface RoleplayScenario {
 export const ROLEPLAY_SCENARIO: RoleplayScenario = {
   id: ROLEPLAY_SCENARIO_ID,
   route: ROLEPLAY_SCENARIO_ROUTE,
-  label: ROLEPLAY_SCENARIOS[0].label,
   prototypeOnly: true,
 };
 

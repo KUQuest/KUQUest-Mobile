@@ -4,7 +4,6 @@ import { useColorScheme, useWindowDimensions } from "react-native";
 import { useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { Image, Pressable, View } from "@/tw";
 import { Animated } from "@/tw/animated";
-import { BriefcaseBusiness } from "lucide-react-native";
 import { useLocale } from "@/features/preferences/localeStore";
 import { navigationMessages } from "@/locales/navigationMessages";
 import { getAppChromeMetrics } from "@/theme/layout";
@@ -15,77 +14,10 @@ import {
 import styles, { getBottomNavigationColors } from "./bottomNavStyles";
 import { useRoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
 import { useProfileQuery } from "@/features/profile/api/profileQueries";
-
-const navigationHomeIcon = require("@/assets/icons/navigation-home.svg");
-const navigationWalletIcon = require("@/assets/icons/navigation-wallet.svg");
-const navigationProfileIcon = require("@/assets/icons/navigation-profile.svg");
-const navigationCreateIcon = require("@/assets/icons/navigation-create.svg");
-const navigationChatIcon = require("@/assets/icons/navigation-chat.svg");
-
-type NavigationAsset = number;
-
-type NavigationIcon = typeof BriefcaseBusiness;
-
-type NavigationItem = {
-  routeName: string;
-  labelKey:
-    "board" | "money" | "create" | "workManagement" | "chat" | "profile";
-  icon?: NavigationIcon;
-  asset?: NavigationAsset;
-  isCreate?: boolean;
-  hasUnread?: boolean;
-};
-
-const baseNavigationItems = {
-  home: {
-    routeName: "index",
-    labelKey: "board",
-    asset: navigationHomeIcon,
-  },
-  money: {
-    routeName: "money",
-    labelKey: "money",
-    asset: navigationWalletIcon,
-  },
-  chat: {
-    routeName: "chat",
-    labelKey: "chat",
-    asset: navigationChatIcon,
-  },
-  profile: {
-    routeName: "profile",
-    labelKey: "profile",
-    asset: navigationProfileIcon,
-  },
-} satisfies Record<string, NavigationItem>;
-
-export const hirerNavigationItems: readonly NavigationItem[] = [
-  baseNavigationItems.home,
-  baseNavigationItems.money,
-  {
-    routeName: "create",
-    labelKey: "create",
-    asset: navigationCreateIcon,
-    isCreate: true,
-  },
-  baseNavigationItems.chat,
-  baseNavigationItems.profile,
-];
-
-export const workerNavigationItems: readonly NavigationItem[] = [
-  baseNavigationItems.home,
-  baseNavigationItems.money,
-  {
-    routeName: "my-quests",
-    labelKey: "workManagement",
-    icon: BriefcaseBusiness,
-    isCreate: true,
-  },
-  baseNavigationItems.chat,
-  baseNavigationItems.profile,
-];
-
-export const navigationItems: readonly NavigationItem[] = hirerNavigationItems;
+import {
+  getRoleWorkspaceAccessibilityLabel,
+  getRoleWorkspaceNavigation,
+} from "@/features/navigation/roleWorkspaceNavigation";
 
 type TabBarProps = Parameters<
   NonNullable<React.ComponentProps<typeof import("expo-router").Tabs>["tabBar"]>
@@ -104,7 +36,7 @@ export function BottomNav({
   const { locale } = useLocale();
   const messages = navigationMessages[locale];
   const focusedRouteKey = state.routes[state.index]?.key;
-  const { workspace, switchWorkspace } = useRoleWorkspace();
+  const { workspace } = useRoleWorkspace();
   const navigationCompact = useNavigationCompact();
   const profileQuery = useProfileQuery(locale);
   const profileImage = profileQuery.data?.profileImage;
@@ -115,17 +47,8 @@ export function BottomNav({
     typeof profileImage.uri === "string"
       ? profileImage.uri
       : null;
-  const lastProfilePressRef = React.useRef<number>(0);
-  const activeItems =
-    workspace === "worker" ? workerNavigationItems : hirerNavigationItems;
-  const workspaceLabel =
-    workspace === "worker"
-      ? locale === "th"
-        ? "พื้นที่ทำงานผู้ปฏิบัติงาน"
-        : "Worker workspace"
-      : locale === "th"
-        ? "พื้นที่ทำงานผู้ว่าจ้าง"
-        : "Hirer workspace";
+  const activeItems = getRoleWorkspaceNavigation(workspace);
+  const workspaceLabel = getRoleWorkspaceAccessibilityLabel(workspace, locale);
   const compactNavigationPadding = Math.max(
     32,
     Math.min(56, (width - 248) / 2)
@@ -223,15 +146,6 @@ export function BottomNav({
 
           const onPress = () => {
             showNavigation();
-            if (isProfileTab) {
-              const now = Date.now();
-              if (now - lastProfilePressRef.current < 400) {
-                lastProfilePressRef.current = 0;
-                void switchWorkspace();
-                return;
-              }
-              lastProfilePressRef.current = now;
-            }
 
             const event = navigation.emit({
               type: "tabPress",
@@ -244,12 +158,6 @@ export function BottomNav({
             }
           };
 
-          const onLongPress = isProfileTab
-            ? () => {
-                void switchWorkspace();
-              }
-            : undefined;
-
           return (
             <Pressable
               key={route.key}
@@ -259,14 +167,6 @@ export function BottomNav({
                 ? {}
                 : { accessibilityState: { selected: isFocused } })}
               onPress={onPress}
-              onLongPress={onLongPress}
-              accessibilityHint={
-                isProfileTab
-                  ? locale === "th"
-                    ? "แตะสองครั้งหรือกดค้างเพื่อสลับพื้นที่ทำงาน"
-                    : "Double tap or long press to switch workspace"
-                  : undefined
-              }
               className={cn(
                 styles.item,
                 metrics.isTablet && styles.tabletItem,
@@ -355,7 +255,7 @@ export function BottomNav({
                     >
                       <Image
                         contentFit="contain"
-                        source={navigationProfileIcon}
+                        source={item.asset}
                         style={{
                           height: metrics.iconSize,
                           width: metrics.iconSize,

@@ -10,10 +10,7 @@ import {
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import {
-  PROTOTYPE_PERSONAS,
-  type PrototypePersonaId,
-} from "@/components/ui/prototypeMenuData";
+import type { PrototypePersonaId } from "@/components/ui/prototypeMenuData";
 import { QuestTeamStatus } from "@/features/questBoard/types";
 import { useLocale } from "@/features/preferences/localeStore";
 import { colors } from "@/theme/colors";
@@ -50,13 +47,24 @@ type Feedback = {
 };
 
 function getPersonaLabel(
-  personaId: PrototypePersonaId,
-  locale: "en" | "th"
+  messages: RoleplayMessages,
+  personaId: PrototypePersonaId
 ): string {
   return (
-    PROTOTYPE_PERSONAS.find((persona) => persona.id === personaId)?.label[
-      locale
-    ] ?? personaId
+    messages.personaLabels[personaId] ??
+    roleplayMessages.en.personaLabels[personaId] ??
+    personaId
+  );
+}
+
+function getScenarioLabel(
+  messages: RoleplayMessages,
+  scenarioId: RoleplayScenarioId
+): string {
+  return (
+    messages.scenarioLabels[scenarioId] ??
+    roleplayMessages.en.scenarioLabels[scenarioId] ??
+    scenarioId
   );
 }
 
@@ -120,10 +128,7 @@ export default function RoleplayScreen() {
   const viewModel = selectRoleplayViewModel(roleplayStore.getState());
   const [feedback, setFeedback] = useState<Feedback | null>(null);
 
-  const selectedScenario = ROLEPLAY_SCENARIOS.find(
-    (scenario) => scenario.id === viewModel.scenario.id
-  );
-  const personaLabel = getPersonaLabel(viewModel.activePersonaId, locale);
+  const personaLabel = getPersonaLabel(messages, viewModel.activePersonaId);
   const availableActions = viewModel.visibleActions;
   const applications = viewModel.state.applications;
   const teams = viewModel.state.teams;
@@ -133,7 +138,7 @@ export default function RoleplayScreen() {
     roleplayMock.setPersona(personaId);
     setFeedback({
       kind: "success",
-      message: messages.switchedPersona(getPersonaLabel(personaId, locale)),
+      message: messages.switchedPersona(getPersonaLabel(messages, personaId)),
     });
   };
 
@@ -214,10 +219,11 @@ export default function RoleplayScreen() {
             <View className={styles.scenarioList}>
               {ROLEPLAY_SCENARIOS.map((scenario) => {
                 const selected = scenario.id === viewModel.scenario.id;
+                const label = getScenarioLabel(messages, scenario.id);
 
                 return (
                   <Pressable
-                    accessibilityLabel={scenario.label[locale]}
+                    accessibilityLabel={label}
                     accessibilityRole="radio"
                     accessibilityState={{ selected }}
                     className={cn(
@@ -230,7 +236,7 @@ export default function RoleplayScreen() {
                   >
                     <View className={styles.scenarioOptionCopy}>
                       <Text className={styles.scenarioOptionLabel}>
-                        {scenario.label[locale]}
+                        {label}
                       </Text>
                       <Text className={styles.scenarioOptionMeta}>
                         {scenario.id}
@@ -249,14 +255,13 @@ export default function RoleplayScreen() {
               })}
             </View>
           </View>
-
           <View className={styles.panel} testID="roleplay-scenario">
             <Text className={styles.sectionTitle}>{messages.scenario}</Text>
             <Text className={styles.sectionHint}>
               {messages.scenarioDescription}
             </Text>
             <Text className={styles.scenarioLabel}>
-              {selectedScenario?.label[locale] ?? viewModel.scenario.id}
+              {getScenarioLabel(messages, viewModel.scenario.id)}
             </Text>
             <Text className={styles.scenarioName}>{viewModel.scenario.id}</Text>
             <Text className={styles.scenarioRoute}>
@@ -282,12 +287,11 @@ export default function RoleplayScreen() {
               </Text>
             </View>
           </View>
-
           <RoleplayPersonaSwitcher
             activePersonaId={viewModel.activePersonaId}
             description={messages.personasDescription}
-            locale={locale}
             onPersonaChange={handlePersonaChange}
+            personaLabels={messages.personaLabels}
             title={messages.personas}
           />
 

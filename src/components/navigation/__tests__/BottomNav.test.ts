@@ -1,13 +1,13 @@
 import { fireEvent } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import React from "react";
+import { BottomNav } from "../BottomNav";
 import {
-  BottomNav,
+  getRoleWorkspaceAccessibilityLabel,
+  getRoleWorkspaceNavigation,
   hirerNavigationItems,
-  navigationItems,
   workerNavigationItems,
-} from "../BottomNav";
-import * as SecureStore from "expo-secure-store";
+} from "@/features/navigation/roleWorkspaceNavigation";
 import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
 import styles from "../bottomNavStyles";
 import { navigationMessages } from "../../../locales/navigationMessages";
@@ -41,8 +41,8 @@ describe("authenticated primary navigation", () => {
   });
 
   it("keeps the approved five-destination order", () => {
-    expect(hirerNavigationItems).toBe(navigationItems);
-    expect(navigationItems.map((item) => item.routeName)).toEqual([
+    expect(getRoleWorkspaceNavigation("hirer")).toBe(hirerNavigationItems);
+    expect(hirerNavigationItems.map((item) => item.routeName)).toEqual([
       "index",
       "money",
       "create",
@@ -53,11 +53,12 @@ describe("authenticated primary navigation", () => {
 
   it("marks Create as the central action", () => {
     expect(
-      navigationItems.find((item) => item.routeName === "create")
+      hirerNavigationItems.find((item) => item.routeName === "create")
     ).toMatchObject({ isCreate: true });
   });
 
   it("keeps the approved five-destination order for Worker workspace", () => {
+    expect(getRoleWorkspaceNavigation("worker")).toBe(workerNavigationItems);
     expect(workerNavigationItems.map((item) => item.routeName)).toEqual([
       "index",
       "money",
@@ -92,6 +93,12 @@ describe("authenticated primary navigation", () => {
       profile: "โปรไฟล์นักศึกษา",
       workManagement: "จัดการงาน",
     });
+    expect(getRoleWorkspaceAccessibilityLabel("hirer", "en")).toBe(
+      "Hirer workspace"
+    );
+    expect(getRoleWorkspaceAccessibilityLabel("worker", "th")).toBe(
+      "พื้นที่ทำงานผู้ปฏิบัติงาน"
+    );
   });
 
   it("floats above the screen with compact horizontal margins", () => {
@@ -106,7 +113,7 @@ describe("authenticated primary navigation", () => {
   });
 
   it("exposes icon-only destinations as accessible tabs and actions", async () => {
-    const routes = navigationItems.map((item) => ({
+    const routes = hirerNavigationItems.map((item) => ({
       key: `${item.routeName}-key`,
       name: item.routeName,
     }));
@@ -144,7 +151,7 @@ describe("authenticated primary navigation", () => {
   });
 
   it("launches Create when it is already the current route", async () => {
-    const routes = navigationItems.map((item) => ({
+    const routes = hirerNavigationItems.map((item) => ({
       key: `${item.routeName}-key`,
       name: item.routeName,
     }));
@@ -169,7 +176,7 @@ describe("authenticated primary navigation", () => {
   });
 
   it("marks the profile tab selected when the profile route is focused", async () => {
-    const routes = navigationItems.map((item) => ({
+    const routes = hirerNavigationItems.map((item) => ({
       key: `${item.routeName}-key`,
       name: item.routeName,
     }));
@@ -231,7 +238,7 @@ describe("authenticated primary navigation", () => {
   });
 
   it("removes visible navigation text while preserving labels for assistive technology", async () => {
-    const routes = navigationItems.map((item) => ({
+    const routes = hirerNavigationItems.map((item) => ({
       key: `${item.routeName}-key`,
       name: item.routeName,
     }));
@@ -274,7 +281,7 @@ describe("authenticated primary navigation", () => {
       },
     });
 
-    const routes = navigationItems.map((item) => ({
+    const routes = hirerNavigationItems.map((item) => ({
       key: `${item.routeName}-key`,
       name: item.routeName,
     }));
@@ -306,7 +313,7 @@ describe("authenticated primary navigation", () => {
       },
     });
 
-    const routes = navigationItems.map((item) => ({
+    const routes = hirerNavigationItems.map((item) => ({
       key: `${item.routeName}-key`,
       name: item.routeName,
     }));
@@ -327,13 +334,12 @@ describe("authenticated primary navigation", () => {
     expect(view.queryByTestId("tab-profile-avatar")).toBeNull();
   });
 
-  it("switches role workspace on double-tap of the profile tab", async () => {
-    const routes = navigationItems.map((item) => ({
+  it("keeps workspace switching out of primary navigation", async () => {
+    const routes = hirerNavigationItems.map((item) => ({
       key: `${item.routeName}-key`,
       name: item.routeName,
     }));
     const navigate = jest.fn();
-    const setItemSpy = jest.spyOn(SecureStore, "setItemAsync");
 
     useRoleWorkspaceStore.setState({ workspace: "hirer" });
     const view = await renderWithQueryClient(
@@ -351,16 +357,10 @@ describe("authenticated primary navigation", () => {
     );
 
     const profileTab = view.getByTestId("tab-profile");
-
-    // First tap -> navigates to profile
     await fireEvent.press(profileTab);
-    expect(navigate).toHaveBeenCalledWith("profile", undefined);
-
-    // Second tap immediately -> switches workspace
     await fireEvent.press(profileTab);
-    expect(setItemSpy).toHaveBeenCalledWith(
-      "kuquest_active_workspace",
-      "worker"
-    );
+
+    expect(useRoleWorkspaceStore.getState().workspace).toBe("hirer");
+    expect(navigate).toHaveBeenCalledTimes(2);
   });
 });

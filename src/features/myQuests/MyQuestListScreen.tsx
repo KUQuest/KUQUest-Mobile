@@ -13,10 +13,7 @@ import { QuestList } from "@/components/ui/QuestList";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { useLocale } from "@/features/preferences/localeStore";
-import {
-  myQuestMessages,
-  type MyQuestMessages,
-} from "@/locales/myQuestMessages";
+import { myQuestMessages } from "@/locales/myQuestMessages";
 import { getThemeColors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import { MyQuestSummaryCard } from "./components/MyQuestSummaryCard";
@@ -25,23 +22,18 @@ import {
   useMyWorkerQuestSnapshotsQuery,
 } from "./api/myQuestsQueries";
 import {
-  getLiveHirerItems,
-  getLiveWorkerItems,
-  type HirerTab,
-  type QuestSummary,
-  type WorkerTab,
-} from "./myQuestService";
+  projectMyQuestWorkspace,
+  type MyQuestRole,
+  type MyQuestTab,
+} from "./myQuestWorkspaceProjection";
+import type { QuestSummary } from "./myQuestService";
 
-export type MyQuestRole = "worker" | "hirer";
-export type MyQuestTab = WorkerTab | HirerTab;
+export type { MyQuestRole, MyQuestTab };
 
 export interface MyQuestListScreenProps {
   initialRole?: MyQuestRole;
   initialTab?: string;
 }
-
-const workerTabs: WorkerTab[] = ["pending", "accepted", "history"];
-const hirerTabs: HirerTab[] = ["active", "draft", "completed"];
 
 const styles = {
   root: "flex-1",
@@ -74,36 +66,6 @@ const styles = {
   errorText: "font-ku-semibold text-ku-body text-center leading-[24px]",
 } as const;
 
-function tabLabel(
-  messages: MyQuestMessages,
-  role: MyQuestRole,
-  tab: MyQuestTab
-): string {
-  return role === "hirer"
-    ? messages.tabs.hirer[tab as HirerTab]
-    : messages.tabs.worker[tab as WorkerTab];
-}
-
-function emptyLabel(
-  messages: MyQuestMessages,
-  role: MyQuestRole,
-  tab: MyQuestTab
-): string {
-  return role === "hirer"
-    ? messages.emptyTitle.hirer[tab as HirerTab]
-    : messages.emptyTitle.worker[tab as WorkerTab];
-}
-
-function initialTabForRole(
-  role: MyQuestRole,
-  value: string | undefined
-): MyQuestTab {
-  if (role === "hirer") {
-    return value === "draft" || value === "completed" ? value : "active";
-  }
-  return value === "accepted" || value === "history" ? value : "pending";
-}
-
 function Separator() {
   return <View className="h-ku-sm" />;
 }
@@ -118,8 +80,8 @@ export default function MyQuestListScreen({
   const palette = getThemeColors(useColorScheme());
   const insets = useSafeAreaInsets();
   const role = initialRole;
-  const [tab, setTab] = useState<MyQuestTab>(() =>
-    initialTabForRole(initialRole, initialTab)
+  const [requestedTab, setRequestedTab] = useState<string | undefined>(
+    initialTab
   );
   const sessionQuery = useSessionQuery();
   const sessionUserId = sessionQuery.data?.user.id ?? null;
@@ -130,22 +92,19 @@ export default function MyQuestListScreen({
   const hirerQuests = hirerQuery.data ?? null;
   const workerSnapshots = workerQuery.data ?? null;
 
-  const items = useMemo(() => {
-    if (role === "hirer") {
-      return hirerQuests
-        ? getLiveHirerItems(hirerQuests, tab as HirerTab, locale)
-        : [];
-    }
-    return workerSnapshots
-      ? getLiveWorkerItems(
-          workerSnapshots,
-          tab as WorkerTab,
-          locale,
-          sessionUserId ?? ""
-        )
-      : [];
-  }, [hirerQuests, locale, role, sessionUserId, tab, workerSnapshots]);
-  const tabs = role === "hirer" ? hirerTabs : workerTabs;
+  const projection = useMemo(
+    () =>
+      projectMyQuestWorkspace({
+        role,
+        requestedTab,
+        locale,
+        hirerQuests,
+        workerSnapshots,
+        viewerId: sessionUserId ?? "",
+      }),
+    [hirerQuests, locale, requestedTab, role, sessionUserId, workerSnapshots]
+  );
+  const { items, selectedTab: tab, tabs } = projection;
   const isLoading =
     role === "hirer" ? hirerQuery.isPending : workerQuery.isPending;
   const refreshing =
@@ -193,7 +152,6 @@ export default function MyQuestListScreen({
       role === "hirer" ? hirerQuery.refetch() : workerQuery.refetch()
     ).catch(() => undefined);
   }, [hirerQuery, role, workerQuery]);
-  const selectedTabLabel = tabLabel(messages, role, tab);
 
   return (
     <ScreenLayout
@@ -235,7 +193,7 @@ export default function MyQuestListScreen({
               const selected = option === tab;
               return (
                 <Pressable
-                  accessibilityLabel={tabLabel(messages, role, option)}
+                  accessibilityLabel={projection.tabLabels[option]}
                   accessibilityRole="tab"
                   accessibilityState={{ selected }}
                   className={`${styles.tabButton} ${
@@ -244,7 +202,7 @@ export default function MyQuestListScreen({
                       : "border-ku-border-accent bg-ku-surface"
                   }`}
                   key={option}
-                  onPress={() => setTab(option)}
+                  onPress={() => setRequestedTab(option)}
                   testID={`my-quest-list-tab-${option}`}
                 >
                   <Text
@@ -252,7 +210,7 @@ export default function MyQuestListScreen({
                       selected ? "text-ku-primary" : "text-ku-text-secondary"
                     }`}
                   >
-                    {tabLabel(messages, role, option)}
+                    {projection.tabLabels[option]}
                   </Text>
                 </Pressable>
               );
@@ -284,7 +242,7 @@ export default function MyQuestListScreen({
           </View>
         ) : (
           <QuestList
-            accessibilityLabel={`${selectedTabLabel} ${messages.listTitle}`}
+            accessibilityLabel={`${projection.selectedTabLabel} ${messages.listTitle}`}
             className={styles.list}
             contentContainerClassName="grow"
             contentContainerStyle={{ paddingBottom: bottomPadding }}
@@ -297,12 +255,12 @@ export default function MyQuestListScreen({
                   <Clock3 color={palette.primary} size={24} strokeWidth={2.1} />
                 </View>
                 <Text className={`${styles.emptyTitle} text-ku-text-strong`}>
-                  {emptyLabel(messages, role, tab)}
+                  {projection.emptyTitle}
                 </Text>
                 <Text
                   className={`${styles.emptyDescription} text-ku-text-secondary`}
                 >
-                  {messages.emptyDescription[role]}
+                  {projection.emptyDescription}
                 </Text>
               </View>
             }

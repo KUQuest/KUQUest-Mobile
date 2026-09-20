@@ -1,4 +1,3 @@
-import { router } from "expo-router";
 import { create } from "zustand";
 
 import { secureStorage } from "@/infrastructure/storage/keyValueStorage";
@@ -29,11 +28,6 @@ export const useRoleWorkspaceStore = create<RoleWorkspaceStoreState>(
       const nextWorkspace =
         target ?? (currentWorkspace === "hirer" ? "worker" : "hirer");
       await get().setWorkspace(nextWorkspace);
-      try {
-        router.replace("/(tabs)");
-      } catch {
-        // Router might not be mounted in test environments.
-      }
     },
     hydrateWorkspace: async () => {
       try {

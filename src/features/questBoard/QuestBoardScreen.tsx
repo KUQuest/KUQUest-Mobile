@@ -16,7 +16,7 @@ import { spacing } from "@/theme/spacing";
 import { getAppChromeMetrics } from "@/theme/layout";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import styles from "./questBoardStyles";
-import { getLocalizedQuest } from "./questFixtures";
+import { getLocalizedQuest } from "./questFixtureLocalization";
 import { getActiveFilterCount, sortOptions } from "./questBoardOptions";
 import {
   applyQuestBoardFilters,

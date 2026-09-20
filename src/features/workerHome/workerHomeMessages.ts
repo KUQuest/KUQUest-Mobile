@@ -3,8 +3,6 @@ import type { SupportedLocale } from "@/locales/locale";
 export interface WorkerHomeMessages {
   title: string;
   subtitle: string;
-  badge: string;
-  switchToHirer: string;
   activeJobs: string;
   completedJobs: string;
   workManagementShortcut: string;
@@ -80,8 +78,6 @@ export const workerHomeMessages: Record<SupportedLocale, WorkerHomeMessages> = {
   en: {
     title: "Worker Workspace",
     subtitle: "Active assignments & available quests",
-    badge: "Worker",
-    switchToHirer: "Switch to Hirer",
     activeJobs: "Active Work",
     completedJobs: "Completed",
     workManagementShortcut: "Work Manager",
@@ -159,8 +155,6 @@ export const workerHomeMessages: Record<SupportedLocale, WorkerHomeMessages> = {
   th: {
     title: "พื้นที่ทำงาน: ผู้รับงาน",
     subtitle: "งานที่กำลังทำและเควสต์ที่เปิดรับสมัคร",
-    badge: "ผู้รับงาน",
-    switchToHirer: "สลับไปผู้จ้างวาน",
     activeJobs: "งานที่กำลังทำ",
     completedJobs: "งานที่สำเร็จ",
     workManagementShortcut: "จัดการงาน",

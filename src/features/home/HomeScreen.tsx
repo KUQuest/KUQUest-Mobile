@@ -18,10 +18,8 @@ import {
 } from "lucide-react-native";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { useRoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
 
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
-import WorkerHomeScreen from "@/features/workerHome/WorkerHomeScreen";
 import { isPrototypeDemoEnabled } from "@/features/auth/authEnvironment";
 import { useLocale } from "@/features/preferences/localeStore";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
@@ -40,7 +38,6 @@ import {
 import { hirerHomeMessages } from "./hirerHomeMessages";
 import { hirerHomeStyles as styles } from "./hirerHomeStyles";
 export default function HomeScreen() {
-  const { workspace } = useRoleWorkspace();
   const router = useRouter();
   const { locale } = useLocale();
   const { width, fontScale } = useWindowDimensions();
@@ -104,7 +101,6 @@ export default function HomeScreen() {
     },
     [router]
   );
-  if (workspace === "worker") return <WorkerHomeScreen />;
 
   if (isPending) {
     return (

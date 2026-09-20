@@ -19,6 +19,8 @@ jest.mock("../../auth/AuthService", () => ({
 
 const mockSetLocale = jest.fn();
 let mockLocale: "th" | "en" = "en";
+let mockWorkspace: "hirer" | "worker" = "worker";
+const mockSwitchWorkspace = jest.fn();
 
 jest.mock("../../../features/preferences/localeStore", () => ({
   useLocale: () => ({
@@ -27,11 +29,20 @@ jest.mock("../../../features/preferences/localeStore", () => ({
   }),
 }));
 
+jest.mock("../../../features/workspace/roleWorkspaceStore", () => ({
+  useRoleWorkspace: () => ({
+    workspace: mockWorkspace,
+    switchWorkspace: mockSwitchWorkspace,
+  }),
+}));
+
 describe("Settings screen", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
     mockSetLocale.mockReset();
+    mockSwitchWorkspace.mockReset();
+    mockSwitchWorkspace.mockResolvedValue(undefined);
     mockLocale = "en";
+    mockWorkspace = "worker";
   });
 
   it("renders grouped account, preference, support, and about content", async () => {
@@ -51,6 +62,18 @@ describe("Settings screen", () => {
     ).toBeGreaterThanOrEqual(24);
     expect(view.getByTestId("settings-content")).toBeTruthy();
     expect(view.queryByTestId("settings-report")).toBeNull();
+  });
+
+  it("switches workspace from Settings and returns to workspace Home", async () => {
+    const view = await renderWithQueryClient(<SettingsScreen />);
+
+    expect(view.getByTestId("settings-workspace")).toBeTruthy();
+    fireEvent.press(view.getByTestId("settings-workspace"));
+
+    await waitFor(() => {
+      expect(mockSwitchWorkspace).toHaveBeenCalledTimes(1);
+      expect(mockReplace).toHaveBeenCalledWith("/(tabs)");
+    });
   });
 
   it("renders language row with current language and opens modal when pressed", async () => {
@@ -118,17 +141,6 @@ describe("Settings screen", () => {
     });
   });
 
-  it("renders a red logout button at the bottom and returns to the start screen", async () => {
-    const view = await renderWithQueryClient(<SettingsScreen />);
-
-    fireEvent.press(view.getByTestId("settings-logout"));
-
-    await waitFor(() => {
-      expect(authService.signOut).toHaveBeenCalledTimes(1);
-      expect(mockReplace).toHaveBeenCalledWith("/");
-    });
-  });
-
   it("toggles quest notifications", async () => {
     const view = await renderWithQueryClient(<SettingsScreen />);
     const toggle = view.getByTestId("settings-notifications");
@@ -148,7 +160,6 @@ describe("Settings screen", () => {
 
     expect(view.queryByTestId("settings-switch-account")).toBeNull();
     expect(view.queryByText("Switch account")).toBeNull();
-    expect(authService.signOut).not.toHaveBeenCalled();
   });
 
   it("opens Edit Profile from settings", async () => {

@@ -1,4 +1,9 @@
-import type { RoleplayActionType } from "@/features/roleplay/roleplayTypes";
+import type { PrototypePersonaId } from "@/components/ui/prototypeMenuData";
+import type {
+  RoleplayActionType,
+  RoleplayScenarioId,
+} from "@/features/roleplay/roleplayTypes";
+
 import type { SupportedLocale } from "./locale";
 
 export interface RoleplayMessages {
@@ -14,6 +19,8 @@ export interface RoleplayMessages {
   activePersona: string;
   personas: string;
   personasDescription: string;
+  personaLabels: Record<PrototypePersonaId, string>;
+  scenarioLabels: Record<RoleplayScenarioId, string>;
   applications: string;
   applicationId: string;
   applicant: string;
@@ -61,6 +68,19 @@ export const roleplayMessages: Record<SupportedLocale, RoleplayMessages> = {
     personas: "Switch persona",
     personasDescription:
       "Only the personas supported by this roleplay scenario are shown.",
+    personaLabels: {
+      "demo-hirer": "Hirer",
+      "student-demo": "Applicant / Team Leader A",
+      "demo-worker-2": "Invited Worker",
+      "demo-worker-3": "Team Leader B",
+    },
+    scenarioLabels: {
+      "single-candidate-demo": "1. Single Candidate",
+      "print-documents": "2. Single First Come First Serve",
+      "team-selection-demo": "3. Team Candidate",
+      "clean-fan": "4. Team First Come First Serve",
+    },
+
     applications: "Candidate applications",
     applicationId: "Application",
     applicant: "Applicant",
@@ -147,6 +167,18 @@ export const roleplayMessages: Record<SupportedLocale, RoleplayMessages> = {
     activePersona: "ตัวตนที่ใช้งาน",
     personas: "สลับตัวตน",
     personasDescription: "แสดงเฉพาะตัวตนที่สถานการณ์ roleplay นี้รองรับ",
+    personaLabels: {
+      "demo-hirer": "ผู้ว่าจ้าง",
+      "student-demo": "ผู้สมัคร / หัวหน้าทีม A",
+      "demo-worker-2": "ผู้ทำงานที่ได้รับเชิญ",
+      "demo-worker-3": "หัวหน้าทีม B",
+    },
+    scenarioLabels: {
+      "single-candidate-demo": "1. Single Candidate",
+      "print-documents": "2. Single First Come First Serve",
+      "team-selection-demo": "3. Team Candidate",
+      "clean-fan": "4. Team First Come First Serve",
+    },
     applications: "ใบสมัคร Candidate",
     applicationId: "ใบสมัคร",
     applicant: "ผู้สมัคร",

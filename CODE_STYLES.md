@@ -9,6 +9,7 @@ This file is the review standard. Repository-specific facts belong in the refere
 - Keep screens as composition roots. If a screen grows beyond roughly 400 lines or contains independently testable regions, split feature-local components and assemble them in the screen.
 - Keep route files in `src/app/` thin; route modules export a default screen or layout. Providers and other support modules live outside `src/app/`.
 - Use existing domain terminology from `CONTEXT.md`; do not introduce synonyms for canonical states or actors.
+- Keep each cross-workspace action behind one explicit seam. A workspace switch exposed in Settings must not be duplicated in primary navigation, a Home header, or an implicit gesture without an ADR update and behavioral coverage.
 
 ## 2. NativeWind
 

@@ -16,8 +16,8 @@ import {
 import {
   getLocalizedQuest,
   getLocalizedTag,
-  questFixtures,
-} from "../questFixtures";
+} from "../questFixtureLocalization";
+import { questFixtures } from "../questFixtures";
 
 const quests: QuestBoardQuest[] = [
   {

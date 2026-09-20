@@ -11,6 +11,14 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 ## Entries
 
+### 2026-09-21 — An online Android device can still fail native smoke
+
+**What happened**: `adb devices` showed a ready device, but native validation was blocked by an active agent-device lease, an occupied Metro port, and a stale/broken bundle.
+
+**Root cause**: ADB connectivity, the agent-device lease, Metro health, and JavaScript bundle freshness are separate conditions.
+
+**Rule**: Run `bun run mobile:android:preflight` before native work, reuse only a verified session and healthy project-owned Metro listener, then run `bun run check-android-workspace-surface` after reload.
+
 ### 2026-09-20 — Agent-device MCP paths use one mounted prefix
 
 **What happened**: Calls addressed `xd://mcp__mcp__agent_device_*` and failed before reaching the device tool.
@@ -58,14 +66,6 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 **Root cause**: Force-stop kills the dev client's live Metro connection; reconnecting on cold start is slow and not guaranteed.
 
 **Rule**: Don't `force-stop` a running dev-client app as a debugging shortcut. Retry a deep link with a warm `adb shell am start -a android.intent.action.VIEW -d "<uri>" <applicationId>` against the already-running instance instead.
-
-### 2026-09-18 — A double-tap near the profile tab silently switches Hirer/Worker workspace
-
-**What happened**: During on-device automation, the app unexpectedly flipped from the Hirer to the Worker home screen with no tap on that control intended.
-
-**Root cause**: `BottomNav.tsx` treats two taps on the profile tab within 400ms as a request to call `switchWorkspace()`, toggling the persisted `roleWorkspaceStore` workspace. Closely-timed automated taps near that control can misfire it.
-
-**Rule**: After any accidental double-tap near the profile tab during device automation, check which workspace is showing before continuing; recover with `switch-to-hirer-button` (on `WorkerHomeScreen`) or a deliberate `switchWorkspace("hirer")` path.
 
 ### 2026-09-18 — `scroll`/`swipe` don't reliably page a horizontal paged carousel
 

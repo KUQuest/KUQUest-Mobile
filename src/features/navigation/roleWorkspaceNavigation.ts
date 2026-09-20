@@ -1,0 +1,89 @@
+import { BriefcaseBusiness } from "lucide-react-native";
+
+import type { RoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
+import type { SupportedLocale } from "@/locales/locale";
+
+const navigationHomeIcon = require("@/assets/icons/navigation-home.svg");
+const navigationWalletIcon = require("@/assets/icons/navigation-wallet.svg");
+const navigationProfileIcon = require("@/assets/icons/navigation-profile.svg");
+const navigationCreateIcon = require("@/assets/icons/navigation-create.svg");
+const navigationChatIcon = require("@/assets/icons/navigation-chat.svg");
+
+type NavigationAsset = number;
+type NavigationIcon = typeof BriefcaseBusiness;
+
+export type NavigationItem = {
+  routeName: string;
+  labelKey:
+    "board" | "money" | "create" | "workManagement" | "chat" | "profile";
+  icon?: NavigationIcon;
+  asset?: NavigationAsset;
+  isCreate?: boolean;
+  hasUnread?: boolean;
+};
+
+const baseNavigationItems = {
+  home: {
+    routeName: "index",
+    labelKey: "board",
+    asset: navigationHomeIcon,
+  },
+  money: {
+    routeName: "money",
+    labelKey: "money",
+    asset: navigationWalletIcon,
+  },
+  chat: {
+    routeName: "chat",
+    labelKey: "chat",
+    asset: navigationChatIcon,
+  },
+  profile: {
+    routeName: "profile",
+    labelKey: "profile",
+    asset: navigationProfileIcon,
+  },
+} satisfies Record<string, NavigationItem>;
+
+export const hirerNavigationItems: readonly NavigationItem[] = [
+  baseNavigationItems.home,
+  baseNavigationItems.money,
+  {
+    routeName: "create",
+    labelKey: "create",
+    asset: navigationCreateIcon,
+    isCreate: true,
+  },
+  baseNavigationItems.chat,
+  baseNavigationItems.profile,
+];
+
+export const workerNavigationItems: readonly NavigationItem[] = [
+  baseNavigationItems.home,
+  baseNavigationItems.money,
+  {
+    routeName: "my-quests",
+    labelKey: "workManagement",
+    icon: BriefcaseBusiness,
+    isCreate: true,
+  },
+  baseNavigationItems.chat,
+  baseNavigationItems.profile,
+];
+
+export function getRoleWorkspaceNavigation(
+  workspace: RoleWorkspace
+): readonly NavigationItem[] {
+  return workspace === "worker" ? workerNavigationItems : hirerNavigationItems;
+}
+
+export function getRoleWorkspaceAccessibilityLabel(
+  workspace: RoleWorkspace,
+  locale: SupportedLocale
+): string {
+  if (workspace === "worker") {
+    return locale === "th" ? "พื้นที่ทำงานผู้ปฏิบัติงาน" : "Worker workspace";
+  }
+
+  return locale === "th" ? "พื้นที่ทำงานผู้ว่าจ้าง" : "Hirer workspace";
+}

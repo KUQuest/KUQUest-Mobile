@@ -18,10 +18,48 @@ bun run mobile:android:prepare
 ```
 
 The command selects `ANDROID_SERIAL` or the single online device and runs
-`adb reverse tcp:8081 tcp:8081`. Bind device tooling to
-`metroHost: 127.0.0.1`, `metroPort: 8081`, and
-`bundleUrl: http://127.0.0.1:8081`. Pass `ANDROID_SERIAL` when more than one
-device is online.
+`adb reverse` for `METRO_PORT` (default `8081`). Bind device tooling to the
+same `metroHost`, `metroPort`, and `bundleUrl` values printed by the command.
+When `8081` is occupied by a healthy project-owned Metro listener, use one
+alternate port consistently:
+
+```bash
+METRO_PORT=8082 bun run mobile:android:prepare
+EXPO_PORT=8082 bun run staging:start
+```
+
+Pass `ANDROID_SERIAL` when more than one device is online.
+
+### Preflight
+
+Before starting Metro or opening a development build, run:
+
+```bash
+bun run mobile:android:preflight
+```
+
+The preflight requires one online Android device (or `ANDROID_SERIAL`), reports
+Metro health, listener ownership, open-file pressure, and inotify limits, and
+checks for an existing agent-device session. An occupied port or active session
+fails by default. Reuse only an explicitly verified owner:
+
+```bash
+AGENT_DEVICE_SESSION=existing-session METRO_REUSE=1 \
+  bun run mobile:android:preflight
+```
+
+If preflight reports near-exhausted inotify capacity, do not retry Metro.
+Release stale file-watching processes through their owning session or ask the
+host administrator to raise the system limit. A healthy `/status` response is
+not sufficient when the bundle endpoint returns `500`.
+
+The reuse form is valid only when the Metro listener is healthy, rooted in this
+worktree, and the named agent-device session is the session you already own.
+Do not open a second session for the same device.
+
+If the device reports `DEVICE_IN_USE`, continue through the existing session
+that owns the device or close it through that same session context. Do not
+retry `open` against the same serial until the lease is released.
 
 Agent-device MCP paths use exactly one `mcp__` prefix:
 `xd://mcp__agent_device_<command>`.
@@ -37,7 +75,21 @@ Agent-device MCP paths use exactly one `mcp__` prefix:
 7. Record the device, build variant, states exercised, and any pre-existing warnings.
 8. Close the same app session and stop the supervised Metro process.
 
+### Workspace surface smoke gate
+
+For Role Workspace changes, run
+`bun run check-android-workspace-surface` after the JavaScript bundle reloads
+on Worker Home, then run it again after navigating to Settings. The check
+rejects a stale Worker Home bundle that still exposes
+`switch-to-hirer-button` and rejects Settings when `settings-workspace` is
+absent.
+
 Prefer semantic refs and selectors over coordinates. Keep logs and snapshots narrow enough to inspect. If a development overlay appears, inspect the accessibility tree and app state before treating it as a startup failure.
+
+If a physical device rejects interaction with `INJECT_EVENTS`, record native
+startup and accessibility evidence but do not claim interaction coverage.
+Switch to an emulator or an approved device session for semantic presses; do
+not repeatedly retry the same denied input.
 
 For UI and accessibility changes, also exercise the applicable matrix from
 `docs/agents/ui-design-rules.md`: compact and larger windows, portrait and

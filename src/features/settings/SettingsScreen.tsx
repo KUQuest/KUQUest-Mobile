@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { Modal } from "react-native";
 import { Host, Switch } from "@expo/ui";
 import {
+  ArrowRightLeft,
   Bell,
   Check,
   ChevronLeft,
@@ -23,6 +24,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Pressable, ScrollView, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { useLocale } from "@/features/preferences/localeStore";
+import { useRoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
 import { settingsMessages } from "@/locales/settingsMessages";
 import { authService } from "@/features/auth/AuthService";
 import { authEnvironment } from "@/features/auth/authEnvironment";
@@ -103,6 +105,8 @@ export default function SettingsScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [switchingAccount, setSwitchingAccount] = useState(false);
+  const { workspace, switchWorkspace } = useRoleWorkspace();
+  const [switchingWorkspace, setSwitchingWorkspace] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const devOverlayEnabled = authEnvironment.isDemoEnabled();
   const switchAccount = () => {
@@ -115,6 +119,14 @@ export default function SettingsScreen() {
         clearSessionCache(queryClient);
         router.replace("/");
       });
+  };
+
+  const handleSwitchWorkspace = () => {
+    if (switchingWorkspace) return;
+    setSwitchingWorkspace(true);
+    void switchWorkspace().finally(() => {
+      router.replace("/(tabs)");
+    });
   };
 
   const logout = () => {
@@ -165,6 +177,20 @@ export default function SettingsScreen() {
                 onPress={() => router.push("/profile/edit")}
                 title={messages.editProfile}
                 testID="settings-edit-profile"
+              />
+              <SettingsRow
+                description={messages.workspaceDescription}
+                icon={ArrowRightLeft}
+                onPress={handleSwitchWorkspace}
+                title={messages.workspace}
+                value={
+                  switchingWorkspace
+                    ? messages.switchingWorkspace
+                    : workspace === "worker"
+                      ? messages.workerWorkspace
+                      : messages.hirerWorkspace
+                }
+                testID="settings-workspace"
                 last={!devOverlayEnabled}
               />
               {devOverlayEnabled ? (
