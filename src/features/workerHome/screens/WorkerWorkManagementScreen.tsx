@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   RefreshControl,
   useColorScheme,
   useWindowDimensions,
@@ -126,11 +125,8 @@ export default function WorkerWorkManagementScreen() {
   return (
     <ScreenLayout edges={["top", "left", "right"]} className="bg-ku-background">
       <ScrollView
-        contentContainerStyle={{
-          paddingBottom: scrollBottomPadding,
-          paddingHorizontal: 16,
-          paddingTop: 14,
-        }}
+        contentContainerClassName="px-ku-md pt-[14px]"
+        contentContainerStyle={{ paddingBottom: scrollBottomPadding }}
         onScroll={handleScroll}
         refreshControl={
           <RefreshControl
@@ -149,10 +145,10 @@ export default function WorkerWorkManagementScreen() {
         testID="worker-work-management-scroll"
       >
         {/* Header Title: Work */}
-        <View style={{ paddingHorizontal: 4, marginBottom: 14 }}>
+        <View className="mb-[14px] px-[4px]">
           <Text
             accessibilityRole="header"
-            style={[styles.screenTitle, { color: themeColors.textStrong }]}
+            className={`${styles.screenTitle} text-ku-text-strong`}
             testID="work-management-title"
           >
             {messages.workTitle}
@@ -162,40 +158,29 @@ export default function WorkerWorkManagementScreen() {
         {/* Section 1: Current Quest Card OR No Work Prompt */}
         {assignmentsQuery.isError ? (
           <View
-            style={[
-              styles.errorState,
-              {
-                backgroundColor: themeColors.surfaceMuted,
-                borderColor: themeColors.borderSubtle,
-              },
-            ]}
+            className={`${styles.errorState} border-ku-border-subtle bg-ku-surface-muted`}
             testID="worker-work-management-error"
           >
-            <Text style={[styles.errorText, { color: themeColors.textStrong }]}>
+            <Text className={`${styles.errorText} text-ku-text-strong`}>
               {messages.errorTitle}
             </Text>
             <Pressable
               accessibilityLabel={messages.errorRetry}
               accessibilityRole="button"
+              className={`${styles.retryButton} bg-ku-primary-dark`}
               onPress={() => void assignmentsQuery.refetch()}
-              style={[
-                styles.retryButton,
-                { backgroundColor: themeColors.primaryDeep },
-              ]}
               testID="worker-work-management-retry"
             >
-              <Text style={[styles.retryText, { color: themeColors.white }]}>
+              <Text className={`${styles.retryText} text-ku-on-primary`}>
                 {messages.errorRetry}
               </Text>
             </Pressable>
           </View>
         ) : assignmentsQuery.isPending && !currentAssignment ? (
           <View
-            style={{ paddingVertical: 24, alignItems: "center" }}
+            className="items-center py-ku-md"
             testID="worker-work-management-loading"
-          >
-            <ActivityIndicator color={themeColors.primaryDeep} />
-          </View>
+          ></View>
         ) : currentAssignment ? (
           <CurrentQuestCard
             assignment={currentAssignment}
@@ -233,136 +218,92 @@ export default function WorkerWorkManagementScreen() {
           />
         )}
 
-        <View style={styles.managementTabsRow}>
-          <View style={styles.tabsGroup}>
-            {/* Tab 1: Applied quest */}
+        <View className={styles.managementTabsRow}>
+          <View className={styles.tabsGroup}>
             <Pressable
               accessibilityLabel={`${messages.appliedTab} tab (${appliedQuests.length})`}
               accessibilityRole="tab"
               accessibilityState={{ selected: activeTab === "applied" }}
-              onPress={() => setActiveTab("applied")}
-              style={[
-                styles.managementTabItem,
+              className={`${styles.managementTabItem} ${
                 activeTab === "applied"
-                  ? {
-                      backgroundColor: themeColors.primaryDeep,
-                      borderColor: themeColors.primaryDeep,
-                    }
-                  : {
-                      backgroundColor: themeColors.surface,
-                      borderColor: themeColors.borderSubtle,
-                    },
-              ]}
+                  ? "border-ku-primary-dark bg-ku-primary-dark"
+                  : "border-ku-border-subtle bg-ku-surface"
+              }`}
+              onPress={() => setActiveTab("applied")}
               testID="tab-applied-quest"
             >
               <Text
-                style={[
-                  styles.managementTabText,
-                  {
-                    color:
-                      activeTab === "applied"
-                        ? themeColors.white
-                        : themeColors.textSecondary,
-                  },
-                ]}
+                className={`${styles.managementTabText} ${
+                  activeTab === "applied"
+                    ? "text-ku-on-primary"
+                    : "text-ku-text-secondary"
+                }`}
               >
                 {messages.appliedTab}
               </Text>
               <View
-                style={[
-                  styles.tabCountBadge,
-                  {
-                    backgroundColor:
-                      activeTab === "applied"
-                        ? "rgba(255,255,255,0.25)"
-                        : themeColors.surfaceMuted,
-                  },
-                ]}
+                className={`${styles.tabCountBadge} ${
+                  activeTab === "applied"
+                    ? "bg-ku-on-primary/[0.25]"
+                    : "bg-ku-surface-muted"
+                }`}
               >
                 <Text
-                  style={{
-                    fontSize: 11,
-                    fontWeight: "700",
-                    color:
-                      activeTab === "applied"
-                        ? themeColors.white
-                        : themeColors.textSecondary,
-                  }}
+                  className={`font-ku-bold text-ku-caption ${
+                    activeTab === "applied"
+                      ? "text-ku-on-primary"
+                      : "text-ku-text-secondary"
+                  }`}
                 >
                   {appliedQuests.length}
                 </Text>
               </View>
             </Pressable>
-
-            {/* Tab 2: History */}
             <Pressable
               accessibilityLabel={`${messages.historyTab} tab (${historyQuests.length})`}
               accessibilityRole="tab"
               accessibilityState={{ selected: activeTab === "history" }}
-              onPress={() => setActiveTab("history")}
-              style={[
-                styles.managementTabItem,
+              className={`${styles.managementTabItem} ${
                 activeTab === "history"
-                  ? {
-                      backgroundColor: themeColors.primaryDeep,
-                      borderColor: themeColors.primaryDeep,
-                    }
-                  : {
-                      backgroundColor: themeColors.surface,
-                      borderColor: themeColors.borderSubtle,
-                    },
-              ]}
+                  ? "border-ku-primary-dark bg-ku-primary-dark"
+                  : "border-ku-border-subtle bg-ku-surface"
+              }`}
+              onPress={() => setActiveTab("history")}
               testID="tab-history-quest"
             >
               <Text
-                style={[
-                  styles.managementTabText,
-                  {
-                    color:
-                      activeTab === "history"
-                        ? themeColors.white
-                        : themeColors.textSecondary,
-                  },
-                ]}
+                className={`${styles.managementTabText} ${
+                  activeTab === "history"
+                    ? "text-ku-on-primary"
+                    : "text-ku-text-secondary"
+                }`}
               >
                 {messages.historyTab}
               </Text>
               <View
-                style={[
-                  styles.tabCountBadge,
-                  {
-                    backgroundColor:
-                      activeTab === "history"
-                        ? "rgba(255,255,255,0.25)"
-                        : themeColors.surfaceMuted,
-                  },
-                ]}
+                className={`${styles.tabCountBadge} ${
+                  activeTab === "history"
+                    ? "bg-ku-on-primary/[0.25]"
+                    : "bg-ku-surface-muted"
+                }`}
               >
                 <Text
-                  style={{
-                    fontSize: 11,
-                    fontWeight: "700",
-                    color:
-                      activeTab === "history"
-                        ? themeColors.white
-                        : themeColors.textSecondary,
-                  }}
+                  className={`font-ku-bold text-ku-caption ${
+                    activeTab === "history"
+                      ? "text-ku-on-primary"
+                      : "text-ku-text-secondary"
+                  }`}
                 >
                   {historyQuests.length}
                 </Text>
               </View>
             </Pressable>
           </View>
-
-          {/* Refresh icon (⟳) */}
           <Pressable
             accessibilityLabel="Refresh work list"
             accessibilityRole="button"
+            className={`${styles.refreshIconButton} bg-ku-surface-muted`}
             onPress={handleRefresh}
-            style={[
-              styles.refreshIconButton,
-              { backgroundColor: themeColors.surfaceMuted },
-            ]}
             testID="work-management-refresh-btn"
           >
             <RefreshCw size={16} color={themeColors.primaryDeep} />
@@ -371,7 +312,7 @@ export default function WorkerWorkManagementScreen() {
 
         {activeTab === "applied" ? (
           appliedQuests.length > 0 ? (
-            <View style={styles.cardList} testID="applied-quests-list">
+            <View className={styles.cardList} testID="applied-quests-list">
               {appliedQuests.map((quest) => {
                 const questTitle =
                   questTitles[quest.questId] ??
@@ -384,6 +325,7 @@ export default function WorkerWorkManagementScreen() {
                   <Pressable
                     accessibilityLabel={questTitle}
                     accessibilityRole="button"
+                    className={`${styles.feedCard} border-ku-border-subtle bg-ku-surface`}
                     key={quest.id}
                     onPress={() => {
                       router.push({
@@ -395,53 +337,30 @@ export default function WorkerWorkManagementScreen() {
                         },
                       });
                     }}
-                    style={[
-                      styles.feedCard,
-                      {
-                        backgroundColor: themeColors.surface,
-                        borderColor: themeColors.borderSubtle,
-                      },
-                    ]}
                     testID={`applied-quest-item-${quest.id}`}
                   >
-                    <View style={styles.feedCardTop}>
+                    <View className={styles.feedCardTop}>
                       <Text
+                        className={`${styles.cardTitle} text-ku-text-strong`}
                         numberOfLines={2}
-                        style={[
-                          styles.cardTitle,
-                          { color: themeColors.textStrong },
-                        ]}
                       >
                         {questTitle}
                       </Text>
                       <View
-                        style={[
-                          styles.badgePill,
-                          {
-                            backgroundColor: themeColors.surfaceAccent,
-                            borderColor: themeColors.borderAccent,
-                          },
-                        ]}
+                        className={`${styles.badgePill} border-ku-border-accent bg-ku-surface-accent`}
                       >
                         <Text
-                          style={[
-                            styles.badgeText,
-                            { color: themeColors.primaryDeep },
-                          ]}
+                          className={`${styles.badgeText} text-ku-primary-dark`}
                         >
                           {statusLabel}
                         </Text>
                       </View>
                     </View>
-
-                    <View style={styles.cardMetaRow}>
-                      <View style={styles.cardMetaItem}>
+                    <View className={styles.cardMetaRow}>
+                      <View className={styles.cardMetaItem}>
                         <Clock size={13} color={themeColors.textSecondary} />
                         <Text
-                          style={[
-                            styles.cardMetaText,
-                            { color: themeColors.textSecondary },
-                          ]}
+                          className={`${styles.cardMetaText} text-ku-text-secondary`}
                         >
                           {new Date(quest.createdAt).toLocaleDateString(
                             locale === "th" ? "th-TH" : "en-US",
@@ -456,24 +375,16 @@ export default function WorkerWorkManagementScreen() {
             </View>
           ) : (
             <View
-              style={[
-                styles.emptyState,
-                {
-                  backgroundColor: themeColors.surfaceMuted,
-                  borderColor: themeColors.borderSubtle,
-                },
-              ]}
+              className={`${styles.emptyState} border-ku-border-subtle bg-ku-surface-muted`}
               testID="applied-quests-empty"
             >
-              <Text
-                style={[styles.emptyTitle, { color: themeColors.textStrong }]}
-              >
+              <Text className={`${styles.emptyTitle} text-ku-text-strong`}>
                 {messages.noAppliedQuests}
               </Text>
             </View>
           )
         ) : historyQuests.length > 0 ? (
-          <View style={styles.cardList} testID="history-quests-list">
+          <View className={styles.cardList} testID="history-quests-list">
             {historyQuests.map((quest) => {
               const questTitle =
                 questTitles[quest.questId] ?? messages.questDetailsUnavailable;
@@ -484,6 +395,7 @@ export default function WorkerWorkManagementScreen() {
                 <Pressable
                   accessibilityLabel={questTitle}
                   accessibilityRole="button"
+                  className={`${styles.feedCard} border-ku-border-subtle bg-ku-surface`}
                   key={quest.id}
                   onPress={() => {
                     router.push({
@@ -495,48 +407,28 @@ export default function WorkerWorkManagementScreen() {
                       },
                     });
                   }}
-                  style={[
-                    styles.feedCard,
-                    {
-                      backgroundColor: themeColors.surface,
-                      borderColor: themeColors.borderSubtle,
-                    },
-                  ]}
                   testID={`history-quest-item-${quest.id}`}
                 >
-                  <View style={styles.feedCardTop}>
+                  <View className={styles.feedCardTop}>
                     <Text
+                      className={`${styles.cardTitle} text-ku-text-strong`}
                       numberOfLines={2}
-                      style={[
-                        styles.cardTitle,
-                        { color: themeColors.textStrong },
-                      ]}
                     >
                       {questTitle}
                     </Text>
                     <View
-                      style={[
-                        styles.badgePill,
+                      className={`${styles.badgePill} ${
                         isCompleted
-                          ? {
-                              backgroundColor: themeColors.surfaceSuccess,
-                              borderColor: themeColors.borderSuccess,
-                            }
-                          : {
-                              backgroundColor: themeColors.surfaceMuted,
-                              borderColor: themeColors.borderSubtle,
-                            },
-                      ]}
+                          ? "border-ku-border-success bg-ku-surface-success"
+                          : "border-ku-border-subtle bg-ku-surface-muted"
+                      }`}
                     >
                       <Text
-                        style={[
-                          styles.badgeText,
-                          {
-                            color: isCompleted
-                              ? themeColors.success
-                              : themeColors.textSecondary,
-                          },
-                        ]}
+                        className={`${styles.badgeText} ${
+                          isCompleted
+                            ? "text-ku-success"
+                            : "text-ku-text-secondary"
+                        }`}
                       >
                         {isCompleted
                           ? messages.statusCompleted
@@ -544,19 +436,15 @@ export default function WorkerWorkManagementScreen() {
                       </Text>
                     </View>
                   </View>
-
-                  <View style={styles.cardMetaRow}>
-                    <View style={styles.cardMetaItem}>
+                  <View className={styles.cardMetaRow}>
+                    <View className={styles.cardMetaItem}>
                       {isCompleted ? (
                         <CheckCircle2 size={14} color={themeColors.success} />
                       ) : (
                         <CircleX size={14} color={themeColors.textSecondary} />
                       )}
                       <Text
-                        style={[
-                          styles.cardMetaText,
-                          { color: themeColors.textSecondary },
-                        ]}
+                        className={`${styles.cardMetaText} text-ku-text-secondary`}
                       >
                         {new Date(quest.createdAt).toLocaleDateString(
                           locale === "th" ? "th-TH" : "en-US",
@@ -571,18 +459,10 @@ export default function WorkerWorkManagementScreen() {
           </View>
         ) : (
           <View
-            style={[
-              styles.emptyState,
-              {
-                backgroundColor: themeColors.surfaceMuted,
-                borderColor: themeColors.borderSubtle,
-              },
-            ]}
+            className={`${styles.emptyState} border-ku-border-subtle bg-ku-surface-muted`}
             testID="history-quests-empty"
           >
-            <Text
-              style={[styles.emptyTitle, { color: themeColors.textStrong }]}
-            >
+            <Text className={`${styles.emptyTitle} text-ku-text-strong`}>
               {messages.noHistoryQuests}
             </Text>
           </View>

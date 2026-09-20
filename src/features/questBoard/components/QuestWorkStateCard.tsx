@@ -1,7 +1,7 @@
 import React from "react";
 
 import { View } from "@/tw";
-
+import { cn } from "@/tw/cn";
 export interface QuestWorkStateCardProps {
   children: React.ReactNode;
   tone?: "neutral" | "warning" | "success";
@@ -13,13 +13,14 @@ export function StateCard({
 }: QuestWorkStateCardProps) {
   return (
     <View
-      className={`rounded-2xl border p-4 ${
+      className={cn(
+        "rounded-2xl border p-4",
         tone === "warning"
-          ? "border-amber-300 bg-amber-50"
+          ? "border-ku-border-warning bg-ku-surface-warning"
           : tone === "success"
-            ? "border-emerald-300 bg-emerald-50"
-            : "border-slate-200 bg-white"
-      }`}
+            ? "border-ku-border-success bg-ku-surface-success"
+            : "border-ku-border bg-ku-card"
+      )}
     >
       {children}
     </View>

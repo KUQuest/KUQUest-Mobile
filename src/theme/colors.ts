@@ -1,8 +1,9 @@
 import { Appearance } from "react-native";
 
 /**
- * Persona ramps. `hirer` is what the app-wide `primary` tokens resolve to today;
- * `worker` is defined so the worker workspace can adopt it without inventing values.
+ * Persona ramps. `getThemeColors` resolves the app-wide `primary`/accent keys
+ * from whichever ramp the active workspace selected; `RoleAccentProvider`
+ * rebinds the matching CSS variables so `className` styling follows too.
  */
 export const hirerRamp = {
   light: {
@@ -54,16 +55,7 @@ export const lightColors = {
   primary: hirerRamp.light.primary,
   primaryDark: hirerRamp.light.primaryDark,
   primaryDeep: hirerRamp.light.primaryDark,
-  hirerPrimary: hirerRamp.light.primary,
-  hirerPrimaryDark: hirerRamp.light.primaryDark,
-  hirerPrimarySubtle: hirerRamp.light.primarySubtle,
-  hirerAccentBorder: hirerRamp.light.accentBorder,
-  hirerOnPrimary: hirerRamp.light.onPrimary,
-  workerPrimary: workerRamp.light.primary,
-  workerPrimaryDark: workerRamp.light.primaryDark,
-  workerPrimarySubtle: workerRamp.light.primarySubtle,
-  workerAccentBorder: workerRamp.light.accentBorder,
-  workerOnPrimary: workerRamp.light.onPrimary,
+  onPrimary: hirerRamp.light.onPrimary,
   text: "#18201B",
   textStrong: "#18201B",
   textSecondary: "#5F6962",
@@ -110,16 +102,7 @@ export const darkColors = {
   primary: hirerRamp.dark.primary,
   primaryDark: hirerRamp.dark.primaryDark,
   primaryDeep: hirerRamp.dark.primary,
-  hirerPrimary: hirerRamp.dark.primary,
-  hirerPrimaryDark: hirerRamp.dark.primaryDark,
-  hirerPrimarySubtle: hirerRamp.dark.primarySubtle,
-  hirerAccentBorder: hirerRamp.dark.accentBorder,
-  hirerOnPrimary: hirerRamp.dark.onPrimary,
-  workerPrimary: workerRamp.dark.primary,
-  workerPrimaryDark: workerRamp.dark.primaryDark,
-  workerPrimarySubtle: workerRamp.dark.primarySubtle,
-  workerAccentBorder: workerRamp.dark.accentBorder,
-  workerOnPrimary: workerRamp.dark.onPrimary,
+  onPrimary: hirerRamp.dark.onPrimary,
   text: "#F3F6F4",
   textStrong: "#F3F6F4",
   textSecondary: "#AAB4AD",
@@ -150,12 +133,54 @@ export const darkColors = {
   overlay: "rgba(0, 0, 0, 0.64)",
 } as const;
 
-export type ThemeColors = typeof lightColors | typeof darkColors;
+export type ThemeColors = {
+  readonly [K in keyof typeof lightColors]: string;
+};
 export type AppColorScheme =
   "dark" | "light" | "unspecified" | null | undefined;
 
+export const ramps = { hirer: hirerRamp, worker: workerRamp } as const;
+export type RampName = keyof typeof ramps;
+type Ramp = (typeof ramps)[RampName]["light" | "dark"];
+
+function withRamp(
+  base: ThemeColors,
+  ramp: Ramp,
+  scheme: "light" | "dark"
+): ThemeColors {
+  return {
+    ...base,
+    primary: ramp.primary,
+    primaryDark: ramp.primaryDark,
+    primaryDeep: scheme === "dark" ? ramp.primary : ramp.primaryDark,
+    surfaceAccent: ramp.primarySubtle,
+    borderAccent: ramp.accentBorder,
+    onPrimary: ramp.onPrimary,
+  };
+}
+
+// Four fixed combinations, resolved once, so the proxy below never allocates.
+const palettes = {
+  hirer: {
+    light: withRamp(lightColors, hirerRamp.light, "light"),
+    dark: withRamp(darkColors, hirerRamp.dark, "dark"),
+  },
+  worker: {
+    light: withRamp(lightColors, workerRamp.light, "light"),
+    dark: withRamp(darkColors, workerRamp.dark, "dark"),
+  },
+} as const;
+
+let activeRamp: RampName = "hirer";
+
+/** Called by `RoleAccentProvider`; keeps the imperative palette in step with
+ * the CSS variables it publishes. */
+export function setActiveRamp(name: RampName) {
+  activeRamp = name;
+}
+
 export function getThemeColors(colorScheme: AppColorScheme) {
-  return colorScheme === "dark" ? darkColors : lightColors;
+  return palettes[activeRamp][colorScheme === "dark" ? "dark" : "light"];
 }
 
 // Existing consumers can keep reading `colors.foo`; the proxy resolves the

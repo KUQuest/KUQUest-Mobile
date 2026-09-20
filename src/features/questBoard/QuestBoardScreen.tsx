@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { RefreshControl, View } from "react-native";
-import { AccessibilityInfo, useWindowDimensions } from "react-native";
+import {
+  AccessibilityInfo,
+  RefreshControl,
+  useWindowDimensions,
+} from "react-native";
+import { View } from "@/tw";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";

@@ -1,8 +1,7 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Plus } from "lucide-react-native";
 import { colors } from "@/theme/colors";
-import { fontFamily } from "@/theme/typography";
+import { Text, TouchableOpacity, View } from "@/tw";
 interface HirerWalletBannerProps {
   label: string;
   onPress: () => void;
@@ -14,47 +13,34 @@ export function HirerWalletBanner({ label, onPress }: HirerWalletBannerProps) {
       accessibilityLabel={label}
       accessibilityRole="button"
       activeOpacity={0.85}
+      className={styles.container}
       onPress={onPress}
-      style={styles.container}
       testID="hirer-wallet-banner"
     >
-      <Text style={styles.label}>{label}</Text>
-      <View style={styles.actionButton} testID="hirer-wallet-banner-action-btn">
+      <Text className={styles.label}>{label}</Text>
+      <View
+        className={styles.actionButton}
+        style={actionButtonShadow}
+        testID="hirer-wallet-banner-action-btn"
+      >
         <Plus color={colors.primaryDeep} size={20} strokeWidth={2.6} />
       </View>
     </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.surfaceSuccess,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.borderSuccess,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  label: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 16,
-    color: colors.primaryDeep,
-  },
-  actionButton: {
-    backgroundColor: colors.white,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-});
+const styles = {
+  container:
+    "mb-ku-md flex-row items-center justify-between rounded-[16px] border border-ku-border-success bg-ku-surface-success px-[18px] py-[12px]",
+  label: "font-ku-semibold text-ku-body text-ku-primary-dark",
+  actionButton:
+    "h-[40px] w-[40px] items-center justify-center rounded-[20px] bg-ku-white",
+} as const;
+
+const actionButtonShadow = {
+  shadowColor: colors.black,
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.06,
+  shadowRadius: 3,
+  elevation: 2,
+} as const;

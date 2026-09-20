@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "@/tw";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -11,7 +11,6 @@ import {
   Send,
 } from "lucide-react-native";
 import { colors } from "@/theme/colors";
-import { fontFamily } from "@/theme/typography";
 import { formatSatang } from "@/domain/satang";
 import type { ClassifiedHirerTransaction } from "../walletModule";
 
@@ -74,51 +73,49 @@ export function HirerTransactionItem({
       accessibilityLabel={`${tx.title}, ${formattedAmount}`}
       accessibilityRole={onPress ? "button" : undefined}
       activeOpacity={0.75}
+      className={styles.card}
       onPress={onPress ? () => onPress(tx) : undefined}
-      style={styles.card}
       testID={`hirer-tx-${tx.id}`}
     >
       {/* Icon Box */}
       <View
-        style={[
-          styles.iconBox,
-          isGreenIcon ? styles.iconBoxGreen : styles.iconBoxNeutral,
-        ]}
+        className={`${styles.iconBox} ${
+          isGreenIcon ? styles.iconBoxGreen : styles.iconBoxNeutral
+        }`}
       >
         {renderIcon()}
       </View>
 
       {/* Title, Subtitle, Date */}
-      <View style={styles.contentWrap}>
-        <Text numberOfLines={1} style={styles.title}>
+      <View className={styles.contentWrap}>
+        <Text numberOfLines={1} className={styles.title}>
           {tx.title}
         </Text>
         {tx.subtitle ? (
-          <Text numberOfLines={1} style={styles.subtitle}>
+          <Text numberOfLines={1} className={styles.subtitle}>
             {tx.subtitle}
           </Text>
         ) : null}
-        <View style={styles.dateRow}>
-          <Text style={styles.date}>{tx.dateFormatted}</Text>
+        <View className={styles.dateRow}>
+          <Text className={styles.date}>{tx.dateFormatted}</Text>
           {isPending ? (
-            <View style={styles.pendingChip}>
-              <Text style={styles.pendingText}>{tx.statusLabel}</Text>
+            <View className={styles.pendingChip}>
+              <Text className={styles.pendingText}>{tx.statusLabel}</Text>
             </View>
           ) : isFailed ? (
-            <View style={styles.failedChip}>
-              <Text style={styles.failedText}>{tx.statusLabel}</Text>
+            <View className={styles.failedChip}>
+              <Text className={styles.failedText}>{tx.statusLabel}</Text>
             </View>
           ) : null}
         </View>
       </View>
 
       {/* Amount and Chevron */}
-      <View style={styles.amountWrap}>
+      <View className={styles.amountWrap}>
         <Text
-          style={[
-            styles.amount,
-            tx.isInflow ? styles.amountInflow : styles.amountOutflow,
-          ]}
+          className={`${styles.amount} ${
+            tx.isInflow ? styles.amountInflow : styles.amountOutflow
+          }`}
         >
           {formattedAmount}
         </Text>
@@ -130,95 +127,25 @@ export function HirerTransactionItem({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    padding: 14,
-    marginBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  iconBoxNeutral: {
-    backgroundColor: colors.surfaceMuted,
-  },
-  iconBoxGreen: {
-    backgroundColor: colors.surfaceSuccess,
-  },
-  contentWrap: {
-    flex: 1,
-    marginRight: 8,
-  },
-  title: {
-    fontFamily: fontFamily.medium,
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.textStrong,
-    marginBottom: 2,
-  },
-  subtitle: {
-    fontFamily: fontFamily.regular,
-    fontSize: 12,
-    lineHeight: 16,
-    color: colors.textSecondary,
-    marginBottom: 2,
-  },
-  dateRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  date: {
-    fontFamily: fontFamily.regular,
-    fontSize: 11,
-    color: colors.textMuted,
-  },
-  pendingChip: {
-    backgroundColor: colors.surfaceWarning,
-    paddingVertical: 1,
-    paddingHorizontal: 6,
-    borderRadius: 4,
-  },
-  pendingText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 10,
-    color: colors.warningDark,
-  },
-  failedChip: {
-    backgroundColor: colors.surfaceDanger,
-    paddingVertical: 1,
-    paddingHorizontal: 6,
-    borderRadius: 4,
-  },
-  failedText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 10,
-    color: colors.danger,
-  },
-  amountWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  amount: {
-    fontFamily: fontFamily.bold,
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  amountInflow: {
-    color: colors.success,
-  },
-  amountOutflow: {
-    color: colors.textStrong,
-  },
-});
+const styles = {
+  card: "mb-[10px] flex-row items-center rounded-[16px] border border-ku-border-subtle bg-ku-card p-[14px]",
+  iconBox:
+    "mr-[12px] h-[44px] w-[44px] items-center justify-center rounded-[12px]",
+  iconBoxNeutral: "bg-ku-surface-muted",
+  iconBoxGreen: "bg-ku-surface-success",
+  contentWrap: "mr-ku-sm flex-1",
+  title:
+    "mb-[2px] font-ku-medium text-ku-body-small leading-[20px] text-ku-text-strong",
+  subtitle:
+    "mb-[2px] font-ku-regular text-ku-label leading-[16px] text-ku-text-secondary",
+  dateRow: "flex-row items-center gap-ku-sm",
+  date: "font-ku-regular text-ku-caption text-ku-text-muted",
+  pendingChip: "rounded-[4px] bg-ku-surface-warning px-ku-xs py-[1px]",
+  pendingText: "font-ku-medium text-ku-nav text-ku-warning-dark",
+  failedChip: "rounded-[4px] bg-ku-surface-danger px-ku-xs py-[1px]",
+  failedText: "font-ku-medium text-ku-nav text-ku-danger",
+  amountWrap: "flex-row items-center gap-ku-xs",
+  amount: "font-ku-bold text-[15px] leading-[20px]",
+  amountInflow: "text-ku-success",
+  amountOutflow: "text-ku-text-strong",
+} as const;

@@ -8,7 +8,10 @@ import type { QuestV2Assignment } from "@/api/questV2Contracts";
 import { useLocale } from "@/features/preferences/localeStore";
 import { getThemeColors } from "@/theme/colors";
 import { workerHomeMessages } from "../workerHomeMessages";
-import { workerHomeStyles as styles } from "../workerHomeStyles";
+import {
+  workerHomeStyles as styles,
+  workerHomeWorkingNowShadow,
+} from "../workerHomeStyles";
 
 interface WorkingNowFloatingBarProps {
   assignment: QuestV2Assignment | null;
@@ -30,12 +33,10 @@ export function formatElapsedTime(
   const totalMinutes = Math.floor(diffMs / 60_000);
   const hours = Math.floor(totalMinutes / 60);
   const mins = totalMinutes % 60;
-
   if (locale === "th") {
-    if (hours > 0) return `ผ่านไป ${hours} ชม. ${mins} นาที`;
-    return `ผ่านไป ${mins} นาที`;
+    if (hours > 0) return `${hours} ชม. ${mins} นาทีที่แล้ว`;
+    return `${mins} นาทีที่แล้ว`;
   }
-
   if (hours > 0) return `${hours}h ${mins}m elapsed`;
   return `${mins}m elapsed`;
 }
@@ -51,10 +52,8 @@ export function WorkingNowFloatingBar({
   const themeColors = getThemeColors(colorScheme);
   const { locale } = useLocale();
   const messages = workerHomeMessages[locale];
-
   const isWaitingToStart = assignment?.questState === "QUEST_ASSIGNED";
   const isInProgress = assignment?.questState === "QUEST_IN_PROGRESS";
-
   if (
     !assignment ||
     assignment.state !== "ASSIGNMENT_ACTIVE" ||
@@ -62,7 +61,6 @@ export function WorkingNowFloatingBar({
   ) {
     return null;
   }
-
   const stateLabel = isWaitingToStart
     ? messages.stateAssigned
     : messages.stateInProgress;
@@ -72,7 +70,6 @@ export function WorkingNowFloatingBar({
         assignment.startedAt,
         locale
       )}`;
-
   const handlePress = () => {
     if (onPress) {
       onPress();
@@ -80,49 +77,31 @@ export function WorkingNowFloatingBar({
     }
     router.push("/my-quests");
   };
-
   return (
     <Pressable
       accessibilityHint={messages.tapToOpenWork}
       accessibilityLabel={`${stateLabel}: ${questTitle ?? messages.workTitle}`}
       accessibilityRole="button"
+      className={`${styles.workingNowBar} border-ku-primary-dark bg-ku-surface`}
       onPress={handlePress}
-      style={[
-        styles.workingNowBar,
-        {
-          bottom: bottomInset + 8,
-          backgroundColor: themeColors.surface,
-          borderColor: themeColors.primaryDeep,
-        },
-      ]}
+      style={[{ bottom: bottomInset + 8 }, workerHomeWorkingNowShadow]}
       testID="working-now-floating-bar"
     >
-      <View style={styles.workingNowLeft}>
-        <View
-          style={[
-            styles.roleBadgeDot,
-            { backgroundColor: themeColors.primaryDeep },
-          ]}
-        />
+      <View className={styles.workingNowLeft}>
+        <View className={`${styles.roleBadgeDot} bg-ku-primary-dark`} />
         <Clock size={16} color={themeColors.primaryDeep} />
-        <View style={{ flex: 1 }}>
-          <Text
-            style={[styles.workingNowTitle, { color: themeColors.primaryDeep }]}
-          >
+        <View className="flex-1">
+          <Text className={`${styles.workingNowTitle} text-ku-primary-dark`}>
             {stateLabel}
           </Text>
           <Text
+            className={`${styles.workingNowElapsed} text-ku-text-secondary`}
             numberOfLines={1}
-            style={[
-              styles.workingNowElapsed,
-              { color: themeColors.textSecondary },
-            ]}
           >
             {subtitle}
           </Text>
         </View>
       </View>
-
       <ChevronRight size={18} color={themeColors.primaryDeep} />
     </Pressable>
   );

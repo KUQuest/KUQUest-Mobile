@@ -449,7 +449,7 @@ export function TeamSetupStep({
               )}
             >
               {draft.locationMode === "ONLINE" ? (
-                <Check color={colors.white} size={15} strokeWidth={3} />
+                <Check color={colors.onPrimary} size={15} strokeWidth={3} />
               ) : null}
             </View>
             <View className={styles.onlineToggleCopy}>
@@ -516,7 +516,7 @@ export function TeamSetupStep({
                       onPress={() => removeImage(index)}
                       className={styles.removeImageButton}
                     >
-                      <X color={colors.white} size={15} strokeWidth={2.5} />
+                      <X color={colors.onPrimary} size={15} strokeWidth={2.5} />
                     </Pressable>
                   </View>
                 ))}

@@ -19,7 +19,7 @@ const styles = {
   errorText:
     "font-ku-medium text-ku-body-small text-ku-danger-dark font-ku-medium",
   retryButton: "self-start bg-ku-danger-dark px-[16px] py-[8px] rounded-[8px]",
-  retryButtonText: "font-ku-bold text-ku-white text-ku-meta font-ku-bold",
+  retryButtonText: "font-ku-bold text-ku-on-primary text-ku-meta font-ku-bold",
   hostWrapper: "w-full self-stretch",
   footerSection: "items-start gap-[12px] mb-[8px] mt-auto",
   footerLinks: "items-start flex-col justify-center gap-[8px]",

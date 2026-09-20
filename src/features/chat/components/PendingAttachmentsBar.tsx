@@ -43,7 +43,7 @@ export function PendingAttachmentsBar({
           />
           {item.uploading ? (
             <View className={styles.pendingAttachmentUploading}>
-              <ActivityIndicator size="small" color={colors.white} />
+              <ActivityIndicator size="small" color={colors.onPrimary} />
             </View>
           ) : null}
           <Pressable
@@ -54,7 +54,7 @@ export function PendingAttachmentsBar({
             className={styles.pendingAttachmentRemove}
             onPress={() => onRemove(item.id)}
           >
-            <X color={colors.white} size={12} strokeWidth={2.5} />
+            <X color={colors.onPrimary} size={12} strokeWidth={2.5} />
           </Pressable>
         </View>
       ))}

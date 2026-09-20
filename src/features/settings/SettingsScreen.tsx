@@ -279,13 +279,12 @@ export default function SettingsScreen() {
           <Pressable
             accessibilityLabel={messages.cancel}
             accessibilityRole="button"
-            className="absolute inset-0"
+            className="absolute inset-0 bg-ku-overlay"
             onPress={() => setLanguageModalVisible(false)}
-            style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
           />
           <View
             accessibilityViewIsModal
-            className="w-full max-w-[420px] rounded-[20px] bg-white p-[20px]"
+            className="w-full max-w-[420px] rounded-[20px] bg-ku-surface p-[20px]"
           >
             <Text
               accessibilityRole="header"

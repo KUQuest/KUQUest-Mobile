@@ -1,13 +1,7 @@
 import React from "react";
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Modal, StyleSheet } from "react-native";
+import type { ViewStyle } from "react-native";
+import { Pressable, ScrollView, Text, TouchableOpacity, View } from "@/tw";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -22,7 +16,6 @@ import {
   XCircle,
 } from "lucide-react-native";
 import { colors } from "@/theme/colors";
-import { fontFamily } from "@/theme/typography";
 import { formatSatang } from "@/domain/satang";
 import type { WalletMessages } from "@/locales/walletMessages";
 import type { ClassifiedHirerTransaction } from "../walletModule";
@@ -33,6 +26,58 @@ interface TransactionDetailModalProps {
   messages: WalletMessages;
   onClose: () => void;
 }
+const styles = {
+  modalOverlay: "flex-1 justify-end bg-ku-overlay",
+  modalCard:
+    "max-h-[85%] rounded-tl-[24px] rounded-tr-[24px] bg-ku-surface pb-ku-lg",
+  header:
+    "flex-row items-center justify-between border-b border-ku-border-subtle px-[20px] pb-[14px] pt-[18px]",
+  headerTitle: "font-ku-bold text-ku-body text-ku-text-strong",
+  closeBtn: "p-ku-xs",
+  scrollContent: "p-ku-md",
+  heroSection: "mb-ku-md items-center",
+  iconWrap:
+    "mb-ku-sm h-[56px] w-[56px] items-center justify-center rounded-[28px]",
+  iconWrapInflow: "bg-ku-surface-success",
+  iconWrapNeutral: "bg-ku-surface-muted",
+  amountText: "mb-ku-xs font-ku-bold text-[30px] leading-[38px]",
+  amountInflow: "text-ku-success",
+  amountOutflow: "text-ku-text-strong",
+  txTitle: "mb-[10px] font-ku-medium text-ku-control text-ku-text-secondary",
+  statusBadge:
+    "flex-row items-center gap-[5px] rounded-ku-pill px-[10px] py-ku-xs",
+  statusBadgeText: "font-ku-medium text-ku-label",
+  detailsCard:
+    "mb-ku-md rounded-[16px] border border-ku-border-subtle bg-ku-surface-muted px-ku-md py-ku-sm",
+  detailRow: "flex-row items-center justify-between py-[10px]",
+  detailRowLast: "",
+  detailLabel: "flex-1 font-ku-regular text-ku-meta text-ku-text-muted",
+  detailValue:
+    "flex-[1.5] text-right font-ku-medium text-ku-meta text-ku-text-strong",
+  monoText: "font-ku-regular text-[11px] text-ku-text-secondary",
+  sourceTag: "self-end rounded-[6px] bg-ku-surface-success px-ku-sm py-[2px]",
+  sourceTagText: "font-ku-medium text-[11px] text-ku-primary-deep",
+  actionButton:
+    "items-center justify-center rounded-[14px] bg-ku-primary px-[13px] py-[13px]",
+  actionButtonText: "font-ku-bold text-ku-control text-ku-on-primary",
+} as const;
+
+const modalCardShadow = {
+  elevation: 24,
+  shadowColor: colors.black,
+  shadowOffset: { width: 0, height: -4 },
+  shadowOpacity: 0.2,
+  shadowRadius: 12,
+} satisfies ViewStyle;
+
+const detailRowDividerStyle = {
+  borderBottomColor: colors.borderSubtle,
+  borderBottomWidth: StyleSheet.hairlineWidth,
+} as const;
+
+const detailRowLastStyle = {
+  borderBottomWidth: 0,
+} as const;
 
 export function TransactionDetailModal({
   transaction: tx,
@@ -114,23 +159,28 @@ export function TransactionDetailModal({
       transparent
       visible={visible}
     >
-      <View style={styles.modalOverlay}>
+      <View className={styles.modalOverlay}>
         <Pressable
           accessibilityLabel={m.closeButton}
           onPress={onClose}
           style={StyleSheet.absoluteFill}
           testID="transaction-detail-backdrop"
         />
-        <View style={styles.modalCard} testID="transaction-detail-modal">
-          {/* Header with Close */}
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>{m.transactionDetailTitle}</Text>
+        <View
+          className={styles.modalCard}
+          style={modalCardShadow}
+          testID="transaction-detail-modal"
+        >
+          <View className={styles.header}>
+            <Text className={styles.headerTitle}>
+              {m.transactionDetailTitle}
+            </Text>
             <TouchableOpacity
               accessibilityLabel={m.closeButton}
               accessibilityRole="button"
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               onPress={onClose}
-              style={styles.closeBtn}
+              className={styles.closeBtn}
               testID="transaction-detail-close-btn"
             >
               <X color={colors.textSecondary} size={20} />
@@ -138,85 +188,83 @@ export function TransactionDetailModal({
           </View>
 
           <ScrollView
-            contentContainerStyle={styles.scrollContent}
+            contentContainerClassName={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {/* Main Amount & Icon Hero */}
-            <View style={styles.heroSection}>
+            <View className={styles.heroSection}>
               <View
-                style={[
-                  styles.iconWrap,
-                  tx.isInflow ? styles.iconWrapInflow : styles.iconWrapNeutral,
-                ]}
+                className={`${styles.iconWrap} ${
+                  tx.isInflow ? styles.iconWrapInflow : styles.iconWrapNeutral
+                }`}
               >
                 {renderIcon()}
               </View>
 
               <Text
-                style={[
-                  styles.amountText,
-                  tx.isInflow ? styles.amountInflow : styles.amountOutflow,
-                ]}
+                className={`${styles.amountText} ${
+                  tx.isInflow ? styles.amountInflow : styles.amountOutflow
+                }`}
                 testID="tx-detail-amount"
               >
                 {formattedAmount}
               </Text>
 
-              <Text style={styles.txTitle} testID="tx-detail-title">
+              <Text className={styles.txTitle} testID="tx-detail-title">
                 {tx.title}
               </Text>
 
-              {/* Status Badge */}
               <View
-                style={[
-                  styles.statusBadge,
-                  { backgroundColor: statusBadge.bg },
-                ]}
+                className={styles.statusBadge}
+                style={{ backgroundColor: statusBadge.bg }}
                 testID="tx-detail-status-badge"
               >
                 {statusBadge.icon}
                 <Text
-                  style={[styles.statusBadgeText, { color: statusBadge.text }]}
+                  className={styles.statusBadgeText}
+                  style={{ color: statusBadge.text }}
                 >
                   {tx.statusLabel}
                 </Text>
               </View>
             </View>
 
-            {/* Detail Rows */}
-            <View style={styles.detailsCard}>
-              {/* Date & Time */}
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>{m.txDateLabel}</Text>
-                <Text style={styles.detailValue}>
+            <View className={styles.detailsCard}>
+              <View className={styles.detailRow} style={detailRowDividerStyle}>
+                <Text className={styles.detailLabel}>{m.txDateLabel}</Text>
+                <Text className={styles.detailValue}>
                   {tx.dateFormatted}, {tx.timeFormatted} น.
                 </Text>
               </View>
 
-              {/* Source API */}
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>{m.txSourceLabel}</Text>
-                <View style={styles.sourceTag} testID="tx-detail-source-tag">
-                  <Text style={styles.sourceTagText}>{tx.sourceApiLabel}</Text>
+              <View className={styles.detailRow} style={detailRowDividerStyle}>
+                <Text className={styles.detailLabel}>{m.txSourceLabel}</Text>
+                <View
+                  className={styles.sourceTag}
+                  testID="tx-detail-source-tag"
+                >
+                  <Text className={styles.sourceTagText}>
+                    {tx.sourceApiLabel}
+                  </Text>
                 </View>
               </View>
 
-              {/* Reference / Subtitle if available */}
               {tx.subtitle ? (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>รายละเอียด</Text>
-                  <Text style={styles.detailValue} numberOfLines={2}>
+                <View
+                  className={styles.detailRow}
+                  style={detailRowDividerStyle}
+                >
+                  <Text className={styles.detailLabel}>รายละเอียด</Text>
+                  <Text className={styles.detailValue} numberOfLines={2}>
                     {tx.subtitle}
                   </Text>
                 </View>
               ) : null}
 
-              {/* Transaction ID */}
-              <View style={[styles.detailRow, styles.detailRowLast]}>
-                <Text style={styles.detailLabel}>{m.txReferenceLabel}</Text>
+              <View className={styles.detailRow} style={detailRowLastStyle}>
+                <Text className={styles.detailLabel}>{m.txReferenceLabel}</Text>
                 <Text
                   numberOfLines={1}
-                  style={[styles.detailValue, styles.monoText]}
+                  className={`${styles.detailValue} ${styles.monoText}`}
                   testID="tx-detail-reference"
                 >
                   {tx.id}
@@ -224,15 +272,14 @@ export function TransactionDetailModal({
               </View>
             </View>
 
-            {/* Bottom Close Button */}
             <TouchableOpacity
               accessibilityLabel={m.closeButton}
               accessibilityRole="button"
               activeOpacity={0.8}
               onPress={onClose}
-              style={styles.actionButton}
+              className={styles.actionButton}
             >
-              <Text style={styles.actionButtonText}>{m.closeButton}</Text>
+              <Text className={styles.actionButtonText}>{m.closeButton}</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -240,154 +287,3 @@ export function TransactionDetailModal({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.55)",
-    justifyContent: "flex-end",
-  },
-  modalCard: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: "85%",
-    paddingBottom: 24,
-    elevation: 24,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderSubtle,
-  },
-  headerTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 16,
-    color: colors.textStrong,
-  },
-  closeBtn: {
-    padding: 4,
-  },
-  scrollContent: {
-    padding: 20,
-  },
-  heroSection: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  iconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  iconWrapInflow: {
-    backgroundColor: colors.surfaceSuccess,
-  },
-  iconWrapNeutral: {
-    backgroundColor: colors.surfaceMuted,
-  },
-  amountText: {
-    fontFamily: fontFamily.bold,
-    fontSize: 30,
-    lineHeight: 38,
-    marginBottom: 4,
-  },
-  amountInflow: {
-    color: colors.success,
-  },
-  amountOutflow: {
-    color: colors.textStrong,
-  },
-  txTitle: {
-    fontFamily: fontFamily.medium,
-    fontSize: 15,
-    color: colors.textSecondary,
-    marginBottom: 10,
-  },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-  },
-  statusBadgeText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 12,
-  },
-  detailsCard: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-  },
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderSubtle,
-  },
-  detailRowLast: {
-    borderBottomWidth: 0,
-  },
-  detailLabel: {
-    fontFamily: fontFamily.regular,
-    fontSize: 13,
-    color: colors.textMuted,
-    flex: 1,
-  },
-  detailValue: {
-    fontFamily: fontFamily.medium,
-    fontSize: 13,
-    color: colors.textStrong,
-    flex: 1.5,
-    textAlign: "right",
-  },
-  monoText: {
-    fontFamily: fontFamily.regular,
-    fontSize: 11,
-    color: colors.textSecondary,
-  },
-  sourceTag: {
-    backgroundColor: colors.surfaceSuccess,
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    alignSelf: "flex-end",
-  },
-  sourceTagText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 11,
-    color: colors.primaryDeep,
-  },
-  actionButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 14,
-    paddingVertical: 13,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionButtonText: {
-    fontFamily: fontFamily.bold,
-    fontSize: 15,
-    color: colors.white,
-  },
-});

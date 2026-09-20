@@ -255,7 +255,7 @@ export default function PublicProfileScreen() {
               leadingIcon={
                 <Icon
                   size={16}
-                  color={isSelected ? colors.white : colors.textSecondary}
+                  color={isSelected ? colors.onPrimary : colors.textSecondary}
                   strokeWidth={2}
                 />
               }
@@ -352,7 +352,7 @@ export default function PublicProfileScreen() {
             onPress={() => void profileQuery.refetch()}
             className="min-h-[48px] min-w-[140px] items-center justify-center rounded-ku-pill bg-ku-primary px-6 active:opacity-90"
           >
-            <Text className="font-ku-semibold text-ku-white">
+            <Text className="font-ku-semibold text-ku-on-primary">
               {messages.retry}
             </Text>
           </Pressable>

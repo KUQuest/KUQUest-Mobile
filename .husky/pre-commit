@@ -1,3 +1,6 @@
 bunx lint-staged
+bun run check-nativewind
+bun run check-routes
 bun run typecheck
+bun run lint
 bun run test

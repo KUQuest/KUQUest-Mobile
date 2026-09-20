@@ -17,6 +17,7 @@ colors:
   primary: "#006664"
   primary-dark: "#004D4B"
   primary-deep: "#004D4B"
+  on-primary: "#FFFFFF"
   hirer-primary: "#006664"
   hirer-primary-dark: "#004D4B"
   hirer-primary-subtle: "#E5F1F0"

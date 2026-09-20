@@ -65,7 +65,7 @@ export function FeaturePlaceholder({
             className="mt-[24px] min-h-[44px] justify-center self-start rounded-ku-pill bg-ku-primary px-[24px]"
             onPress={onAction}
           >
-            <Text className="font-ku-semibold text-ku-white">
+            <Text className="font-ku-semibold text-ku-on-primary">
               {actionLabel}
             </Text>
           </Pressable>

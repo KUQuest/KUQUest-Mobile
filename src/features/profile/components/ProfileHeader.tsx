@@ -148,7 +148,7 @@ export function ProfileHeader({
           className={styles.editButton}
           accessibilityLabel={editProfileLabel}
         >
-          <Pencil color={colors.white} size={16} strokeWidth={2.5} />
+          <Pencil color={colors.onPrimary} size={16} strokeWidth={2.5} />
           <Text className={styles.editButtonText}>{editProfileLabel}</Text>
         </Button>
       ) : null}

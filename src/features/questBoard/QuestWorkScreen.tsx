@@ -328,14 +328,14 @@ export default function QuestWorkScreen({
     return (
       <ScreenLayout
         edges={["top", "left", "right", "bottom"]}
-        className="flex-1 bg-slate-50"
+        className="flex-1 bg-ku-background"
       >
         <View
           className="flex-1 items-center justify-center px-6"
           testID="quest-work-loading"
         >
           <ActivityIndicator color={colors.primary} />
-          <Text className="mt-3 text-sm text-slate-500">
+          <Text className="mt-3 text-ku-label text-ku-text-subtle">
             {questMessages.loading}
           </Text>
         </View>
@@ -347,22 +347,22 @@ export default function QuestWorkScreen({
     return (
       <ScreenLayout
         edges={["top", "left", "right", "bottom"]}
-        className="flex-1 bg-slate-50"
+        className="flex-1 bg-ku-background"
       >
         <View className="flex-1 justify-center px-6" testID="quest-work-error">
-          <Text className="text-xl font-bold text-slate-950">
+          <Text className="font-ku-bold text-ku-title-small text-ku-text-strong">
             {messages.serverError}
           </Text>
-          <Text className="mt-2 text-sm leading-5 text-slate-600">
+          <Text className="mt-2 text-ku-body-small text-ku-text-secondary">
             {errorText ?? messages.missingRoute}
           </Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={messages.retry}
-            className="mt-5 rounded-xl bg-slate-950 px-4 py-3"
+            className="mt-5 rounded-xl bg-ku-primary px-4 py-3"
             onPress={() => void refreshSnapshot().catch(() => undefined)}
           >
-            <Text className="text-center font-semibold text-white">
+            <Text className="text-center font-ku-semibold text-ku-on-primary">
               {messages.retry}
             </Text>
           </Pressable>
@@ -374,7 +374,7 @@ export default function QuestWorkScreen({
   return (
     <ScreenLayout
       edges={["top", "left", "right", "bottom"]}
-      className="flex-1 bg-slate-50"
+      className="flex-1 bg-ku-background"
     >
       <ScrollView
         refreshControl={
@@ -392,18 +392,18 @@ export default function QuestWorkScreen({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={questMessages.back}
-              className="h-10 w-10 items-center justify-center rounded-full bg-white"
+              className="h-10 w-10 items-center justify-center rounded-full bg-ku-surface"
               onPress={handleBack}
             >
               <ChevronLeft color={colors.primaryDeep} size={23} />
             </Pressable>
-            <Text className="text-base font-bold text-slate-950">
+            <Text className="font-ku-bold text-ku-body text-ku-text-strong">
               {messages.title}
             </Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={messages.refresh}
-              className="h-10 w-10 items-center justify-center rounded-full bg-white"
+              className="h-10 w-10 items-center justify-center rounded-full bg-ku-surface"
               onPress={() => void refreshSnapshot().catch(() => undefined)}
             >
               <RefreshCw color={colors.primaryDeep} size={18} />

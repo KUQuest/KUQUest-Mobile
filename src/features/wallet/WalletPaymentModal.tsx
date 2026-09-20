@@ -1,16 +1,15 @@
 import React, { useState } from "react";
+import { Modal, Platform } from "react-native";
 import {
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
-  Modal,
-  Platform,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+} from "@/tw";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -189,25 +188,19 @@ export function WalletPaymentModal({
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={s.modalOverlay}
+        className={s.modalOverlay}
       >
         <View
-          style={[
-            s.modalCard,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.borderSubtle,
-            },
-          ]}
+          className={`${s.modalCard} border-ku-border-subtle bg-ku-surface`}
         >
           {/* Modal Header */}
-          <View style={s.modalHeader}>
+          <View className={s.modalHeader}>
             {step !== "amount" ? (
               <TouchableOpacity
                 accessibilityLabel={m.back}
                 accessibilityRole="button"
                 onPress={handleBackToAmount}
-                style={s.closeBtn}
+                className={s.closeBtn}
                 testID="quest-funding-top-up-back"
               >
                 <ArrowLeft
@@ -217,9 +210,9 @@ export function WalletPaymentModal({
                 />
               </TouchableOpacity>
             ) : (
-              <View style={{ width: 38 }} />
+              <View className="w-[38px]" />
             )}
-            <Text style={[s.modalTitle, { color: colors.textStrong }]}>
+            <Text className={`${s.modalTitle} text-ku-text-strong`}>
               {step === "amount"
                 ? m.topUpAmountTitle
                 : step === "confirmation"
@@ -230,7 +223,7 @@ export function WalletPaymentModal({
               accessibilityLabel={m.close}
               accessibilityRole="button"
               onPress={resetAndClose}
-              style={[s.closeBtn, { backgroundColor: colors.surfaceMuted }]}
+              className={`${s.closeBtn} bg-ku-surface-muted`}
               testID="quest-funding-top-up-close"
             >
               <X color={colors.textMuted} size={20} />
@@ -238,61 +231,29 @@ export function WalletPaymentModal({
           </View>
 
           <ScrollView
-            contentContainerStyle={{ paddingBottom: 16 }}
+            contentContainerClassName="pb-ku-md"
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
             {step === "amount" ? (
               /* Step 1: Enter Top-Up Amount */
               <View testID="quest-funding-top-up-flow">
-                <Text
-                  style={{
-                    color: colors.textSecondary,
-                    fontSize: 13,
-                    marginBottom: 14,
-                    lineHeight: 18,
-                  }}
-                >
+                <Text className="mb-[14px] text-[13px] leading-[18px] text-ku-text-secondary">
                   {m.topUpAmountDescription}
                 </Text>
 
-                <Text
-                  style={{
-                    color: colors.textSecondary,
-                    fontSize: 13,
-                    fontWeight: "600",
-                    marginBottom: 6,
-                  }}
-                >
+                <Text className="mb-[6px] text-[13px] font-semibold text-ku-text-secondary">
                   {m.enterAmount}
                 </Text>
 
-                <View
-                  style={{
-                    alignItems: "center",
-                    backgroundColor: colors.surfaceMuted,
-                    borderColor: colors.borderAccent,
-                    borderRadius: 14,
-                    borderWidth: 1,
-                    flexDirection: "row",
-                    height: 52,
-                    marginBottom: 6,
-                    paddingHorizontal: 14,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: colors.primary,
-                      fontSize: 20,
-                      fontWeight: "700",
-                      marginRight: 8,
-                    }}
-                  >
+                <View className="mb-[6px] h-[52px] flex-row items-center rounded-[14px] border border-ku-border-accent bg-ku-surface-muted px-[14px]">
+                  <Text className="mr-ku-sm text-[20px] font-bold text-ku-primary">
                     ฿
                   </Text>
                   <TextInput
                     accessibilityLabel={m.enterAmount}
                     autoFocus
+                    className="h-full flex-1 text-[20px] font-bold text-ku-text-strong"
                     keyboardType="numeric"
                     maxLength={7}
                     onChangeText={(val) =>
@@ -301,57 +262,36 @@ export function WalletPaymentModal({
                     placeholder="0"
                     placeholderTextColor={colors.textMuted}
                     returnKeyType="done"
-                    style={{
-                      color: colors.textStrong,
-                      flex: 1,
-                      fontSize: 20,
-                      fontWeight: "700",
-                      height: "100%",
-                    }}
                     testID="quest-funding-top-up-amount"
                     value={amountStr}
                   />
                 </View>
 
-                <Text
-                  style={[
-                    s.hintText,
-                    { color: colors.textMuted, marginBottom: 14 },
-                  ]}
-                >
+                <Text className={`${s.hintText} mb-[14px] text-ku-text-muted`}>
                   {m.minTopUpHint}
                 </Text>
 
                 {/* Quick Select Buttons */}
-                <View style={s.quickAmountRow}>
+                <View className={s.quickAmountRow}>
                   {QUICK_AMOUNTS.map((amt) => {
                     const selected = amountStr === String(amt);
                     return (
                       <TouchableOpacity
                         key={amt}
+                        className={`${s.quickAmountBtn} ${
+                          selected
+                            ? "border-ku-primary bg-ku-primary"
+                            : "border-ku-border-subtle bg-ku-surface-muted"
+                        }`}
                         onPress={() => handleSelectQuick(amt)}
-                        style={[
-                          s.quickAmountBtn,
-                          {
-                            backgroundColor: selected
-                              ? colors.primary
-                              : colors.surfaceMuted,
-                            borderColor: selected
-                              ? colors.primary
-                              : colors.borderSubtle,
-                          },
-                        ]}
                         testID={`quest-funding-top-up-quick-${amt}`}
                       >
                         <Text
-                          style={[
-                            s.quickAmountLabel,
-                            {
-                              color: selected
-                                ? colors.white
-                                : colors.textStrong,
-                            },
-                          ]}
+                          className={`${s.quickAmountLabel} ${
+                            selected
+                              ? "text-ku-on-primary"
+                              : "text-ku-text-strong"
+                          }`}
                         >
                           {formatSatang(amt * 100, locale)}
                         </Text>
@@ -361,13 +301,7 @@ export function WalletPaymentModal({
                 </View>
 
                 {error ? (
-                  <Text
-                    style={{
-                      color: colors.danger,
-                      fontSize: 12,
-                      marginBottom: 12,
-                    }}
-                  >
+                  <Text className="mb-[12px] text-[12px] text-ku-danger">
                     {error}
                   </Text>
                 ) : null}
@@ -377,38 +311,24 @@ export function WalletPaymentModal({
                   accessibilityLabel={m.continue}
                   accessibilityRole="button"
                   accessibilityState={{ disabled: !isAmountValid || loading }}
+                  className={`${s.actionButtonPrimary} mt-ku-xs h-[48px] rounded-[14px] ${
+                    isAmountValid
+                      ? "border-ku-primary bg-ku-primary"
+                      : "border-ku-border-muted bg-ku-surface-muted"
+                  }`}
                   disabled={!isAmountValid || loading}
                   onPress={handleContinue}
-                  style={[
-                    s.actionButtonPrimary,
-                    {
-                      backgroundColor: isAmountValid
-                        ? colors.primary
-                        : colors.surfaceMuted,
-                      borderColor: isAmountValid
-                        ? colors.primary
-                        : colors.borderMuted,
-                      height: 48,
-                      borderRadius: 14,
-                      marginTop: 4,
-                    },
-                  ]}
                   testID="quest-funding-top-up-continue"
                 >
                   {loading ? (
-                    <ActivityIndicator color={colors.white} size="small" />
+                    <ActivityIndicator color={colors.onPrimary} size="small" />
                   ) : (
                     <Text
-                      style={[
-                        s.actionButtonLabelPrimary,
-                        {
-                          color: isAmountValid
-                            ? colors.white
-                            : colors.textMuted,
-                          fontSize: 15,
-                          fontWeight: "700",
-                        },
-                      ]}
+                      className={`${s.actionButtonLabelPrimary} text-ku-control font-bold ${
+                        isAmountValid
+                          ? "text-ku-on-primary"
+                          : "text-ku-text-muted"
+                      }`}
                     >
                       {m.continue}
                     </Text>
@@ -417,141 +337,60 @@ export function WalletPaymentModal({
               </View>
             ) : step === "confirmation" && quote ? (
               <View testID="quest-funding-top-up-confirmation">
-                <Text
-                  style={{
-                    color: colors.textSecondary,
-                    fontSize: 13,
-                    lineHeight: 18,
-                    marginBottom: 16,
-                  }}
-                >
+                <Text className="mb-ku-md text-[13px] leading-[18px] text-ku-text-secondary">
                   {m.topUpAmountDescription}
                 </Text>
-                <View
-                  style={{
-                    backgroundColor: colors.surfaceMuted,
-                    borderColor: colors.borderSubtle,
-                    borderRadius: 14,
-                    borderWidth: 1,
-                    gap: 12,
-                    padding: 16,
-                  }}
-                >
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Text style={{ color: colors.textSecondary }}>
+                <View className="gap-[12px] rounded-[14px] border border-ku-border-subtle bg-ku-surface-muted p-ku-md">
+                  <View className="flex-row justify-between">
+                    <Text className="text-ku-text-secondary">
                       {m.topUpCredit}
                     </Text>
-                    <Text
-                      style={{ color: colors.textStrong, fontWeight: "700" }}
-                    >
+                    <Text className="font-bold text-ku-text-strong">
                       {formatSatang(quote.creditSatang, locale, "exact")}
                     </Text>
                   </View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Text style={{ color: colors.textSecondary }}>
-                      {m.topUpFee}
-                    </Text>
-                    <Text style={{ color: colors.textStrong }}>
+                  <View className="flex-row justify-between">
+                    <Text className="text-ku-text-secondary">{m.topUpFee}</Text>
+                    <Text className="text-ku-text-strong">
                       {formatSatang(quote.chargedFeeSatang, locale, "exact")}
                     </Text>
                   </View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Text style={{ color: colors.textSecondary }}>
-                      {m.topUpTax}
-                    </Text>
-                    <Text style={{ color: colors.textStrong }}>
+                  <View className="flex-row justify-between">
+                    <Text className="text-ku-text-secondary">{m.topUpTax}</Text>
+                    <Text className="text-ku-text-strong">
                       {formatSatang(quote.chargedTaxSatang, locale, "exact")}
                     </Text>
                   </View>
-                  <View
-                    style={{
-                      borderTopColor: colors.borderSubtle,
-                      borderTopWidth: 1,
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      paddingTop: 12,
-                    }}
-                  >
-                    <Text
-                      style={{ color: colors.textStrong, fontWeight: "700" }}
-                    >
+                  <View className="flex-row justify-between border-t border-ku-border-subtle pt-[12px]">
+                    <Text className="font-bold text-ku-text-strong">
                       {m.topUpPaymentTotal}
                     </Text>
-                    <Text
-                      style={{
-                        color: colors.textStrong,
-                        fontSize: 18,
-                        fontWeight: "800",
-                      }}
-                    >
+                    <Text className="text-[18px] font-extrabold text-ku-text-strong">
                       {formatSatang(quote.paymentTotalSatang, locale, "exact")}
                     </Text>
                   </View>
                 </View>
-                <Text
-                  style={{
-                    color: colors.textMuted,
-                    fontSize: 12,
-                    marginTop: 12,
-                  }}
-                >
+                <Text className="mt-[12px] text-[12px] text-ku-text-muted">
                   {m.topUpExpiresAt}: {formatExpiry(quote.expiresAt, locale)}
                 </Text>
                 {error ? (
-                  <Text
-                    style={{
-                      color: colors.danger,
-                      fontSize: 12,
-                      marginTop: 12,
-                    }}
-                  >
+                  <Text className="mt-[12px] text-[12px] text-ku-danger">
                     {error}
                   </Text>
                 ) : null}
                 <TouchableOpacity
                   accessibilityLabel={m.topUpConfirm}
                   accessibilityRole="button"
+                  className={`${s.actionButtonPrimary} mt-ku-md h-[48px] rounded-[14px] border-ku-primary bg-ku-primary`}
                   disabled={loading}
                   onPress={handleConfirm}
-                  style={[
-                    s.actionButtonPrimary,
-                    {
-                      backgroundColor: colors.primary,
-                      borderColor: colors.primary,
-                      borderRadius: 14,
-                      height: 48,
-                      marginTop: 16,
-                    },
-                  ]}
                   testID="quest-funding-top-up-confirm"
                 >
                   {loading ? (
-                    <ActivityIndicator color={colors.white} size="small" />
+                    <ActivityIndicator color={colors.onPrimary} size="small" />
                   ) : (
                     <Text
-                      style={[
-                        s.actionButtonLabelPrimary,
-                        {
-                          color: colors.white,
-                          fontSize: 15,
-                          fontWeight: "700",
-                        },
-                      ]}
+                      className={`${s.actionButtonLabelPrimary} text-ku-control font-bold text-ku-on-primary`}
                     >
                       {m.topUpConfirm}
                     </Text>
@@ -560,58 +399,33 @@ export function WalletPaymentModal({
               </View>
             ) : (
               <View
-                style={{ alignItems: "center" }}
+                className="items-center"
                 testID="quest-funding-top-up-promptpay"
               >
-                <Text
-                  style={{
-                    color: colors.textSecondary,
-                    fontSize: 13,
-                    textAlign: "center",
-                    marginBottom: 12,
-                  }}
-                >
+                <Text className="mb-[12px] text-center text-[13px] text-ku-text-secondary">
                   {m.topUpPromptPayDescription}
                 </Text>
 
                 {/* QR Code Container */}
                 <View
-                  style={[
-                    s.qrWrapper,
-                    {
-                      backgroundColor: colors.white,
-                      borderColor: colors.borderAccent,
-                      padding: 16,
-                      borderRadius: 20,
-                    },
-                  ]}
+                  className={`${s.qrWrapper} rounded-[20px] border-ku-border-accent bg-ku-white`}
                 >
                   {activeTopUp?.qrDataUrl ? (
                     <Image
-                      source={{ uri: activeTopUp.qrDataUrl }}
-                      style={s.qrImage}
+                      className={s.qrImage}
                       resizeMode="contain"
+                      source={{ uri: activeTopUp.qrDataUrl }}
                     />
                   ) : (
                     <View
-                      style={[
-                        s.qrImage,
-                        { alignItems: "center", justifyContent: "center" },
-                      ]}
+                      className={`${s.qrImage} items-center justify-center`}
                     >
                       <QrCode
                         color={colors.primary}
                         size={84}
                         strokeWidth={1.8}
                       />
-                      <Text
-                        style={{
-                          color: colors.textMuted,
-                          fontSize: 12,
-                          marginTop: 12,
-                          textAlign: "center",
-                        }}
-                      >
+                      <Text className="mt-[12px] text-center text-[12px] text-ku-text-muted">
                         {m.topUpPromptPayTitle} •{" "}
                         {formatSatang(
                           activeTopUp!.paymentTotalSatang,
@@ -624,18 +438,11 @@ export function WalletPaymentModal({
                 </View>
 
                 {/* Amount Line */}
-                <View style={{ alignItems: "center", marginVertical: 8 }}>
-                  <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                <View className="my-ku-sm items-center">
+                  <Text className="text-[13px] text-ku-text-secondary">
                     {m.topUpPaymentTotal}
                   </Text>
-                  <Text
-                    style={{
-                      color: colors.textStrong,
-                      fontSize: 24,
-                      fontWeight: "800",
-                      marginTop: 2,
-                    }}
-                  >
+                  <Text className="mt-[2px] text-[24px] font-extrabold text-ku-text-strong">
                     {formatSatang(
                       activeTopUp!.paymentTotalSatang,
                       locale,
@@ -647,18 +454,7 @@ export function WalletPaymentModal({
                 {/* Verified Badge */}
                 {paymentVerified ? (
                   <View
-                    style={{
-                      alignItems: "center",
-                      backgroundColor: colors.surfaceSuccess,
-                      borderColor: colors.borderSuccess,
-                      borderRadius: 16,
-                      borderWidth: 1,
-                      flexDirection: "row",
-                      gap: 12,
-                      marginVertical: 12,
-                      padding: 14,
-                      width: "100%",
-                    }}
+                    className="my-[12px] w-full flex-row items-center gap-[12px] rounded-[16px] border border-ku-border-success bg-ku-surface-success p-[14px]"
                     testID="quest-funding-verified-badge"
                   >
                     <ShieldCheck
@@ -666,23 +462,11 @@ export function WalletPaymentModal({
                       size={28}
                       strokeWidth={2.3}
                     />
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={{
-                          color: colors.textStrong,
-                          fontSize: 14,
-                          fontWeight: "700",
-                        }}
-                      >
+                    <View className="flex-1">
+                      <Text className="text-[14px] font-bold text-ku-text-strong">
                         {m.paymentVerified}
                       </Text>
-                      <Text
-                        style={{
-                          color: colors.textSecondary,
-                          fontSize: 12,
-                          marginTop: 2,
-                        }}
-                      >
+                      <Text className="mt-[2px] text-[12px] text-ku-text-secondary">
                         {m.paymentCredited(
                           formatSatang(
                             activeTopUp!.creditSatang,
@@ -696,63 +480,38 @@ export function WalletPaymentModal({
                 ) : null}
 
                 {statusMessage && !paymentVerified ? (
-                  <View
-                    style={{
-                      backgroundColor: colors.surfaceMuted,
-                      borderRadius: 10,
-                      padding: 10,
-                      marginBottom: 12,
-                      width: "100%",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: colors.textSecondary,
-                        fontSize: 12,
-                        textAlign: "center",
-                      }}
-                    >
+                  <View className="mb-[12px] w-full rounded-[10px] bg-ku-surface-muted p-[10px]">
+                    <Text className="text-center text-[12px] text-ku-text-secondary">
                       {statusMessage}
                     </Text>
                   </View>
                 ) : null}
 
                 {/* Actions Row */}
-                <View style={{ gap: 10, marginTop: 10, width: "100%" }}>
+                <View className="mt-[10px] w-full gap-[10px]">
                   {!paymentVerified ? (
                     <TouchableOpacity
                       accessibilityLabel={m.verifyPayment}
                       accessibilityRole="button"
+                      className={`${s.actionButtonPrimary} h-[48px] rounded-[14px] bg-ku-primary`}
                       disabled={checkingStatus}
                       onPress={handleVerifyPayment}
-                      style={[
-                        s.actionButtonPrimary,
-                        {
-                          backgroundColor: colors.primary,
-                          height: 48,
-                          borderRadius: 14,
-                        },
-                      ]}
                       testID="quest-funding-top-up-verify-payment"
                     >
                       {checkingStatus ? (
-                        <ActivityIndicator color={colors.white} size="small" />
+                        <ActivityIndicator
+                          color={colors.onPrimary}
+                          size="small"
+                        />
                       ) : (
                         <>
                           <CheckCircle2
-                            color={colors.white}
+                            color={colors.onPrimary}
                             size={18}
                             strokeWidth={2.2}
                           />
                           <Text
-                            style={[
-                              s.actionButtonLabelPrimary,
-                              {
-                                color: colors.white,
-                                fontSize: 14,
-                                fontWeight: "700",
-                              },
-                            ]}
+                            className={`${s.actionButtonLabelPrimary} text-ku-body-small font-bold text-ku-on-primary`}
                           >
                             {m.verifyPayment}
                           </Text>
@@ -764,28 +523,13 @@ export function WalletPaymentModal({
                     <TouchableOpacity
                       accessibilityLabel={m.simulateSuccess}
                       accessibilityRole="button"
+                      className={`${s.actionButtonSecondary} h-[48px] rounded-[14px] border-ku-border-subtle bg-ku-surface-muted`}
                       disabled={checkingStatus}
                       onPress={handleSimulatePayment}
-                      style={[
-                        s.actionButtonSecondary,
-                        {
-                          backgroundColor: colors.surfaceMuted,
-                          borderColor: colors.borderSubtle,
-                          height: 48,
-                          borderRadius: 14,
-                        },
-                      ]}
                       testID="quest-funding-top-up-simulate-dev"
                     >
                       <Text
-                        style={[
-                          s.actionButtonLabelSecondary,
-                          {
-                            color: colors.textStrong,
-                            fontSize: 14,
-                            fontWeight: "700",
-                          },
-                        ]}
+                        className={`${s.actionButtonLabelSecondary} text-ku-body-small font-bold text-ku-text-strong`}
                       >
                         {m.simulateSuccess}
                       </Text>
@@ -795,33 +539,20 @@ export function WalletPaymentModal({
                   <TouchableOpacity
                     accessibilityLabel={paymentVerified ? m.done : m.close}
                     accessibilityRole="button"
+                    className={`${s.actionButtonSecondary} h-[48px] rounded-[14px] ${
+                      paymentVerified
+                        ? "border-ku-primary bg-ku-primary"
+                        : "border-ku-border-subtle bg-ku-surface-muted"
+                    }`}
                     onPress={resetAndClose}
-                    style={[
-                      s.actionButtonSecondary,
-                      {
-                        backgroundColor: paymentVerified
-                          ? colors.primary
-                          : colors.surfaceMuted,
-                        borderColor: paymentVerified
-                          ? colors.primary
-                          : colors.borderSubtle,
-                        height: 48,
-                        borderRadius: 14,
-                      },
-                    ]}
                     testID="quest-funding-top-up-promptpay-close"
                   >
                     <Text
-                      style={[
-                        s.actionButtonLabelSecondary,
-                        {
-                          color: paymentVerified
-                            ? colors.white
-                            : colors.textStrong,
-                          fontSize: 14,
-                          fontWeight: "700",
-                        },
-                      ]}
+                      className={`${s.actionButtonLabelSecondary} text-ku-body-small font-bold ${
+                        paymentVerified
+                          ? "text-ku-on-primary"
+                          : "text-ku-text-strong"
+                      }`}
                     >
                       {paymentVerified ? m.done : m.close}
                     </Text>

@@ -153,6 +153,9 @@ bun run test
 
 # Lint source files with Expo ESLint
 bun run lint
+
+# Full static, lint, formatting, route, NativeWind, and Jest verification
+bun run verify
 ```
 
 ### Pre-commit Hooks
@@ -160,5 +163,7 @@ bun run lint
 The repository uses **Husky** + **lint-staged** + **Prettier**. Every `git commit` automatically:
 
 1. Runs Prettier formatting on all staged files.
-2. Runs `bun run typecheck`.
-3. Runs `bun run test`.
+2. Runs the NativeWind and route audits.
+3. Runs `bun run typecheck`.
+4. Runs `bun run lint` with the repository warning budget.
+5. Runs `bun run test`.

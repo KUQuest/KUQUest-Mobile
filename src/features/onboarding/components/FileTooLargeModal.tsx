@@ -46,7 +46,7 @@ export const FileTooLargeModal: React.FC<FileTooLargeModalProps> = ({
             onPress={onTryAgain}
           >
             <View className={styles.btnIcon}>
-              <RefreshCw size={18} color={colors.white} strokeWidth={2} />
+              <RefreshCw size={18} color={colors.onPrimary} strokeWidth={2} />
             </View>
             <Text className={styles.tryAgainText}>{msg.tryAgain}</Text>
           </Pressable>

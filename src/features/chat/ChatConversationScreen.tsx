@@ -200,7 +200,7 @@ export default function ChatConversationScreen({
             className="mt-[16px] min-h-[48px] justify-center rounded-ku-pill bg-ku-primary px-[20px]"
             onPress={() => router.replace("/chat")}
           >
-            <Text className="font-ku-semibold text-ku-body-small text-ku-white">
+            <Text className="font-ku-semibold text-ku-body-small text-ku-on-primary">
               {messages.backToChat}
             </Text>
           </Pressable>
@@ -611,7 +611,11 @@ export default function ChatConversationScreen({
                     className={styles.sendButton}
                     onPress={sendMessage}
                   >
-                    <Send color={colors.white} size={19} strokeWidth={2.3} />
+                    <Send
+                      color={colors.onPrimary}
+                      size={19}
+                      strokeWidth={2.3}
+                    />
                   </Pressable>
                 ) : (
                   <Pressable

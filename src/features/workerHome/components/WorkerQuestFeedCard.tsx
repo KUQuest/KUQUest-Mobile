@@ -57,10 +57,7 @@ export function WorkerQuestFeedCard({
       onPress();
       return;
     }
-    router.push({
-      pathname: "/quest/[id]",
-      params: { id: quest.id },
-    });
+    router.push({ pathname: "/quest/[id]", params: { id: quest.id } });
   };
 
   // Quest V2 board rewards are Baht; formatSatang requires integer Satang.
@@ -73,119 +70,84 @@ export function WorkerQuestFeedCard({
     <Pressable
       accessibilityLabel={`${quest.title}, ${messages.reward} ${rewardFormatted}`}
       accessibilityRole="button"
+      className="rounded-[18px] border border-ku-border-subtle bg-ku-surface p-ku-md"
       onPress={handlePress}
-      style={[
-        styles.feedCard,
-        {
-          backgroundColor: themeColors.surface,
-          borderColor: themeColors.borderSubtle,
-        },
-      ]}
       testID={`worker-feed-card-${quest.id}`}
     >
-      <View style={styles.feedCardTop}>
-        <View style={styles.feedCardIdentity}>
+      <View className={styles.feedCardTop}>
+        <View className={styles.feedCardIdentity}>
           {quest.tag?.name ? (
-            <View
-              style={[
-                styles.tagChip,
-                { backgroundColor: themeColors.surfaceMuted },
-              ]}
-            >
-              <Text
-                style={[styles.tagText, { color: themeColors.primaryDeep }]}
-              >
+            <View className={`${styles.tagChip} bg-ku-surface-muted`}>
+              <Text className={`${styles.tagText} text-ku-primary-dark`}>
                 {quest.tag.name}
               </Text>
             </View>
           ) : null}
           <Text
+            className={`${styles.feedCardTitle} text-ku-text-strong`}
             numberOfLines={2}
-            style={[styles.feedCardTitle, { color: themeColors.textStrong }]}
           >
             {quest.title}
           </Text>
-          <View style={styles.feedCardOwner}>
+          <View className={styles.feedCardOwner}>
             <UserRound size={13} color={themeColors.textSecondary} />
             <Text
+              className={`${styles.feedCardOwnerText} text-ku-text-secondary`}
               numberOfLines={1}
-              style={[
-                styles.feedCardOwnerText,
-                { color: themeColors.textSecondary },
-              ]}
             >
               {quest.hirerName}
             </Text>
           </View>
         </View>
-        <View style={styles.feedRewardBlock}>
-          <Text
-            style={[styles.feedRewardText, { color: themeColors.primaryDeep }]}
-          >
+        <View className={styles.feedRewardBlock}>
+          <Text className={`${styles.feedRewardText} text-ku-primary-dark`}>
             {rewardFormatted}
           </Text>
-          <Text
-            style={[
-              styles.feedRewardUnit,
-              { color: themeColors.textSecondary },
-            ]}
-          >
+          <Text className={`${styles.feedRewardUnit} text-ku-text-secondary`}>
             {messages.perPerson}
           </Text>
         </View>
       </View>
-
-      <View style={styles.feedMetaGrid}>
-        <View style={styles.feedMetaItem}>
+      <View className={styles.feedMetaGrid}>
+        <View className={styles.feedMetaItem}>
           <CalendarDays size={15} color={themeColors.primaryDeep} />
           <Text
+            className={`${styles.feedMetaText} text-ku-text-strong`}
             numberOfLines={1}
-            style={[styles.feedMetaText, { color: themeColors.textStrong }]}
           >
             {formatQuestDate(quest.startTime, locale)}
           </Text>
         </View>
-        <View style={styles.feedMetaItem}>
+        <View className={styles.feedMetaItem}>
           <Clock3 size={15} color={themeColors.primaryDeep} />
           <Text
+            className={`${styles.feedMetaText} text-ku-text-strong`}
             numberOfLines={1}
-            style={[styles.feedMetaText, { color: themeColors.textStrong }]}
           >
             {formatQuestTime(quest.startTime, locale)}
           </Text>
         </View>
-        <View style={styles.feedMetaItem}>
+        <View className={styles.feedMetaItem}>
           <MapPin size={15} color={themeColors.primaryDeep} />
           <Text
+            className={`${styles.feedMetaText} text-ku-text-strong`}
             numberOfLines={1}
-            style={[styles.feedMetaText, { color: themeColors.textStrong }]}
           >
             {location}
           </Text>
         </View>
-        <View style={styles.feedMetaItem}>
+        <View className={styles.feedMetaItem}>
           <Users size={15} color={themeColors.primaryDeep} />
           <Text
+            className={`${styles.feedMetaText} text-ku-text-strong`}
             numberOfLines={1}
-            style={[styles.feedMetaText, { color: themeColors.textStrong }]}
           >
             {`${quest.activeWorkerCount}/${quest.headcount}`}
           </Text>
         </View>
       </View>
-
-      <View
-        style={[
-          styles.feedCardFooter,
-          { borderTopColor: themeColors.borderSubtle },
-        ]}
-      >
-        <Text
-          style={[
-            styles.feedCardFooterText,
-            { color: themeColors.primaryDeep },
-          ]}
-        >
+      <View className={`${styles.feedCardFooter} border-ku-border-subtle`}>
+        <Text className={`${styles.feedCardFooterText} text-ku-primary-dark`}>
           {messages.viewDetails}
         </Text>
         <ChevronRight

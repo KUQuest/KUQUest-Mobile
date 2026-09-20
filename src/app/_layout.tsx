@@ -9,9 +9,10 @@ import { useColorScheme } from "react-native";
 import { useFonts } from "expo-font";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useLocaleStore } from "@/features/preferences/localeStore";
-import { QueryProvider } from "@/app/providers/QueryProvider";
+import { QueryProvider } from "@/providers/QueryProvider";
 import AuthMiddleware from "@/features/auth/AuthMiddleware";
 import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
+import { RoleAccentProvider } from "@/features/workspace/RoleAccentProvider";
 import { colors, darkColors } from "../theme/colors";
 
 import {
@@ -51,11 +52,13 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-      <QueryProvider>
-        <AuthMiddleware>
-          <Stack screenOptions={{ headerShown: false }} />
-        </AuthMiddleware>
-      </QueryProvider>
+      <RoleAccentProvider>
+        <QueryProvider>
+          <AuthMiddleware>
+            <Stack screenOptions={{ headerShown: false }} />
+          </AuthMiddleware>
+        </QueryProvider>
+      </RoleAccentProvider>
     </SafeAreaProvider>
   );
 }

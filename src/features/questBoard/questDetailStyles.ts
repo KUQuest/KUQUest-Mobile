@@ -58,11 +58,11 @@ const styles = {
   participationCard:
     "bg-ku-primary rounded-[18px] flex-row items-center justify-between mt-[16px] p-[16px]",
   participationCopy: "flex-1 min-w-0 mr-[12px]",
-  participationTitle: "text-ku-white font-ku-bold text-ku-body",
+  participationTitle: "text-ku-on-primary font-ku-bold text-ku-body",
   participationDescription:
-    "text-ku-white font-ku-regular text-ku-label mt-[4px]",
+    "text-ku-on-primary font-ku-regular text-ku-label mt-[4px]",
   participationAction:
-    "items-center bg-ku-white rounded-ku-pill flex-row gap-[6px] justify-center min-h-[44px] px-[12px]",
+    "items-center bg-ku-on-primary rounded-ku-pill flex-row gap-[6px] justify-center min-h-[44px] px-[12px]",
   participationActionDisabled: "opacity-60",
   participationActionText: "text-ku-primary font-ku-semibold text-ku-label",
   scheduleCard:
@@ -127,7 +127,7 @@ const styles = {
     "text-ku-text-secondary font-ku-regular text-ku-body-small mt-[6px] text-center",
   errorAction:
     "items-center bg-ku-danger rounded-ku-pill justify-center min-h-[48px] mt-[16px] px-[20px]",
-  errorActionText: "text-ku-white font-ku-semibold text-ku-body-small",
+  errorActionText: "text-ku-on-primary font-ku-semibold text-ku-body-small",
   prototypeCard:
     "bg-ku-surface border-ku-border-subtle rounded-[16px] border mt-[16px] p-[14px]",
   prototypeCardWarning: "bg-ku-surface-accent border-ku-border-accent",
@@ -144,21 +144,21 @@ const styles = {
     "items-center border-ku-primary rounded-ku-pill border min-h-[44px] justify-center px-[14px]",
   prototypeActionPrimary: "bg-ku-primary",
   prototypeActionText: "text-ku-primary font-ku-semibold text-ku-label",
-  prototypeActionTextPrimary: "text-ku-white",
+  prototypeActionTextPrimary: "text-ku-on-primary",
   prototypeActionDanger: "border-ku-danger-dark",
   prototypeActionTextDanger: "text-ku-danger-dark",
   reportCard:
     "bg-ku-surface-danger border-ku-border-danger rounded-[16px] mt-[16px] p-[14px]",
   reportHeader: "items-start flex-row gap-[10px]",
   reportIcon:
-    "items-center bg-ku-white rounded-ku-pill h-[36px] justify-center shrink-0 w-[36px]",
+    "items-center bg-ku-on-primary rounded-ku-pill h-[36px] justify-center shrink-0 w-[36px]",
   reportCopy: "flex-1 min-w-0",
   reportTitle: "text-ku-danger-dark font-ku-bold text-ku-body",
   reportDescription:
     "text-ku-text-secondary font-ku-regular text-ku-label mt-[4px]",
   reportAction:
     "items-center bg-ku-danger rounded-ku-pill justify-center min-h-[48px] mt-[14px] px-[16px]",
-  reportActionText: "text-ku-white font-ku-semibold text-ku-body-small",
+  reportActionText: "text-ku-on-primary font-ku-semibold text-ku-body-small",
   prototypeProgress:
     "bg-ku-border-accent rounded-ku-pill h-[6px] mt-[10px] overflow-hidden w-full",
   prototypeProgressFill: "bg-ku-primary h-full",
@@ -173,7 +173,7 @@ const styles = {
   primaryAction:
     "items-center bg-ku-primary rounded-ku-pill flex-[1.4] justify-center min-h-[52px] px-[12px]",
   primaryActionDisabled: "opacity-60",
-  primaryActionText: "text-ku-white font-ku-semibold text-ku-control",
+  primaryActionText: "text-ku-on-primary font-ku-semibold text-ku-control",
   leaveAction:
     "items-center border-ku-danger-dark rounded-ku-pill border flex-1 flex-row gap-[8px] justify-center min-h-[52px] px-[12px]",
   leaveActionDisabled: "opacity-60",
@@ -192,7 +192,7 @@ const styles = {
   cancelActionText: "text-ku-text-strong font-ku-semibold text-ku-body-small",
   confirmAction:
     "items-center bg-ku-primary rounded-ku-pill flex-[1.4] justify-center min-h-[50px]",
-  confirmActionText: "text-ku-white font-ku-semibold text-ku-body-small",
+  confirmActionText: "text-ku-on-primary font-ku-semibold text-ku-body-small",
   proofSheetBackdrop: "bg-ku-overlay flex-1 justify-end",
   proofSheet:
     "bg-ku-background rounded-tl-[24px] rounded-tr-[24px] max-h-[90%] p-[24px]",

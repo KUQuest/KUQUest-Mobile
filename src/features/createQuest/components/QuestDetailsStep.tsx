@@ -1,7 +1,9 @@
 import type { ComponentRef, Ref } from "react";
 import { Check, Tag } from "lucide-react-native";
-import type { Pressable as RNPressable } from "react-native";
-import type { TextInput as RNTextInput } from "react-native";
+import type {
+  Pressable as RNPressable,
+  TextInput as RNTextInput,
+} from "react-native";
 
 import { Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
@@ -106,7 +108,7 @@ export function QuestDetailsStep({
             )}
           >
             {proofRequired ? (
-              <Check color={colors.white} size={15} strokeWidth={3} />
+              <Check color={colors.onPrimary} size={15} strokeWidth={3} />
             ) : null}
           </View>
           <Text className={styles.proofToggleLabel}>

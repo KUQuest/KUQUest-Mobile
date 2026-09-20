@@ -17,7 +17,7 @@ const styles = {
   tag: "rounded-ku-pill bg-ku-surface-accent border-ku-border-accent border px-[10px] py-[4px]",
   tagText: "text-ku-primary-dark font-ku-semibold text-ku-label",
   editButton: "min-h-[48px] mt-[18px] w-full",
-  editButtonText: "text-ku-white font-ku-semibold text-ku-body-small",
+  editButtonText: "text-ku-on-primary font-ku-semibold text-ku-body-small",
   section:
     "self-stretch rounded-[16px] bg-ku-card border-ku-border-subtle border",
   statsCard:
@@ -112,7 +112,7 @@ const styles = {
     "border-ku-border rounded-ku-pill border min-h-[48px] justify-center px-[12px]",
   filterChipSelected: "bg-ku-primary border-ku-primary",
   filterChipText: "text-ku-text-secondary font-ku-semibold text-ku-meta",
-  filterChipTextSelected: "text-ku-white",
+  filterChipTextSelected: "text-ku-on-primary",
   profileListContent: "gap-[16px]",
   reviewCard:
     "bg-ku-surface-subtle border-ku-border-subtle rounded-[8px] border mt-[8px] p-[16px]",

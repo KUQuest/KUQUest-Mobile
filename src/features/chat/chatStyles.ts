@@ -31,7 +31,7 @@ const styles = {
   rowTime: "text-ku-text-muted font-ku-regular text-ku-caption",
   unreadBadge:
     "items-center bg-ku-primary rounded-ku-pill h-[22px] justify-center min-w-[22px] mt-[8px] px-[5px]",
-  unreadText: "text-ku-white font-ku-bold text-ku-caption",
+  unreadText: "text-ku-on-primary font-ku-bold text-ku-caption",
   emptyState: "items-center justify-center px-[24px] py-[64px]",
   emptyIcon:
     "items-center bg-ku-surface-accent rounded-ku-pill h-[68px] justify-center mb-[16px] w-[68px]",
@@ -45,7 +45,7 @@ const styles = {
     "text-ku-danger-dark font-ku-semibold text-ku-body-small text-center",
   loadErrorAction:
     "items-center bg-ku-primary rounded-ku-pill justify-center min-h-[48px] mt-[8px] px-[24px]",
-  loadErrorActionText: "text-ku-white font-ku-semibold text-ku-body-small",
+  loadErrorActionText: "text-ku-on-primary font-ku-semibold text-ku-body-small",
   detailHeader: "bg-ku-surface border-b-ku-border-subtle border-b",
   brandRow:
     "items-center flex-row justify-start min-h-[48px] px-[16px] pt-[4px]",
@@ -149,9 +149,9 @@ const styles = {
     "relative w-[64px] h-[64px] rounded-[10px] overflow-hidden border border-ku-border-accent bg-ku-surface-muted items-center justify-center",
   pendingAttachmentImage: "w-full h-full",
   pendingAttachmentRemove:
-    "absolute top-[2px] right-[2px] bg-black/60 rounded-full w-[20px] h-[20px] items-center justify-center",
+    "absolute top-[2px] right-[2px] bg-ku-overlay rounded-full w-[20px] h-[20px] items-center justify-center",
   pendingAttachmentUploading:
-    "absolute inset-0 bg-black/40 items-center justify-center",
+    "absolute inset-0 bg-ku-overlay items-center justify-center",
 } as const;
 
 export default styles;

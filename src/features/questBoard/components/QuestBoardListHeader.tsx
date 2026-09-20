@@ -104,7 +104,7 @@ export function QuestBoardListHeader({
           testID="open-quest-filters"
         >
           <SlidersHorizontal
-            color={hasActiveFilters ? colors.white : colors.textStrong}
+            color={hasActiveFilters ? colors.onPrimary : colors.textStrong}
             size={22}
             strokeWidth={2.3}
           />

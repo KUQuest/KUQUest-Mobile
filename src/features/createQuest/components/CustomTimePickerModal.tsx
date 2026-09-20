@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { Modal } from "react-native";
 import { Check, X } from "lucide-react-native";
 
-import { colors } from "@/theme/colors";
+import { Pressable, ScrollView, Text, View } from "@/tw";
 import { Chip } from "@/components/ui/Chip";
+import { colors } from "@/theme/colors";
 import { cn } from "@/tw/cn";
 import styles from "../createQuestStyles";
 import { getNearestQuarterHour } from "../createQuestModel";
@@ -269,7 +270,7 @@ export default function CustomTimePickerModal({
                     testID={`time-preset-${preset.time}`}
                     textClassName={
                       isSelected
-                        ? "font-ku-bold text-white"
+                        ? "font-ku-bold text-ku-on-primary"
                         : "font-ku-semibold text-ku-body-small text-ku-primary"
                     }
                     tone="accent"
@@ -407,7 +408,7 @@ export default function CustomTimePickerModal({
               testID="custom-time-picker-confirm"
             >
               <View className="flex-row items-center gap-[6px]">
-                <Check color={colors.white} size={18} strokeWidth={2.5} />
+                <Check color={colors.onPrimary} size={18} strokeWidth={2.5} />
                 <Text className={styles.timePickerConfirmText}>
                   {messages.confirmTime} ({formattedTime})
                 </Text>

@@ -7,7 +7,7 @@ const styles = {
   errorState: "items-center p-[24px]",
   retryButton:
     "min-h-[48px] min-w-[140px] items-center justify-center rounded-ku-pill bg-ku-primary px-[24px]",
-  retryButtonText: "text-ku-white font-ku-semibold",
+  retryButtonText: "text-ku-on-primary font-ku-semibold",
 } as const;
 
 export default styles;

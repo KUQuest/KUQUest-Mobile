@@ -102,7 +102,7 @@ export default function QuestDetailScreen(props: QuestDetailScreenProps) {
             className={styles.primaryAction}
             testID="quest-edit-post-button"
           >
-            <Pencil color={colors.white} size={19} strokeWidth={2.2} />
+            <Pencil color={colors.onPrimary} size={19} strokeWidth={2.2} />
             <Text className={styles.primaryActionText}>
               {messages.editPost}
             </Text>

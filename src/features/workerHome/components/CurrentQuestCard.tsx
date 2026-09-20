@@ -64,7 +64,6 @@ export function CurrentQuestCard({
   const themeColors = getThemeColors(colorScheme);
   const { locale } = useLocale();
   const messages = workerHomeMessages[locale];
-
   const questState = state ?? assignment.questState;
   const questTitle = title ?? messages.workTitle;
   const isAssigned =
@@ -82,12 +81,12 @@ export function CurrentQuestCard({
   const canSubmit =
     isInProgress && !submissionPending && submitEnabled !== false;
   const stateLabel = getQuestStateLabel(questState, messages);
-  const stateColor =
+  const stateClasses =
     questState === "QUEST_CANCELLED" || questState === "QUEST_FAILED"
-      ? themeColors.danger
+      ? "border-ku-danger bg-ku-surface-danger text-ku-danger"
       : questState === "QUEST_COMPLETED"
-        ? themeColors.success
-        : themeColors.primaryDeep;
+        ? "border-ku-success bg-ku-surface-success text-ku-success"
+        : "border-ku-primary-dark bg-ku-surface-accent text-ku-primary-dark";
   const submitHint = submissionPending
     ? messages.submissionPending
     : isTerminal
@@ -95,7 +94,6 @@ export function CurrentQuestCard({
       : !isInProgress
         ? messages.submitLockedUntilStart
         : undefined;
-
   const handlePress = () => {
     if (onPress) {
       onPress();
@@ -106,216 +104,123 @@ export function CurrentQuestCard({
       params: { id: assignment.questId },
     });
   };
-
+  const timelineDot = (complete: boolean, tone = "primary") =>
+    complete
+      ? tone === "danger"
+        ? "border-ku-danger bg-ku-danger"
+        : tone === "success"
+          ? "border-ku-success bg-ku-success"
+          : "border-ku-primary-dark bg-ku-primary-dark"
+      : "border-ku-border-subtle bg-transparent";
   return (
     <View
-      style={[
-        styles.currentQuestCard,
-        {
-          backgroundColor: themeColors.surface,
-          borderColor: themeColors.primaryDeep,
-        },
-      ]}
+      className={`${styles.currentQuestCard} border-ku-primary-dark bg-ku-surface`}
     >
       <Pressable
         accessibilityHint="Opens current quest work screen"
         accessibilityLabel={`${messages.currentQuest}: ${questTitle}`}
         accessibilityRole="button"
+        className="gap-[10px]"
         onPress={handlePress}
-        style={{ gap: 10 }}
         testID="current-quest-card"
       >
-        <View style={styles.currentQuestTop}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <View
-              style={[
-                styles.roleBadgeDot,
-                { backgroundColor: themeColors.primaryDeep },
-              ]}
-            />
+        <View className={styles.currentQuestTop}>
+          <View className="flex-row items-center gap-[6px]">
+            <View className={`${styles.roleBadgeDot} bg-ku-primary-dark`} />
             <Text
-              style={[
-                styles.currentQuestLabel,
-                { color: themeColors.primaryDeep },
-              ]}
+              className={`${styles.currentQuestLabel} text-ku-primary-dark`}
             >
               {messages.currentQuest}
             </Text>
           </View>
           <View
-            style={{
-              alignItems: "center",
-              backgroundColor:
-                questState === "QUEST_CANCELLED" ||
-                questState === "QUEST_FAILED"
-                  ? themeColors.surfaceDanger
-                  : themeColors.surfaceAccent,
-              borderColor: stateColor,
-              borderRadius: 999,
-              borderWidth: 1,
-              flexDirection: "row",
-              gap: 5,
-              paddingHorizontal: 8,
-              paddingVertical: 4,
-            }}
+            className={`flex-row items-center gap-[5px] rounded-ku-pill border px-ku-sm py-[4px] ${stateClasses}`}
           >
-            <View
-              style={{
-                backgroundColor: stateColor,
-                borderRadius: 4,
-                height: 8,
-                width: 8,
-              }}
-            />
-            <Text
-              style={{
-                color: stateColor,
-                fontFamily: styles.currentQuestLabel.fontFamily,
-                fontSize: 11,
-                lineHeight: 15,
-              }}
-            >
+            <View className="h-[8px] w-[8px] rounded-[4px] bg-current" />
+            <Text className="font-ku-semibold text-ku-caption leading-[15px]">
               {stateLabel}
             </Text>
           </View>
         </View>
-
-        <View style={styles.currentQuestBody}>
-          <View style={styles.currentQuestLeft}>
+        <View className={styles.currentQuestBody}>
+          <View className={styles.currentQuestLeft}>
             <Text
+              className={`${styles.cardTitle} text-ku-text-strong`}
               numberOfLines={2}
-              style={[styles.cardTitle, { color: themeColors.textStrong }]}
             >
               {questTitle}
             </Text>
-
-            <View style={styles.hirerRow}>
-              <View
-                style={[
-                  styles.hirerAvatar,
-                  { backgroundColor: themeColors.surfaceMuted },
-                ]}
-              >
-                <UserRound size={18} color={themeColors.primaryDeep} />
+            <View className={styles.hirerRow}>
+              <View className={`${styles.hirerAvatar} bg-ku-surface-muted`}>
+                <UserRound color={themeColors.primaryDeep} size={18} />
               </View>
               <View>
                 <Text
+                  className={`${styles.hirerName} text-ku-text-strong`}
                   numberOfLines={1}
-                  style={[styles.hirerName, { color: themeColors.textStrong }]}
                 >
                   {hirerName}
                 </Text>
               </View>
             </View>
           </View>
-
           <View
-            style={[
-              styles.currentQuestRight,
-              { borderColor: themeColors.borderSubtle },
-            ]}
+            className={`${styles.currentQuestRight} border-ku-border-subtle`}
           >
-            <Text
-              style={[
-                styles.timelineTitle,
-                { color: themeColors.textSecondary },
-              ]}
-            >
+            <Text className={`${styles.timelineTitle} text-ku-text-secondary`}>
               {messages.questState}
             </Text>
-
-            <View style={styles.timelineStepRow}>
+            <View className={styles.timelineStepRow}>
               <View
-                style={[
-                  styles.timelineDot,
-                  isAssigned
-                    ? {
-                        backgroundColor: themeColors.primaryDeep,
-                        borderColor: themeColors.primaryDeep,
-                      }
-                    : {
-                        backgroundColor: "transparent",
-                        borderColor: themeColors.borderSubtle,
-                      },
-                ]}
+                className={`${styles.timelineDot} ${timelineDot(isAssigned)}`}
               />
               <Text
-                style={[
-                  styles.timelineStepText,
-                  {
-                    color: isAssigned
-                      ? themeColors.textStrong
-                      : themeColors.textSecondary,
-                    fontWeight: isAssigned ? "600" : "400",
-                  },
-                ]}
+                className={`${styles.timelineStepText} ${
+                  isAssigned
+                    ? "font-ku-semibold text-ku-text-strong"
+                    : "text-ku-text-secondary"
+                }`}
               >
                 {messages.stageAssigned}
               </Text>
             </View>
-
-            <View style={styles.timelineStepRow}>
+            <View className={styles.timelineStepRow}>
               <View
-                style={[
-                  styles.timelineDot,
+                className={`${styles.timelineDot} ${timelineDot(
                   isInProgress || isReviewDone
-                    ? {
-                        backgroundColor: themeColors.primaryDeep,
-                        borderColor: themeColors.primaryDeep,
-                      }
-                    : {
-                        backgroundColor: "transparent",
-                        borderColor: themeColors.borderSubtle,
-                      },
-                ]}
+                )}`}
               />
               <Text
-                style={[
-                  styles.timelineStepText,
-                  {
-                    color:
-                      isInProgress || isReviewDone
-                        ? themeColors.textStrong
-                        : themeColors.textSecondary,
-                    fontWeight: isInProgress || isReviewDone ? "600" : "400",
-                  },
-                ]}
+                className={`${styles.timelineStepText} ${
+                  isInProgress || isReviewDone
+                    ? "font-ku-semibold text-ku-text-strong"
+                    : "text-ku-text-secondary"
+                }`}
               >
                 {messages.stageInProgress}
               </Text>
             </View>
-
-            <View style={styles.timelineStepRow}>
+            <View className={styles.timelineStepRow}>
               <View
-                style={[
-                  styles.timelineDot,
-                  isReviewDone
-                    ? {
-                        backgroundColor: isTerminal
-                          ? stateColor
-                          : themeColors.success,
-                        borderColor: isTerminal
-                          ? stateColor
-                          : themeColors.success,
-                      }
-                    : {
-                        backgroundColor: "transparent",
-                        borderColor: themeColors.borderSubtle,
-                      },
-                ]}
+                className={`${styles.timelineDot} ${timelineDot(
+                  isReviewDone,
+                  isTerminal
+                    ? questState === "QUEST_COMPLETED"
+                      ? "success"
+                      : "danger"
+                    : "success"
+                )}`}
               />
               <Text
-                style={[
-                  styles.timelineStepText,
-                  {
-                    color: isReviewDone
-                      ? isTerminal
-                        ? stateColor
-                        : themeColors.success
-                      : themeColors.textSecondary,
-                    fontWeight: isReviewDone ? "600" : "400",
-                  },
-                ]}
+                className={`${styles.timelineStepText} ${
+                  isReviewDone
+                    ? isTerminal
+                      ? questState === "QUEST_COMPLETED"
+                        ? "text-ku-success"
+                        : "text-ku-danger"
+                      : "text-ku-success"
+                    : "text-ku-text-secondary"
+                } ${isReviewDone ? "font-ku-semibold" : ""}`}
               >
                 {messages.stageReview}
               </Text>
@@ -323,35 +228,12 @@ export function CurrentQuestCard({
           </View>
         </View>
       </Pressable>
-
-      <View
-        style={{
-          borderColor: themeColors.borderSubtle,
-          borderTopWidth: 1,
-          marginTop: 14,
-          paddingTop: 14,
-        }}
-      >
-        <View
-          style={{
-            alignItems: "center",
-            flexDirection: "row",
-            gap: 10,
-            justifyContent: "space-between",
-          }}
-        >
-          <View style={{ flex: 1, gap: 3 }}>
-            <View
-              style={{ alignItems: "center", flexDirection: "row", gap: 6 }}
-            >
+      <View className="mt-[14px] border-t border-ku-border-subtle pt-[14px]">
+        <View className="flex-row items-center justify-between gap-[10px]">
+          <View className="flex-1 gap-[3px]">
+            <View className="flex-row items-center gap-[6px]">
               <BriefcaseBusiness color={themeColors.primaryDeep} size={15} />
-              <Text
-                style={{
-                  color: themeColors.textStrong,
-                  fontFamily: styles.currentQuestLabel.fontFamily,
-                  fontSize: 12,
-                }}
-              >
+              <Text className="font-ku-semibold text-ku-label text-ku-text-strong">
                 {proofRequired === undefined
                   ? messages.submitWork
                   : proofRequired
@@ -360,55 +242,33 @@ export function CurrentQuestCard({
               </Text>
             </View>
             {submitHint ? (
-              <Text
-                style={{
-                  color: themeColors.textSecondary,
-                  fontSize: 11,
-                  lineHeight: 15,
-                }}
-              >
+              <Text className="text-[11px] leading-[15px] text-ku-text-secondary">
                 {submitHint}
               </Text>
             ) : null}
           </View>
-
           <Pressable
             accessibilityLabel={messages.submitWork}
             accessibilityRole="button"
             accessibilityState={{ disabled: !canSubmit }}
+            className={`min-h-[44px] flex-row items-center justify-center gap-[6px] rounded-[10px] border px-[13px] ${
+              canSubmit
+                ? "border-ku-primary-dark bg-ku-primary-dark"
+                : "border-ku-border-subtle bg-ku-surface-muted opacity-80"
+            }`}
             disabled={!canSubmit}
             onPress={onSubmit}
-            style={{
-              alignItems: "center",
-              backgroundColor: canSubmit
-                ? themeColors.primaryDeep
-                : themeColors.surfaceMuted,
-              borderColor: canSubmit
-                ? themeColors.primaryDeep
-                : themeColors.borderSubtle,
-              borderRadius: 10,
-              borderWidth: 1,
-              flexDirection: "row",
-              gap: 6,
-              minHeight: 44,
-              opacity: canSubmit ? 1 : 0.8,
-              paddingHorizontal: 13,
-            }}
             testID="current-quest-submit-button"
           >
             {canSubmit ? (
-              <Upload color={themeColors.white} size={16} />
+              <Upload color={themeColors.onPrimary} size={16} />
             ) : (
               <LockKeyhole color={themeColors.textSecondary} size={16} />
             )}
             <Text
-              style={{
-                color: canSubmit
-                  ? themeColors.white
-                  : themeColors.textSecondary,
-                fontFamily: styles.currentQuestLabel.fontFamily,
-                fontSize: 13,
-              }}
+              className={`font-ku-semibold text-[13px] ${
+                canSubmit ? "text-ku-on-primary" : "text-ku-text-secondary"
+              }`}
             >
               {messages.submitWork}
             </Text>

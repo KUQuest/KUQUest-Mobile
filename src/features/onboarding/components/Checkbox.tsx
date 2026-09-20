@@ -30,7 +30,7 @@ export function Checkbox({ label, checked, onChange, error }: CheckboxProps) {
           )}
         >
           {checked && (
-            <Check color={colors.white} size={14} strokeWidth={2.5} />
+            <Check color={colors.onPrimary} size={14} strokeWidth={2.5} />
           )}
         </View>
         <Text className={styles.label}>{label}</Text>

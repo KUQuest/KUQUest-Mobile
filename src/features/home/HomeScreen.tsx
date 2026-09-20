@@ -160,62 +160,43 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         testID="hirer-home-scroll"
       >
-        <View style={styles.screenContent}>
-          <View style={styles.screenHeader}>
+        <View className={styles.screenContent}>
+          <View className={styles.screenHeader}>
             <Text
               accessibilityRole="header"
-              style={[styles.screenTitle, { color: themeColors.textStrong }]}
+              className={`${styles.screenTitle} text-ku-text-strong`}
               testID="hirer-home-title"
             >
               {messages.title}
             </Text>
-            <Text
-              style={[
-                styles.screenSubtitle,
-                { color: themeColors.textSecondary },
-              ]}
-            >
+            <Text className={`${styles.screenSubtitle} text-ku-text-secondary`}>
               {messages.subtitle}
             </Text>
           </View>
 
           {displayQuests.length > 0 ? (
             <>
-              <View style={styles.sectionHeaderRow}>
-                <Text
-                  style={[
-                    styles.sectionTitle,
-                    { color: themeColors.textStrong },
-                  ]}
-                >
+              <View className={styles.sectionHeaderRow}>
+                <Text className={`${styles.sectionTitle} text-ku-text-strong`}>
                   {messages.activeQuestTitle}
                 </Text>
                 {displayQuests.length > 1 ? (
                   <Chip
+                    className={styles.sectionCounterBadge}
                     label={messages.activeQuestCounter(
                       activeCardIndex + 1,
                       displayQuests.length
                     )}
-                    style={[
-                      styles.sectionCounterBadge,
-                      {
-                        backgroundColor: themeColors.surfaceAccent,
-                        borderColor: themeColors.borderAccent,
-                      },
-                    ]}
+                    textClassName={`${styles.sectionCounterText} text-ku-primary`}
                     testID="hirer-quest-counter"
-                    textStyle={[
-                      styles.sectionCounterText,
-                      { color: themeColors.primary },
-                    ]}
                     tone="accent"
                   />
                 ) : null}
               </View>
 
-              <View style={styles.carouselContainer}>
+              <View className={styles.carouselContainer}>
                 <ScrollView
-                  contentContainerStyle={{ gap: 12 }}
+                  contentContainerClassName="gap-[12px]"
                   decelerationRate="fast"
                   horizontal
                   onMomentumScrollEnd={(event) => {
@@ -263,24 +244,17 @@ export default function HomeScreen() {
                       max: displayQuests.length,
                       now: activeCardIndex + 1,
                     }}
-                    style={styles.carouselPagination}
+                    className={styles.carouselPagination}
                     testID="hirer-quest-carousel-dots"
                   >
                     {displayQuests.map((item, index) => (
                       <View
-                        key={item.id}
-                        style={[
-                          styles.paginationDot,
+                        className={`${styles.paginationDot} ${
                           index === activeCardIndex
-                            ? [
-                                styles.paginationDotActive,
-                                { backgroundColor: themeColors.primary },
-                              ]
-                            : [
-                                styles.paginationDotInactive,
-                                { backgroundColor: themeColors.borderSubtle },
-                              ],
-                        ]}
+                            ? `${styles.paginationDotActive} bg-ku-primary`
+                            : `${styles.paginationDotInactive} bg-ku-border-subtle`
+                        }`}
+                        key={item.id}
                         testID={`hirer-carousel-dot-${index}`}
                       />
                     ))}
@@ -290,70 +264,46 @@ export default function HomeScreen() {
             </>
           ) : (
             <View
-              style={[
-                styles.emptyState,
-                {
-                  backgroundColor: themeColors.surfaceMuted,
-                  borderColor: themeColors.borderSubtle,
-                },
-              ]}
+              className={`${styles.emptyState} border-ku-border-subtle bg-ku-surface-muted`}
               testID="hirer-home-empty"
             >
-              <Text
-                style={[styles.emptyTitle, { color: themeColors.textStrong }]}
-              >
+              <Text className={`${styles.emptyTitle} text-ku-text-strong`}>
                 {messages.emptyTitle}
               </Text>
               <Text
-                style={[
-                  styles.emptyDescription,
-                  { color: themeColors.textSecondary },
-                ]}
+                className={`${styles.emptyDescription} text-ku-text-secondary`}
               >
                 {messages.emptyDescription}
               </Text>
             </View>
           )}
 
-          {/* Quick Access Section */}
           <View
-            style={styles.quickAccessSection}
+            className={styles.quickAccessSection}
             testID="hirer-home-quick-access"
           >
             <Text
               accessibilityRole="header"
-              style={[
-                styles.quickAccessTitle,
-                { color: themeColors.textStrong },
-              ]}
+              className={`${styles.quickAccessTitle} text-ku-text-strong`}
             >
               {messages.quickAccessTitle}
             </Text>
 
-            <View style={styles.quickAccessGrid}>
+            <View className={styles.quickAccessGrid}>
               <Pressable
                 accessibilityLabel={`${messages.quickActiveTitle}: ${messages.quickActiveDesc}`}
                 accessibilityRole="button"
+                className={`${styles.quickAccessCard} border-ku-border-subtle bg-ku-surface`}
                 onPress={() =>
                   router.push({
                     pathname: "/my-quests",
                     params: { role: "hirer", tab: "active" },
                   })
                 }
-                style={[
-                  styles.quickAccessCard,
-                  {
-                    backgroundColor: themeColors.surface,
-                    borderColor: themeColors.borderSubtle,
-                  },
-                ]}
                 testID="hirer-quick-access-active"
               >
                 <View
-                  style={[
-                    styles.quickAccessIconBox,
-                    { backgroundColor: themeColors.surfaceAccent },
-                  ]}
+                  className={`${styles.quickAccessIconBox} bg-ku-surface-accent`}
                 >
                   <Clock3
                     color={themeColors.primary}
@@ -361,22 +311,16 @@ export default function HomeScreen() {
                     strokeWidth={2.2}
                   />
                 </View>
-                <View style={styles.quickAccessCopy}>
+                <View className={styles.quickAccessCopy}>
                   <Text
+                    className={`${styles.quickAccessItemTitle} text-ku-text-strong`}
                     numberOfLines={1}
-                    style={[
-                      styles.quickAccessItemTitle,
-                      { color: themeColors.textStrong },
-                    ]}
                   >
                     {messages.quickActiveTitle}
                   </Text>
                   <Text
+                    className={`${styles.quickAccessItemDesc} text-ku-text-secondary`}
                     numberOfLines={1}
-                    style={[
-                      styles.quickAccessItemDesc,
-                      { color: themeColors.textSecondary },
-                    ]}
                   >
                     {messages.quickActiveDesc}
                   </Text>
@@ -386,26 +330,17 @@ export default function HomeScreen() {
               <Pressable
                 accessibilityLabel={`${messages.quickDraftTitle}: ${messages.quickDraftDesc}`}
                 accessibilityRole="button"
+                className={`${styles.quickAccessCard} border-ku-border-subtle bg-ku-surface`}
                 onPress={() =>
                   router.push({
                     pathname: "/my-quests",
                     params: { role: "hirer", tab: "draft" },
                   })
                 }
-                style={[
-                  styles.quickAccessCard,
-                  {
-                    backgroundColor: themeColors.surface,
-                    borderColor: themeColors.borderSubtle,
-                  },
-                ]}
                 testID="hirer-quick-access-draft"
               >
                 <View
-                  style={[
-                    styles.quickAccessIconBox,
-                    { backgroundColor: themeColors.surfaceAccent },
-                  ]}
+                  className={`${styles.quickAccessIconBox} bg-ku-surface-accent`}
                 >
                   <FileText
                     color={themeColors.primary}
@@ -413,22 +348,16 @@ export default function HomeScreen() {
                     strokeWidth={2.2}
                   />
                 </View>
-                <View style={styles.quickAccessCopy}>
+                <View className={styles.quickAccessCopy}>
                   <Text
+                    className={`${styles.quickAccessItemTitle} text-ku-text-strong`}
                     numberOfLines={1}
-                    style={[
-                      styles.quickAccessItemTitle,
-                      { color: themeColors.textStrong },
-                    ]}
                   >
                     {messages.quickDraftTitle}
                   </Text>
                   <Text
+                    className={`${styles.quickAccessItemDesc} text-ku-text-secondary`}
                     numberOfLines={1}
-                    style={[
-                      styles.quickAccessItemDesc,
-                      { color: themeColors.textSecondary },
-                    ]}
                   >
                     {messages.quickDraftDesc}
                   </Text>
@@ -438,26 +367,17 @@ export default function HomeScreen() {
               <Pressable
                 accessibilityLabel={`${messages.quickHistoryTitle}: ${messages.quickHistoryDesc}`}
                 accessibilityRole="button"
+                className={`${styles.quickAccessCard} border-ku-border-subtle bg-ku-surface`}
                 onPress={() =>
                   router.push({
                     pathname: "/my-quests",
                     params: { role: "hirer", tab: "completed" },
                   })
                 }
-                style={[
-                  styles.quickAccessCard,
-                  {
-                    backgroundColor: themeColors.surface,
-                    borderColor: themeColors.borderSubtle,
-                  },
-                ]}
                 testID="hirer-quick-access-history"
               >
                 <View
-                  style={[
-                    styles.quickAccessIconBox,
-                    { backgroundColor: themeColors.surfaceAccent },
-                  ]}
+                  className={`${styles.quickAccessIconBox} bg-ku-surface-accent`}
                 >
                   <History
                     color={themeColors.primary}
@@ -465,22 +385,16 @@ export default function HomeScreen() {
                     strokeWidth={2.2}
                   />
                 </View>
-                <View style={styles.quickAccessCopy}>
+                <View className={styles.quickAccessCopy}>
                   <Text
+                    className={`${styles.quickAccessItemTitle} text-ku-text-strong`}
                     numberOfLines={1}
-                    style={[
-                      styles.quickAccessItemTitle,
-                      { color: themeColors.textStrong },
-                    ]}
                   >
                     {messages.quickHistoryTitle}
                   </Text>
                   <Text
+                    className={`${styles.quickAccessItemDesc} text-ku-text-secondary`}
                     numberOfLines={1}
-                    style={[
-                      styles.quickAccessItemDesc,
-                      { color: themeColors.textSecondary },
-                    ]}
                   >
                     {messages.quickHistoryDesc}
                   </Text>
@@ -490,21 +404,12 @@ export default function HomeScreen() {
               <Pressable
                 accessibilityLabel={`${messages.quickBoardTitle}: ${messages.quickBoardDesc}`}
                 accessibilityRole="button"
+                className={`${styles.quickAccessCard} border-ku-border-subtle bg-ku-surface`}
                 onPress={() => router.push("/quest-board")}
-                style={[
-                  styles.quickAccessCard,
-                  {
-                    backgroundColor: themeColors.surface,
-                    borderColor: themeColors.borderSubtle,
-                  },
-                ]}
                 testID="hirer-quick-access-board"
               >
                 <View
-                  style={[
-                    styles.quickAccessIconBox,
-                    { backgroundColor: themeColors.surfaceAccent },
-                  ]}
+                  className={`${styles.quickAccessIconBox} bg-ku-surface-accent`}
                 >
                   <LayoutDashboard
                     color={themeColors.primary}
@@ -512,22 +417,16 @@ export default function HomeScreen() {
                     strokeWidth={2.2}
                   />
                 </View>
-                <View style={styles.quickAccessCopy}>
+                <View className={styles.quickAccessCopy}>
                   <Text
+                    className={`${styles.quickAccessItemTitle} text-ku-text-strong`}
                     numberOfLines={1}
-                    style={[
-                      styles.quickAccessItemTitle,
-                      { color: themeColors.textStrong },
-                    ]}
                   >
                     {messages.quickBoardTitle}
                   </Text>
                   <Text
+                    className={`${styles.quickAccessItemDesc} text-ku-text-secondary`}
                     numberOfLines={1}
-                    style={[
-                      styles.quickAccessItemDesc,
-                      { color: themeColors.textSecondary },
-                    ]}
                   >
                     {messages.quickBoardDesc}
                   </Text>
@@ -537,21 +436,12 @@ export default function HomeScreen() {
               <Pressable
                 accessibilityLabel={`${messages.quickTopUpTitle}: ${messages.quickTopUpDesc}`}
                 accessibilityRole="button"
+                className={`${styles.quickAccessCard} border-ku-border-subtle bg-ku-surface`}
                 onPress={() => router.push("/money")}
-                style={[
-                  styles.quickAccessCard,
-                  {
-                    backgroundColor: themeColors.surface,
-                    borderColor: themeColors.borderSubtle,
-                  },
-                ]}
                 testID="hirer-quick-access-topup"
               >
                 <View
-                  style={[
-                    styles.quickAccessIconBox,
-                    { backgroundColor: themeColors.surfaceAccent },
-                  ]}
+                  className={`${styles.quickAccessIconBox} bg-ku-surface-accent`}
                 >
                   <WalletCards
                     color={themeColors.primary}
@@ -559,22 +449,16 @@ export default function HomeScreen() {
                     strokeWidth={2.2}
                   />
                 </View>
-                <View style={styles.quickAccessCopy}>
+                <View className={styles.quickAccessCopy}>
                   <Text
+                    className={`${styles.quickAccessItemTitle} text-ku-text-strong`}
                     numberOfLines={1}
-                    style={[
-                      styles.quickAccessItemTitle,
-                      { color: themeColors.textStrong },
-                    ]}
                   >
                     {messages.quickTopUpTitle}
                   </Text>
                   <Text
+                    className={`${styles.quickAccessItemDesc} text-ku-text-secondary`}
                     numberOfLines={1}
-                    style={[
-                      styles.quickAccessItemDesc,
-                      { color: themeColors.textSecondary },
-                    ]}
                   >
                     {messages.quickTopUpDesc}
                   </Text>

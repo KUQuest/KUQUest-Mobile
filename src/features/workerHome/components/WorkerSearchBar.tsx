@@ -35,25 +35,18 @@ export function WorkerSearchBar({
 
   return (
     <View testID="worker-search-and-tags-section">
-      {/* Search Input Bar */}
       <View
-        style={[
-          styles.searchBarContainer,
-          {
-            backgroundColor: themeColors.surface,
-            borderColor: themeColors.borderSubtle,
-          },
-        ]}
+        className={`${styles.searchBarContainer} border-ku-border-subtle bg-ku-surface`}
       >
         <Search size={18} color={themeColors.textSecondary} />
         <TextInput
           accessibilityLabel={messages.searchPlaceholder}
           accessibilityRole="search"
           autoCapitalize="none"
+          className={`${styles.searchInput} text-ku-text-strong`}
           onChangeText={onQueryChange}
           placeholder={messages.searchPlaceholder}
           placeholderTextColor={themeColors.textSecondary}
-          style={[styles.searchInput, { color: themeColors.textStrong }]}
           testID="worker-quest-search-input"
           value={query}
         />
@@ -61,113 +54,78 @@ export function WorkerSearchBar({
           <Pressable
             accessibilityLabel="Clear search"
             accessibilityRole="button"
+            className="p-[4px]"
             onPress={onClearQuery}
-            style={{ padding: 4 }}
             testID="clear-search-button"
           >
             <X size={16} color={themeColors.textSecondary} />
           </Pressable>
         ) : null}
-
         <Pressable
           accessibilityLabel={messages.filter}
           accessibilityRole="button"
+          className={`${styles.filterIconButton} bg-ku-surface-muted`}
           onPress={onOpenFilter}
-          style={[
-            styles.filterIconButton,
-            {
-              backgroundColor: themeColors.surfaceMuted,
-            },
-          ]}
           testID="worker-filter-button"
         >
           <SlidersHorizontal size={17} color={themeColors.primaryDeep} />
         </Pressable>
       </View>
-
-      {/* Quick Tag Filter Row */}
       <ScrollView
+        contentContainerClassName={styles.tagFilterRow}
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.tagFilterScrollView}
+        className={styles.tagFilterScrollView}
         testID="worker-tag-filter-scroll"
       >
-        <View style={styles.tagFilterRow}>
-          {/* "All" Tag Chip */}
-          <Pressable
-            accessibilityLabel={`${messages.tagAll} filter`}
-            accessibilityRole="button"
-            onPress={() => onSelectTag(null)}
-            style={[
-              styles.tagPill,
+        <Pressable
+          accessibilityLabel={`${messages.tagAll} filter`}
+          accessibilityRole="button"
+          className={`${styles.tagPill} ${
+            selectedTagId === null
+              ? "border-ku-primary-dark bg-ku-primary-dark"
+              : "border-ku-border-subtle bg-ku-surface"
+          }`}
+          onPress={() => onSelectTag(null)}
+          testID="tag-pill-all"
+        >
+          <Text
+            className={`${styles.tagPillText} ${
               selectedTagId === null
-                ? {
-                    backgroundColor: themeColors.primaryDeep,
-                    borderColor: themeColors.primaryDeep,
-                  }
-                : {
-                    backgroundColor: themeColors.surface,
-                    borderColor: themeColors.borderSubtle,
-                  },
-            ]}
-            testID="tag-pill-all"
+                ? "font-ku-semibold text-ku-on-primary"
+                : "text-ku-text-secondary"
+            }`}
           >
-            <Text
-              style={[
-                styles.tagPillText,
-                {
-                  color:
-                    selectedTagId === null
-                      ? themeColors.white
-                      : themeColors.textSecondary,
-                  fontWeight: selectedTagId === null ? "600" : "500",
-                },
-              ]}
+            {messages.tagAll}
+          </Text>
+        </Pressable>
+        {tags.map((tag) => {
+          const isSelected = selectedTagId === tag.id;
+          return (
+            <Pressable
+              accessibilityLabel={`${tag.name} filter`}
+              accessibilityRole="button"
+              className={`${styles.tagPill} ${
+                isSelected
+                  ? "border-ku-primary-dark bg-ku-primary-dark"
+                  : "border-ku-border-subtle bg-ku-surface"
+              }`}
+              key={tag.id}
+              onPress={() => onSelectTag(isSelected ? null : tag.id)}
+              testID={`tag-pill-${tag.id}`}
             >
-              {messages.tagAll}
-            </Text>
-          </Pressable>
-
-          {/* Dynamic Tag Chips */}
-          {tags.map((tag) => {
-            const isSelected = selectedTagId === tag.id;
-            return (
-              <Pressable
-                accessibilityLabel={`${tag.name} filter`}
-                accessibilityRole="button"
-                key={tag.id}
-                onPress={() => onSelectTag(isSelected ? null : tag.id)}
-                style={[
-                  styles.tagPill,
+              <Text
+                className={`${styles.tagPillText} ${
                   isSelected
-                    ? {
-                        backgroundColor: themeColors.primaryDeep,
-                        borderColor: themeColors.primaryDeep,
-                      }
-                    : {
-                        backgroundColor: themeColors.surface,
-                        borderColor: themeColors.borderSubtle,
-                      },
-                ]}
-                testID={`tag-pill-${tag.id}`}
+                    ? "font-ku-semibold text-ku-on-primary"
+                    : "text-ku-text-secondary"
+                }`}
               >
-                <Text
-                  style={[
-                    styles.tagPillText,
-                    {
-                      color: isSelected
-                        ? themeColors.white
-                        : themeColors.textSecondary,
-                      fontWeight: isSelected ? "600" : "500",
-                    },
-                  ]}
-                >
-                  {tag.name}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+                {tag.name}
+              </Text>
+            </Pressable>
+          );
+        })}
       </ScrollView>
     </View>
   );

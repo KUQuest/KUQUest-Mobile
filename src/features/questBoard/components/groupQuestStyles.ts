@@ -62,7 +62,7 @@ const styles = {
   bulkInviteText: "text-ku-text-strong font-ku-semibold text-ku-body-small",
   bulkInviteButton:
     "items-center bg-ku-primary rounded-ku-pill min-h-[48px] justify-center ml-[10px] px-[14px]",
-  bulkInviteButtonText: "text-ku-white font-ku-semibold text-ku-label",
+  bulkInviteButtonText: "text-ku-on-primary font-ku-semibold text-ku-label",
   emptyState:
     "items-center bg-ku-surface-muted border-ku-border-subtle border-dashed rounded-[16px] justify-center min-h-[190px] px-[24px] py-[24px]",
   emptyIcon:
@@ -72,7 +72,7 @@ const styles = {
     "text-ku-text-secondary font-ku-regular text-ku-body-small mt-[5px] text-center",
   retryButton:
     "items-center bg-ku-primary rounded-ku-pill min-h-[48px] justify-center mt-[12px] px-[20px]",
-  retryButtonText: "text-ku-white font-ku-semibold text-ku-body-small",
+  retryButtonText: "text-ku-on-primary font-ku-semibold text-ku-body-small",
   rosterCard:
     "bg-ku-surface border-ku-border-subtle border rounded-[16px] mt-[8px] p-[12px]",
   rosterHeader: "items-center flex-row justify-between",
@@ -102,7 +102,7 @@ const styles = {
   invitationActionDecline: "border-ku-danger-dark",
   invitationActionText:
     "text-ku-primary font-ku-semibold text-ku-label text-center",
-  invitationActionTextAccept: "text-ku-white",
+  invitationActionTextAccept: "text-ku-on-primary",
   invitationActionTextDecline: "text-ku-danger-dark",
   reviewCard:
     "bg-ku-surface-accent border-ku-border-accent rounded-[16px] border mt-[8px] p-[14px]",
@@ -121,7 +121,8 @@ const styles = {
   submitButton:
     "items-center bg-ku-primary rounded-ku-pill flex-row gap-[7px] justify-center min-h-[52px] mt-[16px] px-[16px]",
   submitButtonDisabled: "bg-ku-surface-muted border-ku-border-muted border",
-  submitButtonText: "text-ku-white font-ku-semibold text-ku-body text-center",
+  submitButtonText:
+    "text-ku-on-primary font-ku-semibold text-ku-body text-center",
   submitButtonTextDisabled: "text-ku-text-muted",
   proposalSummary:
     "bg-ku-surface-accent border-ku-border-accent rounded-[16px] border mt-[12px] p-[12px]",
@@ -167,7 +168,7 @@ const styles = {
   proposalActionReject: "border-ku-danger-dark",
   proposalActionText:
     "text-ku-primary font-ku-semibold text-ku-label text-center",
-  proposalActionTextAccept: "text-ku-white",
+  proposalActionTextAccept: "text-ku-on-primary",
   proposalActionTextReject: "text-ku-danger-dark",
   consentStatusCard:
     "bg-ku-surface-accent border-ku-border-accent rounded-[16px] border mt-[12px] p-[14px]",
@@ -208,7 +209,7 @@ const styles = {
   consentActionApprove: "bg-ku-primary border-ku-primary",
   consentActionReject: "border-ku-danger-dark",
   consentActionText: "font-ku-semibold text-ku-body-small text-center",
-  consentActionTextApprove: "text-ku-white",
+  consentActionTextApprove: "text-ku-on-primary",
   consentActionTextReject: "text-ku-danger-dark",
   chatHint:
     "bg-ku-surface-accent rounded-[12px] flex-row items-start mt-[12px] px-[11px] py-[9px]",

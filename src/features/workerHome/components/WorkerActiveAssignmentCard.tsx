@@ -33,28 +33,17 @@ export function WorkerActiveAssignmentCard({
       onPress();
       return;
     }
-    router.push({
-      pathname: "/quest/[id]",
-      params: { id: assignment.questId, mode: "join" },
-    });
+    router.push(`/quest/${assignment.questId}/work`);
   };
 
   const formattedDate = assignment.startedAt
     ? new Date(assignment.startedAt).toLocaleDateString(
         locale === "th" ? "th-TH" : "en-US",
-        {
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }
+        { day: "numeric", month: "short", year: "numeric" }
       )
     : new Date(assignment.createdAt).toLocaleDateString(
         locale === "th" ? "th-TH" : "en-US",
-        {
-          month: "short",
-          day: "numeric",
-        }
+        { day: "numeric", month: "short", year: "numeric" }
       );
 
   const statusLabel =
@@ -69,53 +58,29 @@ export function WorkerActiveAssignmentCard({
   return (
     <View
       accessibilityRole="summary"
-      style={[
-        styles.assignmentCard,
-        {
-          backgroundColor: themeColors.surface,
-          borderColor: themeColors.borderSubtle,
-        },
-      ]}
+      className="rounded-[16px] border border-ku-border-subtle bg-ku-surface p-ku-md"
       testID={`worker-assignment-card-${assignment.id}`}
     >
-      <View style={styles.cardHeader}>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            flex: 1,
-          }}
-        >
+      <View className="mb-ku-sm flex-row items-center justify-between">
+        <View className="flex-1 flex-row items-center gap-ku-sm">
           <BriefcaseBusiness size={18} color={themeColors.primaryDeep} />
           <Text
+            className={`${styles.cardTitle} text-ku-text-strong`}
             numberOfLines={1}
-            style={[styles.cardTitle, { color: themeColors.textStrong }]}
           >
             {questTitle}
           </Text>
         </View>
-        <View
-          style={[
-            styles.badgePill,
-            {
-              backgroundColor: themeColors.surfaceSuccess,
-              borderColor: themeColors.borderSuccess,
-            },
-          ]}
-        >
-          <Text style={[styles.badgeText, { color: themeColors.success }]}>
+        <View className="rounded-ku-pill border border-ku-border-success bg-ku-surface-success px-[10px] py-[3px]">
+          <Text className="font-ku-semibold text-ku-caption leading-[16px] text-ku-success">
             {statusLabel}
           </Text>
         </View>
       </View>
-
-      <View style={styles.cardMetaRow}>
-        <View style={styles.cardMetaItem}>
+      <View className={styles.cardMetaRow}>
+        <View className={styles.cardMetaItem}>
           <Clock size={14} color={themeColors.textSecondary} />
-          <Text
-            style={[styles.cardMetaText, { color: themeColors.textSecondary }]}
-          >
+          <Text className={`${styles.cardMetaText} text-ku-text-secondary`}>
             {formattedDate}
           </Text>
         </View>
@@ -123,18 +88,15 @@ export function WorkerActiveAssignmentCard({
       <Pressable
         accessibilityLabel={`${messages.viewWork}: ${questTitle}`}
         accessibilityRole="button"
+        className={`${styles.actionButton} bg-ku-primary-dark`}
         onPress={handlePress}
-        style={[
-          styles.actionButton,
-          { backgroundColor: themeColors.primaryDeep },
-        ]}
         testID={`worker-assignment-action-${assignment.id}`}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          <Text style={[styles.actionButtonText, { color: themeColors.white }]}>
+        <View className="flex-row items-center gap-[6px]">
+          <Text className={`${styles.actionButtonText} text-ku-on-primary`}>
             {messages.viewWork}
           </Text>
-          <ChevronRight size={16} color={themeColors.white} />
+          <ChevronRight size={16} color={themeColors.onPrimary} />
         </View>
       </Pressable>
     </View>

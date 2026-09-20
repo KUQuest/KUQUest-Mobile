@@ -47,10 +47,10 @@ export function QuestConditionEditStatusCard({
       >
         {messages.conditionEditPendingTitle}
       </Text>
-      <Text className="mt-1 text-ku-body-small leading-5 text-ku-text-secondary">
+      <Text className="mt-1 text-ku-body-small text-ku-text-secondary">
         {messages.conditionEditPendingDescription}
       </Text>
-      <View className="mt-3 flex-row items-center justify-between rounded-xl bg-white px-3 py-3">
+      <View className="mt-3 flex-row items-center justify-between rounded-xl bg-ku-surface px-3 py-3">
         <Text className="text-ku-body-small text-ku-text-secondary">
           {messages.conditionEditCountdownLabel}
         </Text>

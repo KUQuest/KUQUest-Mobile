@@ -63,7 +63,10 @@ Then use:
 
 - `CONTEXT.md` — canonical ubiquitous domain language
 - `docs/agents/routing.md` — routes a task to the correct feature/persona documentation
-- `CODE_STYLES.md` — implementation, formatting, NativeWind, feature architecture, and Jest conventions
+- `CODE_STYLES.md` — review standards, composition, NativeWind, and Jest conventions
+- `docs/agents/nativewind.md` — NativeWind v5 styling and token reference
+- `docs/agents/mobile-validation.md` — canonical staging and native device smoke flow
+- `docs/agents/engineering-workflow.md` — detailed planning, delegation, safety, testing, and delivery workflow
 - `docs/agents/gotchas.md` — known repository-specific traps
 
 Do not reconstruct information that already exists in these documents.
@@ -423,88 +426,11 @@ Do not invoke it ceremonially and ignore the result.
 
 ---
 
-# Self-steering for long-running work
+# Engineering workflow
 
-For autonomous implementation, continuously operate as:
-
-```text
-OBSERVE
-→ REASSESS
-→ PRIORITIZE
-→ EXECUTE
-→ VALIDATE
-→ RETRO
-→ UPDATE PLAN
-→ repeat
-```
-
-Do not blindly execute an initial plan after repository evidence changes.
-
-## Observe
-
-Inspect current reality:
-
-```text
-git status
-current diff
-tests
-type errors
-lint errors
-domain contracts
-architecture boundaries
-new coupling
-remaining legacy behavior
-blockers
-```
-
-## Reassess
-
-Ask internally:
-
-```text
-What assumption changed?
-Did this actually simplify ownership?
-Did I create duplicated behavior?
-Did a prerequisite appear?
-Can obsolete code now be removed?
-Is the planned next task still the highest-leverage task?
-```
-
-## Prioritize
-
-Prefer:
-
-```text
-correctness
-product contract
-behavior preservation
-security
-architectural ownership
-testability
-simplicity
-performance where relevant
-cleanup
-```
-
-Do not optimize for number of files changed.
-
-## Execute
-
-Work in small coherent batches with one clear purpose.
-
-## Validate
-
-Use the cheapest relevant check first, then expand validation as needed.
-
-## Retro
-
-Use the `retro` skill when available at major boundaries or when the current approach is producing friction.
-
-## Update plan
-
-Repository evidence overrides the initial roadmap.
-
-If blocked on one task, document the blocker and continue independent work.
+Read `docs/agents/engineering-workflow.md` for planning, delegation, Git
+safety, testing, validation, and delivery. Keep this file to repository
+navigation, domain authorities, and hard invariants.
 
 ---
 
@@ -534,118 +460,35 @@ Do not invent alternate triage labels for the same lifecycle states.
 
 ---
 
-# Typical workflow
+# Code and native style
 
-A normal feature workflow is approximately:
-
-```text
-grilling / grill-with-docs
-→ to-spec / to-tickets
-→ query-api when an API contract is involved
-→ implementation
-→ validation
-→ triage as issues appear
-→ wayfinder when scope exceeds one session
-```
-
-This is guidance, not mandatory ceremony.
-
-Use only the steps justified by the task.
-
----
-
-# Code style
-
-Follow:
-
-```text
-CODE_STYLES.md
-```
-
-for:
-
-- formatting
-- import grouping
-- feature architecture
-- NativeWind conventions
-- Jest conventions
-- naming
-- composition patterns
-
-Do not create competing style conventions in this file.
-
----
-
-# Large screens
-
-Before creating or substantially expanding a screen that is likely to:
-
-- exceed roughly 400 lines, or
-- contain multiple independently testable visual regions
-
-read:
-
-```text
-CODE_STYLES.md §3 — Large Screen Composition
-```
-
-Prefer:
-
-```text
-feature-local components
-→ assembled by the screen
-```
-
-Promote a component to global `src/components/` only when it is genuinely domain-agnostic and has a second real consumer.
-
-Do not create global abstractions for hypothetical reuse.
-
----
-
-# Mobile-first validation
-
-Android and iOS behavior are the target.
-
-Focus implementation and validation on native mobile behavior.
-
-Do not spend time on:
-
-```text
-React Native Web
-browser-only layout
-web bundling optimization
-web-specific routing
-desktop browser behavior
-```
-
-unless explicitly requested.
-
-For native-facing changes, consider both platforms even when only one platform can be executed locally.
-
-Document intentional platform differences.
+Read `CODE_STYLES.md` for review standards, composition, NativeWind, and Jest
+conventions. Read `docs/agents/mobile-validation.md` before native smoke work.
 
 ---
 
 # Package management
 
-Use Bun by default.
-
-Examples:
+Use Bun and the scripts in `package.json`:
 
 ```bash
 bun install
-bun add <package>
-bun remove <package>
 bun run <script>
-bun test
+bun run test
+bun run verify
 ```
 
-Before installing or upgrading an Expo-managed package, verify SDK 57 compatibility using the versioned Expo documentation.
+Before installing or upgrading an Expo-managed package, verify SDK 57
+compatibility using the versioned Expo documentation. Do not introduce a
+second package-manager lockfile or replace Bun with another package manager.
 
-Do not introduce a second package-manager lockfile.
+---
 
-Do not replace Bun with npm, pnpm, or Yarn unless explicitly required.
+# Delegation, safety, tests, validation, and delivery
 
+Read `docs/agents/engineering-workflow.md` for shared-worktree ownership,
+file allowlists, handoff evidence, Git safety, behavioral test rules,
+validation order, compatibility/deletion checks, and final reporting.
 ---
 
 # API changes
@@ -694,173 +537,3 @@ relevant command/path
 Do not add one-off debugging diary entries.
 
 ---
-
-# Subagents and parallel work
-
-The main agent owns:
-
-```text
-shared worktree
-branch
-Git mutations
-integration
-final validation
-```
-
-For delegated implementation, assign:
-
-- one writer per file
-- an explicit file allowlist
-- a clear responsibility boundary
-
-Subagents should use read-only Git inspection.
-
-Each implementation handoff must include:
-
-```text
-changed files
-git status --short --untracked-files=all
-git diff --stat <base>
-validation performed
-```
-
-Before accepting a handoff, the main agent must verify that every modified/untracked path is inside the assigned allowlist.
-
-A subagent may cite a repository rule only as:
-
-```text
-path/to/file:line
-```
-
-Do not accept invented rule names or fabricated lint constraints.
-
-Avoid parallel writers touching the same file.
-
----
-
-# Git safety
-
-Before editing:
-
-```bash
-git status --short --untracked-files=all
-```
-
-Never destroy work that predates the current task.
-
-Do not use routine destructive commands such as:
-
-```text
-git reset --hard
-git clean -fd
-project reset scripts
-```
-
-to resolve ordinary implementation problems.
-
-If your own approach must be backed out, revert only your own changes safely.
-
-The main agent owns commits and other Git mutations during subagent work.
-
----
-
-# Tests
-
-Tests represent preserved product behavior.
-
-Before changing complex logic, inspect existing tests.
-
-For risky behavior changes, prefer characterization coverage before refactoring.
-
-Never modify a test merely because implementation changed.
-
-A test change requires a contract reason.
-
-When fixing a bug:
-
-```text
-reproduce
-→ identify owning code
-→ add/adjust behavioral coverage where useful
-→ fix smallest owning path
-→ validate
-```
-
-Do not hide regressions by snapshot churn.
-
----
-
-# Validation
-
-Use repository scripts rather than guessed commands.
-
-Inspect `package.json` first.
-
-Prefer focused checks while iterating, then broader validation before delivery.
-
-Typical order:
-
-```text
-targeted test
-→ typecheck
-→ affected test suite
-→ lint
-→ broader mobile validation where justified
-```
-
-For Expo/native dependency, configuration, routing, or development-build changes, use the repository's corresponding native validation scripts.
-
-Do not treat successful web execution as proof of Android/iOS correctness.
-
----
-
-# Deletions and compatibility changes
-
-At delivery, inspect every:
-
-```text
-deleted file
-changed test
-changed fixture
-changed persisted key
-changed API contract
-changed navigation route
-compatibility fallback removal
-```
-
-Each must be:
-
-- directly required by the task, or
-- explicitly justified by the resulting architecture/product contract.
-
-Do not perform opportunistic deletion.
-
----
-
-# Delivery checklist
-
-Before finishing:
-
-1. Re-read the task.
-2. Inspect `git status`.
-3. Inspect changed files.
-4. Verify changed paths belong to the task.
-5. Run relevant validation.
-6. Confirm Android/iOS implications.
-7. Confirm API work matches `query-api`.
-8. Confirm domain language matches `CONTEXT.md`.
-9. Confirm applicable rulebooks/specs were followed.
-10. Confirm no unrelated test was weakened.
-11. Confirm no unrelated file was deleted.
-12. Confirm no persisted contract was silently broken.
-13. Add a reusable gotcha if the session uncovered one.
-14. Run `retro` for substantial long-running work when available.
-
-Report:
-
-- what changed
-- validation performed
-- known limitations/blockers
-- any intentional compatibility changes
-
-Do not claim validation that was not actually run.

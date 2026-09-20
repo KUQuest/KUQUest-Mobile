@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import {
   RefreshControl,
-  StyleSheet,
   type ListRenderItemInfo,
   useColorScheme,
 } from "react-native";
@@ -20,7 +19,6 @@ import {
 } from "@/locales/myQuestMessages";
 import { getThemeColors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
-import { fontFamily } from "@/theme/typography";
 import { MyQuestSummaryCard } from "./components/MyQuestSummaryCard";
 import {
   useMyHirerQuestsQuery,
@@ -45,113 +43,36 @@ export interface MyQuestListScreenProps {
 const workerTabs: WorkerTab[] = ["pending", "accepted", "history"];
 const hirerTabs: HirerTab[] = ["active", "draft", "completed"];
 
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  header: {
-    borderBottomWidth: 1,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-  },
-  headerRow: { alignItems: "center", flexDirection: "row", gap: 12 },
-  backButton: {
-    alignItems: "center",
-    borderRadius: 14,
-    borderWidth: 1,
-    height: 48,
-    justifyContent: "center",
-    width: 48,
-  },
-  headerCopy: { flex: 1, minWidth: 0 },
-  title: { fontFamily: fontFamily.bold, fontSize: 24, lineHeight: 30 },
-  subtitle: {
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    lineHeight: 21,
-    marginTop: 2,
-  },
-  tabRow: { flexDirection: "row", gap: 8, marginTop: 12 },
-  tabButton: {
-    alignItems: "center",
-    borderRadius: 9999,
-    borderWidth: 1,
-    flex: 1,
-    justifyContent: "center",
-    minHeight: 48,
-    paddingHorizontal: 6,
-  },
-  tabButtonText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 12,
-    lineHeight: 18,
-    textAlign: "center",
-  },
-  list: { flex: 1, paddingHorizontal: 16 },
-  listHeader: { paddingBottom: 12, paddingTop: 20 },
-  listTitle: { fontFamily: fontFamily.bold, fontSize: 18, lineHeight: 24 },
-  listHint: {
-    fontFamily: fontFamily.regular,
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 2,
-  },
-  empty: {
-    alignItems: "center",
-    borderRadius: 16,
-    borderStyle: "dashed",
-    borderWidth: 1,
-    justifyContent: "center",
-    minHeight: 230,
-    paddingHorizontal: 24,
-    paddingVertical: 28,
-  },
-  emptyIcon: {
-    alignItems: "center",
-    borderRadius: 9999,
-    height: 48,
-    justifyContent: "center",
-    marginBottom: 10,
-    width: 48,
-  },
-  emptyTitle: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 16,
-    lineHeight: 24,
-    textAlign: "center",
-  },
-  emptyDescription: {
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    lineHeight: 21,
-    marginTop: 4,
-    textAlign: "center",
-  },
-  emptyAction: {
-    alignItems: "center",
-    borderRadius: 9999,
-    justifyContent: "center",
-    marginTop: 16,
-    minHeight: 48,
-    paddingHorizontal: 20,
-  },
-  emptyActionText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  error: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 24,
-  },
-  errorText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 16,
-    lineHeight: 24,
-    textAlign: "center",
-  },
-});
+const styles = {
+  root: "flex-1",
+  header: "border-b border-ku-border-subtle px-ku-lg pb-ku-md pt-ku-sm",
+  headerRow: "flex-row items-center gap-ku-sm",
+  backButton:
+    "h-[48px] w-[48px] items-center justify-center rounded-[14px] border border-ku-border",
+  headerCopy: "min-w-0 flex-1",
+  title: "font-ku-bold text-ku-title leading-[30px]",
+  subtitle: "mt-[2px] font-ku-regular text-ku-body-small leading-[21px]",
+  tabRow: "mt-ku-sm flex-row gap-ku-sm",
+  tabButton:
+    "min-h-[48px] flex-1 items-center justify-center rounded-ku-pill border border-ku-border px-[6px]",
+  tabButtonText: "font-ku-semibold text-ku-label text-center leading-[18px]",
+  list: "flex-1 px-ku-md",
+  listHeader: "pb-ku-sm pt-ku-md",
+  listTitle: "font-ku-bold text-ku-subtitle leading-[24px]",
+  listHint: "mt-[2px] font-ku-regular text-ku-label leading-[18px]",
+  empty:
+    "min-h-[230px] items-center justify-center rounded-[16px] border border-dashed border-ku-border px-ku-lg py-[28px]",
+  emptyIcon:
+    "mb-[10px] h-[48px] w-[48px] items-center justify-center rounded-ku-pill",
+  emptyTitle: "font-ku-semibold text-ku-body text-center leading-[24px]",
+  emptyDescription:
+    "mt-[4px] font-ku-regular text-ku-body-small text-center leading-[21px]",
+  emptyAction:
+    "mt-ku-md min-h-[48px] items-center justify-center rounded-ku-pill px-ku-md",
+  emptyActionText: "font-ku-semibold text-ku-body-small leading-[21px]",
+  error: "flex-1 items-center justify-center px-ku-lg",
+  errorText: "font-ku-semibold text-ku-body text-center leading-[24px]",
+} as const;
 
 function tabLabel(
   messages: MyQuestMessages,
@@ -184,7 +105,7 @@ function initialTabForRole(
 }
 
 function Separator() {
-  return <View style={{ height: spacing.sm }} />;
+  return <View className="h-ku-sm" />;
 }
 
 export default function MyQuestListScreen({
@@ -276,46 +197,37 @@ export default function MyQuestListScreen({
       className="flex-1 bg-ku-background"
       edges={["top", "left", "right"]}
     >
-      <View style={[styles.root, { backgroundColor: palette.background }]}>
-        <View
-          style={[
-            styles.header,
-            {
-              backgroundColor: palette.surface,
-              borderBottomColor: palette.borderSubtle,
-            },
-          ]}
-        >
-          <View style={styles.headerRow}>
+      <View className="flex-1 bg-ku-background">
+        <View className="border-b border-ku-border-subtle bg-ku-surface px-ku-lg pt-ku-sm pb-ku-md">
+          <View className={styles.headerRow}>
             <Pressable
               accessibilityLabel={messages.back}
               accessibilityRole="button"
+              className={`${styles.backButton} border-ku-border-accent`}
               onPress={() => router.back()}
-              style={({ pressed }) => [
-                styles.backButton,
-                { borderColor: palette.borderAccent },
-                pressed && { backgroundColor: palette.surfaceMuted },
-              ]}
+              style={({ pressed }) =>
+                pressed ? { backgroundColor: palette.surfaceMuted } : undefined
+              }
               testID="my-quest-list-back"
             >
               <ArrowLeft color={palette.primary} size={24} strokeWidth={2.2} />
             </Pressable>
-            <View style={styles.headerCopy}>
+            <View className={styles.headerCopy}>
               <Text
+                className={`${styles.title} text-ku-text-strong`}
                 numberOfLines={1}
-                style={[styles.title, { color: palette.textStrong }]}
               >
                 {messages.title[role]}
               </Text>
               <Text
+                className={`${styles.subtitle} text-ku-text-secondary`}
                 numberOfLines={2}
-                style={[styles.subtitle, { color: palette.textSecondary }]}
               >
                 {messages.subtitle[role]}
               </Text>
             </View>
           </View>
-          <View accessibilityRole="tablist" style={styles.tabRow}>
+          <View accessibilityRole="tablist" className={styles.tabRow}>
             {tabs.map((option) => {
               const selected = option === tab;
               return (
@@ -323,30 +235,19 @@ export default function MyQuestListScreen({
                   accessibilityLabel={tabLabel(messages, role, option)}
                   accessibilityRole="tab"
                   accessibilityState={{ selected }}
+                  className={`${styles.tabButton} ${
+                    selected
+                      ? "border-ku-primary bg-ku-surface-success"
+                      : "border-ku-border-accent bg-ku-surface"
+                  }`}
                   key={option}
                   onPress={() => setTab(option)}
-                  style={[
-                    styles.tabButton,
-                    {
-                      backgroundColor: selected
-                        ? palette.surfaceSuccess
-                        : palette.surface,
-                      borderColor: selected
-                        ? palette.primary
-                        : palette.borderAccent,
-                    },
-                  ]}
                   testID={`my-quest-list-tab-${option}`}
                 >
                   <Text
-                    style={[
-                      styles.tabButtonText,
-                      {
-                        color: selected
-                          ? palette.primary
-                          : palette.textSecondary,
-                      },
-                    ]}
+                    className={`${styles.tabButtonText} ${
+                      selected ? "text-ku-primary" : "text-ku-text-secondary"
+                    }`}
                   >
                     {tabLabel(messages, role, option)}
                   </Text>
@@ -356,24 +257,24 @@ export default function MyQuestListScreen({
           </View>
         </View>
         {isLoading ? (
-          <View style={styles.error}>
-            <Text style={[styles.emptyTitle, { color: palette.textSecondary }]}>
+          <View className={styles.error}>
+            <Text className={`${styles.emptyTitle} text-ku-text-secondary`}>
               {messages.loading}
             </Text>
           </View>
         ) : (role === "hirer" ? hirerQuery.isError : workerQuery.isError) ? (
-          <View style={styles.error}>
-            <Text style={[styles.errorText, { color: palette.dangerDark }]}>
+          <View className={styles.error}>
+            <Text className={`${styles.errorText} text-ku-danger-dark`}>
               {messages.error}
             </Text>
             <Pressable
               accessibilityLabel={messages.retry}
               accessibilityRole="button"
+              className={`${styles.emptyAction} bg-ku-primary`}
               onPress={onRefresh}
-              style={[styles.emptyAction, { backgroundColor: palette.primary }]}
               testID="my-quest-list-retry"
             >
-              <Text style={[styles.emptyActionText, { color: palette.white }]}>
+              <Text className={`${styles.emptyActionText} text-ku-on-primary`}>
                 {messages.retry}
               </Text>
             </Pressable>
@@ -381,55 +282,33 @@ export default function MyQuestListScreen({
         ) : (
           <QuestList
             accessibilityLabel={`${selectedTabLabel} ${messages.listTitle}`}
-            style={styles.list}
-            contentContainerStyle={{
-              flexGrow: 1,
-              paddingBottom: bottomPadding,
-            }}
+            className={styles.list}
+            contentContainerClassName="grow"
+            contentContainerStyle={{ paddingBottom: bottomPadding }}
             data={items}
             ItemSeparatorComponent={Separator}
             keyExtractor={keyExtractor}
             ListEmptyComponent={
-              <View
-                style={[
-                  styles.empty,
-                  {
-                    backgroundColor: palette.surfaceMuted,
-                    borderColor: palette.borderSubtle,
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.emptyIcon,
-                    { backgroundColor: palette.surfaceSuccess },
-                  ]}
-                >
+              <View className="min-h-[230px] items-center justify-center rounded-[16px] border border-dashed border-ku-border-subtle bg-ku-surface-muted px-ku-lg py-[28px]">
+                <View className="mb-[10px] h-[48px] w-[48px] items-center justify-center rounded-ku-pill bg-ku-surface-success">
                   <Clock3 color={palette.primary} size={24} strokeWidth={2.1} />
                 </View>
-                <Text
-                  style={[styles.emptyTitle, { color: palette.textStrong }]}
-                >
+                <Text className={`${styles.emptyTitle} text-ku-text-strong`}>
                   {emptyLabel(messages, role, tab)}
                 </Text>
                 <Text
-                  style={[
-                    styles.emptyDescription,
-                    { color: palette.textSecondary },
-                  ]}
+                  className={`${styles.emptyDescription} text-ku-text-secondary`}
                 >
                   {messages.emptyDescription[role]}
                 </Text>
               </View>
             }
             ListHeaderComponent={
-              <View style={styles.listHeader}>
-                <Text style={[styles.listTitle, { color: palette.textStrong }]}>
+              <View className={styles.listHeader}>
+                <Text className={`${styles.listTitle} text-ku-text-strong`}>
                   {messages.listTitle}
                 </Text>
-                <Text
-                  style={[styles.listHint, { color: palette.textSecondary }]}
-                >
+                <Text className={`${styles.listHint} text-ku-text-secondary`}>
                   {messages.listHint}
                 </Text>
               </View>

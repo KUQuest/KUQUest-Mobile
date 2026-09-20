@@ -1,398 +1,100 @@
-import { StyleSheet } from "react-native";
+import type { ViewStyle } from "react-native";
 
 import { darkColors, lightColors } from "@/theme/colors";
-import { fontFamily } from "@/theme/typography";
 
-export const hirerHomeStyles = StyleSheet.create({
-  screenContent: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
-  },
-  screenHeader: {
-    paddingHorizontal: 4,
-    paddingBottom: 22,
-  },
-  prototypeNotice: {
-    alignSelf: "flex-start",
-    borderRadius: 9999,
-    borderWidth: 1,
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  prototypeNoticeText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  emptyState: {
-    alignItems: "center",
-    borderRadius: 16,
-    borderWidth: 1,
-    justifyContent: "center",
-    minHeight: 220,
-    paddingHorizontal: 24,
-    paddingVertical: 28,
-  },
-  emptyTitle: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 18,
-    lineHeight: 24,
-    textAlign: "center",
-  },
-  emptyDescription: {
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    lineHeight: 21,
-    marginTop: 6,
-    textAlign: "center",
-  },
-  screenTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 28,
-    lineHeight: 36,
-  },
-  screenSubtitle: {
-    fontFamily: fontFamily.regular,
-    fontSize: 15,
-    lineHeight: 22,
-    marginTop: 4,
-  },
-  sectionHeaderRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 12,
-    paddingHorizontal: 4,
-  },
-  sectionTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 18,
-    lineHeight: 24,
-  },
-  sectionCounterBadge: {
-    borderRadius: 9999,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  sectionCounterText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  card: {
-    borderRadius: 18,
-    borderWidth: 1.5,
-    overflow: "hidden",
-    shadowOffset: { height: 4, width: 0 },
-    shadowRadius: 10,
-    shadowOpacity: 0.1,
-    elevation: 4,
-  },
-  cardTopAccent: {
-    height: 3.5,
-    width: "100%",
-  },
-  cardHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-  },
-  cardHeaderMetaRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  tagBadge: {
-    alignItems: "center",
-    borderRadius: 9999,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  tagText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 11,
-    lineHeight: 15,
-  },
-  statusBadge: {
-    alignItems: "center",
-    borderRadius: 9999,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  statusBadgeDot: {
-    borderRadius: 4,
-    height: 6,
-    width: 6,
-  },
-  statusLabel: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 12,
-    letterSpacing: 0.2,
-    lineHeight: 16,
-  },
-  cardTitleRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  cardTitle: {
-    flex: 1,
-    fontFamily: fontFamily.bold,
-    fontSize: 17,
-    lineHeight: 23,
-    paddingRight: 8,
-  },
-  headerArrow: {
-    alignItems: "center",
-    height: 32,
-    justifyContent: "center",
-    width: 32,
-  },
-  divider: {
-    height: 1,
-  },
-  cardBody: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  workerBanner: {
-    alignItems: "center",
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  workerLeading: {
-    alignItems: "center",
-    flex: 1,
-    flexDirection: "row",
-    gap: 10,
-    minWidth: 0,
-  },
-  workerAvatar: {
-    alignItems: "center",
-    borderRadius: 9999,
-    borderWidth: 1,
-    height: 40,
-    justifyContent: "center",
-    overflow: "hidden",
-    width: 40,
-  },
-  workerAvatarText: {
-    fontFamily: fontFamily.bold,
-    fontSize: 14,
-  },
-  workerCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-  workerName: {
-    fontFamily: fontFamily.bold,
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  workerRole: {
-    fontFamily: fontFamily.regular,
-    fontSize: 11,
-    lineHeight: 15,
-    marginTop: 1,
-  },
-  workerProfileButton: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 2,
-    justifyContent: "center",
-    minHeight: 44,
-    paddingLeft: 8,
-  },
-  workerProfileText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  progressSection: {
-    marginTop: 14,
-  },
-  progressHeaderRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  timelineTitle: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 12,
-    letterSpacing: 0.4,
-    lineHeight: 16,
-  },
-  stepProgressText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  stagesTrack: {
-    alignItems: "flex-start",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    position: "relative",
-  },
-  trackLine: {
-    height: 2,
-    left: 16,
-    position: "absolute",
-    right: 16,
-    top: 9,
-  },
-  stageStep: {
-    alignItems: "center",
-    flex: 1,
-  },
-  stepDot: {
-    alignItems: "center",
-    borderRadius: 9999,
-    borderWidth: 2,
-    height: 20,
-    justifyContent: "center",
-    width: 20,
-    zIndex: 2,
-  },
-  stepDotCurrentOuter: {
-    alignItems: "center",
-    borderRadius: 9999,
-    height: 22,
-    justifyContent: "center",
-    width: 22,
-    zIndex: 2,
-  },
-  stepDotCurrentInner: {
-    borderRadius: 9999,
-    height: 10,
-    width: 10,
-  },
-  stepLabel: {
-    fontFamily: fontFamily.regular,
-    fontSize: 10,
-    lineHeight: 14,
-    marginTop: 6,
-    textAlign: "center",
-  },
-  stepLabelCurrent: {
-    fontFamily: fontFamily.bold,
-  },
-  cardFooter: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    minHeight: 44,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  dueRow: {
-    alignItems: "center",
-    flex: 1,
-    flexDirection: "row",
-    gap: 6,
-    paddingRight: 8,
-  },
-  dueLabel: {
-    fontFamily: fontFamily.regular,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  detailsButton: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 2,
-    justifyContent: "center",
-    minHeight: 44,
-    paddingHorizontal: 6,
-  },
-  detailsText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  carouselContainer: {
-    marginBottom: 4,
-  },
-  carouselPagination: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 6,
-    justifyContent: "center",
-    marginTop: 12,
-  },
-  paginationDot: {
-    borderRadius: 3,
-    height: 6,
-  },
-  paginationDotActive: {
-    width: 20,
-  },
-  paginationDotInactive: {
-    width: 6,
-  },
-  quickAccessSection: {
-    marginTop: 22,
-  },
-  quickAccessTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 18,
-    lineHeight: 24,
-    marginBottom: 12,
-    paddingHorizontal: 4,
-  },
-  quickAccessGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  quickAccessCard: {
-    alignItems: "center",
-    borderRadius: 16,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 12,
-    minHeight: 70,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    width: "48%",
-    flexGrow: 1,
-  },
-  quickAccessIconBox: {
-    alignItems: "center",
-    borderRadius: 12,
-    height: 40,
-    justifyContent: "center",
-    width: 40,
-  },
-  quickAccessCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-  quickAccessItemTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  quickAccessItemDesc: {
-    fontFamily: fontFamily.regular,
-    fontSize: 11,
-    lineHeight: 15,
-    marginTop: 2,
-  },
-});
+export const hirerHomeStyles = {
+  screenContent: "px-ku-md pt-[14px]",
+  screenHeader: "px-[4px] pb-[22px]",
+  prototypeNotice:
+    "self-start rounded-ku-pill border border-ku-border mb-ku-md px-ku-sm py-[6px]",
+  prototypeNoticeText: "font-ku-semibold text-ku-label leading-[18px]",
+  emptyState:
+    "min-h-[220px] items-center justify-center rounded-[16px] border border-ku-border px-ku-lg py-[28px]",
+  emptyTitle: "font-ku-semibold text-ku-subtitle text-center leading-[24px]",
+  emptyDescription:
+    "mt-[6px] font-ku-regular text-ku-body-small text-center leading-[21px]",
+  screenTitle: "font-ku-bold text-ku-title-large leading-[36px]",
+  screenSubtitle: "mt-[4px] font-ku-regular text-ku-control leading-[22px]",
+  sectionHeaderRow: "mb-ku-md flex-row items-center justify-between px-[4px]",
+  sectionTitle: "font-ku-bold text-ku-subtitle leading-[24px]",
+  sectionCounterBadge:
+    "rounded-ku-pill border border-ku-border px-ku-sm py-[2px]",
+  sectionCounterText: "font-ku-semibold text-ku-label leading-[16px]",
+  card: "overflow-hidden rounded-[18px] border-[1.5px] border-ku-border",
+  cardTopAccent: "h-[3.5px] w-full",
+  cardHeader: "px-ku-md pb-ku-sm pt-ku-md",
+  cardHeaderMetaRow: "mb-ku-sm flex-row items-center justify-between",
+  tagBadge:
+    "flex-row items-center gap-ku-xs rounded-ku-pill border border-ku-border px-ku-sm py-[3px]",
+  tagText: "font-ku-medium text-ku-caption leading-[15px]",
+  statusBadge:
+    "flex-row items-center gap-ku-xs rounded-ku-pill border border-ku-border px-ku-sm py-[3px]",
+  statusBadgeDot: "h-[6px] w-[6px] rounded-[4px]",
+  statusLabel: "font-ku-semibold text-ku-label leading-[16px] tracking-[0.2px]",
+  cardTitleRow: "flex-row items-center justify-between",
+  cardTitle: "flex-1 pr-ku-sm font-ku-bold text-ku-emphasis leading-[23px]",
+  headerArrow: "h-[32px] w-[32px] items-center justify-center",
+  divider: "h-px",
+  cardBody: "px-ku-md py-[14px]",
+  workerBanner:
+    "flex-row items-center justify-between rounded-[12px] border border-ku-border px-ku-sm py-[10px]",
+  workerLeading: "min-w-0 flex-1 flex-row items-center gap-[10px]",
+  workerAvatar:
+    "h-[40px] w-[40px] items-center justify-center overflow-hidden rounded-ku-pill border border-ku-border",
+  workerAvatarText: "font-ku-bold text-ku-body-small",
+  workerCopy: "min-w-0 flex-1",
+  workerName: "font-ku-bold text-ku-body-small leading-[18px]",
+  workerRole: "mt-[1px] font-ku-regular text-ku-caption leading-[15px]",
+  workerProfileButton:
+    "min-h-[44px] flex-row items-center justify-center gap-[2px] pl-ku-sm",
+  workerProfileText: "font-ku-semibold text-ku-label leading-[16px]",
+  progressSection: "mt-[14px]",
+  progressHeaderRow: "mb-[10px] flex-row items-center justify-between",
+  timelineTitle:
+    "font-ku-semibold text-ku-label leading-[16px] tracking-[0.4px]",
+  stepProgressText: "font-ku-semibold text-ku-label leading-[16px]",
+  stagesTrack: "relative flex-row items-start justify-between",
+  trackLine: "absolute left-[16px] right-[16px] top-[9px] h-[2px]",
+  stageStep: "flex-1 items-center",
+  stepDot:
+    "z-[2] h-[20px] w-[20px] items-center justify-center rounded-ku-pill border-2",
+  stepDotCurrentOuter:
+    "z-[2] h-[22px] w-[22px] items-center justify-center rounded-ku-pill",
+  stepDotCurrentInner: "h-[10px] w-[10px] rounded-ku-pill",
+  stepLabel: "mt-[6px] font-ku-regular text-ku-nav text-center leading-[14px]",
+  stepLabelCurrent: "font-ku-bold",
+  cardFooter:
+    "min-h-[44px] flex-row items-center justify-between px-ku-md py-ku-sm",
+  dueRow: "flex-1 flex-row items-center gap-[6px] pr-ku-sm",
+  dueLabel: "font-ku-regular text-ku-label leading-[16px]",
+  detailsButton:
+    "min-h-[44px] flex-row items-center justify-center gap-[2px] px-[6px]",
+  detailsText: "font-ku-semibold text-ku-label leading-[16px]",
+  carouselContainer: "mb-[4px]",
+  carouselPagination: "mt-ku-sm flex-row items-center justify-center gap-[6px]",
+  paginationDot: "h-[6px] rounded-[3px]",
+  paginationDotActive: "w-[20px]",
+  paginationDotInactive: "w-[6px]",
+  quickAccessSection: "mt-[22px]",
+  quickAccessTitle:
+    "mb-ku-md px-[4px] font-ku-bold text-ku-subtitle leading-[24px]",
+  quickAccessGrid: "flex-row flex-wrap gap-[12px]",
+  quickAccessCard:
+    "min-h-[70px] w-[48%] flex-grow flex-row items-center gap-[12px] rounded-[16px] border border-ku-border px-[14px] py-ku-sm",
+  quickAccessIconBox:
+    "h-[40px] w-[40px] items-center justify-center rounded-[12px]",
+  quickAccessCopy: "min-w-0 flex-1",
+  quickAccessItemTitle: "font-ku-bold text-ku-body-small leading-[18px]",
+  quickAccessItemDesc:
+    "mt-[2px] font-ku-regular text-ku-caption leading-[15px]",
+} as const;
+
+export const hirerHomeCardShadow = {
+  shadowOffset: { height: 4, width: 0 },
+  shadowRadius: 10,
+  shadowOpacity: 0.1,
+  elevation: 4,
+} satisfies ViewStyle;
 
 export const hirerHomePalette = {
   light: {

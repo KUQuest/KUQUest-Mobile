@@ -1,9 +1,9 @@
 import React from "react";
-import { StyleSheet } from "react-native";
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { HomeWalletOverview } from "../HomeWalletOverview";
 import { walletApi } from "@/api/WalletApi";
+import { walletStyles } from "../walletStyles";
 
 jest.mock("@/api/WalletApi", () => {
   const original = jest.requireActual("@/api/WalletApi");
@@ -65,27 +65,15 @@ describe("HomeWalletOverview", () => {
     expect(view.getByText("฿50.00")).toBeTruthy();
   });
 
-  it("keeps Money controls at the Android touch-target minimum", async () => {
-    const view = await renderWithQueryClient(
-      <HomeWalletOverview locale="en" />
-    );
-
-    await waitFor(() => {
-      expect(view.getByTestId("wallet-spending-balance")).toBeTruthy();
-    });
-
-    expect(
-      StyleSheet.flatten(view.getByTestId("wallet-refresh-button").props.style)
-    ).toMatchObject({ height: 48, width: 48 });
-    expect(
-      StyleSheet.flatten(view.getByTestId("wallet-topup-button").props.style)
-    ).toMatchObject({ height: 48 });
-    expect(
-      StyleSheet.flatten(view.getByTestId("wallet-withdraw-button").props.style)
-    ).toMatchObject({ height: 48 });
-    expect(
-      StyleSheet.flatten(view.getByTestId("wallet-history-button").props.style)
-    ).toMatchObject({ height: 48 });
+  // Jest maps `*.css` to an empty module (`package.json` `moduleNameMapper`),
+  // so a NativeWind class never resolves to a style object and the rendered
+  // tree exposes neither the class nor a size. The authored class string is
+  // the only place the 48dp floor exists, so that is what this guards.
+  it("keeps Money controls at the Android touch-target minimum", () => {
+    expect(walletStyles.refreshButton).toContain("h-[48px]");
+    expect(walletStyles.refreshButton).toContain("w-[48px]");
+    expect(walletStyles.actionButtonPrimary).toContain("h-[48px]");
+    expect(walletStyles.actionButtonSecondary).toContain("h-[48px]");
   });
 
   it("quotes server totals before confirmation and creates PromptPay only after confirm", async () => {

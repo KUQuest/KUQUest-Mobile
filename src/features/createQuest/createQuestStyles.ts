@@ -3,20 +3,20 @@ const styles = {
   hero: "bg-ku-primary px-[24px] pb-[22px] pt-[4px]",
   heroTop: "items-center flex-row min-h-[64px] justify-between",
   heroButton:
-    "items-center border border-ku-white rounded-[14px] h-[48px] justify-center w-[48px]",
+    "items-center border border-ku-on-primary/[0.42] rounded-[14px] h-[48px] justify-center w-[48px]",
   heroTitleGroup: "flex-1 items-center px-[8px]",
-  heroTitle: "text-ku-white font-ku-bold text-ku-title text-center",
+  heroTitle: "text-ku-on-primary font-ku-bold text-ku-title text-center",
   heroSubtitle:
-    "text-ku-white font-ku-regular text-ku-body-small text-center mt-[1px]",
+    "text-ku-on-primary font-ku-regular text-ku-body-small text-center mt-[1px]",
   progressTrack: "items-center flex-row mt-[12px]",
   progressNodePressable:
     "items-center justify-center min-h-[48px] min-w-[48px]",
   progressNode: "items-center rounded-ku-pill h-[40px] justify-center w-[40px]",
-  progressNodeText: "text-ku-white font-ku-bold text-ku-emphasis",
+  progressNodeText: "text-ku-on-primary font-ku-bold text-ku-emphasis",
   progressConnector: "flex-1 h-[2px]",
   stepLabels: "flex-row mt-[4px]",
   stepLabel: "flex-1 font-ku-medium text-center text-ku-meta",
-  stepLabelActive: "text-ku-white font-ku-bold",
+  stepLabelActive: "text-ku-on-primary font-ku-bold",
   surface:
     "bg-ku-background flex-1 -mt-[16px] rounded-tl-[28px] rounded-tr-[28px]",
   loadErrorState: "items-center flex-1 justify-center gap-[12px] p-[32px]",
@@ -133,13 +133,13 @@ const styles = {
     "items-center justify-center bg-ku-card border border-ku-border-subtle rounded-[10px] w-[50px] h-[40px]",
   hourCellSelected: "bg-ku-primary border-ku-primary",
   hourCellText: "text-ku-text-strong font-ku-semibold text-ku-body-small",
-  hourCellTextSelected: "text-white font-ku-bold",
+  hourCellTextSelected: "text-ku-on-primary font-ku-bold",
   minuteGrid: "flex-row flex-wrap justify-between gap-[8px] mb-[12px]",
   minuteCell:
     "items-center justify-center bg-ku-card border border-ku-border-subtle rounded-[12px] w-[72px] h-[44px]",
   minuteCellSelected: "bg-ku-primary border-ku-primary",
   minuteCellText: "text-ku-text-strong font-ku-semibold text-ku-body-small",
-  minuteCellTextSelected: "text-white font-ku-bold",
+  minuteCellTextSelected: "text-ku-on-primary font-ku-bold",
   minuteStepperContainer:
     "flex-row items-center justify-between bg-ku-surface-accent rounded-[12px] px-[12px] py-[8px] mb-[12px]",
   minuteStepperLabel:
@@ -155,7 +155,7 @@ const styles = {
     "text-ku-text-secondary font-ku-semibold text-ku-control",
   timePickerConfirmBtn:
     "flex-1 items-center justify-center bg-ku-primary rounded-[12px] min-h-[46px] px-[16px]",
-  timePickerConfirmText: "text-white font-ku-bold text-ku-control",
+  timePickerConfirmText: "text-ku-on-primary font-ku-bold text-ku-control",
   scheduleCard:
     "bg-ku-card border border-ku-border-subtle rounded-[14px] p-[12px] mb-[12px]",
   scheduleCardHeader: "flex-row items-center justify-between mb-[8px]",
@@ -283,9 +283,9 @@ const styles = {
   reviewActionButtonPrimary: "bg-ku-primary",
   reviewActionButtonSecondary: "bg-transparent border-2 border-ku-primary",
   reviewActionText: "font-ku-semibold text-center text-ku-body-small",
-  reviewActionTextPrimary: "text-ku-white",
+  reviewActionTextPrimary: "text-ku-on-primary",
   reviewActionTextSecondary: "text-ku-primary",
-  primaryButtonText: "text-ku-white font-ku-semibold text-ku-body",
+  primaryButtonText: "text-ku-on-primary font-ku-semibold text-ku-body",
   buttonContent: "items-center flex-row gap-[4px] justify-center",
   successState: "items-center flex-1 justify-center p-[32px]",
   successIcon:

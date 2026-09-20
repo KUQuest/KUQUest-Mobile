@@ -8,7 +8,10 @@ import type { QuestV2Assignment, QuestV2State } from "@/api/questV2Contracts";
 import { useLocale } from "@/features/preferences/localeStore";
 import { getThemeColors } from "@/theme/colors";
 import { workerHomeMessages } from "../workerHomeMessages";
-import { workerHomeStyles as styles } from "../workerHomeStyles";
+import {
+  workerHomeQuickAccessShadow,
+  workerHomeStyles as styles,
+} from "../workerHomeStyles";
 
 interface WorkerQuickAccessBarProps {
   assignment: QuestV2Assignment | null;
@@ -63,72 +66,41 @@ export function WorkerQuickAccessBar({
       accessibilityHint={messages.tapToOpenWork}
       accessibilityLabel={`${stateLabel}: ${questTitle ?? messages.workTitle}`}
       accessibilityRole="button"
+      className={`${styles.quickAccessFloatingContainer} border-ku-primary-dark bg-ku-surface`}
       onPress={handlePress}
-      style={[
-        styles.quickAccessFloatingContainer,
-        {
-          bottom: bottomInset + 8,
-          backgroundColor: themeColors.surface,
-          borderColor: themeColors.primaryDeep,
-        },
-      ]}
+      style={[{ bottom: bottomInset + 8 }, workerHomeQuickAccessShadow]}
       testID="worker-quick-access-bar"
     >
-      <View style={styles.quickAccessTopRow}>
-        <View style={styles.quickAccessLeft}>
+      <View className={styles.quickAccessTopRow}>
+        <View className={styles.quickAccessLeft}>
           <View
-            style={[
-              styles.quickAccessIndicator,
-              { backgroundColor: themeColors.primaryDeep },
-            ]}
+            className={`${styles.quickAccessIndicator} bg-ku-primary-dark`}
           />
-          <View style={{ flex: 1 }}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
+          <View className="flex-1">
+            <View className="flex-row items-center gap-[6px]">
               <BriefcaseBusiness size={14} color={themeColors.primaryDeep} />
               <Text
-                style={[
-                  styles.quickAccessTitle,
-                  { color: themeColors.primaryDeep },
-                ]}
+                className={`${styles.quickAccessTitle} text-ku-primary-dark`}
               >
                 {stateLabel}
               </Text>
             </View>
             <Text
+              className={`${styles.quickAccessSubtitle} text-ku-text-secondary`}
               numberOfLines={1}
-              style={[
-                styles.quickAccessSubtitle,
-                { color: themeColors.textSecondary },
-              ]}
             >
               {questTitle ?? messages.workTitle} · {messages.tapToOpenWork}
             </Text>
           </View>
         </View>
-
         <ChevronRight size={18} color={themeColors.primaryDeep} />
       </View>
-
       <View
-        style={[
-          styles.quickAccessProgressBar,
-          { backgroundColor: themeColors.surfaceSuccess },
-        ]}
+        className={`${styles.quickAccessProgressBar} bg-ku-surface-success`}
       >
         <View
-          style={[
-            styles.quickAccessProgressFill,
-            {
-              backgroundColor: themeColors.primaryDeep,
-              width: progressWidth,
-            },
-          ]}
+          className={`${styles.quickAccessProgressFill} bg-ku-primary-dark`}
+          style={{ width: progressWidth }}
         />
       </View>
     </Pressable>

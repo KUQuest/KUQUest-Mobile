@@ -1,14 +1,13 @@
-import { Image } from "expo-image";
+import { Image, Pressable, ScrollView, View } from "@/tw";
 import { SymbolView } from "expo-symbols";
-import { Platform, Pressable, ScrollView, StyleSheet } from "react-native";
+import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ExternalLink } from "@/components/external-link";
 import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
 import { Collapsible } from "@/components/ui/collapsible";
 import { WebBadge } from "@/components/web-badge";
-import { BottomTabInset, MaxContentWidth, Spacing } from "@/constants/theme";
+import { BottomTabInset, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
 export default function TabTwoScreen() {
@@ -34,20 +33,28 @@ export default function TabTwoScreen() {
 
   return (
     <ScrollView
-      style={[styles.scrollView, { backgroundColor: theme.background }]}
+      className={styles.scrollView}
+      style={{ backgroundColor: theme.background }}
       contentInset={insets}
-      contentContainerStyle={[styles.contentContainer, contentPlatformStyle]}
+      contentContainerClassName={styles.contentContainer}
+      contentContainerStyle={contentPlatformStyle}
     >
-      <ThemedView style={styles.container}>
-        <ThemedView style={styles.titleContainer}>
+      <View
+        className={styles.container}
+        style={{ backgroundColor: theme.background }}
+      >
+        <View className={styles.titleContainer}>
           <ThemedText type="subtitle">Explore</ThemedText>
-          <ThemedText style={styles.centerText} themeColor="textSecondary">
+          <ThemedText className={styles.centerText} themeColor="textSecondary">
             This starter app includes example{"\n"}code to help you get started.
           </ThemedText>
 
           <ExternalLink href="https://docs.expo.dev" asChild>
-            <Pressable style={({ pressed }) => pressed && styles.pressed}>
-              <ThemedView type="backgroundElement" style={styles.linkButton}>
+            <Pressable style={({ pressed }) => pressed && { opacity: 0.7 }}>
+              <View
+                className={styles.linkButton}
+                style={{ backgroundColor: theme.backgroundElement }}
+              >
                 <ThemedText type="link">Expo documentation</ThemedText>
                 <SymbolView
                   tintColor={theme.text}
@@ -58,12 +65,12 @@ export default function TabTwoScreen() {
                   }}
                   size={12}
                 />
-              </ThemedView>
+              </View>
             </Pressable>
           </ExternalLink>
-        </ThemedView>
+        </View>
 
-        <ThemedView style={styles.sectionsWrapper}>
+        <View className={styles.sectionsWrapper}>
           <Collapsible title="File-based routing">
             <ThemedText type="small">
               This app has two screens:{" "}
@@ -81,9 +88,9 @@ export default function TabTwoScreen() {
           </Collapsible>
 
           <Collapsible title="Android, iOS, and web support">
-            <ThemedView
-              type="backgroundElement"
-              style={styles.collapsibleContent}
+            <View
+              className={styles.collapsibleContent}
+              style={{ backgroundColor: theme.backgroundElement }}
             >
               <ThemedText type="small">
                 You can open this project on Android, iOS, and the web. To open
@@ -93,9 +100,9 @@ export default function TabTwoScreen() {
               </ThemedText>
               <Image
                 source={require("@/assets/images/tutorial-web.png")}
-                style={styles.imageTutorial}
+                className={styles.imageTutorial}
               />
-            </ThemedView>
+            </View>
           </Collapsible>
 
           <Collapsible title="Images">
@@ -107,7 +114,7 @@ export default function TabTwoScreen() {
             </ThemedText>
             <Image
               source={require("@/assets/images/react-logo.png")}
-              style={styles.imageReact}
+              className={styles.imageReact}
             />
             <ExternalLink href="https://reactnative.dev/docs/images">
               <ThemedText type="linkPrimary">Learn more</ThemedText>
@@ -137,63 +144,23 @@ export default function TabTwoScreen() {
               library to animate opening this hint.
             </ThemedText>
           </Collapsible>
-        </ThemedView>
+        </View>
         {Platform.OS === "web" && <WebBadge />}
-      </ThemedView>
+      </View>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-  },
-  container: {
-    maxWidth: MaxContentWidth,
-    flexGrow: 1,
-  },
-  titleContainer: {
-    gap: Spacing.three,
-    alignItems: "center",
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.six,
-  },
-  centerText: {
-    textAlign: "center",
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  linkButton: {
-    flexDirection: "row",
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.five,
-    justifyContent: "center",
-    gap: Spacing.one,
-    alignItems: "center",
-  },
-  sectionsWrapper: {
-    gap: Spacing.five,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
-  },
-  collapsibleContent: {
-    alignItems: "center",
-  },
-  imageTutorial: {
-    width: "100%",
-    aspectRatio: 296 / 171,
-    borderRadius: Spacing.three,
-    marginTop: Spacing.two,
-  },
-  imageReact: {
-    width: 100,
-    height: 100,
-    alignSelf: "center",
-  },
-});
+const styles = {
+  scrollView: "flex-1",
+  contentContainer: "flex-row justify-center",
+  container: "grow max-w-[800px]",
+  titleContainer: "items-center gap-ku-md px-ku-lg py-[64px]",
+  centerText: "text-center",
+  linkButton:
+    "items-center flex-row gap-ku-xs justify-center px-ku-lg py-ku-sm rounded-[32px]",
+  sectionsWrapper: "gap-ku-xl px-ku-lg pt-ku-md",
+  collapsibleContent: "items-center",
+  imageTutorial: "mt-ku-sm w-full aspect-[296/171] rounded-[16px]",
+  imageReact: "h-[100px] self-center w-[100px]",
+} as const;

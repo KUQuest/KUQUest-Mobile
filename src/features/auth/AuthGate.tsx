@@ -88,7 +88,7 @@ export default function Index() {
           }}
           testID="auth-gate-retry"
         >
-          <Text className="font-ku-semibold text-ku-white">
+          <Text className="font-ku-semibold text-ku-on-primary">
             {messages.retryButton}
           </Text>
         </Pressable>

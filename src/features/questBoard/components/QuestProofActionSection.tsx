@@ -34,8 +34,8 @@ export function QuestProofActionSection(props: QuestProofActionSectionProps) {
             onPress={props.onOpenSubmission}
             testID="open-proof-submission"
           >
-            <Send color={colors.white} size={18} />
-            <Text className="ml-[8px] font-ku-semibold text-ku-body text-ku-white">
+            <Send color={colors.onPrimary} size={18} />
+            <Text className="ml-[8px] font-ku-semibold text-ku-body text-ku-on-primary">
               {props.submitLabel}
             </Text>
           </Button>

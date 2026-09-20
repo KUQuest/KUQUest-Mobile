@@ -35,7 +35,7 @@ const styles = {
     "text-ku-text-secondary font-ku-regular text-ku-body-small mt-[4px] text-center",
   stateAction:
     "bg-ku-primary rounded-ku-pill mt-[16px] min-h-[48px] justify-center px-[24px]",
-  stateActionText: "text-ku-white font-ku-semibold text-ku-body-small",
+  stateActionText: "text-ku-on-primary font-ku-semibold text-ku-body-small",
   alertIcon: "bg-ku-surface-danger",
 } as const;
 

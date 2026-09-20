@@ -134,7 +134,11 @@ export function TeamAssembleMemberPicker({
                     className={`${styles.memberSelectionBox} ${selected ? styles.memberSelectionBoxSelected : ""}`}
                   >
                     {selected ? (
-                      <Check color={colors.white} size={15} strokeWidth={3} />
+                      <Check
+                        color={colors.onPrimary}
+                        size={15}
+                        strokeWidth={3}
+                      />
                     ) : null}
                   </View>
                   <View className={styles.memberAvatar}>
