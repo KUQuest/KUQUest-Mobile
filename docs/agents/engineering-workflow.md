@@ -6,8 +6,9 @@ This is the detailed workflow behind the concise root `AGENTS.md` pointer.
 
 1. Read `docs/agents/repository-context.md`.
 2. Inspect the owning feature, applicable domain specification/rulebook, existing tests, and current status.
-3. For API-facing work, use `bun run query-api` before changing routes, schemas, or fixtures.
-4. Preserve unrelated changes. Do not invent missing routes, schemas, fixtures, or domain states.
+3. For UI, accessibility, navigation, layout, animation, or styling work, read `docs/agents/ui-design-rules.md` and `DESIGN.md` before editing.
+4. For API-facing work, use `bun run query-api` before changing routes, schemas, or fixtures.
+5. Preserve unrelated changes. Do not invent missing routes, schemas, fixtures, or domain states.
 
 ## Plan and execute
 
@@ -28,7 +29,7 @@ This is the detailed workflow behind the concise root `AGENTS.md` pointer.
 
 - Tests preserve product behavior. Change a test only for a contract reason; assert consumer-visible behavior, boundaries, transitions, errors, accessibility, and invariants.
 - Bug work follows: reproduce, trace the owning path, add useful behavioral coverage, fix the smallest owner, validate.
-- Use repository scripts rather than guessed commands. The normal order is targeted check, typecheck, affected tests, lint, format check, then native validation when relevant.
+- Use repository scripts rather than guessed commands. The normal order is targeted check, typecheck, affected tests, lint, format check, then native validation when relevant. For UI changes, native validation is required when layout, semantics, text scaling, safe areas, motion, or platform behavior can change.
 - Do not treat a successful web run as proof of Android or iOS behavior.
 - Add a reusable gotcha only when the discovery applies to future unrelated sessions.
 

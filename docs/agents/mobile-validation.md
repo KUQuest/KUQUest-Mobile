@@ -39,10 +39,20 @@ Agent-device MCP paths use exactly one `mcp__` prefix:
 
 Prefer semantic refs and selectors over coordinates. Keep logs and snapshots narrow enough to inspect. If a development overlay appears, inspect the accessibility tree and app state before treating it as a startup failure.
 
+For UI and accessibility changes, also exercise the applicable matrix from
+`docs/agents/ui-design-rules.md`: compact and larger windows, portrait and
+landscape, light and dark appearance, large text, keyboard-visible forms,
+reduced motion, and every role/workspace accent. Confirm that labels, roles,
+states, error text, focus order, and non-color state cues appear in the
+accessibility snapshot. These are native checks; Jest and a web run cannot
+prove them.
+
 For scroll-driven chrome transitions, validate both expanded and compact
-states. Every `tab-*` control must remain visible, enabled, hittable, and at
-least 44dp in both states. Run `bun run check-android-navigation-targets` on
-the screen where the navbar is visible after each state is reached.
+states. Every `tab-*` control must remain visible, enabled, hittable, and
+at least 48 logical units in both states. Run
+`bun run check-android-navigation-targets` on the screen where the navbar is
+visible after each state is reached. The checker currently enforces a 44dp
+floor; treat any changed target below 48 logical units as a failure.
 
 ## Evidence
 

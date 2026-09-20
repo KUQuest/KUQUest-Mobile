@@ -27,9 +27,10 @@ files, read:
 2. `CONTEXT.md` — canonical domain language.
 3. `docs/agents/routing.md` — route to the relevant specification, rulebook,
    and ADR.
-4. `CODE_STYLES.md` — review standards, composition, NativeWind, accessibility,
-   and test conventions.
-5. `docs/agents/gotchas.md` — repository-specific traps.
+4. `CODE_STYLES.md` — review standards, composition, NativeWind, and tests.
+5. `docs/agents/ui-design-rules.md` — platform UI behavior, accessibility,
+   responsive layout, navigation, forms, sheets, and native proof.
+6. `docs/agents/gotchas.md` — repository-specific traps.
 
 Then read the owning feature, adjacent tests, and the routed domain documents.
 Read `docs/agents/engineering-workflow.md` for planning, delegation, Git
@@ -41,6 +42,8 @@ safety, behavioral tests, validation order, and delivery evidence.
 - Mobile behavior: `docs/specs/`.
 - Architecture and navigation: `docs/adr/` and
   `docs/system-design-specification.md`.
+- UI behavior and accessibility: `docs/agents/ui-design-rules.md`; visual
+  identity, tokens, typography, and component appearance: `DESIGN.md`.
 - For Quest, Work Chat, Candidate Inquiry, Profile, Wallet, Proof, Review, or
   Settlement changes, resolve the actor, Quest state, selection mode,
   participation, `proofRequired`, and `dueAt` branch before changing behavior.

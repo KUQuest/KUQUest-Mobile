@@ -14,6 +14,9 @@ This file is the review standard. Repository-specific facts belong in the refere
 
 Read `docs/agents/nativewind.md` for the installed NativeWind v5 behavior and token rules.
 
+- Read `docs/agents/ui-design-rules.md` for the platform target, accessibility,
+  responsive layout, navigation, forms, sheets, and native verification contract.
+
 - Import class-styled primitives from `@/tw`; direct `react-native` imports are for APIs and components that do not receive `className`.
 - Use semantic `ku-*` tokens from `src/global.css`, not raw palette utilities or screen-local color constants.
 - Keep imperative colors in `src/theme/colors.ts` synchronized with CSS tokens.
@@ -35,7 +38,14 @@ Read `docs/agents/nativewind.md` for the installed NativeWind v5 behavior and to
 - Use repository scripts: `bun run typecheck`, `bun run lint`, `bun run format:check`, `bun run test`, and `bun run verify`.
 - Native-facing changes require light/dark validation on a development build. Android and iOS are product targets; document the platform that was actually exercised.
 
-## 5. Animated interactive surfaces
+## 5. Platform UI and accessibility
 
-- Do not scale an animated parent that contains interactive controls. Animate spacing or dimensions, or isolate the visual layer, so compact states preserve at least 44dp accessibility bounds.
+- Use 48 logical units as the minimum interactive frame for new or changed controls; the Android navigation checker’s 44dp threshold is a regression floor.
+- Give every interactive control a visible/programmatic name, role, and current state. Keep state and meaning independent of color or motion.
+- Preserve text scaling and content-driven height. Verify focused inputs, errors, safe areas, keyboard-visible layouts, and larger windows on native builds.
+- Meet the contrast and adaptive-layout checks in `docs/agents/ui-design-rules.md`; do not treat a web run or Jest CSS mock as native proof.
+
+## 6. Animated interactive surfaces
+
+- Do not scale an animated parent that contains interactive controls. Animate spacing or dimensions, or isolate the visual layer, so compact states preserve at least 48 logical-unit accessibility bounds.
 - Scroll-driven chrome transitions require native smoke evidence for expanded and compact states; verify every interactive descendant remains enabled and hittable.

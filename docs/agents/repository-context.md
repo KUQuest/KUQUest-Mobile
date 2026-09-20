@@ -4,20 +4,26 @@ This document is the implementation map and safe-debug contract for agents worki
 
 ## Read order and authority
 
-Use this order before a domain change:
+Use this order before a domain or UI change:
 
 1. `CONTEXT.md` — canonical ubiquitous language and domain meanings.
 2. `docs/rulebook/README.md` and the relevant contract under `docs/rulebook/` — target backend behavior, lifecycle, money, conversation, proof, notification, image, and Admin rules.
 3. `docs/agents/routing.md` — deterministic route to the matching specification, rulebook contract, and ADR.
 4. `docs/specs/` — mobile behavior and UI contracts.
 5. `docs/adr/` and `docs/system-design-specification.md` — architectural and navigation decisions.
-6. The owning source module and its adjacent `__tests__/` files — current implementation evidence.
+6. `DESIGN.md` and `docs/agents/ui-design-rules.md` — visual identity plus platform UI/accessibility behavior.
+7. The owning source module and its adjacent `__tests__/` files — current implementation evidence.
 
 Precedence when sources disagree:
 
 `CONTEXT.md` terminology → mirrored backend rulebook target behavior → mobile specifications → ADRs → system-design UI evidence → current implementation and fixtures.
 
 Current code can intentionally lag the rulebook. Treat that as an implementation gap to diagnose, not as permission to delete tests, fixtures, or compatibility values.
+
+For UI work, `docs/agents/ui-design-rules.md` governs platform behavior,
+accessibility, adaptive layout, navigation, forms, and native proof; `DESIGN.md`
+governs the visual system. Current code is evidence of implementation, not a
+reason to weaken either contract.
 
 ## Repository boundaries
 
@@ -26,10 +32,10 @@ Current code can intentionally lag the rulebook. Treat that as an implementation
 - `package.json` — Bun scripts, Expo SDK 57 dependencies, Jest configuration.
 - `app.json`, `app.config.ts`, `eas.json` — Expo/native configuration and build profiles.
 - `README.md` — staging environment, development-build setup, and verification commands.
-- `CODE_STYLES.md` — review standards, feature boundaries, accessibility, and test conventions.
+- `CODE_STYLES.md` — review standards, feature boundaries, NativeWind, and test conventions.
+- `DESIGN.md` — KUQuest visual identity, tokens, typography, and component appearance.
+- `docs/agents/ui-design-rules.md` — platform UI behavior, accessibility, adaptive layout, navigation, forms, sheets, and native proof.
 - `docs/agents/nativewind.md` — NativeWind/Tailwind styling: token naming, dark mode, role accent, and v5-vs-v4 traps.
-- `docs/agents/mobile-validation.md` — canonical staging and native device smoke flow.
-- `docs/agents/engineering-workflow.md` — detailed planning, delegation, safety, testing, and delivery workflow.
 - `AGENTS.md` / `CLAUDE.md` — agent operating rules and pointers.
 - `android/` — native/generated Android build project. Change it only for an explicit native Android task; do not use generated build output as application source.
 - `.expo/`, `node_modules/`, build outputs, and caches are generated state. They are not source-of-truth files.
