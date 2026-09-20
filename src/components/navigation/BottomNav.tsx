@@ -4,7 +4,7 @@ import { useColorScheme, useWindowDimensions } from "react-native";
 import { useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { Image, Pressable, View } from "@/tw";
 import { Animated } from "@/tw/animated";
-import { BriefcaseBusiness, MessageSquare } from "lucide-react-native";
+import { BriefcaseBusiness } from "lucide-react-native";
 import { useLocale } from "@/features/preferences/localeStore";
 import { navigationMessages } from "@/locales/navigationMessages";
 import { getAppChromeMetrics } from "@/theme/layout";
@@ -20,6 +20,7 @@ const navigationHomeIcon = require("@/assets/icons/navigation-home.svg");
 const navigationWalletIcon = require("@/assets/icons/navigation-wallet.svg");
 const navigationProfileIcon = require("@/assets/icons/navigation-profile.svg");
 const navigationCreateIcon = require("@/assets/icons/navigation-create.svg");
+const navigationChatIcon = require("@/assets/icons/navigation-chat.svg");
 
 type NavigationAsset = number;
 
@@ -49,7 +50,7 @@ const baseNavigationItems = {
   chat: {
     routeName: "chat",
     labelKey: "chat",
-    icon: MessageSquare,
+    asset: navigationChatIcon,
   },
   profile: {
     routeName: "profile",
