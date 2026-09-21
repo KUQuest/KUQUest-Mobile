@@ -17,7 +17,6 @@ type PublishQuest = (draft: QuestDraft) => Promise<boolean>;
 export function useCreateQuestCommit({
   draft,
   mode,
-  onClearPendingSave,
   onCompleted,
   publishCheck,
   publishQuest,
@@ -26,7 +25,6 @@ export function useCreateQuestCommit({
 }: {
   draft: QuestDraft;
   mode: CreateQuestFlowMode;
-  onClearPendingSave: () => void;
   onCompleted: (state: CompletionState) => void;
   publishCheck: QuestPublishCheck;
   publishQuest: PublishQuest;
@@ -42,7 +40,6 @@ export function useCreateQuestCommit({
       )
         return false;
 
-      onClearPendingSave();
       if (!isServerEditMode(mode) && state === "OPEN") {
         const published = await publishQuest(draft);
         if (published) onCompleted("OPEN");
@@ -53,38 +50,30 @@ export function useCreateQuestCommit({
       if (saved) onCompleted("DRAFT");
       return saved;
     },
-    [
-      draft,
-      mode,
-      onClearPendingSave,
-      onCompleted,
-      publishCheck.canPublish,
-      publishQuest,
-      saveDraft,
-    ]
+    [draft, mode, onCompleted, publishCheck.canPublish, publishQuest, saveDraft]
   );
 
-  const retry = useCallback(() => {
+  const retry = useCallback(async (): Promise<boolean> => {
     if (isServerEditMode(mode)) {
-      void saveDraft(draft, "DRAFT", true).then((saved) => {
-        if (saved) onCompleted("DRAFT");
-      });
-      return;
+      const saved = await saveDraft(draft, "DRAFT", true);
+      if (saved) onCompleted("DRAFT");
+      return saved;
     }
 
     const intent = saveErrorIntent;
     if (intent?.state === "OPEN") {
-      void publishQuest(draft).then((published) => {
-        if (published && intent.completesFlow) onCompleted("OPEN");
-      });
-      return;
+      const published = await publishQuest(draft);
+      if (published && intent.completesFlow) onCompleted("OPEN");
+      return published;
     }
 
-    void saveDraft(draft, "DRAFT", intent?.completesFlow ?? false).then(
-      (saved) => {
-        if (saved && intent?.completesFlow) onCompleted("DRAFT");
-      }
+    const saved = await saveDraft(
+      draft,
+      "DRAFT",
+      intent?.completesFlow ?? false
     );
+    if (saved && intent?.completesFlow) onCompleted("DRAFT");
+    return saved;
   }, [draft, mode, onCompleted, publishQuest, saveDraft, saveErrorIntent]);
 
   return { finish, retry };

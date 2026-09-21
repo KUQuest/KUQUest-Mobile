@@ -37,6 +37,7 @@ import {
 import { validateCreateQuestStep } from "./createQuestValidation";
 import {
   getInitialCreateQuestStep,
+  getNextCreateQuestStep,
   isServerEditMode,
   resolveCreateQuestFlowMode,
 } from "./createQuestWorkflow";
@@ -96,6 +97,7 @@ export default function CreateQuestScreen({
     validationSummary,
     setValidationSummary,
     draftChangedRef,
+    draftRevisionRef,
   } = draftState;
   const {
     step,
@@ -111,10 +113,8 @@ export default function CreateQuestScreen({
   const localPersistence = useQuestPersistence({
     editQuestId: mode.kind === "local-draft" ? mode.draftId : undefined,
     step,
-    completedState,
-    draft,
     draftChangedRef,
-    publishedQuestRef,
+    draftRevisionRef,
     setDraft,
     setStep,
     setCompletedState,
@@ -136,7 +136,7 @@ export default function CreateQuestScreen({
     draftStorageKey: localPersistence.draftStorageKey,
     draft,
     draftIdRef: localPersistence.draftIdRef,
-    draftChangedRef,
+    draftRevisionRef,
     publishedQuestRef,
     saveRequestRef: localPersistence.saveRequestRef,
     setSaveErrorIntent: localPersistence.setSaveErrorIntent,
@@ -189,31 +189,26 @@ export default function CreateQuestScreen({
     [messages]
   );
 
-  const clearDraftWorkflowState = useCallback(() => {
-    resetSaveState();
-    localPersistence.setSaveErrorIntent(null);
+  // Editing the draft only invalidates derived state. It must never reset a save
+  // mutation (indicator churn) and it issues no request: nulling the publish-check
+  // quest id disables that query.
+  const invalidateDraftDerivatives = () => {
     publishState.setPublishCheck(null);
     setValidationSummary(null);
     setPendingInvalidField(null);
-  }, [
-    localPersistence,
-    publishState,
-    resetSaveState,
-    setPendingInvalidField,
-    setValidationSummary,
-  ]);
+  };
 
   const updateDraft: DraftUpdater = <K extends keyof QuestDraft>(
     field: K,
     value: QuestDraft[K]
   ) => {
     draftState.updateDraft(field, value);
-    clearDraftWorkflowState();
+    invalidateDraftDerivatives();
   };
 
   const updateParticipation = (value: QuestDraft["participation"]) => {
     draftState.updateParticipation(value);
-    clearDraftWorkflowState();
+    invalidateDraftDerivatives();
   };
 
   const validateStep = (currentStep: Step): boolean => {
@@ -241,32 +236,56 @@ export default function CreateQuestScreen({
     return result.firstErrorField === null;
   };
 
-  const goNext = () => {
-    if (validateStep(step)) wizard.advance();
+  // Authoritative double-tap guard: the action bar's `disabled={isSaving}` only
+  // applies after a re-render, so a rapid second press would otherwise re-enter.
+  const actionInFlightRef = useRef(false);
+  const runExclusive = useCallback(async (action: () => Promise<unknown>) => {
+    if (actionInFlightRef.current) return;
+    actionInFlightRef.current = true;
+    try {
+      await action();
+    } finally {
+      actionInFlightRef.current = false;
+    }
+  }, []);
+
+  const goNext = async () => {
+    if (!validateStep(step)) return;
+    const targetStep = getNextCreateQuestStep(step);
+    if (!targetStep) return;
+    if (!isServerEditMode(mode)) {
+      const saved = await localPersistence.saveDraft(
+        draft,
+        "DRAFT",
+        false,
+        targetStep
+      );
+      if (!saved) return;
+      if (targetStep === 3) await publishState.refreshPublishCheck();
+    }
+    wizard.advance();
   };
 
   const goToStep = (targetStep: Step) => {
     wizard.selectPreviousStep(targetStep);
   };
 
-  const clearPendingSave = localPersistence.cancelPendingSave;
-
   const reviewPublishCheck =
     publishState.publishCheck ?? getQuestPublishCheck(draft);
+  const activeSaveDraft = isServerEditMode(mode)
+    ? editState.saveDraft
+    : localPersistence.saveDraft;
   const commit = useCreateQuestCommit({
     draft,
     mode,
-    onClearPendingSave: clearPendingSave,
     onCompleted: setCompletedState,
     publishCheck: reviewPublishCheck,
     publishQuest: publishState.publishQuest,
-    saveDraft: isServerEditMode(mode)
-      ? editState.saveDraft
-      : localPersistence.saveDraft,
+    saveDraft: activeSaveDraft,
     saveErrorIntent,
   });
 
-  const finishQuest = (state: CompletionState) => {
+  const finishQuest = async (state: CompletionState) => {
     if (!validateStep(2)) return;
     if (
       !isServerEditMode(mode) &&
@@ -276,7 +295,7 @@ export default function CreateQuestScreen({
       setValidationSummary(messages.publishCheckBlocked);
       return;
     }
-    void commit.finish(state);
+    return commit.finish(state);
   };
 
   const leaveCreateFlow = () => {
@@ -340,6 +359,7 @@ export default function CreateQuestScreen({
   const resetDraft = async () => {
     const draftId = localPersistence.prepareDraftReset();
     publishedQuestRef.current = null;
+    publishState.resetCreateIdempotencyKey();
     draftChangedRef.current = false;
     try {
       if (draftStorageKey && draftId) {
@@ -481,8 +501,10 @@ export default function CreateQuestScreen({
           logisticsExpanded={logisticsExpanded}
           logisticsSummary={review.logisticsSummary}
           messages={messages}
-          onRefreshPublishCheck={() => void publishState.refreshPublishCheck()}
-          onRetrySave={commit.retry}
+          onRefreshPublishCheck={() =>
+            void runExclusive(publishState.refreshPublishCheck)
+          }
+          onRetrySave={() => void runExclusive(commit.retry)}
           onToggleLogistics={() => setLogisticsExpanded((current) => !current)}
           participationOptions={participationOptions}
           pendingInvalidField={pendingInvalidField}
@@ -509,9 +531,9 @@ export default function CreateQuestScreen({
           step={step}
           stacked={useStackedActions}
           onCancel={confirmCancel}
-          onNext={goNext}
-          onPublish={() => finishQuest("OPEN")}
-          onSaveDraft={() => finishQuest("DRAFT")}
+          onNext={() => void runExclusive(goNext)}
+          onPublish={() => void runExclusive(() => finishQuest("OPEN"))}
+          onSaveDraft={() => void runExclusive(() => finishQuest("DRAFT"))}
         />
       </KeyboardAvoidingView>
     </CreateQuestFrame>
