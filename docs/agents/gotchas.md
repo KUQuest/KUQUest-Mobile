@@ -11,6 +11,14 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 ## Entries
 
+### 2026-09-21 — `bun x tsc --noEmit` can pass vacuously; use `bun run typecheck`
+
+**What happened**: Repeated `bun x tsc --noEmit` invocations reported "Build successful (0 units compiled)" while the committed code had type errors that husky's `tsc --noEmit` then caught, costing three failed commits.
+
+**Root cause**: The shell wrapper resolved a different binary/filter path than the repo's `tsc --noEmit` script and compiled nothing.
+
+**Rule**: Type-check with `bun run typecheck` (the repo script), never `bun x tsc --noEmit` directly.
+
 ### 2026-09-21 — An online Android device can still fail native smoke
 
 **What happened**: `adb devices` showed a ready device, but native validation was blocked by an active agent-device lease, an occupied Metro port, and a stale/broken bundle.

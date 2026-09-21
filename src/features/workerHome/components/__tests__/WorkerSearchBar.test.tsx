@@ -1,5 +1,6 @@
 import React from "react";
-import { fireEvent, render } from "@testing-library/react-native";
+import { fireEvent } from "@testing-library/react-native";
+import { renderWithAppTheme as render } from "@/testing/queryTestUtils";
 import { WorkerSearchBar } from "../WorkerSearchBar";
 
 jest.mock("@/features/preferences/localeStore", () => ({

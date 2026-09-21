@@ -103,9 +103,9 @@ const styles = {
   workGalleryImage: "bg-ku-surface-placeholder rounded-[12px]",
   showAllReviews: "self-start min-h-[48px] justify-center mt-[4px] px-[8px]",
   showAllReviewsText: "text-ku-primary font-ku-semibold text-ku-meta underline",
-  imageFallback: "items-center bg-ku-surface-placeholder justify-center",
+  imageFallback: "items-center bg-ku-surface-terracotta justify-center",
   imageFallbackText:
-    "text-ku-text-muted font-ku-regular text-ku-meta text-center",
+    "text-ku-terracotta-dark font-ku-regular text-ku-meta text-center",
   filterScroll: "self-stretch mb-[16px]",
   filterList: "flex-row gap-[8px]",
   filterChip:

@@ -3,6 +3,7 @@ import { Modal, Platform } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Check, ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { getRouteParam } from "@/utils/navigation";
 
 import { Button } from "@/components/ui/Button";
 import { TextArea } from "@/components/ui/TextArea";
@@ -32,22 +33,16 @@ type ReportRouteSearchParams = Partial<
   Record<keyof ReportRouteParams, string | string[]>
 >;
 
-function getSingleRouteParam(value: unknown): string | undefined {
-  if (typeof value === "string" && value) return value;
-  if (Array.isArray(value)) return getSingleRouteParam(value[0]);
-  return undefined;
-}
-
 export default function ReportScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<ReportRouteSearchParams>();
   const { locale } = useLocale();
   const insets = useSafeAreaInsets();
   const messages = reportMessages[locale];
-  const sourceParam = getSingleRouteParam(params.source);
+  const sourceParam = getRouteParam(params.source);
   const source: ReportSource | undefined =
     sourceParam === "chat" || sourceParam === "quest" ? sourceParam : undefined;
-  const questTitle = getSingleRouteParam(params.questTitle);
+  const questTitle = getRouteParam(params.questTitle);
   const contextType =
     source === "chat"
       ? messages.chatContextLabel

@@ -4,11 +4,30 @@
 
 @layer theme {
   @theme {
+    /* Brand */
+    --color-ku-primary: #5f7655;
+    --color-ku-primary-dark: #465b3e;
+    --color-ku-primary-deep: #34462f;
+    --color-ku-primary-subtle: #edf2ea;
+    --color-ku-primary-border: #b6c4af;
+    --color-ku-on-primary: #ffffff;
+
+    --color-ku-support: #755570;
+    --color-ku-support-dark: #5d4058;
+    --color-ku-support-deep: #463143;
+    --color-ku-support-subtle: #f3ecf2;
+    --color-ku-support-border: #b79aaf;
+    --color-ku-on-support: #ffffff;
+
+    /* Neutral */
     --color-ku-background: #f7f9f8;
     --color-ku-surface: #ffffff;
+    --color-ku-surface-raised: #f0f3f1;
+    --color-ku-surface-high: #e7ece8;
     --color-ku-surface-muted: #f0f3f1;
     --color-ku-surface-subtle: #f0f3f1;
-    --color-ku-surface-accent: #e5f1f0;
+    --color-ku-surface-accent: #edf2ea;
+    --color-ku-surface-terracotta: #faeee7;
     --color-ku-surface-success: #e2eee7;
     --color-ku-surface-danger: #f2e6e6;
     --color-ku-surface-image: #deeae9;
@@ -16,26 +35,30 @@
     --color-ku-surface-nav-translucent: rgb(255 255 255 / 0.92);
     --color-ku-border-nav: rgb(24 32 27 / 0.14);
     --color-ku-nav-icon-muted: #89928c;
-    --color-ku-primary: #006664;
-    --color-ku-primary-dark: #004d4b;
-    --color-ku-primary-deep: #004d4b;
-    --color-ku-on-primary: #ffffff;
-    --color-ku-text: #18201b;
+
     --color-ku-text-strong: #18201b;
+    --color-ku-text: #273029;
     --color-ku-text-secondary: #5f6962;
-    --color-ku-text-muted: #5f6962;
-    --color-ku-text-subtle: #89928c;
-    --color-ku-text-faint: #89928c;
-    --color-ku-border: #dde3df;
-    --color-ku-border-subtle: #dde3df;
-    --color-ku-border-muted: #dde3df;
-    --color-ku-border-accent: #b9d5d2;
+    --color-ku-text-muted: #737d76;
+    --color-ku-text-subtle: #737d76;
+    --color-ku-text-faint: #737d76;
+
+    --color-ku-border: #d5ddd7;
+    --color-ku-border-subtle: #d5ddd7;
+    --color-ku-border-muted: #d5ddd7;
+    --color-ku-border-accent: #b6c4af;
     --color-ku-border-danger: #e6bdbe;
     --color-ku-border-success: #b3d4c2;
-    --color-ku-danger: #c13d43;
-    --color-ku-danger-dark: #8b2c30;
-    --color-ku-danger-light: #e6bdbe;
-    --color-ku-danger-icon: #c13d43;
+    --color-ku-divider: #dde3df;
+
+    /* Supporting accents */
+    --color-ku-cream: #f6efe6;
+    --color-ku-gold: #c8953d;
+    --color-ku-terracotta: #9c634d;
+    --color-ku-terracotta-dark: #7a3d2b;
+    --color-ku-rose: #c88c9b;
+
+    /* Semantic */
     --color-ku-success: #21864f;
     --color-ku-success-bright: #21864f;
     --color-ku-success-light: #b3d4c2;
@@ -43,6 +66,10 @@
     --color-ku-warning-dark: #845716;
     --color-ku-surface-warning: #f1ece2;
     --color-ku-border-warning: #e3d0b3;
+    --color-ku-danger: #c13d43;
+    --color-ku-danger-dark: #8b2c30;
+    --color-ku-danger-light: #e6bdbe;
+    --color-ku-danger-icon: #c13d43;
     --color-ku-info: #356ca5;
     --color-ku-disabled: #c8ceca;
     --color-ku-black: #18201b;
@@ -102,11 +129,30 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-ku-background: #0f1411;
-    --color-ku-surface: #161c18;
-    --color-ku-surface-muted: #1d2520;
-    --color-ku-surface-subtle: #1d2520;
-    --color-ku-surface-accent: #153b39;
+    /* Brand */
+    --color-ku-primary: #a9c79e;
+    --color-ku-primary-dark: #7fa273;
+    --color-ku-primary-deep: #5f7655;
+    --color-ku-primary-subtle: #243128;
+    --color-ku-primary-border: #526b58;
+    --color-ku-on-primary: #142019;
+
+    --color-ku-support: #d8b4d0;
+    --color-ku-support-dark: #be91b5;
+    --color-ku-support-deep: #966b8f;
+    --color-ku-support-subtle: #342832;
+    --color-ku-support-border: #72556d;
+    --color-ku-on-support: #21171f;
+
+    /* Neutral */
+    --color-ku-background: #101713;
+    --color-ku-surface: #172019;
+    --color-ku-surface-raised: #1e2a22;
+    --color-ku-surface-high: #27342b;
+    --color-ku-surface-muted: #1e2a22;
+    --color-ku-surface-subtle: #1e2a22;
+    --color-ku-surface-accent: #243128;
+    --color-ku-surface-terracotta: #35251f;
     --color-ku-surface-success: #172e21;
     --color-ku-surface-danger: #33211f;
     --color-ku-surface-image: #142b27;
@@ -114,39 +160,47 @@
     --color-ku-surface-nav-translucent: rgb(22 28 24 / 0.94);
     --color-ku-border-nav: rgb(243 246 244 / 0.16);
     --color-ku-nav-icon-muted: #7d8881;
-    --color-ku-primary: #2fa39b;
-    --color-ku-primary-dark: #25847e;
-    --color-ku-primary-deep: #2fa39b;
-    --color-ku-on-primary: #f7fffe;
-    --color-ku-text: #f3f6f4;
-    --color-ku-text-strong: #f3f6f4;
-    --color-ku-text-secondary: #aab4ad;
-    --color-ku-text-muted: #aab4ad;
-    --color-ku-text-subtle: #7d8881;
-    --color-ku-text-faint: #7d8881;
-    --color-ku-border: #303b34;
-    --color-ku-border-subtle: #303b34;
-    --color-ku-border-muted: #303b34;
-    --color-ku-border-accent: #2e5753;
+
+    --color-ku-text-strong: #f2f5f2;
+    --color-ku-text: #e3e9e4;
+    --color-ku-text-secondary: #b4bdb6;
+    --color-ku-text-muted: #919c94;
+    --color-ku-text-subtle: #919c94;
+    --color-ku-text-faint: #919c94;
+
+    --color-ku-border: #3a4940;
+    --color-ku-border-subtle: #3a4940;
+    --color-ku-border-muted: #3a4940;
+    --color-ku-border-accent: #526b58;
     --color-ku-border-danger: #5b2f2f;
     --color-ku-border-success: #204c32;
-    --color-ku-danger: #ef6469;
-    --color-ku-danger-dark: #f4999c;
-    --color-ku-danger-light: #5b2f2f;
-    --color-ku-danger-icon: #ef6469;
-    --color-ku-success: #42b873;
-    --color-ku-success-bright: #42b873;
+    --color-ku-divider: #334039;
+
+    /* Supporting accents */
+    --color-ku-cream: #302b24;
+    --color-ku-gold: #e3bb70;
+    --color-ku-terracotta: #da9a80;
+    --color-ku-terracotta-dark: #f2c0aa;
+    --color-ku-rose: #dba7b4;
+
+    /* Semantic */
+    --color-ku-success: #62c88b;
+    --color-ku-success-bright: #62c88b;
     --color-ku-success-light: #204c32;
-    --color-ku-warning: #e4a83b;
+    --color-ku-warning: #e4b45a;
     --color-ku-warning-dark: #edc67e;
     --color-ku-surface-warning: #312c18;
     --color-ku-border-warning: #57461f;
-    --color-ku-info: #659ad0;
+    --color-ku-danger: #ef777b;
+    --color-ku-danger-dark: #f4999c;
+    --color-ku-danger-light: #5b2f2f;
+    --color-ku-danger-icon: #ef6469;
+    --color-ku-info: #75a8da;
     --color-ku-disabled: #58615b;
     --color-ku-black: #0f1411;
     --color-ku-white: #f7fffe;
     --color-ku-overlay: rgb(0 0 0 / 0.64);
-    --color-ku-card: #1d2520;
+    --color-ku-card: #172019;
   }
 }
 

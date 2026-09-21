@@ -8,8 +8,9 @@ import type { QuestV2EditRequest } from "@/api/questV2Contracts";
 import type { LiveQuestSnapshot } from "@/features/questBoard/liveQuestService";
 import HirerQuestManageRoute from "../manage";
 
+const mockPush = jest.fn();
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn() }),
   useLocalSearchParams: () => ({ id: "quest-1" }),
 }));
 
@@ -236,5 +237,37 @@ describe("HirerQuestManageRoute condition edit", () => {
     await act(async () => undefined);
 
     expect(view.queryByTestId("hirer-manage-condition-edit")).toBeNull();
+  });
+
+  it("renders a file dispute action when the Quest state is QUEST_FAILED and navigates to dispute", async () => {
+    mockPush.mockClear();
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        state: "QUEST_FAILED",
+        quest: {
+          ...createSnapshot().quest,
+          state: "QUEST_FAILED",
+        },
+      })
+    );
+    const view = await render(<HirerQuestManageRoute />);
+    const disputeButton = await view.findByTestId("hirer-manage-dispute");
+    expect(disputeButton).toBeTruthy();
+    fireEvent.press(disputeButton);
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]/dispute",
+      params: { id: "quest-1" },
+    });
+  });
+
+  it("does not render the dispute action for non-failed Quests", async () => {
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        state: "QUEST_ASSIGNED",
+      })
+    );
+    const view = await render(<HirerQuestManageRoute />);
+    await act(async () => undefined);
+    expect(view.queryByTestId("hirer-manage-dispute")).toBeNull();
   });
 });

@@ -3,7 +3,7 @@ import { SymbolView } from "expo-symbols";
 import Animated, { FadeIn } from "react-native-reanimated";
 
 import { ThemedText } from "@/components/themed-text";
-import { useTheme } from "@/hooks/use-theme";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { Pressable, View } from "@/tw";
 
 export function Collapsible({
@@ -11,10 +11,10 @@ export function Collapsible({
   title,
 }: PropsWithChildren & { title: string }) {
   const [isOpen, setIsOpen] = useState(false);
-  const theme = useTheme();
+  const { colors } = useAppTheme();
 
   return (
-    <View style={{ backgroundColor: theme.background }}>
+    <View style={{ backgroundColor: colors.background }}>
       <Pressable
         className={styles.heading}
         style={({ pressed }) => pressed && { opacity: 0.7 }}
@@ -22,7 +22,7 @@ export function Collapsible({
       >
         <View
           className={styles.button}
-          style={{ backgroundColor: theme.backgroundElement }}
+          style={{ backgroundColor: colors.surfaceMuted }}
         >
           <SymbolView
             name={{
@@ -32,7 +32,7 @@ export function Collapsible({
             }}
             size={14}
             weight="bold"
-            tintColor={theme.text}
+            tintColor={colors.text}
             style={{ transform: [{ rotate: isOpen ? "-90deg" : "90deg" }] }}
           />
         </View>
@@ -43,7 +43,7 @@ export function Collapsible({
         <Animated.View entering={FadeIn.duration(200)}>
           <View
             className={styles.content}
-            style={{ backgroundColor: theme.backgroundElement }}
+            style={{ backgroundColor: colors.surfaceMuted }}
           >
             {children}
           </View>

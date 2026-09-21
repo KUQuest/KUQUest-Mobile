@@ -14,9 +14,9 @@ import { Image, Pressable, ScrollView, Text, View } from "@/tw";
 import { Chip } from "@/components/ui/Chip";
 import { ScreenLayout } from "../../components/layout/ScreenLayout";
 import { colors } from "@/theme/colors";
+import { formatDisplayMonthYear } from "@/utils";
 import { getProfileLayoutMetrics } from "@/theme/profileLayout";
 import { useLocale } from "@/features/preferences/localeStore";
-import type { SupportedLocale } from "@/locales/locale";
 import { profileMessages } from "@/locales/profileMessages";
 import {
   usePublicProfileQuery,
@@ -40,15 +40,6 @@ import type {
 
 type PublicProfileTab =
   "about" | "experience" | "works" | "certificates" | "reviews";
-
-function formatDate(value: string, locale: SupportedLocale): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", {
-    year: "numeric",
-    month: "short",
-  }).format(date);
-}
 
 function sortExperiences(
   experiences: ProfileExperience[]
@@ -147,7 +138,8 @@ export default function PublicProfileScreen() {
       title: cert.name,
       issuer: cert.issuer,
       issuedYear:
-        formatDate(cert.issuedAt, locale).split(" ").pop() ?? cert.issuedAt,
+        formatDisplayMonthYear(cert.issuedAt, locale).split(" ").pop() ??
+        cert.issuedAt,
       link: cert.image?.url ?? "",
     }));
   }, [profile, locale]);

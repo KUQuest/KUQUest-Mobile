@@ -159,6 +159,39 @@ describe("MyQuestListScreen", () => {
       params: { id: "draft-1" },
     });
   });
+
+  it("keeps completed and closed Hirer Quests in history with review actions", async () => {
+    mockHirerList.mockResolvedValue([
+      {
+        ...draftQuest("completed-1", "Completed Quest", "QUEST_OPEN"),
+        state: "QUEST_COMPLETED",
+      },
+      {
+        ...draftQuest("cancelled-1", "Cancelled Quest", "QUEST_OPEN"),
+        state: "QUEST_CANCELLED",
+      },
+      {
+        ...draftQuest("failed-1", "Failed Quest", "QUEST_OPEN"),
+        state: "QUEST_FAILED",
+      },
+    ] as never);
+
+    const screen = await renderWithQueryClient(
+      <MyQuestListScreen initialRole="hirer" initialTab="completed" />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Completed Quest")).toBeTruthy();
+      expect(screen.getByText("Cancelled Quest")).toBeTruthy();
+      expect(screen.getByText("Failed Quest")).toBeTruthy();
+    });
+    expect(screen.getByTestId("my-quest-list-action-completed-1")).toBeTruthy();
+    fireEvent.press(screen.getByTestId("my-quest-list-action-completed-1"));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]/review",
+      params: { id: "completed-1" },
+    });
+  });
   it("projects Worker tabs, history items, and empty-state labels", () => {
     const projection = projectMyQuestWorkspace({
       role: "worker",

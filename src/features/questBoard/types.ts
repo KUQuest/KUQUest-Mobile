@@ -48,6 +48,7 @@ export const QuestTeamStatus = {
   TEAM_SUBMITTED: "TEAM_SUBMITTED",
   TEAM_SELECTED: "TEAM_SELECTED",
   TEAM_REJECTED: "TEAM_REJECTED",
+  TEAM_DISBANDED: "TEAM_DISBANDED",
 } as const;
 export type QuestTeamStatus =
   (typeof QuestTeamStatus)[keyof typeof QuestTeamStatus];
@@ -83,14 +84,19 @@ export type QuestAssignmentStatus =
 export const QuestProofStatus = {
   PROOF_PENDING: "PROOF_PENDING",
   PROOF_APPROVED: "PROOF_APPROVED",
+  /** Legacy umbrella value for a declined proof. v2 emits PROOF_NOT_APPROVED. */
   PROOF_REJECTED: "PROOF_REJECTED",
+  PROOF_NOT_APPROVED: "PROOF_NOT_APPROVED",
   PROOF_AUTO_APPROVED: "PROOF_AUTO_APPROVED",
 } as const;
 export type QuestProofStatus =
   (typeof QuestProofStatus)[keyof typeof QuestProofStatus];
-
 export const QuestEditRequestStatus = {
   EDIT_REQUEST_PENDING: "EDIT_REQUEST_PENDING",
+  /** v2 terminal states: `APPLIED` after consent, `FAILED` on decline/timeout/leave. */
+  EDIT_REQUEST_APPLIED: "EDIT_REQUEST_APPLIED",
+  EDIT_REQUEST_FAILED: "EDIT_REQUEST_FAILED",
+  /** Legacy umbrella labels kept for the fixture adapter's consent vocabulary. */
   EDIT_REQUEST_APPROVED: "EDIT_REQUEST_APPROVED",
   EDIT_REQUEST_REJECTED: "EDIT_REQUEST_REJECTED",
 } as const;
@@ -103,6 +109,61 @@ export const QuestEditResponseStatus = {
 } as const;
 export type QuestEditResponseStatus =
   (typeof QuestEditResponseStatus)[keyof typeof QuestEditResponseStatus];
+
+/** v2 wire selection modes (`questV2ModeSchema`). */
+export const QuestMode = {
+  FIRST_COME_FIRST_SERVED: "FIRST_COME_FIRST_SERVED",
+  CANDIDATE: "CANDIDATE",
+} as const;
+export type QuestMode = (typeof QuestMode)[keyof typeof QuestMode];
+
+/** Hirer decision for an underfilled Quest (`PROCEED` keeps it, `CANCEL` ends it). */
+export const QuestUnderfilledDecision = {
+  PROCEED: "PROCEED",
+  CANCEL: "CANCEL",
+} as const;
+export type QuestUnderfilledDecision =
+  (typeof QuestUnderfilledDecision)[keyof typeof QuestUnderfilledDecision];
+
+/** Worker consent decision on an underfilled Quest. */
+export const QuestUnderfilledConsentDecision = {
+  ACCEPT: "ACCEPT",
+  DECLINE: "DECLINE",
+} as const;
+export type QuestUnderfilledConsentDecision =
+  (typeof QuestUnderfilledConsentDecision)[keyof typeof QuestUnderfilledConsentDecision];
+
+/** Hirer verdict on a submitted proof (v2 review payload). */
+export const QuestProofDecision = {
+  PROOF_APPROVED: "PROOF_APPROVED",
+  PROOF_NOT_APPROVED: "PROOF_NOT_APPROVED",
+} as const;
+export type QuestProofDecision =
+  (typeof QuestProofDecision)[keyof typeof QuestProofDecision];
+
+/** Server-derived next action for the authenticated viewer. */
+export const QuestNextAction = {
+  NONE: "NONE",
+  JOIN: "JOIN",
+  APPLY: "APPLY",
+  WITHDRAW_APPLICATION: "WITHDRAW_APPLICATION",
+  CREATE_TEAM: "CREATE_TEAM",
+  JOIN_TEAM: "JOIN_TEAM",
+  SUBMIT_TEAM: "SUBMIT_TEAM",
+  SELECT_CANDIDATE: "SELECT_CANDIDATE",
+  SELECT_TEAM: "SELECT_TEAM",
+  DECIDE_UNDERFILLED: "DECIDE_UNDERFILLED",
+  CONSENT_UNDERFILLED: "CONSENT_UNDERFILLED",
+  RESPOND_TO_EDIT: "RESPOND_TO_EDIT",
+  WAIT_FOR_START: "WAIT_FOR_START",
+  SUBMIT_PROOF: "SUBMIT_PROOF",
+  CONFIRM_COMPLETION: "CONFIRM_COMPLETION",
+  REVIEW_PROOF: "REVIEW_PROOF",
+  CANCEL: "CANCEL",
+  CREATE_REVIEW: "CREATE_REVIEW",
+} as const;
+export type QuestNextAction =
+  (typeof QuestNextAction)[keyof typeof QuestNextAction];
 
 export type QuestLocationMode = "online" | "on-campus";
 export type QuestParticipationMode = "single" | "team";

@@ -1,7 +1,11 @@
 import { QuestStatus } from "@/features/questBoard/types";
 
 import { hirerHomeMessages } from "../hirerHomeMessages";
-import { formatHirerDueAt, getQuestProgressStages } from "../hirerHomeData";
+import {
+  formatHirerDueAt,
+  getQuestProgressStages,
+  prioritizeHirerHomeQuests,
+} from "../hirerHomeData";
 
 describe("Hirer Home Quest progress", () => {
   it("projects every canonical lifecycle state into five human stages", () => {
@@ -28,6 +32,31 @@ describe("Hirer Home Quest progress", () => {
 
     expect(formatHirerDueAt(dueAt, "th")).toContain("18:00");
     expect(formatHirerDueAt(dueAt, "en")).toContain("18:00");
+  });
+  it("prioritizes live work before assigned and open Quests", () => {
+    const quests = [
+      {
+        id: "open",
+        status: QuestStatus.QUEST_OPEN,
+        dueAt: "2026-09-01T00:00:00.000Z",
+      },
+      {
+        id: "in-progress",
+        status: QuestStatus.QUEST_IN_PROGRESS,
+        dueAt: null,
+      },
+      {
+        id: "assigned",
+        status: QuestStatus.QUEST_ASSIGNED,
+        dueAt: "2026-09-30T00:00:00.000Z",
+      },
+    ];
+
+    expect(prioritizeHirerHomeQuests(quests).map((quest) => quest.id)).toEqual([
+      "in-progress",
+      "assigned",
+      "open",
+    ]);
   });
 
   it("localizes the timeline heading for Thai users", () => {

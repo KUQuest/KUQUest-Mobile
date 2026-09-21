@@ -15,6 +15,7 @@ import {
   type UploadAsset,
 } from "@/api/fileUpload";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
+import { getRouteParam } from "@/utils/navigation";
 import { liveQuestService } from "@/features/questBoard/liveQuestService";
 import { useLocale } from "@/features/preferences/localeStore";
 import { chatMessages } from "@/locales/chatMessages";
@@ -48,13 +49,6 @@ type ChatRouteSearchParams = Partial<
   Record<keyof ChatRouteParams, string | string[]>
 >;
 
-function getSingleRouteParam(value: unknown): string | undefined {
-  if (typeof value === "string" && value) return value;
-  if (typeof value === "number" && Number.isFinite(value)) return String(value);
-  if (Array.isArray(value)) return getSingleRouteParam(value[0]);
-  return undefined;
-}
-
 export function useChatConversationController(
   conversationType: ConversationMode
 ) {
@@ -65,13 +59,13 @@ export function useChatConversationController(
   const messages = chatMessages[locale];
   const routeQuestId =
     conversationType === "CANDIDATE_INQUIRY"
-      ? getSingleRouteParam(params.id)
-      : getSingleRouteParam(params.questId);
+      ? getRouteParam(params.id)
+      : getRouteParam(params.questId);
   const routeConversationId =
     conversationType === "CANDIDATE_INQUIRY"
-      ? getSingleRouteParam(params.conversationId)
-      : getSingleRouteParam(params.id);
-  const routeViewerId = getSingleRouteParam(params.viewerId);
+      ? getRouteParam(params.conversationId)
+      : getRouteParam(params.id);
+  const routeViewerId = getRouteParam(params.viewerId);
   const sessionQuery = useSessionQuery();
   const viewerId = routeViewerId || sessionQuery.data?.user.id || "";
   const queryClient = useQueryClient();

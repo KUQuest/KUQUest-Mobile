@@ -1,19 +1,17 @@
 import { version } from "expo/package.json";
-import { useColorScheme } from "react-native";
 
 import { ThemedText } from "./themed-text";
 
-import { useTheme } from "@/hooks/use-theme";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { Image, View } from "@/tw";
 
 export function WebBadge() {
-  const scheme = useColorScheme();
-  const theme = useTheme();
+  const { scheme, colors } = useAppTheme();
 
   return (
     <View
       className={styles.container}
-      style={{ backgroundColor: theme.background }}
+      style={{ backgroundColor: colors.background }}
     >
       <ThemedText
         type="code"

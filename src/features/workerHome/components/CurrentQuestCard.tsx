@@ -1,5 +1,4 @@
 import React from "react";
-import { useColorScheme } from "react-native";
 import { useRouter } from "expo-router";
 import {
   BriefcaseBusiness,
@@ -11,7 +10,7 @@ import {
 import { Pressable, Text, View } from "@/tw";
 import type { QuestV2Assignment, QuestV2State } from "@/api/questV2Contracts";
 import { useLocale } from "@/features/preferences/localeStore";
-import { getThemeColors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { workerHomeMessages } from "../workerHomeMessages";
 import { workerHomeStyles as styles } from "../workerHomeStyles";
 
@@ -60,8 +59,7 @@ export function CurrentQuestCard({
   onSubmit,
 }: CurrentQuestCardProps) {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const themeColors = getThemeColors(colorScheme);
+  const { colors: themeColors } = useAppTheme();
   const { locale } = useLocale();
   const messages = workerHomeMessages[locale];
   const questState = state ?? assignment.questState;

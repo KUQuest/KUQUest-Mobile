@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { useTheme } from "@/hooks/use-theme";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { View } from "@/tw";
 
 import { ThemedText } from "./themed-text";
@@ -14,14 +14,14 @@ export function HintRow({
   title = "Try editing",
   hint = "app/index.tsx",
 }: HintRowProps) {
-  const theme = useTheme();
+  const { colors } = useAppTheme();
 
   return (
     <View className={styles.stepRow}>
       <ThemedText type="small">{title}</ThemedText>
       <View
         className={styles.codeSnippet}
-        style={{ backgroundColor: theme.backgroundSelected }}
+        style={{ backgroundColor: colors.surfaceAccent }}
       >
         <ThemedText themeColor="textSecondary">{hint}</ThemedText>
       </View>

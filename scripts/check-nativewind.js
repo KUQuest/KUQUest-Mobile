@@ -166,16 +166,22 @@ function findMissingAccentWiring(rootDir) {
   const files = {
     css: fs.readFileSync(path.join(rootDir, "src/global.css"), "utf8"),
     provider: fs.readFileSync(
-      path.join(rootDir, "src/features/workspace/RoleAccentProvider.tsx"),
+      path.join(rootDir, "src/features/workspace/AppThemeProvider.tsx"),
       "utf8"
     ),
     metro: fs.readFileSync(path.join(rootDir, "metro.config.js"), "utf8"),
   };
+  const providerUsesPaletteMapper =
+    files.provider.includes("toCssVariable") &&
+    files.provider.includes("Object.entries(themeColors)");
   const missing = [];
 
   for (const variable of ACCENT_VARIABLES) {
     for (const [owner, source] of Object.entries(files)) {
-      if (!source.includes(variable)) {
+      if (
+        !source.includes(variable) &&
+        !(owner === "provider" && providerUsesPaletteMapper)
+      ) {
         missing.push(`${variable} is missing from ${owner}`);
       }
     }

@@ -16,7 +16,7 @@ KUQuest is a KU-only job board where people with `@ku.th` accounts can discover,
 
 ## Positioning
 
-A job board restricted to the `@ku.th` community, using structured Quests with clear requirements, timing, participation, and per-person rewards.
+KUQuest is a university community platform at the intersection of a trusted campus opportunity board, an editorial lifestyle publication, and a calm productivity tool. Restricted to the verified `@ku.th` community, it connects students, faculty, and campus staff through structured Quests with explicit requirements, transparent scheduling, safe participation modes, and guaranteed escrowed rewards.
 
 ## Operating Context
 
@@ -49,9 +49,11 @@ A job board restricted to the `@ku.th` community, using structured Quests with c
 
 ## Brand Commitments
 
-- The existing product name is KUQuest and the current implementation includes KUQuest logo assets at `logo.svg` and `topbar-logo.svg`.
-- The existing user-facing domain language uses Quest, Quest Board, My Quests, Student Profile, Academic Registration, and Review.
-- The binding status of the existing visual identity and logo assets has not been separately confirmed.
+- Product Name: KUQuest, with official logo assets at `logo.svg` and `topbar-logo.svg`.
+- Visual Identity: The interface adheres to an **Organic Editorial Mobile UI** — anchored by Kasetsart forest sage (`#5F7655`), deep plum (`#755570`) as a supporting tone, warm paper accents (cream, gold, terracotta, rose), and calm 60–70% neutral canvases.
+- Tone & Voice: Calm, honest, grounded, community-oriented, and quietly confident. Differentiates sharply from sterile corporate enterprise tools, hyperactive gig apps, gambling-like gamification, and pastel wellness apps.
+- Domain Language: Uses canonical domain terms from `CONTEXT.md`: Quest, Quest Board, My Quests, Hirer, Worker, Student Profile, Academic Registration, Proof, and Review.
+- Aesthetic Restraint: Soft natural shapes, tactile 8px/16px/24px geometry, minimal elevation, no harsh gradients, no glassmorphism, and no card rainbows.
 
 ## Evidence on Hand
 
@@ -65,7 +67,8 @@ A job board restricted to the `@ku.th` community, using structured Quests with c
 ## Product Principles
 
 - Keep eligibility within the trusted `@ku.th` community.
-- Make opportunities structured and comparable before someone applies.
+- Make opportunities structured, comparable, and transparent before someone applies.
+- Treat the interface as an organic editorial noticeboard: calm neutral grounds, intentional color blocking, and typography-first hierarchy.
 - Separate low-risk discovery from lifecycle-changing participation.
-- Use public profile reputation to build trust without exposing private identity details.
-- Support the bilingual, native mobile context of the KU community.
+- Use public profile reputation to build community trust without exposing private student identities.
+- Support the bilingual (Thai and English), native mobile context of the Kasetsart University community.

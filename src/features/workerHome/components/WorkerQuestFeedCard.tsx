@@ -1,5 +1,4 @@
 import React from "react";
-import { useColorScheme } from "react-native";
 import { useRouter } from "expo-router";
 import {
   CalendarDays,
@@ -14,7 +13,7 @@ import { Pressable, Text, View } from "@/tw";
 import type { QuestV2BoardCard } from "@/api/questV2Contracts";
 import { SATANG_PER_BAHT, formatSatang } from "@/domain/satang";
 import { useLocale } from "@/features/preferences/localeStore";
-import { getThemeColors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { workerHomeMessages } from "../workerHomeMessages";
 import { workerHomeStyles as styles } from "../workerHomeStyles";
 
@@ -47,8 +46,7 @@ export function WorkerQuestFeedCard({
   onPress,
 }: WorkerQuestFeedCardProps) {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const themeColors = getThemeColors(colorScheme);
+  const { colors: themeColors } = useAppTheme();
   const { locale } = useLocale();
   const messages = workerHomeMessages[locale];
 

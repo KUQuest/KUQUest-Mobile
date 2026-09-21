@@ -13,6 +13,7 @@ import type {
   QuestV2PublishCheck,
 } from "@/api/questV2Contracts";
 
+import { formatDateTime } from "@/domain/datetime";
 import { createQuestMessages } from "@/locales/createQuestMessages";
 import type { SupportedLocale } from "@/locales/locale";
 import { formatSatang, parseSatangInput } from "@/domain/satang";
@@ -75,6 +76,48 @@ export function formatQuestDuration(
   if (hours > 0) parts.push(`${hours}h`);
   if (minutes > 0 && days === 0) parts.push(`${minutes}m`);
   return parts.join(" ") || "< 1 min";
+}
+export interface QuestScheduleDisplay {
+  range: string;
+  duration: string;
+  crossesMidnight: boolean;
+}
+
+export function formatQuestSchedule(
+  schedule: Pick<
+    QuestDraft,
+    "startDate" | "startTime" | "deadline" | "endTime"
+  >,
+  locale: "en" | "th",
+  emptyLabel: string
+): QuestScheduleDisplay {
+  const hasValues =
+    Boolean(schedule.startDate) &&
+    Boolean(schedule.startTime) &&
+    Boolean(schedule.deadline) &&
+    Boolean(schedule.endTime) &&
+    TIME_PATTERN.test(schedule.startTime) &&
+    TIME_PATTERN.test(schedule.endTime);
+  if (!hasValues) {
+    return { range: emptyLabel, duration: "", crossesMidnight: false };
+  }
+
+  const startMs = getDateTimeValue(schedule.startDate, schedule.startTime);
+  const endMs = getDateTimeValue(schedule.deadline, schedule.endTime);
+  const duration =
+    startMs !== null && endMs !== null && endMs > startMs
+      ? formatQuestDuration(startMs, endMs, locale)
+      : "";
+
+  return {
+    range: `${formatDateTime(schedule.startDate, schedule.startTime, locale, emptyLabel)} – ${formatDateTime(schedule.deadline, schedule.endTime, locale, emptyLabel)}`,
+    duration,
+    crossesMidnight:
+      startMs !== null &&
+      endMs !== null &&
+      endMs > startMs &&
+      schedule.startDate !== schedule.deadline,
+  };
 }
 
 export function addHoursToTime(time: string, hoursToAdd: number): string {

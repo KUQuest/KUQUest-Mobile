@@ -1,4 +1,6 @@
+import { Platform } from "react-native";
 import { spacing } from "./spacing";
+export const bottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 
 export interface AppChromeMetrics {
   isTablet: boolean;

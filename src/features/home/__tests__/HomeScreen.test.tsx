@@ -279,6 +279,87 @@ describe("HomeScreen live active quests syncing", () => {
 
     expect(queryByTestId("hirer-quest-carousel")).toBeNull();
   });
+  it("keeps the home carousel compact while counting every Hirer Quest", async () => {
+    const activeQuests = Array.from({ length: 6 }, (_, index) => ({
+      id: `active-${index + 1}`,
+      title: `Open Quest ${index + 1}`,
+      state: "QUEST_OPEN",
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "SINGLE",
+      headcount: 1,
+      dueAt: "2026-09-20T17:00:00.000+07:00",
+      tag: { name: "Design" },
+    }));
+
+    (questApi.listMine as jest.Mock)
+      .mockResolvedValueOnce({
+        items: [
+          ...activeQuests.slice(0, 5),
+          {
+            id: "draft-1",
+            title: "Draft Quest 1",
+            state: "QUEST_DRAFT",
+            mode: "FIRST_COME_FIRST_SERVED",
+            participation: "SINGLE",
+            headcount: 1,
+            dueAt: null,
+            tag: { name: "Design" },
+          },
+        ],
+        nextCursor: "page-2",
+      })
+      .mockResolvedValueOnce({
+        items: [
+          activeQuests[5],
+          {
+            id: "draft-2",
+            title: "Draft Quest 2",
+            state: "QUEST_DRAFT",
+            mode: "FIRST_COME_FIRST_SERVED",
+            participation: "SINGLE",
+            headcount: 1,
+            dueAt: null,
+            tag: { name: "Design" },
+          },
+          {
+            id: "completed-1",
+            title: "Completed Quest",
+            state: "QUEST_COMPLETED",
+            mode: "FIRST_COME_FIRST_SERVED",
+            participation: "SINGLE",
+            headcount: 1,
+            dueAt: "2026-09-20T17:00:00.000+07:00",
+            tag: { name: "Design" },
+          },
+        ],
+        nextCursor: null,
+      });
+    (questApi.listQuestAssignments as jest.Mock).mockResolvedValue([]);
+    (questApi.listApplications as jest.Mock).mockResolvedValue([]);
+    (questApi.listCandidateTeams as jest.Mock).mockResolvedValue([]);
+
+    const { getByTestId, getByText, queryByText } = await renderWithQueryClient(
+      <HomeScreen />
+    );
+
+    await waitFor(() => {
+      expect(getByText("Open Quest 1")).toBeTruthy();
+    });
+
+    expect(getByText("6 เควสต์ที่กำลังดำเนินการ")).toBeTruthy();
+    expect(getByText("2 ฉบับร่าง")).toBeTruthy();
+    expect(getByText("1 เควสต์ที่เสร็จสิ้นแล้ว")).toBeTruthy();
+    expect(getByTestId("hirer-view-all-active")).toBeTruthy();
+    expect(queryByText("Open Quest 6")).toBeNull();
+    expect(queryByText("Completed Quest")).toBeNull();
+
+    fireEvent.press(getByTestId("hirer-view-all-active"));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/my-quests",
+      params: { role: "hirer", tab: "active" },
+    });
+  });
+
   it("navigates to the correct destination for each Quick Access action", async () => {
     (questApi.listMine as jest.Mock).mockResolvedValue({
       items: [],

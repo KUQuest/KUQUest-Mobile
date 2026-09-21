@@ -9,9 +9,9 @@ import {
   Clock3,
   Users,
 } from "lucide-react-native";
-import { useColorScheme } from "react-native";
 
 import { useLocale } from "@/features/preferences/localeStore";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import {
   formatHirerDueAt,
   getQuestProgressStages,
@@ -61,10 +61,10 @@ export function HirerQuestProgressCard({
   onViewRoster,
 }: HirerQuestProgressCardProps) {
   const { locale } = useLocale();
-  const colorScheme = useColorScheme();
+  const { scheme } = useAppTheme();
   const messages = hirerHomeMessages[locale];
   const palette =
-    colorScheme === "dark" ? hirerHomePalette.dark : hirerHomePalette.light;
+    scheme === "dark" ? hirerHomePalette.dark : hirerHomePalette.light;
   const statusLabel = messages.statusLabels[status];
   const isTerminal = status === "QUEST_FAILED" || status === "QUEST_CANCELLED";
   const dueLabel = useMemo(

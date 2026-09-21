@@ -3,8 +3,8 @@ import { Platform, type TextProps } from "react-native";
 import { Text } from "@/tw";
 import { cn } from "@/tw/cn";
 
-import { ThemeColor } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import type { ThemeColors } from "@/theme/colors";
 
 export type ThemedTextProps = TextProps & {
   type?:
@@ -16,7 +16,7 @@ export type ThemedTextProps = TextProps & {
     | "link"
     | "linkPrimary"
     | "code";
-  themeColor?: ThemeColor;
+  themeColor?: keyof ThemeColors;
 };
 
 type ThemedTextType = NonNullable<ThemedTextProps["type"]>;
@@ -28,14 +28,14 @@ export function ThemedText({
   className,
   ...rest
 }: ThemedTextProps) {
-  const theme = useTheme();
+  const { colors } = useAppTheme();
 
   return (
     <Text
       className={cn(styles[type], className)}
       style={[
-        { color: theme[themeColor ?? "text"] },
-        type === "linkPrimary" && { color: "#3c87f7" },
+        { color: colors[themeColor ?? "text"] },
+        type === "linkPrimary" && { color: colors.info },
         type === "code" && {
           fontWeight: Platform.select({ android: 700 }) ?? 500,
         },

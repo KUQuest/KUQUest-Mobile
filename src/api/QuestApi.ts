@@ -71,12 +71,10 @@ import {
   type QuestV2Underfilled,
 } from "./questV2Contracts";
 import { appendUploadFile, type UploadAsset } from "./fileUpload";
+import { createIdempotencyKey } from "@/utils/idempotency";
 
 export function createQuestIdempotencyKey(): string {
-  return (
-    globalThis.crypto?.randomUUID?.() ??
-    `mobile-${Date.now()}-${Math.random().toString(36).slice(2)}`
-  );
+  return createIdempotencyKey("mobile");
 }
 
 export interface CreateQuestV2Payload {

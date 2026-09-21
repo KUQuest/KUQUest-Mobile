@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ActivityIndicator, Alert, useColorScheme } from "react-native";
+import { ActivityIndicator, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
@@ -22,7 +22,7 @@ import {
   useWorkerLiveSnapshotQuery,
 } from "../api/workerHomeQueries";
 import { workerHomeMessages } from "../workerHomeMessages";
-import { getThemeColors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 
 export interface WorkerProofUploadScreenProps {
   questId?: string;
@@ -37,8 +37,7 @@ export default function WorkerProofUploadScreen({
 }: WorkerProofUploadScreenProps = {}) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
-  const themeColors = getThemeColors(colorScheme);
+  const { colors: themeColors } = useAppTheme();
   const { locale } = useLocale();
   const messages = workerHomeMessages[locale];
 

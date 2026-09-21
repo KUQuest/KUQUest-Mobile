@@ -6,6 +6,7 @@ import {
   formatBangkokIso,
   formatDraftReward,
   formatQuestDuration,
+  formatQuestSchedule,
   getDraftRewardSatang,
   getHeadcountForParticipation,
   getNearestQuarterHour,
@@ -525,6 +526,26 @@ describe("Create Quest model", () => {
       const time = new Date("2026-09-20T09:00:00").getTime();
       expect(formatQuestDuration(time, time)).toBe("");
       expect(formatQuestDuration(time, time - 1000)).toBe("");
+    });
+  });
+
+  describe("formatQuestSchedule", () => {
+    test("shows both endpoint dates and marks next-day schedules", () => {
+      const display = formatQuestSchedule(
+        {
+          startDate: "2026-10-15",
+          startTime: "21:00",
+          deadline: "2026-10-16",
+          endTime: "01:30",
+        },
+        "en",
+        "Not selected"
+      );
+
+      expect(display.range).toContain("15 Oct 2026 · 21:00");
+      expect(display.range).toContain("16 Oct 2026 · 01:30");
+      expect(display.duration).toBe("4h 30m");
+      expect(display.crossesMidnight).toBe(true);
     });
   });
 

@@ -24,5 +24,5 @@ export function useSessionQuery(options: SessionQueryOptions = {}) {
 }
 
 export function clearSessionCache(queryClient: QueryClient): void {
-  queryClient.removeQueries({ queryKey: sessionKeys.all });
+  queryClient.clear();
 }

@@ -20,6 +20,8 @@ export const hirerHomeStyles = {
   sectionCounterBadge:
     "rounded-ku-pill border border-ku-border px-ku-sm py-[2px]",
   sectionCounterText: "font-ku-semibold text-ku-label leading-[16px]",
+  viewAllButton: "min-h-[44px] justify-center px-[4px]",
+  viewAllText: "font-ku-semibold text-ku-label leading-[16px]",
   card: "overflow-hidden rounded-[18px] border-[1.5px] border-ku-border",
   cardTopAccent: "h-[3.5px] w-full",
   cardHeader: "px-ku-md pb-ku-sm pt-ku-md",

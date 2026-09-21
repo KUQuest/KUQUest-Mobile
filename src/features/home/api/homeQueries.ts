@@ -2,10 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 
 import { questApi } from "@/api/QuestApi";
 import { studentApi } from "@/api/StudentApi";
-import type {
-  CanonicalHirerQuestStatus,
-  LiveHirerQuestCardData,
-  QuestMemberProfile,
+import { QuestStatus } from "@/features/questBoard/types";
+import { myQuestService } from "@/features/myQuests/myQuestService";
+import {
+  HIRER_HOME_MAX_ACTIVE_QUESTS,
+  prioritizeHirerHomeQuests,
+  type CanonicalHirerQuestStatus,
+  type HirerHomeData,
+  type QuestMemberProfile,
 } from "../hirerHomeData";
 
 export const homeKeys = {
@@ -20,16 +24,33 @@ export function useHirerHomeQuery() {
   });
 }
 
-async function loadHirerHome(
-  signal: AbortSignal
-): Promise<LiveHirerQuestCardData[]> {
-  const res = await questApi.listMine({ limit: 50 }, { signal });
-  const activeQuests = res.items.filter(
-    (q) => q.state !== "QUEST_CANCELLED" && q.state !== "QUEST_COMPLETED"
+async function loadHirerHome(signal: AbortSignal): Promise<HirerHomeData> {
+  const quests = await myQuestService.listAllMyHirerQuests({ signal });
+  const activeSourceQuests = quests.filter(
+    (q) =>
+      q.state !== QuestStatus.QUEST_DRAFT &&
+      q.state !== QuestStatus.QUEST_COMPLETED &&
+      q.state !== QuestStatus.QUEST_CANCELLED &&
+      q.state !== QuestStatus.QUEST_FAILED
   );
+  const draftCount = quests.filter(
+    (q) => q.state === QuestStatus.QUEST_DRAFT
+  ).length;
+  const completedCount = quests.filter(
+    (q) => q.state === QuestStatus.QUEST_COMPLETED
+  ).length;
+  const selectedSourceQuests = prioritizeHirerHomeQuests(
+    activeSourceQuests.map((quest) => ({
+      quest,
+      status: quest.state as CanonicalHirerQuestStatus,
+      dueAt: quest.dueAt,
+    }))
+  )
+    .slice(0, HIRER_HOME_MAX_ACTIVE_QUESTS)
+    .map(({ quest }) => quest);
 
-  return Promise.all(
-    activeQuests.map(async (q) => {
+  const activeQuests = await Promise.all(
+    selectedSourceQuests.map(async (q) => {
       const isSingleCandidate =
         q.mode === "CANDIDATE" && q.participation !== "GROUP";
       const isGroupCandidate =
@@ -101,4 +122,11 @@ async function loadHirerHome(
       };
     })
   );
+
+  return {
+    activeQuests,
+    activeQuestCount: activeSourceQuests.length,
+    draftCount,
+    completedCount,
+  };
 }

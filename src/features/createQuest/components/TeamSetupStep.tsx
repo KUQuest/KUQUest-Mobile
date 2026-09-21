@@ -25,7 +25,7 @@ import { formatDate, formatDateTime } from "@/domain/datetime";
 import {
   addDaysToDate,
   addHoursToTime,
-  formatQuestDuration,
+  formatQuestSchedule,
   getDateTimeValue,
   getNearestQuarterHour,
   getRelativeDateValue,
@@ -33,12 +33,15 @@ import {
   type QuestDraft,
 } from "../createQuestModel";
 import type { ChoiceOption, ScheduleField } from "../createQuestTypes";
+import { useCreateQuestImages } from "../useCreateQuestImages";
+import { useSchedulePicker } from "../useSchedulePicker";
 import { ChoiceGroup } from "./ChoiceGroup";
 import CustomTimePickerModal from "./CustomTimePickerModal";
 import { DateTimeField } from "./DateTimeField";
 import { FieldLabel } from "./FieldLabel";
 import { LogisticsSection } from "./LogisticsSection";
 import { ModeSummary } from "./ModeSummary";
+import { SchedulePickerModal } from "./SchedulePickerModal";
 import { SectionHeading } from "./SectionHeading";
 export function TeamSetupStep({
   messages,
@@ -52,16 +55,11 @@ export function TeamSetupStep({
   logisticsExpanded,
   logisticsSummary,
   onToggleLogistics,
-  imageError,
-  setImageError,
   headcountRef,
   rewardRef,
   startDateRef,
   deadlineRef,
   locationRef,
-  openSchedulePicker,
-  pickImages,
-  removeImage,
   updateDraft,
   updateParticipation,
 }: {
@@ -76,22 +74,29 @@ export function TeamSetupStep({
   logisticsExpanded: boolean;
   logisticsSummary: string;
   onToggleLogistics: () => void;
-  imageError?: string;
-  setImageError: (error?: string) => void;
   headcountRef: Ref<ComponentRef<typeof RNTextInput>>;
   rewardRef: Ref<ComponentRef<typeof RNTextInput>>;
   startDateRef: Ref<ComponentRef<typeof RNPressable>>;
   deadlineRef: Ref<ComponentRef<typeof RNPressable>>;
   locationRef: Ref<ComponentRef<typeof RNTextInput>>;
-  openSchedulePicker: (field: ScheduleField) => void;
-  pickImages: () => void;
-  removeImage: (index: number) => void;
   updateDraft: <K extends keyof QuestDraft>(
     field: K,
     value: QuestDraft[K]
   ) => void;
   updateParticipation: (value: QuestDraft["participation"]) => void;
 }) {
+  const {
+    activeField: scheduleField,
+    pickerMode,
+    pickerValue: schedulePickerValue,
+    minimumDate: schedulePickerMinimum,
+    openPicker: openSchedulePicker,
+    closePicker: closeSchedulePicker,
+    handleChange: handleDateChange,
+    confirmIos: confirmIosScheduleValue,
+  } = useSchedulePicker({ draft, updateDraft });
+  const { imageError, setImageError, pickImages, removeImage } =
+    useCreateQuestImages({ draft, messages, updateDraft });
   const [timePickerField, setTimePickerField] = useState<ScheduleField | null>(
     null
   );
@@ -111,6 +116,11 @@ export function TeamSetupStep({
     }
     updateDraft("endTime", addHoursToTime(baseTime, 2));
   };
+  const scheduleDisplay = formatQuestSchedule(
+    draft,
+    locale,
+    messages.notSelected
+  );
   return (
     <>
       <View className={styles.sectionCard}>
@@ -338,7 +348,7 @@ export function TeamSetupStep({
                 );
               }
               if (startMs !== null && endMs !== null) {
-                const durationStr = formatQuestDuration(startMs, endMs, locale);
+                const durationStr = scheduleDisplay.duration;
                 if (durationStr) {
                   return (
                     <View className={styles.durationBadge}>
@@ -350,6 +360,9 @@ export function TeamSetupStep({
                         />
                         <Text className={styles.durationBadgeText}>
                           {messages.questDuration}: {durationStr}
+                          {scheduleDisplay.crossesMidnight
+                            ? ` · ${messages.nextDay}`
+                            : ""}
                         </Text>
                       </View>
                     </View>
@@ -553,6 +566,17 @@ export function TeamSetupStep({
           ) : null}
         </View>
       </LogisticsSection>
+      <SchedulePickerModal
+        messages={messages}
+        visible={scheduleField !== null}
+        field={scheduleField}
+        mode={pickerMode}
+        value={schedulePickerValue}
+        minimumDate={schedulePickerMinimum}
+        onChange={handleDateChange}
+        onConfirmIos={confirmIosScheduleValue}
+        onClose={closeSchedulePicker}
+      />
       <CustomTimePickerModal
         visible={Boolean(timePickerField)}
         field={timePickerField ?? "start"}

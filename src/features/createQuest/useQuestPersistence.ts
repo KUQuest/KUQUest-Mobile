@@ -218,6 +218,20 @@ export function useQuestPersistence({
   const retryDraftLoad = useCallback(() => {
     setLoadAttempt((value) => value + 1);
   }, []);
+  const cancelPendingSave = useCallback(() => {
+    if (!saveTimerRef.current) return;
+    clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = null;
+  }, []);
+
+  const prepareDraftReset = useCallback(() => {
+    cancelPendingSave();
+    saveRequestRef.current += 1;
+    skipPersistRef.current = true;
+    const draftId = draftIdRef.current;
+    draftIdRef.current = null;
+    return draftId;
+  }, [cancelPendingSave]);
 
   const saveState = saveMutation.isPending
     ? "saving"
@@ -246,6 +260,8 @@ export function useQuestPersistence({
     saveTimerRef,
     saveRequestRef,
     saveDraft,
+    cancelPendingSave,
+    prepareDraftReset,
     resetSaveState: saveMutation.reset,
   };
 }

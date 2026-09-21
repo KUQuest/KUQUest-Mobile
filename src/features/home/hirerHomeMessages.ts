@@ -17,6 +17,7 @@ export interface HirerHomeMessages {
   emptyDescription: string;
   activeQuestTitle: string;
   activeQuestCounter: (current: number, total: number) => string;
+  viewAllActive: string;
   workerProfile: string;
   assignedWorkerRole: string;
   timelineTitle: string;
@@ -27,11 +28,12 @@ export interface HirerHomeMessages {
   dueAt: (value: string) => string;
   quickAccessTitle: string;
   quickActiveTitle: string;
-  quickActiveDesc: string;
+  quickActiveCount: (count: number) => string;
   quickDraftTitle: string;
   quickDraftDesc: string;
+  quickDraftCount: (count: number) => string;
   quickHistoryTitle: string;
-  quickHistoryDesc: string;
+  quickHistoryCount: (count: number) => string;
   quickBoardTitle: string;
   quickBoardDesc: string;
   quickTopUpTitle: string;
@@ -81,6 +83,7 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
       "Published Quests with accepted Workers will appear here.",
     activeQuestTitle: "Active Quest",
     activeQuestCounter: (current, total) => `${current} of ${total}`,
+    viewAllActive: "View all",
     workerProfile: "View Worker profile",
     assignedWorkerRole: "Assigned Worker",
     timelineTitle: "QUEST TIMELINE",
@@ -92,11 +95,12 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     dueAt: (value) => value,
     quickAccessTitle: "Quick Actions",
     quickActiveTitle: "In Progress",
-    quickActiveDesc: "Active quests",
+    quickActiveCount: (count) => `${count} active quests`,
     quickDraftTitle: "Drafts",
     quickDraftDesc: "Saved quest drafts",
+    quickDraftCount: (count) => `${count} saved quest drafts`,
     quickHistoryTitle: "History",
-    quickHistoryDesc: "Completed quests",
+    quickHistoryCount: (count) => `${count} completed quests`,
     quickBoardTitle: "Quest Board",
     quickBoardDesc: "Browse all quests",
     quickTopUpTitle: "Top-up",
@@ -162,6 +166,7 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     emptyDescription: "เควสต์ที่เผยแพร่และมีผู้ทำงานตอบรับจะแสดงที่นี่",
     activeQuestTitle: "เควสต์ที่กำลังดำเนินการ",
     activeQuestCounter: (current, total) => `${current}/${total}`,
+    viewAllActive: "ดูทั้งหมด",
     workerProfile: "ดูโปรไฟล์ผู้ทำงาน",
     assignedWorkerRole: "ผู้รับผิดชอบงาน",
     timelineTitle: "ลำดับการทำงาน",
@@ -173,11 +178,12 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     dueAt: (value) => value,
     quickAccessTitle: "เมนูลัด",
     quickActiveTitle: "กำลังทำงาน",
-    quickActiveDesc: "เควสต์ที่กำลังดำเนินการ",
+    quickActiveCount: (count) => `${count} เควสต์ที่กำลังดำเนินการ`,
     quickDraftTitle: "ฉบับร่าง",
     quickDraftDesc: "เควสต์ที่ยังไม่เผยแพร่",
+    quickDraftCount: (count) => `${count} ฉบับร่าง`,
     quickHistoryTitle: "ประวัติ",
-    quickHistoryDesc: "เควสต์ที่เสร็จสิ้นแล้ว",
+    quickHistoryCount: (count) => `${count} เควสต์ที่เสร็จสิ้นแล้ว`,
     quickBoardTitle: "กระดานเควสต์",
     quickBoardDesc: "ค้นหาและดูเควสต์ทั้งหมด",
     quickTopUpTitle: "เติมเงิน",

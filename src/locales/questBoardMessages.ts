@@ -271,6 +271,8 @@ export interface QuestBoardMessages {
   conditionEditPendingDescription: string;
   conditionEditCountdownLabel: string;
   conditionEditVotingProgress: (accepted: number, total: number) => string;
+  reviewQuest: string;
+  fileDispute: string;
 }
 
 export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
@@ -638,6 +640,8 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     conditionEditCountdownLabel: "Time remaining",
     conditionEditVotingProgress: (accepted, total) =>
       `${accepted} of ${total} Workers responded`,
+    reviewQuest: "Write review",
+    fileDispute: "File dispute",
   },
   th: {
     title: "กระดานเควสต์",
@@ -994,5 +998,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     conditionEditCountdownLabel: "เวลาที่เหลือ",
     conditionEditVotingProgress: (accepted, total) =>
       `ผู้ทำงานตอบแล้ว ${accepted} จาก ${total} คน`,
+    reviewQuest: "เขียนรีวิว",
+    fileDispute: "ยื่นข้อพิพาท",
   },
 };

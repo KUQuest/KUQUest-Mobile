@@ -1,10 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type QueryClient } from "@tanstack/react-query";
 
 import { ApiError } from "@/api/ApiClient";
 import type { AcademicRegistrationOptions } from "@/api/contracts";
 import { authService } from "@/features/auth/AuthService";
 import { AuthError } from "@/features/auth/types";
 import { profileModule } from "@/features/profile/profileModule";
+import { profileKeys } from "@/features/profile/api/profileQueries";
 import type { ProfileDraft } from "@/features/profile/types";
 import type { UnavailableProfileCollections } from "../profilePersistenceCoordinator";
 
@@ -46,6 +47,12 @@ export function useOnboardingQuery() {
     queryKey: onboardingKeys.profile(),
     queryFn: ({ signal }) => loadOnboardingData(signal),
   });
+}
+
+export function invalidateOnboardingQueries(queryClient: QueryClient): void {
+  void queryClient.invalidateQueries({ queryKey: onboardingKeys.profile() });
+  void queryClient.invalidateQueries({ queryKey: profileKeys.detail() });
+  void queryClient.invalidateQueries({ queryKey: profileKeys.editData() });
 }
 
 async function loadOnboardingData(
