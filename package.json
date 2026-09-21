@@ -91,6 +91,7 @@
     "format:check": "prettier --check .",
     "check-nativewind": "node ./scripts/check-nativewind.js",
     "check-routes": "node ./scripts/check-orphaned-routes.js",
+    "check-enum-literals": "node ./scripts/check-enum-literals.js",
     "check-android-navigation-targets": "node ./scripts/check-android-navigation-targets.js",
     "check-android-workspace-surface": "node ./scripts/check-android-workspace-surface.js",
     "mobile:android:prepare": "node ./scripts/prepare-android-device.js",

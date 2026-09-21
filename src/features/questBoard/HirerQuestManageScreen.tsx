@@ -38,6 +38,16 @@ import { getChatRouteParams } from "@/features/chat/chatData";
 import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
+import {
+  QuestApplicationStatus,
+  QuestEditRequestStatus,
+  QuestMode,
+  QuestNextAction,
+  QuestParticipation,
+  QuestProofStatus,
+  QuestStatus,
+  QuestTeamStatus,
+} from "./types";
 
 export interface HirerQuestManageScreenProps {
   questId?: string;
@@ -134,24 +144,24 @@ export default function HirerQuestManageScreen({
     .sort((a, b) => a.position - b.position)
     .map((item) => item.text);
   const pendingProof = snapshot.proofs.find(
-    (proof) => proof.status === "PROOF_PENDING"
+    (proof) => proof.status === QuestProofStatus.PROOF_PENDING
   );
-  const terminal = [
-    "QUEST_COMPLETED",
-    "QUEST_CANCELLED",
-    "QUEST_FAILED",
-  ].includes(snapshot.state);
+  const terminal =
+    snapshot.state === QuestStatus.QUEST_COMPLETED ||
+    snapshot.state === QuestStatus.QUEST_CANCELLED ||
+    snapshot.state === QuestStatus.QUEST_FAILED;
   const canReviewCandidateProposals =
     snapshot.actor === "HIRER" &&
-    snapshot.mode === "CANDIDATE" &&
-    (snapshot.participation === "GROUP"
+    snapshot.mode === QuestMode.CANDIDATE &&
+    (snapshot.participation === QuestParticipation.GROUP
       ? snapshot.capabilities.canSelectTeam
       : snapshot.capabilities.canSelectCandidate);
   const canProposeConditionEdit =
     snapshot.actor === "HIRER" &&
-    snapshot.state === "QUEST_ASSIGNED" &&
+    snapshot.state === QuestStatus.QUEST_ASSIGNED &&
     snapshot.capabilities.canRequestEdit &&
-    snapshot.editRequest?.status !== "EDIT_REQUEST_PENDING";
+    snapshot.editRequest?.status !==
+      QuestEditRequestStatus.EDIT_REQUEST_PENDING;
   const openChat = () => {
     if (!snapshot.workConversation || !viewerId) return;
     router.push({
@@ -290,10 +300,13 @@ export default function HirerQuestManageScreen({
           </Text>
         </View>
         {canReviewCandidateProposals &&
-        (snapshot.participation === "GROUP"
-          ? snapshot.teams.some((team) => team.state === "TEAM_SUBMITTED")
+        (snapshot.participation === QuestParticipation.GROUP
+          ? snapshot.teams.some(
+              (team) => team.state === QuestTeamStatus.TEAM_SUBMITTED
+            )
           : snapshot.applications.some(
-              (application) => application.state === "APPLICATION_APPLIED"
+              (application) =>
+                application.state === QuestApplicationStatus.APPLICATION_APPLIED
             )) ? (
           <Pressable
             testID="hirer-manage-candidate-review"
@@ -305,7 +318,7 @@ export default function HirerQuestManageScreen({
             </Text>
           </Pressable>
         ) : null}
-        {snapshot.state === "QUEST_FAILED" ? (
+        {snapshot.state === QuestStatus.QUEST_FAILED ? (
           <Pressable
             testID="hirer-manage-dispute"
             className="mt-3 flex-row items-center justify-center rounded-2xl bg-ku-danger p-4"
@@ -322,7 +335,7 @@ export default function HirerQuestManageScreen({
             </Text>
           </Pressable>
         ) : null}
-        {snapshot.nextAction === "DECIDE_UNDERFILLED" &&
+        {snapshot.nextAction === QuestNextAction.DECIDE_UNDERFILLED &&
         snapshot.capabilities.canDecideUnderfilled ? (
           <Pressable
             testID="hirer-manage-underfilled"
@@ -346,7 +359,8 @@ export default function HirerQuestManageScreen({
             </Text>
           </Pressable>
         ) : null}
-        {snapshot.editRequest?.status === "EDIT_REQUEST_PENDING" ? (
+        {snapshot.editRequest?.status ===
+        QuestEditRequestStatus.EDIT_REQUEST_PENDING ? (
           <View className="mt-3">
             <QuestConditionEditStatusCard
               editRequest={snapshot.editRequest}
@@ -394,14 +408,20 @@ export default function HirerQuestManageScreen({
       <CandidateReviewSheet
         visible={candidateOpen}
         applications={snapshot.applications}
-        teams={snapshot.teams.filter((team) => team.state === "TEAM_SUBMITTED")}
-        mode={snapshot.participation === "GROUP" ? "team" : "individual"}
+        teams={snapshot.teams.filter(
+          (team) => team.state === QuestTeamStatus.TEAM_SUBMITTED
+        )}
+        mode={
+          snapshot.participation === QuestParticipation.GROUP
+            ? "team"
+            : "individual"
+        }
         questTitle={quest.title}
         requestedHeadcount={quest.headcount}
         actualHeadcount={snapshot.assignments.length}
         onClose={() => setCandidateOpen(false)}
         onAcceptProposal={
-          snapshot.participation === "GROUP"
+          snapshot.participation === QuestParticipation.GROUP
             ? snapshot.capabilities.canSelectTeam
               ? selectTeam
               : undefined

@@ -1,0 +1,65 @@
+{
+  "total": 434,
+  "top": [
+    {
+      "file": "src/features/questBoard/liveQuestService.ts",
+      "count": 76
+    },
+    {
+      "file": "src/features/questBoard/domain/questReducer.ts",
+      "count": 43
+    },
+    {
+      "file": "src/features/createQuest/createQuestModel.ts",
+      "count": 33
+    },
+    {
+      "file": "src/features/questBoard/questFixtures.ts",
+      "count": 25
+    },
+    {
+      "file": "src/features/myQuests/myQuestService.ts",
+      "count": 21
+    },
+    {
+      "file": "src/features/workerHome/components/CurrentQuestCard.tsx",
+      "count": 21
+    },
+    {
+      "file": "src/features/workerHome/screens/WorkerWorkManagementScreen.tsx",
+      "count": 14
+    },
+    {
+      "file": "src/features/questBoard/components/PartialGroupStartConsentSheet.tsx",
+      "count": 13
+    },
+    {
+      "file": "src/features/questBoard/QuestProofScreen.tsx",
+      "count": 12
+    },
+    {
+      "file": "src/features/questBoard/questFixtureAdapter.ts",
+      "count": 12
+    },
+    {
+      "file": "src/features/questBoard/detail/questDetailPresentation.ts",
+      "count": 10
+    },
+    {
+      "file": "src/features/questBoard/questDetailProjection.ts",
+      "count": 10
+    },
+    {
+      "file": "src/features/createQuest/createQuestPresentation.ts",
+      "count": 9
+    },
+    {
+      "file": "src/features/questBoard/fixtures/questSeeds.ts",
+      "count": 9
+    },
+    {
+      "file": "src/features/questBoard/detail/useQuestDetailTeamActions.ts",
+      "count": 8
+    }
+  ]
+}

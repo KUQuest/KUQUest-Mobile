@@ -53,7 +53,13 @@ import type {
   QuestV2TeamSelection,
   QuestV2Underfilled,
 } from "@/api/questV2Contracts";
-import type { QuestBoardQuest, QuestStatus } from "./types";
+import {
+  type QuestBoardQuest,
+  type QuestNextAction,
+  type QuestStatus,
+  type QuestUnderfilledConsentDecision,
+  type QuestUnderfilledDecision,
+} from "./types";
 
 export type LiveQuestActor =
   "HIRER" | "PROSPECTIVE_WORKER" | "CANDIDATE" | "WORKER";
@@ -61,26 +67,9 @@ export type LiveQuestActor =
 /**
  * Server-derived action for the authenticated viewer. The lifecycle worker
  * starts assigned Quests; the client only refreshes this projection.
+ * Named values live in the central contract (`QuestNextAction` in `./types`).
  */
-export type LiveQuestNextAction =
-  | "NONE"
-  | "JOIN"
-  | "APPLY"
-  | "WITHDRAW_APPLICATION"
-  | "CREATE_TEAM"
-  | "JOIN_TEAM"
-  | "SUBMIT_TEAM"
-  | "SELECT_CANDIDATE"
-  | "SELECT_TEAM"
-  | "DECIDE_UNDERFILLED"
-  | "CONSENT_UNDERFILLED"
-  | "RESPOND_TO_EDIT"
-  | "WAIT_FOR_START"
-  | "SUBMIT_PROOF"
-  | "CONFIRM_COMPLETION"
-  | "REVIEW_PROOF"
-  | "CANCEL"
-  | "CREATE_REVIEW";
+export type LiveQuestNextAction = QuestNextAction;
 
 export interface LiveQuestCapabilities {
   canJoin: boolean;
@@ -1231,7 +1220,7 @@ export class LiveQuestService {
 
   async decideUnderfilled(
     questId: string,
-    decision: "PROCEED" | "CANCEL",
+    decision: QuestUnderfilledDecision,
     idempotencyKey?: string
   ): Promise<QuestV2Underfilled> {
     return questApi.decideUnderfilled(questId, decision, idempotencyKey);
@@ -1239,7 +1228,7 @@ export class LiveQuestService {
 
   async respondUnderfilledConsent(
     questId: string,
-    decision: "ACCEPT" | "DECLINE",
+    decision: QuestUnderfilledConsentDecision,
     idempotencyKey?: string
   ): Promise<QuestV2Underfilled> {
     return questApi.respondUnderfilledConsent(
