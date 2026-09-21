@@ -23,7 +23,6 @@ import { useRoleWorkspace } from "@/components/navigation/RoleWorkspaceContext";
 
 import { useNavigationVisibility } from "@/components/navigation/NavigationVisibilityContext";
 import WorkerHomeScreen from "@/features/workerHome/WorkerHomeScreen";
-import { isPrototypeDemoEnabled } from "@/features/auth/authEnvironment";
 import { useLocale } from "@/locales/LocaleProvider";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { getThemeColors } from "@/theme/colors";
@@ -31,11 +30,10 @@ import { spacing } from "@/theme/spacing";
 
 import { HirerQuestProgressCard } from "./components/HirerQuestProgressCard";
 import { HirerQuestRosterModal } from "./components/HirerQuestRosterModal";
-import {
-  hirerHomeQuestFixtures,
-  type CanonicalHirerQuestStatus,
-  type LiveHirerQuestCardData,
-  type QuestMemberProfile,
+import type {
+  CanonicalHirerQuestStatus,
+  LiveHirerQuestCardData,
+  QuestMemberProfile,
 } from "./hirerHomeData";
 import { hirerHomeMessages } from "./hirerHomeMessages";
 import { hirerHomeStyles as styles } from "./hirerHomeStyles";
@@ -155,31 +153,7 @@ export default function HomeScreen() {
     }, [fetchActiveQuests])
   );
 
-  const isPrototypeDemo = isPrototypeDemoEnabled();
-  const displayQuests =
-    liveQuests.length > 0
-      ? liveQuests
-      : isPrototypeDemo
-        ? hirerHomeQuestFixtures.map((f) => ({
-            id: f.id,
-            title: f.title[locale],
-            tag: f.tag?.[locale],
-            status: f.status,
-            mode: "FIRST_COME_FIRST_SERVED" as const,
-            participation: "SINGLE" as const,
-            headcount: 1,
-            dueAt: f.dueAt,
-            assignedWorkers: [
-              {
-                id: f.worker.id,
-                displayName: f.worker.displayName[locale],
-                avatarUri: f.worker.avatarUri,
-                faculty: f.worker.faculty?.[locale],
-              },
-            ],
-            applicants: [],
-          }))
-        : [];
+  const displayQuests = liveQuests;
 
   const cardWidth = Math.min(width - 32, 640);
   const handleOpenDetails = useCallback(

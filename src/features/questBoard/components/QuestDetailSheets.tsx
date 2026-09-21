@@ -7,10 +7,9 @@ import { X } from "lucide-react-native";
 import { formatSatang } from "@/domain/satang";
 import { colors } from "@/theme/colors";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
-import { getQuestRewardSatang } from "../questWorkflow";
 import type { QuestBoardQuest } from "../types";
 import styles from "../questDetailStyles";
-import { formatDeadline } from "../questDetailFormat";
+import { formatDeadline, getQuestRewardSatang } from "../questDetailFormat";
 import {
   CandidateReviewSheet,
   type CandidateReviewSheetProps,

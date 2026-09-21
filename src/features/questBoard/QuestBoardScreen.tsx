@@ -19,7 +19,6 @@ import { spacing } from "@/theme/spacing";
 import { getAppChromeMetrics } from "@/theme/layout";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import styles from "./questBoardStyles";
-import { getLocalizedQuest } from "./questFixtures";
 import { getActiveFilterCount, sortOptions } from "./questBoardOptions";
 import {
   applyQuestBoardFilters,
@@ -27,8 +26,6 @@ import {
   getVisibleQuests,
   sortQuests,
 } from "./questBoardViewData";
-import type { BoardPreviewState } from "./questBoardHarness";
-import { questWorkflow } from "./questWorkflow";
 import { liveQuestService } from "./liveQuestService";
 import {
   emptyQuestBoardFilter,
@@ -46,11 +43,8 @@ import {
 import { QuestBoardListHeader } from "./components/QuestBoardListHeader";
 import { QuestBoardSkeleton, StateView } from "./components/QuestBoardStates";
 
-export type { BoardPreviewState } from "./questBoardHarness";
-
 export interface QuestBoardScreenProps {
   currentStudentId?: string;
-  initialPreviewState?: BoardPreviewState;
 }
 
 function announce(message: string): void {
@@ -68,7 +62,6 @@ function cloneFilter(filter: QuestBoardFilter): QuestBoardFilter {
 
 export default function QuestBoardScreen({
   currentStudentId,
-  initialPreviewState = "populated",
 }: QuestBoardScreenProps) {
   const router = useRouter();
   const { locale } = useLocale();
@@ -99,21 +92,8 @@ export default function QuestBoardScreen({
     emptyQuestBoardFilter
   );
   const [sort, setSort] = useState<QuestBoardSort>("newest");
-  const [previewState, setPreviewState] =
-    useState<BoardPreviewState>(initialPreviewState);
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
-  const [retryAttempt, setRetryAttempt] = useState(0);
-  const [retrying, setRetrying] = useState(false);
-
-  useEffect(() => {
-    if (!retrying || previewState !== "loading") return undefined;
-    const timeout = setTimeout(() => {
-      setPreviewState("populated");
-      setRetrying(false);
-    }, 250);
-    return () => clearTimeout(timeout);
-  }, [previewState, retrying]);
   const [liveQuests, setLiveQuests] = useState<QuestBoardQuest[] | null>(null);
   const [liveError, setLiveError] = useState<Error | null>(null);
   const hasSuccessfulBoardDataRef = useRef(false);
@@ -137,29 +117,20 @@ export default function QuestBoardScreen({
   }, []);
   const { refreshing, refresh, refreshOnFocus } = useCalmRefresh(loadBoard);
   const refreshBoard = useCallback(() => {
-    if (previewState !== "populated") return;
     void refresh(true).catch(() => undefined);
-  }, [previewState, refresh]);
+  }, [refresh]);
   const workflowNow = useMemo(() => new Date(), []);
   useEffect(() => {
-    if (previewState !== "populated") return;
-    void refresh(retryAttempt > 0).catch(() => undefined);
-  }, [previewState, refresh, retryAttempt]);
+    void refresh().catch(() => undefined);
+  }, [refresh]);
   useFocusEffect(
     useCallback(() => {
-      if (previewState !== "populated") return undefined;
       refreshOnFocus();
       return undefined;
-    }, [previewState, refreshOnFocus])
+    }, [refreshOnFocus])
   );
 
   const boardModel = useMemo(() => {
-    if (previewState !== "populated") {
-      return questWorkflow.getQuestBoardSurfaceModel(
-        resolvedStudentId,
-        previewState
-      );
-    }
     if (liveError) return { kind: "error" as const };
     if (liveQuests !== null) {
       const quests = getVisibleQuests(liveQuests, {
@@ -171,17 +142,10 @@ export default function QuestBoardScreen({
         : { kind: "empty" as const };
     }
     return { kind: "loading" as const };
-  }, [liveError, liveQuests, previewState, resolvedStudentId]);
+  }, [liveError, liveQuests, resolvedStudentId]);
   const localizedQuests = useMemo(
-    () =>
-      boardModel.kind === "ready"
-        ? boardModel.quests.map((quest) =>
-            previewState === "populated"
-              ? quest
-              : getLocalizedQuest(quest, locale)
-          )
-        : [],
-    [boardModel, locale, previewState]
+    () => (boardModel.kind === "ready" ? boardModel.quests : []),
+    [boardModel]
   );
   const availableTags = useMemo(
     () =>
@@ -243,31 +207,20 @@ export default function QuestBoardScreen({
   };
 
   const openQuest = useCallback(
-    (quest: QuestBoardQuest, preview?: BoardPreviewState) => {
-      const applicationPreview =
-        preview ??
-        (previewState === "application-pending" ||
-        previewState === "application-accepted"
-          ? previewState
-          : undefined);
+    (quest: QuestBoardQuest) => {
       router.push({
         pathname: "/quest/[id]",
-        params: {
-          id: quest.id,
-          ...(applicationPreview ? { preview: applicationPreview } : {}),
-        },
+        params: { id: quest.id },
       });
     },
-    [previewState, router]
+    [router]
   );
 
   const retryBoard = () => {
     hasSuccessfulBoardDataRef.current = false;
     setLiveQuests(null);
     setLiveError(null);
-    setRetryAttempt((attempt) => attempt + 1);
-    setRetrying(true);
-    setPreviewState("loading");
+    void refresh(true).catch(() => undefined);
   };
 
   const activeFilterCount = getActiveFilterCount(filters);
@@ -275,10 +228,7 @@ export default function QuestBoardScreen({
   const sortLabelKey =
     sortOptions.find((option) => option.value === sort)?.labelKey ?? "newest";
   const sortLabel = messages[sortLabelKey];
-  const noMatch =
-    previewState === "populated" ||
-    previewState === "application-pending" ||
-    previewState === "application-accepted";
+  const noMatch = boardModel.kind === "ready";
   const noMatchActionLabel =
     hasActiveFilters && query
       ? messages.clearSearchAndFilters
@@ -373,7 +323,7 @@ export default function QuestBoardScreen({
       onRemoveRewardBounds={removeRewardBounds}
       onRemoveDeadline={removeDeadline}
       onRemoveStartTimeBucket={removeStartTimeBucket}
-      showRetryStatus={boardModel.kind === "ready" && retryAttempt > 0}
+      showRetryStatus={false}
     />
   );
 
@@ -390,17 +340,6 @@ export default function QuestBoardScreen({
       />
     ) : boardModel.kind === "empty" ? (
       <StateView title={messages.noQuests} description={messages.subtitle} />
-    ) : boardModel.kind === "unavailable" ? (
-      <StateView
-        title={
-          boardModel.availability === "full"
-            ? messages.stateFull
-            : messages.stateClosed
-        }
-        description={messages.noMatches}
-        actionLabel={messages.title}
-        onAction={() => openQuest(boardModel.quest, boardModel.availability)}
-      />
     ) : noMatch ? (
       <StateView
         title={messages.noMatches}

@@ -19,7 +19,7 @@ import {
   type QuestBoardMessages,
 } from "@/locales/questBoardMessages";
 import { liveQuestService } from "../liveQuestService";
-import { getQuestRewardSatang } from "../questWorkflow";
+import { getQuestRewardSatang } from "../questDetailFormat";
 import type { QuestBoardQuest } from "../types";
 import styles from "../questBoardStyles";
 
