@@ -24,10 +24,7 @@ import { RegistrationStepThree } from "../components/RegistrationStepThree";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
-import DateTimePicker, {
-  type DateTimePickerChangeEvent,
-} from "@react-native-community/datetimepicker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { Button } from "@/components/ui/Button";
 import {
   LoadingSkeleton,
@@ -41,51 +38,19 @@ import { spacing } from "@/theme/spacing";
 import { FileTooLargeModal } from "../components/FileTooLargeModal";
 import { onboardingMessages } from "../../../locales/registrationOnboarding";
 import { useLocale } from "@/features/preferences/localeStore";
-import { createEmptyProfile } from "../../profile/types";
-import type {
-  Certificate,
-  Experience,
-  ProfileDraft,
-  Work,
-} from "../../profile/types";
 import { authService } from "../../auth/AuthService";
 import { clearSessionCache } from "../../auth/sessionQueries";
-import { AuthError, type OnboardingStep } from "../../auth/types";
+import { type OnboardingStep } from "../../auth/types";
 import {
-  useOnboardingQuery,
   isOnboardingSessionExpired,
+  useOnboardingQuery,
 } from "../api/onboardingQueries";
-import {
-  ProfilePersistenceCoordinator,
-  ProfilePersistenceError,
-} from "../profilePersistenceCoordinator";
 import { parseOnboardingStep } from "../steps";
-import { validateProfileBasics, validateProfileDetails } from "../validation";
-
-function createOnboardingForm(): ProfileDraft {
-  return {
-    ...createEmptyProfile(),
-  };
-}
-
-function createEmptyCertificate(): Certificate {
-  return { name: "", issuer: "", issuedAt: "", imageUri: "" };
-}
-
-function createEmptyWork(): Work {
-  return { imageUri: "", title: "", detail: "" };
-}
-
-function createEmptyExperience(): Experience {
-  return {
-    title: "",
-    employmentType: "",
-    organization: "",
-    description: "",
-    startedAt: "",
-    endedAt: "",
-  };
-}
+import { useOnboardingDatePicker } from "../useOnboardingDatePicker";
+import { useOnboardingForm } from "../useOnboardingForm";
+import { useOnboardingImagePicker } from "../useOnboardingImagePicker";
+import { useOnboardingPersistence } from "../useOnboardingPersistence";
+import { useOnboardingWizard } from "../useOnboardingWizard";
 
 function onboardingDebug(
   message: string,
@@ -256,42 +221,8 @@ function OnboardingSkeleton({
   );
 }
 
-function removeIndexedErrors(
-  errors: Record<string, string>,
-  prefix: string,
-  removedIndex: number
-): Record<string, string> {
-  const prefixWithSeparator = `${prefix}_`;
-  return Object.entries(errors).reduce<Record<string, string>>(
-    (next, [key, value]) => {
-      if (!key.startsWith(prefixWithSeparator)) {
-        next[key] = value;
-        return next;
-      }
-
-      const remainder = key.slice(prefixWithSeparator.length);
-      const separatorIndex = remainder.indexOf("_");
-      const itemIndex = Number.parseInt(remainder.slice(0, separatorIndex), 10);
-      if (!Number.isInteger(itemIndex) || separatorIndex === -1) {
-        next[key] = value;
-        return next;
-      }
-      if (itemIndex < removedIndex) {
-        next[key] = value;
-      } else if (itemIndex > removedIndex) {
-        next[
-          `${prefix}_${itemIndex - 1}_${remainder.slice(separatorIndex + 1)}`
-        ] = value;
-      }
-      return next;
-    },
-    {}
-  );
-}
-
 export default function OnboardingScreen() {
   const { colors } = useAppTheme();
-
   const router = useRouter();
   const queryClient = useQueryClient();
   const { locale } = useLocale();
@@ -303,28 +234,55 @@ export default function OnboardingScreen() {
   const isEditMode = mode === "edit";
   const routerRef = useRef(router);
   const routeStep = parseOnboardingStep(step);
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>(routeStep);
-  const [form, setForm] = useState<ProfileDraft>(createOnboardingForm);
+  const { currentStep, advance, goBack } = useOnboardingWizard(routeStep);
   const onboardingQuery = useOnboardingQuery();
   const options = onboardingQuery.data?.options ?? null;
   const unavailableCollections =
     onboardingQuery.data?.unavailableCollections ?? {};
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isModalVisible, setModalVisible] = useState(false);
   const [isPolicyVisible, setPolicyVisible] = useState(false);
-  const [retryAction, setRetryAction] = useState<(() => void) | null>(null);
-  const [datePickerTarget, setDatePickerTarget] = useState<{
-    index: number;
-    value: string;
-    kind: "certificate" | "experience";
-    field?: "startedAt" | "endedAt";
-  } | null>(null);
-  const [today] = useState(() => new Date());
-  const persistenceCoordinator = useRef(new ProfilePersistenceCoordinator());
+  const persistence = useOnboardingPersistence({
+    isEditMode,
+    termsVersion: process.env.EXPO_PUBLIC_TERMS_VERSION,
+  });
+  const formState = useOnboardingForm({
+    serverForm: onboardingQuery.data?.form,
+    isEditMode,
+    messages: msg,
+    onMarkCertificateDeleted: persistence.markCertificateDeleted,
+    onMarkExperienceDeleted: persistence.markExperienceDeleted,
+    onMarkPortfolioDeleted: persistence.markPortfolioDeleted,
+  });
+  const {
+    form,
+    errors,
+    updateField,
+    updateCertificate,
+    updateExperience,
+    updateWork,
+    removeCertificate,
+    removeExperience: removeExperienceNow,
+    removeWork,
+  } = formState;
+  const selectedOccupation = options?.occupations.find(
+    (occupation) => occupation.id === form.occupation
+  );
+  const selectedFaculty = options?.faculties.find(
+    (faculty) => faculty.id === form.faculty
+  );
+  const datePicker = useOnboardingDatePicker({
+    onCertificateDate: (index, value) =>
+      updateCertificate(index, "issuedAt", value),
+    onExperienceDate: (index, field, value) =>
+      updateExperience(index, field, value),
+  });
+  const imagePicker = useOnboardingImagePicker({
+    onError: () => setSubmitError(msg.submitErrorMsg),
+  });
   const reduceMotion = useReducedMotionPreference();
-  const initialLoadPending = onboardingQuery.isPending && options === null;
+  const initialLoadPending =
+    onboardingQuery.isPending && formState.hydrationState === "waiting";
+
   const leaveRegistration = useCallback(() => {
     if (isEditMode) {
       router.back();
@@ -356,34 +314,25 @@ export default function OnboardingScreen() {
     const subscription = BackHandler.addEventListener(
       "hardwareBackPress",
       () => {
-        if (initialLoadPending || isSubmitting) return true;
+        if (initialLoadPending || persistence.isSubmitting) return true;
         if (isEditMode) {
           router.back();
           return true;
         }
-        if (currentStep > 1) {
-          setCurrentStep((currentStep - 1) as OnboardingStep);
-          return true;
-        }
+        if (goBack()) return true;
         leaveRegistration();
         return true;
       }
     );
     return () => subscription.remove();
   }, [
-    currentStep,
     initialLoadPending,
     isEditMode,
-    isSubmitting,
     leaveRegistration,
+    persistence.isSubmitting,
     router,
+    goBack,
   ]);
-
-  const [seededFrom, setSeededFrom] = useState<object | null>(null);
-  if (onboardingQuery.data && seededFrom !== onboardingQuery.data) {
-    setSeededFrom(onboardingQuery.data);
-    setForm(onboardingQuery.data.form);
-  }
 
   useEffect(() => {
     if (!isOnboardingSessionExpired(onboardingQuery.error)) return;
@@ -400,12 +349,6 @@ export default function OnboardingScreen() {
     label: occupation.name,
     value: occupation.id,
   }));
-  const selectedOccupation = options?.occupations.find(
-    (occupation) => occupation.id === form.occupation
-  );
-  const selectedFaculty = options?.faculties.find(
-    (faculty) => faculty.id === form.faculty
-  );
   const facultyOptions = (options?.faculties ?? []).map((faculty) => ({
     label: faculty.name,
     value: faculty.id,
@@ -416,247 +359,63 @@ export default function OnboardingScreen() {
       value: department.id,
     })
   );
-  const clearErrors = (...keys: string[]) => {
-    setErrors((previous) => {
-      let changed = false;
-      const next = { ...previous };
-      keys.forEach((key) => {
-        if (key in next) {
-          delete next[key];
-          changed = true;
-        }
-      });
-      return changed ? next : previous;
-    });
-  };
-
-  const clearRemovedItemErrors = (prefix: string, index: number) => {
-    setErrors((previous) => removeIndexedErrors(previous, prefix, index));
-  };
 
   const handleOccupationChange = (occupation: string) => {
     const requiresStudentId =
       options?.occupations.find((item) => item.id === occupation)
         ?.requiresStudentId ?? false;
-    setForm((previous) => ({
-      ...previous,
-      occupation,
-      ...(requiresStudentId ? {} : { studentId: "" }),
-    }));
-    clearErrors("occupation", "studentId");
+    updateField("occupation", occupation);
+    if (!requiresStudentId) updateField("studentId", "");
   };
 
   const handleFacultyChange = (faculty: string) => {
-    setForm((previous) => ({ ...previous, faculty, department: "" }));
-    clearErrors("faculty", "department");
+    updateField("faculty", faculty);
+    updateField("department", "");
   };
 
   const handleDepartmentChange = (department: string) => {
-    setForm((previous) => ({ ...previous, department }));
-    clearErrors("department");
+    updateField("department", department);
   };
 
-  const validate = () => {
-    const newErrors = validateProfileBasics(
-      form,
-      isEditMode,
-      msg,
-      selectedOccupation?.requiresStudentId ?? false
-    );
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const validate = () =>
+    formState.validateBasics(Boolean(selectedOccupation?.requiresStudentId));
 
   const validateStep3 = () => {
-    const newErrors = validateProfileDetails(form, msg);
-    setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) {
+    const valid = formState.validateDetails();
+    if (!valid) {
       onboardingDebug("save validation failed", {
-        fields: Object.keys(newErrors),
+        fields: Object.keys(formState.errors),
       });
     }
-    return Object.keys(newErrors).length === 0;
+    return valid;
   };
+  const isSubmitting = persistence.isSubmitting;
 
   const handleComplete = async () => {
     if (!validateStep3()) return;
-    setIsSubmitting(true);
     setSubmitError(null);
-    try {
-      const session = await authService.getSession();
-      if (!session) throw new Error("No active session");
-      const api = await authService.getStudentApi();
-      const result = await persistenceCoordinator.current.save(
-        api,
-        form,
-        isEditMode,
-        process.env.EXPO_PUBLIC_TERMS_VERSION,
-        { unavailableCollections }
-      );
-      setForm(result.draft);
-      if (isEditMode) router.replace("/(tabs)/profile");
-      else router.replace("/");
-    } catch (error) {
-      if (error instanceof AuthError && error.code === "SESSION_EXPIRED") {
-        await authService.signOut().catch(() => undefined);
-        clearSessionCache(queryClient);
-        router.replace("/");
-        return;
-      }
-      if (error instanceof ProfilePersistenceError) {
-        setForm(error.draft);
-        if (error.partial) {
-          setSubmitError(`${msg.submitErrorMsg} ${msg.partialSaveMsg}`);
-        } else {
-          setSubmitError(
-            msg.submitErrorMsg || "Failed to save data. Please try again."
-          );
-        }
-      } else {
-        setSubmitError(
-          error instanceof Error &&
-            error.message.includes("EXPO_PUBLIC_TERMS_VERSION")
-            ? error.message
-            : msg.submitErrorMsg || "Failed to save data. Please try again."
-        );
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handlePickImage = async (
-    onSelected: (uri: string) => void,
-    aspect: [number, number]
-  ) => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        aspect,
-        quality: 0.5,
-      });
-      if (result.canceled || !result.assets?.[0]) return;
-      const asset = result.assets[0];
-      if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-        setRetryAction(() => () => void handlePickImage(onSelected, aspect));
-        setModalVisible(true);
-        return;
-      }
-      onSelected(asset.uri);
-    } catch {
-      setSubmitError(msg.submitErrorMsg);
-    }
-  };
-
-  const handleDateChange = (
-    event: DateTimePickerChangeEvent,
-    selectedDate?: Date
-  ) => {
-    if (!selectedDate || !datePickerTarget) {
-      setDatePickerTarget(null);
+    const result = await persistence.save(form, unavailableCollections);
+    if (result.kind === "session-expired") {
+      router.replace("/");
       return;
     }
-    const year = selectedDate.getFullYear();
-    const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
-    const day = String(selectedDate.getDate()).padStart(2, "0");
-    const date =
-      datePickerTarget.kind === "experience"
-        ? `${year}-${month}-01`
-        : `${year}-${month}-${day}`;
-    if (datePickerTarget.kind === "certificate")
-      handleUpdateCertificate(datePickerTarget.index, "issuedAt", date);
-    else if (datePickerTarget.field)
-      handleUpdateExperience(
-        datePickerTarget.index,
-        datePickerTarget.field,
-        date
+    if (result.kind === "failed") {
+      if (result.failure.draft) {
+        formState.replaceForm(result.failure.draft, true);
+      }
+      setSubmitError(
+        result.failure.error instanceof Error &&
+          result.failure.error.message.includes("EXPO_PUBLIC_TERMS_VERSION")
+          ? result.failure.error.message
+          : result.failure.partial
+            ? `${msg.submitErrorMsg} ${msg.partialSaveMsg}`
+            : msg.submitErrorMsg || "Failed to save data. Please try again."
       );
-    setDatePickerTarget(null);
-  };
-
-  const openDatePicker = (index: number, value: string) => {
-    const parsed = /^\d{4}-\d{2}-\d{2}$/.test(value)
-      ? new Date(`${value}T12:00:00`)
-      : new Date();
-    setDatePickerTarget({
-      index,
-      value: Number.isNaN(parsed.getTime())
-        ? new Date().toISOString()
-        : parsed.toISOString(),
-      kind: "certificate",
-    });
-  };
-
-  const openExperienceDatePicker = (
-    index: number,
-    field: "startedAt" | "endedAt",
-    value: string
-  ) => {
-    const parsed = /^\d{4}-\d{2}-\d{2}$/.test(value)
-      ? new Date(`${value}T12:00:00`)
-      : new Date();
-    setDatePickerTarget({
-      index,
-      field,
-      value: Number.isNaN(parsed.getTime())
-        ? new Date().toISOString()
-        : parsed.toISOString(),
-      kind: "experience",
-    });
-  };
-
-  const handleUpdateCertificate = (
-    index: number,
-    field: keyof Certificate,
-    value: string
-  ) => {
-    setForm((previous) => ({
-      ...previous,
-      certificates: previous.certificates.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, [field]: value } : item
-      ),
-    }));
-    clearErrors(`cert_${index}_${String(field)}`);
-  };
-  const handleUpdateWork = (
-    index: number,
-    field: keyof Work,
-    value: string
-  ) => {
-    setForm((previous) => ({
-      ...previous,
-      works: previous.works.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, [field]: value } : item
-      ),
-    }));
-    clearErrors(`work_${index}_${String(field)}`);
-  };
-  const handleUpdateExperience = (
-    index: number,
-    field: keyof Experience,
-    value: string
-  ) => {
-    setForm((previous) => ({
-      ...previous,
-      experiences: previous.experiences.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, [field]: value } : item
-      ),
-    }));
-    clearErrors(`experience_${index}_${String(field)}`);
-  };
-
-  const removeExperienceNow = (index: number) => {
-    const experience = form.experiences[index];
-    if (experience?.id)
-      persistenceCoordinator.current.markExperienceDeleted(experience.id);
-    clearRemovedItemErrors("experience", index);
-    setForm((previous) => ({
-      ...previous,
-      experiences: previous.experiences.filter(
-        (_, itemIndex) => itemIndex !== index
-      ),
-    }));
+      return;
+    }
+    formState.replaceForm(result.draft, false);
+    if (isEditMode) router.replace("/(tabs)/profile");
+    else router.replace("/");
   };
 
   const removeExperience = (index: number) => {
@@ -674,41 +433,6 @@ export default function OnboardingScreen() {
       },
     ]);
   };
-
-  const removeCertificate = (index: number) => {
-    const certificate = form.certificates[index];
-    try {
-      if (certificate?.id) {
-        persistenceCoordinator.current.markCertificateDeleted(certificate.id);
-      }
-      clearRemovedItemErrors("cert", index);
-      setForm((previous) => ({
-        ...previous,
-        certificates: previous.certificates.filter(
-          (_, itemIndex) => itemIndex !== index
-        ),
-      }));
-    } catch {
-      setSubmitError(msg.submitErrorMsg);
-    }
-  };
-
-  const removeWork = (index: number) => {
-    const work = form.works[index];
-    try {
-      if (work?.id) {
-        persistenceCoordinator.current.markPortfolioDeleted(work.id);
-      }
-      clearRemovedItemErrors("work", index);
-      setForm((previous) => ({
-        ...previous,
-        works: previous.works.filter((_, itemIndex) => itemIndex !== index),
-      }));
-    } catch {
-      setSubmitError(msg.submitErrorMsg);
-    }
-  };
-
   if (initialLoadPending) {
     return (
       <OnboardingSkeleton
@@ -791,12 +515,8 @@ export default function OnboardingScreen() {
                 accessibilityLabel={msg.addImage}
                 className={styles.avatarPlaceholder}
                 onPress={() =>
-                  void handlePickImage(
-                    (uri) =>
-                      setForm((previous) => ({
-                        ...previous,
-                        profileImage: uri,
-                      })),
+                  void imagePicker.pickImage(
+                    (uri) => updateField("profileImage", uri),
                     [1, 1]
                   )
                 }
@@ -851,25 +571,19 @@ export default function OnboardingScreen() {
                   selectedOccupation?.requiresStudentId
                 )}
                 errors={errors}
-                onNameChange={(name) => {
-                  setForm((previous) => ({ ...previous, name }));
-                  clearErrors("name");
-                }}
-                onTelephoneChange={(telephone) => {
-                  setForm((previous) => ({ ...previous, telephone }));
-                  clearErrors("telephone");
-                }}
+                onNameChange={(name) => updateField("name", name)}
+                onTelephoneChange={(telephone) =>
+                  updateField("telephone", telephone)
+                }
                 onOccupationChange={handleOccupationChange}
-                onStudentIdChange={(studentId) => {
-                  setForm((previous) => ({ ...previous, studentId }));
-                  clearErrors("studentId");
-                }}
+                onStudentIdChange={(studentId) =>
+                  updateField("studentId", studentId)
+                }
                 onFacultyChange={handleFacultyChange}
                 onDepartmentChange={handleDepartmentChange}
-                onAcceptedTermsChange={(acceptedTerms) => {
-                  setForm((previous) => ({ ...previous, acceptedTerms }));
-                  clearErrors("acceptedTerms");
-                }}
+                onAcceptedTermsChange={(acceptedTerms) =>
+                  updateField("acceptedTerms", acceptedTerms)
+                }
                 onReadPolicy={() => setPolicyVisible(true)}
               />
             )}
@@ -878,10 +592,9 @@ export default function OnboardingScreen() {
                 messages={msg}
                 description={form.description}
                 errors={errors}
-                onDescriptionChange={(description) => {
-                  setForm((previous) => ({ ...previous, description }));
-                  clearErrors("description");
-                }}
+                onDescriptionChange={(description) =>
+                  updateField("description", description)
+                }
               />
             )}
 
@@ -895,52 +608,31 @@ export default function OnboardingScreen() {
                 errors={errors}
                 unavailableCollections={unavailableCollections}
                 reduceMotion={reduceMotion}
-                datePickerIndex={datePickerTarget?.index ?? null}
+                datePickerIndex={datePicker.datePickerIndex}
                 submitError={submitError}
-                onUpdateCertificate={handleUpdateCertificate}
-                onUpdateExperience={handleUpdateExperience}
-                onUpdateWork={handleUpdateWork}
+                onUpdateCertificate={updateCertificate}
+                onUpdateExperience={updateExperience}
+                onUpdateWork={updateWork}
                 onPickCertificateImage={(index) =>
-                  void handlePickImage(
-                    (uri) => handleUpdateCertificate(index, "imageUri", uri),
+                  void imagePicker.pickImage(
+                    (uri) => updateCertificate(index, "imageUri", uri),
                     [4, 3]
                   )
                 }
                 onPickWorkImage={(index) =>
-                  void handlePickImage(
-                    (uri) => handleUpdateWork(index, "imageUri", uri),
+                  void imagePicker.pickImage(
+                    (uri) => updateWork(index, "imageUri", uri),
                     [4, 3]
                   )
                 }
-                onOpenCertificateDatePicker={openDatePicker}
-                onOpenExperienceDatePicker={openExperienceDatePicker}
+                onOpenCertificateDatePicker={datePicker.openCertificate}
+                onOpenExperienceDatePicker={datePicker.openExperience}
                 onRemoveCertificate={removeCertificate}
                 onRemoveExperience={removeExperience}
                 onRemoveWork={removeWork}
-                onAddCertificate={() =>
-                  setForm((previous) => ({
-                    ...previous,
-                    certificates: [
-                      ...previous.certificates,
-                      createEmptyCertificate(),
-                    ],
-                  }))
-                }
-                onAddExperience={() =>
-                  setForm((previous) => ({
-                    ...previous,
-                    experiences: [
-                      ...previous.experiences,
-                      createEmptyExperience(),
-                    ],
-                  }))
-                }
-                onAddWork={() =>
-                  setForm((previous) => ({
-                    ...previous,
-                    works: [...previous.works, createEmptyWork()],
-                  }))
-                }
+                onAddCertificate={formState.addCertificate}
+                onAddExperience={formState.addExperience}
+                onAddWork={formState.addWork}
               />
             )}
           </MotionView>
@@ -964,12 +656,8 @@ export default function OnboardingScreen() {
                     : msg.back
                 }
                 onPress={() => {
-                  if (currentStep === 1) {
+                  if (currentStep === 1 || !goBack()) {
                     leaveRegistration();
-                  } else {
-                    setCurrentStep(
-                      (stepValue) => (stepValue - 1) as OnboardingStep
-                    );
                   }
                 }}
                 disabled={isSubmitting}
@@ -994,9 +682,9 @@ export default function OnboardingScreen() {
                 }
                 onPress={() => {
                   if (currentStep === 1) {
-                    if (validate()) setCurrentStep(2);
+                    if (validate()) advance();
                   } else if (currentStep === 2) {
-                    setCurrentStep(3);
+                    advance();
                   } else {
                     void handleComplete();
                   }
@@ -1017,23 +705,20 @@ export default function OnboardingScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
-      {datePickerTarget ? (
+      {datePicker.target ? (
         <DateTimePicker
-          value={new Date(datePickerTarget.value)}
+          value={new Date(datePicker.target.value)}
           mode="date"
           display={Platform.OS === "ios" ? "spinner" : "default"}
-          onValueChange={handleDateChange}
-          onDismiss={() => setDatePickerTarget(null)}
-          maximumDate={today}
+          onValueChange={datePicker.handleChange}
+          onDismiss={datePicker.close}
+          maximumDate={datePicker.today}
         />
       ) : null}
       <FileTooLargeModal
-        visible={isModalVisible}
-        onBack={() => setModalVisible(false)}
-        onTryAgain={() => {
-          setModalVisible(false);
-          retryAction?.();
-        }}
+        visible={imagePicker.isTooLargeVisible}
+        onBack={imagePicker.dismissTooLarge}
+        onTryAgain={imagePicker.retry}
       />
       <Modal
         visible={isPolicyVisible}
