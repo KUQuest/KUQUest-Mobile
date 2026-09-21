@@ -102,6 +102,7 @@ export function useQuestPublish({
     publishCheckRequestRef.current += 1;
     publishCheckQuestIdRef.current = null;
     setPublishCheckQuestId(null);
+    setIsPreparingPublishCheck(false);
   }, []);
   const isCheckingPublish =
     isPreparingPublishCheck ||
@@ -359,10 +360,14 @@ export function useQuestPublish({
 
   const publishPending =
     createMutation.isPending ||
+    editMutation.isPending ||
     imageUploadMutation.isPending ||
     publishMutation.isPending;
   const publishError =
-    publishMutation.error ?? createMutation.error ?? imageUploadMutation.error;
+    publishMutation.error ??
+    editMutation.error ??
+    createMutation.error ??
+    imageUploadMutation.error;
 
   return {
     publishCheck,
@@ -388,6 +393,7 @@ export function useQuestPublish({
     resetSaveState: () => {
       setCleanupError(null);
       createMutation.reset();
+      editMutation.reset();
       imageUploadMutation.reset();
       publishMutation.reset();
     },

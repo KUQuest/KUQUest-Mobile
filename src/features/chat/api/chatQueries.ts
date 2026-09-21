@@ -21,6 +21,7 @@ export const chatKeys = {
     [...chatKeys.all, "conversations", viewerId] as const,
   candidateInquiries: (viewerId: string) =>
     [...chatKeys.all, "candidate-inquiries", viewerId] as const,
+  unread: (viewerId: string) => [...chatKeys.all, "unread", viewerId] as const,
   conversation: (
     conversationId: string,
     viewerId: string,
@@ -142,6 +143,24 @@ export function useListCandidateInquiriesQuery(
             candidateInquiryToConversation(inquiry, viewerId)
           )
         )
+      );
+    },
+  });
+}
+
+export function useHasUnreadChatQuery(viewerId: string, enabled = true) {
+  return useQuery<boolean>({
+    enabled: Boolean(viewerId) && enabled,
+    queryKey: chatKeys.unread(viewerId),
+    queryFn: async ({ signal }) => {
+      const [conversations, candidateInquiries] = await Promise.all([
+        chatApi.listConversations({ limit: 20 }, { signal }),
+        chatApi.listCandidateInquiries({ limit: 20 }, { signal }),
+      ]);
+      return (
+        conversations.items.some(
+          (conversation) => conversation.unreadCount > 0
+        ) || candidateInquiries.items.some((inquiry) => inquiry.unreadCount > 0)
       );
     },
   });

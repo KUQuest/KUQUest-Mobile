@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Linking } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
@@ -69,6 +69,7 @@ export function useChatConversationController(
   const sessionQuery = useSessionQuery();
   const viewerId = routeViewerId || sessionQuery.data?.user.id || "";
   const queryClient = useQueryClient();
+  const lastReadMessageIdRef = useRef<string | null>(null);
   const listConversationsQuery = useListConversationsQuery(
     viewerId,
     conversationType === "WORK" && !routeQuestId
@@ -129,20 +130,53 @@ export function useChatConversationController(
     ]);
   };
   useEffect(() => {
-    if (!routeConversationId || !conversation?.capability?.canRead) return;
+    if (
+      !routeConversationId ||
+      !viewerId ||
+      !conversation?.capability?.canRead
+    ) {
+      return;
+    }
     const lastMessage = conversationMessages.at(-1);
-    if (!lastMessage) return;
-    void (conversationType === "CANDIDATE_INQUIRY"
-      ? liveQuestService.markCandidateInquiryRead(
-          routeConversationId,
-          lastMessage.id
-        )
-      : chatApi.markRead(routeConversationId, lastMessage.id));
+    if (!lastMessage || lastMessage.id === lastReadMessageIdRef.current) {
+      return;
+    }
+
+    lastReadMessageIdRef.current = lastMessage.id;
+    const markRead =
+      conversationType === "CANDIDATE_INQUIRY"
+        ? liveQuestService.markCandidateInquiryRead(
+            routeConversationId,
+            lastMessage.id
+          )
+        : chatApi.markRead(routeConversationId, lastMessage.id);
+
+    void Promise.resolve(markRead)
+      .then(() =>
+        Promise.all([
+          queryClient.invalidateQueries({
+            queryKey:
+              conversationType === "CANDIDATE_INQUIRY"
+                ? chatKeys.candidateInquiries(viewerId)
+                : chatKeys.conversations(viewerId),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: chatKeys.unread(viewerId),
+          }),
+        ])
+      )
+      .catch(() => {
+        if (lastReadMessageIdRef.current === lastMessage.id) {
+          lastReadMessageIdRef.current = null;
+        }
+      });
   }, [
     conversation,
     conversationMessages,
     conversationType,
+    queryClient,
     routeConversationId,
+    viewerId,
   ]);
   const handleChatSocketEvent = useCallback(
     (event: ChatSocketEvent) => {

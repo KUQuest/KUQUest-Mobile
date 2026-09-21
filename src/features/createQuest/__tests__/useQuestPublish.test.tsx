@@ -144,6 +144,36 @@ describe("useQuestPublish", () => {
     });
   });
 
+  it("clears stale publish-check busy state when the draft changes", async () => {
+    let resolveCreate!: (value: { id: string; version: number }) => void;
+    mockCreateQuest.mockImplementation(
+      () =>
+        new Promise<{ id: string; version: number }>((resolve) => {
+          resolveCreate = resolve;
+        })
+    );
+    const props = createProps();
+    const { result } = await renderHook(() => useQuestPublish(props), {
+      wrapper,
+    });
+
+    let refresh!: Promise<void>;
+    await act(async () => {
+      refresh = result.current.refreshPublishCheck();
+    });
+    expect(result.current.isCheckingPublish).toBe(true);
+
+    await act(async () => {
+      result.current.setPublishCheck(null);
+    });
+    expect(result.current.isCheckingPublish).toBe(false);
+
+    resolveCreate({ id: "server-quest", version: 1 });
+    await act(async () => {
+      await refresh;
+    });
+  });
+
   it("reuses a failed create key until the operation is reset", async () => {
     mockCreateQuest.mockRejectedValueOnce(new Error("offline"));
     const props = createProps();

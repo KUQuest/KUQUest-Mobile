@@ -245,6 +245,8 @@ describe("CreateQuestScreen", () => {
 
     expect(view.getByText("ตั้งค่าทีม")).toBeTruthy();
     expect(view.getByLabelText("ขั้นตอนที่ 2 จาก 3: ตั้งค่าทีม")).toBeTruthy();
+    expect(mockPersistQuestDraft).not.toHaveBeenCalled();
+    expect(mockLiveCreateQuest).not.toHaveBeenCalled();
     expect(view.getAllByLabelText("ย้อนกลับ")).toHaveLength(1);
     expect(view.getByText("1. เลือกรูปแบบการทำงาน")).toBeTruthy();
     expect(view.getByText("2. เลือกรูปแบบการรับผู้สมัคร")).toBeTruthy();
@@ -819,12 +821,16 @@ describe("CreateQuestScreen", () => {
     expect(mockLiveEditQuest).not.toHaveBeenCalled();
   });
 
-  it("updates the server Quest once after a Review-step edit", async () => {
+  it("updates and publishes the server Quest once after a Review-step edit", async () => {
     mockLiveCreateQuest.mockResolvedValue({
       id: "server-quest-edit",
       version: 3,
     });
     mockLiveGetPublishCheck.mockResolvedValue(serverPublishCheckFixture);
+    mockLivePublishQuest.mockResolvedValue({
+      id: "server-quest-edit",
+      state: "QUEST_OPEN",
+    });
     const view = await renderNewModeAtTeamSetup();
 
     await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
@@ -846,6 +852,13 @@ describe("CreateQuestScreen", () => {
     await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
     await waitFor(() => expect(mockLiveEditQuest).toHaveBeenCalledTimes(1));
     expect(mockLiveEditQuest.mock.calls[0][3]).toEqual(expect.any(String));
+    expect(mockLiveCreateQuest).toHaveBeenCalledTimes(1);
+    await waitForPublishCheck(view);
+    await fireEvent.press(view.getByTestId("create-quest-save-preview"));
+    await waitFor(() =>
+      expect(view.getByText("เผยแพร่เควสต์แล้ว")).toBeTruthy()
+    );
+    expect(mockLiveEditQuest).toHaveBeenCalledTimes(1);
     expect(mockLiveCreateQuest).toHaveBeenCalledTimes(1);
   });
 
