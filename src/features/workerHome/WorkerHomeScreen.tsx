@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   type ListRenderItem,
   RefreshControl,
-  useColorScheme,
   useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -14,13 +13,13 @@ import { FlatList, Pressable, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import { useLocale } from "@/features/preferences/localeStore";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import {
   useWorkerAssignmentsQuery,
   useWorkerBoardQuery,
   useWorkerParticipationDetailQuery,
   useWorkerTagsQuery,
 } from "./api/workerHomeQueries";
-import { getThemeColors } from "@/theme/colors";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 
@@ -43,8 +42,7 @@ export default function WorkerHomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width, fontScale } = useWindowDimensions();
-  const colorScheme = useColorScheme();
-  const themeColors = getThemeColors(colorScheme);
+  const { colors: themeColors } = useAppTheme();
   const metrics = getAppChromeMetrics(width, fontScale);
   const handleScroll = handleNavigationScroll;
   const { locale } = useLocale();

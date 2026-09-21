@@ -7,13 +7,11 @@ import {
   TabListProps,
 } from "expo-router/ui";
 import { SymbolView } from "expo-symbols";
-import { useColorScheme } from "react-native";
 
 import { ExternalLink } from "./external-link";
 import { ThemedText } from "./themed-text";
 
-import { Colors } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { Pressable, View } from "@/tw";
 
 export default function AppTabs() {
@@ -39,15 +37,15 @@ export function TabButton({
   isFocused,
   ...props
 }: TabTriggerSlotProps) {
-  const theme = useTheme();
+  const { colors } = useAppTheme();
   return (
     <Pressable {...props} style={({ pressed }) => pressed && { opacity: 0.7 }}>
       <View
         className={styles.tabButtonView}
         style={{
           backgroundColor: isFocused
-            ? theme.backgroundSelected
-            : theme.backgroundElement,
+            ? colors.surfaceAccent
+            : colors.surfaceMuted,
         }}
       >
         <ThemedText
@@ -62,14 +60,13 @@ export function TabButton({
 }
 
 export function CustomTabList(props: TabListProps) {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === "unspecified" ? "light" : scheme];
+  const { colors } = useAppTheme();
 
   return (
     <View {...props} className={styles.tabListContainer}>
       <View
         className={styles.innerContainer}
-        style={{ backgroundColor: colors.backgroundElement }}
+        style={{ backgroundColor: colors.surfaceMuted }}
       >
         <ThemedText type="smallBold" className={styles.brandText}>
           Expo Starter

@@ -7,16 +7,17 @@ import { ExternalLink } from "@/components/external-link";
 import { ThemedText } from "@/components/themed-text";
 import { Collapsible } from "@/components/ui/collapsible";
 import { WebBadge } from "@/components/web-badge";
-import { BottomTabInset, Spacing } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { bottomTabInset } from "@/theme/layout";
+import { spacing } from "@/theme/spacing";
 
 export default function TabTwoScreen() {
   const safeAreaInsets = useSafeAreaInsets();
   const insets = {
     ...safeAreaInsets,
-    bottom: safeAreaInsets.bottom + BottomTabInset + Spacing.three,
+    bottom: safeAreaInsets.bottom + bottomTabInset + spacing.md,
   };
-  const theme = useTheme();
+  const { colors } = useAppTheme();
 
   const contentPlatformStyle = Platform.select({
     android: {
@@ -26,22 +27,22 @@ export default function TabTwoScreen() {
       paddingBottom: insets.bottom,
     },
     web: {
-      paddingTop: Spacing.six,
-      paddingBottom: Spacing.four,
+      paddingTop: spacing.xl * 2,
+      paddingBottom: spacing.lg,
     },
   });
 
   return (
     <ScrollView
       className={styles.scrollView}
-      style={{ backgroundColor: theme.background }}
+      style={{ backgroundColor: colors.background }}
       contentInset={insets}
       contentContainerClassName={styles.contentContainer}
       contentContainerStyle={contentPlatformStyle}
     >
       <View
         className={styles.container}
-        style={{ backgroundColor: theme.background }}
+        style={{ backgroundColor: colors.background }}
       >
         <View className={styles.titleContainer}>
           <ThemedText type="subtitle">Explore</ThemedText>
@@ -53,11 +54,11 @@ export default function TabTwoScreen() {
             <Pressable style={({ pressed }) => pressed && { opacity: 0.7 }}>
               <View
                 className={styles.linkButton}
-                style={{ backgroundColor: theme.backgroundElement }}
+                style={{ backgroundColor: colors.surfaceMuted }}
               >
                 <ThemedText type="link">Expo documentation</ThemedText>
                 <SymbolView
-                  tintColor={theme.text}
+                  tintColor={colors.text}
                   name={{
                     ios: "arrow.up.right.square",
                     android: "link",
@@ -90,7 +91,7 @@ export default function TabTwoScreen() {
           <Collapsible title="Android, iOS, and web support">
             <View
               className={styles.collapsibleContent}
-              style={{ backgroundColor: theme.backgroundElement }}
+              style={{ backgroundColor: colors.surfaceMuted }}
             >
               <ThemedText type="small">
                 You can open this project on Android, iOS, and the web. To open
@@ -123,10 +124,8 @@ export default function TabTwoScreen() {
 
           <Collapsible title="Light and dark mode components">
             <ThemedText type="small">
-              This template has light and dark mode support. The{" "}
-              <ThemedText type="code">useColorScheme()</ThemedText> hook lets
-              you inspect what the user&apos;s current color scheme is, and so
-              you can adjust UI colors accordingly.
+              This app follows system light and dark mode through the{" "}
+              <ThemedText type="code">useAppTheme()</ThemedText> context hook.
             </ThemedText>
             <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
               <ThemedText type="linkPrimary">Learn more</ThemedText>

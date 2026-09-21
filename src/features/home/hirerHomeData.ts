@@ -69,6 +69,15 @@ export interface LiveHirerQuestCardData {
   applicants: QuestMemberProfile[];
 }
 
+export interface HirerHomeData {
+  activeQuests: LiveHirerQuestCardData[];
+  activeQuestCount: number;
+  draftCount: number;
+  completedCount: number;
+}
+
+export const HIRER_HOME_MAX_ACTIVE_QUESTS = 5;
+
 const activeStageByStatus: Record<CanonicalHirerQuestStatus, TimelineStageKey> =
   {
     [QuestStatus.QUEST_DRAFT]: "open",
@@ -79,6 +88,47 @@ const activeStageByStatus: Record<CanonicalHirerQuestStatus, TimelineStageKey> =
     [QuestStatus.QUEST_CANCELLED]: "completed",
     [QuestStatus.QUEST_FAILED]: "review",
   };
+
+type HirerHomeQuestPriorityInput = {
+  status: CanonicalHirerQuestStatus;
+  dueAt?: string | null;
+};
+
+const getHirerHomeQuestPriority = (
+  quest: HirerHomeQuestPriorityInput
+): number => {
+  if (quest.status === QuestStatus.QUEST_IN_PROGRESS) return 0;
+  if (quest.status === QuestStatus.QUEST_ASSIGNED) return 1;
+  if (quest.status === QuestStatus.QUEST_OPEN) return 2;
+  return 3;
+};
+
+export function prioritizeHirerHomeQuests<
+  T extends HirerHomeQuestPriorityInput,
+>(quests: T[]): T[] {
+  return quests
+    .map((quest, index) => ({ quest, index }))
+    .sort((left, right) => {
+      const priorityDifference =
+        getHirerHomeQuestPriority(left.quest) -
+        getHirerHomeQuestPriority(right.quest);
+      if (priorityDifference !== 0) return priorityDifference;
+
+      const leftDueAt = left.quest.dueAt
+        ? Date.parse(left.quest.dueAt)
+        : Number.POSITIVE_INFINITY;
+      const rightDueAt = right.quest.dueAt
+        ? Date.parse(right.quest.dueAt)
+        : Number.POSITIVE_INFINITY;
+      const dueAtDifference =
+        (Number.isNaN(leftDueAt) ? Number.POSITIVE_INFINITY : leftDueAt) -
+        (Number.isNaN(rightDueAt) ? Number.POSITIVE_INFINITY : rightDueAt);
+      if (dueAtDifference !== 0) return dueAtDifference;
+
+      return left.index - right.index;
+    })
+    .map(({ quest }) => quest);
+}
 
 const terminalStatuses: Record<CanonicalHirerQuestStatus, boolean> = {
   QUEST_DRAFT: false,

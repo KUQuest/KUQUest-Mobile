@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Alert, useColorScheme, type ListRenderItemInfo } from "react-native";
+import { Alert, type ListRenderItemInfo } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { CircleUserRound, Users } from "lucide-react-native";
 
@@ -16,7 +16,8 @@ import { useLocale } from "@/features/preferences/localeStore";
 import type { SupportedLocale } from "@/locales/locale";
 import { hirerHomeMessages } from "@/features/home/hirerHomeMessages";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
-import { getThemeColors, type ThemeColors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import type { ThemeColors } from "@/theme/colors";
 
 function routeValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -242,8 +243,7 @@ function TeamRow(props: {
 export default function SelectRosterRoute() {
   const router = useRouter();
   const { locale } = useLocale();
-  const colorScheme = useColorScheme();
-  const colors = getThemeColors(colorScheme);
+  const { colors } = useAppTheme();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const questId = routeValue(params.id);
   const messages = hirerHomeMessages[locale];

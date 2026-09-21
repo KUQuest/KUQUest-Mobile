@@ -1,11 +1,10 @@
 import React from "react";
-import { useColorScheme } from "react-native";
 import { Search, SlidersHorizontal, X } from "lucide-react-native";
 
 import { Pressable, ScrollView, Text, TextInput, View } from "@/tw";
 import type { TagItem } from "@/api/QuestApi";
 import { useLocale } from "@/features/preferences/localeStore";
-import { getThemeColors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { workerHomeMessages } from "../workerHomeMessages";
 import { workerHomeStyles as styles } from "../workerHomeStyles";
 
@@ -28,8 +27,7 @@ export function WorkerSearchBar({
   onSelectTag,
   onOpenFilter,
 }: WorkerSearchBarProps) {
-  const colorScheme = useColorScheme();
-  const themeColors = getThemeColors(colorScheme);
+  const { colors: themeColors } = useAppTheme();
   const { locale } = useLocale();
   const messages = workerHomeMessages[locale];
 

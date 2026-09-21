@@ -1,4 +1,4 @@
-import { Modal, useColorScheme } from "react-native";
+import { Modal } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -32,7 +32,7 @@ import {
 } from "@/features/wallet/api/walletQueries";
 import type { SupportedLocale } from "@/locales/locale";
 import { questBoardMessages } from "@/locales/questBoardMessages";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { getActionBarPaddingBottom } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 import { fontFamily } from "@/theme/typography";
@@ -366,6 +366,7 @@ function FundingDetailsContent({
   onTopUp,
 }: FundingDetailsContentProps) {
   const messages = questBoardMessages[locale];
+  const { colors } = useAppTheme();
 
   return (
     <View accessibilityViewIsModal testID="quest-funding-summary-details">
@@ -633,6 +634,7 @@ function TopUpFlowContent({
   onSimulatePayment,
 }: TopUpFlowContentProps) {
   const messages = questBoardMessages[locale];
+  const { colors } = useAppTheme();
   const amountValid = checkTopUpAmount(amount).ok;
   const title =
     step === "confirmation"
@@ -1355,14 +1357,14 @@ function FundingModal({
   onSimulatePayment,
 }: FundingModalProps) {
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
+  const { scheme, colors } = useAppTheme();
   const isDetailsModal = modal === "details";
   const bottomPadding = getActionBarPaddingBottom(insets.bottom);
 
   return (
     <>
       <StatusBar
-        style={isDetailsModal || colorScheme === "dark" ? "light" : "dark"}
+        style={isDetailsModal || scheme === "dark" ? "light" : "dark"}
       />
       <Modal
         animationType={isDetailsModal ? "fade" : "slide"}
@@ -1464,7 +1466,7 @@ export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
     onBackFromAmount: () => setModal("details"),
   });
 
-  useColorScheme();
+  const { colors } = useAppTheme();
 
   const openFundingDetails = () => setModal("details");
   const openTopUp = () => {

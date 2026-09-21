@@ -25,7 +25,7 @@ import { formatDate, formatDateTime } from "@/domain/datetime";
 import {
   addDaysToDate,
   addHoursToTime,
-  formatQuestDuration,
+  formatQuestSchedule,
   getDateTimeValue,
   getNearestQuarterHour,
   getRelativeDateValue,
@@ -111,6 +111,11 @@ export function TeamSetupStep({
     }
     updateDraft("endTime", addHoursToTime(baseTime, 2));
   };
+  const scheduleDisplay = formatQuestSchedule(
+    draft,
+    locale,
+    messages.notSelected
+  );
   return (
     <>
       <View className={styles.sectionCard}>
@@ -338,7 +343,7 @@ export function TeamSetupStep({
                 );
               }
               if (startMs !== null && endMs !== null) {
-                const durationStr = formatQuestDuration(startMs, endMs, locale);
+                const durationStr = scheduleDisplay.duration;
                 if (durationStr) {
                   return (
                     <View className={styles.durationBadge}>
@@ -350,6 +355,9 @@ export function TeamSetupStep({
                         />
                         <Text className={styles.durationBadgeText}>
                           {messages.questDuration}: {durationStr}
+                          {scheduleDisplay.crossesMidnight
+                            ? ` · ${messages.nextDay}`
+                            : ""}
                         </Text>
                       </View>
                     </View>

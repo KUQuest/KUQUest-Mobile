@@ -90,6 +90,7 @@ export interface CreateQuestMessages {
   plus1Day: string;
   endOfDay: string;
   questDuration: string;
+  nextDay: string;
   fixDeadlineQuick: string;
   location: string;
   online: string;
@@ -319,6 +320,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       sameDay: "Same day",
       plus1Day: "+1 day",
       endOfDay: "End of day (23:59)",
+      nextDay: "Next day",
       questDuration: "Duration",
       fixDeadlineQuick: "Set to +2 hrs from start",
       location: "Location",
@@ -594,6 +596,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       sameDay: "วันเดียวกัน",
       plus1Day: "+1 วัน",
       endOfDay: "สิ้นสุดวัน (23:59)",
+      nextDay: "วันถัดไป",
       questDuration: "ระยะเวลาเควสต์",
       fixDeadlineQuick: "ตั้งเป็น +2 ชม. จากเวลาเริ่ม",
       location: "สถานที่",

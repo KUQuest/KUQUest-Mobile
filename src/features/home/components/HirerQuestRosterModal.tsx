@@ -1,13 +1,13 @@
 import React from "react";
-import { Modal, useColorScheme } from "react-native";
+import { Modal } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckCircle2, Users, X } from "lucide-react-native";
 
 import { Avatar } from "@/components/ui/Avatar";
 import { Pressable, ScrollView, Text, TouchableOpacity, View } from "@/tw";
 import { Chip } from "@/components/ui/Chip";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { useLocale } from "@/features/preferences/localeStore";
-import { getThemeColors } from "@/theme/colors";
 
 import type {
   CanonicalHirerQuestStatus,
@@ -41,8 +41,7 @@ export function HirerQuestRosterModal({
   onOpenManageQuest,
 }: HirerQuestRosterModalProps) {
   const { locale } = useLocale();
-  const colorScheme = useColorScheme();
-  const themeColors = getThemeColors(colorScheme);
+  const { colors: themeColors } = useAppTheme();
   const insets = useSafeAreaInsets();
   const messages = hirerHomeMessages[locale];
   return (

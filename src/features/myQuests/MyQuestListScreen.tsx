@@ -1,9 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import {
-  RefreshControl,
-  type ListRenderItemInfo,
-  useColorScheme,
-} from "react-native";
+import { RefreshControl, type ListRenderItemInfo } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft, Clock3 } from "lucide-react-native";
@@ -14,7 +10,7 @@ import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import { myQuestMessages } from "@/locales/myQuestMessages";
-import { getThemeColors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { spacing } from "@/theme/spacing";
 import { MyQuestSummaryCard } from "./components/MyQuestSummaryCard";
 import {
@@ -77,7 +73,7 @@ export default function MyQuestListScreen({
   const router = useRouter();
   const { locale } = useLocale();
   const messages = myQuestMessages[locale];
-  const palette = getThemeColors(useColorScheme());
+  const { colors: palette } = useAppTheme();
   const insets = useSafeAreaInsets();
   const role = initialRole;
   const [requestedTab, setRequestedTab] = useState<string | undefined>(

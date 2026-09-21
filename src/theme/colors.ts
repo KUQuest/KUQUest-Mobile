@@ -1,24 +1,24 @@
 import { Appearance } from "react-native";
 
 /**
- * Persona ramps. `getThemeColors` resolves the app-wide `primary`/accent keys
- * from whichever ramp the active workspace selected; `RoleAccentProvider`
- * rebinds the matching CSS variables so `className` styling follows too.
+ * Persona ramps. `getThemeColors` resolves the app-wide palette from the
+ * active workspace and appearance; `AppThemeProvider` publishes it to React
+ * and NativeWind consumers.
  */
 export const hirerRamp = {
   light: {
-    primary: "#006664",
-    primaryDark: "#004D4B",
-    primarySubtle: "#E5F1F0",
-    accentBorder: "#B9D5D2",
+    primary: "#755570",
+    primaryDark: "#5D4058",
+    primarySubtle: "#F3ECF2",
+    accentBorder: "#A06B95",
     onPrimary: "#FFFFFF",
   },
   dark: {
-    primary: "#2FA39B",
-    primaryDark: "#25847E",
-    primarySubtle: "#153B39",
-    accentBorder: "#2E5753",
-    onPrimary: "#F7FFFE",
+    primary: "#D8B4D0",
+    primaryDark: "#C49DBB",
+    primarySubtle: "#30232E",
+    accentBorder: "#8B6985",
+    onPrimary: "#30232E",
   },
 } as const;
 
@@ -45,6 +45,7 @@ export const lightColors = {
   surfaceMuted: "#F0F3F1",
   surfaceSubtle: "#F0F3F1",
   surfaceAccent: hirerRamp.light.primarySubtle,
+  surfaceTerracotta: "#FAEEE7",
   surfaceSuccess: "#E2EEE7",
   surfaceDanger: "#F2E6E6",
   surfaceImage: "#DEEAE9",
@@ -56,6 +57,8 @@ export const lightColors = {
   primaryDark: hirerRamp.light.primaryDark,
   primaryDeep: hirerRamp.light.primaryDark,
   onPrimary: hirerRamp.light.onPrimary,
+  terracotta: "#9C5238",
+  terracottaDark: "#7A3D2B",
   text: "#18201B",
   textStrong: "#18201B",
   textSecondary: "#5F6962",
@@ -82,7 +85,7 @@ export const lightColors = {
   info: "#356CA5",
   disabled: "#C8CECA",
   black: "#18201B",
-  white: hirerRamp.light.onPrimary,
+  white: "#FFFFFF",
   overlay: "rgba(24, 32, 27, 0.4)",
 } as const;
 
@@ -92,6 +95,7 @@ export const darkColors = {
   surfaceMuted: "#1D2520",
   surfaceSubtle: "#1D2520",
   surfaceAccent: hirerRamp.dark.primarySubtle,
+  surfaceTerracotta: "#35251F",
   surfaceSuccess: "#172E21",
   surfaceDanger: "#33211F",
   surfaceImage: "#142B27",
@@ -103,6 +107,8 @@ export const darkColors = {
   primaryDark: hirerRamp.dark.primaryDark,
   primaryDeep: hirerRamp.dark.primary,
   onPrimary: hirerRamp.dark.onPrimary,
+  terracotta: "#E9AB8F",
+  terracottaDark: "#F2C0AA",
   text: "#F3F6F4",
   textStrong: "#F3F6F4",
   textSecondary: "#AAB4AD",
@@ -129,7 +135,7 @@ export const darkColors = {
   info: "#659AD0",
   disabled: "#58615B",
   black: "#0F1411",
-  white: hirerRamp.dark.onPrimary,
+  white: "#F7FFFE",
   overlay: "rgba(0, 0, 0, 0.64)",
 } as const;
 
@@ -173,8 +179,8 @@ const palettes = {
 
 let activeRamp: RampName = "hirer";
 
-/** Called by `RoleAccentProvider`; keeps the imperative palette in step with
- * the CSS variables it publishes. */
+/** Called by `AppThemeProvider`; keeps imperative `colors` consumers in step
+ * with the current workspace ramp. */
 export function setActiveRamp(name: RampName) {
   activeRamp = name;
 }

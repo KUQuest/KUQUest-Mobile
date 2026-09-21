@@ -51,6 +51,7 @@ import { spacing } from "@/theme/spacing";
 import styles from "./createQuestStyles";
 import {
   formatDraftReward,
+  formatQuestSchedule,
   getHeadcountForParticipation,
   getQuestPublishCheck,
   initialDraft,
@@ -61,7 +62,6 @@ import {
 } from "./createQuestModel";
 import { deleteQuestDraft } from "./createQuestPersistence";
 import { measureFieldRelativeToScroll } from "./createQuestFocus";
-import { formatDate } from "@/domain/datetime";
 import {
   LOGISTICS_FIELDS,
   QUEST_DETAIL_FIELDS,
@@ -659,6 +659,10 @@ export default function CreateQuestScreen({
       : messages.groupCandidateHint;
   }, [draft.candidateMode, draft.participation, messages]);
   const proofRequired = draft.proofRequired !== "none";
+  const scheduleDisplay = useMemo(
+    () => formatQuestSchedule(draft, locale, messages.notSelected),
+    [draft, locale, messages.notSelected]
+  );
 
   const reviewPublishCheck = publishCheck ?? getQuestPublishCheck(draft);
   const missingSatang = Math.max(
@@ -680,10 +684,7 @@ export default function CreateQuestScreen({
       },
       {
         label: messages.summary.schedule,
-        value:
-          draft.startDate && draft.deadline && draft.startTime && draft.endTime
-            ? `${formatDate(draft.startDate, locale, messages.notSelected)} · ${draft.startTime}–${draft.endTime} → ${formatDate(draft.deadline, locale, messages.notSelected)}`
-            : messages.notSelected,
+        value: scheduleDisplay.range,
       },
       {
         label: messages.summary.location,
@@ -705,7 +706,7 @@ export default function CreateQuestScreen({
           : messages.notSelected,
       },
     ],
-    [draft, locale, messages, proofRequired]
+    [draft, locale, messages, proofRequired, scheduleDisplay]
   );
 
   const selectedQuestTag =
@@ -722,9 +723,9 @@ export default function CreateQuestScreen({
       ? messages.selectCandidate
       : messages.instantAccept;
   const logisticsSummary =
-    draft.startDate && draft.deadline && draft.startTime && draft.endTime
+    scheduleDisplay.range !== messages.notSelected
       ? messages.logisticsSummaryComplete(
-          `${formatDate(draft.startDate, locale, messages.notSelected)} · ${draft.startTime}–${draft.endTime}`,
+          scheduleDisplay.range,
           draft.locationMode === "ONLINE"
             ? messages.online
             : draft.location || messages.notSelected

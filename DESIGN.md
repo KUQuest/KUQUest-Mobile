@@ -6,7 +6,7 @@ colors:
   surface: "#FFFFFF"
   surface-muted: "#F0F3F1"
   surface-subtle: "#F0F3F1"
-  surface-accent: "#E5F1F0"
+  surface-accent: "#F3ECF2"
   surface-success: "#E2EEE7"
   surface-danger: "#F2E6E6"
   surface-image: "#DEEAE9"
@@ -14,20 +14,23 @@ colors:
   surface-nav-translucent: "rgba(255, 255, 255, 0.92)"
   border-nav: "rgba(24, 32, 27, 0.14)"
   nav-icon-muted: "#89928C"
-  primary: "#006664"
-  primary-dark: "#004D4B"
-  primary-deep: "#004D4B"
+  primary: "#755570"
+  primary-dark: "#5D4058"
+  primary-deep: "#5D4058"
   on-primary: "#FFFFFF"
-  hirer-primary: "#006664"
-  hirer-primary-dark: "#004D4B"
-  hirer-primary-subtle: "#E5F1F0"
-  hirer-accent-border: "#B9D5D2"
+  hirer-primary: "#755570"
+  hirer-primary-dark: "#5D4058"
+  hirer-primary-subtle: "#F3ECF2"
+  hirer-accent-border: "#A06B95"
   hirer-on-primary: "#FFFFFF"
   worker-primary: "#B2BB1E"
   worker-primary-dark: "#7D8615"
   worker-primary-subtle: "#F4F5DF"
   worker-accent-border: "#D9DDA5"
   worker-on-primary: "#1B2106"
+  terracotta: "#9C5238"
+  terracotta-dark: "#7A3D2B"
+  surface-terracotta: "#FAEEE7"
   text: "#18201B"
   text-strong: "#18201B"
   text-secondary: "#5F6962"
@@ -37,7 +40,7 @@ colors:
   border: "#DDE3DF"
   border-subtle: "#DDE3DF"
   border-muted: "#DDE3DF"
-  border-accent: "#B9D5D2"
+  border-accent: "#A06B95"
   border-danger: "#E6BDBE"
   border-success: "#B3D4C2"
   danger: "#C13D43"
@@ -166,28 +169,33 @@ components:
 
 KUQuest is a trusted community job board for people with `@ku.th` accounts. Its visual system treats the **Quest Board** as a clear, welcoming noticeboard: useful information comes first, actions are easy to find, and the KU identity feels connected to the community rather than to a generic marketplace.
 
-The atmosphere is calm, grounded, and quietly energetic in light appearance. Cool neutral surfaces keep long lists and **Quest Detail** information comfortable to read. In dark appearance the same system moves to deep green-black layers with pale text and softened signals. KU Teal marks important actions and active states in the Hirer workspace; KU Lime is the Worker workspace counterpart. Cards, filters, and inputs use soft edges and calm layers so the interface feels friendly, soft, and confident.
+The atmosphere is calm, grounded, and quietly energetic in light appearance. Cool neutral surfaces keep long lists and **Quest Detail** information comfortable to read. In dark appearance the same system moves to deep green-black layers with pale text and softened signals. Dusty Plum marks primary actions and active states in the Hirer workspace; KU Lime remains the Worker workspace counterpart. Terracotta adds a restrained supporting accent for expressive, non-status moments. Cards, filters, and inputs use soft edges and calm layers so the interface feels friendly, soft, and confident.
 
 **Key Characteristics:**
 
 - Cool neutral canvas with quiet white surface layers.
-- KU Teal for primary actions and Hirer identity.
+- Dusty Plum for primary actions and Hirer identity.
 - KU Lime as the Worker persona ramp.
+- Terracotta for restrained supporting accents in onboarding and profile expression.
 - Compact, scannable information for Quest discovery and comparison.
 - Clear mobile behavior with safe-area-aware navigation.
 
 ## Colors
 
-The palette is built from two persona ramps, one neutral ramp, and one semantic ramp. Light and dark appearance carry the same roles. Status colors stay semantic and should not become decorative accents.
+The palette is built from two persona ramps, one supporting accent family, one neutral ramp, and one semantic ramp. Light and dark appearance carry the same roles. Status colors stay semantic and should not become decorative accents.
 
 ### Persona ramps
 
 Each ramp is five roles: **Primary**, **Primary Dark**, **Primary Subtle**, **Accent Border**, **On Primary**.
 
-- **Hirer (KU Teal, `#006664` light / `#2FA39B` dark):** the app-wide `primary` tokens resolve to this ramp today.
+- **Hirer (Dusty Plum, `#755570` light / `#D8B4D0` dark):** the app-wide `primary` tokens resolve to this ramp today.
 - **Worker (KU Lime, `#B2BB1E` light / `#C8D34A` dark):** defined as `worker*` tokens so the Worker workspace can adopt it without inventing values. Nothing resolves to it yet.
 
-A surface never mixes the two ramps. The persona in view owns its primary, its subtle tint, and its accent border together.
+A surface never mixes the two persona ramps. The persona in view owns its primary, its subtle tint, and its accent border together.
+
+### Supporting accent
+
+**Terracotta (`#9C5238` light / `#E9AB8F` dark)** adds warmth to onboarding illustrations, empty-state artwork, and restrained **Portfolio Work** framing. Its text roles use `#7A3D2B` light / `#F2C0AA` dark, and its supporting surfaces use `#FAEEE7` light / `#35251F` dark. The dark Hirer accent border is `#8B6985`. Terracotta must not encode Quest lifecycle, settlement, validation, or workspace selection.
 
 ### Neutral
 
@@ -220,6 +228,8 @@ Four semantic hues, each with a subtle surface, a border, and a darker on-surfac
 ### Named Rules
 
 **The Persona Signal Rule.** The primary ramp marks an action, an active state, or a positive result for the workspace in view. Do not use it as a general decoration on every element, and do not mix the Hirer and Worker ramps on one surface.
+
+**The Supporting Accent Rule.** Terracotta is expressive, not semantic. Use it sparingly for illustration and profile-expression surfaces; pair it with labels or icons when it carries meaning.
 
 **The Quiet Canvas Rule.** Keep the app canvas neutral and quiet so the information in a Quest Card or Quest Detail view remains the focus.
 
@@ -261,7 +271,7 @@ defines the visual system and does not weaken that contract.
 
 ## Elevation & Depth
 
-Depth is layered and calm. Warm and pale green surface changes separate groups before a shadow is added. Cards and the bottom navigation use soft, low-contrast shadows. Sheets use an overlay and a raised bottom surface. Avoid large offsets, glossy effects, and decorative blur.
+Depth is layered and calm. Warm neutral, pale plum, and pale green surface changes separate groups before a shadow is added. Cards and the bottom navigation use soft, low-contrast shadows. Sheets use an overlay and a raised bottom surface. Avoid large offsets, glossy effects, and decorative blur.
 
 ### Shadow Vocabulary
 
@@ -293,8 +303,8 @@ Components should feel friendly, soft, and confident. They should make the next 
 
 ### Chips
 
-- **Style:** Rounded pills with a pale green or quiet neutral surface, compact padding, and small semibold labels.
-- **State:** Selected Quest Board filters use the accent surface and primary green text. Selected review filters use the primary green surface and `on-primary` text.
+- **Style:** Rounded pills with a pale plum or quiet neutral surface, compact padding, and small semibold labels.
+- **State:** Selected Quest Board filters use the accent surface and primary-color text. Selected review filters use the primary-color surface and `on-primary` text.
 - **Use:** Use chips for Quest Tags, active Quest Board filters, and small profile categories. They are not a replacement for a full section heading.
 
 ### Cards / Containers
@@ -331,7 +341,7 @@ Components should feel friendly, soft, and confident. They should make the next 
 ### Student Profile
 
 - **Style:** Use a brand row, Content Card surfaces for the profile header and statistics, and section cards with consistent 16px corners.
-- **Tabs:** Use a horizontal tab strip with icons, a 72px minimum tab height, and a primary-green bottom indicator for the selected section.
+- **Tabs:** Use a horizontal tab strip with icons, a 72px minimum tab height, and a primary-color bottom indicator for the selected section.
 - **Trust content:** Keep Profile Rating, completed Quest count, Experience, Portfolio Work, Certificates, and Reviews easy to scan. Do not expose private contact details or Student ID.
 
 ## Do's and Don'ts
@@ -350,7 +360,7 @@ Components should feel friendly, soft, and confident. They should make the next 
 
 - **Don't** introduce generic corporate blue, glossy gradients, or noisy gaming aesthetics.
 - **Don't** turn KUQuest into a crowded gig-marketplace interface with dense badges and competing accents.
-- **Don't** use green on every surface or for text that does not represent an action, active state, or positive result.
+- **Don't** use Dusty Plum on every surface or for text that does not represent an action, active state, or positive result.
 - **Don't** use large hard-offset shadows, decorative blur, or heavy visual effects.
 - **Don't** replace clear labels with icon-only controls when a person is applying to or creating a Quest.
 - **Don't** invent proof, ratings, customer claims, or other product evidence that is not supplied by the product.

@@ -1,9 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import {
-  RefreshControl,
-  useColorScheme,
-  useWindowDimensions,
-} from "react-native";
+import { RefreshControl, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckCircle2, CircleX, Clock, RefreshCw } from "lucide-react-native";
@@ -12,13 +8,13 @@ import { Pressable, ScrollView, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import { useLocale } from "@/features/preferences/localeStore";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import {
   useWorkerAssignmentTitlesQuery,
   useWorkerAssignmentsQuery,
   useWorkerLiveSnapshotQuery,
 } from "../api/workerHomeQueries";
-import { getThemeColors } from "@/theme/colors";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 import { CurrentQuestCard } from "../components/CurrentQuestCard";
@@ -33,8 +29,7 @@ export default function WorkerWorkManagementScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width, fontScale } = useWindowDimensions();
-  const colorScheme = useColorScheme();
-  const themeColors = getThemeColors(colorScheme);
+  const { colors: themeColors } = useAppTheme();
   const metrics = getAppChromeMetrics(width, fontScale);
   const handleScroll = handleNavigationScroll;
   const { locale } = useLocale();

@@ -1,10 +1,9 @@
 import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/tw/cn";
-import { useColorScheme, useWindowDimensions } from "react-native";
+import { useWindowDimensions } from "react-native";
 import { Pressable, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { StatusBar } from "expo-status-bar";
 import { Host, Button } from "@expo/ui";
 import { GraduationCap, TriangleAlert } from "lucide-react-native";
 import {
@@ -17,7 +16,7 @@ import { authService } from "./AuthService";
 import { clearSessionCache } from "./sessionQueries";
 import { authMessages, getAuthErrorText } from "../../locales/authMessages";
 import { useLocale } from "@/features/preferences/localeStore";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import styles from "./styles/loginStyles";
 
 interface LoginErrorState {
@@ -37,7 +36,7 @@ export default function LoginScreen({
   authAdapter = authService,
 }: LoginScreenProps) {
   const { width } = useWindowDimensions();
-  const colorScheme = useColorScheme();
+  const { colors } = useAppTheme();
   const buttonWidth = Math.min(width - 48, 420);
 
   const { locale: currentLocale } = useLocale();
@@ -77,7 +76,6 @@ export default function LoginScreen({
 
   return (
     <ScreenLayout className={styles.safeArea}>
-      <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <View className={styles.container}>
         <View className={styles.content}>
           {/* Header Section */}

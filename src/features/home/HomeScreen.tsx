@@ -1,9 +1,5 @@
 import React, { useCallback, useState } from "react";
-import {
-  RefreshControl,
-  useColorScheme,
-  useWindowDimensions,
-} from "react-native";
+import { RefreshControl, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -22,8 +18,8 @@ import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import { isPrototypeDemoEnabled } from "@/features/auth/authEnvironment";
 import { useLocale } from "@/features/preferences/localeStore";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
-import { getThemeColors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 
 import { StateView } from "@/components/ui/StateView";
@@ -41,20 +37,23 @@ export default function HomeScreen() {
   const router = useRouter();
   const { locale } = useLocale();
   const { width, fontScale } = useWindowDimensions();
-  const colorScheme = useColorScheme();
+  const { colors: themeColors } = useAppTheme();
   const insets = useSafeAreaInsets();
   const handleScroll = handleNavigationScroll;
   const metrics = getAppChromeMetrics(width, fontScale);
-  const themeColors = getThemeColors(colorScheme);
   const messages = hirerHomeMessages[locale];
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const {
-    data: liveQuests = [],
+    data: homeData,
     isError,
     isPending,
     isRefetching,
     refetch,
   } = useHirerHomeQuery();
+  const liveQuests = homeData?.activeQuests ?? [];
+  const activeQuestCount = homeData?.activeQuestCount ?? 0;
+  const draftCount = homeData?.draftCount ?? 0;
+  const completedCount = homeData?.completedCount ?? 0;
   const [rosterModalQuest, setRosterModalQuest] =
     useState<LiveHirerQuestCardData | null>(null);
 
@@ -83,6 +82,8 @@ export default function HomeScreen() {
             applicants: [],
           }))
         : [];
+  const displayedActiveQuestCount =
+    liveQuests.length > 0 ? activeQuestCount : displayQuests.length;
 
   const cardWidth = Math.min(width - 32, 640);
   const handleOpenDetails = useCallback(
@@ -176,18 +177,38 @@ export default function HomeScreen() {
                 <Text className={`${styles.sectionTitle} text-ku-text-strong`}>
                   {messages.activeQuestTitle}
                 </Text>
-                {displayQuests.length > 1 ? (
-                  <Chip
-                    className={styles.sectionCounterBadge}
-                    label={messages.activeQuestCounter(
-                      activeCardIndex + 1,
-                      displayQuests.length
-                    )}
-                    textClassName={`${styles.sectionCounterText} text-ku-primary`}
-                    testID="hirer-quest-counter"
-                    tone="accent"
-                  />
-                ) : null}
+                <View className="flex-row items-center gap-2">
+                  {displayQuests.length > 1 ? (
+                    <Chip
+                      className={styles.sectionCounterBadge}
+                      label={messages.activeQuestCounter(
+                        activeCardIndex + 1,
+                        displayedActiveQuestCount
+                      )}
+                      textClassName={`${styles.sectionCounterText} text-ku-primary`}
+                      testID="hirer-quest-counter"
+                      tone="accent"
+                    />
+                  ) : null}
+                  {displayedActiveQuestCount > displayQuests.length ? (
+                    <Pressable
+                      accessibilityLabel={messages.viewAllActive}
+                      accessibilityRole="button"
+                      className={styles.viewAllButton}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/my-quests",
+                          params: { role: "hirer", tab: "active" },
+                        })
+                      }
+                      testID="hirer-view-all-active"
+                    >
+                      <Text className={`${styles.viewAllText} text-ku-primary`}>
+                        {messages.viewAllActive}
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </View>
               </View>
 
               <View className={styles.carouselContainer}>
@@ -287,7 +308,7 @@ export default function HomeScreen() {
 
             <View className={styles.quickAccessGrid}>
               <Pressable
-                accessibilityLabel={`${messages.quickActiveTitle}: ${messages.quickActiveDesc}`}
+                accessibilityLabel={`${messages.quickActiveTitle}: ${messages.quickActiveCount(displayedActiveQuestCount)}`}
                 accessibilityRole="button"
                 className={`${styles.quickAccessCard} border-ku-border-subtle bg-ku-surface`}
                 onPress={() =>
@@ -318,13 +339,13 @@ export default function HomeScreen() {
                     className={`${styles.quickAccessItemDesc} text-ku-text-secondary`}
                     numberOfLines={1}
                   >
-                    {messages.quickActiveDesc}
+                    {messages.quickActiveCount(displayedActiveQuestCount)}
                   </Text>
                 </View>
               </Pressable>
 
               <Pressable
-                accessibilityLabel={`${messages.quickDraftTitle}: ${messages.quickDraftDesc}`}
+                accessibilityLabel={`${messages.quickDraftTitle}: ${messages.quickDraftCount(draftCount)}`}
                 accessibilityRole="button"
                 className={`${styles.quickAccessCard} border-ku-border-subtle bg-ku-surface`}
                 onPress={() =>
@@ -355,13 +376,13 @@ export default function HomeScreen() {
                     className={`${styles.quickAccessItemDesc} text-ku-text-secondary`}
                     numberOfLines={1}
                   >
-                    {messages.quickDraftDesc}
+                    {messages.quickDraftCount(draftCount)}
                   </Text>
                 </View>
               </Pressable>
 
               <Pressable
-                accessibilityLabel={`${messages.quickHistoryTitle}: ${messages.quickHistoryDesc}`}
+                accessibilityLabel={`${messages.quickHistoryTitle}: ${messages.quickHistoryCount(completedCount)}`}
                 accessibilityRole="button"
                 className={`${styles.quickAccessCard} border-ku-border-subtle bg-ku-surface`}
                 onPress={() =>
@@ -392,7 +413,7 @@ export default function HomeScreen() {
                     className={`${styles.quickAccessItemDesc} text-ku-text-secondary`}
                     numberOfLines={1}
                   >
-                    {messages.quickHistoryDesc}
+                    {messages.quickHistoryCount(completedCount)}
                   </Text>
                 </View>
               </Pressable>

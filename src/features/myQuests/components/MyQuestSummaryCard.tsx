@@ -59,7 +59,10 @@ export function MyQuestSummaryCard({
   const status = toneColors(quest.statusTone, palette);
   const description = quest.description.trim();
   return (
-    <View className="overflow-hidden rounded-[16px] border border-ku-border-accent bg-ku-white">
+    <View
+      className="overflow-hidden rounded-[16px] border border-ku-border-accent"
+      style={{ backgroundColor: palette.surface }}
+    >
       <Pressable
         accessibilityHint={messages.listHint}
         accessibilityLabel={`${quest.title}. ${quest.status}. ${messages.detail}`}
@@ -164,7 +167,10 @@ export function MyQuestSummaryCard({
           </View>
         </View>
       </Pressable>
-      <View className="flex-row items-center justify-end bg-ku-surface px-ku-md py-[10px]">
+      <View
+        className="flex-row items-center justify-end px-ku-md py-[10px]"
+        style={{ backgroundColor: palette.surface }}
+      >
         <Pressable
           accessibilityLabel={`${quest.action}: ${quest.title}`}
           accessibilityRole="button"

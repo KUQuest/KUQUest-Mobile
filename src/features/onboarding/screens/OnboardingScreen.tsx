@@ -5,9 +5,7 @@ import {
   BackHandler,
   Modal,
   Platform,
-  useColorScheme,
 } from "react-native";
-import { StatusBar } from "expo-status-bar";
 import {
   Image,
   KeyboardAvoidingView,
@@ -38,7 +36,7 @@ import {
 import { CircleAlert, Pencil, UserRound, X } from "lucide-react-native";
 
 import styles from "@/features/onboarding/styles/registrationStyles";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { spacing } from "@/theme/spacing";
 import { FileTooLargeModal } from "../components/FileTooLargeModal";
 import { onboardingMessages } from "../../../locales/registrationOnboarding";
@@ -126,6 +124,7 @@ function OnboardingSkeleton({
   currentStep: OnboardingStep;
   loadingLabel: string;
 }) {
+  const { colors } = useAppTheme();
   const field = (key: string, height = 52) => (
     <View key={key} style={{ gap: spacing.xs }}>
       <SkeletonBlock height={14} width="42%" borderRadius={4} />
@@ -291,7 +290,7 @@ function removeIndexedErrors(
 }
 
 export default function OnboardingScreen() {
-  const colorScheme = useColorScheme();
+  const { colors } = useAppTheme();
 
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -742,7 +741,6 @@ export default function OnboardingScreen() {
       edges={["top", "left", "right", "bottom"]}
       className={styles.safeArea}
     >
-      <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : undefined}

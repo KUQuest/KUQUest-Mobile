@@ -59,21 +59,43 @@ Assert on behaviour, `testID`, accessibility props and rendered text. A test tha
 
 Screens consume `ku-` semantic names. A raw hex or `rgba()` in JSX is a token gap — add the token in `src/global.css` (light **and** dark) plus its `DESIGN.md` entry, then use it.
 
-`src/theme/colors.ts` mirrors the same palette for the imperative surfaces that take a colour value rather than a class: `lucide-react-native` icon `color`, `StatusBar`, `SystemUI`, `placeholderTextColor`, third-party `style`-only props. Prefer `getThemeColors(useColorScheme())` inside components; the exported `colors` Proxy reads `Appearance.getColorScheme()` per property access and does not re-render on appearance change. Any edit to a colour token must land in both files or light and dark will disagree between the class path and the imperative path.
+`src/theme/colors.ts` mirrors the same palette for imperative surfaces that
+take a colour value rather than a class: `lucide-react-native` icon `color`,
+`StatusBar`, `SystemUI`, `placeholderTextColor`, third-party `style`-only
+props. `src/features/workspace/AppThemeProvider.tsx` owns appearance and
+workspace resolution, publishes the full palette through `useAppTheme()`, and
+binds matching NativeWind variables. React Modules should call
+`useAppTheme()`; keep the exported `colors` Proxy only for non-React adapters.
+The provider keeps its active ramp synchronized before render.
 
 ## Dark mode
 
-Appearance follows the OS only — there is no Light/Dark/System user setting, and adding one is a product change, not a styling change. Class-styled components track appearance through the `@media (prefers-color-scheme: dark)` block with no component code. Imperative colours track it through `useColorScheme()` from `react-native`.
+Appearance follows the OS only — there is no Light/Dark/System user setting,
+and adding one is a product change, not a styling change. NativeWind variables
+and imperative colours both come from `useAppTheme()`.
 
-State both sides of an appearance-dependent style. React Native applies conditional styles unreliably, so write `bg-ku-surface dark:bg-ku-card`, never a bare `dark:` utility.
+State both sides of an appearance-dependent style. React Native applies
+conditional styles unreliably, so write `bg-ku-surface dark:bg-ku-card`, never
+a bare `dark:` utility.
 
 ## Hirer / Worker accent
 
-Role lives in `src/features/workspace/roleWorkspaceStore.ts` (`useRoleWorkspace()`, persisted under `kuquest_active_workspace`). `src/features/workspace/RoleAccentProvider.tsx` wraps the app in `<VariableContextProvider>` and rebinds `--color-ku-primary`, `--color-ku-primary-dark`, `--color-ku-primary-deep`, `--color-ku-surface-accent`, `--color-ku-border-accent` and `--color-ku-on-primary` to `hirerRamp` or `workerRamp` from `src/theme/colors.ts`, per appearance. The same provider calls `setActiveRamp`, so `getThemeColors()` and the `colors` proxy resolve the same accent for imperative props.
+Role lives in `src/features/workspace/roleWorkspaceStore.ts`
+(`useRoleWorkspace()`, persisted under `kuquest_active_workspace`).
+`src/features/workspace/AppThemeProvider.tsx` wraps the app in
+`<VariableContextProvider>`, resolves `hirerRamp` or `workerRamp` from
+`src/theme/colors.ts`, and publishes appearance-aware accent variables.
+The same provider calls `setActiveRamp`, so the compatibility `colors` Proxy
+uses the same role ramp for non-React adapters.
 
-Components keep writing `bg-ku-primary` and reading `colors.primary`. Never branch on role inside a `className`, and never duplicate a component per role.
+React components should call `useAppTheme()` and read `colors`; non-React
+adapters may use the compatibility `colors` Proxy. Never branch on role inside
+a `className`, and never duplicate a component per role.
 
-`metro.config.js` lists those six variables under `inlineVariables.exclude`. The compiler folds any custom property referenced exactly once into its consumer (`react-native-css/dist/commonjs/compiler/inline-variables.js:9`), which would make it unreachable from the provider — the exclusion keeps them resolvable at runtime. Add an accent-bearing token to that list when you add one.
+`metro.config.js` lists accent variables under `inlineVariables.exclude`. The
+compiler folds any custom property referenced exactly once into its consumer
+(`react-native-css/dist/commonjs/compiler/inline-variables.js:9`), which would
+make it unreachable from the provider.
 
 Role must never be communicated by colour alone — keep the existing textual and icon indicators.
 

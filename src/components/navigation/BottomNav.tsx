@@ -1,18 +1,19 @@
 import React from "react";
 import { cn } from "@/tw/cn";
-import { useColorScheme, useWindowDimensions } from "react-native";
+import { useWindowDimensions } from "react-native";
 import { useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { Image, Pressable, View } from "@/tw";
 import { Animated } from "@/tw/animated";
 
 import { useLocale } from "@/features/preferences/localeStore";
 import { navigationMessages } from "@/locales/navigationMessages";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { getAppChromeMetrics } from "@/theme/layout";
 import {
   useNavigationCompact,
   showNavigation,
 } from "@/features/navigation/navigationUiStore";
-import styles, { getBottomNavigationColors } from "./bottomNavStyles";
+import styles from "./bottomNavStyles";
 import { useRoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
 import { useProfileQuery } from "@/features/profile/api/profileQueries";
 import {
@@ -31,8 +32,7 @@ export function BottomNav({
   insets,
 }: TabBarProps) {
   const { width, fontScale } = useWindowDimensions();
-  const colorScheme = useColorScheme();
-  const navigationColors = getBottomNavigationColors(colorScheme);
+  const { colors: navigationColors } = useAppTheme();
   const metrics = getAppChromeMetrics(width, fontScale);
   const { locale } = useLocale();
   const messages = navigationMessages[locale];
