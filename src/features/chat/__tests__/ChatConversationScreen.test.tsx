@@ -56,6 +56,7 @@ describe("ChatConversationScreen", () => {
       setViewerState: jest.fn(),
       handleImagePress: jest.fn(),
       openFile: jest.fn(),
+      socketStatus: "idle",
     });
   });
 

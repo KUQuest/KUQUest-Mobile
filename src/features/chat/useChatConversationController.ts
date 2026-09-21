@@ -152,16 +152,20 @@ export function useChatConversationController(
   ]);
   const handleChatSocketEvent = useCallback(
     (event: ChatSocketEvent) => {
+      const expectedEventType =
+        conversationType === "CANDIDATE_INQUIRY"
+          ? "CANDIDATE_INQUIRY_MESSAGE"
+          : "WORK_CONVERSATION_MESSAGE";
       if (
-        event.type === "chat.message.created" &&
-        event.data.conversationId === routeConversationId
+        event.type === expectedEventType &&
+        event.message.conversationId === routeConversationId
       ) {
         const queryKey = chatKeys.messages(
           routeConversationId,
           viewerId,
           conversationType
         );
-        const incomingMessage = toDisplayMessage(event.data.message, viewerId);
+        const incomingMessage = toDisplayMessage(event.message, viewerId);
         queryClient.setQueryData<DisplayChatMessage[]>(queryKey, (current) => {
           if (current?.some((message) => message.id === incomingMessage.id)) {
             return current;
@@ -178,27 +182,14 @@ export function useChatConversationController(
           conversationKey,
           (current) => {
             if (!current) return current;
-            const preview = event.data.message.text ?? "";
+            const preview = event.message.text ?? "";
             return {
               ...current,
               latestMessage: { en: preview, th: preview },
-              latestAt: event.data.message.createdAt,
+              latestAt: event.message.createdAt,
             };
           }
         );
-      }
-      if (
-        event.type === "quest.state.changed" &&
-        event.data.questId === routeQuestId
-      ) {
-        void queryClient.invalidateQueries({
-          queryKey: chatKeys.conversation(
-            routeConversationId ?? "",
-            viewerId,
-            "WORK",
-            fallbackQuestId
-          ),
-        });
       }
     },
     [
@@ -206,16 +197,18 @@ export function useChatConversationController(
       fallbackQuestId,
       queryClient,
       routeConversationId,
-      routeQuestId,
       viewerId,
     ]
   );
-  useChatSocket({
-    conversationId: routeConversationId ?? "",
-    conversationType,
-    enabled: Boolean(routeConversationId && conversation?.capability?.canRead),
-    onEvent: handleChatSocketEvent,
-  });
+  const { status: socketStatus, sendMessage: sendSocketMessage } =
+    useChatSocket({
+      conversationId: routeConversationId ?? "",
+      conversationType,
+      enabled: Boolean(
+        routeConversationId && conversation?.capability?.canRead
+      ),
+      onEvent: handleChatSocketEvent,
+    });
   const sendMessageMutation = useSendChatMessageMutation();
   const uploadAttachmentMutation = useUploadChatAttachmentMutation();
   const [draft, setDraft] = useState("");
@@ -458,34 +451,84 @@ export function useChatConversationController(
       createdAt: new Date().toISOString(),
       attachments: [],
     };
-    void sendMessageMutation
-      .mutateAsync({
-        conversationId: conversation.id,
-        mode: conversationType,
-        text: value,
-        clientMessageId,
-        attachmentIds,
-        viewerId,
+    const mutationVariables = {
+      conversationId: conversation.id,
+      mode: conversationType,
+      text: value,
+      clientMessageId,
+      attachmentIds,
+      viewerId,
+      optimisticMessage,
+    };
+    const clearDraft = () => {
+      setDraft("");
+      setPendingAttachmentIds([]);
+      setPendingAttachments([]);
+    };
+    const showSendError = (error: unknown) => {
+      const rateLimited = error instanceof ApiError && error.status === 429;
+      Alert.alert(
+        messages.send,
+        rateLimited
+          ? locale === "th"
+            ? "ส่งข้อความถี่เกินไป ลองอีกครั้งในอีกสักครู่"
+            : "You are sending messages too quickly. Try again shortly."
+          : error instanceof Error
+            ? error.message
+            : messages.loadError
+      );
+    };
+    const sendWithRest = () =>
+      sendMessageMutation.mutateAsync(mutationVariables);
+    const queryKey = chatKeys.messages(
+      conversation.id,
+      viewerId,
+      conversationType
+    );
+    const sendWithSocket = async () => {
+      queryClient.setQueryData<DisplayChatMessage[]>(queryKey, (current) => [
+        ...(current ?? []),
         optimisticMessage,
-      })
-      .then(() => {
-        setDraft("");
-        setPendingAttachmentIds([]);
-        setPendingAttachments([]);
-      })
-      .catch((error: unknown) => {
-        const rateLimited = error instanceof ApiError && error.status === 429;
-        Alert.alert(
-          messages.send,
-          rateLimited
-            ? locale === "th"
-              ? "ส่งข้อความถี่เกินไป ลองอีกครั้งในอีกสักครู่"
-              : "You are sending messages too quickly. Try again shortly."
-            : error instanceof Error
-              ? error.message
-              : messages.loadError
-        );
+      ]);
+      const accepted = await sendSocketMessage({
+        type: "SEND_MESSAGE",
+        clientMessageId,
+        ...(value ? { text: value } : {}),
+        attachmentIds,
       });
+      const acceptedDisplay = toDisplayMessage(accepted, viewerId);
+      queryClient.setQueryData<DisplayChatMessage[]>(queryKey, (current) => {
+        const withoutOptimistic = (current ?? []).filter(
+          (message) => message.id !== clientMessageId
+        );
+        if (
+          withoutOptimistic.some((message) => message.id === acceptedDisplay.id)
+        ) {
+          return withoutOptimistic;
+        }
+        return [...withoutOptimistic, acceptedDisplay];
+      });
+    };
+    const send = async () => {
+      if (socketStatus === "connected") {
+        try {
+          await sendWithSocket();
+          clearDraft();
+          return;
+        } catch {
+          queryClient.setQueryData<DisplayChatMessage[]>(queryKey, (current) =>
+            (current ?? []).filter((message) => message.id !== clientMessageId)
+          );
+        }
+      }
+      try {
+        await sendWithRest();
+        clearDraft();
+      } catch (error: unknown) {
+        showSendError(error);
+      }
+    };
+    void send();
   };
   const openFile = async (attachment: RenderAttachment): Promise<void> => {
     if (!conversation) return;
@@ -559,5 +602,6 @@ export function useChatConversationController(
     setViewerState,
     handleImagePress,
     openFile,
+    socketStatus,
   };
 }

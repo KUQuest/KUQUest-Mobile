@@ -10,7 +10,11 @@ jest.mock("expo-file-system", () => ({
 }));
 
 import { ApiClient } from "../ApiClient";
-import { ChatApi, serverConversationToChatConversation } from "../ChatApi";
+import {
+  ChatApi,
+  parseChatSocketMessage,
+  serverConversationToChatConversation,
+} from "../ChatApi";
 
 describe("ChatApi", () => {
   let fetchMock: jest.Mock;
@@ -505,5 +509,38 @@ describe("ChatApi", () => {
         ([url]) => !url.includes("/chat/conversations")
       )
     ).toBe(true);
+  });
+  it("parses committed events and command acknowledgements", () => {
+    const message = {
+      id: "message-1",
+      conversationId: "conversation-1",
+      sequence: 1,
+      kind: "USER",
+      sender: { id: "user-1", displayName: "Me" },
+      text: "Hello",
+      attachments: [],
+      createdAt: "2026-09-15T12:05:00Z",
+    };
+
+    expect(
+      parseChatSocketMessage({
+        type: "WORK_CONVERSATION_MESSAGE",
+        message,
+      })
+    ).toMatchObject({ type: "WORK_CONVERSATION_MESSAGE", message });
+    expect(
+      parseChatSocketMessage({
+        type: "MESSAGE_ACCEPTED",
+        clientMessageId: "client-1",
+        message,
+      })
+    ).toMatchObject({ type: "MESSAGE_ACCEPTED", clientMessageId: "client-1" });
+    expect(() =>
+      parseChatSocketMessage({
+        type: "MESSAGE_REJECTED",
+        clientMessageId: "client-2",
+        error: { code: "NOT_ALLOWED", message: "Read-only" },
+      })
+    ).not.toThrow();
   });
 });

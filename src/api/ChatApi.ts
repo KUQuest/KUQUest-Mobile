@@ -206,6 +206,48 @@ export function parseChatEvent(payload: unknown): ServerChatEvent {
   return chatEventSchema.parse(payload);
 }
 
+export const chatSocketCommandSchema = z
+  .object({
+    type: z.literal("SEND_MESSAGE"),
+    clientMessageId: z.string().trim().min(1).max(128),
+    text: z.string().trim().min(1).max(1000).optional(),
+    attachmentIds: z.array(z.string().uuid()).default([]),
+  })
+  .refine(
+    (command) => Boolean(command.text) || command.attachmentIds.length > 0,
+    "Message text or attachmentIds is required"
+  );
+export type ChatSocketCommand = z.infer<typeof chatSocketCommandSchema>;
+
+export const chatSocketAcceptedSchema = z.object({
+  type: z.literal("MESSAGE_ACCEPTED"),
+  clientMessageId: z.string().min(1),
+  message: chatMessageSchema,
+});
+export type ChatSocketAccepted = z.infer<typeof chatSocketAcceptedSchema>;
+
+export const chatSocketRejectedSchema = z.object({
+  type: z.literal("MESSAGE_REJECTED"),
+  clientMessageId: z.string().nullable(),
+  error: z.object({
+    code: z.string().min(1),
+    message: z.string().min(1),
+  }),
+});
+export type ChatSocketRejected = z.infer<typeof chatSocketRejectedSchema>;
+
+export const chatSocketMessageSchema = z.discriminatedUnion("type", [
+  chatEventSchema.options[0],
+  chatEventSchema.options[1],
+  chatSocketAcceptedSchema,
+  chatSocketRejectedSchema,
+]);
+export type ChatSocketMessage = z.infer<typeof chatSocketMessageSchema>;
+
+export function parseChatSocketMessage(payload: unknown): ChatSocketMessage {
+  return chatSocketMessageSchema.parse(payload);
+}
+
 export function serverMessageToChatMessage(
   msg: ServerChatMessage,
   currentUserId?: string

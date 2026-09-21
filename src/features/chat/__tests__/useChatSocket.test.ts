@@ -1,16 +1,25 @@
 import { act, renderHook } from "@testing-library/react-native";
 
+jest.mock("@/features/auth/authClient", () => ({
+  authClient: { getCookie: () => "better-auth.session_token=test-cookie" },
+}));
+
 import { toWebSocketUrl, useChatSocket } from "../useChatSocket";
 
 class MockWebSocket {
   static instances: MockWebSocket[] = [];
 
   readonly close = jest.fn();
+  readonly send = jest.fn();
   onclose: (() => void) | null = null;
   onmessage: ((event: { data: unknown }) => void) | null = null;
   onopen: (() => void) | null = null;
 
-  constructor(readonly url: string) {
+  constructor(
+    readonly url: string,
+    readonly protocols?: string | string[],
+    readonly options?: { headers?: Record<string, string> }
+  ) {
     MockWebSocket.instances.push(this);
   }
 
@@ -60,7 +69,7 @@ describe("useChatSocket", () => {
       "/api/v1/chat/candidate-inquiries/conversation-1/events",
     ],
   ] as const)(
-    "uses the correct %s event path",
+    "uses the correct %s event path and authenticated constructor",
     async (conversationType, path) => {
       const { unmount } = await renderHook(() =>
         useChatSocket({
@@ -75,6 +84,9 @@ describe("useChatSocket", () => {
       expect(MockWebSocket.instances[0]?.url).toBe(
         `wss://api.example.com${path}`
       );
+      expect(MockWebSocket.instances[0]?.options).toEqual({
+        headers: { Cookie: "better-auth.session_token=test-cookie" },
+      });
 
       await unmount();
     }
@@ -92,18 +104,16 @@ describe("useChatSocket", () => {
       })
     );
 
-    expect(result.current).toEqual({
-      status: "unavailable",
-      reconnectAttempt: 0,
-    });
+    expect(result.current.status).toBe("unavailable");
+    expect(result.current.reconnectAttempt).toBe(0);
     expect(MockWebSocket.instances).toHaveLength(0);
 
     await unmount();
   });
 
-  it("forwards only valid recognized socket events", async () => {
+  it("forwards backend committed events and resolves accepted commands", async () => {
     const onEvent = jest.fn();
-    const { unmount } = await renderHook(() =>
+    const { result, unmount } = await renderHook(() =>
       useChatSocket({
         conversationId: "conversation-1",
         conversationType: "WORK",
@@ -115,74 +125,131 @@ describe("useChatSocket", () => {
 
     if (!socket) throw new Error("Expected a WebSocket connection");
 
+    const acceptedMessage = {
+      id: "message-1",
+      conversationId: "conversation-1",
+      sequence: 1,
+      kind: "USER",
+      sender: { id: "member-1", displayName: "Arthit" },
+      text: "I have arrived.",
+      attachments: [],
+      createdAt: "2026-09-17T16:05:00+07:00",
+    };
+
     await act(async () => {
       socket.open();
-      socket.receive(
+      const pending = result.current.sendMessage({
+        type: "SEND_MESSAGE",
+        clientMessageId: "client-message-1",
+        text: "I have arrived.",
+        attachmentIds: [],
+      });
+      expect(socket.send).toHaveBeenCalledWith(
         JSON.stringify({
-          type: "chat.message.created",
-          data: {
-            conversationId: "conversation-1",
-            message: {
-              id: "message-1",
-              conversationId: "conversation-1",
-              sequence: 1,
-              kind: "USER",
-              sender: { id: "member-1", displayName: "Arthit" },
-              text: "I have arrived.",
-              attachments: [],
-              createdAt: "2026-09-17T16:05:00+07:00",
-            },
-          },
+          type: "SEND_MESSAGE",
+          clientMessageId: "client-message-1",
+          text: "I have arrived.",
+          attachmentIds: [],
         })
       );
       socket.receive(
         JSON.stringify({
-          type: "chat.read.updated",
-          data: {
-            conversationId: "conversation-1",
-            userId: "member-1",
-            lastReadMessageId: "message-1",
-            readAt: "2026-09-17T16:05:30+07:00",
-          },
+          type: "MESSAGE_ACCEPTED",
+          clientMessageId: "client-message-1",
+          message: acceptedMessage,
+        })
+      );
+      await expect(pending).resolves.toEqual(acceptedMessage);
+      socket.receive(
+        JSON.stringify({
+          type: "WORK_CONVERSATION_MESSAGE",
+          message: acceptedMessage,
         })
       );
       socket.receive(
         JSON.stringify({
-          type: "quest.state.changed",
-          data: {
-            questId: "quest-1",
-            previousState: "QUEST_ASSIGNED",
-            newState: "QUEST_IN_PROGRESS",
-            timestamp: "2026-09-17T16:10:00+07:00",
-          },
+          type: "CANDIDATE_INQUIRY_MESSAGE",
+          message: acceptedMessage,
         })
       );
       socket.receive("{not json");
-      socket.receive(JSON.stringify({ type: "chat.typing", data: {} }));
-      socket.receive(
-        JSON.stringify({
-          type: "chat.read.updated",
-          data: { userId: "member-1" },
-        })
-      );
-      socket.receive({ type: "chat.read.updated" });
     });
 
-    expect(onEvent).toHaveBeenCalledTimes(3);
+    expect(onEvent).toHaveBeenCalledTimes(2);
     expect(onEvent.mock.calls[0]?.[0]).toMatchObject({
-      type: "chat.message.created",
-      data: { conversationId: "conversation-1" },
+      type: "WORK_CONVERSATION_MESSAGE",
+      message: { id: "message-1" },
     });
     expect(onEvent.mock.calls[1]?.[0]).toMatchObject({
-      type: "chat.read.updated",
-      data: { lastReadMessageId: "message-1" },
-    });
-    expect(onEvent.mock.calls[2]?.[0]).toMatchObject({
-      type: "quest.state.changed",
-      data: { questId: "quest-1" },
+      type: "CANDIDATE_INQUIRY_MESSAGE",
+      message: { id: "message-1" },
     });
 
     await unmount();
+  });
+
+  it("rejects a command with the backend error code and message", async () => {
+    const { result, unmount } = await renderHook(() =>
+      useChatSocket({
+        conversationId: "conversation-1",
+        conversationType: "WORK",
+        enabled: true,
+        onEvent: jest.fn(),
+      })
+    );
+    const socket = MockWebSocket.instances[0];
+
+    if (!socket) throw new Error("Expected a WebSocket connection");
+
+    await act(async () => {
+      socket.open();
+      const pending = result.current.sendMessage({
+        type: "SEND_MESSAGE",
+        clientMessageId: "client-message-2",
+        text: "Rejected",
+        attachmentIds: [],
+      });
+      socket.receive(
+        JSON.stringify({
+          type: "MESSAGE_REJECTED",
+          clientMessageId: "client-message-2",
+          error: { code: "NOT_ALLOWED", message: "Conversation is read-only." },
+        })
+      );
+      await expect(pending).rejects.toMatchObject({
+        code: "NOT_ALLOWED",
+        message: "Conversation is read-only.",
+      });
+    });
+
+    await unmount();
+  });
+
+  it("reconnects after the socket closes", async () => {
+    jest.useFakeTimers();
+    const { result, unmount } = await renderHook(() =>
+      useChatSocket({
+        conversationId: "conversation-1",
+        conversationType: "WORK",
+        enabled: true,
+        onEvent: jest.fn(),
+      })
+    );
+    const socket = MockWebSocket.instances[0];
+
+    if (!socket) throw new Error("Expected a WebSocket connection");
+
+    await act(async () => {
+      socket.open();
+      socket.onclose?.();
+      jest.advanceTimersByTime(1_000);
+    });
+
+    expect(result.current.status).toBe("reconnecting");
+    expect(MockWebSocket.instances).toHaveLength(2);
+
+    await unmount();
+    jest.useRealTimers();
   });
 
   it("closes the socket when the hook unmounts", async () => {
