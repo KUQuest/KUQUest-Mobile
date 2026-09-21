@@ -1,85 +1,72 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 import {
   AccessibilityInfo,
   Alert,
-  findNodeHandle,
   Platform,
-  Pressable as RNPressable,
-  TextInput as RNTextInput,
   useWindowDimensions,
 } from "react-native";
-import { cn } from "@/tw/cn";
-import { KeyboardAvoidingView, Pressable, ScrollView, Text, View } from "@/tw";
-import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import * as ImagePicker from "expo-image-picker";
-import {
-  Check,
-  ChevronRight,
-  CircleAlert,
-  Clock3,
-  UserRound,
-  UserRoundCheck,
-  UsersRound,
-} from "lucide-react-native";
+import { CircleAlert } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
 
 import { Button } from "@/components/ui/Button";
-import { CreateQuestHeader } from "./components/CreateQuestHeader";
-import { QuestDetailsStep } from "./components/QuestDetailsStep";
-import { TeamSetupStep } from "./components/TeamSetupStep";
-import { SchedulePickerModal } from "./components/SchedulePickerModal";
-import { useSchedulePicker } from "./useSchedulePicker";
-import { QuestTopUpModal } from "@/features/wallet/components/QuestFundingSummary";
-import { CreateQuestSkeleton } from "./components/CreateQuestSkeleton";
-import { QuestSetupOverview } from "./components/QuestSetupOverview";
-import { ReviewStep } from "./components/ReviewStep";
-import { ReviewActionButton } from "./components/ReviewActionButton";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useWorkerTagsQuery } from "@/features/workerHome/api/workerHomeQueries";
 import { createQuestMessages } from "@/locales/createQuestMessages";
 import { colors } from "@/theme/colors";
 import { getCreateQuestLayoutMetrics } from "@/theme/layout";
-import { spacing } from "@/theme/spacing";
-import styles from "./createQuestStyles";
+import { KeyboardAvoidingView, Text, View } from "@/tw";
+
+import { CreateQuestActionBar } from "./components/CreateQuestActionBar";
+import { CreateQuestCompletionState } from "./components/CreateQuestCompletionState";
+import { CreateQuestForm } from "./components/CreateQuestForm";
+import { CreateQuestFrame } from "./components/CreateQuestFrame";
+import { CreateQuestSkeleton } from "./components/CreateQuestSkeleton";
 import {
-  formatDraftReward,
-  formatQuestSchedule,
-  getHeadcountForParticipation,
+  getCreateQuestChoiceOptions,
+  getCreateQuestCombinationHint,
+  getCreateQuestReviewView,
+  getCreateQuestTagOptions,
+} from "./createQuestPresentation";
+import { deleteQuestDraft } from "./createQuestPersistence";
+import {
   getQuestPublishCheck,
-  initialDraft,
   isQuestDraftDirty,
-  MAX_REWARD_THB,
-  validateQuestDraftStep,
   type QuestDraft,
 } from "./createQuestModel";
-import { deleteQuestDraft } from "./createQuestPersistence";
-import { measureFieldRelativeToScroll } from "./createQuestFocus";
+import { validateCreateQuestStep } from "./createQuestValidation";
 import {
-  LOGISTICS_FIELDS,
-  QUEST_DETAIL_FIELDS,
-  type CompletionState,
-  type Focusable,
-  type Step,
+  getInitialCreateQuestStep,
+  isServerEditMode,
+  resolveCreateQuestFlowMode,
+} from "./createQuestWorkflow";
+import styles from "./createQuestStyles";
+import type {
+  CompletionState,
+  SaveErrorIntent,
+  SaveState,
+  Step,
 } from "./createQuestTypes";
+import { LOGISTICS_FIELDS } from "./createQuestTypes";
 import {
   useQuestPersistence,
   type PublishedQuestRefValue,
 } from "./useQuestPersistence";
 import { useQuestPublish } from "./useQuestPublish";
 import { useQuestEdit } from "./useQuestEdit";
-import { MAX_QUEST_IMAGES } from "../questBoard/types";
+import { useCreateQuestCommit } from "./useCreateQuestCommit";
+import { useCreateQuestDraft } from "./useCreateQuestDraft";
+import { useCreateQuestWizard } from "./useCreateQuestWizard";
+
 export interface CreateQuestScreenProps {
   editQuestId?: string;
   editMode?: boolean;
 }
+
+type DraftUpdater = <K extends keyof QuestDraft>(
+  field: K,
+  value: QuestDraft[K]
+) => void;
 
 export default function CreateQuestScreen({
   editQuestId,
@@ -91,55 +78,38 @@ export default function CreateQuestScreen({
   const { width, fontScale } = useWindowDimensions();
   const layout = getCreateQuestLayoutMetrics(width);
   const insets = useSafeAreaInsets();
-  const draftChangedRef = useRef(false);
-  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
-  const titleRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
-  const tagRef = useRef<React.ComponentRef<typeof RNPressable>>(null);
-  const descriptionRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
-  const conditionsRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
-  const startDateRef = useRef<React.ComponentRef<typeof RNPressable>>(null);
-  const deadlineRef = useRef<React.ComponentRef<typeof RNPressable>>(null);
-  const locationRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
-  const headcountRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
-  const [step, setStep] = useState<Step>(() =>
-    editMode ? 1 : editQuestId ? 2 : 1
+  const mode = useMemo(
+    () => resolveCreateQuestFlowMode({ editMode, editQuestId }),
+    [editMode, editQuestId]
   );
-  const rewardRef = useRef<React.ComponentRef<typeof RNTextInput>>(null);
-  const [draft, setDraft] = useState<QuestDraft>(initialDraft);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [validationSummary, setValidationSummary] = useState<string | null>(
-    null
-  );
-  const [imageError, setImageError] = useState<string | undefined>();
-  const [completedState, setCompletedState] = useState<CompletionState | null>(
-    null
-  );
-  const [showTopUpModal, setShowTopUpModal] = useState(false);
-  const [logisticsExpanded, setLogisticsExpanded] = useState(false);
-  const [pendingInvalidField, setPendingInvalidField] = useState<string | null>(
-    null
-  );
-  const focusedInvalidFieldRef = useRef<string | null>(null);
   const publishedQuestRef = useRef<PublishedQuestRefValue | null>(null);
 
+  const draftState = useCreateQuestDraft();
+  const wizard = useCreateQuestWizard({
+    initialStep: getInitialCreateQuestStep(mode),
+  });
   const {
-    draftIdRef: localDraftIdRef,
-    draftHydrated: localDraftHydrated,
-    draftStorageKey: localDraftStorageKey,
-    draftLoadError: localDraftLoadError,
-    retryDraftLoad: retryLocalDraftLoad,
-    saveState: localSaveState,
-    resetSaveState: resetLocalSaveState,
-    saveErrorIntent: localSaveErrorIntent,
-    setSaveErrorIntent: setLocalSaveErrorIntent,
-    saveErrorMessage: localSaveErrorMessage,
-    savingAction: localSavingAction,
-    skipPersistRef,
-    saveTimerRef,
-    saveRequestRef,
-    saveDraft: saveLocalDraft,
-  } = useQuestPersistence({
-    editQuestId: editMode ? undefined : editQuestId,
+    draft,
+    setDraft,
+    errors,
+    setErrors,
+    validationSummary,
+    setValidationSummary,
+    draftChangedRef,
+  } = draftState;
+  const {
+    step,
+    setStep,
+    completedState,
+    setCompletedState,
+    logisticsExpanded,
+    setLogisticsExpanded,
+    pendingInvalidField,
+    setPendingInvalidField,
+  } = wizard;
+
+  const localPersistence = useQuestPersistence({
+    editQuestId: mode.kind === "local-draft" ? mode.draftId : undefined,
     step,
     completedState,
     draft,
@@ -148,392 +118,172 @@ export default function CreateQuestScreen({
     setDraft,
     setStep,
     setCompletedState,
-    enabled: !editMode,
+    enabled: !isServerEditMode(mode),
   });
-
   const editState = useQuestEdit({
-    questId: editMode ? editQuestId : undefined,
+    questId: isServerEditMode(mode) ? mode.questId : undefined,
     draftChangedRef,
     setDraft,
     setStep,
   });
-  const draftIdRef = localDraftIdRef;
-  const draftHydrated = editMode ? editState.draftHydrated : localDraftHydrated;
-  const draftStorageKey = localDraftStorageKey;
-  const draftLoadError = editMode
-    ? editState.draftLoadError
-    : localDraftLoadError;
-  const retryDraftLoad = editMode
-    ? editState.retryDraftLoad
-    : retryLocalDraftLoad;
-  const localOrEditSaveState = editMode ? editState.saveState : localSaveState;
-  const localOrEditSaveErrorMessage = editMode
-    ? editState.saveErrorMessage
-    : localSaveErrorMessage;
-  const localOrEditSavingAction = editMode
-    ? editState.savingAction
-    : localSavingAction;
-  const saveErrorIntent = localSaveErrorIntent;
-  const setSaveErrorIntent = setLocalSaveErrorIntent;
-  const saveDraft = editMode ? editState.saveDraft : saveLocalDraft;
-
-  const {
-    publishCheck,
-    setPublishCheck,
-    walletBalances,
-    isCheckingPublish,
-    publishQuest,
-    refreshPublishCheck,
-    saveState: publishSaveState,
-    saveErrorMessage: publishSaveErrorMessage,
-    savingAction: publishSavingAction,
-    resetSaveState: resetPublishSaveState,
-  } = useQuestPublish({
-    editQuestId: editMode ? undefined : editQuestId,
+  const publishState = useQuestPublish({
+    editQuestId: mode.kind === "local-draft" ? mode.draftId : undefined,
     step,
     completedState,
-    draftHydrated,
-    draftStorageKey,
+    draftHydrated: isServerEditMode(mode)
+      ? editState.draftHydrated
+      : localPersistence.draftHydrated,
+    draftStorageKey: localPersistence.draftStorageKey,
     draft,
-    draftIdRef,
+    draftIdRef: localPersistence.draftIdRef,
     draftChangedRef,
     publishedQuestRef,
-    saveRequestRef,
-    setSaveErrorIntent,
-    enabled: !editMode,
+    saveRequestRef: localPersistence.saveRequestRef,
+    setSaveErrorIntent: localPersistence.setSaveErrorIntent,
+    enabled: !isServerEditMode(mode),
   });
 
-  const saveState =
-    !editMode && publishSaveState !== "idle"
-      ? publishSaveState
-      : localOrEditSaveState;
-  const saveErrorMessage =
-    !editMode && publishSaveErrorMessage
-      ? publishSaveErrorMessage
-      : localOrEditSaveErrorMessage;
-  const savingAction =
-    !editMode && publishSavingAction
-      ? publishSavingAction
-      : localOrEditSavingAction;
-  const resetSaveState = () => {
-    resetLocalSaveState();
-    resetPublishSaveState();
+  const draftHydrated = isServerEditMode(mode)
+    ? editState.draftHydrated
+    : localPersistence.draftHydrated;
+  const draftStorageKey = localPersistence.draftStorageKey;
+  const draftLoadError = isServerEditMode(mode)
+    ? editState.draftLoadError
+    : localPersistence.draftLoadError;
+  const retryDraftLoad = isServerEditMode(mode)
+    ? editState.retryDraftLoad
+    : localPersistence.retryDraftLoad;
+  const saveState: SaveState = (
+    isServerEditMode(mode)
+      ? editState.saveState
+      : publishState.saveState !== "idle"
+        ? publishState.saveState
+        : localPersistence.saveState
+  ) as SaveState;
+  const saveErrorMessage = isServerEditMode(mode)
+    ? editState.saveErrorMessage
+    : (publishState.saveErrorMessage ?? localPersistence.saveErrorMessage);
+  const savingAction = isServerEditMode(mode)
+    ? editState.savingAction
+    : (publishState.savingAction ?? localPersistence.savingAction);
+  const cancelState = editState.cancelState as "cancelling" | "error" | "idle";
+  const saveErrorIntent: SaveErrorIntent | null =
+    localPersistence.saveErrorIntent;
+  const resetSaveState = useCallback(() => {
+    localPersistence.resetSaveState();
+    publishState.resetSaveState();
     editState.resetSaveState();
-  };
+  }, [editState, localPersistence, publishState]);
+
   const workerTagsQuery = useWorkerTagsQuery();
   const liveTags = useMemo(
     () => workerTagsQuery.data ?? [],
     [workerTagsQuery.data]
   );
-
-  const tagOptions = useMemo(() => {
-    if (liveTags.length > 0) {
-      return liveTags.map((tag) => ({
-        label: tag.name,
-        shortLabel: tag.name,
-        value: tag.id,
-      }));
-    }
-    return [
-      {
-        label:
-          locale === "th" ? "การออกแบบและงานสร้างสรรค์" : "Design & creative",
-        shortLabel: locale === "th" ? "การออกแบบ" : "Design",
-        value: "design",
-      },
-      {
-        label: locale === "th" ? "เทคโนโลยี" : "Technology",
-        shortLabel: locale === "th" ? "เทคโนโลยี" : "Technology",
-        value: "technology",
-      },
-      {
-        label: locale === "th" ? "การสอนพิเศษ" : "Tutoring",
-        shortLabel: locale === "th" ? "ติว" : "Tutoring",
-        value: "tutoring",
-      },
-      {
-        label: locale === "th" ? "ชีวิตในมหาวิทยาลัย" : "Campus life",
-        shortLabel: locale === "th" ? "ชีวิตมหาวิทยาลัย" : "Campus life",
-        value: "campus-life",
-      },
-    ];
-  }, [liveTags, locale]);
-  const candidateOptions = useMemo(
-    () => [
-      {
-        value: "FIRST_COME_FIRST_SERVED" as const,
-        label: messages.instantAccept,
-        description: messages.instantAcceptDescription,
-        icon: Clock3,
-      },
-      {
-        value: "CANDIDATE" as const,
-        label: messages.selectCandidate,
-        description: messages.selectCandidateDescription,
-        icon: UserRoundCheck,
-      },
-    ],
-    [messages]
+  const tagOptions = useMemo(
+    () => getCreateQuestTagOptions(liveTags, locale),
+    [liveTags, locale]
   );
-  const participationOptions = useMemo(
-    () => [
-      {
-        value: "SINGLE" as const,
-        label: messages.singleFormat,
-        description: messages.singleFormatDescription,
-        icon: UserRound,
-      },
-      {
-        value: "GROUP" as const,
-        label: messages.teamFormat,
-        description: messages.teamFormatDescription,
-        icon: UsersRound,
-      },
-    ],
+  const { participationOptions, candidateOptions } = useMemo(
+    () => getCreateQuestChoiceOptions(messages),
     [messages]
   );
 
-  const updateDraft = <K extends keyof QuestDraft>(
+  const clearDraftWorkflowState = useCallback(() => {
+    resetSaveState();
+    localPersistence.setSaveErrorIntent(null);
+    publishState.setPublishCheck(null);
+    setValidationSummary(null);
+    setPendingInvalidField(null);
+  }, [
+    localPersistence,
+    publishState,
+    resetSaveState,
+    setPendingInvalidField,
+    setValidationSummary,
+  ]);
+
+  const updateDraft: DraftUpdater = <K extends keyof QuestDraft>(
     field: K,
     value: QuestDraft[K]
   ) => {
-    draftChangedRef.current = true;
-    skipPersistRef.current = false;
-    publishedQuestRef.current = null;
-    setDraft((current) => ({ ...current, [field]: value }));
-    resetSaveState();
-    setSaveErrorIntent(null);
-    setPublishCheck(null);
-    setValidationSummary(null);
-    setPendingInvalidField(null);
-    setErrors((current) => {
-      if (!current[field]) return current;
-      const next = { ...current };
-      delete next[field];
-      return next;
-    });
+    draftState.updateDraft(field, value);
+    clearDraftWorkflowState();
   };
-
-  const {
-    activeField: scheduleField,
-    pickerMode,
-    pickerValue: schedulePickerValue,
-    minimumDate: schedulePickerMinimum,
-    openPicker: openSchedulePicker,
-    closePicker: closeSchedulePicker,
-    handleChange: handleDateChange,
-    confirmIos: confirmIosScheduleValue,
-  } = useSchedulePicker({ draft, updateDraft });
 
   const updateParticipation = (value: QuestDraft["participation"]) => {
-    draftChangedRef.current = true;
-    skipPersistRef.current = false;
-    publishedQuestRef.current = null;
-    setDraft((current) => ({
-      ...current,
-      participation: value,
-      headcount: getHeadcountForParticipation(value, current.headcount),
-    }));
-    resetSaveState();
-    setSaveErrorIntent(null);
-    setPublishCheck(null);
-    setValidationSummary(null);
-    setPendingInvalidField(null);
-    setErrors((current) => {
-      const next = { ...current };
-      delete next.headcount;
-      return next;
-    });
+    draftState.updateParticipation(value);
+    clearDraftWorkflowState();
   };
 
-  const focusRefs = useMemo<Record<string, React.RefObject<Focusable | null>>>(
-    () => ({
-      title: titleRef,
-      tag: tagRef,
-      description: descriptionRef,
-      conditions: conditionsRef,
-      startDate: startDateRef,
-      deadline: deadlineRef,
-      startTime: startDateRef,
-      endTime: deadlineRef,
-      location: locationRef,
-      headcount: headcountRef,
-      wage: rewardRef,
-    }),
-    []
-  );
-
-  const focusInvalidField = useCallback(
-    (field: string) => {
-      const focus = () => {
-        const target = focusRefs[field]?.current;
-        if (!target) return;
-        const reactTag = findNodeHandle(target);
-        if (reactTag) void AccessibilityInfo.setAccessibilityFocus(reactTag);
-        if ("focus" in target && typeof target.focus === "function")
-          target.focus();
-        const nativeScrollRef = scrollRef.current?.getNativeScrollRef();
-        const measured = nativeScrollRef
-          ? measureFieldRelativeToScroll(
-              target,
-              nativeScrollRef,
-              (_x, y) =>
-                scrollRef.current?.scrollTo({
-                  y: Math.max(0, y - 24),
-                  animated: true,
-                }),
-              () => scrollRef.current?.scrollTo({ y: 0, animated: true })
-            )
-          : false;
-        if (!measured) {
-          scrollRef.current?.scrollTo({ y: 0, animated: true });
-        }
-      };
-      if (typeof globalThis.requestIdleCallback === "function") {
-        globalThis.requestIdleCallback(focus, { timeout: 250 });
-      } else {
-        setTimeout(focus, 0);
-      }
-    },
-    [focusRefs]
-  );
-
-  useEffect(() => {
-    if (!pendingInvalidField) return;
-    const targetStep = pendingInvalidField in QUEST_DETAIL_FIELDS ? 1 : 2;
-    if (step !== targetStep) return;
-    if (pendingInvalidField in LOGISTICS_FIELDS && !logisticsExpanded) return;
-    if (focusedInvalidFieldRef.current === pendingInvalidField) return;
-    focusedInvalidFieldRef.current = pendingInvalidField;
-    focusInvalidField(pendingInvalidField);
-  }, [focusInvalidField, logisticsExpanded, pendingInvalidField, step]);
-
   const validateStep = (currentStep: Step): boolean => {
-    const findings = validateQuestDraftStep(draft, currentStep, new Date());
-    const codeMessages: Record<string, string> = {
-      "title:required": messages.titleError,
-      "tag:required": messages.questTagError,
-      "description:required": messages.descriptionError,
-      "conditions:required": messages.completionCriteriaError,
-      "startDate:required": messages.startDateError,
-      "startDate:startDatePast": messages.startDatePastError,
-      "deadline:required": messages.deadlineError,
-      "deadline:deadlineOrder": messages.deadlineOrderError,
-      "startTime:required": messages.startTimeError,
-      "startTime:format": messages.startTimeError,
-      "endTime:required": messages.endTimeError,
-      "endTime:format": messages.endTimeError,
-      "endTime:timeOrder": messages.timeOrderError,
-      "location:required": messages.locationError,
-      "headcount:required": messages.headcountError,
-      "headcount:bounds": messages.headcountError,
-      "wage:empty": messages.rewardEmptyError,
-      "wage:format": messages.rewardFormatError,
-      "wage:bounds": messages.rewardBoundsError(MAX_REWARD_THB),
-    };
-    const nextErrors: Record<string, string> = {};
-    for (const { field, code } of findings) {
-      nextErrors[field] = codeMessages[`${field}:${code}`];
-    }
+    const result = validateCreateQuestStep(
+      draft,
+      currentStep,
+      new Date(),
+      messages
+    );
+    setErrors(result.errors);
 
-    setErrors(nextErrors);
-    const firstErrorKey = Object.keys(nextErrors)[0];
-    if (firstErrorKey) {
-      const fieldLabels: Record<string, string> = {
-        title: messages.titleLabel,
-        tag: messages.questTag,
-        description: messages.description,
-        conditions: messages.completionCriteria,
-        startDate: messages.startDate,
-        deadline: messages.deadline,
-        startTime: messages.startTime,
-        endTime: messages.endTime,
-        location: messages.location,
-        headcount: messages.headcount,
-        wage: messages.rewardPerPerson,
-      };
-      const firstError = `${fieldLabels[firstErrorKey] ?? messages.title}: ${nextErrors[firstErrorKey]}`;
-      setValidationSummary(firstError);
-      AccessibilityInfo.announceForAccessibility(firstError);
-      if (currentStep === 2 && firstErrorKey in LOGISTICS_FIELDS)
+    if (result.firstErrorField) {
+      setValidationSummary(result.summary);
+      AccessibilityInfo.announceForAccessibility(result.summary ?? "");
+      if (currentStep === 2 && result.firstErrorField in LOGISTICS_FIELDS) {
         setLogisticsExpanded(true);
-      if (currentStep !== step) {
-        setStep(currentStep);
-        scrollRef.current?.scrollTo({ y: 0, animated: false });
       }
-      focusedInvalidFieldRef.current = null;
-      setPendingInvalidField(firstErrorKey);
+      if (currentStep !== step) setStep(currentStep);
+      setPendingInvalidField(result.firstErrorField);
     } else {
       setValidationSummary(null);
+      setPendingInvalidField(null);
     }
 
-    return Object.keys(nextErrors).length === 0;
+    return result.firstErrorField === null;
   };
 
   const goNext = () => {
-    if (!validateStep(step)) return;
-    if (step < 3) {
-      setStep((current) => (current + 1) as Step);
-      scrollRef.current?.scrollTo({ y: 0, animated: false });
-    }
+    if (validateStep(step)) wizard.advance();
   };
 
-  const goToStep = (target: Step) => {
-    if (target >= step) return;
-    setPendingInvalidField(null);
-    setStep(target);
-    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  const goToStep = (targetStep: Step) => {
+    wizard.selectPreviousStep(targetStep);
   };
 
-  const finishQuest = async (state: CompletionState) => {
+  const clearPendingSave = localPersistence.cancelPendingSave;
+
+  const reviewPublishCheck =
+    publishState.publishCheck ?? getQuestPublishCheck(draft);
+  const commit = useCreateQuestCommit({
+    draft,
+    mode,
+    onClearPendingSave: clearPendingSave,
+    onCompleted: setCompletedState,
+    publishCheck: reviewPublishCheck,
+    publishQuest: publishState.publishQuest,
+    saveDraft: isServerEditMode(mode)
+      ? editState.saveDraft
+      : localPersistence.saveDraft,
+    saveErrorIntent,
+  });
+
+  const finishQuest = (state: CompletionState) => {
     if (!validateStep(2)) return;
-    const check = reviewPublishCheck;
-    if (!editMode) setPublishCheck(check);
-    if (!editMode && state === "OPEN" && !check.canPublish) {
-      const firstBlocker = check.blockers[0];
-      if (firstBlocker) setValidationSummary(messages.publishCheckBlocked);
+    if (
+      !isServerEditMode(mode) &&
+      state === "OPEN" &&
+      !reviewPublishCheck.canPublish
+    ) {
+      setValidationSummary(messages.publishCheckBlocked);
       return;
     }
-
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = null;
-    }
-    if (!editMode && state === "OPEN") {
-      const published = await publishQuest(draft);
-      if (published) setCompletedState("OPEN");
-      return;
-    }
-    const saved = await saveDraft(draft, "DRAFT", true);
-    if (saved) setCompletedState("DRAFT");
-  };
-
-  const retrySave = () => {
-    if (editMode) {
-      void saveDraft(draft, "DRAFT", true).then((saved) => {
-        if (saved) setCompletedState("DRAFT");
-      });
-      return;
-    }
-    const intent = saveErrorIntent;
-    if (intent?.state === "OPEN") {
-      void publishQuest(draft).then((published) => {
-        if (published && intent.completesFlow) setCompletedState("OPEN");
-      });
-      return;
-    }
-    void saveDraft(draft, "DRAFT", intent?.completesFlow ?? false).then(
-      (saved) => {
-        if (saved && intent?.completesFlow) setCompletedState("DRAFT");
-      }
-    );
+    void commit.finish(state);
   };
 
   const leaveCreateFlow = () => {
-    if (editMode && editQuestId) {
+    if (isServerEditMode(mode) && mode.questId) {
       router.replace({
         pathname: "/quest/[id]",
-        params: { id: editQuestId, mode: "post" },
+        params: { id: mode.questId, mode: "post" },
       });
       return;
     }
@@ -541,7 +291,7 @@ export default function CreateQuestScreen({
   };
 
   const confirmCancel = () => {
-    if (!editMode) return;
+    if (!isServerEditMode(mode)) return;
     Alert.alert(messages.cancelQuestTitle, messages.cancelQuestDescription, [
       { text: messages.cancelQuestKeep, style: "cancel" },
       {
@@ -582,592 +332,188 @@ export default function CreateQuestScreen({
         return;
       }
       leaveCreateFlow();
-    } else {
-      setStep((current) => (current - 1) as Step);
-      scrollRef.current?.scrollTo({ y: 0, animated: false });
+      return;
     }
-  };
-
-  const pickImages = async () => {
-    setImageError(undefined);
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsMultipleSelection: true,
-        selectionLimit: MAX_QUEST_IMAGES,
-        quality: 0.6,
-      });
-      if (!result.canceled)
-        updateDraft(
-          "imageUris",
-          result.assets.slice(0, MAX_QUEST_IMAGES).map((asset) => asset.uri)
-        );
-    } catch {
-      setImageError(messages.imageError);
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setDraft((current) => ({
-      ...current,
-      imageUris: current.imageUris.filter(
-        (_, imageIndex) => imageIndex !== index
-      ),
-    }));
-    setImageError(undefined);
+    wizard.retreat();
   };
 
   const resetDraft = async () => {
-    saveRequestRef.current += 1;
+    const draftId = localPersistence.prepareDraftReset();
     publishedQuestRef.current = null;
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = null;
-    }
-    skipPersistRef.current = true;
     draftChangedRef.current = false;
     try {
-      if (draftStorageKey) {
-        const activeDraftId = draftIdRef.current;
-        if (activeDraftId) {
-          await deleteQuestDraft(draftStorageKey, activeDraftId);
-        }
+      if (draftStorageKey && draftId) {
+        await deleteQuestDraft(draftStorageKey, draftId);
       }
     } catch {
-      setSaveErrorIntent({ state: "DRAFT", completesFlow: false });
+      localPersistence.setSaveErrorIntent({
+        state: "DRAFT",
+        completesFlow: false,
+      });
     }
-    draftIdRef.current = null;
-    setDraft(initialDraft);
-    setErrors({});
-    setValidationSummary(null);
-    setImageError(undefined);
+    draftState.resetDraft();
     resetSaveState();
-    setPublishCheck(null);
+    publishState.setPublishCheck(null);
     setLogisticsExpanded(false);
     setPendingInvalidField(null);
-    setStep(1);
-    setCompletedState(null);
+    wizard.resetWizard(mode);
   };
 
-  const combinationHint = useMemo(() => {
-    if (draft.participation === "SINGLE")
-      return draft.candidateMode === "FIRST_COME_FIRST_SERVED"
-        ? messages.singleFirstComeHint
-        : messages.singleCandidateHint;
-    return draft.candidateMode === "FIRST_COME_FIRST_SERVED"
-      ? messages.groupFirstComeHint
-      : messages.groupCandidateHint;
-  }, [draft.candidateMode, draft.participation, messages]);
-  const proofRequired = draft.proofRequired !== "none";
-  const scheduleDisplay = useMemo(
-    () => formatQuestSchedule(draft, locale, messages.notSelected),
-    [draft, locale, messages.notSelected]
+  const review = useMemo(
+    () =>
+      getCreateQuestReviewView({
+        draft,
+        locale,
+        messages,
+        publishCheck: reviewPublishCheck,
+        spendingBalanceSatang:
+          publishState.walletBalances?.spendingBalanceSatang ?? 0,
+        tagOptions,
+      }),
+    [
+      draft,
+      locale,
+      messages,
+      publishState.walletBalances?.spendingBalanceSatang,
+      reviewPublishCheck,
+      tagOptions,
+    ]
   );
-
-  const reviewPublishCheck = publishCheck ?? getQuestPublishCheck(draft);
-  const missingSatang = Math.max(
-    0,
-    reviewPublishCheck.escrow.totalRequiredSatang -
-      (walletBalances?.spendingBalanceSatang ?? 0)
+  const combinationHint = useMemo(
+    () => getCreateQuestCombinationHint(draft, messages),
+    [draft, messages]
   );
-  const summary = useMemo(
-    () => [
-      { label: messages.summary.title, value: draft.title || "—" },
-      { label: messages.summary.description, value: draft.description || "—" },
-      {
-        label: messages.summary.completionCriteria,
-        value: draft.conditions || "—",
-      },
-      {
-        label: messages.summary.proof,
-        value: proofRequired ? messages.required : messages.notNeeded,
-      },
-      {
-        label: messages.summary.schedule,
-        value: scheduleDisplay.range,
-      },
-      {
-        label: messages.summary.location,
-        value:
-          draft.locationMode === "ONLINE"
-            ? messages.online
-            : draft.location || messages.notSelected,
-      },
-      {
-        label: messages.summary.images,
-        value: draft.imageUris.length
-          ? messages.selectedImages(draft.imageUris.length)
-          : messages.noImages,
-      },
-      {
-        label: messages.summary.reward,
-        value: draft.wage
-          ? `${formatDraftReward(draft, locale)} / ${locale === "th" ? "คน" : "person"}`
-          : messages.notSelected,
-      },
-    ],
-    [draft, locale, messages, proofRequired, scheduleDisplay]
-  );
-
-  const selectedQuestTag =
-    tagOptions.find((option) => option.value === draft.tag)?.shortLabel ??
-    messages.notSelected;
-  const selectedTeamSize =
-    draft.participation === "SINGLE"
-      ? messages.teamSizeValue("1")
-      : draft.headcount
-        ? messages.teamSizeValue(draft.headcount)
-        : messages.notSelected;
-  const selectedAcceptanceMethod =
-    draft.candidateMode === "CANDIDATE"
-      ? messages.selectCandidate
-      : messages.instantAccept;
-  const logisticsSummary =
-    scheduleDisplay.range !== messages.notSelected
-      ? messages.logisticsSummaryComplete(
-          scheduleDisplay.range,
-          draft.locationMode === "ONLINE"
-            ? messages.online
-            : draft.location || messages.notSelected
-        )
-      : messages.logisticsSummary;
   const useStackedChoices = width < 430 || fontScale >= 1.15;
   const useWideSummary = layout.isExpanded || width >= 430;
   const useStackedActions = width < 340 || fontScale >= 1.15;
 
+  const frameTitle = isServerEditMode(mode) ? messages.editTitle : undefined;
+  const frameSubtitle = isServerEditMode(mode)
+    ? messages.editHeaderSubtitle
+    : undefined;
+
   if (!draftHydrated && saveState !== "error") {
     return (
-      <ScreenLayout
-        edges={["top", "left", "right"]}
-        className={styles.safeArea}
-      >
-        <StatusBar style="light" />
-        <CreateQuestHeader
-          messages={messages}
-          step={step}
-          onBackPress={goBack}
-          onHelpPress={showHelp}
-          onStepPress={goToStep}
-          title={editMode ? messages.editTitle : undefined}
-          subtitle={editMode ? messages.editHeaderSubtitle : undefined}
-        />
-        <View className={styles.surface}>
-          {draftLoadError ? (
-            <View className={styles.loadErrorState}>
-              <View className={styles.loadErrorIcon}>
-                <CircleAlert
-                  color={colors.dangerDark}
-                  size={26}
-                  strokeWidth={2.2}
-                />
-              </View>
-              <Text accessibilityRole="alert" className={styles.loadErrorText}>
-                {messages.loadDraftError}
-              </Text>
-              <Button onPress={retryDraftLoad} className={styles.fullButton}>
-                {messages.retryLoadDraft}
-              </Button>
-            </View>
-          ) : (
-            <CreateQuestSkeleton
-              horizontalPadding={layout.horizontalPadding}
-              contentMaxWidth={
-                layout.isExpanded ? layout.contentMaxWidth : "100%"
-              }
-              loadingLabel={messages.loadingDraft}
-              stackedActions={useStackedActions}
-              step={step}
-            />
-          )}
-        </View>
-      </ScreenLayout>
-    );
-  }
-
-  if (completedState) {
-    const published = !editMode && completedState === "OPEN";
-    return (
-      <ScreenLayout
-        edges={["top", "left", "right"]}
-        className={styles.safeArea}
-      >
-        <StatusBar style="light" />
-        <CreateQuestHeader
-          messages={messages}
-          step={3}
-          onBackPress={() => setCompletedState(null)}
-          onHelpPress={showHelp}
-          onStepPress={goToStep}
-          title={editMode ? messages.editTitle : undefined}
-          subtitle={editMode ? messages.editHeaderSubtitle : undefined}
-        />
-        <View className={styles.surface}>
-          <View className={styles.successState}>
-            <View className={styles.successIcon}>
-              <Check color={colors.primary} size={32} strokeWidth={2.5} />
-            </View>
-            <Text accessibilityRole="header" className={styles.successTitle}>
-              {editMode
-                ? messages.updatedQuestTitle
-                : published
-                  ? messages.publishedQuestTitle
-                  : messages.savedDraftTitle}
-            </Text>
-            <Text className={styles.successDescription}>
-              {editMode
-                ? messages.updatedQuestDescription
-                : published
-                  ? messages.publishedQuestDescription
-                  : messages.savedDraftDescription}
-            </Text>
-            {editMode ? (
-              <Button onPress={leaveCreateFlow} className={styles.fullButton}>
-                {messages.backToQuest}
-              </Button>
-            ) : (
-              <>
-                <Button
-                  onPress={() => void resetDraft()}
-                  className={styles.fullButton}
-                >
-                  {published
-                    ? messages.createNewQuest
-                    : messages.createAnotherDraft}
-                </Button>
-                <Button
-                  variant="secondary"
-                  onPress={leaveCreateFlow}
-                  className={styles.fullButton}
-                >
-                  {messages.viewQuestBoard}
-                </Button>
-              </>
-            )}
-          </View>
-        </View>
-      </ScreenLayout>
-    );
-  }
-  const isSaving = saveState === "saving";
-  const nextLabel = step === 2 ? messages.reviewQuest : messages.next;
-
-  return (
-    <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
-      <StatusBar style="light" />
-      <CreateQuestHeader
+      <CreateQuestFrame
         messages={messages}
         step={step}
         onBackPress={goBack}
         onHelpPress={showHelp}
         onStepPress={goToStep}
-        title={editMode ? messages.editTitle : undefined}
-        subtitle={editMode ? messages.editHeaderSubtitle : undefined}
-      />
-      <View className={styles.surface}>
-        <KeyboardAvoidingView
-          className="flex-1"
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-          <ScrollView
-            ref={scrollRef}
-            className="flex-1"
-            contentContainerStyle={{
-              paddingBottom: spacing.xl,
-              paddingHorizontal: layout.horizontalPadding,
-              paddingTop: spacing.lg,
-            }}
-            keyboardDismissMode="on-drag"
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <View
-              style={{
-                alignSelf: "center",
-                width: layout.isExpanded ? layout.contentMaxWidth : "100%",
-              }}
-            >
-              {validationSummary ? (
-                <View
-                  accessibilityRole="alert"
-                  accessibilityLiveRegion="assertive"
-                  className={styles.validationSummary}
-                >
-                  <View className={styles.validationIcon}>
-                    <CircleAlert
-                      color={colors.dangerDark}
-                      size={19}
-                      strokeWidth={2.3}
-                    />
-                  </View>
-                  <Text className={styles.validationSummaryText}>
-                    {validationSummary}
-                  </Text>
-                </View>
-              ) : null}
-              {saveState === "saving" || saveState === "saved" ? (
-                <View
-                  accessibilityLiveRegion="polite"
-                  className={styles.autosaveStatus}
-                >
-                  {saveState === "saved" ? (
-                    <View className={styles.autosaveSavedIcon}>
-                      <Check
-                        color={colors.success}
-                        size={12}
-                        strokeWidth={2.8}
-                      />
-                    </View>
-                  ) : (
-                    <View className={styles.autosaveSavingDot} />
-                  )}
-                  <Text
-                    className={cn(
-                      styles.autosaveText,
-                      saveState === "saved" && styles.autosaveSavedText
-                    )}
-                  >
-                    {saveState === "saved"
-                      ? messages.autosaveSaved
-                      : messages.autosaveSaving}
-                  </Text>
-                </View>
-              ) : null}
-              {saveState === "error" ? (
-                <View
-                  accessibilityLiveRegion="assertive"
-                  className={styles.saveErrorCard}
-                  testID="create-quest-save-error"
-                >
-                  <CircleAlert
-                    color={colors.dangerDark}
-                    size={22}
-                    strokeWidth={2.2}
-                  />
-                  <View className={styles.saveErrorCopy}>
-                    <Text className={styles.saveErrorText}>
-                      {saveErrorMessage ?? messages.saveError}
-                    </Text>
-                  </View>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={messages.retrySave}
-                    onPress={retrySave}
-                    className={styles.retryButton}
-                    testID="create-quest-retry-save"
-                  >
-                    <Text className={styles.retryButtonText}>
-                      {messages.retrySave}
-                    </Text>
-                  </Pressable>
-                </View>
-              ) : null}
-              {step === 1 ? (
-                <QuestDetailsStep
-                  messages={messages}
-                  draft={draft}
-                  errors={errors}
-                  tagOptions={tagOptions}
-                  proofRequired={proofRequired}
-                  titleRef={titleRef}
-                  tagRef={tagRef}
-                  descriptionRef={descriptionRef}
-                  conditionsRef={conditionsRef}
-                  updateDraft={updateDraft}
-                />
-              ) : null}
-
-              {step === 2 ? (
-                <TeamSetupStep
-                  messages={messages}
-                  draft={draft}
-                  errors={errors}
-                  locale={locale}
-                  participationOptions={participationOptions}
-                  candidateOptions={candidateOptions}
-                  combinationHint={combinationHint}
-                  useStackedChoices={useStackedChoices}
-                  logisticsExpanded={logisticsExpanded}
-                  logisticsSummary={logisticsSummary}
-                  onToggleLogistics={() =>
-                    setLogisticsExpanded((current) => !current)
-                  }
-                  imageError={imageError}
-                  setImageError={setImageError}
-                  headcountRef={headcountRef}
-                  rewardRef={rewardRef}
-                  startDateRef={startDateRef}
-                  deadlineRef={deadlineRef}
-                  locationRef={locationRef}
-                  openSchedulePicker={openSchedulePicker}
-                  pickImages={pickImages}
-                  removeImage={removeImage}
-                  updateDraft={updateDraft}
-                  updateParticipation={updateParticipation}
-                />
-              ) : null}
-
-              {step === 3 ? (
-                <>
-                  <QuestSetupOverview
-                    messages={messages}
-                    questTag={selectedQuestTag}
-                    teamSize={selectedTeamSize}
-                    acceptanceMethod={selectedAcceptanceMethod}
-                    wide={useWideSummary}
-                  />
-                  <ReviewStep
-                    messages={messages}
-                    locale={locale}
-                    summary={summary}
-                    rewardPerPerson={formatDraftReward(draft, locale)}
-                    publishCheck={reviewPublishCheck}
-                    missingSatang={missingSatang}
-                    isCheckingPublish={isCheckingPublish}
-                    onTopUp={() => setShowTopUpModal(true)}
-                  />
-                </>
-              ) : null}
+        title={frameTitle}
+        subtitle={frameSubtitle}
+      >
+        {draftLoadError ? (
+          <View className={styles.loadErrorState}>
+            <View className={styles.loadErrorIcon}>
+              <CircleAlert
+                color={colors.dangerDark}
+                size={26}
+                strokeWidth={2.2}
+              />
             </View>
-          </ScrollView>
-
-          <View
-            className={cn(
-              styles.actionBar,
-              useStackedActions && styles.actionBarStacked
-            )}
-            style={{
-              alignItems: useStackedActions ? "stretch" : "center",
-              flexDirection: useStackedActions ? "column" : "row",
-              paddingBottom: Math.max(spacing.sm, insets.bottom + spacing.xs),
-            }}
-          >
-            {editMode ? (
-              <Pressable
-                accessibilityLabel={
-                  editState.cancelState === "cancelling"
-                    ? messages.cancellingQuest
-                    : messages.cancelQuest
-                }
-                accessibilityRole="button"
-                accessibilityState={{
-                  disabled: isSaving || editState.cancelState === "cancelling",
-                }}
-                className={cn(
-                  "min-h-[44px] items-center justify-center rounded-[12px] border border-ku-danger px-[12px]",
-                  useStackedActions ? "w-full" : "flex-1"
-                )}
-                disabled={isSaving || editState.cancelState === "cancelling"}
-                onPress={confirmCancel}
-                testID="edit-quest-cancel"
-              >
-                <Text className="font-ku-semibold text-ku-danger">
-                  {editState.cancelState === "cancelling"
-                    ? messages.cancellingQuest
-                    : messages.cancelQuest}
-                </Text>
-              </Pressable>
-            ) : null}
-            {step < 3 ? (
-              <Button
-                disabled={isSaving}
-                onPress={goNext}
-                className={styles.nextButtonFull}
-                accessibilityLabel={nextLabel}
-              >
-                <View className={styles.buttonContent}>
-                  <Text className={styles.primaryButtonText}>{nextLabel}</Text>
-                  <ChevronRight
-                    color={colors.onPrimary}
-                    size={20}
-                    strokeWidth={2.5}
-                  />
-                </View>
-              </Button>
-            ) : (
-              <>
-                {editMode ? (
-                  <ReviewActionButton
-                    accessibilityLabel={
-                      savingAction === "DRAFT"
-                        ? messages.savingChanges
-                        : messages.saveChanges
-                    }
-                    disabled={isSaving}
-                    label={
-                      savingAction === "DRAFT"
-                        ? messages.savingChanges
-                        : messages.saveChanges
-                    }
-                    onPress={() => void finishQuest("DRAFT")}
-                    stacked={useStackedActions}
-                    testID="edit-quest-save"
-                    variant="primary"
-                  />
-                ) : (
-                  <>
-                    <ReviewActionButton
-                      accessibilityLabel={
-                        savingAction === "DRAFT"
-                          ? messages.savingDraft
-                          : messages.saveDraft
-                      }
-                      disabled={isSaving}
-                      label={
-                        savingAction === "DRAFT"
-                          ? messages.savingDraft
-                          : messages.saveDraft
-                      }
-                      onPress={() => void finishQuest("DRAFT")}
-                      stacked={useStackedActions}
-                      testID="create-quest-save-draft"
-                      variant="secondary"
-                    />
-                    <ReviewActionButton
-                      accessibilityLabel={
-                        savingAction === "OPEN"
-                          ? messages.publishingQuest
-                          : messages.publishQuest
-                      }
-                      disabled={isSaving || !reviewPublishCheck.canPublish}
-                      label={
-                        savingAction === "OPEN"
-                          ? messages.publishingQuest
-                          : messages.publishQuest
-                      }
-                      onPress={() => void finishQuest("OPEN")}
-                      stacked={useStackedActions}
-                      testID="create-quest-save-preview"
-                      variant="primary"
-                    />
-                  </>
-                )}
-              </>
-            )}
+            <Text accessibilityRole="alert" className={styles.loadErrorText}>
+              {messages.loadDraftError}
+            </Text>
+            <Button onPress={retryDraftLoad} className={styles.fullButton}>
+              {messages.retryLoadDraft}
+            </Button>
           </View>
-        </KeyboardAvoidingView>
-      </View>
+        ) : (
+          <CreateQuestSkeleton
+            horizontalPadding={layout.horizontalPadding}
+            contentMaxWidth={
+              layout.isExpanded ? layout.contentMaxWidth : "100%"
+            }
+            loadingLabel={messages.loadingDraft}
+            stackedActions={useStackedActions}
+            step={step}
+          />
+        )}
+      </CreateQuestFrame>
+    );
+  }
 
-      <SchedulePickerModal
+  if (completedState) {
+    return (
+      <CreateQuestFrame
         messages={messages}
-        visible={scheduleField !== null}
-        field={scheduleField}
-        mode={pickerMode}
-        value={schedulePickerValue}
-        minimumDate={schedulePickerMinimum}
-        onChange={handleDateChange}
-        onConfirmIos={confirmIosScheduleValue}
-        onClose={closeSchedulePicker}
-      />
+        step={3}
+        onBackPress={() => setCompletedState(null)}
+        onHelpPress={showHelp}
+        onStepPress={goToStep}
+        title={frameTitle}
+        subtitle={frameSubtitle}
+      >
+        <CreateQuestCompletionState
+          completedState={completedState}
+          messages={messages}
+          mode={mode}
+          onLeave={leaveCreateFlow}
+          onReset={resetDraft}
+        />
+      </CreateQuestFrame>
+    );
+  }
 
-      <QuestTopUpModal
-        visible={showTopUpModal}
-        onClose={() => setShowTopUpModal(false)}
-        onSuccess={() => {
-          void refreshPublishCheck();
-        }}
-        locale={locale}
-        suggestedAmountSatang={missingSatang}
-      />
-    </ScreenLayout>
+  return (
+    <CreateQuestFrame
+      messages={messages}
+      step={step}
+      onBackPress={goBack}
+      onHelpPress={showHelp}
+      onStepPress={goToStep}
+      title={frameTitle}
+      subtitle={frameSubtitle}
+    >
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <CreateQuestForm
+          candidateOptions={candidateOptions}
+          combinationHint={combinationHint}
+          draft={draft}
+          errors={errors}
+          isCheckingPublish={publishState.isCheckingPublish}
+          layout={layout}
+          locale={locale}
+          logisticsExpanded={logisticsExpanded}
+          logisticsSummary={review.logisticsSummary}
+          messages={messages}
+          onRefreshPublishCheck={() => void publishState.refreshPublishCheck()}
+          onRetrySave={commit.retry}
+          onToggleLogistics={() => setLogisticsExpanded((current) => !current)}
+          participationOptions={participationOptions}
+          pendingInvalidField={pendingInvalidField}
+          publishCheck={reviewPublishCheck}
+          review={review}
+          saveErrorMessage={saveErrorMessage}
+          saveState={saveState}
+          step={step}
+          tagOptions={tagOptions}
+          updateDraft={updateDraft}
+          updateParticipation={updateParticipation}
+          useStackedChoices={useStackedChoices}
+          useWideSummary={useWideSummary}
+          validationSummary={validationSummary}
+        />
+        <CreateQuestActionBar
+          bottomInset={insets.bottom}
+          cancelState={cancelState}
+          isSaving={saveState === "saving"}
+          messages={messages}
+          mode={mode}
+          publishCanPublish={reviewPublishCheck.canPublish}
+          savingAction={savingAction}
+          step={step}
+          stacked={useStackedActions}
+          onCancel={confirmCancel}
+          onNext={goNext}
+          onPublish={() => finishQuest("OPEN")}
+          onSaveDraft={() => finishQuest("DRAFT")}
+        />
+      </KeyboardAvoidingView>
+    </CreateQuestFrame>
   );
 }
