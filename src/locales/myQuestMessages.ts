@@ -22,6 +22,7 @@ export interface MyQuestMessages {
   };
   emptyDescription: Record<MyQuestMessagesRole, string>;
   edit: string;
+  review: string;
   detail: string;
   statusLabel: string;
   workerLabel: string;
@@ -58,7 +59,7 @@ export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
       hirer: {
         active: "ยังไม่มีเควสต์ที่กำลังดำเนินการ",
         draft: "ยังไม่มีฉบับร่าง",
-        completed: "ยังไม่มีเควสต์ที่จบแล้ว",
+        completed: "ยังไม่มีเควสต์ที่เสร็จสิ้นหรือปิดแล้ว",
       },
       worker: {
         pending: "ยังไม่มีเควสต์ที่รอตรวจสอบ",
@@ -71,6 +72,7 @@ export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
       worker: "เควสต์ที่ตรงกับสถานะนี้จะแสดงที่นี่",
     },
     edit: "แก้ไข",
+    review: "เขียนรีวิว",
     detail: "ดูรายละเอียด",
     statusLabel: "สถานะ",
     workerLabel: "ผู้ทำงาน",
@@ -101,7 +103,7 @@ export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
       hirer: {
         active: "No active Quests",
         draft: "No Quest drafts",
-        completed: "No completed Quests",
+        completed: "No finished or closed Quests",
       },
       worker: {
         pending: "No pending Quests",
@@ -114,6 +116,7 @@ export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
       worker: "Quests in this status will appear here",
     },
     edit: "Edit",
+    review: "Write review",
     detail: "View details",
     statusLabel: "Status",
     workerLabel: "Workers",

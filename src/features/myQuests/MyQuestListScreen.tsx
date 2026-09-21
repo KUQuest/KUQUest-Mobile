@@ -117,6 +117,13 @@ export default function MyQuestListScreen({
         });
         return;
       }
+      if (quest.actionType === "review") {
+        router.push({
+          pathname: "/quest/[id]/review",
+          params: { id: quest.id },
+        });
+        return;
+      }
       if (quest.actionType === "edit") {
         router.push({
           pathname: "/quest/[id]/edit",

@@ -5,9 +5,10 @@ import {
   CalendarDays,
   Check,
   CircleX,
+  Clock3,
   MapPin,
   Pencil,
-  Clock3,
+  Star,
 } from "lucide-react-native";
 import type { MyQuestMessages } from "@/locales/myQuestMessages";
 import { type ThemeColors } from "@/theme/colors";
@@ -183,9 +184,15 @@ export function MyQuestSummaryCard({
         >
           {quest.actionType === "edit" ? (
             <Pencil color={palette.onPrimary} size={16} strokeWidth={2.2} />
+          ) : quest.actionType === "review" ? (
+            <Star color={palette.onPrimary} size={16} strokeWidth={2.2} />
           ) : null}
           <Text className="font-ku-semibold text-ku-label leading-[18px] text-ku-on-primary">
-            {quest.actionType === "edit" ? messages.edit : quest.action}
+            {quest.actionType === "edit"
+              ? messages.edit
+              : quest.actionType === "review"
+                ? messages.review
+                : quest.action}
           </Text>
         </Pressable>
       </View>

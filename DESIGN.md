@@ -2,64 +2,82 @@
 name: KUQuest
 description: A trusted community job board for people with @ku.th accounts.
 colors:
+  # Brand
+  primary: "#5F7655"
+  primary-dark: "#465B3E"
+  primary-deep: "#34462F"
+  primary-subtle: "#EDF2EA"
+  primary-border: "#B6C4AF"
+  on-primary: "#FFFFFF"
+
+  support: "#755570"
+  support-dark: "#5D4058"
+  support-deep: "#463143"
+  support-subtle: "#F3ECF2"
+  support-border: "#B79AAF"
+  on-support: "#FFFFFF"
+
+  # Neutral
   background: "#F7F9F8"
   surface: "#FFFFFF"
-  surface-muted: "#F0F3F1"
-  surface-subtle: "#F0F3F1"
-  surface-accent: "#F3ECF2"
-  surface-success: "#E2EEE7"
-  surface-danger: "#F2E6E6"
-  surface-image: "#DEEAE9"
-  surface-placeholder: "#DDE3DF"
-  surface-nav-translucent: "rgba(255, 255, 255, 0.92)"
-  border-nav: "rgba(24, 32, 27, 0.14)"
-  nav-icon-muted: "#89928C"
-  primary: "#755570"
-  primary-dark: "#5D4058"
-  primary-deep: "#5D4058"
-  on-primary: "#FFFFFF"
-  hirer-primary: "#755570"
-  hirer-primary-dark: "#5D4058"
-  hirer-primary-subtle: "#F3ECF2"
-  hirer-accent-border: "#A06B95"
-  hirer-on-primary: "#FFFFFF"
-  worker-primary: "#B2BB1E"
-  worker-primary-dark: "#7D8615"
-  worker-primary-subtle: "#F4F5DF"
-  worker-accent-border: "#D9DDA5"
-  worker-on-primary: "#1B2106"
-  terracotta: "#9C5238"
-  terracotta-dark: "#7A3D2B"
-  surface-terracotta: "#FAEEE7"
-  text: "#18201B"
+  surface-raised: "#F0F3F1"
+  surface-high: "#E7ECE8"
   text-strong: "#18201B"
+  text: "#273029"
   text-secondary: "#5F6962"
-  text-muted: "#5F6962"
-  text-subtle: "#89928C"
-  text-faint: "#89928C"
-  border: "#DDE3DF"
-  border-subtle: "#DDE3DF"
-  border-muted: "#DDE3DF"
-  border-accent: "#A06B95"
-  border-danger: "#E6BDBE"
-  border-success: "#B3D4C2"
-  danger: "#C13D43"
-  danger-dark: "#8B2C30"
-  danger-light: "#E6BDBE"
-  danger-icon: "#C13D43"
+  text-muted: "#737D76"
+  border: "#D5DDD7"
+  divider: "#DDE3DF"
+
+  # Supporting accents
+  cream: "#F6EFE6"
+  gold: "#C8953D"
+  terracotta: "#9C634D"
+  rose: "#C88C9B"
+
+  # Semantic
   success: "#21864F"
-  success-bright: "#21864F"
-  success-light: "#B3D4C2"
   warning: "#B7791F"
-  warning-dark: "#845716"
-  surface-warning: "#F1ECE2"
-  border-warning: "#E3D0B3"
+  danger: "#C13D43"
   info: "#356CA5"
-  disabled: "#C8CECA"
-  black: "#18201B"
-  white: "#FFFFFF"
-  overlay: "rgba(24, 32, 27, 0.4)"
-  card: "#FFFFFF"
+
+  # Dark mode
+  dark:
+    background: "#101713"
+    surface: "#172019"
+    surface-raised: "#1E2A22"
+    surface-high: "#27342B"
+
+    primary: "#A9C79E"
+    primary-dark: "#7FA273"
+    primary-deep: "#5F7655"
+    primary-subtle: "#243128"
+    primary-border: "#526B58"
+    on-primary: "#142019"
+
+    support: "#D8B4D0"
+    support-dark: "#BE91B5"
+    support-deep: "#966B8F"
+    support-subtle: "#342832"
+    support-border: "#72556D"
+    on-support: "#21171F"
+
+    text-strong: "#F2F5F2"
+    text: "#E3E9E4"
+    text-secondary: "#B4BDB6"
+    text-muted: "#919C94"
+    border: "#3A4940"
+    divider: "#334039"
+
+    cream: "#302B24"
+    gold: "#E3BB70"
+    terracotta: "#DA9A80"
+    rose: "#DBA7B4"
+
+    success: "#62C88B"
+    warning: "#E4B45A"
+    danger: "#EF777B"
+    info: "#75A8DA"
 typography:
   display:
     fontFamily: "KuriousSemiBold, sans-serif"
@@ -126,7 +144,7 @@ components:
     padding: "14px 16px"
     height: "48px"
   input-field:
-    backgroundColor: "{colors.white}"
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.text-strong}"
     typography: "{typography.body-small}"
     rounded: "{rounded.field}"
@@ -140,20 +158,20 @@ components:
     padding: "8px 16px"
     height: "56px"
   quest-card:
-    backgroundColor: "{colors.white}"
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.text-strong}"
     typography: "{typography.body-small}"
     rounded: "{rounded.card}"
     padding: "16px"
   filter-chip:
-    backgroundColor: "{colors.surface-accent}"
+    backgroundColor: "{colors.primary-subtle}"
     textColor: "{colors.primary}"
     typography: "{typography.label}"
     rounded: "{rounded.pill}"
     padding: "4px 8px"
     height: "32px"
   bottom-navigation:
-    backgroundColor: "{colors.surface-nav-translucent}"
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.text-secondary}"
     typography: "{typography.label}"
     rounded: "{rounded.navigation}"
@@ -161,206 +179,169 @@ components:
     height: "68px"
 ---
 
-# Design System: KUQuest
+# Design System: KUQuest — Organic Editorial Mobile UI
 
 ## Overview
 
-**Creative North Star: "The Green Noticeboard"**
+**Creative North Star: "The Organic Editorial Campus Noticeboard"**
 
-KUQuest is a trusted community job board for people with `@ku.th` accounts. Its visual system treats the **Quest Board** as a clear, welcoming noticeboard: useful information comes first, actions are easy to find, and the KU identity feels connected to the community rather than to a generic marketplace.
+KUQuest is a trusted community opportunity platform for students, faculty, and staff with `@ku.th` accounts. Its visual language merges the grounded, warm authority of an **editorial lifestyle publication** with the calm, human warmth of an **organic product UI**. Rather than feeling like a sterile corporate dashboard, a transactional gig app, or a bright neon gamified tool, KUQuest feels like an intentional print-and-digital campus gazette: thoughtful, clear, and rooted in natural campus life.
 
-The atmosphere is calm, grounded, and quietly energetic in light appearance. Cool neutral surfaces keep long lists and **Quest Detail** information comfortable to read. In dark appearance the same system moves to deep green-black layers with pale text and softened signals. Dusty Plum marks primary actions and active states in the Hirer workspace; KU Lime remains the Worker workspace counterpart. Terracotta adds a restrained supporting accent for expressive, non-status moments. Cards, filters, and inputs use soft edges and calm layers so the interface feels friendly, soft, and confident.
+The system is defined by:
 
-**Key Characteristics:**
+- **Calm, neutral-dominant canvases**: 60–70% of any screen is clean, breathable neutral ground.
+- **Organic forest sage primary identity**: `#5F7655` anchors the app in Kasetsart's agricultural and campus heritage.
+- **Deep plum supporting identity**: `#755570` provides a sophisticated editorial companion for special moments, secondary actions, and badges.
+- **Earthy supporting accents**: Cream (`#F6EFE6`), Gold (`#C8953D`), Terracotta (`#9C634D`), and Rose (`#C88C9B`) add deliberate warmth to cards, wallet surfaces, and empty states.
+- **Editorial typography and whitespace**: Strong headings, expressive section titles, and generous asymmetrical compositions paired with highly readable, scannable UI labels.
+- **Quiet cards and soft geometry**: Surfaces sit naturally on the canvas with subtle borders and minimal shadows rather than heavy elevation.
+- **Intentional color blocking**: Single dominant color moments per flow (such as a full-bleed onboarding screen, a colored profile hero, or a tinted header) rather than a scatter of colored badges.
 
-- Cool neutral canvas with quiet white surface layers.
-- Dusty Plum for primary actions and Hirer identity.
-- KU Lime as the Worker persona ramp.
-- Terracotta for restrained supporting accents in onboarding and profile expression.
-- Compact, scannable information for Quest discovery and comparison.
-- Clear mobile behavior with safe-area-aware navigation.
+---
 
-## Colors
+## Colors & Hierarchy
 
-The palette is built from two persona ramps, one supporting accent family, one neutral ramp, and one semantic ramp. Light and dark appearance carry the same roles. Status colors stay semantic and should not become decorative accents.
+### Brand Colors
 
-### Persona ramps
+- **Primary (`#5F7655` light / `#A9C79E` dark)**: The primary brand color. Used for primary buttons, active navigation indicators, key highlights, and selected states.
+  - `primary-dark`: `#465B3E` light / `#7FA273` dark
+  - `primary-deep`: `#34462F` light / `#5F7655` dark
+  - `primary-subtle`: `#EDF2EA` light / `#243128` dark (surface tint for active chips, avatar backdrops, and highlights)
+  - `primary-border`: `#B6C4AF` light / `#526B58` dark
+  - `on-primary`: `#FFFFFF` light / `#142019` dark
+- **Support (`#755570` light / `#D8B4D0` dark)**: Sophisticated plum tone for supporting accents, secondary badges, and editorial highlights.
+  - `support-dark`: `#5D4058` light / `#BE91B5` dark
+  - `support-deep`: `#463143` light / `#966B8F` dark
+  - `support-subtle`: `#F3ECF2` light / `#342832` dark
+  - `support-border`: `#B79AAF` light / `#72556D` dark
+  - `on-support`: `#FFFFFF` light / `#21171F` dark
 
-Each ramp is five roles: **Primary**, **Primary Dark**, **Primary Subtle**, **Accent Border**, **On Primary**.
+### Neutral Surfaces & Typography
 
-- **Hirer (Dusty Plum, `#755570` light / `#D8B4D0` dark):** the app-wide `primary` tokens resolve to this ramp today.
-- **Worker (KU Lime, `#B2BB1E` light / `#C8D34A` dark):** defined as `worker*` tokens so the Worker workspace can adopt it without inventing values. Nothing resolves to it yet.
+- **Background (`#F7F9F8` light / `#101713` dark)**: The canvas foundation. Soft off-white light; deep organic green-black dark.
+- **Surface (`#FFFFFF` light / `#172019` dark)**: Primary card, modal, and sheet background.
+- **Surface Raised (`#F0F3F1` light / `#1E2A22` dark)**: Secondary card surface, grouped list items, pressed states, and chip backgrounds.
+- **Surface High (`#E7ECE8` light / `#27342B` dark)**: Modals, active search bars, and elevated floating panels.
+- **Text Strong (`#18201B` light / `#F2F5F2` dark)**: Display headings, Quest titles, and primary numbers.
+- **Text (`#273029` light / `#E3E9E4` dark)**: Primary body text and readable descriptions.
+- **Text Secondary (`#5F6962` light / `#B4BDB6` dark)**: Supporting copy, timestamps, and metadata.
+- **Text Muted (`#737D76` light / `#919C94` dark)**: Field labels, inactive placeholders, and helper text.
+- **Border (`#D5DDD7` light / `#3A4940` dark)**: Quiet structural borders for inputs, cards, and dividers.
+- **Divider (`#DDE3DF` light / `#334039` dark)**: Subtle list item dividers.
 
-A surface never mixes the two persona ramps. The persona in view owns its primary, its subtle tint, and its accent border together.
+### Supporting Accents (Warm & Organic)
 
-### Supporting accent
+- **Cream (`#F6EFE6` light / `#302B24` dark)**: Warm paper-like surface for onboarding cards, callouts, and quote blocks.
+- **Gold (`#C8953D` light / `#E3BB70` dark)**: Rewards, earnings, star ratings, and financial badges.
+- **Terracotta (`#9C634D` light / `#DA9A80` dark)**: Earthy accent for illustrations, creative tags, and profile banners.
+- **Rose (`#C88C9B` light / `#DBA7B4` dark)**: Gentle accent for social moments, community inquiries, and heart/favorite cues.
 
-**Terracotta (`#9C5238` light / `#E9AB8F` dark)** adds warmth to onboarding illustrations, empty-state artwork, and restrained **Portfolio Work** framing. Its text roles use `#7A3D2B` light / `#F2C0AA` dark, and its supporting surfaces use `#FAEEE7` light / `#35251F` dark. The dark Hirer accent border is `#8B6985`. Terracotta must not encode Quest lifecycle, settlement, validation, or workspace selection.
+### Semantic Status
 
-### Neutral
+- **Success (`#21864F` light / `#62C88B` dark)**: Completed quests, verified badges, positive balances.
+- **Warning (`#B7791F` light / `#E4B45A` dark)**: Due soon alerts, pending settlements, dispute warnings.
+- **Danger (`#C13D43` light / `#EF777B` dark)**: Errors, failed quests, cancellations, destructive actions.
+- **Info (`#356CA5` light / `#75A8DA` dark)**: Instructional notices and system announcements.
 
-- **Canvas:** The main app background, a cool off-white in light appearance and a green-black in dark.
-- **Surface:** The card and sheet surface, pure white in light appearance.
-- **Surface Raised:** Low-emphasis controls, skeletons, grouped content, and pressed backgrounds.
-- **Accent Surface:** The persona's Primary Subtle tint, used for selected filters, avatar fallbacks, and positive notices.
-- **Image Surface:** A soft tinted image fallback surface.
-- **Placeholder Surface:** Neutral image and certificate placeholders.
-- **Strong Text:** Main headings, Quest titles, and important values.
-- **Secondary Text:** Supporting descriptions, metadata, and body copy.
-- **Muted Text:** Labels, helper copy, and less important metadata.
-- **Faint Text:** Placeholder and tertiary copy.
-- **Quiet Border:** The default field and option border.
-- **Subtle Border:** Dividers and the outline around cards and profile sections.
-- **Accent Border:** Selected controls and positive notice outlines; the persona's Accent Border.
-- **Disabled:** Inactive controls and step indicators that are not yet reached.
+### Palette Balance Rule (60-30-10)
 
-### Status
+1. **60–70% Neutral**: Clean canvas (`#F7F9F8` / `#101713`) and white/layered surfaces let content breathe.
+2. **20–30% Primary Brand Family**: `#5F7655` and its subtle tints guide focus to main actions, tags, and progress.
+3. **5–10% Supporting / Accent**: Cream, Gold, Plum, and Terracotta serve as deliberate accents, never overwhelming the page.
 
-Four semantic hues, each with a subtle surface, a border, and a darker on-surface text tone:
+---
 
-- **Success `#21864F` / `#42B873`** — completion, positive outcomes, certificate metadata.
-- **Warning `#B7791F` / `#E4A83B`** — pending settlement, expiring holds, dispute notices.
-- **Danger `#C13D43` / `#EF6469`** — invalid fields, failures, cancellation.
-- **Info `#356CA5` / `#659AD0`** — neutral informational notices.
+## Typography & Editorial Voice
 
-**Contrast policy.** WCAG AA requires 4.5:1 for ordinary text, 3:1 for large text (at least 18pt regular or 14pt bold in the web baseline), and 3:1 for meaningful non-text controls and state indicators. The current Muted Text (`#89928C`, 3.2:1 on light surfaces) and self-colored Success hue are documented token gaps: do not use them for body, placeholder, control, focus, or stand-alone status text. Use strong text on semantic surfaces; use the hue with text or icon cues. Verify both appearances before adding or changing a token. See [`docs/agents/ui-design-rules.md`](docs/agents/ui-design-rules.md).
-
-### Named Rules
-
-**The Persona Signal Rule.** The primary ramp marks an action, an active state, or a positive result for the workspace in view. Do not use it as a general decoration on every element, and do not mix the Hirer and Worker ramps on one surface.
-
-**The Supporting Accent Rule.** Terracotta is expressive, not semantic. Use it sparingly for illustration and profile-expression surfaces; pair it with labels or icons when it carries meaning.
-
-**The Quiet Canvas Rule.** Keep the app canvas neutral and quiet so the information in a Quest Card or Quest Detail view remains the focus.
-
-## Typography
-
-**Display Font:** Kurious (`KuriousSemiBold`, with a sans-serif fallback)
-**Body Font:** Kurious (`KuriousMedium`, with a sans-serif fallback)
-**Label/Strong Font:** Kurious medium and semibold weights.
-
-**Character:** The type system is direct and readable. Semibold Kurious gives the interface a confident KUQuest voice, while medium Kurious keeps requirements, schedules, rewards, and profile information easy to scan in both supported locales.
+**Display Font:** `KuriousSemiBold` (with clean sans-serif fallback)
+**Body Font:** `KuriousMedium` (with clean sans-serif fallback)
 
 ### Hierarchy
 
-- **Display** (bold, 44px): Sign-in product identity and the strongest entry-point title.
-- **Headline** (bold, 30px / 38px): Main flow titles such as Create Quest.
-- **Title** (bold, 24px / 29px): Page and completion titles, reward values, and profile statistics.
-- **Body** (regular, 16px / 24px): Main actions, search input, and readable explanatory copy.
-- **Body Small** (regular, 14px / 21px): Supporting descriptions, fields, and state messages.
-- **Label** (regular or bold, 12px / 18px): Metadata, field labels, tab labels, helper text, and compact controls.
+- **Display (44px / 52px)**: Expressive editorial moments — onboarding headlines, sign-in welcome, zero-state heroes.
+- **Headline (30px / 38px)**: Major flow titles (Create Quest, Wallet, Profile Overview).
+- **Title (24px / 29px)**: Section headers, Quest titles in detail view, reward amounts.
+- **Body (16px / 24px)**: Primary interactive controls, search inputs, description paragraphs.
+- **Body Small (14px / 21px)**: Quest card titles, form field labels, metadata rows.
+- **Label (12px / 18px)**: Status badges, category chips, bottom tab labels, small timestamps.
 
-### Named Rules
+### Editorial Guidelines
 
-**The Clear Label Rule.** Labels name the information or action directly. Do not replace a useful label with a decorative phrase.
+- **Expressive contrast**: Combine bold display sizes with generous margins to give screens an editorial magazine feel.
+- **Weight before color**: Establish clarity using size and weight before adding color.
+- **Uncluttered copy**: Terse, honest, community-oriented phrases. Avoid hype, marketing fluff, or generic gig language ("Gigs", "Bids"). Use domain terms from `CONTEXT.md`: **Quest**, **Reward**, **Hirer**, **Worker**, **Proof**, **Review**.
 
-**The Weight Before Color Rule.** Use weight and size to establish hierarchy before adding another color.
+---
 
-## Layout
+## Shapes & Geometry
 
-The system is mobile-first and safe-area aware. Main screens use 24px horizontal page padding; the top bar and Quest Board use 16px horizontal padding where the brand mark or search field needs more room. Sign-in content is capped at 420px, and the Student Profile content is capped at 720px on wider devices.
+- **Inputs & Fields**: `8px` (`rounded-field`) — clean, structured, and tactile.
+- **Cards & Content Blocks**: `16px` (`rounded-card`) — soft and natural without looking pillowy.
+- **Search Inputs**: `18px` (`rounded-search`) — friendly and distinct from standard text fields.
+- **Sheets & Modals**: `24px` top corners (`rounded-sheet`) — welcoming, sheet-like presentation.
+- **Bottom Navigation Bar**: `28px` (`rounded-navigation`) — floating capsule with safe-area spacing.
+- **Buttons, Badges & Chips**: Full pill `9999px` (`rounded-pill`) — friendly, ergonomic tap targets.
 
-The spacing rhythm is 4px, 8px, 16px, 24px, and 32px. Use the smaller steps inside controls and metadata groups. Use 16px between related controls and 24px or more between sections. Quest Cards are intentionally compact and use an 8px gap in result lists so people can compare several Quests without excessive scrolling.
+---
 
-The implementation changes app chrome below 400px, expands profile content from 600px, and changes the authenticated navigation to a vertical rail at expanded tablet widths. The bottom navigation is absolute on phones and becomes an in-flow rail on tablets, with safe-area-aware spacing. Scrollable content calculates its bottom clearance from the actual navigation height and safe-area inset so the final Quest Card or profile section is not hidden.
+## Elevation, Depth & Layering
 
-Platform behavior, accessibility semantics, responsive windows, text scaling,
-motion preferences, navigation, forms, and sheets are governed by
-[`docs/agents/ui-design-rules.md`](docs/agents/ui-design-rules.md). This file
-defines the visual system and does not weaken that contract.
+- **Surface before shadow**: Rely on subtle surface transitions (`#F7F9F8` -> `#FFFFFF` -> `#F0F3F1`) rather than drop shadows.
+- **Thin, quiet borders**: `1px` border (`#D5DDD7` light / `#3A4940` dark) creates crisp, organic definition.
+- **Quiet Lift**: Minimal shadow (`0 2px 6px rgba(24, 32, 27, 0.04)`) for floating elements like the bottom navigation and search bar.
+- **No glassmorphism or neon glows**: Avoid blurred backdrops, heavy gradients, or glowing neon outlines.
 
-## Elevation & Depth
+---
 
-Depth is layered and calm. Warm neutral, pale plum, and pale green surface changes separate groups before a shadow is added. Cards and the bottom navigation use soft, low-contrast shadows. Sheets use an overlay and a raised bottom surface. Avoid large offsets, glossy effects, and decorative blur.
+## Screen-Specific Design Rules
 
-### Shadow Vocabulary
+### 1. Quest Board
 
-- **Quest Card lift** (`0px 2px 5px rgba(18, 32, 24, 0.06)`): A quiet separation from the warm canvas while scanning Quest results.
-- **Navigation lift** (`0px 4px 4px rgba(18, 32, 24, 0.06)`): Keeps the floating bottom navigation readable above scrolling content.
-- **Create action lift** (`0px 3px 4px rgba(18, 32, 24, 0.18)`): Gives the central Create action a clear position without making it look glossy.
+- Clean neutral canvas with an editorial masthead ("KUQuest Notices").
+- Rounded search bar (`18px`) and horizontal scrollable category chips (`rounded-pill`).
+- Quest Cards are compact, structured, and scannable: title and reward first, category tag, creator avatar/name, schedule/location, and clear action.
+- 8px gap between cards in lists for rapid comparison.
 
-### Named Rules
+### 2. Quest Detail
 
-**The Calm Layer Rule.** Use surface color first. Use shadow only when a surface must sit above nearby content.
+- Editorial header block with title, author, and prominent reward value.
+- Clear structural sections for Requirements, Schedule & Location, and Deliverables.
+- Primary sticky action bar at bottom with clear, full-width pill button.
 
-## Shapes
+### 3. Create Quest
 
-The form language is soft and approachable. Text fields and choice rows use an 8px radius. Quest Cards and Student Profile sections use a 16px radius. Search fields use an 18px radius, bottom sheets use a 24px top radius, and the bottom navigation uses a 28px radius. Pills are reserved for small actions, filters, tags, progress segments, and the central Create control.
+- Editorial header intro with a subtle tint block.
+- Calm, focused 3-step wizard with clear progress pills.
+- Clean inputs with 8px radius and explicit field labels.
 
-Borders are light and functional. Keep them thin and quiet. Use rounded hit areas of at least 48 logical units for interactive controls, including back, close, filter, and tab actions. Images use 8px to 12px clipping depending on their size.
+### 4. Profile & Reputation
 
-## Components
+- Editorial magazine-style profile header with clean statistics (completed quests, rating, badges).
+- Tabbed layout for Experience, Portfolio Work, Certificates, and Reviews.
+- Authentic campus trust indicators without exposing private IDs.
 
-Components should feel friendly, soft, and confident. They should make the next action clear without adding visual noise.
+### 5. Bottom Navigation
 
-### Buttons
+- Quiet, floating rounded capsule with safe-area clearance.
+- Muted icons for inactive states; solid primary color indicator for the active tab.
 
-- **Shape:** Full pills for primary and secondary actions; minimum height 48px.
-- **Primary:** persona primary background, `on-primary` label, semibold type, and 16px horizontal padding.
-- **Secondary:** Transparent background with a 2px persona primary outline and label.
-- **Pressed / Disabled:** Pressed actions move to the persona Primary Dark state or a muted active surface. Disabled buttons use reduced opacity and keep their label readable.
-- **Use:** Use a clear action label such as Apply now, Create Quest, Next, or Retry. Do not hide the action in an icon alone.
-
-### Chips
-
-- **Style:** Rounded pills with a pale plum or quiet neutral surface, compact padding, and small semibold labels.
-- **State:** Selected Quest Board filters use the accent surface and primary-color text. Selected review filters use the primary-color surface and `on-primary` text.
-- **Use:** Use chips for Quest Tags, active Quest Board filters, and small profile categories. They are not a replacement for a full section heading.
-
-### Cards / Containers
-
-- **Corner Style:** Quest Cards and Student Profile sections use the 16px card radius. Small review and form summary containers use 8px to 10px.
-- **Background:** Use the Content Card surface for primary content cards and quiet surface layers for grouped or secondary content. The Content Card surface changes with appearance; do not use a bright white card in dark appearance.
-- **Shadow Strategy:** Follow the calm layered approach in Elevation & Depth.
-- **Border:** Use a subtle 1px border for cards, sections, and fields. Keep the border close to the surface color.
-- **Internal Padding:** Use 16px for Quest Cards, profile cards, statistics, and review cards.
-- **Signature behavior:** A Quest Card places the title and reward first, then category, creator, metadata, and lifecycle actions. Keep this order stable so people can compare Quests quickly.
-
-### Inputs / Fields
-
-- **Style:** White field surface, quiet 1px border, 8px radius, 48px minimum height, and 12px horizontal padding.
-- **Focus:** Replace the quiet border with the persona primary while keeping the field shape stable.
-- **Error / Success:** Use the semantic danger or success border and helper text. Error copy must explain the problem and how to recover.
-- **Disabled:** Use the muted surface and reduced opacity. Keep the label and value legible.
-- **Select and Text Area:** Use the same field language. Select options open in a bottom sheet on mobile.
-
-### Navigation
-
-- **Style:** The current authenticated shell exposes five same-level destinations: Quest Board, My Quests, Create, Chat, and Student Profile.
-- **Default:** Translucent warm surface, 28px radius, quiet border, and muted green-gray icons.
-- **Active:** persona primary icon and label with a short active indicator. If Create launches an action rather than a destination, its product contract must keep it distinct from selected-tab semantics.
-- **Mobile treatment:** Keep the bar at the bottom, respect the safe area, preserve labels, and give each navigation target at least a 48 logical-unit frame.
-- **Tablet treatment:** Use a vertical rail on expanded widths and reserve horizontal content space for it.
-
-### Quest Board Filter Sheet
-
-- **Style:** A bottom sheet with a warm background, 24px top corners, a small handle, a clear title, and grouped options.
-- **Behavior:** Keep the current search query visible behind the sheet, preserve selected filters while editing, and provide explicit Apply filters and Clear all actions.
-- **State:** Invalid reward bounds disable the primary Apply filters action and show a danger message near the fields.
-
-### Student Profile
-
-- **Style:** Use a brand row, Content Card surfaces for the profile header and statistics, and section cards with consistent 16px corners.
-- **Tabs:** Use a horizontal tab strip with icons, a 72px minimum tab height, and a primary-color bottom indicator for the selected section.
-- **Trust content:** Keep Profile Rating, completed Quest count, Experience, Portfolio Work, Certificates, and Reviews easy to scan. Do not expose private contact details or Student ID.
+---
 
 ## Do's and Don'ts
 
 ### Do:
 
-- **Do** use the persona primary for primary actions, selected controls, and the main KUQuest identity.
-- **Do** keep the neutral canvas and quiet surface layers behind Quest Board content.
-- **Do** preserve the compact Quest Card order: title, reward, category, creator, metadata, then actions.
-- **Do** keep interactive controls at least 48 logical units high and safe-area aware on native Android and iOS; give them accessible names and states.
-- **Do** provide a first-class dark appearance with the same semantic color roles.
-- **Do** use the domain language from `CONTEXT.md`: Quest, Quest Board, Quest Detail, Quest Application, Student Profile, Academic Registration, and Review.
-- **Do** provide clear loading, empty, error, unavailable, pending, and accepted states.
+- **Do** maintain the 60-30-10 color balance with neutral surfaces dominating.
+- **Do** use `#5F7655` as the primary brand color across all screens and workspaces.
+- **Do** use editorial typography with oversized titles for section introductions and empty states.
+- **Do** keep interactive elements at a minimum 48px touch target.
+- **Do** support full dark mode using the specified dark palette layers (`#101713`, `#172019`, `#1E2A22`).
+- **Do** use domain terms: Quest, Quest Board, Hirer, Worker, Proof, Review.
 
 ### Don't:
 
-- **Don't** introduce generic corporate blue, glossy gradients, or noisy gaming aesthetics.
-- **Don't** turn KUQuest into a crowded gig-marketplace interface with dense badges and competing accents.
-- **Don't** use Dusty Plum on every surface or for text that does not represent an action, active state, or positive result.
-- **Don't** use large hard-offset shadows, decorative blur, or heavy visual effects.
-- **Don't** replace clear labels with icon-only controls when a person is applying to or creating a Quest.
-- **Don't** invent proof, ratings, customer claims, or other product evidence that is not supplied by the product.
+- **Don't** use neon greens, bright purples, or generic corporate blues.
+- **Don't** mix competing persona brand colors; Hirer and Worker both share the unified Organic Editorial palette.
+- **Don't** scatter tiny colored badges across cards creating a "fruit salad" effect.
+- **Don't** use heavy drop shadows, decorative blurs, or glossy gradients.
+- **Don't** reduce text contrast below WCAG AA thresholds (4.5:1 for body copy).

@@ -22,34 +22,15 @@ import {
   type ProofDraftAsset,
 } from "./components/ProofSubmissionSheet";
 import { liveQuestService, type LiveQuestSnapshot } from "./liveQuestService";
-
+import {
+  getRouteParam,
+  formatRelativeRemaining,
+  getErrorMessage,
+} from "@/utils";
 export interface QuestProofScreenProps {
   questId?: string;
   viewerId?: string;
   onReturnToWorkHub?: () => void;
-}
-
-function routeValue(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-function formatRemaining(dueAt: string | null, now: number): string | null {
-  if (!dueAt) return null;
-  const remaining = new Date(dueAt).getTime() - now;
-  if (!Number.isFinite(remaining)) return null;
-  if (remaining <= 0) return "Due now";
-  const minutes = Math.floor(remaining / 60_000);
-  const days = Math.floor(minutes / (60 * 24));
-  const hours = Math.floor((minutes % (60 * 24)) / 60);
-  const mins = minutes % 60;
-  if (days > 0) return `${days}d ${hours}h remaining`;
-  if (hours > 0) return `${hours}h ${mins}m remaining`;
-  return `${mins}m remaining`;
-}
-
-function errorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message.trim()) return error.message;
-  return fallback;
 }
 
 function ownProof(
@@ -82,9 +63,11 @@ export default function QuestProofScreen({
   }>();
   const { locale } = useLocale();
   const messages = questBoardMessages[locale];
-  const resolvedQuestId = questId ?? routeValue(params.id);
+  const resolvedQuestId = questId ?? getRouteParam(params.id);
   const explicitViewerId =
-    viewerId ?? routeValue(params.viewerId) ?? routeValue(params.studentId);
+    viewerId ??
+    getRouteParam(params.viewerId) ??
+    getRouteParam(params.studentId);
   const sessionQuery = useSessionQuery();
   const resolvedViewerId = explicitViewerId ?? sessionQuery.data?.user.id;
   const snapshotPollingInterval = useCallback(
@@ -117,7 +100,7 @@ export default function QuestProofScreen({
   const [now, setNow] = useState(() => Date.now());
   const [commandError, setCommandError] = useState<string | null>(null);
   const snapshotError = snapshotQuery.error
-    ? errorMessage(snapshotQuery.error, messages.errorDescription)
+    ? getErrorMessage(snapshotQuery.error, messages.errorDescription)
     : undefined;
   const error = commandError ?? snapshotError;
 
@@ -139,7 +122,7 @@ export default function QuestProofScreen({
   );
   const status = proof?.status;
   const isLocked = Boolean(proof?.submittedAt);
-  const countdown = formatRemaining(snapshot?.dueAt ?? null, now);
+  const countdown = formatRelativeRemaining(snapshot?.dueAt ?? null, now);
 
   const refreshAuthoritatively =
     useCallback(async (): Promise<LiveQuestSnapshot> => {
@@ -386,7 +369,9 @@ export default function QuestProofScreen({
                 if (!onReturnToWorkHub) router.replace("/my-quests");
               })
               .catch((caught) =>
-                setCommandError(errorMessage(caught, messages.errorDescription))
+                setCommandError(
+                  getErrorMessage(caught, messages.errorDescription)
+                )
               );
           },
         },

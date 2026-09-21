@@ -19,7 +19,7 @@ import {
 import { colors } from "@/theme/colors";
 import { formatTimestamp } from "@/domain/datetime";
 import { spacing } from "@/theme/spacing";
-
+import { getRouteParam, formatWorkCountdown } from "@/utils";
 import { useLiveQuestSnapshotQuery } from "./api/questBoardQueries";
 import {
   liveQuestService,
@@ -46,32 +46,6 @@ const terminalStates: Record<string, true> = {
   QUEST_CANCELLED: true,
   QUEST_FAILED: true,
 };
-
-function routeValue(value: string | string[] | undefined): string | undefined {
-  if (Array.isArray(value)) return value[0];
-  return value;
-}
-
-function formatCountdown(
-  value: string | null,
-  now: number,
-  messages: QuestWorkMessages
-): string {
-  if (!value) return messages.noDueAt;
-  const due = new Date(value).getTime();
-  if (!Number.isFinite(due)) return messages.noDueAt;
-  const remaining = due - now;
-  if (remaining <= 0) return messages.dueNow;
-  const totalMinutes = Math.ceil(remaining / 60_000);
-  const days = Math.floor(totalMinutes / 1_440);
-  const hours = Math.floor((totalMinutes % 1_440) / 60);
-  const minutes = totalMinutes % 60;
-  const parts: string[] = [];
-  if (days) parts.push(`${days}d`);
-  if (hours || days) parts.push(`${hours}h`);
-  parts.push(`${minutes}m`);
-  return `${parts.join(" ")} ${messages.remaining}`;
-}
 
 function nextActionLabel(
   action: LiveQuestNextAction,
@@ -139,14 +113,14 @@ export default function QuestWorkScreen({
   const { locale } = useLocale();
   const messages = questWorkMessages[locale];
   const questMessages = questBoardMessages[locale];
-  const resolvedQuestId = questId ?? routeValue(params.id);
+  const resolvedQuestId = questId ?? getRouteParam(params.id);
   const routeViewerId =
     viewerId ??
     studentId ??
-    routeValue(params.viewerId) ??
-    routeValue(params.studentId);
+    getRouteParam(params.viewerId) ??
+    getRouteParam(params.studentId);
   const resolvedEditRequestId =
-    editRequestId ?? routeValue(params.editRequestId);
+    editRequestId ?? getRouteParam(params.editRequestId);
   const sessionQuery = useSessionQuery();
   const resolvedViewerId = routeViewerId ?? sessionQuery.data?.user.id;
   const snapshotPollingInterval = useCallback(
@@ -288,7 +262,7 @@ export default function QuestWorkScreen({
   const status = snapshot ? statusLabel(snapshot, messages, questMessages) : "";
   const isTerminal = Boolean(snapshot && terminalStates[snapshot.state]);
   const countdown = useMemo(
-    () => formatCountdown(snapshot?.dueAt ?? null, now, messages),
+    () => formatWorkCountdown(snapshot?.dueAt ?? null, now, messages),
     [messages, now, snapshot?.dueAt]
   );
   const conditions = useMemo(

@@ -240,8 +240,9 @@ one owner" was true only of the five files phase 4 inspected. Six more sites sti
 - `src/app/quest/[id]/manage.tsx`, `src/app/quest/[id]/select-roster.tsx`,
   `QuestProofScreen`, `QuestWorkScreen` each hand-rolled snapshot/loading/refreshing/error
   `useState` plus a fetching effect. They now read `useLiveQuestSnapshotQuery`.
-  `QuestBoardScreen` and `useQuestDetailController` lost their session effects;
-  `CreateQuestScreen` lost its `questApi.listTags()` effect in favour of `useWorkerTagsQuery`.
+- `QuestBoardScreen` and the Quest Detail flow now use the shared session query;
+  `CreateQuestScreen` lost its `questApi.listTags()` effect in favour of
+  `useWorkerTagsQuery`.
 - Manual polling became `refetchInterval`. `useLiveQuestSnapshotQuery` gained one optional
   trailing argument accepting `number | false | ((snapshot) => number | false)`; the predicate
   form exists because both screens' cadence depended on the snapshot itself. QuestProof polls
@@ -277,14 +278,15 @@ one owner" was true only of the five files phase 4 inspected. Six more sites sti
   default. Pre-existing behavior, preserved deliberately.
 - `attachmentLinkCache` is read synchronously in `MessageBubble` render, so replacing it with
   Query requires restructuring that component's render path.
-- Fixture data ships in the production bundle. `QuestBoardScreen` and `useQuestDetailController`
-  import `questWorkflow`, which imports `questFixtureAdapter` and its seeds at module scope:
-  3,610 lines of demo data (`questFixtureAdapter.ts` 1,544, `questFixtures.ts` 947,
-  `fixtures/questSeeds.ts` 781, `fixtures/chatSeeds.ts` 298, `fixtures/memberDirectory.ts` 40).
-  Both screens still branch on `previewState !== "populated"`. `HomeScreen` likewise branches
-  on `isPrototypeDemoEnabled()` and imports `hirerHomeQuestFixtures`. Removing this is a
-  product decision about the preview/demo mode, not a state-ownership change, so it was left
-  alone deliberately.
+- Fixture data ships in the production bundle. `QuestBoardScreen` and
+  `useQuestDetailReadSource` import `questWorkflow`, which imports
+  `questFixtureAdapter` and its seeds at module scope: 3,610 lines of demo data
+  (`questFixtureAdapter.ts` 1,544, `questFixtures.ts` 947, `fixtures/questSeeds.ts` 781,
+  `fixtures/chatSeeds.ts` 298, `fixtures/memberDirectory.ts` 40). Both paths still branch on
+  `previewState !== "populated"`. `HomeScreen` likewise branches on
+  `isPrototypeDemoEnabled()` and imports `hirerHomeQuestFixtures`. Removing this is a product
+  decision about the preview/demo mode, not a state-ownership change, so it was left alone
+  deliberately.
 - Onboarding, chat and profile keep bespoke empty/error presentations rather than the shared
   `StateView`: their icons, copy placement and surrounding layout genuinely differ, and
   forcing them through one component would have changed what users see.

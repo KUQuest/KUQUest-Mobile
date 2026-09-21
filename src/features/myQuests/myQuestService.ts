@@ -9,6 +9,8 @@ import type { LiveQuestSnapshot } from "@/features/questBoard/liveQuestService";
 import type { WorkConversationCapability } from "@/features/questBoard/types";
 import type { SupportedLocale } from "@/locales/locale";
 import { questBoardMessages } from "@/locales/questBoardMessages";
+import { formatQuestDate } from "@/utils/datetime";
+import { getCategoryTone } from "@/utils/format";
 /** The v2 endpoint accepts limits from 1 through 50. */
 const PAGE_LIMIT = 50;
 
@@ -30,7 +32,7 @@ export type QuestSummary = {
   status: string;
   statusTone: StatusTone;
   action: string;
-  actionType?: "edit" | "applicants" | "detail";
+  actionType?: "edit" | "applicants" | "detail" | "review";
   secondaryAction?: string;
   groupChatId?: string;
   groupChatCapability?: WorkConversationCapability;
@@ -46,6 +48,7 @@ export const actionLabels: Record<
     detail: string;
     applicants: string;
     edit: string;
+    review: string;
     message: string;
     start: string;
   }
@@ -54,6 +57,7 @@ export const actionLabels: Record<
     detail: "ดูรายละเอียด",
     applicants: "ดูผู้สมัคร",
     edit: "แก้ไข",
+    review: "เขียนรีวิว",
     message: "ข้อความ",
     start: "รอเริ่มงาน",
   },
@@ -61,31 +65,61 @@ export const actionLabels: Record<
     detail: "View Detail",
     applicants: "View Applicants",
     edit: "Edit",
+    review: "Write review",
     message: "Message",
     start: "Awaiting start",
   },
 };
 
-export function formatQuestDate(
-  value: string,
+export { formatQuestDate, getCategoryTone };
+export function getLiveHirerItems(
+  quests: QuestV2CanonicalQuest[],
+  tab: HirerTab,
   locale: SupportedLocale
-): string {
-  if (!value) return "—";
-  const dateValue = value.length > 10 ? value.slice(0, 10) : value;
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
-    day: "numeric",
-    month: "short",
-  }).format(new Date(`${dateValue}T12:00:00`));
-}
+): QuestSummary[] {
+  return quests.flatMap((quest) => {
+    const terminal =
+      quest.state === "QUEST_COMPLETED" ||
+      quest.state === "QUEST_CANCELLED" ||
+      quest.state === "QUEST_FAILED";
+    const matchesTab =
+      tab === "draft"
+        ? quest.state === "QUEST_DRAFT"
+        : tab === "completed"
+          ? terminal
+          : !terminal && quest.state !== "QUEST_DRAFT";
+    if (!matchesTab) return [];
 
-export function getCategoryTone(tag: string): CategoryTone {
-  if (tag.toLocaleLowerCase().includes("print") || tag.includes("ถ่าย")) {
-    return "blue";
-  }
-  if (tag.toLocaleLowerCase().includes("design") || tag.includes("ออกแบบ")) {
-    return "purple";
-  }
-  return "green";
+    const tag = quest.tag?.name ?? "Quest";
+    const statusValue = quest.hiddenAt ? "QUEST_HIDDEN" : quest.state;
+    const status = liveQuestStatusLabel(statusValue, locale);
+    const isDraft = quest.state === "QUEST_DRAFT";
+    return [
+      {
+        id: quest.id,
+        title: quest.title,
+        tag,
+        categoryTone: getCategoryTone(tag),
+        date: formatQuestDate(quest.startTime, locale),
+        location: quest.locations[0]?.label ?? "—",
+        description: quest.description ?? "",
+        detail: status,
+        teamSize: String(quest.headcount),
+        status,
+        statusTone: liveQuestStatusTone(statusValue),
+        action: isDraft
+          ? actionLabels[locale].edit
+          : terminal
+            ? actionLabels[locale].review
+            : actionLabels[locale].detail,
+        actionType: isDraft
+          ? ("edit" as const)
+          : terminal
+            ? ("review" as const)
+            : ("detail" as const),
+      },
+    ];
+  });
 }
 
 export function liveQuestStatusTone(
@@ -203,53 +237,6 @@ export function getLiveWorkerItems(
         appliedOn: snapshot.assignment?.createdAt
           ? formatQuestDate(snapshot.assignment.createdAt, locale)
           : undefined,
-      },
-    ];
-  });
-}
-
-export function getLiveHirerItems(
-  quests: QuestV2CanonicalQuest[],
-  tab: HirerTab,
-  locale: SupportedLocale
-): QuestSummary[] {
-  return quests.flatMap((quest) => {
-    const terminal =
-      quest.state === "QUEST_COMPLETED" ||
-      quest.state === "QUEST_CANCELLED" ||
-      quest.state === "QUEST_FAILED";
-    const matchesTab =
-      tab === "draft"
-        ? quest.state === "QUEST_DRAFT"
-        : tab === "completed"
-          ? quest.state === "QUEST_COMPLETED"
-          : !terminal && quest.state !== "QUEST_DRAFT";
-    if (!matchesTab) return [];
-
-    const tag = quest.tag?.name ?? "Quest";
-    const statusValue = quest.hiddenAt ? "QUEST_HIDDEN" : quest.state;
-    const status = liveQuestStatusLabel(statusValue, locale);
-    return [
-      {
-        id: quest.id,
-        title: quest.title,
-        tag,
-        categoryTone: getCategoryTone(tag),
-        date: formatQuestDate(quest.startTime, locale),
-        location: quest.locations[0]?.label ?? "—",
-        description: quest.description ?? "",
-        detail: status,
-        teamSize: String(quest.headcount),
-        status,
-        statusTone: liveQuestStatusTone(statusValue),
-        action:
-          quest.state === "QUEST_DRAFT"
-            ? actionLabels[locale].edit
-            : actionLabels[locale].detail,
-        actionType:
-          quest.state === "QUEST_DRAFT"
-            ? ("edit" as const)
-            : ("detail" as const),
       },
     ];
   });

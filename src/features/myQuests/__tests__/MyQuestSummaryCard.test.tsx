@@ -5,7 +5,7 @@ import { darkColors, lightColors } from "@/theme/colors";
 import { MyQuestSummaryCard } from "../components/MyQuestSummaryCard";
 
 jest.mock("@/tw", () => {
-  const native = require("react-native");
+  const native = jest.requireActual("react-native");
   return {
     Pressable: native.Pressable,
     Text: native.Text,

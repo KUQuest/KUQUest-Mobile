@@ -1,51 +1,90 @@
 import { Appearance } from "react-native";
 
 /**
- * Persona ramps. `getThemeColors` resolves the app-wide palette from the
- * active workspace and appearance; `AppThemeProvider` publishes it to React
- * and NativeWind consumers.
+ * Organic Editorial brand ramps. `getThemeColors` resolves the app-wide palette
+ * from the active workspace and appearance; `AppThemeProvider` publishes it
+ * to React and NativeWind consumers.
  */
 export const hirerRamp = {
   light: {
-    primary: "#755570",
-    primaryDark: "#5D4058",
-    primarySubtle: "#F3ECF2",
-    accentBorder: "#A06B95",
+    primary: "#5F7655",
+    primaryDark: "#465B3E",
+    primarySubtle: "#EDF2EA",
+    accentBorder: "#B6C4AF",
     onPrimary: "#FFFFFF",
   },
   dark: {
-    primary: "#D8B4D0",
-    primaryDark: "#C49DBB",
-    primarySubtle: "#30232E",
-    accentBorder: "#8B6985",
-    onPrimary: "#30232E",
+    primary: "#A9C79E",
+    primaryDark: "#7FA273",
+    primarySubtle: "#243128",
+    accentBorder: "#526B58",
+    onPrimary: "#142019",
   },
 } as const;
 
 export const workerRamp = {
   light: {
-    primary: "#B2BB1E",
-    primaryDark: "#7D8615",
-    primarySubtle: "#F4F5DF",
-    accentBorder: "#D9DDA5",
-    onPrimary: "#1B2106",
+    primary: "#5F7655",
+    primaryDark: "#465B3E",
+    primarySubtle: "#EDF2EA",
+    accentBorder: "#B6C4AF",
+    onPrimary: "#FFFFFF",
   },
   dark: {
-    primary: "#C8D34A",
-    primaryDark: "#A7B12F",
-    primarySubtle: "#343817",
-    accentBorder: "#555B27",
-    onPrimary: "#171A05",
+    primary: "#A9C79E",
+    primaryDark: "#7FA273",
+    primarySubtle: "#243128",
+    accentBorder: "#526B58",
+    onPrimary: "#142019",
   },
 } as const;
 
 export const lightColors = {
+  // Brand
+  primary: "#5F7655",
+  primaryDark: "#465B3E",
+  primaryDeep: "#34462F",
+  primarySubtle: "#EDF2EA",
+  primaryBorder: "#B6C4AF",
+  onPrimary: "#FFFFFF",
+
+  support: "#755570",
+  supportDark: "#5D4058",
+  supportDeep: "#463143",
+  supportSubtle: "#F3ECF2",
+  supportBorder: "#B79AAF",
+  onSupport: "#FFFFFF",
+
+  // Neutral
   background: "#F7F9F8",
   surface: "#FFFFFF",
+  surfaceRaised: "#F0F3F1",
+  surfaceHigh: "#E7ECE8",
+  textStrong: "#18201B",
+  text: "#273029",
+  textSecondary: "#5F6962",
+  textMuted: "#737D76",
+  border: "#D5DDD7",
+  divider: "#DDE3DF",
+
+  // Supporting accents
+  cream: "#F6EFE6",
+  gold: "#C8953D",
+  terracotta: "#9C634D",
+  rose: "#C88C9B",
+
+  // Semantic
+  success: "#21864F",
+  warning: "#B7791F",
+  danger: "#C13D43",
+  info: "#356CA5",
+
+  // Compatibility aliases
   surfaceMuted: "#F0F3F1",
   surfaceSubtle: "#F0F3F1",
-  surfaceAccent: hirerRamp.light.primarySubtle,
+  surfaceAccent: "#EDF2EA",
   surfaceTerracotta: "#FAEEE7",
+  terracottaDark: "#7A3D2B",
   surfaceSuccess: "#E2EEE7",
   surfaceDanger: "#F2E6E6",
   surfaceImage: "#DEEAE9",
@@ -53,49 +92,74 @@ export const lightColors = {
   surfaceNavTranslucent: "rgba(255, 255, 255, 0.92)",
   borderNav: "rgba(24, 32, 27, 0.14)",
   navIconMuted: "#89928C",
-  primary: hirerRamp.light.primary,
-  primaryDark: hirerRamp.light.primaryDark,
-  primaryDeep: hirerRamp.light.primaryDark,
-  onPrimary: hirerRamp.light.onPrimary,
-  terracotta: "#9C5238",
-  terracottaDark: "#7A3D2B",
-  text: "#18201B",
-  textStrong: "#18201B",
-  textSecondary: "#5F6962",
-  textMuted: "#5F6962",
-  textSubtle: "#89928C",
-  textFaint: "#89928C",
-  border: "#DDE3DF",
-  borderSubtle: "#DDE3DF",
-  borderMuted: "#DDE3DF",
-  borderAccent: hirerRamp.light.accentBorder,
+  textSubtle: "#737D76",
+  textFaint: "#737D76",
+  borderSubtle: "#D5DDD7",
+  borderMuted: "#D5DDD7",
+  borderAccent: "#B6C4AF",
   borderDanger: "#E6BDBE",
   borderSuccess: "#B3D4C2",
-  danger: "#C13D43",
   dangerDark: "#8B2C30",
   dangerLight: "#E6BDBE",
   dangerIcon: "#C13D43",
-  success: "#21864F",
   successBright: "#21864F",
   successLight: "#B3D4C2",
-  warning: "#B7791F",
   warningDark: "#845716",
   surfaceWarning: "#F1ECE2",
   borderWarning: "#E3D0B3",
-  info: "#356CA5",
   disabled: "#C8CECA",
   black: "#18201B",
   white: "#FFFFFF",
+  card: "#FFFFFF",
   overlay: "rgba(24, 32, 27, 0.4)",
 } as const;
 
 export const darkColors = {
-  background: "#0F1411",
-  surface: "#161C18",
-  surfaceMuted: "#1D2520",
-  surfaceSubtle: "#1D2520",
-  surfaceAccent: hirerRamp.dark.primarySubtle,
+  // Brand
+  primary: "#A9C79E",
+  primaryDark: "#7FA273",
+  primaryDeep: "#5F7655",
+  primarySubtle: "#243128",
+  primaryBorder: "#526B58",
+  onPrimary: "#142019",
+
+  support: "#D8B4D0",
+  supportDark: "#BE91B5",
+  supportDeep: "#966B8F",
+  supportSubtle: "#342832",
+  supportBorder: "#72556D",
+  onSupport: "#21171F",
+
+  // Neutral
+  background: "#101713",
+  surface: "#172019",
+  surfaceRaised: "#1E2A22",
+  surfaceHigh: "#27342B",
+  textStrong: "#F2F5F2",
+  text: "#E3E9E4",
+  textSecondary: "#B4BDB6",
+  textMuted: "#919C94",
+  border: "#3A4940",
+  divider: "#334039",
+
+  // Supporting accents
+  cream: "#302B24",
+  gold: "#E3BB70",
+  terracotta: "#DA9A80",
+  rose: "#DBA7B4",
+
+  // Semantic
+  success: "#62C88B",
+  warning: "#E4B45A",
+  danger: "#EF777B",
+  info: "#75A8DA",
+
+  // Compatibility aliases
+  surfaceMuted: "#1E2A22",
+  surfaceSubtle: "#1E2A22",
+  surfaceAccent: "#243128",
   surfaceTerracotta: "#35251F",
+  terracottaDark: "#F2C0AA",
   surfaceSuccess: "#172E21",
   surfaceDanger: "#33211F",
   surfaceImage: "#142B27",
@@ -103,39 +167,25 @@ export const darkColors = {
   surfaceNavTranslucent: "rgba(22, 28, 24, 0.94)",
   borderNav: "rgba(243, 246, 244, 0.16)",
   navIconMuted: "#7D8881",
-  primary: hirerRamp.dark.primary,
-  primaryDark: hirerRamp.dark.primaryDark,
-  primaryDeep: hirerRamp.dark.primary,
-  onPrimary: hirerRamp.dark.onPrimary,
-  terracotta: "#E9AB8F",
-  terracottaDark: "#F2C0AA",
-  text: "#F3F6F4",
-  textStrong: "#F3F6F4",
-  textSecondary: "#AAB4AD",
-  textMuted: "#AAB4AD",
-  textSubtle: "#7D8881",
-  textFaint: "#7D8881",
-  border: "#303B34",
-  borderSubtle: "#303B34",
-  borderMuted: "#303B34",
-  borderAccent: hirerRamp.dark.accentBorder,
+  textSubtle: "#919C94",
+  textFaint: "#919C94",
+  borderSubtle: "#3A4940",
+  borderMuted: "#3A4940",
+  borderAccent: "#526B58",
   borderDanger: "#5B2F2F",
   borderSuccess: "#204C32",
-  danger: "#EF6469",
   dangerDark: "#F4999C",
   dangerLight: "#5B2F2F",
   dangerIcon: "#EF6469",
-  success: "#42B873",
-  successBright: "#42B873",
+  successBright: "#62C88B",
   successLight: "#204C32",
-  warning: "#E4A83B",
   warningDark: "#EDC67E",
   surfaceWarning: "#312C18",
   borderWarning: "#57461F",
-  info: "#659AD0",
   disabled: "#58615B",
   black: "#0F1411",
   white: "#F7FFFE",
+  card: "#172019",
   overlay: "rgba(0, 0, 0, 0.64)",
 } as const;
 
@@ -185,7 +235,7 @@ export function setActiveRamp(name: RampName) {
   activeRamp = name;
 }
 
-export function getThemeColors(colorScheme: AppColorScheme) {
+export function getThemeColors(colorScheme: AppColorScheme): ThemeColors {
   return palettes[activeRamp][colorScheme === "dark" ? "dark" : "light"];
 }
 

@@ -5,7 +5,7 @@ import {
   parseQuestRouteId,
 } from "../questRoute";
 import { parseBoardPreviewState } from "../questBoardHarness";
-
+import { resolveQuestDetailRoute } from "../detail/questDetailRoute";
 describe("Quest route parsing", () => {
   it("accepts only a single non-empty quest id", () => {
     expect(parseQuestRouteId("quest-1")).toBe("quest-1");
@@ -34,5 +34,31 @@ describe("Quest route parsing", () => {
     expect(parseQuestJoinStatus("accepted")).toBe("accepted");
     expect(parseQuestJoinStatus("history")).toBe("history");
     expect(parseQuestJoinStatus("unexpected")).toBeUndefined();
+  });
+  it("resolves URL params and lets explicit screen props win", () => {
+    expect(
+      resolveQuestDetailRoute(
+        {
+          id: ["route-quest"],
+          mode: "join",
+          intent: "apply",
+          preview: "full",
+          studentId: "route-student",
+        },
+        {
+          questId: "prop-quest",
+          mode: "post",
+          intent: "apply",
+          previewState: "closed",
+          studentId: "prop-student",
+        }
+      )
+    ).toEqual({
+      questId: "prop-quest",
+      mode: "post",
+      intent: "apply",
+      previewState: "closed",
+      studentId: "prop-student",
+    });
   });
 });

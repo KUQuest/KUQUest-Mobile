@@ -32,6 +32,8 @@ tags:
     description: Authenticated Member reference data for Quest Tags.
   - name: Xendit webhooks
     description: Provider callbacks for durable Top-up outcome processing.
+  - name: Admin Reports
+    description: Admin Trust and Safety Report Case queue, evidence, and decisions.
 components:
   securitySchemes:
     betterAuthSession:
@@ -1157,7 +1159,6 @@ paths:
                                 type: string
                               - minimum: 0
                                 type: integer
-                additionalProperties: false
         "401":
           description: Response for status 401
           content:
@@ -1548,7 +1549,6 @@ paths:
                               anyOf:
                                 - type: string
                                 - type: "null"
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -2213,7 +2213,6 @@ paths:
                                   name:
                                     example: Computer Engineering
                                     type: string
-                additionalProperties: false
         "401":
           description: Response for status 401
           content:
@@ -2317,7 +2316,6 @@ paths:
                           - type: "null"
                       completed:
                         type: boolean
-                additionalProperties: false
         "401":
           description: Response for status 401
           content:
@@ -3240,7 +3238,6 @@ paths:
                                     type: string
                                   - minimum: 0
                                     type: integer
-                additionalProperties: false
         "401":
           description: Response for status 401
           content:
@@ -3403,7 +3400,6 @@ paths:
                         anyOf:
                           - type: string
                           - type: "null"
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -3599,7 +3595,6 @@ paths:
                         anyOf:
                           - type: string
                           - type: "null"
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -3970,7 +3965,6 @@ paths:
                             updatedAt:
                               format: date-time
                               type: string
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -9818,6 +9812,7 @@ paths:
                     type: object
                     required:
                       - id
+                      - displayId
                       - questId
                       - filerUserId
                       - openedByAdminId
@@ -9832,6 +9827,8 @@ paths:
                     properties:
                       id:
                         format: uuid
+                        type: string
+                      displayId:
                         type: string
                       questId:
                         format: uuid
@@ -10273,6 +10270,7 @@ paths:
                     type: object
                     required:
                       - id
+                      - displayId
                       - questId
                       - filerUserId
                       - openedByAdminId
@@ -10287,6 +10285,8 @@ paths:
                     properties:
                       id:
                         format: uuid
+                        type: string
+                      displayId:
                         type: string
                       questId:
                         format: uuid
@@ -10541,6 +10541,7 @@ paths:
                           type: object
                           required:
                             - id
+                            - displayId
                             - questId
                             - filerUserId
                             - openedByAdminId
@@ -10555,6 +10556,8 @@ paths:
                           properties:
                             id:
                               format: uuid
+                              type: string
+                            displayId:
                               type: string
                             questId:
                               format: uuid
@@ -11084,6 +11087,7 @@ paths:
                       - type: object
                         required:
                           - id
+                          - displayId
                           - questId
                           - filerUserId
                           - openedByAdminId
@@ -11098,6 +11102,8 @@ paths:
                         properties:
                           id:
                             format: uuid
+                            type: string
+                          displayId:
                             type: string
                           questId:
                             format: uuid
@@ -11417,6 +11423,7 @@ paths:
                         type: object
                         required:
                           - id
+                          - displayId
                           - questId
                           - filerUserId
                           - openedByAdminId
@@ -11431,6 +11438,8 @@ paths:
                         properties:
                           id:
                             format: uuid
+                            type: string
+                          displayId:
                             type: string
                           questId:
                             format: uuid
@@ -11735,7 +11744,6 @@ paths:
                             createdAt:
                               format: date-time
                               type: string
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -11892,7 +11900,6 @@ paths:
                             createdAt:
                               format: date-time
                               type: string
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -12446,7 +12453,6 @@ paths:
                                     type: string
                                   - type: "null"
                           - type: "null"
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -12890,7 +12896,6 @@ paths:
                                     type: string
                                   - type: "null"
                           - type: "null"
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -13334,7 +13339,6 @@ paths:
                                     type: string
                                   - type: "null"
                           - type: "null"
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -13733,7 +13737,6 @@ paths:
                             appliedAt:
                               format: date-time
                               type: string
-                additionalProperties: false
         "401":
           description: Response for status 401
           content:
@@ -15021,7 +15024,6 @@ paths:
                             createdAt:
                               format: date-time
                               type: string
-                additionalProperties: false
         "401":
           description: Response for status 401
           content:
@@ -18612,7 +18614,6 @@ paths:
                                         maxLength: 64
                                         type: string
                                       - type: "null"
-                additionalProperties: false
         "401":
           description: Response for status 401
           content:
@@ -21637,7 +21638,6 @@ paths:
                         anyOf:
                           - type: string
                           - type: "null"
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -27295,7 +27295,7 @@ paths:
       summary: Get Public Quest Detail through the v2 contract
       description: Returns the public projection of a non-hidden QUEST_OPEN Quest to
         an authenticated Member who is not the Hirer. Candidate and Finance
-        internals are excluded.
+        internals are excluded. Includes the Hirer Avatar when available.
       operationId: getPublicQuestV2Detail
       security:
         - betterAuthSession: []
@@ -27338,6 +27338,7 @@ paths:
                       - dueAt
                       - proofRequired
                       - hirerName
+                      - hirerAvatar
                       - locations
                       - images
                     properties:
@@ -27442,6 +27443,21 @@ paths:
                         type: boolean
                       hirerName:
                         type: string
+                      hirerAvatar:
+                        nullable: true
+                        anyOf:
+                          - type: object
+                            required:
+                              - fileId
+                              - url
+                            properties:
+                              fileId:
+                                format: uuid
+                                type: string
+                              url:
+                                format: uri
+                                type: string
+                          - type: "null"
                       locations:
                         type: array
                         items:
@@ -27673,6 +27689,7 @@ paths:
                       - dueAt
                       - proofRequired
                       - hirerName
+                      - hirerAvatar
                       - locations
                       - images
                       - assignment
@@ -27779,6 +27796,21 @@ paths:
                         type: boolean
                       hirerName:
                         type: string
+                      hirerAvatar:
+                        nullable: true
+                        anyOf:
+                          - type: object
+                            required:
+                              - fileId
+                              - url
+                            properties:
+                              fileId:
+                                format: uuid
+                                type: string
+                              url:
+                                format: uri
+                                type: string
+                          - type: "null"
                       locations:
                         type: array
                         items:
@@ -31155,6 +31187,7 @@ paths:
                           type: object
                           required:
                             - id
+                            - displayId
                             - apiVersion
                             - version
                             - title
@@ -31173,6 +31206,8 @@ paths:
                           properties:
                             id:
                               format: uuid
+                              type: string
+                            displayId:
                               type: string
                             apiVersion:
                               type: string
@@ -32229,6 +32264,7 @@ paths:
                         type: object
                         required:
                           - id
+                          - displayId
                           - apiVersion
                           - version
                           - title
@@ -32247,6 +32283,8 @@ paths:
                         properties:
                           id:
                             format: uuid
+                            type: string
+                          displayId:
                             type: string
                           apiVersion:
                             type: string
@@ -32579,6 +32617,7 @@ paths:
                         type: object
                         required:
                           - id
+                          - displayId
                           - apiVersion
                           - version
                           - title
@@ -32597,6 +32636,8 @@ paths:
                         properties:
                           id:
                             format: uuid
+                            type: string
+                          displayId:
                             type: string
                           apiVersion:
                             type: string
@@ -32935,6 +32976,7 @@ paths:
                         type: object
                         required:
                           - id
+                          - displayId
                           - apiVersion
                           - version
                           - title
@@ -32953,6 +32995,8 @@ paths:
                         properties:
                           id:
                             format: uuid
+                            type: string
+                          displayId:
                             type: string
                           apiVersion:
                             type: string
@@ -33216,8 +33260,8 @@ paths:
         - Admin Overview
       summary: Read Admin operational counters
       description: Counts Quest States, the Hidden Quest overlay, Dispute Cases,
-        Payout queues, and Wallet holds. The Report counter is absent because
-        Report Case persistence is unavailable.
+        Payout queues, and Wallet holds. Report Case queue records are available
+        through the Admin Reports endpoints.
       operationId: getAdminOverview
       security:
         - betterAuthSession: []
@@ -33399,7 +33443,6 @@ paths:
                                 type: string
                               - minimum: 0
                                 type: integer
-                additionalProperties: false
         "401":
           description: Response for status 401
           content:
@@ -34707,7 +34750,6 @@ paths:
                           lastAuditedAt:
                             format: date-time
                             type: string
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -36140,6 +36182,1176 @@ paths:
                       message:
                         type: string
                 additionalProperties: false
+  /api/v1/admin/reports:
+    get:
+      tags:
+        - Admin Reports
+      summary: List Report Cases for Trust and Safety review
+      description: Lists Report Case queue pages with Reporter Entries and Evidence
+        References, without unrelated Work Conversation content.
+      operationId: listAdminReports
+      security:
+        - betterAuthSession: []
+      parameters:
+        - name: kind
+          in: query
+          required: false
+          schema:
+            const: REPORT_CASE
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - REPORT_CASE_PENDING
+              - REPORT_CASE_DISMISSED
+              - REPORT_CASE_HIDDEN
+              - REPORT_CASE_RESTORED
+        - name: memberId
+          in: query
+          required: false
+          schema:
+            format: uuid
+            type: string
+        - name: questId
+          in: query
+          required: false
+          schema:
+            format: uuid
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            minimum: 1
+            maximum: 50
+            anyOf:
+              - format: integer
+                default: 0
+                type: string
+              - minimum: 1
+                maximum: 50
+                type: integer
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - newest
+              - oldest
+      responses:
+        "200":
+          description: Response for status 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - items
+                      - nextCursor
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - kind
+                            - id
+                            - displayId
+                            - messageId
+                            - conversationId
+                            - questId
+                            - status
+                            - version
+                            - caseClosedAt
+                            - createdAt
+                            - updatedAt
+                            - reporterEntries
+                            - evidenceReferences
+                          properties:
+                            kind:
+                              const: REPORT_CASE
+                              type: string
+                            id:
+                              format: uuid
+                              type: string
+                            displayId:
+                              type: string
+                            messageId:
+                              format: uuid
+                              type: string
+                            conversationId:
+                              format: uuid
+                              type: string
+                            questId:
+                              format: uuid
+                              type: string
+                            status:
+                              type: string
+                              enum:
+                                - REPORT_CASE_PENDING
+                                - REPORT_CASE_DISMISSED
+                                - REPORT_CASE_HIDDEN
+                                - REPORT_CASE_RESTORED
+                            version:
+                              minimum: 1
+                              anyOf:
+                                - format: integer
+                                  default: 0
+                                  type: string
+                                - minimum: 1
+                                  type: integer
+                            caseClosedAt:
+                              nullable: true
+                              anyOf:
+                                - format: date-time
+                                  type: string
+                                - type: "null"
+                            createdAt:
+                              format: date-time
+                              type: string
+                            updatedAt:
+                              format: date-time
+                              type: string
+                            reporterEntries:
+                              type: array
+                              items:
+                                type: object
+                                required:
+                                  - id
+                                  - reporterMemberId
+                                  - reporter
+                                  - reason
+                                  - detail
+                                  - createdAt
+                                properties:
+                                  id:
+                                    format: uuid
+                                    type: string
+                                  reporterMemberId:
+                                    format: uuid
+                                    type: string
+                                  reporter:
+                                    type: object
+                                    required:
+                                      - id
+                                      - email
+                                      - firstName
+                                      - lastName
+                                    properties:
+                                      id:
+                                        format: uuid
+                                        type: string
+                                      email:
+                                        type: string
+                                      firstName:
+                                        type: string
+                                      lastName:
+                                        type: string
+                                  reason:
+                                    type: string
+                                    enum:
+                                      - REPORT_ABUSIVE_OR_HARASSMENT
+                                      - REPORT_SPAM
+                                      - REPORT_INAPPROPRIATE_CONTENT
+                                      - REPORT_DANGER_OR_THREAT
+                                      - REPORT_OTHER
+                                  detail:
+                                    nullable: true
+                                    anyOf:
+                                      - type: string
+                                      - type: "null"
+                                  createdAt:
+                                    format: date-time
+                                    type: string
+                            evidenceReferences:
+                              type: array
+                              items:
+                                type: object
+                                required:
+                                  - id
+                                  - messageId
+                                  - attachmentId
+                                  - createdAt
+                                properties:
+                                  id:
+                                    format: uuid
+                                    type: string
+                                  messageId:
+                                    nullable: true
+                                    anyOf:
+                                      - format: uuid
+                                        type: string
+                                      - type: "null"
+                                  attachmentId:
+                                    nullable: true
+                                    anyOf:
+                                      - format: uuid
+                                        type: string
+                                      - type: "null"
+                                  createdAt:
+                                    format: date-time
+                                    type: string
+                      nextCursor:
+                        nullable: true
+                        anyOf:
+                          - type: string
+                          - type: "null"
+        "400":
+          description: Response for status 400
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "401":
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "403":
+          description: Response for status 403
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+  /api/v1/admin/reports/{reportId}:
+    get:
+      tags:
+        - Admin Reports
+      summary: Get Report Case detail for Trust and Safety review
+      description: Returns the Report Case, Reporter Entries, and Evidence References.
+        Message content is available only through the case-scoped evidence
+        route.
+      operationId: getAdminReport
+      security:
+        - betterAuthSession: []
+      parameters:
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Response for status 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - kind
+                      - id
+                      - displayId
+                      - messageId
+                      - conversationId
+                      - questId
+                      - status
+                      - version
+                      - caseClosedAt
+                      - createdAt
+                      - updatedAt
+                      - reporterEntries
+                      - evidenceReferences
+                    properties:
+                      kind:
+                        const: REPORT_CASE
+                        type: string
+                      id:
+                        format: uuid
+                        type: string
+                      displayId:
+                        type: string
+                      messageId:
+                        format: uuid
+                        type: string
+                      conversationId:
+                        format: uuid
+                        type: string
+                      questId:
+                        format: uuid
+                        type: string
+                      status:
+                        type: string
+                        enum:
+                          - REPORT_CASE_PENDING
+                          - REPORT_CASE_DISMISSED
+                          - REPORT_CASE_HIDDEN
+                          - REPORT_CASE_RESTORED
+                      version:
+                        minimum: 1
+                        anyOf:
+                          - format: integer
+                            default: 0
+                            type: string
+                          - minimum: 1
+                            type: integer
+                      caseClosedAt:
+                        nullable: true
+                        anyOf:
+                          - format: date-time
+                            type: string
+                          - type: "null"
+                      createdAt:
+                        format: date-time
+                        type: string
+                      updatedAt:
+                        format: date-time
+                        type: string
+                      reporterEntries:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - id
+                            - reporterMemberId
+                            - reporter
+                            - reason
+                            - detail
+                            - createdAt
+                          properties:
+                            id:
+                              format: uuid
+                              type: string
+                            reporterMemberId:
+                              format: uuid
+                              type: string
+                            reporter:
+                              type: object
+                              required:
+                                - id
+                                - email
+                                - firstName
+                                - lastName
+                              properties:
+                                id:
+                                  format: uuid
+                                  type: string
+                                email:
+                                  type: string
+                                firstName:
+                                  type: string
+                                lastName:
+                                  type: string
+                            reason:
+                              type: string
+                              enum:
+                                - REPORT_ABUSIVE_OR_HARASSMENT
+                                - REPORT_SPAM
+                                - REPORT_INAPPROPRIATE_CONTENT
+                                - REPORT_DANGER_OR_THREAT
+                                - REPORT_OTHER
+                            detail:
+                              nullable: true
+                              anyOf:
+                                - type: string
+                                - type: "null"
+                            createdAt:
+                              format: date-time
+                              type: string
+                      evidenceReferences:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - id
+                            - messageId
+                            - attachmentId
+                            - createdAt
+                          properties:
+                            id:
+                              format: uuid
+                              type: string
+                            messageId:
+                              nullable: true
+                              anyOf:
+                                - format: uuid
+                                  type: string
+                                - type: "null"
+                            attachmentId:
+                              nullable: true
+                              anyOf:
+                                - format: uuid
+                                  type: string
+                                - type: "null"
+                            createdAt:
+                              format: date-time
+                              type: string
+        "400":
+          description: Response for status 400
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "401":
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "403":
+          description: Response for status 403
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "404":
+          description: Response for status 404
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+  /api/v1/admin/reports/{reportId}/decide:
+    post:
+      tags:
+        - Admin Reports
+      summary: Apply a Trust and Safety Report Case decision
+      description: Dismisses, hides, or restores a Report Case with an Admin Action, a
+        current resource version, and an immutable Moderation Decision.
+      operationId: decideAdminReport
+      security:
+        - betterAuthSession: []
+      parameters:
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              additionalProperties: false
+              type: object
+              required:
+                - outcome
+                - reasonCode
+              properties:
+                outcome:
+                  type: string
+                  enum:
+                    - REPORT_CASE_DISMISSED
+                    - REPORT_CASE_HIDDEN
+                    - REPORT_CASE_RESTORED
+                reasonCode:
+                  minLength: 1
+                  maxLength: 100
+                  pattern: ^[A-Z][A-Z0-9_.-]*$
+                  type: string
+          application/x-www-form-urlencoded:
+            schema:
+              additionalProperties: false
+              type: object
+              required:
+                - outcome
+                - reasonCode
+              properties:
+                outcome:
+                  type: string
+                  enum:
+                    - REPORT_CASE_DISMISSED
+                    - REPORT_CASE_HIDDEN
+                    - REPORT_CASE_RESTORED
+                reasonCode:
+                  minLength: 1
+                  maxLength: 100
+                  pattern: ^[A-Z][A-Z0-9_.-]*$
+                  type: string
+          multipart/form-data:
+            schema:
+              additionalProperties: false
+              type: object
+              required:
+                - outcome
+                - reasonCode
+              properties:
+                outcome:
+                  type: string
+                  enum:
+                    - REPORT_CASE_DISMISSED
+                    - REPORT_CASE_HIDDEN
+                    - REPORT_CASE_RESTORED
+                reasonCode:
+                  minLength: 1
+                  maxLength: 100
+                  pattern: ^[A-Z][A-Z0-9_.-]*$
+                  type: string
+      responses:
+        "200":
+          description: Response for status 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - resourceSummary
+                      - resourceVersion
+                      - adminActionId
+                    properties:
+                      resourceSummary:
+                        type: object
+                        required:
+                          - id
+                          - displayId
+                          - kind
+                          - status
+                          - version
+                          - reporterEntryCount
+                          - referenceCount
+                          - caseClosedAt
+                          - updatedAt
+                        properties:
+                          id:
+                            format: uuid
+                            type: string
+                          displayId:
+                            type: string
+                          kind:
+                            const: REPORT_CASE
+                            type: string
+                          status:
+                            type: string
+                            enum:
+                              - REPORT_CASE_PENDING
+                              - REPORT_CASE_DISMISSED
+                              - REPORT_CASE_HIDDEN
+                              - REPORT_CASE_RESTORED
+                          version:
+                            minimum: 1
+                            anyOf:
+                              - format: integer
+                                default: 0
+                                type: string
+                              - minimum: 1
+                                type: integer
+                          reporterEntryCount:
+                            minimum: 0
+                            anyOf:
+                              - format: integer
+                                default: 0
+                                type: string
+                              - minimum: 0
+                                type: integer
+                          referenceCount:
+                            minimum: 0
+                            anyOf:
+                              - format: integer
+                                default: 0
+                                type: string
+                              - minimum: 0
+                                type: integer
+                          caseClosedAt:
+                            nullable: true
+                            anyOf:
+                              - format: date-time
+                                type: string
+                              - type: "null"
+                          updatedAt:
+                            format: date-time
+                            type: string
+                      resourceVersion:
+                        minimum: 1
+                        anyOf:
+                          - format: integer
+                            default: 0
+                            type: string
+                          - minimum: 1
+                            type: integer
+                      adminActionId:
+                        format: uuid
+                        type: string
+        "400":
+          description: Response for status 400
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "401":
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "403":
+          description: Response for status 403
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "404":
+          description: Response for status 404
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "409":
+          description: Response for status 409
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+  /api/v1/admin/evidence/{evidenceRef}:
+    get:
+      tags:
+        - Admin Reports
+      summary: Read case-scoped Report evidence
+      description: Returns the reported Message and bounded surrounding Messages.
+        Every access is recorded as an Admin Action and is not a general Work
+        Conversation read.
+      operationId: getAdminReportEvidence
+      security:
+        - betterAuthSession: []
+      parameters:
+        - name: evidenceRef
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+        - name: idempotency-key
+          in: header
+          required: true
+          schema:
+            minLength: 1
+            maxLength: 200
+            pattern: \S
+            type: string
+      responses:
+        "200":
+          description: Response for status 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - caseId
+                      - evidenceRefId
+                      - reportedMessageId
+                      - truncated
+                      - messages
+                      - adminActionId
+                    properties:
+                      caseId:
+                        format: uuid
+                        type: string
+                      evidenceRefId:
+                        format: uuid
+                        type: string
+                      reportedMessageId:
+                        format: uuid
+                        type: string
+                      truncated:
+                        type: boolean
+                      messages:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - id
+                            - conversationId
+                            - sequence
+                            - kind
+                            - sender
+                            - contentText
+                            - systemType
+                            - systemPayload
+                            - createdAt
+                            - attachments
+                          properties:
+                            id:
+                              format: uuid
+                              type: string
+                            conversationId:
+                              format: uuid
+                              type: string
+                            sequence:
+                              minimum: 1
+                              anyOf:
+                                - format: integer
+                                  default: 0
+                                  type: string
+                                - minimum: 1
+                                  type: integer
+                            kind:
+                              type: string
+                              enum:
+                                - USER
+                                - SYSTEM
+                            sender:
+                              nullable: true
+                              anyOf:
+                                - type: object
+                                  required:
+                                    - id
+                                    - email
+                                    - firstName
+                                    - lastName
+                                  properties:
+                                    id:
+                                      format: uuid
+                                      type: string
+                                    email:
+                                      type: string
+                                    firstName:
+                                      type: string
+                                    lastName:
+                                      type: string
+                                - type: "null"
+                            contentText:
+                              nullable: true
+                              anyOf:
+                                - type: string
+                                - type: "null"
+                            systemType:
+                              nullable: true
+                              anyOf:
+                                - type: string
+                                - type: "null"
+                            systemPayload:
+                              nullable: true
+                              anyOf:
+                                - type: object
+                                  patternProperties:
+                                    ^(.*)$: {}
+                                - type: "null"
+                            createdAt:
+                              format: date-time
+                              type: string
+                            attachments:
+                              type: array
+                              items:
+                                type: object
+                                required:
+                                  - id
+                                  - status
+                                  - originalFilename
+                                  - mimeType
+                                  - sizeBytes
+                                  - url
+                                  - urlExpiresAt
+                                properties:
+                                  id:
+                                    format: uuid
+                                    type: string
+                                  status:
+                                    type: string
+                                    enum:
+                                      - QUARANTINED
+                                      - VALIDATED
+                                      - REJECTED
+                                      - CONSUMED
+                                      - HIDDEN
+                                      - EXPIRED
+                                  originalFilename:
+                                    type: string
+                                  mimeType:
+                                    type: string
+                                  sizeBytes:
+                                    minimum: 0
+                                    anyOf:
+                                      - format: integer
+                                        default: 0
+                                        type: string
+                                      - minimum: 0
+                                        type: integer
+                                  url:
+                                    nullable: true
+                                    anyOf:
+                                      - format: uri
+                                        type: string
+                                      - type: "null"
+                                  urlExpiresAt:
+                                    nullable: true
+                                    anyOf:
+                                      - format: date-time
+                                        type: string
+                                      - type: "null"
+                      adminActionId:
+                        format: uuid
+                        type: string
+        "400":
+          description: Response for status 400
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "401":
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "403":
+          description: Response for status 403
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "404":
+          description: Response for status 404
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "503":
+          description: Response for status 503
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
   /api/v1/profile/certificates:
     get:
       tags:
@@ -36221,7 +37433,6 @@ paths:
                             updatedAt:
                               format: date-time
                               type: string
-                additionalProperties: false
         "401":
           description: Response for status 401
           content:
@@ -37472,7 +38683,6 @@ paths:
                         createdAt:
                           format: date-time
                           type: string
-                additionalProperties: false
         "401":
           description: Response for status 401
           content:
@@ -38915,7 +40125,6 @@ paths:
                         updatedAt:
                           format: date-time
                           type: string
-                additionalProperties: false
         "401":
           description: Response for status 401
           content:
@@ -39735,7 +40944,6 @@ paths:
                         anyOf:
                           - type: string
                           - type: "null"
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -39907,6 +41115,7 @@ paths:
                                 - id
                                 - role
                                 - displayName
+                                - avatar
                               properties:
                                 id:
                                   nullable: true
@@ -39921,6 +41130,21 @@ paths:
                                     - PROSPECTIVE_WORKER
                                 displayName:
                                   type: string
+                                avatar:
+                                  nullable: true
+                                  anyOf:
+                                    - type: object
+                                      required:
+                                        - fileId
+                                        - url
+                                      properties:
+                                        fileId:
+                                          format: uuid
+                                          type: string
+                                        url:
+                                          format: uri
+                                          type: string
+                                    - type: "null"
                           latestMessage:
                             nullable: true
                             anyOf:
@@ -40146,6 +41370,7 @@ paths:
                                   - id
                                   - role
                                   - displayName
+                                  - avatar
                                 properties:
                                   id:
                                     nullable: true
@@ -40160,6 +41385,21 @@ paths:
                                       - PROSPECTIVE_WORKER
                                   displayName:
                                     type: string
+                                  avatar:
+                                    nullable: true
+                                    anyOf:
+                                      - type: object
+                                        required:
+                                          - fileId
+                                          - url
+                                        properties:
+                                          fileId:
+                                            format: uuid
+                                            type: string
+                                          url:
+                                            format: uri
+                                            type: string
+                                      - type: "null"
                             latestMessage:
                               nullable: true
                               anyOf:
@@ -40201,7 +41441,6 @@ paths:
                         anyOf:
                           - type: string
                           - type: "null"
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -40329,6 +41568,7 @@ paths:
                                 - id
                                 - role
                                 - displayName
+                                - avatar
                               properties:
                                 id:
                                   nullable: true
@@ -40343,6 +41583,21 @@ paths:
                                     - PROSPECTIVE_WORKER
                                 displayName:
                                   type: string
+                                avatar:
+                                  nullable: true
+                                  anyOf:
+                                    - type: object
+                                      required:
+                                        - fileId
+                                        - url
+                                      properties:
+                                        fileId:
+                                          format: uuid
+                                          type: string
+                                        url:
+                                          format: uri
+                                          type: string
+                                    - type: "null"
                           latestMessage:
                             nullable: true
                             anyOf:
@@ -40432,8 +41687,8 @@ paths:
       tags:
         - Candidate Inquiry
       summary: List Candidate Inquiry Participants
-      description: Lists the Hirer and Prospective Worker in an open Candidate Inquiry
-        Conversation.
+      description: Lists the Hirer and Prospective Worker with their avatars when
+        available in an open Candidate Inquiry Conversation.
       operationId: listCandidateInquiryParticipants
       security:
         - betterAuthSession: []
@@ -40471,6 +41726,7 @@ paths:
                             - id
                             - role
                             - displayName
+                            - avatar
                           properties:
                             id:
                               nullable: true
@@ -40485,6 +41741,21 @@ paths:
                                 - PROSPECTIVE_WORKER
                             displayName:
                               type: string
+                            avatar:
+                              nullable: true
+                              anyOf:
+                                - type: object
+                                  required:
+                                    - fileId
+                                    - url
+                                  properties:
+                                    fileId:
+                                      format: uuid
+                                      type: string
+                                    url:
+                                      format: uri
+                                      type: string
+                                - type: "null"
         "401":
           description: Response for status 401
           content:
@@ -41117,6 +42388,7 @@ paths:
                               required:
                                 - id
                                 - displayName
+                                - avatar
                               properties:
                                 id:
                                   nullable: true
@@ -41126,6 +42398,21 @@ paths:
                                     - type: "null"
                                 displayName:
                                   type: string
+                                avatar:
+                                  nullable: true
+                                  anyOf:
+                                    - type: object
+                                      required:
+                                        - fileId
+                                        - url
+                                      properties:
+                                        fileId:
+                                          format: uuid
+                                          type: string
+                                        url:
+                                          format: uri
+                                          type: string
+                                    - type: "null"
                             text:
                               nullable: true
                               anyOf:
@@ -41392,6 +42679,7 @@ paths:
                             required:
                               - id
                               - displayName
+                              - avatar
                             properties:
                               id:
                                 nullable: true
@@ -41401,6 +42689,21 @@ paths:
                                   - type: "null"
                               displayName:
                                 type: string
+                              avatar:
+                                nullable: true
+                                anyOf:
+                                  - type: object
+                                    required:
+                                      - fileId
+                                      - url
+                                    properties:
+                                      fileId:
+                                        format: uuid
+                                        type: string
+                                      url:
+                                        format: uri
+                                        type: string
+                                  - type: "null"
                           text:
                             nullable: true
                             anyOf:
@@ -41712,6 +43015,520 @@ paths:
                       message:
                         type: string
                 additionalProperties: false
+  /api/v1/chat/reports:
+    post:
+      tags:
+        - Message Reports
+      summary: Report a visible Message
+      description: Creates or replays the authenticated Member’s Reporter Entry for a
+        visible Message.
+      operationId: submitMessageReport
+      security:
+        - betterAuthSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              additionalProperties: false
+              type: object
+              required:
+                - messageId
+                - reason
+              properties:
+                messageId:
+                  format: uuid
+                  type: string
+                reason:
+                  type: string
+                  enum:
+                    - REPORT_ABUSIVE_OR_HARASSMENT
+                    - REPORT_SPAM
+                    - REPORT_INAPPROPRIATE_CONTENT
+                    - REPORT_DANGER_OR_THREAT
+                    - REPORT_OTHER
+                detail:
+                  minLength: 1
+                  maxLength: 1000
+                  pattern: \S
+                  type: string
+          application/x-www-form-urlencoded:
+            schema:
+              additionalProperties: false
+              type: object
+              required:
+                - messageId
+                - reason
+              properties:
+                messageId:
+                  format: uuid
+                  type: string
+                reason:
+                  type: string
+                  enum:
+                    - REPORT_ABUSIVE_OR_HARASSMENT
+                    - REPORT_SPAM
+                    - REPORT_INAPPROPRIATE_CONTENT
+                    - REPORT_DANGER_OR_THREAT
+                    - REPORT_OTHER
+                detail:
+                  minLength: 1
+                  maxLength: 1000
+                  pattern: \S
+                  type: string
+          multipart/form-data:
+            schema:
+              additionalProperties: false
+              type: object
+              required:
+                - messageId
+                - reason
+              properties:
+                messageId:
+                  format: uuid
+                  type: string
+                reason:
+                  type: string
+                  enum:
+                    - REPORT_ABUSIVE_OR_HARASSMENT
+                    - REPORT_SPAM
+                    - REPORT_INAPPROPRIATE_CONTENT
+                    - REPORT_DANGER_OR_THREAT
+                    - REPORT_OTHER
+                detail:
+                  minLength: 1
+                  maxLength: 1000
+                  pattern: \S
+                  type: string
+      responses:
+        "200":
+          description: Response for status 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - reporterEntry
+                    properties:
+                      reporterEntry:
+                        type: object
+                        required:
+                          - id
+                          - messageId
+                          - reason
+                          - detail
+                          - caseStatus
+                          - createdAt
+                          - updatedAt
+                        properties:
+                          id:
+                            format: uuid
+                            type: string
+                          messageId:
+                            format: uuid
+                            type: string
+                          reason:
+                            type: string
+                            enum:
+                              - REPORT_ABUSIVE_OR_HARASSMENT
+                              - REPORT_SPAM
+                              - REPORT_INAPPROPRIATE_CONTENT
+                              - REPORT_DANGER_OR_THREAT
+                              - REPORT_OTHER
+                          detail:
+                            nullable: true
+                            anyOf:
+                              - type: string
+                              - type: "null"
+                          caseStatus:
+                            type: string
+                            enum:
+                              - REPORT_CASE_PENDING
+                              - REPORT_CASE_DISMISSED
+                              - REPORT_CASE_HIDDEN
+                              - REPORT_CASE_RESTORED
+                          createdAt:
+                            format: date-time
+                            type: string
+                          updatedAt:
+                            format: date-time
+                            type: string
+        "400":
+          description: Response for status 400
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "401":
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "404":
+          description: Response for status 404
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+    get:
+      tags:
+        - Message Reports
+      summary: List own Message Reports
+      description: Lists only the authenticated Member’s Reporter Entries and case statuses.
+      operationId: listOwnMessageReports
+      security:
+        - betterAuthSession: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            minimum: 1
+            maximum: 50
+            anyOf:
+              - format: integer
+                default: 0
+                type: string
+              - minimum: 1
+                maximum: 50
+                type: integer
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Response for status 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - items
+                      - nextCursor
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - id
+                            - messageId
+                            - reason
+                            - detail
+                            - caseStatus
+                            - createdAt
+                            - updatedAt
+                          properties:
+                            id:
+                              format: uuid
+                              type: string
+                            messageId:
+                              format: uuid
+                              type: string
+                            reason:
+                              type: string
+                              enum:
+                                - REPORT_ABUSIVE_OR_HARASSMENT
+                                - REPORT_SPAM
+                                - REPORT_INAPPROPRIATE_CONTENT
+                                - REPORT_DANGER_OR_THREAT
+                                - REPORT_OTHER
+                            detail:
+                              nullable: true
+                              anyOf:
+                                - type: string
+                                - type: "null"
+                            caseStatus:
+                              type: string
+                              enum:
+                                - REPORT_CASE_PENDING
+                                - REPORT_CASE_DISMISSED
+                                - REPORT_CASE_HIDDEN
+                                - REPORT_CASE_RESTORED
+                            createdAt:
+                              format: date-time
+                              type: string
+                            updatedAt:
+                              format: date-time
+                              type: string
+                      nextCursor:
+                        nullable: true
+                        anyOf:
+                          - type: string
+                          - type: "null"
+        "400":
+          description: Response for status 400
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "401":
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+  /api/v1/chat/reports/{reporterEntryId}:
+    get:
+      tags:
+        - Message Reports
+      summary: Get own Message Report status
+      description: Returns one Reporter Entry owned by the authenticated Member.
+      operationId: getOwnMessageReport
+      security:
+        - betterAuthSession: []
+      parameters:
+        - name: reporterEntryId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Response for status 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - reporterEntry
+                    properties:
+                      reporterEntry:
+                        type: object
+                        required:
+                          - id
+                          - messageId
+                          - reason
+                          - detail
+                          - caseStatus
+                          - createdAt
+                          - updatedAt
+                        properties:
+                          id:
+                            format: uuid
+                            type: string
+                          messageId:
+                            format: uuid
+                            type: string
+                          reason:
+                            type: string
+                            enum:
+                              - REPORT_ABUSIVE_OR_HARASSMENT
+                              - REPORT_SPAM
+                              - REPORT_INAPPROPRIATE_CONTENT
+                              - REPORT_DANGER_OR_THREAT
+                              - REPORT_OTHER
+                          detail:
+                            nullable: true
+                            anyOf:
+                              - type: string
+                              - type: "null"
+                          caseStatus:
+                            type: string
+                            enum:
+                              - REPORT_CASE_PENDING
+                              - REPORT_CASE_DISMISSED
+                              - REPORT_CASE_HIDDEN
+                              - REPORT_CASE_RESTORED
+                          createdAt:
+                            format: date-time
+                            type: string
+                          updatedAt:
+                            format: date-time
+                            type: string
+        "400":
+          description: Response for status 400
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "401":
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "404":
+          description: Response for status 404
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
   /api/v1/chat/conversations/{conversationId}/events:
     ws:
       tags:
@@ -41913,7 +43730,8 @@ paths:
       tags:
         - Work Chat
       summary: List Work Conversation Participants
-      description: Lists the current Hirer and Worker participants with their roles.
+      description: Lists the current Hirer and Worker participants with their roles
+        and avatar when available.
       operationId: listWorkConversationParticipants
       security:
         - betterAuthSession: []
@@ -41951,6 +43769,7 @@ paths:
                             - id
                             - role
                             - displayName
+                            - avatar
                           properties:
                             id:
                               nullable: true
@@ -41965,7 +43784,21 @@ paths:
                                 - WORKER
                             displayName:
                               type: string
-                additionalProperties: false
+                            avatar:
+                              nullable: true
+                              anyOf:
+                                - type: object
+                                  required:
+                                    - fileId
+                                    - url
+                                  properties:
+                                    fileId:
+                                      format: uuid
+                                      type: string
+                                    url:
+                                      format: uri
+                                      type: string
+                                - type: "null"
         "401":
           description: Response for status 401
           content:
@@ -42626,6 +44459,7 @@ paths:
                                   required:
                                     - id
                                     - displayName
+                                    - avatar
                                   properties:
                                     id:
                                       nullable: true
@@ -42635,6 +44469,21 @@ paths:
                                         - type: "null"
                                     displayName:
                                       type: string
+                                    avatar:
+                                      nullable: true
+                                      anyOf:
+                                        - type: object
+                                          required:
+                                            - fileId
+                                            - url
+                                          properties:
+                                            fileId:
+                                              format: uuid
+                                              type: string
+                                            url:
+                                              format: uri
+                                              type: string
+                                        - type: "null"
                                 - type: "null"
                             text:
                               nullable: true
@@ -42697,7 +44546,6 @@ paths:
                           - type: "null"
                       hasMore:
                         type: boolean
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -42918,6 +44766,7 @@ paths:
                                 required:
                                   - id
                                   - displayName
+                                  - avatar
                                 properties:
                                   id:
                                     nullable: true
@@ -42927,6 +44776,21 @@ paths:
                                       - type: "null"
                                   displayName:
                                     type: string
+                                  avatar:
+                                    nullable: true
+                                    anyOf:
+                                      - type: object
+                                        required:
+                                          - fileId
+                                          - url
+                                        properties:
+                                          fileId:
+                                            format: uuid
+                                            type: string
+                                          url:
+                                            format: uri
+                                            type: string
+                                      - type: "null"
                               - type: "null"
                           text:
                             nullable: true
@@ -43178,7 +45042,6 @@ paths:
                       messageId:
                         format: uuid
                         type: string
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -44098,7 +45961,6 @@ paths:
                               type: string
                       nextCursor:
                         type: "null"
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -47789,7 +49651,6 @@ paths:
                       createdAt:
                         format: date-time
                         type: string
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -48095,7 +49956,6 @@ paths:
                         type: boolean
                       reconciliationUsed:
                         type: boolean
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -48421,7 +50281,6 @@ paths:
                               type: boolean
                       nextCursor:
                         type: "null"
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -48662,7 +50521,6 @@ paths:
                         type: boolean
                       reconciliationUsed:
                         type: boolean
-                additionalProperties: false
         "401":
           description: Response for status 401
           content:
@@ -49085,7 +50943,6 @@ paths:
                         type: boolean
                       reconciliationUsed:
                         type: boolean
-                additionalProperties: false
         "401":
           description: Response for status 401
           content:

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { QueryClient } from "@tanstack/react-query";
+import type { QueryClient, QueryKey } from "@tanstack/react-query";
 
 import type { UploadAsset } from "@/api/fileUpload";
 import { disputeApi, type DisputeReason } from "@/api/DisputeApi";
@@ -12,6 +12,9 @@ import type {
   QuestV2ProofUpdatePayload,
   QuestV2ReviewPayload,
 } from "@/api/QuestApi";
+import { homeKeys } from "@/features/home/api/homeQueries";
+import { myQuestsKeys } from "@/features/myQuests/api/myQuestsQueries";
+import { workerHomeKeys } from "@/features/workerHome/api/workerHomeQueries";
 import {
   liveQuestService,
   type LiveQuestSnapshot,
@@ -23,12 +26,11 @@ export const questBoardKeys = {
   board: () => [...questBoardKeys.all, "board"] as const,
   detail: (questId: string) =>
     [...questBoardKeys.all, "detail", questId] as const,
+  liveSnapshotScope: (questId: string, viewerId: string) =>
+    [...questBoardKeys.all, "live-snapshot", questId, viewerId] as const,
   liveSnapshot: (questId: string, viewerId: string, editRequestId?: string) =>
     [
-      ...questBoardKeys.all,
-      "live-snapshot",
-      questId,
-      viewerId,
+      ...questBoardKeys.liveSnapshotScope(questId, viewerId),
       editRequestId ?? null,
     ] as const,
 };
@@ -87,22 +89,36 @@ export function useLiveQuestSnapshotQuery(
   });
 }
 
-function invalidateQuestReads(
+type QuestReadProjection = "hirer" | "worker";
+
+async function invalidateQuestReads(
   queryClient: QueryClient,
   questId: string,
-  viewerId?: string
-) {
-  void queryClient.invalidateQueries({
-    queryKey: questBoardKeys.detail(questId),
-  });
-  void queryClient.invalidateQueries({
-    queryKey: questBoardKeys.board(),
-  });
+  viewerId?: string,
+  projection?: QuestReadProjection
+): Promise<void> {
+  const queryKeys: QueryKey[] = [
+    questBoardKeys.detail(questId),
+    questBoardKeys.board(),
+  ];
   if (viewerId) {
-    void queryClient.invalidateQueries({
-      queryKey: questBoardKeys.liveSnapshot(questId, viewerId),
-    });
+    queryKeys.push(questBoardKeys.liveSnapshotScope(questId, viewerId));
   }
+  if (projection === "hirer") {
+    queryKeys.push(homeKeys.hirer(), myQuestsKeys.hirer());
+  }
+  if (projection === "worker" && viewerId) {
+    queryKeys.push(
+      workerHomeKeys.assignments("active"),
+      workerHomeKeys.assignments("all"),
+      workerHomeKeys.participationDetail(questId),
+      workerHomeKeys.liveSnapshot(questId, viewerId),
+      myQuestsKeys.worker(viewerId)
+    );
+  }
+  await Promise.all(
+    queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey }))
+  );
 }
 
 export function useJoinQuestMutation() {
@@ -111,7 +127,12 @@ export function useJoinQuestMutation() {
     mutationFn: ({ questId }: { questId: string; viewerId?: string }) =>
       liveQuestService.joinQuest(questId),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "worker"
+      ),
   });
 }
 
@@ -127,7 +148,12 @@ export function useApplyQuestMutation() {
       idempotencyKey?: string;
     }) => liveQuestService.applyQuest(questId, idempotencyKey),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "worker"
+      ),
   });
 }
 
@@ -150,7 +176,12 @@ export function useWithdrawApplicationMutation() {
         idempotencyKey
       ),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "worker"
+      ),
   });
 }
 
@@ -180,7 +211,12 @@ export function useSelectApplicationMutation() {
         idempotencyKey
       ),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "hirer"
+      ),
   });
 }
 
@@ -203,7 +239,12 @@ export function useRejectApplicationMutation() {
         idempotencyKey
       ),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "hirer"
+      ),
   });
 }
 
@@ -222,7 +263,12 @@ export function useCreateCandidateTeamMutation() {
     }) =>
       liveQuestService.createCandidateTeam(questId, payload, idempotencyKey),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "worker"
+      ),
   });
 }
 
@@ -248,7 +294,12 @@ export function useJoinCandidateTeamMutation() {
         idempotencyKey
       ),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "worker"
+      ),
   });
 }
 
@@ -266,7 +317,12 @@ export function useSelectCandidateTeamMutation() {
       idempotencyKey?: string;
     }) => liveQuestService.selectCandidateTeam(questId, teamId, idempotencyKey),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "hirer"
+      ),
   });
 }
 
@@ -284,7 +340,12 @@ export function useRejectCandidateTeamMutation() {
       idempotencyKey?: string;
     }) => liveQuestService.rejectCandidateTeam(questId, teamId, idempotencyKey),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "hirer"
+      ),
   });
 }
 
@@ -302,7 +363,12 @@ export function useLeaveCandidateTeamMutation() {
       idempotencyKey?: string;
     }) => liveQuestService.leaveCandidateTeam(questId, teamId, idempotencyKey),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "worker"
+      ),
   });
 }
 
@@ -328,7 +394,12 @@ export function useRemoveCandidateTeamMemberMutation() {
         idempotencyKey
       ),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "worker"
+      ),
   });
 }
 
@@ -351,7 +422,12 @@ export function useRegenerateCandidateTeamCodeMutation() {
         idempotencyKey
       ),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "worker"
+      ),
   });
 }
 
@@ -377,7 +453,12 @@ export function useUpdateCandidateTeamMutation() {
         idempotencyKey
       ),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "worker"
+      ),
   });
 }
 
@@ -403,7 +484,12 @@ export function useSubmitCandidateTeamMutation() {
         idempotencyKey
       ),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "worker"
+      ),
   });
 }
 
@@ -429,7 +515,12 @@ export function useUploadCandidateTeamFileMutation() {
         idempotencyKey
       ),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "worker"
+      ),
   });
 }
 
@@ -447,7 +538,12 @@ export function useDecideUnderfilledMutation() {
       idempotencyKey?: string;
     }) => liveQuestService.decideUnderfilled(questId, decision, idempotencyKey),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "hirer"
+      ),
   });
 }
 
@@ -470,7 +566,12 @@ export function useRespondUnderfilledConsentMutation() {
         idempotencyKey
       ),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "worker"
+      ),
   });
 }
 
@@ -485,7 +586,7 @@ export function usePublishQuestMutation() {
       idempotencyKey?: string;
     }) => liveQuestService.publishQuest(questId, idempotencyKey),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId),
+      invalidateQuestReads(queryClient, variables.questId, undefined, "hirer"),
   });
 }
 
@@ -497,10 +598,16 @@ export function useCancelQuestMutation() {
       idempotencyKey,
     }: {
       questId: string;
+      viewerId?: string;
       idempotencyKey?: string;
     }) => liveQuestService.cancelQuest(questId, idempotencyKey),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "hirer"
+      ),
   });
 }
 
@@ -517,17 +624,8 @@ export function useFileDisputeMutation() {
       reason: DisputeReason;
       statement: string;
     }) => disputeApi.fileDispute(questId, { reason, statement }),
-    onSuccess: (_, variables) => {
-      void queryClient.invalidateQueries({
-        queryKey: questBoardKeys.liveSnapshot(
-          variables.questId,
-          variables.viewerId
-        ),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: questBoardKeys.detail(variables.questId),
-      });
-    },
+    onSuccess: (_, variables) =>
+      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
   });
 }
 
@@ -556,7 +654,12 @@ export function useProofDraftMutation() {
         idempotencyKey
       ),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "worker"
+      ),
   });
 }
 
@@ -576,7 +679,12 @@ export function useCreateProofDraftMutation() {
       idempotencyKey?: string;
     }) => liveQuestService.createProofDraft(questId, payload, idempotencyKey),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "worker"
+      ),
   });
 }
 
@@ -599,7 +707,12 @@ export function useSubmitProofDraftMutation() {
         idempotencyKey
       ),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "worker"
+      ),
   });
 }
 
@@ -625,7 +738,12 @@ export function useReviewProofMutation() {
         idempotencyKey
       ),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "hirer"
+      ),
   });
 }
 
@@ -643,7 +761,20 @@ export function useCreateReviewMutation() {
       idempotencyKey?: string;
     }) => liveQuestService.createReview(questId, input, idempotencyKey),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      Promise.all([
+        invalidateQuestReads(
+          queryClient,
+          variables.questId,
+          variables.viewerId,
+          "hirer"
+        ),
+        invalidateQuestReads(
+          queryClient,
+          variables.questId,
+          variables.viewerId,
+          "worker"
+        ),
+      ]),
   });
 }
 
@@ -661,6 +792,11 @@ export function useCreateEditRequestMutation() {
       idempotencyKey?: string;
     }) => liveQuestService.createEditRequest(questId, payload, idempotencyKey),
     onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+      invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        "hirer"
+      ),
   });
 }

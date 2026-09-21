@@ -1,16 +1,14 @@
 import { Pressable, Text, View } from "@/tw";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { LogOut, MessageCircle, Pencil } from "lucide-react-native";
+import { LogOut, MessageCircle, Pencil, Star } from "lucide-react-native";
 import { cn } from "@/tw/cn";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
 import { colors } from "@/theme/colors";
 import { getActionBarPaddingBottom } from "@/theme/layout";
 import styles from "./questDetailStyles";
-import {
-  useQuestDetailController,
-  type QuestDetailScreenProps,
-} from "./useQuestDetailController";
+import { useQuestDetailFeature } from "./detail/useQuestDetailFeature";
+import type { QuestDetailScreenProps } from "./detail/questDetailRoute";
 import { QuestDetailBody } from "./components/QuestDetailBody";
 import {
   NotFoundState,
@@ -18,26 +16,26 @@ import {
 } from "./components/QuestDetailStateViews";
 import { QuestDetailSheets } from "./components/QuestDetailSheets";
 
-export type { QuestDetailScreenProps } from "./useQuestDetailController";
+export type { QuestDetailScreenProps } from "./detail/questDetailRoute";
 
 export default function QuestDetailScreen(props: QuestDetailScreenProps) {
   const insets = useSafeAreaInsets();
+  const view = useQuestDetailFeature({
+    ...props,
+    bottomInset: insets.bottom,
+  });
   const {
     handleBack,
     messages,
-    questPending,
-    errorState,
+    state,
     quest,
     bodyProps,
     sheets,
     onRetry,
     actionBar,
-  } = useQuestDetailController({
-    ...props,
-    bottomInset: insets.bottom,
-  });
+  } = view;
 
-  if (questPending) {
+  if (state === "loading") {
     return (
       <ScreenLayout
         edges={["top", "left", "right"]}
@@ -54,7 +52,8 @@ export default function QuestDetailScreen(props: QuestDetailScreenProps) {
     );
   }
 
-  if (errorState || !quest || !bodyProps) {
+  if (state === "error" || state === "missing" || !quest || !bodyProps) {
+    const errorState = state === "error";
     return (
       <ScreenLayout
         edges={["top", "left", "right"]}
@@ -91,7 +90,7 @@ export default function QuestDetailScreen(props: QuestDetailScreenProps) {
       />
       <QuestDetailBody {...bodyProps} />
       <QuestDetailSheets {...sheets} />
-      {actionBar?.isPostView ? (
+      {actionBar?.isPostView && actionBar.canEditPost ? (
         <View
           className={styles.actionBar}
           style={{ paddingBottom: getActionBarPaddingBottom(insets.bottom) }}
@@ -105,6 +104,23 @@ export default function QuestDetailScreen(props: QuestDetailScreenProps) {
             <Pencil color={colors.onPrimary} size={19} strokeWidth={2.2} />
             <Text className={styles.primaryActionText}>
               {messages.editPost}
+            </Text>
+          </Pressable>
+        </View>
+      ) : actionBar?.isPostView && actionBar.canReview ? (
+        <View
+          className={styles.actionBar}
+          style={{ paddingBottom: getActionBarPaddingBottom(insets.bottom) }}
+        >
+          <Pressable
+            accessibilityRole="button"
+            onPress={actionBar.onOpenReview}
+            className={styles.primaryAction}
+            testID="quest-review-button"
+          >
+            <Star color={colors.onPrimary} size={19} strokeWidth={2.2} />
+            <Text className={styles.primaryActionText}>
+              {messages.reviewQuest}
             </Text>
           </Pressable>
         </View>
