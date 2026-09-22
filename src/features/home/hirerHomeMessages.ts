@@ -25,6 +25,7 @@ export interface HirerHomeMessages {
   currentStageLabel: string;
   terminalStageLabel: string;
   openDetails: string;
+  reviewProof: string;
   dueAt: (value: string) => string;
   quickAccessTitle: string;
   quickActiveTitle: string;
@@ -92,6 +93,7 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     currentStageLabel: "current",
     terminalStageLabel: "terminal",
     openDetails: "View details",
+    reviewProof: "Review proof",
     dueAt: (value) => value,
     quickAccessTitle: "Quick Actions",
     quickActiveTitle: "In Progress",
@@ -175,6 +177,7 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     currentStageLabel: "สถานะปัจจุบัน",
     terminalStageLabel: "สถานะสิ้นสุด",
     openDetails: "ดูรายละเอียด",
+    reviewProof: "ตรวจงาน",
     dueAt: (value) => value,
     quickAccessTitle: "เมนูลัด",
     quickActiveTitle: "กำลังทำงาน",

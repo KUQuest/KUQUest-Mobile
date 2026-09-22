@@ -237,6 +237,7 @@ export interface QuestBoardMessages {
   proofReviewReasonRequired: string;
   proofReviewReasonTooLong: string;
   proofReviewConfirmNotApproved: string;
+  proofReviewNothingPending: string;
   disputeBannerTitle: string;
   disputeDescription: string;
   resolveDispute: string;
@@ -600,6 +601,8 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
         PROOF_FILE_PENDING: "Uploading",
       })[status] ?? status,
     proofReviewConfirmNotApproved: "Confirm non-approval",
+    proofReviewNothingPending:
+      "This Quest has no submitted work waiting for your review.",
     disputeBannerTitle: "Quest dispute",
     disputeDescription:
       "This Quest is waiting for an authorized dispute resolution.",
@@ -959,6 +962,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
         PROOF_FILE_PENDING: "กำลังอัปโหลด",
       })[status] ?? status,
     proofReviewConfirmNotApproved: "ยืนยันการไม่อนุมัติ",
+    proofReviewNothingPending: "เควสต์นี้ไม่มีงานที่รอให้คุณตรวจ",
     disputeBannerTitle: "ข้อพิพาทเควสต์",
     disputeDescription: "เควสต์นี้รอการแก้ไขข้อพิพาทจากผู้มีอำนาจ",
     resolveDispute: "แก้ไขข้อพิพาท",

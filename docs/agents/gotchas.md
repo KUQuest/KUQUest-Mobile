@@ -11,6 +11,22 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 ## Entries
 
+### 2026-09-23 — Jest runs from `bash` hang and report misleading counts
+
+**What happened**: `bunx jest` through the agent shell showed "N passed" summaries while a test had failed, and runs never exited, so later runs overwrote the same `--outputFile` concurrently.
+
+**Root cause**: The shell's output filter condenses Jest output, and Jest keeps open handles after `HomeScreen` query tests.
+
+**Rule**: Run Jest with `--forceExit --json --outputFile=<unique path>` and read failures from the JSON (or run it via a subprocess in `eval`); never trust the condensed summary. New `HomeScreen.test.tsx` cases go before the Quick Access test, which leaves an overlapping `act()` scope that blanks later renders.
+
+### 2026-09-23 — `contentContainerStyle` replaces `contentContainerClassName`
+
+**What happened**: The chat message list and the Worker Work Management scroll lost every class-based padding on device (content touching the screen edges and status bar). Jest passed because CSS is mocked.
+
+**Root cause**: `@/tw` maps `contentContainerClassName` onto `contentContainerStyle`; an inline `contentContainerStyle` on the same list replaces the class styles instead of merging.
+
+**Rule**: Never pass both props to one `ScrollView`/`FlatList`. Put static padding in the class or on an inner wrapper `View`, and keep only runtime values (safe-area or nav insets) in `contentContainerStyle`. Confirm the layout with a device screenshot.
+
 ### 2026-09-21 — `bun x tsc --noEmit` can pass vacuously; use `bun run typecheck`
 
 **What happened**: Repeated `bun x tsc --noEmit` invocations reported "Build successful (0 units compiled)" while the committed code had type errors that husky's `tsc --noEmit` then caught, costing three failed commits.

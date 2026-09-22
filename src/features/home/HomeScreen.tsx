@@ -80,6 +80,7 @@ export default function HomeScreen() {
               },
             ],
             applicants: [],
+            proofPending: false,
           }))
         : [];
   const displayedActiveQuestCount =
@@ -90,6 +91,16 @@ export default function HomeScreen() {
     (questId: string) => {
       router.push({
         pathname: "/quest/[id]",
+        params: { id: questId },
+      });
+    },
+    [router]
+  );
+
+  const handleReviewProof = useCallback(
+    (questId: string) => {
+      router.push({
+        pathname: "/quest/[id]/proof-review",
         params: { id: questId },
       });
     },
@@ -246,6 +257,8 @@ export default function HomeScreen() {
                         mode={item.mode}
                         assignedWorkers={item.assignedWorkers}
                         applicants={item.applicants}
+                        proofPending={item.proofPending}
+                        onReviewProof={() => handleReviewProof(item.id)}
                       />
                     </View>
                   ))}

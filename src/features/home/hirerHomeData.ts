@@ -67,6 +67,8 @@ export interface LiveHirerQuestCardData {
   dueAt?: string | null;
   assignedWorkers: QuestMemberProfile[];
   applicants: QuestMemberProfile[];
+  /** A Worker sent a Proof Submission that awaits the Hirer decision. */
+  proofPending: boolean;
 }
 
 export interface HirerHomeData {
@@ -141,10 +143,15 @@ const terminalStatuses: Record<CanonicalHirerQuestStatus, boolean> = {
 };
 
 export function getQuestProgressStages(
-  status: CanonicalHirerQuestStatus
+  status: CanonicalHirerQuestStatus,
+  proofPending = false
 ): QuestProgressStage[] {
+  // A sent Proof keeps the Quest QUEST_IN_PROGRESS; only the Proof list
+  // reveals that the Quest reached Hirer review.
   const activeStageIndex = timelineStageOrder.indexOf(
-    activeStageByStatus[status]
+    proofPending && status === QuestStatus.QUEST_IN_PROGRESS
+      ? "review"
+      : activeStageByStatus[status]
   );
   const isCompleted = status === QuestStatus.QUEST_COMPLETED;
   const isTerminal = terminalStatuses[status];

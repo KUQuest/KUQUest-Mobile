@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { Pressable, Text, View } from "@/tw";
 import { Avatar } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import {
   BriefcaseBusiness,
@@ -41,9 +42,11 @@ export interface HirerQuestProgressCardProps {
   assignedWorkers?: QuestMemberProfile[];
   applicants?: QuestMemberProfile[];
   dueAt?: string | null;
+  proofPending?: boolean;
   onOpenDetails: () => void;
   onOpenWorkerProfile?: (workerId: string) => void;
   onViewRoster?: () => void;
+  onReviewProof?: () => void;
 }
 
 export function HirerQuestProgressCard({
@@ -56,9 +59,11 @@ export function HirerQuestProgressCard({
   applicants,
   headcount,
   dueAt,
+  proofPending,
   onOpenDetails,
   onOpenWorkerProfile,
   onViewRoster,
+  onReviewProof,
 }: HirerQuestProgressCardProps) {
   const { locale } = useLocale();
   const { scheme } = useAppTheme();
@@ -73,13 +78,13 @@ export function HirerQuestProgressCard({
   );
   const stages = useMemo(
     () =>
-      getQuestProgressStages(status).map((stage) => ({
+      getQuestProgressStages(status, proofPending).map((stage) => ({
         ...stage,
         label:
           messages.timelineOverrides[status]?.[stage.key] ??
           messages.timelineLabels[stage.key],
       })),
-    [messages, status]
+    [messages, proofPending, status]
   );
   const activeStageIndex = useMemo(() => {
     const stageIndex = stages.findIndex(
@@ -433,6 +438,20 @@ export function HirerQuestProgressCard({
             })}
           </View>
         </View>
+        {proofPending && onReviewProof ? (
+          <Button
+            accessibilityLabel={messages.reviewProof}
+            accessibilityRole="button"
+            className="mt-ku-md"
+            onPress={(event) => {
+              event.stopPropagation();
+              onReviewProof();
+            }}
+            testID={`hirer-quest-card-review-proof-${questId}`}
+          >
+            {messages.reviewProof}
+          </Button>
+        ) : null}
       </View>
       <View
         className={`${styles.cardFooter} border-t border-ku-border-success bg-ku-surface-success`}

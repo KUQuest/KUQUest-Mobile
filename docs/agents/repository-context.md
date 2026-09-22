@@ -48,7 +48,7 @@ reason to weaken either contract.
 - `src/app/index.tsx` — root/auth entry.
 - `src/app/(tabs)/_layout.tsx` — authenticated tab shell.
 - `src/app/(tabs)/index.tsx` — Quest Board.
-- `src/app/(tabs)/my-quests.tsx` — My Quests.
+- `src/app/(tabs)/my-quests.tsx` — Work Management: Hirer My Quests or Worker Work Management by Role Workspace.
 - `src/app/(tabs)/create.tsx` — Create Quest wizard.
 - `src/app/(tabs)/chat.tsx` and `src/app/(tabs)/chat/[id].tsx` — Chat inbox and conversation.
 - `src/app/(tabs)/profile.tsx` — Student Profile.
@@ -56,8 +56,8 @@ reason to weaken either contract.
 - `src/app/quest/[id]/manage.tsx` — Hirer quest management (cancel, chat, proof review, candidate/team selection fallback). Reached only from My Quests (`MyQuestsScreen.openManageQuest`); the Home Active Quest carousel opens `quest/[id].tsx` instead.
 - `src/app/quest/[id]/select-roster.tsx` — Hirer candidate/team selection for a CANDIDATE-mode quest with pending applicants. Reached from `HirerQuestRosterModal`'s manage action.
 - `src/app/quest/[id]/dispute.tsx` — Dispute case submission.
-- `src/app/quest/[id]/work.tsx` — Worker work-in-progress screen.
-- `src/app/quest/[id]/proof.tsx` — Worker proof submission.
+- `src/app/quest/[id]/work.tsx` — Worker Work Hub: one page per Quest for status, inline proof submission, completion, edit responses, conditions, and chat.
+- `src/app/quest/[id]/proof.tsx` — Hirer-side proof screen; in the Worker workspace it redirects to the Work Hub, where proof is submitted inline.
 - `src/app/quest/[id]/inquiry/[conversationId].tsx` — Candidate Inquiry conversation detail.
 - `src/app/onboarding/index.tsx` — Academic Registration entry.
 - `src/app/profile/edit/index.tsx` and `src/app/profile/edit/[section].tsx` — Profile editing.
@@ -78,7 +78,7 @@ The route tree currently has no dedicated route file for Sent Work, Wallet/Conve
 - `auth/` — Better Auth session, SecureStore, native Google Sign-In, auth gate, login, routing destination.
 - `onboarding/` — Academic Registration validation, steps, persistence coordinator, inputs/selects/checkbox/file-size modal.
 - `questBoard/` — Quest Board, Quest Detail, Quest lifecycle adapter, workflow projections, fixtures, prototype harness, proof/team/candidate/partial-consent sheets.
-- `myQuests/` — Worker/Hirer My Quests projections, status views, funding summary integration.
+- `myQuests/` — Hirer My Quests projections, status views, funding summary integration, and the shared Worker snapshot query used by `workerWork/`.
 - `createQuest/` — three-step Quest draft model, persistence, publish checks, schedule/location/proof/funding UI.
 - `chat/` — Conversation inbox, Work Conversation, messages, attachments, read state, loading states.
 - `profile/` — Student Profile, public data adapters, demo data, tabs, reputation and profile components.
@@ -87,11 +87,12 @@ The route tree currently has no dedicated route file for Sent Work, Wallet/Conve
 - `report/` — Report form, categories, validation and submit state.
 - `home/` — home composition where used by the route shell.
 - `workerHome/` — Worker Workspace Home screen with real assignment and board endpoints, quick stats, and available quests feed.
-- `wallet/` — four-compartment wallet overview (spending, earnings, funding reserved, payout reserve), Top-up quote and payment flow, transaction history modal, `walletModule.ts` Top-up and Earnings Conversion rules.
+- `workerWork/` — Worker Work Management (the `my-quests` tab in the Worker workspace), which triages live Assignment snapshots into active/history and opens each Quest's Work Hub, plus the inline `WorkerProofForm` rendered by the Work Hub.
+- `wallet/` — Money tab (`WalletScreen`: balances, transaction history, Earnings transfer), Top-up quote and payment flow, `walletModule.ts` Top-up and Earnings Conversion rules. No in-app Payout surface exists (the Quest Board wallet overview and its Payout modal were removed); `WalletApi` still exposes the payout transport.
 - `roleplay/` — development-only Roleplay prototype screen, prototype persona switching, four quest fixture scenarios, mock view-model store, candidate/team/consent actions dispatched through the questBoard fixture adapter.
 - `preferences/` — locale preference store (`localeStore.ts`); owns the persisted `kuquest_user_locale` value.
 - `workspace/` — Hirer/Worker role workspace store (`roleWorkspaceStore.ts`); owns the persisted `kuquest_active_workspace` value.
-- `navigation/` — navigation chrome UI store (`navigationUiStore.ts`); owns bottom-nav compactness, profile top-bar visibility, and scroll accumulation. Scroll owners: `home/`, `questBoard/`, `chat/`, `profile/`, `workerHome/`, and `myQuests/screens/`.
+- `navigation/` — navigation chrome UI store (`navigationUiStore.ts`); owns bottom-nav compactness, profile top-bar visibility, and scroll accumulation. Scroll owners: `home/`, `questBoard/`, `chat/`, `profile/`, `workerHome/`, `workerWork/`, and `myQuests/screens/`.
 
 ### Shared and transport layer
 
