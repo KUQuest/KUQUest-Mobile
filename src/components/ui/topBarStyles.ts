@@ -1,9 +1,9 @@
 const styles = {
   container:
-    "w-full items-center justify-center relative px-[16px] bg-ku-surface border-b-0",
-  profileContainer: "bg-ku-surface border-b-0 px-[24px]",
-  boardContainer: "px-[16px]",
-  detailContainer: "px-[16px]",
+    "w-full items-center justify-center relative px-ku-md bg-ku-surface border-b-0",
+  profileContainer: "bg-ku-surface border-b-0 px-ku-lg",
+  boardContainer: "px-ku-md",
+  detailContainer: "px-ku-md",
   title: "self-center text-ku-text text-ku-subtitle font-ku-semibold",
   backButton: "items-center justify-center",
   backButtonPosition: "left-[16px] absolute",

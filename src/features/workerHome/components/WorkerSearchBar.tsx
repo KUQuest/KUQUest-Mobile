@@ -52,7 +52,7 @@ export function WorkerSearchBar({
           <Pressable
             accessibilityLabel="Clear search"
             accessibilityRole="button"
-            className="p-[4px]"
+            className="p-ku-xs"
             onPress={onClearQuery}
             testID="clear-search-button"
           >

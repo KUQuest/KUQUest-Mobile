@@ -77,6 +77,44 @@
     --color-ku-overlay: rgb(24 32 27 / 0.4);
     --color-ku-card: #ffffff;
 
+    /*
+     * Numeric aliases centralize existing component measurements that do not
+     * belong to the five-step semantic scale.
+     */
+    --spacing-ku-0: 0px;
+    --spacing-ku-1: 1px;
+    --spacing-ku-2: 2px;
+    --spacing-ku-3: 3px;
+    --spacing-ku-4: 4px;
+    --spacing-ku-5: 5px;
+    --spacing-ku-6: 6px;
+    --spacing-ku-7: 7px;
+    --spacing-ku-8: 8px;
+    --spacing-ku-9: 9px;
+    --spacing-ku-10: 10px;
+    --spacing-ku-11: 11px;
+    --spacing-ku-12: 12px;
+    --spacing-ku-13: 13px;
+    --spacing-ku-14: 14px;
+    --spacing-ku-16: 16px;
+    --spacing-ku-18: 18px;
+    --spacing-ku-20: 20px;
+    --spacing-ku-22: 22px;
+    --spacing-ku-24: 24px;
+    --spacing-ku-28: 28px;
+    --spacing-ku-30: 30px;
+    --spacing-ku-31: 31px;
+    --spacing-ku-32: 32px;
+    --spacing-ku-34: 34px;
+    --spacing-ku-36: 36px;
+    --spacing-ku-40: 40px;
+    --spacing-ku-48: 48px;
+    --spacing-ku-56: 56px;
+    --spacing-ku-64: 64px;
+    --spacing-ku-76: 76px;
+    --spacing-ku-120: 120px;
+    --spacing-ku-132: 132px;
+
     --spacing-ku-xs: 4px;
     --spacing-ku-sm: 8px;
     --spacing-ku-md: 16px;

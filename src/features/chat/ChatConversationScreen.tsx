@@ -197,7 +197,7 @@ export default function ChatConversationScreen({
           </Text>
           <Pressable
             accessibilityRole="button"
-            className="mt-[16px] min-h-[48px] justify-center rounded-ku-pill bg-ku-primary px-[20px]"
+            className="mt-ku-md min-h-[48px] justify-center rounded-ku-pill bg-ku-primary px-ku-20"
             onPress={() => router.replace("/chat")}
           >
             <Text className="font-ku-semibold text-ku-body-small text-ku-on-primary">
@@ -562,9 +562,9 @@ export default function ChatConversationScreen({
             <View
               className={cn(
                 styles.composerWrap,
-                pendingAttachments.length > 0 && "border-t-0 pt-[4px]"
+                pendingAttachments.length > 0 && "border-t-0 pt-ku-xs"
               )}
-              style={{ paddingBottom: Math.max(insets.bottom, 8) }}
+              style={{ paddingBottom: Math.max(insets.bottom, spacing.sm) }}
             >
               <View className={styles.composer}>
                 <Pressable

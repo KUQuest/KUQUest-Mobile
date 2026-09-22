@@ -94,15 +94,15 @@ export function HirerHistoryFilter({
 }
 
 const styles = {
-  headerRow: "mb-[14px] flex-row items-center justify-between",
+  headerRow: "mb-ku-14 flex-row items-center justify-between",
   title: "font-ku-bold text-[22px] leading-[28px] text-ku-text-strong",
   filterPill:
-    "flex-row items-center gap-ku-sm rounded-ku-pill bg-ku-surface-muted px-[14px] py-[7px]",
+    "flex-row items-center gap-ku-sm rounded-ku-pill bg-ku-surface-muted px-ku-14 py-ku-7",
   filterText: "font-ku-medium text-ku-meta text-ku-text-secondary",
   modalBackdrop: "flex-1 items-center justify-center bg-ku-overlay p-ku-md",
   menuCard:
     "w-[80%] max-w-[280px] rounded-[16px] border border-ku-border-subtle bg-ku-card py-ku-sm",
-  menuOption: "flex-row items-center justify-between px-ku-md py-[12px]",
+  menuOption: "flex-row items-center justify-between px-ku-md py-ku-12",
   menuOptionSelected: "bg-ku-surface-success",
   menuOptionText: "font-ku-medium text-ku-body-small text-ku-text-secondary",
   menuOptionTextSelected: "font-ku-semibold text-ku-primary-dark",

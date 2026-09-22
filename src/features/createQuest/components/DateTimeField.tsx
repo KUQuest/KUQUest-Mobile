@@ -54,7 +54,7 @@ export function DateTimeField({
           <Text className={styles.scheduleCardTitle}>{label}</Text>
         </View>
         {hasDate && hasTime ? (
-          <View className="rounded-ku-pill bg-ku-surface-success px-[8px] py-[2px]">
+          <View className="rounded-ku-pill bg-ku-surface-success px-ku-sm py-ku-2">
             <Text className="font-ku-bold text-ku-label text-ku-success">
               {timeValue}
             </Text>
@@ -146,7 +146,7 @@ export function DateTimeField({
           {quickPresets.map((preset) => (
             <Chip
               accessibilityLabel={preset.label}
-              className="px-[10px] py-[4px]"
+              className="px-ku-10 py-ku-xs"
               key={preset.label}
               label={preset.label}
               onPress={preset.onPress}

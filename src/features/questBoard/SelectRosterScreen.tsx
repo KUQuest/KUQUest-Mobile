@@ -68,7 +68,7 @@ function MemberAvatar({
 }) {
   return (
     <View
-      className="mr-3 h-12 w-12 items-center justify-center overflow-hidden rounded-full"
+      className="mr-ku-12 h-12 w-12 items-center justify-center overflow-hidden rounded-full"
       style={{ backgroundColor }}
     >
       {avatarUri ? (
@@ -108,7 +108,7 @@ function ProposalRow({
 }) {
   return (
     <View
-      className="mb-3 rounded-2xl border p-4"
+      className="mb-ku-12 rounded-2xl border p-ku-md"
       style={{
         backgroundColor: colors.surfaceMuted,
         borderColor: colors.borderSubtle,
@@ -121,7 +121,7 @@ function ProposalRow({
           iconColor={colors.primary}
           backgroundColor={colors.surfaceAccent}
         />
-        <View className="flex-1 pr-2">
+        <View className="flex-1 pr-ku-sm">
           <Text
             className="font-ku-bold"
             style={{ color: colors.textStrong }}
@@ -131,7 +131,7 @@ function ProposalRow({
           </Text>
           {detail ? (
             <Text
-              className="mt-0.5 text-ku-label"
+              className="mt-ku-2 text-ku-label"
               style={{ color: colors.textSecondary }}
               numberOfLines={1}
             >
@@ -141,11 +141,11 @@ function ProposalRow({
         </View>
       </View>
       {canSelect || canReject ? (
-        <View className="mt-3 flex-row gap-2">
+        <View className="mt-ku-12 flex-row gap-ku-sm">
           {canSelect ? (
             <Pressable
               accessibilityRole="button"
-              className="flex-1 items-center rounded-xl p-3"
+              className="flex-1 items-center rounded-xl p-ku-12"
               style={{ backgroundColor: colors.primary }}
               onPress={onSelect}
               testID={`${testID}-select`}
@@ -158,7 +158,7 @@ function ProposalRow({
           {canReject ? (
             <Pressable
               accessibilityRole="button"
-              className="flex-1 items-center rounded-xl border p-3"
+              className="flex-1 items-center rounded-xl border p-ku-12"
               style={{ borderColor: colors.borderDanger }}
               onPress={onReject}
               testID={`${testID}-reject`}
@@ -513,7 +513,7 @@ export default function SelectRosterScreen({
           title={messages.selectRosterTitle}
           onBackPress={() => router.back()}
         />
-        <View className="p-6">
+        <View className="p-ku-lg">
           <Text style={{ color: colors.textSecondary }}>
             {groupMessages.loading}
           </Text>
@@ -529,15 +529,15 @@ export default function SelectRosterScreen({
           title={messages.selectRosterTitle}
           onBackPress={() => router.back()}
         />
-        <View className="p-6">
+        <View className="p-ku-lg">
           <Text style={{ color: colors.textStrong }} className="font-ku-bold">
             {groupMessages.errorTitle}
           </Text>
-          <Text className="mt-1" style={{ color: colors.textSecondary }}>
+          <Text className="mt-ku-xs" style={{ color: colors.textSecondary }}>
             {error ?? groupMessages.errorDescription}
           </Text>
           <Pressable
-            className="mt-4 rounded-xl p-4"
+            className="mt-ku-md rounded-xl p-ku-md"
             style={{ backgroundColor: colors.primary }}
             onPress={() => void refetchSnapshot()}
           >
@@ -559,10 +559,10 @@ export default function SelectRosterScreen({
           title={messages.selectRosterTitle}
           onBackPress={() => router.back()}
         />
-        <View className="items-center justify-center p-8">
+        <View className="items-center justify-center p-ku-xl">
           <Users size={36} color={colors.textSecondary} />
           <Text
-            className="mt-3 text-center font-ku-medium"
+            className="mt-ku-12 text-center font-ku-medium"
             style={{ color: colors.textSecondary }}
           >
             {messages.noSelectionNeeded}
@@ -583,7 +583,7 @@ export default function SelectRosterScreen({
     : pendingApplications.length;
 
   const header = (
-    <View className="mb-4">
+    <View className="mb-ku-md">
       <Text
         accessibilityRole="header"
         className="font-ku-bold text-ku-title"
@@ -591,11 +591,11 @@ export default function SelectRosterScreen({
       >
         {quest.title}
       </Text>
-      <Text className="mt-2" style={{ color: colors.textSecondary }}>
+      <Text className="mt-ku-sm" style={{ color: colors.textSecondary }}>
         {groupMessages.candidateReviewSubtitle}
       </Text>
       <View
-        className="mt-4 flex-row justify-between rounded-2xl p-4"
+        className="mt-ku-md flex-row justify-between rounded-2xl p-ku-md"
         style={{ backgroundColor: colors.surfaceMuted }}
       >
         <View>
@@ -606,7 +606,7 @@ export default function SelectRosterScreen({
             {groupMessages.requestedHeadcount}
           </Text>
           <Text
-            className="mt-1 font-ku-bold"
+            className="mt-ku-xs font-ku-bold"
             style={{ color: colors.textStrong }}
           >
             {quest.headcount}
@@ -620,7 +620,7 @@ export default function SelectRosterScreen({
             {groupMessages.actualHeadcount}
           </Text>
           <Text
-            className="mt-1 font-ku-bold"
+            className="mt-ku-xs font-ku-bold"
             style={{ color: colors.textStrong }}
           >
             {snapshot.assignments.length}
@@ -663,7 +663,7 @@ export default function SelectRosterScreen({
             </Text>
           }
           renderItem={renderTeam}
-          contentContainerClassName="p-5 pb-12"
+          contentContainerClassName="p-ku-20 pb-ku-48"
           initialNumToRender={12}
           windowSize={7}
           removeClippedSubviews
@@ -684,7 +684,7 @@ export default function SelectRosterScreen({
             </Text>
           }
           renderItem={renderCandidate}
-          contentContainerClassName="p-5 pb-12"
+          contentContainerClassName="p-ku-20 pb-ku-48"
           initialNumToRender={12}
           windowSize={7}
           removeClippedSubviews

@@ -28,14 +28,14 @@ export type { QuestProofActionSectionProps };
 export function QuestProofActionSection(props: QuestProofActionSectionProps) {
   if (props.variant === "proof") {
     return (
-      <View className="mt-[18px] gap-[10px]">
+      <View className="mt-ku-18 gap-ku-10">
         {props.canSubmit ? (
           <Button
             onPress={props.onOpenSubmission}
             testID="open-proof-submission"
           >
             <Send color={colors.onPrimary} size={18} />
-            <Text className="ml-[8px] font-ku-semibold text-ku-body text-ku-on-primary">
+            <Text className="ml-ku-sm font-ku-semibold text-ku-body text-ku-on-primary">
               {props.submitLabel}
             </Text>
           </Button>
@@ -53,8 +53,8 @@ export function QuestProofActionSection(props: QuestProofActionSectionProps) {
   }
 
   return (
-    <View className="mt-[18px]">
-      <Text className="mb-[10px] text-ku-body-small text-ku-text-secondary">
+    <View className="mt-ku-18">
+      <Text className="mb-ku-10 text-ku-body-small text-ku-text-secondary">
         {props.description}
       </Text>
       {props.canConfirm ? (

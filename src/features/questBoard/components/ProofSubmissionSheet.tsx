@@ -10,6 +10,7 @@ import { TextArea } from "@/components/ui/TextArea";
 import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
+import { spacing } from "@/theme/spacing";
 import { cn } from "@/tw/cn";
 import { Pressable, SafeAreaView, ScrollView, Text, View } from "@/tw";
 
@@ -307,15 +308,15 @@ export function ProofSubmissionSheet({
                 )}
               </Text>
               {assets.length > 0 ? (
-                <View className="mt-[10px] gap-[8px]">
+                <View className="mt-ku-10 gap-ku-sm">
                   {assets.map((asset, index) => (
                     <View
-                      className="flex-row items-center rounded-[12px] bg-ku-surface-muted px-[10px] py-[9px]"
+                      className="flex-row items-center rounded-[12px] bg-ku-surface-muted px-ku-10 py-ku-9"
                       key={asset.uri}
                     >
                       <FileText color={colors.primary} size={18} />
                       <Text
-                        className="ml-[8px] flex-1 font-ku-medium text-ku-label text-ku-text-strong"
+                        className="ml-ku-sm flex-1 font-ku-medium text-ku-label text-ku-text-strong"
                         numberOfLines={1}
                       >
                         {fileLabel(asset)}
@@ -343,10 +344,10 @@ export function ProofSubmissionSheet({
                 </View>
               ) : null}
               {serverFiles.length > 0 ? (
-                <View className="mt-[10px] gap-[8px]">
+                <View className="mt-ku-10 gap-ku-sm">
                   {serverFiles.map((file) => (
                     <View
-                      className="flex-row items-center rounded-[12px] bg-ku-surface-muted px-[10px] py-[9px]"
+                      className="flex-row items-center rounded-[12px] bg-ku-surface-muted px-ku-10 py-ku-9"
                       key={file.fileId}
                     >
                       <FileText
@@ -358,7 +359,7 @@ export function ProofSubmissionSheet({
                         size={18}
                       />
                       <Text
-                        className="ml-[8px] flex-1 font-ku-medium text-ku-label text-ku-text-strong"
+                        className="ml-ku-sm flex-1 font-ku-medium text-ku-label text-ku-text-strong"
                         numberOfLines={1}
                       >
                         {file.contentType || "Proof file"} ·{" "}
@@ -394,7 +395,7 @@ export function ProofSubmissionSheet({
                 </View>
               ) : null}
               {failedFiles.length > 0 ? (
-                <Text className="mt-[8px] font-ku-medium text-ku-label text-ku-danger">
+                <Text className="mt-ku-sm font-ku-medium text-ku-label text-ku-danger">
                   {messages.retry}
                 </Text>
               ) : null}
@@ -425,7 +426,7 @@ export function ProofSubmissionSheet({
             </ScrollView>
             <View
               className={styles.proofSheetActions}
-              style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+              style={{ paddingBottom: Math.max(insets.bottom, spacing.md) }}
             >
               <Button
                 onPress={handleClose}

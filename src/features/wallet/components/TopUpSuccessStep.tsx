@@ -37,7 +37,7 @@ export function TopUpSuccessStep({
       <Text className="mt-ku-xs text-center font-ku-regular text-ku-body-small leading-[21px] text-ku-text-secondary">
         {m.topUpSuccessDescription}
       </Text>
-      <View className="mt-ku-lg w-full items-center rounded-[18px] border border-ku-border-accent bg-ku-surface px-[20px] py-[18px]">
+      <View className="mt-ku-lg w-full items-center rounded-[18px] border border-ku-border-accent bg-ku-surface px-ku-20 py-ku-18">
         <View className="flex-row items-center gap-ku-sm">
           <Wallet color={colors.primaryDeep} size={20} strokeWidth={2.2} />
           <Text className="font-ku-medium text-ku-meta text-ku-text-secondary">

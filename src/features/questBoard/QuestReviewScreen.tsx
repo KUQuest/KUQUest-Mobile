@@ -137,67 +137,73 @@ export default function QuestReviewScreen({ questId }: QuestReviewScreenProps) {
         title={messages.title}
       />
       {loading ? (
-        <View className="flex-1 items-center justify-center px-6">
+        <View className="flex-1 items-center justify-center px-ku-lg">
           <Text className="text-center text-ku-text-secondary">
             {messages.loading}
           </Text>
         </View>
       ) : loadError ? (
-        <View className="flex-1 items-center justify-center px-6">
+        <View className="flex-1 items-center justify-center px-ku-lg">
           <Text className="text-center font-ku-bold text-ku-text-strong">
             {messages.errorTitle}
           </Text>
-          <Text className="mt-2 text-center text-ku-text-secondary">
+          <Text className="mt-ku-sm text-center text-ku-text-secondary">
             {loadError instanceof Error
               ? loadError.message
               : messages.errorDescription}
           </Text>
           <Button
-            className="mt-5 max-w-[280px]"
+            className="mt-ku-20 max-w-[280px]"
             onPress={() => void snapshotQuery.refetch()}
           >
             {messages.retry}
           </Button>
         </View>
       ) : !canReview ? (
-        <View className="flex-1 items-center justify-center px-6">
+        <View className="flex-1 items-center justify-center px-ku-lg">
           <Text className="text-center font-ku-bold text-ku-text-strong">
             {messages.unavailableTitle}
           </Text>
-          <Text className="mt-2 text-center text-ku-text-secondary">
+          <Text className="mt-ku-sm text-center text-ku-text-secondary">
             {messages.unavailableDescription}
           </Text>
         </View>
       ) : allReviewed ? (
         <View
-          className="flex-1 items-center justify-center px-6"
+          className="flex-1 items-center justify-center px-ku-lg"
           testID="quest-review-success"
         >
           <Text className="text-center font-ku-bold text-ku-text-strong">
             {messages.successTitle}
           </Text>
-          <Text className="mt-2 text-center text-ku-text-secondary">
+          <Text className="mt-ku-sm text-center text-ku-text-secondary">
             {messages.successDescription}
           </Text>
-          <Button className="mt-5 max-w-[280px]" onPress={() => router.back()}>
+          <Button
+            className="mt-ku-20 max-w-[280px]"
+            onPress={() => router.back()}
+          >
             {messages.done}
           </Button>
         </View>
       ) : workerOptions.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-6">
+        <View className="flex-1 items-center justify-center px-ku-lg">
           <Text className="text-center font-ku-bold text-ku-text-strong">
             {messages.noWorkersTitle}
           </Text>
-          <Text className="mt-2 text-center text-ku-text-secondary">
+          <Text className="mt-ku-sm text-center text-ku-text-secondary">
             {messages.noWorkersDescription}
           </Text>
-          <Button className="mt-5 max-w-[280px]" onPress={() => router.back()}>
+          <Button
+            className="mt-ku-20 max-w-[280px]"
+            onPress={() => router.back()}
+          >
             {messages.done}
           </Button>
         </View>
       ) : (
         <ScrollView
-          contentContainerClassName="gap-5 px-5 pt-5 pb-10"
+          contentContainerClassName="gap-ku-20 px-ku-20 pt-ku-20 pb-ku-40"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -205,24 +211,24 @@ export default function QuestReviewScreen({ questId }: QuestReviewScreenProps) {
             <Text className="font-ku-bold text-ku-title text-ku-text-strong">
               {snapshotQuery.data?.quest.title}
             </Text>
-            <Text className="mt-2 text-ku-body-small text-ku-text-secondary">
+            <Text className="mt-ku-sm text-ku-body-small text-ku-text-secondary">
               {messages.description}
             </Text>
           </View>
 
           {remainingWorkers.length > 1 ? (
-            <View className="gap-2">
+            <View className="gap-ku-sm">
               <Text className="font-ku-semibold text-ku-body-small text-ku-text-strong">
                 {messages.workerLabel}
               </Text>
-              <View className="gap-2">
+              <View className="gap-ku-sm">
                 {remainingWorkers.map((worker) => {
                   const selected = worker.id === selectedWorker?.id;
                   return (
                     <Pressable
                       accessibilityRole="radio"
                       accessibilityState={{ selected }}
-                      className={`rounded-[14px] border p-4 ${
+                      className={`rounded-[14px] border p-ku-md ${
                         selected
                           ? "border-ku-primary bg-ku-surface-success"
                           : "border-ku-border-subtle bg-ku-surface"
@@ -245,11 +251,11 @@ export default function QuestReviewScreen({ questId }: QuestReviewScreenProps) {
             </View>
           ) : null}
 
-          <View className="gap-3">
+          <View className="gap-ku-12">
             <Text className="font-ku-semibold text-ku-body-small text-ku-text-strong">
               {messages.ratingLabel}
             </Text>
-            <View className="flex-row justify-between rounded-[14px] border border-ku-border-subtle bg-ku-surface px-4 py-3">
+            <View className="flex-row justify-between rounded-[14px] border border-ku-border-subtle bg-ku-surface px-ku-md py-ku-12">
               {[1, 2, 3, 4, 5].map((value) => {
                 const selected = value <= rating;
                 return (
@@ -291,7 +297,7 @@ export default function QuestReviewScreen({ questId }: QuestReviewScreenProps) {
 
           {successMessage ? (
             <Text
-              className="rounded-[12px] bg-ku-surface-success p-3 text-ku-primary"
+              className="rounded-[12px] bg-ku-surface-success p-ku-12 text-ku-primary"
               testID="quest-review-success"
             >
               {successMessage}
@@ -300,7 +306,7 @@ export default function QuestReviewScreen({ questId }: QuestReviewScreenProps) {
           {submitError ? (
             <Text
               accessibilityRole="alert"
-              className="rounded-[12px] bg-ku-surface-danger p-3 text-ku-danger-dark"
+              className="rounded-[12px] bg-ku-surface-danger p-ku-12 text-ku-danger-dark"
               testID="quest-review-error"
             >
               {submitError}

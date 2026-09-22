@@ -12,15 +12,14 @@ const styles = {
   overlayFullScreen: "bg-ku-card flex-1",
   backdrop: "absolute bottom-0 left-0 right-0 top-0",
   sheet:
-    "bg-ku-card max-h-[92%] min-h-[360px] rounded-tl-[24px] rounded-tr-[24px] px-[20px] pt-[12px]",
-  sheetFullScreen: "bg-ku-card flex-1 px-[20px] pt-[12px]",
+    "bg-ku-card max-h-[92%] min-h-[360px] rounded-tl-[24px] rounded-tr-[24px] px-ku-20 pt-ku-12",
+  sheetFullScreen: "bg-ku-card flex-1 px-ku-20 pt-ku-12",
   handle:
-    "self-center bg-ku-border-accent rounded-ku-pill h-[4px] mb-[14px] w-[40px]",
+    "self-center bg-ku-border-accent rounded-ku-pill h-[4px] mb-ku-14 w-[40px]",
   header: "items-start flex-row justify-between",
-  heading: "flex-1 min-w-0 pr-[12px]",
+  heading: "flex-1 min-w-0 pr-ku-12",
   title: "text-ku-text-strong font-ku-bold text-ku-title-small",
-  subtitle:
-    "text-ku-text-secondary font-ku-regular text-ku-body-small mt-[3px]",
+  subtitle: "text-ku-text-secondary font-ku-regular text-ku-body-small mt-ku-3",
   close:
     "items-center bg-ku-surface-muted rounded-ku-pill h-[44px] justify-center w-[44px]",
 } as const;

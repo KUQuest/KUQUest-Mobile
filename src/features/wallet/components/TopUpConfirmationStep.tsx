@@ -28,9 +28,9 @@ export interface TopUpConfirmationStepProps {
 
 const styles = {
   summaryCard:
-    "mb-ku-md rounded-[20px] border border-ku-border-subtle bg-ku-surface p-[18px]",
+    "mb-ku-md rounded-[20px] border border-ku-border-subtle bg-ku-surface p-ku-18",
   summaryHeader: "mb-ku-md border-b border-ku-border-subtle pb-ku-sm",
-  summaryTitle: "mb-[2px] font-ku-bold text-[16px] text-ku-text-strong",
+  summaryTitle: "mb-ku-2 font-ku-bold text-[16px] text-ku-text-strong",
   summarySubtitle: "font-ku-regular text-[12px] text-ku-text-secondary",
   breakdownTable: "gap-ku-sm",
   breakdownRow: "flex-row items-center justify-between",
@@ -42,16 +42,16 @@ const styles = {
   breakdownTotalLabel: "font-ku-bold text-ku-control text-ku-text-strong",
   breakdownTotalValue: "font-ku-bold text-ku-title-small text-ku-primary-deep",
   expiryRow:
-    "mt-ku-md flex-row items-center gap-[6px] border-t border-ku-border-subtle pt-ku-sm",
+    "mt-ku-md flex-row items-center gap-ku-6 border-t border-ku-border-subtle pt-ku-sm",
   expiryText: "font-ku-regular text-[11px] text-ku-text-muted",
   errorBanner:
-    "mt-ku-sm flex-row items-center gap-[6px] rounded-[10px] bg-ku-surface-danger p-[10px]",
+    "mt-ku-sm flex-row items-center gap-ku-6 rounded-[10px] bg-ku-surface-danger p-ku-10",
   errorText: "flex-1 font-ku-medium text-[12px] text-ku-danger",
   primaryActionButton:
     "h-[52px] items-center justify-center rounded-[16px] bg-ku-primary-deep",
   primaryActionButtonText: "font-ku-bold text-ku-body text-ku-on-primary",
   secondaryButton:
-    "mt-[10px] h-[48px] items-center justify-center rounded-[16px] bg-ku-surface-muted",
+    "mt-ku-10 h-[48px] items-center justify-center rounded-[16px] bg-ku-surface-muted",
   secondaryButtonText:
     "font-ku-medium text-ku-body-small text-ku-text-secondary",
 } as const;

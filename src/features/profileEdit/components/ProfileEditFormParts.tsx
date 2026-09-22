@@ -135,7 +135,7 @@ export function ImagePickerField({
             contentFit="cover"
           />
         ) : (
-          <View className="flex-1 items-center justify-center gap-[4px]">
+          <View className="flex-1 items-center justify-center gap-ku-xs">
             <ImageIcon color={colors.textMuted} size={24} />
             <Text className={styles.imagePickerText}>{placeholder}</Text>
           </View>
@@ -188,7 +188,7 @@ export function DateField({
     : new Date();
   return (
     <View className={styles.dateField}>
-      <Text className="mb-[6px] font-ku-semibold text-ku-label text-ku-text-secondary">
+      <Text className="mb-ku-6 font-ku-semibold text-ku-label text-ku-text-secondary">
         {label}
       </Text>
       <Pressable
@@ -206,7 +206,7 @@ export function DateField({
       {error ? (
         <Text
           accessibilityRole="alert"
-          className="mt-[4px] font-ku-regular text-ku-label text-ku-danger"
+          className="mt-ku-xs font-ku-regular text-ku-label text-ku-danger"
         >
           {error}
         </Text>

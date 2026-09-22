@@ -14,7 +14,7 @@ export function StateCard({
   return (
     <View
       className={cn(
-        "rounded-2xl border p-4",
+        "rounded-2xl border p-ku-md",
         tone === "warning"
           ? "border-ku-border-warning bg-ku-surface-warning"
           : tone === "success"

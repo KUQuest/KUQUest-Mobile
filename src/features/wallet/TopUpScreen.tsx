@@ -15,6 +15,7 @@ import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { useLocale } from "@/features/preferences/localeStore";
 import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
+import { spacing } from "@/theme/spacing";
 import { TopUpAmountStep } from "./components/TopUpAmountStep";
 import { TopUpConfirmationStep } from "./components/TopUpConfirmationStep";
 import { TopUpPromptPayStep } from "./components/TopUpPromptPayStep";
@@ -162,7 +163,7 @@ export default function TopUpScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         className="flex-1"
       >
-        <View className="flex-row items-center justify-between border-b border-ku-border-subtle bg-ku-surface px-ku-md pt-[12px] pb-[14px]">
+        <View className="flex-row items-center justify-between border-b border-ku-border-subtle bg-ku-surface px-ku-md pt-ku-12 pb-ku-14">
           <TouchableOpacity
             accessibilityLabel={m.back}
             accessibilityRole="button"
@@ -185,7 +186,7 @@ export default function TopUpScreen() {
                   ? m.topUpConfirmationTitle
                   : m.topUpPromptPayTitle}
             </Text>
-            <Text className="mt-[2px] font-ku-medium text-[11px] text-ku-text-secondary">
+            <Text className="mt-ku-2 font-ku-medium text-[11px] text-ku-text-secondary">
               {step === "amount"
                 ? m.topUpAmountStepSubtitle
                 : step === "confirmation"
@@ -198,8 +199,11 @@ export default function TopUpScreen() {
         </View>
 
         <ScrollView
-          contentContainerClassName="px-[18px] pt-[18px]"
-          contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
+          contentContainerStyle={{
+            paddingBottom: insets.bottom + spacing.xl,
+            paddingHorizontal: spacing.md,
+            paddingTop: spacing.md,
+          }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           testID="top-up-screen-scroll"

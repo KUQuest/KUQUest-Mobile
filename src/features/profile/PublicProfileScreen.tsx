@@ -16,6 +16,7 @@ import { ScreenLayout } from "../../components/layout/ScreenLayout";
 import { colors } from "@/theme/colors";
 import { formatDisplayMonthYear } from "@/utils";
 import { getProfileLayoutMetrics } from "@/theme/profileLayout";
+import { spacing } from "@/theme/spacing";
 import { useLocale } from "@/features/preferences/localeStore";
 import { profileMessages } from "@/locales/profileMessages";
 import {
@@ -195,7 +196,7 @@ export default function PublicProfileScreen() {
   );
 
   const topBar = (
-    <View className="flex-row items-center justify-between border-b border-ku-border-subtle bg-ku-surface px-4 py-2">
+    <View className="flex-row items-center justify-between border-b border-ku-border-subtle bg-ku-surface px-ku-md py-ku-sm">
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={messages.back ?? "Back"}
@@ -206,7 +207,7 @@ export default function PublicProfileScreen() {
       >
         <ChevronLeft color={colors.primaryDeep} size={24} strokeWidth={2.5} />
       </Pressable>
-      <View className="flex-1 items-center justify-center px-2">
+      <View className="flex-1 items-center justify-center px-ku-sm">
         <Image
           accessibilityLabel="KUQuest"
           contentFit="contain"
@@ -215,7 +216,7 @@ export default function PublicProfileScreen() {
         />
         <Text
           numberOfLines={1}
-          className="mt-0.5 font-ku-semibold text-ku-caption text-ku-text-strong"
+          className="mt-ku-2 font-ku-semibold text-ku-caption text-ku-text-strong"
           testID="public-profile-header-name"
         >
           {displayName || messages.title}
@@ -227,13 +228,13 @@ export default function PublicProfileScreen() {
 
   const stickyProfileTabs = (
     <View
-      className="border-b border-ku-border-subtle bg-ku-surface py-2"
+      className="border-b border-ku-border-subtle bg-ku-surface py-ku-sm"
       testID="public-profile-tabs"
     >
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerClassName="flex-row items-center gap-2 px-4"
+        contentContainerClassName="flex-row items-center gap-ku-sm px-ku-md"
         accessibilityRole="tablist"
       >
         {tabs.map(({ key, label, icon: Icon }) => {
@@ -241,7 +242,7 @@ export default function PublicProfileScreen() {
           return (
             <Chip
               accessibilityLabel={label}
-              className="min-h-[40px] gap-1.5 px-4 py-2"
+              className="min-h-[40px] gap-ku-6 px-ku-md py-ku-sm"
               key={key}
               label={label}
               leadingIcon={
@@ -282,7 +283,7 @@ export default function PublicProfileScreen() {
         }}
       />
       {bio ? (
-        <View className="rounded-ku-card mt-3 border border-ku-border-subtle bg-ku-surface p-3">
+        <View className="rounded-ku-card mt-ku-12 border border-ku-border-subtle bg-ku-surface p-ku-12">
           <Text className="font-ku-regular text-ku-body-small text-ku-text-secondary">
             {bio}
           </Text>
@@ -304,7 +305,7 @@ export default function PublicProfileScreen() {
   );
 
   const profileChrome = (
-    <View className="gap-3">
+    <View className="gap-ku-12">
       {profileHeader}
       {profileStats}
       {stickyProfileTabs}
@@ -335,14 +336,14 @@ export default function PublicProfileScreen() {
         className="flex-1 bg-ku-surface"
       >
         {topBar}
-        <View className="flex-1 items-center justify-center p-6">
-          <Text className="mb-4 text-center text-ku-text-secondary">
+        <View className="flex-1 items-center justify-center p-ku-lg">
+          <Text className="mb-ku-md text-center text-ku-text-secondary">
             {profileErrorMessage}
           </Text>
           <Pressable
             accessibilityRole="button"
             onPress={() => void profileQuery.refetch()}
-            className="min-h-[48px] min-w-[140px] items-center justify-center rounded-ku-pill bg-ku-primary px-6 active:opacity-90"
+            className="min-h-[48px] min-w-[140px] items-center justify-center rounded-ku-pill bg-ku-primary px-ku-lg active:opacity-90"
           >
             <Text className="font-ku-semibold text-ku-on-primary">
               {messages.retry}
@@ -391,7 +392,7 @@ export default function PublicProfileScreen() {
         <ScrollView
           stickyHeaderIndices={[2]}
           contentContainerStyle={{
-            paddingBottom: 48,
+            paddingBottom: spacing.px48,
             gap: layoutMetrics.sectionGap,
             paddingHorizontal: layoutMetrics.pagePadding,
             paddingTop: layoutMetrics.sectionGap,

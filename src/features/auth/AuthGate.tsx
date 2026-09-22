@@ -68,19 +68,19 @@ export default function Index() {
   if (status === "error") {
     return (
       <View
-        className="flex-1 items-center justify-center bg-ku-background p-[24px]"
+        className="flex-1 items-center justify-center bg-ku-background p-ku-lg"
         accessibilityRole="alert"
         testID="auth-gate-error"
       >
         <Text className="text-center font-ku-bold text-ku-subtitle text-ku-text-strong">
           {messages.sessionLoadTitle}
         </Text>
-        <Text className="mt-[8px] text-center text-ku-text-secondary">
+        <Text className="mt-ku-sm text-center text-ku-text-secondary">
           {messages.sessionLoadDescription}
         </Text>
         <Pressable
           accessibilityRole="button"
-          className="mt-[20px] min-h-[44px] justify-center rounded-ku-pill bg-ku-primary px-[24px]"
+          className="mt-ku-20 min-h-[44px] justify-center rounded-ku-pill bg-ku-primary px-ku-lg"
           onPress={() => {
             setRoutingFailed(false);
             setAttempt((value) => value + 1);

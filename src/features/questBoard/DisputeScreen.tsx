@@ -172,18 +172,18 @@ export default function DisputeScreen({
         className="flex-1"
       >
         <ScrollView
-          contentContainerClassName="px-5 pt-4 pb-12"
+          contentContainerClassName="px-ku-20 pt-ku-md pb-ku-48"
           keyboardShouldPersistTaps="handled"
         >
           {/* Header & Escrow Notice */}
-          <View className="mb-5 rounded-2xl border border-ku-border-warning bg-ku-surface-warning p-4">
-            <View className="flex-row items-center gap-2">
+          <View className="mb-ku-20 rounded-2xl border border-ku-border-warning bg-ku-surface-warning p-ku-md">
+            <View className="flex-row items-center gap-ku-sm">
               <AlertTriangle color={colors.warningDark} size={20} />
               <Text className="font-ku-bold text-ku-body text-ku-warning-dark">
                 {isTh ? "ข้อกำหนดการยื่นข้อพิพาท" : "Dispute Case Filing"}
               </Text>
             </View>
-            <Text className="mt-2 text-ku-body-small text-ku-warning-dark">
+            <Text className="mt-ku-sm text-ku-body-small text-ku-warning-dark">
               {isTh
                 ? "สามารถยื่นข้อพิพาทได้ภายใน 24 ชั่วโมงหลังเควสต์ล้มเหลว เมื่อยื่นแล้ว เงินประกันจะถูกระงับไว้ 7 วันเพื่อรอการตรวจสอบจากผู้ดูแลระบบ"
                 : "Disputes can be filed within 24 hours of quest failure. Upon filing, held funding is preserved for 7 days pending admin investigation."}
@@ -191,10 +191,10 @@ export default function DisputeScreen({
           </View>
 
           {/* Reason Selector */}
-          <Text className="mb-3 font-ku-bold text-ku-body text-ku-text-strong">
+          <Text className="mb-ku-12 font-ku-bold text-ku-body text-ku-text-strong">
             {isTh ? "สาเหตุของข้อพิพาท" : "Reason for Dispute"}
           </Text>
-          <View className="mb-6 gap-2.5">
+          <View className="mb-ku-lg gap-ku-10">
             {REASON_OPTIONS.map((option) => {
               const isSelected = selectedReason === option.value;
               return (
@@ -205,13 +205,13 @@ export default function DisputeScreen({
                   accessibilityState={{ selected: isSelected }}
                   onPress={() => setSelectedReason(option.value)}
                   className={cn(
-                    "flex-row items-start gap-3 rounded-2xl border p-4 transition-colors",
+                    "flex-row items-start gap-ku-12 rounded-2xl border p-ku-md transition-colors",
                     isSelected
                       ? "border-ku-border-success bg-ku-surface-success"
                       : "border-ku-border bg-ku-card"
                   )}
                 >
-                  <View className="mt-0.5">
+                  <View className="mt-ku-2">
                     {isSelected ? (
                       <CheckCircle2 color={colors.primary} size={20} />
                     ) : (
@@ -227,7 +227,7 @@ export default function DisputeScreen({
                     >
                       {isTh ? option.labelTh : option.labelEn}
                     </Text>
-                    <Text className="mt-1 text-ku-label text-ku-text-secondary">
+                    <Text className="mt-ku-xs text-ku-label text-ku-text-secondary">
                       {isTh ? option.descTh : option.descEn}
                     </Text>
                   </View>
@@ -237,8 +237,8 @@ export default function DisputeScreen({
           </View>
 
           {/* Statement Input */}
-          <View className="mb-6">
-            <View className="mb-2 flex-row items-center justify-between">
+          <View className="mb-ku-lg">
+            <View className="mb-ku-sm flex-row items-center justify-between">
               <Text className="font-ku-bold text-ku-body text-ku-text-strong">
                 {isTh ? "คำชี้แจงและหลักฐาน" : "Statement & Details"}
                 <Text className="text-ku-danger"> *</Text>
@@ -254,7 +254,7 @@ export default function DisputeScreen({
                 {statement.length}/1000
               </Text>
             </View>
-            <View className="rounded-2xl border border-ku-border bg-ku-surface p-3">
+            <View className="rounded-2xl border border-ku-border bg-ku-surface p-ku-12">
               <TextInput
                 multiline
                 numberOfLines={6}
@@ -275,7 +275,7 @@ export default function DisputeScreen({
               />
             </View>
             {statementTooLongMessage ? (
-              <Text className="mt-1 text-ku-label text-ku-danger">
+              <Text className="mt-ku-xs text-ku-label text-ku-danger">
                 {statementTooLongMessage}
               </Text>
             ) : null}
@@ -283,7 +283,7 @@ export default function DisputeScreen({
 
           {/* Error notice if present */}
           {errorMessage ? (
-            <View className="mb-4 flex-row items-center gap-2 rounded-xl border border-ku-border-danger bg-ku-surface-danger p-3">
+            <View className="mb-ku-md flex-row items-center gap-ku-sm rounded-xl border border-ku-border-danger bg-ku-surface-danger p-ku-12">
               <AlertCircle color={colors.danger} size={18} />
               <Text className="flex-1 text-ku-label text-ku-danger">
                 {errorMessage}

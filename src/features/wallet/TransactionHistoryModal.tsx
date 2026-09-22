@@ -90,7 +90,7 @@ export function TransactionHistoryModal({
               accessibilityLabel={m.refresh}
               accessibilityRole="button"
               accessibilityState={{ disabled: loading }}
-              className={`${s.closeBtn} mr-[6px]`}
+              className={`${s.closeBtn} mr-ku-6`}
               disabled={loading}
               onPress={handleRefresh}
             >
@@ -107,7 +107,7 @@ export function TransactionHistoryModal({
           </View>
 
           {loading && !historyResult ? (
-            <View className="items-center py-[32px]">
+            <View className="items-center py-ku-xl">
               <ActivityIndicator color={colors.primary} size="large" />
             </View>
           ) : (
@@ -133,7 +133,7 @@ export function TransactionHistoryModal({
                     >
                       <View className="flex-1 flex-row items-center">
                         <View
-                          className={`mr-[10px] h-[34px] w-[34px] items-center justify-center rounded-[10px] ${
+                          className={`mr-ku-10 h-[34px] w-[34px] items-center justify-center rounded-[10px] ${
                             isInflow
                               ? "bg-ku-surface-success"
                               : "bg-ku-surface-muted"
@@ -186,7 +186,7 @@ export function TransactionHistoryModal({
                   );
                 })
               ) : (
-                <View className="items-center py-[24px]">
+                <View className="items-center py-ku-lg">
                   <Text className="text-ku-text-muted">{m.noTransactions}</Text>
                 </View>
               )}

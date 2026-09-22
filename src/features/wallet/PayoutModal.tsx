@@ -473,9 +473,9 @@ const styles = {
   closeButtonText: "text-[28px] leading-[28px] text-ku-text-secondary",
   content: "gap-ku-lg p-ku-lg",
   destination:
-    "items-center flex-row justify-between rounded-[10px] border border-ku-border-subtle p-[14px]",
+    "items-center flex-row justify-between rounded-[10px] border border-ku-border-subtle p-ku-14",
   destinationAccount:
-    "mt-[2px] font-ku-regular text-ku-meta text-ku-text-secondary",
+    "mt-ku-2 font-ku-regular text-ku-meta text-ku-text-secondary",
   destinationForm: "gap-ku-sm",
   destinationHeading: "items-center flex-row justify-between",
   destinationList: "gap-ku-sm",
@@ -488,7 +488,7 @@ const styles = {
     "items-center flex-row justify-between border-b border-ku-border-subtle px-ku-lg py-ku-md",
   hint: "mt-ku-xs font-ku-regular text-ku-label text-ku-text-muted",
   input:
-    "rounded-[10px] border border-ku-border-subtle px-[12px] py-[11px] font-ku-regular text-ku-body text-ku-text-strong",
+    "rounded-[10px] border border-ku-border-subtle px-ku-12 py-ku-11 font-ku-regular text-ku-body text-ku-text-strong",
   label: "font-ku-medium text-ku-control text-ku-text-strong",
   overlay: "flex-1 items-center justify-center bg-ku-overlay p-ku-md",
   primaryButton:

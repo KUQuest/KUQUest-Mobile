@@ -346,24 +346,24 @@ export function HirerBalanceCards({
 
 const styles = {
   container: "mb-ku-lg",
-  switcherBar: "mb-[10px] flex-row items-center justify-between px-[2px]",
-  hintBadge: "flex-row items-center gap-[6px]",
+  switcherBar: "mb-ku-10 flex-row items-center justify-between px-ku-2",
+  hintBadge: "flex-row items-center gap-ku-6",
   hintText: "font-ku-medium text-ku-label text-ku-text-secondary",
-  switcherActions: "flex-row items-center gap-[6px]",
+  switcherActions: "flex-row items-center gap-ku-6",
   transferShortcutBtn:
-    "flex-row items-center gap-ku-xs rounded-ku-pill border border-ku-border-success bg-ku-surface-success px-[9px] py-[3px]",
+    "flex-row items-center gap-ku-xs rounded-ku-pill border border-ku-border-success bg-ku-surface-success px-ku-9 py-ku-3",
   transferShortcutBtnText:
     "font-ku-medium text-ku-caption text-ku-primary-dark",
   swapAllButton:
-    "flex-row items-center rounded-ku-pill border border-ku-border-success bg-ku-surface-success px-[9px] py-[3px]",
+    "flex-row items-center rounded-ku-pill border border-ku-border-success bg-ku-surface-success px-ku-9 py-ku-3",
   swapAllButtonText: "font-ku-medium text-ku-caption text-ku-primary-dark",
   cardTransferBtn:
-    "mt-ku-xs flex-row items-center justify-center gap-ku-xs rounded-[8px] bg-ku-primary-dark px-ku-sm py-[5px]",
+    "mt-ku-xs flex-row items-center justify-center gap-ku-xs rounded-[8px] bg-ku-primary-dark px-ku-sm py-ku-5",
   cardTransferBtnText: "font-ku-semibold text-ku-caption text-ku-on-primary",
   cardContent: "flex-1 justify-between",
-  row: "flex-row gap-[12px]",
+  row: "flex-row gap-ku-12",
   cardWrapper: "flex-1",
-  cardHeader: "mb-[6px] flex-row items-center justify-between",
+  cardHeader: "mb-ku-6 flex-row items-center justify-between",
   card: "min-h-[126px] flex-1 justify-between rounded-[16px] border p-ku-md",
   spendingCard: "border-ku-border-success bg-ku-surface-success",
   earningsCard: "border-ku-border-success bg-ku-surface-success",

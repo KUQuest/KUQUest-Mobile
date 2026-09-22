@@ -52,7 +52,7 @@ function formatExpiry(expiresAt: string, locale: SupportedLocale): string {
 }
 
 const fundingLayout = {
-  summary: "mb-[16px]",
+  summary: "mb-ku-md",
   collapsedSummary: {
     borderRadius: 16,
     borderWidth: 1,
@@ -61,8 +61,8 @@ const fundingLayout = {
     alignItems: "center",
     flexDirection: "row",
     minHeight: 64,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.px12,
+    paddingVertical: spacing.px10,
   },
   icon: {
     alignItems: "center",
@@ -71,14 +71,14 @@ const fundingLayout = {
   chevron: {
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: 8,
+    marginLeft: spacing.sm,
   },
   modalOverlay: {
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 24,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
   },
   modalBackdrop: {
     bottom: 0,
@@ -92,13 +92,13 @@ const fundingLayout = {
     borderWidth: 1,
     maxHeight: "82%",
     maxWidth: 560,
-    paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingHorizontal: spacing.px20,
+    paddingTop: spacing.md,
     width: "100%",
   },
   topUpSurface: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.px20,
     width: "100%",
   },
   topUpFlow: {
@@ -118,7 +118,7 @@ const fundingLayout = {
     alignItems: "center",
     flexDirection: "row",
     minHeight: 56,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   modalHeaderIcon: {
     alignItems: "center",
@@ -130,7 +130,7 @@ const fundingLayout = {
   modalHeaderCopy: {
     flex: 1,
     minWidth: 0,
-    marginLeft: 10,
+    marginLeft: spacing.px10,
   },
   modalTitle: {
     fontFamily: fontFamily.bold,
@@ -142,7 +142,7 @@ const fundingLayout = {
     borderRadius: 9999,
     height: 48,
     justifyContent: "center",
-    marginLeft: 8,
+    marginLeft: spacing.sm,
     width: 48,
   },
   modalBackButton: {
@@ -150,17 +150,17 @@ const fundingLayout = {
     borderRadius: 9999,
     height: 48,
     justifyContent: "center",
-    marginRight: 4,
+    marginRight: spacing.xs,
     width: 48,
   },
   modalScroll: "shrink",
   topUpScroll: "flex-1",
-  modalContent: "gap-[12px] pb-[4px]",
+  modalContent: "gap-ku-12 pb-ku-xs",
   topUpContent: "gap-ku-md pb-ku-md",
   statusCard: {
     borderRadius: 16,
     borderWidth: 1,
-    padding: 16,
+    padding: spacing.md,
   },
   statusIcon: {
     alignItems: "center",
@@ -173,23 +173,23 @@ const fundingLayout = {
     fontFamily: fontFamily.bold,
     fontSize: 24,
     lineHeight: 30,
-    marginTop: 2,
+    marginTop: spacing.px2,
   },
   statusDescription: {
     fontFamily: fontFamily.regular,
     fontSize: 14,
     lineHeight: 21,
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   reservation: {
     borderTopWidth: 1,
-    marginTop: 16,
-    paddingTop: 12,
+    marginTop: spacing.md,
+    paddingTop: spacing.px12,
   },
   actionRow: {
     flexDirection: "row",
-    gap: 8,
-    marginTop: 16,
+    gap: spacing.sm,
+    marginTop: spacing.md,
   },
   actionButton: {
     alignItems: "center",
@@ -199,30 +199,30 @@ const fundingLayout = {
     flexDirection: "row",
     justifyContent: "center",
     minHeight: 48,
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
   },
   actionButtonDisabled: {
     opacity: 0.72,
   },
   information: {
     borderTopWidth: 1,
-    gap: 12,
-    paddingBottom: 4,
-    paddingTop: 12,
+    gap: spacing.px12,
+    paddingBottom: spacing.xs,
+    paddingTop: spacing.px12,
   },
   informationItem: {
     alignItems: "flex-start",
     flexDirection: "row",
-    gap: 8,
+    gap: spacing.sm,
   },
   informationIcon: {
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: 1,
+    paddingTop: spacing.px1,
     width: 24,
   },
   flowIntro: {
-    gap: 4,
+    gap: spacing.xs,
   },
   flowTitle: {
     fontFamily: fontFamily.bold,
@@ -245,7 +245,7 @@ const fundingLayout = {
     borderWidth: 1,
     flexDirection: "row",
     minHeight: 64,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
   },
   amountCurrency: {
     fontFamily: fontFamily.bold,
@@ -258,13 +258,13 @@ const fundingLayout = {
     fontSize: 24,
     lineHeight: 30,
     minHeight: 60,
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
     textAlign: "right",
   },
   quickAmounts: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: spacing.sm,
   },
   quickAmount: {
     alignItems: "center",
@@ -274,7 +274,7 @@ const fundingLayout = {
     flexGrow: 1,
     justifyContent: "center",
     minHeight: 48,
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
   },
   quickAmountText: {
     fontFamily: fontFamily.semiBold,
@@ -286,7 +286,7 @@ const fundingLayout = {
     borderRadius: 9999,
     justifyContent: "center",
     minHeight: 48,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
   },
   continueButtonDisabled: {
     borderWidth: 1,
@@ -300,13 +300,13 @@ const fundingLayout = {
     alignItems: "center",
     borderRadius: 16,
     borderWidth: 1,
-    padding: 16,
+    padding: spacing.md,
   },
   qrFrame: {
     alignItems: "center",
     borderRadius: 12,
     justifyContent: "center",
-    padding: 12,
+    padding: spacing.px12,
   },
   qrRows: {
     aspectRatio: 1,
@@ -323,7 +323,7 @@ const fundingLayout = {
     fontFamily: fontFamily.semiBold,
     fontSize: 12,
     lineHeight: 18,
-    marginTop: 12,
+    marginTop: spacing.px12,
     textAlign: "center",
   },
   promptPayAmount: {
@@ -331,8 +331,8 @@ const fundingLayout = {
     borderTopWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 16,
-    paddingTop: 12,
+    marginTop: spacing.md,
+    paddingTop: spacing.px12,
     width: "100%",
   },
   promptPayAmountLabel: {
@@ -349,7 +349,7 @@ const fundingLayout = {
     fontFamily: fontFamily.regular,
     fontSize: 14,
     lineHeight: 21,
-    marginTop: 12,
+    marginTop: spacing.px12,
     textAlign: "center",
   },
 } as const;
@@ -428,7 +428,7 @@ function FundingDetailsContent({
             accessible
             accessibilityLabel={`${messages.fundingStatusLabel}: ${messages.fundingUnavailable}. ${messages.fundingUnavailableDescription}`}
             accessibilityRole="text"
-            className="flex-row items-start gap-[12px]"
+            className="flex-row items-start gap-ku-12"
             testID="quest-funding-status"
           >
             <View
@@ -475,7 +475,7 @@ function FundingDetailsContent({
             <Text className="font-ku-medium text-ku-label text-ku-text-secondary">
               {messages.fundingHeld}
             </Text>
-            <Text className="mt-[4px] font-ku-regular text-ku-body-small text-ku-text-secondary">
+            <Text className="mt-ku-xs font-ku-regular text-ku-body-small text-ku-text-secondary">
               {messages.fundingReservationDescription}
             </Text>
           </View>
@@ -500,7 +500,7 @@ function FundingDetailsContent({
                 size={18}
                 strokeWidth={2.2}
               />
-              <Text className="ml-[4px] font-ku-semibold text-ku-label text-ku-primary">
+              <Text className="ml-ku-xs font-ku-semibold text-ku-label text-ku-primary">
                 {messages.fundingTopUp}
               </Text>
             </Pressable>
@@ -526,7 +526,7 @@ function FundingDetailsContent({
                 size={18}
                 strokeWidth={2.2}
               />
-              <Text className="ml-[4px] font-ku-semibold text-ku-label text-ku-text-muted">
+              <Text className="ml-ku-xs font-ku-semibold text-ku-label text-ku-text-muted">
                 {messages.fundingTransfer}
               </Text>
             </Pressable>
@@ -534,7 +534,7 @@ function FundingDetailsContent({
           <Text
             accessible
             accessibilityRole="text"
-            className="mt-[8px] text-center font-ku-regular text-ku-caption text-ku-text-muted"
+            className="mt-ku-sm text-center font-ku-regular text-ku-caption text-ku-text-muted"
             testID="quest-funding-actions-unavailable"
           >
             {messages.fundingActionsUnavailable}
@@ -649,7 +649,7 @@ function TopUpFlowContent({
       style={fundingLayout.topUpFlowContent}
       testID="quest-funding-top-up-flow"
     >
-      <View style={[fundingLayout.modalHeader, { marginBottom: 16 }]}>
+      <View style={[fundingLayout.modalHeader, { marginBottom: spacing.md }]}>
         <Pressable
           accessibilityLabel={messages.topUpBack}
           accessibilityRole="button"
@@ -669,7 +669,7 @@ function TopUpFlowContent({
         <View
           style={[
             fundingLayout.modalHeaderCopy,
-            { alignItems: "center", marginLeft: 0 },
+            { alignItems: "center", marginLeft: spacing.px0 },
           ]}
         >
           <Text
@@ -858,7 +858,7 @@ function TopUpFlowContent({
                 {
                   backgroundColor: colors.surfaceSubtle,
                   borderColor: colors.borderSubtle,
-                  gap: 12,
+                  gap: spacing.px12,
                 },
               ]}
             >
@@ -907,7 +907,7 @@ function TopUpFlowContent({
                   borderTopWidth: 1,
                   flexDirection: "row",
                   justifyContent: "space-between",
-                  paddingTop: 12,
+                  paddingTop: spacing.px12,
                 }}
               >
                 <Text className="font-ku-bold text-ku-text-strong">
@@ -918,12 +918,12 @@ function TopUpFlowContent({
                 </Text>
               </View>
             </View>
-            <Text className="mt-[12px] text-[12px] text-ku-text-muted">
+            <Text className="mt-ku-12 text-[12px] text-ku-text-muted">
               {messages.topUpExpiresAt}: {formatExpiry(quote.expiresAt, locale)}
             </Text>
             {verificationError ? (
               <View
-                className="mt-[10px] rounded-[12px] border border-ku-border-danger bg-ku-surface-danger p-[12px]"
+                className="mt-ku-10 rounded-[12px] border border-ku-border-danger bg-ku-surface-danger p-ku-12"
                 testID="quest-funding-verify-error"
               >
                 <Text className="font-ku-medium text-[12px] text-ku-danger-dark">
@@ -1039,7 +1039,7 @@ function TopUpFlowContent({
             </View>
             {paymentVerified ? (
               <View
-                className="mt-[12px] flex-row items-center gap-[12px] rounded-[16px] border border-ku-border-success bg-ku-surface-success p-[16px]"
+                className="mt-ku-12 flex-row items-center gap-ku-12 rounded-[16px] border border-ku-border-success bg-ku-surface-success p-ku-md"
                 testID="quest-funding-verified-badge"
               >
                 <ShieldCheck
@@ -1062,7 +1062,7 @@ function TopUpFlowContent({
 
             {verificationError ? (
               <View
-                className="mt-[10px] rounded-[12px] border border-ku-border-danger bg-ku-surface-danger p-[12px]"
+                className="mt-ku-10 rounded-[12px] border border-ku-border-danger bg-ku-surface-danger p-ku-12"
                 testID="quest-funding-verify-error"
               >
                 <Text className="font-ku-medium text-[12px] text-ku-danger-dark">
@@ -1071,7 +1071,7 @@ function TopUpFlowContent({
               </View>
             ) : null}
 
-            <View style={{ gap: 10, marginTop: 12 }}>
+            <View style={{ gap: spacing.px10, marginTop: spacing.px12 }}>
               {!paymentVerified ? (
                 <Pressable
                   accessibilityLabel={messages.topUpVerifyPayment}
@@ -1081,7 +1081,7 @@ function TopUpFlowContent({
                     {
                       backgroundColor: colors.surfaceSuccess,
                       borderColor: colors.borderSuccess,
-                      marginTop: 0,
+                      marginTop: spacing.px0,
                     },
                     isVerifying && fundingLayout.continueButtonDisabled,
                   ]}
@@ -1112,7 +1112,7 @@ function TopUpFlowContent({
                     {
                       backgroundColor: colors.surfaceMuted,
                       borderColor: colors.borderMuted,
-                      marginTop: 0,
+                      marginTop: spacing.px0,
                     },
                     isVerifying && fundingLayout.continueButtonDisabled,
                   ]}
@@ -1138,7 +1138,7 @@ function TopUpFlowContent({
                   {
                     backgroundColor: colors.primary,
                     borderColor: colors.primary,
-                    marginTop: 0,
+                    marginTop: spacing.px0,
                   },
                 ]}
                 onPress={onClose}
@@ -1515,7 +1515,7 @@ export function QuestFundingSummary({ locale }: { locale: SupportedLocale }) {
                 strokeWidth={2.1}
               />
             </View>
-            <View className="ml-[10px] min-w-0 flex-1">
+            <View className="ml-ku-10 min-w-0 flex-1">
               <Text
                 numberOfLines={1}
                 className="font-ku-semibold text-[14px] leading-[21px] text-ku-text-strong"

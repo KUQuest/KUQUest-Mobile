@@ -9,6 +9,7 @@ import { X } from "lucide-react-native";
 import { Pressable, ScrollView, Text, View } from "@/tw";
 
 import { colors } from "@/theme/colors";
+import { spacing } from "@/theme/spacing";
 
 export interface ImageViewerModalProps {
   visible: boolean;
@@ -43,7 +44,7 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
       <View className={styles.container} style={containerBackground}>
         <View
           className={styles.topBar}
-          style={{ paddingTop: Math.max(insets.top, 16) }}
+          style={{ paddingTop: Math.max(insets.top, spacing.md) }}
         >
           <View className={styles.fileNameContainer}>
             {fileName ? (
@@ -98,9 +99,9 @@ const containerBackground = { backgroundColor: "rgba(0, 0, 0, 0.95)" };
 
 const styles = {
   container: "flex-1",
-  topBar: "items-center flex-row justify-between px-ku-md pb-[12px] z-10",
-  fileNameContainer: "flex-1 mr-[12px]",
+  topBar: "items-center flex-row justify-between px-ku-md pb-ku-12 z-10",
+  fileNameContainer: "flex-1 mr-ku-12",
   fileName: "text-ku-white text-[16px] font-semibold",
-  timestamp: "mt-[2px] text-ku-text-muted text-[12px]",
+  timestamp: "mt-ku-2 text-ku-text-muted text-[12px]",
   closeButton: "items-center justify-center p-ku-sm rounded-[20px]",
 } as const;

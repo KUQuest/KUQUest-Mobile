@@ -41,6 +41,7 @@ import {
 import { Image, Pressable, ScrollView, Text, View } from "../../tw";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "../../theme/colors";
+import { spacing } from "../../theme/spacing";
 import { ScreenLayout } from "../../components/layout/ScreenLayout";
 import styles from "./profileEditStyles";
 import {
@@ -165,7 +166,7 @@ function SkeletonFormField({
   testID?: string;
 }) {
   return (
-    <View style={{ gap: 4 }} testID={testID}>
+    <View style={{ gap: spacing.xs }} testID={testID}>
       <SkeletonBlock height={14} width={width} borderRadius={4} />
       <SkeletonBlock height={height} borderRadius={10} />
     </View>
@@ -197,7 +198,7 @@ function ProfileEditLoadingState({
 
   return (
     <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
-      <View style={{ paddingHorizontal: 24, paddingTop: 16 }}>
+      <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}>
         <ScreenHeader title={title} backLabel={messages.back} onBack={onBack} />
       </View>
       <LoadingSkeleton
@@ -213,20 +214,20 @@ function ProfileEditLoadingState({
                 ? styles.scrollContent
                 : styles.formContent
             }
-            contentContainerStyle={{ paddingTop: 0 }}
+            contentContainerStyle={{ paddingTop: spacing.px0 }}
             showsVerticalScrollIndicator={false}
           >
             {variant === "hub" ? (
               <>
                 <SkeletonBlock height={18} width="88%" borderRadius={4} />
-                <View style={{ gap: 8, marginTop: 8 }}>
+                <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
                   {[1, 2, 3, 4].map((item) => (
                     <View
                       key={item}
                       className={styles.sectionRow}
-                      style={{ gap: 12 }}
+                      style={{ gap: spacing.px12 }}
                     >
-                      <View style={{ flex: 1, gap: 6 }}>
+                      <View style={{ flex: 1, gap: spacing.px6 }}>
                         <SkeletonBlock
                           height={20}
                           width="48%"
@@ -244,12 +245,12 @@ function ProfileEditLoadingState({
                 </View>
               </>
             ) : listSection ? (
-              <View style={{ gap: 8 }}>
+              <View style={{ gap: spacing.sm }}>
                 {[1, 2, 3].map((item) => (
                   <View
                     key={item}
                     className={styles.itemRow}
-                    style={{ gap: 12 }}
+                    style={{ gap: spacing.px12 }}
                   >
                     {variant === "portfolio-list" ||
                     variant === "certificates-list" ? (
@@ -260,7 +261,7 @@ function ProfileEditLoadingState({
                         borderRadius={10}
                       />
                     ) : null}
-                    <View style={{ flex: 1, gap: 6 }}>
+                    <View style={{ flex: 1, gap: spacing.px6 }}>
                       <SkeletonBlock height={20} width="64%" borderRadius={4} />
                       <SkeletonBlock height={15} width="48%" borderRadius={4} />
                       <SkeletonBlock height={14} width="78%" borderRadius={4} />
@@ -270,7 +271,7 @@ function ProfileEditLoadingState({
                 ))}
               </View>
             ) : (
-              <View className={styles.formGroup} style={{ gap: 12 }}>
+              <View className={styles.formGroup} style={{ gap: spacing.px12 }}>
                 <SkeletonBlock height={22} width="46%" borderRadius={5} />
                 {variant === "basics-editor" ? (
                   <>
@@ -291,7 +292,7 @@ function ProfileEditLoadingState({
                     <SkeletonFormField width="58%" />
                     <SkeletonFormField width="54%" />
                     <SkeletonFormField width="44%" height={120} />
-                    <View style={{ flexDirection: "row", gap: 16 }}>
+                    <View style={{ flexDirection: "row", gap: spacing.md }}>
                       <SkeletonFormField width="64%" />
                       <SkeletonFormField width="64%" />
                     </View>
@@ -305,7 +306,7 @@ function ProfileEditLoadingState({
                       testID="profile-edit-skeleton-certificate-image"
                     />
                     <View
-                      style={{ gap: 12 }}
+                      style={{ gap: spacing.px12 }}
                       testID="profile-edit-skeleton-certificate-fields"
                     >
                       <SkeletonFormField
@@ -335,7 +336,7 @@ function ProfileEditLoadingState({
           {isEditor ? (
             <View
               className={styles.saveBar}
-              style={{ paddingBottom: Math.max(insets.bottom, 24) }}
+              style={{ paddingBottom: Math.max(insets.bottom, spacing.lg) }}
             >
               <View className={styles.saveBarInner}>
                 <SkeletonBlock

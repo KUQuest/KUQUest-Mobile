@@ -31,5 +31,5 @@ export function HintRow({
 
 const styles = {
   stepRow: "flex-row justify-between",
-  codeSnippet: "px-ku-sm py-[2px] rounded-[8px]",
+  codeSnippet: "px-ku-sm py-ku-2 rounded-[8px]",
 } as const;

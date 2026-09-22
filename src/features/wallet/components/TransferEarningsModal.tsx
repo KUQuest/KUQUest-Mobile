@@ -23,6 +23,7 @@ import { type WalletBalances } from "@/api/WalletApi";
 import { formatSatang } from "@/domain/satang";
 import type { WalletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
+import { spacing } from "@/theme/spacing";
 import { cn } from "@/tw/cn";
 import { useConvertEarningsMutation } from "../api/walletQueries";
 
@@ -389,27 +390,27 @@ const styles = {
   modalCard:
     "max-h-[88%] rounded-tl-[24px] rounded-tr-[24px] bg-ku-surface pb-ku-lg",
   header:
-    "flex-row items-center justify-between border-b border-ku-border-subtle px-[20px] pb-[14px] pt-[18px]",
-  headerTitleRow: "flex-row items-center gap-[10px]",
+    "flex-row items-center justify-between border-b border-ku-border-subtle px-ku-20 pb-ku-14 pt-ku-18",
+  headerTitleRow: "flex-row items-center gap-ku-10",
   headerIconWrap:
     "h-[32px] w-[32px] items-center justify-center rounded-[16px] bg-ku-surface-accent",
   headerTitle: "font-ku-bold text-ku-emphasis text-ku-text-strong",
   closeBtn:
     "h-[34px] w-[34px] items-center justify-center rounded-[17px] bg-ku-surface-muted",
-  scrollContent: "px-[20px] pb-ku-md pt-ku-md",
+  scrollContent: "px-ku-20 pb-ku-md pt-ku-md",
   modalDesc:
     "mb-ku-md font-ku-regular text-[13px] leading-[18px] text-ku-text-secondary",
   flowCard:
-    "mb-[18px] rounded-[16px] border border-ku-border-subtle bg-ku-surface-muted p-[14px]",
+    "mb-ku-18 rounded-[16px] border border-ku-border-subtle bg-ku-surface-muted p-ku-14",
   flowRow: "flex-row items-center gap-ku-sm",
   flowIconBoxEarnings:
     "h-[38px] w-[38px] items-center justify-center rounded-[12px] bg-ku-surface-accent",
   flowIconBoxSpending:
     "h-[38px] w-[38px] items-center justify-center rounded-[12px] bg-ku-surface-success",
   flowInfo: "flex-1",
-  flowLabel: "mb-[2px] font-ku-medium text-[12px] text-ku-text-secondary",
+  flowLabel: "mb-ku-2 font-ku-medium text-[12px] text-ku-text-secondary",
   flowAmount: "font-ku-bold text-ku-body text-ku-text-strong",
-  flowDivider: "my-ku-sm flex-row items-center px-[10px]",
+  flowDivider: "my-ku-sm flex-row items-center px-ku-10",
   flowLine: "h-[1px] flex-1 bg-ku-border-subtle",
   flowArrowCircle:
     "mx-ku-sm h-[24px] w-[24px] items-center justify-center rounded-[12px] bg-ku-surface-accent",
@@ -417,35 +418,35 @@ const styles = {
   inputLabel:
     "mb-ku-sm font-ku-semibold text-ku-body-small text-ku-text-strong",
   inputWrap:
-    "h-[52px] flex-row items-center rounded-[14px] border-[1.5px] border-ku-border bg-ku-surface px-[14px]",
+    "h-[52px] flex-row items-center rounded-[14px] border-[1.5px] border-ku-border bg-ku-surface px-ku-14",
   inputWrapError: "border-ku-danger",
   inputWrapDisabled: "bg-ku-surface-muted opacity-70",
-  inputPrefix: "mr-[6px] font-ku-bold text-ku-subtitle text-ku-text-strong",
-  textInput: "flex-1 py-0 font-ku-bold text-ku-subtitle text-ku-text-strong",
-  maxButton: "rounded-[8px] bg-ku-surface-accent px-[10px] py-[6px]",
+  inputPrefix: "mr-ku-6 font-ku-bold text-ku-subtitle text-ku-text-strong",
+  textInput: "flex-1 py-ku-0 font-ku-bold text-ku-subtitle text-ku-text-strong",
+  maxButton: "rounded-[8px] bg-ku-surface-accent px-ku-10 py-ku-6",
   maxButtonDisabled: "opacity-40",
   maxButtonText: "font-ku-semibold text-[12px] text-ku-primary-deep",
-  presetRow: "mt-[10px] flex-row gap-ku-sm",
+  presetRow: "mt-ku-10 flex-row gap-ku-sm",
   presetChip:
-    "flex-1 items-center justify-center rounded-[10px] border border-ku-border-subtle bg-ku-surface-muted py-[7px]",
+    "flex-1 items-center justify-center rounded-[10px] border border-ku-border-subtle bg-ku-surface-muted py-ku-7",
   presetChipDisabled: "opacity-35",
   presetChipText: "font-ku-medium text-[12px] text-ku-text-secondary",
   presetChipTextDisabled: "text-ku-text-muted",
-  hintWarning: "mt-[6px] font-ku-medium text-[12px] text-ku-warning-dark",
-  hintError: "mt-[6px] font-ku-medium text-[12px] text-ku-danger",
+  hintWarning: "mt-ku-6 font-ku-medium text-[12px] text-ku-warning-dark",
+  hintError: "mt-ku-6 font-ku-medium text-[12px] text-ku-danger",
   policyCard:
     "mb-ku-md rounded-[14px] border border-ku-border-success bg-ku-surface-success p-ku-sm",
-  policyHeader: "mb-ku-xs flex-row items-center gap-[6px]",
+  policyHeader: "mb-ku-xs flex-row items-center gap-ku-6",
   policyTitle: "font-ku-semibold text-[13px] text-ku-success",
-  policyBody: "flex-row items-start gap-[6px]",
+  policyBody: "flex-row items-start gap-ku-6",
   policyNote:
     "flex-1 font-ku-regular text-[12px] leading-[16px] text-ku-text-secondary",
-  previewCard: "mb-[18px] gap-[6px] rounded-[12px] bg-ku-surface-muted p-ku-sm",
+  previewCard: "mb-ku-18 gap-ku-6 rounded-[12px] bg-ku-surface-muted p-ku-sm",
   previewRow: "flex-row items-center justify-between",
   previewLabel: "font-ku-medium text-[12px] text-ku-text-secondary",
   previewValue: "font-ku-semibold text-[13px] text-ku-text-strong",
   previewValueSuccess: "font-ku-bold text-[13px] text-ku-success",
-  actionRow: "mt-ku-xs gap-[10px]",
+  actionRow: "mt-ku-xs gap-ku-10",
   confirmBtn:
     "h-[50px] flex-row items-center justify-center gap-ku-sm rounded-[14px] bg-ku-primary-deep",
   confirmBtnDisabled: "bg-ku-text-muted",
@@ -479,4 +480,4 @@ const confirmShadowDisabled = {
   elevation: 0,
 } satisfies ViewStyle;
 
-const policyInfoIcon = { marginTop: 2 } as const;
+const policyInfoIcon = { marginTop: spacing.px2 } as const;

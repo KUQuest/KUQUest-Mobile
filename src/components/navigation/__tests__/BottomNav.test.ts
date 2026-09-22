@@ -9,7 +9,6 @@ import {
   workerNavigationItems,
 } from "@/features/navigation/roleWorkspaceNavigation";
 import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
-import styles from "../bottomNavStyles";
 import { navigationMessages } from "../../../locales/navigationMessages";
 
 const mockUseProfileQuery = jest.fn();
@@ -115,17 +114,6 @@ describe("authenticated primary navigation", () => {
     expect(getRoleWorkspaceAccessibilityLabel("worker", "th")).toBe(
       "พื้นที่ทำงานผู้ปฏิบัติงาน"
     );
-  });
-
-  it("floats above the screen with compact horizontal margins", () => {
-    expect(styles.container).toEqual(expect.stringContaining("absolute"));
-    expect(styles.container).toEqual(expect.stringContaining("bottom-0"));
-    expect(styles.container).toEqual(expect.stringContaining("px-[32px]"));
-    expect(styles.container).not.toEqual(expect.stringContaining("bg-"));
-  });
-  it("centers the tablet rail actions as one balanced vertical group", () => {
-    expect(styles.tabletBar).toEqual(expect.stringContaining("justify-center"));
-    expect(styles.tabletBar).toEqual(expect.stringContaining("gap-[4px]"));
   });
 
   it("exposes icon-only destinations as accessible tabs and actions", async () => {

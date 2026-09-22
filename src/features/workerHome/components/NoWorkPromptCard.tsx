@@ -28,10 +28,10 @@ export function NoWorkPromptCard({ onFindQuests }: NoWorkPromptCardProps) {
   return (
     <View
       accessibilityRole="summary"
-      className="mb-[18px] items-center rounded-[18px] border border-ku-border-subtle bg-ku-surface p-[22px]"
+      className="mb-ku-18 items-center rounded-[18px] border border-ku-border-subtle bg-ku-surface p-ku-22"
       testID="no-work-prompt-card"
     >
-      <View className="mb-[10px] h-[48px] w-[48px] items-center justify-center rounded-[24px] bg-ku-surface-muted">
+      <View className="mb-ku-10 h-[48px] w-[48px] items-center justify-center rounded-[24px] bg-ku-surface-muted">
         <Search size={24} color={themeColors.primaryDeep} />
       </View>
       <Text
@@ -41,7 +41,7 @@ export function NoWorkPromptCard({ onFindQuests }: NoWorkPromptCardProps) {
         {messages.noWorkPromptTitle}
       </Text>
       <Text
-        className="mt-[4px] text-center font-ku-regular text-ku-meta leading-[18px]"
+        className="mt-ku-xs text-center font-ku-regular text-ku-meta leading-[18px]"
         testID="no-work-prompt-desc"
       >
         {messages.noWorkPromptDesc}
@@ -49,7 +49,7 @@ export function NoWorkPromptCard({ onFindQuests }: NoWorkPromptCardProps) {
       <Pressable
         accessibilityLabel={messages.findQuestsAction}
         accessibilityRole="button"
-        className="mt-[14px] min-h-[42px] items-center justify-center rounded-[10px] bg-ku-primary-dark px-ku-lg py-[10px]"
+        className="mt-ku-14 min-h-[42px] items-center justify-center rounded-[10px] bg-ku-primary-dark px-ku-lg py-ku-10"
         onPress={handlePress}
         testID="find-quests-button"
       >

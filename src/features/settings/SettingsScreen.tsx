@@ -143,7 +143,7 @@ export default function SettingsScreen() {
 
   return (
     <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
-      <View className="h-[56px] flex-row items-center px-[12px]">
+      <View className="h-[56px] flex-row items-center px-ku-12">
         <Pressable
           accessibilityLabel={messages.back}
           accessibilityRole="button"
@@ -155,7 +155,7 @@ export default function SettingsScreen() {
         </Pressable>
         <Text
           accessibilityRole="header"
-          className="ml-[4px] font-ku-bold text-ku-title-small text-ku-text-strong"
+          className="ml-ku-xs font-ku-bold text-ku-title-small text-ku-text-strong"
         >
           {messages.title}
         </Text>
@@ -283,13 +283,13 @@ export default function SettingsScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ disabled: loggingOut }}
-            className="min-h-[52px] flex-row items-center justify-center rounded-[16px] border border-ku-danger px-[16px] active:bg-ku-danger/10"
+            className="min-h-[52px] flex-row items-center justify-center rounded-[16px] border border-ku-danger px-ku-md active:bg-ku-danger/10"
             disabled={loggingOut}
             onPress={logout}
             testID="settings-logout"
           >
             <LogOut color={colors.danger} size={20} strokeWidth={2} />
-            <Text className="ml-[8px] font-ku-semibold text-ku-control text-ku-danger">
+            <Text className="ml-ku-sm font-ku-semibold text-ku-control text-ku-danger">
               {messages.logout}
             </Text>
           </Pressable>
@@ -301,7 +301,7 @@ export default function SettingsScreen() {
         onRequestClose={() => setLanguageModalVisible(false)}
         testID="settings-language-modal"
       >
-        <View className="flex-1 items-center justify-center px-[24px]">
+        <View className="flex-1 items-center justify-center px-ku-lg">
           <Pressable
             accessibilityLabel={messages.cancel}
             accessibilityRole="button"
@@ -310,7 +310,7 @@ export default function SettingsScreen() {
           />
           <View
             accessibilityViewIsModal
-            className="w-full max-w-[420px] rounded-[20px] bg-ku-surface p-[20px]"
+            className="w-full max-w-[420px] rounded-[20px] bg-ku-surface p-ku-20"
           >
             <Text
               accessibilityRole="header"
@@ -321,7 +321,7 @@ export default function SettingsScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ selected: locale === "th" }}
-              className={`mt-[16px] min-h-[52px] flex-row items-center justify-between rounded-[14px] border px-[16px] ${
+              className={`mt-ku-md min-h-[52px] flex-row items-center justify-between rounded-[14px] border px-ku-md ${
                 locale === "th"
                   ? "border-ku-primary bg-ku-primary/10"
                   : "border-ku-border"
@@ -342,7 +342,7 @@ export default function SettingsScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ selected: locale === "en" }}
-              className={`mt-[8px] min-h-[52px] flex-row items-center justify-between rounded-[14px] border px-[16px] ${
+              className={`mt-ku-sm min-h-[52px] flex-row items-center justify-between rounded-[14px] border px-ku-md ${
                 locale === "en"
                   ? "border-ku-primary bg-ku-primary/10"
                   : "border-ku-border"
@@ -362,7 +362,7 @@ export default function SettingsScreen() {
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              className="mt-[12px] min-h-[48px] items-center justify-center rounded-[14px] active:bg-ku-surface"
+              className="mt-ku-12 min-h-[48px] items-center justify-center rounded-[14px] active:bg-ku-surface"
               onPress={() => setLanguageModalVisible(false)}
               testID="settings-language-modal-cancel"
             >

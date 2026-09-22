@@ -238,15 +238,15 @@ export function WalletPaymentModal({
             {step === "amount" ? (
               /* Step 1: Enter Top-Up Amount */
               <View testID="quest-funding-top-up-flow">
-                <Text className="mb-[14px] text-[13px] leading-[18px] text-ku-text-secondary">
+                <Text className="mb-ku-14 text-[13px] leading-[18px] text-ku-text-secondary">
                   {m.topUpAmountDescription}
                 </Text>
 
-                <Text className="mb-[6px] text-[13px] font-semibold text-ku-text-secondary">
+                <Text className="mb-ku-6 text-[13px] font-semibold text-ku-text-secondary">
                   {m.enterAmount}
                 </Text>
 
-                <View className="mb-[6px] h-[52px] flex-row items-center rounded-[14px] border border-ku-border-accent bg-ku-surface-muted px-[14px]">
+                <View className="mb-ku-6 h-[52px] flex-row items-center rounded-[14px] border border-ku-border-accent bg-ku-surface-muted px-ku-14">
                   <Text className="mr-ku-sm text-[20px] font-bold text-ku-primary">
                     ฿
                   </Text>
@@ -267,7 +267,7 @@ export function WalletPaymentModal({
                   />
                 </View>
 
-                <Text className={`${s.hintText} mb-[14px] text-ku-text-muted`}>
+                <Text className={`${s.hintText} mb-ku-14 text-ku-text-muted`}>
                   {m.minTopUpHint}
                 </Text>
 
@@ -301,7 +301,7 @@ export function WalletPaymentModal({
                 </View>
 
                 {error ? (
-                  <Text className="mb-[12px] text-[12px] text-ku-danger">
+                  <Text className="mb-ku-12 text-[12px] text-ku-danger">
                     {error}
                   </Text>
                 ) : null}
@@ -340,7 +340,7 @@ export function WalletPaymentModal({
                 <Text className="mb-ku-md text-[13px] leading-[18px] text-ku-text-secondary">
                   {m.topUpAmountDescription}
                 </Text>
-                <View className="gap-[12px] rounded-[14px] border border-ku-border-subtle bg-ku-surface-muted p-ku-md">
+                <View className="gap-ku-12 rounded-[14px] border border-ku-border-subtle bg-ku-surface-muted p-ku-md">
                   <View className="flex-row justify-between">
                     <Text className="text-ku-text-secondary">
                       {m.topUpCredit}
@@ -361,7 +361,7 @@ export function WalletPaymentModal({
                       {formatSatang(quote.chargedTaxSatang, locale, "exact")}
                     </Text>
                   </View>
-                  <View className="flex-row justify-between border-t border-ku-border-subtle pt-[12px]">
+                  <View className="flex-row justify-between border-t border-ku-border-subtle pt-ku-12">
                     <Text className="font-bold text-ku-text-strong">
                       {m.topUpPaymentTotal}
                     </Text>
@@ -370,11 +370,11 @@ export function WalletPaymentModal({
                     </Text>
                   </View>
                 </View>
-                <Text className="mt-[12px] text-[12px] text-ku-text-muted">
+                <Text className="mt-ku-12 text-[12px] text-ku-text-muted">
                   {m.topUpExpiresAt}: {formatExpiry(quote.expiresAt, locale)}
                 </Text>
                 {error ? (
-                  <Text className="mt-[12px] text-[12px] text-ku-danger">
+                  <Text className="mt-ku-12 text-[12px] text-ku-danger">
                     {error}
                   </Text>
                 ) : null}
@@ -402,7 +402,7 @@ export function WalletPaymentModal({
                 className="items-center"
                 testID="quest-funding-top-up-promptpay"
               >
-                <Text className="mb-[12px] text-center text-[13px] text-ku-text-secondary">
+                <Text className="mb-ku-12 text-center text-[13px] text-ku-text-secondary">
                   {m.topUpPromptPayDescription}
                 </Text>
 
@@ -425,7 +425,7 @@ export function WalletPaymentModal({
                         size={84}
                         strokeWidth={1.8}
                       />
-                      <Text className="mt-[12px] text-center text-[12px] text-ku-text-muted">
+                      <Text className="mt-ku-12 text-center text-[12px] text-ku-text-muted">
                         {m.topUpPromptPayTitle} •{" "}
                         {formatSatang(
                           activeTopUp!.paymentTotalSatang,
@@ -442,7 +442,7 @@ export function WalletPaymentModal({
                   <Text className="text-[13px] text-ku-text-secondary">
                     {m.topUpPaymentTotal}
                   </Text>
-                  <Text className="mt-[2px] text-[24px] font-extrabold text-ku-text-strong">
+                  <Text className="mt-ku-2 text-[24px] font-extrabold text-ku-text-strong">
                     {formatSatang(
                       activeTopUp!.paymentTotalSatang,
                       locale,
@@ -454,7 +454,7 @@ export function WalletPaymentModal({
                 {/* Verified Badge */}
                 {paymentVerified ? (
                   <View
-                    className="my-[12px] w-full flex-row items-center gap-[12px] rounded-[16px] border border-ku-border-success bg-ku-surface-success p-[14px]"
+                    className="my-ku-12 w-full flex-row items-center gap-ku-12 rounded-[16px] border border-ku-border-success bg-ku-surface-success p-ku-14"
                     testID="quest-funding-verified-badge"
                   >
                     <ShieldCheck
@@ -466,7 +466,7 @@ export function WalletPaymentModal({
                       <Text className="text-[14px] font-bold text-ku-text-strong">
                         {m.paymentVerified}
                       </Text>
-                      <Text className="mt-[2px] text-[12px] text-ku-text-secondary">
+                      <Text className="mt-ku-2 text-[12px] text-ku-text-secondary">
                         {m.paymentCredited(
                           formatSatang(
                             activeTopUp!.creditSatang,
@@ -480,7 +480,7 @@ export function WalletPaymentModal({
                 ) : null}
 
                 {statusMessage && !paymentVerified ? (
-                  <View className="mb-[12px] w-full rounded-[10px] bg-ku-surface-muted p-[10px]">
+                  <View className="mb-ku-12 w-full rounded-[10px] bg-ku-surface-muted p-ku-10">
                     <Text className="text-center text-[12px] text-ku-text-secondary">
                       {statusMessage}
                     </Text>
@@ -488,7 +488,7 @@ export function WalletPaymentModal({
                 ) : null}
 
                 {/* Actions Row */}
-                <View className="mt-[10px] w-full gap-[10px]">
+                <View className="mt-ku-10 w-full gap-ku-10">
                   {!paymentVerified ? (
                     <TouchableOpacity
                       accessibilityLabel={m.verifyPayment}

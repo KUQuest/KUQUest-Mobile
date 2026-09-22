@@ -104,7 +104,9 @@ export default function WorkerWorkManagementScreen() {
 
   const bottomNavInset = getBottomNavigationInset(metrics, insets.bottom);
   const scrollBottomPadding =
-    bottomNavInset + (currentAssignment ? 76 : 16) + spacing.xl;
+    bottomNavInset +
+    (currentAssignment ? spacing.px76 : spacing.md) +
+    spacing.xl;
   const currentQuestState =
     currentSnapshot?.state ?? currentAssignment?.questState;
   const currentQuestCanSubmit =
@@ -120,7 +122,7 @@ export default function WorkerWorkManagementScreen() {
   return (
     <ScreenLayout edges={["top", "left", "right"]} className="bg-ku-background">
       <ScrollView
-        contentContainerClassName="px-ku-md pt-[14px]"
+        contentContainerClassName="px-ku-md pt-ku-14"
         contentContainerStyle={{ paddingBottom: scrollBottomPadding }}
         onScroll={handleScroll}
         refreshControl={
@@ -140,7 +142,7 @@ export default function WorkerWorkManagementScreen() {
         testID="worker-work-management-scroll"
       >
         {/* Header Title: Work */}
-        <View className="mb-[14px] px-[4px]">
+        <View className="mb-ku-14 px-ku-xs">
           <Text
             accessibilityRole="header"
             className={`${styles.screenTitle} text-ku-text-strong`}

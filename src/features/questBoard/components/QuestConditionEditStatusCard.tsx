@@ -47,10 +47,10 @@ export function QuestConditionEditStatusCard({
       >
         {messages.conditionEditPendingTitle}
       </Text>
-      <Text className="mt-1 text-ku-body-small text-ku-text-secondary">
+      <Text className="mt-ku-xs text-ku-body-small text-ku-text-secondary">
         {messages.conditionEditPendingDescription}
       </Text>
-      <View className="mt-3 flex-row items-center justify-between rounded-xl bg-ku-surface px-3 py-3">
+      <View className="mt-ku-12 flex-row items-center justify-between rounded-xl bg-ku-surface px-ku-12 py-ku-12">
         <Text className="text-ku-body-small text-ku-text-secondary">
           {messages.conditionEditCountdownLabel}
         </Text>
@@ -64,7 +64,7 @@ export function QuestConditionEditStatusCard({
       </View>
       <Text
         testID="hirer-condition-edit-progress"
-        className="mt-2 text-ku-body-small text-ku-text-secondary"
+        className="mt-ku-sm text-ku-body-small text-ku-text-secondary"
       >
         {messages.conditionEditVotingProgress(acceptedCount, totalCount)}
       </Text>

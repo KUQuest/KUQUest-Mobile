@@ -8,6 +8,7 @@ import { Pressable, ScrollView, Text, TouchableOpacity, View } from "@/tw";
 import { Chip } from "@/components/ui/Chip";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { useLocale } from "@/features/preferences/localeStore";
+import { spacing } from "@/theme/spacing";
 
 import type {
   CanonicalHirerQuestStatus,
@@ -62,15 +63,15 @@ export function HirerQuestRosterModal({
           accessibilityLabel={messages.close}
         />
         <View
-          className="w-full rounded-t-3xl bg-ku-surface px-6 pt-6"
+          className="w-full rounded-t-3xl bg-ku-surface px-ku-lg pt-ku-lg"
           style={{
             maxHeight: "85%",
-            paddingBottom: Math.max(insets.bottom, 20),
+            paddingBottom: Math.max(insets.bottom, spacing.px20),
           }}
           accessibilityViewIsModal
         >
-          <View className="mb-4 flex-row items-center justify-between">
-            <View className="flex-1 pr-4">
+          <View className="mb-ku-md flex-row items-center justify-between">
+            <View className="flex-1 pr-ku-lg">
               <Text
                 className="font-ku-bold text-ku-subtitle text-ku-text-strong"
                 numberOfLines={1}
@@ -78,7 +79,7 @@ export function HirerQuestRosterModal({
                 {messages.rosterModalTitle}
               </Text>
               <Text
-                className="mt-1 text-ku-body-small text-ku-text-secondary"
+                className="mt-ku-xs text-ku-body-small text-ku-text-secondary"
                 numberOfLines={1}
               >
                 {questTitle}
@@ -86,7 +87,7 @@ export function HirerQuestRosterModal({
             </View>
             <TouchableOpacity
               onPress={onClose}
-              className="rounded-full bg-ku-surface-accent p-2"
+              className="rounded-full bg-ku-surface-accent p-ku-sm"
               testID="hirer-roster-close"
               accessibilityRole="button"
               accessibilityLabel={messages.close}
@@ -96,16 +97,16 @@ export function HirerQuestRosterModal({
           </View>
 
           {/* Quick Counter Pills */}
-          <View className="mt-2 flex-row gap-2">
+          <View className="mt-ku-sm flex-row gap-ku-sm">
             <Chip
-              className="rounded-full border-0 bg-ku-surface-accent px-3 py-1"
+              className="rounded-full border-0 bg-ku-surface-accent px-ku-12 py-ku-xs"
               label={messages.joinedLabel(assignedWorkers.length, headcount)}
               textClassName="font-ku-medium text-ku-label text-ku-primary"
               tone="accent"
             />
             {applicants.length > 0 && (
               <Chip
-                className="rounded-full border-0 bg-ku-surface-muted px-3 py-1"
+                className="rounded-full border-0 bg-ku-surface-muted px-ku-12 py-ku-xs"
                 label={messages.applicantsLabel(applicants.length)}
                 textClassName="font-ku-medium text-ku-label text-ku-text-strong"
                 tone="accent"
@@ -115,14 +116,14 @@ export function HirerQuestRosterModal({
 
           {/* Member Lists */}
           <ScrollView
-            className="mt-4"
-            contentContainerStyle={{ paddingBottom: 20 }}
+            className="mt-ku-md"
+            contentContainerStyle={{ paddingBottom: spacing.px20 }}
             showsVerticalScrollIndicator={false}
           >
             {/* Joined Section */}
             {assignedWorkers.length > 0 && (
-              <View className="mb-5">
-                <View className="mb-2.5 flex-row items-center gap-1.5">
+              <View className="mb-ku-20">
+                <View className="mb-ku-10 flex-row items-center gap-ku-6">
                   <CheckCircle2 size={16} color={themeColors.primary} />
                   <Text className="font-ku-bold text-ku-body-small text-ku-text-strong">
                     {messages.joinedSectionTitle} ({assignedWorkers.length})
@@ -131,18 +132,18 @@ export function HirerQuestRosterModal({
                 {assignedWorkers.map((worker) => (
                   <View
                     key={worker.id}
-                    className="mb-2 flex-row items-center justify-between rounded-xl border border-ku-border bg-ku-surface-muted p-3"
+                    className="mb-ku-sm flex-row items-center justify-between rounded-xl border border-ku-border bg-ku-surface-muted p-ku-12"
                     testID={`roster-worker-${worker.id}`}
                   >
                     <View className="flex-1 flex-row items-center">
                       <Avatar
                         name={worker.displayName}
                         size={40}
-                        className="mr-3 h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-ku-surface-accent"
+                        className="mr-ku-12 h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-ku-surface-accent"
                         textClassName="font-ku-bold text-sm"
                         uri={worker.avatarUri}
                       />
-                      <View className="flex-1 pr-2">
+                      <View className="flex-1 pr-ku-sm">
                         <Text
                           className="font-ku-bold text-ku-text-strong"
                           numberOfLines={1}
@@ -162,7 +163,7 @@ export function HirerQuestRosterModal({
                         onClose();
                         onOpenWorkerProfile(worker.id);
                       }}
-                      className="rounded-lg bg-ku-surface-accent px-3 py-1.5"
+                      className="rounded-lg bg-ku-surface-accent px-ku-12 py-ku-6"
                       testID={`roster-worker-profile-${worker.id}`}
                       accessibilityRole="button"
                       accessibilityLabel={messages.viewProfile}
@@ -178,8 +179,8 @@ export function HirerQuestRosterModal({
 
             {/* Applicants Section */}
             {applicants.length > 0 && (
-              <View className="mb-4">
-                <View className="mb-2.5 flex-row items-center gap-1.5">
+              <View className="mb-ku-md">
+                <View className="mb-ku-10 flex-row items-center gap-ku-6">
                   <Users size={16} color={themeColors.primary} />
                   <Text className="font-ku-bold text-ku-body-small text-ku-text-strong">
                     {messages.applicantsSectionTitle} ({applicants.length})
@@ -188,18 +189,18 @@ export function HirerQuestRosterModal({
                 {applicants.map((applicant) => (
                   <View
                     key={applicant.id}
-                    className="mb-2 flex-row items-center justify-between rounded-xl border border-ku-border bg-ku-surface-muted p-3"
+                    className="mb-ku-sm flex-row items-center justify-between rounded-xl border border-ku-border bg-ku-surface-muted p-ku-12"
                     testID={`roster-applicant-${applicant.id}`}
                   >
                     <View className="flex-1 flex-row items-center">
                       <Avatar
-                        className="mr-3 h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-ku-surface-accent"
+                        className="mr-ku-12 h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-ku-surface-accent"
                         name={applicant.displayName}
                         size={40}
                         textClassName="font-ku-bold text-sm"
                         uri={applicant.avatarUri}
                       />
-                      <View className="flex-1 pr-2">
+                      <View className="flex-1 pr-ku-sm">
                         <Text
                           className="font-ku-bold text-ku-text-strong"
                           numberOfLines={1}
@@ -219,7 +220,7 @@ export function HirerQuestRosterModal({
                         onClose();
                         onOpenWorkerProfile(applicant.id);
                       }}
-                      className="rounded-lg bg-ku-surface-accent px-3 py-1.5"
+                      className="rounded-lg bg-ku-surface-accent px-ku-12 py-ku-6"
                       testID={`roster-applicant-profile-${applicant.id}`}
                       accessibilityRole="button"
                       accessibilityLabel={messages.viewProfile}
@@ -235,9 +236,9 @@ export function HirerQuestRosterModal({
 
             {/* Empty State when no workers and no applicants */}
             {assignedWorkers.length === 0 && applicants.length === 0 && (
-              <View className="items-center justify-center py-8">
+              <View className="items-center justify-center py-ku-xl">
                 <Users size={36} color={themeColors.textSecondary} />
-                <Text className="mt-3 text-center text-ku-body-small text-ku-text-secondary">
+                <Text className="mt-ku-12 text-center text-ku-body-small text-ku-text-secondary">
                   {messages.noRosterYet}
                 </Text>
               </View>
@@ -250,7 +251,7 @@ export function HirerQuestRosterModal({
               onClose();
               onOpenManageQuest(questId);
             }}
-            className="mt-2 w-full items-center rounded-2xl bg-ku-primary p-4"
+            className="mt-ku-sm w-full items-center rounded-2xl bg-ku-primary p-ku-md"
             testID="hirer-roster-manage-button"
             accessibilityRole="button"
             accessibilityLabel={messages.openManageQuest}
