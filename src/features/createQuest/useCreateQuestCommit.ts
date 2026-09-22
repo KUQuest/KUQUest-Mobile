@@ -17,6 +17,7 @@ type PublishQuest = (draft: QuestDraft) => Promise<boolean>;
 export function useCreateQuestCommit({
   draft,
   mode,
+
   onCompleted,
   publishCheck,
   publishQuest,
@@ -25,6 +26,7 @@ export function useCreateQuestCommit({
 }: {
   draft: QuestDraft;
   mode: CreateQuestFlowMode;
+
   onCompleted: (state: CompletionState) => void;
   publishCheck: QuestPublishCheck;
   publishQuest: PublishQuest;
