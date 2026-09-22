@@ -118,12 +118,12 @@ export function CurrentQuestCard({
         accessibilityHint="Opens current quest work screen"
         accessibilityLabel={`${messages.currentQuest}: ${questTitle}`}
         accessibilityRole="button"
-        className="gap-[10px]"
+        className="gap-ku-10"
         onPress={handlePress}
         testID="current-quest-card"
       >
         <View className={styles.currentQuestTop}>
-          <View className="flex-row items-center gap-[6px]">
+          <View className="flex-row items-center gap-ku-6">
             <View className={`${styles.roleBadgeDot} bg-ku-primary-dark`} />
             <Text
               className={`${styles.currentQuestLabel} text-ku-primary-dark`}
@@ -132,7 +132,7 @@ export function CurrentQuestCard({
             </Text>
           </View>
           <View
-            className={`flex-row items-center gap-[5px] rounded-ku-pill border px-ku-sm py-[4px] ${stateClasses}`}
+            className={`flex-row items-center gap-ku-5 rounded-ku-pill border px-ku-sm py-ku-xs ${stateClasses}`}
           >
             <View className="h-[8px] w-[8px] rounded-[4px] bg-current" />
             <Text className="font-ku-semibold text-ku-caption leading-[15px]">
@@ -226,10 +226,10 @@ export function CurrentQuestCard({
           </View>
         </View>
       </Pressable>
-      <View className="mt-[14px] border-t border-ku-border-subtle pt-[14px]">
-        <View className="flex-row items-center justify-between gap-[10px]">
-          <View className="flex-1 gap-[3px]">
-            <View className="flex-row items-center gap-[6px]">
+      <View className="mt-ku-14 border-t border-ku-border-subtle pt-ku-14">
+        <View className="flex-row items-center justify-between gap-ku-10">
+          <View className="flex-1 gap-ku-3">
+            <View className="flex-row items-center gap-ku-6">
               <BriefcaseBusiness color={themeColors.primaryDeep} size={15} />
               <Text className="font-ku-semibold text-ku-label text-ku-text-strong">
                 {proofRequired === undefined
@@ -249,7 +249,7 @@ export function CurrentQuestCard({
             accessibilityLabel={messages.submitWork}
             accessibilityRole="button"
             accessibilityState={{ disabled: !canSubmit }}
-            className={`min-h-[44px] flex-row items-center justify-center gap-[6px] rounded-[10px] border px-[13px] ${
+            className={`min-h-[44px] flex-row items-center justify-center gap-ku-6 rounded-[10px] border px-ku-13 ${
               canSubmit
                 ? "border-ku-primary-dark bg-ku-primary-dark"
                 : "border-ku-border-subtle bg-ku-surface-muted opacity-80"

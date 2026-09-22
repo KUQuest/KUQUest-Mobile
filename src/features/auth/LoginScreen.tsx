@@ -122,7 +122,7 @@ export default function LoginScreen({
                     <Text
                       className={cn(
                         styles.errorText,
-                        "mt-[4px] text-ku-label text-ku-danger-light"
+                        "mt-ku-xs text-ku-label text-ku-danger-light"
                       )}
                     >
                       {error.message}

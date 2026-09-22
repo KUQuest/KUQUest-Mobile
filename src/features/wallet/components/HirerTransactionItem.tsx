@@ -128,21 +128,21 @@ export function HirerTransactionItem({
 }
 
 const styles = {
-  card: "mb-[10px] flex-row items-center rounded-[16px] border border-ku-border-subtle bg-ku-card p-[14px]",
+  card: "mb-ku-10 flex-row items-center rounded-[16px] border border-ku-border-subtle bg-ku-card p-ku-14",
   iconBox:
-    "mr-[12px] h-[44px] w-[44px] items-center justify-center rounded-[12px]",
+    "mr-ku-12 h-[44px] w-[44px] items-center justify-center rounded-[12px]",
   iconBoxNeutral: "bg-ku-surface-muted",
   iconBoxGreen: "bg-ku-surface-success",
   contentWrap: "mr-ku-sm flex-1",
   title:
-    "mb-[2px] font-ku-medium text-ku-body-small leading-[20px] text-ku-text-strong",
+    "mb-ku-2 font-ku-medium text-ku-body-small leading-[20px] text-ku-text-strong",
   subtitle:
-    "mb-[2px] font-ku-regular text-ku-label leading-[16px] text-ku-text-secondary",
+    "mb-ku-2 font-ku-regular text-ku-label leading-[16px] text-ku-text-secondary",
   dateRow: "flex-row items-center gap-ku-sm",
   date: "font-ku-regular text-ku-caption text-ku-text-muted",
-  pendingChip: "rounded-[4px] bg-ku-surface-warning px-ku-xs py-[1px]",
+  pendingChip: "rounded-[4px] bg-ku-surface-warning px-ku-xs py-ku-1",
   pendingText: "font-ku-medium text-ku-nav text-ku-warning-dark",
-  failedChip: "rounded-[4px] bg-ku-surface-danger px-ku-xs py-[1px]",
+  failedChip: "rounded-[4px] bg-ku-surface-danger px-ku-xs py-ku-1",
   failedText: "font-ku-medium text-ku-nav text-ku-danger",
   amountWrap: "flex-row items-center gap-ku-xs",
   amount: "font-ku-bold text-[15px] leading-[20px]",

@@ -251,7 +251,7 @@ export default function CustomTimePickerModal({
             </Pressable>
           </View>
 
-          <View className="mb-[6px]">
+          <View className="mb-ku-6">
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -262,7 +262,7 @@ export default function CustomTimePickerModal({
                 return (
                   <Chip
                     accessibilityLabel={`${preset.label}: ${preset.time}`}
-                    className="mr-[6px] px-[12px] py-[6px]"
+                    className="mr-ku-6 px-ku-12 py-ku-6"
                     key={preset.label}
                     label={`${preset.label} (${preset.time})`}
                     onPress={() => handleApplyPreset(preset.time)}
@@ -407,7 +407,7 @@ export default function CustomTimePickerModal({
               className={styles.timePickerConfirmBtn}
               testID="custom-time-picker-confirm"
             >
-              <View className="flex-row items-center gap-[6px]">
+              <View className="flex-row items-center gap-ku-6">
                 <Check color={colors.onPrimary} size={18} strokeWidth={2.5} />
                 <Text className={styles.timePickerConfirmText}>
                   {messages.confirmTime} ({formattedTime})

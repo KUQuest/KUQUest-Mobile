@@ -108,15 +108,18 @@ export function QuestConditionEditModal({
       fullScreen
     >
       <ScrollView className="flex-1" testID="quest-condition-edit-scroll">
-        <View className="mt-4 rounded-2xl border border-ku-border-warning bg-ku-surface-warning p-4">
+        <View className="mt-ku-md rounded-2xl border border-ku-border-warning bg-ku-surface-warning p-ku-md">
           <Text className="text-ku-body-small text-ku-warning-dark">
             {messages.conditionEditWarning}
           </Text>
         </View>
 
-        <View className="mt-4">
+        <View className="mt-ku-md">
           {items.map((item, index) => (
-            <View key={index} className="mb-3 flex-row items-start gap-2">
+            <View
+              key={index}
+              className="mb-ku-12 flex-row items-start gap-ku-sm"
+            >
               <TextInput
                 value={item}
                 onChangeText={(text) => updateItem(index, text)}
@@ -125,9 +128,9 @@ export function QuestConditionEditModal({
                 maxLength={MAX_CONDITION_ITEM_LENGTH}
                 accessibilityLabel={messages.conditionItemLabel(index + 1)}
                 testID={`quest-condition-item-${index}`}
-                className="flex-1 rounded-xl border border-ku-border bg-ku-surface p-3 text-ku-text-strong"
+                className="flex-1 rounded-xl border border-ku-border bg-ku-surface p-ku-12 text-ku-text-strong"
               />
-              <View className="gap-1">
+              <View className="gap-ku-xs">
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={messages.moveConditionItemUp(index + 1)}
@@ -166,7 +169,7 @@ export function QuestConditionEditModal({
             accessibilityLabel={messages.addConditionItem}
             onPress={addItem}
             testID="quest-condition-add"
-            className="flex-row items-center justify-center gap-2 rounded-xl border border-dashed border-ku-border bg-ku-surface p-3"
+            className="flex-row items-center justify-center gap-ku-sm rounded-xl border border-dashed border-ku-border bg-ku-surface p-ku-12"
           >
             <Plus size={16} color={colors.primary} />
             <Text className="font-ku-semibold text-ku-primary">
@@ -176,14 +179,14 @@ export function QuestConditionEditModal({
         </View>
 
         <View
-          className="mt-5 rounded-2xl bg-ku-surface-muted p-4"
+          className="mt-ku-20 rounded-2xl bg-ku-surface-muted p-ku-md"
           testID="quest-condition-diff"
         >
           <Text className="font-ku-bold text-ku-text-strong">
             {messages.conditionDiffTitle}
           </Text>
           {hasChanges ? (
-            <View className="mt-2 gap-1">
+            <View className="mt-ku-sm gap-ku-xs">
               {diff.added.map((text, index) => (
                 <Text
                   key={`added-${index}-${text}`}
@@ -209,7 +212,7 @@ export function QuestConditionEditModal({
               ) : null}
             </View>
           ) : (
-            <Text className="mt-2 text-ku-body-small text-ku-text-secondary">
+            <Text className="mt-ku-sm text-ku-body-small text-ku-text-secondary">
               {messages.conditionNoChanges}
             </Text>
           )}
@@ -218,7 +221,7 @@ export function QuestConditionEditModal({
         {hasEmptyItem ? (
           <Text
             accessibilityRole="alert"
-            className="mt-3 text-ku-body-small text-ku-danger-dark"
+            className="mt-ku-12 text-ku-body-small text-ku-danger-dark"
           >
             {messages.conditionItemRequired}
           </Text>
@@ -226,7 +229,7 @@ export function QuestConditionEditModal({
         {error ? (
           <Text
             accessibilityRole="alert"
-            className="mt-3 text-ku-body-small text-ku-danger-dark"
+            className="mt-ku-12 text-ku-body-small text-ku-danger-dark"
           >
             {error}
           </Text>
@@ -236,7 +239,7 @@ export function QuestConditionEditModal({
       <Button
         onPress={handleSubmit}
         disabled={!canSubmit}
-        className="mt-4"
+        className="mt-ku-md"
         testID="quest-condition-submit"
       >
         {submitting

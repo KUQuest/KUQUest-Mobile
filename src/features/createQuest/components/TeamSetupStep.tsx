@@ -323,7 +323,7 @@ export function TeamSetupStep({
                       styles.durationBadgeError
                     )}
                   >
-                    <View className="flex-1 flex-row items-center gap-[6px]">
+                    <View className="flex-1 flex-row items-center gap-ku-6">
                       <CircleAlert
                         color={colors.danger}
                         size={16}
@@ -352,7 +352,7 @@ export function TeamSetupStep({
                 if (durationStr) {
                   return (
                     <View className={styles.durationBadge}>
-                      <View className="flex-row items-center gap-[6px]">
+                      <View className="flex-row items-center gap-ku-6">
                         <Clock3
                           color={colors.primary}
                           size={16}

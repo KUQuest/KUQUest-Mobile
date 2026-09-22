@@ -22,7 +22,7 @@ export function CreateQuestSkeleton({
   stackedActions: boolean;
 }) {
   const field = (key: string, height = 48) => (
-    <View key={key} style={{ gap: 4 }}>
+    <View key={key} style={{ gap: spacing.xs }}>
       <SkeletonBlock height={14} width="42%" borderRadius={4} />
       <SkeletonBlock height={height} borderRadius={10} />
     </View>

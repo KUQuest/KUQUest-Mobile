@@ -69,7 +69,7 @@ export function WorkerActiveAssignmentCard({
             {questTitle}
           </Text>
         </View>
-        <View className="rounded-ku-pill border border-ku-border-success bg-ku-surface-success px-[10px] py-[3px]">
+        <View className="rounded-ku-pill border border-ku-border-success bg-ku-surface-success px-ku-10 py-ku-3">
           <Text className="font-ku-semibold text-ku-caption leading-[16px] text-ku-success">
             {statusLabel}
           </Text>
@@ -90,7 +90,7 @@ export function WorkerActiveAssignmentCard({
         onPress={handlePress}
         testID={`worker-assignment-action-${assignment.id}`}
       >
-        <View className="flex-row items-center gap-[6px]">
+        <View className="flex-row items-center gap-ku-6">
           <Text className={`${styles.actionButtonText} text-ku-on-primary`}>
             {messages.viewWork}
           </Text>

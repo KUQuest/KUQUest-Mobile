@@ -1,4 +1,5 @@
 import React from "react";
+import type { Tabs } from "expo-router";
 import { cn } from "@/tw/cn";
 import { useWindowDimensions } from "react-native";
 import { useAnimatedStyle, withTiming } from "react-native-reanimated";
@@ -6,9 +7,11 @@ import { Image, Pressable, View } from "@/tw";
 import { Animated } from "@/tw/animated";
 
 import { useLocale } from "@/features/preferences/localeStore";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { navigationMessages } from "@/locales/navigationMessages";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { getAppChromeMetrics } from "@/theme/layout";
+import { useHasUnreadChatQuery } from "@/features/chat/api/chatQueries";
 import {
   useNavigationCompact,
   showNavigation,
@@ -22,7 +25,7 @@ import {
 } from "@/features/navigation/roleWorkspaceNavigation";
 
 type TabBarProps = Parameters<
-  NonNullable<React.ComponentProps<typeof import("expo-router").Tabs>["tabBar"]>
+  NonNullable<React.ComponentProps<typeof Tabs>["tabBar"]>
 >[0];
 
 export function BottomNav({
@@ -39,6 +42,10 @@ export function BottomNav({
   const focusedRouteKey = state.routes[state.index]?.key;
   const { workspace } = useRoleWorkspace();
   const navigationCompact = useNavigationCompact();
+  const sessionQuery = useSessionQuery();
+  const viewerId = sessionQuery.data?.user.id ?? "";
+  const unreadChatQuery = useHasUnreadChatQuery(viewerId);
+  const hasUnreadChat = unreadChatQuery.data === true;
   const profileQuery = useProfileQuery(locale);
   const profileImage = profileQuery.data?.profileImage;
   const avatarUri =
@@ -139,8 +146,15 @@ export function BottomNav({
           const isFocused = route.key === focusedRouteKey;
           const options = descriptors[route.key]?.options;
           const label = messages[item.labelKey];
+          const tabLabel = options?.tabBarAccessibilityLabel ?? label;
           const Icon = item.icon;
           const isProfileTab = item.routeName === "profile";
+          const hasUnread = Boolean(
+            item.hasUnread || (item.routeName === "chat" && hasUnreadChat)
+          );
+          const accessibilityLabel = hasUnread
+            ? `${tabLabel}, ${messages.unreadMessages}`
+            : tabLabel;
           const iconColor = isFocused
             ? navigationColors.primaryDeep
             : navigationColors.navIconMuted;
@@ -162,7 +176,7 @@ export function BottomNav({
           return (
             <Pressable
               key={route.key}
-              accessibilityLabel={options?.tabBarAccessibilityLabel ?? label}
+              accessibilityLabel={accessibilityLabel}
               accessibilityRole={item.isCreate ? "button" : "tab"}
               {...(item.isCreate
                 ? {}
@@ -292,10 +306,11 @@ export function BottomNav({
                   style={{ backgroundColor: navigationColors.primaryDeep }}
                 />
               ) : null}
-              {item.hasUnread ? (
+              {hasUnread ? (
                 <View
-                  accessibilityLabel={messages.unreadMessages}
+                  accessible={false}
                   className={styles.unreadBadge}
+                  testID={`tab-${item.routeName}-unread-badge`}
                 />
               ) : null}
             </Pressable>

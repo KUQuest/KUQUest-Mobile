@@ -33,7 +33,46 @@ const KU_TEXT_SIZES = [
   "ku-heading",
 ];
 
-const KU_SPACING = ["ku-xs", "ku-sm", "ku-md", "ku-lg", "ku-xl"];
+const KU_SPACING = [
+  "ku-0",
+  "ku-1",
+  "ku-2",
+  "ku-3",
+  "ku-4",
+  "ku-5",
+  "ku-6",
+  "ku-7",
+  "ku-8",
+  "ku-9",
+  "ku-10",
+  "ku-11",
+  "ku-12",
+  "ku-13",
+  "ku-14",
+  "ku-16",
+  "ku-18",
+  "ku-20",
+  "ku-22",
+  "ku-24",
+  "ku-28",
+  "ku-30",
+  "ku-31",
+  "ku-32",
+  "ku-34",
+  "ku-36",
+  "ku-40",
+  "ku-48",
+  "ku-56",
+  "ku-64",
+  "ku-76",
+  "ku-120",
+  "ku-132",
+  "ku-xs",
+  "ku-sm",
+  "ku-md",
+  "ku-lg",
+  "ku-xl",
+];
 
 const twMerge = extendTailwindMerge({
   extend: {

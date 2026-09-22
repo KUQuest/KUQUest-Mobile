@@ -24,7 +24,7 @@ export function HirerWalletHeader({ subtitle, title }: HirerWalletHeaderProps) {
 }
 
 const styles = {
-  screenHeader: "px-[4px] pb-[20px]",
+  screenHeader: "px-ku-xs pb-ku-20",
   screenTitle: "font-ku-bold text-[28px] leading-[36px] text-ku-text-strong",
   screenSubtitle:
     "mt-ku-xs font-ku-regular text-ku-body-small leading-[21px] text-ku-text-secondary",

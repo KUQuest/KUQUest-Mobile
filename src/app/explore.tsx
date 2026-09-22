@@ -154,7 +154,7 @@ const styles = {
   scrollView: "flex-1",
   contentContainer: "flex-row justify-center",
   container: "grow max-w-[800px]",
-  titleContainer: "items-center gap-ku-md px-ku-lg py-[64px]",
+  titleContainer: "items-center gap-ku-md px-ku-lg py-ku-64",
   centerText: "text-center",
   linkButton:
     "items-center flex-row gap-ku-xs justify-center px-ku-lg py-ku-sm rounded-[32px]",

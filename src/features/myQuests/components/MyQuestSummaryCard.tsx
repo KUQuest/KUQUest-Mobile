@@ -90,7 +90,7 @@ export function MyQuestSummaryCard({
             </Text>
           </View>
           <View
-            className={`min-h-[28px] flex-shrink-0 flex-row items-center justify-center gap-ku-xs rounded-ku-pill border px-[9px] ${statusClasses(quest.statusTone)}`}
+            className={`min-h-[28px] flex-shrink-0 flex-row items-center justify-center gap-ku-xs rounded-ku-pill border px-ku-9 ${statusClasses(quest.statusTone)}`}
           >
             <StatusIcon color={status.foreground} tone={quest.statusTone} />
             <Text className="font-ku-semibold text-ku-label leading-[18px]">
@@ -112,7 +112,7 @@ export function MyQuestSummaryCard({
             {description}
           </Text>
         ) : null}
-        <View className="mt-[14px] gap-ku-sm">
+        <View className="mt-ku-14 gap-ku-sm">
           <View className="min-h-[28px] flex-row items-center gap-ku-sm">
             <View className="h-[28px] w-[28px] items-center justify-center rounded-ku-pill bg-ku-surface-accent">
               <CalendarDays color={palette.primary} size={15} strokeWidth={2} />
@@ -122,7 +122,7 @@ export function MyQuestSummaryCard({
                 {messages.scheduleLabel}
               </Text>
               <Text
-                className="mt-[1px] flex-shrink font-ku-semibold text-ku-body-small leading-[18px] text-ku-text-secondary"
+                className="mt-ku-1 flex-shrink font-ku-semibold text-ku-body-small leading-[18px] text-ku-text-secondary"
                 numberOfLines={1}
               >
                 {quest.date}
@@ -138,7 +138,7 @@ export function MyQuestSummaryCard({
                 {messages.locationLabel}
               </Text>
               <Text
-                className="mt-[1px] flex-shrink font-ku-semibold text-ku-body-small leading-[18px] text-ku-text-secondary"
+                className="mt-ku-1 flex-shrink font-ku-semibold text-ku-body-small leading-[18px] text-ku-text-secondary"
                 numberOfLines={1}
               >
                 {quest.location}
@@ -146,12 +146,12 @@ export function MyQuestSummaryCard({
             </View>
           </View>
         </View>
-        <View className="mt-[14px] flex-row gap-ku-sm border-t border-ku-border-subtle pt-ku-sm">
+        <View className="mt-ku-14 flex-row gap-ku-sm border-t border-ku-border-subtle pt-ku-sm">
           <View className="min-w-0 flex-1">
             <Text className="font-ku-regular text-[10px] leading-[14px] text-ku-text-muted">
               {messages.workerLabel}
             </Text>
-            <Text className="mt-[2px] flex-shrink font-ku-bold text-ku-meta leading-[18px] text-ku-text-strong">
+            <Text className="mt-ku-2 flex-shrink font-ku-bold text-ku-meta leading-[18px] text-ku-text-strong">
               {quest.teamSize}
             </Text>
           </View>
@@ -160,7 +160,7 @@ export function MyQuestSummaryCard({
               {messages.statusLabel}
             </Text>
             <Text
-              className="mt-[2px] flex-shrink font-ku-bold text-ku-meta leading-[18px] text-ku-text-strong"
+              className="mt-ku-2 flex-shrink font-ku-bold text-ku-meta leading-[18px] text-ku-text-strong"
               numberOfLines={1}
             >
               {quest.status}
@@ -169,13 +169,13 @@ export function MyQuestSummaryCard({
         </View>
       </Pressable>
       <View
-        className="flex-row items-center justify-end px-ku-md py-[10px]"
+        className="flex-row items-center justify-end px-ku-md py-ku-10"
         style={{ backgroundColor: palette.surface }}
       >
         <Pressable
           accessibilityLabel={`${quest.action}: ${quest.title}`}
           accessibilityRole="button"
-          className="min-h-[40px] flex-row items-center justify-center gap-[5px] rounded-ku-pill bg-ku-primary px-[14px]"
+          className="min-h-[40px] flex-row items-center justify-center gap-ku-5 rounded-ku-pill bg-ku-primary px-ku-14"
           onPress={onOpen}
           style={({ pressed }) =>
             pressed ? { backgroundColor: palette.primaryDark } : undefined

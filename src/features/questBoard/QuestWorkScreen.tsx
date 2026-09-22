@@ -305,11 +305,11 @@ export default function QuestWorkScreen({
         className="flex-1 bg-ku-background"
       >
         <View
-          className="flex-1 items-center justify-center px-6"
+          className="flex-1 items-center justify-center px-ku-lg"
           testID="quest-work-loading"
         >
           <ActivityIndicator color={colors.primary} />
-          <Text className="mt-3 text-ku-label text-ku-text-subtle">
+          <Text className="mt-ku-12 text-ku-label text-ku-text-subtle">
             {questMessages.loading}
           </Text>
         </View>
@@ -323,17 +323,20 @@ export default function QuestWorkScreen({
         edges={["top", "left", "right", "bottom"]}
         className="flex-1 bg-ku-background"
       >
-        <View className="flex-1 justify-center px-6" testID="quest-work-error">
+        <View
+          className="flex-1 justify-center px-ku-lg"
+          testID="quest-work-error"
+        >
           <Text className="font-ku-bold text-ku-title-small text-ku-text-strong">
             {messages.serverError}
           </Text>
-          <Text className="mt-2 text-ku-body-small text-ku-text-secondary">
+          <Text className="mt-ku-sm text-ku-body-small text-ku-text-secondary">
             {errorText ?? messages.missingRoute}
           </Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={messages.retry}
-            className="mt-5 rounded-xl bg-ku-primary px-4 py-3"
+            className="mt-ku-20 rounded-xl bg-ku-primary px-ku-md py-ku-12"
             onPress={() => void refreshSnapshot().catch(() => undefined)}
           >
             <Text className="text-center font-ku-semibold text-ku-on-primary">
@@ -361,8 +364,8 @@ export default function QuestWorkScreen({
         contentContainerStyle={{ paddingBottom: contentBottom }}
         testID="quest-work-screen"
       >
-        <View className="px-5 pt-3">
-          <View className="mb-5 flex-row items-center justify-between">
+        <View className="px-ku-20 pt-ku-12">
+          <View className="mb-ku-20 flex-row items-center justify-between">
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={questMessages.back}

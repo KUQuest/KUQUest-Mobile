@@ -162,11 +162,13 @@ export function usePublishEditQuestMutation() {
       questId,
       version,
       payload,
+      idempotencyKey,
     }: {
       questId: string;
       version: number;
       payload: Partial<CreateQuestV2Payload>;
-    }) => liveQuestService.editQuest(questId, version, payload),
+      idempotencyKey: string;
+    }) => liveQuestService.editQuest(questId, version, payload, idempotencyKey),
     onSuccess: (_, variables) =>
       invalidateQuestReads(queryClient, variables.questId),
   });

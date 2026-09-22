@@ -255,18 +255,18 @@ export default function WalletScreen() {
 
 const styles = {
   screen: "bg-ku-background",
-  centerContainer: "items-center justify-center py-[40px]",
+  centerContainer: "items-center justify-center py-ku-40",
   errorCard:
     "mt-ku-sm items-center rounded-[16px] border border-ku-border-danger bg-ku-card p-ku-lg",
   errorText:
-    "mb-ku-md mt-[10px] text-center font-ku-medium text-ku-body-small text-ku-danger",
+    "mb-ku-md mt-ku-10 text-center font-ku-medium text-ku-body-small text-ku-danger",
   retryButton:
-    "flex-row items-center gap-ku-sm rounded-ku-pill bg-ku-primary px-[18px] py-[10px]",
+    "flex-row items-center gap-ku-sm rounded-ku-pill bg-ku-primary px-ku-18 py-ku-10",
   retryButtonText: "font-ku-semibold text-ku-body-small text-ku-on-primary",
   emptyCard:
     "mt-ku-xs items-center rounded-[16px] border border-ku-border-subtle bg-ku-card p-ku-xl",
   emptyIconBox:
-    "mb-[14px] h-[56px] w-[56px] items-center justify-center rounded-[28px] bg-ku-surface-muted",
+    "mb-ku-14 h-[56px] w-[56px] items-center justify-center rounded-[28px] bg-ku-surface-muted",
   emptyTitle:
     "mb-ku-sm text-center font-ku-semibold text-ku-body text-ku-text-strong",
   emptyDesc:

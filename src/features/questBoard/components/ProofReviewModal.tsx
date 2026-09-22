@@ -141,7 +141,7 @@ export function ProofReviewModal({
           <SafeAreaView edges={["bottom"]}>
             <View className={styles.proofSheetHeader}>
               <View className={styles.proofSheetHeaderCopy}>
-                <View className="flex-row items-center gap-[8px]">
+                <View className="flex-row items-center gap-ku-sm">
                   <ShieldCheck color={colors.primary} size={22} />
                   <Text
                     accessibilityRole="header"
@@ -170,14 +170,14 @@ export function ProofReviewModal({
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              <View className="gap-[8px] rounded-[14px] bg-ku-surface-accent p-[14px]">
+              <View className="gap-ku-sm rounded-[14px] bg-ku-surface-accent p-ku-14">
                 <Text className="font-ku-medium text-ku-label text-ku-text-muted">
                   {messages.proofReviewSubmittedAt}
                 </Text>
                 <Text className="font-ku-semibold text-ku-body-small text-ku-text-strong">
                   {submittedAt}
                 </Text>
-                <Text className="mt-[4px] font-ku-medium text-ku-label text-ku-text-muted">
+                <Text className="mt-ku-xs font-ku-medium text-ku-label text-ku-text-muted">
                   {messages.proofReviewDueAt}
                 </Text>
                 <Text className="font-ku-semibold text-ku-body-small text-ku-text-strong">
@@ -185,33 +185,33 @@ export function ProofReviewModal({
                 </Text>
               </View>
 
-              <View className="mt-[16px]">
+              <View className="mt-ku-md">
                 <Text className="font-ku-bold text-ku-body text-ku-text-strong">
                   {messages.proofReviewDescriptionLabel}
                 </Text>
-                <Text className="mt-[8px] font-ku-regular text-ku-body-small text-ku-text-secondary">
+                <Text className="mt-ku-sm font-ku-regular text-ku-body-small text-ku-text-secondary">
                   {proof.description?.trim() ||
                     messages.proofReviewNoDescription}
                 </Text>
               </View>
 
-              <View className="mt-[20px]">
+              <View className="mt-ku-20">
                 <Text className="font-ku-bold text-ku-body text-ku-text-strong">
                   {messages.proofReviewEvidenceLabel}
                 </Text>
                 {proof.files.length === 0 ? (
-                  <Text className="mt-[8px] font-ku-regular text-ku-body-small text-ku-text-secondary">
+                  <Text className="mt-ku-sm font-ku-regular text-ku-body-small text-ku-text-secondary">
                     {messages.proofReviewNoEvidence}
                   </Text>
                 ) : (
-                  <View className="mt-[8px] gap-[10px]">
+                  <View className="mt-ku-sm gap-ku-10">
                     {proof.files.map((file) => {
                       const kind = fileKind(file.contentType);
                       const size = formatFileSize(file.sizeBytes);
                       const fileUrl = file.url ?? undefined;
                       return (
                         <View
-                          className="rounded-[14px] border border-ku-border-subtle bg-ku-surface-muted p-[10px]"
+                          className="rounded-[14px] border border-ku-border-subtle bg-ku-surface-muted p-ku-10"
                           key={file.fileId}
                           testID={`proof-review-file-${file.position}`}
                         >
@@ -235,7 +235,7 @@ export function ProofReviewModal({
                             ) : (
                               <FileText color={colors.primary} size={20} />
                             )}
-                            <View className="ml-[10px] flex-1">
+                            <View className="ml-ku-10 flex-1">
                               <Text className="font-ku-semibold text-ku-body-small text-ku-text-strong">
                                 {messages.proofReviewFileLabel(
                                   file.position + 1,
@@ -243,7 +243,7 @@ export function ProofReviewModal({
                                   size
                                 )}
                               </Text>
-                              <Text className="mt-[2px] font-ku-regular text-ku-label text-ku-text-muted">
+                              <Text className="mt-ku-2 font-ku-regular text-ku-label text-ku-text-muted">
                                 {messages.proofReviewFileStatus(
                                   file.uploadStatus
                                 )}
@@ -253,7 +253,7 @@ export function ProofReviewModal({
                               <Pressable
                                 accessibilityLabel={messages.proofReviewPreview}
                                 accessibilityRole="button"
-                                className="rounded-ku-pill border border-ku-primary px-[10px] py-[7px]"
+                                className="rounded-ku-pill border border-ku-primary px-ku-10 py-ku-7"
                                 onPress={() => void openPreview(fileUrl)}
                               >
                                 <Text className="font-ku-semibold text-ku-label text-ku-primary">
@@ -263,7 +263,7 @@ export function ProofReviewModal({
                             ) : null}
                           </View>
                           {!fileUrl ? (
-                            <Text className="mt-[8px] font-ku-regular text-ku-label text-ku-text-muted">
+                            <Text className="mt-ku-sm font-ku-regular text-ku-label text-ku-text-muted">
                               {messages.proofReviewPreviewUnavailable}
                             </Text>
                           ) : null}
@@ -275,7 +275,7 @@ export function ProofReviewModal({
               </View>
 
               {decisionMode === "not-approved" ? (
-                <View className="mt-[20px]">
+                <View className="mt-ku-20">
                   <TextArea
                     accessibilityLabel={messages.proofReviewReasonLabel}
                     label={messages.proofReviewReasonLabel}

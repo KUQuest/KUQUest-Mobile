@@ -26,15 +26,15 @@ export type StateViewProps =
     };
 
 const styles = {
-  state: "items-center justify-center min-h-[330px] px-[24px]",
+  state: "items-center justify-center min-h-[330px] px-ku-lg",
   stateIcon:
-    "items-center bg-ku-surface-accent rounded-ku-pill h-[68px] justify-center mb-[16px] w-[68px]",
+    "items-center bg-ku-surface-accent rounded-ku-pill h-[68px] justify-center mb-ku-md w-[68px]",
   stateTitle:
     "text-ku-text-strong font-ku-semibold text-ku-emphasis-large text-center",
   stateDescription:
-    "text-ku-text-secondary font-ku-regular text-ku-body-small mt-[4px] text-center",
+    "text-ku-text-secondary font-ku-regular text-ku-body-small mt-ku-xs text-center",
   stateAction:
-    "bg-ku-primary rounded-ku-pill mt-[16px] min-h-[48px] justify-center px-[24px]",
+    "bg-ku-primary rounded-ku-pill mt-ku-md min-h-[48px] justify-center px-ku-lg",
   stateActionText: "text-ku-on-primary font-ku-semibold text-ku-body-small",
   alertIcon: "bg-ku-surface-danger",
 } as const;

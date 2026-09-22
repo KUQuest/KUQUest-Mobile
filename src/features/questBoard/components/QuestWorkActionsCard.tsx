@@ -52,12 +52,12 @@ export default function QuestWorkActionsCard({
   return (
     <>
       {stale ? (
-        <View className="mt-3 rounded-xl border border-ku-border-warning bg-ku-surface-warning px-3 py-2">
+        <View className="mt-ku-12 rounded-xl border border-ku-border-warning bg-ku-surface-warning px-ku-12 py-ku-sm">
           <Text className="text-ku-body-small text-ku-warning-dark">
             {messages.stale}
           </Text>
           {errorText ? (
-            <Text className="mt-1 text-ku-label text-ku-warning-dark">
+            <Text className="mt-ku-xs text-ku-label text-ku-warning-dark">
               {errorText}
             </Text>
           ) : null}
@@ -65,13 +65,13 @@ export default function QuestWorkActionsCard({
       ) : null}
 
       {snapshot.state === "QUEST_ASSIGNED" ? (
-        <View className="mt-3 flex-row items-start gap-3 rounded-xl border border-ku-border-accent bg-ku-surface-accent px-3 py-3">
+        <View className="mt-ku-12 flex-row items-start gap-ku-12 rounded-xl border border-ku-border-accent bg-ku-surface-accent px-ku-12 py-ku-12">
           <ShieldCheck color={colors.primary} size={20} />
           <View className="flex-1">
             <Text className="font-ku-semibold text-ku-text-strong">
               {messages.waitingForStart}
             </Text>
-            <Text className="mt-1 text-ku-body-small text-ku-text-secondary">
+            <Text className="mt-ku-xs text-ku-body-small text-ku-text-secondary">
               {messages.startsAutomatically}
             </Text>
           </View>
@@ -79,7 +79,7 @@ export default function QuestWorkActionsCard({
       ) : null}
 
       {isTerminal ? (
-        <View className="mt-3 rounded-xl border border-ku-border bg-ku-surface-muted px-3 py-3">
+        <View className="mt-ku-12 rounded-xl border border-ku-border bg-ku-surface-muted px-ku-12 py-ku-12">
           <Text className="text-ku-body-small text-ku-text-secondary">
             {messages.archiveDescription}
           </Text>
@@ -87,7 +87,7 @@ export default function QuestWorkActionsCard({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={messages.fileDispute}
-              className="mt-3 flex-row items-center justify-center gap-2 rounded-xl bg-ku-warning px-3 py-2.5"
+              className="mt-ku-12 flex-row items-center justify-center gap-ku-sm rounded-xl bg-ku-warning px-ku-12 py-ku-10"
               onPress={onFileDispute}
             >
               <AlertTriangle color={colors.onPrimary} size={16} />
@@ -99,8 +99,8 @@ export default function QuestWorkActionsCard({
         </View>
       ) : null}
 
-      <View className="mt-5">
-        <Text className="mb-3 font-ku-bold text-ku-subtitle text-ku-text-strong">
+      <View className="mt-ku-20">
+        <Text className="mb-ku-12 font-ku-bold text-ku-subtitle text-ku-text-strong">
           {messages.conditions}
         </Text>
         <StateCard>
@@ -108,7 +108,7 @@ export default function QuestWorkActionsCard({
             conditions.map((condition) => (
               <View
                 key={`${condition.position}-${condition.text}`}
-                className="mb-3 flex-row items-start gap-2 last:mb-0"
+                className="mb-ku-12 flex-row items-start gap-ku-sm last:mb-ku-0"
               >
                 <CheckCircle2 color={colors.primary} size={18} />
                 <Text className="flex-1 text-ku-body-small text-ku-text-secondary">
@@ -129,26 +129,26 @@ export default function QuestWorkActionsCard({
           <Text className="font-ku-bold text-ku-subtitle text-ku-text-strong">
             {messages.editTitle}
           </Text>
-          <Text className="mt-1 text-ku-body-small text-ku-text-secondary">
+          <Text className="mt-ku-xs text-ku-body-small text-ku-text-secondary">
             {messages.editDescription}
           </Text>
-          <View className="mt-3 rounded-xl bg-ku-surface px-3 py-3">
+          <View className="mt-ku-12 rounded-xl bg-ku-surface px-ku-12 py-ku-12">
             {snapshot.editRequest.proposedCondition.items.map((item) => (
               <Text
                 key={`${item.position}-${item.text}`}
-                className="mb-1 text-ku-body-small text-ku-text-secondary"
+                className="mb-ku-xs text-ku-body-small text-ku-text-secondary"
               >
                 • {item.text}
               </Text>
             ))}
           </View>
           {snapshot.capabilities.canRespondToEdit ? (
-            <View className="mt-3 flex-row gap-2">
+            <View className="mt-ku-12 flex-row gap-ku-sm">
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={messages.acceptEdit}
                 disabled={editSending}
-                className="flex-1 rounded-xl bg-ku-primary px-3 py-3 disabled:opacity-50"
+                className="flex-1 rounded-xl bg-ku-primary px-ku-12 py-ku-12 disabled:opacity-50"
                 onPress={() => void onRespondToEdit("EDIT_RESPONSE_ACCEPTED")}
               >
                 <Text className="text-center font-ku-semibold text-ku-body-small text-ku-on-primary">
@@ -159,7 +159,7 @@ export default function QuestWorkActionsCard({
                 accessibilityRole="button"
                 accessibilityLabel={messages.declineEdit}
                 disabled={editSending}
-                className="flex-1 rounded-xl border border-ku-border bg-ku-surface px-3 py-3 disabled:opacity-50"
+                className="flex-1 rounded-xl border border-ku-border bg-ku-surface px-ku-12 py-ku-12 disabled:opacity-50"
                 onPress={() => void onRespondToEdit("EDIT_RESPONSE_DECLINED")}
               >
                 <Text className="text-center font-ku-semibold text-ku-body-small text-ku-text-strong">
@@ -168,33 +168,33 @@ export default function QuestWorkActionsCard({
               </Pressable>
             </View>
           ) : (
-            <Text className="mt-3 text-ku-body-small text-ku-text-subtle">
+            <Text className="mt-ku-12 text-ku-body-small text-ku-text-subtle">
               {messages.actionUnavailable}
             </Text>
           )}
         </StateCard>
       ) : null}
       {editFeedback ? (
-        <Text className="mt-2 text-ku-body-small text-ku-success">
+        <Text className="mt-ku-sm text-ku-body-small text-ku-success">
           {editFeedback}
         </Text>
       ) : null}
 
       {snapshot.capabilities.canSubmitProof ? (
-        <View className="mt-5 rounded-2xl border border-ku-border bg-ku-card p-4">
-          <View className="flex-row items-center gap-2">
+        <View className="mt-ku-20 rounded-2xl border border-ku-border bg-ku-card p-ku-md">
+          <View className="flex-row items-center gap-ku-sm">
             <CheckCircle2 color={colors.primaryDeep} size={20} />
             <Text className="font-ku-bold text-ku-text-strong">
               {messages.proofCta}
             </Text>
           </View>
-          <Text className="mt-2 text-ku-body-small text-ku-text-secondary">
+          <Text className="mt-ku-sm text-ku-body-small text-ku-text-secondary">
             {messages.proofPlaceholder}
           </Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={messages.proofCta}
-            className="mt-3 rounded-xl bg-ku-primary px-3 py-3"
+            className="mt-ku-12 rounded-xl bg-ku-primary px-ku-12 py-ku-12"
             onPress={onOpenProof}
           >
             <Text className="text-center font-ku-semibold text-ku-body-small text-ku-on-primary">
@@ -205,21 +205,21 @@ export default function QuestWorkActionsCard({
       ) : null}
 
       {snapshot.capabilities.canConfirmCompletion ? (
-        <View className="mt-5 rounded-2xl border border-ku-border bg-ku-card p-4">
-          <View className="flex-row items-center gap-2">
+        <View className="mt-ku-20 rounded-2xl border border-ku-border bg-ku-card p-ku-md">
+          <View className="flex-row items-center gap-ku-sm">
             <CheckCircle2 color={colors.primaryDeep} size={20} />
             <Text className="font-ku-bold text-ku-text-strong">
               {messages.confirmationCta}
             </Text>
           </View>
-          <Text className="mt-2 text-ku-body-small text-ku-text-secondary">
+          <Text className="mt-ku-sm text-ku-body-small text-ku-text-secondary">
             {messages.confirmationPlaceholder}
           </Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={messages.confirmationCta}
             disabled={confirmationSending}
-            className="mt-3 rounded-xl bg-ku-primary px-3 py-3 disabled:opacity-50"
+            className="mt-ku-12 rounded-xl bg-ku-primary px-ku-12 py-ku-12 disabled:opacity-50"
             onPress={() => void onConfirmCompletion()}
           >
             {confirmationSending ? (
@@ -233,12 +233,12 @@ export default function QuestWorkActionsCard({
         </View>
       ) : null}
 
-      <View className="mt-5">
+      <View className="mt-ku-20">
         {canOpenChat ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={messages.workChat}
-            className="flex-row items-center justify-center gap-2 rounded-xl bg-ku-primary px-4 py-3"
+            className="flex-row items-center justify-center gap-ku-sm rounded-xl bg-ku-primary px-ku-md py-ku-12"
             onPress={onOpenChat}
           >
             <MessageCircle color={colors.onPrimary} size={18} />

@@ -121,7 +121,7 @@ function OnboardingSkeleton({
               <View
                 style={{
                   flexDirection: "row",
-                  gap: 6,
+                  gap: spacing.px6,
                   marginTop: spacing.sm,
                   width: "100%",
                 }}

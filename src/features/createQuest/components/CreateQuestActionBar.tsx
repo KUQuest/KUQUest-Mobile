@@ -66,7 +66,7 @@ export function CreateQuestActionBar({
             disabled: isSaving || cancelState === "cancelling",
           }}
           className={cn(
-            "min-h-[44px] items-center justify-center rounded-[12px] border border-ku-danger px-[12px]",
+            "min-h-[44px] items-center justify-center rounded-[12px] border border-ku-danger px-ku-12",
             stacked ? "w-full" : "flex-1"
           )}
           disabled={isSaving || cancelState === "cancelling"}

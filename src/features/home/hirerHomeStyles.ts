@@ -3,55 +3,55 @@ import type { ViewStyle } from "react-native";
 import { darkColors, lightColors } from "@/theme/colors";
 
 export const hirerHomeStyles = {
-  screenContent: "px-ku-md pt-[14px]",
-  screenHeader: "px-[4px] pb-[22px]",
+  screenContent: "px-ku-md pt-ku-14",
+  screenHeader: "px-ku-xs pb-ku-22",
   prototypeNotice:
-    "self-start rounded-ku-pill border border-ku-border mb-ku-md px-ku-sm py-[6px]",
+    "self-start rounded-ku-pill border border-ku-border mb-ku-md px-ku-sm py-ku-6",
   prototypeNoticeText: "font-ku-semibold text-ku-label leading-[18px]",
   emptyState:
-    "min-h-[220px] items-center justify-center rounded-[16px] border border-ku-border px-ku-lg py-[28px]",
+    "min-h-[220px] items-center justify-center rounded-[16px] border border-ku-border px-ku-lg py-ku-28",
   emptyTitle: "font-ku-semibold text-ku-subtitle text-center leading-[24px]",
   emptyDescription:
-    "mt-[6px] font-ku-regular text-ku-body-small text-center leading-[21px]",
+    "mt-ku-6 font-ku-regular text-ku-body-small text-center leading-[21px]",
   screenTitle: "font-ku-bold text-ku-title-large leading-[36px]",
-  screenSubtitle: "mt-[4px] font-ku-regular text-ku-control leading-[22px]",
-  sectionHeaderRow: "mb-ku-md flex-row items-center justify-between px-[4px]",
+  screenSubtitle: "mt-ku-xs font-ku-regular text-ku-control leading-[22px]",
+  sectionHeaderRow: "mb-ku-md flex-row items-center justify-between px-ku-xs",
   sectionTitle: "font-ku-bold text-ku-subtitle leading-[24px]",
   sectionCounterBadge:
-    "rounded-ku-pill border border-ku-border px-ku-sm py-[2px]",
+    "rounded-ku-pill border border-ku-border px-ku-sm py-ku-2",
   sectionCounterText: "font-ku-semibold text-ku-label leading-[16px]",
-  viewAllButton: "min-h-[44px] justify-center px-[4px]",
+  viewAllButton: "min-h-[44px] justify-center px-ku-xs",
   viewAllText: "font-ku-semibold text-ku-label leading-[16px]",
   card: "overflow-hidden rounded-[18px] border-[1.5px] border-ku-border",
   cardTopAccent: "h-[3.5px] w-full",
   cardHeader: "px-ku-md pb-ku-sm pt-ku-md",
   cardHeaderMetaRow: "mb-ku-sm flex-row items-center justify-between",
   tagBadge:
-    "flex-row items-center gap-ku-xs rounded-ku-pill border border-ku-border px-ku-sm py-[3px]",
+    "flex-row items-center gap-ku-xs rounded-ku-pill border border-ku-border px-ku-sm py-ku-3",
   tagText: "font-ku-medium text-ku-caption leading-[15px]",
   statusBadge:
-    "flex-row items-center gap-ku-xs rounded-ku-pill border border-ku-border px-ku-sm py-[3px]",
+    "flex-row items-center gap-ku-xs rounded-ku-pill border border-ku-border px-ku-sm py-ku-3",
   statusBadgeDot: "h-[6px] w-[6px] rounded-[4px]",
   statusLabel: "font-ku-semibold text-ku-label leading-[16px] tracking-[0.2px]",
   cardTitleRow: "flex-row items-center justify-between",
   cardTitle: "flex-1 pr-ku-sm font-ku-bold text-ku-emphasis leading-[23px]",
   headerArrow: "h-[32px] w-[32px] items-center justify-center",
   divider: "h-px",
-  cardBody: "px-ku-md py-[14px]",
+  cardBody: "px-ku-md py-ku-14",
   workerBanner:
-    "flex-row items-center justify-between rounded-[12px] border border-ku-border px-ku-sm py-[10px]",
-  workerLeading: "min-w-0 flex-1 flex-row items-center gap-[10px]",
+    "flex-row items-center justify-between rounded-[12px] border border-ku-border px-ku-sm py-ku-10",
+  workerLeading: "min-w-0 flex-1 flex-row items-center gap-ku-10",
   workerAvatar:
     "h-[40px] w-[40px] items-center justify-center overflow-hidden rounded-ku-pill border border-ku-border",
   workerAvatarText: "font-ku-bold text-ku-body-small",
   workerCopy: "min-w-0 flex-1",
   workerName: "font-ku-bold text-ku-body-small leading-[18px]",
-  workerRole: "mt-[1px] font-ku-regular text-ku-caption leading-[15px]",
+  workerRole: "mt-ku-1 font-ku-regular text-ku-caption leading-[15px]",
   workerProfileButton:
-    "min-h-[44px] flex-row items-center justify-center gap-[2px] pl-ku-sm",
+    "min-h-[44px] flex-row items-center justify-center gap-ku-2 pl-ku-sm",
   workerProfileText: "font-ku-semibold text-ku-label leading-[16px]",
-  progressSection: "mt-[14px]",
-  progressHeaderRow: "mb-[10px] flex-row items-center justify-between",
+  progressSection: "mt-ku-14",
+  progressHeaderRow: "mb-ku-10 flex-row items-center justify-between",
   timelineTitle:
     "font-ku-semibold text-ku-label leading-[16px] tracking-[0.4px]",
   stepProgressText: "font-ku-semibold text-ku-label leading-[16px]",
@@ -63,32 +63,31 @@ export const hirerHomeStyles = {
   stepDotCurrentOuter:
     "z-[2] h-[22px] w-[22px] items-center justify-center rounded-ku-pill",
   stepDotCurrentInner: "h-[10px] w-[10px] rounded-ku-pill",
-  stepLabel: "mt-[6px] font-ku-regular text-ku-nav text-center leading-[14px]",
+  stepLabel: "mt-ku-6 font-ku-regular text-ku-nav text-center leading-[14px]",
   stepLabelCurrent: "font-ku-bold",
   cardFooter:
     "min-h-[44px] flex-row items-center justify-between px-ku-md py-ku-sm",
-  dueRow: "flex-1 flex-row items-center gap-[6px] pr-ku-sm",
+  dueRow: "flex-1 flex-row items-center gap-ku-6 pr-ku-sm",
   dueLabel: "font-ku-regular text-ku-label leading-[16px]",
   detailsButton:
-    "min-h-[44px] flex-row items-center justify-center gap-[2px] px-[6px]",
+    "min-h-[44px] flex-row items-center justify-center gap-ku-2 px-ku-6",
   detailsText: "font-ku-semibold text-ku-label leading-[16px]",
-  carouselContainer: "mb-[4px]",
-  carouselPagination: "mt-ku-sm flex-row items-center justify-center gap-[6px]",
+  carouselContainer: "mb-ku-xs",
+  carouselPagination: "mt-ku-sm flex-row items-center justify-center gap-ku-6",
   paginationDot: "h-[6px] rounded-[3px]",
   paginationDotActive: "w-[20px]",
   paginationDotInactive: "w-[6px]",
-  quickAccessSection: "mt-[22px]",
+  quickAccessSection: "mt-ku-22",
   quickAccessTitle:
-    "mb-ku-md px-[4px] font-ku-bold text-ku-subtitle leading-[24px]",
-  quickAccessGrid: "flex-row flex-wrap gap-[12px]",
+    "mb-ku-md px-ku-xs font-ku-bold text-ku-subtitle leading-[24px]",
+  quickAccessGrid: "flex-row flex-wrap gap-ku-12",
   quickAccessCard:
-    "min-h-[70px] w-[48%] flex-grow flex-row items-center gap-[12px] rounded-[16px] border border-ku-border px-[14px] py-ku-sm",
+    "min-h-[70px] w-[48%] flex-grow flex-row items-center gap-ku-12 rounded-[16px] border border-ku-border px-ku-14 py-ku-sm",
   quickAccessIconBox:
     "h-[40px] w-[40px] items-center justify-center rounded-[12px]",
   quickAccessCopy: "min-w-0 flex-1",
   quickAccessItemTitle: "font-ku-bold text-ku-body-small leading-[18px]",
-  quickAccessItemDesc:
-    "mt-[2px] font-ku-regular text-ku-caption leading-[15px]",
+  quickAccessItemDesc: "mt-ku-2 font-ku-regular text-ku-caption leading-[15px]",
 } as const;
 
 export const hirerHomeCardShadow = {

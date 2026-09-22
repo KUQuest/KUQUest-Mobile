@@ -2,7 +2,7 @@ const styles = {
   safeArea: "flex-1 bg-ku-surface",
   screen: "flex-1",
   scrollContent:
-    "px-ku-lg pt-ku-md pb-[120px] gap-ku-md self-center w-full max-w-[720px]",
+    "px-ku-lg pt-ku-md pb-ku-120 gap-ku-md self-center w-full max-w-[720px]",
   header: "flex-row items-center justify-between mb-ku-sm",
   headerTitle: "font-ku-bold text-ku-title text-ku-text-strong",
   backButton: "min-h-[48px] min-w-[48px] items-center justify-center",
@@ -13,7 +13,7 @@ const styles = {
     "flex-row items-center bg-ku-card border border-ku-border-subtle rounded-ku-card px-ku-md min-h-[76px]",
   sectionRowContent: "flex-1 py-ku-md",
   sectionRowTitle: "font-ku-semibold text-ku-text-strong text-ku-body",
-  sectionRowSummary: "font-ku-regular text-ku-text-muted text-ku-meta mt-[2px]",
+  sectionRowSummary: "font-ku-regular text-ku-text-muted text-ku-meta mt-ku-2",
   chevron: "ml-ku-sm",
   statusCard:
     "bg-ku-surface-danger border border-ku-border-danger rounded-ku-field p-ku-md gap-ku-sm",
@@ -29,7 +29,7 @@ const styles = {
   addButtonText: "font-ku-semibold text-ku-primary text-ku-body",
   itemRow:
     "flex-row items-center bg-ku-card border border-ku-border-subtle rounded-ku-card p-ku-md gap-ku-md",
-  itemRowContent: "flex-1 gap-[3px]",
+  itemRowContent: "flex-1 gap-ku-3",
   itemTitle: "font-ku-semibold text-ku-text-strong text-ku-body",
   itemMeta: "font-ku-regular text-ku-text-secondary text-ku-body-small",
   itemDescription: "font-ku-regular text-ku-text-muted text-ku-meta",
@@ -37,13 +37,13 @@ const styles = {
   itemImageFallback:
     "w-[64px] h-[64px] rounded-ku-field bg-ku-surface-placeholder items-center justify-center",
   itemImageFallbackText:
-    "font-ku-regular text-ku-text-faint text-ku-nav text-center px-[4px]",
+    "font-ku-regular text-ku-text-faint text-ku-nav text-center px-ku-xs",
   formScroll: "flex-1",
   formContent:
-    "px-ku-lg pt-ku-md pb-[132px] gap-ku-md self-center w-full max-w-[720px]",
+    "px-ku-lg pt-ku-md pb-ku-132 gap-ku-md self-center w-full max-w-[720px]",
   formGroup:
     "bg-ku-card border border-ku-border-subtle rounded-ku-card p-ku-md gap-ku-sm",
-  formGroupTitle: "font-ku-bold text-ku-text-strong text-ku-subtitle mb-[4px]",
+  formGroupTitle: "font-ku-bold text-ku-text-strong text-ku-subtitle mb-ku-xs",
   formGroupHint: "font-ku-regular text-ku-text-secondary text-ku-body-small",
   avatarPicker: "items-center gap-ku-sm py-ku-sm",
   avatar:
@@ -66,13 +66,13 @@ const styles = {
     "min-h-[48px] flex-row items-center justify-between border border-ku-border-muted rounded-ku-field bg-ku-card px-ku-md",
   dateText: "font-ku-regular text-ku-text-strong text-ku-body-small",
   datePlaceholder: "font-ku-regular text-ku-text-faint text-ku-body-small",
-  clearDate: "min-h-[48px] items-center justify-center px-[4px]",
+  clearDate: "min-h-[48px] items-center justify-center px-ku-xs",
   clearDateText: "font-ku-semibold text-ku-primary text-ku-label",
   errorCard:
     "flex-row items-center bg-ku-surface-danger border border-ku-border-danger rounded-ku-field p-ku-md gap-ku-sm",
   errorText: "font-ku-regular text-ku-danger-dark text-ku-meta flex-1",
   saveBar:
-    "absolute bottom-0 left-0 right-0 bg-ku-surface-nav-translucent border-t border-ku-border-nav px-ku-lg pt-ku-sm pb-0",
+    "absolute bottom-0 left-0 right-0 bg-ku-surface-nav-translucent border-t border-ku-border-nav px-ku-lg pt-ku-sm pb-ku-0",
   saveBarInner: "self-center w-full max-w-[720px]",
 } as const;
 

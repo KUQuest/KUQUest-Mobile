@@ -39,22 +39,22 @@ const styles = {
     "h-[48px] w-[48px] items-center justify-center rounded-[14px] border border-ku-border",
   headerCopy: "min-w-0 flex-1",
   title: "font-ku-bold text-ku-title leading-[30px]",
-  subtitle: "mt-[2px] font-ku-regular text-ku-body-small leading-[21px]",
+  subtitle: "mt-ku-2 font-ku-regular text-ku-body-small leading-[21px]",
   tabRow: "mt-ku-sm flex-row gap-ku-sm",
   tabButton:
-    "min-h-[48px] flex-1 items-center justify-center rounded-ku-pill border border-ku-border px-[6px]",
+    "min-h-[48px] flex-1 items-center justify-center rounded-ku-pill border border-ku-border px-ku-6",
   tabButtonText: "font-ku-semibold text-ku-label text-center leading-[18px]",
   list: "flex-1 px-ku-md",
   listHeader: "pb-ku-sm pt-ku-md",
   listTitle: "font-ku-bold text-ku-subtitle leading-[24px]",
-  listHint: "mt-[2px] font-ku-regular text-ku-label leading-[18px]",
+  listHint: "mt-ku-2 font-ku-regular text-ku-label leading-[18px]",
   empty:
-    "min-h-[230px] items-center justify-center rounded-[16px] border border-dashed border-ku-border px-ku-lg py-[28px]",
+    "min-h-[230px] items-center justify-center rounded-[16px] border border-dashed border-ku-border px-ku-lg py-ku-28",
   emptyIcon:
-    "mb-[10px] h-[48px] w-[48px] items-center justify-center rounded-ku-pill",
+    "mb-ku-10 h-[48px] w-[48px] items-center justify-center rounded-ku-pill",
   emptyTitle: "font-ku-semibold text-ku-body text-center leading-[24px]",
   emptyDescription:
-    "mt-[4px] font-ku-regular text-ku-body-small text-center leading-[21px]",
+    "mt-ku-xs font-ku-regular text-ku-body-small text-center leading-[21px]",
   emptyAction:
     "mt-ku-md min-h-[48px] items-center justify-center rounded-ku-pill px-ku-md",
   emptyActionText: "font-ku-semibold text-ku-body-small leading-[21px]",
@@ -253,8 +253,8 @@ export default function MyQuestListScreen({
             ItemSeparatorComponent={Separator}
             keyExtractor={keyExtractor}
             ListEmptyComponent={
-              <View className="min-h-[230px] items-center justify-center rounded-[16px] border border-dashed border-ku-border-subtle bg-ku-surface-muted px-ku-lg py-[28px]">
-                <View className="mb-[10px] h-[48px] w-[48px] items-center justify-center rounded-ku-pill bg-ku-surface-success">
+              <View className="min-h-[230px] items-center justify-center rounded-[16px] border border-dashed border-ku-border-subtle bg-ku-surface-muted px-ku-lg py-ku-28">
+                <View className="mb-ku-10 h-[48px] w-[48px] items-center justify-center rounded-ku-pill bg-ku-surface-success">
                   <Clock3 color={palette.primary} size={24} strokeWidth={2.1} />
                 </View>
                 <Text className={`${styles.emptyTitle} text-ku-text-strong`}>

@@ -23,6 +23,7 @@ import {
 } from "../api/workerHomeQueries";
 import { workerHomeMessages } from "../workerHomeMessages";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { spacing } from "@/theme/spacing";
 
 export interface WorkerProofUploadScreenProps {
   questId?: string;
@@ -191,15 +192,15 @@ export default function WorkerProofUploadScreen({
 
       {snapshotQuery.isPending ? (
         <View
-          className="flex-1 items-center justify-center p-6"
+          className="flex-1 items-center justify-center p-ku-lg"
           testID="worker-proof-loading"
         >
           <ActivityIndicator color={themeColors.primaryDeep} />
         </View>
       ) : (
         <ScrollView
-          contentContainerClassName="px-[20px] pt-ku-md"
-          contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
+          contentContainerClassName="px-ku-20 pt-ku-md"
+          contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
           showsVerticalScrollIndicator={false}
           testID="worker-proof-scroll"
         >
@@ -236,12 +237,12 @@ export default function WorkerProofUploadScreen({
               <Text className="mt-ku-sm text-center font-ku-semibold text-ku-emphasis text-ku-text-strong">
                 {messages.proofNotRequiredNote}
               </Text>
-              <Text className="mt-[6px] text-center font-ku-regular text-ku-meta text-ku-text-secondary">
+              <Text className="mt-ku-6 text-center font-ku-regular text-ku-meta text-ku-text-secondary">
                 {messages.confirmCompleteDesc}
               </Text>
               {!canSubmitAction ? (
                 <Text
-                  className="mt-[10px] text-center font-ku-medium text-ku-meta text-ku-text-secondary"
+                  className="mt-ku-10 text-center font-ku-medium text-ku-meta text-ku-text-secondary"
                   testID="worker-submit-locked-hint"
                 >
                   {messages.submitLockedUntilStart}
@@ -250,7 +251,7 @@ export default function WorkerProofUploadScreen({
               <Pressable
                 accessibilityLabel={messages.completeQuestDirectly}
                 accessibilityRole="button"
-                className="mt-ku-lg min-h-[48px] w-full items-center rounded-[12px] bg-ku-primary-dark py-[14px]"
+                className="mt-ku-lg min-h-[48px] w-full items-center rounded-[12px] bg-ku-primary-dark py-ku-14"
                 disabled={submitting || !canSubmitAction}
                 onPress={handleConfirmCompletionDirectly}
                 style={{ opacity: submitting || !canSubmitAction ? 0.6 : 1 }}
@@ -270,7 +271,7 @@ export default function WorkerProofUploadScreen({
             <View testID="worker-proof-required-section">
               {!canSubmitAction ? (
                 <Text
-                  className="mb-[14px] font-ku-medium text-ku-meta text-ku-text-secondary"
+                  className="mb-ku-14 font-ku-medium text-ku-meta text-ku-text-secondary"
                   testID="worker-submit-locked-hint"
                 >
                   {messages.submitLockedUntilStart}
@@ -282,7 +283,7 @@ export default function WorkerProofUploadScreen({
                   <Pressable
                     accessibilityLabel={messages.uploadImagePrompt}
                     accessibilityRole="button"
-                    className="h-[220px] items-center justify-center gap-[10px] rounded-[18px] border-2 border-dashed border-ku-border-subtle bg-ku-surface"
+                    className="h-[220px] items-center justify-center gap-ku-10 rounded-[18px] border-2 border-dashed border-ku-border-subtle bg-ku-surface"
                     onPress={handlePickImage}
                     testID="worker-image-upload-box"
                   >
@@ -308,7 +309,7 @@ export default function WorkerProofUploadScreen({
                       <Pressable
                         accessibilityLabel={messages.changeImage}
                         accessibilityRole="button"
-                        className="flex-row items-center gap-[6px] rounded-[8px] bg-ku-surface-muted px-ku-sm py-[6px]"
+                        className="flex-row items-center gap-ku-6 rounded-[8px] bg-ku-surface-muted px-ku-sm py-ku-6"
                         onPress={handlePickImage}
                         testID="worker-change-image-btn"
                       >
@@ -321,7 +322,7 @@ export default function WorkerProofUploadScreen({
                       <Pressable
                         accessibilityLabel={messages.removeImage}
                         accessibilityRole="button"
-                        className="flex-row items-center gap-[6px] rounded-[8px] px-ku-sm py-[6px]"
+                        className="flex-row items-center gap-ku-6 rounded-[8px] px-ku-sm py-ku-6"
                         onPress={handleRemoveImage}
                         testID="worker-remove-image-btn"
                       >
@@ -342,7 +343,7 @@ export default function WorkerProofUploadScreen({
               <View className="mb-ku-lg">
                 <TextInput
                   accessibilityLabel={messages.proofDescriptionPlaceholder}
-                  className="min-h-[100px] rounded-[14px] border border-ku-border-subtle bg-ku-surface px-[14px] py-ku-sm text-ku-body-small text-ku-text-strong"
+                  className="min-h-[100px] rounded-[14px] border border-ku-border-subtle bg-ku-surface px-ku-14 py-ku-sm text-ku-body-small text-ku-text-strong"
                   multiline
                   numberOfLines={4}
                   onChangeText={setDescription}
@@ -357,7 +358,7 @@ export default function WorkerProofUploadScreen({
               <Pressable
                 accessibilityLabel={messages.submitWork}
                 accessibilityRole="button"
-                className="min-h-[50px] items-center justify-center rounded-[14px] bg-ku-primary-dark py-[14px]"
+                className="min-h-[50px] items-center justify-center rounded-[14px] bg-ku-primary-dark py-ku-14"
                 disabled={submitting || !selectedImage || !canSubmitAction}
                 onPress={handleSubmitProof}
                 style={{

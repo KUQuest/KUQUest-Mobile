@@ -34,6 +34,7 @@ const mockCreateQuestDraftId = jest.fn(() => "draft-1");
 const mockLiveCreateQuest = jest.fn();
 const mockLiveGetPublishCheck = jest.fn();
 const mockLivePublishQuest = jest.fn();
+const mockLiveEditQuest = jest.fn();
 const mockWalletGetWallet = jest.fn();
 const defaultWalletBalances = {
   spendingBalanceSatang: 100_000,
@@ -85,6 +86,7 @@ jest.mock("../../questBoard/liveQuestService", () => ({
     uploadImages: (...args: unknown[]) => Promise.resolve([]),
     getPublishCheck: (...args: unknown[]) => mockLiveGetPublishCheck(...args),
     publishQuest: (...args: unknown[]) => mockLivePublishQuest(...args),
+    editQuest: (...args: unknown[]) => mockLiveEditQuest(...args),
   },
 }));
 
@@ -150,6 +152,23 @@ async function fillQuestDetails(view: Awaited<ReturnType<typeof render>>) {
     "พัดลมสะอาดและใช้งานได้"
   );
 }
+async function renderNewModeAtTeamSetup() {
+  mockLoadQuestDraft.mockImplementation(() =>
+    Promise.resolve(liveDraftSnapshot)
+  );
+  const view = await render(<CreateQuestScreen />);
+  await waitFor(() =>
+    expect(view.getByTestId("create-quest-logistics-toggle")).toBeTruthy()
+  );
+  return view;
+}
+async function waitForPublishCheck(view: Awaited<ReturnType<typeof render>>) {
+  await waitFor(() =>
+    expect(
+      view.getByTestId("create-quest-publish-check").props.accessibilityState
+    ).toMatchObject({ busy: false })
+  );
+}
 
 describe("CreateQuestScreen", () => {
   beforeEach(() => {
@@ -163,6 +182,11 @@ describe("CreateQuestScreen", () => {
     mockDeleteQuestDraft.mockReset();
     mockDeleteQuestDraft.mockResolvedValue(undefined);
     mockLiveCreateQuest.mockReset();
+    mockLiveEditQuest.mockReset();
+    mockLiveEditQuest.mockResolvedValue({
+      id: "server-quest-edit",
+      version: 4,
+    });
     mockLiveGetPublishCheck.mockReset();
     mockLivePublishQuest.mockReset();
     mockWalletGetWallet.mockReset();
@@ -212,6 +236,8 @@ describe("CreateQuestScreen", () => {
       "Restored quest"
     );
     expect(mockLoadQuestDraft).toHaveBeenCalledWith("test-key", undefined);
+    expect(mockPersistQuestDraft).not.toHaveBeenCalled();
+    expect(mockLiveCreateQuest).not.toHaveBeenCalled();
   });
 
   it("opens the mock draft in Team Setup for edit flows and updates the summary", async () => {
@@ -219,6 +245,8 @@ describe("CreateQuestScreen", () => {
 
     expect(view.getByText("ตั้งค่าทีม")).toBeTruthy();
     expect(view.getByLabelText("ขั้นตอนที่ 2 จาก 3: ตั้งค่าทีม")).toBeTruthy();
+    expect(mockPersistQuestDraft).not.toHaveBeenCalled();
+    expect(mockLiveCreateQuest).not.toHaveBeenCalled();
     expect(view.getAllByLabelText("ย้อนกลับ")).toHaveLength(1);
     expect(view.getByText("1. เลือกรูปแบบการทำงาน")).toBeTruthy();
     expect(view.getByText("2. เลือกรูปแบบการรับผู้สมัคร")).toBeTruthy();
@@ -709,38 +737,211 @@ describe("CreateQuestScreen", () => {
     expect(mockRouter.replace).toHaveBeenCalledWith("/(tabs)");
   });
 
-  it("autosaves edits and exposes a retry when persistence fails", async () => {
+  it("does not save or sync while typing and saves once on the next CTA", async () => {
     mockLoadQuestDraft.mockResolvedValueOnce(null);
     const view = await render(<CreateQuestScreen />);
-
     await waitFor(() =>
       expect(view.getByLabelText("ชื่อเควสต์ *")).toBeTruthy()
     );
-    mockPersistQuestDraft.mockRejectedValueOnce(
-      new Error("storage unavailable")
-    );
-    await fireEvent.changeText(
-      view.getByLabelText("ชื่อเควสต์ *"),
-      "บันทึกอัตโนมัติ"
-    );
 
-    await waitFor(() =>
-      expect(view.getByTestId("create-quest-save-error")).toBeTruthy()
-    );
+    const typedTitle = "12345678901234567890";
+    for (let index = 1; index <= typedTitle.length; index += 1) {
+      await fireEvent.changeText(
+        view.getByLabelText("ชื่อเควสต์ *"),
+        typedTitle.slice(0, index)
+      );
+    }
+    expect(mockPersistQuestDraft).not.toHaveBeenCalled();
+    expect(mockLiveCreateQuest).not.toHaveBeenCalled();
+    expect(mockLiveEditQuest).not.toHaveBeenCalled();
+
+    await fillQuestDetails(view);
+    await fireEvent.changeText(view.getByLabelText("ชื่อเควสต์ *"), typedTitle);
+    await fireEvent.press(view.getByLabelText("ถัดไป"));
+
+    await waitFor(() => expect(mockPersistQuestDraft).toHaveBeenCalledTimes(1));
     expect(mockPersistQuestDraft).toHaveBeenCalledWith(
       "test-key",
       expect.any(String),
-      expect.objectContaining({ title: "บันทึกอัตโนมัติ" }),
-      1,
+      expect.objectContaining({ title: typedTitle }),
+      2,
       "DRAFT"
     );
+  });
 
-    mockPersistQuestDraft.mockResolvedValueOnce(undefined);
+  it("exposes a retry when an explicit draft save fails", async () => {
+    mockLoadQuestDraft.mockResolvedValueOnce(null);
+    const view = await render(<CreateQuestScreen />);
+    await waitFor(() =>
+      expect(view.getByLabelText("ชื่อเควสต์ *")).toBeTruthy()
+    );
+    await fillQuestDetails(view);
+    mockPersistQuestDraft.mockRejectedValueOnce(
+      new Error("storage unavailable")
+    );
+
+    await fireEvent.press(view.getByLabelText("ถัดไป"));
+    await waitFor(() =>
+      expect(view.getByTestId("create-quest-save-error")).toBeTruthy()
+    );
+    expect(mockPersistQuestDraft).toHaveBeenCalledTimes(1);
+
     await fireEvent.press(view.getByTestId("create-quest-retry-save"));
-
     await waitFor(() =>
       expect(view.getByText("บันทึกฉบับร่างแล้ว")).toBeTruthy()
     );
+    expect(mockPersistQuestDraft).toHaveBeenCalledTimes(2);
+  });
+
+  it("creates the server Quest once when entering Review", async () => {
+    mockLiveCreateQuest.mockResolvedValue({
+      id: "server-quest-review",
+      version: 3,
+    });
+    mockLiveGetPublishCheck.mockResolvedValue(serverPublishCheckFixture);
+    const view = await renderNewModeAtTeamSetup();
+
+    await fireEvent.press(view.getByTestId("create-quest-logistics-toggle"));
+    const location = view.getByTestId("create-quest-location");
+    const typedLocation = "location-update-1234";
+    for (let index = 1; index <= typedLocation.length; index += 1) {
+      await fireEvent.changeText(location, typedLocation.slice(0, index));
+    }
+    expect(mockPersistQuestDraft).not.toHaveBeenCalled();
+    expect(mockLiveCreateQuest).not.toHaveBeenCalled();
+    expect(mockLiveEditQuest).not.toHaveBeenCalled();
+
+    await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
+    await waitFor(() =>
+      expect(view.getByTestId("create-quest-save-preview")).toBeTruthy()
+    );
+    await waitForPublishCheck(view);
+    expect(mockPersistQuestDraft).toHaveBeenCalledTimes(1);
+    expect(mockLiveCreateQuest).toHaveBeenCalledTimes(1);
+    expect(mockLiveEditQuest).not.toHaveBeenCalled();
+  });
+
+  it("updates and publishes the server Quest once after a Review-step edit", async () => {
+    mockLiveCreateQuest.mockResolvedValue({
+      id: "server-quest-edit",
+      version: 3,
+    });
+    mockLiveGetPublishCheck.mockResolvedValue(serverPublishCheckFixture);
+    mockLivePublishQuest.mockResolvedValue({
+      id: "server-quest-edit",
+      state: "QUEST_OPEN",
+    });
+    const view = await renderNewModeAtTeamSetup();
+
+    await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
+    await waitFor(() =>
+      expect(view.getByTestId("create-quest-save-preview")).toBeTruthy()
+    );
+    await waitForPublishCheck(view);
+    expect(mockLiveCreateQuest).toHaveBeenCalledTimes(1);
+
+    await fireEvent.press(view.getByTestId("create-quest-header-back"));
+    await fireEvent.press(view.getByTestId("create-quest-logistics-toggle"));
+    const location = view.getByTestId("create-quest-location");
+    const editedLocation = "location-update-1234";
+    for (let index = 1; index <= editedLocation.length; index += 1) {
+      await fireEvent.changeText(location, editedLocation.slice(0, index));
+    }
+    expect(mockLiveEditQuest).not.toHaveBeenCalled();
+
+    await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
+    await waitFor(() => expect(mockLiveEditQuest).toHaveBeenCalledTimes(1));
+    expect(mockLiveEditQuest.mock.calls[0][3]).toEqual(expect.any(String));
+    expect(mockLiveCreateQuest).toHaveBeenCalledTimes(1);
+    await waitForPublishCheck(view);
+    await fireEvent.press(view.getByTestId("create-quest-save-preview"));
+    await waitFor(() =>
+      expect(view.getByText("เผยแพร่เควสต์แล้ว")).toBeTruthy()
+    );
+    expect(mockLiveEditQuest).toHaveBeenCalledTimes(1);
+    expect(mockLiveCreateQuest).toHaveBeenCalledTimes(1);
+  });
+
+  it("collapses a double-tapped Review press into one create", async () => {
+    let resolveCreate!: (value: { id: string; version: number }) => void;
+    mockLiveCreateQuest.mockImplementation(
+      () =>
+        new Promise<{ id: string; version: number }>((resolve) => {
+          resolveCreate = resolve;
+        })
+    );
+    mockLiveGetPublishCheck.mockResolvedValue(serverPublishCheckFixture);
+    const view = await renderNewModeAtTeamSetup();
+
+    const reviewButton = view.getByRole("button", {
+      name: "ตรวจสอบเควสต์",
+    });
+    await fireEvent.press(reviewButton);
+    await fireEvent.press(reviewButton);
+    await waitFor(() => expect(mockLiveCreateQuest).toHaveBeenCalledTimes(1));
+    resolveCreate({ id: "server-quest-double-tap", version: 3 });
+
+    await waitFor(() =>
+      expect(view.getByTestId("create-quest-save-preview")).toBeTruthy()
+    );
+    await waitForPublishCheck(view);
+    expect(mockPersistQuestDraft).toHaveBeenCalledTimes(1);
+    expect(mockLiveCreateQuest).toHaveBeenCalledTimes(1);
+  });
+
+  it("reuses the idempotency key when a failed create is retried", async () => {
+    mockLiveGetPublishCheck.mockResolvedValue(serverPublishCheckFixture);
+    const view = await renderNewModeAtTeamSetup();
+    mockLiveCreateQuest.mockRejectedValueOnce(new Error("offline"));
+    await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
+    await waitFor(() =>
+      expect(view.getByTestId("create-quest-save-preview")).toBeTruthy()
+    );
+    await waitForPublishCheck(view);
+    mockLiveCreateQuest.mockResolvedValueOnce({
+      id: "server-quest-retry",
+      version: 1,
+    });
+    mockLivePublishQuest.mockResolvedValue({
+      id: "server-quest-retry",
+      state: "QUEST_OPEN",
+    });
+
+    await fireEvent.press(view.getByLabelText("เผยแพร่เควสต์"));
+    await waitFor(() =>
+      expect(view.getByText("เผยแพร่เควสต์แล้ว")).toBeTruthy()
+    );
+    expect(mockLiveCreateQuest).toHaveBeenCalledTimes(2);
+    expect(mockLiveCreateQuest.mock.calls[1][1]).toBe(
+      mockLiveCreateQuest.mock.calls[0][1]
+    );
+  });
+
+  it("sends one create and one draft write under StrictMode", async () => {
+    mockLoadQuestDraft.mockImplementation(() =>
+      Promise.resolve(liveDraftSnapshot)
+    );
+    mockLiveCreateQuest.mockResolvedValue({
+      id: "server-quest-strict",
+      version: 3,
+    });
+    mockLiveGetPublishCheck.mockResolvedValue(serverPublishCheckFixture);
+    const view = await render(
+      <mockReact.StrictMode>
+        <CreateQuestScreen />
+      </mockReact.StrictMode>
+    );
+    await waitFor(() =>
+      expect(view.getByTestId("create-quest-logistics-toggle")).toBeTruthy()
+    );
+
+    await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
+    await waitFor(() =>
+      expect(view.getByTestId("create-quest-save-preview")).toBeTruthy()
+    );
+    await waitForPublishCheck(view);
+    expect(mockPersistQuestDraft).toHaveBeenCalledTimes(1);
+    expect(mockLiveCreateQuest).toHaveBeenCalledTimes(1);
   });
 
   it("starts a fresh blank form after the draft screen is unmounted", async () => {

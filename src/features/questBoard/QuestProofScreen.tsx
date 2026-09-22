@@ -407,7 +407,7 @@ export default function QuestProofScreen({
           onBackPress={() => router.back()}
           title={messages.proofBannerTitle}
         />
-        <View className="flex-1 items-center justify-center px-[24px]">
+        <View className="flex-1 items-center justify-center px-ku-lg">
           <Text className="text-center text-ku-body text-ku-text-secondary">
             {messages.errorDescription}
           </Text>
@@ -428,13 +428,13 @@ export default function QuestProofScreen({
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator color={colors.primary} />
-          <Text className="mt-[12px] text-ku-body text-ku-text-secondary">
+          <Text className="mt-ku-12 text-ku-body text-ku-text-secondary">
             {messages.loading}
           </Text>
         </View>
       ) : (
         <ScrollView
-          contentContainerClassName="px-[20px] pb-[40px]"
+          contentContainerClassName="px-ku-20 pb-ku-40"
           showsVerticalScrollIndicator={false}
         >
           <QuestProofSummaryCard

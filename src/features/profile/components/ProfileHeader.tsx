@@ -131,7 +131,7 @@ export function ProfileHeader({
           <View className={styles.tagList}>
             {(data.tags ?? []).map((tag) => (
               <Chip
-                className="px-[10px] py-[4px]"
+                className="px-ku-10 py-ku-xs"
                 key={tag.id ?? tag.name}
                 label={tag.name}
                 textClassName="font-ku-semibold text-ku-label"

@@ -109,7 +109,7 @@ export default function HomeScreen() {
         edges={["top", "left", "right"]}
         className="bg-ku-background"
       >
-        <View className="flex-1 px-4 pt-6" testID="hirer-home-loading">
+        <View className="flex-1 px-ku-md pt-ku-lg" testID="hirer-home-loading">
           <QuestBoardSkeleton loadingLabel={messages.loading} />
         </View>
       </ScreenLayout>
@@ -122,7 +122,7 @@ export default function HomeScreen() {
         edges={["top", "left", "right"]}
         className="bg-ku-background"
       >
-        <View className="flex-1 px-4 pt-6" testID="hirer-home-error">
+        <View className="flex-1 px-ku-md pt-ku-lg" testID="hirer-home-error">
           <StateView
             actionLabel={messages.retry}
             description={messages.errorDescription}
@@ -177,7 +177,7 @@ export default function HomeScreen() {
                 <Text className={`${styles.sectionTitle} text-ku-text-strong`}>
                   {messages.activeQuestTitle}
                 </Text>
-                <View className="flex-row items-center gap-2">
+                <View className="flex-row items-center gap-ku-sm">
                   {displayQuests.length > 1 ? (
                     <Chip
                       className={styles.sectionCounterBadge}
@@ -213,12 +213,14 @@ export default function HomeScreen() {
 
               <View className={styles.carouselContainer}>
                 <ScrollView
-                  contentContainerClassName="gap-[12px]"
+                  contentContainerClassName="gap-ku-12"
                   decelerationRate="fast"
                   horizontal
                   onMomentumScrollEnd={(event) => {
                     const offsetX = event.nativeEvent.contentOffset.x;
-                    const nextIndex = Math.round(offsetX / (cardWidth + 12));
+                    const nextIndex = Math.round(
+                      offsetX / (cardWidth + spacing.px12)
+                    );
                     setActiveCardIndex(
                       Math.max(0, Math.min(nextIndex, displayQuests.length - 1))
                     );
@@ -226,7 +228,7 @@ export default function HomeScreen() {
                   pagingEnabled
                   showsHorizontalScrollIndicator={false}
                   snapToAlignment="start"
-                  snapToInterval={cardWidth + 12}
+                  snapToInterval={cardWidth + spacing.px12}
                   testID="hirer-quest-carousel"
                 >
                   {displayQuests.map((item) => (

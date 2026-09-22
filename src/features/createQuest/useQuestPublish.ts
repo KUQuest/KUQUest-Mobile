@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { RefObject } from "react";
 
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
@@ -56,7 +56,7 @@ export function useQuestPublish({
   draftStorageKey,
   draft,
   draftIdRef,
-  draftChangedRef,
+  draftRevisionRef,
   publishedQuestRef,
   saveRequestRef,
   setSaveErrorIntent,
@@ -69,7 +69,7 @@ export function useQuestPublish({
   draftStorageKey: string | null;
   draft: QuestDraft;
   draftIdRef: RefObject<string | null>;
-  draftChangedRef: RefObject<boolean>;
+  draftRevisionRef: RefObject<number>;
   publishedQuestRef: RefObject<PublishedQuestRefValue | null>;
   saveRequestRef: RefObject<number>;
   setSaveErrorIntent: (intent: SaveErrorIntent | null) => void;
@@ -84,12 +84,16 @@ export function useQuestPublish({
   const publishCheckQuestIdRef = useRef<string | null>(null);
   const [isPreparingPublishCheck, setIsPreparingPublishCheck] = useState(false);
   const publishCheckRequestRef = useRef(0);
+  const syncInFlightRef = useRef<Promise<string | null> | null>(null);
+  const opIdempotencyKeyRef = useRef<string | null>(null);
+  const serverSavedRevisionRef = useRef(-1);
   const publishCheckEnabled =
     enabled && step === 3 && draftHydrated && !completedState;
   const publishCheckQuery = useQuestPublishCheckQuery(
     publishCheckQuestId,
     publishCheckEnabled
   );
+  const refetchPublishCheck = publishCheckQuery.refetch;
   const publishCheck =
     derivePublishCheck(publishCheckQuery.data, draft) ??
     (publishCheckQuery.error ? getQuestPublishCheck(draft) : null);
@@ -98,6 +102,7 @@ export function useQuestPublish({
     publishCheckRequestRef.current += 1;
     publishCheckQuestIdRef.current = null;
     setPublishCheckQuestId(null);
+    setIsPreparingPublishCheck(false);
   }, []);
   const isCheckingPublish =
     isPreparingPublishCheck ||
@@ -110,42 +115,60 @@ export function useQuestPublish({
   const editMutation = usePublishEditQuestMutation();
   const publishMutation = usePublishQuestMutation();
 
-  const refreshPublishCheck = useCallback(async () => {
-    if (!enabled || !draftHydrated || !draftStorageKey) return;
-    const requestId = ++publishCheckRequestRef.current;
-    setIsPreparingPublishCheck(true);
-    try {
+  // One key per pending logical operation: a failed create or update keeps it so
+  // the next press replays the same Idempotency-Key instead of minting a new one.
+  const takeOperationKey = useCallback(() => {
+    if (!opIdempotencyKeyRef.current) {
+      opIdempotencyKeyRef.current = createQuestIdempotencyKey();
+    }
+    return opIdempotencyKeyRef.current;
+  }, []);
+  const resetCreateIdempotencyKey = useCallback(() => {
+    opIdempotencyKeyRef.current = null;
+    serverSavedRevisionRef.current = -1;
+  }, []);
+
+  const syncServerQuest = useCallback(
+    async (
+      draftToSync: QuestDraft,
+      fallbackQuestId?: string
+    ): Promise<string | null> => {
+      if (!draftStorageKey) return null;
       const normalizedDraft = {
-        ...draft,
+        ...draftToSync,
         headcount: getHeadcountForParticipation(
-          draft.participation,
-          draft.headcount
+          draftToSync.participation,
+          draftToSync.headcount
         ),
       };
       const existing = publishedQuestRef.current;
-      let questId = existing?.questId ?? editQuestId;
+      let questId = existing?.questId ?? fallbackQuestId;
+      const revisionAtStart = draftRevisionRef.current;
+      const requestIdAtStart = saveRequestRef.current;
       if (questId) {
         if (
           existing &&
           existing.questId === questId &&
-          draftChangedRef.current &&
+          revisionAtStart !== serverSavedRevisionRef.current &&
           existing.version != null
         ) {
           const edited = await editMutation.mutateAsync({
             questId,
             version: existing.version,
             payload: toQuestV2Payload(normalizedDraft),
+            idempotencyKey: takeOperationKey(),
           });
-          if (requestId !== publishCheckRequestRef.current) return;
+          if (requestIdAtStart !== saveRequestRef.current) return null;
+          opIdempotencyKeyRef.current = null;
+          serverSavedRevisionRef.current = revisionAtStart;
           publishedQuestRef.current = { ...existing, version: edited.version };
         }
       } else {
-        const createIdempotencyKey = createQuestIdempotencyKey();
         const created = await createMutation.mutateAsync({
           payload: toQuestV2Payload(normalizedDraft),
-          idempotencyKey: createIdempotencyKey,
+          idempotencyKey: takeOperationKey(),
         });
-        if (requestId !== publishCheckRequestRef.current) return;
+        if (requestIdAtStart !== saveRequestRef.current) return null;
         questId = created.id;
         if (normalizedDraft.imageUris && normalizedDraft.imageUris.length > 0) {
           try {
@@ -157,54 +180,89 @@ export function useQuestPublish({
             console.warn("Failed to upload quest images:", imageError);
           }
         }
+        if (requestIdAtStart !== saveRequestRef.current) return null;
+        opIdempotencyKeyRef.current = null;
+        serverSavedRevisionRef.current = revisionAtStart;
         publishedQuestRef.current = {
           questId,
           version: created.version,
           storageKey: draftStorageKey,
           editQuestId,
-          createIdempotencyKey,
         };
       }
+      return questId ?? null;
+    },
+    [
+      createMutation,
+      draftRevisionRef,
+      draftStorageKey,
+      editMutation,
+      editQuestId,
+      imageUploadMutation,
+      publishedQuestRef,
+      saveRequestRef,
+      takeOperationKey,
+    ]
+  );
 
-      if (requestId !== publishCheckRequestRef.current) return;
+  // Single-flight: a second press joins the running sync instead of starting a
+  // duplicate create/update. React Query's isPending cannot serve this role —
+  // it is still false within the tick that started the mutation.
+  const ensureServerQuest = useCallback(
+    (
+      draftToSync: QuestDraft,
+      fallbackQuestId?: string
+    ): Promise<string | null> => {
+      if (syncInFlightRef.current) return syncInFlightRef.current;
+      const promise = (async () => {
+        try {
+          return await syncServerQuest(draftToSync, fallbackQuestId);
+        } finally {
+          syncInFlightRef.current = null;
+        }
+      })();
+      syncInFlightRef.current = promise;
+      return promise;
+    },
+    [syncServerQuest]
+  );
+
+  const refreshPublishCheck = useCallback(async () => {
+    if (!enabled || !draftHydrated || !draftStorageKey) return;
+    const requestId = ++publishCheckRequestRef.current;
+    setIsPreparingPublishCheck(true);
+    try {
+      const questId = await ensureServerQuest(draft, editQuestId);
+      if (!questId || requestId !== publishCheckRequestRef.current) return;
       if (publishCheckQuestIdRef.current === questId) {
-        const result = await publishCheckQuery.refetch();
+        const result = await refetchPublishCheck();
         if (requestId !== publishCheckRequestRef.current) return;
         if (result.error) throw result.error;
-        setIsPreparingPublishCheck(false);
       } else {
         publishCheckQuestIdRef.current = questId;
         setPublishCheckQuestId(questId);
-        setIsPreparingPublishCheck(false);
       }
     } catch {
-      if (requestId !== publishCheckRequestRef.current) return;
-      setIsPreparingPublishCheck(false);
+      // A failed sync must not block navigation: the Review card falls back to
+      // the locally derived check, and publishing re-verifies server-side.
+    } finally {
+      if (requestId === publishCheckRequestRef.current) {
+        setIsPreparingPublishCheck(false);
+      }
     }
   }, [
-    createMutation,
     draft,
-    draftChangedRef,
     draftHydrated,
     draftStorageKey,
-    editMutation,
     editQuestId,
     enabled,
-    imageUploadMutation,
-    publishCheckQuery.refetch,
-    publishedQuestRef,
+    ensureServerQuest,
+    refetchPublishCheck,
   ]);
-
-  useEffect(() => {
-    if (!enabled || step !== 3 || !draftHydrated || completedState) return;
-    const timer = setTimeout(() => {
-      void refreshPublishCheck();
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [completedState, draftHydrated, enabled, refreshPublishCheck, step]);
 
   const publishQuest = useCallback(
     async (draftToPublish: QuestDraft): Promise<boolean> => {
+      if (!enabled) return false;
       const requestId = ++saveRequestRef.current;
       setSaveErrorIntent(null);
       setCleanupError(null);
@@ -214,9 +272,6 @@ export function useQuestPublish({
           return false;
         }
 
-        let publishedQuestId = publishedQuestRef.current?.questId;
-        let createIdempotencyKey =
-          publishedQuestRef.current?.createIdempotencyKey;
         let publishIdempotencyKey =
           publishedQuestRef.current?.publishIdempotencyKey;
         const hasMatchingPublishedQuest =
@@ -224,46 +279,17 @@ export function useQuestPublish({
           publishedQuestRef.current?.editQuestId === editQuestId;
 
         if (!hasMatchingPublishedQuest) {
-          createIdempotencyKey = undefined;
           publishIdempotencyKey = undefined;
         }
 
+        // Unconditional sync: this is the only place that pushes a draft edit
+        // made after entering Review onto the server copy. No fallback quest id —
+        // in local-draft mode `editQuestId` is a SecureStore draft id, never a
+        // server quest id.
+        const publishedQuestId = await ensureServerQuest(draftToPublish);
         if (!publishedQuestId) {
-          const normalizedDraft = {
-            ...draftToPublish,
-            headcount: getHeadcountForParticipation(
-              draftToPublish.participation,
-              draftToPublish.headcount
-            ),
-          };
-          createIdempotencyKey = createQuestIdempotencyKey();
-          const created = await createMutation.mutateAsync({
-            payload: toQuestV2Payload(normalizedDraft),
-            idempotencyKey: createIdempotencyKey,
-          });
-          publishedQuestId = created.id;
-          if (
-            normalizedDraft.imageUris &&
-            normalizedDraft.imageUris.length > 0
-          ) {
-            try {
-              await imageUploadMutation.mutateAsync({
-                questId: publishedQuestId,
-                imageUris: normalizedDraft.imageUris,
-              });
-            } catch (imageError) {
-              console.warn("Failed to upload quest images:", imageError);
-            }
-          }
-          publishIdempotencyKey = createQuestIdempotencyKey();
-          publishedQuestRef.current = {
-            questId: publishedQuestId,
-            version: created.version,
-            storageKey: draftStorageKey,
-            editQuestId,
-            createIdempotencyKey,
-            publishIdempotencyKey,
-          };
+          setSaveErrorIntent({ state: "OPEN", completesFlow: true });
+          return false;
         }
 
         if (!publishIdempotencyKey) {
@@ -273,7 +299,6 @@ export function useQuestPublish({
             version: publishedQuestRef.current?.version,
             storageKey: draftStorageKey,
             editQuestId,
-            createIdempotencyKey,
             publishIdempotencyKey,
           };
         }
@@ -310,6 +335,8 @@ export function useQuestPublish({
         }
         if (requestId !== saveRequestRef.current) return false;
         publishedQuestRef.current = null;
+        opIdempotencyKeyRef.current = null;
+        serverSavedRevisionRef.current = -1;
         setSaveErrorIntent(null);
         return true;
       } catch {
@@ -319,11 +346,11 @@ export function useQuestPublish({
       }
     },
     [
-      createMutation,
       draftIdRef,
       draftStorageKey,
       editQuestId,
-      imageUploadMutation,
+      enabled,
+      ensureServerQuest,
       publishMutation,
       publishedQuestRef,
       saveRequestRef,
@@ -333,10 +360,14 @@ export function useQuestPublish({
 
   const publishPending =
     createMutation.isPending ||
+    editMutation.isPending ||
     imageUploadMutation.isPending ||
     publishMutation.isPending;
   const publishError =
-    publishMutation.error ?? createMutation.error ?? imageUploadMutation.error;
+    publishMutation.error ??
+    editMutation.error ??
+    createMutation.error ??
+    imageUploadMutation.error;
 
   return {
     publishCheck,
@@ -345,6 +376,7 @@ export function useQuestPublish({
     isCheckingPublish,
     publishQuest,
     refreshPublishCheck,
+    resetCreateIdempotencyKey,
     saveState: publishPending
       ? "saving"
       : cleanupError || publishError
@@ -361,6 +393,7 @@ export function useQuestPublish({
     resetSaveState: () => {
       setCleanupError(null);
       createMutation.reset();
+      editMutation.reset();
       imageUploadMutation.reset();
       publishMutation.reset();
     },

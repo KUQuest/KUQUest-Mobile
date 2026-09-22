@@ -142,14 +142,16 @@ export default function WorkerHomeScreen() {
 
   // Extra padding when the Grab-like quick access bar is showing
   const scrollBottomPadding =
-    bottomNavInset + (activeOngoingAssignment ? 76 : 16) + spacing.xl;
+    bottomNavInset +
+    (activeOngoingAssignment ? spacing.px76 : spacing.md) +
+    spacing.xl;
   return (
     <ScreenLayout edges={["top", "left", "right"]} className="bg-ku-background">
       <FlatList
         contentContainerStyle={{
           paddingBottom: scrollBottomPadding,
           paddingHorizontal: spacing.md,
-          paddingTop: 14,
+          paddingTop: spacing.px14,
         }}
         data={availableQuests}
         ItemSeparatorComponent={WorkerQuestFeedSeparator}

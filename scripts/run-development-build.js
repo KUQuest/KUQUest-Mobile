@@ -66,6 +66,12 @@ if (!supportedPlatforms.has(platform)) {
 
   const extraExpoArgs = process.argv.slice(3);
   const expoArgs = ["expo", `run:${platform}`, ...extraExpoArgs];
+  const hasPortArg = extraExpoArgs.some(
+    (arg) => arg === "--port" || arg === "-p" || arg.startsWith("--port=")
+  );
+  if (process.env.EXPO_PORT && !hasPortArg) {
+    expoArgs.push("--port", process.env.EXPO_PORT);
+  }
   if (platform === "android" && !extraExpoArgs.includes("--all-arch")) {
     expoArgs.push("--all-arch");
   }

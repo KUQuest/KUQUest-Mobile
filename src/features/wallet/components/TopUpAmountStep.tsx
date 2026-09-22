@@ -29,11 +29,11 @@ export interface TopUpAmountStepProps {
 
 const styles = {
   bannerCard:
-    "mb-ku-md flex-row items-center gap-[14px] rounded-[18px] border border-ku-border-accent bg-ku-surface-accent p-ku-md",
+    "mb-ku-md flex-row items-center gap-ku-14 rounded-[18px] border border-ku-border-accent bg-ku-surface-accent p-ku-md",
   bannerIconWrap:
     "h-[44px] w-[44px] items-center justify-center rounded-[22px] bg-ku-surface-success",
   bannerTextWrap: "flex-1",
-  bannerTitle: "mb-[2px] font-ku-bold text-[15px] text-ku-primary-deep",
+  bannerTitle: "mb-ku-2 font-ku-bold text-[15px] text-ku-primary-deep",
   bannerDesc:
     "font-ku-regular text-[12px] leading-[16px] text-ku-text-secondary",
   sectionContainer: "mb-ku-md",
@@ -43,21 +43,21 @@ const styles = {
     "h-[60px] flex-row items-center rounded-[16px] border-2 border-ku-primary bg-ku-surface px-ku-md",
   inputContainerError: "border-ku-danger",
   inputPrefix: "mr-ku-sm font-ku-bold text-ku-title-small text-ku-text-strong",
-  amountInput: "flex-1 py-0 font-ku-bold text-ku-title text-ku-text-strong",
-  clearBtn: "p-[6px]",
+  amountInput: "flex-1 py-ku-0 font-ku-bold text-ku-title text-ku-text-strong",
+  clearBtn: "p-ku-6",
   clearBtnText: "font-ku-bold text-[14px] text-ku-text-muted",
-  helperText: "mt-[6px] font-ku-medium text-[12px] text-ku-text-secondary",
+  helperText: "mt-ku-6 font-ku-medium text-[12px] text-ku-text-secondary",
   errorBanner:
-    "mt-ku-sm flex-row items-center gap-[6px] rounded-[10px] bg-ku-surface-danger p-[10px]",
+    "mt-ku-sm flex-row items-center gap-ku-6 rounded-[10px] bg-ku-surface-danger p-ku-10",
   errorText: "flex-1 font-ku-medium text-[12px] text-ku-danger",
-  quickGrid: "flex-row flex-wrap gap-[10px]",
+  quickGrid: "flex-row flex-wrap gap-ku-10",
   quickChip:
-    "items-center justify-center rounded-[12px] border border-ku-border-subtle bg-ku-surface-muted px-ku-md py-[10px]",
+    "items-center justify-center rounded-[12px] border border-ku-border-subtle bg-ku-surface-muted px-ku-md py-ku-10",
   quickChipSelected: "border-[1.5px] border-ku-primary bg-ku-surface-accent",
   quickChipText: "font-ku-semibold text-[13px] text-ku-text-secondary",
   quickChipTextSelected: "font-ku-bold text-[13px] text-ku-primary-deep",
   infoCallout:
-    "mb-ku-lg flex-row items-start gap-[10px] rounded-[14px] border border-ku-border-success bg-ku-surface-success p-[14px]",
+    "mb-ku-lg flex-row items-start gap-ku-10 rounded-[14px] border border-ku-border-success bg-ku-surface-success p-ku-14",
   infoCalloutText:
     "flex-1 font-ku-regular text-[12px] leading-[18px] text-ku-text-secondary",
   primaryActionButton:

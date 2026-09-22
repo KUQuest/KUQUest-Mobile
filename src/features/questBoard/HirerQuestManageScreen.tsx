@@ -114,7 +114,7 @@ export default function HirerQuestManageScreen({
           onBackPress={() => router.back()}
           backLabel="Back"
         />
-        <View className="p-6">
+        <View className="p-ku-lg">
           <Text>Loading live Quest…</Text>
         </View>
       </ScreenLayout>
@@ -127,10 +127,10 @@ export default function HirerQuestManageScreen({
           onBackPress={() => router.back()}
           backLabel="Back"
         />
-        <View className="p-6">
+        <View className="p-ku-lg">
           <Text>{error ?? "Quest not found"}</Text>
           <Pressable
-            className="mt-4 rounded-xl bg-ku-primary p-4"
+            className="mt-ku-md rounded-xl bg-ku-primary p-ku-md"
             onPress={() => void snapshotQuery.refetch()}
           >
             <Text className="text-center text-ku-on-primary">Retry</Text>
@@ -274,7 +274,7 @@ export default function HirerQuestManageScreen({
             onRefresh={() => void snapshotQuery.refetch()}
           />
         }
-        contentContainerClassName="p-5 pb-12"
+        contentContainerClassName="p-ku-20 pb-ku-48"
       >
         <Text
           accessibilityRole="header"
@@ -284,17 +284,17 @@ export default function HirerQuestManageScreen({
         </Text>
         <Text
           testID="hirer-manage-state"
-          className="mt-2 font-ku-bold text-ku-primary"
+          className="mt-ku-sm font-ku-bold text-ku-primary"
         >
           {snapshot.state} · {snapshot.mode}
         </Text>
-        <View className="mt-5 rounded-2xl bg-ku-card p-4">
+        <View className="mt-ku-20 rounded-2xl bg-ku-card p-ku-md">
           <Text className="font-ku-bold text-ku-text-strong">Roster</Text>
-          <Text className="mt-2 text-ku-text-secondary">
+          <Text className="mt-ku-sm text-ku-text-secondary">
             {snapshot.assignments.length} assigned · {snapshot.quest.headcount}{" "}
             requested
           </Text>
-          <Text className="mt-1 text-ku-text-secondary">
+          <Text className="mt-ku-xs text-ku-text-secondary">
             {snapshot.applications.length} applications ·{" "}
             {snapshot.teams.length} submitted teams
           </Text>
@@ -310,7 +310,7 @@ export default function HirerQuestManageScreen({
             )) ? (
           <Pressable
             testID="hirer-manage-candidate-review"
-            className="mt-3 rounded-2xl bg-ku-primary p-4"
+            className="mt-ku-12 rounded-2xl bg-ku-primary p-ku-md"
             onPress={() => setCandidateOpen(true)}
           >
             <Text className="text-center font-ku-bold text-ku-on-primary">
@@ -321,7 +321,7 @@ export default function HirerQuestManageScreen({
         {snapshot.state === QuestStatus.QUEST_FAILED ? (
           <Pressable
             testID="hirer-manage-dispute"
-            className="mt-3 flex-row items-center justify-center rounded-2xl bg-ku-danger p-4"
+            className="mt-ku-12 flex-row items-center justify-center rounded-2xl bg-ku-danger p-ku-md"
             onPress={() =>
               router.push({
                 pathname: "/quest/[id]/dispute",
@@ -330,7 +330,7 @@ export default function HirerQuestManageScreen({
             }
           >
             <AlertTriangle color={colors.onPrimary} size={20} />
-            <Text className="ml-2 font-ku-bold text-ku-on-primary">
+            <Text className="ml-ku-sm font-ku-bold text-ku-on-primary">
               {messages.fileDispute}
             </Text>
           </Pressable>
@@ -339,7 +339,7 @@ export default function HirerQuestManageScreen({
         snapshot.capabilities.canDecideUnderfilled ? (
           <Pressable
             testID="hirer-manage-underfilled"
-            className="mt-3 rounded-2xl bg-ku-warning p-4"
+            className="mt-ku-12 rounded-2xl bg-ku-warning p-ku-md"
             onPress={() => setUnderfilledOpen(true)}
           >
             <Text className="text-center font-ku-bold text-ku-text-strong">
@@ -350,18 +350,18 @@ export default function HirerQuestManageScreen({
         {canProposeConditionEdit ? (
           <Pressable
             testID="hirer-manage-condition-edit"
-            className="mt-3 flex-row items-center rounded-2xl border border-ku-primary p-4"
+            className="mt-ku-12 flex-row items-center rounded-2xl border border-ku-primary p-ku-md"
             onPress={() => setConditionEditOpen(true)}
           >
             <FileEdit color={colors.primary} size={20} />
-            <Text className="ml-3 font-ku-bold text-ku-primary">
+            <Text className="ml-ku-12 font-ku-bold text-ku-primary">
               {messages.proposeConditionChanges}
             </Text>
           </Pressable>
         ) : null}
         {snapshot.editRequest?.status ===
         QuestEditRequestStatus.EDIT_REQUEST_PENDING ? (
-          <View className="mt-3">
+          <View className="mt-ku-12">
             <QuestConditionEditStatusCard
               editRequest={snapshot.editRequest}
               messages={messages}
@@ -371,11 +371,11 @@ export default function HirerQuestManageScreen({
         {pendingProof && snapshot.capabilities.canReviewProof ? (
           <Pressable
             testID="hirer-manage-proof-review"
-            className="mt-3 rounded-2xl border border-ku-primary p-4"
+            className="mt-ku-12 rounded-2xl border border-ku-primary p-ku-md"
             onPress={reviewProof}
           >
             <ShieldCheck color={colors.primary} size={20} />
-            <Text className="mt-2 font-ku-bold text-ku-primary">
+            <Text className="mt-ku-sm font-ku-bold text-ku-primary">
               Review pending proof
             </Text>
           </Pressable>
@@ -383,11 +383,11 @@ export default function HirerQuestManageScreen({
         {snapshot.capabilities.canReadWorkChat && snapshot.workConversation ? (
           <Pressable
             testID="hirer-manage-work-chat"
-            className="mt-3 flex-row items-center rounded-2xl bg-ku-card p-4"
+            className="mt-ku-12 flex-row items-center rounded-2xl bg-ku-card p-ku-md"
             onPress={openChat}
           >
             <MessageSquare color={colors.primary} size={20} />
-            <Text className="ml-3 font-ku-bold text-ku-primary">
+            <Text className="ml-ku-12 font-ku-bold text-ku-primary">
               Open Work Chat
             </Text>
           </Pressable>
@@ -395,11 +395,11 @@ export default function HirerQuestManageScreen({
         {!terminal && snapshot.capabilities.canCancel ? (
           <Pressable
             testID="hirer-manage-cancel"
-            className="mt-3 flex-row items-center rounded-2xl border border-ku-danger p-4"
+            className="mt-ku-12 flex-row items-center rounded-2xl border border-ku-danger p-ku-md"
             onPress={cancel}
           >
             <X color={colors.danger} size={20} />
-            <Text className="ml-3 font-ku-bold text-ku-danger">
+            <Text className="ml-ku-12 font-ku-bold text-ku-danger">
               Cancel Quest
             </Text>
           </Pressable>

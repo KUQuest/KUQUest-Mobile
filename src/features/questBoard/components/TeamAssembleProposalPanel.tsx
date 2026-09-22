@@ -45,7 +45,7 @@ export function TeamAssembleProposalPanel({
           ? "เพิ่มรายละเอียดหรือแนบเอกสารเพื่อประกอบการพิจารณา"
           : "Add a proposal note and supporting documents or images"}
       </Text>
-      <View className="mt-[8px] rounded-[18px] border border-ku-border bg-ku-surface p-[12px]">
+      <View className="mt-ku-sm rounded-[18px] border border-ku-border bg-ku-surface p-ku-12">
         <TextInput
           accessibilityLabel={thai ? "ข้อความเสนอตัว" : "Proposal note"}
           className="min-h-[72px] font-ku-regular text-ku-body text-ku-text-strong"
@@ -63,16 +63,16 @@ export function TeamAssembleProposalPanel({
           value={text}
         />
       </View>
-      <View className="mt-[10px] gap-[8px]">
+      <View className="mt-ku-10 gap-ku-sm">
         {files.map((file) => (
           <View
             key={file.id}
-            className="flex-row items-center justify-between rounded-[14px] border border-ku-border-subtle bg-ku-surface-muted px-[12px] py-[8px]"
+            className="flex-row items-center justify-between rounded-[14px] border border-ku-border-subtle bg-ku-surface-muted px-ku-12 py-ku-sm"
             testID={`team-proposal-file-${file.id}`}
           >
-            <View className="min-w-0 flex-1 flex-row items-center pr-[8px]">
+            <View className="min-w-0 flex-1 flex-row items-center pr-ku-sm">
               <FileText color={colors.primary} size={18} strokeWidth={2} />
-              <View className="ml-[8px] min-w-0 flex-1">
+              <View className="ml-ku-sm min-w-0 flex-1">
                 <Text
                   className="font-ku-medium text-ku-body-small text-ku-text-strong"
                   numberOfLines={1}
@@ -91,7 +91,7 @@ export function TeamAssembleProposalPanel({
                 thai ? `ลบไฟล์ ${file.name}` : `Remove file ${file.name}`
               }
               accessibilityRole="button"
-              className="items-center justify-center p-[6px]"
+              className="items-center justify-center p-ku-6"
               onPress={() => onRemoveFile(file.id)}
               testID={`team-remove-file-${file.id}`}
             >
@@ -104,7 +104,7 @@ export function TeamAssembleProposalPanel({
             thai ? "แนบไฟล์หรือรูปภาพ" : "Attach file or image"
           }
           accessibilityRole="button"
-          className="min-h-[44px] flex-row items-center justify-center gap-[6px] rounded-[14px] border border-dashed border-ku-primary px-[12px] py-[8px]"
+          className="min-h-[44px] flex-row items-center justify-center gap-ku-6 rounded-[14px] border border-dashed border-ku-primary px-ku-12 py-ku-sm"
           disabled={isPickingFile}
           onPress={onPickFiles}
           testID="team-pick-file-button"
@@ -121,7 +121,7 @@ export function TeamAssembleProposalPanel({
           )}
         </Pressable>
         {filePickError ? (
-          <Text className="mt-[2px] font-ku-regular text-ku-label text-ku-danger-dark">
+          <Text className="mt-ku-2 font-ku-regular text-ku-label text-ku-danger-dark">
             {filePickError}
           </Text>
         ) : null}

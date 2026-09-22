@@ -28,7 +28,7 @@ function WorkRow({
   detail?: string;
 }) {
   return (
-    <View className="mb-3 flex-row justify-between gap-3">
+    <View className="mb-ku-12 flex-row justify-between gap-ku-12">
       <Text className="flex-1 text-ku-body-small text-ku-text-subtle">
         {label}
       </Text>
@@ -37,7 +37,7 @@ function WorkRow({
           {value}
         </Text>
         {detail ? (
-          <Text className="mt-1 text-right text-ku-label text-ku-text-subtle">
+          <Text className="mt-ku-xs text-right text-ku-label text-ku-text-subtle">
             {detail}
           </Text>
         ) : null}
@@ -66,12 +66,12 @@ export default function QuestWorkStatusCard({
             : "warning"
       }
     >
-      <View className="flex-row items-start justify-between gap-3">
+      <View className="flex-row items-start justify-between gap-ku-12">
         <View className="flex-1">
           <Text className="font-ku-semibold text-ku-label tracking-wider text-ku-text-subtle uppercase">
             {status}
           </Text>
-          <Text className="mt-1 font-ku-bold text-ku-title text-ku-text-strong">
+          <Text className="mt-ku-xs font-ku-bold text-ku-title text-ku-text-strong">
             {snapshot.quest.title}
           </Text>
         </View>
@@ -80,7 +80,7 @@ export default function QuestWorkStatusCard({
           size={22}
         />
       </View>
-      <View className="mt-4 border-t border-ku-border pt-3">
+      <View className="mt-ku-md border-t border-ku-border pt-ku-12">
         <WorkRow label={messages.assignment} value={assignment} />
         <WorkRow label={messages.nextAction} value={nextAction} />
         <WorkRow

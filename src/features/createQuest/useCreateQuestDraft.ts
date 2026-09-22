@@ -14,10 +14,12 @@ export function useCreateQuestDraft() {
     null
   );
   const draftChangedRef = useRef(false);
+  const draftRevisionRef = useRef(0);
 
   const updateDraft = useCallback(
     <K extends keyof QuestDraft>(field: K, value: QuestDraft[K]) => {
       draftChangedRef.current = true;
+      draftRevisionRef.current += 1;
       setDraft((current) => ({ ...current, [field]: value }));
       setErrors((current) => {
         if (!current[field]) return current;
@@ -33,6 +35,7 @@ export function useCreateQuestDraft() {
   const updateParticipation = useCallback(
     (value: QuestDraft["participation"]) => {
       draftChangedRef.current = true;
+      draftRevisionRef.current += 1;
       setDraft((current) => ({
         ...current,
         participation: value,
@@ -51,6 +54,7 @@ export function useCreateQuestDraft() {
 
   const resetDraft = useCallback(() => {
     draftChangedRef.current = false;
+    draftRevisionRef.current += 1;
     setDraft(initialDraft);
     setErrors({});
     setValidationSummary(null);
@@ -64,6 +68,7 @@ export function useCreateQuestDraft() {
     validationSummary,
     setValidationSummary,
     draftChangedRef,
+    draftRevisionRef,
     updateDraft,
     updateParticipation,
     resetDraft,

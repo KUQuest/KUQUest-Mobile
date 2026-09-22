@@ -31,7 +31,7 @@ const styles = {
   modalCard:
     "max-h-[85%] rounded-tl-[24px] rounded-tr-[24px] bg-ku-surface pb-ku-lg",
   header:
-    "flex-row items-center justify-between border-b border-ku-border-subtle px-[20px] pb-[14px] pt-[18px]",
+    "flex-row items-center justify-between border-b border-ku-border-subtle px-ku-20 pb-ku-14 pt-ku-18",
   headerTitle: "font-ku-bold text-ku-body text-ku-text-strong",
   closeBtn: "p-ku-xs",
   scrollContent: "p-ku-md",
@@ -43,22 +43,22 @@ const styles = {
   amountText: "mb-ku-xs font-ku-bold text-[30px] leading-[38px]",
   amountInflow: "text-ku-success",
   amountOutflow: "text-ku-text-strong",
-  txTitle: "mb-[10px] font-ku-medium text-ku-control text-ku-text-secondary",
+  txTitle: "mb-ku-10 font-ku-medium text-ku-control text-ku-text-secondary",
   statusBadge:
-    "flex-row items-center gap-[5px] rounded-ku-pill px-[10px] py-ku-xs",
+    "flex-row items-center gap-ku-5 rounded-ku-pill px-ku-10 py-ku-xs",
   statusBadgeText: "font-ku-medium text-ku-label",
   detailsCard:
     "mb-ku-md rounded-[16px] border border-ku-border-subtle bg-ku-surface-muted px-ku-md py-ku-sm",
-  detailRow: "flex-row items-center justify-between py-[10px]",
+  detailRow: "flex-row items-center justify-between py-ku-10",
   detailRowLast: "",
   detailLabel: "flex-1 font-ku-regular text-ku-meta text-ku-text-muted",
   detailValue:
     "flex-[1.5] text-right font-ku-medium text-ku-meta text-ku-text-strong",
   monoText: "font-ku-regular text-[11px] text-ku-text-secondary",
-  sourceTag: "self-end rounded-[6px] bg-ku-surface-success px-ku-sm py-[2px]",
+  sourceTag: "self-end rounded-[6px] bg-ku-surface-success px-ku-sm py-ku-2",
   sourceTagText: "font-ku-medium text-[11px] text-ku-primary-deep",
   actionButton:
-    "items-center justify-center rounded-[14px] bg-ku-primary px-[13px] py-[13px]",
+    "items-center justify-center rounded-[14px] bg-ku-primary px-ku-13 py-ku-13",
   actionButtonText: "font-ku-bold text-ku-control text-ku-on-primary",
 } as const;
 

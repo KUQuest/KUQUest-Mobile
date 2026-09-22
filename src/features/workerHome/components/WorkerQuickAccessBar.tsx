@@ -75,7 +75,7 @@ export function WorkerQuickAccessBar({
             className={`${styles.quickAccessIndicator} bg-ku-primary-dark`}
           />
           <View className="flex-1">
-            <View className="flex-row items-center gap-[6px]">
+            <View className="flex-row items-center gap-ku-6">
               <BriefcaseBusiness size={14} color={themeColors.primaryDeep} />
               <Text
                 className={`${styles.quickAccessTitle} text-ku-primary-dark`}

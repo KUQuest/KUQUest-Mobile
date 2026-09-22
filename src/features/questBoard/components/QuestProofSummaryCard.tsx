@@ -18,17 +18,17 @@ export function QuestProofSummaryCard({
 }: QuestProofSummaryCardProps) {
   return (
     <>
-      <View className="mt-[20px] rounded-[18px] border border-ku-border-accent bg-ku-surface-accent p-[16px]">
+      <View className="mt-ku-20 rounded-[18px] border border-ku-border-accent bg-ku-surface-accent p-ku-md">
         <Text className="font-ku-bold text-ku-title-small text-ku-text-strong">
           {title}
         </Text>
-        <Text className="mt-[6px] font-ku-regular text-ku-body-small text-ku-text-secondary">
+        <Text className="mt-ku-6 font-ku-regular text-ku-body-small text-ku-text-secondary">
           {description}
         </Text>
         {countdown ? (
-          <View className="mt-[14px] flex-row items-center">
+          <View className="mt-ku-14 flex-row items-center">
             <Clock3 color={colors.primary} size={18} />
-            <Text className="ml-[7px] font-ku-semibold text-ku-body-small text-ku-primary">
+            <Text className="ml-ku-7 font-ku-semibold text-ku-body-small text-ku-primary">
               {countdown}
             </Text>
           </View>
@@ -36,11 +36,11 @@ export function QuestProofSummaryCard({
       </View>
 
       {error ? (
-        <View className="mt-[12px] flex-row items-start rounded-[14px] border border-ku-border-danger bg-ku-surface-danger p-[12px]">
+        <View className="mt-ku-12 flex-row items-start rounded-[14px] border border-ku-border-danger bg-ku-surface-danger p-ku-12">
           <ShieldAlert color={colors.danger} size={20} />
           <Text
             accessibilityRole="alert"
-            className="ml-[8px] flex-1 font-ku-medium text-ku-body-small text-ku-danger"
+            className="ml-ku-sm flex-1 font-ku-medium text-ku-body-small text-ku-danger"
           >
             {error}
           </Text>

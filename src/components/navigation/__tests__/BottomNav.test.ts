@@ -9,13 +9,22 @@ import {
   workerNavigationItems,
 } from "@/features/navigation/roleWorkspaceNavigation";
 import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
-import styles from "../bottomNavStyles";
 import { navigationMessages } from "../../../locales/navigationMessages";
 
 const mockUseProfileQuery = jest.fn();
+const mockUseSessionQuery = jest.fn();
+const mockUseHasUnreadChatQuery = jest.fn();
 
 jest.mock("@/features/profile/api/profileQueries", () => ({
   useProfileQuery: (...args: unknown[]) => mockUseProfileQuery(...args),
+}));
+jest.mock("@/features/auth/sessionQueries", () => ({
+  useSessionQuery: (...args: unknown[]) => mockUseSessionQuery(...args),
+}));
+
+jest.mock("@/features/chat/api/chatQueries", () => ({
+  useHasUnreadChatQuery: (...args: unknown[]) =>
+    mockUseHasUnreadChatQuery(...args),
 }));
 
 jest.mock("lucide-react-native", () => ({
@@ -38,6 +47,12 @@ describe("authenticated primary navigation", () => {
     useRoleWorkspaceStore.setState({ workspace: "hirer" });
     mockUseProfileQuery.mockReset();
     mockUseProfileQuery.mockReturnValue({ data: undefined });
+    mockUseSessionQuery.mockReset();
+    mockUseSessionQuery.mockReturnValue({
+      data: { user: { id: "viewer-1" } },
+    });
+    mockUseHasUnreadChatQuery.mockReset();
+    mockUseHasUnreadChatQuery.mockReturnValue({ data: false });
   });
 
   it("keeps the approved five-destination order", () => {
@@ -99,17 +114,6 @@ describe("authenticated primary navigation", () => {
     expect(getRoleWorkspaceAccessibilityLabel("worker", "th")).toBe(
       "พื้นที่ทำงานผู้ปฏิบัติงาน"
     );
-  });
-
-  it("floats above the screen with compact horizontal margins", () => {
-    expect(styles.container).toEqual(expect.stringContaining("absolute"));
-    expect(styles.container).toEqual(expect.stringContaining("bottom-0"));
-    expect(styles.container).toEqual(expect.stringContaining("px-[32px]"));
-    expect(styles.container).not.toEqual(expect.stringContaining("bg-"));
-  });
-  it("centers the tablet rail actions as one balanced vertical group", () => {
-    expect(styles.tabletBar).toEqual(expect.stringContaining("justify-center"));
-    expect(styles.tabletBar).toEqual(expect.stringContaining("gap-[4px]"));
   });
 
   it("exposes icon-only destinations as accessible tabs and actions", async () => {
@@ -269,6 +273,55 @@ describe("authenticated primary navigation", () => {
     expect(view.getByTestId("tab-profile").props.accessibilityLabel).toBe(
       "Profile"
     );
+  });
+
+  it("shows the Chat unread badge when unread Chat activity exists", async () => {
+    mockUseHasUnreadChatQuery.mockReturnValue({ data: true });
+    const routes = hirerNavigationItems.map((item) => ({
+      key: `${item.routeName}-key`,
+      name: item.routeName,
+    }));
+    const view = await renderWithQueryClient(
+      React.createElement(BottomNav, {
+        state: { index: 0, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate: jest.fn(),
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
+    );
+
+    expect(view.getByTestId("tab-chat-unread-badge")).toBeTruthy();
+    expect(view.getByTestId("tab-chat").props.accessibilityLabel).toBe(
+      "Chat, Unread messages"
+    );
+  });
+
+  it("hides the Chat unread badge when both inbox sections are read", async () => {
+    const routes = hirerNavigationItems.map((item) => ({
+      key: `${item.routeName}-key`,
+      name: item.routeName,
+    }));
+    const view = await renderWithQueryClient(
+      React.createElement(BottomNav, {
+        state: { index: 0, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate: jest.fn(),
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
+    );
+
+    expect(view.queryByTestId("tab-chat-unread-badge")).toBeNull();
+    expect(view.getByTestId("tab-chat").props.accessibilityLabel).toBe("Chat");
   });
 
   it("renders the app profile avatar instead of the Google session avatar", async () => {

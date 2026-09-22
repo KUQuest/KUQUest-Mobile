@@ -25,8 +25,7 @@ const styles = {
     "mb-ku-md w-full items-center rounded-[24px] border border-ku-border-subtle bg-ku-surface p-ku-md",
   qrHeader: "mb-ku-md items-center",
   qrHeaderPromptPay: "font-ku-bold text-ku-subtitle text-ku-primary-dark",
-  qrHeaderSubtitle:
-    "mt-[2px] font-ku-medium text-[12px] text-ku-text-secondary",
+  qrHeaderSubtitle: "mt-ku-2 font-ku-medium text-[12px] text-ku-text-secondary",
   qrImageWrapper:
     "mb-ku-md h-[220px] w-[220px] items-center justify-center overflow-hidden rounded-[16px] border border-ku-border-subtle bg-ku-white",
   qrImage: "h-[200px] w-[200px]",
@@ -34,16 +33,16 @@ const styles = {
   qrPlaceholderText: "mt-ku-sm font-ku-medium text-[11px] text-ku-text-muted",
   qrAmountBox: "items-center",
   qrAmountLabel: "font-ku-medium text-[12px] text-ku-text-secondary",
-  qrAmountValue: "mt-[2px] font-ku-bold text-[26px] text-ku-text-strong",
+  qrAmountValue: "mt-ku-2 font-ku-bold text-[26px] text-ku-text-strong",
   statusBanner:
-    "mb-[18px] w-full items-center rounded-[12px] bg-ku-surface-muted p-ku-sm",
+    "mb-ku-18 w-full items-center rounded-[12px] bg-ku-surface-muted p-ku-sm",
   statusBannerText: "font-ku-medium text-[13px] text-ku-text-secondary",
-  promptPayActions: "w-full gap-[10px]",
+  promptPayActions: "w-full gap-ku-10",
   checkStatusButton:
     "h-[50px] flex-row items-center justify-center gap-ku-sm rounded-[16px] bg-ku-primary-deep",
   checkStatusButtonText: "font-ku-semibold text-ku-control text-ku-on-primary",
   simulateButton:
-    "h-[44px] flex-row items-center justify-center gap-[6px] rounded-[16px] border border-ku-border-success bg-ku-surface-success",
+    "h-[44px] flex-row items-center justify-center gap-ku-6 rounded-[16px] border border-ku-border-success bg-ku-surface-success",
   simulateButtonText: "font-ku-medium text-[13px] text-ku-primary-deep",
 } as const;
 
