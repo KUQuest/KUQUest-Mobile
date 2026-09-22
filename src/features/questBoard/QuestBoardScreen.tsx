@@ -310,7 +310,6 @@ export default function QuestBoardScreen({
 
   const listHeader = (
     <QuestBoardListHeader
-      locale={locale}
       messages={messages}
       query={query}
       onQueryChange={setQuery}

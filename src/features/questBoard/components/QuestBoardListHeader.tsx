@@ -3,7 +3,6 @@ import { ArrowDownUp, SlidersHorizontal, X } from "lucide-react-native";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
-import { HomeWalletOverview } from "@/features/wallet/HomeWalletOverview";
 import { colors } from "@/theme/colors";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 import type {
@@ -15,7 +14,6 @@ import styles from "../questBoardStyles";
 import { deadlineOptions, startTimeOptions } from "../questBoardOptions";
 
 export interface QuestBoardListHeaderProps {
-  locale: "en" | "th";
   messages: QuestBoardMessages;
   query: string;
   onQueryChange: (query: string) => void;
@@ -37,7 +35,6 @@ export interface QuestBoardListHeaderProps {
 }
 
 export function QuestBoardListHeader({
-  locale,
   messages,
   query,
   onQueryChange,
@@ -69,7 +66,6 @@ export function QuestBoardListHeader({
           </View>
         </View>
       </View>
-      <HomeWalletOverview locale={locale} />
       <SearchInput
         accessibilityLabel={messages.searchPlaceholder}
         autoCapitalize="none"

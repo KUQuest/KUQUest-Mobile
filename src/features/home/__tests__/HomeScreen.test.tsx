@@ -5,6 +5,8 @@ import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { questApi } from "@/api/QuestApi";
 import { studentApi } from "@/api/StudentApi";
 import HomeScreen from "../HomeScreen";
+import { DEFAULT_LOCALE } from "@/locales/locale";
+import { hirerHomeMessages } from "../hirerHomeMessages";
 
 const mockPush = jest.fn();
 
@@ -28,6 +30,7 @@ jest.mock("@/api/QuestApi", () => ({
     listQuestAssignments: jest.fn(),
     listApplications: jest.fn(),
     listCandidateTeams: jest.fn(),
+    listProofSubmissions: jest.fn(),
   },
 }));
 
@@ -357,6 +360,53 @@ describe("HomeScreen live active quests syncing", () => {
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/my-quests",
       params: { role: "hirer", tab: "active" },
+    });
+  });
+
+  it("moves an in-progress Active Quest to review once a Worker sends Proof", async () => {
+    (questApi.listMine as jest.Mock).mockResolvedValue({
+      items: [
+        {
+          id: "live-proof",
+          title: "Poster Design",
+          state: "QUEST_IN_PROGRESS",
+          mode: "FIRST_COME_FIRST_SERVED",
+          participation: "SINGLE",
+          headcount: 1,
+          proofRequired: true,
+          dueAt: "2026-09-30T17:00:00.000+07:00",
+        },
+      ],
+      nextCursor: null,
+    });
+    (questApi.listQuestAssignments as jest.Mock).mockResolvedValue([]);
+    (questApi.listProofSubmissions as jest.Mock).mockResolvedValue([
+      {
+        id: "proof-1",
+        status: "PROOF_PENDING",
+        submittedAt: "2026-09-23T10:00:00.000Z",
+      },
+    ]);
+
+    const { getByTestId } = await renderWithQueryClient(<HomeScreen />);
+    const messages = hirerHomeMessages[DEFAULT_LOCALE];
+
+    await waitFor(() => {
+      expect(
+        getByTestId("hirer-quest-card-live-proof").props.accessibilityLabel
+      ).toContain(
+        `${messages.timelineLabels.review}, ${messages.currentStageLabel}`
+      );
+    });
+    expect(questApi.listProofSubmissions).toHaveBeenCalledWith(
+      "live-proof",
+      expect.anything()
+    );
+
+    fireEvent.press(getByTestId("hirer-quest-card-review-proof-live-proof"));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]/proof-review",
+      params: { id: "live-proof" },
     });
   });
 

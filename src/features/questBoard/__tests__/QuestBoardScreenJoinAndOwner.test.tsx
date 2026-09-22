@@ -27,10 +27,6 @@ jest.mock("@/features/navigation/navigationUiStore", () => ({
   handleNavigationScroll: jest.fn(),
 }));
 
-jest.mock("@/features/wallet/HomeWalletOverview", () => ({
-  HomeWalletOverview: () => null,
-}));
-
 jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));

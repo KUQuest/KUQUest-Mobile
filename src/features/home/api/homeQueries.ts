@@ -55,13 +55,16 @@ async function loadHirerHome(signal: AbortSignal): Promise<HirerHomeData> {
         q.mode === "CANDIDATE" && q.participation !== "GROUP";
       const isGroupCandidate =
         q.mode === "CANDIDATE" && q.participation === "GROUP";
-      const [assignments, applications, teams] = await Promise.all([
+      const [assignments, applications, teams, proofs] = await Promise.all([
         questApi.listQuestAssignments(q.id, { signal }).catch(() => []),
         isSingleCandidate
           ? questApi.listApplications(q.id, { signal }).catch(() => [])
           : Promise.resolve([]),
         isGroupCandidate
           ? questApi.listCandidateTeams(q.id, { signal }).catch(() => [])
+          : Promise.resolve([]),
+        q.proofRequired && q.state === QuestStatus.QUEST_IN_PROGRESS
+          ? questApi.listProofSubmissions(q.id, { signal }).catch(() => [])
           : Promise.resolve([]),
       ]);
 
@@ -119,6 +122,10 @@ async function loadHirerHome(signal: AbortSignal): Promise<HirerHomeData> {
         dueAt: q.dueAt,
         assignedWorkers,
         applicants,
+        proofPending: proofs.some(
+          (proof) =>
+            proof.status === "PROOF_PENDING" && proof.submittedAt !== null
+        ),
       };
     })
   );

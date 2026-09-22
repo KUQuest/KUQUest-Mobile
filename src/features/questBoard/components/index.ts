@@ -19,6 +19,7 @@ export { ProofSubmissionSheet } from "./ProofSubmissionSheet";
 export type { ProofSubmissionSheetProps } from "./ProofSubmissionSheet";
 export { ProofReviewModal } from "./ProofReviewModal";
 export type { ProofReviewModalProps } from "./ProofReviewModal";
+export { ProofReviewPanel } from "./ProofReviewPanel";
 
 export { TeamAssembleSheet } from "./TeamAssembleSheet";
 export type {
