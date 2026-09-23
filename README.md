@@ -13,7 +13,7 @@ The mobile app must connect to the remote **develop staging API**:
 https://kuquest-dev-api.kubits.org
 ```
 
-Do **not** run the local API. The mobile app's local API/LAN setup will not work for the normal development flow. Do not use `bun run start`, `bun run dev:start`, `bun run dev:local`, or `bun run update-api-env`.
+Do **not** run the local API. The mobile app's local API/LAN setup will not work for the normal development flow. Use `bun run staging:start` for the staging API; `bun run dev:local` is only for explicitly requested local-LAN work.
 
 Create `.env.local` in the project root by copying the template:
 
@@ -65,10 +65,10 @@ This project uses native modules, including Google Sign-In and `@expo/ui`. Build
 
 ```bash
 # Android
-bun run dev:android
+bun android
 
 # iOS
-bun run dev:ios
+bun ios
 ```
 
 Do not open the project in Expo Go. Expo Go cannot load the native modules used by this app.
@@ -90,13 +90,7 @@ This command:
 
 ### Step 4: Launch the app
 
-For Android, use a running emulator and launch the installed Development Build:
-
-```bash
-bun run android
-```
-
-For iOS, open the installed Development Build from the simulator after Metro starts.
+After Metro starts, run `bun android` to build and install the debug development client on the selected Android device; use `bun ios` for the iOS development build.
 
 ### Android Google Sign-In
 

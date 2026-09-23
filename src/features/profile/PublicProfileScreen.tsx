@@ -14,7 +14,7 @@ import { Image, Pressable, ScrollView, Text, View } from "@/tw";
 import { Chip } from "@/components/ui/Chip";
 import { ScreenLayout } from "../../components/layout/ScreenLayout";
 import { colors } from "@/theme/colors";
-import { formatDisplayMonthYear } from "@/utils";
+import { formatDisplayMonthYear } from "./profileFormatting";
 import { getProfileLayoutMetrics } from "@/theme/profileLayout";
 import { spacing } from "@/theme/spacing";
 import { useLocale } from "@/features/preferences/localeStore";
@@ -283,7 +283,7 @@ export default function PublicProfileScreen() {
         }}
       />
       {bio ? (
-        <View className="rounded-ku-card mt-ku-12 border border-ku-border-subtle bg-ku-surface p-ku-12">
+        <View className="mt-ku-12 rounded-ku-card border border-ku-border-subtle bg-ku-surface p-ku-12">
           <Text className="font-ku-regular text-ku-body-small text-ku-text-secondary">
             {bio}
           </Text>

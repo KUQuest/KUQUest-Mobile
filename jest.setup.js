@@ -17,6 +17,7 @@ jest.mock("react-native-reanimated", () => ({
   __esModule: true,
   default: { View, createAnimatedComponent: (Component) => Component },
   cancelAnimation: jest.fn(),
+  useAnimatedKeyboard: () => ({ height: { value: 0 }, state: { value: 0 } }),
   useAnimatedStyle: (updater) => updater(),
   useSharedValue: (value) => ({ value }),
   withRepeat: (value) => value,

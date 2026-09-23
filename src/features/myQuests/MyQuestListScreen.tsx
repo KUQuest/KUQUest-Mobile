@@ -7,27 +7,21 @@ import { Pressable, Text, View } from "@/tw";
 
 import { QuestList } from "@/components/ui/QuestList";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import { myQuestMessages } from "@/locales/myQuestMessages";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { spacing } from "@/theme/spacing";
 import { MyQuestSummaryCard } from "./components/MyQuestSummaryCard";
-import {
-  useMyHirerQuestsQuery,
-  useMyWorkerQuestSnapshotsQuery,
-} from "./api/myQuestsQueries";
+import { useMyHirerQuestsQuery } from "./api/myQuestsQueries";
 import {
   projectMyQuestWorkspace,
-  type MyQuestRole,
   type MyQuestTab,
 } from "./myQuestWorkspaceProjection";
-import type { QuestSummary } from "./myQuestService";
+import type { QuestSummary } from "./myQuestTypes";
 
-export type { MyQuestRole, MyQuestTab };
+export type { MyQuestTab };
 
 export interface MyQuestListScreenProps {
-  initialRole?: MyQuestRole;
   initialTab?: string;
 }
 
@@ -66,8 +60,8 @@ function Separator() {
   return <View className="h-ku-sm" />;
 }
 
+/** Hirer Work Management; the Worker workspace uses `WorkerWorkManagementScreen`. */
 export default function MyQuestListScreen({
-  initialRole = "hirer",
   initialTab,
 }: MyQuestListScreenProps = {}) {
   const router = useRouter();
@@ -75,48 +69,23 @@ export default function MyQuestListScreen({
   const messages = myQuestMessages[locale];
   const { colors: palette } = useAppTheme();
   const insets = useSafeAreaInsets();
-  const role = initialRole;
   const [requestedTab, setRequestedTab] = useState<string | undefined>(
     initialTab
   );
-  const sessionQuery = useSessionQuery();
-  const sessionUserId = sessionQuery.data?.user.id ?? null;
-  const hirerQuery = useMyHirerQuestsQuery(role === "hirer");
-  const workerQuery = useMyWorkerQuestSnapshotsQuery(
-    role === "worker" ? sessionUserId : null
-  );
+  const hirerQuery = useMyHirerQuestsQuery();
   const hirerQuests = hirerQuery.data ?? null;
-  const workerSnapshots = workerQuery.data ?? null;
 
   const projection = useMemo(
-    () =>
-      projectMyQuestWorkspace({
-        role,
-        requestedTab,
-        locale,
-        hirerQuests,
-        workerSnapshots,
-        viewerId: sessionUserId ?? "",
-      }),
-    [hirerQuests, locale, requestedTab, role, sessionUserId, workerSnapshots]
+    () => projectMyQuestWorkspace({ requestedTab, locale, hirerQuests }),
+    [hirerQuests, locale, requestedTab]
   );
   const { items, selectedTab: tab, tabs } = projection;
-  const isLoading =
-    role === "hirer" ? hirerQuery.isPending : workerQuery.isPending;
-  const refreshing =
-    role === "hirer" ? hirerQuery.isRefetching : workerQuery.isRefetching;
+  const isLoading = hirerQuery.isPending;
+  const refreshing = hirerQuery.isRefetching;
   const bottomPadding = insets.bottom + spacing.xl;
 
   const openQuest = useCallback(
     (quest: QuestSummary) => {
-      if (role === "worker") {
-        if (!sessionUserId) return;
-        router.push({
-          pathname: `../quest/${quest.id}/work`,
-          params: { viewerId: sessionUserId, studentId: sessionUserId },
-        });
-        return;
-      }
       if (quest.actionType === "review") {
         router.push({
           pathname: "/quest/[id]/review",
@@ -136,7 +105,7 @@ export default function MyQuestListScreen({
         params: { id: quest.id, mode: "post" },
       });
     },
-    [role, router, sessionUserId]
+    [router]
   );
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<QuestSummary>) => (
@@ -151,10 +120,8 @@ export default function MyQuestListScreen({
   );
   const keyExtractor = useCallback((item: QuestSummary) => item.id, []);
   const onRefresh = useCallback(() => {
-    void (
-      role === "hirer" ? hirerQuery.refetch() : workerQuery.refetch()
-    ).catch(() => undefined);
-  }, [hirerQuery, role, workerQuery]);
+    void hirerQuery.refetch().catch(() => undefined);
+  }, [hirerQuery]);
 
   return (
     <ScreenLayout
@@ -181,13 +148,13 @@ export default function MyQuestListScreen({
                 className={`${styles.title} text-ku-text-strong`}
                 numberOfLines={1}
               >
-                {messages.title[role]}
+                {messages.title}
               </Text>
               <Text
                 className={`${styles.subtitle} text-ku-text-secondary`}
                 numberOfLines={2}
               >
-                {messages.subtitle[role]}
+                {messages.subtitle}
               </Text>
             </View>
           </View>
@@ -226,7 +193,7 @@ export default function MyQuestListScreen({
               {messages.loading}
             </Text>
           </View>
-        ) : (role === "hirer" ? hirerQuery.isError : workerQuery.isError) ? (
+        ) : hirerQuery.isError ? (
           <View className={styles.error}>
             <Text className={`${styles.errorText} text-ku-danger-dark`}>
               {messages.error}

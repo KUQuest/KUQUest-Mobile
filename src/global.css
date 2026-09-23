@@ -108,12 +108,21 @@
     --spacing-ku-34: 34px;
     --spacing-ku-36: 36px;
     --spacing-ku-40: 40px;
+    --spacing-ku-42: 42px;
+    --spacing-ku-44: 44px;
     --spacing-ku-48: 48px;
+    --spacing-ku-52: 52px;
     --spacing-ku-56: 56px;
+    --spacing-ku-60: 60px;
     --spacing-ku-64: 64px;
+    --spacing-ku-68: 68px;
+    --spacing-ku-72: 72px;
     --spacing-ku-76: 76px;
+    --spacing-ku-78: 78px;
+    --spacing-ku-88: 88px;
     --spacing-ku-120: 120px;
     --spacing-ku-132: 132px;
+    --spacing-ku-180: 180px;
 
     --spacing-ku-xs: 4px;
     --spacing-ku-sm: 8px;
@@ -161,6 +170,14 @@
     --text-ku-nav--line-height: 1.2;
     --text-ku-heading: 24px;
     --text-ku-heading--line-height: 1.208333;
+    --radius-ku-field: 8px;
+    --radius-ku-image: 10px;
+    --radius-ku-image-large: 12px;
+    --radius-ku-control: 14px;
+    --radius-ku-card: 16px;
+    --radius-ku-search: 18px;
+    --radius-ku-sheet: 24px;
+    --radius-ku-navigation: 28px;
     --radius-ku-pill: 9999px;
   }
 }

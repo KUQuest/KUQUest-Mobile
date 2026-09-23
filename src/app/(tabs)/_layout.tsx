@@ -3,6 +3,7 @@ import { useWindowDimensions } from "react-native";
 
 import { BottomNav } from "@/components/navigation/BottomNav";
 import { useLocale } from "@/features/preferences/localeStore";
+import { useRoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
 import { navigationMessages } from "@/locales/navigationMessages";
 import { getAppChromeMetrics } from "@/theme/layout";
 
@@ -11,17 +12,21 @@ export default function TabsLayout() {
   const metrics = getAppChromeMetrics(width, fontScale);
   const segments = useSegments();
   const { locale } = useLocale();
+  const { workspace } = useRoleWorkspace();
   const messages = navigationMessages[locale];
   const isTablet = metrics.isTablet;
   const isCreateQuest = segments[segments.length - 1] === "create";
   const isChatConversation = segments[segments.length - 2] === "chat";
-  const isMyQuests = segments[segments.length - 1] === "my-quests";
+  // Worker Work Management is a primary destination and keeps the nav;
+  // the Hirer's My Quests is a sub-page with its own back button.
+  const isHirerMyQuests =
+    segments[segments.length - 1] === "my-quests" && workspace !== "worker";
 
   return (
     <Tabs
       initialRouteName="index"
       tabBar={(props) =>
-        isCreateQuest || isChatConversation || isMyQuests ? null : (
+        isCreateQuest || isChatConversation || isHirerMyQuests ? null : (
           <BottomNav {...props} />
         )
       }

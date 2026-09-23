@@ -13,10 +13,7 @@ import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { Avatar } from "@/components/ui/Avatar";
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
-import {
-  LoadingSkeleton,
-  SkeletonBlock,
-} from "@/components/ui/LoadingSkeleton";
+import { SkeletonBlock } from "@/components/ui/LoadingSkeleton";
 import { Pressable, Text, TextInput, View } from "@/tw";
 import { useLocale } from "@/features/preferences/localeStore";
 import { chatMessages } from "@/locales/chatMessages";
@@ -26,6 +23,7 @@ import { formatTimeInBangkok } from "@/domain/datetime";
 
 import { spacing } from "@/theme/spacing";
 import { getChatRouteParams } from "./chatData";
+import { ChatInboxSkeleton } from "./components/ChatInboxSkeleton";
 import type { ChatConversation } from "./chatTypes";
 import styles from "./chatStyles";
 import {
@@ -155,52 +153,6 @@ const ConversationRow = memo(function ConversationRow({
     </Pressable>
   );
 });
-
-function ChatInboxSkeleton({ loadingLabel }: { loadingLabel: string }) {
-  return (
-    <LoadingSkeleton
-      loadingLabel={loadingLabel}
-      style={{ width: "100%" }}
-      contentStyle={{ gap: spacing.sm }}
-      testID="chat-inbox-loading-skeleton"
-    >
-      {[1, 2, 3, 4].map((item) => (
-        <View
-          key={item}
-          className={styles.conversationRow}
-          testID={`chat-skeleton-${item}`}
-        >
-          <SkeletonBlock
-            variant="image"
-            height={48}
-            width={48}
-            borderRadius={24}
-          />
-          <View style={{ flex: 1, gap: spacing.xs, marginLeft: spacing.md }}>
-            <SkeletonBlock height={18} width="76%" borderRadius={4} />
-            <SkeletonBlock height={16} width="58%" borderRadius={4} />
-            <SkeletonBlock
-              height={14}
-              width="88%"
-              borderRadius={4}
-              style={{ marginTop: spacing.xs }}
-            />
-          </View>
-          <View
-            style={{
-              alignItems: "flex-end",
-              gap: spacing.sm,
-              marginLeft: spacing.sm,
-            }}
-          >
-            <SkeletonBlock height={13} width={34} borderRadius={4} />
-            <SkeletonBlock height={22} width={22} borderRadius={11} />
-          </View>
-        </View>
-      ))}
-    </LoadingSkeleton>
-  );
-}
 
 export interface ChatInboxScreenProps {
   viewerId?: string;
@@ -422,9 +374,9 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
           </Text>
           {conversationsPending ? (
             <SkeletonBlock
-              height={16}
-              width={78}
-              borderRadius={4}
+              height={spacing.px16}
+              width={spacing.px78}
+              borderRadius={spacing.px4}
               testID="chat-inbox-loading-count"
             />
           ) : (
@@ -482,14 +434,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
           return renderEmptyState();
         case "inquiry-heading":
           return (
-            <View
-              className={styles.sectionHeading}
-              style={
-                index === 0
-                  ? { marginBottom: 0 }
-                  : { marginBottom: 0, marginTop: 0 }
-              }
-            >
+            <View className={styles.sectionHeadingCompact}>
               <Text accessibilityRole="header" className={styles.sectionTitle}>
                 {candidateInquiryTitle}
               </Text>
@@ -502,8 +447,11 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
           return (
             <>
               <View
-                className={styles.sectionHeading}
-                style={index === 0 ? undefined : { marginTop: 0 }}
+                className={
+                  index === 0
+                    ? styles.sectionHeading
+                    : styles.sectionHeadingNoTopMargin
+                }
               >
                 <Text
                   accessibilityRole="header"
@@ -564,7 +512,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
         <FlatList
           contentContainerStyle={{
             paddingBottom: bottomPadding + spacing.lg,
-            paddingHorizontal: spacing.lg,
+            paddingHorizontal: spacing.md,
           }}
           data={listItems}
           ItemSeparatorComponent={ChatInboxItemSeparator}

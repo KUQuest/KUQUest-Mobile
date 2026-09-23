@@ -12,7 +12,6 @@ import { spacing } from "@/theme/spacing";
 import styles from "./chatStyles";
 import { cn } from "@/tw/cn";
 import {
-  AttachmentRow,
   InlineImageAttachment,
   MessageBubble,
   isImageAttachment,
@@ -22,12 +21,7 @@ import {
   type PendingAttachmentItem,
 } from "./components/PendingAttachmentsBar";
 
-export {
-  AttachmentRow,
-  InlineImageAttachment,
-  MessageBubble,
-  isImageAttachment,
-};
+export { InlineImageAttachment, MessageBubble, isImageAttachment };
 export { PendingAttachmentsBar, type PendingAttachmentItem };
 export type {
   DisplayChatMessage,
@@ -166,7 +160,7 @@ export function ChatConversationSkeleton({
             contentContainerStyle={{
               flexGrow: 1,
               gap: spacing.md,
-              paddingHorizontal: spacing.lg,
+              paddingHorizontal: spacing.md,
               paddingTop: spacing.lg,
             }}
           >

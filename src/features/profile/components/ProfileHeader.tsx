@@ -1,6 +1,6 @@
 import React from "react";
 import { Text, View } from "@/tw";
-import { imageSource } from "./profileShared";
+import { defaultAccessibilityLabels, imageSource } from "./profileShared";
 import { useWindowDimensions } from "react-native";
 import { Building2, Code2, GraduationCap, Pencil } from "lucide-react-native";
 import { Avatar } from "../../../components/ui/Avatar";
@@ -13,7 +13,6 @@ import type {
   ProfileAccessibilityLabels,
   ProfileViewData,
 } from "./profileTypes";
-import { defaultAccessibilityLabels } from "./profileShared";
 
 interface ProfileHeaderProps {
   data: Pick<

@@ -55,9 +55,6 @@ export default function WalletScreen() {
   const historyQuery = useTransactionHistoryQuery(50);
   const hasLoadedWalletData = Boolean(walletQuery.data && historyQuery.data);
   const balances = hasLoadedWalletData ? (walletQuery.data ?? null) : null;
-  const transactions = hasLoadedWalletData
-    ? (historyQuery.data?.items ?? [])
-    : [];
   const loading = walletQuery.isPending || historyQuery.isPending;
   const refreshing = walletQuery.isRefetching || historyQuery.isRefetching;
   const error =
@@ -75,8 +72,11 @@ export default function WalletScreen() {
   }, [refetchHistory, refetchWallet]);
 
   const classifiedList = useMemo(
-    () => transactions.map((tx) => classifyHirerTransaction(tx, locale)),
-    [transactions, locale]
+    () =>
+      (hasLoadedWalletData ? (historyQuery.data?.items ?? []) : []).map((tx) =>
+        classifyHirerTransaction(tx, locale)
+      ),
+    [hasLoadedWalletData, historyQuery.data?.items, locale]
   );
 
   const filteredList = useMemo(

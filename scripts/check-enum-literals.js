@@ -3,9 +3,9 @@ const path = require("path");
 
 // Ratchet gate for lifecycle enum literals.
 //
-// The named-value contract lives in `src/features/questBoard/types.ts`
+// The named-value contract lives in `src/features/questBoard/domain/types.ts`
 // (QuestStatus, QuestTeamStatus, QuestMode, ...) and the drift guard test
-// `src/features/questBoard/__tests__/lifecycleEnumConsistency.test.ts` pins it
+// `src/features/questBoard/api/__tests__/lifecycleEnumConsistency.test.ts` pins it
 // against the wire schemas in `src/api/questV2Contracts.ts`. New production
 // code must compare against the named values, not re-inline the wire string.
 //
@@ -19,7 +19,7 @@ const BASELINE_PATH = path.join(__dirname, "enum-literals-baseline.json");
 
 // The two declaration sites legitimately contain the literals.
 const CONTRACT_FILES = new Set([
-  "src/features/questBoard/types.ts",
+  "src/features/questBoard/domain/types.ts",
   "src/api/questV2Contracts.ts",
 ]);
 
@@ -90,7 +90,7 @@ function main() {
       `Lifecycle enum literal ratchet exceeded: ${total} > baseline ${baseline.total}`
     );
     console.error(
-      "Compare against the named values in src/features/questBoard/types.ts (e.g. QuestStatus.QUEST_FAILED), not raw strings."
+      "Compare against the named values in src/features/questBoard/domain/types.ts (e.g. QuestStatus.QUEST_FAILED), not raw strings."
     );
     const offenders = [...perFile.entries()]
       .sort((a, b) => b[1] - a[1])

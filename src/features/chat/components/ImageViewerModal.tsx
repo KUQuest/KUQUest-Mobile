@@ -93,8 +93,6 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
   );
 };
 
-export default ImageViewerModal;
-
 const containerBackground = { backgroundColor: "rgba(0, 0, 0, 0.95)" };
 
 const styles = {

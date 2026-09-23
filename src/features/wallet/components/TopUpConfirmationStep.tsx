@@ -7,15 +7,7 @@ import { formatSatang } from "@/domain/satang";
 import type { SupportedLocale } from "@/locales/locale";
 import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
-
-function formatExpiry(expiresAt: string, locale: SupportedLocale): string {
-  const date = new Date(expiresAt);
-  if (Number.isNaN(date.getTime())) return expiresAt;
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
-}
+import { formatTopUpExpiry } from "../walletFormatting";
 
 export interface TopUpConfirmationStepProps {
   error: string | null;
@@ -126,7 +118,7 @@ export function TopUpConfirmationStep({
         <View className={styles.expiryRow}>
           <Clock color={colors.textMuted} size={14} />
           <Text className={styles.expiryText}>
-            {m.topUpExpiresAt}: {formatExpiry(quote.expiresAt, locale)}
+            {m.topUpExpiresAt}: {formatTopUpExpiry(quote.expiresAt, locale)}
           </Text>
         </View>
       </View>

@@ -5,23 +5,7 @@ import type { SupportedLocale } from "@/locales/locale";
 import styles from "../styles/profileComponentStyles";
 import type { ProfileExperience } from "./profileTypes";
 import { EmptyState, Section, type SectionNoticeProps } from "./ProfileSection";
-
-const monthFormatters: Record<SupportedLocale, Intl.DateTimeFormat> = {
-  en: new Intl.DateTimeFormat("en-US", {
-    year: "numeric",
-    month: "short",
-  }),
-  th: new Intl.DateTimeFormat("th-TH", {
-    year: "numeric",
-    month: "short",
-  }),
-};
-
-function formatMonth(value: string, locale: SupportedLocale = "en"): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return monthFormatters[locale].format(date);
-}
+import { formatDisplayMonthYear } from "../profileFormatting";
 
 export function Experience({
   experiences,
@@ -84,9 +68,9 @@ export function Experience({
                   </Text>
                 ) : null}
                 <Text className={styles.itemMeta} maxFontSizeMultiplier={2}>
-                  {formatMonth(experience.startedAt, locale)} –{" "}
+                  {formatDisplayMonthYear(experience.startedAt, locale)} –{" "}
                   {experience.endedAt
-                    ? formatMonth(experience.endedAt, locale)
+                    ? formatDisplayMonthYear(experience.endedAt, locale)
                     : presentLabel}
                 </Text>
                 {experience.description ? (

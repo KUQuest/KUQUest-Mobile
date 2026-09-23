@@ -1,3 +1,6 @@
+import { ApiClient } from "../ApiClient";
+import { ChatApi, serverConversationToChatConversation } from "../ChatApi";
+
 jest.mock("expo-file-system", () => ({
   File: class MockFile extends Blob {
     readonly uri: string;
@@ -8,9 +11,6 @@ jest.mock("expo-file-system", () => ({
     }
   },
 }));
-
-import { ApiClient } from "../ApiClient";
-import { ChatApi, serverConversationToChatConversation } from "../ChatApi";
 
 describe("ChatApi", () => {
   let fetchMock: jest.Mock;

@@ -1,4 +1,4 @@
-import { ScrollView, Text, View } from "@/tw";
+import { ScrollView, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { getProfileLayoutMetrics } from "../../../theme/profileLayout";
 import { colors } from "../../../theme/colors";

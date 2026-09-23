@@ -17,6 +17,28 @@ colors:
   support-border: "#B79AAF"
   on-support: "#FFFFFF"
 
+  # Role & additional colors
+  hirer: "#5F7655"
+  hirer-dark: "#465B3E"
+  hirer-deep: "#34462F"
+  hirer-subtle: "#EDF2EA"
+  hirer-border: "#B6C4AF"
+  on-hirer: "#FFFFFF"
+
+  worker: "#96533F"
+  worker-dark: "#713D30"
+  worker-deep: "#4F2A22"
+  worker-subtle: "#F8ECE8"
+  worker-border: "#C9A79A"
+  on-worker: "#FFFFFF"
+
+  additional: "#7C4BA8"
+  additional-dark: "#623784"
+  additional-deep: "#412357"
+  additional-subtle: "#F1EBF8"
+  additional-border: "#C2AED7"
+  on-additional: "#FFFFFF"
+
   # Neutral
   background: "#F7F9F8"
   surface: "#FFFFFF"
@@ -61,6 +83,27 @@ colors:
     support-subtle: "#342832"
     support-border: "#72556D"
     on-support: "#21171F"
+
+    hirer: "#A9C79E"
+    hirer-dark: "#7FA273"
+    hirer-deep: "#5F7655"
+    hirer-subtle: "#243128"
+    hirer-border: "#526B58"
+    on-hirer: "#142019"
+
+    worker: "#E1A08C"
+    worker-dark: "#C77B65"
+    worker-deep: "#A75D4B"
+    worker-subtle: "#3B2924"
+    worker-border: "#805044"
+    on-worker: "#241A17"
+
+    additional: "#C7A3EA"
+    additional-dark: "#A77ACF"
+    additional-deep: "#8759B0"
+    additional-subtle: "#302541"
+    additional-border: "#735896"
+    on-additional: "#241B2B"
 
     text-strong: "#F2F5F2"
     text: "#E3E9E4"
@@ -190,8 +233,9 @@ KUQuest is a trusted community opportunity platform for students, faculty, and s
 The system is defined by:
 
 - **Calm, neutral-dominant canvases**: 60–70% of any screen is clean, breathable neutral ground.
-- **Organic forest sage primary identity**: `#5F7655` anchors the app in Kasetsart's agricultural and campus heritage.
-- **Deep plum supporting identity**: `#755570` provides a sophisticated editorial companion for special moments, secondary actions, and badges.
+- **Organic forest sage Hirer identity**: `#5F7655` anchors publishing, funding, and Quest management in Kasetsart's agricultural and campus heritage.
+- **Warm terracotta Worker identity**: `#96533F` distinguishes work and assignment actions while staying grounded in the organic palette.
+- **Purple Additional accent**: `#7C4BA8` adds purple character to highlights, tags, and secondary emphasis.
 - **Earthy supporting accents**: Cream (`#F6EFE6`), Gold (`#C8953D`), Terracotta (`#9C634D`), and Rose (`#C88C9B`) add deliberate warmth to cards, wallet surfaces, and empty states.
 - **Editorial typography and whitespace**: Strong headings, expressive section titles, and generous asymmetrical compositions paired with highly readable, scannable UI labels.
 - **Quiet cards and soft geometry**: Surfaces sit naturally on the canvas with subtle borders and minimal shadows rather than heavy elevation.
@@ -209,12 +253,35 @@ The system is defined by:
   - `primary-subtle`: `#EDF2EA` light / `#243128` dark (surface tint for active chips, avatar backdrops, and highlights)
   - `primary-border`: `#B6C4AF` light / `#526B58` dark
   - `on-primary`: `#FFFFFF` light / `#142019` dark
-- **Support (`#755570` light / `#D8B4D0` dark)**: Sophisticated plum tone for supporting accents, secondary badges, and editorial highlights.
+- **Support (`#755570` light / `#D8B4D0` dark)**: Sophisticated supporting tone for secondary badges, editorial highlights, and accent moments.
   - `support-dark`: `#5D4058` light / `#BE91B5` dark
   - `support-deep`: `#463143` light / `#966B8F` dark
   - `support-subtle`: `#F3ECF2` light / `#342832` dark
   - `support-border`: `#B79AAF` light / `#72556D` dark
   - `on-support`: `#FFFFFF` light / `#21171F` dark
+
+### Role Colors & Additional Accent
+
+- **Hirer (`#5F7655` light / `#A9C79E` dark)**: Reuses the sage primary family for publishing, funding, and managing Quests.
+  - `hirer-dark`: `#465B3E` light / `#7FA273` dark
+  - `hirer-deep`: `#34462F` light / `#5F7655` dark
+  - `hirer-subtle`: `#EDF2EA` light / `#243128` dark
+  - `hirer-border`: `#B6C4AF` light / `#526B58` dark
+  - `on-hirer`: `#FFFFFF` light / `#142019` dark
+- **Worker (`#96533F` light / `#E1A08C` dark)**: Warm terracotta for assignments, work progress, and Worker-owned actions.
+  - `worker-dark`: `#713D30` light / `#C77B65` dark
+  - `worker-deep`: `#4F2A22` light / `#A75D4B` dark
+  - `worker-subtle`: `#F8ECE8` light / `#3B2924` dark
+  - `worker-border`: `#C9A79A` light / `#805044` dark
+  - `on-worker`: `#FFFFFF` light / `#241A17` dark
+- **Additional (`#7C4BA8` light / `#C7A3EA` dark)**: Purple accent for highlights, tags, secondary emphasis, and non-semantic decoration.
+  - `additional-dark`: `#623784` light / `#A77ACF` dark
+  - `additional-deep`: `#412357` light / `#8759B0` dark
+  - `additional-subtle`: `#F1EBF8` light / `#302541` dark
+  - `additional-border`: `#C2AED7` light / `#735896` dark
+  - `on-additional`: `#FFFFFF` light / `#241B2B` dark
+
+Use the `on-*` token for text and icons on role-colored controls. Keep `additional` out of success, warning, danger, and info states so status meaning stays unambiguous.
 
 ### Neutral Surfaces & Typography
 
@@ -246,8 +313,8 @@ The system is defined by:
 ### Palette Balance Rule (60-30-10)
 
 1. **60–70% Neutral**: Clean canvas (`#F7F9F8` / `#101713`) and white/layered surfaces let content breathe.
-2. **20–30% Primary Brand Family**: `#5F7655` and its subtle tints guide focus to main actions, tags, and progress.
-3. **5–10% Supporting / Accent**: Cream, Gold, Plum, and Terracotta serve as deliberate accents, never overwhelming the page.
+2. **20–30% Primary Brand Family**: Hirer's sage green (`#5F7655`) and its subtle tints guide focus to publishing, funding, and primary actions.
+3. **5–10% Supporting / Role Accent**: Worker's terracotta (`#96533F`) and Additional purple (`#7C4BA8`) are deliberate accents, never overwhelming the page.
 
 ---
 
@@ -333,6 +400,7 @@ The system is defined by:
 
 - **Do** maintain the 60-30-10 color balance with neutral surfaces dominating.
 - **Do** use `#5F7655` as the primary brand color across all screens and workspaces.
+- **Do** keep Hirer actions in the sage family, Worker actions in terracotta, and Additional accents in purple.
 - **Do** use editorial typography with oversized titles for section introductions and empty states.
 - **Do** keep interactive elements at a minimum 48px touch target.
 - **Do** support full dark mode using the specified dark palette layers (`#101713`, `#172019`, `#1E2A22`).
@@ -340,8 +408,8 @@ The system is defined by:
 
 ### Don't:
 
-- **Don't** use neon greens, bright purples, or generic corporate blues.
-- **Don't** mix competing persona brand colors; Hirer and Worker both share the unified Organic Editorial palette.
+- **Don't** use neon colors or unpaired purple shades outside the defined Additional scale.
+- **Don't** invent competing persona colors; Hirer stays sage, Worker stays terracotta, and Additional stays purple.
 - **Don't** scatter tiny colored badges across cards creating a "fruit salad" effect.
 - **Don't** use heavy drop shadows, decorative blurs, or glossy gradients.
 - **Don't** reduce text contrast below WCAG AA thresholds (4.5:1 for body copy).

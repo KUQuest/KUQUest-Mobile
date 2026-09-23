@@ -4,7 +4,6 @@ import MyQuestListScreen from "../MyQuestListScreen";
 import { projectMyQuestWorkspace } from "../myQuestWorkspaceProjection";
 const mockPush = jest.fn();
 const mockBack = jest.fn();
-const mockWorkerList = jest.fn();
 const mockHirerList = jest.fn();
 
 jest.mock("expo-router", () => ({
@@ -18,7 +17,7 @@ jest.mock("@/features/navigation/navigationUiStore", () => ({
 }));
 jest.mock("@/features/auth/AuthService", () => ({
   authService: {
-    getSession: jest.fn(async () => ({ user: { id: "worker-1" } })),
+    getSession: jest.fn(async () => ({ user: { id: "hirer-1" } })),
   },
 }));
 jest.mock("../myQuestService", () => {
@@ -28,8 +27,6 @@ jest.mock("../myQuestService", () => {
     myQuestService: {
       ...actual.myQuestService,
       listAllMyHirerQuests: (...args: unknown[]) => mockHirerList(...args),
-      listMyWorkerQuestSnapshots: (...args: unknown[]) =>
-        mockWorkerList(...args),
     },
   };
 });
@@ -50,54 +47,6 @@ const baseQuest = {
   locations: [{ label: "Main Campus" }],
 };
 
-function snapshot(
-  state:
-    | "QUEST_ASSIGNED"
-    | "QUEST_IN_PROGRESS"
-    | "QUEST_COMPLETED"
-    | "QUEST_CANCELLED"
-    | "QUEST_FAILED",
-  title: string,
-  assignmentState:
-    "ASSIGNMENT_ACTIVE" | "ASSIGNMENT_COMPLETED" | "ASSIGNMENT_CANCELLED"
-) {
-  return {
-    viewerId: "worker-1",
-    actor: "WORKER",
-    state,
-    mode: baseQuest.mode,
-    participation: baseQuest.participation,
-    quest: {
-      ...baseQuest,
-      id: title.toLowerCase().replaceAll(" ", "-"),
-      title,
-      state,
-    },
-    assignment: {
-      id: `${title}-assignment`,
-      questId: title.toLowerCase().replaceAll(" ", "-"),
-      workerId: "worker-1",
-      state: assignmentState,
-      questState: state,
-      createdAt: "2026-09-17T10:00:00Z",
-    },
-    assignments: [],
-    application: null,
-    applications: [],
-    team: null,
-    teams: [],
-    underfilled: null,
-    editRequest: null,
-    proofs: [],
-    workConversation: null,
-    proofRequired: true,
-    dueAt: baseQuest.dueAt,
-    nextAction:
-      state === "QUEST_COMPLETED" ? "CREATE_REVIEW" : "WAIT_FOR_START",
-    capabilities: { canReadWorkChat: false },
-  };
-}
-
 function draftQuest(
   id: string,
   title: string,
@@ -116,27 +65,7 @@ function draftQuest(
 describe("MyQuestListScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockWorkerList.mockResolvedValue([]);
     mockHirerList.mockResolvedValue([]);
-  });
-
-  it("shows completed Quests only in Worker history", async () => {
-    mockWorkerList.mockResolvedValue([
-      snapshot("QUEST_COMPLETED", "Completed Quest", "ASSIGNMENT_COMPLETED"),
-      snapshot("QUEST_CANCELLED", "Cancelled Quest", "ASSIGNMENT_CANCELLED"),
-      snapshot("QUEST_FAILED", "Failed Quest", "ASSIGNMENT_CANCELLED"),
-    ] as never);
-
-    const screen = await renderWithQueryClient(
-      <MyQuestListScreen initialRole="worker" initialTab="history" />
-    );
-
-    await waitFor(() =>
-      expect(screen.getByText("Completed Quest")).toBeTruthy()
-    );
-    expect(screen.queryByText("Quests I posted")).toBeNull();
-    expect(screen.queryByText("Cancelled Quest")).toBeNull();
-    expect(screen.queryByText("Failed Quest")).toBeNull();
   });
 
   it("reuses the same list for Hirer drafts and opens the editor", async () => {
@@ -146,11 +75,10 @@ describe("MyQuestListScreen", () => {
     ] as never);
 
     const screen = await renderWithQueryClient(
-      <MyQuestListScreen initialRole="hirer" initialTab="draft" />
+      <MyQuestListScreen initialTab="draft" />
     );
 
     await waitFor(() => expect(screen.getByText("Draft Quest")).toBeTruthy());
-    expect(screen.queryByText("Quests I joined")).toBeNull();
     expect(screen.queryByText("Published Quest")).toBeNull();
 
     fireEvent.press(screen.getByTestId("my-quest-list-action-draft-1"));
@@ -177,7 +105,7 @@ describe("MyQuestListScreen", () => {
     ] as never);
 
     const screen = await renderWithQueryClient(
-      <MyQuestListScreen initialRole="hirer" initialTab="completed" />
+      <MyQuestListScreen initialTab="completed" />
     );
 
     await waitFor(() => {
@@ -192,42 +120,14 @@ describe("MyQuestListScreen", () => {
       params: { id: "completed-1" },
     });
   });
-  it("projects Worker tabs, history items, and empty-state labels", () => {
-    const projection = projectMyQuestWorkspace({
-      role: "worker",
-      requestedTab: "history",
-      locale: "en",
-      hirerQuests: null,
-      workerSnapshots: [
-        snapshot("QUEST_COMPLETED", "Completed Quest", "ASSIGNMENT_COMPLETED"),
-        snapshot("QUEST_ASSIGNED", "Pending Quest", "ASSIGNMENT_ACTIVE"),
-      ] as never,
-      viewerId: "worker-1",
-    });
-
-    expect(projection.tabs).toEqual(["pending", "accepted", "history"]);
-    expect(projection.selectedTab).toBe("history");
-    expect(projection.selectedTabLabel).toBe("History");
-    expect(projection.emptyTitle).toBe("No completed Quest history");
-    expect(projection.emptyDescription).toBe(
-      "Quests in this status will appear here"
-    );
-    expect(projection.items.map((item) => item.title)).toEqual([
-      "Completed Quest",
-    ]);
-  });
-
   it("projects Hirer tabs, normalizes invalid tabs, and projects drafts", () => {
     const projection = projectMyQuestWorkspace({
-      role: "hirer",
       requestedTab: "history",
       locale: "en",
       hirerQuests: [
         draftQuest("draft-1", "Draft Quest", "QUEST_DRAFT"),
         draftQuest("open-1", "Published Quest", "QUEST_OPEN"),
       ] as never,
-      workerSnapshots: null,
-      viewerId: "hirer-1",
     });
 
     expect(projection.tabs).toEqual(["active", "draft", "completed"]);
@@ -235,15 +135,12 @@ describe("MyQuestListScreen", () => {
     expect(projection.selectedTabLabel).toBe("Active");
 
     const draftProjection = projectMyQuestWorkspace({
-      role: "hirer",
       requestedTab: "draft",
       locale: "en",
       hirerQuests: [
         draftQuest("draft-1", "Draft Quest", "QUEST_DRAFT"),
         draftQuest("open-1", "Published Quest", "QUEST_OPEN"),
       ] as never,
-      workerSnapshots: null,
-      viewerId: "hirer-1",
     });
 
     expect(draftProjection.selectedTab).toBe("draft");

@@ -59,7 +59,7 @@ KUQuest is a university community platform at the intersection of a trusted camp
 
 - Domain vocabulary and product boundaries: `CONTEXT.md`.
 - Navigation and product decisions: `docs/adr/0007-authenticated-primary-navigation.md`, `docs/adr/0008-public-student-profile-reputation.md`, and `docs/adr/0009-quest-board-discovery-and-application-boundary.md`.
-- Quest Board implementation and deterministic local states: `src/features/questBoard/QuestBoardScreen.tsx` and `src/features/questBoard/questBoardHarness.ts`.
+- Quest Board implementation and deterministic local states: `src/features/questBoard/board/QuestBoardScreen.tsx` and `src/features/questBoard/fixtures/questBoardHarness.ts`.
 - Quest creation implementation: `src/features/createQuest/CreateQuestScreen.tsx`.
 - Existing native app configuration and development-build guidance: `package.json`, `app.config.ts`, and `README.md`.
 - No production evidence, testimonials, customer claims, or live Quest creation proof is currently established; future work must not fabricate them.

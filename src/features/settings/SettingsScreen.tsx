@@ -109,9 +109,7 @@ export default function SettingsScreen() {
   const [switchingWorkspace, setSwitchingWorkspace] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const devOverlayEnabled = authEnvironment.isDemoEnabled();
-  const switchAccount = () => {
-    if (switchingAccount) return;
-    setSwitchingAccount(true);
+  const completeSignOut = () => {
     void authService
       .signOut()
       .catch(() => undefined)
@@ -119,6 +117,12 @@ export default function SettingsScreen() {
         clearSessionCache(queryClient);
         router.replace("/");
       });
+  };
+
+  const switchAccount = () => {
+    if (switchingAccount) return;
+    setSwitchingAccount(true);
+    completeSignOut();
   };
 
   const handleSwitchWorkspace = () => {
@@ -132,13 +136,7 @@ export default function SettingsScreen() {
   const logout = () => {
     if (loggingOut) return;
     setLoggingOut(true);
-    void authService
-      .signOut()
-      .catch(() => undefined)
-      .finally(() => {
-        clearSessionCache(queryClient);
-        router.replace("/");
-      });
+    completeSignOut();
   };
 
   return (

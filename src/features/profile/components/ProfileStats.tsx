@@ -1,6 +1,5 @@
 import { cn } from "@/tw/cn";
 import { Text, View } from "@/tw";
-import { colors } from "../../../theme/colors";
 import styles from "../styles/profileComponentStyles";
 import type { ProfileStatsData } from "./profileTypes";
 import { defaultAccessibilityLabels } from "./profileShared";

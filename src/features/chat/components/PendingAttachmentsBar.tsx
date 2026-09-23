@@ -61,5 +61,3 @@ export function PendingAttachmentsBar({
     </ScrollView>
   );
 }
-
-export default PendingAttachmentsBar;

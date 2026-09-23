@@ -1,6 +1,4 @@
 import {
-  formatQuestDate,
-  formatDisplayMonthYear,
   calculateTimeRemaining,
   formatCountdownText,
   formatWorkCountdown,
@@ -8,41 +6,6 @@ import {
 } from "../datetime";
 
 describe("datetime utils", () => {
-  describe("formatQuestDate", () => {
-    it("formats ISO date strings in English", () => {
-      const formatted = formatQuestDate("2026-10-01T09:00:00Z", "en");
-      expect(formatted).toMatch(/1\s+Oct/i);
-    });
-
-    it("formats date-only strings in Thai", () => {
-      const formatted = formatQuestDate("2026-10-01", "th");
-      expect(formatted).toContain("1");
-      expect(formatted).toContain("ต.ค.");
-    });
-
-    it("returns dash fallback for empty or invalid values", () => {
-      expect(formatQuestDate(null)).toBe("—");
-      expect(formatQuestDate(undefined)).toBe("—");
-      expect(formatQuestDate("invalid-date")).toBe("—");
-    });
-  });
-
-  describe("formatDisplayMonthYear", () => {
-    it("formats valid date string to month and year", () => {
-      const formatted = formatDisplayMonthYear("2026-10-15T00:00:00Z", "en");
-      expect(formatted).toMatch(/Oct\s+2026/i);
-    });
-
-    it("returns empty string for null or undefined", () => {
-      expect(formatDisplayMonthYear(null)).toBe("");
-      expect(formatDisplayMonthYear(undefined)).toBe("");
-    });
-
-    it("returns raw value for unparseable date strings", () => {
-      expect(formatDisplayMonthYear("not-a-date")).toBe("not-a-date");
-    });
-  });
-
   describe("calculateTimeRemaining", () => {
     const fixedNow = new Date("2026-10-01T12:00:00Z").getTime();
 

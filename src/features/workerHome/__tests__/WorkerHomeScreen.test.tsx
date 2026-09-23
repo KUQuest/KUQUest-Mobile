@@ -176,7 +176,10 @@ describe("WorkerHomeScreen", () => {
 
     fireEvent.press(view.getByTestId("worker-quick-access-bar"));
 
-    expect(mockPush).toHaveBeenCalledWith("/my-quests");
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]/work",
+      params: { id: "quest-active-12345678" },
+    });
   });
 
   it("shows the quick access bar while an assignment waits to start", async () => {

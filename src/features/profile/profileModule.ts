@@ -13,6 +13,7 @@ import type {
   UploadAsset,
 } from "../../api/StudentApi";
 import type { SupportedLocale } from "@/locales/locale";
+import { formatDisplayMonthYear } from "./profileFormatting";
 import { authService } from "../auth/AuthService";
 import { AuthError } from "../auth/types";
 import type {
@@ -62,15 +63,6 @@ async function readRequired<T>(request: () => Promise<T>): Promise<T> {
   }
 }
 
-function formatDate(value: string, locale: SupportedLocale): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", {
-    year: "numeric",
-    month: "short",
-  }).format(date);
-}
-
 function mapApiCertificateToView(
   certificate: CertificateEntry,
   locale: SupportedLocale
@@ -80,7 +72,7 @@ function mapApiCertificateToView(
     title: certificate.name,
     issuer: certificate.issuer,
     issuedYear:
-      formatDate(certificate.issuedAt, locale).split(" ").pop() ??
+      formatDisplayMonthYear(certificate.issuedAt, locale).split(" ").pop() ??
       certificate.issuedAt,
     link: certificate.image?.url ?? "",
   };

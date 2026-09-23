@@ -4,7 +4,7 @@ const http = require("node:http");
 const net = require("node:net");
 const path = require("node:path");
 
-const METRO_PORT = Number(process.env.METRO_PORT ?? 8081);
+const METRO_PORT = Number(process.env.METRO_PORT ?? 6767);
 const METRO_REUSE = process.env.METRO_REUSE === "1";
 const ALLOWED_SESSION = process.env.AGENT_DEVICE_SESSION;
 const AGENT_DEVICE_RECENT_WINDOW_MS = 15 * 60 * 1000;

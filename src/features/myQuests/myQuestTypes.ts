@@ -1,0 +1,26 @@
+import type { WorkConversationCapability } from "@/features/questBoard/domain/types";
+export type HirerTab = "active" | "draft" | "completed";
+export type StatusTone = "success" | "warning" | "danger" | "neutral";
+export type CategoryTone = "green" | "blue" | "purple";
+export type QuestSummary = {
+  id: string;
+  title: string;
+  tag: string;
+  categoryTone: CategoryTone;
+  date: string;
+  location: string;
+  description: string;
+  detail: string;
+  teamSize: string;
+  status: string;
+  statusTone: StatusTone;
+  action: string;
+  actionType?: "edit" | "applicants" | "detail" | "review";
+  secondaryAction?: string;
+  groupChatId?: string;
+  groupChatCapability?: WorkConversationCapability;
+  groupChatViewerId?: string;
+  host?: string;
+  appliedOn?: string;
+  reason?: string;
+};

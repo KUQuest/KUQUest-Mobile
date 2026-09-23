@@ -31,8 +31,8 @@ export function loadNativeGoogleSignin(): NativeGoogleSigninModule | null {
 
   try {
     // The module registry lookup must be caught for Expo Go and stale builds.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const loaded =
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       require("@react-native-google-signin/google-signin") as Partial<NativeGoogleSigninModule>;
     if (!loaded.GoogleSignin || typeof loaded.isSuccessResponse !== "function")
       return null;

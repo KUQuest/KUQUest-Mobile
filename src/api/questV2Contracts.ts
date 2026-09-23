@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-export const QUEST_V2_API_VERSION = "v2" as const;
-
 export const questV2IdSchema = z.string().min(1);
 
 export const questV2ModeSchema = z.enum([
@@ -733,7 +731,6 @@ export const questV2EditPayloadSchema = z
   .superRefine((value, context) =>
     questV2QuestPayloadRefinement(value, context)
   );
-export const questV2EmptyBodySchema = z.object({}).strict();
 export const questV2TeamCreatePayloadSchema = z
   .object({
     name: z

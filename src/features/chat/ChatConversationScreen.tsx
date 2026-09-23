@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import {
   Alert,
   Platform,
@@ -19,6 +19,9 @@ import {
   X,
 } from "lucide-react-native";
 
+import { useAnimatedKeyboard, useAnimatedStyle } from "react-native-reanimated";
+
+import { Animated } from "@/tw/animated";
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -49,7 +52,6 @@ import {
 import type { ConversationMode } from "./useChatConversationController";
 
 export {
-  AttachmentRow,
   ChatAvatar,
   InlineImageAttachment,
   MessageBubble,
@@ -74,7 +76,6 @@ export default function ChatConversationScreen({
     router,
     locale,
     messages,
-    insets,
     viewerId,
     conversationPending,
     conversationLoadFailed,
@@ -109,9 +110,21 @@ export default function ChatConversationScreen({
     handleImagePress,
     openFile,
   } = controller;
-  const openParticipantProfile = conversation?.participantId
-    ? () => router.push(`/profile/${conversation.participantId}`)
-    : undefined;
+  const keyboard = useAnimatedKeyboard();
+  const composerKeyboardStyle = useAnimatedStyle(
+    () => ({
+      paddingBottom: Platform.OS === "android" ? keyboard.height.value : 0,
+    }),
+    [keyboard]
+  );
+  const participantId = conversation?.participantId;
+  const openParticipantProfile = useMemo(
+    () =>
+      participantId
+        ? () => router.push(`/profile/${participantId}`)
+        : undefined,
+    [participantId, router]
+  );
   const renderMessage = useCallback(
     ({ item }: ListRenderItemInfo<DisplayChatMessage>) => {
       if (!conversation) return null;
@@ -516,10 +529,9 @@ export default function ChatConversationScreen({
           <FlatList
             contentContainerClassName={
               searchOpen && searchedMessages.length === 0
-                ? undefined
+                ? "pb-ku-md"
                 : styles.messageContent
             }
-            contentContainerStyle={{ paddingBottom: spacing.md }}
             data={searchedMessages}
             keyExtractor={(message) => message.id}
             ListEmptyComponent={
@@ -554,7 +566,10 @@ export default function ChatConversationScreen({
         )}
 
         {!searchOpen && canWrite ? (
-          <View className="bg-ku-background">
+          <Animated.View
+            className="bg-ku-background"
+            style={composerKeyboardStyle}
+          >
             <PendingAttachmentsBar
               attachments={pendingAttachments}
               onRemove={handleRemovePendingAttachment}
@@ -564,7 +579,6 @@ export default function ChatConversationScreen({
                 styles.composerWrap,
                 pendingAttachments.length > 0 && "border-t-0 pt-ku-xs"
               )}
-              style={{ paddingBottom: Math.max(insets.bottom, spacing.sm) }}
             >
               <View className={styles.composer}>
                 <Pressable
@@ -592,7 +606,7 @@ export default function ChatConversationScreen({
                 />
                 <Text
                   accessibilityLiveRegion="polite"
-                  className={styles.resultMeta}
+                  className={styles.composerCounter}
                   style={{
                     color:
                       draft.length > MAX_MESSAGE_LENGTH
@@ -633,7 +647,7 @@ export default function ChatConversationScreen({
                 )}
               </View>
             </View>
-          </View>
+          </Animated.View>
         ) : null}
       </KeyboardAvoidingView>
       <ImageViewerModal

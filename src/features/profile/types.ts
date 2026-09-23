@@ -194,7 +194,3 @@ export function createEmptyProfile(identity?: ProfileIdentity): ProfileDraft {
     experiences: [],
   };
 }
-
-export function isProfileDraft(value: unknown): value is ProfileDraft {
-  return profileDraftSchema.safeParse(value).success;
-}

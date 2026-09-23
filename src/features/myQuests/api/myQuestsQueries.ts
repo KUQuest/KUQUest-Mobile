@@ -28,7 +28,7 @@ export function useMyWorkerQuestSnapshotsQuery(
       if (!viewerId) {
         throw new Error("A viewer ID is required");
       }
-      return myQuestService.listMyWorkerQuestSnapshots(viewerId, undefined, {
+      return myQuestService.listMyWorkerQuestSnapshots(viewerId, "all", {
         signal,
       });
     },

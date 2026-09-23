@@ -134,9 +134,23 @@ export default function WorkerHomeScreen() {
 
   const keyExtractor = useCallback((quest: QuestV2BoardCard) => quest.id, []);
 
-  const handleOpenMyQuests = useCallback(() => {
+  const ongoingAssignmentCount = activeAssignments.filter(
+    (assignment) =>
+      assignment.state === "ASSIGNMENT_ACTIVE" &&
+      (assignment.questState === "QUEST_ASSIGNED" ||
+        assignment.questState === "QUEST_IN_PROGRESS")
+  ).length;
+  const handleOpenCurrentWork = useCallback(() => {
+    // With a single ongoing Assignment, skip the list and open its Work Hub.
+    if (ongoingAssignmentCount === 1 && activeOngoingAssignment) {
+      router.push({
+        pathname: "/quest/[id]/work",
+        params: { id: activeOngoingAssignment.questId },
+      });
+      return;
+    }
     router.push("/my-quests");
-  }, [router]);
+  }, [activeOngoingAssignment, ongoingAssignmentCount, router]);
 
   const bottomNavInset = getBottomNavigationInset(metrics, insets.bottom);
 
@@ -266,7 +280,7 @@ export default function WorkerHomeScreen() {
       <WorkerQuickAccessBar
         assignment={activeOngoingAssignment}
         bottomInset={bottomNavInset}
-        onPress={handleOpenMyQuests}
+        onPress={handleOpenCurrentWork}
         questState={
           activeQuestDetail?.state ?? activeOngoingAssignment?.questState
         }

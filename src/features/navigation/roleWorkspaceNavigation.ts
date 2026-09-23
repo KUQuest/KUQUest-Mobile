@@ -1,4 +1,4 @@
-import { BriefcaseBusiness } from "lucide-react-native";
+import type { LucideIcon } from "lucide-react-native";
 
 import type { RoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
 import type { SupportedLocale } from "@/locales/locale";
@@ -8,9 +8,10 @@ const navigationWalletIcon = require("@/assets/icons/navigation-wallet.svg");
 const navigationProfileIcon = require("@/assets/icons/navigation-profile.svg");
 const navigationCreateIcon = require("@/assets/icons/navigation-create.svg");
 const navigationChatIcon = require("@/assets/icons/navigation-chat.svg");
+const navigationWorkIcon = require("@/assets/icons/navigation-work.svg");
 
 type NavigationAsset = number;
-type NavigationIcon = typeof BriefcaseBusiness;
+type NavigationIcon = LucideIcon;
 
 export type NavigationItem = {
   routeName: string;
@@ -64,7 +65,7 @@ export const workerNavigationItems: readonly NavigationItem[] = [
   {
     routeName: "my-quests",
     labelKey: "workManagement",
-    icon: BriefcaseBusiness,
+    asset: navigationWorkIcon,
     isCreate: true,
   },
   baseNavigationItems.chat,

@@ -5,8 +5,8 @@ describe("loadNativeGoogleSignin", () => {
         throw new Error("RNGoogleSignin could not be found");
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { loadNativeGoogleSignin } =
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         require("../nativeGoogleSignin") as typeof import("../nativeGoogleSignin");
 
       expect(loadNativeGoogleSignin()).toBeNull();
@@ -31,8 +31,8 @@ describe("loadNativeGoogleSignin", () => {
         isSuccessResponse: jest.fn(),
       }));
 
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { loadNativeGoogleSignin } =
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         require("../nativeGoogleSignin") as typeof import("../nativeGoogleSignin");
 
       expect(loadNativeGoogleSignin()).toBeNull();

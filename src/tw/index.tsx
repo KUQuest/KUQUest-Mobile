@@ -1,8 +1,4 @@
-import {
-  useCssElement,
-  useNativeVariable as useFunctionalVariable,
-} from "react-native-css";
-import { Link as RouterLink } from "expo-router";
+import { useCssElement } from "react-native-css";
 import React from "react";
 import {
   ActivityIndicator as RNActivityIndicator,
@@ -36,22 +32,6 @@ function useCssElementCompat(
 ) {
   return renderCssElement(component, props, mapping);
 }
-
-export const Link = Object.assign(
-  (props: React.ComponentProps<typeof RouterLink> & { className?: string }) =>
-    useCssElementCompat(RouterLink, props, { className: "style" }),
-  {
-    Trigger: RouterLink?.Trigger,
-    Menu: RouterLink?.Menu,
-    MenuAction: RouterLink?.MenuAction,
-    Preview: RouterLink?.Preview,
-  }
-);
-
-export const useCSSVariable =
-  process.env.EXPO_OS !== "web"
-    ? useFunctionalVariable
-    : (variable: string) => `var(${variable})`;
 
 export type ViewProps = React.ComponentProps<typeof RNView> & {
   className?: string;

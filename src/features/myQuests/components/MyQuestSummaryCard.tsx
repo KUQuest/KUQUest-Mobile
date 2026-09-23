@@ -12,7 +12,7 @@ import {
 } from "lucide-react-native";
 import type { MyQuestMessages } from "@/locales/myQuestMessages";
 import { type ThemeColors } from "@/theme/colors";
-import { type QuestSummary, type StatusTone } from "../myQuestService";
+import { type QuestSummary, type StatusTone } from "../myQuestTypes";
 
 export interface MyQuestSummaryCardProps {
   messages: MyQuestMessages;
