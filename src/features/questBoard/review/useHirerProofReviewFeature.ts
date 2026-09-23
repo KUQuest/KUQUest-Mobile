@@ -5,6 +5,7 @@ import {
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import {
   useLiveQuestSnapshotQuery,
+  useProofFileLinksQuery,
   useReviewProofMutation,
 } from "@/features/questBoard/api/questBoardQueries";
 
@@ -20,6 +21,24 @@ export function useHirerProofReviewFeature(questId?: string) {
         (proof) => proof.status === QuestProofStatus.PROOF_PENDING
       )
     : undefined;
+  const proofFileLinksQuery = useProofFileLinksQuery(
+    questId ?? null,
+    viewerId,
+    pendingProof
+  );
+  const proofForReview =
+    pendingProof && proofFileLinksQuery.isSuccess
+      ? {
+          ...pendingProof,
+          files: pendingProof.files.map((file) => ({
+            ...file,
+            url:
+              proofFileLinksQuery.data.find(
+                (fileLink) => fileLink.fileId === file.fileId
+              )?.url ?? null,
+          })),
+        }
+      : undefined;
 
   const review = async (payload: QuestV2ProofReviewPayload) => {
     if (!questId || !pendingProof) return false;
@@ -39,5 +58,12 @@ export function useHirerProofReviewFeature(questId?: string) {
     }
   };
 
-  return { pendingProof, review, snapshot, snapshotQuery };
+  return {
+    pendingProof,
+    proofFileLinksQuery,
+    proofForReview,
+    review,
+    snapshot,
+    snapshotQuery,
+  };
 }

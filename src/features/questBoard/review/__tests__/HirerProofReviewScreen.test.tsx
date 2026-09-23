@@ -7,6 +7,13 @@ const mockBack = jest.fn();
 const mockMutateAsync = jest.fn();
 const mockRefetch = jest.fn();
 let mockSnapshot: unknown;
+let mockProofFileLinksQuery: {
+  data: { fileId: string; url: string }[];
+  isPending: boolean;
+  isError: boolean;
+  isSuccess: boolean;
+  refetch: jest.Mock;
+};
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({ back: mockBack, push: jest.fn() }),
@@ -15,6 +22,7 @@ jest.mock("@/features/auth/sessionQueries", () => ({
   useSessionQuery: () => ({ data: { user: { id: "hirer-1" } } }),
 }));
 jest.mock("@/features/questBoard/api/questBoardQueries", () => ({
+  useProofFileLinksQuery: () => mockProofFileLinksQuery,
   useLiveQuestSnapshotQuery: () => ({
     data: mockSnapshot,
     isPending: false,
@@ -28,16 +36,23 @@ const pendingProof = {
   id: "proof-1",
   questId: "quest-1",
   workerId: "worker-1",
-  teamId: null,
-  submittedByUserId: "worker-1",
+  fileIds: ["proof-file-1"],
+  files: [
+    {
+      fileId: "proof-file-1",
+      contentType: "image/png",
+      sizeBytes: 100,
+      position: 0,
+      uploadStatus: "PROOF_FILE_READY",
+      failureCode: null,
+    },
+  ],
   description: "Done",
   status: "PROOF_PENDING",
   submittedAt: "2026-09-23T10:00:00Z",
   createdAt: "2026-09-23T09:00:00Z",
   updatedAt: "2026-09-23T10:00:00Z",
   visibility: "FULL",
-  fileIds: [],
-  files: [],
 };
 
 function snapshotWith(canReviewProof: boolean) {
@@ -52,6 +67,18 @@ function snapshotWith(canReviewProof: boolean) {
 describe("HirerProofReviewScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockProofFileLinksQuery = {
+      data: [
+        {
+          fileId: "proof-file-1",
+          url: "https://files.example.test/proof.png?token=temporary",
+        },
+      ],
+      isPending: false,
+      isError: false,
+      isSuccess: true,
+      refetch: mockRefetch,
+    };
   });
 
   it("approves the pending Proof and returns to the previous screen", async () => {
@@ -60,6 +87,7 @@ describe("HirerProofReviewScreen", () => {
     const { getByTestId } = await render(
       <HirerProofReviewScreen questId="quest-1" />
     );
+    expect(getByTestId("proof-review-image-0")).toBeTruthy();
 
     fireEvent.press(getByTestId("proof-review-approve"));
 

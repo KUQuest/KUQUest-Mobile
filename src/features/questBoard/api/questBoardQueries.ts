@@ -8,6 +8,10 @@ import type {
   QuestV2ProofReviewPayload,
   QuestV2ReviewPayload,
 } from "@/api/QuestApi";
+import {
+  questV2ProofFileStatusSchema,
+  type QuestV2ProofSubmission,
+} from "@/api/questV2Contracts";
 import { homeKeys } from "@/features/home/api/homeQueries";
 import { myQuestsKeys } from "@/features/myQuests/api/myQuestsQueries";
 import { workerHomeKeys } from "@/features/workerHome/api/workerHomeKeys";
@@ -30,6 +34,50 @@ export const questBoardKeys = {
       editRequestId ?? null,
     ] as const,
 };
+
+export function useProofFileLinksQuery(
+  questId: string | null,
+  viewerId: string | null,
+  proof: QuestV2ProofSubmission | undefined
+) {
+  const readyFiles =
+    proof?.files.filter(
+      (file) =>
+        file.uploadStatus === questV2ProofFileStatusSchema.enum.PROOF_FILE_READY
+    ) ?? [];
+  const fileIds = readyFiles.map((file) => file.fileId);
+
+  return useQuery({
+    enabled: Boolean(questId && viewerId && proof),
+    queryKey: [
+      ...questBoardKeys.all,
+      "proof-file-links",
+      questId ?? "",
+      viewerId ?? "",
+      proof?.id ?? "",
+      fileIds,
+    ],
+    queryFn: async ({ signal }) => {
+      if (!questId || !proof) {
+        throw new Error("A quest and proof submission are required");
+      }
+      const fileLinks = await Promise.all(
+        fileIds.map((fileId) =>
+          liveQuestService.getProofFileLink(questId, proof.id, fileId, {
+            signal,
+          })
+        )
+      );
+      if (
+        fileLinks.some((fileLink, index) => fileLink.fileId !== fileIds[index])
+      ) {
+        throw new Error("Proof file endpoint returned a mismatched file");
+      }
+      return fileLinks;
+    },
+    staleTime: 0,
+  });
+}
 
 export function useQuestBoardQuery(enabled = true) {
   return useQuery({

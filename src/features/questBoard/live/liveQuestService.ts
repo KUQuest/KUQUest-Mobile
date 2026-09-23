@@ -43,6 +43,7 @@ import type {
   QuestV2Mode,
   QuestV2Participation,
   QuestV2ParticipationDetail,
+  QuestV2ProofFileLink,
   QuestV2ProofReview,
   QuestV2ProofSubmission,
   QuestV2PublicDetail,
@@ -1242,6 +1243,20 @@ export class LiveQuestService {
     questId: string
   ): Promise<QuestV2ProofSubmission[]> {
     return questApi.listProofSubmissions(questId);
+  }
+
+  async getProofFileLink(
+    questId: string,
+    proofSubmissionId: string,
+    fileId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2ProofFileLink> {
+    return questApi.getProofFileLink(
+      questId,
+      proofSubmissionId,
+      fileId,
+      options
+    );
   }
 
   async reviewProof(

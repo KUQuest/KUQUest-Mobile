@@ -43,6 +43,8 @@ import {
   questV2TeamResponseSchema,
   questV2TeamFileResponseSchema,
   questV2TeamSelectionResponseSchema,
+  questV2ProofFileLinkResponseSchema,
+  type QuestV2ProofFileLink,
   questV2UnderfilledResponseSchema,
   questV2UnderfilledDecisionPayloadSchema,
   questV2UnderfilledConsentPayloadSchema,
@@ -929,6 +931,18 @@ export class QuestApi {
       { signal: options?.signal }
     );
     return questV2ProofListResponseSchema.parse(body).data.items;
+  }
+  async getProofFileLink(
+    questId: string,
+    proofSubmissionId: string,
+    fileId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2ProofFileLink> {
+    const body = await this.client.request<unknown>(
+      `/api/v2/quests/${questId}/proof-submissions/${proofSubmissionId}/files/${fileId}`,
+      { signal: options?.signal }
+    );
+    return questV2ProofFileLinkResponseSchema.parse(body).data;
   }
 
   async reviewProof(
