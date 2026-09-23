@@ -3,8 +3,10 @@ import type { SupportedLocale } from "./locale";
 export interface ChatMessages {
   title: string;
   subtitle: string;
+  clearSearch: string;
   searchConversations: string;
   recentConversations: string;
+  candidateInquiries: string;
   conversationCount: (count: number) => string;
   loading: string;
   loadError: string;
@@ -54,7 +56,9 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     title: "Chat",
     subtitle: "Coordinate with people from your Quests.",
     searchConversations: "Search conversations",
+    clearSearch: "Clear search",
     recentConversations: "Recent conversations",
+    candidateInquiries: "Candidate inquiries",
     conversationCount: (count) => `${count} conversations`,
     loading: "Loading conversations",
     loadError: "We could not load your conversations.",
@@ -106,7 +110,9 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     title: "แชต",
     subtitle: "ประสานงานกับคนในเควสต์ของคุณ",
     searchConversations: "ค้นหาบทสนทนา",
+    clearSearch: "ล้างการค้นหา",
     recentConversations: "บทสนทนาล่าสุด",
+    candidateInquiries: "การสอบถามก่อนเริ่มงาน",
     conversationCount: (count) => `${count} บทสนทนา`,
     loading: "กำลังโหลดบทสนทนา",
     loadError: "ไม่สามารถโหลดบทสนทนาของคุณได้",

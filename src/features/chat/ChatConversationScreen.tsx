@@ -36,33 +36,20 @@ import { spacing } from "@/theme/spacing";
 import styles from "./chatStyles";
 import { cn } from "@/tw/cn";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { ImageViewerModal } from "./ImageViewerModal";
+import { ImageViewerModal } from "./components/ImageViewerModal";
 import {
   ChatAvatar,
   ChatConversationSkeleton,
-  MessageBubble,
-  PendingAttachmentsBar,
   localizedText,
-  type DisplayChatMessage,
-} from "./ChatConversationPresentation";
+} from "./components/ChatConversationPresentation";
+import { MessageBubble } from "./components/MessageBubble";
+import { PendingAttachmentsBar } from "./components/PendingAttachmentsBar";
+import type { DisplayChatMessage } from "./domain/conversationModule";
 import {
   MAX_MESSAGE_LENGTH,
   useChatConversationController,
-} from "./useChatConversationController";
-import type { ConversationMode } from "./useChatConversationController";
-
-export {
-  ChatAvatar,
-  InlineImageAttachment,
-  MessageBubble,
-  PendingAttachmentsBar,
-} from "./ChatConversationPresentation";
-export type {
-  DisplayChatMessage,
-  PendingAttachmentItem,
-  RenderAttachment,
-} from "./ChatConversationPresentation";
-export type { ConversationMode } from "./useChatConversationController";
+} from "./workflow/useChatConversationController";
+import type { ConversationMode } from "./workflow/useChatConversationController";
 
 export interface ChatConversationScreenProps {
   conversationType?: ConversationMode;

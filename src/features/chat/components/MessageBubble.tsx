@@ -9,16 +9,16 @@ import { colors } from "@/theme/colors";
 import { chatApi } from "@/api/ChatApi";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import type { ChatMessages } from "@/locales/chatMessages";
-import type { ChatConversation } from "./chatTypes";
-import {
-  localizedText,
-  type DisplayChatMessage,
-  type RenderAttachment,
-} from "./ChatConversationPresentation";
-import { attachmentLinkCache } from "./attachmentLinkCache";
+import type { ChatConversation } from "../chatTypes";
+import { localizedText } from "./ChatConversationPresentation";
+import type {
+  DisplayChatMessage,
+  RenderAttachment,
+} from "../domain/conversationModule";
+import { attachmentLinkCache } from "../api/attachmentLinkCache";
 import { formatTimeInBangkok } from "@/domain/datetime";
 
-import styles from "./chatStyles";
+import styles from "../chatStyles";
 
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".heic"];
 
@@ -306,8 +306,3 @@ export function MessageBubble({
     </View>
   );
 }
-
-export type {
-  DisplayChatMessage,
-  RenderAttachment,
-} from "./ChatConversationPresentation";

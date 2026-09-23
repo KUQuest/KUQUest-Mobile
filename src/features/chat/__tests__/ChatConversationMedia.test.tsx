@@ -5,16 +5,19 @@ import * as ImagePicker from "expo-image-picker";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
-import ChatConversationScreen, {
-  ChatAvatar,
+import ChatConversationScreen from "../ChatConversationScreen";
+import { ChatAvatar } from "../components/ChatConversationPresentation";
+import {
   InlineImageAttachment,
   MessageBubble,
-  PendingAttachmentsBar,
-  type DisplayChatMessage,
-  type PendingAttachmentItem,
-  type RenderAttachment,
-} from "../ChatConversationScreen";
-import { attachmentLinkCache } from "../attachmentLinkCache";
+} from "../components/MessageBubble";
+import { PendingAttachmentsBar } from "../components/PendingAttachmentsBar";
+import type {
+  DisplayChatMessage,
+  RenderAttachment,
+} from "../domain/conversationModule";
+import type { PendingAttachmentItem } from "../components/PendingAttachmentsBar";
+import { attachmentLinkCache } from "../api/attachmentLinkCache";
 import { chatApi } from "@/api/ChatApi";
 import type {
   ServerChatMessage,

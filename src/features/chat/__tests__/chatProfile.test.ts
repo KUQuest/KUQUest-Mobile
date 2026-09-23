@@ -1,7 +1,7 @@
 import {
   enrichChatConversation,
   clearChatParticipantProfileCache,
-} from "../chatProfile";
+} from "../api/chatProfile";
 import { authService } from "@/features/auth/AuthService";
 import type { ChatConversation } from "../chatTypes";
 

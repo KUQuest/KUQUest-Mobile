@@ -1,4 +1,4 @@
-import { AttachmentLinkCache } from "../attachmentLinkCache";
+import { AttachmentLinkCache } from "../api/attachmentLinkCache";
 
 describe("AttachmentLinkCache", () => {
   let cache: AttachmentLinkCache;

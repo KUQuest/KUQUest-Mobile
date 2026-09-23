@@ -2,13 +2,12 @@ import React from "react";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import { chatMessages } from "@/locales/chatMessages";
-import { attachmentLinkCache } from "../attachmentLinkCache";
-import {
-  isImageAttachment,
-  MessageBubble,
-  type DisplayChatMessage,
-  type RenderAttachment,
-} from "../MessageBubble";
+import { attachmentLinkCache } from "../api/attachmentLinkCache";
+import { isImageAttachment, MessageBubble } from "../components/MessageBubble";
+import type {
+  DisplayChatMessage,
+  RenderAttachment,
+} from "../domain/conversationModule";
 import type { ChatConversation } from "../chatTypes";
 
 const conversation: ChatConversation = {
