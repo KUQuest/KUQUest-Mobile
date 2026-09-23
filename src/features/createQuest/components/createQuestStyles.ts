@@ -32,9 +32,17 @@ const styles = {
   autosaveText: "text-ku-text-muted font-ku-regular text-ku-label",
   autosaveSavedText: "text-ku-success",
   saveErrorCard:
-    "bg-ku-surface-danger border-ku-border-danger rounded-[12px] border flex-row items-center mt-ku-12 px-ku-12 py-ku-10",
-  saveErrorCopy: "flex-1 min-w-0 ml-ku-sm",
-  saveErrorText: "text-ku-danger-dark font-ku-medium text-ku-body-small",
+    "bg-ku-surface-danger border-ku-border-danger rounded-[14px] border mt-ku-12 p-ku-14",
+  saveErrorHeader: "flex-row items-start",
+  saveErrorIcon:
+    "items-center bg-ku-card rounded-ku-pill h-[36px] justify-center shrink-0 w-[36px]",
+  saveErrorCopy: "flex-1 min-w-0 ml-ku-12",
+  saveErrorTitle: "text-ku-danger-dark font-ku-bold text-ku-body",
+  saveErrorText:
+    "text-ku-danger-dark font-ku-regular text-ku-body-small mt-ku-3",
+  saveErrorRetry:
+    "items-center bg-ku-card border-ku-border-danger rounded-[12px] border flex-row gap-ku-sm justify-center min-h-[44px] mt-ku-12 px-ku-md",
+  saveErrorRetryText: "text-ku-danger-dark font-ku-semibold text-ku-body-small",
   retryButton: "items-center justify-center min-h-[44px] ml-ku-sm px-ku-sm",
   retryButtonText: "text-ku-danger-dark font-ku-semibold text-ku-body-small",
   validationSummary:

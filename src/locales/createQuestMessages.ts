@@ -183,6 +183,9 @@ export interface CreateQuestMessages {
   titleError: string;
   questTagError: string;
   descriptionError: string;
+  publishError: string;
+  publishErrorTitle: string;
+  saveErrorTitle: string;
   completionCriteriaError: string;
   startDateError: string;
   startDatePastError: string;
@@ -439,7 +442,11 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       startTimeError: "Enter a start time, for example 09:00.",
       endTimeError: "Enter an end time, for example 12:00.",
       timeOrderError: "End time must be after the start time.",
-      headcountError: "Enter at least 1 participant.",
+      headcountError: "A Team Quest needs 2 to 20 participants.",
+      publishError:
+        "We couldn't publish this Quest. Check the details and try again.",
+      publishErrorTitle: "Couldn't publish Quest",
+      saveErrorTitle: "Couldn't save",
       rewardEmptyError: "Enter a reward amount in THB.",
       rewardFormatError:
         "Enter a valid amount in THB with up to 2 decimal places.",
@@ -714,7 +721,11 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       startTimeError: "กรอกเวลาเริ่มต้น เช่น 09:00",
       endTimeError: "กรอกเวลาสิ้นสุด เช่น 12:00",
       timeOrderError: "เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มต้น",
-      headcountError: "ระบุผู้เข้าร่วมอย่างน้อย 1 คน",
+      headcountError: "เควสต์แบบทีมต้องมีผู้เข้าร่วม 2-20 คน",
+      publishError:
+        "ไม่สามารถเผยแพร่เควสต์ได้ ตรวจสอบรายละเอียดแล้วลองอีกครั้ง",
+      publishErrorTitle: "เผยแพร่เควสต์ไม่สำเร็จ",
+      saveErrorTitle: "บันทึกไม่สำเร็จ",
       rewardEmptyError: "กรอกค่าตอบแทนเป็นเงินบาท",
       rewardFormatError: "กรอกจำนวนเงินที่ถูกต้อง โดยมีทศนิยมไม่เกิน 2 ตำแหน่ง",
       rewardBoundsError: (maximum) =>

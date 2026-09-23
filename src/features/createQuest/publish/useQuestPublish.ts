@@ -1,6 +1,9 @@
 import { useCallback, useRef, useState } from "react";
 import type { RefObject } from "react";
 
+import { ZodError } from "zod";
+
+import { createQuestMessages } from "@/locales/createQuestMessages";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import { useWalletQuery } from "@/features/wallet/api/walletQueries";
 import { useLocale } from "@/features/preferences/localeStore";
@@ -16,7 +19,6 @@ import {
   getQuestPublishCheck,
   type QuestDraft,
 } from "../domain/createQuestModel";
-import { getQuestApiErrorMessage } from "../presentation/createQuestValidation";
 import {
   adaptV2PublishCheck,
   toQuestV2Payload,
@@ -31,12 +33,27 @@ import type { PublishedQuestRefValue } from "../draft/useQuestPersistence";
 import { liveQuestService } from "../../questBoard/live/liveQuestService";
 import type { QuestPublishCheck } from "../../questBoard/domain/types";
 function getPublishErrorMessage(error: unknown, locale: "en" | "th"): string {
+  const messages = createQuestMessages[locale];
   const errorCode = (error as { code?: unknown } | null)?.code;
-  if (typeof errorCode === "string" && errorCode)
-    return getQuestApiErrorMessage(errorCode, locale);
-  return error instanceof Error
+  if (typeof errorCode === "string" && errorCode) {
+    const guidance = (messages.blockingGuidance as Record<string, unknown>)[
+      errorCode
+    ];
+    const localized =
+      messages.apiErrors[errorCode] ??
+      (typeof guidance === "string" ? guidance : undefined);
+    if (localized) return localized;
+    // Wallet shortfall carries an amount the Review card already renders.
+    if (guidance) return messages.publishCheckBlocked;
+  }
+  // Client-side payload parse failures carry raw Zod JSON; never show it.
+  if (error instanceof ZodError)
+    return error.issues.some((issue) => issue.path[0] === "headcount")
+      ? messages.headcountError
+      : messages.publishError;
+  return error instanceof Error && error.message
     ? error.message
-    : "Unable to publish the Quest.";
+    : messages.publishError;
 }
 function derivePublishCheck(
   data: Parameters<typeof adaptV2PublishCheck>[0] | undefined,
@@ -79,7 +96,8 @@ export function useQuestPublish({
 }) {
   const { locale } = useLocale();
   const walletQuery = useWalletQuery();
-  const [cleanupError, setCleanupError] = useState<string | null>(null);
+  const messages = createQuestMessages[locale];
+  const [failureMessage, setFailureMessage] = useState<string | null>(null);
   const [publishCheckQuestId, setPublishCheckQuestId] = useState<string | null>(
     null
   );
@@ -267,7 +285,7 @@ export function useQuestPublish({
       if (!enabled) return false;
       const requestId = ++saveRequestRef.current;
       setSaveErrorIntent(null);
-      setCleanupError(null);
+      setFailureMessage(null);
       try {
         if (!draftStorageKey) {
           setSaveErrorIntent({ state: "OPEN", completesFlow: true });
@@ -307,10 +325,11 @@ export function useQuestPublish({
 
         const check = await liveQuestService.getPublishCheck(publishedQuestId);
         if (!check.canPublish) {
-          const reason =
-            check.blockingReasons.map((blocker) => blocker.message).join(" ") ||
-            "The Quest is not ready to publish.";
-          throw new Error(reason);
+          const [blocker] = check.blockingReasons;
+          throw Object.assign(
+            new Error(blocker?.message ?? messages.publishCheckBlocked),
+            { code: blocker?.code }
+          );
         }
 
         const published = await publishMutation.mutateAsync({
@@ -318,7 +337,7 @@ export function useQuestPublish({
           idempotencyKey: publishIdempotencyKey,
         });
         if (published.state !== "QUEST_OPEN") {
-          throw new Error("The server did not open the Quest.");
+          throw new Error(messages.publishError);
         }
 
         const activeDraftId = draftIdRef.current;
@@ -326,10 +345,8 @@ export function useQuestPublish({
           try {
             await deleteQuestDraft(draftStorageKey, activeDraftId);
           } catch (error) {
-            setCleanupError(
-              error instanceof Error
-                ? error.message
-                : "Unable to clear the Quest draft."
+            setFailureMessage(
+              error instanceof Error ? error.message : messages.saveError
             );
             setSaveErrorIntent({ state: "OPEN", completesFlow: true });
             return false;
@@ -341,8 +358,9 @@ export function useQuestPublish({
         serverSavedRevisionRef.current = -1;
         setSaveErrorIntent(null);
         return true;
-      } catch {
+      } catch (error) {
         if (requestId !== saveRequestRef.current) return false;
+        setFailureMessage(getPublishErrorMessage(error, locale));
         setSaveErrorIntent({ state: "OPEN", completesFlow: true });
         return false;
       }
@@ -353,6 +371,8 @@ export function useQuestPublish({
       editQuestId,
       enabled,
       ensureServerQuest,
+      locale,
+      messages,
       publishMutation,
       publishedQuestRef,
       saveRequestRef,
@@ -370,6 +390,9 @@ export function useQuestPublish({
     editMutation.error ??
     createMutation.error ??
     imageUploadMutation.error;
+  const saveErrorMessage =
+    failureMessage ??
+    (publishError ? getPublishErrorMessage(publishError, locale) : null);
 
   return {
     publishCheck,
@@ -381,19 +404,15 @@ export function useQuestPublish({
     resetCreateIdempotencyKey,
     saveState: publishPending
       ? "saving"
-      : cleanupError || publishError
+      : saveErrorMessage
         ? "error"
         : publishMutation.isSuccess
           ? "saved"
           : "idle",
-    saveErrorMessage: cleanupError
-      ? cleanupError
-      : publishError
-        ? getPublishErrorMessage(publishError, locale)
-        : null,
+    saveErrorMessage,
     savingAction: publishPending ? ("OPEN" as const) : null,
     resetSaveState: () => {
-      setCleanupError(null);
+      setFailureMessage(null);
       createMutation.reset();
       editMutation.reset();
       imageUploadMutation.reset();

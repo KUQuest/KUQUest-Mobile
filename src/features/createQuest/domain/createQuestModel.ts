@@ -246,6 +246,10 @@ export interface QuestDraftPayload {
   imageUris: string[];
 }
 
+// Team Quests take 2–20 participants (docs/api/api.yaml headcount + GROUP rule).
+const MIN_GROUP_HEADCOUNT = 2;
+const MAX_GROUP_HEADCOUNT = 20;
+
 export function getValidDraftHeadcount(
   draft: Pick<QuestDraft, "participation" | "headcount">
 ): number | null {
@@ -254,7 +258,11 @@ export function getValidDraftHeadcount(
   if (!rawHeadcount) return null;
 
   const headcount = Number(rawHeadcount);
-  return Number.isSafeInteger(headcount) && headcount > 0 ? headcount : null;
+  return Number.isSafeInteger(headcount) &&
+    headcount >= MIN_GROUP_HEADCOUNT &&
+    headcount <= MAX_GROUP_HEADCOUNT
+    ? headcount
+    : null;
 }
 
 export function getDraftRewardSatang(
@@ -521,7 +529,7 @@ export function validateQuestDraftStep(
     if (draft.participation === "GROUP") {
       if (!draft.headcount.trim())
         findings.push({ field: "headcount", code: "required" });
-      else if (Number(draft.headcount) < 1)
+      else if (getValidDraftHeadcount(draft) === null)
         findings.push({ field: "headcount", code: "bounds" });
     }
     // Reuse the reward rule; sentinel messages double as codes.

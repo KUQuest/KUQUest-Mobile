@@ -494,6 +494,10 @@ export function useCreateQuestController({
       publishCheck: reviewPublishCheck,
       review,
       saveErrorMessage,
+      saveErrorTitle:
+        !isServerEditMode(mode) && saveErrorIntent?.state === "OPEN"
+          ? messages.publishErrorTitle
+          : messages.saveErrorTitle,
       saveState,
       step,
       tagOptions,

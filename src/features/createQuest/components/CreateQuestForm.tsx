@@ -6,7 +6,7 @@ import {
   TextInput as RNTextInput,
 } from "react-native";
 
-import { CircleAlert, Check } from "lucide-react-native";
+import { CircleAlert, Check, RotateCw } from "lucide-react-native";
 
 import { cn } from "@/tw/cn";
 import { Pressable, ScrollView, Text, View } from "@/tw";
@@ -60,6 +60,7 @@ export function CreateQuestForm({
   publishCheck,
   review,
   saveErrorMessage,
+  saveErrorTitle,
   saveState,
   step,
   tagOptions,
@@ -87,6 +88,7 @@ export function CreateQuestForm({
   publishCheck: QuestPublishCheck;
   review: CreateQuestReviewView;
   saveErrorMessage: string | null;
+  saveErrorTitle: string;
   saveState: SaveState;
   step: Step;
   tagOptions: CreateQuestTagOption[];
@@ -232,27 +234,34 @@ export function CreateQuestForm({
         {saveState === "error" ? (
           <View
             accessibilityLiveRegion="assertive"
+            accessibilityRole="alert"
             className={styles.saveErrorCard}
             testID="create-quest-save-error"
           >
-            <CircleAlert
-              color={colors.dangerDark}
-              size={22}
-              strokeWidth={2.2}
-            />
-            <View className={styles.saveErrorCopy}>
-              <Text className={styles.saveErrorText}>
-                {saveErrorMessage ?? messages.saveError}
-              </Text>
+            <View className={styles.saveErrorHeader}>
+              <View className={styles.saveErrorIcon}>
+                <CircleAlert
+                  color={colors.dangerDark}
+                  size={20}
+                  strokeWidth={2.2}
+                />
+              </View>
+              <View className={styles.saveErrorCopy}>
+                <Text className={styles.saveErrorTitle}>{saveErrorTitle}</Text>
+                <Text className={styles.saveErrorText}>
+                  {saveErrorMessage ?? messages.saveError}
+                </Text>
+              </View>
             </View>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={messages.retrySave}
               onPress={onRetrySave}
-              className={styles.retryButton}
+              className={styles.saveErrorRetry}
               testID="create-quest-retry-save"
             >
-              <Text className={styles.retryButtonText}>
+              <RotateCw color={colors.dangerDark} size={16} strokeWidth={2.4} />
+              <Text className={styles.saveErrorRetryText}>
                 {messages.retrySave}
               </Text>
             </Pressable>

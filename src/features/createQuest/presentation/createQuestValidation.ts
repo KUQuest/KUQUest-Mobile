@@ -1,8 +1,4 @@
-import {
-  createQuestMessages,
-  type CreateQuestMessages,
-} from "@/locales/createQuestMessages";
-import type { SupportedLocale } from "@/locales/locale";
+import type { CreateQuestMessages } from "@/locales/createQuestMessages";
 
 import {
   MAX_REWARD_THB,
@@ -15,14 +11,6 @@ export interface CreateQuestStepValidationResult {
   errors: Record<string, string>;
   firstErrorField: string | null;
   summary: string | null;
-}
-
-export function getQuestApiErrorMessage(
-  code: string,
-  locale: SupportedLocale
-): string {
-  const messages = createQuestMessages[locale];
-  return messages.apiErrors[code] ?? messages.saveError;
 }
 
 export function validateCreateQuestStep(

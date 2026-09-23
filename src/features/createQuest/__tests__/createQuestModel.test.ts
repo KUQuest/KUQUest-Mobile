@@ -3,7 +3,6 @@ import {
   questDetailToDraft,
   toQuestV2Payload,
 } from "../api/createQuestApiAdapter";
-import { getQuestApiErrorMessage } from "../presentation/createQuestValidation";
 import {
   addDaysToDate,
   addHoursToTime,
@@ -173,7 +172,7 @@ describe("Create Quest model", () => {
       participation: "GROUP" as const,
     };
 
-    test.each(["0", "-2", "", "not-a-number", "2.5"])(
+    test.each(["0", "1", "21", "-2", "", "not-a-number", "2.5"])(
       "blocks invalid GROUP headcount %p without one-place escrow fallback",
       (headcount) => {
         const check = getQuestPublishCheck({
@@ -420,27 +419,6 @@ describe("Create Quest model", () => {
       expect(ready.canPublish).toBe(true);
       expect(ready.blockers).toEqual([]);
       expect(ready.escrow.totalRequiredSatang).toBe(50000);
-    });
-  });
-
-  describe("getQuestApiErrorMessage", () => {
-    test("maps known API error codes to localized messages", () => {
-      expect(
-        getQuestApiErrorMessage("INVALID_QUEST_FUNDING_TOTAL", "en")
-      ).toContain("700,000");
-      expect(getQuestApiErrorMessage("INVALID_TITLE", "th")).toContain("120");
-      expect(getQuestApiErrorMessage("INVALID_TITLE", "en")).not.toBe(
-        getQuestApiErrorMessage("INVALID_TITLE", "th")
-      );
-    });
-
-    test("falls back to the generic save error for unknown codes", () => {
-      expect(getQuestApiErrorMessage("MYSTERY_CODE", "en")).toBe(
-        createQuestMessages.en.saveError
-      );
-      expect(getQuestApiErrorMessage("MYSTERY_CODE", "th")).toBe(
-        createQuestMessages.th.saveError
-      );
     });
   });
 
