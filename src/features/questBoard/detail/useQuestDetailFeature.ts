@@ -7,10 +7,9 @@ import {
   questBoardMessages,
   type QuestBoardMessages,
 } from "@/locales/questBoardMessages";
-import type { QuestDetailBodyProps } from "../components/QuestDetailBody";
-import type { QuestDetailSheetsProps } from "../components/QuestDetailSheets";
+import type { QuestDetailBodyProps } from "./components/QuestDetailBody";
+import type { QuestDetailSheetsProps } from "./components/QuestDetailSheets";
 import type { QuestDetailReadModel } from "./useQuestDetailReadSource";
-import { parseStudentId } from "../questRoute";
 import {
   buildQuestDetailActionBar,
   buildQuestDetailBodyProps,
@@ -20,6 +19,7 @@ import {
   type QuestDetailPresentationContext,
 } from "./questDetailPresentation";
 import {
+  parseSingleRouteParam,
   resolveQuestDetailRoute,
   type QuestDetailScreenProps,
 } from "./questDetailRoute";
@@ -66,7 +66,7 @@ export function useQuestDetailFeature({
   const sessionQuery = useSessionQuery();
   const route = resolveQuestDetailRoute({}, screenProps);
   const explicitStudentId = screenProps.studentId;
-  const sessionStudentId = parseStudentId(sessionQuery.data?.user.id);
+  const sessionStudentId = parseSingleRouteParam(sessionQuery.data?.user.id);
   const viewerId = explicitStudentId ?? sessionStudentId ?? "";
   const sessionReady = Boolean(explicitStudentId) || !sessionQuery.isPending;
   const explicitPreview = screenProps.previewState !== undefined;

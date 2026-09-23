@@ -19,10 +19,10 @@ import type { CreateQuestLayoutMetrics } from "@/theme/layout";
 import {
   type CreateQuestReviewView,
   type CreateQuestTagOption,
-} from "../createQuestPresentation";
-import { measureFieldRelativeToScroll } from "../createQuestFocus";
-import type { QuestDraft } from "../createQuestModel";
-import type { QuestPublishCheck } from "../../questBoard/types";
+} from "../presentation/createQuestPresentation";
+import { measureFieldRelativeToScroll } from "./createQuestFocus";
+import type { QuestDraft } from "../domain/createQuestModel";
+import type { QuestPublishCheck } from "../../questBoard/domain/types";
 import {
   LOGISTICS_FIELDS,
   QUEST_DETAIL_FIELDS,
@@ -31,10 +31,10 @@ import {
   type SaveState,
   type Step,
 } from "../createQuestTypes";
-import styles from "../createQuestStyles";
+import styles from "./createQuestStyles";
 import { CreateQuestReviewPanel } from "./CreateQuestReviewPanel";
 import { QuestDetailsStep } from "./QuestDetailsStep";
-import { TeamSetupStep } from "./TeamSetupStep";
+import { TeamSetupStep } from "./teamSetup/TeamSetupStep";
 
 type DraftUpdater = <K extends keyof QuestDraft>(
   field: K,

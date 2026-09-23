@@ -1,12 +1,12 @@
 import { Check } from "lucide-react-native";
 
-import type { QuestPublishCheck } from "../../questBoard/types";
+import type { QuestPublishCheck } from "../../questBoard/domain/types";
 import { formatSatang } from "@/domain/satang";
 import type { CreateQuestMessages } from "@/locales/createQuestMessages";
 import type { SupportedLocale } from "@/locales/locale";
 import { Text, Pressable, View } from "@/tw";
 import { cn } from "@/tw/cn";
-import styles from "../createQuestStyles";
+import styles from "./createQuestStyles";
 import { SectionHeading } from "./SectionHeading";
 
 export interface ReviewSummaryItem {

@@ -5,7 +5,8 @@ import {
   serverConversationToChatConversation,
   type ServerCandidateInquiry,
 } from "@/api/ChatApi";
-import { liveQuestService } from "@/features/questBoard/liveQuestService";
+import { isTerminalStatus } from "@/domain/questLifecycle";
+import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import type { ChatConversation } from "../chatTypes";
 import { enrichChatConversation } from "../chatProfile";
 import {
@@ -36,10 +37,6 @@ export const chatKeys = {
       viewerId,
       ...(mode === "WORK" ? [questId] : []),
     ] as const,
-  participants: (conversationId: string) =>
-    [...chatKeys.all, "participants", conversationId] as const,
-  candidateParticipants: (conversationId: string) =>
-    [...chatKeys.all, "candidate-participants", conversationId] as const,
   messages: (
     conversationId: string,
     viewerId: string,
@@ -166,32 +163,6 @@ export function useHasUnreadChatQuery(viewerId: string, enabled = true) {
   });
 }
 
-export function useListParticipantsQuery(
-  conversationId: string,
-  enabled = true
-) {
-  return useQuery({
-    enabled: Boolean(conversationId) && enabled,
-    queryKey: chatKeys.participants(conversationId),
-    queryFn: ({ signal }) =>
-      chatApi.listParticipants(conversationId, { signal }),
-  });
-}
-
-export function useCandidateInquiryParticipantsQuery(
-  conversationId: string,
-  enabled = true
-) {
-  return useQuery({
-    enabled: Boolean(conversationId) && enabled,
-    queryKey: chatKeys.candidateParticipants(conversationId),
-    queryFn: ({ signal }) =>
-      liveQuestService.listCandidateInquiryParticipants(conversationId, {
-        signal,
-      }),
-  });
-}
-
 export function useMessagesQuery(
   conversationId: string,
   viewerId: string,
@@ -255,10 +226,7 @@ export function useWorkConversationQuery(
       const canWrite = Boolean(
         liveSnapshot.capabilities.canWriteWorkChat && !workConversation.readOnly
       );
-      const terminal =
-        liveSnapshot.state === "QUEST_COMPLETED" ||
-        liveSnapshot.state === "QUEST_CANCELLED" ||
-        liveSnapshot.state === "QUEST_FAILED";
+      const terminal = isTerminalStatus(liveSnapshot.state);
       return enrichChatConversation({
         ...converted,
         ...(otherParticipant?.id ? { participantId: otherParticipant.id } : {}),

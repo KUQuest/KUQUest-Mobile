@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 
-import DisputeScreen from "@/features/questBoard/DisputeScreen";
+import DisputeScreen from "@/features/questBoard/dispute/DisputeScreen";
 import { getRouteParam } from "@/utils/navigation";
 
 export default function QuestDisputeRoute() {

@@ -1,9 +1,8 @@
-import { questFixtures } from "../questFixtures";
+import { questFixtures } from "./questFixtures";
+import { DEFAULT_PROTOTYPE_VIEWER_ID, PROTOTYPE_NOW } from "./constants";
 import {
-  DEFAULT_PROTOTYPE_VIEWER_ID,
   DEFAULT_REWORK_LIMIT,
   EDIT_CONSENT_WINDOW_MS,
-  PROTOTYPE_NOW,
 } from "../domain/constants";
 import {
   QuestApplicationStatus,
@@ -22,10 +21,11 @@ import {
   type QuestStatus as QuestStatusValue,
   type QuestTeam,
   type QuestTeamMember,
-} from "../types";
-import { addMilliseconds, createState } from "../domain/questValidation";
+} from "../domain/types";
+import { addMilliseconds } from "../domain/questStateUtils";
+import { createState } from "./questValidation";
+import { ensureConversation } from "./chatProjection";
 import {
-  ensureConversation,
   openPartialStartConsent,
   setActualHeadcount,
   settlementFor,

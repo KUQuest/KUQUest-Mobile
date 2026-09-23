@@ -1,4 +1,4 @@
-import { QuestStatus } from "@/features/questBoard/types";
+import { QuestStatus } from "@/features/questBoard/domain/types";
 
 import { hirerHomeMessages } from "../hirerHomeMessages";
 import {

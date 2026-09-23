@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 
-import EditQuestScreen from "@/features/createQuest/EditQuestScreen";
+import EditQuestScreen from "@/features/createQuest/edit/EditQuestScreen";
 import { getRouteParam } from "@/utils/navigation";
 
 export default function QuestEditRoute() {

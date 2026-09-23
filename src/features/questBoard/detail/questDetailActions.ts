@@ -1,9 +1,9 @@
 import type { UploadAsset } from "@/api/fileUpload";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
-import type { QuestDetailProjectionCapabilities } from "../questDetailProjection";
-import type { LiveQuestSnapshot } from "../liveQuestService";
-import type { QuestBoardQuest } from "../types";
-import type { QuestActionResult } from "../questFixtureAdapter";
+import type { QuestDetailProjectionCapabilities } from "./questDetailProjection";
+import type { LiveQuestSnapshot } from "../live/liveQuestService";
+import type { QuestBoardQuest } from "../domain/types";
+import type { QuestActionResult } from "../fixtures/adapters/questFixtureAdapter";
 import type { QuestDetailSurfaceTransitions } from "./useQuestDetailSurfaceState";
 export interface QuestDetailLiveActionContext {
   questId?: string;

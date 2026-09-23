@@ -1,10 +1,8 @@
 import * as Linking from "expo-linking";
 
-import { questWorkflow } from "@/features/questBoard/questWorkflow";
+import { questWorkflow } from "@/features/questBoard/workflow/questWorkflow";
 import {
-  type PrototypePersonaChangeHandler,
   type PrototypePersonaId,
-  type PrototypeResetHandler,
   type PrototypeResetScope,
   type PrototypeScenarioRoute,
   isPrototypeScenarioRoute,
@@ -13,20 +11,8 @@ import {
   deletePersistedPersona,
   loadPersistedPersona,
   persistActivePersona,
-  PROTOTYPE_PERSONA_STORAGE_KEY,
   useAuthEnvironmentStore,
 } from "./authEnvironmentStore";
-
-export { PROTOTYPE_PERSONA_STORAGE_KEY };
-
-export interface AuthEnvironmentState {
-  isDemo: boolean;
-  activePersonaId: PrototypePersonaId;
-  onPersonaChange: PrototypePersonaChangeHandler;
-  onReset: PrototypeResetHandler;
-  setPersona: PrototypePersonaChangeHandler;
-  resetFixtures: PrototypeResetHandler;
-}
 
 function normalizeSegment(value: string | null | undefined): string {
   return value?.replace(/^\/+|\/+$/g, "") ?? "";
@@ -133,29 +119,4 @@ export const authEnvironment = {
   },
 };
 
-const setActivePrototypePersona = (personaId: PrototypePersonaId): void => {
-  useAuthEnvironmentStore.getState().selectPersona(personaId);
-};
-
 export const isPrototypeDemoEnabled = (): boolean => isDemoEnabled();
-
-export function useAuthEnvironment(): AuthEnvironmentState {
-  const activePersonaId = useAuthEnvironmentStore(
-    (state) => state.activePersonaId
-  );
-  const offlineDemoEnabled = useAuthEnvironmentStore(
-    (state) => state.offlineDemoEnabled
-  );
-  const isDemo =
-    __DEV__ &&
-    (process.env.EXPO_PUBLIC_PROFILE_DEMO === "true" || offlineDemoEnabled);
-
-  return {
-    isDemo,
-    activePersonaId,
-    setPersona: setActivePrototypePersona,
-    onPersonaChange: setActivePrototypePersona,
-    resetFixtures,
-    onReset: resetFixtures,
-  };
-}

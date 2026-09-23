@@ -1,16 +1,47 @@
 import {
   parseBoardPreviewState,
   type BoardPreviewState,
-} from "../questBoardHarness";
-import {
-  parseQuestDetailMode,
-  parseQuestIntent,
-  parseQuestJoinStatus,
-  parseQuestRouteId,
-  parseStudentId,
-  type QuestDetailMode,
-  type QuestJoinStatus,
-} from "../questRoute";
+} from "../fixtures/questBoardHarness";
+export type QuestDetailMode = "public" | "join" | "post";
+export type QuestJoinStatus = "pending" | "accepted" | "history";
+
+function singleRouteValue(
+  value: string | string[] | undefined
+): string | undefined {
+  if (Array.isArray(value) && value.length !== 1) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export function parseSingleRouteParam(
+  value: string | string[] | undefined
+): string | undefined {
+  const id = singleRouteValue(value)?.trim();
+  return id || undefined;
+}
+
+export function parseQuestIntent(
+  value: string | string[] | undefined
+): "apply" | undefined {
+  return singleRouteValue(value) === "apply" ? "apply" : undefined;
+}
+
+export function parseQuestDetailMode(
+  value: string | string[] | undefined
+): QuestDetailMode {
+  const candidate = singleRouteValue(value);
+  return candidate === "join" || candidate === "post" ? candidate : "public";
+}
+
+export function parseQuestJoinStatus(
+  value: string | string[] | undefined
+): QuestJoinStatus | undefined {
+  const candidate = singleRouteValue(value);
+  return candidate === "pending" ||
+    candidate === "accepted" ||
+    candidate === "history"
+    ? candidate
+    : undefined;
+}
 
 export interface QuestDetailScreenProps {
   previewState?: BoardPreviewState;
@@ -46,9 +77,9 @@ export function resolveQuestDetailRoute(
   return {
     questId:
       props.questId !== undefined
-        ? parseQuestRouteId(props.questId)
-        : parseQuestRouteId(params.id),
-    studentId: props.studentId ?? parseStudentId(params.studentId),
+        ? parseSingleRouteParam(props.questId)
+        : parseSingleRouteParam(params.id),
+    studentId: props.studentId ?? parseSingleRouteParam(params.studentId),
     mode: props.mode ?? parseQuestDetailMode(params.mode),
     joinStatus: props.joinStatus ?? parseQuestJoinStatus(params.joinStatus),
     previewState: props.previewState ?? parseBoardPreviewState(params.preview),

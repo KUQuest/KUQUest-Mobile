@@ -5,7 +5,7 @@ import {
   getPreviousCreateQuestStep,
   isServerEditMode,
   resolveCreateQuestFlowMode,
-} from "../createQuestWorkflow";
+} from "../workflow/createQuestWorkflow";
 
 describe("Create Quest workflow boundaries", () => {
   it("keeps local draft ids separate from server edit ids", () => {

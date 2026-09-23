@@ -6,7 +6,6 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import ChatConversationScreen, {
-  AttachmentRow,
   ChatAvatar,
   InlineImageAttachment,
   MessageBubble,
@@ -22,8 +21,8 @@ import type {
   ServerChatMessagePage,
   ServerChatParticipant,
 } from "@/api/ChatApi";
-import { liveQuestService } from "@/features/questBoard/liveQuestService";
-import type { LiveQuestSnapshot } from "@/features/questBoard/liveQuestService";
+import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
+import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestService";
 import { chatMessages } from "@/locales/chatMessages";
 import type { ChatConversation } from "../chatTypes";
 
@@ -34,7 +33,6 @@ jest.mock("expo-router", () => {
   const ReactActual = jest.requireActual("react") as typeof ReactModule;
   return {
     useFocusEffect: (effect: () => (() => void) | void) => {
-      // eslint-disable-next-line react-hooks/rules-of-hooks
       ReactActual.useEffect(effect, []);
     },
     useLocalSearchParams: () => ({
@@ -83,7 +81,7 @@ jest.mock("@/api/ChatApi", () => {
   };
 });
 
-jest.mock("@/features/questBoard/liveQuestService", () => ({
+jest.mock("@/features/questBoard/live/liveQuestService", () => ({
   liveQuestService: {
     getLiveSnapshot: jest.fn(),
     getCandidateInquiry: jest.fn(),
@@ -592,10 +590,10 @@ describe("ChatConversationMedia", () => {
 
       // Find the "Choose from Library" option in the alert buttons
       const alertCall = alertSpy.mock.calls[alertSpy.mock.calls.length - 1];
-      const alertButtons = alertCall[2] as Array<{
+      const alertButtons = alertCall[2] as {
         text?: string;
         onPress?: () => void;
-      }>;
+      }[];
       const choosePhotoButton = alertButtons.find(
         (b) => b.text === chatMessages.en.choosePhoto
       );

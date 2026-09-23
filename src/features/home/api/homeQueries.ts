@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 
 import { questApi } from "@/api/QuestApi";
 import { studentApi } from "@/api/StudentApi";
-import { QuestStatus } from "@/features/questBoard/types";
+import { QuestStatus } from "@/features/questBoard/domain/types";
+import { isTerminalStatus } from "@/domain/questLifecycle";
 import { myQuestService } from "@/features/myQuests/myQuestService";
 import {
   HIRER_HOME_MAX_ACTIVE_QUESTS,
@@ -27,11 +28,7 @@ export function useHirerHomeQuery() {
 async function loadHirerHome(signal: AbortSignal): Promise<HirerHomeData> {
   const quests = await myQuestService.listAllMyHirerQuests({ signal });
   const activeSourceQuests = quests.filter(
-    (q) =>
-      q.state !== QuestStatus.QUEST_DRAFT &&
-      q.state !== QuestStatus.QUEST_COMPLETED &&
-      q.state !== QuestStatus.QUEST_CANCELLED &&
-      q.state !== QuestStatus.QUEST_FAILED
+    (q) => q.state !== QuestStatus.QUEST_DRAFT && !isTerminalStatus(q.state)
   );
   const draftCount = quests.filter(
     (q) => q.state === QuestStatus.QUEST_DRAFT

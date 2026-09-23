@@ -1,7 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 
 import { authService } from "@/features/auth/AuthService";
-import { initialDraft } from "../createQuestModel";
+import { initialDraft } from "../domain/createQuestModel";
 import {
   CREATE_QUEST_DRAFT_KEY,
   deleteQuestDraft,
@@ -9,7 +9,7 @@ import {
   loadQuestDraft,
   listQuestDrafts,
   persistQuestDraft,
-} from "../createQuestPersistence";
+} from "../draft/createQuestPersistence";
 
 jest.mock("@/features/auth/AuthService", () => ({
   authService: {

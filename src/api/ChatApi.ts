@@ -7,7 +7,7 @@ import type {
   ChatMessage,
   LocalizedText,
 } from "@/features/chat/chatTypes";
-import type { QuestStatus } from "@/features/questBoard/types";
+import type { QuestStatus } from "@/domain/questLifecycle";
 export const chatAttachmentSchema = z.object({
   id: z.string().min(1),
   fileName: z.string(),
@@ -191,21 +191,6 @@ export const candidateInquiryParticipantsResponseSchema = z.object({
   success: z.literal(true),
   data: z.object({ participants: z.array(candidateInquiryParticipantSchema) }),
 });
-export const chatEventSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("WORK_CONVERSATION_MESSAGE"),
-    message: chatMessageSchema,
-  }),
-  z.object({
-    type: z.literal("CANDIDATE_INQUIRY_MESSAGE"),
-    message: chatMessageSchema,
-  }),
-]);
-export type ServerChatEvent = z.infer<typeof chatEventSchema>;
-export function parseChatEvent(payload: unknown): ServerChatEvent {
-  return chatEventSchema.parse(payload);
-}
-
 export function serverMessageToChatMessage(
   msg: ServerChatMessage,
   currentUserId?: string

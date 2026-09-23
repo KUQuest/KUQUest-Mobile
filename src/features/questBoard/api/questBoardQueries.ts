@@ -5,21 +5,17 @@ import type { UploadAsset } from "@/api/fileUpload";
 import { disputeApi, type DisputeReason } from "@/api/DisputeApi";
 import type {
   QuestV2CreateEditRequestPayload,
-  QuestV2ProofCreatePayload,
-  QuestV2ProofFileUploadPayload,
   QuestV2ProofReviewPayload,
-  QuestV2ProofRetryPayload,
-  QuestV2ProofUpdatePayload,
   QuestV2ReviewPayload,
 } from "@/api/QuestApi";
 import { homeKeys } from "@/features/home/api/homeQueries";
 import { myQuestsKeys } from "@/features/myQuests/api/myQuestsQueries";
-import { workerHomeKeys } from "@/features/workerHome/api/workerHomeQueries";
+import { workerHomeKeys } from "@/features/workerHome/api/workerHomeKeys";
 import {
   liveQuestService,
   type LiveQuestSnapshot,
   type LiveQuestSnapshotOptions,
-} from "../liveQuestService";
+} from "../live/liveQuestService";
 
 export const questBoardKeys = {
   all: ["questBoard"] as const,
@@ -575,21 +571,6 @@ export function useRespondUnderfilledConsentMutation() {
   });
 }
 
-export function usePublishQuestMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      questId,
-      idempotencyKey,
-    }: {
-      questId: string;
-      idempotencyKey?: string;
-    }) => liveQuestService.publishQuest(questId, idempotencyKey),
-    onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, undefined, "hirer"),
-  });
-}
-
 export function useCancelQuestMutation() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -626,93 +607,6 @@ export function useFileDisputeMutation() {
     }) => disputeApi.fileDispute(questId, { reason, statement }),
     onSuccess: (_, variables) =>
       invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
-  });
-}
-
-export function useProofDraftMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      questId,
-      proofSubmissionId,
-      payload,
-      idempotencyKey,
-    }: {
-      questId: string;
-      proofSubmissionId: string;
-      payload:
-        | QuestV2ProofUpdatePayload
-        | QuestV2ProofRetryPayload
-        | QuestV2ProofFileUploadPayload;
-      viewerId?: string;
-      idempotencyKey?: string;
-    }) =>
-      liveQuestService.updateProofDraft(
-        questId,
-        proofSubmissionId,
-        payload,
-        idempotencyKey
-      ),
-    onSuccess: (_, variables) =>
-      invalidateQuestReads(
-        queryClient,
-        variables.questId,
-        variables.viewerId,
-        "worker"
-      ),
-  });
-}
-
-export function useCreateProofDraftMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      questId,
-      payload,
-      idempotencyKey,
-    }: {
-      questId: string;
-      payload:
-        | QuestV2ProofCreatePayload
-        | { assets: { uri: string }[]; description?: string };
-      viewerId?: string;
-      idempotencyKey?: string;
-    }) => liveQuestService.createProofDraft(questId, payload, idempotencyKey),
-    onSuccess: (_, variables) =>
-      invalidateQuestReads(
-        queryClient,
-        variables.questId,
-        variables.viewerId,
-        "worker"
-      ),
-  });
-}
-
-export function useSubmitProofDraftMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      questId,
-      proofSubmissionId,
-      idempotencyKey,
-    }: {
-      questId: string;
-      proofSubmissionId: string;
-      viewerId?: string;
-      idempotencyKey?: string;
-    }) =>
-      liveQuestService.submitProofDraft(
-        questId,
-        proofSubmissionId,
-        idempotencyKey
-      ),
-    onSuccess: (_, variables) =>
-      invalidateQuestReads(
-        queryClient,
-        variables.questId,
-        variables.viewerId,
-        "worker"
-      ),
   });
 }
 

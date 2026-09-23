@@ -4,8 +4,8 @@ import { Alert, BackHandler } from "react-native";
 
 import { getChatRouteParams } from "@/features/chat/chatData";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
-import type { QuestBoardQuest } from "../types";
-import type { QuestDetailProjection } from "../questDetailProjection";
+import type { QuestBoardQuest } from "../domain/types";
+import type { QuestDetailProjection } from "./questDetailProjection";
 import type { QuestDetailReadSource } from "./useQuestDetailReadSource";
 
 interface QuestDetailNavigationParams {

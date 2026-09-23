@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 
-import HirerProofReviewScreen from "@/features/questBoard/HirerProofReviewScreen";
+import HirerProofReviewScreen from "@/features/questBoard/review/HirerProofReviewScreen";
 import { getRouteParam } from "@/utils/navigation";
 
 export default function HirerProofReviewRoute() {

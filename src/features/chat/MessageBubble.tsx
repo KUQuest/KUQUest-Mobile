@@ -7,7 +7,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { cn } from "@/tw/cn";
 import { colors } from "@/theme/colors";
 import { chatApi } from "@/api/ChatApi";
-import { liveQuestService } from "@/features/questBoard/liveQuestService";
+import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import type { ChatMessages } from "@/locales/chatMessages";
 import type { ChatConversation } from "./chatTypes";
 import {
@@ -307,7 +307,6 @@ export function MessageBubble({
   );
 }
 
-export default MessageBubble;
 export type {
   DisplayChatMessage,
   RenderAttachment,

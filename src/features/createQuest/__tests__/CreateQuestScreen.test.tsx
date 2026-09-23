@@ -1,10 +1,10 @@
 import { fireEvent, waitFor, within } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import mockReact, { type ReactElement, type ReactNode } from "react";
-import { StyleSheet, TextInput as RNTextInput } from "react-native";
+import { Alert, StyleSheet, TextInput as RNTextInput } from "react-native";
 import CreateQuestScreen from "../CreateQuestScreen";
-import { measureFieldRelativeToScroll } from "../createQuestFocus";
-import { initialDraft, toBangkokDateTime } from "../createQuestModel";
+import { measureFieldRelativeToScroll } from "../components/createQuestFocus";
+import { initialDraft, toBangkokDateTime } from "../domain/createQuestModel";
 jest.mock("react-native/Libraries/Modal/Modal", () => {
   return {
     __esModule: true,
@@ -27,6 +27,25 @@ jest.mock("react-native/Libraries/Utilities/useWindowDimensions", () => ({
 }));
 
 const mockRouter = { replace: jest.fn() };
+const mockGetQuestDetail = jest.fn();
+type BeforeRemoveEvent = {
+  preventDefault: () => void;
+  data: { action: { type: string } };
+};
+const mockBeforeRemoveListeners: ((event: BeforeRemoveEvent) => void)[] = [];
+const mockNavigation = {
+  addListener: jest.fn(
+    (event: string, handler: (beforeEvent: BeforeRemoveEvent) => void) => {
+      if (event !== "beforeRemove") return jest.fn();
+      mockBeforeRemoveListeners.push(handler);
+      return () => {
+        const index = mockBeforeRemoveListeners.indexOf(handler);
+        if (index >= 0) mockBeforeRemoveListeners.splice(index, 1);
+      };
+    }
+  ),
+  dispatch: jest.fn(),
+};
 const mockLoadQuestDraft = jest.fn();
 const mockPersistQuestDraft = jest.fn();
 const mockDeleteQuestDraft = jest.fn();
@@ -79,8 +98,25 @@ const liveDraftSnapshot = {
   },
   step: 2 as const,
 };
+const serverQuestDetailFixture = {
+  id: "server-quest-1",
+  version: 3,
+  title: "Clean the dorm fans",
+  tag: { id: "design" },
+  description: "Clean every fan in the residence hall.",
+  condition: { items: [{ position: 1, text: "All fans run quietly." }] },
+  proofRequired: false,
+  startTime: "2099-08-26T09:00:00",
+  dueAt: "2099-08-27T12:00:00",
+  locations: [{ label: "Dorm A common room" }],
+  images: [],
+  mode: "FIRST_COME",
+  participation: "SINGLE",
+  headcount: 1,
+  questFundingTotal: 100,
+};
 
-jest.mock("../../questBoard/liveQuestService", () => ({
+jest.mock("../../questBoard/live/liveQuestService", () => ({
   liveQuestService: {
     createQuest: (...args: unknown[]) => mockLiveCreateQuest(...args),
     uploadImages: (...args: unknown[]) => Promise.resolve([]),
@@ -96,7 +132,9 @@ jest.mock("@/api/QuestApi", () => {
     ...actual,
     questApi: {
       ...actual.questApi,
+      getDetail: (...args: unknown[]) => mockGetQuestDetail(...args),
       getPublishCheck: (...args: unknown[]) => mockLiveGetPublishCheck(...args),
+      editQuest: (...args: unknown[]) => mockLiveEditQuest(...args),
     },
   };
 });
@@ -106,7 +144,7 @@ jest.mock("@/api/WalletApi", () => ({
   },
 }));
 
-jest.mock("../createQuestPersistence", () => ({
+jest.mock("../draft/createQuestPersistence", () => ({
   getQuestDraftStorageKey: jest.fn().mockResolvedValue("test-key"),
   createQuestDraftId: () => mockCreateQuestDraftId(),
   loadQuestDraft: (...args: unknown[]) => mockLoadQuestDraft(...args),
@@ -117,12 +155,15 @@ jest.mock("@/features/wallet/api/walletQueries", () => {
   const actual = jest.requireActual("@/features/wallet/api/walletQueries");
   return {
     ...actual,
-    useQueryClient: require("@tanstack/react-query").useQueryClient,
+    useQueryClient: jest.requireActual<typeof import("@tanstack/react-query")>(
+      "@tanstack/react-query"
+    ).useQueryClient,
   };
 });
 
 jest.mock("expo-router", () => ({
   useRouter: () => mockRouter,
+  useNavigation: () => mockNavigation,
 }));
 
 jest.mock("expo-status-bar", () => ({
@@ -170,6 +211,50 @@ async function waitForPublishCheck(view: Awaited<ReturnType<typeof render>>) {
   );
 }
 
+function spyOnAlert() {
+  const spy = jest.spyOn(Alert, "alert").mockImplementation(() => {});
+  // Alert is not auto-restored between tests in this repo's jest config.
+  spy.mockClear();
+  return spy;
+}
+
+async function renderServerEditQuest() {
+  const view = await render(
+    <CreateQuestScreen editMode editQuestId="server-quest-1" />
+  );
+  await waitFor(() =>
+    expect(view.getByLabelText("ชื่อเควสต์ *").props.value).toBe(
+      "Clean the dorm fans"
+    )
+  );
+  return view;
+}
+
+function fireBeforeRemove() {
+  const event: BeforeRemoveEvent = {
+    preventDefault: jest.fn(),
+    data: { action: { type: "GO_BACK" } },
+  };
+  const listener =
+    mockBeforeRemoveListeners[mockBeforeRemoveListeners.length - 1];
+  if (!listener) throw new Error("No beforeRemove guard is registered");
+  listener(event);
+  return event;
+}
+
+function lastAlertCall() {
+  const calls = jest.mocked(Alert.alert).mock.calls;
+  const last = calls[calls.length - 1];
+  if (!last) throw new Error("No Alert was shown");
+  return last;
+}
+
+function lastAlertButtons() {
+  const buttons = lastAlertCall()[2];
+  if (!buttons) throw new Error("The Alert rendered without buttons");
+  return buttons;
+}
+
 describe("CreateQuestScreen", () => {
   beforeEach(() => {
     mockRouter.replace.mockClear();
@@ -191,6 +276,11 @@ describe("CreateQuestScreen", () => {
     mockLivePublishQuest.mockReset();
     mockWalletGetWallet.mockReset();
     mockWalletGetWallet.mockResolvedValue(defaultWalletBalances);
+    mockGetQuestDetail.mockReset();
+    mockGetQuestDetail.mockResolvedValue(serverQuestDetailFixture);
+    mockNavigation.addListener.mockClear();
+    mockNavigation.dispatch.mockClear();
+    mockBeforeRemoveListeners.length = 0;
   });
 
   it("keeps the page skeleton visible until draft hydration settles", async () => {
@@ -216,7 +306,7 @@ describe("CreateQuestScreen", () => {
   it("restores the persisted draft and step on mount", async () => {
     mockLoadQuestDraft.mockResolvedValueOnce({
       draft: {
-        ...jest.requireActual("../createQuestModel").initialDraft,
+        ...jest.requireActual("../domain/createQuestModel").initialDraft,
         title: "Restored quest",
         tag: "design",
         description: "Restored description",
@@ -398,7 +488,7 @@ describe("CreateQuestScreen", () => {
   it("shows quick-fix button when deadline is earlier than start time", async () => {
     mockLoadQuestDraft.mockResolvedValueOnce({
       draft: {
-        ...jest.requireActual("../createQuestModel").initialDraft,
+        ...jest.requireActual("../domain/createQuestModel").initialDraft,
         title: "Test Inverted Quest",
         tag: "design",
         description: "Test desc",
@@ -942,6 +1032,130 @@ describe("CreateQuestScreen", () => {
     await waitForPublishCheck(view);
     expect(mockPersistQuestDraft).toHaveBeenCalledTimes(1);
     expect(mockLiveCreateQuest).toHaveBeenCalledTimes(1);
+  });
+
+  it("confirms before system back can abandon an unsaved server edit", async () => {
+    spyOnAlert();
+    const view = await renderServerEditQuest();
+    await fireEvent.changeText(
+      view.getByLabelText("ชื่อเควสต์ *"),
+      "Clean the dorm fans, second floor"
+    );
+
+    const removal = fireBeforeRemove();
+    expect(removal.preventDefault).toHaveBeenCalled();
+    expect(lastAlertCall()[0]).toBe("ละทิ้งการเปลี่ยนแปลงหรือไม่");
+    // A server edit must never claim its changes are saved on the device.
+    expect(lastAlertCall()[1]).toBe("การเปลี่ยนแปลงของคุณยังไม่ได้บันทึก");
+
+    lastAlertButtons()[0].onPress?.();
+    expect(mockNavigation.dispatch).not.toHaveBeenCalled();
+    expect(view.getByLabelText("ชื่อเควสต์ *").props.value).toBe(
+      "Clean the dorm fans, second floor"
+    );
+
+    const secondRemoval = fireBeforeRemove();
+    expect(secondRemoval.preventDefault).toHaveBeenCalled();
+    lastAlertButtons()[1].onPress?.();
+    expect(mockNavigation.dispatch).toHaveBeenCalledTimes(1);
+    expect(mockNavigation.dispatch).toHaveBeenCalledWith({ type: "GO_BACK" });
+  });
+
+  it("lets system back leave a clean server edit without prompting", async () => {
+    const alertSpy = spyOnAlert();
+    await renderServerEditQuest();
+
+    const removal = fireBeforeRemove();
+    expect(removal.preventDefault).not.toHaveBeenCalled();
+    expect(alertSpy).not.toHaveBeenCalled();
+  });
+
+  it("disarms the guard exactly once when the header discard navigates", async () => {
+    spyOnAlert();
+    const view = await renderServerEditQuest();
+    await fireEvent.changeText(
+      view.getByLabelText("ชื่อเควสต์ *"),
+      "Dirty title"
+    );
+
+    await fireEvent.press(view.getByTestId("create-quest-header-back"));
+    expect(lastAlertCall()[0]).toBe("ละทิ้งการเปลี่ยนแปลงหรือไม่");
+    lastAlertButtons()[1].onPress?.();
+    expect(mockRouter.replace).toHaveBeenCalledTimes(1);
+    expect(mockRouter.replace).toHaveBeenCalledWith({
+      pathname: "/quest/[id]",
+      params: { id: "server-quest-1", mode: "post" },
+    });
+
+    const passthrough = fireBeforeRemove();
+    expect(passthrough.preventDefault).not.toHaveBeenCalled();
+    const reblocked = fireBeforeRemove();
+    expect(reblocked.preventDefault).toHaveBeenCalled();
+  });
+
+  it("guards step 2 of a server edit with the same unsaved confirmation", async () => {
+    spyOnAlert();
+    const view = await renderServerEditQuest();
+    await fireEvent.changeText(
+      view.getByLabelText("ชื่อเควสต์ *"),
+      "Edited before stepping forward"
+    );
+    await fireEvent.press(view.getByText("ถัดไป"));
+
+    const removal = fireBeforeRemove();
+    expect(removal.preventDefault).toHaveBeenCalled();
+    expect(lastAlertCall()[0]).toBe("ละทิ้งการเปลี่ยนแปลงหรือไม่");
+    lastAlertButtons()[1].onPress?.();
+    expect(mockNavigation.dispatch).toHaveBeenCalledTimes(1);
+    expect(mockNavigation.dispatch).toHaveBeenCalledWith({ type: "GO_BACK" });
+  });
+
+  it("keeps the local-draft wording when back interrupts a restored draft", async () => {
+    spyOnAlert();
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
+    await waitFor(() =>
+      expect(view.getByTestId("create-quest-logistics-toggle")).toBeTruthy()
+    );
+
+    const removal = fireBeforeRemove();
+    expect(removal.preventDefault).toHaveBeenCalled();
+    expect(lastAlertCall()[0]).toBe("ออกจากการสร้างเควสต์หรือไม่?");
+    expect(lastAlertCall()[1]).toBe(
+      "ฉบับร่างถูกบันทึกไว้ในอุปกรณ์ ออกจากแบบฟอร์มและทำต่อภายหลังได้"
+    );
+  });
+
+  it("saves a server edit and leaves without a discard prompt", async () => {
+    spyOnAlert();
+    const view = await renderServerEditQuest();
+    await fireEvent.changeText(
+      view.getByLabelText("ชื่อเควสต์ *"),
+      "Clean the dorm fans v2"
+    );
+
+    await fireEvent.press(view.getByText("ถัดไป"));
+    await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
+    await fireEvent.press(view.getByTestId("edit-quest-save"));
+    await waitFor(() =>
+      expect(view.getByText("อัปเดตเควสต์แล้ว")).toBeTruthy()
+    );
+    expect(mockLiveEditQuest).toHaveBeenCalledTimes(1);
+
+    const removal = fireBeforeRemove();
+    expect(removal.preventDefault).not.toHaveBeenCalled();
+
+    await fireEvent.press(view.getByText("กลับไปที่เควสต์"));
+    expect(mockRouter.replace).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a localized action in the help dialog", async () => {
+    const alertSpy = spyOnAlert();
+    const view = await render(<CreateQuestScreen />);
+
+    await fireEvent.press(view.getByTestId("create-quest-help"));
+    expect(alertSpy).toHaveBeenCalledWith("สร้างเควสต์", expect.any(String), [
+      { text: "ตกลง" },
+    ]);
   });
 
   it("starts a fresh blank form after the draft screen is unmounted", async () => {

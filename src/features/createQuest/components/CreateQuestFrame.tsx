@@ -5,7 +5,7 @@ import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import type { CreateQuestMessages } from "@/locales/createQuestMessages";
 import { View } from "@/tw";
 
-import styles from "../createQuestStyles";
+import styles from "./createQuestStyles";
 import type { Step } from "../createQuestTypes";
 import { CreateQuestHeader } from "./CreateQuestHeader";
 

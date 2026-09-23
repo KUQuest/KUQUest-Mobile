@@ -2,7 +2,7 @@ import {
   QuestCandidateMode,
   QuestStatus,
   type QuestBoardQuest,
-} from "../../types";
+} from "../../domain/types";
 import {
   buildQuestDetailActionBar,
   type QuestDetailPresentationContext,

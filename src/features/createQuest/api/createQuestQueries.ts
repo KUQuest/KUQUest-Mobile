@@ -8,7 +8,7 @@ import {
 import { questApi, type CreateQuestV2Payload } from "@/api/QuestApi";
 import type { UploadAsset } from "@/api/fileUpload";
 import { myQuestsKeys } from "@/features/myQuests/api/myQuestsQueries";
-import { liveQuestService } from "@/features/questBoard/liveQuestService";
+import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import { questBoardKeys } from "@/features/questBoard/api/questBoardQueries";
 import { workerHomeKeys } from "@/features/workerHome/api/workerHomeQueries";
 

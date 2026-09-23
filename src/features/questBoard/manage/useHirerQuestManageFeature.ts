@@ -1,0 +1,248 @@
+import { useCallback, useState } from "react";
+import { Alert } from "react-native";
+import { useRouter } from "expo-router";
+
+import {
+  createQuestIdempotencyKey,
+  type QuestV2ProofReviewPayload,
+} from "@/api/QuestApi";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
+import { getChatRouteParams } from "@/features/chat/chatData";
+import { useLocale } from "@/features/preferences/localeStore";
+import {
+  useCancelQuestMutation,
+  useCreateEditRequestMutation,
+  useDecideUnderfilledMutation,
+  useLiveQuestSnapshotQuery,
+  useReviewProofMutation,
+  useSelectApplicationMutation,
+  useSelectCandidateTeamMutation,
+} from "@/features/questBoard/api/questBoardQueries";
+import { isTerminalStatus } from "@/domain/questLifecycle";
+import { questBoardMessages } from "@/locales/questBoardMessages";
+import {
+  QuestEditRequestStatus,
+  QuestMode,
+  QuestParticipation,
+  QuestProofStatus,
+  QuestStatus,
+  type QuestUnderfilledDecision,
+} from "../domain/types";
+
+export function useHirerQuestManageFeature(questId?: string) {
+  const router = useRouter();
+  const { locale } = useLocale();
+  const messages = questBoardMessages[locale];
+  const viewerId = useSessionQuery().data?.user.id || "";
+  const [candidateOpen, setCandidateOpen] = useState(false);
+  const [underfilledOpen, setUnderfilledOpen] = useState(false);
+  const [conditionEditOpen, setConditionEditOpen] = useState(false);
+  const [editRequestId, setEditRequestId] = useState<string>();
+  const [conditionEditSubmitting, setConditionEditSubmitting] = useState(false);
+  const [conditionEditError, setConditionEditError] = useState<string>();
+  const [proofReviewOpen, setProofReviewOpen] = useState(false);
+  const snapshotQuery = useLiveQuestSnapshotQuery(
+    questId ?? null,
+    viewerId || null,
+    editRequestId ? { editRequestId } : undefined
+  );
+  const selectApplicationMutation = useSelectApplicationMutation();
+  const selectCandidateTeamMutation = useSelectCandidateTeamMutation();
+  const decideUnderfilledMutation = useDecideUnderfilledMutation();
+  const cancelQuestMutation = useCancelQuestMutation();
+  const reviewProofMutation = useReviewProofMutation();
+  const createEditRequestMutation = useCreateEditRequestMutation();
+  const snapshot = snapshotQuery.data;
+  const refetchSnapshot = snapshotQuery.refetch;
+  const viewerCommand = useCallback(
+    async (run: (key: string) => Promise<unknown>): Promise<boolean> => {
+      if (!questId || !viewerId) return false;
+      try {
+        await run(createQuestIdempotencyKey());
+        return true;
+      } catch (caught) {
+        await refetchSnapshot();
+        Alert.alert(
+          "Quest",
+          caught instanceof Error ? caught.message : "Action failed"
+        );
+        return false;
+      }
+    },
+    [questId, refetchSnapshot, viewerId]
+  );
+  const error =
+    snapshotQuery.error instanceof Error
+      ? snapshotQuery.error.message
+      : snapshotQuery.error
+        ? "Unable to load Quest"
+        : undefined;
+  const originalConditionItems = snapshot?.quest.condition.items
+    .slice()
+    .sort((a, b) => a.position - b.position)
+    .map((item) => item.text);
+  const pendingProof = snapshot?.proofs.find(
+    (proof) => proof.status === QuestProofStatus.PROOF_PENDING
+  );
+  const terminal = snapshot ? isTerminalStatus(snapshot.state) : false;
+  const canReviewCandidateProposals =
+    snapshot?.actor === "HIRER" &&
+    snapshot.mode === QuestMode.CANDIDATE &&
+    (snapshot.participation === QuestParticipation.GROUP
+      ? snapshot.capabilities.canSelectTeam
+      : snapshot.capabilities.canSelectCandidate);
+  const canProposeConditionEdit =
+    snapshot?.actor === "HIRER" &&
+    snapshot.state === QuestStatus.QUEST_ASSIGNED &&
+    snapshot.capabilities.canRequestEdit &&
+    snapshot.editRequest?.status !==
+      QuestEditRequestStatus.EDIT_REQUEST_PENDING;
+  const openChat = () => {
+    if (!snapshot?.workConversation || !viewerId) return;
+    router.push({
+      pathname: "/chat/[id]",
+      params: getChatRouteParams({
+        conversationId: snapshot.workConversation.id,
+        questId: snapshot.quest.id,
+        viewerId,
+        questTitle: snapshot.quest.title,
+      }),
+    });
+  };
+  const selectApplication = (id: string) =>
+    snapshot &&
+    void viewerCommand((key) =>
+      selectApplicationMutation.mutateAsync({
+        questId: snapshot.quest.id,
+        applicationId: id,
+        viewerId,
+        idempotencyKey: key,
+      })
+    );
+  const selectTeam = (id: string) =>
+    snapshot &&
+    void viewerCommand((key) =>
+      selectCandidateTeamMutation.mutateAsync({
+        questId: snapshot.quest.id,
+        teamId: id,
+        viewerId,
+        idempotencyKey: key,
+      })
+    );
+  const cancel = () => {
+    if (!snapshot) return;
+    Alert.alert("Cancel Quest", "Cancel this Quest?", [
+      { text: "Keep", style: "cancel" },
+      {
+        text: "Cancel Quest",
+        style: "destructive",
+        onPress: () =>
+          void viewerCommand((key) =>
+            cancelQuestMutation
+              .mutateAsync({
+                questId: snapshot.quest.id,
+                viewerId,
+                idempotencyKey: key,
+              })
+              .then((outcome) => {
+                Alert.alert(
+                  "Cancellation complete",
+                  `Paid ${outcome.paidSatang} satang · Refunded ${outcome.refundedSatang} satang`
+                );
+              })
+          ),
+      },
+    ]);
+  };
+  const reviewProof = () => {
+    if (!snapshot || !pendingProof || !snapshot.capabilities.canReviewProof)
+      return;
+    setProofReviewOpen(true);
+  };
+  const submitProofReview = (
+    payload: QuestV2ProofReviewPayload
+  ): Promise<boolean> => {
+    if (!snapshot || !pendingProof || !snapshot.capabilities.canReviewProof) {
+      return Promise.resolve(false);
+    }
+    return viewerCommand((key) =>
+      reviewProofMutation.mutateAsync({
+        questId: snapshot.quest.id,
+        proofSubmissionId: pendingProof.id,
+        payload,
+        viewerId,
+        idempotencyKey: key,
+      })
+    );
+  };
+  const submitConditionEdit = (items: string[]) => {
+    if (!snapshot) return;
+    setConditionEditSubmitting(true);
+    setConditionEditError(undefined);
+    createEditRequestMutation
+      .mutateAsync({
+        questId: snapshot.quest.id,
+        payload: { condition: { items } },
+        viewerId,
+        idempotencyKey: createQuestIdempotencyKey(),
+      })
+      .then((request) => {
+        setEditRequestId(request.requestId);
+        setConditionEditOpen(false);
+      })
+      .catch((caught) => {
+        setConditionEditError(
+          caught instanceof Error
+            ? caught.message
+            : messages.conditionEditSubmitError
+        );
+        return snapshotQuery.refetch();
+      })
+      .finally(() => setConditionEditSubmitting(false));
+  };
+  const decideUnderfilled = (decision: QuestUnderfilledDecision) => {
+    if (!snapshot) return;
+    setUnderfilledOpen(false);
+    void viewerCommand((key) =>
+      decideUnderfilledMutation.mutateAsync({
+        questId: snapshot.quest.id,
+        decision,
+        viewerId,
+        idempotencyKey: key,
+      })
+    );
+  };
+
+  return {
+    router,
+    locale,
+    messages,
+    viewerId,
+    snapshotQuery,
+    snapshot,
+    error,
+    originalConditionItems,
+    pendingProof,
+    terminal,
+    canReviewCandidateProposals,
+    canProposeConditionEdit,
+    candidateOpen,
+    setCandidateOpen,
+    underfilledOpen,
+    setUnderfilledOpen,
+    conditionEditOpen,
+    setConditionEditOpen,
+    conditionEditSubmitting,
+    conditionEditError,
+    proofReviewOpen,
+    setProofReviewOpen,
+    decideUnderfilled,
+    openChat,
+    selectApplication,
+    selectTeam,
+    cancel,
+    reviewProof,
+    submitProofReview,
+    submitConditionEdit,
+  };
+}

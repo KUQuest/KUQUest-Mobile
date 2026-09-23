@@ -4,11 +4,11 @@ import { useAuthEnvironmentStore } from "@/features/auth/authEnvironmentStore";
 import {
   questWorkflow,
   type QuestFixtureAction,
-} from "@/features/questBoard/questWorkflow";
+} from "@/features/questBoard/workflow/questWorkflow";
 import type {
   QuestAction,
   QuestDetailState,
-} from "@/features/questBoard/types";
+} from "@/features/questBoard/domain/types";
 
 import {
   ROLEPLAY_SCENARIO,

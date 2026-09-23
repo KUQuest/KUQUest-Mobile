@@ -3,10 +3,7 @@ import type {
   ChatConversation,
   LocalizedText,
 } from "@/features/chat/chatTypes";
-import {
-  DEFAULT_PROTOTYPE_VIEWER_ID,
-  PROTOTYPE_NOW,
-} from "../domain/constants";
+import { DEFAULT_PROTOTYPE_VIEWER_ID, PROTOTYPE_NOW } from "./constants";
 
 export interface FixtureChatMessageSeed {
   id: string;

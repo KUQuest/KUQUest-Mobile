@@ -3,7 +3,7 @@ import type { LucideIcon } from "lucide-react-native";
 import { Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { colors } from "@/theme/colors";
-import styles from "../createQuestStyles";
+import styles from "./createQuestStyles";
 
 export function SectionHeading({
   icon: Icon,

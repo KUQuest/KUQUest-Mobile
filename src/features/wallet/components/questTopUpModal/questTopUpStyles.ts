@@ -1,0 +1,167 @@
+import { spacing } from "@/theme/spacing";
+import { fontFamily } from "@/theme/typography";
+
+export const questTopUpLayout = {
+  topUpSurface: {
+    flex: 1,
+    paddingHorizontal: spacing.px20,
+    width: "100%",
+  },
+  topUpFlow: {
+    alignSelf: "center",
+    flex: 1,
+    maxWidth: 640,
+    width: "100%",
+  },
+  topUpFlowContent: {
+    flex: 1,
+  },
+  modalHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    minHeight: 56,
+    marginBottom: spacing.sm,
+  },
+  modalHeaderCopy: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: spacing.px10,
+  },
+  modalTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: 20,
+    lineHeight: 26,
+  },
+  modalCloseButton: {
+    alignItems: "center",
+    borderRadius: 9999,
+    height: 48,
+    justifyContent: "center",
+    marginLeft: spacing.sm,
+    width: 48,
+  },
+  modalBackButton: {
+    alignItems: "center",
+    borderRadius: 9999,
+    height: 48,
+    justifyContent: "center",
+    marginRight: spacing.xs,
+    width: 48,
+  },
+  modalScroll: "shrink",
+  topUpScroll: "flex-1",
+  topUpContent: "gap-ku-md pb-ku-md",
+  flowIntro: {
+    gap: spacing.xs,
+  },
+  flowTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: 20,
+    lineHeight: 26,
+  },
+  flowDescription: {
+    fontFamily: fontFamily.regular,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  amountLabel: {
+    fontFamily: fontFamily.semiBold,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  amountField: {
+    alignItems: "center",
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    minHeight: 64,
+    paddingHorizontal: spacing.md,
+  },
+  amountCurrency: {
+    fontFamily: fontFamily.bold,
+    fontSize: 24,
+    lineHeight: 30,
+  },
+  amountInput: {
+    flex: 1,
+    fontFamily: fontFamily.bold,
+    fontSize: 24,
+    lineHeight: 30,
+    minHeight: 60,
+    paddingHorizontal: spacing.sm,
+    textAlign: "right",
+  },
+  quickAmounts: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  quickAmount: {
+    alignItems: "center",
+    borderRadius: 12,
+    borderWidth: 1,
+    flexBasis: "23%",
+    flexGrow: 1,
+    justifyContent: "center",
+    minHeight: 48,
+    paddingHorizontal: spacing.sm,
+  },
+  quickAmountText: {
+    fontFamily: fontFamily.semiBold,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  continueButton: {
+    alignItems: "center",
+    borderRadius: 9999,
+    justifyContent: "center",
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+  },
+  continueButtonDisabled: {
+    borderWidth: 1,
+  },
+  continueButtonText: {
+    fontFamily: fontFamily.semiBold,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  promptPayCard: {
+    alignItems: "center",
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: spacing.md,
+  },
+  qrFrame: {
+    alignItems: "center",
+    borderRadius: 12,
+    justifyContent: "center",
+    padding: spacing.px12,
+  },
+  promptPayPrototype: {
+    fontFamily: fontFamily.semiBold,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: spacing.px12,
+    textAlign: "center",
+  },
+  promptPayAmount: {
+    alignItems: "center",
+    borderTopWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: spacing.md,
+    paddingTop: spacing.px12,
+    width: "100%",
+  },
+  promptPayAmountLabel: {
+    fontFamily: fontFamily.semiBold,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  promptPayAmountValue: {
+    fontFamily: fontFamily.bold,
+    fontSize: 19,
+    lineHeight: 24,
+  },
+} as const;

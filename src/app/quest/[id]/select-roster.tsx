@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 
-import SelectRosterScreen from "@/features/questBoard/SelectRosterScreen";
+import SelectRosterScreen from "@/features/questBoard/roster/SelectRosterScreen";
 import { getRouteParam } from "@/utils/navigation";
 
 export default function SelectRosterRoute() {

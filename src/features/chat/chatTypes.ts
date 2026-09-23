@@ -2,7 +2,7 @@ import type { SupportedLocale } from "@/locales/locale";
 import type {
   QuestStatus,
   WorkConversationCapability,
-} from "../questBoard/types";
+} from "../questBoard/domain/types";
 
 export type LocalizedText = Record<SupportedLocale, string>;
 

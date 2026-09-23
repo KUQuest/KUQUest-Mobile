@@ -1,6 +1,6 @@
 import { Pressable, Text } from "@/tw";
 import { cn } from "@/tw/cn";
-import styles from "../createQuestStyles";
+import styles from "./createQuestStyles";
 
 type ReviewActionButtonProps = {
   label: string;

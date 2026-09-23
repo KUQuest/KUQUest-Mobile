@@ -5,7 +5,7 @@ import { Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { createQuestMessages } from "@/locales/createQuestMessages";
 import { colors } from "@/theme/colors";
-import styles from "../createQuestStyles";
+import styles from "./createQuestStyles";
 import type { Step } from "../createQuestTypes";
 
 export function CreateQuestHeader({

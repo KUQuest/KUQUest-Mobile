@@ -16,7 +16,7 @@ import {
 } from "@/api/fileUpload";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { getRouteParam } from "@/utils/navigation";
-import { liveQuestService } from "@/features/questBoard/liveQuestService";
+import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import { useLocale } from "@/features/preferences/localeStore";
 import { chatMessages } from "@/locales/chatMessages";
 import type { ChatConversation, ChatRouteParams } from "./chatTypes";

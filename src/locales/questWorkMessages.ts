@@ -24,7 +24,6 @@ export interface QuestWorkMessages {
   editUpdated: string;
   actionUnavailable: string;
   proofCta: string;
-  proofPlaceholder: string;
   confirmationCta: string;
   confirmationPlaceholder: string;
   archiveDescription: string;
@@ -63,7 +62,6 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     editUpdated: "Your edit response was sent.",
     actionUnavailable: "This action is not available for your Assignment.",
     proofCta: "Proof submission",
-    proofPlaceholder: "Proof submission will open when this action is enabled.",
     confirmationCta: "Confirm completion",
     confirmationPlaceholder:
       "Completion confirmation will open when this action is enabled.",
@@ -101,7 +99,6 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     editUpdated: "ส่งการตอบกลับการแก้ไขแล้ว",
     actionUnavailable: "การดำเนินการนี้ไม่พร้อมใช้งานสำหรับการมอบหมายของคุณ",
     proofCta: "ส่งหลักฐาน",
-    proofPlaceholder: "หน้าส่งหลักฐานจะแสดงเมื่อเปิดใช้การดำเนินการนี้",
     confirmationCta: "ยืนยันการเสร็จสิ้น",
     confirmationPlaceholder:
       "หน้ายืนยันการเสร็จสิ้นจะแสดงเมื่อเปิดใช้การดำเนินการนี้",

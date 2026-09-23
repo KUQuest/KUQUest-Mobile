@@ -6,9 +6,9 @@ import { Text, View } from "@/tw";
 
 import type { CreateQuestMessages } from "@/locales/createQuestMessages";
 import type { CompletionState } from "../createQuestTypes";
-import type { CreateQuestFlowMode } from "../createQuestWorkflow";
-import { isServerEditMode } from "../createQuestWorkflow";
-import styles from "../createQuestStyles";
+import type { CreateQuestFlowMode } from "../workflow/createQuestWorkflow";
+import { isServerEditMode } from "../workflow/createQuestWorkflow";
+import styles from "./createQuestStyles";
 
 export function CreateQuestCompletionState({
   completedState,

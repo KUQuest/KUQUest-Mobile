@@ -128,6 +128,16 @@ export interface QuestBoardMessages {
   notNeeded: string;
   candidateMode: string;
   candidate: string;
+  selectRosterTitle: string;
+  confirmSelectCandidateTitle: string;
+  confirmSelectCandidateMessage: string;
+  confirmSelectTeamTitle: string;
+  confirmSelectTeamMessage: string;
+  confirmRejectCandidateTitle: string;
+  confirmRejectTeamTitle: string;
+  confirmRejectMessage: string;
+  noSelectionNeeded: string;
+  actionFailedTitle: string;
   firstCome: string;
   reviewCandidates: string;
   applyForReview: string;
@@ -424,6 +434,18 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     notNeeded: "Not needed",
     candidateMode: "Candidate mode",
     candidate: "Candidate",
+    selectRosterTitle: "Select Roster",
+    confirmSelectCandidateTitle: "Select this candidate?",
+    confirmSelectCandidateMessage:
+      "This assigns the Quest to them and automatically rejects every other applicant. This can't be undone.",
+    confirmSelectTeamTitle: "Select this team?",
+    confirmSelectTeamMessage:
+      "This assigns the Quest to every team member and automatically rejects every other team. This can't be undone.",
+    confirmRejectCandidateTitle: "Reject this candidate?",
+    confirmRejectTeamTitle: "Reject this team?",
+    confirmRejectMessage: "They will no longer be considered for this Quest.",
+    noSelectionNeeded: "This Quest fills automatically — no selection needed.",
+    actionFailedTitle: "Action failed",
     firstCome: "First-come, first-served",
     reviewCandidates: "Review candidates",
     applyForReview: "Apply for review",
@@ -794,6 +816,18 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     notNeeded: "ไม่ต้องมี",
     candidateMode: "รูปแบบการคัดเลือก",
     candidate: "คัดเลือก",
+    selectRosterTitle: "คัดเลือกผู้สมัคร",
+    confirmSelectCandidateTitle: "เลือกผู้สมัครคนนี้หรือไม่",
+    confirmSelectCandidateMessage:
+      "การเลือกจะมอบหมายเควสต์ให้ผู้สมัครคนนี้และปฏิเสธผู้สมัครคนอื่นโดยอัตโนมัติ ไม่สามารถย้อนกลับได้",
+    confirmSelectTeamTitle: "เลือกทีมนี้หรือไม่",
+    confirmSelectTeamMessage:
+      "การเลือกจะมอบหมายเควสต์ให้สมาชิกทุกคนในทีมนี้และปฏิเสธทีมอื่นโดยอัตโนมัติ ไม่สามารถย้อนกลับได้",
+    confirmRejectCandidateTitle: "ปฏิเสธผู้สมัครคนนี้หรือไม่",
+    confirmRejectTeamTitle: "ปฏิเสธทีมนี้หรือไม่",
+    confirmRejectMessage: "ผู้สมัครนี้จะไม่ถูกพิจารณาสำหรับเควสต์นี้อีก",
+    noSelectionNeeded: "เควสต์นี้รับผู้ทำงานอัตโนมัติ ไม่ต้องคัดเลือก",
+    actionFailedTitle: "การดำเนินการล้มเหลว",
     firstCome: "มาก่อนได้ก่อน",
     reviewCandidates: "ตรวจสอบผู้สมัคร",
     applyForReview: "สมัครเพื่อรอการคัดเลือก",

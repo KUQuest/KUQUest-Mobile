@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 
-import HirerQuestManageScreen from "@/features/questBoard/HirerQuestManageScreen";
+import HirerQuestManageScreen from "@/features/questBoard/manage/HirerQuestManageScreen";
 import { getRouteParam } from "@/utils/navigation";
 
 export default function HirerQuestManageRoute() {

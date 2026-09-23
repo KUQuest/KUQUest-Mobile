@@ -12,8 +12,8 @@ import { Select } from "@/components/ui/Select";
 import { TextArea } from "@/components/ui/TextArea";
 import { createQuestMessages } from "@/locales/createQuestMessages";
 import { colors } from "@/theme/colors";
-import styles from "../createQuestStyles";
-import type { QuestDraft } from "../createQuestModel";
+import styles from "./createQuestStyles";
+import type { QuestDraft } from "../domain/createQuestModel";
 import { SectionHeading } from "./SectionHeading";
 
 export function QuestDetailsStep({

@@ -23,14 +23,12 @@ import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 
 import { StateView } from "@/components/ui/StateView";
-import { QuestBoardSkeleton } from "@/features/questBoard/components/QuestBoardStates";
+import { QuestBoardSkeleton } from "@/features/questBoard/board/components/QuestBoardStates";
 import { useHirerHomeQuery } from "./api/homeQueries";
 import { HirerQuestProgressCard } from "./components/HirerQuestProgressCard";
 import { HirerQuestRosterModal } from "./components/HirerQuestRosterModal";
-import {
-  hirerHomeQuestFixtures,
-  type LiveHirerQuestCardData,
-} from "./hirerHomeData";
+import { hirerHomeQuestFixtures } from "./hirerHomeData";
+import type { LiveHirerQuestCardData } from "./hirerHomeTypes";
 import { hirerHomeMessages } from "./hirerHomeMessages";
 import { hirerHomeStyles as styles } from "./hirerHomeStyles";
 export default function HomeScreen() {

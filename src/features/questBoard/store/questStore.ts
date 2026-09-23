@@ -1,6 +1,6 @@
 import { createStore, type StoreApi } from "zustand/vanilla";
 
-import type { QuestDetailState } from "../types";
+import type { QuestDetailState } from "../domain/types";
 
 export interface QuestStoreState {
   quests: Record<string, QuestDetailState>;

@@ -59,7 +59,7 @@ reason to weaken either contract.
 - `src/app/quest/[id]/work.tsx` — Worker Work Hub: one page per Quest for status, inline proof submission, completion, edit responses, conditions, and chat.
 - `src/app/quest/[id]/proof.tsx` — Hirer-side proof screen; in the Worker workspace it redirects to the Work Hub, where proof is submitted inline.
 - `src/app/quest/[id]/inquiry/[conversationId].tsx` — Candidate Inquiry conversation detail.
-- `src/app/onboarding/index.tsx` — Academic Registration entry.
+- Quest Board implementation and deterministic local states: `src/features/questBoard/board/QuestBoardScreen.tsx` and `src/features/questBoard/fixtures/questBoardHarness.ts`.
 - `src/app/profile/edit/index.tsx` and `src/app/profile/edit/[section].tsx` — Profile editing.
 - `src/app/settings.tsx` — Settings.
 - `src/app/report.tsx` — Report flow.
@@ -79,7 +79,11 @@ The route tree currently has no dedicated route file for Sent Work, Wallet/Conve
 - `onboarding/` — Academic Registration validation, steps, persistence coordinator, inputs/selects/checkbox/file-size modal.
 - `questBoard/` — Quest Board, Quest Detail, Quest lifecycle adapter, workflow projections, fixtures, prototype harness, proof/team/candidate/partial-consent sheets.
 - `myQuests/` — Hirer My Quests projections, status views, funding summary integration, and the shared Worker snapshot query used by `workerWork/`.
-- `createQuest/` — three-step Quest draft model, persistence, publish checks, schedule/location/proof/funding UI.
+- `createQuest/` — the three-step Quest draft, publish, and server-edit flow.
+  `domain/` owns draft rules; `api/` owns queries and Quest V2 DTO adapters;
+  `presentation/` owns view mapping and localized validation; `workflow/` owns
+  screen and wizard orchestration; `draft/`, `publish/`, and `edit/` own their
+  respective lifecycles; `components/teamSetup/` owns setup and logistics UI.
 - `chat/` — Conversation inbox, Work Conversation, messages, attachments, read state, loading states.
 - `profile/` — Student Profile, public data adapters, demo data, tabs, reputation and profile components.
 - `profileEdit/` — editable basics, Experience, Portfolio, Certificates, validation and save behavior.
@@ -97,14 +101,13 @@ The route tree currently has no dedicated route file for Sent Work, Wallet/Conve
 ### Shared and transport layer
 
 - `src/api/` — `ApiClient`, request/error boundary, Zod/API contracts, `StudentApi`, `ProfileApi`. Network behavior belongs here, not in screen render code.
-- `src/components/ui/` — shared UI primitives, loading/placeholder/button, TopBar, Quest Funding Summary, Prototype Menu.
+- `src/components/ui/` — shared UI primitives, loading/placeholder/button, TopBar, and Prototype Menu.
 - `src/components/navigation/` — BottomNav; `src/features/profile/components/ProfileTopBar.tsx` owns profile top chrome. Both consume navigation state from `src/features/navigation/navigationUiStore.ts`.
 - `src/components/layout/` — shared screen roots and safe-area ownership (`ScreenLayout`).
-- `src/domain/` — cross-slice domain primitives; `satang.ts` owns Integer Satang parsing and display.
+- `src/domain/` — cross-slice domain primitives; `questLifecycle.ts` owns shared Quest status and next-action values and predicates, while `satang.ts` owns Integer Satang parsing and display.
 - `src/locales/` — Thai/English dictionaries plus `locale.ts` (`SupportedLocale`, `DEFAULT_LOCALE`, storage key); user-visible strings belong here. Locale state lives in `src/features/preferences/localeStore.ts`.
 - `src/theme/` — colors, spacing, typography, layout/profile metrics.
 - `src/tw/` — NativeWind primitives and class-name/image/animation helpers.
-- `src/data/questPrototype/` — prototype data entry point.
 - `src/global.css` — global NativeWind/CSS setup.
 - `src/infrastructure/storage/` — the persistence boundary. `keyValueStorage.ts` exports the `KeyValueStorage` interface and the SecureStore-backed `secureStorage` adapter. Feature code persists through an adapter, not through `expo-secure-store` directly.
 - `src/app/providers/` — `QueryProvider` and `createQueryClient`: TanStack Query owns server state, including focus/online integration for React Native.
@@ -112,15 +115,16 @@ The route tree currently has no dedicated route file for Sent Work, Wallet/Conve
 
 ## Quest implementation seams
 
-For Quest behavior, follow the path instead of guessing:
+For Quest behavior, follow the owning subfeature path instead of guessing:
 
-`route → feature screen → questWorkflow → questFixtureAdapter → questFixtures/types`.
+`route → feature screen/hook → API/query or workflow projection → domain/presentation`.
 
-- `src/features/questBoard/types.ts` holds transport/domain types and currently includes explicit compatibility values.
-- `questFixtureAdapter.ts` is the deterministic local state/action adapter used by the prototype and many tests.
-- `questWorkflow.ts` projects adapter state into Board, Detail, My Quests, settlement, conversation capability, and action surfaces.
-- `questBoardHarness.ts` exposes Board preview states: populated, loading, empty, error, pending, accepted, full, and closed.
-- `questFixtures.ts` owns seeded scenario data; it is test/prototype evidence, not proof that the production API supports every scenario.
+- `src/features/questBoard/domain/types.ts` owns Quest domain types and compatibility values; `src/features/questBoard/live/liveQuestTypes.ts` owns live transport snapshots and capabilities.
+- `src/features/questBoard/api/questBoardQueries.ts` and `src/features/questBoard/live/liveQuestService.ts` own production query/service boundaries.
+- `src/features/questBoard/fixtures/adapters/questFixtureAdapter.ts` is the deterministic local state/action adapter used by prototype flows and tests.
+- `src/features/questBoard/workflow/questWorkflow.ts` projects fixture state into Board, Detail, My Quests, settlement, conversation capability, and action surfaces.
+- `src/features/questBoard/fixtures/questBoardHarness.ts` exposes Board preview states: populated, loading, empty, error, pending, accepted, full, and closed.
+- `src/features/questBoard/fixtures/questFixtures.ts` owns seeded scenario data; it is test/prototype evidence, not proof that the production API supports every scenario.
 - `src/components/ui/prototypeMenuData.ts` and `PrototypeMenu.tsx` own the prototype scenario/persona menu.
 
 When a behavior exists only in fixtures, label it as prototype coverage. Do not present it as a production API guarantee.

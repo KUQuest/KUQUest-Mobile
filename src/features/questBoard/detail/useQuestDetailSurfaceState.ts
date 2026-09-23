@@ -1,6 +1,6 @@
 import { useCallback, useReducer } from "react";
 
-import type { QuestJoinStatus } from "../questRoute";
+import type { QuestJoinStatus } from "./questDetailRoute";
 
 export interface QuestDetailSurfaceState {
   liveAction: string | null;

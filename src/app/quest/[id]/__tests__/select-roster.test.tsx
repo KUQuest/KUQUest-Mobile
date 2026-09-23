@@ -5,8 +5,8 @@ import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import { studentApi } from "@/api/StudentApi";
 import { authService } from "@/features/auth/AuthService";
-import { liveQuestService } from "@/features/questBoard/liveQuestService";
-import type { LiveQuestSnapshot } from "@/features/questBoard/liveQuestService";
+import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
+import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestService";
 import SelectRosterRoute from "../select-roster";
 
 const mockBack = jest.fn();
@@ -29,8 +29,10 @@ jest.mock("@/api/StudentApi", () => ({
   },
 }));
 
-jest.mock("@/features/questBoard/liveQuestService", () => {
-  const actual = jest.requireActual("@/features/questBoard/liveQuestService");
+jest.mock("@/features/questBoard/live/liveQuestService", () => {
+  const actual = jest.requireActual(
+    "@/features/questBoard/live/liveQuestService"
+  );
   return {
     ...actual,
     liveQuestService: {
@@ -226,6 +228,60 @@ describe("SelectRosterRoute", () => {
     await waitFor(() => {
       expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledTimes(2);
     });
+    expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  it("shows the rejection error and refetches when team rejection fails", async () => {
+    const base = createSnapshot();
+    const snapshot = createSnapshot({
+      participation: "GROUP",
+      teams: [
+        {
+          id: "team-1",
+          questId: "quest-1",
+          leaderId: "leader-1",
+          name: "Muralists",
+          headcount: 3,
+          state: "TEAM_SUBMITTED",
+          joinCode: null,
+          joinCodeExpiresAt: null,
+          members: [{ memberId: "leader-1", joinedAt: "2026-09-01T00:00:00Z" }],
+          submission: null,
+          createdAt: "2026-09-01T00:00:00Z",
+        },
+      ],
+      capabilities: { ...base.capabilities, canRejectTeam: true },
+    });
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
+    const failureMessage = "The team could not be rejected";
+    (liveQuestService.rejectCandidateTeam as jest.Mock).mockRejectedValue(
+      new Error(failureMessage)
+    );
+    const alertSpy = jest.spyOn(Alert, "alert");
+
+    const { getByTestId, getByText } = await renderWithQueryClient(
+      <SelectRosterRoute />
+    );
+
+    await waitFor(() => {
+      expect(getByText("Nina Candidate")).toBeTruthy();
+    });
+
+    fireEvent.press(getByTestId("select-roster-team-team-1-reject"));
+    const buttons = alertSpy.mock.calls[alertSpy.mock.calls.length - 1][2];
+    const confirm = buttons?.find((button) => button.style === "destructive");
+    confirm?.onPress?.();
+
+    await waitFor(() => {
+      expect(liveQuestService.rejectCandidateTeam).toHaveBeenCalledWith(
+        "quest-1",
+        "team-1",
+        expect.any(String)
+      );
+      expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledTimes(2);
+      expect(alertSpy).toHaveBeenCalledTimes(2);
+    });
+    expect(alertSpy.mock.calls[1]?.[1]).toBe(failureMessage);
     expect(mockBack).not.toHaveBeenCalled();
   });
 

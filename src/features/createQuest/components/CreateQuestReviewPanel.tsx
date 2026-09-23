@@ -1,11 +1,11 @@
 import { useState } from "react";
 
-import type { QuestPublishCheck } from "@/features/questBoard/types";
-import { QuestTopUpModal } from "@/features/wallet/components/QuestFundingSummary";
+import type { QuestPublishCheck } from "@/features/questBoard/domain/types";
+import { QuestTopUpModal } from "@/features/wallet/components/QuestTopUpModal";
 import type { CreateQuestMessages } from "@/locales/createQuestMessages";
 import type { SupportedLocale } from "@/locales/locale";
 
-import type { CreateQuestReviewView } from "../createQuestPresentation";
+import type { CreateQuestReviewView } from "../presentation/createQuestPresentation";
 import { QuestSetupOverview } from "./QuestSetupOverview";
 import { ReviewStep } from "./ReviewStep";
 

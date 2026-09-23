@@ -1,6 +1,6 @@
 import type { PrototypePersonaId } from "@/components/ui/prototypeMenuData";
-import type { QuestFixtureResult } from "@/features/questBoard/questFixtureAdapter";
-import type { QuestDetailState } from "@/features/questBoard/types";
+import type { QuestFixtureResult } from "@/features/questBoard/fixtures/adapters/questFixtureAdapter";
+import type { QuestDetailState } from "@/features/questBoard/domain/types";
 
 export const ROLEPLAY_SCENARIOS = [
   {

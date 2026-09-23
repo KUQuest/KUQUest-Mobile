@@ -11,7 +11,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { PrototypePersonaId } from "@/components/ui/prototypeMenuData";
-import { QuestTeamStatus } from "@/features/questBoard/types";
+import { QuestTeamStatus } from "@/features/questBoard/domain/types";
 import { useLocale } from "@/features/preferences/localeStore";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";

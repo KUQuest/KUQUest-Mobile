@@ -7,10 +7,10 @@ import { cn } from "@/tw/cn";
 import { Pressable, Text, View } from "@/tw";
 import type { CreateQuestMessages } from "@/locales/createQuestMessages";
 
-import type { CreateQuestFlowMode } from "../createQuestWorkflow";
-import { isServerEditMode } from "../createQuestWorkflow";
+import type { CreateQuestFlowMode } from "../workflow/createQuestWorkflow";
+import { isServerEditMode } from "../workflow/createQuestWorkflow";
 import type { CompletionState, Step } from "../createQuestTypes";
-import styles from "../createQuestStyles";
+import styles from "./createQuestStyles";
 import { ReviewActionButton } from "./ReviewActionButton";
 
 export function CreateQuestActionBar({
@@ -66,7 +66,7 @@ export function CreateQuestActionBar({
             disabled: isSaving || cancelState === "cancelling",
           }}
           className={cn(
-            "min-h-[44px] items-center justify-center rounded-[12px] border border-ku-danger px-ku-12",
+            "min-h-[48px] items-center justify-center rounded-[12px] border border-ku-danger px-ku-12",
             stacked ? "w-full" : "flex-1"
           )}
           disabled={isSaving || cancelState === "cancelling"}
@@ -84,7 +84,11 @@ export function CreateQuestActionBar({
         <Button
           disabled={isSaving}
           onPress={onNext}
-          className={styles.nextButtonFull}
+          className={
+            editingServerQuest && !stacked
+              ? styles.nextButtonRow
+              : styles.nextButtonFull
+          }
           accessibilityLabel={nextLabel}
         >
           <View className={styles.buttonContent}>

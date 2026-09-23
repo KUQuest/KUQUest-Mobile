@@ -7,14 +7,17 @@ import {
 } from "lucide-react-native";
 
 import { colors } from "@/theme/colors";
+import { isTerminalStatus } from "@/domain/questLifecycle";
 import type { GroupQuestMessages } from "@/locales/groupQuestMessages";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 import type { SupportedLocale } from "@/locales/locale";
-import type { QuestDetailBodyProps } from "../components/QuestDetailBody";
-import type { QuestDetailSheetsProps } from "../components/QuestDetailSheets";
-import type { PartialGroupStartVoter } from "../components/PartialGroupStartConsentSheet";
-import type { TeamDirectoryMember } from "../components/TeamAssembleSheet";
-import { getQuestRewardSatang } from "../questWorkflow";
+import type { QuestDetailBodyProps } from "./components/QuestDetailBody";
+import type { QuestDetailSheetsProps } from "./components/QuestDetailSheets";
+import type {
+  PartialGroupStartVoter,
+  TeamDirectoryMember,
+} from "../teamAssemble/types";
+import { getQuestRewardSatang } from "../presentation/questBoardViewData";
 import {
   MAX_QUEST_IMAGES,
   QuestCandidateMode,
@@ -25,8 +28,8 @@ import {
   QuestTeamStatus,
   type QuestBoardQuest,
   type QuestDetailState,
-} from "../types";
-import type { QuestDetailProjection } from "../questDetailProjection";
+} from "../domain/types";
+import type { QuestDetailProjection } from "./questDetailProjection";
 import type {
   QuestDetailReadModel,
   QuestDetailReadSource,
@@ -711,9 +714,7 @@ export function buildQuestDetailActionBar(
     canReview:
       facts.isPostView &&
       facts.isHirerView &&
-      (facts.quest.status === QuestStatus.QUEST_COMPLETED ||
-        facts.quest.status === QuestStatus.QUEST_CANCELLED ||
-        facts.quest.status === QuestStatus.QUEST_FAILED) &&
+      isTerminalStatus(facts.quest.status) &&
       facts.liveSnapshot?.capabilities.canCreateReview === true,
     canMessageOwner: facts.canMessageOwner,
     onMessageOwner: navigation.openMessageOwner,

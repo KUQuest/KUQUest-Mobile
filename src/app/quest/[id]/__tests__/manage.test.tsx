@@ -3,9 +3,9 @@ import { act, fireEvent } from "@testing-library/react-native";
 
 import { renderWithQueryClient as render } from "@/testing/queryTestUtils";
 
-import { liveQuestService } from "@/features/questBoard/liveQuestService";
+import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import type { QuestV2EditRequest } from "@/api/questV2Contracts";
-import type { LiveQuestSnapshot } from "@/features/questBoard/liveQuestService";
+import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestService";
 import HirerQuestManageRoute from "../manage";
 
 const mockPush = jest.fn();
@@ -35,8 +35,10 @@ jest.mock("react-native/Libraries/Modal/Modal", () => ({
   }) => (visible ? <>{children}</> : null),
 }));
 
-jest.mock("@/features/questBoard/liveQuestService", () => {
-  const actual = jest.requireActual("@/features/questBoard/liveQuestService");
+jest.mock("@/features/questBoard/live/liveQuestService", () => {
+  const actual = jest.requireActual(
+    "@/features/questBoard/live/liveQuestService"
+  );
   return {
     ...actual,
     liveQuestService: {
@@ -189,14 +191,13 @@ describe("HirerQuestManageRoute condition edit", () => {
       "Finish the mural in blue"
     );
     await fireEvent.press(view.getByTestId("quest-condition-submit"));
-    await act(async () => undefined);
 
     expect(liveQuestService.createEditRequest).toHaveBeenCalledWith(
       "quest-1",
       { condition: { items: ["Finish the mural in blue", "Clean the wall"] } },
       expect.any(String)
     );
-    expect(view.getByTestId("hirer-condition-edit-pending-title")).toBeTruthy();
+    await view.findByTestId("hirer-condition-edit-pending-title");
     expect(view.queryByTestId("hirer-manage-condition-edit")).toBeNull();
   });
 

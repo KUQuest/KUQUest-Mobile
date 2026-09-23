@@ -1,15 +1,18 @@
 import { useCallback } from "react";
 import { Alert } from "react-native";
 
-import type { TeamDirectoryMember } from "../components/TeamAssembleSheet";
-import type { QuestDetailState } from "../types";
+import type { TeamDirectoryMember } from "../teamAssemble/types";
+import type { QuestDetailState } from "../domain/types";
 import {
   QuestInvitationStatus,
   QuestParticipation,
   QuestTeamStatus,
-} from "../types";
-import type { QuestFixtureAction } from "../questFixtureAdapter";
-import { questWorkflow, type QuestActionResult } from "../questWorkflow";
+} from "../domain/types";
+import type { QuestFixtureAction } from "../fixtures/adapters/questFixtureAdapter";
+import {
+  questWorkflow,
+  type QuestActionResult,
+} from "../workflow/questWorkflow";
 import type {
   QuestDetailPreviewActionContext,
   QuestDetailPreviewActions,

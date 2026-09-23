@@ -1,4 +1,4 @@
-import QuestWorkScreen from "@/features/questBoard/QuestWorkScreen";
+import QuestWorkScreen from "@/features/questBoard/work/QuestWorkScreen";
 
 export default function QuestWorkRoute() {
   return <QuestWorkScreen />;

@@ -9,6 +9,7 @@ export interface CreateQuestMessages {
   helpLabel: string;
   helpTitle: string;
   helpDescription: string;
+  helpAction: string;
   missionInfo: string;
   teamSetup: string;
   review: string;
@@ -159,6 +160,8 @@ export interface CreateQuestMessages {
   discardDescription: string;
   discard: string;
   keepEditing: string;
+  unsavedTitle: string;
+  unsavedMessage: string;
   autosaveSaving: string;
   autosaveSaved: string;
   saveError: string;
@@ -232,6 +235,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       helpTitle: "Create a Quest",
       helpDescription:
         "Complete each step to define the Quest, choose whether one person or multiple people can join, select how applicants are accepted, and review the details before saving.",
+      helpAction: "OK",
       missionInfo: "Quest Info",
       teamSetup: "Team Setup",
       review: "Review",
@@ -400,6 +404,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         "Your draft is saved locally. Leave the form and continue later?",
       discard: "Leave",
       keepEditing: "Keep editing",
+      unsavedTitle: "Discard changes?",
+      unsavedMessage: "Your changes have not been saved.",
       autosaveSaving: "Saving draft…",
       autosaveSaved: "Draft saved",
       saveError: "We couldn't save this Quest draft on your device. Try again.",
@@ -509,6 +515,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       helpTitle: "สร้างเควสต์",
       helpDescription:
         "ทำตามแต่ละขั้นตอนเพื่อกำหนดรายละเอียด เลือกจำนวนผู้เข้าร่วม เลือกวิธีรับผู้สมัคร และตรวจสอบข้อมูลก่อนบันทึก",
+      helpAction: "ตกลง",
       missionInfo: "ข้อมูลเควสต์",
       teamSetup: "ตั้งค่าทีม",
       review: "ตรวจสอบ",
@@ -673,6 +680,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         "ฉบับร่างถูกบันทึกไว้ในอุปกรณ์ ออกจากแบบฟอร์มและทำต่อภายหลังได้",
       discard: "ออกจากหน้านี้",
       keepEditing: "แก้ไขต่อ",
+      unsavedTitle: "ละทิ้งการเปลี่ยนแปลงหรือไม่",
+      unsavedMessage: "การเปลี่ยนแปลงของคุณยังไม่ได้บันทึก",
       autosaveSaving: "กำลังบันทึกฉบับร่าง…",
       autosaveSaved: "บันทึกฉบับร่างแล้ว",
       saveError: "ไม่สามารถบันทึกฉบับร่างเควสต์ลงในอุปกรณ์ได้ ลองอีกครั้ง",
