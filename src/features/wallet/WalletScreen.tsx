@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import { useLocale } from "@/features/preferences/localeStore";
+import { useRoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
 import { walletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
@@ -47,6 +48,7 @@ export default function WalletScreen() {
   const router = useRouter();
   const { locale } = useLocale();
   const m = walletMessages[locale];
+  const { workspace } = useRoleWorkspace();
   const { width, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const metrics = getAppChromeMetrics(width, fontScale);
@@ -141,8 +143,10 @@ export default function WalletScreen() {
         onPress={() => router.push("/top-up")}
       />
 
-      {/* Balance Compartment Cards: Spending Balance & Money in Escrow (Swappable Separately) */}
+      {/* Balance compartments: role-specific balances, individually swappable */}
       <HirerBalanceCards
+        key={workspace}
+        isWorkerWorkspace={workspace === "worker"}
         balanceCardsHint={m.balanceCardsHint}
         earningsBalanceSatang={balances?.earningsBalanceSatang ?? 0}
         earningsDesc={m.earningsCardDesc}

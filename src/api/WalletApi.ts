@@ -40,6 +40,7 @@ export type TopUpQuote = z.infer<typeof topUpQuoteResponseSchema>["data"];
 
 export const topUpDataSchema = z.object({
   id: z.string().min(1),
+  internalReference: z.string().min(1),
   creditSatang: z.number().int().positive(),
   chargedFeeSatang: z.number().int().nonnegative(),
   chargedTaxSatang: z.number().int().nonnegative(),

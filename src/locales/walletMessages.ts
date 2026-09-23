@@ -33,6 +33,7 @@ export interface WalletMessages {
   topUpConfirmationTitle: string;
   promptPayQrCode: string;
   topUpCredit: string;
+  topUpBalanceUnavailable: string;
   topUpFee: string;
   topUpTax: string;
   topUpPaymentTotal: string;
@@ -159,6 +160,7 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     promptPayQrCode: "PromptPay QR Code",
     topUpConfirmationTitle: "Confirm top-up",
     topUpCredit: "Credit to Spending Balance",
+    topUpBalanceUnavailable: "Unable to load the current balance.",
     topUpFee: "Payment fee",
     topUpTax: "VAT",
     topUpPaymentTotal: "Payment total",
@@ -290,6 +292,7 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     promptPayQrCode: "PromptPay QR Code",
     topUpConfirmationTitle: "ยืนยันการเติมเงิน",
     topUpCredit: "เครดิตเข้ายอดเงินพร้อมใช้",
+    topUpBalanceUnavailable: "ไม่สามารถโหลดยอดเงินพร้อมใช้ปัจจุบันได้",
     topUpFee: "ค่าธรรมเนียมการชำระเงิน",
     topUpTax: "ภาษีมูลค่าเพิ่ม",
     topUpPaymentTotal: "ยอดชำระทั้งหมด",
@@ -324,11 +327,11 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     financeSubtitle: "การเงิน",
     amaWalletTitle: "Ama Wallet",
     sendMoneyAction: "เติมเงิน",
-    spendingBalanceCardTitle: "เงินพร้อมใช้",
+    spendingBalanceCardTitle: "เงินที่พร้อมใช้",
     spendingBalanceCardDesc: "ใช้จ้างงานได้ทันที",
     escrowCardTitle: "เงินที่พักไว้",
     escrowCardDesc: "รอจ่ายเมื่องานเสร็จ",
-    earningsCardTitle: "รายได้สะสม",
+    earningsCardTitle: "รายได้",
     earningsCardDesc: "รายได้จากการทำเควสต์",
     payoutCardTitle: "กำลังถอนเงิน",
     payoutCardDesc: "รอโอนเข้าบัญชีธนาคาร",

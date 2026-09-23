@@ -10,15 +10,23 @@ export interface TopUpSuccessStepProps {
   creditSatang: number;
   locale: SupportedLocale;
   onDone: () => void;
+  currentBalanceSatang: number | null;
+  transactionReference: string;
 }
 
 export function TopUpSuccessStep({
   creditSatang,
   locale,
   onDone,
+  currentBalanceSatang,
+  transactionReference,
 }: TopUpSuccessStepProps) {
   const m = walletMessages[locale];
   const credit = formatSatang(creditSatang, locale, "exact");
+  const currentBalance =
+    currentBalanceSatang === null
+      ? m.topUpBalanceUnavailable
+      : formatSatang(currentBalanceSatang, locale, "exact");
 
   return (
     <View
@@ -47,6 +55,27 @@ export function TopUpSuccessStep({
         <Text className="mt-ku-xs font-ku-bold text-ku-display-small text-ku-primary-deep">
           {credit}
         </Text>
+        <View className="mt-ku-sm w-full border-t border-ku-border-subtle pt-ku-sm">
+          <Text className="font-ku-medium text-ku-meta text-ku-text-secondary">
+            {m.spendingBalance}
+          </Text>
+          <Text
+            className="mt-ku-2 font-ku-semibold text-ku-control text-ku-text-strong"
+            testID="top-up-current-balance"
+          >
+            {currentBalance}
+          </Text>
+          <Text className="mt-ku-xs font-ku-medium text-ku-meta text-ku-text-secondary">
+            {m.txReferenceLabel}
+          </Text>
+          <Text
+            className="mt-ku-2 w-full font-ku-regular text-[11px] text-ku-text-secondary"
+            selectable
+            testID="top-up-reference-value"
+          >
+            {transactionReference}
+          </Text>
+        </View>
       </View>
       <View className="mt-ku-sm w-full flex-row items-start gap-ku-sm rounded-[14px] bg-ku-surface-accent p-ku-sm">
         <ShieldCheck color={colors.success} size={18} strokeWidth={2.2} />

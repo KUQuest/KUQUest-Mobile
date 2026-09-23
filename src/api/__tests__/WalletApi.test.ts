@@ -62,6 +62,7 @@ describe("WalletApi", () => {
       success: true,
       data: {
         id: "topup-1",
+        internalReference: "top-up:topup-1",
         creditSatang: 50000,
         chargedFeeSatang: 400,
         chargedTaxSatang: 28,
@@ -105,6 +106,7 @@ describe("WalletApi", () => {
       paymentTotalSatang: 50428,
     });
     expect(topUp.topUpStatus).toBe("PENDING");
+    expect(topUp.internalReference).toBe("top-up:topup-1");
     expect(topUp.qrDataUrl).toContain("data:image/png;base64");
   });
 
@@ -113,6 +115,7 @@ describe("WalletApi", () => {
       success: true,
       data: {
         id: "topup-1",
+        internalReference: "top-up:topup-1",
         creditSatang: 10000,
         chargedFeeSatang: 0,
         chargedTaxSatang: 0,

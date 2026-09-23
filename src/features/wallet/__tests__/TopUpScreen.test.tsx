@@ -20,6 +20,7 @@ jest.mock("@/api/WalletApi", () => {
     ...original,
     walletApi: {
       quoteTopUp: jest.fn(),
+      getWallet: jest.fn(),
       createTopUp: jest.fn(),
       getTopUpStatus: jest.fn(),
       simulateTopUp: jest.fn(),
@@ -38,6 +39,7 @@ const mockQuote = {
 
 const mockTopUpRecord = {
   id: "topup-456",
+  internalReference: "top-up:topup-456",
   creditSatang: 10000,
   chargedFeeSatang: 0,
   chargedTaxSatang: 0,
@@ -52,6 +54,12 @@ const mockTopUpRecord = {
 describe("TopUpScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (walletApi.getWallet as jest.Mock).mockResolvedValue({
+      spendingBalanceSatang: 100_000,
+      earningsBalanceSatang: 0,
+      fundingReservedSatang: 0,
+      reservedForPayoutsSatang: 0,
+    });
     (walletApi.quoteTopUp as jest.Mock).mockResolvedValue(mockQuote);
     (walletApi.createTopUp as jest.Mock).mockResolvedValue(mockTopUpRecord);
   });
@@ -144,10 +152,16 @@ describe("TopUpScreen", () => {
     });
   });
 
-  it("handles status check and verified payment state", async () => {
+  it("shows refreshed balance and transaction reference after payment", async () => {
     (walletApi.getTopUpStatus as jest.Mock).mockResolvedValue({
       ...mockTopUpRecord,
       topUpStatus: "PAID",
+    });
+    (walletApi.getWallet as jest.Mock).mockResolvedValueOnce({
+      spendingBalanceSatang: 30_000,
+      earningsBalanceSatang: 0,
+      fundingReservedSatang: 0,
+      reservedForPayoutsSatang: 0,
     });
 
     const view = await renderWithQueryClient(<TopUpScreen />);
@@ -174,10 +188,17 @@ describe("TopUpScreen", () => {
         mockTopUpRecord.id,
         expect.objectContaining({ signal: expect.any(AbortSignal) })
       );
+      expect(walletApi.getWallet).toHaveBeenCalledTimes(1);
       expect(view.getByTestId("top-up-success-view")).toBeTruthy();
       expect(view.getByTestId("top-up-verified-badge")).toBeTruthy();
       expect(view.getByText("เติมเงินสำเร็จ")).toBeTruthy();
       expect(view.getByText("฿100.00")).toBeTruthy();
+      expect(view.getByTestId("top-up-current-balance")).toHaveTextContent(
+        "฿300.00"
+      );
+      expect(view.getByTestId("top-up-reference-value")).toHaveTextContent(
+        "top-up:topup-456"
+      );
       expect(view.getByTestId("top-up-done-btn")).toBeTruthy();
     });
 

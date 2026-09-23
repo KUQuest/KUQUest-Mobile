@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Platform } from "react-native";
 import {
   KeyboardAvoidingView,
@@ -21,15 +22,18 @@ import { TopUpConfirmationStep } from "./components/TopUpConfirmationStep";
 import { TopUpPromptPayStep } from "./components/TopUpPromptPayStep";
 import { TopUpSuccessStep } from "./components/TopUpSuccessStep";
 import {
+  walletKeys,
   useCreateTopUpMutation,
   useQuoteTopUpMutation,
   useSimulateTopUpMutation,
   useTopUpStatusQuery,
+  useWalletQuery,
 } from "./api/walletQueries";
 import { checkTopUpAmount, isQuoteExpired } from "./walletModule";
 
 export default function TopUpScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const { locale } = useLocale();
   const m = walletMessages[locale];
@@ -43,12 +47,18 @@ export default function TopUpScreen() {
   const [activeTopUp, setActiveTopUp] = useState<TopUpData | null>(null);
   const [paymentVerified, setPaymentVerified] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [currentBalanceSatang, setCurrentBalanceSatang] = useState<
+    number | null
+  >(null);
+  const [refreshingBalance, setRefreshingBalance] = useState(false);
   const quoteMutation = useQuoteTopUpMutation();
   const createMutation = useCreateTopUpMutation();
   const simulateMutation = useSimulateTopUpMutation();
+  const walletQuery = useWalletQuery(false);
   const statusQuery = useTopUpStatusQuery(activeTopUp?.id ?? null);
   const loading = quoteMutation.isPending || createMutation.isPending;
-  const checkingStatus = statusQuery.isFetching || simulateMutation.isPending;
+  const checkingStatus =
+    statusQuery.isFetching || simulateMutation.isPending || refreshingBalance;
   const amountCheck = checkTopUpAmount(amountStr);
   const isAmountValid = amountCheck.ok;
 
@@ -56,6 +66,7 @@ export default function TopUpScreen() {
     setQuote(null);
     setActiveTopUp(null);
     setPaymentVerified(false);
+    setCurrentBalanceSatang(null);
     setStatusMessage(null);
   };
 
@@ -108,9 +119,22 @@ export default function TopUpScreen() {
     }
   };
 
-  const applyPaymentStatus = (latest: TopUpData) => {
+  const applyPaymentStatus = async (latest: TopUpData) => {
     setActiveTopUp(latest);
     if (latest.topUpStatus === "PAID") {
+      setRefreshingBalance(true);
+      try {
+        const result = await walletQuery.refetch();
+        if (result.error) throw result.error;
+        setCurrentBalanceSatang(result.data?.spendingBalanceSatang ?? null);
+      } catch {
+        setCurrentBalanceSatang(null);
+      } finally {
+        setRefreshingBalance(false);
+      }
+      void queryClient.invalidateQueries({
+        queryKey: [...walletKeys.all, "transactions"],
+      });
       setPaymentVerified(true);
       setStatusMessage(m.paymentSuccess);
     } else {
@@ -124,7 +148,7 @@ export default function TopUpScreen() {
     try {
       const result = await statusQuery.refetch();
       if (result.error) throw result.error;
-      if (result.data) applyPaymentStatus(result.data);
+      if (result.data) await applyPaymentStatus(result.data);
     } catch (err: unknown) {
       setStatusMessage(err instanceof Error ? err.message : m.paymentFailed);
     }
@@ -135,7 +159,7 @@ export default function TopUpScreen() {
     setStatusMessage(null);
     try {
       const latest = await simulateMutation.mutateAsync(activeTopUp.id);
-      applyPaymentStatus(latest);
+      await applyPaymentStatus(latest);
     } catch (err: unknown) {
       setStatusMessage(err instanceof Error ? err.message : m.paymentFailed);
     }
@@ -231,6 +255,8 @@ export default function TopUpScreen() {
           ) : activeTopUp && paymentVerified ? (
             <TopUpSuccessStep
               creditSatang={activeTopUp.creditSatang}
+              currentBalanceSatang={currentBalanceSatang}
+              transactionReference={activeTopUp.internalReference}
               locale={locale}
               onDone={handleFinish}
             />
