@@ -35,11 +35,13 @@ interface HirerBalanceCardsProps {
   swapHint: string;
   hirerViewLabel: string;
   workerViewLabel: string;
+  isWorkerWorkspace: boolean;
   onTransferEarnings?: () => void;
   transferButtonLabel?: string;
 }
 
 export function HirerBalanceCards({
+  isWorkerWorkspace,
   spendingBalanceSatang,
   fundingReservedSatang,
   earningsBalanceSatang,
@@ -59,14 +61,32 @@ export function HirerBalanceCards({
   transferButtonLabel,
 }: HirerBalanceCardsProps) {
   const [card1Mode, setCard1Mode] = useState<"spending" | "earnings">(
-    "spending"
+    isWorkerWorkspace ? "earnings" : "spending"
   );
-  const [card2Mode, setCard2Mode] = useState<"escrow" | "payout">("escrow");
+  const [card2Mode, setCard2Mode] = useState<"escrow" | "payout">(
+    isWorkerWorkspace ? "payout" : "escrow"
+  );
 
   const [card1Anim] = useState(() => new Animated.Value(0));
   const [card2Anim] = useState(() => new Animated.Value(0));
   const isCard1Earnings = card1Mode === "earnings";
   const isCard2Payout = card2Mode === "payout";
+  const roleAccent = isWorkerWorkspace ? colors.terracottaDark : colors.primary;
+  const roleCardStyle = isWorkerWorkspace
+    ? {
+        backgroundColor: colors.surfaceTerracotta,
+        borderColor: colors.terracotta,
+      }
+    : undefined;
+  const roleTextStyle = isWorkerWorkspace
+    ? { color: colors.terracottaDark }
+    : undefined;
+  const roleActionStyle = isWorkerWorkspace
+    ? { backgroundColor: colors.terracottaDark }
+    : undefined;
+  const roleActionTextStyle = isWorkerWorkspace
+    ? { color: colors.onPrimary }
+    : undefined;
 
   const animateCard = (anim: Animated.Value, onMidpoint: () => void) => {
     Animated.timing(anim, {
@@ -156,7 +176,7 @@ export function HirerBalanceCards({
       {/* Top hint & Swap All bar */}
       <View className={styles.switcherBar}>
         <View className={styles.hintBadge}>
-          <ArrowRightLeft color={colors.primary} size={12} strokeWidth={2.4} />
+          <ArrowRightLeft color={roleAccent} size={12} strokeWidth={2.4} />
           <Text className={styles.hintText}>{balanceCardsHint}</Text>
         </View>
 
@@ -168,14 +188,14 @@ export function HirerBalanceCards({
               activeOpacity={0.7}
               onPress={onTransferEarnings}
               className={styles.transferShortcutBtn}
+              style={roleCardStyle}
               testID="hirer-balance-transfer-shortcut-btn"
             >
-              <ArrowRightLeft
-                color={colors.primaryDeep}
-                size={11}
-                strokeWidth={2.4}
-              />
-              <Text className={styles.transferShortcutBtnText}>
+              <ArrowRightLeft color={roleAccent} size={11} strokeWidth={2.4} />
+              <Text
+                className={styles.transferShortcutBtnText}
+                style={roleTextStyle}
+              >
                 {transferButtonLabel ?? "โอนรายได้"}
               </Text>
             </TouchableOpacity>
@@ -187,9 +207,12 @@ export function HirerBalanceCards({
             activeOpacity={0.7}
             onPress={toggleAll}
             className={styles.swapAllButton}
+            style={roleCardStyle}
             testID="hirer-balance-swap-all-btn"
           >
-            <Text className={styles.swapAllButtonText}>{swapAllButton}</Text>
+            <Text className={styles.swapAllButtonText} style={roleTextStyle}>
+              {swapAllButton}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -206,6 +229,7 @@ export function HirerBalanceCards({
             className={`${styles.card} ${
               isCard1Earnings ? styles.earningsCard : styles.spendingCard
             }`}
+            style={roleCardStyle}
           >
             <TouchableOpacity
               accessibilityHint={swapHint}
@@ -231,19 +255,15 @@ export function HirerBalanceCards({
                     testID="hirer-card-1-swap-btn"
                   >
                     <ArrowRightLeft
-                      color={colors.primaryDeep}
+                      color={roleAccent}
                       size={11}
                       strokeWidth={2.4}
                     />
                   </View>
                   {isCard1Earnings ? (
-                    <Sparkles
-                      color={colors.primary}
-                      size={18}
-                      strokeWidth={2}
-                    />
+                    <Sparkles color={roleAccent} size={18} strokeWidth={2} />
                   ) : (
-                    <Wallet color={colors.primary} size={18} strokeWidth={2} />
+                    <Wallet color={roleAccent} size={18} strokeWidth={2} />
                   )}
                 </View>
               </View>
@@ -251,11 +271,16 @@ export function HirerBalanceCards({
                 adjustsFontSizeToFit
                 numberOfLines={1}
                 className={styles.spendingAmount}
+                style={roleTextStyle}
                 testID="hirer-spending-balance"
               >
                 {formatSatang(currentCard1Amount, "en", "exact")}
               </Text>
-              <Text numberOfLines={1} className={styles.spendingDesc}>
+              <Text
+                numberOfLines={1}
+                className={styles.spendingDesc}
+                style={roleTextStyle}
+              >
                 {currentCard1Desc}
               </Text>
             </TouchableOpacity>
@@ -268,6 +293,7 @@ export function HirerBalanceCards({
                 activeOpacity={0.8}
                 onPress={onTransferEarnings}
                 className={styles.cardTransferBtn}
+                style={roleActionStyle}
                 testID="hirer-card1-transfer-btn"
               >
                 <ArrowRightLeft
@@ -275,7 +301,10 @@ export function HirerBalanceCards({
                   size={11}
                   strokeWidth={2.4}
                 />
-                <Text className={styles.cardTransferBtnText}>
+                <Text
+                  className={styles.cardTransferBtnText}
+                  style={roleActionTextStyle}
+                >
                   {transferButtonLabel ?? "โอนเข้าเงินพร้อมใช้"}
                 </Text>
               </TouchableOpacity>
@@ -296,6 +325,7 @@ export function HirerBalanceCards({
             accessibilityRole="button"
             activeOpacity={0.85}
             className={`${styles.card} ${styles.escrowCard}`}
+            style={roleCardStyle}
             onPress={toggleCard2}
             testID="hirer-card-2"
           >
@@ -314,15 +344,15 @@ export function HirerBalanceCards({
                   testID="hirer-card-2-swap-btn"
                 >
                   <ArrowRightLeft
-                    color={colors.textSecondary}
+                    color={roleAccent}
                     size={11}
                     strokeWidth={2.4}
                   />
                 </View>
                 {isCard2Payout ? (
-                  <Clock color={colors.primary} size={18} strokeWidth={2} />
+                  <Clock color={roleAccent} size={18} strokeWidth={2} />
                 ) : (
-                  <Lock color={colors.primary} size={18} strokeWidth={2} />
+                  <Lock color={roleAccent} size={18} strokeWidth={2} />
                 )}
               </View>
             </View>
@@ -330,11 +360,16 @@ export function HirerBalanceCards({
               adjustsFontSizeToFit
               numberOfLines={1}
               className={styles.escrowAmount}
+              style={roleTextStyle}
               testID="hirer-escrow-balance"
             >
               {formatSatang(currentCard2Amount, "en", "exact")}
             </Text>
-            <Text numberOfLines={1} className={styles.escrowDesc}>
+            <Text
+              numberOfLines={1}
+              className={styles.escrowDesc}
+              style={roleTextStyle}
+            >
               {currentCard2Desc}
             </Text>
           </TouchableOpacity>

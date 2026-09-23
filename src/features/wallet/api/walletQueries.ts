@@ -11,8 +11,9 @@ export const walletKeys = {
     [...walletKeys.all, "top-up-status", topUpId] as const,
 };
 
-export function useWalletQuery() {
+export function useWalletQuery(enabled = true) {
   return useQuery({
+    enabled,
     queryKey: walletKeys.detail(),
     queryFn: ({ signal }) => walletApi.getWallet({ signal }),
   });

@@ -7,6 +7,7 @@ import {
   resetNavigationVisibility,
   useNavigationUiStore,
 } from "@/features/navigation/navigationUiStore";
+import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
 
 const mockPush = jest.fn();
 jest.mock("expo-router", () => ({
@@ -85,10 +86,11 @@ const mockTransactions = [
   },
 ];
 
-describe("Hirer WalletScreen", () => {
+describe("WalletScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     resetNavigationVisibility();
+    useRoleWorkspaceStore.setState({ workspace: "hirer" });
     (walletApi.getWallet as jest.Mock).mockResolvedValue(mockBalances);
     (walletApi.getTransactionHistory as jest.Mock).mockResolvedValue({
       items: mockTransactions,
@@ -132,8 +134,12 @@ describe("Hirer WalletScreen", () => {
     // Balance cards
     expect(view.getByTestId("hirer-balance-cards")).toBeTruthy();
     expect(view.getByTestId("hirer-spending-balance")).toBeTruthy();
+    await waitFor(() => {
+      expect(view.getByText("฿2,450.00")).toBeTruthy();
+      expect(view.getByText("฿1,200.00")).toBeTruthy();
+    });
     expect(view.getByText("฿2,450.00")).toBeTruthy();
-    expect(view.getByText("เงินพร้อมใช้")).toBeTruthy();
+    expect(view.getByText("เงินที่พร้อมใช้")).toBeTruthy();
     expect(view.getByText("ใช้จ้างงานได้ทันที")).toBeTruthy();
 
     expect(view.getByTestId("hirer-escrow-balance")).toBeTruthy();
@@ -169,7 +175,7 @@ describe("Hirer WalletScreen", () => {
     // Initial state: Both in Hirer perspective
     expect(view.getByText("แตะการ์ดเพื่อสลับมุมมอง")).toBeTruthy();
     expect(view.getByText("สลับทั้งหมด")).toBeTruthy();
-    expect(view.getByText("เงินพร้อมใช้")).toBeTruthy();
+    expect(view.getByText("เงินที่พร้อมใช้")).toBeTruthy();
     expect(view.getByText("฿2,450.00")).toBeTruthy();
     expect(view.getByText("ใช้จ้างงานได้ทันที")).toBeTruthy();
     expect(view.getByText("เงินที่พักไว้")).toBeTruthy();
@@ -180,7 +186,7 @@ describe("Hirer WalletScreen", () => {
     fireEvent.press(view.getByTestId("hirer-card-1"));
 
     await waitFor(() => {
-      expect(view.getByText("รายได้สะสม")).toBeTruthy();
+      expect(view.getByText("รายได้")).toBeTruthy();
     });
     expect(view.getByText("฿4,000.00")).toBeTruthy();
     expect(view.getByText("รายได้จากการทำเควสต์")).toBeTruthy();
@@ -197,14 +203,14 @@ describe("Hirer WalletScreen", () => {
     expect(view.getByText("฿1,000.00")).toBeTruthy();
     expect(view.getByText("รอโอนเข้าบัญชีธนาคาร")).toBeTruthy();
     // Card 1 remains in Earnings
-    expect(view.getByText("รายได้สะสม")).toBeTruthy();
+    expect(view.getByText("รายได้")).toBeTruthy();
     expect(view.getByText("฿4,000.00")).toBeTruthy();
 
     // 3. Tap Card 1 again -> Card 1 swaps back to Spending balance while Card 2 stays in Payout
     fireEvent.press(view.getByTestId("hirer-card-1"));
 
     await waitFor(() => {
-      expect(view.getByText("เงินพร้อมใช้")).toBeTruthy();
+      expect(view.getByText("เงินที่พร้อมใช้")).toBeTruthy();
     });
     expect(view.getByText("฿2,450.00")).toBeTruthy();
     expect(view.getByText("กำลังถอนเงิน")).toBeTruthy();
@@ -214,9 +220,26 @@ describe("Hirer WalletScreen", () => {
     fireEvent.press(view.getByTestId("hirer-balance-swap-all-btn"));
 
     await waitFor(() => {
-      expect(view.getByText("รายได้สะสม")).toBeTruthy();
+      expect(view.getByText("รายได้")).toBeTruthy();
     });
     expect(view.getByText("เงินที่พักไว้")).toBeTruthy();
+  });
+  it("shows worker earnings and pending payout by default", async () => {
+    useRoleWorkspaceStore.setState({ workspace: "worker" });
+    const view = await renderWithQueryClient(<WalletScreen />);
+
+    await waitFor(() => {
+      expect(view.getByText("รายได้")).toBeTruthy();
+      expect(view.getByText("กำลังถอนเงิน")).toBeTruthy();
+      expect(view.getByText("฿4,000.00")).toBeTruthy();
+      expect(view.getByText("฿1,000.00")).toBeTruthy();
+    });
+    expect(view.getByText("฿4,000.00")).toBeTruthy();
+    expect(view.getByText("รายได้จากการทำเควสต์")).toBeTruthy();
+    expect(view.getByText("฿1,000.00")).toBeTruthy();
+    expect(view.getByText("รอโอนเข้าบัญชีธนาคาร")).toBeTruthy();
+    expect(view.queryByText("เงินที่พร้อมใช้")).toBeNull();
+    expect(view.queryByText("เงินที่พักไว้")).toBeNull();
   });
 
   it("filters transactions when a filter is chosen", async () => {
