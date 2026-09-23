@@ -100,4 +100,19 @@ describe("HirerQuestProgressCard", () => {
     fireEvent.press(getByTestId("hirer-quest-card-waiting-q4"));
     expect(onOpenDetails).toHaveBeenCalled();
   });
+  it("shows completed Quests at the final accessible progress step", async () => {
+    const { getByTestId, getByText } = await render(
+      <HirerQuestProgressCard
+        questId="q5"
+        title="Finished Quest"
+        status="QUEST_COMPLETED"
+        onOpenDetails={jest.fn()}
+      />
+    );
+
+    expect(getByText("ขั้นตอนที่ 5 จาก 5")).toBeTruthy();
+    expect(
+      getByTestId("hirer-quest-card-q5").props.accessibilityLabel
+    ).toContain("ขั้นตอนที่ 5 จาก 5");
+  });
 });
