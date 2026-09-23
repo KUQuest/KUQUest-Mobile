@@ -167,6 +167,7 @@ export function ProofReviewPanel({
                       >
                         <Image
                           accessibilityLabel={messages.proofReviewPreview}
+                          className={styles.questImageFeatured}
                           testID={`proof-review-image-${file.position}`}
                           contentFit="cover"
                           source={{ uri: fileUrl }}
