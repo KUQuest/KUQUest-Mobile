@@ -46,8 +46,8 @@ export interface HirerQuestProgressCardProps {
 }
 
 const progressSegmentColors = {
-  completed: "bg-ku-hirer-dark",
-  current: "bg-ku-hirer",
+  completed: "bg-ku-primary-dark",
+  current: "bg-ku-primary",
   upcoming: "bg-ku-text-muted",
   terminal: "bg-ku-danger",
 } as const;
@@ -137,12 +137,12 @@ export function HirerQuestProgressCard({
               label={tag}
               leadingIcon={
                 <BriefcaseBusiness
-                  color={colors.hirer}
+                  color={colors.primary}
                   size={12}
                   strokeWidth={2.2}
                 />
               }
-              textClassName={`${styles.tagText} text-ku-hirer-dark`}
+              textClassName={`${styles.tagText} text-ku-primary-dark`}
               tone="accent"
             />
           ) : (
@@ -153,12 +153,12 @@ export function HirerQuestProgressCard({
               styles.statusBadge,
               isTerminal
                 ? "border-ku-border-danger bg-ku-surface-danger"
-                : "border-ku-hirer-border bg-ku-hirer"
+                : "border-ku-primary-border bg-ku-primary"
             )}
             label={statusLabel}
             textClassName={cn(
               styles.statusLabel,
-              isTerminal ? "text-ku-danger-dark" : "text-ku-on-hirer"
+              isTerminal ? "text-ku-danger-dark" : "text-ku-on-primary"
             )}
             tone="primary"
           />
@@ -198,7 +198,7 @@ export function HirerQuestProgressCard({
                 className={styles.workerAvatar}
                 name={primaryWorker.displayName}
                 size={40}
-                textClassName={`${styles.workerAvatarText} text-ku-hirer-dark`}
+                textClassName={`${styles.workerAvatarText} text-ku-primary-dark`}
                 uri={primaryWorker.avatarUri}
               />
               <View className={styles.workerCopy}>
@@ -229,11 +229,15 @@ export function HirerQuestProgressCard({
               testID={`hirer-quest-card-worker-profile-${questId}`}
             >
               <Text
-                className={`${styles.workerProfileText} text-ku-hirer-dark`}
+                className={`${styles.workerProfileText} text-ku-primary-dark`}
               >
                 {messages.workerProfile}
               </Text>
-              <ChevronRight color={colors.hirer} size={15} strokeWidth={2.4} />
+              <ChevronRight
+                color={colors.primary}
+                size={15}
+                strokeWidth={2.4}
+              />
             </Pressable>
           </Pressable>
         ) : hasMultipleWorkers ? (
@@ -252,7 +256,7 @@ export function HirerQuestProgressCard({
           >
             <View className={styles.workerLeading}>
               <View className={styles.workerAvatar}>
-                <Users color={colors.hirer} size={18} strokeWidth={2.2} />
+                <Users color={colors.primary} size={18} strokeWidth={2.2} />
               </View>
               <View className={styles.workerCopy}>
                 <Text
@@ -280,11 +284,15 @@ export function HirerQuestProgressCard({
               testID={`hirer-quest-card-view-roster-${questId}`}
             >
               <Text
-                className={`${styles.workerProfileText} text-ku-hirer-dark`}
+                className={`${styles.workerProfileText} text-ku-primary-dark`}
               >
                 {messages.viewParticipants}
               </Text>
-              <ChevronRight color={colors.hirer} size={15} strokeWidth={2.4} />
+              <ChevronRight
+                color={colors.primary}
+                size={15}
+                strokeWidth={2.4}
+              />
             </View>
           </Pressable>
         ) : hasApplicants ? (
@@ -300,7 +308,7 @@ export function HirerQuestProgressCard({
           >
             <View className={styles.workerLeading}>
               <View className={styles.workerAvatar}>
-                <Users color={colors.hirer} size={18} strokeWidth={2.2} />
+                <Users color={colors.primary} size={18} strokeWidth={2.2} />
               </View>
               <View className={styles.workerCopy}>
                 <Text
@@ -322,11 +330,15 @@ export function HirerQuestProgressCard({
               testID={`hirer-quest-card-view-applicants-${questId}`}
             >
               <Text
-                className={`${styles.workerProfileText} text-ku-hirer-dark`}
+                className={`${styles.workerProfileText} text-ku-primary-dark`}
               >
                 {messages.viewApplicants}
               </Text>
-              <ChevronRight color={colors.hirer} size={15} strokeWidth={2.4} />
+              <ChevronRight
+                color={colors.primary}
+                size={15}
+                strokeWidth={2.4}
+              />
             </View>
           </Pressable>
         ) : (
@@ -366,11 +378,15 @@ export function HirerQuestProgressCard({
               testID={`hirer-quest-card-manage-${questId}`}
             >
               <Text
-                className={`${styles.workerProfileText} text-ku-hirer-dark`}
+                className={`${styles.workerProfileText} text-ku-primary-dark`}
               >
                 {messages.manageQuest}
               </Text>
-              <ChevronRight color={colors.hirer} size={15} strokeWidth={2.4} />
+              <ChevronRight
+                color={colors.primary}
+                size={15}
+                strokeWidth={2.4}
+              />
             </View>
           </Pressable>
         )}
@@ -382,7 +398,7 @@ export function HirerQuestProgressCard({
             >
               {messages.timelineTitle}
             </Text>
-            <Text className={`${styles.stepProgressText} text-ku-hirer-dark`}>
+            <Text className={`${styles.stepProgressText} text-ku-primary-dark`}>
               {messages.stepProgress(activeStageNumber, stages.length)}
             </Text>
           </View>
@@ -430,10 +446,10 @@ export function HirerQuestProgressCard({
           }}
           testID={`hirer-quest-card-details-${questId}`}
         >
-          <Text className={`${styles.detailsText} text-ku-hirer-dark`}>
+          <Text className={`${styles.detailsText} text-ku-primary-dark`}>
             {messages.openDetails}
           </Text>
-          <ChevronRight color={colors.hirer} size={15} strokeWidth={2.4} />
+          <ChevronRight color={colors.primary} size={15} strokeWidth={2.4} />
         </Pressable>
       </View>
     </Pressable>
