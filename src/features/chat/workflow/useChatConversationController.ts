@@ -19,17 +19,16 @@ import { getRouteParam } from "@/utils/navigation";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import { useLocale } from "@/features/preferences/localeStore";
 import { chatMessages } from "@/locales/chatMessages";
-import type { ChatConversation, ChatRouteParams } from "./chatTypes";
+import type { ChatConversation, ChatRouteParams } from "../chatTypes";
+import { isImageAttachment } from "../components/MessageBubble";
+import type { PendingAttachmentItem } from "../components/PendingAttachmentsBar";
 import {
-  isImageAttachment,
-  type PendingAttachmentItem,
-} from "./ChatConversationPresentation";
-import {
+  mergeDisplayMessages,
   toDisplayMessage,
   type DisplayChatMessage,
   type RenderAttachment,
-} from "./conversationModule";
-import { attachmentLinkCache } from "./attachmentLinkCache";
+} from "../domain/conversationModule";
+import { attachmentLinkCache } from "../api/attachmentLinkCache";
 import {
   chatKeys,
   useCandidateConversationQuery,
@@ -38,8 +37,12 @@ import {
   useSendChatMessageMutation,
   useUploadChatAttachmentMutation,
   useWorkConversationQuery,
-} from "./api/chatQueries";
-import { useChatSocket, type ChatSocketEvent } from "./useChatSocket";
+} from "../api/chatQueries";
+import {
+  ChatSocketEventType,
+  useChatSocket,
+  type ChatSocketEvent,
+} from "../api/useChatSocket";
 
 export type ConversationMode = "WORK" | "CANDIDATE_INQUIRY";
 export const MAX_MESSAGE_LENGTH = 1000;
@@ -180,22 +183,36 @@ export function useChatConversationController(
   ]);
   const handleChatSocketEvent = useCallback(
     (event: ChatSocketEvent) => {
+      const eventMessage =
+        event.type === ChatSocketEventType.WORK_CONVERSATION_MESSAGE ||
+        event.type === ChatSocketEventType.CANDIDATE_INQUIRY_MESSAGE ||
+        event.type === ChatSocketEventType.MESSAGE_ACCEPTED
+          ? event.message
+          : event.type === ChatSocketEventType.CHAT_MESSAGE_CREATED
+            ? event.data.message
+            : undefined;
+      const messageTypeMatches =
+        (event.type === ChatSocketEventType.WORK_CONVERSATION_MESSAGE &&
+          conversationType === "WORK") ||
+        (event.type === ChatSocketEventType.CANDIDATE_INQUIRY_MESSAGE &&
+          conversationType === "CANDIDATE_INQUIRY") ||
+        event.type === ChatSocketEventType.CHAT_MESSAGE_CREATED ||
+        event.type === ChatSocketEventType.MESSAGE_ACCEPTED;
+
       if (
-        event.type === "chat.message.created" &&
-        event.data.conversationId === routeConversationId
+        eventMessage &&
+        messageTypeMatches &&
+        eventMessage.conversationId === routeConversationId
       ) {
         const queryKey = chatKeys.messages(
           routeConversationId,
           viewerId,
           conversationType
         );
-        const incomingMessage = toDisplayMessage(event.data.message, viewerId);
-        queryClient.setQueryData<DisplayChatMessage[]>(queryKey, (current) => {
-          if (current?.some((message) => message.id === incomingMessage.id)) {
-            return current;
-          }
-          return [...(current ?? []), incomingMessage];
-        });
+        const incomingMessage = toDisplayMessage(eventMessage, viewerId);
+        queryClient.setQueryData<DisplayChatMessage[]>(queryKey, (current) =>
+          mergeDisplayMessages(current ?? [], [incomingMessage])
+        );
         const conversationKey = chatKeys.conversation(
           routeConversationId,
           viewerId,
@@ -206,17 +223,26 @@ export function useChatConversationController(
           conversationKey,
           (current) => {
             if (!current) return current;
-            const preview = event.data.message.text ?? "";
+            const preview = eventMessage.text ?? "";
             return {
               ...current,
               latestMessage: { en: preview, th: preview },
-              latestAt: event.data.message.createdAt,
+              latestAt: eventMessage.createdAt,
             };
           }
         );
+        void queryClient.invalidateQueries({
+          queryKey:
+            conversationType === "WORK"
+              ? chatKeys.conversations(viewerId)
+              : chatKeys.candidateInquiries(viewerId),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: chatKeys.unread(viewerId),
+        });
       }
       if (
-        event.type === "quest.state.changed" &&
+        event.type === ChatSocketEventType.QUEST_STATE_CHANGED &&
         event.data.questId === routeQuestId
       ) {
         void queryClient.invalidateQueries({
@@ -238,13 +264,22 @@ export function useChatConversationController(
       viewerId,
     ]
   );
-  useChatSocket({
+  const chatSocket = useChatSocket({
     conversationId: routeConversationId ?? "",
     conversationType,
-    enabled: Boolean(routeConversationId && conversation?.capability?.canRead),
+    enabled: Boolean(
+      routeConversationId &&
+      conversation?.capability?.canRead &&
+      messagesQuery.isSuccess
+    ),
     onEvent: handleChatSocketEvent,
   });
-  const sendMessageMutation = useSendChatMessageMutation();
+  const refetchMessages = messagesQuery.refetch;
+  useEffect(() => {
+    if (chatSocket.status !== "connected") return;
+    void refetchMessages().catch(() => undefined);
+  }, [chatSocket.status, refetchMessages]);
+  const sendMessageMutation = useSendChatMessageMutation(chatSocket);
   const uploadAttachmentMutation = useUploadChatAttachmentMutation();
   const [draft, setDraft] = useState("");
   const [pendingAttachmentIds, setPendingAttachmentIds] = useState<string[]>(

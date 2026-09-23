@@ -63,7 +63,8 @@ export const onboardingMessages = {
     studentIdError: "* กรุณากรอกรหัสนิสิต/นักศึกษา",
     termsError: "* กรุณายอมรับข้อตกลงและเงื่อนไขก่อนดำเนินการต่อ",
     student: "นักศึกษา",
-    professor: "อาจารย์",
+    lecturer: "อาจารย์",
+    staff: "บุคลากร",
     faculties: [
       { label: "คณะเกษตร", value: "Agriculture" },
       { label: "คณะบริหารธุรกิจ", value: "Business Administration" },
@@ -220,7 +221,8 @@ Your data will be stored securely in accordance with applicable Personal Data Pr
     studentIdError: "* Please enter your student ID",
     termsError: "* Please accept the Terms and Conditions before proceeding",
     student: "Student",
-    professor: "Professor",
+    lecturer: "Lecturer",
+    staff: "Staff",
     faculties: [
       { label: "Faculty of Agriculture", value: "Agriculture" },
       {

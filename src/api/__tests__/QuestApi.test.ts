@@ -1219,4 +1219,23 @@ describe("QuestApi", () => {
       })
     );
   });
+  it("fetches an expiring proof file link from the proof file endpoint", async () => {
+    const fileLink = {
+      fileId: "file-1",
+      contentType: "image/png",
+      sizeBytes: 100,
+      position: 0,
+      url: "https://files.example.test/proof-1.png?token=temporary",
+      urlExpiresAt: "2026-09-24T12:00:00Z",
+    };
+    fetchMock.mockResolvedValue(okJson({ success: true, data: fileLink }));
+
+    await expect(
+      api.getProofFileLink("quest-1", "proof-1", "file-1")
+    ).resolves.toEqual(fileLink);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v2/quests/quest-1/proof-submissions/proof-1/files/file-1",
+      expect.objectContaining({ method: "GET" })
+    );
+  });
 });

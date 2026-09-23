@@ -3,9 +3,9 @@ import { render } from "@testing-library/react-native";
 import type { ImperativeRouter } from "expo-router";
 import { chatMessages } from "@/locales/chatMessages";
 import ChatConversationScreen from "../ChatConversationScreen";
-import { useChatConversationController } from "../useChatConversationController";
+import { useChatConversationController } from "../workflow/useChatConversationController";
 
-jest.mock("../useChatConversationController", () => ({
+jest.mock("../workflow/useChatConversationController", () => ({
   MAX_MESSAGE_LENGTH: 1000,
   useChatConversationController: jest.fn(),
 }));

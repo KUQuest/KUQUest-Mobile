@@ -2,36 +2,45 @@ const styles = {
   safeArea: "flex-1 bg-ku-background",
   content: "self-center w-full max-w-[720px]",
   listContent: "px-ku-md pb-ku-lg",
-  intro: "pb-ku-md pt-ku-sm",
-  title: "text-ku-text-strong font-ku-bold text-ku-title",
-  subtitle:
-    "text-ku-text-secondary font-ku-regular text-ku-body-small mt-ku-xs",
+  intro:
+    "bg-ku-primary-subtle rounded-ku-sheet mb-ku-lg mt-ku-sm gap-ku-xs px-ku-lg pb-ku-lg pt-ku-lg",
+  title: "text-ku-text-strong font-ku-bold text-ku-title-large",
+  subtitle: "text-ku-text-secondary font-ku-regular text-ku-body-small",
   searchField:
-    "items-center bg-ku-surface border-ku-border-accent rounded-ku-search border flex-row min-h-ku-56 px-ku-12 mt-ku-sm",
+    "items-center bg-ku-surface border-ku-border rounded-ku-search border flex-row min-h-ku-56 pl-ku-sm pr-ku-xs mt-ku-md",
   searchIcon: "items-center justify-center h-ku-40 w-ku-40",
   searchInput:
     "text-ku-text-strong flex-1 font-ku-regular text-ku-body min-h-ku-52 px-ku-sm",
-  sectionHeading: "items-center flex-row justify-between mb-ku-sm mt-ku-sm",
-  sectionTitle: "text-ku-text-strong font-ku-semibold text-ku-subtitle",
-  sectionCount: "text-ku-text-muted font-ku-medium text-ku-meta",
-  conversationList: "gap-ku-sm",
+  clearSearch:
+    "items-center justify-center rounded-ku-pill h-ku-48 w-ku-48 active:bg-ku-surface-raised",
+  sectionHeading:
+    "items-center flex-row flex-wrap justify-between gap-ku-xs mb-ku-sm mt-ku-sm",
+  sectionTitle: "text-ku-text-strong font-ku-semibold text-ku-section",
+  sectionCount: "text-ku-text-secondary font-ku-medium text-ku-meta",
+  inquiryHeading:
+    "items-center bg-ku-support-subtle rounded-ku-card flex-row flex-wrap gap-ku-sm min-h-ku-56 mt-ku-lg mb-ku-xs px-ku-12 py-ku-sm",
+  inquiryIcon: "items-center justify-center h-ku-40 w-ku-40",
+  inquiryTitle: "text-ku-support font-ku-semibold text-ku-subtitle flex-1",
+  inquiryCount: "text-ku-support font-ku-medium text-ku-meta",
   conversationRow:
-    "items-center bg-ku-white border-ku-border-accent rounded-ku-card border flex-row min-h-ku-88 p-ku-12 active:bg-ku-surface-muted",
+    "items-center border-b-ku-divider border-b flex-row min-h-ku-88 px-ku-sm py-ku-12 active:bg-ku-surface-raised",
   avatar:
     "items-center overflow-hidden rounded-ku-pill shrink-0 h-ku-48 justify-center w-ku-48",
   avatarText: "text-ku-primary-deep font-ku-bold text-ku-body-small",
   avatarSmall: "h-ku-36 w-ku-36 overflow-hidden rounded-ku-pill",
   avatarSmallText: "text-ku-primary-deep font-ku-bold text-ku-label",
   rowCopy: "flex-1 min-w-0 ml-ku-12",
-  questTitle: "text-ku-text-strong font-ku-semibold text-ku-body-small",
+  questTitle: "text-ku-text-strong font-ku-semibold text-ku-body",
   participant: "text-ku-primary font-ku-medium text-ku-label mt-ku-1",
-  latestMessage:
-    "text-ku-text-secondary font-ku-regular text-ku-label mt-ku-xs",
+  inquiryParticipant: "text-ku-support",
+  latestMessage: "text-ku-text-secondary font-ku-regular text-ku-meta mt-ku-xs",
   rowMeta: "items-end self-start ml-ku-sm",
-  rowTime: "text-ku-text-muted font-ku-regular text-ku-caption",
+  rowTime: "text-ku-text-secondary font-ku-regular text-ku-label",
   unreadBadge:
-    "items-center bg-ku-primary rounded-ku-pill h-ku-22 justify-center min-w-ku-22 mt-ku-sm px-ku-5",
-  unreadText: "text-ku-on-primary font-ku-bold text-ku-caption",
+    "items-center bg-ku-primary rounded-ku-pill min-h-ku-24 justify-center min-w-ku-24 mt-ku-sm px-ku-6",
+  unreadText: "text-ku-on-primary font-ku-bold text-ku-label",
+  inquiryUnreadBadge: "bg-ku-support",
+  inquiryUnreadText: "text-ku-on-support",
   emptyState: "items-center justify-center px-ku-lg py-ku-64",
   emptyIcon:
     "items-center bg-ku-surface-accent rounded-ku-pill h-ku-68 justify-center mb-ku-md w-ku-68",
@@ -151,8 +160,6 @@ const styles = {
   pendingAttachmentImage: "w-full h-full",
   pendingAttachmentRemove:
     "absolute top-ku-2 right-ku-2 bg-ku-overlay rounded-ku-pill w-ku-20 h-ku-20 items-center justify-center",
-  sectionHeadingCompact: "items-center flex-row justify-between",
-  sectionHeadingNoTopMargin: "items-center flex-row justify-between mb-ku-sm",
   pendingAttachmentUploading:
     "absolute inset-0 bg-ku-overlay items-center justify-center",
 } as const;

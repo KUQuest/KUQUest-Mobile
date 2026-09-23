@@ -201,8 +201,13 @@ export default function OnboardingScreen() {
       });
   }, [onboardingQuery.error, queryClient]);
 
+  const occupationLabels: Record<string, string> = {
+    Student: msg.student,
+    Lecturer: msg.lecturer,
+    Staff: msg.staff,
+  };
   const occupationOptions = (options?.occupations ?? []).map((occupation) => ({
-    label: occupation.name,
+    label: occupationLabels[occupation.name] ?? occupation.name,
     value: occupation.id,
   }));
   const facultyOptions = (options?.faculties ?? []).map((faculty) => ({

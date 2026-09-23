@@ -21,8 +21,14 @@ export default function HirerProofReviewScreen({
   const router = useRouter();
   const { locale } = useLocale();
   const messages = questBoardMessages[locale];
-  const { pendingProof, review, snapshot, snapshotQuery } =
-    useHirerProofReviewFeature(questId);
+  const {
+    pendingProof,
+    proofFileLinksQuery,
+    proofForReview,
+    review,
+    snapshot,
+    snapshotQuery,
+  } = useHirerProofReviewFeature(questId);
 
   return (
     <ScreenLayout className="flex-1 bg-ku-background">
@@ -49,13 +55,25 @@ export default function HirerProofReviewScreen({
             {snapshot.quest.title}
           </Text>
           <View className="flex-1 px-ku-lg">
-            <ProofReviewPanel
-              dueAt={snapshot.dueAt}
-              key={pendingProof.id}
-              onDone={() => router.back()}
-              onReview={review}
-              proof={pendingProof}
-            />
+            {proofFileLinksQuery.isPending ? (
+              <Text className="p-ku-lg">{messages.loading}</Text>
+            ) : proofFileLinksQuery.isError ? (
+              <StateView
+                actionLabel={messages.retry}
+                description={messages.errorDescription}
+                onAction={() => void proofFileLinksQuery.refetch()}
+                title={messages.errorTitle}
+                variant="error"
+              />
+            ) : proofForReview ? (
+              <ProofReviewPanel
+                dueAt={snapshot.dueAt}
+                key={proofForReview.id}
+                onDone={() => router.back()}
+                onReview={review}
+                proof={proofForReview}
+              />
+            ) : null}
           </View>
         </View>
       ) : (

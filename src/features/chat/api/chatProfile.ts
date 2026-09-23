@@ -1,5 +1,5 @@
 import { authService } from "@/features/auth/AuthService";
-import type { ChatConversation } from "./chatTypes";
+import type { ChatConversation } from "../chatTypes";
 
 export interface ChatParticipantProfile {
   id: string;

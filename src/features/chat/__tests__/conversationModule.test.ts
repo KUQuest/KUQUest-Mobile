@@ -1,5 +1,5 @@
 import type { ServerChatMessage } from "../../../api/ChatApi";
-import { toDisplayMessage } from "../conversationModule";
+import { toDisplayMessage } from "../domain/conversationModule";
 
 function makeServerMessage(
   overrides: Partial<ServerChatMessage> = {}
@@ -25,6 +25,7 @@ describe("conversationModule Canonical Adapter", () => {
       sender: "me",
       text: { en: "First message", th: "First message" },
       createdAt: "2026-09-15T12:05:00Z",
+      sequence: 1,
       attachments: [],
     });
   });

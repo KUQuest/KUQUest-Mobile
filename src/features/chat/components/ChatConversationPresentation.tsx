@@ -9,24 +9,8 @@ import {
 } from "@/components/ui/LoadingSkeleton";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
-import styles from "./chatStyles";
+import styles from "../chatStyles";
 import { cn } from "@/tw/cn";
-import {
-  InlineImageAttachment,
-  MessageBubble,
-  isImageAttachment,
-} from "./MessageBubble";
-import {
-  PendingAttachmentsBar,
-  type PendingAttachmentItem,
-} from "./components/PendingAttachmentsBar";
-
-export { InlineImageAttachment, MessageBubble, isImageAttachment };
-export { PendingAttachmentsBar, type PendingAttachmentItem };
-export type {
-  DisplayChatMessage,
-  RenderAttachment,
-} from "./conversationModule";
 
 export function localizedText(
   value: Record<"en" | "th", string>,

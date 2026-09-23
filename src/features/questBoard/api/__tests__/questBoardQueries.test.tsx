@@ -1,5 +1,5 @@
 import React from "react";
-import { act, renderHook } from "@testing-library/react-native";
+import { act, renderHook, waitFor } from "@testing-library/react-native";
 import {
   QueryClient,
   QueryClientProvider,
@@ -11,14 +11,17 @@ import { homeKeys } from "@/features/home/api/homeQueries";
 import { myQuestsKeys } from "@/features/myQuests/api/myQuestsQueries";
 import { workerHomeKeys } from "@/features/workerHome/api/workerHomeQueries";
 import { liveQuestService } from "../../live/liveQuestService";
+import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
 import {
   questBoardKeys,
   useApplyQuestMutation,
   useCancelQuestMutation,
+  useProofFileLinksQuery,
 } from "../questBoardQueries";
 
 jest.mock("../../live/liveQuestService", () => ({
   liveQuestService: {
+    getProofFileLink: jest.fn(),
     applyQuest: jest.fn(),
     cancelQuest: jest.fn(),
   },
@@ -116,6 +119,96 @@ describe("quest board query ownership", () => {
     for (const key of hirerKeys) {
       expect(queryClient.getQueryState(key)?.isInvalidated).not.toBe(true);
     }
+    queryClient.clear();
+  });
+  it("fetches links for each ready proof file before review", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const proof: QuestV2ProofSubmission = {
+      id: "proof-1",
+      questId: "quest-1",
+      workerId: "worker-1",
+      teamId: null,
+      submittedByUserId: "worker-1",
+      description: "Evidence",
+      status: "PROOF_PENDING",
+      submittedAt: "2026-09-23T10:00:00Z",
+      createdAt: "2026-09-23T09:00:00Z",
+      updatedAt: "2026-09-23T10:00:00Z",
+      visibility: "FULL",
+      fileIds: ["file-1", "file-2", "file-failed"],
+      files: [
+        {
+          fileId: "file-1",
+          contentType: "image/png",
+          sizeBytes: 100,
+          position: 0,
+          uploadStatus: "PROOF_FILE_READY",
+          failureCode: null,
+        },
+        {
+          fileId: "file-2",
+          contentType: "application/pdf",
+          sizeBytes: 200,
+          position: 1,
+          uploadStatus: "PROOF_FILE_READY",
+          failureCode: null,
+        },
+        {
+          fileId: "file-failed",
+          contentType: "image/png",
+          sizeBytes: null,
+          position: 2,
+          uploadStatus: "PROOF_FILE_FAILED",
+          failureCode: "UPLOAD_FAILED",
+        },
+      ],
+    };
+    jest
+      .mocked(liveQuestService.getProofFileLink)
+      .mockResolvedValueOnce({
+        fileId: "file-1",
+        contentType: "image/png",
+        sizeBytes: 100,
+        position: 0,
+        url: "https://files.example.test/file-1?token=temporary",
+        urlExpiresAt: "2026-09-24T12:00:00Z",
+      })
+      .mockResolvedValueOnce({
+        fileId: "file-2",
+        contentType: "application/pdf",
+        sizeBytes: 200,
+        position: 1,
+        url: "https://files.example.test/file-2?token=temporary",
+        urlExpiresAt: "2026-09-24T12:00:00Z",
+      });
+    const { result } = await renderHook(
+      () => useProofFileLinksQuery("quest-1", "hirer-1", proof),
+      { wrapper: wrapper(queryClient) }
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data?.map((link) => link.url)).toEqual([
+      "https://files.example.test/file-1?token=temporary",
+      "https://files.example.test/file-2?token=temporary",
+    ]);
+    expect(liveQuestService.getProofFileLink).toHaveBeenCalledTimes(2);
+    expect(liveQuestService.getProofFileLink).toHaveBeenNthCalledWith(
+      1,
+      "quest-1",
+      "proof-1",
+      "file-1",
+      expect.objectContaining({ signal: expect.anything() })
+    );
+    expect(liveQuestService.getProofFileLink).toHaveBeenNthCalledWith(
+      2,
+      "quest-1",
+      "proof-1",
+      "file-2",
+      expect.objectContaining({ signal: expect.anything() })
+    );
     queryClient.clear();
   });
 });

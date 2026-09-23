@@ -549,6 +549,21 @@ export const questV2ProofFileSchema = z.object({
   failureCode: z.string().nullable(),
   url: z.string().url().nullable().optional(),
 });
+export const questV2ProofFileLinkResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    fileId: questV2IdSchema,
+    contentType: z.string(),
+    sizeBytes: z.coerce.number().int().positive(),
+    position: z.coerce.number().int().nonnegative(),
+    url: z.string().url(),
+    urlExpiresAt: z.string(),
+  }),
+});
+export type QuestV2ProofFileLink = z.infer<
+  typeof questV2ProofFileLinkResponseSchema
+>["data"];
+
 export const questV2ProofSubmissionSchema = z.object({
   id: questV2IdSchema,
   questId: questV2IdSchema,

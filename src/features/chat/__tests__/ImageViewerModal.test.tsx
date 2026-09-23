@@ -1,7 +1,7 @@
 import React from "react";
 import { fireEvent, render } from "@testing-library/react-native";
 
-import { ImageViewerModal } from "../ImageViewerModal";
+import { ImageViewerModal } from "../components/ImageViewerModal";
 
 describe("ImageViewerModal", () => {
   const sampleImageUrl = "https://example.com/media/chat-picture.png";

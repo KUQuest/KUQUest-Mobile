@@ -3,7 +3,7 @@ import {
   type ServerChatAttachment,
   type ServerChatMessage,
 } from "@/api/ChatApi";
-import type { ChatAttachment, ChatMessage } from "./chatTypes";
+import type { ChatAttachment, ChatMessage } from "../chatTypes";
 
 /** Canonical Adapter for pure conversation-message and attachment projections. */
 export type RenderAttachment = ChatAttachment & {
@@ -14,6 +14,7 @@ export type RenderAttachment = ChatAttachment & {
 };
 
 export type DisplayChatMessage = ChatMessage & {
+  sequence?: number;
   attachment?: RenderAttachment;
   attachments: RenderAttachment[];
 };
@@ -61,7 +62,25 @@ export function toDisplayMessage(
     converted;
   return {
     ...convertedWithoutAttachment,
+    sequence: message.sequence,
     attachments,
     ...(attachments[0] ? { attachment: attachments[0] } : {}),
   };
+}
+export function mergeDisplayMessages(
+  current: DisplayChatMessage[],
+  incoming: DisplayChatMessage[]
+): DisplayChatMessage[] {
+  const messagesById = new Map<string, DisplayChatMessage>();
+  for (const message of current) messagesById.set(message.id, message);
+  for (const message of incoming) messagesById.set(message.id, message);
+
+  return [...messagesById.values()].sort((left, right) => {
+    if (left.sequence !== undefined && right.sequence !== undefined) {
+      return left.sequence - right.sequence;
+    }
+    if (left.sequence !== undefined) return -1;
+    if (right.sequence !== undefined) return 1;
+    return Date.parse(left.createdAt) - Date.parse(right.createdAt);
+  });
 }
