@@ -217,7 +217,7 @@ export default function ChatConversationScreen({
     >
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View className={styles.detailHeader}>
           <View className={styles.brandRow}>
