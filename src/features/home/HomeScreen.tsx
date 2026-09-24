@@ -68,6 +68,7 @@ export default function HomeScreen() {
             mode: "FIRST_COME_FIRST_SERVED" as const,
             participation: "SINGLE" as const,
             headcount: 1,
+            startTime: f.startTime,
             dueAt: f.dueAt,
             assignedWorkers: [
               {
@@ -267,6 +268,7 @@ export default function HomeScreen() {
                   {displayQuests.map((item) => (
                     <View key={item.id} style={{ width: cardWidth }}>
                       <HirerQuestProgressCard
+                        startTime={item.startTime}
                         dueAt={item.dueAt}
                         onOpenDetails={() => handleOpenDetails(item.id)}
                         onOpenWorkerProfile={handleOpenWorkerProfile}

@@ -116,6 +116,7 @@ async function loadHirerHome(signal: AbortSignal): Promise<HirerHomeData> {
         mode: q.mode,
         participation: q.participation,
         headcount: q.headcount,
+        startTime: q.startTime,
         dueAt: q.dueAt,
         assignedWorkers,
         applicants,
