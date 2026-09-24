@@ -229,7 +229,10 @@ export function useQuestWorkFeature({
 
   const openDispute = useCallback(() => {
     if (!routeQuestId) return;
-    router.push(`../quest/${routeQuestId}/dispute`);
+    router.push({
+      pathname: "/quest/[id]/dispute",
+      params: { id: routeQuestId },
+    });
   }, [routeQuestId, router]);
   const conversationId = snapshot?.workConversation?.id;
   const canOpenChat = Boolean(
