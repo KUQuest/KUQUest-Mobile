@@ -51,6 +51,9 @@ export interface SweetAlertProps {
   buttonLabel: string;
   onClose: () => void;
   testID?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  onConfirm?: () => void;
 }
 
 export function SweetAlert({
@@ -60,6 +63,9 @@ export function SweetAlert({
   message,
   buttonLabel,
   onClose,
+  confirmLabel,
+  cancelLabel,
+  onConfirm,
   testID = "sweet-alert",
 }: SweetAlertProps) {
   const { Icon, color } = variants[variant];
@@ -84,9 +90,27 @@ export function SweetAlert({
           <Text accessibilityRole="alert" className={styles.message}>
             {message}
           </Text>
-          <Button className={styles.close} onPress={onClose}>
-            {buttonLabel}
-          </Button>
+          {onConfirm ? (
+            <View className="mt-ku-lg w-full gap-ku-sm">
+              <Button
+                accessibilityLabel={confirmLabel ?? buttonLabel}
+                onPress={onConfirm}
+              >
+                {confirmLabel ?? buttonLabel}
+              </Button>
+              <Button
+                accessibilityLabel={cancelLabel ?? "Cancel"}
+                onPress={onClose}
+                variant="secondary"
+              >
+                {cancelLabel ?? "Cancel"}
+              </Button>
+            </View>
+          ) : (
+            <Button className={styles.close} onPress={onClose}>
+              {buttonLabel}
+            </Button>
+          )}
         </View>
       </View>
     </Modal>

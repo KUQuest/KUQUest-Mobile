@@ -25,6 +25,30 @@ describe("SweetAlert", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it("confirms only from primary action and lets user cancel", async () => {
+    const onConfirm = jest.fn();
+    const onClose = jest.fn();
+    const view = await render(
+      <SweetAlert
+        buttonLabel="Delete"
+        cancelLabel="Keep"
+        confirmLabel="Delete quest"
+        message="This cannot be undone."
+        onClose={onClose}
+        onConfirm={onConfirm}
+        title="Delete quest?"
+        variant={SweetAlertVariant.Warning}
+        visible
+      />
+    );
+
+    await fireEvent.press(view.getByRole("button", { name: "Keep" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+    await fireEvent.press(view.getByRole("button", { name: "Delete quest" }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
   it("renders no dialog while hidden", async () => {
     const view = await render(
       <SweetAlert
