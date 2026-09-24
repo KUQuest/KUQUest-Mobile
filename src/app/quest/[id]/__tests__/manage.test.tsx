@@ -1,7 +1,9 @@
 import React from "react";
 import { act, fireEvent } from "@testing-library/react-native";
+import { Alert } from "react-native";
 
 import { renderWithQueryClient as render } from "@/testing/queryTestUtils";
+import { disputeMessages } from "@/locales/disputeMessages";
 
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import type { QuestV2EditRequest } from "@/api/questV2Contracts";
@@ -257,8 +259,9 @@ describe("HirerQuestManageRoute condition edit", () => {
     expect(view.queryByTestId("hirer-manage-condition-edit")).toBeNull();
   });
 
-  it("renders a file dispute action when the Quest state is QUEST_FAILED and navigates to dispute", async () => {
+  it("asks the Hirer to confirm filing a Dispute Case when the Quest is QUEST_FAILED", async () => {
     mockPush.mockClear();
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => {});
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
       createSnapshot({
         state: "QUEST_FAILED",
@@ -272,10 +275,13 @@ describe("HirerQuestManageRoute condition edit", () => {
     const disputeButton = await view.findByTestId("hirer-manage-dispute");
     expect(disputeButton).toBeTruthy();
     fireEvent.press(disputeButton);
-    expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/quest/[id]/dispute",
-      params: { id: "quest-1" },
-    });
+    expect(alertSpy).toHaveBeenCalledWith(
+      disputeMessages.en.confirmTitle,
+      expect.any(String),
+      expect.any(Array)
+    );
+    expect(mockPush).not.toHaveBeenCalled();
+    alertSpy.mockRestore();
   });
 
   it("does not render the dispute action for non-failed Quests", async () => {

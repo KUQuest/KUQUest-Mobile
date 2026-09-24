@@ -27,6 +27,7 @@ import { myQuestMessages } from "@/locales/myQuestMessages";
 import { questNextActionLabels } from "@/locales/questStatusLabels";
 import { questWorkMessages } from "@/locales/questWorkMessages";
 import { useHirerQuestManageFeature } from "./useHirerQuestManageFeature";
+import { useFileDispute } from "@/features/questBoard/dispute/useFileDispute";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import {
   QuestApplicationStatus,
@@ -185,6 +186,7 @@ export default function HirerQuestManageScreen({
     reviewProof,
     submitConditionEdit,
   } = view;
+  const { confirmFileDispute } = useFileDispute();
   const topBar = (
     <TopBar
       title={messages.manageQuestTitle}
@@ -368,12 +370,7 @@ export default function HirerQuestManageScreen({
               <PrimaryAction
                 icon={AlertTriangle}
                 label={messages.fileDispute}
-                onPress={() =>
-                  router.push({
-                    pathname: "/quest/[id]/dispute",
-                    params: { id: quest.id },
-                  })
-                }
+                onPress={() => confirmFileDispute(quest.id)}
                 testID="hirer-manage-dispute"
                 tone="danger"
               />

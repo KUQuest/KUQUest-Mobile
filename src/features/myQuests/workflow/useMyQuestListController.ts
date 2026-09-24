@@ -7,6 +7,7 @@ import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import { formatSatang } from "@/domain/satang";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useCancelQuestMutation } from "@/features/questBoard/api/questBoardQueries";
+import { useFileDispute } from "@/features/questBoard/dispute/useFileDispute";
 import { myQuestMessages } from "@/locales/myQuestMessages";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { spacing } from "@/theme/spacing";
@@ -21,8 +22,7 @@ const ACTION_PATHNAMES = {
   edit: "/quest/[id]/edit",
   manage: "/quest/[id]/manage",
   review: "/quest/[id]/review",
-  dispute: "/quest/[id]/dispute",
-} as const satisfies Record<QuestCardAction, string>;
+} as const satisfies Record<Exclude<QuestCardAction, "dispute">, string>;
 
 export interface MyQuestListScreenProps {
   initialTab?: string;
@@ -52,14 +52,19 @@ export function useMyQuestListController({
     variables: cancelVariables,
   } = useCancelQuestMutation();
 
+  const { confirmFileDispute } = useFileDispute();
   const runQuestAction = useCallback(
     (quest: QuestSummary, action: QuestCardAction) => {
+      if (action === "dispute") {
+        confirmFileDispute(quest.id);
+        return;
+      }
       router.push({
         pathname: ACTION_PATHNAMES[action],
         params: { id: quest.id },
       });
     },
-    [router]
+    [confirmFileDispute, router]
   );
   const openQuest = useCallback(
     (quest: QuestSummary) => {
