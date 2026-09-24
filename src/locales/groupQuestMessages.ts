@@ -17,6 +17,12 @@ export interface GroupQuestMessages {
   member: string;
   memberCount: (count: number) => string;
   rosterCount: (actual: number, requested: number) => string;
+  joinTeamTitle: string;
+  joinTeamDescription: string;
+  joinTeamCodeLabel: string;
+  joinTeamCodePlaceholder: string;
+  joinTeam: string;
+  joiningTeam: string;
   partialRosterHint: string;
   reviewRoster: string;
   reviewTitle: string;
@@ -103,6 +109,13 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     member: "Member",
     memberCount: (count) => `${count} ${count === 1 ? "member" : "members"}`,
     rosterCount: (actual, requested) => `Roster ${actual}/${requested}`,
+    joinTeamTitle: "Join a Candidate Team",
+    joinTeamDescription:
+      "Choose a forming team and enter the Join Code from its Team Leader.",
+    joinTeamCodeLabel: "Enter team Join Code",
+    joinTeamCodePlaceholder: "Code from Team Leader",
+    joinTeam: "Join team",
+    joiningTeam: "Joining…",
     partialRosterHint:
       "You can submit with one or more accepted members. The roster locks after confirmation.",
     reviewRoster: "Review roster",
@@ -197,6 +210,13 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     member: "สมาชิก",
     memberCount: (count) => `สมาชิก ${count} คน`,
     rosterCount: (actual, requested) => `สมาชิก ${actual}/${requested} คน`,
+    joinTeamTitle: "เข้าร่วม Candidate Team",
+    joinTeamDescription:
+      "เลือกทีมที่กำลังก่อตัว แล้วกรอกรหัส Join Code จากหัวหน้าทีม",
+    joinTeamCodeLabel: "กรอกรหัสเข้าร่วมทีม",
+    joinTeamCodePlaceholder: "รหัสจากหัวหน้าทีม",
+    joinTeam: "เข้าร่วมทีม",
+    joiningTeam: "กำลังเข้าร่วมทีม…",
     partialRosterHint:
       "ส่งทีมได้เมื่อมีสมาชิกที่ตอบรับแล้วอย่างน้อย 1 คน และรายชื่อจะถูกล็อกเมื่อยืนยัน",
     reviewRoster: "ตรวจสอบรายชื่อทีม",

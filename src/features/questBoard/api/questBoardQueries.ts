@@ -134,6 +134,7 @@ export function useLiveQuestSnapshotQuery(
     | ((snapshot: LiveQuestSnapshot | undefined) => number | false)
 ) {
   const queryClient = useQueryClient();
+
   const query = useQuery<LiveQuestSnapshot>({
     enabled: Boolean(questId && viewerId) && enabled,
     refetchInterval:
@@ -165,30 +166,24 @@ export function useLiveQuestSnapshotQuery(
       });
     });
   }, [canReadQuest, enabled, queryClient, questId, viewerId]);
-  return query;
-}
-
-export function useCandidateRosterEvents(
-  snapshot: LiveQuestSnapshot | undefined
-): void {
-  const queryClient = useQueryClient();
-  const questId = snapshot?.quest.id;
-  const viewerId = snapshot?.viewerId;
-  const canSelectRoster =
-    snapshot?.mode === "CANDIDATE" &&
-    Boolean(
-      snapshot.capabilities.canSelectCandidate ||
-      snapshot.capabilities.canSelectTeam
-    );
-
+  const canReadCandidateRoster = Boolean(
+    query.data?.mode === "CANDIDATE" &&
+    (query.data.team != null ||
+      (query.data.actor === "HIRER" &&
+        (query.data.capabilities.canSelectCandidate ||
+          query.data.capabilities.canSelectTeam)))
+  );
   useEffect(() => {
-    if (!questId || !viewerId || !canSelectRoster) return;
+    if (!enabled || !questId || !viewerId || !canReadCandidateRoster) {
+      return;
+    }
     return subscribeToCandidateRosterEvents(questId, () => {
       void queryClient.invalidateQueries({
         queryKey: questBoardKeys.liveSnapshotScope(questId, viewerId),
       });
     });
-  }, [canSelectRoster, queryClient, questId, viewerId]);
+  }, [canReadCandidateRoster, enabled, queryClient, questId, viewerId]);
+  return query;
 }
 
 type QuestReadProjection = "hirer" | "worker";

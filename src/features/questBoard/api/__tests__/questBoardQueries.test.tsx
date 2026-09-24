@@ -20,7 +20,6 @@ import {
   questBoardKeys,
   useApplyQuestMutation,
   useCancelQuestMutation,
-  useCandidateRosterEvents,
   useLiveQuestSnapshotQuery,
   useProofFileLinksQuery,
 } from "../questBoardQueries";
@@ -351,7 +350,6 @@ describe("quest board query ownership", () => {
     const { result, unmount } = await renderHook(
       () => {
         const query = useLiveQuestSnapshotQuery("quest-1", "viewer-1");
-        useCandidateRosterEvents(query.data);
         return query;
       },
       { wrapper: wrapper(queryClient) }
@@ -376,25 +374,64 @@ describe("quest board query ownership", () => {
     queryClient.clear();
   });
 
-  it("does not subscribe to Candidate roster events without select access", async () => {
+  it("subscribes Candidate Team members to roster updates", async () => {
     jest.mocked(subscribeToCandidateRosterEvents).mockReset();
-    const queryClient = new QueryClient();
-    const unauthorizedSnapshot = {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    jest.mocked(liveQuestService.getLiveSnapshot).mockResolvedValueOnce({
       viewerId: "candidate-1",
       actor: "CANDIDATE",
       quest: { id: "quest-1" },
       mode: "CANDIDATE",
+      team: { id: "team-1" },
       capabilities: {
         canSelectCandidate: false,
         canSelectTeam: false,
       },
-    } as never;
-    const { unmount } = await renderHook(
-      () => useCandidateRosterEvents(unauthorizedSnapshot),
+    } as never);
+    const stopSubscription = jest.fn();
+    jest.mocked(subscribeToQuestEvents).mockReturnValue(jest.fn());
+    jest
+      .mocked(subscribeToCandidateRosterEvents)
+      .mockReturnValue(stopSubscription);
+    const { result, unmount } = await renderHook(
+      () => useLiveQuestSnapshotQuery("quest-1", "candidate-1"),
       { wrapper: wrapper(queryClient) }
     );
 
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(subscribeToCandidateRosterEvents).toHaveBeenCalledTimes(1);
+
+    await unmount();
+    expect(stopSubscription).toHaveBeenCalledTimes(1);
+    queryClient.clear();
+  });
+  it("does not subscribe to Candidate roster events without roster access", async () => {
+    jest.mocked(subscribeToCandidateRosterEvents).mockReset();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    jest.mocked(liveQuestService.getLiveSnapshot).mockResolvedValueOnce({
+      viewerId: "candidate-1",
+      actor: "CANDIDATE",
+      quest: { id: "quest-1" },
+      mode: "CANDIDATE",
+      team: null,
+      capabilities: {
+        canSelectCandidate: false,
+        canSelectTeam: false,
+      },
+    } as never);
+    jest.mocked(subscribeToQuestEvents).mockReturnValue(jest.fn());
+    const { result, unmount } = await renderHook(
+      () => useLiveQuestSnapshotQuery("quest-1", "candidate-1"),
+      { wrapper: wrapper(queryClient) }
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(subscribeToCandidateRosterEvents).not.toHaveBeenCalled();
+
     await unmount();
     queryClient.clear();
   });

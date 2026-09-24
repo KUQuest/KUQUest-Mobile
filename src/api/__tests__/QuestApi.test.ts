@@ -648,6 +648,14 @@ describe("QuestApi", () => {
           okJson({ success: true, data: { items: [team] } })
         );
       }
+      if (url.endsWith("/select")) {
+        return Promise.resolve(
+          okJson({
+            success: true,
+            data: { questState: "QUEST_ASSIGNED", assignments: [] },
+          })
+        );
+      }
       if (url.endsWith("/reject")) {
         return Promise.resolve(
           okJson({ success: true, data: { ...team, state: "TEAM_REJECTED" } })
@@ -672,7 +680,7 @@ describe("QuestApi", () => {
       )
     ).resolves.toEqual(team);
     await expect(
-      api.joinCandidateTeam("quest-1", "team-1", "JOIN-123", "team-join-1")
+      api.joinCandidateTeam("quest-1", "team-1", "join-123", "team-join-1")
     ).resolves.toEqual(team);
     await expect(
       api.submitCandidateTeam(
@@ -689,6 +697,16 @@ describe("QuestApi", () => {
     await expect(
       api.rejectCandidateTeam("quest-1", "team-1", "team-reject-1")
     ).resolves.toEqual({ ...team, state: "TEAM_REJECTED" });
+
+    await expect(
+      api.leaveCandidateTeam("quest-1", "team-1", "team-leave-1")
+    ).resolves.toEqual(team);
+    await expect(
+      api.regenerateCandidateTeamJoinCode("quest-1", "team-1", "team-code-1")
+    ).resolves.toEqual(team);
+    await expect(
+      api.selectCandidateTeam("quest-1", "team-1", "team-select-1")
+    ).resolves.toEqual({ questState: "QUEST_ASSIGNED", assignments: [] });
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
@@ -742,6 +760,39 @@ describe("QuestApi", () => {
       "https://api.example.test/api/v2/quests/quest-1/teams/team-1",
       expect.objectContaining({ method: "GET" })
     );
+    const noBodyActions = [
+      {
+        call: 7,
+        path: "/teams/team-1/reject",
+        idempotencyKey: "team-reject-1",
+      },
+      {
+        call: 8,
+        path: "/teams/team-1/leave",
+        idempotencyKey: "team-leave-1",
+      },
+      {
+        call: 9,
+        path: "/teams/team-1/join-code",
+        idempotencyKey: "team-code-1",
+      },
+      {
+        call: 10,
+        path: "/teams/team-1/select",
+        idempotencyKey: "team-select-1",
+      },
+    ];
+    for (const action of noBodyActions) {
+      const [url, init] = fetchMock.mock.calls[action.call - 1] ?? [];
+      expect(url).toBe(
+        `https://api.example.test/api/v2/quests/quest-1${action.path}`
+      );
+      expect(init?.method).toBe("POST");
+      expect(init?.body).toBeUndefined();
+      expect(init?.headers).toEqual(
+        expect.objectContaining({ "idempotency-key": action.idempotencyKey })
+      );
+    }
   });
 
   it("handles underfilled decisions through separate routes", async () => {

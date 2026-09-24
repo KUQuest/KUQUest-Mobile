@@ -57,7 +57,9 @@ describe("Quest event subscription", () => {
     const stop = subscribeToQuestEvents("quest-1", jest.fn());
     const socket = MockWebSocket.instances[0];
 
-    expect(socket?.url).toBe("wss://api.example.com/v2/quests/quest-1/events");
+    expect(socket?.url).toBe(
+      "wss://api.example.com/api/v2/quests/quest-1/events"
+    );
     expect(socket?.protocols).toEqual([]);
     expect(socket?.options).toEqual({
       headers: { Cookie: "better-auth.session_token=session" },
@@ -66,13 +68,13 @@ describe("Quest event subscription", () => {
     stop();
     expect(socket?.close).toHaveBeenCalledTimes(1);
   });
-  it("subscribes to Candidate roster events on the authenticated WSS path", () => {
+  it("subscribes to authorized Candidate roster updates", () => {
     const onRosterUpdated = jest.fn();
     const stop = subscribeToCandidateRosterEvents("quest-1", onRosterUpdated);
     const socket = MockWebSocket.instances[0];
 
     expect(socket?.url).toBe(
-      "wss://api.example.com/v2/quests/quest-1/candidate-roster/events"
+      "wss://api.example.com/api/v2/quests/quest-1/candidate-roster/events"
     );
     expect(socket?.options).toEqual({
       headers: { Cookie: "better-auth.session_token=session" },
@@ -88,6 +90,13 @@ describe("Quest event subscription", () => {
     );
     socket.receive(
       JSON.stringify({ type: "SUBSCRIBED", version: 1, questId: "other" })
+    );
+    socket.receive(
+      JSON.stringify({
+        type: "CANDIDATE_ROSTER_UPDATED",
+        version: 1,
+        questId: "quest-1",
+      })
     );
     socket.receive(
       JSON.stringify({ type: "SUBSCRIBED", version: 1, questId: "quest-1" })
@@ -111,14 +120,19 @@ describe("Quest event subscription", () => {
         type: "CANDIDATE_ROSTER_UPDATED",
         version: 1,
         questId: "quest-1",
+        team: { id: "ignored" },
       })
     );
+    socket.receive(JSON.stringify({ type: "CANDIDATE_ROSTER_UPDATED" }));
 
-    expect(onRosterUpdated).toHaveBeenCalledTimes(1);
-    expect(onRosterUpdated).toHaveBeenCalledWith({
+    expect(onRosterUpdated).toHaveBeenCalledTimes(2);
+    expect(onRosterUpdated).toHaveBeenNthCalledWith(1, {
       type: "CANDIDATE_ROSTER_UPDATED",
       version: 1,
       questId: "quest-1",
+    });
+    expect(onRosterUpdated).toHaveBeenNthCalledWith(2, {
+      type: "CANDIDATE_ROSTER_UPDATED",
     });
     expect(socket.send).not.toHaveBeenCalled();
     stop();

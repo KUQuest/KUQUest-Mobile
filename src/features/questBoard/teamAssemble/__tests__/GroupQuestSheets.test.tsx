@@ -4,6 +4,7 @@ import { act, fireEvent, render } from "@testing-library/react-native";
 import { CandidateReviewSheet } from "../components/CandidateReviewSheet";
 import { PartialGroupStartConsentSheet } from "../components/PartialGroupStartConsentSheet";
 import { TeamAssembleSheet } from "../components/TeamAssembleSheet";
+import type { QuestV2Team } from "@/api/questV2Contracts";
 import {
   QuestApplicationStatus,
   QuestPartialStartConsentStatus,
@@ -331,5 +332,46 @@ describe("group Quest sheets", () => {
         "The five-minute consent window ended before everyone approved. Reserved rewards are fully refunded."
       )
     ).toBeTruthy();
+  });
+  it("joins the selected forming team with an uppercased Join Code", async () => {
+    const onJoinTeam = jest.fn();
+    const teams: QuestV2Team[] = [
+      {
+        id: "team-1",
+        questId: "quest-1",
+        leaderId: "leader-1",
+        name: "Campus Gardeners",
+        headcount: 3,
+        state: "TEAM_FORMING",
+        joinCode: null,
+        joinCodeExpiresAt: null,
+        members: [
+          { memberId: "leader-1", joinedAt: "2026-09-25T00:00:00.000Z" },
+        ],
+        submission: null,
+        createdAt: "2026-09-25T00:00:00.000Z",
+      },
+    ];
+    const view = await render(
+      <TeamAssembleSheet
+        joinableTeams={teams}
+        locale="en"
+        onClose={() => undefined}
+        onJoinTeam={onJoinTeam}
+        team={null}
+        visible
+      />
+    );
+
+    await fireEvent.press(view.getByTestId("team-assemble-join-target-team-1"));
+    await fireEvent.changeText(
+      view.getByTestId("team-assemble-join-code-input"),
+      "abcd2345"
+    );
+    expect(view.getByTestId("team-assemble-join-code-input").props.value).toBe(
+      "ABCD2345"
+    );
+    await fireEvent.press(view.getByTestId("team-assemble-join"));
+    expect(onJoinTeam).toHaveBeenCalledWith("team-1", "ABCD2345");
   });
 });

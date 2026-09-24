@@ -26,8 +26,8 @@ type QuestUpdatedEvent = z.infer<typeof questUpdatedEventSchema>;
 
 const candidateRosterUpdatedEventSchema = z.object({
   type: z.literal("CANDIDATE_ROSTER_UPDATED"),
-  version: z.literal(1),
-  questId: z.string().min(1),
+  version: z.literal(1).optional(),
+  questId: z.string().min(1).optional(),
 });
 
 export type CandidateRosterUpdatedEvent = z.infer<
@@ -49,7 +49,7 @@ function reconnectDelayMs(attempt: number): number {
   );
 }
 
-function subscribeToQuestEventStream<T extends { questId: string }>(
+function subscribeToQuestEventStream<T extends { questId?: string }>(
   questId: string,
   eventsPath: string,
   updateSchema: z.ZodType<T>,
@@ -118,7 +118,10 @@ function subscribeToQuestEventStream<T extends { questId: string }>(
       if (!subscribed) return;
 
       const parsed = updateSchema.safeParse(payload);
-      if (parsed.success && parsed.data.questId === questId) {
+      if (
+        parsed.success &&
+        (!parsed.data.questId || parsed.data.questId === questId)
+      ) {
         onUpdate(parsed.data);
       }
     };
@@ -149,7 +152,7 @@ export function subscribeToQuestEvents(
 ): () => void {
   return subscribeToQuestEventStream(
     questId,
-    `/v2/quests/${encodeURIComponent(questId)}/events`,
+    `/api/v2/quests/${encodeURIComponent(questId)}/events`,
     questUpdatedEventSchema,
     onQuestUpdated
   );
@@ -161,7 +164,7 @@ export function subscribeToCandidateRosterEvents(
 ): () => void {
   return subscribeToQuestEventStream(
     questId,
-    `/v2/quests/${encodeURIComponent(questId)}/candidate-roster/events`,
+    `/api/v2/quests/${encodeURIComponent(questId)}/candidate-roster/events`,
     candidateRosterUpdatedEventSchema,
     onRosterUpdated
   );

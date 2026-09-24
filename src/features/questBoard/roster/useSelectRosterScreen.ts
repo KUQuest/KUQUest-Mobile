@@ -5,10 +5,7 @@ import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import { questBoardMessages } from "@/locales/questBoardMessages";
-import {
-  useCandidateRosterEvents,
-  useLiveQuestSnapshotQuery,
-} from "@/features/questBoard/api/questBoardQueries";
+import { useLiveQuestSnapshotQuery } from "@/features/questBoard/api/questBoardQueries";
 import {
   QuestAssignmentStatus,
   QuestMode,
@@ -42,7 +39,6 @@ export function useSelectRosterScreen(
     Boolean(questId && viewerId)
   );
   const snapshot = snapshotQuery.data;
-  useCandidateRosterEvents(snapshot);
   const onBack = useCallback(() => router.back(), [router]);
   const onOpenProfile = useCallback(
     (memberId: string) => router.push(`/profile/${memberId}`),

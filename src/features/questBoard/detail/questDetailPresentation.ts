@@ -86,6 +86,9 @@ export interface QuestDetailPresentationFacts {
   liveTeamSheetTeam: NonNullable<
     Extract<QuestDetailReadSource, { kind: "live-snapshot" }>["snapshot"]
   >["team"];
+  liveJoinableTeams: NonNullable<
+    Extract<QuestDetailReadSource, { kind: "live-snapshot" }>["snapshot"]
+  >["teams"];
   liveTeamSurface: boolean;
   partialStartSheetOpen: boolean;
   refreshing: boolean;
@@ -106,7 +109,7 @@ export interface QuestDetailPresentationContext {
   liveUnderfilledDecision: (decision: "PROCEED" | "CANCEL") => void;
   liveUnderfilledConsent: (decision: "ACCEPT" | "DECLINE") => void;
   liveCreateTeam: () => void;
-  liveJoinTeam: (joinCode: string) => void;
+  liveJoinTeam: (teamId: string, joinCode: string) => void;
   liveLeaveTeam: (teamId: string) => void;
   liveRemoveTeamMember: (teamId: string, memberId: string) => void;
   liveRegenerateTeamCode: (teamId: string) => void;
@@ -326,6 +329,18 @@ export function getQuestDetailPresentationFacts({
   const liveTeamSheetTeam = liveCandidateGroup
     ? getQuestDetailLiveTeam(liveSnapshot)
     : null;
+  const beforeStartTime = Boolean(
+    liveSnapshot && Date.now() < Date.parse(liveSnapshot.quest.startTime)
+  );
+  const liveJoinableTeams =
+    liveCandidateGroup && beforeStartTime
+      ? (liveSnapshot?.teams.filter(
+          (team) =>
+            team.state === "TEAM_FORMING" &&
+            team.members.length < team.headcount &&
+            !team.members.some((member) => member.memberId === viewerId)
+        ) ?? [])
+      : [];
   const liveTeamSurface = Boolean(
     liveCandidateGroup &&
     liveSnapshot &&
@@ -384,6 +399,7 @@ export function getQuestDetailPresentationFacts({
     teamDirectory,
     partialVoters,
     liveTeamSheetTeam,
+    liveJoinableTeams,
     liveTeamSurface,
     livePartialVoters,
     partialStartSheetOpen,
@@ -564,6 +580,7 @@ export function buildQuestDetailSheetsProps(
             canUpdateTeam:
               facts.projection?.capabilities.canUpdateTeam ?? false,
             eligibleMembers: [],
+            joinableTeams: facts.liveJoinableTeams,
             joinCode: facts.liveTeamSheetTeam?.joinCode,
             joinCodeExpiresAt: facts.liveTeamSheetTeam?.joinCodeExpiresAt,
             teamName: facts.liveTeamSheetTeam?.name,
@@ -584,7 +601,9 @@ export function buildQuestDetailSheetsProps(
             requestedHeadcount: facts.liveSnapshot.quest.headcount,
             reviewing: surface.teamReviewing,
             searchQuery: surface.teamSearchQuery,
-            submitting: surface.liveAction === "submit-team",
+            submitting:
+              surface.liveAction === "submit-team" ||
+              surface.liveAction === "join-team",
             team: facts.liveTeamSheetTeam,
             viewerId: facts.viewerId,
             visible: surface.teamSheetOpen,

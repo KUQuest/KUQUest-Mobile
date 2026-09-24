@@ -336,6 +336,93 @@ describe("LiveQuestService", () => {
       canWriteWorkChat: true,
     });
   });
+  it("blocks Candidate Team joins at or after startTime", async () => {
+    mockedQuestApi.getDetail.mockRejectedValue(new Error("not the Hirer"));
+    mockedQuestApi.getPublicDetail.mockImplementation(
+      async () =>
+        ({
+          id: "quest-join-1",
+          title: "Join Quest",
+          description: "Join a forming team.",
+          condition: { items: [{ id: "condition-1", text: "Join the team." }] },
+          tag: null,
+          mode: "CANDIDATE",
+          participation: "GROUP",
+          state: "QUEST_OPEN",
+          questReward: 100,
+          headcount: 3,
+          activeWorkerCount: 0,
+          startTime: new Date(Date.now() + 60_000).toISOString(),
+          dueAt: null,
+          proofRequired: true,
+          hirerName: "Hirer Alice",
+          locations: [],
+          images: [],
+        }) as never
+    );
+    mockedQuestApi.listQuestAssignments.mockResolvedValue([]);
+    mockedQuestApi.listApplications.mockResolvedValue([]);
+    mockedQuestApi.listCandidateTeams.mockResolvedValue([
+      {
+        id: "team-1",
+        questId: "quest-join-1",
+        leaderId: "leader-1",
+        name: "Campus Gardeners",
+        headcount: 3,
+        state: "TEAM_FORMING",
+        joinCode: null,
+        joinCodeExpiresAt: null,
+        members: [
+          {
+            memberId: "leader-1",
+            joinedAt: new Date().toISOString(),
+          },
+        ],
+        submission: null,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+    mockedQuestApi.getUnderfilled.mockResolvedValue(null as never);
+    mockedQuestApi.listProofSubmissions.mockResolvedValue([]);
+    mockedChatApi.listConversations.mockResolvedValue({
+      items: [],
+      nextCursor: null,
+    } as never);
+
+    const beforeStart = await liveQuestService.getLiveSnapshot(
+      "quest-join-1",
+      "worker-1"
+    );
+    expect(beforeStart.capabilities.canJoinTeam).toBe(true);
+
+    mockedQuestApi.getPublicDetail.mockImplementation(
+      async () =>
+        ({
+          id: "quest-join-1",
+          title: "Join Quest",
+          description: "Join a forming team.",
+          condition: { items: [{ id: "condition-1", text: "Join the team." }] },
+          tag: null,
+          mode: "CANDIDATE",
+          participation: "GROUP",
+          state: "QUEST_OPEN",
+          questReward: 100,
+          headcount: 3,
+          activeWorkerCount: 0,
+          startTime: new Date(Date.now() - 60_000).toISOString(),
+          dueAt: null,
+          proofRequired: true,
+          hirerName: "Hirer Alice",
+          locations: [],
+          images: [],
+        }) as never
+    );
+    const afterStart = await liveQuestService.getLiveSnapshot(
+      "quest-join-1",
+      "worker-1"
+    );
+    expect(afterStart.capabilities.canJoinTeam).toBe(false);
+  });
 
   it("rejects candidate application through questApi.rejectCandidateApplication", async () => {
     const application = { id: "app-1", state: "APPLICATION_REJECTED" };

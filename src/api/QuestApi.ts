@@ -622,7 +622,9 @@ export class QuestApi {
     joinCode: string,
     idempotencyKey?: string
   ): Promise<QuestV2Team> {
-    const validatedPayload = questV2TeamJoinPayloadSchema.parse({ joinCode });
+    const validatedPayload = questV2TeamJoinPayloadSchema.parse({
+      joinCode: joinCode.toUpperCase(),
+    });
     const body = await this.client.requestJson<unknown>(
       `/api/v2/quests/${questId}/teams/${teamId}/join`,
       validatedPayload,
@@ -636,9 +638,8 @@ export class QuestApi {
     teamId: string,
     idempotencyKey?: string
   ): Promise<QuestV2Team> {
-    const body = await this.client.requestJson<unknown>(
+    const body = await this.client.request<unknown>(
       `/api/v2/quests/${questId}/teams/${teamId}/leave`,
-      {},
       { method: "POST", headers: mutationHeaders(idempotencyKey) }
     );
     return questV2TeamResponseSchema.parse(body).data;
@@ -662,9 +663,8 @@ export class QuestApi {
     teamId: string,
     idempotencyKey?: string
   ): Promise<QuestV2Team> {
-    const body = await this.client.requestJson<unknown>(
+    const body = await this.client.request<unknown>(
       `/api/v2/quests/${questId}/teams/${teamId}/join-code`,
-      {},
       { method: "POST", headers: mutationHeaders(idempotencyKey) }
     );
     return questV2TeamResponseSchema.parse(body).data;
@@ -708,9 +708,8 @@ export class QuestApi {
     teamId: string,
     idempotencyKey?: string
   ): Promise<QuestV2TeamSelection> {
-    const body = await this.client.requestJson<unknown>(
+    const body = await this.client.request<unknown>(
       `/api/v2/quests/${questId}/teams/${teamId}/select`,
-      {},
       { method: "POST", headers: mutationHeaders(idempotencyKey) }
     );
     return questV2TeamSelectionResponseSchema.parse(body).data;
@@ -720,9 +719,8 @@ export class QuestApi {
     teamId: string,
     idempotencyKey?: string
   ): Promise<QuestV2Team> {
-    const body = await this.client.requestJson<unknown>(
+    const body = await this.client.request<unknown>(
       `/api/v2/quests/${questId}/teams/${teamId}/reject`,
-      {},
       { method: "POST", headers: mutationHeaders(idempotencyKey) }
     );
     return questV2TeamResponseSchema.parse(body).data;
