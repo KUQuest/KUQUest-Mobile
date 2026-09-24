@@ -38,6 +38,7 @@ describe("app config variants", () => {
     expect(config.android?.package).toBe("com.kuquest.mobile.debug");
     expect(config.ios?.bundleIdentifier).toBe("com.kuquest.mobile.debug");
     expect(config.android?.versionCode).toBe(1);
+    expect(config.android?.softwareKeyboardLayoutMode).toBe("resize");
   });
 
   test("uses the CI build number for staging", () => {
