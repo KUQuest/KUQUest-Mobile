@@ -203,7 +203,7 @@ export default function PublicProfileScreen() {
         testID="public-profile-back-button"
         hitSlop={8}
         onPress={() => router.back()}
-        className="h-[44px] w-[44px] items-center justify-center rounded-ku-pill active:bg-ku-surface-muted"
+        className="h-[48px] w-[48px] items-center justify-center rounded-ku-pill active:bg-ku-surface-muted"
       >
         <ChevronLeft color={colors.primaryDeep} size={24} strokeWidth={2.5} />
       </Pressable>
@@ -222,7 +222,7 @@ export default function PublicProfileScreen() {
           {displayName || messages.title}
         </Text>
       </View>
-      <View className="w-[44px]" />
+      <View className="w-[48px]" />
     </View>
   );
 
@@ -242,7 +242,7 @@ export default function PublicProfileScreen() {
           return (
             <Chip
               accessibilityLabel={label}
-              className="min-h-[40px] gap-ku-6 px-ku-md py-ku-sm"
+              className="min-h-[48px] gap-ku-6 px-ku-md py-ku-sm"
               key={key}
               label={label}
               leadingIcon={
@@ -267,6 +267,7 @@ export default function PublicProfileScreen() {
   const profileHeader = (
     <View>
       <ProfileHeader
+        presentation="public"
         data={{
           name: displayName,
           faculty: facultyName,
