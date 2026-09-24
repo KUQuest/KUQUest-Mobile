@@ -55,6 +55,7 @@ export interface QuestBoardMessages {
   startWork: string;
   finishBy: string;
   timeNotSpecified: string;
+  endTime: string;
   location: string;
   spotsSummary: (remaining: number, total: number) => string;
   participantsSummary: (accepted: number, total: number) => string;
@@ -345,6 +346,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     startWork: "Start work",
     finishBy: "Finish by",
     timeNotSpecified: "Time not specified",
+    endTime: "End time",
     location: "Where",
     spotsSummary: (remaining, total) => `${remaining} of ${total} spots left`,
     participantsSummary: (accepted, total) =>
@@ -733,6 +735,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     startWork: "เริ่มงาน",
     finishBy: "ส่งงานภายใน",
     timeNotSpecified: "ยังไม่ระบุเวลา",
+    endTime: "เวลาสิ้นสุด",
     location: "สถานที่",
     spotsSummary: (remaining, total) =>
       `เหลือ ${remaining} จาก ${total} ที่ว่าง`,

@@ -90,9 +90,12 @@ function ConfirmationSheet({
             <Text
               className={styles.confirmSummaryText}
             >{`${formatSatang(getQuestRewardSatang(quest), locale)} ${messages.perPerson}`}</Text>
-            <Text
-              className={styles.confirmSummaryText}
-            >{`${messages.schedule}: ${formatDate(quest.startDate, locale, "")}${quest.timeRange ? ` · ${quest.timeRange}` : ""}`}</Text>
+            <Text className={styles.confirmSummaryText}>{`${messages.schedule}: ${formatDate(quest.startDate, locale, "")}`}</Text>
+            {quest.timeRange?.split(/\s*[–—-]\s*/, 2).map((time, index) => (
+              <Text key={index} className={styles.confirmSummaryText}>
+                {`${index === 0 ? messages.startTime : messages.endTime}: ${time}`}
+              </Text>
+            ))}
             <Text
               className={styles.confirmSummaryText}
             >{`${messages.deadline}: ${formatDate(quest.deadline, locale, "")}`}</Text>
