@@ -1,4 +1,5 @@
 import React from "react";
+import { cn } from "@/tw/cn";
 import { Text, View } from "@/tw";
 import { defaultAccessibilityLabels, imageSource } from "./profileShared";
 import { useWindowDimensions } from "react-native";
@@ -26,6 +27,7 @@ interface ProfileHeaderProps {
     "name" | "faculty" | "occupation" | "department" | "profileImage"
   > &
     Partial<Pick<ProfileViewData, "tags">>;
+  presentation?: "default" | "public";
   editProfileLabel?: string;
   onEditPress?: () => void;
   unavailableTagsText?: string;
@@ -55,6 +57,7 @@ function ProfileMeta({
 
 export function ProfileHeader({
   data,
+  presentation = "default",
   editProfileLabel,
   onEditPress,
   unavailableTagsText,
@@ -93,7 +96,10 @@ export function ProfileHeader({
   return (
     <View
       testID="profile-header"
-      className={styles.heroCard}
+      className={cn(
+        styles.heroCard,
+        presentation === "public" && "flex-row flex-wrap items-center"
+      )}
       style={{ padding: metrics.cardPadding }}
     >
       <Avatar
@@ -105,10 +111,15 @@ export function ProfileHeader({
         textClassName={styles.initials}
         uri={profileImageUri}
       />
-      <View className={styles.identityContent}>
+      <View
+        className={cn(
+          styles.identityContent,
+          presentation === "public" && "min-w-0 flex-1 items-start"
+        )}
+      >
         <Text
           accessibilityRole="header"
-          className={styles.name}
+          className={cn(styles.name, presentation === "public" && "text-left")}
           maxFontSizeMultiplier={2}
           style={{
             fontSize: metrics.nameFontSize,
@@ -117,7 +128,12 @@ export function ProfileHeader({
         >
           {data.name}
         </Text>
-        <View className={styles.metaList}>
+        <View
+          className={cn(
+            styles.metaList,
+            presentation === "public" && "justify-start"
+          )}
+        >
           {occupationName ? (
             <ProfileMeta icon={GraduationCap}>{occupationName}</ProfileMeta>
           ) : null}
@@ -132,13 +148,21 @@ export function ProfileHeader({
       {data.tags === undefined && unavailableTagsText ? (
         <Text
           testID="profile-tags-unavailable"
-          className={styles.sectionNoticeText}
+          className={cn(
+            styles.sectionNoticeText,
+            presentation === "public" && "w-full"
+          )}
         >
           {unavailableTagsText}
         </Text>
       ) : null}
       {(data.tags ?? []).length > 0 ? (
-        <View className={styles.tagGroup}>
+        <View
+          className={cn(
+            styles.tagGroup,
+            presentation === "public" && "w-full items-start"
+          )}
+        >
           <Text
             accessibilityRole="header"
             className={styles.tagGroupLabel}
@@ -146,7 +170,12 @@ export function ProfileHeader({
           >
             {labels.questCategoriesLabel}
           </Text>
-          <View className={styles.tagList}>
+          <View
+            className={cn(
+              styles.tagList,
+              presentation === "public" && "justify-start"
+            )}
+          >
             {(data.tags ?? []).map((tag) => (
               <Chip
                 className="px-ku-10 py-ku-xs"
