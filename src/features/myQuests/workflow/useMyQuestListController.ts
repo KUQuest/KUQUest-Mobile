@@ -3,6 +3,7 @@ import { Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { showErrorAlert } from "@/components/ui/SweetAlert";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import { formatSatang } from "@/domain/satang";
 import { useLocale } from "@/features/preferences/localeStore";
@@ -118,10 +119,7 @@ export function useMyQuestListController({
                   )
                 )
                 .catch((caught: unknown) =>
-                  Alert.alert(
-                    messages.cancelErrorTitle,
-                    caught instanceof Error ? caught.message : undefined
-                  )
+                  showErrorAlert(messages.cancelErrorTitle, caught)
                 );
             },
           },

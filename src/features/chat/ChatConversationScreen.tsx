@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useRef } from "react";
 import {
-  Alert,
   RefreshControl,
   type ListRenderItemInfo,
   type FlatList as NativeFlatList,
 } from "react-native";
+
+import { showErrorAlert } from "@/components/ui/SweetAlert";
 import {
   Camera,
   ChevronLeft,
@@ -255,7 +256,7 @@ export default function ChatConversationScreen({
           className={styles.contextCard}
           onPress={() => {
             if (!conversation.questId) {
-              Alert.alert(
+              showErrorAlert(
                 messages.viewQuest,
                 locale === "th"
                   ? "ไม่พบบริบทเควสต์สำหรับการนำทาง"

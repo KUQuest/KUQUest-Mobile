@@ -1,10 +1,19 @@
 import React from "react";
 import { Modal } from "react-native";
-import { CircleAlert, CircleCheck, Info, TriangleAlert } from "lucide-react-native";
+import {
+  CircleAlert,
+  CircleCheck,
+  Info,
+  TriangleAlert,
+} from "lucide-react-native";
+import { create } from "zustand";
 
 import { Button } from "@/components/ui/Button";
+import { useLocale } from "@/features/preferences/localeStore";
+import { alertMessages } from "@/locales/alertMessages";
 import { colors } from "@/theme/colors";
 import { Text, View } from "@/tw";
+import { getErrorMessage } from "@/utils/error";
 
 export const SweetAlertVariant = {
   Error: "error",
@@ -118,3 +127,38 @@ export function SweetAlert({
 }
 
 SweetAlert.displayName = "SweetAlert";
+
+interface ErrorAlertState {
+  title: string;
+  message: string;
+}
+
+const useErrorAlertStore = create<{ current: ErrorAlertState | null }>(() => ({
+  current: null,
+}));
+
+/**
+ * Shows the app-wide error SweetAlert. `error` may be a message or a caught
+ * value; an empty or unknown value falls back to the localized generic text.
+ */
+export function showErrorAlert(title: string, error?: unknown): void {
+  const message = getErrorMessage(error, "");
+  useErrorAlertStore.setState({ current: { title, message } });
+}
+
+/** Mounted once at the app root; renders the alert raised by `showErrorAlert`. */
+export function ErrorAlertHost() {
+  const current = useErrorAlertStore((state) => state.current);
+  const messages = alertMessages[useLocale().locale];
+  return (
+    <SweetAlert
+      buttonLabel={messages.dismiss}
+      message={current?.message || messages.errorFallback}
+      onClose={() => useErrorAlertStore.setState({ current: null })}
+      testID="error-alert"
+      title={current?.title ?? ""}
+      variant={SweetAlertVariant.Error}
+      visible={current !== null}
+    />
+  );
+}

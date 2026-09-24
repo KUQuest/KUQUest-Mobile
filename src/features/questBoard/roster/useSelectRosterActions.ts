@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Alert } from "react-native";
 
+import { showErrorAlert } from "@/components/ui/SweetAlert";
+
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import type { QuestV2Application, QuestV2Team } from "@/api/questV2Contracts";
 import {
@@ -65,10 +67,7 @@ export function useSelectRosterActions({
       await run(targetQuestId, createQuestIdempotencyKey());
       if (action.kind === "select") onSelectSuccess();
     } catch (caught) {
-      Alert.alert(
-        messages.actionFailedTitle,
-        caught instanceof Error ? caught.message : messages.actionFailedTitle
-      );
+      showErrorAlert(messages.actionFailedTitle, caught);
       if (action.kind === "reject") await refetchSnapshot();
     } finally {
       setPendingAction(null);

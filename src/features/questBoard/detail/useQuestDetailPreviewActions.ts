@@ -1,5 +1,6 @@
 import { useCallback } from "react";
-import { Alert } from "react-native";
+
+import { showErrorAlert } from "@/components/ui/SweetAlert";
 
 import type { TeamDirectoryMember } from "../teamAssemble/types";
 import type { QuestDetailState } from "../domain/types";
@@ -86,13 +87,13 @@ export function useQuestDetailPreviewActions(
       const result = questWorkflow.dispatch(action);
       const errorMessage = fixtureErrorMessage(result);
       if (errorMessage) {
-        Alert.alert(messages.details, errorMessage);
+        showErrorAlert(messages.actionFailedTitle, errorMessage);
         return result;
       }
       transitions.markFixtureChanged();
       return result;
     },
-    [messages.details, transitions]
+    [messages.actionFailedTitle, transitions]
   );
 
   const directJoin = useCallback(() => {

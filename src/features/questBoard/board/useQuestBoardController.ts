@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AccessibilityInfo, Alert } from "react-native";
+import { AccessibilityInfo } from "react-native";
 import { useRouter } from "expo-router";
+
+import { showErrorAlert } from "@/components/ui/SweetAlert";
 
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { useLocale } from "@/features/preferences/localeStore";
@@ -200,9 +202,9 @@ export function useQuestBoardController(
       try {
         const hirer = await liveQuestService.getHirerParticipant(quest.id);
         if (hirer?.id) router.push(`/profile/${hirer.id}`);
-        else Alert.alert("Profile", "Profile unavailable for this quest.");
+        else showErrorAlert("Profile", "Profile unavailable for this quest.");
       } catch {
-        Alert.alert("Profile", "Profile unavailable for this quest.");
+        showErrorAlert("Profile", "Profile unavailable for this quest.");
       }
     },
     [router]

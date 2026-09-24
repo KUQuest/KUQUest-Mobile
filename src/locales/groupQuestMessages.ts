@@ -10,6 +10,7 @@ export interface GroupQuestMessages {
   noTeamTitle: string;
   noTeamDescription: string;
   createTeam: string;
+  teamNameLabel: string;
   teamTitle: string;
   teamSubtitle: string;
   roster: string;
@@ -21,6 +22,8 @@ export interface GroupQuestMessages {
   joinTeamDescription: string;
   joinTeamCodeLabel: string;
   joinTeamCodePlaceholder: string;
+  joinTeamInvalidInvite: string;
+  teamInviteMessage: (teamName: string, link: string) => string;
   joinTeam: string;
   joiningTeam: string;
   partialRosterHint: string;
@@ -99,11 +102,12 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     errorDescription: "The latest Quest information is unavailable. Try again.",
     noTeamTitle: "No Quest Team yet",
     noTeamDescription:
-      "Create a team, then invite eligible KU Account Holders by name or @ku.th.",
+      "Name your Candidate Team, then share its invite link so teammates can join with the Join Code.",
     createTeam: "Create Team",
+    teamNameLabel: "Team name",
     teamTitle: "Build your Quest Team",
     teamSubtitle:
-      "No team name is needed. Your Leader and roster identify the team.",
+      "Form a Candidate Team with the Join Code, then submit it at the full headcount.",
     roster: "Accepted roster",
     leader: "Team Leader",
     member: "Member",
@@ -111,9 +115,13 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     rosterCount: (actual, requested) => `Roster ${actual}/${requested}`,
     joinTeamTitle: "Join a Candidate Team",
     joinTeamDescription:
-      "Choose a forming team and enter the Join Code from its Team Leader.",
-    joinTeamCodeLabel: "Enter team Join Code",
-    joinTeamCodePlaceholder: "Code from Team Leader",
+      "Paste the invite link your Team Leader shared with you.",
+    joinTeamCodeLabel: "Team invite link",
+    joinTeamCodePlaceholder: "Paste the invite link",
+    joinTeamInvalidInvite:
+      "This invite link is incomplete. Ask your Team Leader to share it again.",
+    teamInviteMessage: (teamName, link) =>
+      `Join my KUQuest team "${teamName}": ${link}`,
     joinTeam: "Join team",
     joiningTeam: "Joining…",
     partialRosterHint:
@@ -201,20 +209,24 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     errorDescription: "ไม่สามารถโหลดข้อมูลเควสต์ล่าสุดได้ ลองอีกครั้ง",
     noTeamTitle: "ยังไม่มีทีมเควสต์",
     noTeamDescription:
-      "สร้างทีม แล้วเชิญผู้ถือบัญชี KU ที่มีสิทธิ์ด้วยชื่อหรืออีเมล @ku.th",
+      "ตั้งชื่อ Candidate Team แล้วแชร์ลิงก์เชิญให้เพื่อนร่วมทีมเข้าร่วมด้วย Join Code",
     createTeam: "สร้างทีม",
+    teamNameLabel: "ชื่อทีม",
     teamTitle: "รวมทีมเควสต์",
-    teamSubtitle: "ไม่ต้องตั้งชื่อทีม ระบบใช้หัวหน้าทีมและสมาชิกเป็นตัวระบุทีม",
+    teamSubtitle: "รวมทีมด้วย Join Code แล้วส่งทีมเมื่อสมาชิกครบตามจำนวน",
     roster: "สมาชิกที่ตอบรับแล้ว",
     leader: "หัวหน้าทีม",
     member: "สมาชิก",
     memberCount: (count) => `สมาชิก ${count} คน`,
     rosterCount: (actual, requested) => `สมาชิก ${actual}/${requested} คน`,
     joinTeamTitle: "เข้าร่วม Candidate Team",
-    joinTeamDescription:
-      "เลือกทีมที่กำลังก่อตัว แล้วกรอกรหัส Join Code จากหัวหน้าทีม",
-    joinTeamCodeLabel: "กรอกรหัสเข้าร่วมทีม",
-    joinTeamCodePlaceholder: "รหัสจากหัวหน้าทีม",
+    joinTeamDescription: "วางลิงก์เชิญที่หัวหน้าทีมแชร์ให้คุณ",
+    joinTeamCodeLabel: "ลิงก์เชิญเข้าทีม",
+    joinTeamCodePlaceholder: "วางลิงก์เชิญ",
+    joinTeamInvalidInvite:
+      "ลิงก์เชิญไม่ครบถ้วน ขอให้หัวหน้าทีมแชร์ลิงก์อีกครั้ง",
+    teamInviteMessage: (teamName, link) =>
+      `เข้าร่วมทีม "${teamName}" ของฉันใน KUQuest: ${link}`,
     joinTeam: "เข้าร่วมทีม",
     joiningTeam: "กำลังเข้าร่วมทีม…",
     partialRosterHint:

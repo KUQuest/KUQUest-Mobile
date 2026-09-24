@@ -19,7 +19,10 @@ import styles from "./groupQuestStyles";
  * live snapshot as Quest Detail, so Quest and Candidate roster WebSocket
  * invalidations refresh this screen while it is open.
  */
-export default function TeamAssembleScreen(props: QuestDetailScreenProps) {
+export default function TeamAssembleScreen({
+  initialInvite,
+  ...props
+}: QuestDetailScreenProps & { initialInvite?: string }) {
   const insets = useSafeAreaInsets();
   const { locale } = useLocale();
   const messages = groupQuestMessages[locale];
@@ -43,7 +46,7 @@ export default function TeamAssembleScreen(props: QuestDetailScreenProps) {
       >
         <View className={styles.screenBody}>
           {view.state === "ready" && view.team ? (
-            <TeamAssembleView {...view.team} />
+            <TeamAssembleView {...view.team} initialInvite={initialInvite} />
           ) : (
             <View className={styles.sheetContent}>
               {view.state === "loading" ? (
