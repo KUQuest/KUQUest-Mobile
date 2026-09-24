@@ -157,6 +157,8 @@ const styles = {
   proposalSelectionBoxSelected: "bg-ku-primary border-ku-primary",
   proposalCopy: "flex-1 min-w-0 ml-ku-9",
   proposalName: "text-ku-text-strong font-ku-semibold text-ku-body-small",
+  proposalIdentity: "flex-row flex-wrap items-center gap-ku-xs",
+  proposalRating: "text-ku-text-secondary font-ku-medium text-ku-label",
   proposalDetail:
     "text-ku-text-secondary font-ku-regular text-ku-label mt-ku-2",
   proposalMembers: "gap-ku-2 mt-ku-6",

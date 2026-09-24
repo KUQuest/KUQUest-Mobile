@@ -4,7 +4,9 @@ import { act, fireEvent, render } from "@testing-library/react-native";
 import { CandidateReviewSheet } from "../components/CandidateReviewSheet";
 import { PartialGroupStartConsentSheet } from "../components/PartialGroupStartConsentSheet";
 import { TeamAssembleSheet } from "../components/TeamAssembleSheet";
-import type { QuestV2Team } from "@/api/questV2Contracts";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { profileKeys } from "@/features/profile/api/profileQueries";
+import type { QuestV2Application, QuestV2Team } from "@/api/questV2Contracts";
 import {
   QuestApplicationStatus,
   QuestPartialStartConsentStatus,
@@ -29,6 +31,23 @@ jest.mock("react-native/Libraries/Modal/Modal", () => ({
     children: ReactNode;
   }) => (visible ? <>{children}</> : null),
 }));
+function queryClientWithRatings(memberIds: string[]) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
+  for (const memberId of memberIds) {
+    queryClient.setQueryData(profileKeys.public(memberId), {
+      version: 1,
+      firstName: memberId,
+      lastName: "",
+      reputation: { totalQuests: 1, rating: { average: 4.7 } },
+      experience: [],
+      portfolio: [],
+      certificates: [],
+    });
+  }
+  return queryClient;
+}
 
 const team: QuestTeam = {
   id: "team-1",
@@ -223,20 +242,27 @@ describe("group Quest sheets", () => {
     const onSelectProposal = jest.fn();
     const onAccept = jest.fn();
     const onReject = jest.fn();
+    const queryClient = queryClientWithRatings([
+      "submitted-leader",
+      "selected-leader",
+      "rejected-leader",
+    ]);
     const view = await render(
-      <CandidateReviewSheet
-        applications={applications}
-        locale="en"
-        mode="team"
-        onAccept={onAccept}
-        onClose={() => undefined}
-        onReject={onReject}
-        onSelectProposal={onSelectProposal}
-        requestedHeadcount={3}
-        rewardSatangPerWorker={10000}
-        teams={[forming, submitted, selected, rejected]}
-        visible
-      />
+      <QueryClientProvider client={queryClient}>
+        <CandidateReviewSheet
+          applications={applications}
+          locale="en"
+          mode="team"
+          onAccept={onAccept}
+          onClose={() => undefined}
+          onReject={onReject}
+          onSelectProposal={onSelectProposal}
+          requestedHeadcount={3}
+          rewardSatangPerWorker={10000}
+          teams={[forming, submitted, selected, rejected]}
+          visible
+        />
+      </QueryClientProvider>
     );
 
     expect(view.queryByText("Forming Team")).toBeNull();
@@ -259,6 +285,34 @@ describe("group Quest sheets", () => {
     );
     expect(onAccept).toHaveBeenCalledWith("proposal-submitted");
     expect(onReject).toHaveBeenCalledWith("proposal-submitted");
+  });
+  it("shows a candidate's average reputation rating beside their name", async () => {
+    const application: QuestV2Application = {
+      id: "application-1",
+      questId: "quest-1",
+      memberId: "worker-1",
+      state: QuestApplicationStatus.APPLICATION_APPLIED,
+      appliedAt: "2026-09-25T09:00:00.000Z",
+    };
+    const queryClient = queryClientWithRatings(["worker-1"]);
+    const view = await render(
+      <QueryClientProvider client={queryClient}>
+        <CandidateReviewSheet
+          applicantDirectory={[{ id: "worker-1", displayName: "Chat Worker" }]}
+          applications={[application]}
+          locale="en"
+          mode="individual"
+          onClose={() => undefined}
+          visible
+        />
+      </QueryClientProvider>
+    );
+
+    expect(view.getByText("Chat Worker")).toBeTruthy();
+    expect(view.getByText("★ 4.7")).toBeTruthy();
+    expect(
+      view.getByTestId("candidate-review-rating-application-1")
+    ).toBeTruthy();
   });
 
   it("counts down the five-minute partial-start consent window and exposes voter actions", async () => {

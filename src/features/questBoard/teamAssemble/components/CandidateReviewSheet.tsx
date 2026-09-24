@@ -24,6 +24,7 @@ import {
   type QuestTeamMember,
 } from "../../domain/types";
 import type { QuestV2Application, QuestV2Team } from "@/api/questV2Contracts";
+import { usePublicProfileQuery } from "@/features/profile/api/profileQueries";
 import styles from "../groupQuestStyles";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 
@@ -31,6 +32,7 @@ export interface CandidateReviewIdentity {
   id: string;
   displayName: string;
   detail?: string;
+  ratingAverage?: number | null;
 }
 
 export interface CandidateReviewProposal {
@@ -57,6 +59,7 @@ type NormalizedProposal = {
   status: string;
   displayName: string;
   detail: string;
+  profileId?: string;
   submittedAt?: string;
   members: readonly QuestTeamMember[];
 };
@@ -230,6 +233,9 @@ function proposalFromRecord(
       detail:
         proposal.detail ??
         `${labels.teamProposal} · ${labels.memberCount(memberList.length)}`,
+      profileId:
+        proposal.leaderId ??
+        memberList.find((member) => member.role === "LEADER")?.workerId,
       submittedAt: proposal.submittedAt,
       members: memberList,
     };
@@ -247,6 +253,7 @@ function proposalFromRecord(
       proposal.detail ??
       identities.get(applicantId)?.detail ??
       labels.individualProposal,
+    profileId: proposal.applicantId,
     submittedAt: proposal.submittedAt,
     members: [],
   };
@@ -333,6 +340,7 @@ function normalizeProposals({
           status,
           displayName: leaderName,
           detail: `${messages.teamProposal} · ${messages.memberCount(members.length)}`,
+          profileId: team.leaderId,
           submittedAt: application?.submittedAt ?? team.createdAt,
           members,
         };
@@ -375,6 +383,7 @@ function normalizeProposals({
         detail: applicantId
           ? (identities.get(applicantId)?.detail ?? messages.individualProposal)
           : messages.individualProposal,
+        profileId: applicantId,
         submittedAt: applicationSubmittedAt(application),
         members: [],
       };
@@ -435,6 +444,7 @@ function ProposalRow({
   proposal,
   labels,
   locale,
+  visible,
   selected,
   onSelect,
   onAccept,
@@ -445,11 +455,21 @@ function ProposalRow({
   labels: ReturnType<typeof getMessages>;
   locale: SupportedLocale;
   selected: boolean;
+  visible: boolean;
   onSelect?: (proposalId: string) => void;
   onAccept?: (proposalId: string) => void;
   onReject?: (proposalId: string) => void;
   memberIdentities: Map<string, CandidateReviewIdentity>;
 }) {
+  const profileQuery = usePublicProfileQuery(
+    visible ? (proposal.profileId ?? "") : ""
+  );
+  const directoryRating = proposal.profileId
+    ? memberIdentities.get(proposal.profileId)?.ratingAverage
+    : undefined;
+  const ratingAverage = profileQuery.data
+    ? profileQuery.data.reputation.rating.average
+    : (directoryRating ?? null);
   const rejected =
     proposal.status === QuestTeamStatus.TEAM_REJECTED ||
     proposal.status === QuestApplicationStatus.APPLICATION_REJECTED;
@@ -471,7 +491,9 @@ function ProposalRow({
     >
       <View className={styles.proposalHeaderRow}>
         <Pressable
-          accessibilityLabel={`${labels.selectProposal}: ${name}`}
+          accessibilityLabel={`${labels.selectProposal}: ${name}${
+            ratingAverage != null ? ` · ${ratingAverage.toFixed(1)}/5` : ""
+          }`}
           accessibilityRole="radio"
           accessibilityState={{ selected: selected || statusSelected }}
           className={styles.proposalSelect}
@@ -487,9 +509,20 @@ function ProposalRow({
             ) : null}
           </View>
           <View className={styles.proposalCopy}>
-            <Text className={styles.proposalName} numberOfLines={1}>
-              {name}
-            </Text>
+            <View className={styles.proposalIdentity}>
+              <Text className={styles.proposalName} numberOfLines={1}>
+                {name}
+              </Text>
+              {ratingAverage != null ? (
+                <Text
+                  accessibilityLabel={`${ratingAverage.toFixed(1)}/5`}
+                  className={styles.proposalRating}
+                  testID={`candidate-review-rating-${proposal.id}`}
+                >
+                  ★ {ratingAverage.toFixed(1)}
+                </Text>
+              ) : null}
+            </View>
             <Text className={styles.proposalDetail}>
               {proposal.type === "team"
                 ? labels.teamProposal
@@ -798,6 +831,7 @@ export function CandidateReviewSheet({
               <ProposalRow
                 key={proposal.id}
                 labels={messages}
+                visible={visible}
                 locale={locale}
                 memberIdentities={memberIdentities}
                 onAccept={accept}
