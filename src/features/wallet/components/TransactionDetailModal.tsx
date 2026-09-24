@@ -241,7 +241,11 @@ export function TransactionDetailModal({
                   testID="tx-detail-source-tag"
                 >
                   <Text className={styles.sourceTagText}>
-                    {tx.sourceApiLabel}
+                    {tx.sourceApi === "TOP_UPS"
+                      ? m.sourceTopUps
+                      : tx.sourceApi === "PAYOUTS"
+                        ? m.sourcePayouts
+                        : m.sourceActivities}
                   </Text>
                 </View>
               </View>
@@ -263,7 +267,7 @@ export function TransactionDetailModal({
               ) : null}
 
               <View className={styles.detailRow} style={detailRowLastStyle}>
-                <Text className={styles.detailLabel}>{m.txTransactionIdLabel}</Text>
+                <Text className={styles.detailLabel}>{m.txReferenceLabel}</Text>
                 <Text
                   numberOfLines={1}
                   className={`${styles.detailValue} ${styles.monoText}`}
