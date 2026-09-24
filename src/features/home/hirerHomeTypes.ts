@@ -1,3 +1,7 @@
+import type {
+  QuestMode,
+  QuestParticipation,
+} from "@/features/questBoard/domain/types";
 import type { CanonicalHirerQuestStatus } from "./hirerHomeStatuses";
 
 export type { CanonicalHirerQuestStatus } from "./hirerHomeStatuses";
@@ -43,8 +47,8 @@ export interface LiveHirerQuestCardData {
   title: string;
   tag?: string;
   status: CanonicalHirerQuestStatus;
-  mode: "FIRST_COME_FIRST_SERVED" | "CANDIDATE";
-  participation: "SINGLE" | "GROUP";
+  mode: QuestMode;
+  participation: QuestParticipation;
   headcount: number;
   dueAt?: string | null;
   assignedWorkers: QuestMemberProfile[];

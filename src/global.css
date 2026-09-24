@@ -34,6 +34,13 @@
     --color-ku-worker-border: #c9a79a;
     --color-ku-on-worker: #ffffff;
 
+    --color-ku-additional: #7c4ba8;
+    --color-ku-additional-dark: #623784;
+    --color-ku-additional-deep: #412357;
+    --color-ku-additional-subtle: #f1ebf8;
+    --color-ku-additional-border: #c2aed7;
+    --color-ku-on-additional: #ffffff;
+
     /* Neutral */
     --color-ku-background: #f7f9f8;
     --color-ku-surface: #ffffff;
@@ -228,6 +235,13 @@
     --color-ku-worker-subtle: #3b2924;
     --color-ku-worker-border: #805044;
     --color-ku-on-worker: #241a17;
+
+    --color-ku-additional: #c7a3ea;
+    --color-ku-additional-dark: #a77acf;
+    --color-ku-additional-deep: #8759b0;
+    --color-ku-additional-subtle: #302541;
+    --color-ku-additional-border: #735896;
+    --color-ku-on-additional: #241b2b;
 
     /* Neutral */
     --color-ku-background: #101713;

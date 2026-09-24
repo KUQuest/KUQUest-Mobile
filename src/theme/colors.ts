@@ -70,6 +70,13 @@ export const lightColors = {
   workerBorder: "#C9A79A",
   onWorker: "#FFFFFF",
 
+  additional: "#7C4BA8",
+  additionalDark: "#623784",
+  additionalDeep: "#412357",
+  additionalSubtle: "#F1EBF8",
+  additionalBorder: "#C2AED7",
+  onAdditional: "#FFFFFF",
+
   // Neutral
   background: "#F7F9F8",
   surface: "#FFFFFF",
@@ -159,6 +166,13 @@ export const darkColors = {
   workerSubtle: "#3B2924",
   workerBorder: "#805044",
   onWorker: "#241A17",
+
+  additional: "#C7A3EA",
+  additionalDark: "#A77ACF",
+  additionalDeep: "#8759B0",
+  additionalSubtle: "#302541",
+  additionalBorder: "#735896",
+  onAdditional: "#241B2B",
 
   // Neutral
   background: "#101713",
