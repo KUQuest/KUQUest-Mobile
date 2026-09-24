@@ -15,6 +15,7 @@ import {
 } from "lucide-react-native";
 import { RefreshControl } from "react-native";
 
+import { ImageViewerModal } from "@/components/ui/ImageViewerModal";
 import { Image, Pressable, ScrollView, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { colors } from "@/theme/colors";
@@ -109,11 +110,13 @@ function QuestImage({
   uri,
   index,
   messages,
+  onPress,
   featured = false,
 }: {
   uri: string;
   index: number;
   messages: QuestBoardMessages;
+  onPress: () => void;
   featured?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
@@ -143,14 +146,21 @@ function QuestImage({
   }
 
   return (
-    <Image
+    <Pressable
       accessibilityLabel={label}
-      cachePolicy="memory-disk"
-      contentFit="cover"
-      onError={() => setFailed(true)}
-      source={{ uri }}
+      accessibilityRole="button"
+      onPress={onPress}
       className={imageClassName}
-    />
+    >
+      <Image
+        accessibilityLabel={label}
+        cachePolicy="memory-disk"
+        contentFit="cover"
+        onError={() => setFailed(true)}
+        source={{ uri }}
+        className="h-full w-full"
+      />
+    </Pressable>
   );
 }
 
@@ -258,6 +268,7 @@ export function QuestDetailBody({
   canReportQuest,
   onReportQuest,
 }: QuestDetailBodyProps) {
+  const [viewingImage, setViewingImage] = useState<number | null>(null);
   const StatusIcon = status?.Icon;
   return (
     <ScrollView
@@ -308,6 +319,7 @@ export function QuestDetailBody({
             featured
             index={1}
             messages={messages}
+            onPress={() => setViewingImage(0)}
             uri={imageUris[0]}
           />
           {imageUris.length > 1 ? (
@@ -317,6 +329,7 @@ export function QuestDetailBody({
                   key={`${uri}-${index + 1}`}
                   index={index + 2}
                   messages={messages}
+                  onPress={() => setViewingImage(index + 1)}
                   uri={uri}
                 />
               ))}
@@ -324,6 +337,17 @@ export function QuestDetailBody({
           ) : null}
         </View>
       ) : null}
+      <ImageViewerModal
+        closeLabel={messages.closeImageViewer}
+        imageAccessibilityLabel={
+          viewingImage === null
+            ? ""
+            : messages.questImageLabel(viewingImage + 1)
+        }
+        imageUrl={viewingImage === null ? null : imageUris[viewingImage] ?? null}
+        onClose={() => setViewingImage(null)}
+        visible={viewingImage !== null}
+      />
       <View className={styles.heroCard}>
         <View className={styles.heroPrimary}>
           <View className={styles.heroReward}>

@@ -64,6 +64,7 @@ export interface QuestBoardMessages {
   imageCount: (count: number) => string;
   questImageLabel: (index: number) => string;
   imageUnavailable: string;
+  closeImageViewer: string;
   perPerson: string;
   noQuests: string;
   noMatches: string;
@@ -355,6 +356,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     imageCount: (count) => `${count} photo${count === 1 ? "" : "s"}`,
     questImageLabel: (index) => `Quest image ${index}`,
     imageUnavailable: "Quest image unavailable",
+    closeImageViewer: "Close image viewer",
     perPerson: "/ person",
     noQuests: "No quests available yet.",
     noMatches: "No quests found",
@@ -609,12 +611,12 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
       status === null
         ? "Not submitted yet"
         : ((
-            {
-              PROOF_PENDING: "Waiting for review",
-              PROOF_APPROVED: "Approved",
-              PROOF_NOT_APPROVED: "Not approved",
-            } as Record<string, string>
-          )[status] ?? status),
+          {
+            PROOF_PENDING: "Waiting for review",
+            PROOF_APPROVED: "Approved",
+            PROOF_NOT_APPROVED: "Not approved",
+          } as Record<string, string>
+        )[status] ?? status),
     proofReviewWorkerFallback: "Worker",
     proofReviewTeamSubmittedBy: (leaderName) => `Sent by ${leaderName}`,
     proofReviewOpen: "Review",
@@ -742,6 +744,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     imageCount: (count) => `${count} รูป`,
     questImageLabel: (index) => `รูปเควสต์ที่ ${index}`,
     imageUnavailable: "ไม่สามารถแสดงรูปเควสต์ได้",
+    closeImageViewer: "ปิดโปรแกรมดูรูปภาพ",
     perPerson: "/ คน",
     noQuests: "ยังไม่มีเควสต์ที่พร้อมให้ค้นหา",
     noMatches: "ไม่พบเควสต์",
@@ -981,12 +984,12 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
       status === null
         ? "ยังไม่ส่งงาน"
         : ((
-            {
-              PROOF_PENDING: "รอตรวจ",
-              PROOF_APPROVED: "อนุมัติแล้ว",
-              PROOF_NOT_APPROVED: "ไม่อนุมัติ",
-            } as Record<string, string>
-          )[status] ?? status),
+          {
+            PROOF_PENDING: "รอตรวจ",
+            PROOF_APPROVED: "อนุมัติแล้ว",
+            PROOF_NOT_APPROVED: "ไม่อนุมัติ",
+          } as Record<string, string>
+        )[status] ?? status),
     proofReviewWorkerFallback: "ผู้ทำงาน",
     proofReviewTeamSubmittedBy: (leaderName) => `ส่งโดย ${leaderName}`,
     proofReviewOpen: "ตรวจงาน",
