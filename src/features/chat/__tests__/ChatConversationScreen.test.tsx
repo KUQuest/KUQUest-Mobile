@@ -72,7 +72,7 @@ describe("ChatConversationScreen", () => {
       throw new Error("Chat conversation controller mock is not configured");
     }
     mockedUseChatConversationController.mockReturnValue({
-      ...getController(),
+      ...getController("WORK"),
       conversationPending: false,
       role: chatMessages.en.questOwner,
       conversation: {

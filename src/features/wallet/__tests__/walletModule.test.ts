@@ -36,6 +36,7 @@ const now = new Date("2026-01-01T00:00:00.000Z");
 
 const topUpData: TopUpData = {
   id: "topup-1",
+  internalReference: "top-up:topup-1",
   creditSatang: 50_000,
   chargedFeeSatang: 0,
   chargedTaxSatang: 0,

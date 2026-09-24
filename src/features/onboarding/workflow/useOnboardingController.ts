@@ -168,8 +168,13 @@ export function useOnboardingController() {
       });
   }, [onboardingQuery.error, queryClient]);
 
+  const occupationLabels: Record<string, string> = {
+    Student: messages.student,
+    Lecturer: messages.lecturer,
+    Staff: messages.staff,
+  };
   const occupationOptions = (options?.occupations ?? []).map((occupation) => ({
-    label: occupation.name,
+    label: occupationLabels[occupation.name] ?? occupation.name,
     value: occupation.id,
   }));
   const facultyOptions = (options?.faculties ?? []).map((faculty) => ({

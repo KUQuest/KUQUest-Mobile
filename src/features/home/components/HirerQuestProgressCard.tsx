@@ -11,6 +11,8 @@ import {
   Users,
 } from "lucide-react-native";
 
+import { QuestStatus } from "@/domain/questLifecycle";
+import type { QuestMode } from "@/features/questBoard/domain/types";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import {
@@ -27,7 +29,7 @@ export interface HirerQuestProgressCardProps {
   title: string;
   tag?: string;
   status: CanonicalHirerQuestStatus;
-  mode?: "FIRST_COME_FIRST_SERVED" | "CANDIDATE";
+  mode?: QuestMode;
   headcount?: number;
   worker?: {
     id: string;
@@ -46,8 +48,8 @@ export interface HirerQuestProgressCardProps {
 }
 
 const progressSegmentColors = {
-  completed: "bg-ku-hirer-dark",
-  current: "bg-ku-hirer",
+  completed: "bg-ku-hirer",
+  current: "bg-ku-hirer-dark",
   upcoming: "bg-ku-hirer-border",
   terminal: "bg-ku-danger",
 } as const;
@@ -72,7 +74,9 @@ export function HirerQuestProgressCard({
   const { colors } = useAppTheme();
   const messages = hirerHomeMessages[locale];
   const statusLabel = messages.statusLabels[status];
-  const isTerminal = status === "QUEST_FAILED" || status === "QUEST_CANCELLED";
+  const isTerminal =
+    status === QuestStatus.QUEST_FAILED ||
+    status === QuestStatus.QUEST_CANCELLED;
   const dueLabel = useMemo(
     () => messages.dueAt(formatHirerDueAt(dueAt, locale)),
     [dueAt, locale, messages]
@@ -129,12 +133,12 @@ export function HirerQuestProgressCard({
               label={tag}
               leadingIcon={
                 <BriefcaseBusiness
-                  color={colors.hirer}
+                  color={colors.additionalDark}
                   size={14}
                   strokeWidth={2.1}
                 />
               }
-              textClassName={`${styles.tagText} text-ku-primary-dark`}
+              textClassName={`${styles.tagText} text-ku-additional-dark`}
               tone="accent"
             />
           ) : (
@@ -186,12 +190,32 @@ export function HirerQuestProgressCard({
             <View
               className={cn(
                 styles.progressSegment,
-                progressSegmentColors[stage.state]
+                progressSegmentColors[stage.state],
+                (stage.state === "current" || stage.state === "terminal") &&
+                  styles.progressSegmentActive
               )}
               key={stage.key}
             />
           ))}
         </View>
+        {activeStageIndex !== -1 ? (
+          <View className={styles.currentStageRow}>
+            <View
+              className={cn(
+                styles.currentStageDot,
+                isTerminal ? "bg-ku-danger" : "bg-ku-hirer-dark"
+              )}
+            />
+            <Text
+              className={cn(
+                styles.currentStageText,
+                isTerminal ? "text-ku-danger-dark" : "text-ku-hirer-dark"
+              )}
+            >
+              {stages[activeStageIndex].label}
+            </Text>
+          </View>
+        ) : null}
       </View>
       <View className={styles.cardBody}>
         {primaryWorker && !hasMultipleWorkers ? (
@@ -210,7 +234,7 @@ export function HirerQuestProgressCard({
                 className={styles.workerAvatar}
                 name={primaryWorker.displayName}
                 size={44}
-                textClassName={`${styles.workerAvatarText} text-ku-primary-dark`}
+                textClassName={`${styles.workerAvatarText} text-ku-additional-dark`}
                 uri={primaryWorker.avatarUri}
               />
               <View className={styles.workerCopy}>
@@ -255,7 +279,11 @@ export function HirerQuestProgressCard({
           >
             <View className={styles.workerLeading}>
               <View className={styles.workerAvatar}>
-                <Users color={colors.primary} size={18} strokeWidth={2.2} />
+                <Users
+                  color={colors.additionalDark}
+                  size={18}
+                  strokeWidth={2.2}
+                />
               </View>
               <View className={styles.workerCopy}>
                 <Text className={`${styles.workerName} text-ku-text-strong`}>
@@ -298,7 +326,11 @@ export function HirerQuestProgressCard({
           >
             <View className={styles.workerLeading}>
               <View className={styles.workerAvatar}>
-                <Users color={colors.primary} size={18} strokeWidth={2.2} />
+                <Users
+                  color={colors.additionalDark}
+                  size={18}
+                  strokeWidth={2.2}
+                />
               </View>
               <View className={styles.workerCopy}>
                 <Text className={`${styles.workerName} text-ku-text-strong`}>
@@ -342,7 +374,7 @@ export function HirerQuestProgressCard({
                   {messages.waitingForApplicants}
                 </Text>
                 <Text className={`${styles.workerRole} text-ku-text-secondary`}>
-                  {status === "QUEST_DRAFT"
+                  {status === QuestStatus.QUEST_DRAFT
                     ? messages.quickDraftDesc
                     : messages.noApplicantsYet}
                 </Text>
@@ -389,10 +421,10 @@ export function HirerQuestProgressCard({
           onPress={onOpenDetails}
           testID={`hirer-quest-card-details-${questId}`}
         >
-          <Text className={`${styles.detailsText} text-ku-primary-dark`}>
+          <Text className={`${styles.detailsText} text-ku-on-hirer`}>
             {messages.openDetails}
           </Text>
-          <ChevronRight color={colors.primary} size={15} strokeWidth={2.4} />
+          <ChevronRight color={colors.onHirer} size={15} strokeWidth={2.4} />
         </Pressable>
       </View>
     </View>

@@ -23,7 +23,7 @@ export const hirerHomeStyles = {
   cardHeaderMetaRow:
     "mb-ku-md flex-row flex-wrap items-center justify-between gap-ku-sm",
   tagBadge:
-    "max-w-full shrink flex-row items-center gap-ku-6 rounded-ku-pill border border-ku-hirer-border bg-ku-surface px-ku-10 py-ku-4",
+    "max-w-full shrink flex-row items-center gap-ku-6 rounded-ku-pill border border-ku-additional-border bg-ku-additional-subtle px-ku-10 py-ku-4",
   tagText: "shrink font-ku-medium text-ku-meta leading-[19px]",
   statusBadge: "flex-row items-center rounded-ku-pill border px-ku-10 py-ku-6",
   statusLabel: "font-ku-semibold text-ku-meta leading-[19px]",
@@ -34,7 +34,7 @@ export const hirerHomeStyles = {
   workerLeading:
     "min-h-[48px] min-w-[160px] flex-1 flex-row items-center gap-ku-10",
   workerAvatar:
-    "h-[44px] w-[44px] shrink-0 items-center justify-center overflow-hidden rounded-ku-pill border border-ku-hirer-border bg-ku-hirer-subtle",
+    "h-[44px] w-[44px] shrink-0 items-center justify-center overflow-hidden rounded-ku-pill border border-ku-additional-border bg-ku-additional-subtle",
   workerAvatarText: "font-ku-bold text-ku-body-small",
   workerCopy: "min-w-0 flex-1",
   workerName: "font-ku-semibold text-ku-body leading-[22px]",
@@ -48,14 +48,18 @@ export const hirerHomeStyles = {
     "mb-ku-10 flex-row flex-wrap items-center justify-between gap-ku-xs",
   timelineTitle: "font-ku-medium text-ku-meta leading-[19px]",
   stepProgressText: "font-ku-semibold text-ku-body-small leading-[21px]",
-  stagesTrack: "flex-row gap-ku-xs",
-  progressSegment: "h-[8px] flex-1 rounded-ku-pill",
+  stagesTrack: "flex-row items-center gap-ku-xs",
+  progressSegment: "h-[6px] flex-1 rounded-ku-pill",
+  progressSegmentActive: "h-[10px]",
+  currentStageRow: "mt-ku-10 flex-row items-center gap-ku-6",
+  currentStageDot: "h-[8px] w-[8px] rounded-ku-pill",
+  currentStageText: "font-ku-semibold text-ku-meta leading-[19px]",
   cardFooter:
     "flex-row flex-wrap items-center justify-between gap-ku-sm border-t border-ku-divider bg-ku-surface-raised px-ku-md py-ku-sm",
   dueRow: "min-w-[140px] flex-1 flex-row items-center gap-ku-6",
   dueLabel: "flex-1 font-ku-medium text-ku-body-small leading-[21px]",
   detailsButton:
-    "min-h-[48px] flex-row items-center justify-center gap-ku-4 rounded-ku-pill border border-ku-hirer-border bg-ku-surface px-ku-12",
+    "min-h-[48px] flex-row items-center justify-center gap-ku-4 rounded-ku-pill bg-ku-hirer px-ku-md",
   detailsText: "font-ku-semibold text-ku-body-small leading-[21px]",
   carouselContainer: "mb-ku-xs",
   carouselPagination: "mt-ku-sm flex-row items-center justify-center gap-ku-6",

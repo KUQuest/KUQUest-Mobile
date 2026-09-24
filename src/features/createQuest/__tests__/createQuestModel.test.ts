@@ -491,8 +491,8 @@ describe("Create Quest model", () => {
         "Not selected"
       );
 
-      expect(display.range).toContain("15 Oct 2026 · 21:00");
-      expect(display.range).toContain("16 Oct 2026 · 01:30");
+      expect(display.range).toContain("15 Oct 2026, 21:00");
+      expect(display.range).toContain("16 Oct 2026, 01:30");
       expect(display.duration).toBe("4h 30m");
       expect(display.crossesMidnight).toBe(true);
     });

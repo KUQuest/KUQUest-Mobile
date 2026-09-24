@@ -11,6 +11,7 @@ import {
 } from "lucide-react-native";
 import { colors } from "@/theme/colors";
 import { formatSatang } from "@/domain/satang";
+import { useRoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
 
 // `Animated.View` from react-native does not pass through `className`; wrapping
 // the NativeWind `View` keeps the class path while the animation stays on the
@@ -58,10 +59,13 @@ export function HirerBalanceCards({
   onTransferEarnings,
   transferButtonLabel,
 }: HirerBalanceCardsProps) {
+  const { isWorker } = useRoleWorkspace();
   const [card1Mode, setCard1Mode] = useState<"spending" | "earnings">(
-    "spending"
+    isWorker ? "earnings" : "spending"
   );
-  const [card2Mode, setCard2Mode] = useState<"escrow" | "payout">("escrow");
+  const [card2Mode, setCard2Mode] = useState<"escrow" | "payout">(
+    isWorker ? "payout" : "escrow"
+  );
 
   const [card1Anim] = useState(() => new Animated.Value(0));
   const [card2Anim] = useState(() => new Animated.Value(0));
