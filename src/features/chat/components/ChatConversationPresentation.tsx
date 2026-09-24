@@ -84,8 +84,6 @@ export function ChatConversationSkeleton({
               strokeWidth={2.5}
             />
           </Pressable>
-        </View>
-        <View className={styles.identityRow}>
           <SkeletonBlock
             variant="image"
             height={48}
@@ -95,22 +93,6 @@ export function ChatConversationSkeleton({
           <View style={{ flex: 1, gap: spacing.xs, marginLeft: spacing.sm }}>
             <SkeletonBlock height={18} width="78%" borderRadius={4} />
             <SkeletonBlock height={15} width="56%" borderRadius={4} />
-          </View>
-          <View
-            style={{
-              flexDirection: "row",
-              gap: spacing.xs,
-              marginLeft: spacing.sm,
-            }}
-          >
-            {[1, 2, 3].map((item) => (
-              <SkeletonBlock
-                key={item}
-                height={36}
-                width={36}
-                borderRadius={18}
-              />
-            ))}
           </View>
         </View>
       </View>

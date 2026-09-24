@@ -12,7 +12,6 @@ import {
   ClipboardCheck,
   Download,
   FileText,
-  MoreHorizontal,
   Paperclip,
   Search,
   Send,
@@ -70,7 +69,6 @@ export default function ChatConversationScreen({
     refreshing,
     refresh,
     retryLoad,
-    role,
     conversationKind,
     canWrite,
     readOnlyDescription,
@@ -232,8 +230,6 @@ export default function ChatConversationScreen({
                 strokeWidth={2.5}
               />
             </Pressable>
-          </View>
-          <View className={styles.identityRow}>
             <ChatAvatar
               initials={conversation.initials}
               color={conversation.avatarColor}
@@ -248,48 +244,8 @@ export default function ChatConversationScreen({
                 {localizedText(conversation.questTitle, locale)}
               </Text>
               <Text className={styles.identityMeta} numberOfLines={1}>
-                {conversation.participantName} · {role}
+                {conversation.participantName}
               </Text>
-            </View>
-            <View className={styles.headerActions}>
-              <Pressable
-                accessibilityLabel={messages.search}
-                accessibilityRole="button"
-                className={styles.headerAction}
-                onPress={() => {
-                  setSearchOpen(true);
-                  setSearchScope("messages");
-                }}
-              >
-                <Search color={colors.textStrong} size={21} strokeWidth={2.2} />
-              </Pressable>
-              <Pressable
-                accessibilityLabel={messages.searchFiles}
-                accessibilityRole="button"
-                className={styles.headerAction}
-                onPress={() => {
-                  setSearchOpen(true);
-                  setSearchScope("files");
-                }}
-              >
-                <FileText
-                  color={colors.textStrong}
-                  size={20}
-                  strokeWidth={2.1}
-                />
-              </Pressable>
-              <Pressable
-                accessibilityLabel={messages.moreOptions}
-                accessibilityRole="button"
-                className={styles.headerAction}
-                onPress={() => Alert.alert(messages.moreOptions)}
-              >
-                <MoreHorizontal
-                  color={colors.textStrong}
-                  size={21}
-                  strokeWidth={2.2}
-                />
-              </Pressable>
             </View>
           </View>
         </View>
@@ -312,9 +268,9 @@ export default function ChatConversationScreen({
               conversationType === "CANDIDATE_INQUIRY"
                 ? `../../${conversation.questId}`
                 : {
-                    pathname: `../quest/${conversation.questId}/work`,
-                    params: { viewerId },
-                  }
+                  pathname: `../quest/${conversation.questId}/work`,
+                  params: { viewerId },
+                }
             );
           }}
         >
@@ -604,8 +560,8 @@ export default function ChatConversationScreen({
                   {draft.length}/{MAX_MESSAGE_LENGTH}
                 </Text>
                 {draft.trim() ||
-                pendingAttachmentIds.length > 0 ||
-                pendingAttachments.length > 0 ? (
+                  pendingAttachmentIds.length > 0 ||
+                  pendingAttachments.length > 0 ? (
                   <Pressable
                     accessibilityLabel={messages.send}
                     accessibilityRole="button"
