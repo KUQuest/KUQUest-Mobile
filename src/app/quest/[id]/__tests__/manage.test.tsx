@@ -172,6 +172,22 @@ describe("HirerQuestManageRoute condition edit", () => {
     expect(view.queryByTestId("hirer-condition-edit-pending-title")).toBeNull();
   });
 
+  it("does not offer condition edits while a published Quest is open", async () => {
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        state: "QUEST_OPEN",
+        quest: {
+          ...createSnapshot().quest,
+          state: "QUEST_OPEN",
+        },
+      })
+    );
+    const view = await render(<HirerQuestManageRoute />);
+    await view.findByTestId("hirer-manage-cancel");
+
+    expect(view.queryByTestId("hirer-manage-condition-edit")).toBeNull();
+  });
+
   it("opens the composer, submits a proposal, and refreshes with the new pending edit", async () => {
     const pendingSnapshot = createSnapshot({
       editRequest: makeEditRequest(),
