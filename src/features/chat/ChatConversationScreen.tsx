@@ -1,9 +1,10 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import {
   Alert,
   Platform,
   RefreshControl,
   type ListRenderItemInfo,
+  type FlatList as NativeFlatList,
 } from "react-native";
 import {
   Camera,
@@ -18,9 +19,6 @@ import {
   X,
 } from "lucide-react-native";
 
-import { useAnimatedKeyboard, useAnimatedStyle } from "react-native-reanimated";
-
-import { Animated } from "@/tw/animated";
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -95,13 +93,18 @@ export default function ChatConversationScreen({
     handleImagePress,
     openFile,
   } = controller;
-  const keyboard = useAnimatedKeyboard();
-  const composerKeyboardStyle = useAnimatedStyle(
-    () => ({
-      paddingBottom: Platform.OS === "android" ? keyboard.height.value : 0,
-    }),
-    [keyboard]
-  );
+  const messageListRef = useRef<NativeFlatList<DisplayChatMessage>>(null);
+  const lastMessageIdRef = useRef<string | null>(null);
+  const handleMessageListContentSizeChange = useCallback(() => {
+    if (searchOpen) return;
+    const latestMessageId = searchedMessages.at(-1)?.id;
+    if (!latestMessageId || latestMessageId === lastMessageIdRef.current) {
+      return;
+    }
+    const animated = lastMessageIdRef.current !== null;
+    lastMessageIdRef.current = latestMessageId;
+    messageListRef.current?.scrollToEnd({ animated });
+  }, [searchOpen, searchedMessages]);
   const participantId = conversation?.participantId;
   const openParticipantProfile = useMemo(
     () =>
@@ -470,12 +473,15 @@ export default function ChatConversationScreen({
           </ScrollView>
         ) : (
           <FlatList
+            ref={messageListRef}
+            testID="chat-message-list"
             contentContainerClassName={
               searchOpen && searchedMessages.length === 0
                 ? "pb-ku-md"
                 : styles.messageContent
             }
             data={searchedMessages}
+            onContentSizeChange={handleMessageListContentSizeChange}
             keyExtractor={(message) => message.id}
             ListEmptyComponent={
               searchOpen ? (
@@ -509,10 +515,7 @@ export default function ChatConversationScreen({
         )}
 
         {!searchOpen && canWrite ? (
-          <Animated.View
-            className="bg-ku-background"
-            style={composerKeyboardStyle}
-          >
+          <View className="bg-ku-background">
             <PendingAttachmentsBar
               attachments={pendingAttachments}
               onRemove={handleRemovePendingAttachment}
@@ -590,7 +593,7 @@ export default function ChatConversationScreen({
                 )}
               </View>
             </View>
-          </Animated.View>
+          </View>
         ) : null}
       </KeyboardAvoidingView>
       <ImageViewerModal
