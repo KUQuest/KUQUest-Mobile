@@ -13,7 +13,6 @@ export interface WalletMessages {
   convertPrompt: string;
   convertSuccess: string;
   convertError: string;
-  topUpTitle: string;
   enterAmount: string;
   minTopUpHint: string;
   continue: string;
@@ -31,7 +30,7 @@ export interface WalletMessages {
   editAmount: string;
   promptPayScanLabel: string;
   topUpConfirmationTitle: string;
-  promptPayQrCode: string;
+  topUpQrUnavailable: string;
   topUpCredit: string;
   topUpBalanceUnavailable: string;
   topUpFee: string;
@@ -135,7 +134,6 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
       "Transfer your entire earnings balance to your spending balance? This action is instant and irreversible.",
     convertSuccess: "Earnings transferred to spending balance successfully.",
     convertError: "Failed to convert earnings.",
-    topUpTitle: "PromptPay QR Top-Up",
     enterAmount: "Enter amount (฿)",
     minTopUpHint: "Minimum amount is ฿10.00",
     continue: "Continue",
@@ -155,7 +153,8 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     clearAmount: "Clear amount",
     editAmount: "Edit amount",
     promptPayScanLabel: "Scan to pay",
-    promptPayQrCode: "PromptPay QR Code",
+    topUpQrUnavailable:
+      "The payment provider did not return a PromptPay QR. Please try again.",
     topUpConfirmationTitle: "Confirm top-up",
     topUpCredit: "Credit to Spending Balance",
     topUpBalanceUnavailable: "Unable to load the current balance.",
@@ -265,7 +264,6 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
       "ต้องการโอนยอดรายได้สะสมทั้งหมดเข้าสู่ยอดเงินพร้อมใช้หรือไม่? การดำเนินการนี้จะเกิดขึ้นทันทีและไม่สามารถยกเลิกได้",
     convertSuccess: "โอนรายได้เข้าสู่ยอดเงินพร้อมใช้สำเร็จแล้ว",
     convertError: "ไม่สามารถโอนรายได้ได้",
-    topUpTitle: "เติมเงินผ่าน PromptPay QR",
     enterAmount: "ระบุจำนวนเงิน (บาท)",
     minTopUpHint: "ยอดเติมเงินขั้นต่ำ ฿10.00",
     continue: "ดำเนินการต่อ",
@@ -285,7 +283,8 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     clearAmount: "ล้าง",
     editAmount: "แก้ไขจำนวนเงิน",
     promptPayScanLabel: "สแกนเพื่อชำระเงิน",
-    promptPayQrCode: "PromptPay QR Code",
+    topUpQrUnavailable:
+      "ผู้ให้บริการชำระเงินไม่ส่ง QR พร้อมเพย์กลับมา โปรดลองอีกครั้ง",
     topUpConfirmationTitle: "ยืนยันการเติมเงิน",
     topUpCredit: "เครดิตเข้ายอดเงินพร้อมใช้",
     topUpBalanceUnavailable: "ไม่สามารถโหลดยอดเงินพร้อมใช้ปัจจุบันได้",

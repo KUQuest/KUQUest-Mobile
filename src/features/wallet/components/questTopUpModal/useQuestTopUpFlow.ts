@@ -15,7 +15,7 @@ import {
   useWalletQuery,
   walletKeys,
 } from "@/features/wallet/api/walletQueries";
-import type { QuestTopUpStep } from "./types";
+import type { TopUpStep } from "../../topUpTypes";
 
 interface QuestTopUpFlowOptions {
   locale: SupportedLocale;
@@ -30,7 +30,7 @@ export function useQuestTopUpFlow({
   onPaid,
 }: QuestTopUpFlowOptions) {
   const messages = questBoardMessages[locale];
-  const [topUpStep, setTopUpStep] = useState<QuestTopUpStep>("amount");
+  const [topUpStep, setTopUpStep] = useState<TopUpStep>("amount");
   const [topUpAmount, setTopUpAmount] = useState("");
   const { data: liveWallet } = useWalletQuery();
   const queryClient = useQueryClient();
@@ -38,7 +38,6 @@ export function useQuestTopUpFlow({
   const [activeTopUp, setActiveTopUp] = useState<TopUpData | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [paymentVerified, setPaymentVerified] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(
     null
   );
@@ -46,7 +45,6 @@ export function useQuestTopUpFlow({
   const resetTopUp = useCallback(() => {
     setTopUpQuote(null);
     setActiveTopUp(null);
-    setPaymentVerified(false);
     setIsConfirming(false);
     setVerificationError(null);
     setTopUpStep("amount");
@@ -124,7 +122,6 @@ export function useQuestTopUpFlow({
       setVerificationError(messages.topUpPaymentPending);
       return;
     }
-    setPaymentVerified(true);
     await queryClient.invalidateQueries({ queryKey: walletKeys.detail() });
     onPaid?.();
   };
@@ -166,7 +163,6 @@ export function useQuestTopUpFlow({
     activeTopUp,
     isConfirming,
     isVerifying,
-    paymentVerified,
     verificationError,
     resetTopUp,
     openTopUp,

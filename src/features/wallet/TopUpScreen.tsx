@@ -1,24 +1,17 @@
 import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Platform } from "react-native";
-import {
-  KeyboardAvoidingView,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "@/tw";
+import { KeyboardAvoidingView, ScrollView, View } from "@/tw";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowLeft } from "lucide-react-native";
 import { type TopUpData, type TopUpQuote } from "@/api/WalletApi";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { useLocale } from "@/features/preferences/localeStore";
 import { walletMessages } from "@/locales/walletMessages";
-import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import { TopUpAmountStep } from "./components/TopUpAmountStep";
 import { TopUpConfirmationStep } from "./components/TopUpConfirmationStep";
+import { TopUpHeader } from "./components/TopUpHeader";
 import { TopUpPromptPayStep } from "./components/TopUpPromptPayStep";
 import { TopUpSuccessStep } from "./components/TopUpSuccessStep";
 import {
@@ -29,6 +22,7 @@ import {
   useTopUpStatusQuery,
   useWalletQuery,
 } from "./api/walletQueries";
+import type { TopUpStep } from "./topUpTypes";
 import { checkTopUpAmount, isQuoteExpired } from "./walletModule";
 
 export default function TopUpScreen() {
@@ -38,9 +32,7 @@ export default function TopUpScreen() {
   const { locale } = useLocale();
   const m = walletMessages[locale];
 
-  const [step, setStep] = useState<"amount" | "confirmation" | "promptPay">(
-    "amount"
-  );
+  const [step, setStep] = useState<TopUpStep>("amount");
   const [amountStr, setAmountStr] = useState("100");
   const [error, setError] = useState<string | null>(null);
   const [quote, setQuote] = useState<TopUpQuote | null>(null);
@@ -71,13 +63,9 @@ export default function TopUpScreen() {
   };
 
   const updateAmount = (val: string) => {
-    setAmountStr(val.replace(/[^0-9]/g, ""));
+    setAmountStr(val);
     setError(null);
     resetQuote();
-  };
-
-  const handleSelectQuick = (amount: number) => {
-    updateAmount(String(amount));
   };
 
   const handleContinue = async () => {
@@ -166,7 +154,9 @@ export default function TopUpScreen() {
   };
 
   const handleBack = () => {
-    if (step === "confirmation") {
+    if (paymentVerified) {
+      router.back();
+    } else if (step === "confirmation") {
       setStep("amount");
       setError(null);
     } else if (step === "promptPay") {
@@ -187,89 +177,57 @@ export default function TopUpScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         className="flex-1"
       >
-        <View className="flex-row items-center justify-between border-b border-ku-border-subtle bg-ku-surface px-ku-md pt-ku-12 pb-ku-14">
-          <TouchableOpacity
-            accessibilityLabel={m.back}
-            accessibilityRole="button"
-            activeOpacity={0.7}
-            onPress={handleBack}
-            className="h-[40px] w-[40px] items-center justify-center rounded-[20px] bg-ku-surface-muted"
-            testID="top-up-screen-back-btn"
-          >
-            <ArrowLeft color={colors.textStrong} size={22} strokeWidth={2.4} />
-          </TouchableOpacity>
-
-          <View className="flex-1 items-center px-ku-sm">
-            <Text
-              numberOfLines={1}
-              className="text-center font-ku-bold text-ku-body text-ku-text-strong"
-            >
-              {step === "amount"
-                ? m.topUpAmountTitle
-                : step === "confirmation"
-                  ? m.topUpConfirmationTitle
-                  : m.topUpPromptPayTitle}
-            </Text>
-            <Text className="mt-ku-2 font-ku-medium text-[11px] text-ku-text-secondary">
-              {step === "amount"
-                ? m.topUpAmountStepSubtitle
-                : step === "confirmation"
-                  ? m.topUpConfirmationStepSubtitle
-                  : m.topUpPromptPayStepSubtitle}
-            </Text>
-          </View>
-
-          <View className="w-[40px]" />
-        </View>
+        <TopUpHeader
+          locale={locale}
+          onBack={handleBack}
+          step={paymentVerified ? null : step}
+        />
 
         <ScrollView
-          contentContainerStyle={{
-            paddingBottom: insets.bottom + spacing.xl,
-            paddingHorizontal: spacing.md,
-            paddingTop: spacing.md,
-          }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           testID="top-up-screen-scroll"
         >
-          {step === "amount" ? (
-            <TopUpAmountStep
-              amountStr={amountStr}
-              error={error}
-              isAmountValid={isAmountValid}
-              loading={loading}
-              locale={locale}
-              onAmountChange={updateAmount}
-              onContinue={handleContinue}
-              onSelectQuick={handleSelectQuick}
-            />
-          ) : step === "confirmation" && quote ? (
-            <TopUpConfirmationStep
-              error={error}
-              loading={loading}
-              locale={locale}
-              onConfirm={handleConfirm}
-              onEdit={() => setStep("amount")}
-              quote={quote}
-            />
-          ) : activeTopUp && paymentVerified ? (
-            <TopUpSuccessStep
-              creditSatang={activeTopUp.creditSatang}
-              currentBalanceSatang={currentBalanceSatang}
-              transactionReference={activeTopUp.internalReference}
-              locale={locale}
-              onDone={handleFinish}
-            />
-          ) : activeTopUp ? (
-            <TopUpPromptPayStep
-              activeTopUp={activeTopUp}
-              checkingStatus={checkingStatus}
-              locale={locale}
-              onSimulatePayment={handleSimulatePayment}
-              onVerifyPayment={handleVerifyPayment}
-              statusMessage={statusMessage}
-            />
-          ) : null}
+          <View className="w-full max-w-[640px] self-center px-ku-md pt-ku-md">
+            {step === "amount" ? (
+              <TopUpAmountStep
+                amountStr={amountStr}
+                error={error}
+                isAmountValid={isAmountValid}
+                loading={loading}
+                locale={locale}
+                onAmountChange={updateAmount}
+                onContinue={handleContinue}
+              />
+            ) : step === "confirmation" && quote ? (
+              <TopUpConfirmationStep
+                error={error}
+                loading={loading}
+                locale={locale}
+                onConfirm={handleConfirm}
+                onEdit={() => setStep("amount")}
+                quote={quote}
+              />
+            ) : activeTopUp && paymentVerified ? (
+              <TopUpSuccessStep
+                creditSatang={activeTopUp.creditSatang}
+                currentBalanceSatang={currentBalanceSatang}
+                transactionReference={activeTopUp.internalReference}
+                locale={locale}
+                onDone={handleFinish}
+              />
+            ) : activeTopUp ? (
+              <TopUpPromptPayStep
+                activeTopUp={activeTopUp}
+                checkingStatus={checkingStatus}
+                locale={locale}
+                onSimulatePayment={handleSimulatePayment}
+                onVerifyPayment={handleVerifyPayment}
+                statusMessage={statusMessage}
+              />
+            ) : null}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </ScreenLayout>

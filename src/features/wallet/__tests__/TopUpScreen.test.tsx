@@ -211,10 +211,10 @@ describe("TopUpScreen", () => {
     const view = await renderWithQueryClient(<TopUpScreen />);
 
     await waitFor(() => {
-      expect(view.getByTestId("top-up-screen-back-btn")).toBeTruthy();
+      expect(view.getByTestId("top-up-back-btn")).toBeTruthy();
     });
 
-    await fireEvent.press(view.getByTestId("top-up-screen-back-btn"));
+    await fireEvent.press(view.getByTestId("top-up-back-btn"));
     expect(mockBack).toHaveBeenCalled();
   });
 });

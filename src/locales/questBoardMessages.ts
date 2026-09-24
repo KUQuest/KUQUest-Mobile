@@ -14,32 +14,8 @@ export interface QuestBoardMessages {
   fundingTopUp: string;
   fundingTransfer: string;
   fundingActionsUnavailable: string;
-  topUpTitle: string;
-  topUpAmountTitle: string;
-  topUpAmountDescription: string;
-  topUpAmountLabel: string;
-  topUpQuickAmountLabel: (amount: number) => string;
-  topUpPromptPayTitle: string;
-  topUpPromptPayDescription: string;
-  topUpPromptPayQrUnavailable: string;
-  topUpConfirmationTitle: string;
-  topUpCredit: string;
-  topUpFee: string;
-  topUpTax: string;
-  topUpPaymentTotal: string;
-  topUpExpiresAt: string;
-  topUpConfirm: string;
-  topUpPaymentVerified: string;
-  topUpPaymentCredited: (credit: string) => string;
-  topUpDone: string;
   topUpCreateError: string;
-  topUpVerifyPayment: string;
-  topUpVerifyingPayment: string;
   topUpPaymentPending: string;
-  topUpSimulateDev: string;
-  topUpClose: string;
-  topUpBack: string;
-  topUpContinue: string;
   settlement: string;
   settlementDescription: string;
   refunds: string;
@@ -308,36 +284,8 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     fundingTransfer: "Transfer",
     fundingActionsUnavailable:
       "Transfers between Members are not supported. Use a funded Quest instead.",
-    topUpTitle: "Top up",
-    topUpAmountTitle: "Enter amount",
-    topUpAmountDescription: "Choose an amount to add to your funding balance.",
-    topUpAmountLabel: "Amount (THB)",
-    topUpQuickAmountLabel: (amount) =>
-      `Choose ฿${amount.toLocaleString("en-US")}`,
-    topUpPromptPayTitle: "PromptPay QR",
-    topUpPromptPayDescription:
-      "Scan this PromptPay QR with your mobile banking app, then check payment status.",
-    topUpPromptPayQrUnavailable:
-      "The payment provider did not return a PromptPay QR. Please try again.",
-    topUpConfirmationTitle: "Confirm top-up",
-    topUpCredit: "Credit to Spending Balance",
-    topUpFee: "Payment fee",
-    topUpTax: "VAT",
-    topUpPaymentTotal: "Payment total",
-    topUpExpiresAt: "Quote expires",
-    topUpConfirm: "Confirm and create QR",
-    topUpPaymentVerified: "Payment Verified (PAID)",
-    topUpPaymentCredited: (credit) =>
-      `${credit} credited to your Spending Balance`,
-    topUpDone: "Done",
     topUpCreateError: "Unable to create the PromptPay QR. Please try again.",
-    topUpVerifyPayment: "Check payment status",
-    topUpVerifyingPayment: "Checking payment status…",
     topUpPaymentPending: "Awaiting payment confirmation…",
-    topUpSimulateDev: "Simulate Paid (Dev)",
-    topUpClose: "Close",
-    topUpBack: "Back",
-    topUpContinue: "Continue",
     settlement: "Settlement",
     settlementDescription: "Settlement pays rewards for the Actual Headcount.",
     refunds: "Refunds",
@@ -695,36 +643,8 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     fundingTransfer: "โอนเงิน",
     fundingActionsUnavailable:
       "ไม่รองรับการโอนเงินระหว่าง Member โปรดใช้เควสต์ที่มีการกันเงินแทน",
-    topUpTitle: "เติมเงิน",
-    topUpAmountTitle: "ระบุจำนวนเงิน",
-    topUpAmountDescription: "เลือกจำนวนเงินที่ต้องการเติมในยอดเงินพร้อมใช้",
-    topUpAmountLabel: "จำนวนเงิน (บาท)",
-    topUpQuickAmountLabel: (amount) =>
-      `เลือก ฿${amount.toLocaleString("en-US")}`,
-    topUpPromptPayTitle: "QR พร้อมเพย์",
-    topUpPromptPayDescription:
-      "สแกน QR พร้อมเพย์นี้ด้วยแอปธนาคาร แล้วตรวจสอบสถานะการชำระเงิน",
-    topUpPromptPayQrUnavailable:
-      "ผู้ให้บริการชำระเงินไม่ส่ง QR พร้อมเพย์กลับมา โปรดลองอีกครั้ง",
-    topUpConfirmationTitle: "ยืนยันการเติมเงิน",
-    topUpCredit: "เครดิตเข้ายอดเงินพร้อมใช้",
-    topUpFee: "ค่าธรรมเนียมการชำระเงิน",
-    topUpTax: "ภาษีมูลค่าเพิ่ม",
-    topUpPaymentTotal: "ยอดชำระทั้งหมด",
-    topUpExpiresAt: "ใบเสนอราคาหมดอายุ",
-    topUpConfirm: "ยืนยันและสร้าง QR",
-    topUpPaymentVerified: "ยืนยันการชำระเงินแล้ว (PAID)",
-    topUpPaymentCredited: (credit) =>
-      `เครดิต ${credit} เข้ายอดเงินพร้อมใช้แล้ว`,
-    topUpDone: "เสร็จสิ้น",
     topUpCreateError: "ไม่สามารถสร้าง QR พร้อมเพย์ได้ โปรดลองอีกครั้ง",
-    topUpVerifyPayment: "ตรวจสอบสถานะการชำระเงิน",
-    topUpVerifyingPayment: "กำลังตรวจสอบสถานะการชำระเงิน…",
     topUpPaymentPending: "กำลังรอการยืนยันการชำระเงิน…",
-    topUpSimulateDev: "จำลองชำระสำเร็จ (Dev)",
-    topUpClose: "ปิด",
-    topUpBack: "ย้อนกลับ",
-    topUpContinue: "ดำเนินการต่อ",
     settlement: "การชำระเงิน",
     settlementDescription:
       "การชำระเงินจ่ายค่าตอบแทนตามจำนวน Worker จริง (Actual Headcount)",

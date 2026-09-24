@@ -1,10 +1,12 @@
 import React from "react";
-import { CheckCircle2, ShieldCheck, Wallet } from "lucide-react-native";
-import { TouchableOpacity, Text, View } from "@/tw";
+import { CheckCircle2 } from "lucide-react-native";
+import { Text, View } from "@/tw";
+import { Button } from "@/components/ui/Button";
 import { formatSatang } from "@/domain/satang";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import type { SupportedLocale } from "@/locales/locale";
 import { walletMessages } from "@/locales/walletMessages";
-import { colors } from "@/theme/colors";
+import { topUpStyles } from "./topUpStyles";
 
 export interface TopUpSuccessStepProps {
   creditSatang: number;
@@ -22,79 +24,75 @@ export function TopUpSuccessStep({
   transactionReference,
 }: TopUpSuccessStepProps) {
   const m = walletMessages[locale];
-  const credit = formatSatang(creditSatang, locale, "exact");
+  const { colors } = useAppTheme();
   const currentBalance =
     currentBalanceSatang === null
       ? m.topUpBalanceUnavailable
       : formatSatang(currentBalanceSatang, locale, "exact");
 
   return (
-    <View
-      className="items-center pt-ku-lg pb-ku-lg"
-      testID="top-up-success-view"
-    >
-      <View
-        className="h-[88px] w-[88px] items-center justify-center rounded-[48px] border border-ku-border-success bg-ku-surface-success"
-        testID="top-up-verified-badge"
-      >
-        <CheckCircle2 color={colors.success} size={48} strokeWidth={2.2} />
+    <View className={topUpStyles.step} testID="top-up-success-view">
+      <View className={styles.hero}>
+        <View className={styles.badge} testID="top-up-verified-badge">
+          <CheckCircle2 color={colors.success} size={44} strokeWidth={2.2} />
+        </View>
+        <Text accessibilityRole="header" className={styles.title}>
+          {m.topUpSuccessTitle}
+        </Text>
+        <Text className={styles.description}>{m.topUpSuccessDescription}</Text>
       </View>
-      <Text className="mt-ku-md text-center font-ku-bold text-ku-title text-ku-text-strong">
-        {m.topUpSuccessTitle}
-      </Text>
-      <Text className="mt-ku-xs text-center font-ku-regular text-ku-body-small leading-[21px] text-ku-text-secondary">
-        {m.topUpSuccessDescription}
-      </Text>
-      <View className="mt-ku-lg w-full items-center rounded-[18px] border border-ku-border-accent bg-ku-surface px-ku-20 py-ku-18">
-        <View className="flex-row items-center gap-ku-sm">
-          <Wallet color={colors.hirerDeep} size={20} strokeWidth={2.2} />
-          <Text className="font-ku-medium text-ku-meta text-ku-text-secondary">
-            {m.topUpCredit}
+
+      <View className={topUpStyles.receipt}>
+        <View className={topUpStyles.receiptHero}>
+          <Text className={topUpStyles.receiptHeroLabel}>{m.topUpCredit}</Text>
+          <Text className={topUpStyles.receiptHeroValue}>
+            {formatSatang(creditSatang, locale, "exact")}
           </Text>
         </View>
-        <Text className="mt-ku-xs font-ku-bold text-ku-display-small text-ku-hirer-deep">
-          {credit}
-        </Text>
-        <View className="mt-ku-sm w-full border-t border-ku-border-subtle pt-ku-sm">
-          <Text className="font-ku-medium text-ku-meta text-ku-text-secondary">
-            {m.spendingBalance}
-          </Text>
-          <Text
-            className="mt-ku-2 font-ku-semibold text-ku-control text-ku-text-strong"
-            testID="top-up-current-balance"
-          >
-            {currentBalance}
-          </Text>
-          <Text className="mt-ku-xs font-ku-medium text-ku-meta text-ku-text-secondary">
-            {m.txReferenceLabel}
-          </Text>
-          <Text
-            className="mt-ku-2 w-full font-ku-regular text-[11px] text-ku-text-secondary"
-            selectable
-            testID="top-up-reference-value"
-          >
-            {transactionReference}
-          </Text>
+        <View className={styles.details}>
+          <View className={styles.detail}>
+            <Text className={styles.detailLabel}>{m.spendingBalance}</Text>
+            <Text
+              className={styles.detailValue}
+              testID="top-up-current-balance"
+            >
+              {currentBalance}
+            </Text>
+          </View>
+          <View className={styles.detail}>
+            <Text className={styles.detailLabel}>{m.txReferenceLabel}</Text>
+            <Text
+              className={styles.referenceValue}
+              selectable
+              testID="top-up-reference-value"
+            >
+              {transactionReference}
+            </Text>
+          </View>
         </View>
       </View>
-      <View className="mt-ku-sm w-full flex-row items-start gap-ku-sm rounded-[14px] bg-ku-surface-accent p-ku-sm">
-        <ShieldCheck color={colors.success} size={18} strokeWidth={2.2} />
-        <Text className="flex-1 font-ku-regular text-[12px] leading-[18px] text-ku-text-secondary">
-          {m.paymentSuccess}
-        </Text>
-      </View>
-      <TouchableOpacity
+
+      <Button
         accessibilityLabel={m.done}
-        accessibilityRole="button"
-        activeOpacity={0.8}
         onPress={onDone}
-        className="mt-ku-lg h-[52px] w-full items-center justify-center rounded-ku-pill bg-ku-hirer"
         testID="top-up-done-btn"
       >
-        <Text className="font-ku-semibold text-ku-control text-ku-on-hirer">
-          {m.done}
-        </Text>
-      </TouchableOpacity>
+        {m.done}
+      </Button>
     </View>
   );
 }
+
+const styles = {
+  hero: "items-center gap-ku-sm pt-ku-md",
+  badge:
+    "mb-ku-sm h-[88px] w-[88px] items-center justify-center rounded-ku-pill border border-ku-border-success bg-ku-surface-success",
+  title: "text-center font-ku-bold text-ku-title text-ku-text-strong",
+  description:
+    "text-center font-ku-regular text-ku-body-small text-ku-text-secondary",
+  details: "gap-ku-md p-ku-md",
+  detail: "gap-ku-2",
+  detailLabel: "font-ku-medium text-ku-label text-ku-text-secondary",
+  detailValue: "font-ku-semibold text-ku-body text-ku-text-strong",
+  referenceValue: "font-ku-regular text-ku-body-small text-ku-text",
+} as const;
