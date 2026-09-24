@@ -223,7 +223,7 @@ export function TeamAssembleView({
       setProposalFiles((prev) => [...prev, ...newFiles]);
     } catch (err) {
       setFilePickError(
-        err instanceof Error ? err.message : "Failed to pick file"
+        err instanceof Error ? err.message : messages.filePickFailed
       );
     } finally {
       setIsPickingFile(false);
@@ -243,8 +243,6 @@ export function TeamAssembleView({
       setTeamNameDraft(currentName);
     }
   }, [canonicalTeam?.id, canonicalTeam?.name, teamName]);
-  const leaveLabel = locale === "th" ? "ออกจากทีม" : "Leave";
-  const removeLabel = locale === "th" ? "นำออก" : "Remove";
   const canonicalMembers = canonicalTeam
     ? canonicalMemberRows(canonicalTeam, eligibleMembers)
     : [];
@@ -445,8 +443,55 @@ export function TeamAssembleView({
               submittedTitle={messages.submittedTitle}
             />
           ) : null}
-          {canonical && teamStatus === "TEAM_FORMING" ? (
+          {canRenameTeam ? (
+            <TeamAssembleNameEditor
+              currentName={teamName ?? canonicalTeam?.name ?? ""}
+              messages={messages}
+              onChange={setTeamNameDraft}
+              onSave={renameTeam}
+              value={teamNameDraft}
+            />
+          ) : null}
+          <TeamAssembleRoster
+            acceptedLabel={messages.invitationAccepted}
+            canonical={canonical}
+            canLeaveTeam={canLeaveTeam}
+            canRemoveMember={canRemoveMember}
+            helper={
+              canonical
+                ? messages.fullRosterHint(requiredHeadcount)
+                : messages.partialRosterHint
+            }
+            isLeader={isLeader}
+            isLocked={isLocked}
+            leaderLabel={messages.leader}
+            leaveLabel={messages.leaveTeam}
+            memberLabel={messages.member}
+            members={acceptedMembers}
+            onLeaveTeam={
+              onLeaveTeam && team ? () => onLeaveTeam(team.id) : undefined
+            }
+            onRemoveMember={
+              onRemoveMember && team
+                ? (memberId) => onRemoveMember(team.id, memberId)
+                : undefined
+            }
+            openSlotLabel={messages.openSlot}
+            removeLabel={messages.removeMember}
+            requiredHeadcount={requiredHeadcount}
+            rosterCountLabel={messages.rosterCount(
+              acceptedMembers.length,
+              requiredHeadcount
+            )}
+            rosterLabel={messages.roster}
+            teamStatusLabel={teamStatusLabel}
+            viewerId={viewerId}
+          />
+          {canonical &&
+          teamStatus === "TEAM_FORMING" &&
+          (!viewerIsMember || acceptedMembers.length < requiredHeadcount) ? (
             <TeamAssembleJoinCodePanel
+              messages={messages}
               canRegenerateJoinCode={canRegenerateJoinCode}
               code={code}
               codeExpiry={codeExpiry}
@@ -466,50 +511,6 @@ export function TeamAssembleView({
               viewerIsMember={viewerIsMember}
             />
           ) : null}
-          {canRenameTeam ? (
-            <TeamAssembleNameEditor
-              currentName={teamName ?? canonicalTeam?.name ?? ""}
-              locale={locale}
-              onChange={setTeamNameDraft}
-              onSave={renameTeam}
-              value={teamNameDraft}
-            />
-          ) : null}
-          <TeamAssembleRoster
-            acceptedLabel={messages.invitationAccepted}
-            canonical={canonical}
-            canLeaveTeam={canLeaveTeam}
-            canRemoveMember={canRemoveMember}
-            helper={
-              canonical
-                ? locale === "th"
-                  ? `ต้องมีสมาชิกครบ ${requiredHeadcount} คนจึงจะส่งทีมได้`
-                  : `Add exactly ${requiredHeadcount} members before submitting.`
-                : messages.partialRosterHint
-            }
-            isLeader={isLeader}
-            isLocked={isLocked}
-            leaderLabel={messages.leader}
-            leaveLabel={leaveLabel}
-            memberLabel={messages.member}
-            members={acceptedMembers}
-            onLeaveTeam={
-              onLeaveTeam && team ? () => onLeaveTeam(team.id) : undefined
-            }
-            onRemoveMember={
-              onRemoveMember && team
-                ? (memberId) => onRemoveMember(team.id, memberId)
-                : undefined
-            }
-            removeLabel={removeLabel}
-            rosterCountLabel={messages.rosterCount(
-              acceptedMembers.length,
-              requiredHeadcount
-            )}
-            rosterLabel={messages.roster}
-            teamStatusLabel={teamStatusLabel}
-            viewerId={viewerId}
-          />
           {pendingInvitations.length > 0 ? (
             <TeamAssembleInvitations
               canRespond={canRespondToInvitations}
@@ -542,7 +543,7 @@ export function TeamAssembleView({
               filePickError={filePickError}
               files={proposalFiles}
               isPickingFile={isPickingFile}
-              locale={locale}
+              messages={messages}
               onPickFiles={handlePickFiles}
               onRemoveFile={handleRemoveFile}
               onTextChange={setProposalText}
@@ -555,21 +556,7 @@ export function TeamAssembleView({
               canonical={canonical}
               files={proposalFiles}
               isReviewing={isReviewing}
-              locale={locale}
-              messages={{
-                attachedFiles: locale === "th" ? "ไฟล์แนบ" : "Attached files",
-                cancel: messages.cancel,
-                confirmSubmit: messages.confirmSubmit,
-                partialRosterHint: messages.partialRosterHint,
-                proposal: locale === "th" ? "ข้อเสนอ" : "Proposal",
-                reviewDescription: messages.reviewDescription,
-                reviewRoster: messages.reviewRoster,
-                reviewTitle: messages.reviewTitle,
-                roster: messages.roster,
-                rosterCount: messages.rosterCount,
-                submittingTeam: messages.submittingTeam,
-                teamSubmissionUnavailable: "Team submission unavailable",
-              }}
+              messages={messages}
               onReviewChange={setReview}
               onSubmit={submit}
               requiredHeadcount={requiredHeadcount}

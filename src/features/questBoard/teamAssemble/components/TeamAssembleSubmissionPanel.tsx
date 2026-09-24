@@ -3,7 +3,6 @@ import React from "react";
 import { Check, CircleAlert, UsersRound } from "lucide-react-native";
 
 import { ActivityIndicator, Pressable, Text, View } from "@/tw";
-import type { SupportedLocale } from "@/locales/locale";
 import { colors } from "@/theme/colors";
 import type { ProposalFileItem } from "../types";
 
@@ -25,7 +24,6 @@ export interface TeamAssembleSubmissionMessages {
 }
 
 export interface TeamAssembleSubmissionPanelProps {
-  locale: SupportedLocale;
   submissionBlocker?: string;
   canonical: boolean;
   submissionReady: boolean;
@@ -41,7 +39,6 @@ export interface TeamAssembleSubmissionPanelProps {
 }
 
 export function TeamAssembleSubmissionPanel({
-  locale,
   submissionBlocker,
   canonical,
   submissionReady,
@@ -55,7 +52,6 @@ export function TeamAssembleSubmissionPanel({
   onSubmit,
   onReviewChange,
 }: TeamAssembleSubmissionPanelProps) {
-  const thai = locale === "th";
   if (submissionBlocker && canonical && submissionReady) {
     return (
       <View
@@ -68,7 +64,7 @@ export function TeamAssembleSubmissionPanel({
         </View>
         <View className={styles.noticeCopy}>
           <Text className={styles.noticeTitle}>
-            {thai ? "ยังส่งทีมไม่ได้" : messages.teamSubmissionUnavailable}
+            {messages.teamSubmissionUnavailable}
           </Text>
           <Text className={styles.noticeText}>{submissionBlocker}</Text>
         </View>
@@ -106,16 +102,14 @@ export function TeamAssembleSubmissionPanel({
           {files.length > 0 ? (
             <View className={styles.reviewRow}>
               <Text className={styles.reviewLabel}>
-                {thai ? "ไฟล์แนบ" : messages.attachedFiles}
+                {messages.attachedFiles}
               </Text>
               <Text className={styles.reviewValue}>{files.length}</Text>
             </View>
           ) : null}
           {text.trim() ? (
             <View className={styles.reviewRow}>
-              <Text className={styles.reviewLabel}>
-                {thai ? "ข้อเสนอ" : messages.proposal}
-              </Text>
+              <Text className={styles.reviewLabel}>{messages.proposal}</Text>
               <Text className={styles.reviewValue} numberOfLines={2}>
                 {text.trim()}
               </Text>

@@ -1,11 +1,11 @@
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "@/tw";
 import { FileText, ImagePlus, Trash2 } from "lucide-react-native";
-import type { SupportedLocale } from "@/locales/locale";
+import type { GroupQuestMessages } from "@/locales/groupQuestMessages";
 import { colors } from "@/theme/colors";
 import type { ProposalFileItem } from "../types";
 import styles from "../groupQuestStyles";
 export interface TeamAssembleProposalPanelProps {
-  locale: SupportedLocale;
+  messages: GroupQuestMessages;
   files: readonly ProposalFileItem[];
   text: string;
   isPickingFile: boolean;
@@ -16,7 +16,7 @@ export interface TeamAssembleProposalPanelProps {
 }
 
 export function TeamAssembleProposalPanel({
-  locale,
+  messages,
   files,
   text,
   isPickingFile,
@@ -25,36 +25,27 @@ export function TeamAssembleProposalPanel({
   onRemoveFile,
   onPickFiles,
 }: TeamAssembleProposalPanelProps) {
-  const thai = locale === "th";
   return (
     <View className={styles.section} testID="team-assemble-proposal-section">
       <View className={styles.sectionHeader}>
         <Text accessibilityRole="header" className={styles.sectionTitle}>
-          {thai ? "ข้อเสนอและเอกสารแนบ" : "Proposal & Supporting Files"}
+          {messages.proposalTitle}
         </Text>
         {files.length > 0 ? (
           <Text className={styles.sectionMeta}>
-            {thai ? `${files.length} ไฟล์` : `${files.length} files`}
+            {messages.fileCount(files.length)}
           </Text>
         ) : null}
       </View>
-      <Text className={styles.helper}>
-        {thai
-          ? "เพิ่มรายละเอียดหรือแนบเอกสารเพื่อประกอบการพิจารณา"
-          : "Add a proposal note and supporting documents or images"}
-      </Text>
+      <Text className={styles.helper}>{messages.proposalHelper}</Text>
       <View className="mt-ku-sm rounded-[18px] border border-ku-border bg-ku-surface p-ku-12">
         <TextInput
-          accessibilityLabel={thai ? "ข้อความเสนอตัว" : "Proposal note"}
+          accessibilityLabel={messages.proposalNoteLabel}
           className="min-h-[72px] font-ku-regular text-ku-body text-ku-text-strong"
           multiline
           numberOfLines={3}
           onChangeText={onTextChange}
-          placeholder={
-            thai
-              ? "ข้อความเสนอตัวหรือรายละเอียดเพิ่มเติม (ไม่บังคับ)"
-              : "Proposal note or message (optional)"
-          }
+          placeholder={messages.proposalNotePlaceholder}
           placeholderTextColor={colors.textFaint}
           testID="team-proposal-text-input"
           textAlignVertical="top"
@@ -85,9 +76,7 @@ export function TeamAssembleProposalPanel({
               </View>
             </View>
             <Pressable
-              accessibilityLabel={
-                thai ? `ลบไฟล์ ${file.name}` : `Remove file ${file.name}`
-              }
+              accessibilityLabel={messages.removeFile(file.name)}
               accessibilityRole="button"
               className="items-center justify-center p-ku-6"
               onPress={() => onRemoveFile(file.id)}
@@ -98,9 +87,7 @@ export function TeamAssembleProposalPanel({
           </View>
         ))}
         <Pressable
-          accessibilityLabel={
-            thai ? "แนบไฟล์หรือรูปภาพ" : "Attach file or image"
-          }
+          accessibilityLabel={messages.attachFile}
           accessibilityRole="button"
           className="min-h-[44px] flex-row items-center justify-center gap-ku-6 rounded-[14px] border border-dashed border-ku-primary px-ku-12 py-ku-sm"
           disabled={isPickingFile}
@@ -113,7 +100,7 @@ export function TeamAssembleProposalPanel({
             <>
               <ImagePlus color={colors.primary} size={18} strokeWidth={2.2} />
               <Text className="font-ku-semibold text-ku-label text-ku-primary">
-                {thai ? "แนบเอกสารหรือรูปภาพ" : "Attach file or image"}
+                {messages.attachFile}
               </Text>
             </>
           )}
