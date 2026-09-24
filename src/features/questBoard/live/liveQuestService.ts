@@ -312,6 +312,7 @@ function deriveCapabilities(input: {
   state: QuestV2Detail["state"];
   mode: QuestV2Mode;
   participation: QuestV2Participation;
+  startTime: string;
   proofRequired: boolean;
   headcount: number;
   assignments: LiveQuestAssignment[];
@@ -341,6 +342,7 @@ function deriveCapabilities(input: {
     editRequest,
     proofs,
     workConversation,
+    startTime,
   } = input;
   const isHirer = actor === "HIRER";
   const isWorker = actor === "WORKER";
@@ -348,6 +350,7 @@ function deriveCapabilities(input: {
   const isProspectiveWorker = isCandidate || actor === "PROSPECTIVE_WORKER";
   const activeWorker = assignment?.state === "ASSIGNMENT_ACTIVE";
   const open = state === "QUEST_OPEN";
+  const beforeStartTime = Date.now() < Date.parse(startTime);
   const assigned = state === "QUEST_ASSIGNED";
   const inProgress = state === "QUEST_IN_PROGRESS";
   const reviewableProofState = inProgress || state === "QUEST_FAILED";
@@ -413,6 +416,7 @@ function deriveCapabilities(input: {
       mode === "CANDIDATE" &&
       participation === "GROUP" &&
       open &&
+      beforeStartTime &&
       team === null &&
       hasJoinableTeam,
     canUpdateTeam:
@@ -851,6 +855,7 @@ export class LiveQuestService {
       viewerId,
       actor,
       state: quest.state,
+      startTime: quest.startTime,
       mode: quest.mode,
       participation: quest.participation,
       proofRequired: quest.proofRequired,

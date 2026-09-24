@@ -16,6 +16,7 @@ import { TeamAssembleEmptyState } from "./TeamAssembleEmptyState";
 import { TeamAssembleErrorState } from "./TeamAssembleErrorState";
 import { TeamAssembleInvitations } from "./TeamAssembleInvitations";
 import { TeamAssembleJoinCodePanel } from "./TeamAssembleJoinCodePanel";
+import { TeamAssembleJoinTeamPanel } from "./TeamAssembleJoinTeamPanel";
 import { TeamAssembleLoadingState } from "./TeamAssembleLoadingState";
 import { TeamAssembleLockedState } from "./TeamAssembleLockedState";
 import { TeamAssembleMemberPicker } from "./TeamAssembleMemberPicker";
@@ -37,12 +38,13 @@ export interface TeamAssembleSheetProps {
   eligibleMembers?: readonly TeamDirectoryMember[];
   requestedHeadcount?: number;
   viewerId?: string;
+  joinableTeams?: readonly QuestV2Team[];
   /** Canonical v2 join code override; forming teams expose their server value by default. */
   joinCode?: string | null;
   joinCodeExpiresAt?: string | null;
   joinCodeInput?: string;
   onJoinCodeInputChange?: (joinCode: string) => void;
-  onJoinTeam?: (joinCode: string) => void;
+  onJoinTeam?: (teamId: string, joinCode: string) => void;
   teamName?: string | null;
   onUpdateTeamName?: (teamId: string, name: string) => void;
   canUpdateTeam?: boolean;
@@ -119,6 +121,7 @@ export function TeamAssembleSheet({
   eligibleMembers = [],
   requestedHeadcount,
   viewerId,
+  joinableTeams,
   surfaceState = "ready",
   joinCode,
   joinCodeExpiresAt,
@@ -385,12 +388,25 @@ export function TeamAssembleSheet({
         retryLabel={messages.retry}
       />
     ) : !team ? (
-      <TeamAssembleEmptyState
-        createLabel={messages.createTeam}
-        description={messages.noTeamDescription}
-        onCreateTeam={onCreateTeam}
-        title={messages.noTeamTitle}
-      />
+      <ScrollView
+        className={styles.sheetScroll}
+        contentContainerClassName={styles.sheetContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <TeamAssembleEmptyState
+          createLabel={messages.createTeam}
+          description={messages.noTeamDescription}
+          onCreateTeam={onCreateTeam}
+          title={messages.noTeamTitle}
+        />
+        <TeamAssembleJoinTeamPanel
+          locale={locale}
+          onJoinTeam={(teamId, code) => onJoinTeam?.(teamId, code)}
+          submitting={submitting}
+          teams={joinableTeams ?? []}
+        />
+      </ScrollView>
     ) : (
       <ScrollView
         className={styles.sheetScroll}
@@ -420,7 +436,9 @@ export function TeamAssembleSheet({
               if (joinCodeInput === undefined) setInternalJoinCode(value);
               onJoinCodeInputChange?.(value);
             }}
-            onJoinTeam={onJoinTeam}
+            onJoinTeam={
+              onJoinTeam ? (code) => onJoinTeam(team.id, code) : undefined
+            }
             onRegenerateJoinCode={onRegenerateJoinCode}
             teamId={team.id}
             viewerIsMember={viewerIsMember}

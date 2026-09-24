@@ -12,7 +12,7 @@ export interface QuestDetailTeamHandlers {
   liveUnderfilledDecision: (decision: "PROCEED" | "CANCEL") => void;
   liveUnderfilledConsent: (decision: "ACCEPT" | "DECLINE") => void;
   liveCreateTeam: () => void;
-  liveJoinTeam: (joinCode: string) => void;
+  liveJoinTeam: (teamId: string, joinCode: string) => void;
   liveLeaveTeam: (teamId: string) => void;
   liveRemoveTeamMember: (teamId: string, memberId: string) => void;
   liveRegenerateTeamCode: (teamId: string) => void;
@@ -65,8 +65,8 @@ export function useQuestDetailTeamActions({
     void liveActions.createTeam();
   }, [liveActions]);
   const liveJoinTeam = useCallback(
-    (joinCode: string) => {
-      void liveActions.joinTeam(joinCode);
+    (teamId: string, joinCode: string) => {
+      void liveActions.joinTeam(teamId, joinCode);
     },
     [liveActions]
   );

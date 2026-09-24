@@ -292,17 +292,24 @@ export function useQuestDetailLiveActions(
     ]
   );
   const liveTeam = getQuestDetailLiveTeam(liveSnapshot);
+  const liveStartTime = liveSnapshot?.quest.startTime;
   const joinTeam = useCallback(
-    (joinCode: string) =>
+    (teamId: string, joinCode: string) =>
       runLiveAction(
         "join-team",
         () => {
-          if (!questId || !liveTeam || !capabilities?.canJoinTeam)
+          if (
+            !questId ||
+            !capabilities?.canJoinTeam ||
+            !liveStartTime ||
+            Date.now() >= Date.parse(liveStartTime)
+          ) {
             return Promise.reject(new Error("Team joining is unavailable"));
+          }
           return joinCandidateTeamMutation.mutateAsync({
             questId,
-            teamId: liveTeam.id,
-            joinCode,
+            teamId,
+            joinCode: joinCode.toUpperCase(),
             viewerId,
             idempotencyKey: createQuestIdempotencyKey(),
           });
@@ -312,7 +319,7 @@ export function useQuestDetailLiveActions(
     [
       capabilities?.canJoinTeam,
       joinCandidateTeamMutation,
-      liveTeam,
+      liveStartTime,
       questId,
       runLiveAction,
       viewerId,

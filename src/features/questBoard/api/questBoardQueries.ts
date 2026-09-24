@@ -17,7 +17,10 @@ import {
 import { homeKeys } from "@/features/home/api/homeQueries";
 import { myQuestsKeys } from "@/features/myQuests/api/myQuestsQueries";
 import { workerHomeKeys } from "@/features/workerHome/api/workerHomeKeys";
-import { subscribeToQuestEvents } from "../live/questEvents";
+import {
+  subscribeToCandidateRosterEvents,
+  subscribeToQuestEvents,
+} from "../live/questEvents";
 import {
   liveQuestService,
   type LiveQuestSnapshot,
@@ -139,7 +142,7 @@ export function useLiveQuestSnapshotQuery(
       });
     });
   }, [enabled, queryClient, questId, viewerId]);
-  return useQuery<LiveQuestSnapshot>({
+  const query = useQuery<LiveQuestSnapshot>({
     enabled: Boolean(questId && viewerId) && enabled,
     refetchInterval:
       typeof refetchIntervalMs === "function"
@@ -161,6 +164,20 @@ export function useLiveQuestSnapshotQuery(
       });
     },
   });
+  const canReadCandidateRoster = Boolean(
+    query.data && (query.data.actor === "HIRER" || query.data.team != null)
+  );
+  useEffect(() => {
+    if (!enabled || !questId || !viewerId || !canReadCandidateRoster) {
+      return;
+    }
+    return subscribeToCandidateRosterEvents(questId, () => {
+      void queryClient.invalidateQueries({
+        queryKey: questBoardKeys.liveSnapshotScope(questId, viewerId),
+      });
+    });
+  }, [canReadCandidateRoster, enabled, queryClient, questId, viewerId]);
+  return query;
 }
 
 type QuestReadProjection = "hirer" | "worker";

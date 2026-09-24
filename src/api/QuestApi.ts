@@ -622,7 +622,9 @@ export class QuestApi {
     joinCode: string,
     idempotencyKey?: string
   ): Promise<QuestV2Team> {
-    const validatedPayload = questV2TeamJoinPayloadSchema.parse({ joinCode });
+    const validatedPayload = questV2TeamJoinPayloadSchema.parse({
+      joinCode: joinCode.toUpperCase(),
+    });
     const body = await this.client.requestJson<unknown>(
       `/api/v2/quests/${questId}/teams/${teamId}/join`,
       validatedPayload,

@@ -672,7 +672,7 @@ describe("QuestApi", () => {
       )
     ).resolves.toEqual(team);
     await expect(
-      api.joinCandidateTeam("quest-1", "team-1", "JOIN-123", "team-join-1")
+      api.joinCandidateTeam("quest-1", "team-1", "join-123", "team-join-1")
     ).resolves.toEqual(team);
     await expect(
       api.submitCandidateTeam(

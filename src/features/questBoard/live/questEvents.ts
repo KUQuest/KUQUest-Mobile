@@ -37,6 +37,12 @@ const questEventSchema = z.union([
     ),
 ]);
 
+const candidateRosterEventSchema = z.object({
+  type: z.literal("CANDIDATE_ROSTER_UPDATED"),
+  version: z.literal(1).optional(),
+  questId: z.string().min(1).optional(),
+});
+
 type QuestUpdatedEvent = Extract<
   z.infer<typeof questEventSchema>,
   { type: "QUEST_UPDATED" }
@@ -57,16 +63,17 @@ function reconnectDelayMs(attempt: number): number {
   );
 }
 
-export function subscribeToQuestEvents(
+function subscribeToEventStream(
   questId: string,
-  onQuestUpdated: (event: QuestUpdatedEvent) => void
+  path: string,
+  onMessage: (payload: unknown) => void
 ): () => void {
   const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
   if (!apiBaseUrl || !questId) return () => {};
 
   const eventsUrl = toWebSocketUrl(
     apiBaseUrl,
-    `/api/v2/quests/${encodeURIComponent(questId)}/events`
+    `/api/v2/quests/${encodeURIComponent(questId)}${path}`
   );
   const NativeWebSocket = WebSocket as unknown as NativeWebSocketConstructor;
   let active = true;
@@ -117,14 +124,7 @@ export function subscribeToQuestEvents(
       } catch {
         return;
       }
-      const parsed = questEventSchema.safeParse(payload);
-      if (
-        parsed.success &&
-        parsed.data.type === "QUEST_UPDATED" &&
-        parsed.data.questId === questId
-      ) {
-        onQuestUpdated(parsed.data);
-      }
+      onMessage(payload);
     };
     currentSocket.onclose = () => {
       if (!active || socket !== currentSocket) return;
@@ -141,4 +141,39 @@ export function subscribeToQuestEvents(
     socket?.close();
     socket = null;
   };
+}
+
+export function subscribeToQuestEvents(
+  questId: string,
+  onQuestUpdated: (event: QuestUpdatedEvent) => void
+): () => void {
+  return subscribeToEventStream(questId, "/events", (payload) => {
+    const parsed = questEventSchema.safeParse(payload);
+    if (
+      parsed.success &&
+      parsed.data.type === "QUEST_UPDATED" &&
+      parsed.data.questId === questId
+    ) {
+      onQuestUpdated(parsed.data);
+    }
+  });
+}
+
+export function subscribeToCandidateRosterEvents(
+  questId: string,
+  onRosterUpdated: () => void
+): () => void {
+  return subscribeToEventStream(
+    questId,
+    "/candidate-roster/events",
+    (payload) => {
+      const parsed = candidateRosterEventSchema.safeParse(payload);
+      if (
+        parsed.success &&
+        (!parsed.data.questId || parsed.data.questId === questId)
+      ) {
+        onRosterUpdated();
+      }
+    }
+  );
 }

@@ -1,5 +1,8 @@
 import { authClient } from "@/features/auth/authClient";
-import { subscribeToQuestEvents } from "../questEvents";
+import {
+  subscribeToCandidateRosterEvents,
+  subscribeToQuestEvents,
+} from "../questEvents";
 
 class MockWebSocket {
   static instances: MockWebSocket[] = [];
@@ -135,6 +138,38 @@ describe("Quest event subscription", () => {
       })
     );
     stop();
+  });
+
+  it("refreshes roster listeners only for matching Candidate roster events", () => {
+    const onRosterUpdated = jest.fn();
+    const stop = subscribeToCandidateRosterEvents("quest-1", onRosterUpdated);
+    const socket = MockWebSocket.instances[0];
+    if (!socket) throw new Error("Expected a Candidate roster event socket");
+
+    expect(socket.url).toBe(
+      "wss://api.example.com/api/v2/quests/quest-1/candidate-roster/events"
+    );
+    socket.receive(
+      JSON.stringify({
+        type: "CANDIDATE_ROSTER_UPDATED",
+        version: 1,
+        questId: "another-quest",
+      })
+    );
+    socket.receive(
+      JSON.stringify({
+        type: "CANDIDATE_ROSTER_UPDATED",
+        version: 1,
+        questId: "quest-1",
+        team: { id: "ignored" },
+      })
+    );
+    socket.receive(JSON.stringify({ type: "CANDIDATE_ROSTER_UPDATED" }));
+
+    expect(onRosterUpdated).toHaveBeenCalledTimes(2);
+    expect(onRosterUpdated).toHaveBeenCalledWith();
+    stop();
+    expect(socket.close).toHaveBeenCalledTimes(1);
   });
 
   it("does not connect without a session cookie", () => {
