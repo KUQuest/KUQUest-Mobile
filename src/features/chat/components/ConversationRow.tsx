@@ -25,15 +25,10 @@ export const ConversationRow = memo(function ConversationRow({
   onOpenProfile,
 }: ConversationRowProps) {
   const messages = chatMessages[locale];
-  const role =
-    conversation.participantRole === "owner"
-      ? messages.questOwner
-      : messages.questMember;
-  const participantId = conversation.participantId;
+  const participantName = conversation.participantName.split(/\s+/)[0];
   const label = [
     conversation.questTitle[locale],
-    conversation.participantName,
-    role,
+    participantName,
     conversation.latestMessage[locale],
     conversation.unreadCount > 0
       ? messages.unreadCount(conversation.unreadCount)
@@ -62,9 +57,9 @@ export const ConversationRow = memo(function ConversationRow({
         onPress={
           participantId && onOpenProfile
             ? (event) => {
-                event.stopPropagation();
-                onOpenProfile(participantId);
-              }
+              event.stopPropagation();
+              onOpenProfile(participantId);
+            }
             : undefined
         }
         style={{ backgroundColor: conversation.avatarColor }}
@@ -82,7 +77,7 @@ export const ConversationRow = memo(function ConversationRow({
             inquiry && styles.inquiryParticipant
           )}
         >
-          {conversation.participantName} · {role}
+          {participantName}
         </Text>
         <Text className={styles.latestMessage} numberOfLines={2}>
           {conversation.latestMessage[locale]}
