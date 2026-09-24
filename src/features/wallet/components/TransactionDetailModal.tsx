@@ -255,7 +255,10 @@ export function TransactionDetailModal({
                   className={styles.detailRow}
                   style={detailRowDividerStyle}
                 >
-                  <Text className={styles.detailLabel}>
+                  <Text
+                    className={styles.detailLabel}
+                    numberOfLines={1}
+                  >
                     {tx.type === WalletTransactionType.TOP_UP
                       ? m.txTopUpReferenceLabel
                       : m.txDetailsLabel}
