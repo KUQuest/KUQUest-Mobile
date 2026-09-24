@@ -88,7 +88,7 @@ describe("MyQuestListScreen", () => {
     });
   });
 
-  it("keeps completed and closed Hirer Quests in history with review actions", async () => {
+  it("keeps completed and closed Hirer Quests in history with review actions that open the review Popup", async () => {
     mockHirerList.mockResolvedValue([
       {
         ...draftQuest("completed-1", "Completed Quest", "QUEST_OPEN"),
@@ -115,10 +115,8 @@ describe("MyQuestListScreen", () => {
     });
     expect(screen.getByTestId("my-quest-list-action-completed-1")).toBeTruthy();
     fireEvent.press(screen.getByTestId("my-quest-list-action-completed-1"));
-    expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/quest/[id]/review",
-      params: { id: "completed-1" },
-    });
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(await screen.findByTestId("quest-review-modal")).toBeTruthy();
   });
   it("projects Hirer tabs, normalizes invalid tabs, and projects drafts", () => {
     const projection = projectMyQuestWorkspace({

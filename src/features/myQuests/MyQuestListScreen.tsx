@@ -1,5 +1,6 @@
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { View } from "@/tw";
+import { QuestReviewModal } from "@/features/questBoard/review/components/QuestReviewModal";
 
 import { MyQuestListContent } from "./components/MyQuestListContent";
 import { MyQuestListHeader } from "./components/MyQuestListHeader";
@@ -24,6 +25,7 @@ export default function MyQuestListScreen({
       <View className="flex-1 bg-ku-background">
         <MyQuestListHeader {...frame.headerProps} />
         <MyQuestListContent {...content.listProps} />
+        <QuestReviewModal {...content.reviewModalProps} />
       </View>
     </ScreenLayout>
   );

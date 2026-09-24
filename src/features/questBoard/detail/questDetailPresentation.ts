@@ -720,7 +720,6 @@ export interface QuestDetailActionBarModel {
   firstCome: boolean;
   onOpenApply: () => void;
   onEditPost: () => void;
-  onOpenReview: () => void;
   busy: boolean;
 }
 
@@ -747,7 +746,6 @@ export function buildQuestDetailActionBar(
     firstCome: facts.firstCome,
     onOpenApply: transitions.openConfirmation,
     onEditPost: navigation.openEditPost,
-    onOpenReview: navigation.openReview,
     busy: Boolean(surface.liveAction),
   };
 }

@@ -344,7 +344,9 @@ export function QuestDetailBody({
             ? ""
             : messages.questImageLabel(viewingImage + 1)
         }
-        imageUrl={viewingImage === null ? null : imageUris[viewingImage] ?? null}
+        imageUrl={
+          viewingImage === null ? null : (imageUris[viewingImage] ?? null)
+        }
         onClose={() => setViewingImage(null)}
         visible={viewingImage !== null}
       />

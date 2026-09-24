@@ -1,18 +1,14 @@
 import React from "react";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
-import QuestReviewScreen from "../QuestReviewScreen";
+import { QuestReviewModal } from "../components/QuestReviewModal";
 
-const mockBack = jest.fn();
+const mockClose = jest.fn();
 const mockMutateAsync = jest.fn();
 const mockRefetch = jest.fn();
 let mockSnapshot: Record<string, unknown>;
 let mockAssignments: { data?: unknown[]; error: Error | null };
 let mockKeyCount = 0;
-
-jest.mock("expo-router", () => ({
-  useRouter: () => ({ back: mockBack }),
-}));
 
 jest.mock("@/api/QuestApi", () => ({
   createQuestIdempotencyKey: () => `review-key-${++mockKeyCount}`,
@@ -47,34 +43,6 @@ jest.mock("@/features/questBoard/api/questBoardQueries", () => ({
     refetch: mockRefetch,
   }),
 }));
-
-jest.mock("@/components/layout/ScreenLayout", () => {
-  const ReactRuntime = jest.requireActual("react");
-  const native = jest.requireActual("react-native");
-  return {
-    ScreenLayout: ({ children }: { children: unknown }) =>
-      ReactRuntime.createElement(native.View, null, children),
-  };
-});
-
-jest.mock("@/components/ui/TopBar", () => {
-  const ReactRuntime = jest.requireActual("react");
-  const native = jest.requireActual("react-native");
-  return {
-    TopBar: ({
-      title,
-      onBackPress,
-    }: {
-      title: string;
-      onBackPress: () => void;
-    }) =>
-      ReactRuntime.createElement(
-        native.Pressable,
-        { onPress: onBackPress, testID: "review-back" },
-        ReactRuntime.createElement(native.Text, null, title)
-      ),
-  };
-});
 
 jest.mock("@/components/ui/Button", () => {
   const ReactRuntime = jest.requireActual("react");
@@ -120,7 +88,9 @@ jest.mock("@/components/ui/TextArea", () => {
 jest.mock("@/tw", () => {
   const native = jest.requireActual("react-native");
   return {
+    KeyboardAvoidingView: native.View,
     Pressable: native.Pressable,
+    SafeAreaView: native.View,
     ScrollView: native.ScrollView,
     Text: native.Text,
     View: native.View,
@@ -129,6 +99,7 @@ jest.mock("@/tw", () => {
 
 jest.mock("lucide-react-native", () => ({
   Star: () => null,
+  X: () => null,
 }));
 
 function completedSnapshot() {
@@ -142,7 +113,7 @@ function completedSnapshot() {
   };
 }
 
-describe("QuestReviewScreen", () => {
+describe("QuestReviewModal", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockKeyCount = 0;
@@ -155,7 +126,9 @@ describe("QuestReviewScreen", () => {
   });
 
   it("submits a rating and optional comment for the selected Worker", async () => {
-    const screen = await render(<QuestReviewScreen questId="quest-1" />);
+    const screen = await render(
+      <QuestReviewModal onClose={mockClose} questId="quest-1" />
+    );
 
     await fireEvent.press(screen.getByTestId("quest-review-rating-5"));
     await fireEvent.changeText(
@@ -183,16 +156,20 @@ describe("QuestReviewScreen", () => {
       data: [{ state: "ASSIGNMENT_CANCELLED", workerId: "worker-1" }],
       error: null,
     };
-    const screen = await render(<QuestReviewScreen questId="quest-1" />);
+    const screen = await render(
+      <QuestReviewModal onClose={mockClose} questId="quest-1" />
+    );
 
     expect(screen.getByText("No Workers to review")).toBeTruthy();
     await fireEvent.press(screen.getByText("Done"));
-    expect(mockBack).toHaveBeenCalled();
+    expect(mockClose).toHaveBeenCalled();
   });
 
   it("shows a retryable error instead of an empty roster when Assignments fail to load", async () => {
     mockAssignments = { data: undefined, error: new Error("Forbidden") };
-    const screen = await render(<QuestReviewScreen questId="quest-1" />);
+    const screen = await render(
+      <QuestReviewModal onClose={mockClose} questId="quest-1" />
+    );
 
     expect(screen.getByText("Forbidden")).toBeTruthy();
     expect(screen.queryByText("No Workers to review")).toBeNull();
@@ -209,7 +186,9 @@ describe("QuestReviewScreen", () => {
     mockMutateAsync
       .mockRejectedValueOnce(new TypeError("Network request failed"))
       .mockResolvedValue({});
-    const screen = await render(<QuestReviewScreen questId="quest-1" />);
+    const screen = await render(
+      <QuestReviewModal onClose={mockClose} questId="quest-1" />
+    );
 
     await fireEvent.press(screen.getByTestId("quest-review-rating-5"));
     await fireEvent.press(screen.getByTestId("quest-review-submit"));

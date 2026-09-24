@@ -38,7 +38,6 @@ function makeQuest(status: QuestStatus): QuestBoardQuest {
 }
 
 describe("buildQuestDetailActionBar", () => {
-  const mockOpenReview = jest.fn();
   const mockOpenEditPost = jest.fn();
   const mockOpenMessageOwner = jest.fn();
   const mockLeaveQuest = jest.fn();
@@ -132,7 +131,6 @@ describe("buildQuestDetailActionBar", () => {
         openWorkHub: jest.fn(),
         openTeam: jest.fn(),
         openEditPost: mockOpenEditPost,
-        openReview: mockOpenReview,
         openReportQuest: jest.fn(),
         openMessageOwner: mockOpenMessageOwner,
       },
@@ -144,15 +142,12 @@ describe("buildQuestDetailActionBar", () => {
     jest.clearAllMocks();
   });
 
-  it("enables canReview for a terminal Hirer view with review capabilities and triggers navigation", () => {
+  it("enables canReview for a terminal Hirer view with review capabilities", () => {
     const context = makeContext();
     const actionBar = buildQuestDetailActionBar(context);
 
     expect(actionBar.canReview).toBe(true);
     expect(actionBar.canEditPost).toBe(false);
-
-    actionBar.onOpenReview();
-    expect(mockOpenReview).toHaveBeenCalledTimes(1);
   });
 
   it("enables canEditPost and disables canReview for draft Quests", () => {

@@ -21,8 +21,10 @@ import type { QuestCardAction, QuestSummary } from "../myQuestTypes";
 const ACTION_PATHNAMES = {
   edit: "/quest/[id]/edit",
   manage: "/quest/[id]/manage",
-  review: "/quest/[id]/review",
-} as const satisfies Record<Exclude<QuestCardAction, "dispute">, string>;
+} as const satisfies Record<
+  Exclude<QuestCardAction, "dispute" | "review">,
+  string
+>;
 
 export interface MyQuestListScreenProps {
   initialTab?: string;
@@ -53,10 +55,15 @@ export function useMyQuestListController({
   } = useCancelQuestMutation();
 
   const { confirmFileDispute } = useFileDispute();
+  const [reviewQuestId, setReviewQuestId] = useState<string | null>(null);
   const runQuestAction = useCallback(
     (quest: QuestSummary, action: QuestCardAction) => {
       if (action === "dispute") {
         confirmFileDispute(quest.id);
+        return;
+      }
+      if (action === "review") {
+        setReviewQuestId(quest.id);
         return;
       }
       router.push({
@@ -155,6 +162,10 @@ export function useMyQuestListController({
         cancellingQuestId: cancelPending
           ? (cancelVariables?.questId ?? null)
           : null,
+      },
+      reviewModalProps: {
+        questId: reviewQuestId,
+        onClose: () => setReviewQuestId(null),
       },
     },
   };
