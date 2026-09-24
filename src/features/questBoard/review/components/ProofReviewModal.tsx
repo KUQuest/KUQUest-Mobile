@@ -1,10 +1,10 @@
-import { Modal } from "react-native";
+import { Modal, Platform } from "react-native";
 import { ShieldCheck, X } from "lucide-react-native";
 
 import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
-import { Pressable, SafeAreaView, Text, View } from "@/tw";
+import { KeyboardAvoidingView, Pressable, SafeAreaView, Text, View } from "@/tw";
 
 import type { QuestV2ProofReviewPayload } from "@/api/QuestApi";
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
@@ -46,50 +46,55 @@ export function ProofReviewModal({
         className={styles.proofSheetBackdrop}
         onPress={onClose}
       >
-        <Pressable
-          accessibilityRole="none"
-          accessible={false}
-          accessibilityViewIsModal
-          className={styles.proofSheet}
-          onPress={() => undefined}
-          testID="proof-review-modal"
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="flex-1 justify-end"
         >
-          <SafeAreaView edges={["bottom"]}>
-            <View className={styles.proofSheetHeader}>
-              <View className={styles.proofSheetHeaderCopy}>
-                <View className="flex-row items-center gap-ku-sm">
-                  <ShieldCheck color={colors.primary} size={22} />
-                  <Text
-                    accessibilityRole="header"
-                    className={styles.proofSheetTitle}
-                  >
-                    {messages.proofReviewTitle}
+          <Pressable
+            accessibilityRole="none"
+            accessible={false}
+            accessibilityViewIsModal
+            className={styles.proofSheet}
+            onPress={() => undefined}
+            testID="proof-review-modal"
+          >
+            <SafeAreaView className="flex-1" edges={["bottom"]}>
+              <View className={styles.proofSheetHeader}>
+                <View className={styles.proofSheetHeaderCopy}>
+                  <View className="flex-row items-center gap-ku-sm">
+                    <ShieldCheck color={colors.primary} size={22} />
+                    <Text
+                      accessibilityRole="header"
+                      className={styles.proofSheetTitle}
+                    >
+                      {messages.proofReviewTitle}
+                    </Text>
+                  </View>
+                  <Text className={styles.proofSheetDescription}>
+                    {messages.proofReviewDescription}
                   </Text>
                 </View>
-                <Text className={styles.proofSheetDescription}>
-                  {messages.proofReviewDescription}
-                </Text>
+                <Pressable
+                  accessibilityLabel={messages.close}
+                  accessibilityRole="button"
+                  className={styles.sheetCloseButton}
+                  onPress={onClose}
+                  testID="proof-review-close"
+                >
+                  <X color={colors.textStrong} size={24} />
+                </Pressable>
               </View>
-              <Pressable
-                accessibilityLabel={messages.close}
-                accessibilityRole="button"
-                className={styles.sheetCloseButton}
-                onPress={onClose}
-                testID="proof-review-close"
-              >
-                <X color={colors.textStrong} size={24} />
-              </Pressable>
-            </View>
-            {/* Modal content unmounts while hidden, so reopening starts a fresh form. */}
-            <ProofReviewPanel
-              dueAt={dueAt}
-              key={proof.id}
-              onDone={onClose}
-              onReview={onReview}
-              proof={proof}
-            />
-          </SafeAreaView>
-        </Pressable>
+              {/* Modal content unmounts while hidden, so reopening starts a fresh form. */}
+              <ProofReviewPanel
+                dueAt={dueAt}
+                key={proof.id}
+                onDone={onClose}
+                onReview={onReview}
+                proof={proof}
+              />
+            </SafeAreaView>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Pressable>
     </Modal>
   );
