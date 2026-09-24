@@ -44,14 +44,15 @@ async function pressAlertButton(text: string) {
 
 function renderForm(
   snapshot = submittable,
-  onSubmitted: () => Promise<unknown> | void = jest.fn()
+  onSubmitted: () => Promise<unknown> | void = jest.fn(),
+  viewerId = "worker-1"
 ) {
   return renderWithQueryClient(
     <WorkerProofForm
       onSubmitted={onSubmitted}
       questId="quest-1"
       snapshot={snapshot}
-      viewerId="worker-1"
+      viewerId={viewerId}
     />
   );
 }
@@ -150,6 +151,19 @@ describe("WorkerProofForm", () => {
   });
 
   it("keeps the draft input and does not send when a file upload fails", async () => {
+    mockedPicker.mockResolvedValue({
+      canceled: false,
+      assets: [
+        {
+          uri: "file:///fail.jpg",
+          fileName: "fail.jpg",
+          mimeType: "image/jpeg",
+          type: "image",
+          width: 10,
+          height: 10,
+        },
+      ],
+    });
     mockedService.createProofDraft.mockResolvedValue({
       id: "draft-1",
       files: [{ uploadStatus: "PROOF_FILE_FAILED" }],
@@ -157,6 +171,9 @@ describe("WorkerProofForm", () => {
     const onSubmitted = jest.fn();
 
     const screen = await renderForm(submittable, onSubmitted);
+
+    await fireEvent.press(screen.getByRole("button", { name: "Add files" }));
+    await waitFor(() => expect(screen.getByText("1/5 files")).toBeTruthy());
 
     await fireEvent.changeText(
       screen.getByLabelText("Work description (optional)"),
@@ -176,6 +193,36 @@ describe("WorkerProofForm", () => {
     expect(onSubmitted).not.toHaveBeenCalled();
     expect(screen.getByDisplayValue("Done")).toBeTruthy();
   });
+  it("does not send a Proof when API reports no ready file", async () => {
+    mockedPicker.mockResolvedValue({
+      canceled: false,
+      assets: [
+        {
+          uri: "file:///pending.jpg",
+          fileName: "pending.jpg",
+          mimeType: "image/jpeg",
+          type: "image",
+          width: 10,
+          height: 10,
+        },
+      ],
+    });
+    mockedService.createProofDraft.mockResolvedValue({
+      id: "draft-1",
+      files: [{ fileId: null, uploadStatus: "PROOF_FILE_READY" }],
+    } as never);
+    const screen = await renderForm(submittable);
+
+    await fireEvent.press(screen.getByRole("button", { name: "Add files" }));
+    await waitFor(() => expect(screen.getByText("1/5 files")).toBeTruthy());
+    await fireEvent.press(screen.getByRole("button", { name: "Submit proof" }));
+    await pressAlertButton("Confirm");
+
+    await waitFor(() =>
+      expect(screen.getByTestId("worker-proof-notice")).toBeTruthy()
+    );
+    expect(mockedService.submitProofDraft).not.toHaveBeenCalled();
+  });
 
   it("renders nothing while the Worker cannot submit proof", async () => {
     const screen = await renderForm(
@@ -188,6 +235,50 @@ describe("WorkerProofForm", () => {
 
     expect(screen.queryByTestId("worker-proof-form")).toBeNull();
     expect(screen.queryByTestId("worker-proof-sent")).toBeNull();
+  });
+  it("does not treat another GROUP FCFS Worker's proof as this Worker's proof", async () => {
+    const snapshot = workerSnapshot({
+      id: "quest-1",
+      title: "Print flyers",
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "GROUP",
+      viewerId: "worker-2",
+      capabilities: { canSubmitProof: true },
+      proofs: [
+        {
+          id: "proof-worker-1",
+          questId: "quest-1",
+          workerId: "worker-1",
+          teamId: null,
+          submittedByUserId: "worker-1",
+          description: "Done",
+          status: "PROOF_PENDING",
+          submittedAt: "2026-10-01T10:00:00Z",
+          createdAt: "2026-10-01T09:30:00Z",
+          updatedAt: "2026-10-01T10:00:00Z",
+          visibility: "FULL",
+          fileIds: ["proof-file-1"],
+          files: [],
+        },
+      ],
+    });
+    const screen = await renderForm(snapshot, jest.fn(), "worker-2");
+
+    expect(screen.getByTestId("worker-proof-form")).toBeTruthy();
+    expect(screen.queryByTestId("worker-proof-sent")).toBeNull();
+  });
+
+  it("requires an attached file even when description is present", async () => {
+    const screen = await renderForm();
+
+    await fireEvent.changeText(
+      screen.getByLabelText("Work description (optional)"),
+      "Done"
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Submit proof", disabled: true })
+    ).toBeTruthy();
   });
 
   it("shows the sent proof status instead of the form", async () => {

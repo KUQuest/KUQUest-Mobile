@@ -109,6 +109,50 @@ describe("ChatConversationScreen", () => {
     expect(view.queryByLabelText(chatMessages.en.moreOptions)).toBeNull();
   });
 
+  it("opens the correct quest route from each conversation type", async () => {
+    const getController =
+      mockedUseChatConversationController.getMockImplementation();
+    if (!getController) {
+      throw new Error("Chat conversation controller mock is not configured");
+    }
+    const push = jest.fn();
+    const controller = getController("WORK");
+    mockedUseChatConversationController.mockReturnValue({
+      ...controller,
+      router: { back: jest.fn(), push } as unknown as ImperativeRouter,
+      conversationPending: false,
+      conversation: {
+        id: "conversation-1",
+        questId: "quest-1",
+        questTitle: { en: "Campus cleanup", th: "ทำความสะอาดวิทยาเขต" },
+        participantName: "Sora Student",
+        participantRole: "owner",
+        initials: "SS",
+        avatarColor: "#208AEF",
+        latestMessage: { en: "Hello", th: "สวัสดี" },
+        latestAt: "2026-09-24T03:30:00Z",
+        unreadCount: 0,
+        messages: [],
+      },
+    });
+
+    const view = await render(<ChatConversationScreen />);
+    await fireEvent.press(view.getByLabelText(chatMessages.en.viewQuest));
+    expect(push).toHaveBeenLastCalledWith({
+      pathname: "/quest/[id]/work",
+      params: { id: "quest-1", viewerId: "viewer-1" },
+    });
+
+    await view.rerender(
+      <ChatConversationScreen conversationType="CANDIDATE_INQUIRY" />
+    );
+    await fireEvent.press(view.getByLabelText(chatMessages.en.viewQuest));
+    expect(push).toHaveBeenLastCalledWith({
+      pathname: "/quest/[id]",
+      params: { id: "quest-1" },
+    });
+  });
+
   it("follows new messages without jumping when history is prepended", async () => {
     const scrollToEnd = jest
       .spyOn(NativeFlatList.prototype, "scrollToEnd")

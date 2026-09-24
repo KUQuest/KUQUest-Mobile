@@ -188,15 +188,12 @@ export function useChatConversationController(
         event.type === ChatSocketEventType.CANDIDATE_INQUIRY_MESSAGE ||
         event.type === ChatSocketEventType.MESSAGE_ACCEPTED
           ? event.message
-          : event.type === ChatSocketEventType.CHAT_MESSAGE_CREATED
-            ? event.data.message
-            : undefined;
+          : undefined;
       const messageTypeMatches =
         (event.type === ChatSocketEventType.WORK_CONVERSATION_MESSAGE &&
           conversationType === "WORK") ||
         (event.type === ChatSocketEventType.CANDIDATE_INQUIRY_MESSAGE &&
           conversationType === "CANDIDATE_INQUIRY") ||
-        event.type === ChatSocketEventType.CHAT_MESSAGE_CREATED ||
         event.type === ChatSocketEventType.MESSAGE_ACCEPTED;
 
       if (
@@ -241,26 +238,12 @@ export function useChatConversationController(
           queryKey: chatKeys.unread(viewerId),
         });
       }
-      if (
-        event.type === ChatSocketEventType.QUEST_STATE_CHANGED &&
-        event.data.questId === routeQuestId
-      ) {
-        void queryClient.invalidateQueries({
-          queryKey: chatKeys.conversation(
-            routeConversationId ?? "",
-            viewerId,
-            "WORK",
-            fallbackQuestId
-          ),
-        });
-      }
     },
     [
       conversationType,
       fallbackQuestId,
       queryClient,
       routeConversationId,
-      routeQuestId,
       viewerId,
     ]
   );

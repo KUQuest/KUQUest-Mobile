@@ -14,10 +14,23 @@ export const ChatSocketEventType = {
   MESSAGE_ACCEPTED: "MESSAGE_ACCEPTED",
   MESSAGE_REJECTED: "MESSAGE_REJECTED",
   SEND_MESSAGE: "SEND_MESSAGE",
-  CHAT_MESSAGE_CREATED: "chat.message.created",
-  CHAT_READ_UPDATED: "chat.read.updated",
-  QUEST_STATE_CHANGED: "quest.state.changed",
 } as const;
+
+const clientMessageIdSchema = z
+  .string()
+  .min(1)
+  .max(128)
+  .refine((value) => value.trim().length > 0);
+
+const messageTextSchema = z
+  .string()
+  .min(1)
+  .max(1000)
+  .refine((value) => value.trim().length > 0);
+
+const attachmentIdsSchema = z
+  .array(z.string().uuid())
+  .refine((ids) => new Set(ids).size === ids.length);
 
 const chatSocketEventSchema = z.discriminatedUnion("type", [
   z.object({
@@ -30,37 +43,15 @@ const chatSocketEventSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal(ChatSocketEventType.MESSAGE_ACCEPTED),
-    clientMessageId: z.string().min(1),
+    clientMessageId: clientMessageIdSchema,
     message: chatMessageSchema,
   }),
   z.object({
     type: z.literal(ChatSocketEventType.MESSAGE_REJECTED),
-    clientMessageId: z.string().min(1),
-    error: z.union([z.string(), z.record(z.string(), z.unknown())]),
-  }),
-  z.object({
-    type: z.literal(ChatSocketEventType.CHAT_MESSAGE_CREATED),
-    data: z.object({
-      conversationId: z.string(),
-      message: chatMessageSchema,
-    }),
-  }),
-  z.object({
-    type: z.literal(ChatSocketEventType.CHAT_READ_UPDATED),
-    data: z.object({
-      conversationId: z.string(),
-      userId: z.string(),
-      lastReadMessageId: z.string(),
-      readAt: z.string(),
-    }),
-  }),
-  z.object({
-    type: z.literal(ChatSocketEventType.QUEST_STATE_CHANGED),
-    data: z.object({
-      questId: z.string(),
-      previousState: z.string(),
-      newState: z.string(),
-      timestamp: z.string(),
+    clientMessageId: clientMessageIdSchema,
+    error: z.object({
+      code: z.string().min(1),
+      message: z.string().min(1),
     }),
   }),
 ]);
@@ -99,6 +90,15 @@ export interface UseChatSocketResult {
 
 const MAX_RECONNECT_DELAY_MS = 15_000;
 const MESSAGE_ACK_TIMEOUT_MS = 15_000;
+const sendMessageCommandSchema = z
+  .object({
+    type: z.literal(ChatSocketEventType.SEND_MESSAGE),
+    clientMessageId: clientMessageIdSchema,
+    text: messageTextSchema.optional(),
+    attachmentIds: attachmentIdsSchema.optional(),
+  })
+  .strict()
+  .refine((command) => Boolean(command.text || command.attachmentIds?.length));
 type NativeWebSocketConstructor = new (
   url: string,
   protocols: string[],
@@ -134,6 +134,24 @@ export function useChatSocket({
       return Promise.reject(new Error("This message is already pending."));
     }
 
+    const command = sendMessageCommandSchema.safeParse({
+      type: ChatSocketEventType.SEND_MESSAGE,
+      clientMessageId,
+      ...(typeof message.text === "string" && message.text.trim()
+        ? { text: message.text }
+        : message.text === undefined || typeof message.text === "string"
+          ? {}
+          : { text: message.text }),
+      ...(message.attachmentIds === undefined
+        ? {}
+        : { attachmentIds: message.attachmentIds }),
+    });
+    if (!command.success) {
+      return Promise.reject(
+        new Error(command.error.issues[0]?.message ?? "Invalid chat message.")
+      );
+    }
+
     return new Promise<ServerChatMessage>((resolve, reject) => {
       const timeout = setTimeout(() => {
         pendingMessagesRef.current.delete(clientMessageId);
@@ -146,16 +164,7 @@ export function useChatSocket({
       });
 
       try {
-        socket.send(
-          JSON.stringify({
-            type: ChatSocketEventType.SEND_MESSAGE,
-            clientMessageId,
-            ...(message.text?.trim() ? { text: message.text } : {}),
-            ...(message.attachmentIds?.length
-              ? { attachmentIds: message.attachmentIds }
-              : {}),
-          })
-        );
+        socket.send(JSON.stringify(command.data));
       } catch (error) {
         clearTimeout(timeout);
         pendingMessagesRef.current.delete(clientMessageId);
@@ -259,17 +268,7 @@ export function useChatSocket({
             if (pending) {
               clearTimeout(pending.timeout);
               pendingMessagesRef.current.delete(event.clientMessageId);
-              const error = event.error;
-              const messageText =
-                typeof error === "string"
-                  ? error
-                  : error &&
-                      typeof error === "object" &&
-                      "message" in error &&
-                      typeof error.message === "string"
-                    ? error.message
-                    : "The server rejected this message.";
-              pending.reject(new Error(messageText));
+              pending.reject(new Error(event.error.message));
             }
           }
           onEventRef.current(event);
@@ -291,6 +290,11 @@ export function useChatSocket({
             event.reason || "Chat connection closed before confirmation."
           )
         );
+        if (event.code === 1008 || event.code === 4403) {
+          setReconnectAttempt(0);
+          setStatus("unavailable");
+          return;
+        }
         attempt += 1;
         setReconnectAttempt(attempt);
         setStatus("reconnecting");

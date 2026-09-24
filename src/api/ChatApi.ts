@@ -455,7 +455,7 @@ export class ChatApi {
   }
 
   getWorkConversationEventsPath(conversationId: string): string {
-    return `/api/v1/chat/conversations/${conversationId}/events`;
+    return `/api/v1/chat/conversations/${encodeURIComponent(conversationId)}/events`;
   }
 
   async createCandidateInquiry(
@@ -598,7 +598,7 @@ export class ChatApi {
   }
 
   getCandidateInquiryEventsPath(conversationId: string): string {
-    return `/api/v1/chat/candidate-inquiries/${conversationId}/events`;
+    return `/api/v1/chat/candidate-inquiries/${encodeURIComponent(conversationId)}/events`;
   }
 }
 

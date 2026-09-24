@@ -15,6 +15,12 @@ https://kuquest-dev-api.kubits.org
 
 Do **not** run the local API. The mobile app's local API/LAN setup will not work for the normal development flow. Use `bun run staging:start` for the staging API; `bun run dev:local` is only for explicitly requested local-LAN work.
 
+### Realtime connections
+
+- Work Chat and Candidate Inquiry use authenticated WebSocket endpoints: `/v1/chat/conversations/:conversationId/events` and `/v1/chat/candidate-inquiries/:conversationId/events`. Connected clients send messages over WebSocket; REST remains send fallback when disconnected.
+- Authorized Quest readers subscribe to `/v2/quests/:questId/events`; the Hirer Candidate roster screen subscribes to `/v2/quests/:questId/candidate-roster/events`. Both streams are read-only and refresh authoritative REST state after updates.
+- HTTPS API origins map to WSS. The app authenticates sockets with its current session cookie. `/health/ws` is an operational health endpoint; the app does not poll it.
+
 Create `.env.local` in the project root by copying the template:
 
 ```bash

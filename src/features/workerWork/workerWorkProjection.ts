@@ -9,15 +9,27 @@ export type {
   WorkerWorkProjection,
 } from "./workerWorkTypes";
 
-/** Latest sent Proof Submission; unsent drafts have no `submittedAt`. */
+/** Latest sent Proof Submission belonging to this Worker's Assignment. */
 export function latestSentProof(
-  proofs: readonly QuestV2ProofSubmission[]
+  snapshot: LiveQuestSnapshot,
+  viewerId: string
 ): QuestV2ProofSubmission | null {
-  return proofs.reduce<QuestV2ProofSubmission | null>((latest, proof) => {
-    if (!proof.submittedAt) return latest;
-    if (!latest?.submittedAt) return proof;
-    return proof.submittedAt > latest.submittedAt ? proof : latest;
-  }, null);
+  const teamId =
+    snapshot.mode === "CANDIDATE" && snapshot.participation === "GROUP"
+      ? snapshot.team?.id
+      : undefined;
+  return snapshot.proofs.reduce<QuestV2ProofSubmission | null>(
+    (latest, proof) => {
+      const belongsToViewer =
+        proof.submittedByUserId === viewerId ||
+        proof.workerId === viewerId ||
+        (teamId !== undefined && proof.teamId === teamId);
+      if (!belongsToViewer || !proof.submittedAt) return latest;
+      if (!latest?.submittedAt) return proof;
+      return proof.submittedAt > latest.submittedAt ? proof : latest;
+    },
+    null
+  );
 }
 
 function activeStatus(
@@ -63,7 +75,7 @@ function activeStatus(
       needsAction: false,
     };
   }
-  const sentProof = latestSentProof(snapshot.proofs);
+  const sentProof = latestSentProof(snapshot, snapshot.viewerId);
   return {
     status:
       sentProof?.status === "PROOF_PENDING" ? "proofPending" : "inProgress",

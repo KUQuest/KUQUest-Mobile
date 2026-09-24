@@ -17,7 +17,10 @@ import {
 import { homeKeys } from "@/features/home/api/homeQueries";
 import { myQuestsKeys } from "@/features/myQuests/api/myQuestsQueries";
 import { workerHomeKeys } from "@/features/workerHome/api/workerHomeKeys";
-import { subscribeToQuestEvents } from "../live/questEvents";
+import {
+  subscribeToCandidateRosterEvents,
+  subscribeToQuestEvents,
+} from "../live/questEvents";
 import {
   liveQuestService,
   type LiveQuestSnapshot,
@@ -131,15 +134,7 @@ export function useLiveQuestSnapshotQuery(
     | ((snapshot: LiveQuestSnapshot | undefined) => number | false)
 ) {
   const queryClient = useQueryClient();
-  useEffect(() => {
-    if (!enabled || !questId || !viewerId) return;
-    return subscribeToQuestEvents(questId, () => {
-      void queryClient.invalidateQueries({
-        queryKey: questBoardKeys.liveSnapshotScope(questId, viewerId),
-      });
-    });
-  }, [enabled, queryClient, questId, viewerId]);
-  return useQuery<LiveQuestSnapshot>({
+  const query = useQuery<LiveQuestSnapshot>({
     enabled: Boolean(questId && viewerId) && enabled,
     refetchInterval:
       typeof refetchIntervalMs === "function"
@@ -161,6 +156,39 @@ export function useLiveQuestSnapshotQuery(
       });
     },
   });
+  const canReadQuest = query.data !== undefined;
+  useEffect(() => {
+    if (!enabled || !questId || !viewerId || !canReadQuest) return;
+    return subscribeToQuestEvents(questId, () => {
+      void queryClient.invalidateQueries({
+        queryKey: questBoardKeys.liveSnapshotScope(questId, viewerId),
+      });
+    });
+  }, [canReadQuest, enabled, queryClient, questId, viewerId]);
+  return query;
+}
+
+export function useCandidateRosterEvents(
+  snapshot: LiveQuestSnapshot | undefined
+): void {
+  const queryClient = useQueryClient();
+  const questId = snapshot?.quest.id;
+  const viewerId = snapshot?.viewerId;
+  const canSelectRoster =
+    snapshot?.mode === "CANDIDATE" &&
+    Boolean(
+      snapshot.capabilities.canSelectCandidate ||
+      snapshot.capabilities.canSelectTeam
+    );
+
+  useEffect(() => {
+    if (!questId || !viewerId || !canSelectRoster) return;
+    return subscribeToCandidateRosterEvents(questId, () => {
+      void queryClient.invalidateQueries({
+        queryKey: questBoardKeys.liveSnapshotScope(questId, viewerId),
+      });
+    });
+  }, [canSelectRoster, queryClient, questId, viewerId]);
 }
 
 type QuestReadProjection = "hirer" | "worker";

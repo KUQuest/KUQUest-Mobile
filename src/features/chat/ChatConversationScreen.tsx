@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useRef } from "react";
 import {
   Alert,
-  Platform,
   RefreshControl,
   type ListRenderItemInfo,
   type FlatList as NativeFlatList,
@@ -215,10 +214,7 @@ export default function ChatConversationScreen({
       edges={["top", "left", "right", "bottom"]}
       className={styles.safeArea}
     >
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      <KeyboardAvoidingView className="flex-1" behavior="padding">
         <View className={styles.detailHeader}>
           <View className={styles.brandRow}>
             <Pressable
@@ -269,11 +265,14 @@ export default function ChatConversationScreen({
             }
             router.push(
               conversationType === "CANDIDATE_INQUIRY"
-                ? `../../${conversation.questId}`
+                ? {
+                    pathname: "/quest/[id]",
+                    params: { id: conversation.questId },
+                  }
                 : {
-                  pathname: `../quest/${conversation.questId}/work`,
-                  params: { viewerId },
-                }
+                    pathname: "/quest/[id]/work",
+                    params: { id: conversation.questId, viewerId },
+                  }
             );
           }}
         >
@@ -482,6 +481,10 @@ export default function ChatConversationScreen({
             }
             data={searchedMessages}
             onContentSizeChange={handleMessageListContentSizeChange}
+            onLayout={() => {
+              // Keyboard show/hide resizes the list; keep the newest message in view.
+              if (!searchOpen) messageListRef.current?.scrollToEnd();
+            }}
             keyExtractor={(message) => message.id}
             ListEmptyComponent={
               searchOpen ? (
@@ -563,8 +566,8 @@ export default function ChatConversationScreen({
                   {draft.length}/{MAX_MESSAGE_LENGTH}
                 </Text>
                 {draft.trim() ||
-                  pendingAttachmentIds.length > 0 ||
-                  pendingAttachments.length > 0 ? (
+                pendingAttachmentIds.length > 0 ||
+                pendingAttachments.length > 0 ? (
                   <Pressable
                     accessibilityLabel={messages.send}
                     accessibilityRole="button"

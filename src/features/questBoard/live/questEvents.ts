@@ -3,43 +3,35 @@ import { z } from "zod";
 import { toWebSocketUrl } from "@/api/ApiClient";
 import { authClient } from "@/features/auth/authClient";
 
-const questChangeTypeSchema = z.enum([
-  "ASSIGNMENT_ROSTER_UPDATED",
-  "QUEST_STARTED",
-  "PROOF_SUBMITTED",
-  "PROOF_REVIEWED",
-  "PROOF_AUTO_APPROVED",
-  "COMPLETION_CONFIRMED",
-  "QUEST_COMPLETED",
-  "QUEST_FAILED",
-  "QUEST_CANCELLED",
-  "QUEST_EDIT_UPDATED",
-]);
+const questSubscribedEventSchema = z.object({
+  type: z.literal("SUBSCRIBED"),
+  version: z.literal(1),
+  questId: z.string().min(1),
+});
 
-const questEventSchema = z.union([
-  z.object({
-    type: z.literal("SUBSCRIBED"),
+const questUpdatedEventSchema = z
+  .object({
+    type: z.literal("QUEST_UPDATED"),
     version: z.literal(1),
     questId: z.string().min(1),
-  }),
-  z
-    .object({
-      type: z.literal("QUEST_UPDATED"),
-      version: z.literal(1),
-      questId: z.string().min(1),
-      changeType: questChangeTypeSchema,
-      editRequestId: z.string().min(1).optional(),
-    })
-    .refine(
-      (event) =>
-        event.changeType !== "QUEST_EDIT_UPDATED" ||
-        Boolean(event.editRequestId)
-    ),
-]);
+    changeType: z.string().min(1),
+    editRequestId: z.string().min(1).optional(),
+  })
+  .refine(
+    (event) =>
+      event.changeType !== "QUEST_EDIT_UPDATED" || Boolean(event.editRequestId)
+  );
 
-type QuestUpdatedEvent = Extract<
-  z.infer<typeof questEventSchema>,
-  { type: "QUEST_UPDATED" }
+type QuestUpdatedEvent = z.infer<typeof questUpdatedEventSchema>;
+
+const candidateRosterUpdatedEventSchema = z.object({
+  type: z.literal("CANDIDATE_ROSTER_UPDATED"),
+  version: z.literal(1),
+  questId: z.string().min(1),
+});
+
+export type CandidateRosterUpdatedEvent = z.infer<
+  typeof candidateRosterUpdatedEventSchema
 >;
 
 type NativeWebSocketConstructor = new (
@@ -57,17 +49,16 @@ function reconnectDelayMs(attempt: number): number {
   );
 }
 
-export function subscribeToQuestEvents(
+function subscribeToQuestEventStream<T extends { questId: string }>(
   questId: string,
-  onQuestUpdated: (event: QuestUpdatedEvent) => void
+  eventsPath: string,
+  updateSchema: z.ZodType<T>,
+  onUpdate: (event: T) => void
 ): () => void {
   const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
   if (!apiBaseUrl || !questId) return () => {};
 
-  const eventsUrl = toWebSocketUrl(
-    apiBaseUrl,
-    `/api/v2/quests/${encodeURIComponent(questId)}/events`
-  );
+  const eventsUrl = toWebSocketUrl(apiBaseUrl, eventsPath);
   const NativeWebSocket = WebSocket as unknown as NativeWebSocketConstructor;
   let active = true;
   let socket: WebSocket | null = null;
@@ -105,6 +96,7 @@ export function subscribeToQuestEvents(
       return;
     }
     socket = currentSocket;
+    let subscribed = false;
 
     currentSocket.onopen = () => {
       if (active && socket === currentSocket) attempt = 0;
@@ -117,18 +109,26 @@ export function subscribeToQuestEvents(
       } catch {
         return;
       }
-      const parsed = questEventSchema.safeParse(payload);
-      if (
-        parsed.success &&
-        parsed.data.type === "QUEST_UPDATED" &&
-        parsed.data.questId === questId
-      ) {
-        onQuestUpdated(parsed.data);
+
+      const subscription = questSubscribedEventSchema.safeParse(payload);
+      if (subscription.success) {
+        subscribed = subscription.data.questId === questId;
+        return;
+      }
+      if (!subscribed) return;
+
+      const parsed = updateSchema.safeParse(payload);
+      if (parsed.success && parsed.data.questId === questId) {
+        onUpdate(parsed.data);
       }
     };
-    currentSocket.onclose = () => {
+    currentSocket.onclose = (event) => {
       if (!active || socket !== currentSocket) return;
       socket = null;
+      if (event.code === 1008 || event.code === 4403) {
+        active = false;
+        return;
+      }
       scheduleReconnect();
     };
   };
@@ -141,4 +141,28 @@ export function subscribeToQuestEvents(
     socket?.close();
     socket = null;
   };
+}
+
+export function subscribeToQuestEvents(
+  questId: string,
+  onQuestUpdated: (event: QuestUpdatedEvent) => void
+): () => void {
+  return subscribeToQuestEventStream(
+    questId,
+    `/v2/quests/${encodeURIComponent(questId)}/events`,
+    questUpdatedEventSchema,
+    onQuestUpdated
+  );
+}
+
+export function subscribeToCandidateRosterEvents(
+  questId: string,
+  onRosterUpdated: (event: CandidateRosterUpdatedEvent) => void
+): () => void {
+  return subscribeToQuestEventStream(
+    questId,
+    `/v2/quests/${encodeURIComponent(questId)}/candidate-roster/events`,
+    candidateRosterUpdatedEventSchema,
+    onRosterUpdated
+  );
 }

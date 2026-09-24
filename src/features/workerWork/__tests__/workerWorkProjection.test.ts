@@ -69,6 +69,39 @@ describe("projectWorkerWork", () => {
     );
   });
 
+  it("does not show another GROUP FCFS Worker's proof as this Worker's review state", () => {
+    const snapshot = workerSnapshot({
+      id: "group",
+      title: "Group Quest",
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "GROUP",
+      viewerId: "worker-2",
+      proofs: [
+        {
+          id: "proof-worker-1",
+          questId: "group",
+          workerId: "worker-1",
+          teamId: null,
+          submittedByUserId: "worker-1",
+          description: "Done",
+          status: "PROOF_PENDING",
+          submittedAt: "2026-10-01T10:00:00Z",
+          createdAt: "2026-10-01T09:30:00Z",
+          updatedAt: "2026-10-01T10:00:00Z",
+          visibility: "FULL",
+          fileIds: ["proof-file-1"],
+          files: [],
+        },
+      ],
+    });
+
+    const projection = projectWorkerWork([snapshot]);
+
+    expect(projection.otherActive[0]).toEqual(
+      expect.objectContaining({ status: "inProgress", needsAction: false })
+    );
+  });
+
   it("keeps every finished Assignment in history with its outcome", () => {
     const projection = projectWorkerWork([
       workerSnapshot({

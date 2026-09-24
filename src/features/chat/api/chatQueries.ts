@@ -311,10 +311,7 @@ export function useSendChatMessageMutation(socket: UseChatSocketResult) {
       clientMessageId,
       attachmentIds,
     }: SendChatMessageVariables) => {
-      if (
-        socket.status === "connected" &&
-        (mode === "WORK" || attachmentIds.length === 0)
-      ) {
+      if (socket.status === "connected") {
         return await socket.sendMessage({
           clientMessageId,
           ...(text.trim() ? { text } : {}),

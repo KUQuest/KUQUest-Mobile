@@ -68,7 +68,7 @@ export function WorkerProofForm({
   const [notice, setNotice] = useState<string | null>(null);
   const fileKeySeed = useRef(0);
 
-  const sentProof = latestSentProof(snapshot.proofs);
+  const sentProof = latestSentProof(snapshot, viewerId);
   if (sentProof) {
     return (
       <SentProofCard
@@ -88,8 +88,8 @@ export function WorkerProofForm({
   }
 
   const submitting = proofMutation.isPending;
-  const hasProofInput = files.length > 0 || description.trim().length > 0;
-  const submitDisabled = submitting || !hasProofInput;
+  const hasSelectedFile = files.length > 0;
+  const submitDisabled = submitting || !hasSelectedFile;
 
   const pickFiles = async () => {
     const remaining = MAX_PROOF_FILES - files.length;
@@ -232,7 +232,7 @@ export function WorkerProofForm({
         <View className="flex-row items-start gap-ku-sm">
           <Info color={palette.textSecondary} size={16} strokeWidth={2} />
           <Text className="flex-1 font-ku-regular text-ku-label text-ku-text-secondary">
-            {hasProofInput
+            {hasSelectedFile
               ? messages.sendLockNotice
               : messages.proofInputRequired}
           </Text>

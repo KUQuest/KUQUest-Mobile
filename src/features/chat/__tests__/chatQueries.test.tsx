@@ -190,9 +190,10 @@ describe("chat message transport", () => {
     ).toEqual(["server-message"]);
   });
 
-  it("keeps connected Candidate Inquiry attachments on HTTP", async () => {
+  it("sends connected Candidate Inquiry attachments over WebSocket", async () => {
     const acceptedMessage = makeServerMessage("server-message", 1);
-    const sendMessage = jest.fn().mockResolvedValue(undefined);
+    const attachmentId = "b199ae67-3939-4da3-8c78-2fa1c282926d";
+    const sendMessage = jest.fn().mockResolvedValue(acceptedMessage);
     const inquirySend = jest
       .spyOn(liveQuestService, "sendCandidateInquiryMessage")
       .mockResolvedValue(acceptedMessage);
@@ -213,18 +214,17 @@ describe("chat message transport", () => {
         mode: "CANDIDATE_INQUIRY",
         text: "File",
         clientMessageId: "client-file",
-        attachmentIds: ["attachment-1"],
+        attachmentIds: [attachmentId],
         viewerId: "member-1",
       });
     });
 
-    expect(sendMessage).not.toHaveBeenCalled();
-    expect(inquirySend).toHaveBeenCalledWith(
-      "conversation-1",
-      "File",
-      "client-file",
-      ["attachment-1"]
-    );
+    expect(sendMessage).toHaveBeenCalledWith({
+      clientMessageId: "client-file",
+      text: "File",
+      attachmentIds: [attachmentId],
+    });
+    expect(inquirySend).not.toHaveBeenCalled();
   });
 
   it("sends attachment-only Work messages over the connected WebSocket", async () => {
