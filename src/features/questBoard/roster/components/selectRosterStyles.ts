@@ -15,6 +15,8 @@ const selectRosterStyles = {
   memberRow: "min-h-[56px] flex-row items-center gap-ku-12",
   memberText: "flex-1",
   memberName: "font-ku-semibold text-ku-body text-ku-text-strong",
+  memberIdentity: "flex-row flex-wrap items-center gap-ku-xs",
+  memberRating: "font-ku-medium text-ku-body-small text-ku-text-secondary",
   memberDetail: "text-ku-body-small text-ku-text-secondary",
   avatar: "bg-ku-primary-subtle",
   avatarText: "font-ku-semibold text-ku-body text-ku-primary-deep",

@@ -293,6 +293,12 @@ export const publicProfileResponseSchema = z.object({
       })
       .nullable()
       .optional(),
+    reputation: z.object({
+      totalQuests: nonNegativeIntegerSchema,
+      rating: z.object({
+        average: ratingAverageSchema.nullable(),
+      }),
+    }),
     experience: z.array(experienceEntrySchema).default([]),
     portfolio: z.array(portfolioEntrySchema).default([]),
     certificates: z.array(certificateEntrySchema).default([]),

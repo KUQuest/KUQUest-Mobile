@@ -406,8 +406,8 @@ describe("StudentApi", () => {
             name: "Software",
             faculty: { name: "Engineering" },
           },
-          avatar: { fileId: "f-1", url: "https://example.test/avatar.png" },
           occupation: { id: "occ-1", name: "Student" },
+          reputation: { totalQuests: 4, rating: { average: 4.5 } },
           experience: [],
           portfolio: [],
           certificates: [],
@@ -418,6 +418,7 @@ describe("StudentApi", () => {
     const result = await api.getPublicProfile("user-uuid-1");
     expect(result.firstName).toBe("Public");
     expect(result.lastName).toBe("User");
+    expect(result.reputation.rating.average).toBe(4.5);
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.example.test/api/v1/profile/user-uuid-1",
       expect.objectContaining({ method: "GET" })

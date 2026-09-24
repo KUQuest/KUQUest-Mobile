@@ -36,8 +36,11 @@ function MemberIdentity({
 
   return (
     <Pressable
-      accessibilityHint={detail}
-      accessibilityLabel={openProfileLabel(name)}
+      accessibilityLabel={`${openProfileLabel(name)}${
+        identity?.ratingAverage != null
+          ? `. ${identity.ratingAverage.toFixed(1)}/5`
+          : ""
+      }`}
       accessibilityRole="button"
       className={styles.memberRow}
       onPress={() => onOpenProfile(memberId)}
@@ -50,9 +53,20 @@ function MemberIdentity({
         uri={identity?.avatarUri}
       />
       <View className={styles.memberText}>
-        <Text className={styles.memberName} numberOfLines={2}>
-          {name}
-        </Text>
+        <View className={styles.memberIdentity}>
+          <Text className={styles.memberName} numberOfLines={2}>
+            {name}
+          </Text>
+          {identity?.ratingAverage != null ? (
+            <Text
+              accessibilityLabel={`${identity.ratingAverage.toFixed(1)}/5`}
+              className={styles.memberRating}
+              testID={`${testID}-rating`}
+            >
+              ★ {identity.ratingAverage.toFixed(1)}
+            </Text>
+          ) : null}
+        </View>
         {detail ? (
           <Text className={styles.memberDetail} numberOfLines={2}>
             {detail}
