@@ -1,0 +1,3 @@
+interface:
+  display_name: "Query AsyncAPI"
+  short_description: "Inspect KUQuest WebSocket contract"
