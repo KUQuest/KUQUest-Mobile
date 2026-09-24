@@ -663,6 +663,34 @@ describe("CreateQuestScreen", () => {
     expect(mockDeleteQuestDraft).toHaveBeenCalledWith("test-key", "mock-draft");
   });
 
+  it("leaves the flow instead of reopening Review when back is pressed after publish", async () => {
+    mockLiveCreateQuest.mockResolvedValue({ id: "server-quest-done" });
+    mockLiveGetPublishCheck.mockResolvedValue({
+      canPublish: true,
+      blockingReasons: [],
+    });
+    mockLivePublishQuest.mockResolvedValue({
+      id: "server-quest-done",
+      state: "QUEST_OPEN",
+    });
+
+    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
+    await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
+    await waitFor(() =>
+      expect(view.getByTestId("create-quest-save-preview")).toBeTruthy()
+    );
+    await fireEvent.press(view.getByLabelText("เผยแพร่เควสต์"));
+    await waitFor(() =>
+      expect(view.getByText("เผยแพร่เควสต์แล้ว")).toBeTruthy()
+    );
+
+    await fireEvent.press(view.getByTestId("create-quest-header-back"));
+
+    expect(mockRouter.replace).toHaveBeenCalledWith("/(tabs)");
+    expect(view.queryByTestId("create-quest-save-preview")).toBeNull();
+    expect(mockLiveCreateQuest).toHaveBeenCalledTimes(1);
+  });
+
   it("disables publish and shows blocking guidance when the server check blocks", async () => {
     mockLiveGetPublishCheck.mockResolvedValue({
       ...serverPublishCheckFixture,

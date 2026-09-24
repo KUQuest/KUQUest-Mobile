@@ -487,7 +487,6 @@ export function useCreateQuestController({
       layout,
       useStackedActions,
       completedState,
-      onDismissCompletion: () => setCompletedState(null),
       mode,
       onLeave: leaveCreateFlow,
       onReset: resetDraft,
