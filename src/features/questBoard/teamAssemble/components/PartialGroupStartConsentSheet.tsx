@@ -317,9 +317,7 @@ export function PartialGroupStartConsentSheet({
         ? "cancelled"
         : "pending";
   const terminalDescription = underfilled
-    ? locale === "th"
-      ? "เควสต์ถูกยกเลิกก่อนการยินยอมจะเสร็จสิ้น เงินที่สำรองไว้จะคืนเต็มจำนวน"
-      : "The Quest was cancelled before consent completed. Reserved rewards are fully refunded."
+    ? messages.underfilledCancelledDescription
     : consent?.status === QuestPartialStartConsentStatus.PARTIAL_START_TIMED_OUT
       ? messages.timedOutDescription
       : messages.cancelledDescription;
@@ -420,9 +418,7 @@ export function PartialGroupStartConsentSheet({
             <>
               <View className={styles.reviewRow}>
                 <Text className={styles.reviewLabel}>
-                  {locale === "th"
-                    ? "ค่าตอบแทนใหม่ต่อผู้ทำงาน"
-                    : "New reward per Worker"}
+                  {messages.newRewardPerWorker}
                 </Text>
                 <Text selectable className={styles.reviewValue}>
                   {formatSatang(
@@ -433,11 +429,9 @@ export function PartialGroupStartConsentSheet({
                 </Text>
               </View>
               <View className={styles.reviewRow}>
-                <Text className={styles.reviewLabel}>
-                  {locale === "th" ? "กำหนดส่งงาน" : "Due date"}
-                </Text>
+                <Text className={styles.reviewLabel}>{messages.dueDate}</Text>
                 <Text selectable className={styles.reviewValue}>
-                  {underfilled.dueAt ?? (locale === "th" ? "ไม่มี" : "Not set")}
+                  {underfilled.dueAt ?? messages.notSet}
                 </Text>
               </View>
             </>
@@ -539,11 +533,7 @@ export function PartialGroupStartConsentSheet({
             testID="partial-group-start-hirer-decision"
           >
             <Pressable
-              accessibilityLabel={
-                locale === "th"
-                  ? "ดำเนินการต่อด้วยทีมปัจจุบัน"
-                  : "Proceed with current roster"
-              }
+              accessibilityLabel={messages.proceedLabel}
               accessibilityRole="button"
               className={`${styles.consentAction} ${styles.consentActionApprove}`}
               onPress={() => decide("PROCEED")}
@@ -553,13 +543,11 @@ export function PartialGroupStartConsentSheet({
               <Text
                 className={`${styles.consentActionText} ${styles.consentActionTextApprove}`}
               >
-                {locale === "th" ? "ดำเนินการต่อ" : "Proceed"}
+                {messages.proceed}
               </Text>
             </Pressable>
             <Pressable
-              accessibilityLabel={
-                locale === "th" ? "ยกเลิกเควสต์" : "Cancel Quest"
-              }
+              accessibilityLabel={messages.cancelQuest}
               accessibilityRole="button"
               className={`${styles.consentAction} ${styles.consentActionReject}`}
               onPress={() => decide("CANCEL")}
@@ -569,7 +557,7 @@ export function PartialGroupStartConsentSheet({
               <Text
                 className={`${styles.consentActionText} ${styles.consentActionTextReject}`}
               >
-                {locale === "th" ? "ยกเลิก" : "Cancel"}
+                {messages.cancel}
               </Text>
             </Pressable>
           </View>

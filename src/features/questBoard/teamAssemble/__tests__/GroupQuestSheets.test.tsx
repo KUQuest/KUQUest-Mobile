@@ -1,5 +1,6 @@
 import React, { type ReactNode } from "react";
 import { act, fireEvent, render } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import { CandidateReviewSheet } from "../components/CandidateReviewSheet";
 import { PartialGroupStartConsentSheet } from "../components/PartialGroupStartConsentSheet";
@@ -91,7 +92,7 @@ describe("group Quest sheets", () => {
   it("supports a partial roster, directory search, multi-invite, and review before submit", async () => {
     const onInviteMembers = jest.fn();
     const onSubmit = jest.fn();
-    const view = await render(
+    const view = await renderWithQueryClient(
       <TeamAssembleView
         eligibleMembers={[
           { id: "worker-1", displayName: "Mali Worker", email: "mali@ku.th" },
@@ -133,7 +134,7 @@ describe("group Quest sheets", () => {
 
   it("shows pending invitations with accept and decline actions for the invited Worker", async () => {
     const onRespondInvitation = jest.fn();
-    const view = await render(
+    const view = await renderWithQueryClient(
       <TeamAssembleView
         invitations={[invitation]}
         locale="en"
@@ -428,5 +429,62 @@ describe("group Quest sheets", () => {
     );
     await fireEvent.press(view.getByTestId("team-assemble-create"));
     expect(onCreateTeam).toHaveBeenCalledWith("Campus Gardeners");
+  });
+
+  it("names Candidate Team members, shows open spots, and hides the invite once the Team is full", async () => {
+    const formingTeam = {
+      id: "team-9",
+      questId: "quest-9",
+      leaderId: "leader-9",
+      name: "Campus Gardeners",
+      headcount: 3,
+      state: "TEAM_FORMING" as const,
+      joinCode: "ABCD2345",
+      joinCodeExpiresAt: "2026-09-26T05:02:00.000Z",
+      members: [{ memberId: "leader-9", joinedAt: "2026-09-01T00:00:00Z" }],
+      submission: null,
+      createdAt: "2026-09-01T00:00:00Z",
+    };
+    const queryClient = queryClientWithRatings(["leader-9", "worker-9"]);
+    const view = await render(
+      <QueryClientProvider client={queryClient}>
+        <TeamAssembleView
+          locale="en"
+          onRegenerateJoinCode={jest.fn()}
+          team={formingTeam}
+          viewerId="leader-9"
+        />
+      </QueryClientProvider>
+    );
+
+    expect(view.getByText("leader-9")).toBeTruthy();
+    expect(view.getAllByTestId("team-assemble-roster-open-slot")).toHaveLength(
+      2
+    );
+    expect(view.getByTestId("team-assemble-join-code-value")).toHaveTextContent(
+      "ABCD2345"
+    );
+    expect(view.getByTestId("team-assemble-share-invite")).toBeTruthy();
+
+    await view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <TeamAssembleView
+          locale="en"
+          team={{
+            ...formingTeam,
+            headcount: 2,
+            members: [
+              ...formingTeam.members,
+              { memberId: "worker-9", joinedAt: "2026-09-02T00:00:00Z" },
+            ],
+          }}
+          viewerId="leader-9"
+        />
+      </QueryClientProvider>
+    );
+
+    expect(view.getByText("worker-9")).toBeTruthy();
+    expect(view.queryByTestId("team-assemble-roster-open-slot")).toBeNull();
+    expect(view.queryByTestId("team-assemble-join-code")).toBeNull();
   });
 });

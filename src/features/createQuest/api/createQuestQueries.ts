@@ -7,6 +7,7 @@ import {
 
 import { questApi, type CreateQuestV2Payload } from "@/api/QuestApi";
 import type { UploadAsset } from "@/api/fileUpload";
+import { homeKeys } from "@/features/home/api/homeQueries";
 import { myQuestsKeys } from "@/features/myQuests/api/myQuestsQueries";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import { questBoardKeys } from "@/features/questBoard/api/questBoardQueries";
@@ -61,6 +62,7 @@ function invalidateQuestReads(queryClient: QueryClient, questId: string) {
     queryKey: createQuestKeys.editSource(questId),
   });
   void queryClient.invalidateQueries({ queryKey: myQuestsKeys.hirer() });
+  void queryClient.invalidateQueries({ queryKey: homeKeys.hirer() });
   void queryClient.invalidateQueries({ queryKey: workerHomeKeys.all });
 }
 

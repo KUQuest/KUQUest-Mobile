@@ -1,14 +1,18 @@
 import React from "react";
 
+import { RefreshCw, Share2 } from "lucide-react-native";
+
 import { Pressable, Text, TextInput, View } from "@/tw";
 import { colors } from "@/theme/colors";
 import { formatTimestampDateTime } from "@/domain/datetime";
 import type { SupportedLocale } from "@/locales/locale";
+import type { GroupQuestMessages } from "@/locales/groupQuestMessages";
 
 import styles from "../groupQuestStyles";
 
 export interface TeamAssembleJoinCodePanelProps {
   locale: SupportedLocale;
+  messages: GroupQuestMessages;
   code: string | null;
   codeExpiry: string | null;
   viewerIsMember: boolean;
@@ -25,6 +29,7 @@ export interface TeamAssembleJoinCodePanelProps {
 
 export function TeamAssembleJoinCodePanel({
   locale,
+  messages,
   code,
   codeExpiry,
   viewerIsMember,
@@ -37,53 +42,82 @@ export function TeamAssembleJoinCodePanel({
   onShareInvite,
   canRegenerateJoinCode,
 }: TeamAssembleJoinCodePanelProps) {
-  const thai = locale === "th";
+  const canRegenerate =
+    isLeader && canRegenerateJoinCode !== false && onRegenerateJoinCode;
   return (
     <View className={styles.section} testID="team-assemble-join-code">
-      <View className={styles.sectionHeader}>
-        <Text accessibilityRole="header" className={styles.sectionTitle}>
-          {thai ? "รหัสเข้าร่วมทีม" : "Team Join Code"}
-        </Text>
-        {codeExpiry ? (
-          <Text className={styles.sectionMeta}>
-            {thai
-              ? `หมดอายุ ${formatTimestampDateTime(codeExpiry, locale)}`
-              : `Expires ${formatTimestampDateTime(codeExpiry, locale)}`}
-          </Text>
-        ) : null}
-      </View>
+      <Text accessibilityRole="header" className={styles.sectionTitle}>
+        {messages.inviteMembersTitle}
+      </Text>
       {viewerIsMember ? (
-        <View className={styles.reviewCard}>
-          <Text selectable className={styles.proposalSummaryTitle}>
-            {code ?? (thai ? "ยังไม่มีรหัส" : "No code available")}
-          </Text>
+        <View className="mt-ku-sm rounded-[16px] border border-ku-border-subtle bg-ku-surface p-ku-md">
+          {code ? (
+            <>
+              <Text className="text-center font-ku-regular text-ku-label text-ku-text-muted">
+                {messages.joinCodeLabel}
+              </Text>
+              <Text
+                accessibilityLabel={`${messages.joinCodeLabel} ${code.split("").join(" ")}`}
+                className="mt-ku-xs text-center font-ku-bold text-[30px] leading-[38px] tracking-[6px] text-ku-text-strong"
+                selectable
+                testID="team-assemble-join-code-value"
+              >
+                {code}
+              </Text>
+              {codeExpiry ? (
+                <Text className="mt-ku-2 text-center font-ku-regular text-ku-label text-ku-text-muted">
+                  {messages.joinCodeExpires(
+                    formatTimestampDateTime(codeExpiry, locale)
+                  )}
+                </Text>
+              ) : null}
+            </>
+          ) : (
+            <Text className="font-ku-regular text-ku-body-small text-ku-text-secondary">
+              {isLeader
+                ? messages.joinCodeHiddenForLeader
+                : messages.joinCodeHiddenForMember}
+            </Text>
+          )}
           {onShareInvite ? (
             <Pressable
-              accessibilityLabel={thai ? "แชร์ลิงก์เชิญ" : "Share invite link"}
+              accessibilityLabel={messages.shareInviteLabel}
               accessibilityRole="button"
-              className={styles.memberInvite}
+              className={styles.submitButton}
               onPress={onShareInvite}
               testID="team-assemble-share-invite"
             >
-              <Text className={styles.memberInviteText}>
-                {thai ? "แชร์ลิงก์เชิญ" : "Share invite"}
+              <Share2 color={colors.onPrimary} size={18} strokeWidth={2.3} />
+              <Text className={styles.submitButtonText}>
+                {messages.shareInvite}
               </Text>
             </Pressable>
           ) : null}
-          {isLeader &&
-          canRegenerateJoinCode !== false &&
-          onRegenerateJoinCode ? (
+          {canRegenerate ? (
             <Pressable
-              accessibilityLabel={
-                thai ? "สร้างรหัสใหม่" : "Regenerate join code"
-              }
+              accessibilityLabel={messages.regenerateJoinCodeLabel}
               accessibilityRole="button"
-              className={styles.memberInvite}
+              className={
+                code
+                  ? "mt-ku-xs min-h-[48px] flex-row items-center justify-center gap-ku-xs"
+                  : styles.submitButton
+              }
               onPress={() => onRegenerateJoinCode(teamId)}
               testID="team-assemble-regenerate-join-code"
             >
-              <Text className={styles.memberInviteText}>
-                {thai ? "สร้างรหัสใหม่" : "Regenerate"}
+              <RefreshCw
+                color={code ? colors.primary : colors.onPrimary}
+                size={16}
+                strokeWidth={2.3}
+              />
+              <Text
+                className={
+                  code
+                    ? "font-ku-semibold text-ku-body-small text-ku-primary"
+                    : styles.submitButtonText
+                }
+              >
+                {messages.regenerateJoinCode}
               </Text>
             </Pressable>
           ) : null}
@@ -91,20 +125,18 @@ export function TeamAssembleJoinCodePanel({
       ) : onJoinTeam ? (
         <View className={styles.searchField}>
           <TextInput
-            accessibilityLabel={
-              thai ? "กรอกรหัสเข้าร่วมทีม" : "Enter team join code"
-            }
+            accessibilityLabel={messages.enterJoinCode}
             autoCapitalize="characters"
             autoCorrect={false}
             className={styles.searchInput}
             onChangeText={onInputCodeChange}
-            placeholder={thai ? "กรอกรหัสเข้าร่วมทีม" : "Enter team join code"}
+            placeholder={messages.enterJoinCode}
             placeholderTextColor={colors.textFaint}
             testID="team-assemble-join-code-input"
             value={inputCode}
           />
           <Pressable
-            accessibilityLabel={thai ? "เข้าร่วมทีม" : "Join team"}
+            accessibilityLabel={messages.joinTeam}
             accessibilityRole="button"
             className={styles.memberInvite}
             disabled={!inputCode.trim()}
@@ -112,7 +144,7 @@ export function TeamAssembleJoinCodePanel({
             testID="team-assemble-join"
           >
             <Text className={styles.memberInviteText}>
-              {thai ? "เข้าร่วม" : "Join"}
+              {messages.joinShort}
             </Text>
           </Pressable>
         </View>

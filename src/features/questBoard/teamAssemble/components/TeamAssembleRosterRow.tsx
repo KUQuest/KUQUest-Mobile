@@ -4,6 +4,7 @@ import { CircleX } from "lucide-react-native";
 
 import { Pressable, Text, View } from "@/tw";
 import { colors } from "@/theme/colors";
+import { useSelectRosterMemberProfile } from "../../roster/useSelectRosterMemberProfile";
 
 import styles from "../groupQuestStyles";
 
@@ -16,12 +17,10 @@ export interface TeamAssembleRosterRowMember {
 export interface TeamAssembleRosterRowProps {
   member: TeamAssembleRosterRowMember;
   role: string;
-  acceptedLabel: string;
-  canLeave?: boolean;
+  /** Omitted for Candidate Team members, who join directly and never hold an invitation. */
+  acceptedLabel?: string;
   canRemove?: boolean;
-  onLeave?: () => void;
   onRemove?: () => void;
-  leaveLabel?: string;
   removeLabel?: string;
 }
 
@@ -42,17 +41,23 @@ export function TeamAssembleRosterRow({
   member,
   role,
   acceptedLabel,
-  canLeave,
   canRemove,
-  onLeave,
   onRemove,
-  leaveLabel = "Leave",
   removeLabel = "Remove",
 }: TeamAssembleRosterRowProps) {
-  const name = member.displayName ?? member.workerId;
+  // Candidate Team members arrive as bare ids; resolve the public profile name.
+  const needsProfile = member.displayName === member.workerId;
+  const profile = useSelectRosterMemberProfile(
+    needsProfile ? member.workerId : ""
+  );
+  const name = needsProfile
+    ? (profile?.displayName ?? "…")
+    : (member.displayName ?? member.workerId);
   return (
     <View
-      accessibilityLabel={`${name}. ${role}. ${acceptedLabel}`}
+      accessibilityLabel={[name, role, acceptedLabel]
+        .filter(Boolean)
+        .join(". ")}
       className={styles.rosterRow}
       testID={`team-assemble-roster-member-${member.workerId}`}
     >
@@ -65,6 +70,9 @@ export function TeamAssembleRosterRow({
         </Text>
         <Text className={styles.rosterRole}>{role}</Text>
       </View>
+      {acceptedLabel ? (
+        <Text className={styles.rosterStatus}>{acceptedLabel}</Text>
+      ) : null}
       {canRemove && onRemove ? (
         <Pressable
           accessibilityLabel={`${removeLabel}: ${name}`}
@@ -75,18 +83,7 @@ export function TeamAssembleRosterRow({
         >
           <CircleX color={colors.dangerDark} size={18} strokeWidth={2} />
         </Pressable>
-      ) : canLeave && onLeave ? (
-        <Pressable
-          accessibilityLabel={`${leaveLabel}: ${name}`}
-          accessibilityRole="button"
-          className={styles.memberInvite}
-          onPress={onLeave}
-          testID={`team-assemble-leave-team-${member.workerId}`}
-        >
-          <Text className={styles.memberInviteText}>{leaveLabel}</Text>
-        </Pressable>
       ) : null}
-      <Text className={styles.rosterStatus}>{acceptedLabel}</Text>
     </View>
   );
 }

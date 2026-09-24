@@ -2,12 +2,12 @@ import React from "react";
 
 import { Pressable, Text, TextInput, View } from "@/tw";
 import { colors } from "@/theme/colors";
-import type { SupportedLocale } from "@/locales/locale";
+import type { GroupQuestMessages } from "@/locales/groupQuestMessages";
 
 import styles from "../groupQuestStyles";
 
 export interface TeamAssembleNameEditorProps {
-  locale: SupportedLocale;
+  messages: GroupQuestMessages;
   value: string;
   currentName: string;
   onChange: (value: string) => void;
@@ -15,33 +15,32 @@ export interface TeamAssembleNameEditorProps {
 }
 
 export function TeamAssembleNameEditor({
-  locale,
+  messages,
   value,
   currentName,
   onChange,
   onSave,
 }: TeamAssembleNameEditorProps) {
-  const thai = locale === "th";
   return (
     <View className={styles.section} testID="team-assemble-name-editor">
       <Text accessibilityRole="header" className={styles.sectionTitle}>
-        {thai ? "ชื่อทีม" : "Team name"}
+        {messages.teamNameLabel}
       </Text>
       <View className={styles.searchField}>
         <TextInput
-          accessibilityLabel={thai ? "ชื่อทีม" : "Team name"}
+          accessibilityLabel={messages.teamNameLabel}
           autoCapitalize="sentences"
           autoCorrect
           className={styles.searchInput}
           maxLength={120}
           onChangeText={onChange}
-          placeholder={thai ? "ชื่อทีม" : "Team name"}
+          placeholder={messages.teamNameLabel}
           placeholderTextColor={colors.textFaint}
           testID="team-assemble-name-input"
           value={value}
         />
         <Pressable
-          accessibilityLabel={thai ? "บันทึกชื่อทีม" : "Save team name"}
+          accessibilityLabel={messages.saveTeamNameLabel}
           accessibilityRole="button"
           className={styles.memberInvite}
           disabled={!value.trim() || value.trim() === currentName.trim()}
@@ -49,7 +48,7 @@ export function TeamAssembleNameEditor({
           testID="team-assemble-save-name"
         >
           <Text className={styles.memberInviteText}>
-            {thai ? "บันทึก" : "Save"}
+            {messages.saveTeamName}
           </Text>
         </Pressable>
       </View>
