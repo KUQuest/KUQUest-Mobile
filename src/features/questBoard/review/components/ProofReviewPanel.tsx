@@ -256,6 +256,7 @@ export function ProofReviewPanel({
     {decisionMode === "not-approved" ? (
      <>
       <Button
+       className="flex-1 w-auto"
        disabled={busy}
        onPress={() => {
         setDecisionMode("review");
@@ -267,6 +268,7 @@ export function ProofReviewPanel({
        {messages.cancel}
       </Button>
       <Button
+       className="flex-1 w-auto"
        disabled={busy}
        onPress={confirmNotApproved}
        testID="proof-review-confirm-not-approve"
@@ -277,6 +279,7 @@ export function ProofReviewPanel({
     ) : (
      <>
       <Button
+       className="flex-1 w-auto"
        disabled={busy}
        onPress={() => setDecisionMode("not-approved")}
        testID="proof-review-not-approve"
@@ -285,6 +288,7 @@ export function ProofReviewPanel({
        {messages.proofReviewDoNotApprove}
       </Button>
       <Button
+       className="flex-1 w-auto"
        disabled={busy}
        onPress={() => void runReview({ decision: "PROOF_APPROVED" })}
        testID="proof-review-approve"

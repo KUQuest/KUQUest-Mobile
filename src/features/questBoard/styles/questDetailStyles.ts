@@ -181,7 +181,7 @@ const styles = {
   proofAttachmentRemove:
     "absolute bg-ku-overlay items-center justify-center right-[4px] rounded-ku-pill top-[4px] h-[28px] w-[28px]",
   proofValidation: "text-ku-danger-dark font-ku-medium text-ku-label mt-ku-sm",
-  proofSheetActions: "gap-ku-sm pt-ku-12",
+  proofSheetActions: "flex-row gap-ku-sm pt-ku-12",
 } as const;
 
 export default styles;
