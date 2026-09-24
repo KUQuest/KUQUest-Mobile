@@ -102,11 +102,11 @@ describe("Theme Colors — Organic Editorial Palette", () => {
   });
 
   describe("Ramps and Theme Resolution", () => {
-    it("unifies hirer and worker ramps with the brand primary", () => {
+    it("keeps Hirer and Worker ramps distinct", () => {
       expect(hirerRamp.light.primary).toBe("#5F7655");
-      expect(workerRamp.light.primary).toBe("#5F7655");
+      expect(workerRamp.light.primary).toBe("#96533F");
       expect(hirerRamp.dark.primary).toBe("#A9C79E");
-      expect(workerRamp.dark.primary).toBe("#A9C79E");
+      expect(workerRamp.dark.primary).toBe("#E1A08C");
     });
 
     it("resolves the light and dark theme palettes correctly", () => {

@@ -24,18 +24,18 @@ export const hirerRamp = {
 
 export const workerRamp = {
   light: {
-    primary: "#5F7655",
-    primaryDark: "#465B3E",
-    primarySubtle: "#EDF2EA",
-    accentBorder: "#B6C4AF",
+    primary: "#96533F",
+    primaryDark: "#713D30",
+    primarySubtle: "#F8ECE8",
+    accentBorder: "#C9A79A",
     onPrimary: "#FFFFFF",
   },
   dark: {
-    primary: "#A9C79E",
-    primaryDark: "#7FA273",
-    primarySubtle: "#243128",
-    accentBorder: "#526B58",
-    onPrimary: "#142019",
+    primary: "#E1A08C",
+    primaryDark: "#C77B65",
+    primarySubtle: "#3B2924",
+    accentBorder: "#805044",
+    onPrimary: "#241A17",
   },
 } as const;
 
