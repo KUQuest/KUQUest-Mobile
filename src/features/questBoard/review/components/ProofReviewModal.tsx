@@ -4,7 +4,13 @@ import { ShieldCheck, X } from "lucide-react-native";
 import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
-import { KeyboardAvoidingView, Pressable, SafeAreaView, Text, View } from "@/tw";
+import {
+  KeyboardAvoidingView,
+  Pressable,
+  SafeAreaView,
+  Text,
+  View,
+} from "@/tw";
 
 import type { QuestV2ProofReviewPayload } from "@/api/QuestApi";
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";

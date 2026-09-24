@@ -28,7 +28,6 @@ export interface QuestDetailNavigation {
   openWorkHub: () => void;
   openTeam: () => void;
   openEditPost: () => void;
-  openReview: () => void;
   openReportQuest: () => void;
   openMessageOwner: () => void;
 }
@@ -91,13 +90,6 @@ export function useQuestDetailNavigation({
     if (!quest) return;
     router.push({
       pathname: "/quest/[id]/edit",
-      params: { id: quest.id },
-    });
-  }, [quest, router]);
-  const openReview = useCallback(() => {
-    if (!quest) return;
-    router.push({
-      pathname: "/quest/[id]/review",
       params: { id: quest.id },
     });
   }, [quest, router]);
@@ -167,7 +159,6 @@ export function useQuestDetailNavigation({
     openWorkHub,
     openTeam,
     openEditPost,
-    openReview,
     openReportQuest,
     openMessageOwner,
   };

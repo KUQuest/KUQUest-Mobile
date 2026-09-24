@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Pressable, Text, View } from "@/tw";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LogOut, MessageCircle, Pencil, Star } from "lucide-react-native";
@@ -15,11 +16,13 @@ import {
   QuestDetailSkeleton,
 } from "./components/QuestDetailStateViews";
 import { QuestDetailSheets } from "./components/QuestDetailSheets";
+import { QuestReviewModal } from "../review/components/QuestReviewModal";
 
 export type { QuestDetailScreenProps } from "./questDetailRoute";
 
 export default function QuestDetailScreen(props: QuestDetailScreenProps) {
   const insets = useSafeAreaInsets();
+  const [reviewOpen, setReviewOpen] = useState(false);
   const view = useQuestDetailFeature({
     ...props,
     bottomInset: insets.bottom,
@@ -114,7 +117,7 @@ export default function QuestDetailScreen(props: QuestDetailScreenProps) {
         >
           <Pressable
             accessibilityRole="button"
-            onPress={actionBar.onOpenReview}
+            onPress={() => setReviewOpen(true)}
             className={styles.primaryAction}
             testID="quest-review-button"
           >
@@ -123,6 +126,10 @@ export default function QuestDetailScreen(props: QuestDetailScreenProps) {
               {messages.reviewQuest}
             </Text>
           </Pressable>
+          <QuestReviewModal
+            onClose={() => setReviewOpen(false)}
+            questId={reviewOpen ? quest.id : null}
+          />
         </View>
       ) : actionBar &&
         (actionBar.canMessageOwner || actionBar.canShowWithdraw) ? (
