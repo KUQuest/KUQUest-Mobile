@@ -11,20 +11,27 @@ import { homeKeys } from "@/features/home/api/homeQueries";
 import { myQuestsKeys } from "@/features/myQuests/api/myQuestsQueries";
 import { workerHomeKeys } from "@/features/workerHome/api/workerHomeQueries";
 import { liveQuestService } from "../../live/liveQuestService";
+import { subscribeToQuestEvents } from "../../live/questEvents";
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
 import {
   questBoardKeys,
   useApplyQuestMutation,
   useCancelQuestMutation,
+  useLiveQuestSnapshotQuery,
   useProofFileLinksQuery,
 } from "../questBoardQueries";
 
 jest.mock("../../live/liveQuestService", () => ({
   liveQuestService: {
     getProofFileLink: jest.fn(),
+    getLiveSnapshot: jest.fn(),
     applyQuest: jest.fn(),
     cancelQuest: jest.fn(),
   },
+}));
+
+jest.mock("../../live/questEvents", () => ({
+  subscribeToQuestEvents: jest.fn(),
 }));
 
 describe("quest board query ownership", () => {
@@ -156,10 +163,18 @@ describe("quest board query ownership", () => {
           failureCode: null,
         },
         {
+          fileId: null,
+          contentType: "image/png",
+          sizeBytes: 100,
+          position: 2,
+          uploadStatus: "PROOF_FILE_READY",
+          failureCode: null,
+        },
+        {
           fileId: "file-failed",
           contentType: "image/png",
           sizeBytes: null,
-          position: 2,
+          position: 3,
           uploadStatus: "PROOF_FILE_FAILED",
           failureCode: "UPLOAD_FAILED",
         },
@@ -209,6 +224,54 @@ describe("quest board query ownership", () => {
       "file-2",
       expect.objectContaining({ signal: expect.anything() })
     );
+    queryClient.clear();
+  });
+  it("reloads the REST snapshot after a Quest update event", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    let emitQuestUpdate: (() => void) | undefined;
+    const stopSubscription = jest.fn();
+    jest
+      .mocked(liveQuestService.getLiveSnapshot)
+      .mockResolvedValueOnce({ state: "QUEST_IN_PROGRESS" } as never)
+      .mockResolvedValueOnce({ state: "QUEST_FAILED" } as never);
+    jest
+      .mocked(subscribeToQuestEvents)
+      .mockImplementation((_questId, onQuestUpdated) => {
+        emitQuestUpdate = () =>
+          onQuestUpdated({
+            type: "QUEST_UPDATED",
+            version: 1,
+            questId: "quest-1",
+            changeType: "PROOF_SUBMITTED",
+          });
+        return stopSubscription;
+      });
+    const { result, unmount } = await renderHook(
+      () => useLiveQuestSnapshotQuery("quest-1", "viewer-1"),
+      { wrapper: wrapper(queryClient) }
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.state).toBe("QUEST_IN_PROGRESS");
+    expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledTimes(1);
+    jest.useFakeTimers();
+    try {
+      await act(async () => {
+        if (!emitQuestUpdate)
+          throw new Error("Expected Quest event subscription");
+        emitQuestUpdate();
+        await jest.advanceTimersByTimeAsync(0);
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+    expect(result.current.data?.state).toBe("QUEST_FAILED");
+    expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledTimes(2);
+
+    await unmount();
+    expect(stopSubscription).toHaveBeenCalledTimes(1);
     queryClient.clear();
   });
 });

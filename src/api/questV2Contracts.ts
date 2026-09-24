@@ -541,7 +541,7 @@ export const questV2ProofFileStatusSchema = z.enum([
   "PROOF_FILE_PENDING",
 ]);
 export const questV2ProofFileSchema = z.object({
-  fileId: questV2IdSchema,
+  fileId: questV2IdSchema.nullable(),
   contentType: z.string(),
   sizeBytes: z.number().int().positive().nullable(),
   position: z.number().int().nonnegative(),

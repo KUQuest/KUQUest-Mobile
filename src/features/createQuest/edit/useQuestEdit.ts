@@ -2,13 +2,17 @@ import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 
-import { createQuestIdempotencyKey } from "@/api/QuestApi";
+import { createQuestIdempotencyKey, questApi } from "@/api/QuestApi";
 import type { QuestV2Image } from "@/api/questV2Contracts";
+import { QuestStatus } from "@/domain/questLifecycle";
+import { useLocale } from "@/features/preferences/localeStore";
+import { createQuestMessages } from "@/locales/createQuestMessages";
 
 import {
   useCancelQuestMutation,
   useDeleteQuestImageMutation,
   useEditQuestMutation,
+  usePublishQuestMutation,
   useQuestDetailQuery,
   useUploadQuestImagesMutation,
 } from "../api/createQuestQueries";
@@ -20,7 +24,12 @@ import {
   questDetailToDraft,
   toQuestV2Payload,
 } from "../api/createQuestApiAdapter";
-import type { CompletionState, Step } from "../createQuestTypes";
+import type {
+  CompletionState,
+  SaveErrorIntent,
+  Step,
+} from "../createQuestTypes";
+import { getPublishErrorMessage } from "../publish/useQuestPublish";
 
 export interface UseQuestEditOptions {
   questId?: string;
@@ -43,18 +52,27 @@ export function useQuestEdit({
   setDraft,
   setStep,
 }: UseQuestEditOptions) {
+  const { locale } = useLocale();
   const versionRef = useRef<number | null>(null);
+  // Reused until publish succeeds so a retried publish replays, not duplicates.
+  const publishKeyRef = useRef<string | null>(null);
   const existingImagesRef = useRef<QuestV2Image[]>([]);
   const detailQuery = useQuestDetailQuery(questId);
   const deleteImageMutation = useDeleteQuestImageMutation();
   const uploadImagesMutation = useUploadQuestImagesMutation();
   const editMutation = useEditQuestMutation();
   const cancelMutation = useCancelQuestMutation();
+  const publishMutation = usePublishQuestMutation();
 
   useEffect(() => {
     if (!questId) return;
     draftChangedRef.current = false;
-    if (!detailQuery.data) return;
+    // A save refetches the detail; hydrating a version this screen already
+    // holds would reset the wizard to step 1 mid-flow (e.g. after a publish
+    // blocker). Only a newer server version replaces the local draft.
+    if (!detailQuery.data || detailQuery.data.version === versionRef.current) {
+      return;
+    }
     versionRef.current = detailQuery.data.version;
     existingImagesRef.current = detailQuery.data.images
       .slice()
@@ -129,8 +147,29 @@ export function useQuestEdit({
         payload: toQuestV2Payload(normalizedDraft),
         idempotencyKey,
       });
+      versionRef.current = updated.version;
       const gallery = await syncImages(normalizedDraft.imageUris);
-      return { updated, gallery, state };
+      if (state === "OPEN") {
+        const messages = createQuestMessages[locale];
+        const check = await questApi.getPublishCheck(questId);
+        if (!check.canPublish) {
+          const [blocker] = check.blockingReasons;
+          throw Object.assign(
+            new Error(blocker?.message ?? messages.publishCheckBlocked),
+            { code: blocker?.code }
+          );
+        }
+        publishKeyRef.current ??= createQuestIdempotencyKey();
+        const published = await publishMutation.mutateAsync({
+          questId,
+          idempotencyKey: publishKeyRef.current,
+        });
+        if (published.state !== QuestStatus.QUEST_OPEN) {
+          throw new Error(messages.publishError);
+        }
+        publishKeyRef.current = null;
+      }
+      return { gallery, state };
     },
   });
 
@@ -146,7 +185,6 @@ export function useQuestEdit({
           state,
           idempotencyKey: createQuestIdempotencyKey(),
         });
-        versionRef.current = result.updated.version;
         setDraft((current) => ({
           ...current,
           imageUris: result.gallery.map((image) => image.url),
@@ -157,6 +195,11 @@ export function useQuestEdit({
       }
     },
     [saveMutation, setDraft]
+  );
+  // Stable identity: the commit hook memoizes on it.
+  const publishQuest = useCallback(
+    (draftToPublish: QuestDraft) => saveDraft(draftToPublish, "OPEN"),
+    [saveDraft]
   );
 
   const cancelQuest = useCallback(async (): Promise<CancelQuestResult> => {
@@ -188,13 +231,24 @@ export function useQuestEdit({
       : saveMutation.isError
         ? "error"
         : "idle";
+  const failedState = saveMutation.isError
+    ? (saveMutation.variables?.state ?? null)
+    : null;
+  const saveErrorIntent: SaveErrorIntent | null = failedState
+    ? { state: failedState, completesFlow: true }
+    : null;
 
   return {
     draftHydrated,
     draftLoadError: Boolean(detailQuery.error),
     retryDraftLoad,
+    isDraft: detailQuery.data?.state === QuestStatus.QUEST_DRAFT,
     saveState,
-    saveErrorMessage: saveMutation.error?.message ?? null,
+    saveErrorIntent,
+    saveErrorMessage:
+      saveMutation.error && failedState === "OPEN"
+        ? getPublishErrorMessage(saveMutation.error, locale)
+        : (saveMutation.error?.message ?? null),
     savingAction: saveMutation.isPending
       ? (saveMutation.variables?.state ?? null)
       : null,
@@ -204,6 +258,7 @@ export function useQuestEdit({
         ? "error"
         : "idle",
     cancelQuest,
+    publishQuest,
     saveDraft,
     resetSaveState: saveMutation.reset,
   };

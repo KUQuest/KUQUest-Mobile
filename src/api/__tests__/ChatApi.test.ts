@@ -246,13 +246,13 @@ describe("ChatApi", () => {
       id: "attachment-1",
       fileName: "brief.pdf",
       mediaType: "application/pdf",
-      sizeBytes: 256,
+      sizeBytes: "256",
       createdAt: "2026-09-15T12:00:00Z",
     };
     const message = {
       id: "msg-with-file",
       conversationId: "conv-1",
-      sequence: 6,
+      sequence: "6",
       kind: "USER",
       sender: { id: "user-1", displayName: "Me" },
       text: "See the brief",
@@ -310,14 +310,18 @@ describe("ChatApi", () => {
       api.sendMessage("conv-1", "See the brief", "client-msg-2", [
         "attachment-1",
       ])
-    ).resolves.toEqual(message);
+    ).resolves.toMatchObject({
+      ...message,
+      sequence: 6,
+      attachments: [{ ...attachment, sizeBytes: 256 }],
+    });
     await expect(
       api.uploadAttachment("conv-1", {
         uri: "file:///tmp/brief.pdf",
         name: "brief.pdf",
         type: "application/pdf",
       })
-    ).resolves.toEqual(attachment);
+    ).resolves.toMatchObject({ ...attachment, sizeBytes: 256 });
     const uploadInit = fetchMock.mock.calls[1][1] as RequestInit;
     expect(uploadInit.method).toBe("POST");
     expect((uploadInit.body as FormData).get("file")).toEqual(expect.any(Blob));

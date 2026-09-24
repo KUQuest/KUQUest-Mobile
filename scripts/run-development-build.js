@@ -75,14 +75,19 @@ function listOnlineDevices(environment) {
     .map((line) => line.trim().split(/\s+/))
     .filter(([serial, state]) => serial && state === "device")
     .map(([serial, , ...details]) => {
-      const model = details
+      const modelName = details
         .find((detail) => detail.startsWith("model:"))
-        ?.slice("model:".length)
-        .replaceAll("_", " ");
+        ?.slice("model:".length);
       const emulator = serial.startsWith("emulator-");
+      const expoName = emulator
+        ? runAdb(["-s", serial, "emu", "avd", "name"], environment)
+            .split(/\r?\n/)[0]
+            .trim()
+        : modelName;
       return {
         serial,
-        model: model || serial,
+        model: modelName?.replaceAll("_", " ") || serial,
+        expoName: expoName || (emulator ? serial : `Device ${serial}`),
         kind: emulator ? "emulator" : "physical",
       };
     });
@@ -214,12 +219,11 @@ async function runAndroidBuild(args, environment = process.env) {
   );
   console.log(`ADB reverse: ${device.serial} tcp:${port} -> tcp:${port}`);
   console.log(`Building ${ANDROID_PACKAGE} on ${device.serial}...`);
-
   const expoArgs = [
     "expo",
     "run:android",
     "--device",
-    device.serial,
+    device.expoName,
     ...withoutDeviceArgument(extraArgs),
   ];
   const hasPortArg = extraArgs.some(

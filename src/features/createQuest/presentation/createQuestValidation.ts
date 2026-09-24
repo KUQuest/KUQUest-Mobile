@@ -30,6 +30,7 @@ export function validateCreateQuestStep(
     "deadline:deadlineOrder": messages.deadlineOrderError,
     "startTime:required": messages.startTimeError,
     "startTime:format": messages.startTimeError,
+    "startTime:startTimePast": messages.startTimePastError,
     "endTime:required": messages.endTimeError,
     "endTime:format": messages.endTimeError,
     "endTime:timeOrder": messages.timeOrderError,

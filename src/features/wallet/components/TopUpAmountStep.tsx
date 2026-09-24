@@ -33,14 +33,14 @@ const styles = {
   bannerIconWrap:
     "h-[44px] w-[44px] items-center justify-center rounded-[22px] bg-ku-surface-success",
   bannerTextWrap: "flex-1",
-  bannerTitle: "mb-ku-2 font-ku-bold text-[15px] text-ku-primary-deep",
+  bannerTitle: "mb-ku-2 font-ku-bold text-[15px] text-ku-hirer-deep",
   bannerDesc:
     "font-ku-regular text-[12px] leading-[16px] text-ku-text-secondary",
   sectionContainer: "mb-ku-md",
   sectionLabel:
     "mb-ku-sm font-ku-semibold text-ku-body-small text-ku-text-strong",
   inputContainer:
-    "h-[60px] flex-row items-center rounded-[16px] border-2 border-ku-primary bg-ku-surface px-ku-md",
+    "h-[60px] flex-row items-center rounded-[16px] border-2 border-ku-hirer bg-ku-surface px-ku-md",
   inputContainerError: "border-ku-danger",
   inputPrefix: "mr-ku-sm font-ku-bold text-ku-title-small text-ku-text-strong",
   amountInput: "flex-1 py-ku-0 font-ku-bold text-ku-title text-ku-text-strong",
@@ -53,21 +53,21 @@ const styles = {
   quickGrid: "flex-row flex-wrap gap-ku-10",
   quickChip:
     "items-center justify-center rounded-[12px] border border-ku-border-subtle bg-ku-surface-muted px-ku-md py-ku-10",
-  quickChipSelected: "border-[1.5px] border-ku-primary bg-ku-surface-accent",
+  quickChipSelected: "border-[1.5px] border-ku-hirer bg-ku-surface-accent",
   quickChipText: "font-ku-semibold text-[13px] text-ku-text-secondary",
-  quickChipTextSelected: "font-ku-bold text-[13px] text-ku-primary-deep",
+  quickChipTextSelected: "font-ku-bold text-[13px] text-ku-hirer-deep",
   infoCallout:
     "mb-ku-lg flex-row items-start gap-ku-10 rounded-[14px] border border-ku-border-success bg-ku-surface-success p-ku-14",
   infoCalloutText:
     "flex-1 font-ku-regular text-[12px] leading-[18px] text-ku-text-secondary",
   primaryActionButton:
-    "h-[52px] items-center justify-center rounded-[16px] bg-ku-primary-deep",
+    "h-[52px] items-center justify-center rounded-[16px] bg-ku-hirer-deep",
   primaryButtonDisabled: "bg-ku-text-muted",
-  primaryActionButtonText: "font-ku-bold text-ku-body text-ku-on-primary",
+  primaryActionButtonText: "font-ku-bold text-ku-body text-ku-on-hirer",
 } as const;
 
 const primaryActionShadow = {
-  shadowColor: colors.primaryDeep,
+  shadowColor: colors.hirerDeep,
   shadowOffset: { width: 0, height: 3 },
   shadowOpacity: 0.25,
   shadowRadius: 6,
@@ -75,7 +75,7 @@ const primaryActionShadow = {
 } satisfies ViewStyle;
 
 const primaryActionShadowDisabled = {
-  shadowColor: colors.primaryDeep,
+  shadowColor: colors.hirerDeep,
   shadowOffset: { width: 0, height: 3 },
   shadowOpacity: 0,
   shadowRadius: 6,
@@ -99,7 +99,7 @@ export function TopUpAmountStep({
     <View testID="top-up-amount-step">
       <View className={styles.bannerCard}>
         <View className={styles.bannerIconWrap}>
-          <Wallet color={colors.primaryDeep} size={22} strokeWidth={2.4} />
+          <Wallet color={colors.hirerDeep} size={22} strokeWidth={2.4} />
         </View>
         <View className={styles.bannerTextWrap}>
           <Text className={styles.bannerTitle}>{m.topUpTitle}</Text>
@@ -182,7 +182,7 @@ export function TopUpAmountStep({
       </View>
 
       <View className={styles.infoCallout}>
-        <ShieldCheck color={colors.primaryDeep} size={18} strokeWidth={2.4} />
+        <ShieldCheck color={colors.hirerDeep} size={18} strokeWidth={2.4} />
         <Text className={styles.infoCalloutText}>{m.topUpSafetyNotice}</Text>
       </View>
 
@@ -202,7 +202,7 @@ export function TopUpAmountStep({
         testID="top-up-continue-btn"
       >
         {loading ? (
-          <ActivityIndicator color={colors.onPrimary} size="small" />
+          <ActivityIndicator color={colors.onHirer} size="small" />
         ) : (
           <Text className={styles.primaryActionButtonText}>{m.continue}</Text>
         )}

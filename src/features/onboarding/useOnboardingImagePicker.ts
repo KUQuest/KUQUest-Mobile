@@ -2,19 +2,31 @@ import * as ImagePicker from "expo-image-picker";
 import { useCallback, useState } from "react";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-type ImageAspect = [number, number];
-type ImageSelection = (uri: string) => void;
+export type OnboardingImageAspect = [number, number];
+export type OnboardingImageSelection = (uri: string) => void;
 
 type RetryRequest = {
-  onSelected: ImageSelection;
-  aspect: ImageAspect;
+  onSelected: OnboardingImageSelection;
+  aspect: OnboardingImageAspect;
+};
+export type OnboardingImagePickerState = {
+  pickImage: (
+    onSelected: OnboardingImageSelection,
+    aspect: OnboardingImageAspect
+  ) => Promise<void>;
+  isTooLargeVisible: boolean;
+  dismissTooLarge: () => void;
+  retry: () => void;
 };
 
 export function useOnboardingImagePicker({ onError }: { onError: () => void }) {
   const [retryRequest, setRetryRequest] = useState<RetryRequest | null>(null);
 
   const pickImage = useCallback(
-    async (onSelected: ImageSelection, aspect: ImageAspect) => {
+    async (
+      onSelected: OnboardingImageSelection,
+      aspect: OnboardingImageAspect
+    ) => {
       try {
         const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ["images"],

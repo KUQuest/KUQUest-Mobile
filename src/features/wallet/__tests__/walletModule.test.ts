@@ -10,6 +10,7 @@ import {
   convertEarnings,
   createTopUpFromQuote,
   formatTransactionDate,
+  formatTransactionTime,
   type WalletCompartments,
   MAX_WALLET_SATANG,
   MIN_TOP_UP_SATANG,
@@ -35,7 +36,6 @@ const now = new Date("2026-01-01T00:00:00.000Z");
 
 const topUpData: TopUpData = {
   id: "topup-1",
-  internalReference: "top-up:topup-1",
   creditSatang: 50_000,
   chargedFeeSatang: 0,
   chargedTaxSatang: 0,
@@ -261,12 +261,12 @@ describe("Hirer wallet formatting and classification", () => {
     expect(formatSatang(100_000, "en", "signed")).toBe("+฿1,000.00");
   });
 
-  it("formats dates in Thai Buddhist calendar", () => {
-    const date = "2024-04-12T10:00:00Z";
-    const formatted = formatTransactionDate(date, "th");
-    expect(formatted).toContain("12");
-    expect(formatted).toContain("เม.ย.");
-    expect(formatted).toContain("2567");
+  it("formats transaction date and time with the shared Bangkok format", () => {
+    const timestamp = "2024-04-12T10:00:00Z";
+    expect(formatTransactionDate(timestamp, "th")).toBe("12 เม.ย. 2024");
+    expect(formatTransactionTime(timestamp)).toBe("17:00");
+    expect(formatTransactionDate("invalid", "th")).toBe("");
+    expect(formatTransactionTime("invalid")).toBe("");
   });
 
   it("classifies HOLD transaction as escrow payment", () => {

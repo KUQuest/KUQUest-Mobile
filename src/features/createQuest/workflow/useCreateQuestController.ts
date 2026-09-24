@@ -33,7 +33,7 @@ import type {
   SaveState,
   Step,
 } from "../createQuestTypes";
-import { LOGISTICS_FIELDS } from "../createQuestTypes";
+import { LOGISTICS_FIELDS, QUEST_DETAIL_FIELDS } from "../createQuestTypes";
 import {
   useQuestPersistence,
   type PublishedQuestRefValue,
@@ -155,8 +155,12 @@ export function useCreateQuestController({
     ? editState.savingAction
     : (publishState.savingAction ?? localPersistence.savingAction);
   const cancelState = editState.cancelState as "cancelling" | "error" | "idle";
-  const saveErrorIntent: SaveErrorIntent | null =
-    localPersistence.saveErrorIntent;
+  const saveErrorIntent: SaveErrorIntent | null = isServerEditMode(mode)
+    ? editState.saveErrorIntent
+    : localPersistence.saveErrorIntent;
+  // A server Quest that is still a Draft finishes like a new Quest: Review
+  // offers Publish. Published Quests only save changes.
+  const publishable = !isServerEditMode(mode) || editState.isDraft;
   const resetSaveState = useCallback(() => {
     localPersistence.resetSaveState();
     publishState.resetSaveState();
@@ -313,6 +317,17 @@ export function useCreateQuestController({
     wizard.selectPreviousStep(targetStep);
   };
 
+  // Jump back to the step that owns a publish blocker. Local validation wins
+  // when it already explains the problem; server-only blockers still land on
+  // the owning field.
+  const fixPublishBlocker = (field: string) => {
+    const targetStep: Step = field in QUEST_DETAIL_FIELDS ? 1 : 2;
+    if (!validateStep(targetStep)) return;
+    wizard.selectPreviousStep(targetStep);
+    if (field in LOGISTICS_FIELDS) setLogisticsExpanded(true);
+    setPendingInvalidField(field);
+  };
+
   const reviewPublishCheck =
     publishState.publishCheck ?? getQuestPublishCheck(draft);
   const activeSaveDraft = isServerEditMode(mode)
@@ -320,21 +335,18 @@ export function useCreateQuestController({
     : localPersistence.saveDraft;
   const commit = useCreateQuestCommit({
     draft,
-    mode,
     onCompleted: setCompletedState,
     publishCheck: reviewPublishCheck,
-    publishQuest: publishState.publishQuest,
+    publishQuest: isServerEditMode(mode)
+      ? editState.publishQuest
+      : publishState.publishQuest,
     saveDraft: activeSaveDraft,
     saveErrorIntent,
   });
 
   const finishQuest = async (state: CompletionState) => {
     if (!validateStep(2)) return;
-    if (
-      !isServerEditMode(mode) &&
-      state === "OPEN" &&
-      !reviewPublishCheck.canPublish
-    ) {
+    if (state === "OPEN" && !reviewPublishCheck.canPublish) {
       setValidationSummary(messages.publishCheckBlocked);
       return;
     }
@@ -450,6 +462,12 @@ export function useCreateQuestController({
   const frameSubtitle = isServerEditMode(mode)
     ? messages.editHeaderSubtitle
     : undefined;
+  const [firstBlocker, ...otherBlockers] = review.blockers;
+  const publishBlockedHint = firstBlocker
+    ? otherBlockers.length > 0
+      ? `${firstBlocker.message} ${messages.moreBlockers(otherBlockers.length)}`
+      : firstBlocker.message
+    : null;
 
   return {
     frame: {
@@ -485,6 +503,7 @@ export function useCreateQuestController({
       logisticsExpanded,
       logisticsSummary: review.logisticsSummary,
       messages,
+      onFixBlocker: fixPublishBlocker,
       onRefreshPublishCheck: () =>
         void runExclusive(publishState.refreshPublishCheck),
       onRetrySave: () => void runExclusive(commit.retry),
@@ -495,7 +514,7 @@ export function useCreateQuestController({
       review,
       saveErrorMessage,
       saveErrorTitle:
-        !isServerEditMode(mode) && saveErrorIntent?.state === "OPEN"
+        saveErrorIntent?.state === "OPEN"
           ? messages.publishErrorTitle
           : messages.saveErrorTitle,
       saveState,
@@ -513,6 +532,8 @@ export function useCreateQuestController({
       isSaving: saveState === "saving",
       messages,
       mode,
+      publishBlockedHint,
+      publishable,
       publishCanPublish: reviewPublishCheck.canPublish,
       savingAction,
       step,

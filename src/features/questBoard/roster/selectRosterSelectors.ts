@@ -1,3 +1,4 @@
+import { formatTimestampDate } from "@/domain/datetime";
 import type {
   QuestV2Application,
   QuestV2Participation,
@@ -70,13 +71,6 @@ export function getApplicationSubmissionDetail(
   if (!appliedAt) return submittedLabel;
   const date = new Date(appliedAt);
   if (Number.isNaN(date.getTime())) return submittedLabel;
-  const formattedDate = new Intl.DateTimeFormat(
-    locale === "th" ? "th-TH" : "en-GB",
-    {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }
-  ).format(date);
+  const formattedDate = formatTimestampDate(date, locale) ?? submittedLabel;
   return `${submittedLabel} · ${formattedDate}`;
 }

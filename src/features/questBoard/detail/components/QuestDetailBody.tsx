@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
-  BriefcaseBusiness,
-  CalendarDays,
-  Check,
+  CalendarCheck,
+  CalendarClock,
   CircleAlert,
   CircleUserRound,
   ClipboardCheck,
-  Clock3,
+  FileCheck,
   ImageOff,
   MapPin,
   Plus,
+  UserRoundCheck,
   UsersRound,
   type LucideIcon,
 } from "lucide-react-native";
@@ -34,13 +34,6 @@ import {
   GroupQuestEntrySurfaces,
   LiveEntrySurface,
 } from "./QuestDetailEntrySurfaces";
-
-function locationLabel(
-  quest: QuestBoardQuest,
-  messages: QuestBoardMessages
-): string {
-  return quest.locationMode === "online" ? messages.online : messages.onCampus;
-}
 
 function proofLabel(
   quest: QuestBoardQuest,
@@ -71,29 +64,42 @@ function candidateDescription(
     : messages.reviewCandidatesDescription;
 }
 
-function DetailRow({
+function InfoRow({
   icon: Icon,
   label,
   value,
   description,
+  divided = false,
 }: {
   icon: LucideIcon;
   label: string;
   value: string;
   description?: string;
+  divided?: boolean;
 }) {
   return (
-    <View className={styles.requirementRow}>
-      <View className={styles.requirementIcon}>
+    <View className={cn(styles.infoRow, divided && styles.infoRowDivided)}>
+      <View className={styles.infoIcon}>
         <Icon color={colors.primary} size={20} strokeWidth={2} />
       </View>
-      <View className={styles.requirementCopy}>
-        <Text className={styles.requirementLabel}>{label}</Text>
-        <Text className={styles.requirementValue}>{value}</Text>
+      <View className={styles.infoCopy}>
+        <Text className={styles.infoLabel}>{label}</Text>
+        <Text className={styles.infoValue}>{value}</Text>
         {description ? (
-          <Text className={styles.requirementDescription}>{description}</Text>
+          <Text className={styles.infoDescription}>{description}</Text>
         ) : null}
       </View>
+    </View>
+  );
+}
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View className={styles.section}>
+      <Text accessibilityRole="header" className={styles.sectionTitle}>
+        {title}
+      </Text>
+      {children}
     </View>
   );
 }
@@ -147,7 +153,7 @@ function QuestImage({
   );
 }
 
-function ScheduleTimeline({
+function ScheduleLocation({
   locale,
   messages,
   quest,
@@ -156,59 +162,32 @@ function ScheduleTimeline({
   messages: QuestBoardMessages;
   quest: QuestBoardQuest;
 }) {
+  const [startTime, endTime] = quest.timeRange?.split("–") ?? [];
+  const online = quest.locationMode === "online";
   return (
-    <View
-      accessibilityLabel={messages.schedule}
-      className={styles.scheduleCard}
-      testID="quest-schedule-timeline"
-    >
-      <View className={styles.scheduleHeader}>
-        <View className={styles.scheduleHeaderIcon}>
-          <CalendarDays color={colors.primary} size={19} strokeWidth={2} />
-        </View>
-        <View className={styles.scheduleHeaderCopy}>
-          <Text className={styles.scheduleTitle}>{messages.schedule}</Text>
-          <Text className={styles.scheduleDescription}>
-            {messages.scheduleDescription}
-          </Text>
-        </View>
-      </View>
-      <View className={styles.scheduleTimeline}>
-        <View className={styles.timelineRail}>
-          <View className={styles.timelineDotActive} />
-          <View className={styles.timelineLine} />
-          <View className={styles.timelineDot} />
-        </View>
-        <View className={styles.timelineEvents}>
-          <View className={styles.timelineEvent}>
-            <Text className={styles.timelineLabel}>{messages.startWork}</Text>
-            <Text className={styles.timelineDate}>
-              {formatDate(quest.startDate, locale, "")}
-            </Text>
-            <View className={styles.timelineTimeRow}>
-              <Clock3 color={colors.primary} size={15} strokeWidth={2} />
-              <Text className={styles.timelineTimeLabel}>
-                {messages.workWindow}
-              </Text>
-              <Text className={styles.timelineTime}>
-                {quest.timeRange ?? messages.timeNotSpecified}
-              </Text>
-            </View>
-          </View>
-          <View className={styles.timelineEvent}>
-            <Text className={styles.timelineLabel}>{messages.finishBy}</Text>
-            <Text className={styles.timelineDate}>
-              {formatDate(quest.deadline, locale, "")}
-            </Text>
-            <Text className={styles.timelineDescription}>
-              {messages.finishByDescription}
-            </Text>
-          </View>
-        </View>
-      </View>
+    <View className={styles.infoCard} testID="quest-schedule-location">
+      <InfoRow
+        icon={CalendarClock}
+        label={messages.startWork}
+        value={`${formatDate(quest.startDate, locale, "")} · ${startTime ?? messages.timeNotSpecified}`}
+      />
+      <InfoRow
+        divided
+        icon={CalendarCheck}
+        label={messages.finishBy}
+        value={`${formatDate(quest.deadline, locale, "")} · ${endTime ?? messages.timeNotSpecified}`}
+      />
+      <InfoRow
+        divided
+        icon={MapPin}
+        label={messages.location}
+        value={online ? messages.online : quest.location}
+        description={online ? undefined : messages.onCampus}
+      />
     </View>
   );
 }
+
 export interface QuestDetailBodyProps {
   quest: QuestBoardQuest;
   locale: "en" | "th";
@@ -347,60 +326,49 @@ export function QuestDetailBody({
       ) : null}
       <View className={styles.heroCard}>
         <View className={styles.heroPrimary}>
-          <View>
+          <View className={styles.heroReward}>
             <Text className={styles.heroLabel}>{messages.reward}</Text>
-            <Text
-              className={styles.heroRewardValue}
-            >{`${formatSatang(getQuestRewardSatang(quest), locale)} ${messages.perPerson}`}</Text>
+            <Text className={styles.heroRewardValue}>
+              {formatSatang(getQuestRewardSatang(quest), locale)}
+              <Text
+                className={styles.heroRewardUnit}
+              >{` ${messages.perPerson}`}</Text>
+            </Text>
           </View>
-          <View className={styles.heroSpots}>
-            <Text className={styles.heroSpotsLabel}>{messages.spots}</Text>
+          <View
+            accessible
+            accessibilityLabel={messages.participantsSummary(
+              quest.acceptedParticipants,
+              quest.headcount
+            )}
+            className={styles.heroCount}
+          >
+            <Text className={styles.heroLabel}>{messages.participants}</Text>
             <Text
-              className={styles.heroSpotsValue}
+              className={styles.heroCountValue}
             >{`${quest.acceptedParticipants}/${quest.headcount}`}</Text>
           </View>
         </View>
-        <View className={styles.heroDetails}>
-          <View className={styles.heroItem}>
-            <View className={styles.heroItemIcon}>
-              <UsersRound color={colors.primary} size={17} strokeWidth={2} />
-            </View>
-            <View className={styles.heroItemCopy}>
-              <Text className={styles.heroLabel}>{messages.participation}</Text>
-              <Text className={styles.heroValue}>
-                {quest.participationMode === "team"
-                  ? messages.team
-                  : messages.singlePerson}
-              </Text>
-            </View>
-          </View>
-          <View className={cn(styles.heroItem, styles.heroItemDivider)}>
-            <View className={styles.heroItemIcon}>
-              <CircleUserRound
-                color={colors.primary}
-                size={17}
-                strokeWidth={2}
-              />
-            </View>
-            <View className={styles.heroItemCopy}>
-              <Text className={styles.heroLabel}>{messages.candidateMode}</Text>
-              <Text className={styles.heroValue}>
-                {quest.candidateMode === "NO_CANDIDATE"
-                  ? messages.firstCome
-                  : messages.reviewCandidates}
-              </Text>
-            </View>
-          </View>
-        </View>
-        <View className={styles.heroLocation}>
-          <MapPin color={colors.primary} size={20} strokeWidth={2} />
-          <View className={styles.heroLocationCopy}>
-            <Text className={styles.heroLabel}>{messages.location}</Text>
-            <Text className={styles.heroLocationValue}>{quest.location}</Text>
-            <Text className={styles.heroDetail}>
-              {locationLabel(quest, messages)}
-            </Text>
-          </View>
+        <View className={styles.heroFacts}>
+          <InfoRow
+            icon={UsersRound}
+            label={messages.participation}
+            value={
+              quest.participationMode === "team"
+                ? messages.team
+                : messages.singlePerson
+            }
+          />
+          <InfoRow
+            icon={UserRoundCheck}
+            label={messages.candidateMode}
+            value={
+              quest.candidateMode === "NO_CANDIDATE"
+                ? messages.firstCome
+                : messages.reviewCandidates
+            }
+            description={candidateDescription(quest, messages)}
+          />
         </View>
       </View>
       {quest.participationMode === "team" && onOpenParticipantProfile ? (
@@ -452,48 +420,28 @@ export function QuestDetailBody({
           </Pressable>
         </View>
       ) : null}
-      <ScheduleTimeline locale={locale} messages={messages} quest={quest} />
-      <View className={styles.section}>
-        <Text className={styles.sectionTitle}>{messages.description}</Text>
-        <View className={styles.descriptionCard}>
-          <Text className={styles.body}>{quest.description}</Text>
-        </View>
-      </View>
-      <View className={styles.section}>
-        <Text className={styles.sectionTitle}>{messages.requirements}</Text>
-        <View className={styles.requirementCard}>
-          <DetailRow
+      <Section title={messages.description}>
+        <Text className={styles.descriptionText}>{quest.description}</Text>
+      </Section>
+      <Section title={messages.scheduleLocation}>
+        <ScheduleLocation locale={locale} messages={messages} quest={quest} />
+      </Section>
+      <Section title={messages.requirements}>
+        <View className={styles.infoCard}>
+          <InfoRow
             icon={ClipboardCheck}
             label={messages.completionCriteria}
             value={quest.completionCriteria}
           />
-          <DetailRow
-            icon={Check}
+          <InfoRow
+            divided
+            icon={FileCheck}
             label={messages.proofRequired}
             value={proofLabel(quest, messages)}
             description={proofDescription(quest, messages)}
           />
-          <DetailRow
-            icon={UsersRound}
-            label={messages.candidateMode}
-            value={
-              quest.candidateMode === "NO_CANDIDATE"
-                ? messages.firstCome
-                : messages.reviewCandidates
-            }
-            description={candidateDescription(quest, messages)}
-          />
-          <DetailRow
-            icon={BriefcaseBusiness}
-            label={messages.participation}
-            value={
-              quest.participationMode === "team"
-                ? messages.team
-                : messages.singlePerson
-            }
-          />
         </View>
-      </View>
+      </Section>
       {status?.title ? (
         <View
           accessibilityRole="alert"

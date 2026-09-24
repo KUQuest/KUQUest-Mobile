@@ -24,7 +24,7 @@ const styles = {
   qrCard:
     "mb-ku-md w-full items-center rounded-[24px] border border-ku-border-subtle bg-ku-surface p-ku-md",
   qrHeader: "mb-ku-md items-center",
-  qrHeaderPromptPay: "font-ku-bold text-ku-subtitle text-ku-primary-dark",
+  qrHeaderPromptPay: "font-ku-bold text-ku-subtitle text-ku-hirer-dark",
   qrHeaderSubtitle: "mt-ku-2 font-ku-medium text-[12px] text-ku-text-secondary",
   qrImageWrapper:
     "mb-ku-md h-[220px] w-[220px] items-center justify-center overflow-hidden rounded-[16px] border border-ku-border-subtle bg-ku-white",
@@ -39,11 +39,11 @@ const styles = {
   statusBannerText: "font-ku-medium text-[13px] text-ku-text-secondary",
   promptPayActions: "w-full gap-ku-10",
   checkStatusButton:
-    "h-[50px] flex-row items-center justify-center gap-ku-sm rounded-[16px] bg-ku-primary-deep",
-  checkStatusButtonText: "font-ku-semibold text-ku-control text-ku-on-primary",
+    "h-[50px] flex-row items-center justify-center gap-ku-sm rounded-[16px] bg-ku-hirer-deep",
+  checkStatusButtonText: "font-ku-semibold text-ku-control text-ku-on-hirer",
   simulateButton:
     "h-[44px] flex-row items-center justify-center gap-ku-6 rounded-[16px] border border-ku-border-success bg-ku-surface-success",
-  simulateButtonText: "font-ku-medium text-[13px] text-ku-primary-deep",
+  simulateButtonText: "font-ku-medium text-[13px] text-ku-hirer-deep",
 } as const;
 
 const qrCardShadow = {
@@ -55,7 +55,7 @@ const qrCardShadow = {
 } satisfies ViewStyle;
 
 const checkStatusShadow = {
-  shadowColor: colors.primaryDeep,
+  shadowColor: colors.hirerDeep,
   shadowOffset: { width: 0, height: 3 },
   shadowOpacity: 0.25,
   shadowRadius: 6,
@@ -95,7 +95,7 @@ export function TopUpPromptPayStep({
             />
           ) : (
             <View className={styles.qrPlaceholder}>
-              <QrCode color={colors.primary} size={120} strokeWidth={1.8} />
+              <QrCode color={colors.hirer} size={120} strokeWidth={1.8} />
               <Text className={styles.qrPlaceholderText}>
                 {m.promptPayQrCode}
               </Text>
@@ -132,10 +132,10 @@ export function TopUpPromptPayStep({
           testID="top-up-check-status-btn"
         >
           {checkingStatus ? (
-            <ActivityIndicator color={colors.onPrimary} size="small" />
+            <ActivityIndicator color={colors.onHirer} size="small" />
           ) : (
             <>
-              <RefreshCw color={colors.onPrimary} size={16} />
+              <RefreshCw color={colors.onHirer} size={16} />
               <Text className={styles.checkStatusButtonText}>
                 {m.checkStatus}
               </Text>
@@ -153,7 +153,7 @@ export function TopUpPromptPayStep({
             className={styles.simulateButton}
             testID="top-up-simulate-btn"
           >
-            <Sparkles color={colors.primaryDeep} size={15} />
+            <Sparkles color={colors.hirerDeep} size={15} />
             <Text className={styles.simulateButtonText}>
               {m.simulateSuccess}
             </Text>

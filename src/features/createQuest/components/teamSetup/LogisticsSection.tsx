@@ -30,7 +30,7 @@ export function LogisticsSection({
         testID="create-quest-logistics-toggle"
       >
         <View className={styles.collapsibleHeaderIcon}>
-          <CalendarClock color={colors.primary} size={20} strokeWidth={2.2} />
+          <CalendarClock color={colors.hirer} size={20} strokeWidth={2.2} />
         </View>
         <View className={styles.collapsibleHeaderCopy}>
           <Text accessibilityRole="header" className={styles.sectionTitle}>
@@ -44,7 +44,7 @@ export function LogisticsSection({
           ) : null}
         </View>
         <ChevronDown
-          color={colors.primary}
+          color={colors.hirer}
           size={22}
           strokeWidth={2.2}
           style={{ transform: [{ rotate: expanded ? "180deg" : "0deg" }] }}

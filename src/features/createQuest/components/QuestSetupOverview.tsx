@@ -28,7 +28,7 @@ function SetupMetric({
       testID={testID}
     >
       <View className={styles.setupMetricIcon}>
-        <Icon color={colors.primary} size={22} strokeWidth={2.1} />
+        <Icon color={colors.hirer} size={22} strokeWidth={2.1} />
       </View>
       <View
         className={cn(
@@ -74,7 +74,7 @@ export function QuestSetupOverview({
     <View className={styles.setupCard}>
       <View className={styles.setupTitleRow}>
         <View className={styles.setupTitleIcon}>
-          <Check color={colors.primary} size={18} strokeWidth={2.6} />
+          <Check color={colors.hirer} size={18} strokeWidth={2.6} />
         </View>
         <Text className={styles.setupTitle}>{messages.questSetup}</Text>
       </View>

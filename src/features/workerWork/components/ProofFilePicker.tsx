@@ -65,7 +65,7 @@ export function ProofFilePicker({
                 accessibilityLabel={`${messages.videoFile} ${file.name}`}
                 className="flex-1 items-center justify-center gap-ku-xs px-ku-sm"
               >
-                <Film color={palette.primaryDeep} size={24} strokeWidth={2} />
+                <Film color={palette.workerDeep} size={24} strokeWidth={2} />
                 <Text
                   className="text-center font-ku-medium text-ku-caption text-ku-text-secondary"
                   numberOfLines={2}
@@ -98,8 +98,8 @@ export function ProofFilePicker({
             onPress={onAdd}
             testID="worker-proof-add-files"
           >
-            <ImagePlus color={palette.primary} size={24} strokeWidth={2} />
-            <Text className="font-ku-semibold text-ku-label text-ku-primary">
+            <ImagePlus color={palette.worker} size={24} strokeWidth={2} />
+            <Text className="font-ku-semibold text-ku-label text-ku-worker">
               {messages.addFiles}
             </Text>
           </Pressable>

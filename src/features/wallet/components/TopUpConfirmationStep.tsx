@@ -32,7 +32,7 @@ const styles = {
   breakdownDivider: "my-ku-xs h-[1px] bg-ku-border-subtle",
   breakdownTotalRow: "flex-row items-center justify-between pt-ku-xs",
   breakdownTotalLabel: "font-ku-bold text-ku-control text-ku-text-strong",
-  breakdownTotalValue: "font-ku-bold text-ku-title-small text-ku-primary-deep",
+  breakdownTotalValue: "font-ku-bold text-ku-title-small text-ku-hirer-deep",
   expiryRow:
     "mt-ku-md flex-row items-center gap-ku-6 border-t border-ku-border-subtle pt-ku-sm",
   expiryText: "font-ku-regular text-[11px] text-ku-text-muted",
@@ -40,8 +40,8 @@ const styles = {
     "mt-ku-sm flex-row items-center gap-ku-6 rounded-[10px] bg-ku-surface-danger p-ku-10",
   errorText: "flex-1 font-ku-medium text-[12px] text-ku-danger",
   primaryActionButton:
-    "h-[52px] items-center justify-center rounded-[16px] bg-ku-primary-deep",
-  primaryActionButtonText: "font-ku-bold text-ku-body text-ku-on-primary",
+    "h-[52px] items-center justify-center rounded-[16px] bg-ku-hirer-deep",
+  primaryActionButtonText: "font-ku-bold text-ku-body text-ku-on-hirer",
   secondaryButton:
     "mt-ku-10 h-[48px] items-center justify-center rounded-[16px] bg-ku-surface-muted",
   secondaryButtonText:
@@ -49,7 +49,7 @@ const styles = {
 } as const;
 
 const primaryActionShadow = {
-  shadowColor: colors.primaryDeep,
+  shadowColor: colors.hirerDeep,
   shadowOffset: { width: 0, height: 3 },
   shadowOpacity: 0.25,
   shadowRadius: 6,
@@ -141,7 +141,7 @@ export function TopUpConfirmationStep({
         testID="top-up-confirm-btn"
       >
         {loading ? (
-          <ActivityIndicator color={colors.onPrimary} size="small" />
+          <ActivityIndicator color={colors.onHirer} size="small" />
         ) : (
           <Text className={styles.primaryActionButtonText}>
             {m.topUpConfirm}

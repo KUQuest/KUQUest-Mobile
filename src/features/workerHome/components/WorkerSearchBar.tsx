@@ -66,7 +66,7 @@ export function WorkerSearchBar({
           onPress={onOpenFilter}
           testID="worker-filter-button"
         >
-          <SlidersHorizontal size={17} color={themeColors.primaryDeep} />
+          <SlidersHorizontal size={17} color={themeColors.workerDeep} />
         </Pressable>
       </View>
       <ScrollView
@@ -81,7 +81,7 @@ export function WorkerSearchBar({
           accessibilityRole="button"
           className={`${styles.tagPill} ${
             selectedTagId === null
-              ? "border-ku-primary-dark bg-ku-primary-dark"
+              ? "border-ku-worker-dark bg-ku-worker-dark"
               : "border-ku-border-subtle bg-ku-surface"
           }`}
           onPress={() => onSelectTag(null)}
@@ -90,7 +90,7 @@ export function WorkerSearchBar({
           <Text
             className={`${styles.tagPillText} ${
               selectedTagId === null
-                ? "font-ku-semibold text-ku-on-primary"
+                ? "font-ku-semibold text-ku-on-worker"
                 : "text-ku-text-secondary"
             }`}
           >
@@ -105,7 +105,7 @@ export function WorkerSearchBar({
               accessibilityRole="button"
               className={`${styles.tagPill} ${
                 isSelected
-                  ? "border-ku-primary-dark bg-ku-primary-dark"
+                  ? "border-ku-worker-dark bg-ku-worker-dark"
                   : "border-ku-border-subtle bg-ku-surface"
               }`}
               key={tag.id}
@@ -115,7 +115,7 @@ export function WorkerSearchBar({
               <Text
                 className={`${styles.tagPillText} ${
                   isSelected
-                    ? "font-ku-semibold text-ku-on-primary"
+                    ? "font-ku-semibold text-ku-on-worker"
                     : "text-ku-text-secondary"
                 }`}
               >

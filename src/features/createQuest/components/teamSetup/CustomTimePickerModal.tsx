@@ -2,10 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Modal } from "react-native";
 import { Check, X } from "lucide-react-native";
 
-import { Pressable, ScrollView, Text, View } from "@/tw";
-import { Chip } from "@/components/ui/Chip";
-import { colors } from "@/theme/colors";
+import { Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
+import { colors } from "@/theme/colors";
 import styles from "../createQuestStyles";
 import { getNearestQuarterHour } from "../../domain/createQuestModel";
 
@@ -24,12 +23,6 @@ export interface CustomTimePickerModalProps {
     minute: string;
     confirmTime: string;
     cancel: string;
-    quickPresets: string;
-    now: string;
-    in30m: string;
-    in1h: string;
-    in2h: string;
-    endOfDay: string;
   };
   onConfirm: (time: string) => void;
   onClose: () => void;
@@ -87,52 +80,6 @@ export default function CustomTimePickerModal({
     return `${hStr}:${mStr}`;
   }, [hour, minute]);
 
-  const quickPresets = useMemo(() => {
-    const list: { label: string; time: string }[] = [];
-
-    const { hours: nowH, minutes: nowM } = getNearestQuarterHour();
-    const nowTime = `${nowH}:${nowM}`;
-    list.push({ label: messages?.now ?? "Now", time: nowTime });
-
-    if (
-      field === "end" &&
-      startTime &&
-      /^([01]\d|2[0-3]):[0-5]\d$/.test(startTime)
-    ) {
-      const [sh, sm] = startTime.split(":").map(Number);
-      const smStr = String(sm).padStart(2, "0");
-      const hPlus1 = String((sh + 1) % 24).padStart(2, "0");
-      const hPlus2 = String((sh + 2) % 24).padStart(2, "0");
-      const hPlus3 = String((sh + 3) % 24).padStart(2, "0");
-
-      list.push({ label: messages?.in1h ?? "+1h", time: `${hPlus1}:${smStr}` });
-      list.push({ label: messages?.in2h ?? "+2h", time: `${hPlus2}:${smStr}` });
-      list.push({ label: "+3 ชม.", time: `${hPlus3}:${smStr}` });
-      list.push({ label: messages?.endOfDay ?? "23:59", time: "23:59" });
-    } else {
-      const [curH, curM] = [Number(nowH), Number(nowM)];
-      const hPlus1 = String((curH + 1) % 24).padStart(2, "0");
-      const hPlus2 = String((curH + 2) % 24).padStart(2, "0");
-      const curMStr = String(curM).padStart(2, "0");
-
-      list.push({
-        label: messages?.in1h ?? "+1h",
-        time: `${hPlus1}:${curMStr}`,
-      });
-      list.push({
-        label: messages?.in2h ?? "+2h",
-        time: `${hPlus2}:${curMStr}`,
-      });
-      list.push({ label: "09:00", time: "09:00" });
-      list.push({ label: "12:00", time: "12:00" });
-      list.push({ label: "17:00", time: "17:00" });
-      list.push({ label: "20:00", time: "20:00" });
-      list.push({ label: messages?.endOfDay ?? "23:59", time: "23:59" });
-    }
-
-    return list;
-  }, [field, startTime, messages]);
-
   const handleSelectHour = (h: number) => {
     setHour(h);
     setActiveTab("minute");
@@ -148,12 +95,6 @@ export default function CustomTimePickerModal({
       ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
     setHour(Math.floor(normalizedMinutes / 60));
     setMinute(normalizedMinutes % 60);
-  };
-
-  const handleApplyPreset = (presetTime: string) => {
-    const [h, m] = presetTime.split(":").map(Number);
-    setHour(h);
-    setMinute(m);
   };
 
   const handleConfirm = () => {
@@ -249,35 +190,6 @@ export default function CustomTimePickerModal({
                 {messages.minute}
               </Text>
             </Pressable>
-          </View>
-
-          <View className="mb-ku-6">
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              className={styles.timePresetsScroll}
-            >
-              {quickPresets.map((preset) => {
-                const isSelected = preset.time === formattedTime;
-                return (
-                  <Chip
-                    accessibilityLabel={`${preset.label}: ${preset.time}`}
-                    className="mr-ku-6 px-ku-12 py-ku-6"
-                    key={preset.label}
-                    label={`${preset.label} (${preset.time})`}
-                    onPress={() => handleApplyPreset(preset.time)}
-                    selected={isSelected}
-                    testID={`time-preset-${preset.time}`}
-                    textClassName={
-                      isSelected
-                        ? "font-ku-bold text-ku-on-primary"
-                        : "font-ku-semibold text-ku-body-small text-ku-primary"
-                    }
-                    tone="accent"
-                  />
-                );
-              })}
-            </ScrollView>
           </View>
 
           {activeTab === "hour" ? (
@@ -408,7 +320,7 @@ export default function CustomTimePickerModal({
               testID="custom-time-picker-confirm"
             >
               <View className="flex-row items-center gap-ku-6">
-                <Check color={colors.onPrimary} size={18} strokeWidth={2.5} />
+                <Check color={colors.onHirer} size={18} strokeWidth={2.5} />
                 <Text className={styles.timePickerConfirmText}>
                   {messages.confirmTime} ({formattedTime})
                 </Text>

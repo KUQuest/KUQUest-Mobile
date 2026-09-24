@@ -146,6 +146,6 @@ describe("MyQuestListScreen", () => {
     expect(draftProjection.selectedTab).toBe("draft");
     expect(draftProjection.emptyTitle).toBe("No Quest drafts");
     expect(draftProjection.items).toHaveLength(1);
-    expect(draftProjection.items[0]?.actionType).toBe("edit");
+    expect(draftProjection.items[0]?.primaryAction).toBe("edit");
   });
 });

@@ -16,6 +16,7 @@ export function CreateQuestReviewPanel({
   wide,
   isCheckingPublish,
   publishCheck,
+  onFixBlocker,
   onRefreshPublishCheck,
 }: {
   locale: SupportedLocale;
@@ -24,6 +25,7 @@ export function CreateQuestReviewPanel({
   wide: boolean;
   isCheckingPublish: boolean;
   publishCheck: QuestPublishCheck;
+  onFixBlocker: (field: string) => void;
   onRefreshPublishCheck: () => void;
 }) {
   const [showTopUpModal, setShowTopUpModal] = useState(false);
@@ -43,8 +45,9 @@ export function CreateQuestReviewPanel({
         summary={view.summary}
         rewardPerPerson={view.rewardPerPerson}
         publishCheck={publishCheck}
-        missingSatang={view.missingSatang}
+        blockers={view.blockers}
         isCheckingPublish={isCheckingPublish}
+        onFixBlocker={onFixBlocker}
         onTopUp={() => setShowTopUpModal(true)}
       />
       <QuestTopUpModal

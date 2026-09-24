@@ -27,12 +27,13 @@ describe("Hirer Home Quest progress", () => {
     }
   });
 
-  it("formats due dates in the Bangkok time zone for both locales", () => {
+  it("formats due dates with a year and 24-hour Bangkok time", () => {
     const dueAt = "2026-09-19T18:00:00+07:00";
 
-    expect(formatHirerDueAt(dueAt, "th")).toContain("18:00");
-    expect(formatHirerDueAt(dueAt, "en")).toContain("18:00");
+    expect(formatHirerDueAt(dueAt, "th")).toBe("ครบกำหนด 19 ก.ย. 2026 18:00");
+    expect(formatHirerDueAt(dueAt, "en")).toBe("Due 19 Sept 2026, 18:00");
   });
+
   it("prioritizes live work before assigned and open Quests", () => {
     const quests = [
       {

@@ -1,3 +1,8 @@
+import {
+  formatDate,
+  formatTimeInBangkok,
+  formatTimestampDate,
+} from "@/domain/datetime";
 import type { SupportedLocale } from "@/locales/locale";
 
 /** Formats the date shown on compact My Quests cards. */
@@ -6,15 +11,23 @@ export function formatQuestDate(
   locale: SupportedLocale = "en"
 ): string {
   if (!value) return "—";
+  if (value.includes("T")) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return formatTimestampDate(date, locale) ?? "—";
+  }
   const dateValue = value.length > 10 ? value.slice(0, 10) : value;
-  const date = value.includes("T")
-    ? new Date(value)
-    : new Date(`${dateValue}T12:00:00`);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
-    day: "numeric",
-    month: "short",
-  }).format(date);
+  return formatDate(dateValue, locale, "—");
+}
+
+/** Formats one schedule endpoint as its date and Bangkok time. */
+export function formatQuestDateTime(
+  value: string,
+  locale: SupportedLocale
+): string {
+  const time = formatTimeInBangkok(value);
+  const date = formatQuestDate(value, locale);
+  return time ? `${date} · ${time}` : date;
 }
 
 /** Maps Quest categories to their existing My Quests card tone. */

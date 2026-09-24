@@ -302,7 +302,7 @@ export function ProofSubmissionSheet({
                 onPress={() => void handlePickFiles()}
                 testID="proof-add-images"
               >
-                <ImagePlus color={colors.primary} size={20} strokeWidth={2.2} />
+                <ImagePlus color={colors.worker} size={20} strokeWidth={2.2} />
                 <Text className={styles.proofAttachmentTriggerText}>
                   {messages.addProofImages}
                 </Text>
@@ -320,7 +320,7 @@ export function ProofSubmissionSheet({
                       className="flex-row items-center rounded-[12px] bg-ku-surface-muted px-ku-10 py-ku-9"
                       key={asset.uri}
                     >
-                      <FileText color={colors.primary} size={18} />
+                      <FileText color={colors.worker} size={18} />
                       <Text
                         className="ml-ku-sm flex-1 font-ku-medium text-ku-label text-ku-text-strong"
                         numberOfLines={1}
@@ -360,7 +360,7 @@ export function ProofSubmissionSheet({
                         color={
                           file.uploadStatus === "PROOF_FILE_FAILED"
                             ? colors.danger
-                            : colors.primary
+                            : colors.worker
                         }
                         size={18}
                       />
@@ -393,7 +393,7 @@ export function ProofSubmissionSheet({
                               .finally(() => setBusyAction(undefined));
                           }}
                         >
-                          <RotateCcw color={colors.primary} size={18} />
+                          <RotateCcw color={colors.worker} size={18} />
                         </Pressable>
                       ) : null}
                     </View>
@@ -452,7 +452,7 @@ export function ProofSubmissionSheet({
                   testID="proof-delete-draft"
                   variant="secondary"
                 >
-                  <Trash2 color={colors.primary} size={18} />
+                  <Trash2 color={colors.worker} size={18} />
                 </Button>
               ) : null}
               {isLive && onSaveDraft && !locked ? (

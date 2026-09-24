@@ -1,22 +1,22 @@
 const styles = {
-  safeArea: "bg-ku-primary flex-1",
-  hero: "bg-ku-primary px-ku-lg pb-ku-22 pt-ku-xs",
+  safeArea: "bg-ku-hirer flex-1",
+  hero: "bg-ku-hirer px-ku-lg pb-ku-22 pt-ku-xs",
   heroTop: "items-center flex-row min-h-[64px] justify-between",
   heroButton:
-    "items-center border border-ku-on-primary/[0.42] rounded-[14px] h-[48px] justify-center w-[48px]",
+    "items-center border border-ku-on-hirer/[0.42] rounded-[14px] h-[48px] justify-center w-[48px]",
   heroTitleGroup: "flex-1 items-center px-ku-sm",
-  heroTitle: "text-ku-on-primary font-ku-bold text-ku-title text-center",
+  heroTitle: "text-ku-on-hirer font-ku-bold text-ku-title text-center",
   heroSubtitle:
-    "text-ku-on-primary font-ku-regular text-ku-body-small text-center mt-ku-1",
+    "text-ku-on-hirer font-ku-regular text-ku-body-small text-center mt-ku-1",
   progressTrack: "items-center flex-row mt-ku-12",
   progressNodePressable:
     "items-center justify-center min-h-[48px] min-w-[48px]",
   progressNode: "items-center rounded-ku-pill h-[40px] justify-center w-[40px]",
-  progressNodeText: "text-ku-on-primary font-ku-bold text-ku-emphasis",
+  progressNodeText: "text-ku-on-hirer font-ku-bold text-ku-emphasis",
   progressConnector: "flex-1 h-[2px]",
   stepLabels: "flex-row mt-ku-xs",
   stepLabel: "flex-1 font-ku-medium text-center text-ku-meta",
-  stepLabelActive: "text-ku-on-primary font-ku-bold",
+  stepLabelActive: "text-ku-on-hirer font-ku-bold",
   surface:
     "bg-ku-background flex-1 -mt-ku-md rounded-tl-[28px] rounded-tr-[28px]",
   loadErrorState: "items-center flex-1 justify-center gap-ku-12 p-ku-xl",
@@ -106,13 +106,6 @@ const styles = {
   placeholderText: "text-ku-text-muted",
   inputWithIcon:
     "items-center bg-ku-card border-ku-border rounded-[12px] border flex-row min-h-[48px] px-ku-md",
-  modalBackdrop: "bg-ku-overlay flex-1 justify-end",
-  pickerSheet:
-    "bg-ku-background rounded-tl-[24px] rounded-tr-[24px] px-ku-md pb-ku-lg pt-ku-md",
-  pickerHeader: "items-center flex-row justify-between mb-ku-sm",
-  pickerTitle: "text-ku-text-strong font-ku-bold text-ku-body",
-  pickerDoneButton: "items-center min-h-[44px] justify-center px-ku-sm",
-  pickerDoneText: "text-ku-primary font-ku-semibold text-ku-body-small",
   timePickerBackdrop: "bg-ku-overlay flex-1 justify-end",
   timePickerSheet:
     "bg-ku-background rounded-tl-[24px] rounded-tr-[24px] px-ku-20 pb-ku-28 pt-ku-md",
@@ -125,28 +118,27 @@ const styles = {
     "items-center flex-row justify-center gap-ku-12 my-ku-10",
   timeDisplayBox:
     "items-center justify-center bg-ku-card border-2 border-ku-border-muted rounded-[16px] px-ku-20 py-ku-sm min-w-[96px]",
-  timeDisplayBoxActive: "border-ku-primary bg-ku-surface-accent",
+  timeDisplayBoxActive: "border-ku-hirer bg-ku-surface-accent",
   timeDisplayText:
     "text-ku-text-strong font-ku-bold text-[34px] leading-[42px]",
-  timeDisplayTextActive: "text-ku-primary",
+  timeDisplayTextActive: "text-ku-hirer",
   timeDisplayLabel: "text-ku-text-muted font-ku-medium text-ku-meta mt-ku-2",
-  timeDisplayLabelActive: "text-ku-primary font-ku-semibold",
+  timeDisplayLabelActive: "text-ku-hirer font-ku-semibold",
   timeColon: "text-ku-text-strong font-ku-bold text-[32px] leading-[40px]",
-  timePresetsScroll: "py-ku-xs mb-ku-12",
   timeSectionLabel:
     "text-ku-text-secondary font-ku-semibold text-ku-body-small mb-ku-sm mt-ku-xs",
   hourGrid: "flex-row flex-wrap justify-between gap-ku-6 mb-ku-12",
   hourCell:
     "items-center justify-center bg-ku-card border border-ku-border-subtle rounded-[10px] w-[50px] h-[40px]",
-  hourCellSelected: "bg-ku-primary border-ku-primary",
+  hourCellSelected: "bg-ku-hirer border-ku-hirer",
   hourCellText: "text-ku-text-strong font-ku-semibold text-ku-body-small",
-  hourCellTextSelected: "text-ku-on-primary font-ku-bold",
+  hourCellTextSelected: "text-ku-on-hirer font-ku-bold",
   minuteGrid: "flex-row flex-wrap justify-between gap-ku-sm mb-ku-12",
   minuteCell:
     "items-center justify-center bg-ku-card border border-ku-border-subtle rounded-[12px] w-[72px] h-[44px]",
-  minuteCellSelected: "bg-ku-primary border-ku-primary",
+  minuteCellSelected: "bg-ku-hirer border-ku-hirer",
   minuteCellText: "text-ku-text-strong font-ku-semibold text-ku-body-small",
-  minuteCellTextSelected: "text-ku-on-primary font-ku-bold",
+  minuteCellTextSelected: "text-ku-on-hirer font-ku-bold",
   minuteStepperContainer:
     "flex-row items-center justify-between bg-ku-surface-accent rounded-[12px] px-ku-12 py-ku-sm mb-ku-12",
   minuteStepperLabel:
@@ -161,8 +153,26 @@ const styles = {
   timePickerCancelText:
     "text-ku-text-secondary font-ku-semibold text-ku-control",
   timePickerConfirmBtn:
-    "flex-1 items-center justify-center bg-ku-primary rounded-[12px] min-h-[46px] px-ku-md",
-  timePickerConfirmText: "text-ku-on-primary font-ku-bold text-ku-control",
+    "flex-1 items-center justify-center bg-ku-hirer rounded-[12px] min-h-[46px] px-ku-md",
+  timePickerConfirmText: "text-ku-on-hirer font-ku-bold text-ku-control",
+  timePickerConfirmBtnDisabled: "opacity-50",
+  datePickerMonthRow: "items-center flex-row justify-between mb-ku-sm",
+  datePickerMonthTitle: "text-ku-text-strong font-ku-bold text-ku-body",
+  datePickerNavButton:
+    "items-center bg-ku-surface-subtle rounded-ku-pill h-[44px] justify-center w-[44px]",
+  datePickerNavButtonDisabled: "opacity-40",
+  datePickerWeekRow: "flex-row",
+  datePickerWeekday:
+    "flex-1 text-ku-text-muted font-ku-semibold text-ku-meta text-center py-ku-xs",
+  datePickerCell: "flex-1 items-center py-ku-1",
+  datePickerDay:
+    "items-center justify-center rounded-ku-pill h-[44px] w-[44px]",
+  datePickerDayToday: "border border-ku-hirer",
+  datePickerDaySelected: "bg-ku-hirer",
+  datePickerDayDisabled: "opacity-35",
+  datePickerDayText: "text-ku-text-strong font-ku-semibold text-ku-body-small",
+  datePickerDayTextToday: "text-ku-hirer font-ku-bold",
+  datePickerDayTextSelected: "text-ku-on-hirer font-ku-bold",
   scheduleCard:
     "bg-ku-card border border-ku-border-subtle rounded-[14px] p-ku-12 mb-ku-12",
   scheduleCardHeader: "flex-row items-center justify-between mb-ku-sm",
@@ -176,12 +186,10 @@ const styles = {
   scheduleSplitBtnLabel: "text-ku-text-muted font-ku-regular text-ku-meta",
   scheduleSplitBtnValue:
     "text-ku-text-strong font-ku-semibold text-ku-body-small mt-ku-1",
-  scheduleQuickChips: "flex-row flex-wrap gap-ku-6 mt-ku-sm",
   durationBadge:
     "bg-ku-surface-accent border border-ku-border-accent rounded-[12px] p-ku-10 my-ku-sm flex-row items-center justify-between",
   durationBadgeError: "bg-ku-surface-danger border-ku-border-danger",
-  durationBadgeText:
-    "text-ku-primary font-ku-semibold text-ku-body-small flex-1",
+  durationBadgeText: "text-ku-hirer font-ku-semibold text-ku-body-small flex-1",
   durationBadgeErrorText:
     "text-ku-danger-dark font-ku-medium text-ku-body-small flex-1",
   fixDeadlineButton:
@@ -193,7 +201,7 @@ const styles = {
     "bg-ku-surface-subtle border-ku-border-subtle rounded-[12px] border flex-row items-center min-h-[64px] mb-ku-md p-ku-12",
   checkbox:
     "border-ku-border bg-ku-card border h-[24px] items-center justify-center rounded-[7px] w-[24px]",
-  checkboxChecked: "bg-ku-primary border-ku-primary",
+  checkboxChecked: "bg-ku-hirer border-ku-hirer",
   onlineToggleCopy: "flex-1 ml-ku-12",
   onlineToggleTitle: "text-ku-text-strong font-ku-semibold text-ku-control",
   onlineToggleHint: "text-ku-text-muted font-ku-regular text-ku-label mt-ku-1",
@@ -204,7 +212,7 @@ const styles = {
     "text-ku-text-secondary font-ku-regular text-ku-label ml-ku-34 mt-ku-2",
   imagePicker:
     "items-center bg-ku-surface-accent border-ku-border-accent rounded-[12px] border-dashed border justify-center min-h-[128px] p-ku-md",
-  imageTitle: "text-ku-primary font-ku-semibold text-ku-control mt-ku-sm",
+  imageTitle: "text-ku-hirer font-ku-semibold text-ku-control mt-ku-sm",
   changeImagesButton:
     "items-center min-h-[48px] justify-center mt-ku-sm px-ku-12",
   imageGrid: "flex-row flex-wrap gap-ku-sm",
@@ -221,24 +229,24 @@ const styles = {
   choiceFormat: "flex-1 min-h-[104px] py-ku-10",
   choiceFormatStacked: "min-h-[88px] w-full",
   choiceAcceptance: "min-h-[88px] py-ku-10",
-  choiceSelected: "bg-ku-surface-accent border-ku-primary",
+  choiceSelected: "bg-ku-surface-accent border-ku-hirer",
   choiceIcon:
     "items-center bg-ku-surface-accent rounded-[12px] h-[44px] justify-center w-[44px]",
   choiceCopy: "flex-1 min-w-0 ml-ku-10 mr-ku-6",
   choiceText: "text-ku-text-strong font-ku-bold text-ku-emphasis",
-  choiceTextSelected: "text-ku-primary",
+  choiceTextSelected: "text-ku-hirer",
   choiceDescription:
     "text-ku-text-secondary font-ku-regular text-ku-body-small mt-ku-2",
   radio:
     "border-2 border-ku-border-muted rounded-ku-pill h-[28px] items-center justify-center shrink-0 w-[28px]",
-  radioSelected: "border-ku-primary",
-  radioDot: "bg-ku-primary rounded-ku-pill h-[14px] w-[14px]",
+  radioSelected: "border-ku-hirer",
+  radioDot: "bg-ku-hirer rounded-ku-pill h-[14px] w-[14px]",
   modeSummary: "bg-ku-surface-accent rounded-[14px] flex-row mt-ku-14 p-ku-12",
   modeIcon:
     "items-center bg-ku-surface-success rounded-ku-pill h-[48px] justify-center mr-ku-10 w-[48px]",
   modeCopy: "flex-1 min-w-0",
   modeTitle: "text-ku-text-strong font-ku-semibold text-ku-body-small",
-  modeValue: "text-ku-primary font-ku-bold",
+  modeValue: "text-ku-hirer font-ku-bold",
   modeDescription:
     "text-ku-text-secondary font-ku-regular text-ku-body-small mt-ku-6",
   additionalSettings: "border-t-ku-border-subtle border-t mt-ku-lg pt-ku-20",
@@ -246,7 +254,7 @@ const styles = {
     "text-ku-text-strong font-ku-bold text-ku-subtitle mb-ku-md",
   currencyInput:
     "items-center bg-ku-card border-ku-border rounded-[12px] border flex-row min-h-[48px] px-ku-md",
-  currencySymbol: "text-ku-primary font-ku-bold text-ku-emphasis",
+  currencySymbol: "text-ku-hirer font-ku-bold text-ku-emphasis",
   currencyTextInput:
     "text-ku-text-strong flex-1 font-ku-regular text-ku-control ml-ku-sm min-h-[46px]",
   currencyUnit: "text-ku-text-muted font-ku-medium text-ku-label",
@@ -264,19 +272,42 @@ const styles = {
     "text-ku-text-muted flex-[0.36] font-ku-regular text-ku-meta mr-ku-10",
   summaryValue:
     "text-ku-text-strong flex-1 font-ku-medium text-ku-meta min-w-0",
+  summaryImages: "flex-1 flex-row flex-wrap gap-ku-sm min-w-0",
+  summaryImage: "bg-ku-surface-muted rounded-[8px] h-[56px] w-[56px]",
   publishCheckCard:
-    "bg-ku-surface-success border-ku-border-success rounded-[14px] border mt-ku-md p-ku-14",
-  publishCheckCardBlocked: "bg-ku-surface-danger border-ku-border-danger",
+    "bg-ku-card border-ku-border-subtle rounded-[16px] border mt-ku-md p-ku-14",
+  publishCheckCardBlocked: "border-ku-border-danger",
+  publishCheckHeader: "items-center flex-row gap-ku-10",
+  publishCheckIcon:
+    "items-center bg-ku-surface-success rounded-ku-pill h-[40px] justify-center shrink-0 w-[40px]",
+  publishCheckIconBlocked: "bg-ku-surface-danger",
+  publishCheckHeaderCopy: "flex-1 min-w-0",
   publishCheckTitle: "text-ku-text-strong font-ku-bold text-ku-body",
   publishCheckStatus:
-    "text-ku-primary font-ku-semibold text-ku-body-small mt-ku-3",
+    "text-ku-hirer font-ku-semibold text-ku-body-small mt-ku-2",
   publishCheckStatusBlocked: "text-ku-danger-dark",
-  escrowRows: "border-t-ku-border-success border-t mt-ku-10 pt-ku-6",
+  blockerList: "gap-ku-sm mt-ku-10",
+  blockerRow:
+    "items-center bg-ku-card border-ku-border-danger rounded-[12px] border flex-row gap-ku-sm min-h-[48px] pl-ku-12 pr-ku-6 py-ku-6",
+  blockerText:
+    "text-ku-danger-dark flex-1 font-ku-medium text-ku-body-small min-w-0",
+  blockerAction:
+    "items-center bg-ku-surface-danger rounded-[10px] justify-center min-h-[44px] px-ku-12",
+  blockerActionText: "text-ku-danger-dark font-ku-bold text-ku-meta",
+  fundingPanel: "bg-ku-surface-muted rounded-[12px] mt-ku-12 p-ku-12",
+  fundingLabel: "text-ku-text-secondary font-ku-medium text-ku-meta",
+  fundingTotal: "text-ku-text-strong font-ku-bold text-ku-title-small mt-ku-2",
+  fundingFormula: "text-ku-text-muted font-ku-regular text-ku-label mt-ku-1",
+  escrowRows: "border-t-ku-border-subtle border-t mt-ku-10 pt-ku-6",
   escrowRow: "flex-row items-start py-ku-5",
   escrowLabel: "text-ku-text-secondary flex-1 font-ku-regular text-ku-meta",
   escrowValue: "text-ku-text-strong font-ku-semibold text-ku-meta",
+  publishCheckNoteRow: "flex-row items-start gap-ku-6 mt-ku-10",
   publishCheckNote:
-    "text-ku-text-secondary font-ku-regular text-ku-meta mt-ku-6",
+    "text-ku-text-secondary flex-1 font-ku-regular text-ku-meta min-w-0",
+  publishBlockedHint: "items-center flex-row gap-ku-6 w-full",
+  publishBlockedHintText:
+    "text-ku-danger-dark flex-1 font-ku-medium text-ku-meta min-w-0",
   actionBar:
     "shadow-[0px_-4px_12px_rgb(18_32_24_/0.06)] items-center bg-ku-card border-t-ku-border-subtle border-t flex-row gap-ku-10 px-ku-20 pt-ku-12 shrink-0",
   loadingActionBar:
@@ -287,12 +318,12 @@ const styles = {
   reviewActionButton:
     "items-center h-[56px] justify-center min-h-[56px] rounded-[14px] px-ku-10 py-ku-xs",
   reviewActionButtonStacked: "h-auto min-h-[56px] py-ku-10",
-  reviewActionButtonPrimary: "bg-ku-primary",
-  reviewActionButtonSecondary: "bg-transparent border-2 border-ku-primary",
+  reviewActionButtonPrimary: "bg-ku-hirer",
+  reviewActionButtonSecondary: "bg-transparent border-2 border-ku-hirer",
   reviewActionText: "font-ku-semibold text-center text-ku-body-small",
-  reviewActionTextPrimary: "text-ku-on-primary",
-  reviewActionTextSecondary: "text-ku-primary",
-  primaryButtonText: "text-ku-on-primary font-ku-semibold text-ku-body",
+  reviewActionTextPrimary: "text-ku-on-hirer",
+  reviewActionTextSecondary: "text-ku-hirer",
+  primaryButtonText: "text-ku-on-hirer font-ku-semibold text-ku-body",
   buttonContent: "items-center flex-row gap-ku-xs justify-center",
   successState: "items-center flex-1 justify-center p-ku-xl",
   successIcon:

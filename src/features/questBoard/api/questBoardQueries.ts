@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 
@@ -15,6 +17,7 @@ import {
 import { homeKeys } from "@/features/home/api/homeQueries";
 import { myQuestsKeys } from "@/features/myQuests/api/myQuestsQueries";
 import { workerHomeKeys } from "@/features/workerHome/api/workerHomeKeys";
+import { subscribeToQuestEvents } from "../live/questEvents";
 import {
   liveQuestService,
   type LiveQuestSnapshot,
@@ -40,12 +43,13 @@ export function useProofFileLinksQuery(
   viewerId: string | null,
   proof: QuestV2ProofSubmission | undefined
 ) {
-  const readyFiles =
-    proof?.files.filter(
-      (file) =>
-        file.uploadStatus === questV2ProofFileStatusSchema.enum.PROOF_FILE_READY
+  const fileIds =
+    proof?.files.flatMap((file) =>
+      file.fileId !== null &&
+      file.uploadStatus === questV2ProofFileStatusSchema.enum.PROOF_FILE_READY
+        ? [file.fileId]
+        : []
     ) ?? [];
-  const fileIds = readyFiles.map((file) => file.fileId);
 
   return useQuery({
     enabled: Boolean(questId && viewerId && proof),
@@ -109,6 +113,15 @@ export function useLiveQuestSnapshotQuery(
     | false
     | ((snapshot: LiveQuestSnapshot | undefined) => number | false)
 ) {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!enabled || !questId || !viewerId) return;
+    return subscribeToQuestEvents(questId, () => {
+      void queryClient.invalidateQueries({
+        queryKey: questBoardKeys.liveSnapshotScope(questId, viewerId),
+      });
+    });
+  }, [enabled, queryClient, questId, viewerId]);
   return useQuery<LiveQuestSnapshot>({
     enabled: Boolean(questId && viewerId) && enabled,
     refetchInterval:

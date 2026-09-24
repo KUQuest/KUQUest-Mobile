@@ -19,6 +19,21 @@
     --color-ku-support-border: #b79aaf;
     --color-ku-on-support: #ffffff;
 
+    /* Role colors */
+    --color-ku-hirer: #5f7655;
+    --color-ku-hirer-dark: #465b3e;
+    --color-ku-hirer-deep: #34462f;
+    --color-ku-hirer-subtle: #edf2ea;
+    --color-ku-hirer-border: #b6c4af;
+    --color-ku-on-hirer: #ffffff;
+
+    --color-ku-worker: #96533f;
+    --color-ku-worker-dark: #713d30;
+    --color-ku-worker-deep: #4f2a22;
+    --color-ku-worker-subtle: #f8ece8;
+    --color-ku-worker-border: #c9a79a;
+    --color-ku-on-worker: #ffffff;
+
     /* Neutral */
     --color-ku-background: #f7f9f8;
     --color-ku-surface: #ffffff;
@@ -198,6 +213,21 @@
     --color-ku-support-subtle: #342832;
     --color-ku-support-border: #72556d;
     --color-ku-on-support: #21171f;
+
+    /* Role colors */
+    --color-ku-hirer: #a9c79e;
+    --color-ku-hirer-dark: #7fa273;
+    --color-ku-hirer-deep: #5f7655;
+    --color-ku-hirer-subtle: #243128;
+    --color-ku-hirer-border: #526b58;
+    --color-ku-on-hirer: #142019;
+
+    --color-ku-worker: #e1a08c;
+    --color-ku-worker-dark: #c77b65;
+    --color-ku-worker-deep: #a75d4b;
+    --color-ku-worker-subtle: #3b2924;
+    --color-ku-worker-border: #805044;
+    --color-ku-on-worker: #241a17;
 
     /* Neutral */
     --color-ku-background: #101713;

@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react-native";
+import { ChevronRight, CircleAlert } from "lucide-react-native";
 
 import { Button } from "@/components/ui/Button";
 import { colors } from "@/theme/colors";
@@ -19,6 +19,8 @@ export function CreateQuestActionBar({
   isSaving,
   messages,
   mode,
+  publishBlockedHint,
+  publishable,
   publishCanPublish,
   savingAction,
   step,
@@ -33,6 +35,10 @@ export function CreateQuestActionBar({
   isSaving: boolean;
   messages: CreateQuestMessages;
   mode: CreateQuestFlowMode;
+  /** First publish blocker, shown beside the disabled publish button. */
+  publishBlockedHint: string | null;
+  /** False for published Quests: Review saves changes instead of publishing. */
+  publishable: boolean;
   publishCanPublish: boolean;
   savingAction: CompletionState | null;
   step: Step;
@@ -44,6 +50,8 @@ export function CreateQuestActionBar({
 }) {
   const editingServerQuest = isServerEditMode(mode);
   const nextLabel = step === 2 ? messages.reviewQuest : messages.next;
+  const reviewPublishes = step === 3 && publishable;
+  const showBlockedHint = reviewPublishes && Boolean(publishBlockedHint);
 
   return (
     <View
@@ -51,10 +59,23 @@ export function CreateQuestActionBar({
       style={{
         alignItems: stacked ? "stretch" : "center",
         flexDirection: stacked ? "column" : "row",
+        flexWrap: showBlockedHint && !stacked ? "wrap" : "nowrap",
         paddingBottom: Math.max(spacing.sm, bottomInset + spacing.xs),
       }}
     >
-      {editingServerQuest ? (
+      {showBlockedHint ? (
+        <View
+          accessibilityLiveRegion="polite"
+          className={styles.publishBlockedHint}
+          testID="create-quest-publish-blocked-hint"
+        >
+          <CircleAlert color={colors.dangerDark} size={16} strokeWidth={2.2} />
+          <Text className={styles.publishBlockedHintText}>
+            {publishBlockedHint}
+          </Text>
+        </View>
+      ) : null}
+      {editingServerQuest && !reviewPublishes ? (
         <Pressable
           accessibilityLabel={
             cancelState === "cancelling"
@@ -100,7 +121,7 @@ export function CreateQuestActionBar({
             />
           </View>
         </Button>
-      ) : editingServerQuest ? (
+      ) : editingServerQuest && !publishable ? (
         <ReviewActionButton
           accessibilityLabel={
             savingAction === "DRAFT"

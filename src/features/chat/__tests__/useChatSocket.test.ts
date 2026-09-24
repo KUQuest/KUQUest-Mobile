@@ -1,7 +1,8 @@
 import { act, renderHook } from "@testing-library/react-native";
 
+import { toWebSocketUrl } from "@/api/ApiClient";
 import { authClient } from "@/features/auth/authClient";
-import { toWebSocketUrl, useChatSocket } from "../api/useChatSocket";
+import { useChatSocket } from "../api/useChatSocket";
 
 class MockWebSocket {
   static instances: MockWebSocket[] = [];
@@ -280,7 +281,7 @@ describe("useChatSocket", () => {
     await unmount();
   });
 
-  it("sends text and resolves only when the matching acceptance arrives", async () => {
+  it("sends text with attachments and resolves only after acceptance", async () => {
     const { result, unmount } = await renderHook(() =>
       useChatSocket({
         conversationId: "conversation-1",
@@ -296,9 +297,11 @@ describe("useChatSocket", () => {
     await act(async () => {
       socket.open();
     });
+    const attachmentId = "b199ae67-3939-4da3-8c78-2fa1c282926d";
     const accepted = result.current.sendMessage({
       clientMessageId: "client-message-1",
       text: "Hello",
+      attachmentIds: [attachmentId],
     });
 
     expect(socket.send).toHaveBeenCalledWith(
@@ -306,6 +309,7 @@ describe("useChatSocket", () => {
         type: "SEND_MESSAGE",
         clientMessageId: "client-message-1",
         text: "Hello",
+        attachmentIds: [attachmentId],
       })
     );
 
@@ -313,10 +317,95 @@ describe("useChatSocket", () => {
       JSON.stringify({
         type: "MESSAGE_ACCEPTED",
         clientMessageId: "client-message-1",
+        message: {
+          id: "server-message-1",
+          conversationId: "conversation-1",
+          sequence: 1,
+          kind: "USER",
+          sender: { id: "member-1", displayName: "Arthit" },
+          text: "Hello",
+          attachments: [
+            {
+              id: attachmentId,
+              fileName: "hello.pdf",
+              mediaType: "application/pdf",
+              sizeBytes: 1024,
+              createdAt: "2026-09-24T12:00:00Z",
+            },
+          ],
+          createdAt: "2026-09-24T12:00:00Z",
+        },
       })
     );
 
-    await expect(accepted).resolves.toBeUndefined();
+    await expect(accepted).resolves.toMatchObject({
+      id: "server-message-1",
+      text: "Hello",
+    });
+    await unmount();
+  });
+
+  it("sends attachment-only messages without text and resolves saved files", async () => {
+    const { result, unmount } = await renderHook(() =>
+      useChatSocket({
+        conversationId: "conversation-1",
+        conversationType: "WORK",
+        enabled: true,
+        onEvent: jest.fn(),
+      })
+    );
+    const socket = MockWebSocket.instances[0];
+
+    if (!socket) throw new Error("Expected a WebSocket connection");
+
+    await act(async () => {
+      socket.open();
+    });
+    const attachmentId = "b199ae67-3939-4da3-8c78-2fa1c282926d";
+    const accepted = result.current.sendMessage({
+      clientMessageId: "client-file-1",
+      attachmentIds: [attachmentId],
+    });
+
+    expect(socket.send).toHaveBeenCalledWith(
+      JSON.stringify({
+        type: "SEND_MESSAGE",
+        clientMessageId: "client-file-1",
+        attachmentIds: [attachmentId],
+      })
+    );
+
+    socket.receive(
+      JSON.stringify({
+        type: "MESSAGE_ACCEPTED",
+        clientMessageId: "client-file-1",
+        message: {
+          id: "server-message-2",
+          conversationId: "conversation-1",
+          sequence: "2",
+          kind: "USER",
+          sender: { id: "member-1", displayName: "Arthit" },
+          text: null,
+          attachments: [
+            {
+              id: attachmentId,
+              fileName: "brief.pdf",
+              mediaType: "application/pdf",
+              sizeBytes: "1024",
+              createdAt: "2026-09-24T12:01:00Z",
+            },
+          ],
+          createdAt: "2026-09-24T12:01:00Z",
+        },
+      })
+    );
+
+    await expect(accepted).resolves.toMatchObject({
+      id: "server-message-2",
+      sequence: 2,
+      text: null,
+      attachments: [{ id: attachmentId, sizeBytes: 1024 }],
+    });
     await unmount();
   });
 

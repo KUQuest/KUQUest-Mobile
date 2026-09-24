@@ -13,9 +13,9 @@ export const workerWorkStyles = {
   tabTextSelected: "text-ku-text-strong",
   tabBadge:
     "min-w-[24px] items-center justify-center rounded-ku-pill bg-ku-surface px-ku-6 py-ku-1",
-  tabBadgeSelected: "bg-ku-primary",
+  tabBadgeSelected: "bg-ku-worker",
   tabBadgeText: "font-ku-bold text-ku-caption text-ku-text-secondary",
-  tabBadgeTextSelected: "text-ku-on-primary",
+  tabBadgeTextSelected: "text-ku-on-worker",
   sectionHeading:
     "mb-ku-sm mt-ku-xs px-ku-xs font-ku-semibold text-ku-subtitle text-ku-text-strong",
   sectionList: "mb-ku-lg gap-ku-sm",
@@ -37,7 +37,7 @@ export const workerWorkStyles = {
   stateDescription:
     "mt-ku-xs text-center font-ku-regular text-ku-body-small text-ku-text-secondary",
   stateAction:
-    "mt-ku-md min-h-[48px] items-center justify-center rounded-ku-pill bg-ku-primary px-ku-lg active:bg-ku-primary-dark",
-  stateActionText: "font-ku-semibold text-ku-body-small text-ku-on-primary",
+    "mt-ku-md min-h-[48px] items-center justify-center rounded-ku-pill bg-ku-worker px-ku-lg active:bg-ku-worker-dark",
+  stateActionText: "font-ku-semibold text-ku-body-small text-ku-on-worker",
   errorTitle: "text-center font-ku-semibold text-ku-body text-ku-danger-dark",
 } as const;

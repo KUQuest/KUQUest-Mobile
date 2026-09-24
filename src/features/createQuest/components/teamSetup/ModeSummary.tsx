@@ -28,9 +28,9 @@ export function ModeSummary({
     <View accessibilityLiveRegion="polite" className={styles.modeSummary}>
       <View className={styles.modeIcon}>
         {participation === "SINGLE" ? (
-          <UserRoundCheck color={colors.primary} size={30} strokeWidth={2.1} />
+          <UserRoundCheck color={colors.hirer} size={30} strokeWidth={2.1} />
         ) : (
-          <UsersRound color={colors.primary} size={32} strokeWidth={2.1} />
+          <UsersRound color={colors.hirer} size={32} strokeWidth={2.1} />
         )}
       </View>
       <View className={styles.modeCopy}>

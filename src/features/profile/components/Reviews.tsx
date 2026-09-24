@@ -1,3 +1,4 @@
+import { formatTimestampDate } from "@/domain/datetime";
 import React, { useMemo, useState } from "react";
 import { FlatList, Pressable, Text, View } from "@/tw";
 import {
@@ -23,28 +24,6 @@ import {
   type SectionNoticeProps,
 } from "./ProfileSection";
 import { defaultAccessibilityLabels } from "./profileShared";
-
-const reviewDateFormatters: Record<SupportedLocale, Intl.DateTimeFormat> = {
-  en: new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }),
-  th: new Intl.DateTimeFormat("th-TH", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }),
-};
-
-function formatReviewDate(
-  value: string,
-  locale: SupportedLocale = "en"
-): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return reviewDateFormatters[locale].format(date);
-}
 
 function ReviewCard({
   review,
@@ -72,7 +51,8 @@ function ReviewCard({
         <View className={styles.reviewHeaderText}>
           <Text className={styles.itemTitle}>{review.reviewerName}</Text>
           <Text className={styles.itemMeta}>
-            {formatReviewDate(review.createdAt, locale)}
+            {formatTimestampDate(review.createdAt, locale ?? "en") ??
+              review.createdAt}
           </Text>
         </View>
       </View>

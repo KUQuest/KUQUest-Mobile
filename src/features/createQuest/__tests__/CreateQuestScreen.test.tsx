@@ -467,22 +467,35 @@ describe("CreateQuestScreen", () => {
     ).toContain("00:00");
   });
 
-  it("applies quick date and time presets in the logistics flow", async () => {
+  it("keeps manual schedule controls without quick preset pills", async () => {
     const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
 
     await fireEvent.press(view.getByTestId("create-quest-logistics-toggle"));
 
-    const todayChip = view.getByTestId("quick-preset-วันนี้");
-    expect(todayChip).toBeTruthy();
-    await fireEvent.press(todayChip);
+    expect(view.queryAllByTestId(/^quick-preset-/)).toHaveLength(0);
+    expect(
+      view.getByTestId("create-quest-start-datetime-date-btn")
+    ).toBeTruthy();
+    expect(
+      view.getByTestId("create-quest-start-datetime-time-btn")
+    ).toBeTruthy();
+    expect(
+      view.getByTestId("create-quest-deadline-datetime-date-btn")
+    ).toBeTruthy();
+    expect(
+      view.getByTestId("create-quest-deadline-datetime-time-btn")
+    ).toBeTruthy();
+    expect(
+      within(
+        view.getByTestId("create-quest-deadline-datetime-time-btn")
+      ).getByText(/^(End time|เวลาที่สิ้นสุด)$/)
+    ).toBeTruthy();
 
-    const sameDayChip = view.getByTestId("quick-preset-วันเดียวกัน");
-    expect(sameDayChip).toBeTruthy();
-    await fireEvent.press(sameDayChip);
-
-    const plus2hChip = view.getByTestId("quick-preset-+2 ชม.");
-    expect(plus2hChip).toBeTruthy();
-    await fireEvent.press(plus2hChip);
+    await fireEvent.press(
+      view.getByTestId("create-quest-start-datetime-time-btn")
+    );
+    expect(view.queryAllByTestId(/^time-preset-/)).toHaveLength(0);
+    expect(view.getByTestId("custom-time-picker-confirm")).toBeTruthy();
   });
 
   it("shows quick-fix button when deadline is earlier than start time", async () => {
@@ -684,7 +697,16 @@ describe("CreateQuestScreen", () => {
       ).toMatchObject({ disabled: true })
     );
     expect(view.getByText("แก้ไขข้อขัดข้องก่อนเผยแพร่เควสต์")).toBeTruthy();
-    expect(view.getByText("กรุณาเลือกแท็กหมวดหมู่สำหรับเควสต์")).toBeTruthy();
+    expect(
+      within(view.getByTestId("create-quest-blocking-guidance")).getByText(
+        "กรุณาเลือกแท็กหมวดหมู่สำหรับเควสต์"
+      )
+    ).toBeTruthy();
+    expect(
+      within(view.getByTestId("create-quest-publish-blocked-hint")).getByText(
+        "กรุณาเลือกแท็กหมวดหมู่สำหรับเควสต์"
+      )
+    ).toBeTruthy();
     expect(view.queryByTestId("create-quest-top-up-button")).toBeNull();
 
     await fireEvent.press(view.getByTestId("create-quest-save-preview"));
@@ -711,7 +733,9 @@ describe("CreateQuestScreen", () => {
     await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
 
     expect(
-      await view.findByText("ยอดเงินพร้อมใช้ไม่เพียงพอ ขาดอีก ฿150")
+      within(
+        await view.findByTestId("create-quest-blocking-guidance")
+      ).getByText("ยอดเงินพร้อมใช้ไม่เพียงพอ ขาดอีก ฿150")
     ).toBeTruthy();
 
     await fireEvent.press(view.getByTestId("create-quest-top-up-button"));

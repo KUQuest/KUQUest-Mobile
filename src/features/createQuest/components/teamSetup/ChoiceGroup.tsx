@@ -60,7 +60,7 @@ export function ChoiceGroup({
           >
             <View className={styles.choiceIcon}>
               <Icon
-                color={colors.primary}
+                color={colors.hirer}
                 size={variant === "format" ? 27 : 26}
                 strokeWidth={2.1}
               />

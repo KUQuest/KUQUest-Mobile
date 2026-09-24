@@ -120,7 +120,7 @@ export function TransferEarningsModal({
             <View className={styles.headerTitleRow}>
               <View className={styles.headerIconWrap}>
                 <ArrowRightLeft
-                  color={colors.primaryDeep}
+                  color={colors.workerDeep}
                   size={18}
                   strokeWidth={2.4}
                 />
@@ -151,7 +151,7 @@ export function TransferEarningsModal({
             <View className={styles.flowCard}>
               <View className={styles.flowRow}>
                 <View className={styles.flowIconBoxEarnings}>
-                  <Sparkles color={colors.primary} size={18} strokeWidth={2} />
+                  <Sparkles color={colors.worker} size={18} strokeWidth={2} />
                 </View>
                 <View className={styles.flowInfo}>
                   <Text className={styles.flowLabel}>{m.fromEarnings}</Text>
@@ -168,7 +168,7 @@ export function TransferEarningsModal({
                 <View className={styles.flowLine} />
                 <View className={styles.flowArrowCircle}>
                   <ArrowDown
-                    color={colors.primaryDeep}
+                    color={colors.workerDeep}
                     size={14}
                     strokeWidth={2.5}
                   />
@@ -178,11 +178,7 @@ export function TransferEarningsModal({
 
               <View className={styles.flowRow}>
                 <View className={styles.flowIconBoxSpending}>
-                  <Wallet
-                    color={colors.primaryDeep}
-                    size={18}
-                    strokeWidth={2}
-                  />
+                  <Wallet color={colors.workerDeep} size={18} strokeWidth={2} />
                 </View>
                 <View className={styles.flowInfo}>
                   <Text className={styles.flowLabel}>{m.toSpending}</Text>
@@ -351,11 +347,11 @@ export function TransferEarningsModal({
                 testID="transfer-confirm-btn"
               >
                 {loading ? (
-                  <ActivityIndicator color={colors.onPrimary} size="small" />
+                  <ActivityIndicator color={colors.onWorker} size="small" />
                 ) : (
                   <>
                     <ArrowRightLeft
-                      color={colors.onPrimary}
+                      color={colors.onWorker}
                       size={17}
                       strokeWidth={2.4}
                     />
@@ -425,7 +421,7 @@ const styles = {
   textInput: "flex-1 py-ku-0 font-ku-bold text-ku-subtitle text-ku-text-strong",
   maxButton: "rounded-[8px] bg-ku-surface-accent px-ku-10 py-ku-6",
   maxButtonDisabled: "opacity-40",
-  maxButtonText: "font-ku-semibold text-[12px] text-ku-primary-deep",
+  maxButtonText: "font-ku-semibold text-[12px] text-ku-worker-deep",
   presetRow: "mt-ku-10 flex-row gap-ku-sm",
   presetChip:
     "flex-1 items-center justify-center rounded-[10px] border border-ku-border-subtle bg-ku-surface-muted py-ku-7",
@@ -448,9 +444,9 @@ const styles = {
   previewValueSuccess: "font-ku-bold text-[13px] text-ku-success",
   actionRow: "mt-ku-xs gap-ku-10",
   confirmBtn:
-    "h-[50px] flex-row items-center justify-center gap-ku-sm rounded-[14px] bg-ku-primary-deep",
+    "h-[50px] flex-row items-center justify-center gap-ku-sm rounded-[14px] bg-ku-worker-deep",
   confirmBtnDisabled: "bg-ku-text-muted",
-  confirmBtnText: "font-ku-semibold text-ku-control text-ku-on-primary",
+  confirmBtnText: "font-ku-semibold text-ku-control text-ku-on-worker",
   cancelBtn:
     "h-[44px] items-center justify-center rounded-[14px] bg-ku-surface-muted",
   cancelBtnText: "font-ku-medium text-ku-body-small text-ku-text-secondary",
@@ -465,7 +461,7 @@ const modalCardShadow = {
 } satisfies ViewStyle;
 
 const confirmShadow = {
-  shadowColor: colors.primaryDeep,
+  shadowColor: colors.workerDeep,
   shadowOffset: { width: 0, height: 3 },
   shadowOpacity: 0.25,
   shadowRadius: 6,
@@ -473,7 +469,7 @@ const confirmShadow = {
 } satisfies ViewStyle;
 
 const confirmShadowDisabled = {
-  shadowColor: colors.primaryDeep,
+  shadowColor: colors.workerDeep,
   shadowOffset: { width: 0, height: 3 },
   shadowOpacity: 0,
   shadowRadius: 6,

@@ -2,8 +2,6 @@ import { useCallback } from "react";
 
 import type { QuestPublishCheck } from "../../questBoard/domain/types";
 import type { QuestDraft } from "../domain/createQuestModel";
-import type { CreateQuestFlowMode } from "./createQuestWorkflow";
-import { isServerEditMode } from "./createQuestWorkflow";
 import type { CompletionState, SaveErrorIntent } from "../createQuestTypes";
 
 type SaveDraft = (
@@ -16,8 +14,6 @@ type PublishQuest = (draft: QuestDraft) => Promise<boolean>;
 
 export function useCreateQuestCommit({
   draft,
-  mode,
-
   onCompleted,
   publishCheck,
   publishQuest,
@@ -25,8 +21,6 @@ export function useCreateQuestCommit({
   saveErrorIntent,
 }: {
   draft: QuestDraft;
-  mode: CreateQuestFlowMode;
-
   onCompleted: (state: CompletionState) => void;
   publishCheck: QuestPublishCheck;
   publishQuest: PublishQuest;
@@ -35,14 +29,8 @@ export function useCreateQuestCommit({
 }) {
   const finish = useCallback(
     async (state: CompletionState): Promise<boolean> => {
-      if (
-        !isServerEditMode(mode) &&
-        state === "OPEN" &&
-        !publishCheck.canPublish
-      )
-        return false;
-
-      if (!isServerEditMode(mode) && state === "OPEN") {
+      if (state === "OPEN") {
+        if (!publishCheck.canPublish) return false;
         const published = await publishQuest(draft);
         if (published) onCompleted("OPEN");
         return published;
@@ -52,16 +40,10 @@ export function useCreateQuestCommit({
       if (saved) onCompleted("DRAFT");
       return saved;
     },
-    [draft, mode, onCompleted, publishCheck.canPublish, publishQuest, saveDraft]
+    [draft, onCompleted, publishCheck.canPublish, publishQuest, saveDraft]
   );
 
   const retry = useCallback(async (): Promise<boolean> => {
-    if (isServerEditMode(mode)) {
-      const saved = await saveDraft(draft, "DRAFT", true);
-      if (saved) onCompleted("DRAFT");
-      return saved;
-    }
-
     const intent = saveErrorIntent;
     if (intent?.state === "OPEN") {
       const published = await publishQuest(draft);
@@ -76,7 +58,7 @@ export function useCreateQuestCommit({
     );
     if (saved && intent?.completesFlow) onCompleted("DRAFT");
     return saved;
-  }, [draft, mode, onCompleted, publishQuest, saveDraft, saveErrorIntent]);
+  }, [draft, onCompleted, publishQuest, saveDraft, saveErrorIntent]);
 
   return { finish, retry };
 }

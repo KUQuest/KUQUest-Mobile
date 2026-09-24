@@ -36,7 +36,7 @@ import { spacing } from "@/theme/spacing";
 import styles from "./chatStyles";
 import { cn } from "@/tw/cn";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { ImageViewerModal } from "./components/ImageViewerModal";
+import { ImageViewerModal } from "@/components/ui/ImageViewerModal";
 import {
   ChatAvatar,
   ChatConversationSkeleton,
@@ -639,6 +639,8 @@ export default function ChatConversationScreen({
       </KeyboardAvoidingView>
       <ImageViewerModal
         visible={viewerState.visible}
+        closeLabel={messages.close}
+        imageAccessibilityLabel={viewerState.name ?? messages.attachment}
         imageUrl={viewerState.url}
         fileName={viewerState.name}
         timestamp={viewerState.timestamp}

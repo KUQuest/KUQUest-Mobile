@@ -21,6 +21,13 @@ export class ApiError extends Error {
 function normalizeBaseUrl(baseUrl: string | undefined): string | undefined {
   return baseUrl?.replace(/\/$/, "");
 }
+export function toWebSocketUrl(apiBaseUrl: string, path: string): string {
+  const baseUrl = apiBaseUrl.trim().replace(/\/+$/, "");
+  const socketBaseUrl = baseUrl
+    .replace(/^https:/i, "wss:")
+    .replace(/^http:/i, "ws:");
+  return `${socketBaseUrl}/${path.replace(/^\/+/, "")}`;
+}
 
 function isFormDataBody(body: BodyInit | null | undefined): boolean {
   return typeof FormData !== "undefined" && body instanceof FormData;

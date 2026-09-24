@@ -8,11 +8,16 @@ import type {
   LocalizedText,
 } from "@/features/chat/chatTypes";
 import type { QuestStatus } from "@/domain/questLifecycle";
+const positiveWireIntegerSchema = z.union([
+  z.number().int().positive(),
+  z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().positive()),
+]);
+
 export const chatAttachmentSchema = z.object({
   id: z.string().min(1),
   fileName: z.string(),
   mediaType: z.string(),
-  sizeBytes: z.number().int().positive(),
+  sizeBytes: positiveWireIntegerSchema,
   width: z.number().int().positive().optional(),
   height: z.number().int().positive().optional(),
   createdAt: z.string(),
@@ -21,7 +26,7 @@ export type ServerChatAttachment = z.infer<typeof chatAttachmentSchema>;
 export const chatMessageSchema = z.object({
   id: z.string().min(1),
   conversationId: z.string().min(1),
-  sequence: z.number().int().positive(),
+  sequence: positiveWireIntegerSchema,
   kind: z.enum(["USER", "SYSTEM"]),
   sender: z
     .object({

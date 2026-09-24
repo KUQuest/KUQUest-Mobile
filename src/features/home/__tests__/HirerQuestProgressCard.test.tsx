@@ -5,16 +5,19 @@ import { renderWithAppTheme as render } from "@/testing/queryTestUtils";
 import { HirerQuestProgressCard } from "../components/HirerQuestProgressCard";
 
 describe("HirerQuestProgressCard", () => {
-  it("renders single assigned worker and triggers profile navigation", async () => {
+  it("keeps participant, profile and Quest details actions independent", async () => {
     const onOpenWorkerProfile = jest.fn();
+    const onViewRoster = jest.fn();
+    const onOpenDetails = jest.fn();
     const { getByText, getByTestId } = await render(
       <HirerQuestProgressCard
         questId="q1"
         title="Science Project"
         status="QUEST_ASSIGNED"
         dueAt="2026-09-20T17:00:00.000+07:00"
-        onOpenDetails={jest.fn()}
+        onOpenDetails={onOpenDetails}
         onOpenWorkerProfile={onOpenWorkerProfile}
+        onViewRoster={onViewRoster}
         assignedWorkers={[
           {
             id: "worker-1",
@@ -27,10 +30,18 @@ describe("HirerQuestProgressCard", () => {
 
     expect(getByText("Science Project")).toBeTruthy();
     expect(getByText("Chat Worker")).toBeTruthy();
-    expect(getByTestId("hirer-quest-card-worker-q1")).toBeTruthy();
 
-    fireEvent.press(getByTestId("hirer-quest-card-worker-profile-q1"));
+    await fireEvent.press(getByTestId("hirer-quest-card-worker-profile-q1"));
     expect(onOpenWorkerProfile).toHaveBeenCalledWith("worker-1");
+    expect(onViewRoster).not.toHaveBeenCalled();
+    expect(onOpenDetails).not.toHaveBeenCalled();
+
+    await fireEvent.press(getByTestId("hirer-quest-card-worker-q1"));
+    expect(onViewRoster).toHaveBeenCalledTimes(1);
+    expect(onOpenDetails).not.toHaveBeenCalled();
+
+    await fireEvent.press(getByTestId("hirer-quest-card-details-q1"));
+    expect(onOpenDetails).toHaveBeenCalledTimes(1);
   });
 
   it("renders multiple assigned workers and triggers roster view", async () => {
@@ -52,9 +63,8 @@ describe("HirerQuestProgressCard", () => {
     );
 
     expect(getByText("ผู้เข้าร่วม (2/3 คน)")).toBeTruthy();
-    expect(getByTestId("hirer-quest-card-workers-q2")).toBeTruthy();
 
-    fireEvent.press(getByTestId("hirer-quest-card-workers-q2"));
+    await fireEvent.press(getByTestId("hirer-quest-card-workers-q2"));
     expect(onViewRoster).toHaveBeenCalled();
   });
 
@@ -76,14 +86,13 @@ describe("HirerQuestProgressCard", () => {
     );
 
     expect(getByText("ผู้สมัคร (2 คน)")).toBeTruthy();
-    expect(getByTestId("hirer-quest-card-applicants-q3")).toBeTruthy();
 
-    fireEvent.press(getByTestId("hirer-quest-card-applicants-q3"));
+    await fireEvent.press(getByTestId("hirer-quest-card-applicants-q3"));
     expect(onViewRoster).toHaveBeenCalled();
   });
   it("renders waiting banner when no applicants or workers", async () => {
     const onOpenDetails = jest.fn();
-    const { getAllByText, getByText, getByTestId } = await render(
+    const { getByText, getByTestId } = await render(
       <HirerQuestProgressCard
         questId="q4"
         title="Empty Quest"
@@ -93,11 +102,9 @@ describe("HirerQuestProgressCard", () => {
       />
     );
 
-    expect(getAllByText("เปิดรับสมัคร").length).toBeGreaterThanOrEqual(1);
     expect(getByText("ยังไม่มีผู้สมัคร")).toBeTruthy();
-    expect(getByTestId("hirer-quest-card-waiting-q4")).toBeTruthy();
 
-    fireEvent.press(getByTestId("hirer-quest-card-waiting-q4"));
+    await fireEvent.press(getByTestId("hirer-quest-card-waiting-q4"));
     expect(onOpenDetails).toHaveBeenCalled();
   });
   it("shows completed Quests at the final accessible progress step", async () => {
@@ -111,8 +118,12 @@ describe("HirerQuestProgressCard", () => {
     );
 
     expect(getByText("ขั้นตอนที่ 5 จาก 5")).toBeTruthy();
+    expect(getByTestId("hirer-quest-card-progress-q5").props).toMatchObject({
+      accessibilityRole: "progressbar",
+      accessibilityValue: { min: 1, max: 5, now: 5 },
+    });
     expect(
-      getByTestId("hirer-quest-card-q5").props.accessibilityLabel
+      getByTestId("hirer-quest-card-progress-q5").props.accessibilityLabel
     ).toContain("ขั้นตอนที่ 5 จาก 5");
   });
 });

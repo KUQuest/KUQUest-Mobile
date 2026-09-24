@@ -24,18 +24,18 @@ export const hirerRamp = {
 
 export const workerRamp = {
   light: {
-    primary: "#5F7655",
-    primaryDark: "#465B3E",
-    primarySubtle: "#EDF2EA",
-    accentBorder: "#B6C4AF",
+    primary: "#96533F",
+    primaryDark: "#713D30",
+    primarySubtle: "#F8ECE8",
+    accentBorder: "#C9A79A",
     onPrimary: "#FFFFFF",
   },
   dark: {
-    primary: "#A9C79E",
-    primaryDark: "#7FA273",
-    primarySubtle: "#243128",
-    accentBorder: "#526B58",
-    onPrimary: "#142019",
+    primary: "#E1A08C",
+    primaryDark: "#C77B65",
+    primarySubtle: "#3B2924",
+    accentBorder: "#805044",
+    onPrimary: "#241A17",
   },
 } as const;
 
@@ -54,6 +54,21 @@ export const lightColors = {
   supportSubtle: "#F3ECF2",
   supportBorder: "#B79AAF",
   onSupport: "#FFFFFF",
+
+  // Role colors
+  hirer: "#5F7655",
+  hirerDark: "#465B3E",
+  hirerDeep: "#34462F",
+  hirerSubtle: "#EDF2EA",
+  hirerBorder: "#B6C4AF",
+  onHirer: "#FFFFFF",
+
+  worker: "#96533F",
+  workerDark: "#713D30",
+  workerDeep: "#4F2A22",
+  workerSubtle: "#F8ECE8",
+  workerBorder: "#C9A79A",
+  onWorker: "#FFFFFF",
 
   // Neutral
   background: "#F7F9F8",
@@ -129,6 +144,21 @@ export const darkColors = {
   supportSubtle: "#342832",
   supportBorder: "#72556D",
   onSupport: "#21171F",
+
+  // Role colors
+  hirer: "#A9C79E",
+  hirerDark: "#7FA273",
+  hirerDeep: "#5F7655",
+  hirerSubtle: "#243128",
+  hirerBorder: "#526B58",
+  onHirer: "#142019",
+
+  worker: "#E1A08C",
+  workerDark: "#C77B65",
+  workerDeep: "#A75D4B",
+  workerSubtle: "#3B2924",
+  workerBorder: "#805044",
+  onWorker: "#241A17",
 
   // Neutral
   background: "#101713",

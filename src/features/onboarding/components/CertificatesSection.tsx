@@ -1,3 +1,4 @@
+import { formatDate } from "@/domain/datetime";
 import React from "react";
 import { Image, Pressable, Text, View } from "@/tw";
 import { CalendarDays, Image as ImageIcon, Trash2 } from "lucide-react-native";
@@ -26,18 +27,6 @@ export interface CertificatesSectionProps {
   onOpenDatePicker: (index: number, value: string) => void;
   onRemove: (index: number) => void;
   onAdd: () => void;
-}
-
-function formatDate(value: string, locale: "en" | "th"): string {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";
-  const date = new Date(`${value}T12:00:00`);
-  return Number.isNaN(date.getTime())
-    ? ""
-    : new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      }).format(date);
 }
 
 export function CertificatesSection({
@@ -117,7 +106,7 @@ export function CertificatesSection({
             <Text className={styles.dateInputLabel}>{msg.certIssuedAt}</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${msg.certIssuedAt}: ${formatDate(cert.issuedAt, locale) || msg.selectDate}`}
+              accessibilityLabel={`${msg.certIssuedAt}: ${formatDate(cert.issuedAt, locale, "") || msg.selectDate}`}
               accessibilityState={{ expanded: datePickerIndex === index }}
               className={cn(
                 styles.dateInputBox,
@@ -132,7 +121,7 @@ export function CertificatesSection({
                     : styles.dateInputTextPlaceholder
                 }
               >
-                {formatDate(cert.issuedAt, locale) || msg.selectDate}
+                {formatDate(cert.issuedAt, locale, "") || msg.selectDate}
               </Text>
               <CalendarDays
                 size={18}

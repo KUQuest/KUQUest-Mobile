@@ -31,7 +31,7 @@ const toneClasses: Record<WorkerWorkTone, { pill: string; text: string }> = {
   },
   progress: {
     pill: "border-ku-border-accent bg-ku-surface-accent",
-    text: "text-ku-primary-deep",
+    text: "text-ku-worker-deep",
   },
   success: {
     pill: "border-ku-border-success bg-ku-surface-success",
@@ -49,7 +49,7 @@ const toneClasses: Record<WorkerWorkTone, { pill: string; text: string }> = {
 
 function toneColor(tone: WorkerWorkTone, palette: ThemeColors): string {
   if (tone === "action") return palette.warningDark;
-  if (tone === "progress") return palette.primaryDeep;
+  if (tone === "progress") return palette.workerDeep;
   if (tone === "success") return palette.success;
   if (tone === "danger") return palette.dangerDark;
   return palette.textSecondary;

@@ -71,6 +71,11 @@ bun android
 bun ios
 ```
 
+To choose a connected Android device before building and installing, run `./scripts/android-device.sh`. It lists authorized devices and passes your selection to `bun android`. `bun android` by itself also prompts when multiple devices are online.
+
+Apps already connected to the same Metro server receive the same JavaScript updates; this picker only targets the native build/install to the selected device.
+The picker already opens the selected device. In an Expo terminal, lowercase `a` opens on the first Android device (often an emulator); press `Shift+A` only if you need to choose a different device to open.
+
 Do not open the project in Expo Go. Expo Go cannot load the native modules used by this app.
 
 ### Step 3: Start Metro against staging

@@ -64,7 +64,7 @@ export function WorkerQuickAccessBar({
       accessibilityHint={messages.tapToOpenWork}
       accessibilityLabel={`${stateLabel}: ${questTitle ?? messages.workTitle}`}
       accessibilityRole="button"
-      className={`${styles.quickAccessFloatingContainer} border-ku-primary-dark bg-ku-surface`}
+      className={`${styles.quickAccessFloatingContainer} border-ku-worker-dark bg-ku-surface`}
       onPress={handlePress}
       style={[{ bottom: bottomInset + 8 }, workerHomeQuickAccessShadow]}
       testID="worker-quick-access-bar"
@@ -72,13 +72,13 @@ export function WorkerQuickAccessBar({
       <View className={styles.quickAccessTopRow}>
         <View className={styles.quickAccessLeft}>
           <View
-            className={`${styles.quickAccessIndicator} bg-ku-primary-dark`}
+            className={`${styles.quickAccessIndicator} bg-ku-worker-dark`}
           />
           <View className="flex-1">
             <View className="flex-row items-center gap-ku-6">
-              <BriefcaseBusiness size={14} color={themeColors.primaryDeep} />
+              <BriefcaseBusiness size={14} color={themeColors.workerDeep} />
               <Text
-                className={`${styles.quickAccessTitle} text-ku-primary-dark`}
+                className={`${styles.quickAccessTitle} text-ku-worker-dark`}
               >
                 {stateLabel}
               </Text>
@@ -91,13 +91,13 @@ export function WorkerQuickAccessBar({
             </Text>
           </View>
         </View>
-        <ChevronRight size={18} color={themeColors.primaryDeep} />
+        <ChevronRight size={18} color={themeColors.workerDeep} />
       </View>
       <View
         className={`${styles.quickAccessProgressBar} bg-ku-surface-success`}
       >
         <View
-          className={`${styles.quickAccessProgressFill} bg-ku-primary-dark`}
+          className={`${styles.quickAccessProgressFill} bg-ku-worker-dark`}
           style={{ width: progressWidth }}
         />
       </View>

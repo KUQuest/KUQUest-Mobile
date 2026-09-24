@@ -32,13 +32,21 @@ import type {
 import type { PublishedQuestRefValue } from "../draft/useQuestPersistence";
 import { liveQuestService } from "../../questBoard/live/liveQuestService";
 import type { QuestPublishCheck } from "../../questBoard/domain/types";
-function getPublishErrorMessage(error: unknown, locale: "en" | "th"): string {
+export function getPublishErrorMessage(
+  error: unknown,
+  locale: "en" | "th"
+): string {
   const messages = createQuestMessages[locale];
-  const errorCode = (error as { code?: unknown } | null)?.code;
+  const errorCode =
+    typeof error === "object" && error !== null && "code" in error
+      ? error.code
+      : undefined;
   if (typeof errorCode === "string" && errorCode) {
-    const guidance = (messages.blockingGuidance as Record<string, unknown>)[
-      errorCode
-    ];
+    const guidanceByCode: Record<
+      string,
+      string | ((missingAmount: string) => string)
+    > = messages.blockingGuidance;
+    const guidance = guidanceByCode[errorCode];
     const localized =
       messages.apiErrors[errorCode] ??
       (typeof guidance === "string" ? guidance : undefined);

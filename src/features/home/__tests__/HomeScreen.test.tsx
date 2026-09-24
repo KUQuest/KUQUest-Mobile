@@ -393,7 +393,8 @@ describe("HomeScreen live active quests syncing", () => {
 
     await waitFor(() => {
       expect(
-        getByTestId("hirer-quest-card-live-proof").props.accessibilityLabel
+        getByTestId("hirer-quest-card-progress-live-proof").props
+          .accessibilityLabel
       ).toContain(
         `${messages.timelineLabels.review}, ${messages.currentStageLabel}`
       );
@@ -403,7 +404,9 @@ describe("HomeScreen live active quests syncing", () => {
       expect.anything()
     );
 
-    fireEvent.press(getByTestId("hirer-quest-card-review-proof-live-proof"));
+    await fireEvent.press(
+      getByTestId("hirer-quest-card-review-proof-live-proof")
+    );
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/quest/[id]/proof-review",
       params: { id: "live-proof" },

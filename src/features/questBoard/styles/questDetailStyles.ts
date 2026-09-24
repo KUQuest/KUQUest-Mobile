@@ -1,6 +1,6 @@
 const styles = {
   safeArea: "bg-ku-background flex-1",
-  scrollContent: "pb-ku-132 px-ku-lg",
+  scrollContent: "pb-ku-132 px-ku-lg self-center w-full max-w-[720px]",
   header: "pt-ku-md",
   tagRow: "flex-row flex-wrap gap-ku-xs mt-ku-12",
   tag: "bg-ku-surface-accent rounded-ku-pill px-ku-sm py-ku-xs text-ku-primary font-ku-medium text-ku-label",
@@ -23,25 +23,25 @@ const styles = {
   questImageFallbackText:
     "text-ku-text-muted font-ku-regular text-ku-label text-center mt-ku-xs",
   heroCard:
-    "bg-ku-surface-accent border-ku-border-accent rounded-[18px] border mt-ku-20 p-ku-md",
-  heroPrimary: "items-center flex-row justify-between pb-ku-14",
-  heroRewardValue: "text-ku-primary font-ku-bold text-ku-title mt-ku-2",
-  heroSpots: "bg-ku-card rounded-[12px] min-w-[78px] px-ku-12 py-ku-sm",
-  heroSpotsLabel: "text-ku-text-secondary font-ku-regular text-ku-label",
-  heroSpotsValue: "text-ku-primary font-ku-bold text-ku-subtitle mt-ku-1",
-  heroDetails: "border-ku-border-accent border-t flex-row pt-ku-14",
-  heroItem: "flex-1 flex-row min-w-0",
-  heroItemDivider: "border-l-ku-border-accent border-l ml-ku-10 pl-ku-12",
-  heroItemIcon:
-    "items-center bg-ku-surface-success rounded-ku-pill h-[30px] justify-center shrink-0 w-[30px]",
-  heroItemCopy: "flex-1 min-w-0 ml-ku-sm",
+    "bg-ku-surface-accent border-ku-border-accent rounded-[16px] border mt-ku-lg pb-ku-2 pt-ku-md px-ku-md",
+  heroPrimary: "items-end flex-row gap-ku-md justify-between",
+  heroReward: "flex-1 min-w-0",
   heroLabel: "text-ku-text-secondary font-ku-regular text-ku-label",
-  heroValue: "text-ku-primary font-ku-bold text-ku-body mt-ku-2",
-  heroDetail: "text-ku-text-secondary font-ku-regular text-ku-label mt-ku-2",
-  heroLocation:
-    "items-start border-ku-border-accent border-t flex-row gap-ku-10 mt-ku-14 pt-ku-14",
-  heroLocationCopy: "flex-1 min-w-0",
-  heroLocationValue: "text-ku-text-strong font-ku-medium text-ku-body mt-ku-2",
+  heroRewardValue: "text-ku-primary font-ku-bold text-ku-title mt-ku-2",
+  heroRewardUnit: "text-ku-text-secondary font-ku-medium text-ku-body",
+  heroCount: "items-end",
+  heroCountValue: "text-ku-text-strong font-ku-bold text-ku-subtitle mt-ku-2",
+  heroFacts: "border-ku-border-accent border-t mt-ku-md",
+  infoCard:
+    "bg-ku-surface border-ku-border-subtle rounded-[16px] border px-ku-md",
+  infoRow: "items-start flex-row gap-ku-12 py-ku-14",
+  infoRowDivided: "border-ku-divider border-t",
+  infoIcon: "mt-ku-2",
+  infoCopy: "flex-1 min-w-0",
+  infoLabel: "text-ku-text-secondary font-ku-regular text-ku-label",
+  infoValue: "text-ku-text-strong font-ku-medium text-ku-body mt-ku-1",
+  infoDescription:
+    "text-ku-text-secondary font-ku-regular text-ku-body-small mt-ku-2",
   participantRosterCard:
     "bg-ku-surface border-ku-border-subtle rounded-[16px] border mt-ku-md p-ku-14",
   participantRosterHeader: "items-center flex-row justify-between",
@@ -64,46 +64,10 @@ const styles = {
     "items-center bg-ku-on-primary rounded-ku-pill flex-row gap-ku-6 justify-center min-h-[44px] px-ku-12",
   participationActionDisabled: "opacity-60",
   participationActionText: "text-ku-primary font-ku-semibold text-ku-label",
-  scheduleCard:
-    "bg-ku-surface border-ku-border-subtle rounded-[16px] border mt-ku-lg p-ku-md",
-  scheduleHeader: "items-center flex-row",
-  scheduleHeaderIcon:
-    "items-center bg-ku-surface-success rounded-ku-pill h-[36px] justify-center shrink-0 w-[36px]",
-  scheduleHeaderCopy: "flex-1 min-w-0 ml-ku-10",
-  scheduleTitle: "text-ku-text-strong font-ku-bold text-ku-section",
-  scheduleDescription:
-    "text-ku-text-secondary font-ku-regular text-ku-label mt-ku-1",
-  scheduleTimeline: "flex-row mt-ku-20",
-  timelineRail: "items-center w-[16px]",
-  timelineDotActive: "bg-ku-primary rounded-ku-pill h-[10px] w-[10px]",
-  timelineDot:
-    "bg-ku-border-accent border-ku-primary border-[2px] rounded-ku-pill h-[10px] w-[10px]",
-  timelineLine: "bg-ku-border-accent flex-1 w-[2px]",
-  timelineEvents: "flex-1 gap-ku-lg ml-ku-12",
-  timelineEvent: "min-h-[64px]",
-  timelineLabel: "text-ku-text-secondary font-ku-medium text-ku-label",
-  timelineDate: "text-ku-text-strong font-ku-bold text-ku-body mt-ku-2",
-  timelineTimeRow: "items-center flex-row flex-wrap gap-ku-xs mt-ku-6",
-  timelineTimeLabel: "text-ku-text-secondary font-ku-regular text-ku-label",
-  timelineTime: "text-ku-primary font-ku-bold text-ku-body-small ml-ku-2",
-  timelineDescription:
-    "text-ku-text-secondary font-ku-regular text-ku-label mt-ku-6",
   section: "mt-ku-xl",
   sectionTitle: "text-ku-text-strong font-ku-bold text-ku-section mb-ku-sm",
   body: "text-ku-text-secondary font-ku-regular text-ku-body",
-  descriptionCard:
-    "bg-ku-surface border-ku-border-subtle rounded-[14px] border p-ku-md",
-  requirementCard:
-    "bg-ku-surface border-ku-border-subtle rounded-[14px] border gap-ku-10 p-ku-12",
-  requirementRow:
-    "items-start bg-ku-surface-accent rounded-[12px] flex-row p-ku-12",
-  requirementIcon:
-    "items-center bg-ku-surface-success rounded-ku-pill h-[32px] justify-center shrink-0 w-[32px]",
-  requirementCopy: "flex-1 min-w-0 ml-ku-10",
-  requirementLabel: "text-ku-text-muted font-ku-medium text-ku-label",
-  requirementValue: "text-ku-text-strong font-ku-medium text-ku-body-small",
-  requirementDescription:
-    "text-ku-text-secondary font-ku-regular text-ku-meta mt-ku-2",
+  descriptionText: "text-ku-text font-ku-regular text-ku-body",
   confirmHeader: "items-center flex-row justify-between",
   sheetCloseButton:
     "items-center rounded-ku-pill h-[44px] justify-center ml-ku-sm w-[44px] active:bg-ku-surface-muted",

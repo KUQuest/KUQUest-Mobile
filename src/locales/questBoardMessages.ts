@@ -75,16 +75,15 @@ export interface QuestBoardMessages {
   afternoon: string;
   evening: string;
   schedule: string;
-  scheduleDescription: string;
+  scheduleLocation: string;
   startWork: string;
-  workWindow: string;
   finishBy: string;
-  finishByDescription: string;
   timeNotSpecified: string;
   location: string;
-  spots: string;
   spotsSummary: (remaining: number, total: number) => string;
   participantsSummary: (accepted: number, total: number) => string;
+  manageQuestTitle: string;
+  submittedTeamCount: (count: number) => string;
   endingSoon: string;
   imageCount: (count: number) => string;
   questImageLabel: (index: number) => string;
@@ -378,17 +377,17 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     afternoon: "Afternoon",
     evening: "Evening",
     schedule: "Schedule",
-    scheduleDescription: "Plan the work window and deadline.",
+    scheduleLocation: "Schedule & location",
     startWork: "Start work",
-    workWindow: "Work window",
     finishBy: "Finish by",
-    finishByDescription: "Complete the Quest by this date.",
     timeNotSpecified: "Time not specified",
     location: "Where",
-    spots: "spots",
     spotsSummary: (remaining, total) => `${remaining} of ${total} spots left`,
     participantsSummary: (accepted, total) =>
       `Participants ${accepted}/${total}`,
+    manageQuestTitle: "Manage Quest",
+    submittedTeamCount: (count) =>
+      `${count} submitted team${count === 1 ? "" : "s"}`,
     endingSoon: "Ending soon",
     imageCount: (count) => `${count} photo${count === 1 ? "" : "s"}`,
     questImageLabel: (index) => `Quest image ${index}`,
@@ -760,18 +759,17 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     afternoon: "ช่วงบ่าย",
     evening: "ช่วงเย็น",
     schedule: "เวลา",
-    scheduleDescription: "ดูช่วงเวลาทำงานและกำหนดส่งได้ที่นี่",
+    scheduleLocation: "กำหนดการและสถานที่",
     startWork: "เริ่มงาน",
-    workWindow: "ช่วงเวลาทำงาน",
     finishBy: "ส่งงานภายใน",
-    finishByDescription: "ทำเควสต์ให้เสร็จภายในวันนี้",
     timeNotSpecified: "ยังไม่ระบุเวลา",
     location: "สถานที่",
-    spots: "ที่ว่าง",
     spotsSummary: (remaining, total) =>
       `เหลือ ${remaining} จาก ${total} ที่ว่าง`,
     participantsSummary: (accepted, total) =>
       `ผู้เข้าร่วม ${accepted}/${total} คน`,
+    manageQuestTitle: "จัดการเควสต์",
+    submittedTeamCount: (count) => `${count} ทีมที่ส่งแล้ว`,
     endingSoon: "ใกล้ปิดรับสมัคร",
     imageCount: (count) => `${count} รูป`,
     questImageLabel: (index) => `รูปเควสต์ที่ ${index}`,
@@ -1005,7 +1003,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     publishQuest: "เผยแพร่เควสต์",
     escrowRewardPool: "เงินรางวัลรวม",
     escrowPlatformFee: "ค่าธรรมเนียมแพลตฟอร์ม",
-    escrowTotal: "ยอด Escrow ที่ต้องใช้",
+    escrowTotal: "ยอดเงินที่ต้องพักไว้",
     terminalBannerTitle: "ปิดเควสต์แล้ว",
     terminalDescription:
       "เควสต์นี้อยู่ในสถานะสิ้นสุด ไม่สามารถเปิดใหม่หรือรับผู้เข้าร่วมเพิ่มได้",

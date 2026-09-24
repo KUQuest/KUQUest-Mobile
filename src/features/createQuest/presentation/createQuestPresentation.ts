@@ -6,6 +6,8 @@ import {
 } from "lucide-react-native";
 
 import type { QuestPublishCheck } from "../../questBoard/domain/types";
+import { formatDateTime } from "@/domain/datetime";
+import { formatSatang } from "@/domain/satang";
 import {
   formatDraftReward,
   formatQuestSchedule,
@@ -24,7 +26,16 @@ export type CreateQuestTagOption = {
 export type CreateQuestReviewSummaryItem = {
   label: string;
   value: string;
+  /** Rendered as thumbnails; `value` becomes their accessibility label. */
+  imageUris?: readonly string[];
 };
+
+export interface CreateQuestPublishBlocker {
+  code: string;
+  message: string;
+  /** Draft field that resolves the blocker; null when it is fixed outside the form. */
+  field: string | null;
+}
 
 export interface CreateQuestReviewView {
   questTag: string;
@@ -34,6 +45,51 @@ export interface CreateQuestReviewView {
   rewardPerPerson: string;
   missingSatang: number;
   logisticsSummary: string;
+  blockers: CreateQuestPublishBlocker[];
+}
+
+// Server publish-check codes and local fallback codes share one table.
+const BLOCKER_FIELDS: Record<string, string> = {
+  QUEST_TAG_REQUIRED: "tag",
+  TITLE_REQUIRED: "title",
+  DESCRIPTION_REQUIRED: "description",
+  COMPLETION_CRITERIA_REQUIRED: "conditions",
+  QUEST_CONDITION_REQUIRED: "conditions",
+  START_REQUIRED: "startDate",
+  QUEST_START_TIME_NOT_IN_FUTURE: "startTime",
+  DEADLINE_REQUIRED: "deadline",
+  QUEST_DUE_AT_REQUIRED: "deadline",
+  QUEST_DUE_AT_NOT_AFTER_START_TIME: "endTime",
+  LOCATION_REQUIRED: "location",
+  REWARD_INVALID: "wage",
+  HEADCOUNT_INVALID: "headcount",
+  QUEST_HEADCOUNT_INVALID: "headcount",
+};
+
+function getPublishBlockers(
+  codes: readonly string[],
+  messages: CreateQuestMessages,
+  missingAmount: string
+): CreateQuestPublishBlocker[] {
+  const guidance = messages.blockingGuidance;
+  const blockerMessages: Record<string, string> = {
+    ...guidance,
+    INSUFFICIENT_SPENDING_BALANCE:
+      guidance.INSUFFICIENT_SPENDING_BALANCE(missingAmount),
+    TITLE_REQUIRED: messages.titleError,
+    DESCRIPTION_REQUIRED: messages.descriptionError,
+    COMPLETION_CRITERIA_REQUIRED: messages.completionCriteriaError,
+    START_REQUIRED: messages.startDateError,
+    DEADLINE_REQUIRED: messages.deadlineError,
+    LOCATION_REQUIRED: messages.locationError,
+    REWARD_INVALID: messages.rewardFormatError,
+    HEADCOUNT_INVALID: messages.headcountError,
+  };
+  return codes.map((code) => ({
+    code,
+    message: blockerMessages[code] ?? messages.publishError,
+    field: BLOCKER_FIELDS[code] ?? null,
+  }));
 }
 
 export function getCreateQuestTagOptions(
@@ -188,8 +244,22 @@ export function getCreateQuestReviewView({
         value: proofRequired ? messages.required : messages.notNeeded,
       },
       {
-        label: messages.summary.schedule,
-        value: scheduleDisplay.range,
+        label: messages.summary.startTime,
+        value: formatDateTime(
+          draft.startDate,
+          draft.startTime,
+          locale,
+          messages.notSelected
+        ),
+      },
+      {
+        label: messages.summary.endTime,
+        value: formatDateTime(
+          draft.deadline,
+          draft.endTime,
+          locale,
+          messages.notSelected
+        ),
       },
       {
         label: messages.summary.location,
@@ -203,6 +273,7 @@ export function getCreateQuestReviewView({
         value: draft.imageUris.length
           ? messages.selectedImages(draft.imageUris.length)
           : messages.noImages,
+        imageUris: draft.imageUris,
       },
       {
         label: messages.summary.reward,
@@ -214,5 +285,12 @@ export function getCreateQuestReviewView({
     rewardPerPerson,
     missingSatang,
     logisticsSummary,
+    blockers: publishCheck.canPublish
+      ? []
+      : getPublishBlockers(
+          publishCheck.blockers,
+          messages,
+          formatSatang(missingSatang, locale)
+        ),
   };
 }

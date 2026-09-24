@@ -228,7 +228,7 @@ export function WorkerProofForm({
         accessibilityRole="button"
         accessibilityState={{ disabled: submitDisabled, busy: submitting }}
         className={cn(
-          "mt-ku-sm min-h-[48px] flex-row items-center justify-center rounded-ku-pill bg-ku-primary px-ku-md active:bg-ku-primary-dark",
+          "mt-ku-sm min-h-[48px] flex-row items-center justify-center rounded-ku-pill bg-ku-worker px-ku-md active:bg-ku-worker-dark",
           submitDisabled && "opacity-[0.55]"
         )}
         disabled={submitDisabled}
@@ -236,9 +236,9 @@ export function WorkerProofForm({
         testID="worker-proof-submit"
       >
         {submitting ? (
-          <ActivityIndicator color={palette.onPrimary} />
+          <ActivityIndicator color={palette.onWorker} />
         ) : (
-          <Text className="font-ku-semibold text-ku-body text-ku-on-primary">
+          <Text className="font-ku-semibold text-ku-body text-ku-on-worker">
             {messages.submitProof}
           </Text>
         )}
@@ -269,7 +269,7 @@ function SentProofCard({
       ? palette.success
       : status === "PROOF_NOT_APPROVED"
         ? palette.dangerDark
-        : palette.primaryDeep;
+        : palette.workerDeep;
   const description =
     status === "PROOF_APPROVED"
       ? messages.proofApprovedDescription

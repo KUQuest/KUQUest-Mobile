@@ -10,23 +10,15 @@ export interface TopUpSuccessStepProps {
   creditSatang: number;
   locale: SupportedLocale;
   onDone: () => void;
-  currentBalanceSatang: number | null;
-  transactionReference: string;
 }
 
 export function TopUpSuccessStep({
   creditSatang,
   locale,
   onDone,
-  currentBalanceSatang,
-  transactionReference,
 }: TopUpSuccessStepProps) {
   const m = walletMessages[locale];
   const credit = formatSatang(creditSatang, locale, "exact");
-  const currentBalance =
-    currentBalanceSatang === null
-      ? m.topUpBalanceUnavailable
-      : formatSatang(currentBalanceSatang, locale, "exact");
 
   return (
     <View
@@ -47,35 +39,14 @@ export function TopUpSuccessStep({
       </Text>
       <View className="mt-ku-lg w-full items-center rounded-[18px] border border-ku-border-accent bg-ku-surface px-ku-20 py-ku-18">
         <View className="flex-row items-center gap-ku-sm">
-          <Wallet color={colors.primaryDeep} size={20} strokeWidth={2.2} />
+          <Wallet color={colors.hirerDeep} size={20} strokeWidth={2.2} />
           <Text className="font-ku-medium text-ku-meta text-ku-text-secondary">
             {m.topUpCredit}
           </Text>
         </View>
-        <Text className="mt-ku-xs font-ku-bold text-ku-display-small text-ku-primary-deep">
+        <Text className="mt-ku-xs font-ku-bold text-ku-display-small text-ku-hirer-deep">
           {credit}
         </Text>
-        <View className="mt-ku-sm w-full border-t border-ku-border-subtle pt-ku-sm">
-          <Text className="font-ku-medium text-ku-meta text-ku-text-secondary">
-            {m.spendingBalance}
-          </Text>
-          <Text
-            className="mt-ku-2 font-ku-semibold text-ku-control text-ku-text-strong"
-            testID="top-up-current-balance"
-          >
-            {currentBalance}
-          </Text>
-          <Text className="mt-ku-xs font-ku-medium text-ku-meta text-ku-text-secondary">
-            {m.txReferenceLabel}
-          </Text>
-          <Text
-            className="mt-ku-2 w-full font-ku-regular text-[11px] text-ku-text-secondary"
-            selectable
-            testID="top-up-reference-value"
-          >
-            {transactionReference}
-          </Text>
-        </View>
       </View>
       <View className="mt-ku-sm w-full flex-row items-start gap-ku-sm rounded-[14px] bg-ku-surface-accent p-ku-sm">
         <ShieldCheck color={colors.success} size={18} strokeWidth={2.2} />
@@ -88,10 +59,10 @@ export function TopUpSuccessStep({
         accessibilityRole="button"
         activeOpacity={0.8}
         onPress={onDone}
-        className="mt-ku-lg h-[52px] w-full items-center justify-center rounded-ku-pill bg-ku-primary"
+        className="mt-ku-lg h-[52px] w-full items-center justify-center rounded-ku-pill bg-ku-hirer"
         testID="top-up-done-btn"
       >
-        <Text className="font-ku-semibold text-ku-control text-ku-on-primary">
+        <Text className="font-ku-semibold text-ku-control text-ku-on-hirer">
           {m.done}
         </Text>
       </TouchableOpacity>

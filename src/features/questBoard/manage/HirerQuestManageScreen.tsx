@@ -1,26 +1,38 @@
-import { RefreshControl } from "react-native";
+import { ActivityIndicator, RefreshControl } from "react-native";
 
-import { ScrollView, Text, View, Pressable } from "@/tw";
+import { Pressable, ScrollView, Text, View } from "@/tw";
+import { cn } from "@/tw/cn";
 import {
   AlertTriangle,
+  CalendarCheck,
+  CalendarClock,
+  ChevronRight,
   FileEdit,
+  Hourglass,
   MessageSquare,
   ShieldCheck,
+  UsersRound,
   X,
+  type LucideIcon,
 } from "lucide-react-native";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
+import { formatTimestamp } from "@/domain/datetime";
 import { CandidateReviewSheet } from "@/features/questBoard/teamAssemble/components/CandidateReviewSheet";
 import { PartialGroupStartConsentSheet } from "@/features/questBoard/teamAssemble/components/PartialGroupStartConsentSheet";
 import { QuestConditionEditModal } from "@/features/questBoard/shared/components/QuestConditionEditModal";
 import { QuestConditionEditStatusCard } from "@/features/questBoard/shared/components/QuestConditionEditStatusCard";
 import { ProofReviewModal } from "@/features/questBoard/review/components/ProofReviewModal";
+import { myQuestMessages } from "@/locales/myQuestMessages";
+import { questNextActionLabels } from "@/locales/questStatusLabels";
+import { questWorkMessages } from "@/locales/questWorkMessages";
 import { useHirerQuestManageFeature } from "./useHirerQuestManageFeature";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import {
   QuestApplicationStatus,
   QuestEditRequestStatus,
+  QuestMode,
   QuestNextAction,
   QuestParticipation,
   QuestStatus,
@@ -31,10 +43,119 @@ export interface HirerQuestManageScreenProps {
   questId?: string;
 }
 
+type PrimaryActionTone = "hirer" | "warning" | "danger";
+
+const primaryActionTones: Record<
+  PrimaryActionTone,
+  { frame: string; text: string; icon: "onHirer" | "warningDark" }
+> = {
+  hirer: { frame: "bg-ku-hirer", text: "text-ku-on-hirer", icon: "onHirer" },
+  warning: {
+    frame: "border border-ku-border-warning bg-ku-surface-warning",
+    text: "text-ku-text-strong",
+    icon: "warningDark",
+  },
+  danger: { frame: "bg-ku-danger", text: "text-ku-on-hirer", icon: "onHirer" },
+};
+
+function PrimaryAction({
+  icon: Icon,
+  label,
+  onPress,
+  testID,
+  tone = "hirer",
+}: {
+  icon: LucideIcon;
+  label: string;
+  onPress: () => void;
+  testID: string;
+  tone?: PrimaryActionTone;
+}) {
+  const variant = primaryActionTones[tone];
+  const { colors } = useAppTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      testID={testID}
+      onPress={onPress}
+      className={cn(
+        "min-h-[52px] flex-row items-center justify-center gap-ku-sm rounded-ku-pill px-ku-lg py-ku-12 active:opacity-80",
+        variant.frame
+      )}
+    >
+      <Icon color={colors[variant.icon]} size={20} strokeWidth={2.2} />
+      <Text
+        className={cn("shrink font-ku-semibold text-ku-control", variant.text)}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function ActionRow({
+  divided,
+  icon: Icon,
+  label,
+  onPress,
+  testID,
+}: {
+  divided?: boolean;
+  icon: LucideIcon;
+  label: string;
+  onPress: () => void;
+  testID: string;
+}) {
+  const { colors } = useAppTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      testID={testID}
+      onPress={onPress}
+      className={cn(
+        "min-h-[56px] flex-row items-center gap-ku-12 py-ku-14 active:opacity-70",
+        divided && "border-t border-ku-divider"
+      )}
+    >
+      <Icon color={colors.hirer} size={20} strokeWidth={2} />
+      <Text className="flex-1 font-ku-medium text-ku-body text-ku-text-strong">
+        {label}
+      </Text>
+      <ChevronRight color={colors.textMuted} size={20} strokeWidth={2} />
+    </Pressable>
+  );
+}
+
+function ScheduleRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}) {
+  const { colors } = useAppTheme();
+  return (
+    <View className="flex-row items-start gap-ku-12 border-t border-ku-hirer-border py-ku-12">
+      <View className="mt-ku-2">
+        <Icon color={colors.hirer} size={18} strokeWidth={2} />
+      </View>
+      <View className="min-w-0 flex-1">
+        <Text className="text-ku-label text-ku-text-secondary">{label}</Text>
+        <Text className="mt-ku-1 font-ku-medium text-ku-body text-ku-text-strong">
+          {value}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 export default function HirerQuestManageScreen({
   questId,
 }: HirerQuestManageScreenProps) {
   const view = useHirerQuestManageFeature(questId);
+  const { colors } = useAppTheme();
   const {
     router,
     locale,
@@ -46,6 +167,7 @@ export default function HirerQuestManageScreen({
     originalConditionItems,
     pendingProof,
     terminal,
+    cancelDescription,
     canReviewCandidateProposals,
     canProposeConditionEdit,
     candidateOpen,
@@ -67,48 +189,79 @@ export default function HirerQuestManageScreen({
     submitProofReview,
     submitConditionEdit,
   } = view;
+  const topBar = (
+    <TopBar
+      title={messages.manageQuestTitle}
+      onBackPress={() => router.back()}
+      backLabel={messages.back}
+    />
+  );
 
   if (snapshotQuery.isPending)
     return (
       <ScreenLayout className="flex-1 bg-ku-background">
-        <TopBar
-          title="Manage Quest"
-          onBackPress={() => router.back()}
-          backLabel="Back"
-        />
-        <View className="p-ku-lg">
-          <Text>Loading live Quest…</Text>
+        {topBar}
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator
+            accessibilityLabel={messages.loading}
+            color={colors.hirer}
+          />
         </View>
       </ScreenLayout>
     );
   if (error || !snapshot)
     return (
       <ScreenLayout className="flex-1 bg-ku-background">
-        <TopBar
-          title="Manage Quest"
-          onBackPress={() => router.back()}
-          backLabel="Back"
-        />
-        <View className="p-ku-lg">
-          <Text>{error ?? "Quest not found"}</Text>
+        {topBar}
+        <View className="flex-1 items-center justify-center px-ku-lg">
+          <Text className="text-center font-ku-bold text-ku-emphasis text-ku-text-strong">
+            {error ?? messages.questNotFound}
+          </Text>
           <Pressable
-            className="mt-ku-md rounded-xl bg-ku-primary p-ku-md"
+            accessibilityRole="button"
+            className="mt-ku-md min-h-[48px] items-center justify-center rounded-ku-pill bg-ku-hirer px-ku-20 active:opacity-80"
             onPress={() => void snapshotQuery.refetch()}
           >
-            <Text className="text-center text-ku-on-primary">Retry</Text>
+            <Text className="font-ku-semibold text-ku-body-small text-ku-on-hirer">
+              {messages.retry}
+            </Text>
           </Pressable>
         </View>
       </ScreenLayout>
     );
+
   const quest = snapshot.quest;
+  const isGroup = snapshot.participation === QuestParticipation.GROUP;
+  const submittedTeams = snapshot.teams.filter(
+    (team) => team.state === QuestTeamStatus.TEAM_SUBMITTED
+  );
+  const proposalCount = isGroup
+    ? submittedTeams.length
+    : snapshot.applications.filter(
+        (application) =>
+          application.state === QuestApplicationStatus.APPLICATION_APPLIED
+      ).length;
+  const assignedCount = snapshot.assignments.length;
+  const showCandidateReview = canReviewCandidateProposals && proposalCount > 0;
+  const showProofReview =
+    Boolean(pendingProof) && snapshot.capabilities.canReviewProof;
+  const showUnderfilled =
+    snapshot.nextAction === QuestNextAction.DECIDE_UNDERFILLED &&
+    snapshot.capabilities.canDecideUnderfilled;
+  const showDispute = snapshot.state === QuestStatus.QUEST_FAILED;
+  const editPending =
+    snapshot.editRequest?.status ===
+    QuestEditRequestStatus.EDIT_REQUEST_PENDING;
+  const showWorkChat =
+    snapshot.capabilities.canReadWorkChat && Boolean(snapshot.workConversation);
+  const modeLabel =
+    snapshot.mode === QuestMode.CANDIDATE
+      ? myQuestMessages[locale].modeCandidate
+      : myQuestMessages[locale].modeFirstCome;
 
   return (
     <ScreenLayout className="flex-1 bg-ku-background">
-      <TopBar
-        title="Manage Quest"
-        onBackPress={() => router.back()}
-        backLabel="Back"
-      />
+      {topBar}
       <ScrollView
         refreshControl={
           <RefreshControl
@@ -116,154 +269,182 @@ export default function HirerQuestManageScreen({
             onRefresh={() => void snapshotQuery.refetch()}
           />
         }
-        contentContainerClassName="p-ku-20 pb-ku-48"
+        contentContainerClassName="w-full max-w-[720px] gap-ku-lg self-center px-ku-lg pt-ku-md pb-ku-48"
       >
-        <Text
-          accessibilityRole="header"
-          className="font-ku-bold text-ku-title text-ku-text-strong"
-        >
-          {quest.title}
-        </Text>
-        <Text
-          testID="hirer-manage-state"
-          className="mt-ku-sm font-ku-bold text-ku-primary"
-        >
-          {snapshot.state} · {snapshot.mode}
-        </Text>
-        <View className="mt-ku-20 rounded-2xl bg-ku-card p-ku-md">
-          <Text className="font-ku-bold text-ku-text-strong">Roster</Text>
-          <Text className="mt-ku-sm text-ku-text-secondary">
-            {snapshot.assignments.length} assigned · {snapshot.quest.headcount}{" "}
-            requested
+        <View>
+          <Text
+            accessibilityRole="header"
+            className="font-ku-bold text-ku-title-large text-ku-text-strong"
+          >
+            {quest.title}
           </Text>
-          <Text className="mt-ku-xs text-ku-text-secondary">
-            {snapshot.applications.length} applications ·{" "}
-            {snapshot.teams.length} submitted teams
+          <Text
+            testID="hirer-manage-state"
+            className="mt-ku-xs text-ku-body-small text-ku-text-secondary"
+          >
+            <Text className="font-ku-semibold text-ku-hirer">
+              {messages.statusLabel(snapshot.state)}
+            </Text>
+            {` · ${modeLabel} · ${isGroup ? messages.team : messages.singlePerson}`}
           </Text>
         </View>
-        {canReviewCandidateProposals &&
-        (snapshot.participation === QuestParticipation.GROUP
-          ? snapshot.teams.some(
-              (team) => team.state === QuestTeamStatus.TEAM_SUBMITTED
-            )
-          : snapshot.applications.some(
-              (application) =>
-                application.state === QuestApplicationStatus.APPLICATION_APPLIED
-            )) ? (
-          <Pressable
-            testID="hirer-manage-candidate-review"
-            className="mt-ku-12 rounded-2xl bg-ku-primary p-ku-md"
-            onPress={() => setCandidateOpen(true)}
-          >
-            <Text className="text-center font-ku-bold text-ku-on-primary">
-              Review candidates and teams
-            </Text>
-          </Pressable>
-        ) : null}
-        {snapshot.state === QuestStatus.QUEST_FAILED ? (
-          <Pressable
-            testID="hirer-manage-dispute"
-            className="mt-ku-12 flex-row items-center justify-center rounded-2xl bg-ku-danger p-ku-md"
-            onPress={() =>
-              router.push({
-                pathname: "/quest/[id]/dispute",
-                params: { id: quest.id },
-              })
-            }
-          >
-            <AlertTriangle color={colors.onPrimary} size={20} />
-            <Text className="ml-ku-sm font-ku-bold text-ku-on-primary">
-              {messages.fileDispute}
-            </Text>
-          </Pressable>
-        ) : null}
-        {snapshot.nextAction === QuestNextAction.DECIDE_UNDERFILLED &&
-        snapshot.capabilities.canDecideUnderfilled ? (
-          <Pressable
-            testID="hirer-manage-underfilled"
-            className="mt-ku-12 rounded-2xl bg-ku-warning p-ku-md"
-            onPress={() => setUnderfilledOpen(true)}
-          >
-            <Text className="text-center font-ku-bold text-ku-text-strong">
-              Decide underfilled Quest
-            </Text>
-          </Pressable>
-        ) : null}
-        {canProposeConditionEdit ? (
-          <Pressable
-            testID="hirer-manage-condition-edit"
-            className="mt-ku-12 flex-row items-center rounded-2xl border border-ku-primary p-ku-md"
-            onPress={() => setConditionEditOpen(true)}
-          >
-            <FileEdit color={colors.primary} size={20} />
-            <Text className="ml-ku-12 font-ku-bold text-ku-primary">
-              {messages.proposeConditionChanges}
-            </Text>
-          </Pressable>
-        ) : null}
-        {snapshot.editRequest?.status ===
-        QuestEditRequestStatus.EDIT_REQUEST_PENDING ? (
-          <View className="mt-ku-12">
-            <QuestConditionEditStatusCard
-              editRequest={snapshot.editRequest}
-              messages={messages}
-            />
+
+        <View className="rounded-ku-card border border-ku-hirer-border bg-ku-hirer-subtle px-ku-md pt-ku-md">
+          <View className="flex-row flex-wrap items-end justify-between gap-ku-sm pb-ku-md">
+            <View
+              accessible
+              accessibilityLabel={messages.participantsSummary(
+                assignedCount,
+                quest.headcount
+              )}
+            >
+              <Text className="text-ku-label text-ku-text-secondary">
+                {messages.participants}
+              </Text>
+              <Text className="mt-ku-2 font-ku-bold text-ku-title text-ku-text-strong">
+                {`${assignedCount}/${quest.headcount}`}
+              </Text>
+            </View>
+            {canReviewCandidateProposals ? (
+              <Text className="font-ku-medium text-ku-body-small text-ku-text-secondary">
+                {isGroup
+                  ? messages.submittedTeamCount(proposalCount)
+                  : messages.applicationCount(proposalCount)}
+              </Text>
+            ) : null}
+          </View>
+          <ScheduleRow
+            icon={CalendarClock}
+            label={messages.startWork}
+            value={formatTimestamp(
+              quest.startTime,
+              locale,
+              messages.timeNotSpecified
+            )}
+          />
+          <ScheduleRow
+            icon={CalendarCheck}
+            label={messages.finishBy}
+            value={formatTimestamp(
+              snapshot.dueAt,
+              locale,
+              messages.timeNotSpecified
+            )}
+          />
+        </View>
+
+        {showCandidateReview ||
+        showProofReview ||
+        showUnderfilled ||
+        showDispute ||
+        editPending ? (
+          <View className="gap-ku-12">
+            {showCandidateReview ? (
+              <PrimaryAction
+                icon={UsersRound}
+                label={messages.reviewCandidates}
+                onPress={() => setCandidateOpen(true)}
+                testID="hirer-manage-candidate-review"
+              />
+            ) : null}
+            {showProofReview ? (
+              <PrimaryAction
+                icon={ShieldCheck}
+                label={messages.proofReviewTitle}
+                onPress={reviewProof}
+                testID="hirer-manage-proof-review"
+              />
+            ) : null}
+            {showUnderfilled ? (
+              <PrimaryAction
+                icon={Hourglass}
+                label={
+                  questNextActionLabels[locale][
+                    QuestNextAction.DECIDE_UNDERFILLED
+                  ]
+                }
+                onPress={() => setUnderfilledOpen(true)}
+                testID="hirer-manage-underfilled"
+                tone="warning"
+              />
+            ) : null}
+            {showDispute ? (
+              <PrimaryAction
+                icon={AlertTriangle}
+                label={messages.fileDispute}
+                onPress={() =>
+                  router.push({
+                    pathname: "/quest/[id]/dispute",
+                    params: { id: quest.id },
+                  })
+                }
+                testID="hirer-manage-dispute"
+                tone="danger"
+              />
+            ) : null}
+            {editPending && snapshot.editRequest ? (
+              <QuestConditionEditStatusCard
+                editRequest={snapshot.editRequest}
+                messages={messages}
+              />
+            ) : null}
           </View>
         ) : null}
-        {pendingProof && snapshot.capabilities.canReviewProof ? (
-          <Pressable
-            testID="hirer-manage-proof-review"
-            className="mt-ku-12 rounded-2xl border border-ku-primary p-ku-md"
-            onPress={reviewProof}
-          >
-            <ShieldCheck color={colors.primary} size={20} />
-            <Text className="mt-ku-sm font-ku-bold text-ku-primary">
-              Review pending proof
-            </Text>
-          </Pressable>
+
+        {showWorkChat || canProposeConditionEdit ? (
+          <View className="rounded-ku-card border border-ku-border-subtle bg-ku-surface px-ku-md">
+            {showWorkChat ? (
+              <ActionRow
+                icon={MessageSquare}
+                label={questWorkMessages[locale].workChat}
+                onPress={openChat}
+                testID="hirer-manage-work-chat"
+              />
+            ) : null}
+            {canProposeConditionEdit ? (
+              <ActionRow
+                divided={showWorkChat}
+                icon={FileEdit}
+                label={messages.proposeConditionChanges}
+                onPress={() => setConditionEditOpen(true)}
+                testID="hirer-manage-condition-edit"
+              />
+            ) : null}
+          </View>
         ) : null}
-        {snapshot.capabilities.canReadWorkChat && snapshot.workConversation ? (
-          <Pressable
-            testID="hirer-manage-work-chat"
-            className="mt-ku-12 flex-row items-center rounded-2xl bg-ku-card p-ku-md"
-            onPress={openChat}
-          >
-            <MessageSquare color={colors.primary} size={20} />
-            <Text className="ml-ku-12 font-ku-bold text-ku-primary">
-              Open Work Chat
-            </Text>
-          </Pressable>
-        ) : null}
+
         {!terminal && snapshot.capabilities.canCancel ? (
-          <Pressable
-            testID="hirer-manage-cancel"
-            className="mt-ku-12 flex-row items-center rounded-2xl border border-ku-danger p-ku-md"
-            onPress={cancel}
-          >
-            <X color={colors.danger} size={20} />
-            <Text className="ml-ku-12 font-ku-bold text-ku-danger">
-              Cancel Quest
-            </Text>
-          </Pressable>
+          <View className="mt-ku-sm">
+            <Pressable
+              accessibilityRole="button"
+              testID="hirer-manage-cancel"
+              className="min-h-[52px] flex-row items-center justify-center gap-ku-sm rounded-ku-pill border border-ku-danger-dark px-ku-lg py-ku-12 active:bg-ku-surface-danger"
+              onPress={cancel}
+            >
+              <X color={colors.dangerDark} size={20} strokeWidth={2.2} />
+              <Text className="font-ku-semibold text-ku-control text-ku-danger-dark">
+                {messages.cancelQuest}
+              </Text>
+            </Pressable>
+            {cancelDescription ? (
+              <Text className="mt-ku-sm text-center text-ku-body-small text-ku-text-secondary">
+                {cancelDescription}
+              </Text>
+            ) : null}
+          </View>
         ) : null}
       </ScrollView>
       <CandidateReviewSheet
         visible={candidateOpen}
         applications={snapshot.applications}
-        teams={snapshot.teams.filter(
-          (team) => team.state === QuestTeamStatus.TEAM_SUBMITTED
-        )}
-        mode={
-          snapshot.participation === QuestParticipation.GROUP
-            ? "team"
-            : "individual"
-        }
+        teams={submittedTeams}
+        mode={isGroup ? "team" : "individual"}
         questTitle={quest.title}
         requestedHeadcount={quest.headcount}
-        actualHeadcount={snapshot.assignments.length}
+        actualHeadcount={assignedCount}
         onClose={() => setCandidateOpen(false)}
         onAcceptProposal={
-          snapshot.participation === QuestParticipation.GROUP
+          isGroup
             ? snapshot.capabilities.canSelectTeam
               ? selectTeam
               : undefined

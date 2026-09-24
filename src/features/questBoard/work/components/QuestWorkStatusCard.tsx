@@ -76,7 +76,7 @@ export default function QuestWorkStatusCard({
           </Text>
         </View>
         <Clock3
-          color={isTerminal ? colors.textMuted : colors.primary}
+          color={isTerminal ? colors.textMuted : colors.worker}
           size={22}
         />
       </View>

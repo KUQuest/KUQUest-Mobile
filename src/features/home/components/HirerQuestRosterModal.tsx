@@ -101,7 +101,7 @@ export function HirerQuestRosterModal({
             <Chip
               className="rounded-full border-0 bg-ku-surface-accent px-ku-12 py-ku-xs"
               label={messages.joinedLabel(assignedWorkers.length, headcount)}
-              textClassName="font-ku-medium text-ku-label text-ku-primary"
+              textClassName="font-ku-medium text-ku-label text-ku-hirer"
               tone="accent"
             />
             {applicants.length > 0 && (
@@ -124,7 +124,7 @@ export function HirerQuestRosterModal({
             {assignedWorkers.length > 0 && (
               <View className="mb-ku-20">
                 <View className="mb-ku-10 flex-row items-center gap-ku-6">
-                  <CheckCircle2 size={16} color={themeColors.primary} />
+                  <CheckCircle2 size={16} color={themeColors.hirer} />
                   <Text className="font-ku-bold text-ku-body-small text-ku-text-strong">
                     {messages.joinedSectionTitle} ({assignedWorkers.length})
                   </Text>
@@ -168,7 +168,7 @@ export function HirerQuestRosterModal({
                       accessibilityRole="button"
                       accessibilityLabel={messages.viewProfile}
                     >
-                      <Text className="font-ku-bold text-ku-label text-ku-primary">
+                      <Text className="font-ku-bold text-ku-label text-ku-hirer">
                         {messages.viewProfile}
                       </Text>
                     </TouchableOpacity>
@@ -181,7 +181,7 @@ export function HirerQuestRosterModal({
             {applicants.length > 0 && (
               <View className="mb-ku-md">
                 <View className="mb-ku-10 flex-row items-center gap-ku-6">
-                  <Users size={16} color={themeColors.primary} />
+                  <Users size={16} color={themeColors.hirer} />
                   <Text className="font-ku-bold text-ku-body-small text-ku-text-strong">
                     {messages.applicantsSectionTitle} ({applicants.length})
                   </Text>
@@ -225,7 +225,7 @@ export function HirerQuestRosterModal({
                       accessibilityRole="button"
                       accessibilityLabel={messages.viewProfile}
                     >
-                      <Text className="font-ku-bold text-ku-label text-ku-primary">
+                      <Text className="font-ku-bold text-ku-label text-ku-hirer">
                         {messages.viewProfile}
                       </Text>
                     </TouchableOpacity>
@@ -251,12 +251,12 @@ export function HirerQuestRosterModal({
               onClose();
               onOpenManageQuest(questId);
             }}
-            className="mt-ku-sm w-full items-center rounded-2xl bg-ku-primary p-ku-md"
+            className="mt-ku-sm w-full items-center rounded-2xl bg-ku-hirer p-ku-md"
             testID="hirer-roster-manage-button"
             accessibilityRole="button"
             accessibilityLabel={messages.openManageQuest}
           >
-            <Text className="font-ku-bold text-ku-body text-ku-on-primary">
+            <Text className="font-ku-bold text-ku-body text-ku-on-hirer">
               {messages.openManageQuest}
             </Text>
           </TouchableOpacity>

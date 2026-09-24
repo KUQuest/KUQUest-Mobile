@@ -19,23 +19,20 @@ import type { SupportedLocale } from "@/locales/locale";
 import { colors } from "@/theme/colors";
 import { formatDate, formatDateTime } from "@/domain/datetime";
 import {
-  addDaysToDate,
   addHoursToTime,
   formatQuestSchedule,
   getDateTimeValue,
-  getNearestQuarterHour,
   getRelativeDateValue,
   TIME_PATTERN,
   type QuestDraft,
 } from "../../domain/createQuestModel";
 import type { ScheduleField } from "../../createQuestTypes";
 import { useCreateQuestImages } from "./useCreateQuestImages";
-import { useSchedulePicker } from "./useSchedulePicker";
+import { CustomDatePickerModal } from "./CustomDatePickerModal";
 import CustomTimePickerModal from "./CustomTimePickerModal";
 import { DateTimeField } from "./DateTimeField";
 import { FieldLabel } from "./FieldLabel";
 import { LogisticsSection } from "./LogisticsSection";
-import { SchedulePickerModal } from "./SchedulePickerModal";
 import styles from "../createQuestStyles";
 
 export function QuestLogisticsFields({
@@ -66,21 +63,27 @@ export function QuestLogisticsFields({
     value: QuestDraft[K]
   ) => void;
 }) {
-  const {
-    activeField: scheduleField,
-    pickerMode,
-    pickerValue: schedulePickerValue,
-    minimumDate: schedulePickerMinimum,
-    openPicker: openSchedulePicker,
-    closePicker: closeSchedulePicker,
-    handleChange: handleDateChange,
-    confirmIos: confirmIosScheduleValue,
-  } = useSchedulePicker({ draft, updateDraft });
   const { imageError, setImageError, pickImages, removeImage } =
     useCreateQuestImages({ draft, messages, updateDraft });
+  const [datePickerField, setDatePickerField] = useState<ScheduleField | null>(
+    null
+  );
   const [timePickerField, setTimePickerField] = useState<ScheduleField | null>(
     null
   );
+  // Refreshed whenever a schedule value is confirmed, so render stays pure.
+  const [now, setNow] = useState(() => Date.now());
+  const today = getRelativeDateValue(0);
+  const confirmScheduleDate = (field: ScheduleField, date: string) => {
+    updateDraft(field === "start" ? "startDate" : "deadline", date);
+    setNow(Date.now());
+    setDatePickerField(null);
+    // Continue straight to the time when this endpoint has none yet.
+    if (!(field === "start" ? draft.startTime : draft.endTime))
+      setTimePickerField(field);
+  };
+  const startMs = getDateTimeValue(draft.startDate, draft.startTime);
+  const startInPast = startMs !== null && startMs <= now;
   const handleFixDeadlineQuick = () => {
     if (!draft.startDate) {
       updateDraft("startDate", getRelativeDateValue(0));
@@ -125,47 +128,24 @@ export function QuestLogisticsFields({
             locale,
             messages.notSelected
           )}
+          dateLabel={messages.startDate}
           timeValue={draft.startTime}
+          timeLabel={messages.startTime}
           hasValue={Boolean(
             draft.startDate && TIME_PATTERN.test(draft.startTime)
           )}
-          error={errors.startDate ?? errors.startTime}
+          error={
+            errors.startDate ??
+            errors.startTime ??
+            (startInPast ? messages.startTimePastError : undefined)
+          }
           helper={messages.dateTimeHelper}
           fieldRef={startDateRef}
           testID="create-quest-start-datetime"
-          onPress={() => openSchedulePicker("start")}
-          onDatePress={() => openSchedulePicker("start")}
+          onPress={() => setDatePickerField("start")}
+          onDatePress={() => setDatePickerField("start")}
           onTimePress={() => setTimePickerField("start")}
           messages={messages}
-          quickPresets={[
-            {
-              label: messages.today,
-              onPress: () => updateDraft("startDate", getRelativeDateValue(0)),
-            },
-            {
-              label: messages.tomorrow,
-              onPress: () => updateDraft("startDate", getRelativeDateValue(1)),
-            },
-            {
-              label: messages.now,
-              onPress: () => {
-                updateDraft("startDate", getRelativeDateValue(0));
-                const { hours, minutes } = getNearestQuarterHour();
-                updateDraft("startTime", `${hours}:${minutes}`);
-              },
-            },
-            {
-              label: messages.in1h,
-              onPress: () => {
-                updateDraft("startDate", getRelativeDateValue(0));
-                const { hours, minutes } = getNearestQuarterHour();
-                updateDraft(
-                  "startTime",
-                  addHoursToTime(`${hours}:${minutes}`, 1)
-                );
-              },
-            },
-          ]}
         />
         {draft.startDate && draft.deadline && draft.startTime && draft.endTime
           ? (() => {
@@ -215,7 +195,7 @@ export function QuestLogisticsFields({
                     <View className={styles.durationBadge}>
                       <View className="flex-row items-center gap-ku-6">
                         <Clock3
-                          color={colors.primary}
+                          color={colors.hirer}
                           size={16}
                           strokeWidth={2.2}
                         />
@@ -247,59 +227,18 @@ export function QuestLogisticsFields({
             locale,
             messages.notSelected
           )}
+          dateLabel={messages.endDate}
           timeValue={draft.endTime}
+          timeLabel={messages.endTime}
           hasValue={Boolean(draft.deadline && TIME_PATTERN.test(draft.endTime))}
           error={errors.deadline ?? errors.endTime}
           helper={messages.dateTimeHelper}
           fieldRef={deadlineRef}
           testID="create-quest-deadline-datetime"
-          onPress={() => openSchedulePicker("end")}
-          onDatePress={() => openSchedulePicker("end")}
+          onPress={() => setDatePickerField("end")}
+          onDatePress={() => setDatePickerField("end")}
           onTimePress={() => setTimePickerField("end")}
           messages={messages}
-          quickPresets={[
-            {
-              label: messages.sameDay,
-              onPress: () =>
-                updateDraft(
-                  "deadline",
-                  draft.startDate || getRelativeDateValue(0)
-                ),
-            },
-            {
-              label: messages.plus1Day,
-              onPress: () =>
-                updateDraft(
-                  "deadline",
-                  draft.startDate
-                    ? addDaysToDate(draft.startDate, 1)
-                    : getRelativeDateValue(1)
-                ),
-            },
-            {
-              label: messages.in2h,
-              onPress: () => {
-                const baseDate = draft.startDate || getRelativeDateValue(0);
-                updateDraft("deadline", baseDate);
-                const baseTime =
-                  draft.startTime && TIME_PATTERN.test(draft.startTime)
-                    ? draft.startTime
-                    : "09:00";
-                if (!draft.startTime) {
-                  updateDraft("startTime", baseTime);
-                }
-                updateDraft("endTime", addHoursToTime(baseTime, 2));
-              },
-            },
-            {
-              label: messages.endOfDay,
-              onPress: () => {
-                const baseDate = draft.startDate || getRelativeDateValue(0);
-                updateDraft("deadline", baseDate);
-                updateDraft("endTime", "23:59");
-              },
-            },
-          ]}
         />
         <View className={styles.fieldGroup}>
           <Pressable
@@ -323,7 +262,7 @@ export function QuestLogisticsFields({
               )}
             >
               {draft.locationMode === "ONLINE" ? (
-                <Check color={colors.onPrimary} size={15} strokeWidth={3} />
+                <Check color={colors.onHirer} size={15} strokeWidth={3} />
               ) : null}
             </View>
             <View className={styles.onlineToggleCopy}>
@@ -390,7 +329,7 @@ export function QuestLogisticsFields({
                       onPress={() => removeImage(index)}
                       className={styles.removeImageButton}
                     >
-                      <X color={colors.onPrimary} size={15} strokeWidth={2.5} />
+                      <X color={colors.onHirer} size={15} strokeWidth={2.5} />
                     </Pressable>
                   </View>
                 ))}
@@ -413,7 +352,7 @@ export function QuestLogisticsFields({
               onPress={() => void pickImages()}
               className={styles.imagePicker}
             >
-              <ImagePlus color={colors.primary} size={28} strokeWidth={1.8} />
+              <ImagePlus color={colors.hirer} size={28} strokeWidth={1.8} />
               <Text className={styles.imageTitle}>{messages.addImages}</Text>
               <Text className={styles.helperText}>
                 {messages.imagesOptional}
@@ -427,17 +366,23 @@ export function QuestLogisticsFields({
           ) : null}
         </View>
       </LogisticsSection>
-      <SchedulePickerModal
-        messages={messages}
-        visible={scheduleField !== null}
-        field={scheduleField}
-        mode={pickerMode}
-        value={schedulePickerValue}
-        minimumDate={schedulePickerMinimum}
-        onChange={handleDateChange}
-        onConfirmIos={confirmIosScheduleValue}
-        onClose={closeSchedulePicker}
-      />
+      {datePickerField ? (
+        <CustomDatePickerModal
+          title={
+            datePickerField === "start" ? messages.startDate : messages.endDate
+          }
+          value={datePickerField === "start" ? draft.startDate : draft.deadline}
+          minimumDate={
+            datePickerField === "end" && draft.startDate > today
+              ? draft.startDate
+              : today
+          }
+          locale={locale}
+          messages={messages}
+          onConfirm={(date) => confirmScheduleDate(datePickerField, date)}
+          onClose={() => setDatePickerField(null)}
+        />
+      ) : null}
       <CustomTimePickerModal
         visible={Boolean(timePickerField)}
         field={timePickerField ?? "start"}
@@ -460,6 +405,7 @@ export function QuestLogisticsFields({
           if (!timePickerField) return;
           const timeKey = timePickerField === "start" ? "startTime" : "endTime";
           updateDraft(timeKey, nextTime);
+          setNow(Date.now());
           setTimePickerField(null);
         }}
         onClose={() => setTimePickerField(null)}

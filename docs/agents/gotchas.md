@@ -11,13 +11,29 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 ## Entries
 
+### 2026-09-24 — Changing `font_scale` restarts the app at Home
+
+**What happened**: `adb shell settings put system font_scale 1.3` during a smoke check dropped the navigation stack; the next screenshot showed Hirer Home instead of the screen under test.
+
+**Root cause**: `MainActivity` `android:configChanges` omits `fontScale`, so Android recreates the Activity (unlike `uiMode`, which dark-mode toggles survive).
+
+**Rule**: Set `font_scale` first, then navigate or deep-link to the screen under test; restore `1.0` afterwards and expect another restart.
+
+### 2026-09-24 — Unawaited React Native test events leak `act()` scopes
+
+**What happened**: A Hirer card test passed alone, but later tests rendered empty after it pressed three controls; awaiting the presses made the full file pass.
+
+**Root cause**: React Native Testing Library v14 returns a Promise from `fireEvent.press`, so unawaited presses leave overlapping React `act()` scopes.
+
+**Rule**: In async component tests, `await fireEvent.press(...)` (and other `fireEvent` helpers) before asserting or rendering the next case. Do not work around leakage by reordering tests.
+
 ### 2026-09-23 — Jest runs from `bash` hang and report misleading counts
 
 **What happened**: `bunx jest` through the agent shell showed "N passed" summaries while a test had failed, and runs never exited, so later runs overwrote the same `--outputFile` concurrently.
 
 **Root cause**: The shell's output filter condenses Jest output, and Jest keeps open handles after `HomeScreen` query tests.
 
-**Rule**: Run Jest with `--forceExit --json --outputFile=<unique path>` and read failures from the JSON (or run it via a subprocess in `eval`); never trust the condensed summary. New `HomeScreen.test.tsx` cases go before the Quick Access test, which leaves an overlapping `act()` scope that blanks later renders.
+**Rule**: Run Jest with `--forceExit --json --outputFile=<unique path>` and read failures from the JSON (or run it via a subprocess in `eval`); never trust the condensed summary.
 
 ### 2026-09-23 — `contentContainerStyle` replaces `contentContainerClassName`
 

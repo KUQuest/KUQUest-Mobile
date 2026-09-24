@@ -160,7 +160,7 @@ export function QuestTopUpFlowContent({
               <Text
                 style={[
                   questTopUpLayout.amountCurrency,
-                  { color: colors.primary },
+                  { color: colors.hirer },
                 ]}
               >
                 ฿
@@ -216,7 +216,7 @@ export function QuestTopUpFlowContent({
                       style={[
                         questTopUpLayout.quickAmountText,
                         {
-                          color: selected ? colors.primary : colors.textStrong,
+                          color: selected ? colors.hirer : colors.textStrong,
                         },
                       ]}
                     >
@@ -235,11 +235,9 @@ export function QuestTopUpFlowContent({
                 questTopUpLayout.continueButton,
                 {
                   backgroundColor: amountValid
-                    ? colors.primary
+                    ? colors.hirer
                     : colors.surfaceMuted,
-                  borderColor: amountValid
-                    ? colors.primary
-                    : colors.borderMuted,
+                  borderColor: amountValid ? colors.hirer : colors.borderMuted,
                 },
                 !amountValid && questTopUpLayout.continueButtonDisabled,
               ]}
@@ -248,7 +246,7 @@ export function QuestTopUpFlowContent({
             >
               <Text
                 className={`font-ku-semibold text-[15px] leading-[22px] ${
-                  amountValid ? "text-ku-on-primary" : "text-ku-text-muted"
+                  amountValid ? "text-ku-on-hirer" : "text-ku-text-muted"
                 }`}
               >
                 {messages.topUpContinue}
@@ -364,15 +362,15 @@ export function QuestTopUpFlowContent({
               style={[
                 questTopUpLayout.continueButton,
                 {
-                  backgroundColor: colors.primary,
-                  borderColor: colors.primary,
+                  backgroundColor: colors.hirer,
+                  borderColor: colors.hirer,
                 },
                 isConfirming && questTopUpLayout.continueButtonDisabled,
               ]}
               onPress={onConfirm}
               testID="quest-funding-top-up-confirm"
             >
-              <Text className="font-ku-semibold text-[15px] leading-[22px] text-ku-on-primary">
+              <Text className="font-ku-semibold text-[15px] leading-[22px] text-ku-on-hirer">
                 {messages.topUpConfirm}
               </Text>
             </Pressable>
@@ -565,15 +563,15 @@ export function QuestTopUpFlowContent({
                 style={[
                   questTopUpLayout.continueButton,
                   {
-                    backgroundColor: colors.primary,
-                    borderColor: colors.primary,
+                    backgroundColor: colors.hirer,
+                    borderColor: colors.hirer,
                     marginTop: spacing.px0,
                   },
                 ]}
                 onPress={onClose}
                 testID="quest-funding-top-up-promptpay-close"
               >
-                <Text className="font-ku-semibold text-[15px] leading-[22px] text-ku-on-primary">
+                <Text className="font-ku-semibold text-[15px] leading-[22px] text-ku-on-hirer">
                   {paymentVerified ? messages.topUpDone : messages.topUpClose}
                 </Text>
               </Pressable>

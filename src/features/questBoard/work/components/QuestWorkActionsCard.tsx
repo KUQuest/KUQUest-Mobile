@@ -64,7 +64,7 @@ export default function QuestWorkActionsCard({
 
       {snapshot.state === "QUEST_ASSIGNED" ? (
         <View className="mt-ku-12 flex-row items-start gap-ku-12 rounded-xl border border-ku-border-accent bg-ku-surface-accent px-ku-12 py-ku-12">
-          <ShieldCheck color={colors.primary} size={20} />
+          <ShieldCheck color={colors.worker} size={20} />
           <View className="flex-1">
             <Text className="font-ku-semibold text-ku-text-strong">
               {messages.waitingForStart}
@@ -88,8 +88,8 @@ export default function QuestWorkActionsCard({
               className="mt-ku-12 flex-row items-center justify-center gap-ku-sm rounded-xl bg-ku-warning px-ku-12 py-ku-10"
               onPress={onFileDispute}
             >
-              <AlertTriangle color={colors.onPrimary} size={16} />
-              <Text className="text-center font-ku-semibold text-ku-body-small text-ku-on-primary">
+              <AlertTriangle color={colors.onWorker} size={16} />
+              <Text className="text-center font-ku-semibold text-ku-body-small text-ku-on-worker">
                 {messages.fileDispute}
               </Text>
             </Pressable>
@@ -108,7 +108,7 @@ export default function QuestWorkActionsCard({
                 key={`${condition.position}-${condition.text}`}
                 className="mb-ku-12 flex-row items-start gap-ku-sm last:mb-ku-0"
               >
-                <CheckCircle2 color={colors.primary} size={18} />
+                <CheckCircle2 color={colors.worker} size={18} />
                 <Text className="flex-1 text-ku-body-small text-ku-text-secondary">
                   {condition.text}
                 </Text>
@@ -146,10 +146,10 @@ export default function QuestWorkActionsCard({
                 accessibilityRole="button"
                 accessibilityLabel={messages.acceptEdit}
                 disabled={editSending}
-                className="flex-1 rounded-xl bg-ku-primary px-ku-12 py-ku-12 disabled:opacity-50"
+                className="flex-1 rounded-xl bg-ku-worker px-ku-12 py-ku-12 disabled:opacity-50"
                 onPress={() => void onRespondToEdit("EDIT_RESPONSE_ACCEPTED")}
               >
-                <Text className="text-center font-ku-semibold text-ku-body-small text-ku-on-primary">
+                <Text className="text-center font-ku-semibold text-ku-body-small text-ku-on-worker">
                   {messages.acceptEdit}
                 </Text>
               </Pressable>
@@ -181,7 +181,7 @@ export default function QuestWorkActionsCard({
       {snapshot.capabilities.canConfirmCompletion ? (
         <View className="mt-ku-20 rounded-2xl border border-ku-border bg-ku-card p-ku-md">
           <View className="flex-row items-center gap-ku-sm">
-            <CheckCircle2 color={colors.primaryDeep} size={20} />
+            <CheckCircle2 color={colors.workerDeep} size={20} />
             <Text className="font-ku-bold text-ku-text-strong">
               {messages.confirmationCta}
             </Text>
@@ -193,13 +193,13 @@ export default function QuestWorkActionsCard({
             accessibilityRole="button"
             accessibilityLabel={messages.confirmationCta}
             disabled={confirmationSending}
-            className="mt-ku-12 rounded-xl bg-ku-primary px-ku-12 py-ku-12 disabled:opacity-50"
+            className="mt-ku-12 rounded-xl bg-ku-worker px-ku-12 py-ku-12 disabled:opacity-50"
             onPress={() => void onConfirmCompletion()}
           >
             {confirmationSending ? (
-              <ActivityIndicator color={colors.onPrimary} />
+              <ActivityIndicator color={colors.onWorker} />
             ) : (
-              <Text className="text-center font-ku-semibold text-ku-body-small text-ku-on-primary">
+              <Text className="text-center font-ku-semibold text-ku-body-small text-ku-on-worker">
                 {messages.confirmationCta}
               </Text>
             )}
@@ -212,11 +212,11 @@ export default function QuestWorkActionsCard({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={messages.workChat}
-            className="flex-row items-center justify-center gap-ku-sm rounded-xl bg-ku-primary px-ku-md py-ku-12"
+            className="flex-row items-center justify-center gap-ku-sm rounded-xl bg-ku-worker px-ku-md py-ku-12"
             onPress={onOpenChat}
           >
-            <MessageCircle color={colors.onPrimary} size={18} />
-            <Text className="font-ku-semibold text-ku-on-primary">
+            <MessageCircle color={colors.onWorker} size={18} />
+            <Text className="font-ku-semibold text-ku-on-worker">
               {messages.workChat}
             </Text>
           </Pressable>

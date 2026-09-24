@@ -98,7 +98,7 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
           className="flex-1 items-center justify-center px-ku-lg"
           testID="quest-work-loading"
         >
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={colors.worker} />
           <Text className="mt-ku-12 text-ku-label text-ku-text-subtle">
             {questMessages.loading}
           </Text>
@@ -126,10 +126,10 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={messages.retry}
-            className="mt-ku-20 rounded-xl bg-ku-primary px-ku-md py-ku-12"
+            className="mt-ku-20 rounded-xl bg-ku-worker px-ku-md py-ku-12"
             onPress={() => void refreshSnapshot().catch(() => undefined)}
           >
-            <Text className="text-center font-ku-semibold text-ku-on-primary">
+            <Text className="text-center font-ku-semibold text-ku-on-worker">
               {messages.retry}
             </Text>
           </Pressable>
@@ -153,7 +153,7 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => void refreshSnapshot().catch(() => undefined)}
-              tintColor={colors.primary}
+              tintColor={colors.worker}
             />
           }
           contentContainerStyle={{ paddingBottom: contentBottom }}
@@ -167,7 +167,7 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
                 className="h-10 w-10 items-center justify-center rounded-full bg-ku-surface"
                 onPress={handleBack}
               >
-                <ChevronLeft color={colors.primaryDeep} size={23} />
+                <ChevronLeft color={colors.workerDeep} size={23} />
               </Pressable>
               <Text className="font-ku-bold text-ku-body text-ku-text-strong">
                 {messages.title}
@@ -178,7 +178,7 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
                 className="h-10 w-10 items-center justify-center rounded-full bg-ku-surface"
                 onPress={() => void refreshSnapshot().catch(() => undefined)}
               >
-                <RefreshCw color={colors.primaryDeep} size={18} />
+                <RefreshCw color={colors.workerDeep} size={18} />
               </Pressable>
             </View>
 

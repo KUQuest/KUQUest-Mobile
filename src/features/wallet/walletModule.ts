@@ -6,6 +6,7 @@ import {
   type WalletBalances,
 } from "@/api/WalletApi";
 import { parseSatangInput } from "@/domain/satang";
+import { formatTimeInBangkok, formatTimestampDate } from "@/domain/datetime";
 
 /**
  * Client-side rules and lifecycle sequencing for the Wallet slice.
@@ -145,41 +146,7 @@ export function formatTransactionDate(
 ): string {
   const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
   if (Number.isNaN(date.getTime())) return "";
-
-  if (locale === "th") {
-    try {
-      return date.toLocaleDateString("th-TH-u-ca-buddhist", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
-    } catch {
-      const thaiMonths = [
-        "ม.ค.",
-        "ก.พ.",
-        "มี.ค.",
-        "เม.ย.",
-        "พ.ค.",
-        "มิ.ย.",
-        "ก.ค.",
-        "ส.ค.",
-        "ก.ย.",
-        "ต.ค.",
-        "พ.ย.",
-        "ธ.ค.",
-      ];
-      const day = date.getDate();
-      const month = thaiMonths[date.getMonth()];
-      const year = date.getFullYear() + 543;
-      return `${day} ${month} ${year}`;
-    }
-  }
-
-  return date.toLocaleDateString("en-US", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return formatTimestampDate(date, locale) ?? "";
 }
 
 export type HirerTransactionIconKind =
@@ -225,9 +192,7 @@ export function formatTransactionStatus(
 export function formatTransactionTime(dateInput: string | Date): string {
   const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
   if (Number.isNaN(date.getTime())) return "";
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${hours}:${minutes}`;
+  return formatTimeInBangkok(date);
 }
 
 export interface ClassifiedHirerTransaction {

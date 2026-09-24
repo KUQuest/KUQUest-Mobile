@@ -12,6 +12,7 @@ import {
 import { Pressable, Text, View } from "@/tw";
 import type { QuestV2BoardCard } from "@/api/questV2Contracts";
 import { SATANG_PER_BAHT, formatSatang } from "@/domain/satang";
+import { formatTimeInBangkok, formatTimestampDate } from "@/domain/datetime";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { workerHomeMessages } from "../workerHomeMessages";
@@ -22,24 +23,7 @@ interface WorkerQuestFeedCardProps {
   onPress?: () => void;
 }
 
-function formatQuestDate(value: string, locale: "en" | "th"): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat(
-    locale === "th" ? "th-TH-u-ca-buddhist" : "en-GB",
-    { day: "numeric", month: "short", timeZone: "Asia/Bangkok" }
-  ).format(date);
-}
-
-function formatQuestTime(value: string, locale: "en" | "th"): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Asia/Bangkok",
-  }).format(date);
-}
+const PLACEHOLDER = "—";
 
 export function WorkerQuestFeedCard({
   quest,
@@ -49,6 +33,14 @@ export function WorkerQuestFeedCard({
   const { colors: themeColors } = useAppTheme();
   const { locale } = useLocale();
   const messages = workerHomeMessages[locale];
+  const questStartDateTime = new Date(quest.startTime);
+  const hasValidQuestStartTime = !Number.isNaN(questStartDateTime.getTime());
+  const formattedStartDate = hasValidQuestStartTime
+    ? (formatTimestampDate(questStartDateTime, locale) ?? PLACEHOLDER)
+    : PLACEHOLDER;
+  const formattedStartTime = hasValidQuestStartTime
+    ? formatTimeInBangkok(questStartDateTime) || PLACEHOLDER
+    : PLACEHOLDER;
 
   const handlePress = () => {
     if (onPress) {
@@ -76,7 +68,7 @@ export function WorkerQuestFeedCard({
         <View className={styles.feedCardIdentity}>
           {quest.tag?.name ? (
             <View className={`${styles.tagChip} bg-ku-surface-muted`}>
-              <Text className={`${styles.tagText} text-ku-primary-dark`}>
+              <Text className={`${styles.tagText} text-ku-worker-dark`}>
                 {quest.tag.name}
               </Text>
             </View>
@@ -98,7 +90,7 @@ export function WorkerQuestFeedCard({
           </View>
         </View>
         <View className={styles.feedRewardBlock}>
-          <Text className={`${styles.feedRewardText} text-ku-primary-dark`}>
+          <Text className={`${styles.feedRewardText} text-ku-worker-dark`}>
             {rewardFormatted}
           </Text>
           <Text className={`${styles.feedRewardUnit} text-ku-text-secondary`}>
@@ -108,25 +100,25 @@ export function WorkerQuestFeedCard({
       </View>
       <View className={styles.feedMetaGrid}>
         <View className={styles.feedMetaItem}>
-          <CalendarDays size={15} color={themeColors.primaryDeep} />
+          <CalendarDays size={15} color={themeColors.workerDeep} />
           <Text
             className={`${styles.feedMetaText} text-ku-text-strong`}
             numberOfLines={1}
           >
-            {formatQuestDate(quest.startTime, locale)}
+            {formattedStartDate}
           </Text>
         </View>
         <View className={styles.feedMetaItem}>
-          <Clock3 size={15} color={themeColors.primaryDeep} />
+          <Clock3 size={15} color={themeColors.workerDeep} />
           <Text
             className={`${styles.feedMetaText} text-ku-text-strong`}
             numberOfLines={1}
           >
-            {formatQuestTime(quest.startTime, locale)}
+            {formattedStartTime}
           </Text>
         </View>
         <View className={styles.feedMetaItem}>
-          <MapPin size={15} color={themeColors.primaryDeep} />
+          <MapPin size={15} color={themeColors.workerDeep} />
           <Text
             className={`${styles.feedMetaText} text-ku-text-strong`}
             numberOfLines={1}
@@ -135,7 +127,7 @@ export function WorkerQuestFeedCard({
           </Text>
         </View>
         <View className={styles.feedMetaItem}>
-          <Users size={15} color={themeColors.primaryDeep} />
+          <Users size={15} color={themeColors.workerDeep} />
           <Text
             className={`${styles.feedMetaText} text-ku-text-strong`}
             numberOfLines={1}
@@ -145,11 +137,11 @@ export function WorkerQuestFeedCard({
         </View>
       </View>
       <View className={`${styles.feedCardFooter} border-ku-border-subtle`}>
-        <Text className={`${styles.feedCardFooterText} text-ku-primary-dark`}>
+        <Text className={`${styles.feedCardFooterText} text-ku-worker-dark`}>
           {messages.viewDetails}
         </Text>
         <ChevronRight
-          color={themeColors.primaryDeep}
+          color={themeColors.workerDeep}
           size={18}
           strokeWidth={2.2}
         />

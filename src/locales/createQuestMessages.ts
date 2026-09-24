@@ -65,11 +65,15 @@ export interface CreateQuestMessages {
   optional: string;
   notNeeded: string;
   startDate: string;
+  endDate: string;
   deadline: string;
   startDateTime: string;
   deadlineDateTime: string;
   dateTimeHelper: string;
-  dateDone: string;
+  confirmDate: string;
+  previousMonth: string;
+  nextMonth: string;
+  today: string;
   startTime: string;
   endTime: string;
   selectTime: string;
@@ -80,16 +84,6 @@ export interface CreateQuestMessages {
   minute: string;
   confirmTime: string;
   cancel: string;
-  quickPresets: string;
-  now: string;
-  in30m: string;
-  in1h: string;
-  in2h: string;
-  today: string;
-  tomorrow: string;
-  sameDay: string;
-  plus1Day: string;
-  endOfDay: string;
   questDuration: string;
   nextDay: string;
   fixDeadlineQuick: string;
@@ -174,27 +168,31 @@ export interface CreateQuestMessages {
   publishCheckTitle: string;
   publishCheckReady: string;
   publishCheckBlocked: string;
+  fixBlocker: string;
+  moreBlockers: (count: number) => string;
   publishCheckWarning: string;
   rewardPool: string;
   platformFee: string;
   escrowTotal: string;
   escrowDescription: string;
+  fundingPerPerson: (amount: string, headcount: number) => string;
   imageError: string;
   titleError: string;
   questTagError: string;
   descriptionError: string;
-  publishError: string;
-  publishErrorTitle: string;
-  saveErrorTitle: string;
   completionCriteriaError: string;
   startDateError: string;
   startDatePastError: string;
+  startTimePastError: string;
   deadlineError: string;
   deadlineOrderError: string;
   startTimeError: string;
   endTimeError: string;
   timeOrderError: string;
   headcountError: string;
+  publishError: string;
+  publishErrorTitle: string;
+  saveErrorTitle: string;
   rewardEmptyError: string;
   rewardFormatError: string;
   rewardBoundsError: (maximum: number) => string;
@@ -216,7 +214,8 @@ export interface CreateQuestMessages {
     description: string;
     completionCriteria: string;
     proof: string;
-    schedule: string;
+    startTime: string;
+    endTime: string;
     location: string;
     images: string;
     candidateMode: string;
@@ -302,11 +301,15 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       optional: "Optional",
       notNeeded: "Not needed",
       startDate: "Start date",
+      endDate: "End date",
       deadline: "Deadline",
       startDateTime: "Start date & time",
       deadlineDateTime: "Deadline date & time",
       dateTimeHelper: "Choose the date and time together.",
-      dateDone: "Done",
+      confirmDate: "Confirm date",
+      previousMonth: "Previous month",
+      nextMonth: "Next month",
+      today: "Today",
       startTime: "Start time",
       endTime: "End time",
       selectTime: "Select time",
@@ -317,16 +320,6 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       minute: "Minute",
       confirmTime: "Confirm time",
       cancel: "Cancel",
-      quickPresets: "Quick presets",
-      now: "Now",
-      in30m: "+30m",
-      in1h: "+1 hr",
-      in2h: "+2 hrs",
-      today: "Today",
-      tomorrow: "Tomorrow",
-      sameDay: "Same day",
-      plus1Day: "+1 day",
-      endOfDay: "End of day (23:59)",
       nextDay: "Next day",
       questDuration: "Duration",
       fixDeadlineQuick: "Set to +2 hrs from start",
@@ -421,6 +414,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       publishCheckTitle: "Publish check & Escrow",
       publishCheckReady: "Ready to publish",
       publishCheckBlocked: "Resolve the publish blockers before publishing.",
+      fixBlocker: "Fix",
+      moreBlockers: (count) => `+${count} more`,
       publishCheckWarning:
         "Images are optional; this warning does not block publishing.",
       rewardPool: "Reward pool",
@@ -428,6 +423,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       escrowTotal: "Total Escrow required",
       escrowDescription:
         "The server reserves this inclusive Quest Funding Total for each participant.",
+      fundingPerPerson: (amount, headcount) =>
+        `${amount} per person × ${headcount}`,
       imageError:
         "We could not add images. Check photo permissions and try again.",
       titleError: "Add a short title so people know what they will do.",
@@ -437,6 +434,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         "Add the criteria for marking the Quest complete.",
       startDateError: "Choose when the Quest can begin.",
       startDatePastError: "Start date cannot be in the past.",
+      startTimePastError: "Start time must be later than now.",
       deadlineError: "Choose the final date for applications or work.",
       deadlineOrderError: "Deadline must be on or after the start date.",
       startTimeError: "Enter a start time, for example 09:00.",
@@ -503,7 +501,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         description: "Description",
         completionCriteria: "Completion criteria",
         proof: "Proof",
-        schedule: "Schedule",
+        startTime: "Start time",
+        endTime: "End time",
         location: "Location",
         images: "Images",
         candidateMode: "Acceptance method",
@@ -585,13 +584,17 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       optional: "ไม่บังคับ",
       notNeeded: "ไม่ต้องมี",
       startDate: "วันที่เริ่มต้น",
+      endDate: "วันที่สิ้นสุด",
       deadline: "กำหนดส่ง",
       startDateTime: "วันที่และเวลาเริ่มต้น",
       deadlineDateTime: "วันที่และเวลาสิ้นสุด",
       dateTimeHelper: "เลือกวันและเวลาได้ในครั้งเดียว",
-      dateDone: "เสร็จสิ้น",
+      confirmDate: "ยืนยันวันที่",
+      previousMonth: "เดือนก่อนหน้า",
+      nextMonth: "เดือนถัดไป",
+      today: "วันนี้",
       startTime: "เวลาเริ่มต้น",
-      endTime: "เวลาสิ้นสุด",
+      endTime: "เวลาที่สิ้นสุด",
       selectTime: "เลือกเวลา",
       selectDate: "เลือกวันที่",
       selectStartTime: "เลือกเวลาเริ่มต้น",
@@ -600,16 +603,6 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       minute: "นาที",
       confirmTime: "ยืนยันเวลา",
       cancel: "ยกเลิก",
-      quickPresets: "เลือกด่วน",
-      now: "ตอนนี้",
-      in30m: "+30 นาที",
-      in1h: "+1 ชม.",
-      in2h: "+2 ชม.",
-      today: "วันนี้",
-      tomorrow: "พรุ่งนี้",
-      sameDay: "วันเดียวกัน",
-      plus1Day: "+1 วัน",
-      endOfDay: "สิ้นสุดวัน (23:59)",
       nextDay: "วันถัดไป",
       questDuration: "ระยะเวลาเควสต์",
       fixDeadlineQuick: "ตั้งเป็น +2 ชม. จากเวลาเริ่ม",
@@ -674,7 +667,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       updatedQuestDescription: "บันทึกการแก้ไขเควสต์ไปยังเซิร์ฟเวอร์แล้ว",
       publishedQuestTitle: "เผยแพร่เควสต์แล้ว",
       publishedQuestDescription:
-        "เควสต์ของคุณเผยแพร่บนกระดานเควสต์แล้ว และจะแสดงใน My Quests ของผู้ว่าจ้าง",
+        "เควสต์ของคุณเผยแพร่บนกระดานเควสต์แล้ว และจะแสดงในรายการเควสต์ของผู้ว่าจ้าง",
       createAnotherDraft: "สร้างฉบับร่างใหม่",
       createNewQuest: "สร้างเควสต์ใหม่",
       backToQuest: "กลับไปที่เควสต์",
@@ -698,16 +691,20 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       savePreview: "บันทึกตัวอย่างเควสต์",
       savingPreview: "กำลังบันทึกตัวอย่าง…",
       viewQuestBoard: "กลับหน้าหลัก",
-      publishCheckTitle: "ตรวจสอบการเผยแพร่และ Escrow",
+      publishCheckTitle: "ตรวจสอบก่อนเผยแพร่",
       publishCheckReady: "พร้อมเผยแพร่",
       publishCheckBlocked: "แก้ไขข้อขัดข้องก่อนเผยแพร่เควสต์",
+      fixBlocker: "แก้ไข",
+      moreBlockers: (count) => `และอีก ${count} รายการ`,
       publishCheckWarning:
         "รูปภาพเป็นข้อมูลเสริม คำเตือนนี้ไม่ขัดขวางการเผยแพร่",
-      rewardPool: "รวมค่าตอบแทน",
+      rewardPool: "ค่าตอบแทนที่ผู้ทำงานได้รับ",
       platformFee: "ค่าธรรมเนียมแพลตฟอร์ม",
-      escrowTotal: "Escrow ที่ต้องสำรองทั้งหมด",
+      escrowTotal: "ยอดเงินที่จะพักไว้",
       escrowDescription:
-        "ระบบจะสำรองเงินทุนเควสต์รวมต่อผู้เข้าร่วมตามผลจากเซิร์ฟเวอร์",
+        "เมื่อเผยแพร่ ระบบจะพักเงินจำนวนนี้จากยอดเงินพร้อมใช้ และจ่ายให้ผู้ทำงานเมื่องานเสร็จ",
+      fundingPerPerson: (amount, headcount) =>
+        `${amount} ต่อคน × ${headcount} คน`,
       imageError:
         "ไม่สามารถเพิ่มรูปภาพได้ ตรวจสอบสิทธิ์การเข้าถึงรูปภาพแล้วลองอีกครั้ง",
       titleError: "เพิ่มชื่อสั้น ๆ เพื่อให้ผู้สนใจเข้าใจว่าจะต้องทำอะไร",
@@ -716,6 +713,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       completionCriteriaError: "เพิ่มเกณฑ์สำหรับตรวจว่างานเสร็จสมบูรณ์",
       startDateError: "เลือกวันที่เริ่มต้นเควสต์",
       startDatePastError: "วันที่เริ่มต้นต้องไม่อยู่ในอดีต",
+      startTimePastError: "เวลาเริ่มต้นต้องเป็นเวลาหลังจากตอนนี้",
       deadlineError: "เลือกวันสุดท้ายสำหรับสมัครหรือทำงาน",
       deadlineOrderError: "กำหนดส่งต้องไม่ก่อนวันที่เริ่มต้น",
       startTimeError: "กรอกเวลาเริ่มต้น เช่น 09:00",
@@ -779,7 +777,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         description: "รายละเอียดงาน",
         completionCriteria: "เกณฑ์การเสร็จงาน",
         proof: "หลักฐาน",
-        schedule: "กำหนดการ",
+        startTime: "เวลาเริ่ม",
+        endTime: "เวลาสิ้นสุด",
         location: "สถานที่",
         images: "รูปภาพ",
         candidateMode: "วิธีรับผู้สมัคร",

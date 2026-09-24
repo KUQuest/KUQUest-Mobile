@@ -7,7 +7,6 @@ import type {
 
 export type Step = 1 | 2 | 3;
 export type ScheduleField = "start" | "end";
-export type PickerMode = "date" | "time";
 export type SaveState = "idle" | "saving" | "saved" | "error";
 export type CompletionState = "DRAFT" | "OPEN";
 export type SaveErrorIntent = {

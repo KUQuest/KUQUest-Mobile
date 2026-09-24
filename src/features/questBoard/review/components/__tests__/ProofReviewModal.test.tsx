@@ -25,6 +25,7 @@ const proof: QuestV2ProofSubmission = {
       sizeBytes: 100,
       position: 0,
       uploadStatus: "PROOF_FILE_READY",
+      url: "https://example.com/proof-image.png",
       failureCode: null,
     },
     {
@@ -61,13 +62,28 @@ describe("ProofReviewModal", () => {
     expect(view.getByTestId("proof-review-file-0")).toBeTruthy();
     expect(view.getByTestId("proof-review-file-1")).toBeTruthy();
   });
+  it("opens image evidence in the fullscreen viewer and closes it", async () => {
+    const view = await renderModal(jest.fn());
+
+    expect(
+      view.getByRole("button", { name: /Preview|ดูตัวอย่าง/ })
+    ).toBeTruthy();
+    await fireEvent.press(view.getByTestId("proof-review-preview-0"));
+
+    const image = await view.findByTestId("image-viewer-image");
+    expect(image.props.source).toEqual({
+      uri: "https://example.com/proof-image.png",
+    });
+    await fireEvent.press(view.getByTestId("image-viewer-close-button"));
+    expect(view.queryByTestId("image-viewer-image")).toBeNull();
+  });
 
   it("submits an approval decision and closes after success", async () => {
     const onReview = jest.fn().mockResolvedValue(undefined);
     const onClose = jest.fn();
     const view = await renderModal(onReview, onClose);
 
-    fireEvent.press(view.getByTestId("proof-review-approve"));
+    await fireEvent.press(view.getByTestId("proof-review-approve"));
 
     await waitFor(() => {
       expect(onReview).toHaveBeenCalledWith({ decision: "PROOF_APPROVED" });
@@ -80,21 +96,21 @@ describe("ProofReviewModal", () => {
     const onClose = jest.fn();
     const view = await renderModal(onReview, onClose);
 
-    fireEvent.press(view.getByTestId("proof-review-not-approve"));
+    await fireEvent.press(view.getByTestId("proof-review-not-approve"));
     const confirmButton = await view.findByTestId(
       "proof-review-confirm-not-approve"
     );
-    fireEvent.press(confirmButton);
+    await fireEvent.press(confirmButton);
 
     expect(await view.findByTestId("proof-review-error")).toBeTruthy();
     expect(onReview).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
 
-    fireEvent.changeText(
+    await fireEvent.changeText(
       await view.findByTestId("proof-review-reason-input"),
       "The submitted result does not match the completion conditions."
     );
-    fireEvent.press(
+    await fireEvent.press(
       await view.findByTestId("proof-review-confirm-not-approve")
     );
 

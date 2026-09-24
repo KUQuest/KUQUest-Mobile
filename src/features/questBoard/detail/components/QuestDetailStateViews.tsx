@@ -1,4 +1,5 @@
 import { Pressable, ScrollView, Text, View } from "@/tw";
+import { cn } from "@/tw/cn";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   LoadingSkeleton,
@@ -44,6 +45,18 @@ export function NotFoundState({
           {actionLabel}
         </Text>
       </Pressable>
+    </View>
+  );
+}
+
+function SkeletonInfoRow({ divided = false }: { divided?: boolean }) {
+  return (
+    <View className={cn(styles.infoRow, divided && styles.infoRowDivided)}>
+      <SkeletonBlock height={20} width={20} borderRadius={10} />
+      <View style={{ flex: 1, gap: spacing.xs }}>
+        <SkeletonBlock height={14} width="28%" borderRadius={4} />
+        <SkeletonBlock height={18} width="64%" borderRadius={4} />
+      </View>
     </View>
   );
 }
@@ -120,7 +133,7 @@ export function QuestDetailSkeleton({
               />
             </View>
           </View>
-          <View className={styles.heroCard} style={{ gap: spacing.md }}>
+          <View className={styles.heroCard}>
             <View
               style={{ flexDirection: "row", justifyContent: "space-between" }}
             >
@@ -128,63 +141,33 @@ export function QuestDetailSkeleton({
                 <SkeletonBlock height={14} width={54} borderRadius={4} />
                 <SkeletonBlock height={28} width={126} borderRadius={5} />
               </View>
-              <SkeletonBlock height={52} width={78} borderRadius={12} />
-            </View>
-            <View style={{ flexDirection: "row", gap: spacing.sm }}>
-              <SkeletonBlock height={58} borderRadius={8} style={{ flex: 1 }} />
-              <SkeletonBlock height={58} borderRadius={8} style={{ flex: 1 }} />
-            </View>
-            <View style={{ flexDirection: "row", gap: spacing.sm }}>
-              <SkeletonBlock height={20} width={20} borderRadius={10} />
-              <View style={{ flex: 1, gap: spacing.xs }}>
-                <SkeletonBlock height={14} width="24%" borderRadius={4} />
-                <SkeletonBlock height={18} width="74%" borderRadius={4} />
-                <SkeletonBlock height={14} width="38%" borderRadius={4} />
+              <View style={{ alignItems: "flex-end", gap: spacing.xs }}>
+                <SkeletonBlock height={14} width={54} borderRadius={4} />
+                <SkeletonBlock height={22} width={40} borderRadius={5} />
               </View>
+            </View>
+            <View className={styles.heroFacts}>
+              <SkeletonInfoRow />
+              <SkeletonInfoRow />
             </View>
           </View>
-          <View className={styles.scheduleCard} style={{ gap: spacing.md }}>
-            <View
-              style={{
-                alignItems: "center",
-                flexDirection: "row",
-                gap: spacing.sm,
-              }}
-            >
-              <SkeletonBlock height={36} width={36} borderRadius={18} />
-              <View style={{ flex: 1, gap: spacing.xs }}>
-                <SkeletonBlock height={20} width="34%" borderRadius={5} />
-                <SkeletonBlock height={14} width="58%" borderRadius={4} />
-              </View>
-            </View>
-            <View style={{ flexDirection: "row", gap: spacing.md }}>
-              <SkeletonBlock height={132} width={12} borderRadius={6} />
-              <View style={{ flex: 1, gap: spacing.sm }}>
-                <SkeletonBlock height={18} width="46%" borderRadius={4} />
-                <SkeletonBlock height={22} width="64%" borderRadius={5} />
-                <SkeletonBlock height={15} width="54%" borderRadius={4} />
-                <SkeletonBlock height={18} width="42%" borderRadius={4} />
-                <SkeletonBlock height={22} width="58%" borderRadius={5} />
-              </View>
-            </View>
+          <View className={styles.section} style={{ gap: spacing.sm }}>
+            <SkeletonBlock height={22} width={112} borderRadius={5} />
+            <SkeletonBlock height={16} width="94%" borderRadius={4} />
+            <SkeletonBlock height={16} width="78%" borderRadius={4} />
           </View>
-          {[1, 2].map((section) => (
-            <View
-              key={section}
-              style={{ gap: spacing.sm, marginTop: spacing.lg }}
-            >
+          {[3, 2].map((rows) => (
+            <View key={rows} className={styles.section}>
               <SkeletonBlock
                 height={22}
-                width={section === 1 ? 126 : 112}
+                width={rows === 3 ? 148 : 126}
                 borderRadius={5}
+                style={{ marginBottom: spacing.sm }}
               />
-              <View
-                className={styles.descriptionCard}
-                style={{ gap: spacing.sm }}
-              >
-                <SkeletonBlock height={16} width="94%" borderRadius={4} />
-                <SkeletonBlock height={16} width="78%" borderRadius={4} />
-                <SkeletonBlock height={16} width="58%" borderRadius={4} />
+              <View className={styles.infoCard}>
+                {Array.from({ length: rows }, (_, row) => (
+                  <SkeletonInfoRow key={row} divided={row > 0} />
+                ))}
               </View>
             </View>
           ))}

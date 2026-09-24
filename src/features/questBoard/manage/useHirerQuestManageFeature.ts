@@ -19,6 +19,8 @@ import {
   useSelectCandidateTeamMutation,
 } from "@/features/questBoard/api/questBoardQueries";
 import { isTerminalStatus } from "@/domain/questLifecycle";
+import { formatSatang } from "@/domain/satang";
+import { myQuestMessages } from "@/locales/myQuestMessages";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import {
   QuestEditRequestStatus,
@@ -33,6 +35,7 @@ export function useHirerQuestManageFeature(questId?: string) {
   const router = useRouter();
   const { locale } = useLocale();
   const messages = questBoardMessages[locale];
+  const cancelMessages = myQuestMessages[locale];
   const viewerId = useSessionQuery().data?.user.id || "";
   const [candidateOpen, setCandidateOpen] = useState(false);
   const [underfilledOpen, setUnderfilledOpen] = useState(false);
@@ -63,13 +66,13 @@ export function useHirerQuestManageFeature(questId?: string) {
       } catch (caught) {
         await refetchSnapshot();
         Alert.alert(
-          "Quest",
-          caught instanceof Error ? caught.message : "Action failed"
+          messages.actionFailedTitle,
+          caught instanceof Error ? caught.message : undefined
         );
         return false;
       }
     },
-    [questId, refetchSnapshot, viewerId]
+    [messages, questId, refetchSnapshot, viewerId]
   );
   const error =
     snapshotQuery.error instanceof Error
@@ -85,6 +88,15 @@ export function useHirerQuestManageFeature(questId?: string) {
     (proof) => proof.status === QuestProofStatus.PROOF_PENDING
   );
   const terminal = snapshot ? isTerminalStatus(snapshot.state) : false;
+  // Settlement per the cancellation matrix in quest-lifecycle-contract.md.
+  const cancelDescription =
+    snapshot?.state === QuestStatus.QUEST_OPEN
+      ? cancelMessages.cancelOpenDescription
+      : snapshot?.state === QuestStatus.QUEST_ASSIGNED
+        ? cancelMessages.cancelAssignedDescription
+        : snapshot?.state === QuestStatus.QUEST_IN_PROGRESS
+          ? cancelMessages.cancelInProgressDescription
+          : undefined;
   const canReviewCandidateProposals =
     snapshot?.actor === "HIRER" &&
     snapshot.mode === QuestMode.CANDIDATE &&
@@ -131,10 +143,10 @@ export function useHirerQuestManageFeature(questId?: string) {
     );
   const cancel = () => {
     if (!snapshot) return;
-    Alert.alert("Cancel Quest", "Cancel this Quest?", [
-      { text: "Keep", style: "cancel" },
+    Alert.alert(cancelMessages.cancelConfirmTitle, cancelDescription, [
+      { text: cancelMessages.keepQuest, style: "cancel" },
       {
-        text: "Cancel Quest",
+        text: cancelMessages.cancelQuest,
         style: "destructive",
         onPress: () =>
           void viewerCommand((key) =>
@@ -145,9 +157,19 @@ export function useHirerQuestManageFeature(questId?: string) {
                 idempotencyKey: key,
               })
               .then((outcome) => {
+                const settlement = [
+                  outcome.paidSatang > 0 &&
+                    cancelMessages.cancelPaidWorkers(
+                      formatSatang(outcome.paidSatang, locale)
+                    ),
+                  outcome.refundedSatang > 0 &&
+                    cancelMessages.cancelRefunded(
+                      formatSatang(outcome.refundedSatang, locale)
+                    ),
+                ].filter(Boolean);
                 Alert.alert(
-                  "Cancellation complete",
-                  `Paid ${outcome.paidSatang} satang · Refunded ${outcome.refundedSatang} satang`
+                  cancelMessages.cancelSuccessTitle,
+                  settlement.join("\n") || undefined
                 );
               })
           ),
@@ -224,6 +246,7 @@ export function useHirerQuestManageFeature(questId?: string) {
     originalConditionItems,
     pendingProof,
     terminal,
+    cancelDescription,
     canReviewCandidateProposals,
     canProposeConditionEdit,
     candidateOpen,

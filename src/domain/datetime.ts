@@ -3,8 +3,6 @@ const THAI_GREGORIAN_LOCALE = "th-TH-u-ca-gregory";
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 const dateFormatters: Partial<Record<"en" | "th", Intl.DateTimeFormat>> = {};
-const timestampFormatters: Partial<Record<"en" | "th", Intl.DateTimeFormat>> =
-  {};
 const bangkokTimeFormatter = new Intl.DateTimeFormat("en-GB", {
   hour: "2-digit",
   minute: "2-digit",
@@ -31,21 +29,6 @@ function getDateFormatter(locale: "en" | "th"): Intl.DateTimeFormat {
   return formatter;
 }
 
-function getTimestampFormatter(locale: "en" | "th"): Intl.DateTimeFormat {
-  const cached = timestampFormatters[locale];
-  if (cached) return cached;
-  const formatter = new Intl.DateTimeFormat(
-    locale === "th" ? "th-TH-u-ca-gregory" : "en-US",
-    {
-      dateStyle: "medium",
-      timeStyle: "short",
-      timeZone: BANGKOK_TIME_ZONE,
-    }
-  );
-  timestampFormatters[locale] = formatter;
-  return formatter;
-}
-
 export function formatDate(
   value: string,
   locale: "en" | "th",
@@ -64,7 +47,9 @@ export function formatDateTime(
   emptyLabel: string
 ): string {
   if (!dateValue || !TIME_PATTERN.test(timeValue)) return emptyLabel;
-  return `${formatDate(dateValue, locale, emptyLabel)} · ${timeValue}`;
+  const date = new Date(`${dateValue}T${timeValue}:00+07:00`);
+  if (Number.isNaN(date.getTime())) return emptyLabel;
+  return formatTimestampDateTime(date, locale);
 }
 
 export function formatTimestamp(
@@ -73,9 +58,7 @@ export function formatTimestamp(
   emptyLabel: string
 ): string {
   if (!value) return emptyLabel;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return getTimestampFormatter(locale).format(date);
+  return formatTimestampDateTime(value, locale);
 }
 
 function getTimestampDateTimeFormatter(
@@ -88,8 +71,10 @@ function getTimestampDateTimeFormatter(
     {
       day: "numeric",
       month: "short",
+      year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      hour12: false,
       timeZone: BANGKOK_TIME_ZONE,
     }
   );
@@ -98,42 +83,33 @@ function getTimestampDateTimeFormatter(
 }
 
 export function formatTimestampDate(
-  value: string | undefined,
+  value: string | Date | undefined,
   locale: "en" | "th"
 ): string | undefined {
   if (!value) return undefined;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+  const date = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) {
+    return typeof value === "string" ? value : undefined;
+  }
   return getDateFormatter(locale).format(date);
 }
 
 export function formatTimestampDateTime(
-  value: string,
+  value: string | Date,
   locale: "en" | "th"
 ): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+  const date = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) {
+    return typeof value === "string" ? value : "";
+  }
   return getTimestampDateTimeFormatter(locale).format(date);
 }
 
-export function formatTimeInBangkok(value: string | null | undefined): string {
+export function formatTimeInBangkok(
+  value: string | Date | null | undefined
+): string {
   if (!value) return "";
-  const date = new Date(value);
+  const date = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(date.getTime())) return "";
   return bangkokTimeFormatter.format(date);
-}
-
-export function getDatePickerValue(value: string): Date {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return new Date(`${value}T12:00:00`);
-  return new Date();
-}
-
-export function getDateTimePickerValue(
-  dateValue: string,
-  timeValue: string
-): Date {
-  const date = getDatePickerValue(dateValue);
-  const match = TIME_PATTERN.exec(timeValue);
-  if (match) date.setHours(Number(match[1]), Number(match[2]), 0, 0);
-  return date;
 }

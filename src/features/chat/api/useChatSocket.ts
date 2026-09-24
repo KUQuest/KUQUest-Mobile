@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
+import { toWebSocketUrl } from "@/api/ApiClient";
 import { authClient } from "@/features/auth/authClient";
 import {
   chatApi,
@@ -30,12 +31,12 @@ const chatSocketEventSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal(ChatSocketEventType.MESSAGE_ACCEPTED),
     clientMessageId: z.string().min(1),
-    message: chatMessageSchema.optional(),
+    message: chatMessageSchema,
   }),
   z.object({
     type: z.literal(ChatSocketEventType.MESSAGE_REJECTED),
     clientMessageId: z.string().min(1),
-    error: z.unknown().optional(),
+    error: z.union([z.string(), z.record(z.string(), z.unknown())]),
   }),
   z.object({
     type: z.literal(ChatSocketEventType.CHAT_MESSAGE_CREATED),
@@ -73,11 +74,12 @@ type ConversationType = "WORK" | "CANDIDATE_INQUIRY";
 
 export interface ChatSocketSendMessage {
   clientMessageId: string;
-  text: string;
+  text?: string;
+  attachmentIds?: string[];
 }
 
 interface PendingMessage {
-  resolve(message?: ServerChatMessage): void;
+  resolve(message: ServerChatMessage): void;
   reject(error: Error): void;
   timeout: number;
 }
@@ -92,9 +94,7 @@ interface UseChatSocketOptions {
 export interface UseChatSocketResult {
   status: ChatSocketStatus;
   reconnectAttempt: number;
-  sendMessage: (
-    message: ChatSocketSendMessage
-  ) => Promise<ServerChatMessage | undefined>;
+  sendMessage: (message: ChatSocketSendMessage) => Promise<ServerChatMessage>;
 }
 
 const MAX_RECONNECT_DELAY_MS = 15_000;
@@ -104,14 +104,6 @@ type NativeWebSocketConstructor = new (
   protocols: string[],
   options: { headers: Record<string, string> }
 ) => WebSocket;
-
-export function toWebSocketUrl(apiBaseUrl: string, path: string): string {
-  const baseUrl = apiBaseUrl.trim().replace(/\/+$/, "");
-  const socketBaseUrl = baseUrl
-    .replace(/^https:/i, "wss:")
-    .replace(/^http:/i, "ws:");
-  return `${socketBaseUrl}/${path.replace(/^\/+/, "")}`;
-}
 
 function reconnectDelayMs(reconnectAttempt: number): number {
   return Math.min(
@@ -132,48 +124,49 @@ export function useChatSocket({
   const socketRef = useRef<WebSocket | null>(null);
   const pendingMessagesRef = useRef(new Map<string, PendingMessage>());
 
-  const sendMessage = useCallback(
-    ({ clientMessageId, text }: ChatSocketSendMessage) => {
-      const socket = socketRef.current;
-      if (!socket || socket.readyState !== WebSocket.OPEN) {
-        return Promise.reject(new Error("Chat connection is not ready."));
-      }
-      if (pendingMessagesRef.current.has(clientMessageId)) {
-        return Promise.reject(new Error("This message is already pending."));
-      }
+  const sendMessage = useCallback((message: ChatSocketSendMessage) => {
+    const { clientMessageId } = message;
+    const socket = socketRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      return Promise.reject(new Error("Chat connection is not ready."));
+    }
+    if (pendingMessagesRef.current.has(clientMessageId)) {
+      return Promise.reject(new Error("This message is already pending."));
+    }
 
-      return new Promise<ServerChatMessage | undefined>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          pendingMessagesRef.current.delete(clientMessageId);
-          reject(new Error("The server did not confirm the message in time."));
-        }, MESSAGE_ACK_TIMEOUT_MS);
-        pendingMessagesRef.current.set(clientMessageId, {
-          resolve,
-          reject,
-          timeout,
-        });
-
-        try {
-          socket.send(
-            JSON.stringify({
-              type: ChatSocketEventType.SEND_MESSAGE,
-              clientMessageId,
-              text,
-            })
-          );
-        } catch (error) {
-          clearTimeout(timeout);
-          pendingMessagesRef.current.delete(clientMessageId);
-          reject(
-            error instanceof Error
-              ? error
-              : new Error("The message could not be sent.")
-          );
-        }
+    return new Promise<ServerChatMessage>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        pendingMessagesRef.current.delete(clientMessageId);
+        reject(new Error("The server did not confirm the message in time."));
+      }, MESSAGE_ACK_TIMEOUT_MS);
+      pendingMessagesRef.current.set(clientMessageId, {
+        resolve,
+        reject,
+        timeout,
       });
-    },
-    []
-  );
+
+      try {
+        socket.send(
+          JSON.stringify({
+            type: ChatSocketEventType.SEND_MESSAGE,
+            clientMessageId,
+            ...(message.text?.trim() ? { text: message.text } : {}),
+            ...(message.attachmentIds?.length
+              ? { attachmentIds: message.attachmentIds }
+              : {}),
+          })
+        );
+      } catch (error) {
+        clearTimeout(timeout);
+        pendingMessagesRef.current.delete(clientMessageId);
+        reject(
+          error instanceof Error
+            ? error
+            : new Error("The message could not be sent.")
+        );
+      }
+    });
+  }, []);
 
   useEffect(() => {
     onEventRef.current = onEvent;

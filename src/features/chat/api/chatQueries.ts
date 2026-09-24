@@ -311,8 +311,15 @@ export function useSendChatMessageMutation(socket: UseChatSocketResult) {
       clientMessageId,
       attachmentIds,
     }: SendChatMessageVariables) => {
-      if (socket.status === "connected" && attachmentIds.length === 0) {
-        return await socket.sendMessage({ clientMessageId, text });
+      if (
+        socket.status === "connected" &&
+        (mode === "WORK" || attachmentIds.length === 0)
+      ) {
+        return await socket.sendMessage({
+          clientMessageId,
+          ...(text.trim() ? { text } : {}),
+          ...(attachmentIds.length > 0 ? { attachmentIds } : {}),
+        });
       }
       return mode === "CANDIDATE_INQUIRY"
         ? liveQuestService.sendCandidateInquiryMessage(

@@ -3,7 +3,6 @@ import { Calendar, CalendarClock, Clock } from "lucide-react-native";
 import type { Pressable as RNPressable } from "react-native";
 
 import { Pressable, Text, View } from "@/tw";
-import { Chip } from "@/components/ui/Chip";
 import { cn } from "@/tw/cn";
 import { colors } from "@/theme/colors";
 import styles from "../createQuestStyles";
@@ -14,7 +13,9 @@ export function DateTimeField({
   label,
   value,
   dateFormatted,
+  dateLabel,
   timeValue,
+  timeLabel,
   error,
   helper,
   emptyLabel,
@@ -24,13 +25,14 @@ export function DateTimeField({
   onPress,
   onDatePress,
   onTimePress,
-  quickPresets,
   messages,
 }: {
   label: string;
   value: string;
   dateFormatted?: string;
+  dateLabel: string;
   timeValue?: string;
+  timeLabel: string;
   error?: string;
   helper: string;
   emptyLabel: string;
@@ -40,7 +42,6 @@ export function DateTimeField({
   onPress: () => void;
   onDatePress?: () => void;
   onTimePress?: () => void;
-  quickPresets?: { label: string; onPress: () => void }[];
   messages?: (typeof createQuestMessages)["en"];
 }) {
   const hasDate = Boolean(dateFormatted && dateFormatted !== emptyLabel);
@@ -50,7 +51,7 @@ export function DateTimeField({
     <View className={styles.scheduleCard}>
       <View className={styles.scheduleCardHeader}>
         <View className={styles.scheduleCardTitle}>
-          <CalendarClock color={colors.primary} size={18} strokeWidth={2.2} />
+          <CalendarClock color={colors.hirer} size={18} strokeWidth={2.2} />
           <Text className={styles.scheduleCardTitle}>{label}</Text>
         </View>
         {hasDate && hasTime ? (
@@ -85,9 +86,7 @@ export function DateTimeField({
             testID={testID ? `${testID}-date-btn` : undefined}
           >
             <View className={styles.scheduleSplitBtnCopy}>
-              <Text className={styles.scheduleSplitBtnLabel}>
-                {messages?.startDate ?? "Date"}
-              </Text>
+              <Text className={styles.scheduleSplitBtnLabel}>{dateLabel}</Text>
               <Text
                 numberOfLines={1}
                 className={cn(
@@ -99,7 +98,7 @@ export function DateTimeField({
               </Text>
             </View>
             <Calendar
-              color={hasDate ? colors.primary : colors.textMuted}
+              color={hasDate ? colors.hirer : colors.textMuted}
               size={18}
               strokeWidth={2}
             />
@@ -119,9 +118,7 @@ export function DateTimeField({
             testID={testID ? `${testID}-time-btn` : undefined}
           >
             <View className={styles.scheduleSplitBtnCopy}>
-              <Text className={styles.scheduleSplitBtnLabel}>
-                {messages?.startTime ?? "Time"}
-              </Text>
+              <Text className={styles.scheduleSplitBtnLabel}>{timeLabel}</Text>
               <Text
                 numberOfLines={1}
                 className={cn(
@@ -133,30 +130,13 @@ export function DateTimeField({
               </Text>
             </View>
             <Clock
-              color={hasTime ? colors.primary : colors.textMuted}
+              color={hasTime ? colors.hirer : colors.textMuted}
               size={18}
               strokeWidth={2}
             />
           </Pressable>
         </View>
       </Pressable>
-
-      {quickPresets && quickPresets.length > 0 ? (
-        <View className={styles.scheduleQuickChips}>
-          {quickPresets.map((preset) => (
-            <Chip
-              accessibilityLabel={preset.label}
-              className="px-ku-10 py-ku-xs"
-              key={preset.label}
-              label={preset.label}
-              onPress={preset.onPress}
-              testID={`quick-preset-${preset.label}`}
-              textClassName="text-ku-primary font-ku-semibold text-ku-meta"
-              tone="accent"
-            />
-          ))}
-        </View>
-      ) : null}
 
       <Text
         accessibilityLiveRegion={error ? "assertive" : "none"}

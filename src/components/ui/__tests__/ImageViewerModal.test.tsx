@@ -1,7 +1,7 @@
 import React from "react";
 import { fireEvent, render } from "@testing-library/react-native";
 
-import { ImageViewerModal } from "../components/ImageViewerModal";
+import { ImageViewerModal } from "../ImageViewerModal";
 
 describe("ImageViewerModal", () => {
   const sampleImageUrl = "https://example.com/media/chat-picture.png";
@@ -13,6 +13,8 @@ describe("ImageViewerModal", () => {
       <ImageViewerModal
         visible={true}
         imageUrl={sampleImageUrl}
+        imageAccessibilityLabel={sampleFileName}
+        closeLabel="Close"
         fileName={sampleFileName}
         onClose={handleClose}
       />
@@ -34,13 +36,15 @@ describe("ImageViewerModal", () => {
       <ImageViewerModal
         visible={true}
         imageUrl={sampleImageUrl}
+        imageAccessibilityLabel={sampleFileName}
+        closeLabel="Close"
         fileName={sampleFileName}
         onClose={handleClose}
       />
     );
 
     const closeButton = view.getByTestId("image-viewer-close-button");
-    fireEvent.press(closeButton);
+    await fireEvent.press(closeButton);
 
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
@@ -51,6 +55,8 @@ describe("ImageViewerModal", () => {
       <ImageViewerModal
         visible={false}
         imageUrl={sampleImageUrl}
+        imageAccessibilityLabel={sampleFileName}
+        closeLabel="Close"
         fileName={sampleFileName}
         onClose={handleClose}
       />
@@ -66,6 +72,8 @@ describe("ImageViewerModal", () => {
       <ImageViewerModal
         visible={true}
         imageUrl={null}
+        imageAccessibilityLabel={sampleFileName}
+        closeLabel="Close"
         fileName={sampleFileName}
         onClose={handleClose}
       />
@@ -81,6 +89,8 @@ describe("ImageViewerModal", () => {
       <ImageViewerModal
         visible={true}
         imageUrl={sampleImageUrl}
+        imageAccessibilityLabel="Image"
+        closeLabel="Close"
         onClose={handleClose}
       />
     );

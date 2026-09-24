@@ -158,8 +158,8 @@ export default function HomeScreen() {
             onRefresh={() => {
               void refetch();
             }}
-            colors={[themeColors.primary]}
-            tintColor={themeColors.primary}
+            colors={[themeColors.hirer]}
+            tintColor={themeColors.hirer}
           />
         }
         scrollEventThrottle={16}
@@ -194,7 +194,7 @@ export default function HomeScreen() {
                         activeCardIndex + 1,
                         displayedActiveQuestCount
                       )}
-                      textClassName={`${styles.sectionCounterText} text-ku-primary`}
+                      textClassName={`${styles.sectionCounterText} text-ku-hirer`}
                       testID="hirer-quest-counter"
                       tone="accent"
                     />
@@ -212,7 +212,7 @@ export default function HomeScreen() {
                       }
                       testID="hirer-view-all-active"
                     >
-                      <Text className={`${styles.viewAllText} text-ku-primary`}>
+                      <Text className={`${styles.viewAllText} text-ku-hirer`}>
                         {messages.viewAllActive}
                       </Text>
                     </Pressable>
@@ -281,7 +281,7 @@ export default function HomeScreen() {
                       <View
                         className={`${styles.paginationDot} ${
                           index === activeCardIndex
-                            ? `${styles.paginationDotActive} bg-ku-primary`
+                            ? `${styles.paginationDotActive} bg-ku-hirer`
                             : `${styles.paginationDotInactive} bg-ku-border-subtle`
                         }`}
                         key={item.id}
@@ -336,7 +336,7 @@ export default function HomeScreen() {
                   className={`${styles.quickAccessIconBox} bg-ku-surface-accent`}
                 >
                   <Clock3
-                    color={themeColors.primary}
+                    color={themeColors.hirer}
                     size={22}
                     strokeWidth={2.2}
                   />
@@ -373,7 +373,7 @@ export default function HomeScreen() {
                   className={`${styles.quickAccessIconBox} bg-ku-surface-accent`}
                 >
                   <FileText
-                    color={themeColors.primary}
+                    color={themeColors.hirer}
                     size={22}
                     strokeWidth={2.2}
                   />
@@ -410,7 +410,7 @@ export default function HomeScreen() {
                   className={`${styles.quickAccessIconBox} bg-ku-surface-accent`}
                 >
                   <History
-                    color={themeColors.primary}
+                    color={themeColors.hirer}
                     size={22}
                     strokeWidth={2.2}
                   />
@@ -442,7 +442,7 @@ export default function HomeScreen() {
                   className={`${styles.quickAccessIconBox} bg-ku-surface-accent`}
                 >
                   <LayoutDashboard
-                    color={themeColors.primary}
+                    color={themeColors.hirer}
                     size={22}
                     strokeWidth={2.2}
                   />
@@ -474,7 +474,7 @@ export default function HomeScreen() {
                   className={`${styles.quickAccessIconBox} bg-ku-surface-accent`}
                 >
                   <WalletCards
-                    color={themeColors.primary}
+                    color={themeColors.hirer}
                     size={22}
                     strokeWidth={2.2}
                   />

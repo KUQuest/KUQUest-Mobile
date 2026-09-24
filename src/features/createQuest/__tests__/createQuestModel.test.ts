@@ -17,8 +17,6 @@ import {
   getQuestPublishCheck,
   getRelativeDateValue,
   getRewardValidationError,
-  getSchedulePickerValue,
-  getScheduleTimeValue,
   initialDraft,
   isQuestDraftDirty,
   MAX_REWARD_THB,
@@ -446,35 +444,6 @@ describe("Create Quest model", () => {
           0
         );
       }
-    });
-  });
-
-  describe("getSchedulePickerValue", () => {
-    test("uses the latest draft value on Android instead of stale iOS picker state", () => {
-      const draftValue = new Date(2026, 9, 20, 15, 45);
-      const stalePickerValue = new Date(2026, 7, 20, 9, 0);
-
-      expect(
-        getSchedulePickerValue("android", draftValue, stalePickerValue)
-      ).toBe(draftValue);
-    });
-
-    test("keeps the temporary spinner value on iOS", () => {
-      const draftValue = new Date(2026, 9, 20, 15, 45);
-      const temporaryPickerValue = new Date(2026, 9, 21, 16, 0);
-
-      expect(
-        getSchedulePickerValue("ios", draftValue, temporaryPickerValue)
-      ).toBe(temporaryPickerValue);
-    });
-  });
-
-  describe("getScheduleTimeValue", () => {
-    test("keeps the selected time independent from an epoch date", () => {
-      const timeOnlyPickerValue = new Date(0);
-      timeOnlyPickerValue.setHours(7, 0, 0, 0);
-
-      expect(getScheduleTimeValue(timeOnlyPickerValue)).toBe("07:00");
     });
   });
 

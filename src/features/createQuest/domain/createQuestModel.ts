@@ -25,20 +25,6 @@ export interface StoredQuestDraft {
   state: QuestDraftState;
 }
 
-export function getSchedulePickerValue(
-  platform: string,
-  draftValue: Date,
-  temporaryValue: Date | null
-): Date {
-  return platform === "ios" ? (temporaryValue ?? draftValue) : draftValue;
-}
-
-export function getScheduleTimeValue(value: Date): string {
-  const hours = String(value.getHours()).padStart(2, "0");
-  const minutes = String(value.getMinutes()).padStart(2, "0");
-  return `${hours}:${minutes}`;
-}
-
 export function getHeadcountForParticipation(
   participation: QuestDraftParticipation,
   currentHeadcount: string
@@ -357,7 +343,8 @@ export function calculateQuestEscrow(
 
 export function getQuestPublishCheck(
   draft: QuestDraft,
-  feeRateBasisPoints = DEFAULT_PLATFORM_FEE_BASIS_POINTS
+  feeRateBasisPoints = DEFAULT_PLATFORM_FEE_BASIS_POINTS,
+  now = new Date()
 ): QuestPublishCheck {
   const headcount = getValidDraftHeadcount(draft);
   const payload = toQuestDraftPayload(draft);
@@ -368,6 +355,9 @@ export function getQuestPublishCheck(
   if (!payload.conditions) blockers.push("COMPLETION_CRITERIA_REQUIRED");
   if (!payload.startDate || !payload.startTime) blockers.push("START_REQUIRED");
   if (!payload.deadline || !payload.endTime) blockers.push("DEADLINE_REQUIRED");
+  const startMs = getDateTimeValue(draft.startDate, draft.startTime);
+  if (startMs !== null && startMs <= now.getTime())
+    blockers.push("QUEST_START_TIME_NOT_IN_FUTURE");
   if (draft.locationMode === "ON_CAMPUS" && !payload.location.label)
     blockers.push("LOCATION_REQUIRED");
   if (getDraftRewardSatang(draft) === null) blockers.push("REWARD_INVALID");
@@ -518,6 +508,12 @@ export function validateQuestDraftStep(
       findings.push({ field: "endTime", code: "format" });
     const startDateTime = getDateTimeValue(draft.startDate, draft.startTime);
     const endDateTime = getDateTimeValue(draft.deadline, draft.endTime);
+    if (
+      draft.startDate >= today &&
+      startDateTime !== null &&
+      startDateTime <= now.getTime()
+    )
+      findings.push({ field: "startTime", code: "startTimePast" });
     if (
       startDateTime !== null &&
       endDateTime !== null &&

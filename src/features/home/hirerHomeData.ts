@@ -1,3 +1,4 @@
+import { formatTimestampDateTime } from "@/domain/datetime";
 import { isTerminalStatus, QuestStatus } from "@/domain/questLifecycle";
 import type { SupportedLocale } from "@/locales/locale";
 import type {
@@ -113,28 +114,10 @@ export function formatHirerDueAt(
   if (!dueAt) return "—";
   const date = new Date(dueAt);
   if (Number.isNaN(date.getTime())) return dueAt;
-
-  const datePart = new Intl.DateTimeFormat(
-    locale === "th" ? "th-TH-u-ca-buddhist" : "en-GB",
-    {
-      day: "numeric",
-      month: "short",
-      timeZone: "Asia/Bangkok",
-    }
-  ).format(date);
-  const timePart = new Intl.DateTimeFormat(
-    locale === "th" ? "th-TH" : "en-GB",
-    {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: "Asia/Bangkok",
-    }
-  ).format(date);
-
+  const formattedDateTime = formatTimestampDateTime(date, locale);
   return locale === "th"
-    ? `ครบกำหนด ${datePart} · ${timePart}`
-    : `Due ${datePart} · ${timePart}`;
+    ? `ครบกำหนด ${formattedDateTime}`
+    : `Due ${formattedDateTime}`;
 }
 
 export const hirerHomeQuestFixtures: HirerHomeQuestFixture[] = [

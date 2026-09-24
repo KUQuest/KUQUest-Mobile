@@ -6,11 +6,13 @@ import type {
 } from "@/api/questV2Contracts";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import { isTerminalStatus } from "@/domain/questLifecycle";
+import { formatSatang } from "@/domain/satang";
 import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestService";
 import type { SupportedLocale } from "@/locales/locale";
+import { myQuestMessages } from "@/locales/myQuestMessages";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import type { HirerTab, StatusTone, QuestSummary } from "./myQuestTypes";
-import { formatQuestDate, getCategoryTone } from "./myQuestFormatting";
+import { formatQuestDateTime, getCategoryTone } from "./myQuestFormatting";
 /** The v2 endpoint accepts limits from 1 through 50. */
 const PAGE_LIMIT = 50;
 
@@ -21,30 +23,12 @@ export type {
   QuestSummary,
 } from "./myQuestTypes";
 
-const actionLabels = {
-  th: {
-    detail: "ดูรายละเอียด",
-    applicants: "ดูผู้สมัคร",
-    edit: "แก้ไข",
-    review: "เขียนรีวิว",
-    message: "ข้อความ",
-    start: "เริ่มงาน",
-  },
-  en: {
-    detail: "View Detail",
-    applicants: "View Applicants",
-    edit: "Edit",
-    review: "Write review",
-    message: "Message",
-    start: "Start work",
-  },
-} satisfies Record<SupportedLocale, Record<string, string>>;
-
 export function getLiveHirerItems(
   quests: QuestV2CanonicalQuest[],
   tab: HirerTab,
   locale: SupportedLocale
 ): QuestSummary[] {
+  const messages = myQuestMessages[locale];
   return quests.flatMap((quest) => {
     const terminal = isTerminalStatus(quest.state);
     const matchesTab =
@@ -65,23 +49,30 @@ export function getLiveHirerItems(
         title: quest.title,
         tag,
         categoryTone: getCategoryTone(tag),
-        date: formatQuestDate(quest.startTime, locale),
-        location: quest.locations[0]?.label ?? "—",
+        startsAt: formatQuestDateTime(quest.startTime, locale),
+        endsAt: quest.dueAt
+          ? formatQuestDateTime(quest.dueAt, locale)
+          : messages.notSet,
+        location: quest.locations[0]?.label ?? "",
+        online: quest.locations.length === 0,
         description: quest.description ?? "",
         detail: status,
         teamSize: String(quest.headcount),
+        mode:
+          quest.mode === "CANDIDATE"
+            ? messages.modeCandidate
+            : messages.modeFirstCome,
+        reward: formatSatang(Math.round(quest.questFundingTotal * 100), locale),
         status,
         statusTone: liveQuestStatusTone(statusValue),
-        action: isDraft
-          ? actionLabels[locale].edit
-          : terminal
-            ? actionLabels[locale].review
-            : actionLabels[locale].detail,
-        actionType: isDraft
-          ? ("edit" as const)
-          : terminal
-            ? ("review" as const)
-            : ("detail" as const),
+        primaryAction: isDraft ? "edit" : terminal ? "review" : "manage",
+        secondaryAction:
+          quest.state === "QUEST_FAILED" ? ("dispute" as const) : undefined,
+        cancelFromCard: isDraft
+          ? ("draft" as const)
+          : quest.state === "QUEST_OPEN"
+            ? ("open" as const)
+            : undefined,
       },
     ];
   });

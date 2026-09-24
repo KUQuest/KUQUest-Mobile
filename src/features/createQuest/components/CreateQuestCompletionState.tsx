@@ -24,25 +24,25 @@ export function CreateQuestCompletionState({
   onReset: () => void | Promise<void>;
 }) {
   const editingServerQuest = isServerEditMode(mode);
-  const published = !editingServerQuest && completedState === "OPEN";
+  const published = completedState === "OPEN";
 
   return (
     <View className={styles.successState}>
       <View className={styles.successIcon}>
-        <Check color={colors.primary} size={32} strokeWidth={2.5} />
+        <Check color={colors.hirer} size={32} strokeWidth={2.5} />
       </View>
       <Text accessibilityRole="header" className={styles.successTitle}>
-        {editingServerQuest
-          ? messages.updatedQuestTitle
-          : published
-            ? messages.publishedQuestTitle
+        {published
+          ? messages.publishedQuestTitle
+          : editingServerQuest
+            ? messages.updatedQuestTitle
             : messages.savedDraftTitle}
       </Text>
       <Text className={styles.successDescription}>
-        {editingServerQuest
-          ? messages.updatedQuestDescription
-          : published
-            ? messages.publishedQuestDescription
+        {published
+          ? messages.publishedQuestDescription
+          : editingServerQuest
+            ? messages.updatedQuestDescription
             : messages.savedDraftDescription}
       </Text>
       {editingServerQuest ? (

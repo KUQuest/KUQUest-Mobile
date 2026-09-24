@@ -945,6 +945,14 @@ describe("QuestApi", () => {
           uploadStatus: "PROOF_FILE_READY",
           failureCode: null,
         },
+        {
+          fileId: null,
+          contentType: "image/png",
+          sizeBytes: 100,
+          position: 1,
+          uploadStatus: "PROOF_FILE_READY",
+          failureCode: null,
+        },
       ],
     };
     const proofReview = {

@@ -52,6 +52,7 @@ export function CreateQuestForm({
   logisticsExpanded,
   logisticsSummary,
   messages,
+  onFixBlocker,
   onRefreshPublishCheck,
   onRetrySave,
   onToggleLogistics,
@@ -80,6 +81,7 @@ export function CreateQuestForm({
   logisticsExpanded: boolean;
   logisticsSummary: string;
   messages: CreateQuestMessages;
+  onFixBlocker: (field: string) => void;
   onRefreshPublishCheck: () => void;
   onRetrySave: () => void;
   onToggleLogistics: () => void;
@@ -313,6 +315,7 @@ export function CreateQuestForm({
             wide={useWideSummary}
             isCheckingPublish={isCheckingPublish}
             publishCheck={publishCheck}
+            onFixBlocker={onFixBlocker}
             onRefreshPublishCheck={onRefreshPublishCheck}
           />
         ) : null}

@@ -81,7 +81,7 @@ export function HirerHistoryFilter({
                     {opt.label}
                   </Text>
                   {isSelected ? (
-                    <Check color={colors.primary} size={16} strokeWidth={2.4} />
+                    <Check color={colors.hirer} size={16} strokeWidth={2.4} />
                   ) : null}
                 </TouchableOpacity>
               );
@@ -105,7 +105,7 @@ const styles = {
   menuOption: "flex-row items-center justify-between px-ku-md py-ku-12",
   menuOptionSelected: "bg-ku-surface-success",
   menuOptionText: "font-ku-medium text-ku-body-small text-ku-text-secondary",
-  menuOptionTextSelected: "font-ku-semibold text-ku-primary-dark",
+  menuOptionTextSelected: "font-ku-semibold text-ku-hirer-dark",
 } as const;
 
 const menuCardShadow = {

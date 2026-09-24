@@ -2,14 +2,12 @@ import { formatQuestDate, getCategoryTone } from "../myQuestFormatting";
 
 describe("My Quests formatting", () => {
   describe("formatQuestDate", () => {
-    it("formats ISO date strings in English", () => {
-      expect(formatQuestDate("2026-10-01T09:00:00Z", "en")).toMatch(/1\s+Oct/i);
+    it("formats ISO date strings in English with a year", () => {
+      expect(formatQuestDate("2026-10-01T09:00:00Z", "en")).toBe("1 Oct 2026");
     });
 
-    it("formats date-only strings in Thai", () => {
-      const formatted = formatQuestDate("2026-10-01", "th");
-      expect(formatted).toContain("1");
-      expect(formatted).toContain("ต.ค.");
+    it("formats date-only strings in Thai with a Gregorian year", () => {
+      expect(formatQuestDate("2026-10-01", "th")).toBe("1 ต.ค. 2026");
     });
 
     it("returns a dash for empty or invalid values", () => {

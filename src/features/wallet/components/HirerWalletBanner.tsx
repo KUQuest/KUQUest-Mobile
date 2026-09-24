@@ -23,7 +23,7 @@ export function HirerWalletBanner({ label, onPress }: HirerWalletBannerProps) {
         style={actionButtonShadow}
         testID="hirer-wallet-banner-action-btn"
       >
-        <Plus color={colors.primaryDeep} size={20} strokeWidth={2.6} />
+        <Plus color={colors.hirerDeep} size={20} strokeWidth={2.6} />
       </View>
     </TouchableOpacity>
   );
@@ -32,7 +32,7 @@ export function HirerWalletBanner({ label, onPress }: HirerWalletBannerProps) {
 const styles = {
   container:
     "mb-ku-md flex-row items-center justify-between rounded-[16px] border border-ku-border-success bg-ku-surface-success px-ku-18 py-ku-12",
-  label: "font-ku-semibold text-ku-body text-ku-primary-dark",
+  label: "font-ku-semibold text-ku-body text-ku-hirer-dark",
   actionButton:
     "h-[40px] w-[40px] items-center justify-center rounded-[20px] bg-ku-white",
 } as const;

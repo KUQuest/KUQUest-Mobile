@@ -14,6 +14,8 @@ import { spacing } from "@/theme/spacing";
 export interface ImageViewerModalProps {
   visible: boolean;
   imageUrl: string | null;
+  imageAccessibilityLabel: string;
+  closeLabel: string;
   fileName?: string;
   timestamp?: string;
   onClose: () => void;
@@ -22,6 +24,8 @@ export interface ImageViewerModalProps {
 export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
   visible,
   imageUrl,
+  imageAccessibilityLabel,
+  closeLabel,
   fileName,
   timestamp,
   onClose,
@@ -59,8 +63,8 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
             ) : null}
           </View>
           <Pressable
+            accessibilityLabel={closeLabel}
             accessibilityRole="button"
-            accessibilityLabel="Close"
             testID="image-viewer-close-button"
             onPress={onClose}
             className={styles.closeButton}
@@ -86,6 +90,7 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
             style={{ width: "100%", height: "80%" }}
             resizeMode="contain"
             testID="image-viewer-image"
+            accessibilityLabel={imageAccessibilityLabel}
           />
         </ScrollView>
       </View>
@@ -101,5 +106,5 @@ const styles = {
   fileNameContainer: "flex-1 mr-ku-12",
   fileName: "text-ku-white text-[16px] font-semibold",
   timestamp: "mt-ku-2 text-ku-text-muted text-[12px]",
-  closeButton: "items-center justify-center p-ku-sm rounded-[20px]",
+  closeButton: "h-12 w-12 items-center justify-center rounded-full",
 } as const;

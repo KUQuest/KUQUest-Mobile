@@ -3,6 +3,7 @@ import { Linking } from "react-native";
 import { FileText, ImageIcon } from "lucide-react-native";
 
 import { Button } from "@/components/ui/Button";
+import { ImageViewerModal } from "@/components/ui/ImageViewerModal";
 import { TextArea } from "@/components/ui/TextArea";
 import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
@@ -58,6 +59,10 @@ export function ProofReviewPanel({
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const [viewingImage, setViewingImage] = useState<{
+    fileName: string;
+    url: string;
+  } | null>(null);
   const submittedAt = useMemo(
     () => formatTimestamp(proof.submittedAt, locale, "—"),
     [locale, proof.submittedAt]
@@ -153,6 +158,11 @@ export function ProofReviewPanel({
                 const kind = fileKind(file.contentType);
                 const size = formatFileSize(file.sizeBytes);
                 const fileUrl = file.url ?? undefined;
+                const fileLabel = messages.proofReviewFileLabel(
+                  file.position + 1,
+                  file.contentType,
+                  size
+                );
                 return (
                   <View
                     className="rounded-[14px] border border-ku-border-subtle bg-ku-surface-muted p-ku-10"
@@ -161,12 +171,15 @@ export function ProofReviewPanel({
                   >
                     {fileUrl && kind === "image" ? (
                       <Pressable
-                        accessibilityLabel={messages.proofReviewPreview}
+                        accessibilityLabel={`${messages.proofReviewPreview}: ${fileLabel}`}
                         accessibilityRole="button"
-                        onPress={() => void openPreview(fileUrl)}
+                        onPress={() =>
+                          setViewingImage({ fileName: fileLabel, url: fileUrl })
+                        }
+                        testID={`proof-review-preview-${file.position}`}
                       >
                         <Image
-                          accessibilityLabel={messages.proofReviewPreview}
+                          accessible={false}
                           className={styles.questImageFeatured}
                           testID={`proof-review-image-${file.position}`}
                           contentFit="cover"
@@ -182,11 +195,7 @@ export function ProofReviewPanel({
                       )}
                       <View className="ml-ku-10 flex-1">
                         <Text className="font-ku-semibold text-ku-body-small text-ku-text-strong">
-                          {messages.proofReviewFileLabel(
-                            file.position + 1,
-                            file.contentType,
-                            size
-                          )}
+                          {fileLabel}
                         </Text>
                         <Text className="mt-ku-2 font-ku-regular text-ku-label text-ku-text-muted">
                           {messages.proofReviewFileStatus(file.uploadStatus)}
@@ -242,10 +251,7 @@ export function ProofReviewPanel({
         ) : null}
       </ScrollView>
 
-      <View
-        className={styles.proofSheetActions}
-        pointerEvents={busy ? "none" : "auto"}
-      >
+      <View className={styles.proofSheetActions}>
         {decisionMode === "not-approved" ? (
           <>
             <Button
@@ -287,6 +293,16 @@ export function ProofReviewPanel({
           </>
         )}
       </View>
+      <ImageViewerModal
+        closeLabel={messages.close}
+        fileName={viewingImage?.fileName}
+        imageAccessibilityLabel={
+          viewingImage?.fileName ?? messages.proofReviewEvidenceLabel
+        }
+        imageUrl={viewingImage?.url ?? null}
+        onClose={() => setViewingImage(null)}
+        visible={viewingImage !== null}
+      />
     </>
   );
 }

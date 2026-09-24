@@ -7,6 +7,7 @@ import {
   type ServerChatMessage,
   type ServerChatMessagePage,
 } from "@/api/ChatApi";
+import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import {
   chatKeys,
   useHasUnreadChatQuery,
@@ -189,9 +190,46 @@ describe("chat message transport", () => {
     ).toEqual(["server-message"]);
   });
 
-  it("keeps attachment sends on the existing HTTP transport", async () => {
+  it("keeps connected Candidate Inquiry attachments on HTTP", async () => {
     const acceptedMessage = makeServerMessage("server-message", 1);
     const sendMessage = jest.fn().mockResolvedValue(undefined);
+    const inquirySend = jest
+      .spyOn(liveQuestService, "sendCandidateInquiryMessage")
+      .mockResolvedValue(acceptedMessage);
+    const { result } = await renderHook(
+      () =>
+        useSendChatMessageMutation({
+          status: "connected",
+          reconnectAttempt: 0,
+          sendMessage,
+        }),
+      { wrapper: createWrapper() }
+    );
+    await waitFor(() => expect(result.current).not.toBeNull());
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        conversationId: "conversation-1",
+        mode: "CANDIDATE_INQUIRY",
+        text: "File",
+        clientMessageId: "client-file",
+        attachmentIds: ["attachment-1"],
+        viewerId: "member-1",
+      });
+    });
+
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect(inquirySend).toHaveBeenCalledWith(
+      "conversation-1",
+      "File",
+      "client-file",
+      ["attachment-1"]
+    );
+  });
+
+  it("sends attachment-only Work messages over the connected WebSocket", async () => {
+    const acceptedMessage = makeServerMessage("server-message", 1);
+    const sendMessage = jest.fn().mockResolvedValue(acceptedMessage);
     const restSend = jest
       .spyOn(chatApi, "sendMessage")
       .mockResolvedValue(acceptedMessage);
@@ -210,20 +248,18 @@ describe("chat message transport", () => {
       await result.current.mutateAsync({
         conversationId: "conversation-1",
         mode: "WORK",
-        text: "File",
+        text: "",
         clientMessageId: "client-file",
-        attachmentIds: ["attachment-1"],
+        attachmentIds: ["b199ae67-3939-4da3-8c78-2fa1c282926d"],
         viewerId: "member-1",
       });
     });
 
-    expect(sendMessage).not.toHaveBeenCalled();
-    expect(restSend).toHaveBeenCalledWith(
-      "conversation-1",
-      "File",
-      "client-file",
-      ["attachment-1"]
-    );
+    expect(sendMessage).toHaveBeenCalledWith({
+      clientMessageId: "client-file",
+      attachmentIds: ["b199ae67-3939-4da3-8c78-2fa1c282926d"],
+    });
+    expect(restSend).not.toHaveBeenCalled();
   });
 
   it("falls back to HTTP when the WebSocket is not connected", async () => {
