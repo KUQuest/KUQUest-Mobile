@@ -1,5 +1,5 @@
 import React from "react";
-import { fireEvent } from "@testing-library/react-native";
+import { fireEvent, within } from "@testing-library/react-native";
 import { renderWithAppTheme as render } from "@/testing/queryTestUtils";
 
 import { HirerQuestProgressCard } from "../components/HirerQuestProgressCard";
@@ -126,5 +126,34 @@ describe("HirerQuestProgressCard", () => {
     expect(
       getByTestId("hirer-quest-card-progress-q5").props.accessibilityLabel
     ).toContain("ขั้นตอนที่ 5 จาก 5");
+  });
+
+  it("shows the Quest start and end times with every timeline stage", async () => {
+    const { getByTestId, getByText } = await render(
+      <HirerQuestProgressCard
+        questId="q6"
+        title="Scheduled Quest"
+        status="QUEST_ASSIGNED"
+        startTime="2026-09-20T09:00:00.000+07:00"
+        dueAt="2026-09-25T06:30:00.000+07:00"
+        onOpenDetails={jest.fn()}
+      />
+    );
+
+    expect(getByText("20 ก.ย. 2026 09:00")).toBeTruthy();
+    expect(getByText("25 ก.ย. 2026 06:30")).toBeTruthy();
+    expect(
+      getByTestId("hirer-quest-card-schedule-q6").props.accessibilityLabel
+    ).toBe("เริ่มงาน 20 ก.ย. 2026 09:00. สิ้นสุด 25 ก.ย. 2026 06:30");
+    const timeline = within(getByTestId("hirer-quest-card-progress-q6"));
+    for (const label of [
+      "เปิดรับสมัคร",
+      "รอเริ่มงาน",
+      "กำลังทำงาน",
+      "ส่งงาน / ตรวจรับ",
+      "เสร็จสิ้น",
+    ]) {
+      expect(timeline.getByText(label)).toBeTruthy();
+    }
   });
 });

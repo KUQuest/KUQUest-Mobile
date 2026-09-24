@@ -34,6 +34,7 @@ export interface HirerHomeQuestFixture {
     avatarUri?: string;
     faculty?: LocalizedHirerCopy;
   };
+  startTime: string;
   dueAt: string;
 }
 export interface QuestMemberProfile {
@@ -50,6 +51,7 @@ export interface LiveHirerQuestCardData {
   mode: QuestMode;
   participation: QuestParticipation;
   headcount: number;
+  startTime: string;
   dueAt?: string | null;
   assignedWorkers: QuestMemberProfile[];
   applicants: QuestMemberProfile[];

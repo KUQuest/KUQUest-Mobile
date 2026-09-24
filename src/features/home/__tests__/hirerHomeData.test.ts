@@ -6,7 +6,7 @@ import {
 
 import { hirerHomeMessages } from "../hirerHomeMessages";
 import {
-  formatHirerDueAt,
+  formatHirerDateTime,
   getHirerAttentionItems,
   getQuestProgressStages,
   prioritizeHirerHomeQuests,
@@ -23,6 +23,7 @@ function liveQuest(
     mode: QuestMode.CANDIDATE,
     participation: QuestParticipation.SINGLE,
     headcount: 1,
+    startTime: "2026-09-19T09:00:00+07:00",
     assignedWorkers: [],
     applicants: [],
     proofPending: false,
@@ -50,11 +51,12 @@ describe("Hirer Home Quest progress", () => {
     }
   });
 
-  it("formats due dates with a year and 24-hour Bangkok time", () => {
+  it("formats Quest schedule times with a year and 24-hour Bangkok time", () => {
     const dueAt = "2026-09-19T18:00:00+07:00";
 
-    expect(formatHirerDueAt(dueAt, "th")).toBe("ครบกำหนด 19 ก.ย. 2026 18:00");
-    expect(formatHirerDueAt(dueAt, "en")).toBe("Due 19 Sept 2026, 18:00");
+    expect(formatHirerDateTime(dueAt, "th")).toBe("19 ก.ย. 2026 18:00");
+    expect(formatHirerDateTime(dueAt, "en")).toBe("19 Sept 2026, 18:00");
+    expect(formatHirerDateTime(null, "en")).toBe("—");
   });
 
   it("prioritizes live work before assigned and open Quests", () => {

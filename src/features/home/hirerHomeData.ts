@@ -109,17 +109,14 @@ export function getQuestProgressStages(
   }));
 }
 
-export function formatHirerDueAt(
-  dueAt: string | null | undefined,
+export function formatHirerDateTime(
+  value: string | null | undefined,
   locale: SupportedLocale
 ): string {
-  if (!dueAt) return "—";
-  const date = new Date(dueAt);
-  if (Number.isNaN(date.getTime())) return dueAt;
-  const formattedDateTime = formatTimestampDateTime(date, locale);
-  return locale === "th"
-    ? `ครบกำหนด ${formattedDateTime}`
-    : `Due ${formattedDateTime}`;
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return formatTimestampDateTime(date, locale);
 }
 
 export type HirerAttentionItem =
@@ -183,6 +180,7 @@ export const hirerHomeQuestFixtures: HirerHomeQuestFixture[] = [
         th: "คณะวิศวกรรมศาสตร์",
       },
     },
+    startTime: "2026-09-19T09:00:00+07:00",
     dueAt: "2026-09-19T18:00:00+07:00",
   },
   {
@@ -207,6 +205,7 @@ export const hirerHomeQuestFixtures: HirerHomeQuestFixture[] = [
         th: "คณะวิทยาศาสตร์",
       },
     },
+    startTime: "2026-09-20T08:00:00+07:00",
     dueAt: "2026-09-20T12:00:00+07:00",
   },
   {
@@ -231,6 +230,7 @@ export const hirerHomeQuestFixtures: HirerHomeQuestFixture[] = [
         th: "คณะเกษตร",
       },
     },
+    startTime: "2026-09-18T10:00:00+07:00",
     dueAt: "2026-09-18T16:00:00+07:00",
   },
 ];

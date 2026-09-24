@@ -25,7 +25,8 @@ export interface HirerHomeMessages {
   terminalStageLabel: string;
   openDetails: string;
   reviewProof: string;
-  dueAt: (value: string) => string;
+  scheduleStart: string;
+  scheduleEnd: string;
   eyebrow: string;
   statActive: string;
   statDrafts: string;
@@ -83,7 +84,8 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     terminalStageLabel: "terminal",
     openDetails: "View details",
     reviewProof: "Review proof",
-    dueAt: (value) => value,
+    scheduleStart: "Starts",
+    scheduleEnd: "Ends",
     eyebrow: "Hirer workspace",
     statActive: "Active",
     statDrafts: "Drafts",
@@ -156,7 +158,8 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     terminalStageLabel: "สถานะสิ้นสุด",
     openDetails: "ดูรายละเอียด",
     reviewProof: "ตรวจงาน",
-    dueAt: (value) => value,
+    scheduleStart: "เริ่มงาน",
+    scheduleEnd: "สิ้นสุด",
     eyebrow: "พื้นที่ผู้ว่าจ้าง",
     statActive: "กำลังดำเนินการ",
     statDrafts: "ฉบับร่าง",

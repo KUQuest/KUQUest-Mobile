@@ -6,9 +6,13 @@ import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import {
   BriefcaseBusiness,
+  Check,
   ChevronRight,
   Clock3,
+  Flag,
+  Play,
   Users,
+  X,
 } from "lucide-react-native";
 
 import { QuestStatus } from "@/domain/questLifecycle";
@@ -17,7 +21,7 @@ import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { localizeFacultyName } from "@/locales/academicUnits";
 import {
-  formatHirerDueAt,
+  formatHirerDateTime,
   getQuestProgressStages,
   type CanonicalHirerQuestStatus,
   type QuestMemberProfile,
@@ -41,6 +45,7 @@ export interface HirerQuestProgressCardProps {
   assignedWorkers?: QuestMemberProfile[];
   applicants?: QuestMemberProfile[];
   dueAt?: string | null;
+  startTime?: string | null;
   proofPending?: boolean;
   onOpenDetails: () => void;
   onOpenWorkerProfile?: (workerId: string) => void;
@@ -48,13 +53,19 @@ export interface HirerQuestProgressCardProps {
   onReviewProof?: () => void;
 }
 
-const progressSegmentColors = {
-  completed: "bg-ku-hirer",
-  current: "bg-ku-hirer-dark",
-  upcoming: "bg-ku-hirer-border",
-  terminal: "bg-ku-danger",
+const timelineDotColors = {
+  completed: "border-ku-hirer bg-ku-hirer",
+  current: "border-[5px] border-ku-hirer-dark bg-ku-surface",
+  upcoming: "border-ku-hirer-border bg-ku-surface",
+  terminal: "border-ku-danger bg-ku-surface-danger",
 } as const;
 
+const timelineLabelColors = {
+  completed: "font-ku-medium text-ku-text-secondary",
+  current: "font-ku-semibold text-ku-hirer-dark",
+  upcoming: "font-ku-regular text-ku-text-muted",
+  terminal: "font-ku-semibold text-ku-danger-dark",
+} as const;
 export function HirerQuestProgressCard({
   questId,
   title,
@@ -65,6 +76,7 @@ export function HirerQuestProgressCard({
   applicants,
   headcount,
   dueAt,
+  startTime,
   proofPending,
   onOpenDetails,
   onOpenWorkerProfile,
@@ -78,10 +90,8 @@ export function HirerQuestProgressCard({
   const isTerminal =
     status === QuestStatus.QUEST_FAILED ||
     status === QuestStatus.QUEST_CANCELLED;
-  const dueLabel = useMemo(
-    () => messages.dueAt(formatHirerDueAt(dueAt, locale)),
-    [dueAt, locale, messages]
-  );
+  const startLabel = formatHirerDateTime(startTime, locale);
+  const endLabel = formatHirerDateTime(dueAt, locale);
   const stages = useMemo(
     () =>
       getQuestProgressStages(status, proofPending).map((stage) => ({
@@ -167,56 +177,104 @@ export function HirerQuestProgressCard({
           {title}
         </Text>
       </View>
-      <View
-        accessibilityLabel={progressAccessibilityLabel}
-        accessibilityRole="progressbar"
-        accessibilityValue={{
-          min: 1,
-          max: stages.length,
-          now: activeStageNumber,
-        }}
-        className={styles.progressSection}
-        testID={`hirer-quest-card-progress-${questId}`}
-      >
-        <View className={styles.progressHeaderRow}>
-          <Text className={`${styles.timelineTitle} text-ku-text-secondary`}>
-            {messages.timelineTitle}
-          </Text>
-          <Text className={`${styles.stepProgressText} text-ku-primary-dark`}>
-            {messages.stepProgress(activeStageNumber, stages.length)}
-          </Text>
-        </View>
-        <View className={styles.stagesTrack}>
-          {stages.map((stage) => (
-            <View
-              className={cn(
-                styles.progressSegment,
-                progressSegmentColors[stage.state],
-                (stage.state === "current" || stage.state === "terminal") &&
-                  styles.progressSegmentActive
-              )}
-              key={stage.key}
-            />
-          ))}
-        </View>
-        {activeStageIndex !== -1 ? (
-          <View className={styles.currentStageRow}>
-            <View
-              className={cn(
-                styles.currentStageDot,
-                isTerminal ? "bg-ku-danger" : "bg-ku-hirer-dark"
-              )}
-            />
-            <Text
-              className={cn(
-                styles.currentStageText,
-                isTerminal ? "text-ku-danger-dark" : "text-ku-hirer-dark"
-              )}
-            >
-              {stages[activeStageIndex].label}
+      <View className={styles.progressSection}>
+        <View
+          accessibilityLabel={`${messages.scheduleStart} ${startLabel}. ${messages.scheduleEnd} ${endLabel}`}
+          accessible
+          className={styles.scheduleRow}
+          testID={`hirer-quest-card-schedule-${questId}`}
+        >
+          <View className={styles.scheduleItem}>
+            <View className={styles.scheduleLabelRow}>
+              <Play color={colors.hirer} size={12} strokeWidth={2.4} />
+              <Text
+                className={`${styles.scheduleLabel} text-ku-text-secondary`}
+              >
+                {messages.scheduleStart}
+              </Text>
+            </View>
+            <Text className={`${styles.scheduleValue} text-ku-text-strong`}>
+              {startLabel}
             </Text>
           </View>
-        ) : null}
+          <View className={styles.scheduleDivider} />
+          <View className={styles.scheduleItem}>
+            <View className={styles.scheduleLabelRow}>
+              <Flag
+                color={isTerminal ? colors.danger : colors.hirer}
+                size={12}
+                strokeWidth={2.4}
+              />
+              <Text
+                className={`${styles.scheduleLabel} text-ku-text-secondary`}
+              >
+                {messages.scheduleEnd}
+              </Text>
+            </View>
+            <Text className={`${styles.scheduleValue} text-ku-text-strong`}>
+              {endLabel}
+            </Text>
+          </View>
+        </View>
+        <View
+          accessibilityLabel={progressAccessibilityLabel}
+          accessibilityRole="progressbar"
+          accessibilityValue={{
+            min: 1,
+            max: stages.length,
+            now: activeStageNumber,
+          }}
+          accessible
+          testID={`hirer-quest-card-progress-${questId}`}
+        >
+          <View className={styles.progressHeaderRow}>
+            <Text className={`${styles.timelineTitle} text-ku-text-secondary`}>
+              {messages.timelineTitle}
+            </Text>
+            <Text className={`${styles.stepProgressText} text-ku-primary-dark`}>
+              {messages.stepProgress(activeStageNumber, stages.length)}
+            </Text>
+          </View>
+          {stages.map((stage, index) => (
+            <View className={styles.timelineRow} key={stage.key}>
+              <View className={styles.timelineRail}>
+                <View className={styles.timelineDotSlot}>
+                  <View
+                    className={cn(
+                      styles.timelineDot,
+                      timelineDotColors[stage.state]
+                    )}
+                  >
+                    {stage.state === "completed" ? (
+                      <Check color={colors.onHirer} size={10} strokeWidth={3} />
+                    ) : stage.state === "terminal" ? (
+                      <X color={colors.danger} size={10} strokeWidth={3} />
+                    ) : null}
+                  </View>
+                </View>
+                {index < stages.length - 1 ? (
+                  <View
+                    className={cn(
+                      styles.timelineConnector,
+                      stage.state === "completed"
+                        ? "bg-ku-hirer"
+                        : "bg-ku-hirer-border"
+                    )}
+                  />
+                ) : null}
+              </View>
+              <Text
+                className={cn(
+                  styles.timelineLabel,
+                  timelineLabelColors[stage.state],
+                  index === stages.length - 1 && "pb-ku-0"
+                )}
+              >
+                {stage.label}
+              </Text>
+            </View>
+          ))}
+        </View>
       </View>
       <View className={styles.cardBody}>
         {primaryWorker && !hasMultipleWorkers ? (
@@ -411,10 +469,6 @@ export function HirerQuestProgressCard({
         ) : null}
       </View>
       <View className={styles.cardFooter}>
-        <View className={styles.dueRow}>
-          <Clock3 color={colors.textSecondary} size={15} strokeWidth={2} />
-          <Text className={`${styles.dueLabel} text-ku-text`}>{dueLabel}</Text>
-        </View>
         <Pressable
           accessibilityLabel={messages.openDetails}
           accessibilityRole="button"
