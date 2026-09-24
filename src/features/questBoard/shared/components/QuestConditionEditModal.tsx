@@ -4,7 +4,7 @@ import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react-native";
 import { Button } from "@/components/ui/Button";
 import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { Pressable, ScrollView, Text, TextInput, View } from "@/tw";
 
 import { BottomSheet } from "@/components/ui/BottomSheet";
@@ -58,6 +58,7 @@ export function QuestConditionEditModal({
   submitting = false,
   error,
 }: QuestConditionEditModalProps) {
+  const { colors } = useAppTheme();
   const { locale } = useLocale();
   const messages = questBoardMessages[locale];
   const [items, setItems] = useState<string[]>(originalItems);

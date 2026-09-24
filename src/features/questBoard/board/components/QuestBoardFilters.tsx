@@ -5,7 +5,7 @@ import { Check, Search, X } from "lucide-react-native";
 
 import { Pressable, ScrollView, Text, TextInput, View } from "@/tw";
 import { cn } from "@/tw/cn";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { getActionBarPaddingBottom } from "@/theme/layout";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 import styles from "../questBoardStyles";
@@ -53,6 +53,7 @@ function Option({
   testID,
   accessibilityRole = "checkbox",
 }: OptionProps) {
+  const { colors } = useAppTheme();
   return (
     <Pressable
       accessibilityLabel={label}
@@ -93,6 +94,7 @@ export function QuestBoardFilterSheet({
   onApply,
   onClose,
 }: QuestBoardFilterSheetProps) {
+  const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
   const [minimumText, setMinimumText] = useState(formatBound(filter.rewardMin));
   const [maximumText, setMaximumText] = useState(formatBound(filter.rewardMax));
@@ -435,6 +437,7 @@ export function QuestBoardSortSheet({
   onSelect,
   onClose,
 }: QuestBoardSortSheetProps) {
+  const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
   return (
     <Modal

@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useFocusEffect } from "expo-router";
 
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
@@ -65,6 +66,7 @@ export function useQuestDetailFeature({
   bottomInset,
   ...screenProps
 }: QuestDetailFeatureParams): QuestDetailFeatureViewModel {
+  const { colors } = useAppTheme();
   const { locale } = useLocale();
   const messages = questBoardMessages[locale];
   const groupMessages = groupQuestMessages[locale];
@@ -144,6 +146,7 @@ export function useQuestDetailFeature({
     viewerId,
     surface: surface.state,
     teamDirectory: previewTeamDirectory,
+    colors,
   });
 
   const refresh = read.refresh;

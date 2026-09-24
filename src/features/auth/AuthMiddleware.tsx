@@ -2,7 +2,7 @@ import { useEffect, type PropsWithChildren } from "react";
 import { useRouter, useSegments } from "expo-router";
 
 import { ActivityIndicator, View } from "@/tw";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 
 import { authEnvironment } from "./authEnvironment";
 import { useSessionQuery } from "./sessionQueries";
@@ -29,6 +29,7 @@ function AuthRouteCheck({
 }: PropsWithChildren<{
   isPublicRoute: boolean;
 }>) {
+  const { colors } = useAppTheme();
   const router = useRouter();
   const sessionQuery = useSessionQuery({ enabled: !isPublicRoute });
   const sessionInvalid =

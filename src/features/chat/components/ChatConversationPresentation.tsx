@@ -7,7 +7,7 @@ import {
   LoadingSkeleton,
   SkeletonBlock,
 } from "@/components/ui/LoadingSkeleton";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { spacing } from "@/theme/spacing";
 import styles from "../chatStyles";
 import { cn } from "@/tw/cn";
@@ -64,6 +64,7 @@ export function ChatConversationSkeleton({
   backLabel: string;
   onBack: () => void;
 }) {
+  const { colors } = useAppTheme();
   return (
     <ScreenLayout
       edges={["top", "left", "right", "bottom"]}

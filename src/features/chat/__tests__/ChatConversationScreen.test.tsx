@@ -1,5 +1,6 @@
 import React from "react";
-import { fireEvent, render } from "@testing-library/react-native";
+import { fireEvent } from "@testing-library/react-native";
+import { renderWithAppTheme } from "@/testing/queryTestUtils";
 import type { ImperativeRouter } from "expo-router";
 import { FlatList as NativeFlatList } from "react-native";
 import { chatMessages } from "@/locales/chatMessages";
@@ -66,7 +67,7 @@ describe("ChatConversationScreen", () => {
   });
 
   it("renders the loading shell while the conversation is pending", async () => {
-    const view = await render(<ChatConversationScreen />);
+    const view = await renderWithAppTheme(<ChatConversationScreen />);
     expect(view.getByTestId("chat-loading-back-button")).toBeTruthy();
     expect(view.getByLabelText(chatMessages.en.loading)).toBeTruthy();
   });
@@ -96,7 +97,7 @@ describe("ChatConversationScreen", () => {
       },
     });
 
-    const view = await render(<ChatConversationScreen />);
+    const view = await renderWithAppTheme(<ChatConversationScreen />);
 
     expect(view.getByLabelText(chatMessages.en.backToChat)).toBeTruthy();
     expect(view.getAllByText("Campus cleanup")).toHaveLength(2);
@@ -136,7 +137,7 @@ describe("ChatConversationScreen", () => {
       },
     });
 
-    const view = await render(<ChatConversationScreen />);
+    const view = await renderWithAppTheme(<ChatConversationScreen />);
     await fireEvent.press(view.getByLabelText(chatMessages.en.viewQuest));
     expect(push).toHaveBeenLastCalledWith({
       pathname: "/quest/[id]/work",
@@ -190,7 +191,7 @@ describe("ChatConversationScreen", () => {
       conversation,
       searchedMessages: [firstMessage],
     });
-    const view = await render(<ChatConversationScreen />);
+    const view = await renderWithAppTheme(<ChatConversationScreen />);
     await fireEvent(
       view.getByTestId("chat-message-list"),
       "contentSizeChange",

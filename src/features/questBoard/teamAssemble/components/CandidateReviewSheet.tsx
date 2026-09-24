@@ -14,7 +14,7 @@ import { formatTimestampDate } from "@/domain/datetime";
 import { useLocale } from "@/features/preferences/localeStore";
 import type { SupportedLocale } from "@/locales/locale";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import {
   QuestApplicationStatus,
   QuestTeamStatus,
@@ -105,6 +105,7 @@ function StatusPill({
   rejected: boolean;
   labels: ReturnType<typeof getMessages>;
 }) {
+  const { colors } = useAppTheme();
   const text = selected
     ? labels.selected
     : rejected
@@ -391,6 +392,7 @@ function normalizeProposals({
 }
 
 function LoadingState({ label }: { label: string }) {
+  const { colors } = useAppTheme();
   return (
     <View
       accessibilityLabel={label}
@@ -413,6 +415,7 @@ function ErrorState({
   retryLabel: string;
   onRetry?: () => void;
 }) {
+  const { colors } = useAppTheme();
   return (
     <View
       accessibilityRole="alert"
@@ -461,6 +464,7 @@ function ProposalRow({
   onReject?: (proposalId: string) => void;
   memberIdentities: Map<string, CandidateReviewIdentity>;
 }) {
+  const { colors } = useAppTheme();
   const profileQuery = usePublicProfileQuery(
     visible ? (proposal.profileId ?? "") : ""
   );
@@ -626,6 +630,7 @@ export function CandidateReviewSheet({
   fullScreen = false,
   locale: localeProp,
 }: CandidateReviewSheetProps) {
+  const { colors } = useAppTheme();
   const contextLocale = useLocale().locale;
   const locale = localeProp ?? contextLocale;
   const messages = getMessages(locale);

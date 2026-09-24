@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "@/tw";
 import { useRouter } from "expo-router";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import LoginScreen from "./LoginScreen";
 import { authService } from "./AuthService";
 import { useSessionQuery } from "./sessionQueries";
@@ -10,6 +10,7 @@ import { useLocale } from "@/features/preferences/localeStore";
 import { RoutingDestination } from "./types";
 
 export default function Index() {
+  const { colors } = useAppTheme();
   const [routingFailed, setRoutingFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const router = useRouter();

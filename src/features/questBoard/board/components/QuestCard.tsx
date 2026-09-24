@@ -12,7 +12,7 @@ import { Pressable, Image, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { formatSatang } from "@/domain/satang";
 import { formatDate } from "@/domain/datetime";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import {
   questBoardMessages,
   type QuestBoardMessages,
@@ -77,6 +77,7 @@ export function QuestCard({
   onDetail,
   onOwnerPress,
 }: QuestCardProps) {
+  const { colors } = useAppTheme();
   const messages = questBoardMessages[locale];
   const tags = [...new Set(quest.tags)].slice(0, 1);
   const spotsRemaining = quest.headcount - quest.acceptedParticipants;

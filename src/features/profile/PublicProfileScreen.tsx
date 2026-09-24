@@ -13,7 +13,7 @@ import {
 import { Image, Pressable, ScrollView, Text, View } from "@/tw";
 import { Chip } from "@/components/ui/Chip";
 import { ScreenLayout } from "../../components/layout/ScreenLayout";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { formatDisplayMonthYear } from "./profileFormatting";
 import { getProfileLayoutMetrics } from "@/theme/profileLayout";
 import { spacing } from "@/theme/spacing";
@@ -62,6 +62,7 @@ function sortExperiences(
 }
 
 export default function PublicProfileScreen() {
+  const { colors } = useAppTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const userId =

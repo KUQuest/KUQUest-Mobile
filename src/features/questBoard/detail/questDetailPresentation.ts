@@ -6,7 +6,7 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 
-import { colors } from "@/theme/colors";
+import type { ThemeColors } from "@/theme/colors";
 import { isTerminalStatus } from "@/domain/questLifecycle";
 import type { GroupQuestMessages } from "@/locales/groupQuestMessages";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
@@ -133,6 +133,7 @@ export function getQuestDetailPresentationFacts({
   viewerId,
   surface,
   teamDirectory,
+  colors,
 }: {
   read: QuestDetailReadModel;
   route: ResolvedQuestDetailRoute;
@@ -142,6 +143,7 @@ export function getQuestDetailPresentationFacts({
   viewerId: string;
   surface: QuestDetailSurfaceState;
   teamDirectory: TeamDirectoryMember[];
+  colors: ThemeColors;
 }): QuestDetailPresentationFacts | null {
   const quest = read.quest;
   if (!quest) return null;

@@ -3,7 +3,7 @@ import React from "react";
 import { Check, CircleAlert, UsersRound } from "lucide-react-native";
 
 import { ActivityIndicator, Pressable, Text, View } from "@/tw";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import type { ProposalFileItem } from "../types";
 
 import styles from "../groupQuestStyles";
@@ -52,6 +52,7 @@ export function TeamAssembleSubmissionPanel({
   onSubmit,
   onReviewChange,
 }: TeamAssembleSubmissionPanelProps) {
+  const { colors } = useAppTheme();
   if (submissionBlocker && canonical && submissionReady) {
     return (
       <View

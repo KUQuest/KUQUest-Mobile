@@ -5,7 +5,7 @@ import { LogOut, MessageCircle, Pencil, Star } from "lucide-react-native";
 import { cn } from "@/tw/cn";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { getActionBarPaddingBottom } from "@/theme/layout";
 import styles from "../styles/questDetailStyles";
 import { useQuestDetailFeature } from "./useQuestDetailFeature";
@@ -21,6 +21,7 @@ import { QuestReviewModal } from "../review/components/QuestReviewModal";
 export type { QuestDetailScreenProps } from "./questDetailRoute";
 
 export default function QuestDetailScreen(props: QuestDetailScreenProps) {
+  const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
   const [reviewOpen, setReviewOpen] = useState(false);
   const view = useQuestDetailFeature({

@@ -9,13 +9,13 @@ import React from "react";
 import { AppThemeProvider } from "@/features/workspace/AppThemeProvider";
 
 /**
- * Renders a component tree inside the app theme provider.
+ * Renders a component tree inside the app theme provider; `rerender` keeps it.
  */
 export function renderWithAppTheme(
   ui: React.ReactElement,
   options?: Omit<RenderOptions, "wrapper">
 ): Promise<RenderResult> {
-  return render(<AppThemeProvider>{ui}</AppThemeProvider>, options);
+  return render(ui, { ...options, wrapper: AppThemeProvider });
 }
 
 /**

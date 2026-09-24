@@ -12,7 +12,7 @@ import {
   Text,
   View,
 } from "../../../tw";
-import { colors } from "../../../theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { ScreenLayout } from "../../../components/layout/ScreenLayout";
 import styles from "../profileEditStyles";
 import type { BasicsForm } from "../types";
@@ -62,6 +62,7 @@ export function BasicsEditor({
   onAvatarError,
   onSave,
 }: BasicsEditorProps) {
+  const { colors } = useAppTheme();
   const chooseAvatar = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({

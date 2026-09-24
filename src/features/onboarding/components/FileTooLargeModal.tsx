@@ -4,7 +4,7 @@ import { Pressable, Text, View } from "@/tw";
 import { CircleX, RefreshCw } from "lucide-react-native";
 import { onboardingMessages } from "../../../locales/registrationOnboarding";
 import { useLocale } from "@/features/preferences/localeStore";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import styles from "../styles/fileTooLargeModalStyles";
 
 interface FileTooLargeModalProps {
@@ -20,6 +20,7 @@ export const FileTooLargeModal: React.FC<FileTooLargeModalProps> = ({
 }) => {
   const { locale } = useLocale();
   const msg = onboardingMessages[locale];
+  const { colors } = useAppTheme();
 
   return (
     <Modal

@@ -1,5 +1,6 @@
 import React from "react";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithAppTheme } from "@/testing/queryTestUtils";
 
 import { DEFAULT_LOCALE } from "@/locales/locale";
 import { questBoardMessages } from "@/locales/questBoardMessages";
@@ -108,7 +109,7 @@ describe("HirerProofReviewScreen", () => {
   it("opens a pending Proof in the review Popup and closes it after approval", async () => {
     mockSnapshot = singleSnapshot(true);
     mockMutateAsync.mockResolvedValue({});
-    const { getByTestId, queryByTestId } = await render(
+    const { getByTestId, queryByTestId } = await renderWithAppTheme(
       <HirerProofReviewScreen questId="quest-1" />
     );
     expect(queryByTestId("proof-review-modal")).toBeNull();
@@ -132,7 +133,9 @@ describe("HirerProofReviewScreen", () => {
   it("offers the Rating Review once a decision makes the Quest Terminal", async () => {
     mockSnapshot = singleSnapshot(true);
     mockMutateAsync.mockResolvedValue({});
-    const view = await render(<HirerProofReviewScreen questId="quest-1" />);
+    const view = await renderWithAppTheme(
+      <HirerProofReviewScreen questId="quest-1" />
+    );
 
     await fireEvent.press(view.getByTestId("proof-review-open-proof-1"));
     await fireEvent.press(view.getByTestId("proof-review-approve"));
@@ -155,7 +158,7 @@ describe("HirerProofReviewScreen", () => {
   it("keeps the Popup open and reloads when the review fails", async () => {
     mockSnapshot = singleSnapshot(true);
     mockMutateAsync.mockRejectedValue(new Error("PROOF_REVIEW_NOT_PENDING"));
-    const { getByTestId } = await render(
+    const { getByTestId } = await renderWithAppTheme(
       <HirerProofReviewScreen questId="quest-1" />
     );
 
@@ -169,7 +172,7 @@ describe("HirerProofReviewScreen", () => {
 
   it("shows submission status without a review action when the viewer cannot review", async () => {
     mockSnapshot = singleSnapshot(false);
-    const { getByTestId, queryByTestId } = await render(
+    const { getByTestId, queryByTestId } = await renderWithAppTheme(
       <HirerProofReviewScreen questId="quest-1" />
     );
 
@@ -192,7 +195,7 @@ describe("HirerProofReviewScreen", () => {
       proofs: [proof("proof-1", "worker-1"), proof("proof-2", "worker-2")],
     };
     mockMutateAsync.mockResolvedValue({});
-    const { getByTestId, getByText } = await render(
+    const { getByTestId, getByText } = await renderWithAppTheme(
       <HirerProofReviewScreen questId="quest-1" />
     );
 

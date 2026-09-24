@@ -15,9 +15,9 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 **What happened**: The redesigned Money tab and Profile hero kept Hirer sage after switching to the Worker workspace.
 
-**Root cause**: Only the ramp tokens (`ku-primary`, `ku-primary-dark`, `ku-primary-deep`, `ku-on-primary`, `ku-surface-accent`, `ku-border-accent`) change with the workspace; `ku-hirer*`, `ku-worker*` and `ku-primary-subtle` are fixed.
+**Root cause**: Only the ramp tokens (`ku-primary`, `ku-primary-dark`, `ku-primary-deep`, `ku-primary-subtle`, `ku-primary-border`, `ku-on-primary`, `ku-surface-accent`, `ku-border-accent`) change with the workspace; `ku-hirer*` / `ku-worker*` are fixed. The `colors` Proxy from `src/theme/colors.ts` reads the current ramp but never re-renders, so mounted tabs kept Hirer icons.
 
-**Rule**: On surfaces both workspaces open, use only ramp tokens or `useAppTheme().colors.primary*`; reserve `ku-hirer*` / `ku-worker*` for single-role surfaces.
+**Rule**: On surfaces both workspaces open, use only ramp tokens; in components read colors via `useAppTheme().colors`, not the `colors` import. Every ramp token must stay in the `inlineVariables.exclude` list in `metro.config.js`.
 
 ### 2026-09-24 — Changing `font_scale` restarts the app at Home
 

@@ -29,7 +29,7 @@ import { settingsMessages } from "@/locales/settingsMessages";
 import { authService } from "@/features/auth/AuthService";
 import { authEnvironment } from "@/features/auth/authEnvironment";
 import { clearSessionCache } from "@/features/auth/sessionQueries";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { spacing } from "@/theme/spacing";
 import styles from "./styles/settingsStyles";
 
@@ -52,6 +52,7 @@ function SettingsRow({
   last?: boolean;
   testID?: string;
 }) {
+  const { colors } = useAppTheme();
   const content = (
     <>
       <View className={styles.iconContainer}>
@@ -96,6 +97,7 @@ function SettingsRow({
 }
 
 export default function SettingsScreen() {
+  const { colors } = useAppTheme();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { locale, setLocale } = useLocale();

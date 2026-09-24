@@ -1,7 +1,7 @@
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "@/tw";
 import { FileText, ImagePlus, Trash2 } from "lucide-react-native";
 import type { GroupQuestMessages } from "@/locales/groupQuestMessages";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import type { ProposalFileItem } from "../types";
 import styles from "../groupQuestStyles";
 export interface TeamAssembleProposalPanelProps {
@@ -25,6 +25,7 @@ export function TeamAssembleProposalPanel({
   onRemoveFile,
   onPickFiles,
 }: TeamAssembleProposalPanelProps) {
+  const { colors } = useAppTheme();
   return (
     <View className={styles.section} testID="team-assemble-proposal-section">
       <View className={styles.sectionHeader}>

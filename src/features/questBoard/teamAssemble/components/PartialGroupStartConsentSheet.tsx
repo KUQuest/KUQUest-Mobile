@@ -8,10 +8,10 @@ import {
 } from "lucide-react-native";
 
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "@/tw";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { useLocale } from "@/features/preferences/localeStore";
 import type { SupportedLocale } from "@/locales/locale";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
-import { colors } from "@/theme/colors";
 import { formatSatang } from "@/domain/satang";
 import {
   QuestPartialStartConsentStatus,
@@ -82,6 +82,7 @@ function getMessages(locale: SupportedLocale) {
 }
 
 function LoadingState({ label }: { label: string }) {
+  const { colors } = useAppTheme();
   return (
     <View
       accessibilityLabel={label}
@@ -104,6 +105,7 @@ function ErrorState({
   retryLabel: string;
   onRetry?: () => void;
 }) {
+  const { colors } = useAppTheme();
   return (
     <View
       accessibilityRole="alert"
@@ -158,6 +160,7 @@ export function PartialGroupStartConsentSheet({
   bottomInset,
   locale: localeProp,
 }: PartialGroupStartConsentSheetProps) {
+  const { colors } = useAppTheme();
   const contextLocale = useLocale().locale;
   const locale = localeProp ?? contextLocale;
   const messages = getMessages(locale);

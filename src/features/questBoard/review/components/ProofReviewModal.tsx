@@ -3,7 +3,7 @@ import { ShieldCheck, X } from "lucide-react-native";
 
 import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import {
   KeyboardAvoidingView,
   Pressable,
@@ -35,6 +35,7 @@ export function ProofReviewModal({
   onReview,
 }: ProofReviewModalProps) {
   const { locale } = useLocale();
+  const { colors } = useAppTheme();
   const messages = questBoardMessages[locale];
 
   if (!proof) return null;

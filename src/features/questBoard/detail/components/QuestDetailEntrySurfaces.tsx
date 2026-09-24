@@ -2,7 +2,7 @@ import { CircleUserRound, Clock3, UsersRound } from "lucide-react-native";
 
 import { Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import type { GroupQuestMessages } from "@/locales/groupQuestMessages";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 import type {
@@ -58,6 +58,7 @@ export function LiveEntrySurface({
   onOpenCandidateReview: () => void;
   onOpenPartialConsent: () => void;
 }) {
+  const { colors } = useAppTheme();
   const isGroupCandidate =
     snapshot.participation === "GROUP" && snapshot.mode === "CANDIDATE";
   const isHirer = snapshot.actor === "HIRER";
@@ -155,6 +156,7 @@ export function GroupQuestEntrySurfaces({
   onOpenCandidateReview: () => void;
   onOpenPartialConsent: () => void;
 }) {
+  const { colors } = useAppTheme();
   const {
     quest,
     teams,

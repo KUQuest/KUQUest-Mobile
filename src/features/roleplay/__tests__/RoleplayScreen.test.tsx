@@ -1,9 +1,5 @@
-import {
-  cleanup,
-  fireEvent,
-  render,
-  waitFor,
-} from "@testing-library/react-native";
+import { cleanup, fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithAppTheme } from "@/testing/queryTestUtils";
 
 import { authEnvironment } from "@/features/auth/authEnvironment";
 
@@ -26,7 +22,7 @@ jest.mock("../../../features/preferences/localeStore", () => ({
 
 describe("RoleplayScreen", () => {
   it("returns to the previous screen from the roleplay route", async () => {
-    const view = await render(<RoleplayScreen />);
+    const view = await renderWithAppTheme(<RoleplayScreen />);
 
     await fireEvent.press(view.getByTestId("roleplay-back"));
 
@@ -49,7 +45,7 @@ describe("RoleplayScreen", () => {
   });
 
   it("switches between the four rulebook roleplay scenarios", async () => {
-    const view = await render(<RoleplayScreen />);
+    const view = await renderWithAppTheme(<RoleplayScreen />);
 
     await fireEvent.press(
       view.getByTestId("roleplay-scenario-print-documents")
@@ -67,7 +63,7 @@ describe("RoleplayScreen", () => {
     roleplayMock.setScenario("team-selection-demo");
     roleplayMock.setPersona("demo-hirer");
     const teamId = roleplayMock.getViewModel().state.teams[0]?.id;
-    const view = await render(<RoleplayScreen />);
+    const view = await renderWithAppTheme(<RoleplayScreen />);
 
     expect(teamId).toBeDefined();
     expect(view.getAllByText("Accept").length).toBeGreaterThan(0);
@@ -88,7 +84,7 @@ describe("RoleplayScreen", () => {
   });
 
   it("switches persona and shows only that persona's actions", async () => {
-    const view = await render(<RoleplayScreen />);
+    const view = await renderWithAppTheme(<RoleplayScreen />);
 
     expect(view.getByTestId("roleplay-action-apply")).toBeTruthy();
     expect(view.queryByTestId("roleplay-action-cancel")).toBeNull();
@@ -105,7 +101,7 @@ describe("RoleplayScreen", () => {
   });
 
   it("keeps every role label visible while switching personas", async () => {
-    const view = await render(<RoleplayScreen />);
+    const view = await renderWithAppTheme(<RoleplayScreen />);
 
     await fireEvent.press(view.getByTestId("roleplay-persona-demo-hirer"));
     await fireEvent.press(view.getByTestId("roleplay-persona-student-demo"));
@@ -126,7 +122,7 @@ describe("RoleplayScreen", () => {
     const application = roleplayMock
       .getViewModel()
       .state.applications.find((item) => item.status === "APPLICATION_APPLIED");
-    const view = await render(<RoleplayScreen />);
+    const view = await renderWithAppTheme(<RoleplayScreen />);
 
     expect(application).toBeDefined();
     await fireEvent.press(
@@ -144,7 +140,7 @@ describe("RoleplayScreen", () => {
   });
 
   it("resets the in-memory state to the open scenario", async () => {
-    const view = await render(<RoleplayScreen />);
+    const view = await renderWithAppTheme(<RoleplayScreen />);
 
     await fireEvent.press(view.getByTestId("roleplay-reset"));
 

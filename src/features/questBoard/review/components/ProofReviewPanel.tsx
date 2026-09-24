@@ -7,7 +7,7 @@ import { ImageViewerModal } from "@/components/ui/ImageViewerModal";
 import { TextArea } from "@/components/ui/TextArea";
 import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { Image, Pressable, ScrollView, Text, View } from "@/tw";
 
 import type { QuestV2ProofReviewPayload } from "@/api/QuestApi";
@@ -51,6 +51,7 @@ export function ProofReviewPanel({
   onDone,
   onReview,
 }: ProofReviewPanelProps) {
+  const { colors } = useAppTheme();
   const { locale } = useLocale();
   const messages = questBoardMessages[locale];
   const [decisionMode, setDecisionMode] = useState<"review" | "not-approved">(

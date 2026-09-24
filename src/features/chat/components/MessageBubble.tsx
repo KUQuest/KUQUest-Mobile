@@ -5,7 +5,7 @@ import { Download, FileText, ImagePlus } from "lucide-react-native";
 import { Image, Pressable, Text, View } from "@/tw";
 import { Avatar } from "@/components/ui/Avatar";
 import { cn } from "@/tw/cn";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { chatApi } from "@/api/ChatApi";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import type { ChatMessages } from "@/locales/chatMessages";
@@ -54,6 +54,7 @@ export function AttachmentRow({
   messages: ChatMessages;
   onPress: () => void;
 }) {
+  const { colors } = useAppTheme();
   return (
     <Pressable
       accessibilityLabel={`${messages.openFile}: ${attachment.name}`}
@@ -119,6 +120,7 @@ export function InlineImageAttachment({
   onFilePress: () => void;
   onImagePress: (url: string, name: string, timestamp?: string) => void;
 }) {
+  const { colors } = useAppTheme();
   const imageSize = getImageSize(attachment.width, attachment.height);
   const [resolvedUrl, setResolvedUrl] = useState<string | null>(() =>
     attachmentLinkCache.get(attachment.id)

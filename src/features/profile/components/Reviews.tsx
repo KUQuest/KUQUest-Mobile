@@ -9,7 +9,7 @@ import {
 import { cn } from "@/tw/cn";
 import { Star } from "lucide-react-native";
 import { Avatar } from "../../../components/ui/Avatar";
-import { colors } from "../../../theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { getProfileLayoutMetrics } from "../../../theme/profileLayout";
 import type { SupportedLocale } from "@/locales/locale";
 import styles from "../styles/profileComponentStyles";
@@ -36,6 +36,7 @@ function ReviewCard({
   reviewerAvatarLabel: (name: string) => string;
   reviewRatingLabel: (rating: number) => string;
 }) {
+  const { colors } = useAppTheme();
   return (
     <View className={styles.reviewCard}>
       <View className={styles.reviewHeader}>
@@ -136,6 +137,7 @@ export function Reviews({
   initialScrollOffset?: number;
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
 } & SectionNoticeProps) {
+  const { colors } = useAppTheme();
   const { width, fontScale } = useWindowDimensions();
   const metrics = getProfileLayoutMetrics(width, fontScale);
   const [filter, setFilter] = useState<1 | 2 | 3 | 4 | 5 | null>(null);

@@ -1,5 +1,6 @@
 import React from "react";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithAppTheme } from "@/testing/queryTestUtils";
 
 import { chatMessages } from "@/locales/chatMessages";
 import { attachmentLinkCache } from "../api/attachmentLinkCache";
@@ -54,7 +55,7 @@ describe("MessageBubble", () => {
     };
     const onImagePress = jest.fn();
 
-    const view = await render(
+    const view = await renderWithAppTheme(
       <MessageBubble
         message={message}
         conversation={conversation}

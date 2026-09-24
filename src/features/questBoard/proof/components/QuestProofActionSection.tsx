@@ -1,7 +1,7 @@
 import { Send } from "lucide-react-native";
 
 import { Button } from "@/components/ui/Button";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { Text, View } from "@/tw";
 
 type QuestProofActionSectionProps =
@@ -26,6 +26,7 @@ type QuestProofActionSectionProps =
 export type { QuestProofActionSectionProps };
 
 export function QuestProofActionSection(props: QuestProofActionSectionProps) {
+  const { colors } = useAppTheme();
   if (props.variant === "proof") {
     return (
       <View className="mt-ku-18 gap-ku-10">

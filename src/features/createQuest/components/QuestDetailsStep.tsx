@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { TextArea } from "@/components/ui/TextArea";
 import { createQuestMessages } from "@/locales/createQuestMessages";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import styles from "./createQuestStyles";
 import type { QuestDraft } from "../domain/createQuestModel";
 import { SectionHeading } from "./SectionHeading";
@@ -42,6 +42,7 @@ export function QuestDetailsStep({
     value: QuestDraft[K]
   ) => void;
 }) {
+  const { colors } = useAppTheme();
   return (
     <View className={styles.sectionCard}>
       <SectionHeading

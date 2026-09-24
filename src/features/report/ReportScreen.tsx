@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { TextArea } from "@/components/ui/TextArea";
 import { useLocale } from "@/features/preferences/localeStore";
 import { reportMessages } from "@/locales/reportMessages";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { spacing } from "@/theme/spacing";
 import { cn } from "@/tw/cn";
 import {
@@ -34,6 +34,7 @@ type ReportRouteSearchParams = Partial<
 >;
 
 export default function ReportScreen() {
+  const { colors } = useAppTheme();
   const router = useRouter();
   const params = useLocalSearchParams<ReportRouteSearchParams>();
   const { locale } = useLocale();

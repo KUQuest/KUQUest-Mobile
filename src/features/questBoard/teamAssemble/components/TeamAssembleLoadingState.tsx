@@ -1,7 +1,7 @@
 import React from "react";
 
 import { ActivityIndicator, Text, View } from "@/tw";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 
 import styles from "../groupQuestStyles";
 
@@ -12,6 +12,7 @@ export interface TeamAssembleLoadingStateProps {
 export function TeamAssembleLoadingState({
   label,
 }: TeamAssembleLoadingStateProps) {
+  const { colors } = useAppTheme();
   return (
     <View
       accessibilityLabel={label}

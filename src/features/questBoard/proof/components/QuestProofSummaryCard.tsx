@@ -1,7 +1,7 @@
 import { Clock3, ShieldAlert } from "lucide-react-native";
 
-import { colors } from "@/theme/colors";
 import { Text, View } from "@/tw";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 
 export interface QuestProofSummaryCardProps {
   title: string;
@@ -16,6 +16,7 @@ export function QuestProofSummaryCard({
   countdown,
   error,
 }: QuestProofSummaryCardProps) {
+  const { colors } = useAppTheme();
   return (
     <>
       <View className="mt-ku-20 rounded-[18px] border border-ku-border-accent bg-ku-surface-accent p-ku-md">

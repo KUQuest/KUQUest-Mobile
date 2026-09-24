@@ -18,7 +18,7 @@ import {
 import { Check, ChevronDown, X } from "lucide-react-native";
 import { SearchInput } from "./SearchInput";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import styles from "./selectStyles";
 
 export interface Option {
@@ -84,6 +84,7 @@ export const Select = React.forwardRef<
   },
   ref
 ) {
+  const { colors } = useAppTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [dropdownPosition, setDropdownPosition] =

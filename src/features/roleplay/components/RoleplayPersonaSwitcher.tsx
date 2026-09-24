@@ -2,7 +2,7 @@ import { Check } from "lucide-react-native";
 
 import { PROTOTYPE_PERSONAS } from "@/components/ui/prototypeMenuData";
 import type { PrototypePersonaId } from "@/components/ui/prototypeMenuData";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { cn } from "@/tw/cn";
 import { Pressable, Text, View } from "@/tw";
 
@@ -29,6 +29,7 @@ export function RoleplayPersonaSwitcher({
   description,
   onPersonaChange,
 }: RoleplayPersonaSwitcherProps) {
+  const { colors } = useAppTheme();
   const personas = PROTOTYPE_PERSONAS.filter(({ id }) =>
     ROLEPLAY_PERSONA_IDS.includes(id)
   );

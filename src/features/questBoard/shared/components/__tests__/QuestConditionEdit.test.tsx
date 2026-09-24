@@ -1,5 +1,6 @@
 import React from "react";
-import { act, fireEvent, render } from "@testing-library/react-native";
+import { act, fireEvent } from "@testing-library/react-native";
+import { renderWithAppTheme } from "@/testing/queryTestUtils";
 
 import { QuestConditionEditModal } from "../QuestConditionEditModal";
 import { QuestConditionEditStatusCard } from "../QuestConditionEditStatusCard";
@@ -49,7 +50,7 @@ function makeEditRequest(
 
 describe("QuestConditionEditModal", () => {
   it("renders the original condition items when opened", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <QuestConditionEditModal
         visible
         originalItems={["Finish the mural", "Clean the wall"]}
@@ -67,7 +68,7 @@ describe("QuestConditionEditModal", () => {
 
   it("disables submit until a change is made, then submits trimmed items", async () => {
     const onSubmit = jest.fn();
-    const view = await render(
+    const view = await renderWithAppTheme(
       <QuestConditionEditModal
         visible
         originalItems={["Finish the mural"]}
@@ -94,7 +95,7 @@ describe("QuestConditionEditModal", () => {
   });
 
   it("prevents removing the last remaining condition item", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <QuestConditionEditModal
         visible
         originalItems={["Only condition"]}
@@ -109,7 +110,7 @@ describe("QuestConditionEditModal", () => {
   });
 
   it("adds and removes condition items, updating the diff preview", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <QuestConditionEditModal
         visible
         originalItems={["Finish the mural"]}
@@ -131,7 +132,7 @@ describe("QuestConditionEditModal", () => {
   });
 
   it("reorders items and reports the change as a reorder, not add/remove", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <QuestConditionEditModal
         visible
         originalItems={["First step", "Second step"]}
@@ -151,7 +152,7 @@ describe("QuestConditionEditModal", () => {
 
   it("blocks submission while a condition item is left empty", async () => {
     const onSubmit = jest.fn();
-    const view = await render(
+    const view = await renderWithAppTheme(
       <QuestConditionEditModal
         visible
         originalItems={["Finish the mural"]}
@@ -166,7 +167,7 @@ describe("QuestConditionEditModal", () => {
   });
 
   it("shows the submitting label while a submission is in flight", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <QuestConditionEditModal
         visible
         originalItems={["Finish the mural"]}
@@ -179,7 +180,7 @@ describe("QuestConditionEditModal", () => {
   });
 
   it("surfaces a submit error passed from the caller", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <QuestConditionEditModal
         visible
         originalItems={["Finish the mural"]}
@@ -205,7 +206,7 @@ describe("QuestConditionEditStatusCard", () => {
     const editRequest = makeEditRequest({
       expiresAt: "2026-08-12T09:01:30.000Z",
     });
-    const view = await render(
+    const view = await renderWithAppTheme(
       <QuestConditionEditStatusCard
         editRequest={editRequest}
         messages={messages}
@@ -232,7 +233,7 @@ describe("QuestConditionEditStatusCard", () => {
     const editRequest = makeEditRequest({
       expiresAt: "2026-08-12T08:59:59.000Z",
     });
-    const view = await render(
+    const view = await renderWithAppTheme(
       <QuestConditionEditStatusCard
         editRequest={editRequest}
         messages={messages}
