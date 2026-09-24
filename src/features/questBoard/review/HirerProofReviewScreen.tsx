@@ -15,6 +15,7 @@ import { ScrollView, Text, View } from "@/tw";
 import { useHirerProofReviewFeature } from "./useHirerProofReviewFeature";
 import { ProofReviewModal } from "./components/ProofReviewModal";
 import { ProofReviewSubmissionCard } from "./components/ProofReviewSubmissionCard";
+import { QuestReviewModal } from "./components/QuestReviewModal";
 
 export interface HirerProofReviewScreenProps {
   questId?: string;
@@ -33,10 +34,12 @@ export default function HirerProofReviewScreen({
   const {
     canReview,
     closeProof,
+    closeRatingReview,
     openProof,
     pendingCount,
     proofFileLinksQuery,
     proofForReview,
+    ratingReviewQuestId,
     review,
     rows,
     selectedProof,
@@ -139,6 +142,10 @@ export default function HirerProofReviewScreen({
         onReview={review}
         proof={proofForReview}
         visible={Boolean(proofForReview)}
+      />
+      <QuestReviewModal
+        onClose={closeRatingReview}
+        questId={ratingReviewQuestId}
       />
     </ScreenLayout>
   );

@@ -35,6 +35,13 @@ jest.mock("@/features/questBoard/api/questBoardQueries", () => ({
   }),
   useReviewProofMutation: () => ({ mutateAsync: mockMutateAsync }),
 }));
+jest.mock("../components/QuestReviewModal", () => {
+  const native = jest.requireActual("react-native");
+  return {
+    QuestReviewModal: ({ questId }: { questId: string | null }) =>
+      questId ? <native.View testID={`rating-review-${questId}`} /> : null,
+  };
+});
 
 function proof(id: string, workerId: string) {
   return {
@@ -120,6 +127,29 @@ describe("HirerProofReviewScreen", () => {
       })
     );
     expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  it("offers the Rating Review once a decision makes the Quest Terminal", async () => {
+    mockSnapshot = singleSnapshot(true);
+    mockMutateAsync.mockResolvedValue({});
+    const view = await render(<HirerProofReviewScreen questId="quest-1" />);
+
+    await fireEvent.press(view.getByTestId("proof-review-open-proof-1"));
+    await fireEvent.press(view.getByTestId("proof-review-approve"));
+    await waitFor(() =>
+      expect(view.queryByTestId("proof-review-modal")).toBeNull()
+    );
+    // Still active (e.g. other GROUP decisions pending): no Rating Review yet.
+    expect(view.queryByTestId("rating-review-quest-1")).toBeNull();
+
+    mockSnapshot = {
+      ...singleSnapshot(false),
+      state: "QUEST_COMPLETED",
+      capabilities: { canReviewProof: false, canCreateReview: true },
+    };
+    await view.rerender(<HirerProofReviewScreen questId="quest-1" />);
+
+    expect(view.getByTestId("rating-review-quest-1")).toBeTruthy();
   });
 
   it("keeps the Popup open and reloads when the review fails", async () => {
