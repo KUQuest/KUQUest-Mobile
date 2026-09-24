@@ -1,4 +1,4 @@
-import React from "react";
+import { WalletTransactionType } from "@/api/WalletApi";
 import { Modal, StyleSheet } from "react-native";
 import type { ViewStyle } from "react-native";
 import { Pressable, ScrollView, Text, TouchableOpacity, View } from "@/tw";
@@ -193,17 +193,15 @@ export function TransactionDetailModal({
           >
             <View className={styles.heroSection}>
               <View
-                className={`${styles.iconWrap} ${
-                  tx.isInflow ? styles.iconWrapInflow : styles.iconWrapNeutral
-                }`}
+                className={`${styles.iconWrap} ${tx.isInflow ? styles.iconWrapInflow : styles.iconWrapNeutral
+                  }`}
               >
                 {renderIcon()}
               </View>
 
               <Text
-                className={`${styles.amountText} ${
-                  tx.isInflow ? styles.amountInflow : styles.amountOutflow
-                }`}
+                className={`${styles.amountText} ${tx.isInflow ? styles.amountInflow : styles.amountOutflow
+                  }`}
                 testID="tx-detail-amount"
               >
                 {formattedAmount}
@@ -253,7 +251,11 @@ export function TransactionDetailModal({
                   className={styles.detailRow}
                   style={detailRowDividerStyle}
                 >
-                  <Text className={styles.detailLabel}>รายละเอียด</Text>
+                  <Text className={styles.detailLabel}>
+                    {tx.type === WalletTransactionType.TOP_UP
+                      ? m.txTopUpReferenceLabel
+                      : m.txDetailsLabel}
+                  </Text>
                   <Text className={styles.detailValue} numberOfLines={2}>
                     {tx.subtitle}
                   </Text>
@@ -261,7 +263,7 @@ export function TransactionDetailModal({
               ) : null}
 
               <View className={styles.detailRow} style={detailRowLastStyle}>
-                <Text className={styles.detailLabel}>{m.txReferenceLabel}</Text>
+                <Text className={styles.detailLabel}>{m.txTransactionIdLabel}</Text>
                 <Text
                   numberOfLines={1}
                   className={`${styles.detailValue} ${styles.monoText}`}
