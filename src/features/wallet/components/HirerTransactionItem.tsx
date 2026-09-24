@@ -10,7 +10,8 @@ import {
   RotateCcw,
   Send,
 } from "lucide-react-native";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { cn } from "@/tw/cn";
 import { formatSatang } from "@/domain/satang";
 import type { ClassifiedHirerTransaction } from "../walletModule";
 
@@ -23,6 +24,7 @@ export function HirerTransactionItem({
   transaction: tx,
   onPress,
 }: HirerTransactionItemProps) {
+  const { colors } = useAppTheme();
   const renderIcon = () => {
     switch (tx.iconKind) {
       case "escrow_pay":
@@ -77,16 +79,14 @@ export function HirerTransactionItem({
       onPress={onPress ? () => onPress(tx) : undefined}
       testID={`hirer-tx-${tx.id}`}
     >
-      {/* Icon Box */}
       <View
-        className={`${styles.iconBox} ${
+        className={cn(
+          styles.iconBox,
           isGreenIcon ? styles.iconBoxGreen : styles.iconBoxNeutral
-        }`}
+        )}
       >
         {renderIcon()}
       </View>
-
-      {/* Title, Subtitle, Date */}
       <View className={styles.contentWrap}>
         <Text numberOfLines={1} className={styles.title}>
           {tx.title}
@@ -110,12 +110,12 @@ export function HirerTransactionItem({
         </View>
       </View>
 
-      {/* Amount and Chevron */}
       <View className={styles.amountWrap}>
         <Text
-          className={`${styles.amount} ${
+          className={cn(
+            styles.amount,
             tx.isInflow ? styles.amountInflow : styles.amountOutflow
-          }`}
+          )}
         >
           {formattedAmount}
         </Text>
@@ -128,24 +128,21 @@ export function HirerTransactionItem({
 }
 
 const styles = {
-  card: "mb-ku-10 flex-row items-center rounded-[16px] border border-ku-border-subtle bg-ku-card p-ku-14",
-  iconBox:
-    "mr-ku-12 h-[44px] w-[44px] items-center justify-center rounded-[12px]",
+  card: "mb-ku-sm min-h-[48px] flex-row items-center gap-ku-12 rounded-ku-card border border-ku-border bg-ku-surface p-ku-md",
+  iconBox: "h-[44px] w-[44px] items-center justify-center rounded-ku-pill",
   iconBoxNeutral: "bg-ku-surface-muted",
   iconBoxGreen: "bg-ku-surface-success",
-  contentWrap: "mr-ku-sm flex-1",
-  title:
-    "mb-ku-2 font-ku-medium text-ku-body-small leading-[20px] text-ku-text-strong",
-  subtitle:
-    "mb-ku-2 font-ku-regular text-ku-label leading-[16px] text-ku-text-secondary",
-  dateRow: "flex-row items-center gap-ku-sm",
-  date: "font-ku-regular text-ku-caption text-ku-text-muted",
-  pendingChip: "rounded-[4px] bg-ku-surface-warning px-ku-xs py-ku-1",
-  pendingText: "font-ku-medium text-ku-nav text-ku-warning-dark",
-  failedChip: "rounded-[4px] bg-ku-surface-danger px-ku-xs py-ku-1",
-  failedText: "font-ku-medium text-ku-nav text-ku-danger",
+  contentWrap: "flex-1 gap-ku-2",
+  title: "font-ku-semibold text-ku-body-small text-ku-text-strong",
+  subtitle: "font-ku-regular text-ku-label text-ku-text-secondary",
+  dateRow: "flex-row flex-wrap items-center gap-ku-sm",
+  date: "font-ku-regular text-ku-label text-ku-text-muted",
+  pendingChip: "rounded-ku-pill bg-ku-surface-warning px-ku-sm py-ku-2",
+  pendingText: "font-ku-medium text-ku-caption text-ku-warning-dark",
+  failedChip: "rounded-ku-pill bg-ku-surface-danger px-ku-sm py-ku-2",
+  failedText: "font-ku-medium text-ku-caption text-ku-danger",
   amountWrap: "flex-row items-center gap-ku-xs",
-  amount: "font-ku-bold text-[15px] leading-[20px]",
+  amount: "font-ku-bold text-ku-control",
   amountInflow: "text-ku-success",
   amountOutflow: "text-ku-text-strong",
 } as const;

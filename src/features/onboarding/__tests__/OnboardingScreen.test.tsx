@@ -285,6 +285,8 @@ describe("OnboardingScreen Academic Registration selections", () => {
     expect(
       screen.getAllByTestId("select-trigger")[0].props.accessibilityLabel
     ).toBe("อาชีพ: อาจารย์");
+    await fireEvent.press(screen.getAllByTestId("select-trigger")[1]);
+    expect(screen.getByText("คณะวิศวกรรมศาสตร์")).toBeTruthy();
   });
   test("opens searchable dropdowns for occupation, faculty, and department", async () => {
     const api = createApi();

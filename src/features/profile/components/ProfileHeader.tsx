@@ -6,7 +6,13 @@ import { Building2, Code2, GraduationCap, Pencil } from "lucide-react-native";
 import { Avatar } from "../../../components/ui/Avatar";
 import { Chip } from "../../../components/ui/Chip";
 import { Button } from "../../../components/ui/Button";
-import { colors } from "../../../theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { useLocale } from "@/features/preferences/localeStore";
+import {
+  localizeDepartmentName,
+  localizeFacultyName,
+} from "@/locales/academicUnits";
+import { localizeOccupationName } from "@/locales/registrationOnboarding";
 import { getProfileLayoutMetrics } from "../../../theme/profileLayout";
 import styles from "../styles/profileComponentStyles";
 import type {
@@ -36,6 +42,7 @@ function ProfileMeta({
   icon: typeof GraduationCap;
   children: string;
 }) {
+  const { colors } = useAppTheme();
   return (
     <View className={styles.metaRow}>
       <Icon color={colors.textSecondary} size={16} strokeWidth={2} />
@@ -54,8 +61,19 @@ export function ProfileHeader({
   accessibilityLabels,
 }: ProfileHeaderProps) {
   const { width, fontScale } = useWindowDimensions();
+  const { colors } = useAppTheme();
   const metrics = getProfileLayoutMetrics(width, fontScale);
   const labels = { ...defaultAccessibilityLabels, ...accessibilityLabels };
+  const { locale } = useLocale();
+  const facultyName = data.faculty
+    ? localizeFacultyName(data.faculty, locale)
+    : "";
+  const departmentName = data.department
+    ? localizeDepartmentName(data.department, locale)
+    : "";
+  const occupationName = data.occupation
+    ? localizeOccupationName(data.occupation, locale)
+    : "";
   const profileImage = imageSource(data.profileImage);
   const profileImageUri =
     profileImage &&
@@ -78,35 +96,36 @@ export function ProfileHeader({
       className={styles.heroCard}
       style={{ padding: metrics.cardPadding }}
     >
-      <View className={styles.headerRow}>
-        <Avatar
-          accessibilityLabel={labels.profileImageLabel(data.name)}
-          cacheKey={profileImageCacheKey}
-          className={styles.photoFrame}
-          name={data.name}
-          size={metrics.photoSize}
-          textClassName={styles.initials}
-          uri={profileImageUri}
-        />
-        <View className={styles.identityContent}>
-          <Text
-            className={styles.name}
-            maxFontSizeMultiplier={2}
-            style={{
-              fontSize: metrics.nameFontSize,
-              lineHeight: Math.round(metrics.nameFontSize * 1.25),
-            }}
-          >
-            {data.name}
-          </Text>
-          {data.occupation ? (
-            <ProfileMeta icon={GraduationCap}>{data.occupation}</ProfileMeta>
+      <Avatar
+        accessibilityLabel={labels.profileImageLabel(data.name)}
+        cacheKey={profileImageCacheKey}
+        className={styles.photoFrame}
+        name={data.name}
+        size={metrics.photoSize}
+        textClassName={styles.initials}
+        uri={profileImageUri}
+      />
+      <View className={styles.identityContent}>
+        <Text
+          accessibilityRole="header"
+          className={styles.name}
+          maxFontSizeMultiplier={2}
+          style={{
+            fontSize: metrics.nameFontSize,
+            lineHeight: Math.round(metrics.nameFontSize * 1.25),
+          }}
+        >
+          {data.name}
+        </Text>
+        <View className={styles.metaList}>
+          {occupationName ? (
+            <ProfileMeta icon={GraduationCap}>{occupationName}</ProfileMeta>
           ) : null}
-          {data.faculty ? (
-            <ProfileMeta icon={Building2}>{data.faculty}</ProfileMeta>
+          {facultyName ? (
+            <ProfileMeta icon={Building2}>{facultyName}</ProfileMeta>
           ) : null}
-          {data.department ? (
-            <ProfileMeta icon={Code2}>{data.department}</ProfileMeta>
+          {departmentName ? (
+            <ProfileMeta icon={Code2}>{departmentName}</ProfileMeta>
           ) : null}
         </View>
       </View>
@@ -143,11 +162,11 @@ export function ProfileHeader({
       {editProfileLabel && onEditPress ? (
         <Button
           onPress={onEditPress}
-          variant="primary"
+          variant="secondary"
           className={styles.editButton}
           accessibilityLabel={editProfileLabel}
         >
-          <Pencil color={colors.onPrimary} size={16} strokeWidth={2.5} />
+          <Pencil color={colors.primary} size={16} strokeWidth={2.5} />
           <Text className={styles.editButtonText}>{editProfileLabel}</Text>
         </Button>
       ) : null}

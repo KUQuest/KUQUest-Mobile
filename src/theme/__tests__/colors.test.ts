@@ -3,6 +3,7 @@ import {
   darkColors,
   getThemeColors,
   hirerRamp,
+  setActiveRamp,
   workerRamp,
 } from "../colors";
 
@@ -148,6 +149,19 @@ describe("Theme Colors — Organic Editorial Palette", () => {
       expect(light.background).toBe("#F7F9F8");
       expect(dark.primary).toBe("#A9C79E");
       expect(dark.background).toBe("#101713");
+    });
+
+    it("switches the whole primary family to the Worker ramp", () => {
+      setActiveRamp("worker");
+      try {
+        const light = getThemeColors("light");
+        expect(light.primary).toBe("#96533F");
+        expect(light.primarySubtle).toBe("#F8ECE8");
+        expect(light.primaryBorder).toBe("#C9A79A");
+        expect(light.onPrimary).toBe("#FFFFFF");
+      } finally {
+        setActiveRamp("hirer");
+      }
     });
   });
 });

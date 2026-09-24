@@ -96,7 +96,7 @@ describe("HomeScreen live active quests syncing", () => {
     expect(getByTestId("hirer-quest-card-worker-live-q1")).toBeTruthy();
   });
 
-  it("opens the quest detail screen from the roster modal when there is no pending Candidate selection", async () => {
+  it("opens the roster screen from the assigned Worker banner", async () => {
     (questApi.listMine as jest.Mock).mockResolvedValue({
       items: [
         {
@@ -137,19 +137,15 @@ describe("HomeScreen live active quests syncing", () => {
       expect(getByText("Science Exhibition Booth Setup")).toBeTruthy();
     });
 
-    fireEvent.press(getByTestId("hirer-quest-card-worker-live-q1"));
-    await waitFor(() => {
-      expect(getByTestId("hirer-roster-manage-button")).toBeTruthy();
-    });
-    fireEvent.press(getByTestId("hirer-roster-manage-button"));
+    await fireEvent.press(getByTestId("hirer-quest-card-worker-live-q1"));
 
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/quest/[id]",
+      pathname: "/quest/[id]/select-roster",
       params: { id: "live-q1" },
     });
   });
 
-  it("opens the select-roster screen from the roster modal when an individual Candidate application is pending", async () => {
+  it("opens the roster screen from the applicants banner and the attention list", async () => {
     (questApi.listMine as jest.Mock).mockResolvedValue({
       items: [
         {
@@ -184,21 +180,21 @@ describe("HomeScreen live active quests syncing", () => {
       department: { faculty: { name: "Design" } },
     });
 
-    const { getByText, getByTestId } = await renderWithQueryClient(
-      <HomeScreen />
-    );
+    const { getByTestId } = await renderWithQueryClient(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByText("Poster Design Sprint")).toBeTruthy();
+      expect(getByTestId("hirer-quest-card-applicants-live-q2")).toBeTruthy();
     });
 
-    fireEvent.press(getByTestId("hirer-quest-card-applicants-live-q2"));
-    await waitFor(() => {
-      expect(getByTestId("hirer-roster-manage-button")).toBeTruthy();
-    });
-    fireEvent.press(getByTestId("hirer-roster-manage-button"));
+    await fireEvent.press(getByTestId("hirer-quest-card-applicants-live-q2"));
+    await fireEvent.press(getByTestId("hirer-attention-applicants-live-q2"));
 
-    expect(mockPush).toHaveBeenCalledWith({
+    expect(mockPush).toHaveBeenCalledTimes(2);
+    expect(mockPush).toHaveBeenNthCalledWith(2, {
+      pathname: "/quest/[id]/select-roster",
+      params: { id: "live-q2" },
+    });
+    expect(mockPush).toHaveBeenNthCalledWith(1, {
       pathname: "/quest/[id]/select-roster",
       params: { id: "live-q2" },
     });
@@ -243,22 +239,18 @@ describe("HomeScreen live active quests syncing", () => {
       department: { faculty: { name: "Art" } },
     });
 
-    const { getByText, getByTestId } = await renderWithQueryClient(
-      <HomeScreen />
-    );
+    const { getByTestId } = await renderWithQueryClient(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByText("Campus Mural Team Project")).toBeTruthy();
+      expect(getByTestId("hirer-quest-card-live-q3")).toBeTruthy();
     });
 
     expect(questApi.listApplications).not.toHaveBeenCalled();
 
-    fireEvent.press(getByTestId("hirer-quest-card-applicants-live-q3"));
     await waitFor(() => {
-      expect(getByText("Leo Leader")).toBeTruthy();
+      expect(getByTestId("hirer-quest-card-applicants-live-q3")).toBeTruthy();
     });
-
-    fireEvent.press(getByTestId("hirer-roster-manage-button"));
+    await fireEvent.press(getByTestId("hirer-quest-card-applicants-live-q3"));
 
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/quest/[id]/select-roster",
@@ -341,17 +333,16 @@ describe("HomeScreen live active quests syncing", () => {
     (questApi.listApplications as jest.Mock).mockResolvedValue([]);
     (questApi.listCandidateTeams as jest.Mock).mockResolvedValue([]);
 
-    const { getByTestId, getByText, queryByText } = await renderWithQueryClient(
-      <HomeScreen />
-    );
+    const { getByLabelText, getByTestId, getByText, queryByText } =
+      await renderWithQueryClient(<HomeScreen />);
 
     await waitFor(() => {
       expect(getByText("Open Quest 1")).toBeTruthy();
     });
 
-    expect(getByText("6 เควสต์ที่กำลังดำเนินการ")).toBeTruthy();
-    expect(getByText("2 ฉบับร่าง")).toBeTruthy();
-    expect(getByText("1 เควสต์ที่เสร็จสิ้นแล้ว")).toBeTruthy();
+    expect(getByLabelText("กำลังดำเนินการ: 6")).toBeTruthy();
+    expect(getByLabelText("ฉบับร่าง: 2")).toBeTruthy();
+    expect(getByLabelText("เสร็จสิ้น: 1")).toBeTruthy();
     expect(getByTestId("hirer-view-all-active")).toBeTruthy();
     expect(queryByText("Open Quest 6")).toBeNull();
     expect(queryByText("Completed Quest")).toBeNull();
@@ -413,7 +404,7 @@ describe("HomeScreen live active quests syncing", () => {
     });
   });
 
-  it("navigates to the correct destination for each Quick Access action", async () => {
+  it("opens My Quests from the overview counts and each shortcut destination", async () => {
     (questApi.listMine as jest.Mock).mockResolvedValue({
       items: [],
       nextCursor: null,
@@ -422,31 +413,71 @@ describe("HomeScreen live active quests syncing", () => {
     const { getByTestId } = await renderWithQueryClient(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByTestId("hirer-home-quick-access")).toBeTruthy();
+      expect(getByTestId("hirer-home-shortcuts")).toBeTruthy();
     });
 
-    fireEvent.press(getByTestId("hirer-quick-access-active"));
+    for (const tab of ["active", "draft", "completed"]) {
+      await fireEvent.press(getByTestId(`hirer-overview-${tab}`));
+      expect(mockPush).toHaveBeenCalledWith({
+        pathname: "/my-quests",
+        params: { role: "hirer", tab },
+      });
+    }
+
+    await fireEvent.press(getByTestId("hirer-shortcut-my-quests"));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/my-quests",
-      params: { role: "hirer", tab: "active" },
+      params: { role: "hirer" },
     });
 
-    fireEvent.press(getByTestId("hirer-quick-access-draft"));
-    expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/my-quests",
-      params: { role: "hirer", tab: "draft" },
-    });
-
-    fireEvent.press(getByTestId("hirer-quick-access-history"));
-    expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/my-quests",
-      params: { role: "hirer", tab: "completed" },
-    });
-
-    fireEvent.press(getByTestId("hirer-quick-access-board"));
+    await fireEvent.press(getByTestId("hirer-shortcut-board"));
     expect(mockPush).toHaveBeenCalledWith("/quest-board");
 
-    fireEvent.press(getByTestId("hirer-quick-access-topup"));
-    expect(mockPush).toHaveBeenCalledWith("/money");
+    await fireEvent.press(getByTestId("hirer-shortcut-topup"));
+    expect(mockPush).toHaveBeenCalledWith("/top-up");
+
+    await fireEvent.press(getByTestId("hirer-shortcut-settings"));
+    expect(mockPush).toHaveBeenCalledWith("/settings");
+
+    await fireEvent.press(getByTestId("hirer-home-empty-create"));
+    expect(mockPush).toHaveBeenCalledWith("/create");
+  });
+
+  it("lists a sent Proof under Needs your attention and opens Proof review", async () => {
+    (questApi.listMine as jest.Mock).mockResolvedValue({
+      items: [
+        {
+          id: "live-proof",
+          title: "Poster Design",
+          state: "QUEST_IN_PROGRESS",
+          mode: "FIRST_COME_FIRST_SERVED",
+          participation: "SINGLE",
+          headcount: 1,
+          proofRequired: true,
+          dueAt: "2026-09-30T17:00:00.000+07:00",
+        },
+      ],
+      nextCursor: null,
+    });
+    (questApi.listQuestAssignments as jest.Mock).mockResolvedValue([]);
+    (questApi.listProofSubmissions as jest.Mock).mockResolvedValue([
+      {
+        id: "proof-1",
+        status: "PROOF_PENDING",
+        submittedAt: "2026-09-23T10:00:00.000Z",
+      },
+    ]);
+
+    const { getByTestId } = await renderWithQueryClient(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(getByTestId("hirer-attention-proof-live-proof")).toBeTruthy();
+    });
+    await fireEvent.press(getByTestId("hirer-attention-proof-live-proof"));
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]/proof-review",
+      params: { id: "live-proof" },
+    });
   });
 });

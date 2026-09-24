@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import {
+  ArrowRightCircle,
   Briefcase,
   CalendarClock,
   CheckCircle2,
@@ -11,7 +12,7 @@ import {
 } from "lucide-react-native";
 
 import { Text, View } from "@/tw";
-import { colors } from "@/theme/colors";
+import { cn } from "@/tw/cn";
 import { formatSatang, SATANG_PER_BAHT } from "@/domain/satang";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
@@ -38,39 +39,24 @@ function DetailRow({
   icon: Icon,
   label,
   value,
-  detail,
   iconColor,
-  iconBg,
+  emphasis = false,
 }: {
   icon: React.ComponentType<{ size?: number; color?: string }>;
   label: string;
   value: string;
-  detail?: string;
-  iconColor?: string;
-  iconBg?: string;
+  iconColor: string;
+  emphasis?: boolean;
 }) {
   return (
-    <View className="flex-row items-start justify-between gap-ku-12 border-b border-ku-border/30 py-ku-10 last:border-b-0">
-      <View className="flex-1 flex-row items-center gap-ku-sm">
-        <View
-          className={`h-7 w-7 items-center justify-center rounded-lg ${iconBg ?? "bg-ku-surface-raised"}`}
-        >
-          <Icon size={15} color={iconColor ?? colors.textSecondary} />
-        </View>
-        <Text className="font-ku-medium text-ku-body-small text-ku-text-secondary">
-          {label}
-        </Text>
-      </View>
-      <View className="flex-1 items-end">
-        <Text className="text-right font-ku-semibold text-ku-body-small text-ku-text-strong">
-          {value}
-        </Text>
-        {detail ? (
-          <Text className="mt-ku-xs text-right text-ku-label text-ku-text-subtle">
-            {detail}
-          </Text>
-        ) : null}
-      </View>
+    <View className={cn(styles.row, styles.rowDivider)}>
+      <Icon size={18} color={iconColor} />
+      <Text className={styles.rowLabel}>{label}</Text>
+      <Text
+        className={cn(styles.rowValue, emphasis && styles.rowValueEmphasis)}
+      >
+        {value}
+      </Text>
     </View>
   );
 }
@@ -88,35 +74,40 @@ export default function QuestWorkStatusCard({
   const { colors: palette } = useAppTheme();
   const { locale } = useLocale();
 
-  const rewardBaht = useMemo(() => {
-    if (
-      "questReward" in snapshot.quest &&
-      typeof snapshot.quest.questReward === "number" &&
-      snapshot.quest.questReward > 0
-    ) {
-      return snapshot.quest.questReward;
-    }
-    if (
-      "questFundingTotal" in snapshot.quest &&
-      typeof snapshot.quest.questFundingTotal === "number" &&
-      snapshot.quest.questFundingTotal > 0
-    ) {
-      return snapshot.quest.questFundingTotal;
-    }
-    return null;
-  }, [snapshot.quest]);
-
   const formattedReward = useMemo(() => {
+    const quest = snapshot.quest;
+    const rewardBaht =
+      "questReward" in quest &&
+      typeof quest.questReward === "number" &&
+      quest.questReward > 0
+        ? quest.questReward
+        : "questFundingTotal" in quest &&
+            typeof quest.questFundingTotal === "number" &&
+            quest.questFundingTotal > 0
+          ? quest.questFundingTotal
+          : null;
     if (rewardBaht === null) return null;
-    const satang = Math.round(rewardBaht * SATANG_PER_BAHT);
-    return formatSatang(satang, locale);
-  }, [rewardBaht, locale]);
-  const statusTone = useMemo(() => {
-    if (isTerminal) return "terminal";
-    if (snapshot.state === QuestStatus.QUEST_IN_PROGRESS) return "in_progress";
-    if (snapshot.state === QuestStatus.QUEST_COMPLETED) return "completed";
-    return "assigned";
-  }, [isTerminal, snapshot.state]);
+    return formatSatang(Math.round(rewardBaht * SATANG_PER_BAHT), locale);
+  }, [snapshot.quest, locale]);
+  const statusTone = isTerminal
+    ? "terminal"
+    : snapshot.state === QuestStatus.QUEST_IN_PROGRESS
+      ? "in_progress"
+      : snapshot.state === QuestStatus.QUEST_COMPLETED
+        ? "completed"
+        : "assigned";
+  const StatusIcon =
+    statusTone === "in_progress"
+      ? Zap
+      : statusTone === "completed"
+        ? CheckCircle2
+        : Clock3;
+  const statusIconColor =
+    statusTone === "in_progress"
+      ? palette.primaryDark
+      : statusTone === "completed"
+        ? palette.success
+        : palette.textSecondary;
 
   const isCandidateMode = snapshot.mode === QuestCandidateMode.CANDIDATE;
   const modeLabel = isCandidateMode
@@ -145,121 +136,70 @@ export default function QuestWorkStatusCard({
       : "Proof-free";
 
   const locationLabel = snapshot.quest.locations?.[0]?.label;
+  const ParticipationIcon = isGroup ? Users : User;
 
   return (
-    <View className="rounded-[20px] border border-ku-border/60 bg-ku-surface p-ku-16 shadow-sm dark:bg-ku-card">
-      {/* Header: Status Pill and Reward Amount */}
-      <View className="flex-row items-center justify-between gap-ku-12">
-        <View
-          className={`flex-row items-center gap-1.5 rounded-full border px-ku-10 py-1 ${
-            statusTone === "in_progress"
-              ? "border-ku-primary-border/60 bg-ku-primary-subtle"
-              : statusTone === "assigned"
-                ? "border-ku-terracotta/40 bg-ku-surface-terracotta"
-                : statusTone === "completed"
-                  ? "border-ku-border-accent bg-ku-surface-accent"
-                  : "border-ku-border bg-ku-surface-muted"
-          }`}
-        >
-          {statusTone === "in_progress" ? (
-            <Zap size={14} color={palette.primary ?? colors.primary} />
-          ) : statusTone === "assigned" ? (
-            <Clock3 size={14} color={palette.terracotta ?? colors.terracotta} />
-          ) : statusTone === "completed" ? (
-            <CheckCircle2 size={14} color={palette.success ?? colors.success} />
-          ) : (
-            <Clock3 size={14} color={palette.textMuted} />
-          )}
-          <Text
-            className={`font-ku-semibold text-ku-label ${
-              statusTone === "in_progress"
-                ? "text-ku-primary-dark dark:text-ku-primary"
-                : statusTone === "assigned"
-                  ? "text-ku-terracotta-dark dark:text-ku-terracotta"
-                  : statusTone === "completed"
-                    ? "text-ku-success-dark"
-                    : "text-ku-text-muted"
-            }`}
-          >
-            {status}
-          </Text>
-        </View>
-
-        {formattedReward ? (
-          <View className="items-end">
-            <Text className="font-ku-bold text-ku-title-small text-ku-terracotta-dark dark:text-ku-terracotta">
-              {formattedReward}
-            </Text>
-            <Text className="font-ku-medium text-[11px] text-ku-text-subtle">
-              {locale === "th" ? "ค่าตอบแทน" : "Reward"}
+    <View className={styles.card}>
+      <View className={styles.header}>
+        <View className={styles.headerTop}>
+          <View className={cn(styles.statusPill, statusPillTone[statusTone])}>
+            <StatusIcon size={14} color={statusIconColor} strokeWidth={2.2} />
+            <Text className={cn(styles.statusText, statusTextTone[statusTone])}>
+              {status}
             </Text>
           </View>
-        ) : null}
-      </View>
-
-      {/* Quest Title */}
-      <Text className="mt-ku-12 font-ku-bold text-[20px] leading-[26px] text-ku-text-strong">
-        {snapshot.quest.title}
-      </Text>
-
-      {/* Metadata Chips */}
-      <View className="mt-ku-10 flex-row flex-wrap gap-1.5">
-        <View className="flex-row items-center gap-1 rounded-full border border-ku-border/50 bg-ku-surface-raised px-ku-sm py-0.5">
-          {snapshot.participation === "GROUP" ? (
-            <Users size={12} color={palette.textSecondary} />
-          ) : (
-            <User size={12} color={palette.textSecondary} />
-          )}
-          <Text className="font-ku-medium text-[11px] text-ku-text-secondary">
-            {participationLabel}
-          </Text>
-        </View>
-
-        <View className="rounded-full border border-ku-border/50 bg-ku-surface-raised px-ku-sm py-0.5">
-          <Text className="font-ku-medium text-[11px] text-ku-text-secondary">
-            {modeLabel}
-          </Text>
-        </View>
-
-        <View className="rounded-full border border-ku-border/50 bg-ku-surface-raised px-ku-sm py-0.5">
-          <Text className="font-ku-medium text-[11px] text-ku-text-secondary">
-            {proofBadgeText}
-          </Text>
-        </View>
-
-        {snapshot.quest.tag?.name ? (
-          <View className="rounded-full border border-ku-border/50 bg-ku-surface-raised px-ku-sm py-0.5">
-            <Text className="font-ku-medium text-[11px] text-ku-text-secondary">
+          {snapshot.quest.tag?.name ? (
+            <Text className={styles.tag} numberOfLines={1}>
               {snapshot.quest.tag.name}
             </Text>
-          </View>
-        ) : null}
+          ) : null}
+        </View>
+        <Text accessibilityRole="header" className={styles.title}>
+          {snapshot.quest.title}
+        </Text>
+        <View className={styles.metaRow}>
+          <ParticipationIcon size={14} color={palette.textSecondary} />
+          <Text className={styles.metaText}>
+            {[participationLabel, modeLabel, proofBadgeText].join(" · ")}
+          </Text>
+        </View>
       </View>
 
-      {/* Divider */}
-      <View className="mt-ku-14 mb-ku-6 border-t border-ku-border/50" />
+      <View className={styles.statStrip}>
+        {formattedReward ? (
+          <>
+            <View className={styles.statTile}>
+              <Text className={styles.statLabel}>
+                {locale === "th" ? "ค่าตอบแทน" : "Reward"}
+              </Text>
+              <Text className={styles.rewardValue}>{formattedReward}</Text>
+            </View>
+            <View className={styles.statDivider} />
+          </>
+        ) : null}
+        <View className={styles.statTile}>
+          <View className={styles.statLabelRow}>
+            <CalendarClock size={14} color={palette.textSecondary} />
+            <Text className={styles.statLabel}>{messages.dueAt}</Text>
+          </View>
+          <Text className={styles.dueValue}>{countdown}</Text>
+          {dueAtDetail ? (
+            <Text className={styles.statDetail}>{dueAtDetail}</Text>
+          ) : null}
+        </View>
+      </View>
 
-      {/* Structured Details */}
       <View>
         <DetailRow
-          icon={CalendarClock}
-          iconColor={palette.primary}
-          iconBg="bg-ku-primary-subtle"
-          label={messages.dueAt}
-          value={countdown}
-          detail={dueAtDetail}
-        />
-        <DetailRow
           icon={Briefcase}
-          iconColor={palette.terracotta}
-          iconBg="bg-ku-surface-terracotta"
+          iconColor={palette.textSecondary}
           label={messages.assignment}
           value={assignment}
         />
         <DetailRow
-          icon={CheckCircle2}
-          iconColor={palette.primaryDeep}
-          iconBg="bg-ku-surface-accent"
+          emphasis
+          icon={ArrowRightCircle}
+          iconColor={palette.primaryDark}
           label={messages.nextAction}
           value={nextAction}
         />
@@ -275,3 +215,44 @@ export default function QuestWorkStatusCard({
     </View>
   );
 }
+
+const statusPillTone = {
+  in_progress: "border-ku-primary-border bg-ku-primary-subtle",
+  assigned: "border-ku-border bg-ku-surface-raised",
+  completed: "border-ku-border-success bg-ku-surface-success",
+  terminal: "border-ku-border bg-ku-surface-raised",
+} as const;
+
+const statusTextTone = {
+  in_progress: "text-ku-primary-dark",
+  assigned: "text-ku-text",
+  completed: "text-ku-success",
+  terminal: "text-ku-text-muted",
+} as const;
+
+const styles = {
+  card: "overflow-hidden rounded-ku-card border border-ku-border bg-ku-surface",
+  header: "gap-ku-sm p-ku-md",
+  headerTop: "flex-row items-center justify-between gap-ku-sm",
+  statusPill:
+    "flex-row items-center gap-ku-6 rounded-ku-pill border px-ku-10 py-ku-4",
+  statusText: "font-ku-semibold text-ku-label",
+  tag: "shrink rounded-ku-pill bg-ku-surface-raised px-ku-10 py-ku-4 font-ku-medium text-ku-label text-ku-text-secondary",
+  title: "font-ku-bold text-ku-title text-ku-text-strong",
+  metaRow: "flex-row items-center gap-ku-6",
+  metaText: "flex-1 font-ku-regular text-ku-label text-ku-text-secondary",
+  statStrip: "flex-row border-t border-ku-divider bg-ku-surface-raised",
+  statTile: "flex-1 gap-ku-2 px-ku-md py-ku-12",
+  statDivider: "w-px bg-ku-divider",
+  statLabelRow: "flex-row items-center gap-ku-6",
+  statLabel: "font-ku-medium text-ku-label text-ku-text-secondary",
+  rewardValue: "font-ku-bold text-ku-title-small text-ku-primary-dark",
+  dueValue: "font-ku-bold text-ku-body text-ku-text-strong",
+  statDetail: "font-ku-regular text-ku-label text-ku-text-secondary",
+  row: "min-h-[52px] flex-row items-center gap-ku-12 px-ku-md py-ku-sm",
+  rowDivider: "border-t border-ku-divider",
+  rowLabel: "flex-1 font-ku-medium text-ku-body-small text-ku-text-secondary",
+  rowValue:
+    "max-w-[55%] text-right font-ku-semibold text-ku-body-small text-ku-text-strong",
+  rowValueEmphasis: "text-ku-primary-dark",
+} as const;

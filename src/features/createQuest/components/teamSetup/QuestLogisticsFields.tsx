@@ -16,7 +16,7 @@ import { Image, Pressable, Text, TextInput, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { createQuestMessages } from "@/locales/createQuestMessages";
 import type { SupportedLocale } from "@/locales/locale";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { formatDate, formatDateTime } from "@/domain/datetime";
 import {
   addHoursToTime,
@@ -63,6 +63,7 @@ export function QuestLogisticsFields({
     value: QuestDraft[K]
   ) => void;
 }) {
+  const { colors } = useAppTheme();
   const { imageError, setImageError, pickImages, removeImage } =
     useCreateQuestImages({ draft, messages, updateDraft });
   const [datePickerField, setDatePickerField] = useState<ScheduleField | null>(
@@ -105,6 +106,11 @@ export function QuestLogisticsFields({
     locale,
     messages.notSelected
   );
+  const endMs =
+    draft.startDate && draft.startTime && draft.deadline && draft.endTime
+      ? getDateTimeValue(draft.deadline, draft.endTime)
+      : null;
+  const timeOrderError = startMs !== null && endMs !== null && endMs <= startMs;
 
   return (
     <>
@@ -114,195 +120,174 @@ export function QuestLogisticsFields({
         summary={logisticsSummary}
         onPress={onToggleLogistics}
       >
-        <DateTimeField
-          emptyLabel={messages.notSelected}
-          label={messages.startDateTime}
-          value={formatDateTime(
-            draft.startDate,
-            draft.startTime,
-            locale,
-            messages.notSelected
-          )}
-          dateFormatted={formatDate(
-            draft.startDate,
-            locale,
-            messages.notSelected
-          )}
-          dateLabel={messages.startDate}
-          timeValue={draft.startTime}
-          timeLabel={messages.startTime}
-          hasValue={Boolean(
-            draft.startDate && TIME_PATTERN.test(draft.startTime)
-          )}
-          error={
-            errors.startDate ??
-            errors.startTime ??
-            (startInPast ? messages.startTimePastError : undefined)
-          }
-          helper={messages.dateTimeHelper}
-          fieldRef={startDateRef}
-          testID="create-quest-start-datetime"
-          onPress={() => setDatePickerField("start")}
-          onDatePress={() => setDatePickerField("start")}
-          onTimePress={() => setTimePickerField("start")}
-          messages={messages}
-        />
-        {draft.startDate && draft.deadline && draft.startTime && draft.endTime
-          ? (() => {
-              const startMs = getDateTimeValue(
+        <View className={styles.timeline}>
+          <View>
+            <View className={styles.timelineLine} />
+            <DateTimeField
+              emptyLabel={messages.notSelected}
+              label={messages.startDateTime}
+              value={formatDateTime(
                 draft.startDate,
-                draft.startTime
-              );
-              const endMs = getDateTimeValue(draft.deadline, draft.endTime);
-              const isOrderError =
-                startMs !== null && endMs !== null && endMs <= startMs;
-              if (isOrderError) {
-                return (
-                  <View
-                    className={cn(
-                      styles.durationBadge,
-                      styles.durationBadgeError
-                    )}
-                  >
-                    <View className="flex-1 flex-row items-center gap-ku-6">
-                      <CircleAlert
-                        color={colors.danger}
-                        size={16}
-                        strokeWidth={2.2}
-                      />
-                      <Text className={styles.durationBadgeErrorText}>
-                        {messages.timeOrderError}
-                      </Text>
-                    </View>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={messages.fixDeadlineQuick}
-                      onPress={handleFixDeadlineQuick}
-                      className={styles.fixDeadlineButton}
-                      testID="create-quest-fix-deadline-btn"
-                    >
-                      <Text className={styles.fixDeadlineButtonText}>
-                        {messages.fixDeadlineQuick}
-                      </Text>
-                    </Pressable>
-                  </View>
-                );
+                draft.startTime,
+                locale,
+                messages.notSelected
+              )}
+              dateFormatted={formatDate(
+                draft.startDate,
+                locale,
+                messages.notSelected
+              )}
+              dateLabel={messages.startDate}
+              timeValue={draft.startTime}
+              timeLabel={messages.startTime}
+              hasValue={Boolean(
+                draft.startDate && TIME_PATTERN.test(draft.startTime)
+              )}
+              error={
+                errors.startDate ??
+                errors.startTime ??
+                (startInPast ? messages.startTimePastError : undefined)
               }
-              if (startMs !== null && endMs !== null) {
-                const durationStr = scheduleDisplay.duration;
-                if (durationStr) {
-                  return (
-                    <View className={styles.durationBadge}>
-                      <View className="flex-row items-center gap-ku-6">
-                        <Clock3
-                          color={colors.hirer}
-                          size={16}
-                          strokeWidth={2.2}
-                        />
-                        <Text className={styles.durationBadgeText}>
-                          {messages.questDuration}: {durationStr}
-                          {scheduleDisplay.crossesMidnight
-                            ? ` · ${messages.nextDay}`
-                            : ""}
-                        </Text>
-                      </View>
-                    </View>
-                  );
-                }
-              }
-              return null;
-            })()
-          : null}
-        <DateTimeField
-          emptyLabel={messages.notSelected}
-          label={messages.deadlineDateTime}
-          value={formatDateTime(
-            draft.deadline,
-            draft.endTime,
-            locale,
-            messages.notSelected
-          )}
-          dateFormatted={formatDate(
-            draft.deadline,
-            locale,
-            messages.notSelected
-          )}
-          dateLabel={messages.endDate}
-          timeValue={draft.endTime}
-          timeLabel={messages.endTime}
-          hasValue={Boolean(draft.deadline && TIME_PATTERN.test(draft.endTime))}
-          error={errors.deadline ?? errors.endTime}
-          helper={messages.dateTimeHelper}
-          fieldRef={deadlineRef}
-          testID="create-quest-deadline-datetime"
-          onPress={() => setDatePickerField("end")}
-          onDatePress={() => setDatePickerField("end")}
-          onTimePress={() => setTimePickerField("end")}
-          messages={messages}
-        />
-        <View className={styles.fieldGroup}>
-          <Pressable
-            accessibilityRole="checkbox"
-            accessibilityState={{
-              checked: draft.locationMode === "ONLINE",
-            }}
-            accessibilityLabel={messages.onlineQuest}
-            onPress={() =>
-              updateDraft(
-                "locationMode",
-                draft.locationMode === "ONLINE" ? "ON_CAMPUS" : "ONLINE"
-              )
-            }
-            className={styles.onlineToggle}
+              fieldRef={startDateRef}
+              testID="create-quest-start-datetime"
+              onPress={() => setDatePickerField("start")}
+              onDatePress={() => setDatePickerField("start")}
+              onTimePress={() => setTimePickerField("start")}
+              messages={messages}
+            />
+            {timeOrderError ? (
+              <View className={styles.durationError}>
+                <View className={styles.durationErrorRow}>
+                  <CircleAlert
+                    color={colors.danger}
+                    size={16}
+                    strokeWidth={2.2}
+                  />
+                  <Text className={styles.durationErrorText}>
+                    {messages.timeOrderError}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={messages.fixDeadlineQuick}
+                  onPress={handleFixDeadlineQuick}
+                  className={styles.fixDeadlineButton}
+                  testID="create-quest-fix-deadline-btn"
+                >
+                  <Text className={styles.fixDeadlineButtonText}>
+                    {messages.fixDeadlineQuick}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : scheduleDisplay.duration && endMs !== null ? (
+              <View className={styles.durationBadge}>
+                <Clock3 color={colors.hirer} size={14} strokeWidth={2.2} />
+                <Text className={styles.durationBadgeText}>
+                  {messages.questDuration}: {scheduleDisplay.duration}
+                  {scheduleDisplay.crossesMidnight
+                    ? ` · ${messages.nextDay}`
+                    : ""}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          <DateTimeField
+            emptyLabel={messages.notSelected}
+            label={messages.deadlineDateTime}
+            value={formatDateTime(
+              draft.deadline,
+              draft.endTime,
+              locale,
+              messages.notSelected
+            )}
+            dateFormatted={formatDate(
+              draft.deadline,
+              locale,
+              messages.notSelected
+            )}
+            dateLabel={messages.endDate}
+            timeValue={draft.endTime}
+            timeLabel={messages.endTime}
+            hasValue={Boolean(
+              draft.deadline && TIME_PATTERN.test(draft.endTime)
+            )}
+            error={errors.deadline ?? errors.endTime}
+            fieldRef={deadlineRef}
+            testID="create-quest-deadline-datetime"
+            onPress={() => setDatePickerField("end")}
+            onDatePress={() => setDatePickerField("end")}
+            onTimePress={() => setTimePickerField("end")}
+            messages={messages}
+          />
+        </View>
+        <Text className={styles.helperText}>{messages.dateTimeHelper}</Text>
+
+        <View className={styles.logisticsDivider} />
+
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{
+            checked: draft.locationMode === "ONLINE",
+          }}
+          accessibilityLabel={messages.onlineQuest}
+          onPress={() =>
+            updateDraft(
+              "locationMode",
+              draft.locationMode === "ONLINE" ? "ON_CAMPUS" : "ONLINE"
+            )
+          }
+          className={styles.onlineToggle}
+        >
+          <View
+            className={cn(
+              styles.checkbox,
+              draft.locationMode === "ONLINE" && styles.checkboxChecked
+            )}
           >
+            {draft.locationMode === "ONLINE" ? (
+              <Check color={colors.onHirer} size={15} strokeWidth={3} />
+            ) : null}
+          </View>
+          <View className={styles.onlineToggleCopy}>
+            <Text className={styles.onlineToggleTitle}>
+              {messages.onlineQuest}
+            </Text>
+            <Text className={styles.onlineToggleHint}>
+              {messages.onlineQuestHint}
+            </Text>
+          </View>
+        </Pressable>
+        {draft.locationMode === "ON_CAMPUS" ? (
+          <View className={styles.fieldGroup}>
+            <FieldLabel required optionalLabel="">
+              {messages.location}
+            </FieldLabel>
             <View
               className={cn(
-                styles.checkbox,
-                draft.locationMode === "ONLINE" && styles.checkboxChecked
+                styles.inputWithIcon,
+                errors.location && styles.fieldError
               )}
             >
-              {draft.locationMode === "ONLINE" ? (
-                <Check color={colors.onHirer} size={15} strokeWidth={3} />
-              ) : null}
+              <MapPin color={colors.textMuted} size={18} strokeWidth={2} />
+              <TextInput
+                ref={locationRef}
+                className={styles.iconInput}
+                placeholder={messages.locationPlaceholder}
+                placeholderTextColor={colors.textMuted}
+                value={draft.location}
+                onChangeText={(value) => updateDraft("location", value)}
+                accessibilityLabel={messages.location}
+                testID="create-quest-location"
+              />
             </View>
-            <View className={styles.onlineToggleCopy}>
-              <Text className={styles.onlineToggleTitle}>
-                {messages.onlineQuest}
-              </Text>
-              <Text className={styles.onlineToggleHint}>
-                {messages.onlineQuestHint}
-              </Text>
-            </View>
-          </Pressable>
-          {draft.locationMode === "ON_CAMPUS" ? (
-            <>
-              <FieldLabel required optionalLabel="">
-                {messages.location}
-              </FieldLabel>
-              <View
-                className={cn(
-                  styles.inputWithIcon,
-                  errors.location && styles.fieldError
-                )}
-              >
-                <MapPin color={colors.textMuted} size={18} strokeWidth={2} />
-                <TextInput
-                  ref={locationRef}
-                  className={styles.iconInput}
-                  placeholder={messages.locationPlaceholder}
-                  placeholderTextColor={colors.textFaint}
-                  value={draft.location}
-                  onChangeText={(value) => updateDraft("location", value)}
-                  accessibilityLabel={messages.location}
-                  testID="create-quest-location"
-                />
-              </View>
-              {errors.location ? (
-                <Text className={styles.errorText}>{errors.location}</Text>
-              ) : null}
-            </>
-          ) : null}
-        </View>
+            {errors.location ? (
+              <Text className={styles.errorText}>{errors.location}</Text>
+            ) : null}
+          </View>
+        ) : null}
+
+        <View className={styles.logisticsDivider} />
+
         <View className={styles.fieldGroup}>
           <FieldLabel optionalLabel={messages.optional}>
             {messages.images}

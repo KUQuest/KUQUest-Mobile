@@ -5,10 +5,11 @@ import { RefreshCw } from "lucide-react-native";
 
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
+import { StateView } from "@/components/ui/StateView";
 import { TopBar } from "@/components/ui/TopBar";
 import { WorkerProofForm } from "@/features/workerWork/components/WorkerProofForm";
 import { questBoardMessages } from "@/locales/questBoardMessages";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { formatTimestamp } from "@/domain/datetime";
 import { isTerminalStatus } from "@/domain/questLifecycle";
 import { spacing } from "@/theme/spacing";
@@ -55,6 +56,7 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
     startWork,
     startWorkSending,
   } = useQuestWorkFeature(props);
+  const { colors } = useAppTheme();
   const questMessages = questBoardMessages[locale];
   const [now, setNow] = useState(() => Date.now());
   const dueAtMs = snapshot?.dueAt
@@ -117,7 +119,7 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
           testID="quest-work-loading"
         >
           <ActivityIndicator color={colors.primary} />
-          <Text className="mt-ku-12 text-ku-label text-ku-text-subtle">
+          <Text className="mt-ku-12 text-ku-label text-ku-text-secondary">
             {questMessages.loading}
           </Text>
         </View>
@@ -137,26 +139,14 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
           onBackPress={handleBack}
           variant="detail"
         />
-        <View
-          className="flex-1 justify-center px-ku-lg"
-          testID="quest-work-error"
-        >
-          <Text className="font-ku-bold text-ku-title-small text-ku-text-strong">
-            {messages.serverError}
-          </Text>
-          <Text className="mt-ku-sm text-ku-body-small text-ku-text-secondary">
-            {errorText ?? messages.missingRoute}
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={messages.retry}
-            className="mt-ku-20 h-12 items-center justify-center rounded-xl bg-ku-primary px-ku-md"
-            onPress={() => void refreshSnapshot().catch(() => undefined)}
-          >
-            <Text className="text-center font-ku-semibold text-ku-on-primary">
-              {messages.retry}
-            </Text>
-          </Pressable>
+        <View className="flex-1 justify-center" testID="quest-work-error">
+          <StateView
+            actionLabel={messages.retry}
+            description={errorText ?? messages.missingRoute}
+            onAction={() => void refreshSnapshot().catch(() => undefined)}
+            title={messages.serverError}
+            variant="error"
+          />
         </View>
       </ScreenLayout>
     );
@@ -177,10 +167,10 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
             accessibilityRole="button"
             accessibilityLabel={messages.refresh}
             hitSlop={8}
-            className="h-12 w-12 items-center justify-center rounded-full"
+            className="h-12 w-12 items-center justify-center rounded-ku-pill active:bg-ku-surface-raised"
             onPress={() => void refreshSnapshot().catch(() => undefined)}
           >
-            <RefreshCw color={colors.primaryDeep} size={18} />
+            <RefreshCw color={colors.primaryDark} size={20} />
           </Pressable>
         }
       />
@@ -200,7 +190,7 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
           contentContainerStyle={{ paddingBottom: contentBottom }}
           testID="quest-work-screen"
         >
-          <View className="px-ku-20 pt-ku-16">
+          <View className="gap-ku-md px-ku-md pt-ku-md">
             <QuestWorkStatusCard
               snapshot={snapshot}
               status={status}

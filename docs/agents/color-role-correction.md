@@ -131,17 +131,12 @@ The most visible Hirer-specific surfaces to audit:
 Audit all `ku-primary` / `colors.primary` usages. The card always renders in the Hirer
 Home workspace → replace with `ku-hirer` / `colors.hirer`.
 
-### `src/features/wallet/components/HirerBalanceCards.tsx`
+### Money tab (`WalletScreenContent`, `HirerBalanceCards`, `HirerHistoryFilter`, `TransactionDetailModal`)
 
-Always renders in the Hirer wallet view:
-
-- `ArrowRightLeft color={colors.primary}` → `colors.hirer`
-- `colors.primaryDeep` icon colors → `colors.hirerDeep`
-- `colors.primary` icon colors → `colors.hirer`
-
-### `src/features/wallet/components/HirerWalletBanner.tsx`
-
-- `Plus color={colors.primaryDeep}` → `colors.hirerDeep`
+Shared by both workspaces (Worker opens it on Earnings/Pending payout). Use the
+ramp-driven `ku-primary` / `ku-primary-dark` / `ku-on-primary` / `ku-surface-accent`
+and `colors.primary*`, never `ku-hirer*`, so it follows the active workspace. The
+Top Up flow (`TopUp*`, `QuestTopUp*`) stays Hirer-only.
 
 ### `src/features/wallet/components/TransferEarningsModal.tsx`
 

@@ -136,6 +136,11 @@ export interface QuestBoardMessages {
   confirmRejectTeamTitle: string;
   confirmRejectMessage: string;
   noSelectionNeeded: string;
+  rosterWorkersTitle: string;
+  rosterWorkerCount: (count: number, headcount: number) => string;
+  rosterNoWorkers: string;
+  rosterProposalsTitle: string;
+  rosterOpenProfile: (name: string) => string;
   actionFailedTitle: string;
   firstCome: string;
   reviewCandidates: string;
@@ -433,7 +438,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     notNeeded: "Not needed",
     candidateMode: "Candidate mode",
     candidate: "Candidate",
-    selectRosterTitle: "Select Roster",
+    selectRosterTitle: "Quest roster",
     confirmSelectCandidateTitle: "Select this candidate?",
     confirmSelectCandidateMessage:
       "This assigns the Quest to them and automatically rejects every other applicant. This can't be undone.",
@@ -444,6 +449,12 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     confirmRejectTeamTitle: "Reject this team?",
     confirmRejectMessage: "They will no longer be considered for this Quest.",
     noSelectionNeeded: "This Quest fills automatically — no selection needed.",
+    rosterWorkersTitle: "Workers",
+    rosterWorkerCount: (count, headcount) =>
+      `${count} of ${headcount} ${headcount === 1 ? "Worker" : "Workers"}`,
+    rosterNoWorkers: "No Workers have joined yet.",
+    rosterProposalsTitle: "Candidate proposals",
+    rosterOpenProfile: (name) => `Open ${name}'s profile`,
     actionFailedTitle: "Action failed",
     firstCome: "First-come, first-served",
     reviewCandidates: "Review candidates",
@@ -814,7 +825,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     notNeeded: "ไม่ต้องมี",
     candidateMode: "รูปแบบการคัดเลือก",
     candidate: "คัดเลือก",
-    selectRosterTitle: "คัดเลือกผู้สมัคร",
+    selectRosterTitle: "รายชื่อในเควสต์",
     confirmSelectCandidateTitle: "เลือกผู้สมัครคนนี้หรือไม่",
     confirmSelectCandidateMessage:
       "การเลือกจะมอบหมายเควสต์ให้ผู้สมัครคนนี้และปฏิเสธผู้สมัครคนอื่นโดยอัตโนมัติ ไม่สามารถย้อนกลับได้",
@@ -825,6 +836,12 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     confirmRejectTeamTitle: "ปฏิเสธทีมนี้หรือไม่",
     confirmRejectMessage: "ผู้สมัครนี้จะไม่ถูกพิจารณาสำหรับเควสต์นี้อีก",
     noSelectionNeeded: "เควสต์นี้รับผู้ทำงานอัตโนมัติ ไม่ต้องคัดเลือก",
+    rosterWorkersTitle: "ผู้ทำงาน",
+    rosterWorkerCount: (count, headcount) =>
+      `ผู้ทำงาน ${count}/${headcount} คน`,
+    rosterNoWorkers: "ยังไม่มีผู้ทำงานเข้าร่วม",
+    rosterProposalsTitle: "ข้อเสนอผู้สมัคร",
+    rosterOpenProfile: (name) => `ดูโปรไฟล์ของ ${name}`,
     actionFailedTitle: "การดำเนินการล้มเหลว",
     firstCome: "มาก่อนได้ก่อน",
     reviewCandidates: "ตรวจสอบผู้สมัคร",

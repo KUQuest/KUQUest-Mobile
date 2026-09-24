@@ -1,3 +1,5 @@
+import type { SupportedLocale } from "./locale";
+
 export const onboardingMessages = {
   th: {
     title: "KUQUEST",
@@ -65,22 +67,6 @@ export const onboardingMessages = {
     student: "นักศึกษา",
     lecturer: "อาจารย์",
     staff: "บุคลากร",
-    faculties: [
-      { label: "คณะเกษตร", value: "Agriculture" },
-      { label: "คณะบริหารธุรกิจ", value: "Business Administration" },
-      { label: "คณะประมง", value: "Fisheries" },
-      { label: "คณะมนุษยศาสตร์", value: "Humanities" },
-      { label: "คณะวนศาสตร์", value: "Forestry" },
-      { label: "คณะวิทยาศาสตร์", value: "Science" },
-      { label: "คณะวิศวกรรมศาสตร์", value: "Engineering" },
-      { label: "คณะศึกษาศาสตร์", value: "Education" },
-      { label: "คณะเศรษฐศาสตร์", value: "Economics" },
-      { label: "คณะสถาปัตยกรรมศาสตร์", value: "Architecture" },
-      { label: "คณะสังคมศาสตร์", value: "Social Sciences" },
-      { label: "คณะสัตวแพทยศาสตร์", value: "Veterinary Medicine" },
-      { label: "คณะอุตสาหกรรมเกษตร", value: "Agro-Industry" },
-      { label: "คณะสิ่งแวดล้อม", value: "Environment" },
-    ],
     step3Title: "ข้อมูลโปรไฟล์เพิ่มเติม",
     step3Indicator: "ขั้นตอนที่ 3 จาก 3",
     step3Desc:
@@ -223,25 +209,6 @@ Your data will be stored securely in accordance with applicable Personal Data Pr
     student: "Student",
     lecturer: "Lecturer",
     staff: "Staff",
-    faculties: [
-      { label: "Faculty of Agriculture", value: "Agriculture" },
-      {
-        label: "Faculty of Business Administration",
-        value: "Business Administration",
-      },
-      { label: "Faculty of Fisheries", value: "Fisheries" },
-      { label: "Faculty of Humanities", value: "Humanities" },
-      { label: "Faculty of Forestry", value: "Forestry" },
-      { label: "Faculty of Science", value: "Science" },
-      { label: "Faculty of Engineering", value: "Engineering" },
-      { label: "Faculty of Education", value: "Education" },
-      { label: "Faculty of Economics", value: "Economics" },
-      { label: "Faculty of Architecture", value: "Architecture" },
-      { label: "Faculty of Social Sciences", value: "Social Sciences" },
-      { label: "Faculty of Veterinary Medicine", value: "Veterinary Medicine" },
-      { label: "Faculty of Agro-Industry", value: "Agro-Industry" },
-      { label: "Faculty of Environment", value: "Environment" },
-    ],
     step3Title: "PROFILE HIGHLIGHTS",
     step3Indicator: "Step 3 of 3",
     step3Desc:
@@ -318,3 +285,20 @@ Your data will be stored securely in accordance with applicable Personal Data Pr
     requiredField: "This field is required",
   },
 };
+
+export function localizeOccupationName(
+  name: string,
+  locale: SupportedLocale
+): string {
+  const messages = onboardingMessages[locale];
+  switch (name) {
+    case "Student":
+      return messages.student;
+    case "Lecturer":
+      return messages.lecturer;
+    case "Staff":
+      return messages.staff;
+    default:
+      return name;
+  }
+}

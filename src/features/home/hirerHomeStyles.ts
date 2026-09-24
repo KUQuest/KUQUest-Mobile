@@ -1,22 +1,25 @@
 export const hirerHomeStyles = {
-  screenContent: "px-ku-md pt-ku-14",
-  screenHeader: "px-ku-xs pb-ku-22",
+  screenContent: "gap-ku-lg px-ku-md pt-ku-14",
   prototypeNotice:
     "self-start rounded-ku-pill border border-ku-border mb-ku-md px-ku-sm py-ku-6",
   prototypeNoticeText: "font-ku-semibold text-ku-label leading-[18px]",
+  section: "gap-ku-12",
   emptyState:
-    "min-h-[220px] items-center justify-center rounded-[16px] border border-ku-border px-ku-lg py-ku-28",
-  emptyTitle: "font-ku-semibold text-ku-subtitle text-center leading-[24px]",
+    "items-center gap-ku-sm rounded-ku-card border border-ku-border bg-ku-surface px-ku-lg py-ku-xl",
+  emptyTitle:
+    "text-center font-ku-semibold text-ku-subtitle text-ku-text-strong",
   emptyDescription:
-    "mt-ku-6 font-ku-regular text-ku-body-small text-center leading-[21px]",
-  screenTitle: "font-ku-bold text-ku-title-large leading-[36px]",
-  screenSubtitle: "mt-ku-xs font-ku-regular text-ku-control leading-[22px]",
-  sectionHeaderRow: "mb-ku-md flex-row items-center justify-between px-ku-xs",
-  sectionTitle: "font-ku-bold text-ku-subtitle leading-[24px]",
+    "text-center font-ku-regular text-ku-body-small text-ku-text-secondary",
+  emptyAction:
+    "mt-ku-sm min-h-[48px] flex-row items-center justify-center gap-ku-sm rounded-ku-pill border border-ku-hirer px-ku-lg",
+  emptyActionText: "font-ku-semibold text-ku-body text-ku-hirer-dark",
+  sectionHeaderRow:
+    "flex-row flex-wrap items-center justify-between gap-ku-sm px-ku-xs",
+  sectionTitle: "font-ku-bold text-ku-subtitle text-ku-text-strong",
   sectionCounterBadge:
     "rounded-ku-pill border border-ku-border px-ku-sm py-ku-2",
   sectionCounterText: "font-ku-semibold text-ku-label leading-[16px]",
-  viewAllButton: "min-h-[44px] justify-center px-ku-xs",
+  viewAllButton: "min-h-[48px] justify-center px-ku-xs",
   viewAllText: "font-ku-semibold text-ku-label leading-[16px]",
   card: "overflow-hidden rounded-ku-card border",
   cardHeader: "bg-ku-hirer-subtle px-ku-md pb-ku-4 pt-ku-md",
@@ -66,15 +69,32 @@ export const hirerHomeStyles = {
   paginationDot: "h-[6px] rounded-[3px]",
   paginationDotActive: "w-[20px]",
   paginationDotInactive: "w-[6px]",
-  quickAccessSection: "mt-ku-22",
-  quickAccessTitle:
-    "mb-ku-md px-ku-xs font-ku-bold text-ku-subtitle leading-[24px]",
-  quickAccessGrid: "flex-row flex-wrap gap-ku-12",
-  quickAccessCard:
-    "min-h-[70px] w-[48%] flex-grow flex-row items-center gap-ku-12 rounded-[16px] border border-ku-border px-ku-14 py-ku-sm",
-  quickAccessIconBox:
-    "h-[40px] w-[40px] items-center justify-center rounded-[12px]",
-  quickAccessCopy: "min-w-0 flex-1",
-  quickAccessItemTitle: "font-ku-bold text-ku-body-small leading-[18px]",
-  quickAccessItemDesc: "mt-ku-2 font-ku-regular text-ku-caption leading-[15px]",
+  masthead: "gap-ku-md rounded-ku-card bg-ku-hirer-subtle p-ku-md",
+  mastheadCopy: "gap-ku-xs px-ku-xs",
+  mastheadEyebrow: "font-ku-semibold text-ku-label text-ku-hirer-dark",
+  mastheadTitle: "font-ku-bold text-ku-headline text-ku-text-strong",
+  mastheadSubtitle: "font-ku-regular text-ku-body-small text-ku-text-secondary",
+  statsRow:
+    "flex-row overflow-hidden rounded-ku-card border border-ku-border bg-ku-surface",
+  statTile: "min-h-[72px] flex-1 justify-center px-ku-12 py-ku-sm",
+  statDivider: "w-px bg-ku-divider",
+  statValue: "font-ku-bold text-ku-title text-ku-text-strong",
+  statLabel: "font-ku-medium text-ku-label text-ku-text-secondary",
+  countPill:
+    "rounded-ku-pill bg-ku-hirer-subtle px-ku-sm py-ku-2 font-ku-semibold text-ku-label text-ku-hirer-dark",
+  list: "overflow-hidden rounded-ku-card border border-ku-border bg-ku-surface",
+  listDivider: "ml-ku-md h-px bg-ku-divider",
+  attentionRow:
+    "min-h-[64px] flex-row items-center gap-ku-12 px-ku-md py-ku-12",
+  iconBadge:
+    "h-[40px] w-[40px] items-center justify-center rounded-ku-pill bg-ku-hirer-subtle",
+  rowCopy: "min-w-0 flex-1",
+  attentionAction: "font-ku-semibold text-ku-body-small text-ku-text-strong",
+  attentionQuest:
+    "mt-ku-2 font-ku-regular text-ku-label text-ku-text-secondary",
+  shortcutGrid: "flex-row flex-wrap gap-ku-12",
+  shortcutTile:
+    "min-h-[104px] min-w-[140px] flex-1 basis-[40%] gap-ku-sm rounded-ku-card border border-ku-border bg-ku-surface p-ku-md",
+  shortcutTitle: "font-ku-semibold text-ku-body-small text-ku-text-strong",
+  shortcutDesc: "font-ku-regular text-ku-label text-ku-text-secondary",
 } as const;

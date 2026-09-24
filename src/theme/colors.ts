@@ -253,6 +253,8 @@ function withRamp(
     primary: ramp.primary,
     primaryDark: ramp.primaryDark,
     primaryDeep: scheme === "dark" ? ramp.primary : ramp.primaryDark,
+    primarySubtle: ramp.primarySubtle,
+    primaryBorder: ramp.accentBorder,
     surfaceAccent: ramp.primarySubtle,
     borderAccent: ramp.accentBorder,
     onPrimary: ramp.onPrimary,

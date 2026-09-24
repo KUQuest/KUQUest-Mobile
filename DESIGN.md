@@ -399,7 +399,7 @@ Use the `on-*` token for text and icons on role-colored controls. Keep `addition
 ### Do:
 
 - **Do** maintain the 60-30-10 color balance with neutral surfaces dominating.
-- **Do** use `#5F7655` as the primary brand color across all screens and workspaces.
+- **Do** let `primary` follow the active workspace: sage (`#5F7655`) in the Hirer workspace, terracotta (`#96533F`) in the Worker workspace. Surfaces shared by both workspaces use `primary`, never a fixed `hirer`/`worker` token.
 - **Do** keep Hirer actions in the sage family, Worker actions in terracotta, and Additional accents in purple.
 - **Do** use editorial typography with oversized titles for section introductions and empty states.
 - **Do** keep interactive elements at a minimum 48px touch target.

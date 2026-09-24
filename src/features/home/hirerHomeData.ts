@@ -1,11 +1,13 @@
 import { formatTimestampDateTime } from "@/domain/datetime";
 import { isTerminalStatus, QuestStatus } from "@/domain/questLifecycle";
 import type { SupportedLocale } from "@/locales/locale";
+import { QuestMode } from "@/features/questBoard/domain/types";
 import type {
   CanonicalHirerQuestStatus,
   TimelineStageKey,
   QuestProgressStage,
   HirerHomeQuestFixture,
+  LiveHirerQuestCardData,
 } from "./hirerHomeTypes";
 import { timelineStageOrder } from "./hirerHomeTypes";
 
@@ -118,6 +120,44 @@ export function formatHirerDueAt(
   return locale === "th"
     ? `ครบกำหนด ${formattedDateTime}`
     : `Due ${formattedDateTime}`;
+}
+
+export type HirerAttentionItem =
+  | { kind: "proof"; questId: string; questTitle: string }
+  | {
+      kind: "applicants";
+      questId: string;
+      questTitle: string;
+      count: number;
+    };
+
+/**
+ * Hirer decisions that block a Quest from moving forward: a sent Proof waiting
+ * for review, or submitted Candidate proposals waiting for selection.
+ */
+export function getHirerAttentionItems(
+  quests: readonly LiveHirerQuestCardData[]
+): HirerAttentionItem[] {
+  return quests.flatMap((quest): HirerAttentionItem[] => {
+    if (quest.proofPending) {
+      return [{ kind: "proof", questId: quest.id, questTitle: quest.title }];
+    }
+    if (
+      quest.mode === QuestMode.CANDIDATE &&
+      quest.status === QuestStatus.QUEST_OPEN &&
+      quest.applicants.length > 0
+    ) {
+      return [
+        {
+          kind: "applicants",
+          questId: quest.id,
+          questTitle: quest.title,
+          count: quest.applicants.length,
+        },
+      ];
+    }
+    return [];
+  });
 }
 
 export const hirerHomeQuestFixtures: HirerHomeQuestFixture[] = [

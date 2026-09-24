@@ -26,18 +26,25 @@ export interface HirerHomeMessages {
   openDetails: string;
   reviewProof: string;
   dueAt: (value: string) => string;
-  quickAccessTitle: string;
-  quickActiveTitle: string;
-  quickActiveCount: (count: number) => string;
-  quickDraftTitle: string;
+  eyebrow: string;
+  statActive: string;
+  statDrafts: string;
+  statCompleted: string;
+  statHint: string;
+  attentionTitle: string;
+  attentionProof: string;
+  attentionApplicants: (count: number) => string;
+  emptyAction: string;
+  shortcutsTitle: string;
+  shortcutMyQuestsTitle: string;
+  shortcutMyQuestsDesc: string;
+  shortcutBoardTitle: string;
+  shortcutBoardDesc: string;
+  shortcutTopUpTitle: string;
+  shortcutTopUpDesc: string;
+  shortcutSettingsTitle: string;
+  shortcutSettingsDesc: string;
   quickDraftDesc: string;
-  quickDraftCount: (count: number) => string;
-  quickHistoryTitle: string;
-  quickHistoryCount: (count: number) => string;
-  quickBoardTitle: string;
-  quickBoardDesc: string;
-  quickTopUpTitle: string;
-  quickTopUpDesc: string;
   statusLabels: Record<CanonicalHirerQuestStatus, string>;
   timelineLabels: Record<TimelineStageKey, string>;
   timelineOverrides: Partial<
@@ -50,13 +57,6 @@ export interface HirerHomeMessages {
   viewApplicants: string;
   viewParticipants: string;
   manageQuest: string;
-  rosterModalTitle: string;
-  joinedSectionTitle: string;
-  applicantsSectionTitle: string;
-  noRosterYet: string;
-  openManageQuest: string;
-  viewProfile: string;
-  close: string;
 }
 
 export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
@@ -84,18 +84,26 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     openDetails: "View details",
     reviewProof: "Review proof",
     dueAt: (value) => value,
-    quickAccessTitle: "Quick Actions",
-    quickActiveTitle: "In Progress",
-    quickActiveCount: (count) => `${count} active quests`,
-    quickDraftTitle: "Drafts",
+    eyebrow: "Hirer workspace",
+    statActive: "Active",
+    statDrafts: "Drafts",
+    statCompleted: "Completed",
+    statHint: "Opens in My Quests",
+    attentionTitle: "Needs your attention",
+    attentionProof: "Proof ready to review",
+    attentionApplicants: (count) =>
+      `${count} ${count === 1 ? "proposal" : "proposals"} waiting for selection`,
+    emptyAction: "Post a Quest",
+    shortcutsTitle: "Shortcuts",
+    shortcutMyQuestsTitle: "My Quests",
+    shortcutMyQuestsDesc: "Every Quest you posted",
+    shortcutBoardTitle: "Quest Board",
+    shortcutBoardDesc: "Browse all Quests",
+    shortcutTopUpTitle: "Top up",
+    shortcutTopUpDesc: "PromptPay QR deposit",
+    shortcutSettingsTitle: "Settings",
+    shortcutSettingsDesc: "Language and account",
     quickDraftDesc: "Saved quest drafts",
-    quickDraftCount: (count) => `${count} saved quest drafts`,
-    quickHistoryTitle: "History",
-    quickHistoryCount: (count) => `${count} completed quests`,
-    quickBoardTitle: "Quest Board",
-    quickBoardDesc: "Browse all quests",
-    quickTopUpTitle: "Top-up",
-    quickTopUpDesc: "PromptPay QR deposit",
     statusLabels: {
       QUEST_DRAFT: "Draft",
       QUEST_OPEN: "Open for applications",
@@ -125,13 +133,6 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     viewApplicants: "View applicants",
     viewParticipants: "View participants",
     manageQuest: "Manage quest",
-    rosterModalTitle: "Quest Participants & Applicants",
-    joinedSectionTitle: "Joined Workers",
-    applicantsSectionTitle: "Applicants",
-    noRosterYet: "No workers or applicants yet for this quest.",
-    openManageQuest: "Manage quest & select candidates",
-    viewProfile: "View profile",
-    close: "Close",
   },
   th: {
     title: "หน้าหลักผู้ว่าจ้าง",
@@ -156,18 +157,25 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     openDetails: "ดูรายละเอียด",
     reviewProof: "ตรวจงาน",
     dueAt: (value) => value,
-    quickAccessTitle: "เมนูลัด",
-    quickActiveTitle: "กำลังทำงาน",
-    quickActiveCount: (count) => `${count} เควสต์ที่กำลังดำเนินการ`,
-    quickDraftTitle: "ฉบับร่าง",
+    eyebrow: "พื้นที่ผู้ว่าจ้าง",
+    statActive: "กำลังดำเนินการ",
+    statDrafts: "ฉบับร่าง",
+    statCompleted: "เสร็จสิ้น",
+    statHint: "เปิดในเควสต์ของฉัน",
+    attentionTitle: "รอคุณดำเนินการ",
+    attentionProof: "มีงานส่งรอตรวจ",
+    attentionApplicants: (count) => `ผู้สมัคร ${count} รายการรอคัดเลือก`,
+    emptyAction: "โพสต์เควสต์",
+    shortcutsTitle: "ทางลัด",
+    shortcutMyQuestsTitle: "เควสต์ของฉัน",
+    shortcutMyQuestsDesc: "เควสต์ทั้งหมดที่คุณโพสต์",
+    shortcutBoardTitle: "กระดานเควสต์",
+    shortcutBoardDesc: "ดูเควสต์ทั้งหมดในกระดาน",
+    shortcutTopUpTitle: "เติมเงิน",
+    shortcutTopUpDesc: "เติมเงินผ่านพร้อมเพย์",
+    shortcutSettingsTitle: "การตั้งค่า",
+    shortcutSettingsDesc: "ภาษาและบัญชี",
     quickDraftDesc: "เควสต์ที่ยังไม่เผยแพร่",
-    quickDraftCount: (count) => `${count} ฉบับร่าง`,
-    quickHistoryTitle: "ประวัติ",
-    quickHistoryCount: (count) => `${count} เควสต์ที่เสร็จสิ้นแล้ว`,
-    quickBoardTitle: "กระดานเควสต์",
-    quickBoardDesc: "ค้นหาและดูเควสต์ทั้งหมด",
-    quickTopUpTitle: "เติมเงิน",
-    quickTopUpDesc: "เติมเงินผ่านพร้อมเพย์",
     statusLabels: {
       QUEST_DRAFT: "ฉบับร่าง",
       QUEST_OPEN: "เปิดรับสมัคร",
@@ -197,12 +205,5 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     viewApplicants: "ดูผู้สมัคร",
     viewParticipants: "ดูผู้เข้าร่วม",
     manageQuest: "จัดการเควสต์",
-    rosterModalTitle: "ผู้เข้าร่วมและผู้สมัครเควสต์",
-    joinedSectionTitle: "ผู้เข้าร่วมที่ตอบรับแล้ว",
-    applicantsSectionTitle: "ผู้สมัคร",
-    noRosterYet: "ยังไม่มีผู้สมัครหรือผู้เข้าร่วมสำหรับเควสต์นี้",
-    openManageQuest: "จัดการเควสต์และคัดเลือกผู้สมัคร",
-    viewProfile: "ดูโปรไฟล์",
-    close: "ปิด",
   },
 };

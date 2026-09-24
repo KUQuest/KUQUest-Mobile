@@ -529,22 +529,6 @@ describe("CreateQuestScreen", () => {
     });
   });
 
-  it("aligns the fixed Single headcount value like the other form fields", async () => {
-    const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
-
-    await fireEvent.press(view.getByTestId("create-quest-choice-single"));
-    const headcountField = await waitFor(() =>
-      view.getByLabelText("จำนวนผู้เข้าร่วม: 1")
-    );
-
-    expect(StyleSheet.flatten(headcountField.props.style)).toEqual(
-      expect.objectContaining({
-        alignItems: "flex-start",
-        justifyContent: "center",
-      })
-    );
-  });
-
   it("uses a checkbox for proof and explains the selected requirement below", async () => {
     const view = await render(<CreateQuestScreen />);
 

@@ -6,6 +6,8 @@ import {
   CircleAlert,
   CircleX,
   Clock3,
+  Info,
+  Send,
 } from "lucide-react-native";
 
 import { Pressable, Text, TextInput, View } from "@/tw";
@@ -31,7 +33,11 @@ const MAX_PROOF_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_DESCRIPTION_LENGTH = 1000;
 
 const card =
-  "mt-ku-16 rounded-2xl border border-ku-border/60 bg-ku-surface dark:bg-ku-card p-ku-16 shadow-sm";
+  "gap-ku-md rounded-ku-card border border-ku-border bg-ku-surface p-ku-md";
+const sentCard =
+  "flex-row items-start gap-ku-12 rounded-ku-card border border-ku-border bg-ku-surface p-ku-md";
+const sentIcon =
+  "h-[40px] w-[40px] items-center justify-center rounded-ku-pill";
 
 export interface WorkerProofFormProps {
   questId: string;
@@ -178,39 +184,41 @@ export function WorkerProofForm({
         palette={palette}
       />
 
-      <View className="mt-ku-md flex-row items-baseline justify-between">
-        <Text className="font-ku-semibold text-ku-body text-ku-text-strong">
-          {messages.descriptionLabel}
-        </Text>
-        <Text className="font-ku-medium text-ku-label text-ku-text-secondary">
-          {messages.descriptionCount(
-            description.length,
-            MAX_DESCRIPTION_LENGTH
-          )}
-        </Text>
+      <View className="gap-ku-sm">
+        <View className="flex-row items-center justify-between gap-ku-sm">
+          <Text className="flex-1 font-ku-semibold text-ku-body text-ku-text-strong">
+            {messages.descriptionLabel}
+          </Text>
+          <Text className="font-ku-medium text-ku-label text-ku-text-secondary">
+            {messages.descriptionCount(
+              description.length,
+              MAX_DESCRIPTION_LENGTH
+            )}
+          </Text>
+        </View>
+        <TextInput
+          accessibilityLabel={messages.descriptionLabel}
+          className="min-h-[112px] rounded-ku-field border border-ku-border bg-ku-surface px-ku-12 py-ku-10 font-ku-regular text-ku-body-small text-ku-text-strong"
+          editable={!submitting}
+          maxLength={MAX_DESCRIPTION_LENGTH}
+          multiline
+          onChangeText={(value) => {
+            setDescription(value);
+            setNotice(null);
+          }}
+          placeholder={messages.descriptionPlaceholder}
+          placeholderTextColor={palette.textMuted}
+          style={{ textAlignVertical: "top" }}
+          testID="worker-proof-description"
+          value={description}
+        />
       </View>
-      <TextInput
-        accessibilityLabel={messages.descriptionLabel}
-        className="mt-ku-sm min-h-[104px] rounded-[12px] border border-ku-border bg-ku-background px-ku-12 py-ku-10 font-ku-regular text-ku-body-small text-ku-text-strong"
-        editable={!submitting}
-        maxLength={MAX_DESCRIPTION_LENGTH}
-        multiline
-        onChangeText={(value) => {
-          setDescription(value);
-          setNotice(null);
-        }}
-        placeholder={messages.descriptionPlaceholder}
-        placeholderTextColor={palette.textSubtle}
-        style={{ textAlignVertical: "top" }}
-        testID="worker-proof-description"
-        value={description}
-      />
 
       {notice ? (
         <View
           accessibilityLiveRegion="polite"
           accessibilityRole="alert"
-          className="mt-ku-12 flex-row items-start gap-ku-sm rounded-[14px] border border-ku-border-danger bg-ku-surface-danger p-ku-12"
+          className="flex-row items-start gap-ku-sm rounded-ku-field border border-ku-border-danger bg-ku-surface-danger p-ku-12"
           testID="worker-proof-notice"
         >
           <CircleAlert color={palette.dangerDark} size={18} strokeWidth={2} />
@@ -220,29 +228,50 @@ export function WorkerProofForm({
         </View>
       ) : null}
 
-      <Text className="mt-ku-md text-center font-ku-regular text-ku-label text-ku-text-secondary">
-        {hasProofInput ? messages.sendLockNotice : messages.proofInputRequired}
-      </Text>
-      <Pressable
-        accessibilityLabel={messages.submitProof}
-        accessibilityRole="button"
-        accessibilityState={{ disabled: submitDisabled, busy: submitting }}
-        className={cn(
-          "mt-ku-sm min-h-[48px] flex-row items-center justify-center rounded-ku-pill bg-ku-primary px-ku-md active:bg-ku-primary-dark",
-          submitDisabled && "opacity-[0.55]"
-        )}
-        disabled={submitDisabled}
-        onPress={confirmAndSend}
-        testID="worker-proof-submit"
-      >
-        {submitting ? (
-          <ActivityIndicator color={palette.onPrimary} />
-        ) : (
-          <Text className="font-ku-semibold text-ku-body text-ku-on-primary">
-            {messages.submitProof}
+      <View className="gap-ku-sm border-t border-ku-divider pt-ku-md">
+        <View className="flex-row items-start gap-ku-sm">
+          <Info color={palette.textSecondary} size={16} strokeWidth={2} />
+          <Text className="flex-1 font-ku-regular text-ku-label text-ku-text-secondary">
+            {hasProofInput
+              ? messages.sendLockNotice
+              : messages.proofInputRequired}
           </Text>
-        )}
-      </Pressable>
+        </View>
+        <Pressable
+          accessibilityLabel={messages.submitProof}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: submitDisabled, busy: submitting }}
+          className={cn(
+            "min-h-[48px] flex-row items-center justify-center gap-ku-sm rounded-ku-pill px-ku-md",
+            submitDisabled
+              ? "bg-ku-surface-high"
+              : "bg-ku-worker-dark active:bg-ku-worker-deep"
+          )}
+          disabled={submitDisabled}
+          onPress={confirmAndSend}
+          testID="worker-proof-submit"
+        >
+          {submitting ? (
+            <ActivityIndicator color={palette.onWorker} />
+          ) : (
+            <>
+              <Send
+                color={submitDisabled ? palette.textMuted : palette.onWorker}
+                size={18}
+                strokeWidth={2}
+              />
+              <Text
+                className={cn(
+                  "font-ku-semibold text-ku-body",
+                  submitDisabled ? "text-ku-text-muted" : "text-ku-on-worker"
+                )}
+              >
+                {messages.submitProof}
+              </Text>
+            </>
+          )}
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -269,7 +298,13 @@ function SentProofCard({
       ? palette.success
       : status === "PROOF_NOT_APPROVED"
         ? palette.dangerDark
-        : palette.primaryDeep;
+        : palette.workerDark;
+  const sentIconTone =
+    status === "PROOF_APPROVED"
+      ? "bg-ku-surface-success"
+      : status === "PROOF_NOT_APPROVED"
+        ? "bg-ku-surface-danger"
+        : "bg-ku-worker-subtle";
   const description =
     status === "PROOF_APPROVED"
       ? messages.proofApprovedDescription
@@ -283,21 +318,20 @@ function SentProofCard({
         ? messages.status.incomplete
         : messages.status.proofPending;
   return (
-    <View
-      className="mt-ku-16 flex-row items-start gap-ku-12 rounded-2xl border border-ku-border/60 bg-ku-surface p-ku-16 shadow-sm dark:bg-ku-card"
-      testID="worker-proof-sent"
-    >
-      <Icon color={color} size={24} strokeWidth={2} />
-      <View className="flex-1">
+    <View className={sentCard} testID="worker-proof-sent">
+      <View className={cn(sentIcon, sentIconTone)}>
+        <Icon color={color} size={22} strokeWidth={2} />
+      </View>
+      <View className="min-w-0 flex-1 gap-ku-xs">
         <Text className="font-ku-semibold text-ku-body text-ku-text-strong">
           {messages.submittedTitle} · {statusLabel}
         </Text>
         {submittedAt ? (
-          <Text className="mt-ku-2 font-ku-regular text-ku-label text-ku-text-secondary">
+          <Text className="font-ku-regular text-ku-label text-ku-text-secondary">
             {messages.submittedAt(submittedAt)}
           </Text>
         ) : null}
-        <Text className="mt-ku-xs font-ku-regular text-ku-body-small text-ku-text-secondary">
+        <Text className="font-ku-regular text-ku-body-small text-ku-text-secondary">
           {description}
         </Text>
       </View>

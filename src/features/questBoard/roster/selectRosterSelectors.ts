@@ -53,16 +53,6 @@ export function getPendingTeams(teams: readonly QuestV2Team[]): QuestV2Team[] {
   return teams.filter((team) => team.state === "TEAM_SUBMITTED");
 }
 
-export function getSelectRosterProposalCount(
-  participation: QuestV2Participation,
-  pendingApplications: readonly QuestV2Application[],
-  pendingTeams: readonly QuestV2Team[]
-): number {
-  return participation === "GROUP"
-    ? pendingTeams.length
-    : pendingApplications.length;
-}
-
 export function getApplicationSubmissionDetail(
   appliedAt: string | undefined,
   locale: SupportedLocale,

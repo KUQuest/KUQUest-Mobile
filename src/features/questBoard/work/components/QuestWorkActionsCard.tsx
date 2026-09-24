@@ -2,15 +2,14 @@ import React from "react";
 import {
   AlertTriangle,
   CheckCircle2,
+  ChevronRight,
   FileEdit,
-  ListChecks,
   MessageCircle,
   ShieldCheck,
 } from "lucide-react-native";
 
 import { ActivityIndicator, Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
-import { colors } from "@/theme/colors";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { useLocale } from "@/features/preferences/localeStore";
 import { type QuestWorkMessages } from "@/locales/questWorkMessages";
@@ -83,44 +82,33 @@ export default function QuestWorkActionsCard({
         : isGroup && snapshot.mode === QuestMode.CANDIDATE
           ? [messages.waitingForTeamLeader]
           : [];
+  const unreadLabel = `${unreadCount} ${locale === "th" ? "ข้อความใหม่" : "unread messages"}`;
 
   return (
     <>
-      {/* Stale Cache Notice */}
       {stale ? (
-        <View className="mt-ku-14 rounded-2xl border border-ku-border-warning bg-ku-surface-warning px-ku-16 py-ku-12">
-          <Text className="font-ku-medium text-ku-body-small text-ku-warning-dark">
-            {messages.stale}
-          </Text>
+        <View className={styles.warningCard}>
+          <Text className={styles.warningTitle}>{messages.stale}</Text>
           {errorText ? (
-            <Text className="mt-ku-xs text-ku-label text-ku-warning-dark">
-              {errorText}
-            </Text>
+            <Text className={styles.warningText}>{errorText}</Text>
           ) : null}
         </View>
       ) : null}
 
-      {/* Start Work Callout */}
       {snapshot.state === "QUEST_ASSIGNED" ? (
-        <View className="mt-ku-16 rounded-2xl border border-ku-terracotta/30 bg-ku-surface-terracotta/60 p-ku-16 shadow-sm">
-          <View className="flex-row items-start gap-ku-12">
-            <View className="mt-0.5 h-9 w-9 items-center justify-center rounded-full bg-ku-surface-terracotta">
-              <ShieldCheck
-                color={palette.terracotta ?? colors.terracotta}
-                size={20}
-              />
+        <View className={styles.startCard}>
+          <View className={styles.calloutRow}>
+            <View className={styles.calloutIcon}>
+              <ShieldCheck color={palette.primaryDark} size={20} />
             </View>
-            <View className="flex-1">
-              <Text className="font-ku-bold text-ku-body text-ku-text-strong">
+            <View className={styles.calloutCopy}>
+              <Text className={styles.calloutTitle}>
                 {canPressStartWork
                   ? messages.startWorkCta
                   : messages.waitingForStart}
               </Text>
               {assignedDetails.map((detail) => (
-                <Text
-                  key={detail}
-                  className="mt-ku-xs text-ku-body-small leading-[20px] text-ku-text-secondary"
-                >
+                <Text key={detail} className={styles.bodyText}>
                   {detail}
                 </Text>
               ))}
@@ -135,13 +123,13 @@ export default function QuestWorkActionsCard({
                 busy: startWorkSending,
               }}
               disabled={startWorkSending}
-              className="mt-ku-14 h-12 flex-row items-center justify-center rounded-xl bg-ku-primary px-ku-16 active:opacity-90 disabled:opacity-50"
+              className={styles.primaryButton}
               onPress={() => void onStartWork()}
             >
               {startWorkSending ? (
-                <ActivityIndicator color={colors.onPrimary} />
+                <ActivityIndicator color={palette.onPrimary} />
               ) : (
-                <Text className="text-center font-ku-semibold text-ku-body-small text-ku-on-primary">
+                <Text className={styles.primaryButtonText}>
                   {messages.startWorkCta}
                 </Text>
               )}
@@ -150,21 +138,18 @@ export default function QuestWorkActionsCard({
         </View>
       ) : null}
 
-      {/* Terminal / Archived Banner */}
       {isTerminal ? (
-        <View className="mt-ku-16 rounded-2xl border border-ku-border/60 bg-ku-surface-muted p-ku-16 dark:bg-ku-surface-raised">
-          <Text className="text-ku-body-small leading-[20px] text-ku-text-secondary">
-            {messages.archiveDescription}
-          </Text>
+        <View className={styles.mutedCard}>
+          <Text className={styles.bodyText}>{messages.archiveDescription}</Text>
           {snapshot.state === "QUEST_FAILED" && onFileDispute ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={messages.fileDispute}
-              className="mt-ku-14 h-12 flex-row items-center justify-center gap-ku-sm rounded-xl bg-ku-warning px-ku-md"
+              className={styles.warningButton}
               onPress={onFileDispute}
             >
-              <AlertTriangle color={colors.onPrimary} size={18} />
-              <Text className="text-center font-ku-semibold text-ku-body-small text-ku-on-primary">
+              <AlertTriangle color={palette.warningDark} size={18} />
+              <Text className={styles.warningButtonText}>
                 {messages.fileDispute}
               </Text>
             </Pressable>
@@ -172,104 +157,89 @@ export default function QuestWorkActionsCard({
         </View>
       ) : null}
 
-      {/* Conditions / Deliverables Checklist */}
-      <View className="mt-ku-24">
-        <View className="mb-ku-12 flex-row items-center justify-between">
-          <View className="flex-row items-center gap-ku-sm">
-            <ListChecks color={palette.primary ?? colors.primary} size={18} />
-            <Text className="font-ku-bold text-ku-subtitle text-ku-text-strong">
-              {messages.conditions}
-            </Text>
-          </View>
+      <View className={styles.section}>
+        <View className={styles.sectionHeader}>
+          <Text accessibilityRole="header" className={styles.sectionTitle}>
+            {messages.conditions}
+          </Text>
           {conditions.length > 0 ? (
-            <View className="rounded-full border border-ku-border/40 bg-ku-surface-raised px-2.5 py-0.5 dark:bg-ku-surface-high">
-              <Text className="font-ku-semibold text-[11px] text-ku-text-secondary">
-                {conditions.length} {locale === "th" ? "ข้อ" : "items"}
-              </Text>
-            </View>
+            <Text className={styles.countPill}>
+              {conditions.length} {locale === "th" ? "ข้อ" : "items"}
+            </Text>
           ) : null}
         </View>
-
-        <View className="rounded-2xl border border-ku-border/60 bg-ku-surface p-ku-16 shadow-sm dark:bg-ku-card">
+        <View className={styles.listCard}>
           {conditions.length ? (
             conditions.map((condition, idx) => (
               <View
                 key={`${condition.position}-${condition.text}`}
                 className={cn(
-                  "flex-row items-start gap-ku-10 py-ku-10",
-                  idx > 0 && "border-t border-ku-border/30",
-                  idx === 0 && "pt-0",
-                  idx === conditions.length - 1 && "pb-0"
+                  styles.conditionRow,
+                  idx > 0 && styles.rowDivider
                 )}
               >
-                <View className="mt-0.5 h-6 w-6 items-center justify-center rounded-full bg-ku-primary-subtle dark:bg-ku-primary-subtle/30">
-                  <CheckCircle2
-                    color={palette.primary ?? colors.primary}
-                    size={15}
-                  />
-                </View>
-                <Text className="flex-1 font-ku-medium text-ku-body-small leading-[21px] text-ku-text">
-                  {condition.text}
-                </Text>
+                <Text className={styles.conditionIndex}>{idx + 1}</Text>
+                <Text className={styles.conditionText}>{condition.text}</Text>
               </View>
             ))
           ) : (
-            <Text className="py-ku-sm text-ku-body-small text-ku-text-subtle">
+            <Text className={cn(styles.bodyText, styles.listEmpty)}>
               {messages.actionUnavailable}
             </Text>
           )}
         </View>
       </View>
 
-      {/* Pending Condition Edit Request */}
       {snapshot.editRequest?.status === "EDIT_REQUEST_PENDING" ? (
-        <View className="mt-ku-20 rounded-2xl border border-ku-border-warning bg-ku-surface-warning p-ku-16">
-          <View className="mb-ku-xs flex-row items-center gap-ku-sm">
-            <FileEdit color={colors.warning} size={18} />
-            <Text className="font-ku-bold text-ku-subtitle text-ku-text-strong">
-              {messages.editTitle}
-            </Text>
+        <View className={styles.warningCard}>
+          <View className={styles.calloutRow}>
+            <FileEdit color={palette.warningDark} size={20} />
+            <View className={styles.calloutCopy}>
+              <Text className={styles.calloutTitle}>{messages.editTitle}</Text>
+              <Text className={styles.bodyText}>
+                {messages.editDescription}
+              </Text>
+            </View>
           </View>
-          <Text className="text-ku-body-small leading-[20px] text-ku-text-secondary">
-            {messages.editDescription}
-          </Text>
-          <View className="mt-ku-12 rounded-xl border border-ku-border/40 bg-ku-surface p-ku-12 dark:bg-ku-surface-raised">
+          <View className={styles.proposedList}>
             {snapshot.editRequest.proposedCondition.items.map((item) => (
               <Text
                 key={`${item.position}-${item.text}`}
-                className="mb-ku-xs text-ku-body-small text-ku-text-secondary last:mb-0"
+                className={styles.bodyText}
               >
                 • {item.text}
               </Text>
             ))}
           </View>
           {snapshot.capabilities.canRespondToEdit ? (
-            <View className="mt-ku-14 flex-row gap-ku-sm">
+            <View className={styles.buttonRow}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={messages.acceptEdit}
+                accessibilityState={{ disabled: editSending }}
                 disabled={editSending}
-                className="h-12 flex-1 items-center justify-center rounded-xl bg-ku-primary px-ku-12 active:opacity-90 disabled:opacity-50"
+                className={cn(styles.primaryButton, styles.buttonFlex)}
                 onPress={() => void onRespondToEdit("EDIT_RESPONSE_ACCEPTED")}
               >
-                <Text className="text-center font-ku-semibold text-ku-body-small text-ku-on-primary">
+                <Text className={styles.primaryButtonText}>
                   {messages.acceptEdit}
                 </Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={messages.declineEdit}
+                accessibilityState={{ disabled: editSending }}
                 disabled={editSending}
-                className="h-12 flex-1 items-center justify-center rounded-xl border border-ku-border bg-ku-surface px-ku-12 active:opacity-90 disabled:opacity-50 dark:bg-ku-card"
+                className={cn(styles.secondaryButton, styles.buttonFlex)}
                 onPress={() => void onRespondToEdit("EDIT_RESPONSE_DECLINED")}
               >
-                <Text className="text-center font-ku-semibold text-ku-body-small text-ku-text-strong">
+                <Text className={styles.secondaryButtonText}>
                   {messages.declineEdit}
                 </Text>
               </Pressable>
             </View>
           ) : (
-            <Text className="mt-ku-12 text-ku-body-small text-ku-text-subtle">
+            <Text className={styles.bodyText}>
               {messages.actionUnavailable}
             </Text>
           )}
@@ -277,37 +247,39 @@ export default function QuestWorkActionsCard({
       ) : null}
 
       {editFeedback ? (
-        <Text className="mt-ku-sm font-ku-medium text-ku-body-small text-ku-success">
-          {editFeedback}
-        </Text>
+        <Text className={styles.successText}>{editFeedback}</Text>
       ) : null}
 
-      {/* Confirmation CTA */}
       {snapshot.capabilities.canConfirmCompletion ? (
-        <View className="mt-ku-20 rounded-2xl border border-ku-border/60 bg-ku-surface p-ku-16 shadow-sm dark:bg-ku-card">
-          <View className="flex-row items-center gap-ku-sm">
-            <CheckCircle2
-              color={palette.primaryDeep ?? colors.primaryDeep}
-              size={20}
-            />
-            <Text className="font-ku-bold text-ku-body text-ku-text-strong">
-              {messages.confirmationCta}
-            </Text>
+        <View className={styles.startCard}>
+          <View className={styles.calloutRow}>
+            <View className={styles.calloutIcon}>
+              <CheckCircle2 color={palette.primaryDark} size={20} />
+            </View>
+            <View className={styles.calloutCopy}>
+              <Text className={styles.calloutTitle}>
+                {messages.confirmationCta}
+              </Text>
+              <Text className={styles.bodyText}>
+                {messages.confirmationPlaceholder}
+              </Text>
+            </View>
           </View>
-          <Text className="mt-ku-xs text-ku-body-small leading-[20px] text-ku-text-secondary">
-            {messages.confirmationPlaceholder}
-          </Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={messages.confirmationCta}
+            accessibilityState={{
+              disabled: confirmationSending,
+              busy: confirmationSending,
+            }}
             disabled={confirmationSending}
-            className="mt-ku-14 h-12 flex-row items-center justify-center rounded-xl bg-ku-primary px-ku-16 active:opacity-90 disabled:opacity-50"
+            className={styles.primaryButton}
             onPress={() => void onConfirmCompletion()}
           >
             {confirmationSending ? (
-              <ActivityIndicator color={colors.onPrimary} />
+              <ActivityIndicator color={palette.onPrimary} />
             ) : (
-              <Text className="text-center font-ku-semibold text-ku-body-small text-ku-on-primary">
+              <Text className={styles.primaryButtonText}>
                 {messages.confirmationCta}
               </Text>
             )}
@@ -315,57 +287,92 @@ export default function QuestWorkActionsCard({
         </View>
       ) : null}
 
-      {/* Work Chat Card */}
-      <View className="mt-ku-24">
-        {canOpenChat ? (
-          <View className="rounded-2xl border border-ku-border/60 bg-ku-surface p-ku-16 shadow-sm dark:bg-ku-card">
-            <View className="mb-ku-12 flex-row items-center justify-between">
-              <View className="flex-1 flex-row items-center gap-ku-10">
-                <View className="h-10 w-10 items-center justify-center rounded-full bg-ku-surface-terracotta">
-                  <MessageCircle
-                    color={palette.terracotta ?? colors.terracotta}
-                    size={20}
-                  />
-                </View>
-                <View className="flex-1 pr-2">
-                  <Text className="font-ku-bold text-ku-body text-ku-text-strong">
-                    {locale === "th" ? "แชตประสานงาน" : "Work Conversation"}
-                  </Text>
-                  <Text className="mt-0.5 text-ku-label text-ku-text-secondary">
-                    {unreadCount > 0
-                      ? `${unreadCount} ${locale === "th" ? "ข้อความใหม่" : "unread messages"}`
-                      : locale === "th"
-                        ? "สื่อสารและประสานงานเควสต์นี้กับผู้ว่าจ้าง"
-                        : "Coordinate with Hirer on this quest"}
-                  </Text>
-                </View>
-              </View>
-              {unreadCount > 0 ? (
-                <View className="h-6 min-w-6 items-center justify-center rounded-full bg-ku-danger px-1.5">
-                  <Text className="font-ku-bold text-[11px] text-ku-on-primary">
-                    {unreadCount}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={messages.workChat}
-              className="h-12 flex-row items-center justify-center gap-ku-sm rounded-xl bg-ku-primary px-ku-md active:opacity-90"
-              onPress={onOpenChat}
-            >
-              <MessageCircle color={colors.onPrimary} size={18} />
-              <Text className="font-ku-semibold text-ku-body text-ku-on-primary">
-                {messages.workChat}
-              </Text>
-            </Pressable>
+      {canOpenChat ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            unreadCount > 0
+              ? `${messages.workChat}, ${unreadLabel}`
+              : messages.workChat
+          }
+          className={styles.chatRow}
+          onPress={onOpenChat}
+        >
+          <View className={styles.chatIcon}>
+            <MessageCircle color={palette.primaryDark} size={20} />
           </View>
-        ) : (
-          <Text className="py-ku-12 text-center text-ku-body-small text-ku-text-subtle">
-            {messages.noChat}
-          </Text>
-        )}
-      </View>
+          <View className={styles.calloutCopy}>
+            <Text className={styles.calloutTitle}>{messages.workChat}</Text>
+            <Text className={styles.chatHint} numberOfLines={2}>
+              {unreadCount > 0
+                ? unreadLabel
+                : locale === "th"
+                  ? "สื่อสารและประสานงานเควสต์นี้กับผู้ว่าจ้าง"
+                  : "Coordinate with Hirer on this quest"}
+            </Text>
+          </View>
+          {unreadCount > 0 ? (
+            <Text className={styles.unreadBadge}>{unreadCount}</Text>
+          ) : null}
+          <ChevronRight color={palette.textSecondary} size={20} />
+        </Pressable>
+      ) : (
+        <Text className={styles.noChat}>{messages.noChat}</Text>
+      )}
     </>
   );
 }
+
+const styles = {
+  section: "gap-ku-12",
+  sectionHeader: "flex-row items-center justify-between gap-ku-sm px-ku-xs",
+  sectionTitle: "font-ku-bold text-ku-subtitle text-ku-text-strong",
+  countPill:
+    "rounded-ku-pill bg-ku-primary-subtle px-ku-sm py-ku-2 font-ku-semibold text-ku-label text-ku-primary-dark",
+  listCard:
+    "overflow-hidden rounded-ku-card border border-ku-border bg-ku-surface",
+  listEmpty: "p-ku-md",
+  conditionRow: "flex-row items-start gap-ku-12 px-ku-md py-ku-12",
+  rowDivider: "border-t border-ku-divider",
+  conditionIndex:
+    "h-[24px] w-[24px] rounded-ku-pill bg-ku-primary-subtle text-center font-ku-semibold text-ku-label leading-[24px] text-ku-primary-dark",
+  conditionText: "flex-1 font-ku-regular text-ku-body-small text-ku-text",
+  startCard:
+    "gap-ku-md rounded-ku-card border border-ku-primary-border bg-ku-primary-subtle p-ku-md",
+  mutedCard: "gap-ku-md rounded-ku-card bg-ku-surface-raised p-ku-md",
+  warningCard:
+    "gap-ku-12 rounded-ku-card border border-ku-border-warning bg-ku-surface-warning p-ku-md",
+  warningTitle: "font-ku-medium text-ku-body-small text-ku-warning-dark",
+  warningText: "font-ku-regular text-ku-label text-ku-warning-dark",
+  calloutRow: "flex-row items-start gap-ku-12",
+  calloutIcon:
+    "h-[40px] w-[40px] items-center justify-center rounded-ku-pill bg-ku-surface",
+  calloutCopy: "min-w-0 flex-1 gap-ku-xs",
+  calloutTitle: "font-ku-bold text-ku-body text-ku-text-strong",
+  bodyText: "font-ku-regular text-ku-body-small text-ku-text-secondary",
+  proposedList:
+    "gap-ku-xs rounded-ku-field border border-ku-border bg-ku-surface p-ku-12",
+  buttonRow: "flex-row gap-ku-sm",
+  buttonFlex: "flex-1",
+  primaryButton:
+    "min-h-[48px] flex-row items-center justify-center rounded-ku-pill bg-ku-primary px-ku-md active:bg-ku-primary-dark disabled:opacity-50",
+  primaryButtonText:
+    "text-center font-ku-semibold text-ku-body-small text-ku-on-primary",
+  secondaryButton:
+    "min-h-[48px] items-center justify-center rounded-ku-pill border border-ku-border bg-ku-surface px-ku-md active:bg-ku-surface-raised disabled:opacity-50",
+  secondaryButtonText:
+    "text-center font-ku-semibold text-ku-body-small text-ku-text-strong",
+  warningButton:
+    "min-h-[48px] flex-row items-center justify-center gap-ku-sm rounded-ku-pill border border-ku-border-warning bg-ku-surface-warning px-ku-md",
+  warningButtonText: "font-ku-semibold text-ku-body-small text-ku-warning-dark",
+  successText: "font-ku-medium text-ku-body-small text-ku-success",
+  chatRow:
+    "min-h-[72px] flex-row items-center gap-ku-12 rounded-ku-card border border-ku-border bg-ku-surface p-ku-md active:bg-ku-surface-raised",
+  chatIcon:
+    "h-[40px] w-[40px] items-center justify-center rounded-ku-pill bg-ku-primary-subtle",
+  chatHint: "font-ku-regular text-ku-label text-ku-text-secondary",
+  unreadBadge:
+    "min-w-[24px] rounded-ku-pill bg-ku-danger px-ku-6 py-ku-2 text-center font-ku-bold text-ku-caption text-ku-on-primary",
+  noChat:
+    "py-ku-12 text-center font-ku-regular text-ku-body-small text-ku-text-secondary",
+} as const;

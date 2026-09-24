@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
+import { ApiError } from "@/api/ApiClient";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import {
   useCreateReviewMutation,
   useLiveQuestSnapshotQuery,
+  useQuestAssignmentsQuery,
 } from "@/features/questBoard/api/questBoardQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import { questReviewMessages } from "@/locales/questReviewMessages";
@@ -29,7 +31,14 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
     {},
     Boolean(questId && viewerId)
   );
+  const assignmentsQuery = useQuestAssignmentsQuery(
+    questId ?? null,
+    viewerId || null
+  );
   const createReviewMutation = useCreateReviewMutation();
+  // One key per Worker's pending review; a retry after an unknown outcome
+  // replays it, while a new review after a server answer gets a new key.
+  const reviewKeysRef = useRef<Record<string, string>>({});
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -48,10 +57,9 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
     );
     const workerIds = [
       ...new Set(
-        (snapshotQuery.data?.assignments ?? [])
+        (assignmentsQuery.data ?? [])
           .filter((assignment) => assignment.state !== "ASSIGNMENT_CANCELLED")
           .map((assignment) => assignment.workerId)
-          .filter(Boolean)
       ),
     ];
     return workerIds.map((workerId) => ({
@@ -59,11 +67,7 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
       label:
         participantNames.get(workerId) ?? messages.workerFallback(workerId),
     }));
-  }, [
-    messages,
-    snapshotQuery.data?.assignments,
-    snapshotQuery.data?.participants,
-  ]);
+  }, [messages, assignmentsQuery.data, snapshotQuery.data?.participants]);
 
   const remainingWorkers = workerOptions.filter(
     (worker) => !reviewedWorkerIds.has(worker.id)
@@ -72,8 +76,16 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
     remainingWorkers.find((worker) => worker.id === selectedWorkerId) ??
     remainingWorkers[0] ??
     null;
-  const loading = sessionQuery.isPending || snapshotQuery.isPending;
-  const loadError = snapshotQuery.error || sessionQuery.error;
+  const loading =
+    sessionQuery.isPending ||
+    snapshotQuery.isPending ||
+    assignmentsQuery.isPending;
+  const loadError =
+    snapshotQuery.error || assignmentsQuery.error || sessionQuery.error;
+  const retryLoad = () => {
+    void snapshotQuery.refetch();
+    void assignmentsQuery.refetch();
+  };
   const canReview = snapshotQuery.data?.capabilities.canCreateReview === true;
   const allReviewed = workerOptions.length > 0 && remainingWorkers.length === 0;
 
@@ -91,26 +103,33 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
       return;
     }
 
+    const revieweeId = selectedWorker.id;
+    const idempotencyKey = (reviewKeysRef.current[revieweeId] ??=
+      createQuestIdempotencyKey());
     try {
       await createReviewMutation.mutateAsync({
         questId,
         input: {
-          revieweeId: selectedWorker.id,
+          revieweeId,
           rating,
           ...(trimmedComment ? { comment: trimmedComment } : {}),
         },
         viewerId,
-        idempotencyKey: createQuestIdempotencyKey(),
+        idempotencyKey,
       });
+      delete reviewKeysRef.current[revieweeId];
       setReviewedWorkerIds((current) => {
         const next = new Set(current);
-        next.add(selectedWorker.id);
+        next.add(revieweeId);
         return next;
       });
       setRating(0);
       setComment("");
       setSuccessMessage(messages.successDescription);
     } catch (caught) {
+      if (caught instanceof ApiError && caught.status < 500) {
+        delete reviewKeysRef.current[revieweeId];
+      }
       setSubmitError(
         caught instanceof Error ? caught.message : messages.errorDescription
       );
@@ -128,13 +147,14 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
     messages,
     rating,
     remainingWorkers,
+    questTitle: snapshotQuery.data?.quest.title,
+    retryLoad,
     selectedWorker,
     setComment,
     setRating,
     setSelectedWorkerId,
     setSubmitError,
     setSuccessMessage,
-    snapshotQuery,
     submitError,
     successMessage,
     workerOptions,

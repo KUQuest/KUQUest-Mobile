@@ -25,6 +25,7 @@ import { getQuestRewardSatang } from "../../presentation/questBoardViewData";
 import { formatDate } from "@/domain/datetime";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
 import type { QuestBoardQuest, QuestDetailState } from "../../domain/types";
+import { localizeFacultyName } from "@/locales/academicUnits";
 import styles from "../../styles/questDetailStyles";
 import {
   QuestParticipantRoster,
@@ -285,10 +286,9 @@ export function QuestDetailBody({
           </View>
           <View className={styles.creatorCopy}>
             <Text className={styles.creatorLabel}>{messages.creator}</Text>
-            <Text
-              className={styles.creatorValue}
-              numberOfLines={1}
-            >{`${quest.creator.name}${quest.creator.faculty ? ` · ${quest.creator.faculty}` : ""}`}</Text>
+            <Text className={styles.creatorValue} numberOfLines={1}>
+              {`${quest.creator.name}${quest.creator.faculty ? ` · ${localizeFacultyName(quest.creator.faculty, locale)}` : ""}`}
+            </Text>
           </View>
         </View>
         <View accessibilityLabel={messages.tags} className={styles.tagRow}>

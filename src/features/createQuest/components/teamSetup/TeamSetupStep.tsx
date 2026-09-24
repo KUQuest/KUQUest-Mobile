@@ -1,5 +1,5 @@
 import { type ComponentRef, type Ref } from "react";
-import { UserRoundCheck, UsersRound } from "lucide-react-native";
+import { Coins, UserRoundCheck, UsersRound } from "lucide-react-native";
 import type {
   Pressable as RNPressable,
   TextInput as RNTextInput,
@@ -10,7 +10,7 @@ import { cn } from "@/tw/cn";
 import { Input } from "@/components/ui/Input";
 import { createQuestMessages } from "@/locales/createQuestMessages";
 import type { SupportedLocale } from "@/locales/locale";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import styles from "../createQuestStyles";
 import type { QuestDraft } from "../../domain/createQuestModel";
 import type { ChoiceOption } from "../../createQuestTypes";
@@ -62,6 +62,8 @@ export function TeamSetupStep({
   ) => void;
   updateParticipation: (value: QuestDraft["participation"]) => void;
 }) {
+  const { colors } = useAppTheme();
+
   return (
     <>
       <View className={styles.sectionCard}>
@@ -107,81 +109,74 @@ export function TeamSetupStep({
           candidateMode={draft.candidateMode}
           combinationHint={combinationHint}
         />
+      </View>
 
-        <View className={styles.additionalSettings}>
-          <Text
-            accessibilityRole="header"
-            className={styles.additionalSettingsTitle}
-          >
-            {messages.capacityAndReward}
-          </Text>
-          <Text className={styles.sectionDescription}>
-            {messages.participantsRewardDescription}
-          </Text>
-          {draft.participation === "SINGLE" ? (
-            <View className={styles.fieldGroup}>
-              <FieldLabel optionalLabel="">{messages.headcount}</FieldLabel>
-              <View
-                accessible
-                accessibilityLabel={`${messages.headcount}: 1`}
-                accessibilityState={{ disabled: true }}
-                className={styles.readOnlyField}
-                style={{
-                  alignItems: "flex-start",
-                  justifyContent: "center",
-                }}
-              >
-                <Text className={styles.readOnlyValue}>1</Text>
-              </View>
-              <Text className={styles.singleHeadcountHint}>
-                {messages.singleHeadcountHint}
-              </Text>
-            </View>
-          ) : (
-            <Input
-              ref={headcountRef}
-              label={`${messages.headcount} *`}
-              placeholder={messages.headcountPlaceholder}
-              value={draft.headcount}
-              onChangeText={(value) =>
-                updateDraft("headcount", value.replace(/[^0-9]/g, ""))
-              }
-              error={errors.headcount}
-              keyboardType="number-pad"
-            />
-          )}
+      <View className={styles.sectionCard}>
+        <SectionHeading
+          compact
+          icon={Coins}
+          title={`3. ${messages.capacityAndReward}`}
+          description={messages.participantsRewardDescription}
+        />
+        {draft.participation === "SINGLE" ? (
           <View className={styles.fieldGroup}>
-            <FieldLabel required optionalLabel={messages.optional}>
-              {messages.rewardPerPerson}
-            </FieldLabel>
+            <FieldLabel optionalLabel="">{messages.headcount}</FieldLabel>
             <View
-              className={cn(
-                styles.currencyInput,
-                errors.wage ? styles.fieldError : null
-              )}
+              accessible
+              accessibilityLabel={`${messages.headcount}: 1`}
+              accessibilityState={{ disabled: true }}
+              className={styles.readOnlyField}
             >
-              <Text className={styles.currencySymbol}>฿</Text>
-              <TextInput
-                ref={rewardRef}
-                className={styles.currencyTextInput}
-                placeholder={messages.rewardPlaceholder}
-                placeholderTextColor={colors.textFaint}
-                value={draft.wage}
-                onChangeText={(value) =>
-                  updateDraft("wage", value.replace(/[^0-9.]/g, ""))
-                }
-                keyboardType="decimal-pad"
-                accessibilityLabel={`${messages.rewardPerPerson} (THB)`}
-              />
-              <Text className={styles.currencyUnit}>THB</Text>
+              <Text className={styles.readOnlyValue}>1</Text>
             </View>
-            <Text
-              accessibilityLiveRegion={errors.wage ? "assertive" : "none"}
-              className={errors.wage ? styles.errorText : styles.helperText}
-            >
-              {errors.wage ?? messages.rewardHelper}
+            <Text className={styles.singleHeadcountHint}>
+              {messages.singleHeadcountHint}
             </Text>
           </View>
+        ) : (
+          <Input
+            ref={headcountRef}
+            label={`${messages.headcount} *`}
+            placeholder={messages.headcountPlaceholder}
+            value={draft.headcount}
+            onChangeText={(value) =>
+              updateDraft("headcount", value.replace(/[^0-9]/g, ""))
+            }
+            error={errors.headcount}
+            keyboardType="number-pad"
+          />
+        )}
+        <View className={styles.fieldGroup}>
+          <FieldLabel required optionalLabel={messages.optional}>
+            {messages.rewardPerPerson}
+          </FieldLabel>
+          <View
+            className={cn(
+              styles.currencyInput,
+              errors.wage ? styles.fieldError : null
+            )}
+          >
+            <Text className={styles.currencySymbol}>฿</Text>
+            <TextInput
+              ref={rewardRef}
+              className={styles.currencyTextInput}
+              placeholder={messages.rewardPlaceholder}
+              placeholderTextColor={colors.textMuted}
+              value={draft.wage}
+              onChangeText={(value) =>
+                updateDraft("wage", value.replace(/[^0-9.]/g, ""))
+              }
+              keyboardType="decimal-pad"
+              accessibilityLabel={`${messages.rewardPerPerson} (THB)`}
+            />
+            <Text className={styles.currencyUnit}>THB</Text>
+          </View>
+          <Text
+            accessibilityLiveRegion={errors.wage ? "assertive" : "none"}
+            className={errors.wage ? styles.errorText : styles.helperText}
+          >
+            {errors.wage ?? messages.rewardHelper}
+          </Text>
         </View>
       </View>
 

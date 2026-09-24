@@ -5,15 +5,22 @@ import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import { questBoardMessages } from "@/locales/questBoardMessages";
-import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { useLiveQuestSnapshotQuery } from "@/features/questBoard/api/questBoardQueries";
 import {
+  QuestAssignmentStatus,
+  QuestMode,
+  QuestParticipation,
+} from "../domain/types";
+import {
+  getApplicationSubmissionDetail,
   getPendingApplications,
   getPendingTeams,
   getSelectRosterPermissions,
-  getSelectRosterProposalCount,
 } from "./selectRosterSelectors";
-import type { SelectRosterScreenViewModel } from "./selectRosterViewModel";
+import type {
+  RosterSelection,
+  SelectRosterScreenViewModel,
+} from "./selectRosterViewModel";
 import { useSelectRosterActions } from "./useSelectRosterActions";
 
 export function useSelectRosterScreen(
@@ -21,7 +28,6 @@ export function useSelectRosterScreen(
 ): SelectRosterScreenViewModel {
   const router = useRouter();
   const { locale } = useLocale();
-  const { colors } = useAppTheme();
   const messages = questBoardMessages[locale];
   const groupMessages = groupQuestMessages[locale];
   const sessionQuery = useSessionQuery();
@@ -33,6 +39,10 @@ export function useSelectRosterScreen(
     Boolean(questId && viewerId)
   );
   const onBack = useCallback(() => router.back(), [router]);
+  const onOpenProfile = useCallback(
+    (memberId: string) => router.push(`/profile/${memberId}`),
+    [router]
+  );
   const actions = useSelectRosterActions({
     questId,
     viewerId,
@@ -42,13 +52,7 @@ export function useSelectRosterScreen(
     refetchSnapshot: snapshotQuery.refetch,
   });
 
-  const baseViewModel = { title: messages.selectRosterTitle, colors, onBack };
-  const error =
-    snapshotQuery.error instanceof Error
-      ? snapshotQuery.error.message
-      : snapshotQuery.isError
-        ? groupMessages.errorTitle
-        : undefined;
+  const baseViewModel = { title: messages.selectRosterTitle, onBack };
 
   if (snapshotQuery.isPending) {
     return {
@@ -59,64 +63,91 @@ export function useSelectRosterScreen(
   }
 
   const snapshot = snapshotQuery.data;
-  if (error || !snapshot) {
+  if (snapshotQuery.isError || !snapshot) {
     return {
       ...baseViewModel,
       status: "error",
       errorTitle: groupMessages.errorTitle,
-      errorMessage: error ?? groupMessages.errorDescription,
+      errorMessage:
+        snapshotQuery.error instanceof Error
+          ? snapshotQuery.error.message
+          : groupMessages.errorDescription,
       retryLabel: groupMessages.retry,
       onRetry: () => void snapshotQuery.refetch(),
     };
   }
 
-  if (snapshot.mode !== "CANDIDATE") {
-    return {
-      ...baseViewModel,
-      status: "not-required",
-      message: messages.noSelectionNeeded,
-    };
-  }
+  const workerIds = [
+    ...new Set(
+      snapshot.assignments
+        .filter(
+          (assignment) =>
+            assignment.state !== QuestAssignmentStatus.ASSIGNMENT_CANCELLED
+        )
+        .map((assignment) => assignment.workerId)
+    ),
+  ];
+  const headcount = snapshot.quest.headcount;
 
-  const permissions = getSelectRosterPermissions(snapshot);
-  const pendingApplications = getPendingApplications(snapshot.applications);
-  const pendingTeams = getPendingTeams(snapshot.teams);
-  const isGroup = snapshot.participation === "GROUP";
-  const pendingCount = getSelectRosterProposalCount(
-    snapshot.participation,
-    pendingApplications,
-    pendingTeams
-  );
+  let selection: RosterSelection;
+  if (snapshot.mode === QuestMode.CANDIDATE) {
+    const permissions = getSelectRosterPermissions(snapshot);
+    const isGroup = snapshot.participation === QuestParticipation.GROUP;
+    const proposals = isGroup
+      ? getPendingTeams(snapshot.teams).map((team) => ({
+          id: team.id,
+          memberId: team.leaderId,
+          detail: `${team.name || groupMessages.teamProposal} · ${groupMessages.memberCount(team.members.length)}`,
+          testID: `select-roster-team-${team.id}`,
+          onSelect: () => actions.selectTeam(team),
+          onReject: () => actions.rejectTeam(team),
+        }))
+      : getPendingApplications(snapshot.applications).map((application) => ({
+          id: application.id,
+          memberId: application.memberId,
+          detail: getApplicationSubmissionDetail(
+            application.appliedAt,
+            locale,
+            groupMessages.submittedLabel
+          ),
+          testID: `select-roster-candidate-${application.id}`,
+          onSelect: () => actions.selectApplication(application),
+          onReject: () => actions.rejectApplication(application),
+        }));
+    selection = {
+      mode: "candidate",
+      title: messages.rosterProposalsTitle,
+      subtitle: groupMessages.candidateReviewSubtitle,
+      countLabel: groupMessages.proposalCount(proposals.length),
+      emptyLabel: groupMessages.noProposals,
+      proposals,
+      canSelect: isGroup
+        ? permissions.canSelectTeam
+        : permissions.canSelectCandidate,
+      canReject: isGroup
+        ? permissions.canRejectTeam
+        : permissions.canRejectCandidate,
+      selectLabel: groupMessages.selectProposal,
+      rejectLabel: groupMessages.reject,
+      pendingAction: actions.pendingAction,
+    };
+  } else {
+    selection = { mode: "automatic", message: messages.noSelectionNeeded };
+  }
 
   return {
     ...baseViewModel,
     status: "ready",
-    isGroup,
     questTitle: snapshot.quest.title,
-    subtitle: groupMessages.candidateReviewSubtitle,
-    requestedHeadcountLabel: groupMessages.requestedHeadcount,
-    requestedHeadcount: snapshot.quest.headcount,
-    actualHeadcountLabel: groupMessages.actualHeadcount,
-    actualHeadcount: snapshot.assignments.length,
-    proposalCountLabel: groupMessages.proposalCount(pendingCount),
-    noProposalsLabel: groupMessages.noProposals,
-    pendingApplications,
-    pendingTeams,
+    workersTitle: messages.rosterWorkersTitle,
+    workerCountLabel: messages.rosterWorkerCount(workerIds.length, headcount),
+    filledRatio: headcount > 0 ? Math.min(workerIds.length / headcount, 1) : 0,
+    noWorkersLabel: messages.rosterNoWorkers,
+    workerIds,
+    openProfileLabel: messages.rosterOpenProfile,
+    onOpenProfile,
+    selection,
     refreshing: snapshotQuery.isRefetching,
-    locale,
-    selectLabel: groupMessages.selectProposal,
-    rejectLabel: groupMessages.reject,
-    submittedLabel: groupMessages.submittedLabel,
-    teamProposalLabel: groupMessages.teamProposal,
-    memberCount: groupMessages.memberCount,
     onRefresh: () => void snapshotQuery.refetch(),
-    onSelectApplication: actions.selectApplication,
-    onRejectApplication: actions.rejectApplication,
-    onSelectTeam: actions.selectTeam,
-    onRejectTeam: actions.rejectTeam,
-    canSelectCandidate: permissions.canSelectCandidate,
-    canRejectCandidate: permissions.canRejectCandidate,
-    canSelectTeam: permissions.canSelectTeam,
-    canRejectTeam: permissions.canRejectTeam,
   };
 }

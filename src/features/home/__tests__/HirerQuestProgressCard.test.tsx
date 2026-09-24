@@ -30,6 +30,7 @@ describe("HirerQuestProgressCard", () => {
 
     expect(getByText("Science Project")).toBeTruthy();
     expect(getByText("Chat Worker")).toBeTruthy();
+    expect(getByText(/คณะวิศวกรรมศาสตร์/)).toBeTruthy();
 
     await fireEvent.press(getByTestId("hirer-quest-card-worker-profile-q1"));
     expect(onOpenWorkerProfile).toHaveBeenCalledWith("worker-1");

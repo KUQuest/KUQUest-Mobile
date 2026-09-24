@@ -454,7 +454,7 @@ export function useCreateQuestController({
     () => getCreateQuestCombinationHint(draft, messages),
     [draft, messages]
   );
-  const useStackedChoices = width < 430 || fontScale >= 1.15;
+  const useStackedChoices = width < 340 || fontScale >= 1.3;
   const useWideSummary = layout.isExpanded || width >= 430;
   const useStackedActions = width < 340 || fontScale >= 1.15;
 

@@ -6,7 +6,8 @@ import {
 } from "react-native";
 
 import { Search } from "lucide-react-native";
-import { FlatList, Pressable, Text, View } from "@/tw";
+import { FlatList, Text, View } from "@/tw";
+import { StateView } from "@/components/ui/StateView";
 import type { QuestV2BoardCard } from "@/api/questV2Contracts";
 import { spacing } from "@/theme/spacing";
 import { WorkerQuestFeedCard } from "./WorkerQuestFeedCard";
@@ -17,7 +18,7 @@ import { workerHomeStyles as styles } from "../workerHomeStyles";
 import type { WorkerHomeContentProps } from "../workflow/useWorkerHomeController";
 
 function WorkerQuestFeedSeparator() {
-  return <View className="h-[12px]" />;
+  return <View className="h-ku-12" />;
 }
 
 function WorkerQuestFeedFooter() {
@@ -58,6 +59,7 @@ export function WorkerHomeContent({
     [handleQuestPress]
   );
   const keyExtractor = useCallback((quest: QuestV2BoardCard) => quest.id, []);
+  const showFeedError = assignmentsError && boardError;
   return (
     <>
       <FlatList
@@ -69,27 +71,31 @@ export function WorkerHomeContent({
         data={availableQuests}
         ItemSeparatorComponent={WorkerQuestFeedSeparator}
         keyExtractor={keyExtractor}
-        keyboardShouldPersistTaps="never"
+        keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
-          boardPending ? (
+          showFeedError ? (
+            <View className={styles.feedError} testID="worker-home-error">
+              <StateView
+                actionLabel={messages.errorRetry}
+                description={messages.errorDescription}
+                onAction={handleRefresh}
+                title={messages.errorTitle}
+                variant="error"
+              />
+            </View>
+          ) : boardPending ? (
             <View className="items-center py-ku-xl">
-              <ActivityIndicator color={themeColors.workerDeep} />
+              <ActivityIndicator color={themeColors.workerDark} />
             </View>
           ) : (
-            <View
-              accessibilityRole="text"
-              className={`${styles.emptyState} border-ku-border-subtle bg-ku-surface-muted`}
-              testID="worker-feed-empty"
-            >
-              <View className={`${styles.emptyIconCircle} bg-ku-surface`}>
-                <Search size={22} color={themeColors.textSecondary} />
+            <View className={styles.emptyState} testID="worker-feed-empty">
+              <View className={styles.emptyIconCircle}>
+                <Search size={24} color={themeColors.workerDark} />
               </View>
-              <Text className={`${styles.emptyTitle} text-ku-text-strong`}>
+              <Text className={styles.emptyTitle}>
                 {messages.noAvailableQuestsTitle}
               </Text>
-              <Text
-                className={`${styles.emptyDescription} text-ku-text-secondary`}
-              >
+              <Text className={styles.emptyDescription}>
                 {messages.noAvailableQuestsDesc}
               </Text>
             </View>
@@ -100,57 +106,44 @@ export function WorkerHomeContent({
         }
         ListHeaderComponent={
           <View>
-            <View className={styles.screenHeader}>
-              <Text
-                accessibilityRole="header"
-                className={`${styles.screenTitle} text-ku-text-strong`}
-                testID="worker-home-title"
-              >
-                {messages.workTitle}
-              </Text>
-              <Text
-                className={`${styles.screenSubtitle} text-ku-text-secondary`}
-              >
-                {messages.subtitle}
-              </Text>
-            </View>
-            <WorkerSearchBar
-              onClearQuery={handleClearSearch}
-              onOpenFilter={handleOpenFilter}
-              onQueryChange={handleSearchChange}
-              onSelectTag={handleSelectTag}
-              query={searchQuery}
-              selectedTagId={selectedTagId}
-              tags={tags}
-            />
-            {assignmentsError && boardError ? (
-              <View
-                className={`${styles.errorState} border-ku-border-subtle bg-ku-surface-muted`}
-                testID="worker-home-error"
-              >
-                <Text className={`${styles.errorText} text-ku-text-strong`}>
-                  {messages.errorTitle}
-                </Text>
-                <Pressable
-                  accessibilityLabel={messages.errorRetry}
-                  accessibilityRole="button"
-                  className={`${styles.retryButton} bg-ku-worker-dark`}
-                  onPress={handleRefresh}
-                  testID="worker-home-retry-btn"
+            <View className={styles.masthead}>
+              <View className={styles.mastheadCopy}>
+                <Text
+                  accessibilityRole="header"
+                  className={styles.screenTitle}
+                  testID="worker-home-title"
                 >
-                  <Text className={`${styles.retryText} text-ku-on-worker`}>
-                    {messages.errorRetry}
-                  </Text>
-                </Pressable>
+                  {messages.workTitle}
+                </Text>
+                <Text className={styles.screenSubtitle}>
+                  {messages.subtitle}
+                </Text>
               </View>
-            ) : null}
+              <WorkerSearchBar
+                onClearQuery={handleClearSearch}
+                onOpenFilter={handleOpenFilter}
+                onQueryChange={handleSearchChange}
+                onSelectTag={handleSelectTag}
+                query={searchQuery}
+                selectedTagId={selectedTagId}
+                tags={tags}
+              />
+            </View>
             <View className={styles.sectionHeader}>
-              <Text className={`${styles.sectionTitle} text-ku-text-strong`}>
-                {messages.feedSectionTitle}
-              </Text>
-              <Text
-                className={`${styles.sectionSubtitle} text-ku-text-secondary`}
-              >
+              <View className={styles.sectionTitleRow}>
+                <Text
+                  accessibilityRole="header"
+                  className={styles.sectionTitle}
+                >
+                  {messages.feedSectionTitle}
+                </Text>
+                {availableQuests.length > 0 ? (
+                  <Text className={styles.sectionCount}>
+                    {availableQuests.length}
+                  </Text>
+                ) : null}
+              </View>
+              <Text className={styles.sectionSubtitle}>
                 {messages.feedSectionSubtitle}
               </Text>
             </View>
@@ -159,10 +152,10 @@ export function WorkerHomeContent({
         onScroll={handleScroll}
         refreshControl={
           <RefreshControl
-            colors={[themeColors.workerDeep]}
+            colors={[themeColors.workerDark]}
             onRefresh={handleRefresh}
             refreshing={isRefreshing}
-            tintColor={themeColors.workerDeep}
+            tintColor={themeColors.workerDark}
           />
         }
         renderItem={renderQuestItem}

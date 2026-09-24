@@ -10,9 +10,10 @@ import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestServ
 import SelectRosterRoute from "../select-roster";
 
 const mockBack = jest.fn();
+const mockPush = jest.fn();
 
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: mockBack }),
+  useRouter: () => ({ push: mockPush, replace: jest.fn(), back: mockBack }),
   useLocalSearchParams: () => ({ id: "quest-1" }),
 }));
 
@@ -299,6 +300,44 @@ describe("SelectRosterRoute", () => {
         getByText("เควสต์นี้รับผู้ทำงานอัตโนมัติ ไม่ต้องคัดเลือก")
       ).toBeTruthy();
     });
+  });
+
+  it("lists assigned Workers without cancelled assignments and opens a Worker profile", async () => {
+    const base = createSnapshot();
+    const snapshot = createSnapshot({
+      mode: "FIRST_COME_FIRST_SERVED",
+      assignments: [
+        {
+          questId: "quest-1",
+          workerId: "worker-1",
+          state: "ASSIGNMENT_ACTIVE",
+          questState: "QUEST_ASSIGNED",
+          startedAt: null,
+        },
+        {
+          questId: "quest-1",
+          workerId: "worker-2",
+          state: "ASSIGNMENT_CANCELLED",
+          questState: "QUEST_ASSIGNED",
+          startedAt: null,
+        },
+      ],
+      quest: { ...base.quest, headcount: 2 },
+    });
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
+
+    const { getByTestId, getByText, queryByTestId } =
+      await renderWithQueryClient(<SelectRosterRoute />);
+
+    await waitFor(() => {
+      expect(getByText("Nina Candidate")).toBeTruthy();
+    });
+    expect(getByText("ผู้ทำงาน 1/2 คน")).toBeTruthy();
+    expect(queryByTestId("select-roster-worker-worker-2")).toBeNull();
+
+    await fireEvent.press(getByTestId("select-roster-worker-worker-1"));
+
+    expect(mockPush).toHaveBeenCalledWith("/profile/worker-1");
   });
 
   it("shows the empty state when no candidates have applied yet", async () => {

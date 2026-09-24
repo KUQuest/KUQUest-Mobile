@@ -1,12 +1,36 @@
-import type { QuestV2Application, QuestV2Team } from "@/api/questV2Contracts";
-import type { SupportedLocale } from "@/locales/locale";
-import type { ThemeColors } from "@/theme/colors";
+import type { PendingRosterAction } from "./useSelectRosterActions";
 
 interface SelectRosterScreenBaseViewModel {
   title: string;
-  colors: ThemeColors;
   onBack: () => void;
 }
+
+/** One submitted Candidate or Candidate Team proposal awaiting the Hirer. */
+export interface RosterProposal {
+  id: string;
+  /** Applicant, or the Team Leader for a Candidate Team. */
+  memberId: string;
+  detail: string;
+  testID: string;
+  onSelect: () => void;
+  onReject: () => void;
+}
+
+export type RosterSelection =
+  | { mode: "automatic"; message: string }
+  | {
+      mode: "candidate";
+      title: string;
+      subtitle: string;
+      countLabel: string;
+      emptyLabel: string;
+      proposals: RosterProposal[];
+      canSelect: boolean;
+      canReject: boolean;
+      selectLabel: string;
+      rejectLabel: string;
+      pendingAction: PendingRosterAction | null;
+    };
 
 export type SelectRosterScreenViewModel =
   | (SelectRosterScreenBaseViewModel & {
@@ -21,36 +45,17 @@ export type SelectRosterScreenViewModel =
       onRetry: () => void;
     })
   | (SelectRosterScreenBaseViewModel & {
-      status: "not-required";
-      message: string;
-    })
-  | (SelectRosterScreenBaseViewModel & {
       status: "ready";
-      isGroup: boolean;
-      canSelectCandidate: boolean;
-      canRejectCandidate: boolean;
-      canSelectTeam: boolean;
-      canRejectTeam: boolean;
       questTitle: string;
-      subtitle: string;
-      requestedHeadcountLabel: string;
-      requestedHeadcount: number;
-      actualHeadcountLabel: string;
-      actualHeadcount: number;
-      proposalCountLabel: string;
-      noProposalsLabel: string;
-      pendingApplications: QuestV2Application[];
-      pendingTeams: QuestV2Team[];
+      workersTitle: string;
+      workerCountLabel: string;
+      /** Filled share of the requested headcount, 0–1. */
+      filledRatio: number;
+      noWorkersLabel: string;
+      workerIds: string[];
+      openProfileLabel: (name: string) => string;
+      onOpenProfile: (memberId: string) => void;
+      selection: RosterSelection;
       refreshing: boolean;
-      locale: SupportedLocale;
-      selectLabel: string;
-      rejectLabel: string;
-      submittedLabel: string;
-      teamProposalLabel: string;
-      memberCount: (count: number) => string;
       onRefresh: () => void;
-      onSelectApplication: (application: QuestV2Application) => void;
-      onRejectApplication: (application: QuestV2Application) => void;
-      onSelectTeam: (team: QuestV2Team) => void;
-      onRejectTeam: (team: QuestV2Team) => void;
     });

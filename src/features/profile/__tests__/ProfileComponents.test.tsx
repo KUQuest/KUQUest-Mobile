@@ -1,4 +1,5 @@
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithAppTheme } from "@/testing/queryTestUtils";
 import { AboutMe } from "../components/AboutMe";
 import { Certificates } from "../components/Certificates";
 import { Experience } from "../components/Experience";
@@ -10,7 +11,7 @@ import { Reviews } from "../components/Reviews";
 describe("Student Profile presentation", () => {
   it("gives an empty About section a clear Settings recovery action", async () => {
     const onEditPress = jest.fn();
-    const view = await render(
+    const view = await renderWithAppTheme(
       <AboutMe
         about=""
         sectionTitle="About"
@@ -26,7 +27,7 @@ describe("Student Profile presentation", () => {
   });
 
   it("keeps a long Student name readable and the edit action available", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <ProfileHeader
         data={{
           department: "Agro-Industrial Innovation and Technology",
@@ -44,10 +45,8 @@ describe("Student Profile presentation", () => {
       view.getByText("Siraphat THAPPHA with a longer display name")
     ).toBeTruthy();
     expect(view.getByText("Edit your profile")).toBeTruthy();
-    expect(view.getByText("Agro-Industry")).toBeTruthy();
-    expect(
-      view.getByText("Agro-Industrial Innovation and Technology")
-    ).toBeTruthy();
+    expect(view.getByText("คณะอุตสาหกรรมเกษตร")).toBeTruthy();
+    expect(view.getByText("นวัตกรรมและเทคโนโลยีอุตสาหกรรมเกษตร")).toBeTruthy();
     expect(view.getByText("Teacher")).toBeTruthy();
   });
 
@@ -61,16 +60,17 @@ describe("Student Profile presentation", () => {
       profileImage: "",
       university: "State University",
     };
-    const view = await render(<ProfileHeader data={data} />);
+    const view = await renderWithAppTheme(<ProfileHeader data={data} />);
 
-    expect(view.getByText("Student")).toBeTruthy();
-    expect(view.getAllByText("Economics")).toHaveLength(2);
+    expect(view.getByText("นักศึกษา")).toBeTruthy();
+    expect(view.getByText("คณะเศรษฐศาสตร์")).toBeTruthy();
+    expect(view.getByText("ภาควิชาเศรษฐศาสตร์")).toBeTruthy();
     expect(view.queryByText("State University")).toBeNull();
     expect(view.queryByText("3")).toBeNull();
   });
 
   it("labels and renders every backend-provided Quest category", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <ProfileHeader
         data={{
           department: "",
@@ -98,7 +98,7 @@ describe("Student Profile presentation", () => {
   });
 
   it("uses the avatar file id as the native image cache key", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <ProfileHeader
         data={{
           department: "",
@@ -122,7 +122,7 @@ describe("Student Profile presentation", () => {
   });
 
   it("renders profile statistics and filters Reviews by star rating", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <>
         <Reviews
           reviews={[
@@ -196,7 +196,7 @@ describe("Student Profile presentation", () => {
   });
 
   it("renders Certificate cards with issuer, year, and preview interaction", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <Certificates
         certificates={[
           {
@@ -228,7 +228,7 @@ describe("Student Profile presentation", () => {
   });
 
   it("gives the certificate viewer image an explicit width", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <Certificates
         certificates={[
           {
@@ -263,7 +263,7 @@ describe("Student Profile presentation", () => {
   });
 
   it("shows a Certificate fallback and disables preview after image failure", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <Certificates
         certificates={[
           {
@@ -295,7 +295,7 @@ describe("Student Profile presentation", () => {
   });
 
   it("disables a Certificate preview after the modal image fails", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <Certificates
         certificates={[
           {
@@ -336,7 +336,7 @@ describe("Student Profile presentation", () => {
   });
 
   it("does not show empty content when an Experience section is unavailable", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <Experience
         experiences={[]}
         sectionTitle="Experience"
@@ -356,7 +356,7 @@ describe("Student Profile presentation", () => {
   });
 
   it("does not show an empty rating state when Profile Rating is unavailable", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <Reviews
         reviews={[]}
         stats={{
@@ -387,7 +387,7 @@ describe("Student Profile presentation", () => {
   });
 
   it("uses the no-rating message when a Student has no Profile Rating", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <ProfileStats
         stats={{
           totalQuests: 0,
@@ -405,7 +405,7 @@ describe("Student Profile presentation", () => {
   });
 
   it("renders the employment type for each experience", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <Experience
         experiences={[
           {
@@ -429,7 +429,7 @@ describe("Student Profile presentation", () => {
   });
 
   it("keeps Portfolio Work usable when an optional image is missing", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <MyWork
         works={[
           {
@@ -459,7 +459,7 @@ describe("Student Profile presentation", () => {
   });
 
   it("shows every Portfolio Work image in the project details sheet", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <MyWork
         works={[
           {

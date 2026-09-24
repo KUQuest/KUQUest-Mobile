@@ -5,7 +5,14 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { useLocale } from "@/features/preferences/localeStore";
-import { onboardingMessages } from "@/locales/registrationOnboarding";
+import {
+  localizeOccupationName,
+  onboardingMessages,
+} from "@/locales/registrationOnboarding";
+import {
+  localizeDepartmentName,
+  localizeFacultyName,
+} from "@/locales/academicUnits";
 import { authService } from "@/features/auth/AuthService";
 import { clearSessionCache } from "@/features/auth/sessionQueries";
 import {
@@ -168,22 +175,17 @@ export function useOnboardingController() {
       });
   }, [onboardingQuery.error, queryClient]);
 
-  const occupationLabels: Record<string, string> = {
-    Student: messages.student,
-    Lecturer: messages.lecturer,
-    Staff: messages.staff,
-  };
   const occupationOptions = (options?.occupations ?? []).map((occupation) => ({
-    label: occupationLabels[occupation.name] ?? occupation.name,
+    label: localizeOccupationName(occupation.name, locale),
     value: occupation.id,
   }));
   const facultyOptions = (options?.faculties ?? []).map((faculty) => ({
-    label: faculty.name,
+    label: localizeFacultyName(faculty.name, locale),
     value: faculty.id,
   }));
   const departmentOptions = (selectedFaculty?.departments ?? []).map(
     (department) => ({
-      label: department.name,
+      label: localizeDepartmentName(department.name, locale),
       value: department.id,
     })
   );

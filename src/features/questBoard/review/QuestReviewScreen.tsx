@@ -27,13 +27,14 @@ export default function QuestReviewScreen({ questId }: QuestReviewScreenProps) {
     messages,
     rating,
     remainingWorkers,
+    questTitle,
+    retryLoad,
     selectedWorker,
     setComment,
     setRating,
     setSelectedWorkerId,
     setSubmitError,
     setSuccessMessage,
-    snapshotQuery,
     submitError,
     successMessage,
     workerOptions,
@@ -64,10 +65,7 @@ export default function QuestReviewScreen({ questId }: QuestReviewScreenProps) {
               ? loadError.message
               : messages.errorDescription}
           </Text>
-          <Button
-            className="mt-ku-20 max-w-[280px]"
-            onPress={() => void snapshotQuery.refetch()}
-          >
+          <Button className="mt-ku-20 max-w-[280px]" onPress={retryLoad}>
             {messages.retry}
           </Button>
         </View>
@@ -121,7 +119,7 @@ export default function QuestReviewScreen({ questId }: QuestReviewScreenProps) {
         >
           <View>
             <Text className="font-ku-bold text-ku-title text-ku-text-strong">
-              {snapshotQuery.data?.quest.title}
+              {questTitle}
             </Text>
             <Text className="mt-ku-sm text-ku-body-small text-ku-text-secondary">
               {messages.description}

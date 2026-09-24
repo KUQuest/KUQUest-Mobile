@@ -36,6 +36,8 @@ export const questBoardKeys = {
       ...questBoardKeys.liveSnapshotScope(questId, viewerId),
       editRequestId ?? null,
     ] as const,
+  assignments: (questId: string, viewerId: string) =>
+    [...questBoardKeys.all, "assignments", questId, viewerId] as const,
 };
 
 export function useProofFileLinksQuery(
@@ -98,6 +100,21 @@ export function useQuestDetailQuery(questId: string | null, enabled = true) {
     queryFn: ({ signal }) => {
       if (!questId) throw new Error("A quest ID is required");
       return liveQuestService.getQuestDetail(questId, { signal });
+    },
+  });
+}
+
+/** Assignments the viewer may read; a Hirer receives every Worker's. */
+export function useQuestAssignmentsQuery(
+  questId: string | null,
+  viewerId: string | null
+) {
+  return useQuery({
+    enabled: Boolean(questId && viewerId),
+    queryKey: questBoardKeys.assignments(questId ?? "", viewerId ?? ""),
+    queryFn: ({ signal }) => {
+      if (!questId) throw new Error("A quest ID is required");
+      return liveQuestService.listQuestAssignments(questId, { signal });
     },
   });
 }

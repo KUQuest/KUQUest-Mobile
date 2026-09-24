@@ -16,12 +16,12 @@ export interface WorkerHomeMessages {
   feedSectionSubtitle: string;
   noAvailableQuestsTitle: string;
   noAvailableQuestsDesc: string;
-  viewDetails: string;
   viewWork: string;
   reward: string;
   perPerson: string;
   online: string;
   errorTitle: string;
+  errorDescription: string;
   errorRetry: string;
   refreshing: string;
   statusActive: string;
@@ -61,12 +61,12 @@ export const workerHomeMessages: Record<SupportedLocale, WorkerHomeMessages> = {
     noAvailableQuestsTitle: "No open quests right now",
     noAvailableQuestsDesc:
       "Check back later for new opportunities from students and faculty.",
-    viewDetails: "View details",
     viewWork: "Open Work",
     reward: "Reward",
     perPerson: "/ person",
     online: "Online",
     errorTitle: "Couldn't load worker workspace data",
+    errorDescription: "Check your connection, then try again.",
     errorRetry: "Try again",
     refreshing: "Refreshing...",
     statusActive: "In Progress",
@@ -104,12 +104,12 @@ export const workerHomeMessages: Record<SupportedLocale, WorkerHomeMessages> = {
     noAvailableQuestsTitle: "ไม่มีเควสต์เปิดใหม่ในขณะนี้",
     noAvailableQuestsDesc:
       "กลับมาตรวจสอบใหม่ในภายหลังเมื่อมีเควสต์ใหม่จากเพื่อนนิสิตหรืออาจารย์",
-    viewDetails: "ดูรายละเอียด",
     viewWork: "เปิดห้องทำงาน",
     reward: "ค่าตอบแทน",
     perPerson: "/ คน",
     online: "ออนไลน์",
     errorTitle: "ไม่สามารถโหลดข้อมูลพื้นที่ทำงานได้",
+    errorDescription: "ตรวจสอบการเชื่อมต่อ แล้วลองอีกครั้ง",
     errorRetry: "ลองอีกครั้ง",
     refreshing: "กำลังอัปเดต...",
     statusActive: "กำลังทำ",

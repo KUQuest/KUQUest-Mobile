@@ -10,12 +10,12 @@ import { Pressable, Text, View } from "@/tw";
 import { useLocale } from "@/features/preferences/localeStore";
 import { navigationMessages } from "@/locales/navigationMessages";
 import { settingsMessages } from "@/locales/settingsMessages";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { getAppChromeMetrics } from "@/theme/layout";
 import { useNavigationVisibility } from "@/features/navigation/navigationUiStore";
 
 const styles = {
-  container: "absolute left-0 right-0 top-0 items-stretch",
+  container: "absolute left-0 right-0 top-0 items-stretch bg-ku-background",
   content: "relative w-full flex-1 items-center justify-center",
   title: "text-ku-text-strong font-ku-semibold text-ku-subtitle",
   settingsButton:
@@ -28,6 +28,7 @@ export function ProfileTopBar() {
   const insets = useSafeAreaInsets();
   const { locale } = useLocale();
   const { navigationVisible } = useNavigationVisibility();
+  const { colors } = useAppTheme();
   const metrics = getAppChromeMetrics(width, fontScale);
   const topBarHeight = metrics.headerHeight + insets.top;
   const shouldHide = !metrics.isTablet && !navigationVisible;
@@ -53,7 +54,6 @@ export function ProfileTopBar() {
       pointerEvents={shouldHide ? "none" : "box-none"}
       style={[
         {
-          backgroundColor: "transparent",
           height: topBarHeight,
           paddingLeft: Math.max(insets.left, 12),
           paddingRight: Math.max(insets.right, 12),

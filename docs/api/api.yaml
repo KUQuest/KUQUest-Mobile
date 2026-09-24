@@ -1670,6 +1670,13 @@ paths:
                           - 2026-07-11T10:56:36.657Z
                         type: string
                 additionalProperties: false
+  /health/ws:
+    ws:
+      tags:
+        - Health
+      summary: Check WebSocket health
+      description: Upgrades a WebSocket connection and returns API health status.
+      operationId: getWebSocketHealth
   /api/v1/onboarding/academic-options:
     get:
       tags:
@@ -2316,6 +2323,7 @@ paths:
                           - type: "null"
                       completed:
                         type: boolean
+                additionalProperties: false
         "401":
           description: Response for status 401
           content:
@@ -4412,7 +4420,7 @@ paths:
             minLength: 1
             maxLength: 200
             pattern: \S
-            description: Non-blank command identity for replay-safe direct joins
+            description: Non-blank command identity for replay-safe Worker commands
             type: string
       responses:
         "200":
@@ -4594,6 +4602,190 @@ paths:
                 additionalProperties: false
         "503":
           description: Response for status 503
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+  /api/v1/quests/{questId}/start-work:
+    post:
+      tags:
+        - Quest Assignments
+      summary: Start Work on an assigned legacy Quest
+      description: Records the authenticated Worker Start Work action between
+        startTime and dueAt. SOLO Quests require the assigned Worker; GROUP +
+        NO_CANDIDATE requires every Active Worker; GROUP + CANDIDATE requires
+        the selected Team Leader.
+      operationId: startQuestWorkV1
+      security:
+        - betterAuthSession: []
+      parameters:
+        - name: questId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+        - name: idempotency-key
+          in: header
+          required: true
+          schema:
+            minLength: 1
+            maxLength: 200
+            pattern: \S
+            description: Non-blank command identity for replay-safe Worker commands
+            type: string
+      responses:
+        "200":
+          description: Response for status 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - questId
+                      - assignmentId
+                      - startedAt
+                      - questStatus
+                    properties:
+                      questId:
+                        format: uuid
+                        type: string
+                      assignmentId:
+                        format: uuid
+                        type: string
+                      startedAt:
+                        format: date-time
+                        type: string
+                      questStatus:
+                        type: string
+                        enum:
+                          - QUEST_ASSIGNED
+                          - QUEST_IN_PROGRESS
+        "400":
+          description: Response for status 400
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "401":
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "404":
+          description: Response for status 404
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "409":
+          description: Response for status 409
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "500":
+          description: Response for status 500
           content:
             application/json:
               schema:
@@ -11821,8 +12013,9 @@ paths:
       tags:
         - Quest Assignments v2
       summary: List permitted v2 Quest Assignments
-      description: The owning Hirer can read all active Assignments. An active Worker
-        can read only that Worker's Assignment.
+      description: The owning Hirer can read all Assignments, including completed,
+        incomplete, and cancelled Assignments, for Reviews. A Worker can read
+        only that Worker's active Assignment.
       operationId: listQuestAssignmentsV2
       security:
         - betterAuthSession: []
@@ -12020,8 +12213,8 @@ paths:
             minLength: 1
             maxLength: 200
             pattern: \S
-            description: Non-blank command identity for replay-safe Quest Assignment
-              commands
+            description: Non-blank command identity for replay-safe Assignment and Start
+              Work commands
             type: string
       responses:
         "200":
@@ -12181,6 +12374,195 @@ paths:
                 additionalProperties: false
         "503":
           description: Response for status 503
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+  /api/v2/quests/{questId}/start-work:
+    post:
+      tags:
+        - Quest Assignments v2
+      summary: Start Work on an assigned v2 Quest
+      description: Records the required Worker Start Work action between startTime and
+        dueAt. GROUP + FCFS requires every Active Worker; GROUP + CANDIDATE
+        requires the Team Leader.
+      operationId: startQuestWorkV2
+      security:
+        - betterAuthSession: []
+      parameters:
+        - name: questId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+        - name: idempotency-key
+          in: header
+          required: true
+          schema:
+            minLength: 1
+            maxLength: 200
+            pattern: \S
+            description: Non-blank command identity for replay-safe Assignment and Start
+              Work commands
+            type: string
+      responses:
+        "200":
+          description: Response for status 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - questId
+                      - assignmentId
+                      - startedAt
+                      - questState
+                    properties:
+                      questId:
+                        format: uuid
+                        type: string
+                      assignmentId:
+                        format: uuid
+                        type: string
+                      startedAt:
+                        format: date-time
+                        type: string
+                      questState:
+                        type: string
+                        enum:
+                          - QUEST_DRAFT
+                          - QUEST_OPEN
+                          - QUEST_ASSIGNED
+                          - QUEST_IN_PROGRESS
+                          - QUEST_COMPLETED
+                          - QUEST_CANCELLED
+                          - QUEST_FAILED
+        "400":
+          description: Response for status 400
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "401":
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "404":
+          description: Response for status 404
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "409":
+          description: Response for status 409
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "500":
+          description: Response for status 500
           content:
             application/json:
               schema:
@@ -20669,6 +21051,184 @@ paths:
                         type: string
                 additionalProperties: false
   /api/v2/quests/{questId}/reviews:
+    get:
+      tags:
+        - Quest Reviews v2
+      summary: List v2 Rating Reviews for a Quest
+      description: Lists Reviews after the Quest reaches a Terminal State. The caller
+        must be the Hirer or a Worker with an Assignment for the Quest.
+      operationId: listQuestReviewsV2
+      security:
+        - betterAuthSession: []
+      parameters:
+        - name: questId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Response for status 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - items
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - id
+                            - questId
+                            - reviewerId
+                            - revieweeId
+                            - rating
+                            - comment
+                            - createdAt
+                            - updatedAt
+                          properties:
+                            id:
+                              format: uuid
+                              type: string
+                            questId:
+                              format: uuid
+                              type: string
+                            reviewerId:
+                              format: uuid
+                              type: string
+                            revieweeId:
+                              format: uuid
+                              type: string
+                            rating:
+                              minimum: 1
+                              maximum: 5
+                              anyOf:
+                                - format: integer
+                                  default: 0
+                                  type: string
+                                - minimum: 1
+                                  maximum: 5
+                                  type: integer
+                            comment:
+                              nullable: true
+                              anyOf:
+                                - type: string
+                                - type: "null"
+                            createdAt:
+                              format: date-time
+                              type: string
+                            updatedAt:
+                              format: date-time
+                              type: string
+        "401":
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "404":
+          description: Response for status 404
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "500":
+          description: Response for status 500
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "503":
+          description: Response for status 503
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
     post:
       tags:
         - Quest Reviews v2
@@ -21002,6 +21562,183 @@ paths:
                         type: string
                 additionalProperties: false
   /api/v2/quests/{questId}/reviews/{reviewId}:
+    get:
+      tags:
+        - Quest Reviews v2
+      summary: Get a v2 Rating Review
+      description: Gets a Review after the Quest reaches a Terminal State. The caller
+        must be the Hirer or a Worker with an Assignment for the Quest.
+      operationId: getQuestReviewV2
+      security:
+        - betterAuthSession: []
+      parameters:
+        - name: questId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+        - name: reviewId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Response for status 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - id
+                      - questId
+                      - reviewerId
+                      - revieweeId
+                      - rating
+                      - comment
+                      - createdAt
+                      - updatedAt
+                    properties:
+                      id:
+                        format: uuid
+                        type: string
+                      questId:
+                        format: uuid
+                        type: string
+                      reviewerId:
+                        format: uuid
+                        type: string
+                      revieweeId:
+                        format: uuid
+                        type: string
+                      rating:
+                        minimum: 1
+                        maximum: 5
+                        anyOf:
+                          - format: integer
+                            default: 0
+                            type: string
+                          - minimum: 1
+                            maximum: 5
+                            type: integer
+                      comment:
+                        nullable: true
+                        anyOf:
+                          - type: string
+                          - type: "null"
+                      createdAt:
+                        format: date-time
+                        type: string
+                      updatedAt:
+                        format: date-time
+                        type: string
+        "401":
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "404":
+          description: Response for status 404
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "500":
+          description: Response for status 500
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        "503":
+          description: Response for status 503
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
     patch:
       tags:
         - Quest Reviews v2
@@ -21328,6 +22065,21 @@ paths:
                       message:
                         type: string
                 additionalProperties: false
+  /api/v2/quests/{questId}/events:
+    ws:
+      tags:
+        - Quest
+      summary: Subscribe to read-only Quest updates
+      description: Subscribes an authorized Hirer or Worker to current Quest updates.
+        Read Quest state from REST after SUBSCRIBED.
+      operationId: subscribeQuestUpdates
+      parameters:
+        - name: questId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
   /api/v2/quests:
     get:
       tags:
@@ -27518,6 +28270,7 @@ paths:
                               - const: ASSIGNMENT_CANCELLED
                                 type: string
                           - type: "null"
+                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -27897,6 +28650,7 @@ paths:
                         properties:
                           canViewOnly:
                             type: boolean
+                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -36186,9 +36940,11 @@ paths:
     get:
       tags:
         - Admin Reports
-      summary: List Report Cases for Trust and Safety review
-      description: Lists Report Case queue pages with Reporter Entries and Evidence
-        References, without unrelated Work Conversation content.
+      summary: List Report Cases and Conduct Reports for Admin review
+      description: Lists a shared queue of Message-based Report Cases and Quest-based
+        Conduct Reports. Supports exact kind, status, reported Member, and Quest
+        filters. The default queue contains open reports and sorts newest first.
+        Each item has a kind discriminator.
       operationId: listAdminReports
       security:
         - betterAuthSession: []
@@ -36197,18 +36953,31 @@ paths:
           in: query
           required: false
           schema:
-            const: REPORT_CASE
             type: string
+            enum:
+              - REPORT_CASE
+              - CONDUCT_REPORT
         - name: status
           in: query
           required: false
           schema:
-            type: string
-            enum:
-              - REPORT_CASE_PENDING
-              - REPORT_CASE_DISMISSED
-              - REPORT_CASE_HIDDEN
-              - REPORT_CASE_RESTORED
+            anyOf:
+              - anyOf:
+                  - const: REPORT_CASE_PENDING
+                    type: string
+                  - const: REPORT_CASE_DISMISSED
+                    type: string
+                  - const: REPORT_CASE_HIDDEN
+                    type: string
+                  - const: REPORT_CASE_RESTORED
+                    type: string
+              - anyOf:
+                  - const: CONDUCT_REPORT_PENDING
+                    type: string
+                  - const: CONDUCT_REPORT_UPHELD
+                    type: string
+                  - const: CONDUCT_REPORT_DISMISSED
+                    type: string
         - name: memberId
           in: query
           required: false
@@ -36270,145 +37039,358 @@ paths:
                       items:
                         type: array
                         items:
-                          type: object
-                          required:
-                            - kind
-                            - id
-                            - displayId
-                            - messageId
-                            - conversationId
-                            - questId
-                            - status
-                            - version
-                            - caseClosedAt
-                            - createdAt
-                            - updatedAt
-                            - reporterEntries
-                            - evidenceReferences
-                          properties:
-                            kind:
-                              const: REPORT_CASE
-                              type: string
-                            id:
-                              format: uuid
-                              type: string
-                            displayId:
-                              type: string
-                            messageId:
-                              format: uuid
-                              type: string
-                            conversationId:
-                              format: uuid
-                              type: string
-                            questId:
-                              format: uuid
-                              type: string
-                            status:
-                              type: string
-                              enum:
-                                - REPORT_CASE_PENDING
-                                - REPORT_CASE_DISMISSED
-                                - REPORT_CASE_HIDDEN
-                                - REPORT_CASE_RESTORED
-                            version:
-                              minimum: 1
-                              anyOf:
-                                - format: integer
-                                  default: 0
+                          anyOf:
+                            - type: object
+                              required:
+                                - kind
+                                - id
+                                - displayId
+                                - messageId
+                                - conversationId
+                                - questId
+                                - status
+                                - version
+                                - caseClosedAt
+                                - createdAt
+                                - updatedAt
+                                - reporterEntries
+                                - evidenceReferences
+                              properties:
+                                kind:
+                                  const: REPORT_CASE
                                   type: string
-                                - minimum: 1
-                                  type: integer
-                            caseClosedAt:
-                              nullable: true
-                              anyOf:
-                                - format: date-time
+                                id:
+                                  format: uuid
                                   type: string
-                                - type: "null"
-                            createdAt:
-                              format: date-time
-                              type: string
-                            updatedAt:
-                              format: date-time
-                              type: string
-                            reporterEntries:
-                              type: array
-                              items:
-                                type: object
-                                required:
-                                  - id
-                                  - reporterMemberId
-                                  - reporter
-                                  - reason
-                                  - detail
-                                  - createdAt
-                                properties:
-                                  id:
-                                    format: uuid
-                                    type: string
-                                  reporterMemberId:
-                                    format: uuid
-                                    type: string
-                                  reporter:
+                                displayId:
+                                  type: string
+                                messageId:
+                                  format: uuid
+                                  type: string
+                                conversationId:
+                                  format: uuid
+                                  type: string
+                                questId:
+                                  format: uuid
+                                  type: string
+                                status:
+                                  anyOf:
+                                    - const: REPORT_CASE_PENDING
+                                      type: string
+                                    - const: REPORT_CASE_DISMISSED
+                                      type: string
+                                    - const: REPORT_CASE_HIDDEN
+                                      type: string
+                                    - const: REPORT_CASE_RESTORED
+                                      type: string
+                                version:
+                                  minimum: 1
+                                  anyOf:
+                                    - format: integer
+                                      default: 0
+                                      type: string
+                                    - minimum: 1
+                                      type: integer
+                                caseClosedAt:
+                                  nullable: true
+                                  anyOf:
+                                    - format: date-time
+                                      type: string
+                                    - type: "null"
+                                createdAt:
+                                  format: date-time
+                                  type: string
+                                updatedAt:
+                                  format: date-time
+                                  type: string
+                                reporterEntries:
+                                  type: array
+                                  items:
                                     type: object
                                     required:
                                       - id
-                                      - email
-                                      - firstName
-                                      - lastName
+                                      - reporterMemberId
+                                      - reporter
+                                      - reason
+                                      - detail
+                                      - createdAt
                                     properties:
                                       id:
                                         format: uuid
                                         type: string
-                                      email:
+                                      reporterMemberId:
+                                        format: uuid
                                         type: string
-                                      firstName:
+                                      reporter:
+                                        type: object
+                                        required:
+                                          - id
+                                          - email
+                                          - firstName
+                                          - lastName
+                                        properties:
+                                          id:
+                                            format: uuid
+                                            type: string
+                                          email:
+                                            type: string
+                                          firstName:
+                                            type: string
+                                          lastName:
+                                            type: string
+                                      reason:
+                                        anyOf:
+                                          - const: REPORT_ABUSIVE_OR_HARASSMENT
+                                            type: string
+                                          - const: REPORT_SPAM
+                                            type: string
+                                          - const: REPORT_INAPPROPRIATE_CONTENT
+                                            type: string
+                                          - const: REPORT_DANGER_OR_THREAT
+                                            type: string
+                                          - const: REPORT_OTHER
+                                            type: string
+                                      detail:
+                                        nullable: true
+                                        anyOf:
+                                          - type: string
+                                          - type: "null"
+                                      createdAt:
+                                        format: date-time
                                         type: string
-                                      lastName:
+                                evidenceReferences:
+                                  type: array
+                                  items:
+                                    type: object
+                                    required:
+                                      - id
+                                      - messageId
+                                      - attachmentId
+                                      - createdAt
+                                    properties:
+                                      id:
+                                        format: uuid
                                         type: string
-                                  reason:
-                                    type: string
-                                    enum:
-                                      - REPORT_ABUSIVE_OR_HARASSMENT
-                                      - REPORT_SPAM
-                                      - REPORT_INAPPROPRIATE_CONTENT
-                                      - REPORT_DANGER_OR_THREAT
-                                      - REPORT_OTHER
-                                  detail:
-                                    nullable: true
-                                    anyOf:
-                                      - type: string
-                                      - type: "null"
-                                  createdAt:
-                                    format: date-time
-                                    type: string
-                            evidenceReferences:
-                              type: array
-                              items:
-                                type: object
-                                required:
-                                  - id
-                                  - messageId
-                                  - attachmentId
-                                  - createdAt
-                                properties:
-                                  id:
-                                    format: uuid
-                                    type: string
-                                  messageId:
-                                    nullable: true
-                                    anyOf:
-                                      - format: uuid
+                                      messageId:
+                                        nullable: true
+                                        anyOf:
+                                          - format: uuid
+                                            type: string
+                                          - type: "null"
+                                      attachmentId:
+                                        nullable: true
+                                        anyOf:
+                                          - format: uuid
+                                            type: string
+                                          - type: "null"
+                                      createdAt:
+                                        format: date-time
                                         type: string
-                                      - type: "null"
-                                  attachmentId:
-                                    nullable: true
-                                    anyOf:
-                                      - format: uuid
-                                        type: string
-                                      - type: "null"
-                                  createdAt:
-                                    format: date-time
-                                    type: string
+                            - type: object
+                              required:
+                                - kind
+                                - id
+                                - displayId
+                                - filer
+                                - reportedMember
+                                - quest
+                                - reason
+                                - detail
+                                - status
+                                - version
+                                - createdAt
+                                - updatedAt
+                                - resolvedAt
+                              properties:
+                                kind:
+                                  const: CONDUCT_REPORT
+                                  type: string
+                                id:
+                                  format: uuid
+                                  type: string
+                                displayId:
+                                  pattern: ^CND-[0-9]{6,}$
+                                  type: string
+                                filer:
+                                  type: object
+                                  required:
+                                    - id
+                                    - email
+                                    - firstName
+                                    - lastName
+                                  properties:
+                                    id:
+                                      format: uuid
+                                      type: string
+                                    email:
+                                      type: string
+                                    firstName:
+                                      type: string
+                                    lastName:
+                                      type: string
+                                reportedMember:
+                                  type: object
+                                  required:
+                                    - id
+                                    - email
+                                    - firstName
+                                    - lastName
+                                  properties:
+                                    id:
+                                      format: uuid
+                                      type: string
+                                    email:
+                                      type: string
+                                    firstName:
+                                      type: string
+                                    lastName:
+                                      type: string
+                                quest:
+                                  type: object
+                                  required:
+                                    - id
+                                    - displayId
+                                    - title
+                                    - questStatus
+                                    - mode
+                                    - participation
+                                    - headcount
+                                    - proofRequired
+                                    - startTime
+                                    - dueAt
+                                    - createdAt
+                                    - updatedAt
+                                    - hirer
+                                  properties:
+                                    id:
+                                      format: uuid
+                                      type: string
+                                    displayId:
+                                      pattern: ^QST-[0-9]{6,}$
+                                      type: string
+                                    title:
+                                      type: string
+                                    questStatus:
+                                      anyOf:
+                                        - const: QUEST_DRAFT
+                                          type: string
+                                        - const: QUEST_OPEN
+                                          type: string
+                                        - const: QUEST_AWAITING_CONSENT
+                                          type: string
+                                        - const: QUEST_ASSIGNED
+                                          type: string
+                                        - const: QUEST_IN_PROGRESS
+                                          type: string
+                                        - const: QUEST_SUBMITTED
+                                          type: string
+                                        - const: QUEST_APPROVED
+                                          type: string
+                                        - const: QUEST_REWORK
+                                          type: string
+                                        - const: QUEST_COMPLETED
+                                          type: string
+                                        - const: QUEST_CANCELLED
+                                          type: string
+                                        - const: QUEST_DISPUTED
+                                          type: string
+                                        - const: QUEST_FAILED
+                                          type: string
+                                    mode:
+                                      anyOf:
+                                        - const: FIRST_COME_FIRST_SERVED
+                                          type: string
+                                        - const: CANDIDATE
+                                          type: string
+                                    participation:
+                                      anyOf:
+                                        - const: SINGLE
+                                          type: string
+                                        - const: GROUP
+                                          type: string
+                                    headcount:
+                                      minimum: 1
+                                      anyOf:
+                                        - format: integer
+                                          default: 0
+                                          type: string
+                                        - minimum: 1
+                                          type: integer
+                                    proofRequired:
+                                      type: boolean
+                                    startTime:
+                                      format: date-time
+                                      type: string
+                                    dueAt:
+                                      nullable: true
+                                      anyOf:
+                                        - format: date-time
+                                          type: string
+                                        - type: "null"
+                                    createdAt:
+                                      format: date-time
+                                      type: string
+                                    updatedAt:
+                                      format: date-time
+                                      type: string
+                                    hirer:
+                                      type: object
+                                      required:
+                                        - id
+                                        - email
+                                        - firstName
+                                        - lastName
+                                      properties:
+                                        id:
+                                          format: uuid
+                                          type: string
+                                        email:
+                                          type: string
+                                        firstName:
+                                          type: string
+                                        lastName:
+                                          type: string
+                                reason:
+                                  anyOf:
+                                    - const: CONDUCT_ABANDONED
+                                      type: string
+                                    - const: CONDUCT_OUT_OF_SCOPE
+                                      type: string
+                                    - const: CONDUCT_NO_SHOW
+                                      type: string
+                                detail:
+                                  nullable: true
+                                  anyOf:
+                                    - type: string
+                                    - type: "null"
+                                status:
+                                  anyOf:
+                                    - const: CONDUCT_REPORT_PENDING
+                                      type: string
+                                    - const: CONDUCT_REPORT_UPHELD
+                                      type: string
+                                    - const: CONDUCT_REPORT_DISMISSED
+                                      type: string
+                                version:
+                                  minimum: 1
+                                  anyOf:
+                                    - format: integer
+                                      default: 0
+                                      type: string
+                                    - minimum: 1
+                                      type: integer
+                                createdAt:
+                                  format: date-time
+                                  type: string
+                                updatedAt:
+                                  format: date-time
+                                  type: string
+                                resolvedAt:
+                                  nullable: true
+                                  anyOf:
+                                    - format: date-time
+                                      type: string
+                                    - type: "null"
                       nextCursor:
                         nullable: true
                         anyOf:
@@ -36490,10 +37472,10 @@ paths:
     get:
       tags:
         - Admin Reports
-      summary: Get Report Case detail for Trust and Safety review
-      description: Returns the Report Case, Reporter Entries, and Evidence References.
-        Message content is available only through the case-scoped evidence
-        route.
+      summary: Get Report Case or Conduct Report detail for Admin review
+      description: Returns a Report Case summary or Conduct Report detail with the
+        Quest, Assignment, and Proof Submission record. Report Case Message
+        content is available only through the case-scoped evidence route.
       operationId: getAdminReport
       security:
         - betterAuthSession: []
@@ -36519,145 +37501,519 @@ paths:
                     const: true
                     type: boolean
                   data:
-                    type: object
-                    required:
-                      - kind
-                      - id
-                      - displayId
-                      - messageId
-                      - conversationId
-                      - questId
-                      - status
-                      - version
-                      - caseClosedAt
-                      - createdAt
-                      - updatedAt
-                      - reporterEntries
-                      - evidenceReferences
-                    properties:
-                      kind:
-                        const: REPORT_CASE
-                        type: string
-                      id:
-                        format: uuid
-                        type: string
-                      displayId:
-                        type: string
-                      messageId:
-                        format: uuid
-                        type: string
-                      conversationId:
-                        format: uuid
-                        type: string
-                      questId:
-                        format: uuid
-                        type: string
-                      status:
-                        type: string
-                        enum:
-                          - REPORT_CASE_PENDING
-                          - REPORT_CASE_DISMISSED
-                          - REPORT_CASE_HIDDEN
-                          - REPORT_CASE_RESTORED
-                      version:
-                        minimum: 1
-                        anyOf:
-                          - format: integer
-                            default: 0
+                    anyOf:
+                      - type: object
+                        required:
+                          - kind
+                          - id
+                          - displayId
+                          - messageId
+                          - conversationId
+                          - questId
+                          - status
+                          - version
+                          - caseClosedAt
+                          - createdAt
+                          - updatedAt
+                          - reporterEntries
+                          - evidenceReferences
+                        properties:
+                          kind:
+                            const: REPORT_CASE
                             type: string
-                          - minimum: 1
-                            type: integer
-                      caseClosedAt:
-                        nullable: true
-                        anyOf:
-                          - format: date-time
+                          id:
+                            format: uuid
                             type: string
-                          - type: "null"
-                      createdAt:
-                        format: date-time
-                        type: string
-                      updatedAt:
-                        format: date-time
-                        type: string
-                      reporterEntries:
-                        type: array
-                        items:
-                          type: object
-                          required:
-                            - id
-                            - reporterMemberId
-                            - reporter
-                            - reason
-                            - detail
-                            - createdAt
-                          properties:
-                            id:
-                              format: uuid
-                              type: string
-                            reporterMemberId:
-                              format: uuid
-                              type: string
-                            reporter:
+                          displayId:
+                            type: string
+                          messageId:
+                            format: uuid
+                            type: string
+                          conversationId:
+                            format: uuid
+                            type: string
+                          questId:
+                            format: uuid
+                            type: string
+                          status:
+                            anyOf:
+                              - const: REPORT_CASE_PENDING
+                                type: string
+                              - const: REPORT_CASE_DISMISSED
+                                type: string
+                              - const: REPORT_CASE_HIDDEN
+                                type: string
+                              - const: REPORT_CASE_RESTORED
+                                type: string
+                          version:
+                            minimum: 1
+                            anyOf:
+                              - format: integer
+                                default: 0
+                                type: string
+                              - minimum: 1
+                                type: integer
+                          caseClosedAt:
+                            nullable: true
+                            anyOf:
+                              - format: date-time
+                                type: string
+                              - type: "null"
+                          createdAt:
+                            format: date-time
+                            type: string
+                          updatedAt:
+                            format: date-time
+                            type: string
+                          reporterEntries:
+                            type: array
+                            items:
                               type: object
                               required:
                                 - id
-                                - email
-                                - firstName
-                                - lastName
+                                - reporterMemberId
+                                - reporter
+                                - reason
+                                - detail
+                                - createdAt
                               properties:
                                 id:
                                   format: uuid
                                   type: string
-                                email:
+                                reporterMemberId:
+                                  format: uuid
                                   type: string
-                                firstName:
+                                reporter:
+                                  type: object
+                                  required:
+                                    - id
+                                    - email
+                                    - firstName
+                                    - lastName
+                                  properties:
+                                    id:
+                                      format: uuid
+                                      type: string
+                                    email:
+                                      type: string
+                                    firstName:
+                                      type: string
+                                    lastName:
+                                      type: string
+                                reason:
+                                  anyOf:
+                                    - const: REPORT_ABUSIVE_OR_HARASSMENT
+                                      type: string
+                                    - const: REPORT_SPAM
+                                      type: string
+                                    - const: REPORT_INAPPROPRIATE_CONTENT
+                                      type: string
+                                    - const: REPORT_DANGER_OR_THREAT
+                                      type: string
+                                    - const: REPORT_OTHER
+                                      type: string
+                                detail:
+                                  nullable: true
+                                  anyOf:
+                                    - type: string
+                                    - type: "null"
+                                createdAt:
+                                  format: date-time
                                   type: string
-                                lastName:
+                          evidenceReferences:
+                            type: array
+                            items:
+                              type: object
+                              required:
+                                - id
+                                - messageId
+                                - attachmentId
+                                - createdAt
+                              properties:
+                                id:
+                                  format: uuid
                                   type: string
-                            reason:
-                              type: string
-                              enum:
-                                - REPORT_ABUSIVE_OR_HARASSMENT
-                                - REPORT_SPAM
-                                - REPORT_INAPPROPRIATE_CONTENT
-                                - REPORT_DANGER_OR_THREAT
-                                - REPORT_OTHER
-                            detail:
-                              nullable: true
-                              anyOf:
-                                - type: string
-                                - type: "null"
-                            createdAt:
-                              format: date-time
-                              type: string
-                      evidenceReferences:
-                        type: array
-                        items:
-                          type: object
-                          required:
-                            - id
-                            - messageId
-                            - attachmentId
-                            - createdAt
-                          properties:
-                            id:
-                              format: uuid
-                              type: string
-                            messageId:
-                              nullable: true
-                              anyOf:
-                                - format: uuid
+                                messageId:
+                                  nullable: true
+                                  anyOf:
+                                    - format: uuid
+                                      type: string
+                                    - type: "null"
+                                attachmentId:
+                                  nullable: true
+                                  anyOf:
+                                    - format: uuid
+                                      type: string
+                                    - type: "null"
+                                createdAt:
+                                  format: date-time
                                   type: string
-                                - type: "null"
-                            attachmentId:
-                              nullable: true
-                              anyOf:
-                                - format: uuid
-                                  type: string
-                                - type: "null"
-                            createdAt:
-                              format: date-time
-                              type: string
+                      - type: object
+                        required:
+                          - kind
+                          - id
+                          - displayId
+                          - filer
+                          - reportedMember
+                          - quest
+                          - reason
+                          - detail
+                          - status
+                          - version
+                          - createdAt
+                          - updatedAt
+                          - resolvedAt
+                          - assignment
+                          - proofSubmission
+                        properties:
+                          kind:
+                            const: CONDUCT_REPORT
+                            type: string
+                          id:
+                            format: uuid
+                            type: string
+                          displayId:
+                            pattern: ^CND-[0-9]{6,}$
+                            type: string
+                          filer:
+                            type: object
+                            required:
+                              - id
+                              - email
+                              - firstName
+                              - lastName
+                            properties:
+                              id:
+                                format: uuid
+                                type: string
+                              email:
+                                type: string
+                              firstName:
+                                type: string
+                              lastName:
+                                type: string
+                          reportedMember:
+                            type: object
+                            required:
+                              - id
+                              - email
+                              - firstName
+                              - lastName
+                            properties:
+                              id:
+                                format: uuid
+                                type: string
+                              email:
+                                type: string
+                              firstName:
+                                type: string
+                              lastName:
+                                type: string
+                          quest:
+                            type: object
+                            required:
+                              - id
+                              - displayId
+                              - title
+                              - questStatus
+                              - mode
+                              - participation
+                              - headcount
+                              - proofRequired
+                              - startTime
+                              - dueAt
+                              - createdAt
+                              - updatedAt
+                              - hirer
+                            properties:
+                              id:
+                                format: uuid
+                                type: string
+                              displayId:
+                                pattern: ^QST-[0-9]{6,}$
+                                type: string
+                              title:
+                                type: string
+                              questStatus:
+                                anyOf:
+                                  - const: QUEST_DRAFT
+                                    type: string
+                                  - const: QUEST_OPEN
+                                    type: string
+                                  - const: QUEST_AWAITING_CONSENT
+                                    type: string
+                                  - const: QUEST_ASSIGNED
+                                    type: string
+                                  - const: QUEST_IN_PROGRESS
+                                    type: string
+                                  - const: QUEST_SUBMITTED
+                                    type: string
+                                  - const: QUEST_APPROVED
+                                    type: string
+                                  - const: QUEST_REWORK
+                                    type: string
+                                  - const: QUEST_COMPLETED
+                                    type: string
+                                  - const: QUEST_CANCELLED
+                                    type: string
+                                  - const: QUEST_DISPUTED
+                                    type: string
+                                  - const: QUEST_FAILED
+                                    type: string
+                              mode:
+                                anyOf:
+                                  - const: FIRST_COME_FIRST_SERVED
+                                    type: string
+                                  - const: CANDIDATE
+                                    type: string
+                              participation:
+                                anyOf:
+                                  - const: SINGLE
+                                    type: string
+                                  - const: GROUP
+                                    type: string
+                              headcount:
+                                minimum: 1
+                                anyOf:
+                                  - format: integer
+                                    default: 0
+                                    type: string
+                                  - minimum: 1
+                                    type: integer
+                              proofRequired:
+                                type: boolean
+                              startTime:
+                                format: date-time
+                                type: string
+                              dueAt:
+                                nullable: true
+                                anyOf:
+                                  - format: date-time
+                                    type: string
+                                  - type: "null"
+                              createdAt:
+                                format: date-time
+                                type: string
+                              updatedAt:
+                                format: date-time
+                                type: string
+                              hirer:
+                                type: object
+                                required:
+                                  - id
+                                  - email
+                                  - firstName
+                                  - lastName
+                                properties:
+                                  id:
+                                    format: uuid
+                                    type: string
+                                  email:
+                                    type: string
+                                  firstName:
+                                    type: string
+                                  lastName:
+                                    type: string
+                          reason:
+                            anyOf:
+                              - const: CONDUCT_ABANDONED
+                                type: string
+                              - const: CONDUCT_OUT_OF_SCOPE
+                                type: string
+                              - const: CONDUCT_NO_SHOW
+                                type: string
+                          detail:
+                            nullable: true
+                            anyOf:
+                              - type: string
+                              - type: "null"
+                          status:
+                            anyOf:
+                              - const: CONDUCT_REPORT_PENDING
+                                type: string
+                              - const: CONDUCT_REPORT_UPHELD
+                                type: string
+                              - const: CONDUCT_REPORT_DISMISSED
+                                type: string
+                          version:
+                            minimum: 1
+                            anyOf:
+                              - format: integer
+                                default: 0
+                                type: string
+                              - minimum: 1
+                                type: integer
+                          createdAt:
+                            format: date-time
+                            type: string
+                          updatedAt:
+                            format: date-time
+                            type: string
+                          resolvedAt:
+                            nullable: true
+                            anyOf:
+                              - format: date-time
+                                type: string
+                              - type: "null"
+                          assignment:
+                            type: object
+                            required:
+                              - id
+                              - worker
+                              - assignmentStatus
+                              - startedAt
+                              - createdAt
+                            properties:
+                              id:
+                                format: uuid
+                                type: string
+                              worker:
+                                type: object
+                                required:
+                                  - id
+                                  - email
+                                  - firstName
+                                  - lastName
+                                properties:
+                                  id:
+                                    format: uuid
+                                    type: string
+                                  email:
+                                    type: string
+                                  firstName:
+                                    type: string
+                                  lastName:
+                                    type: string
+                              assignmentStatus:
+                                anyOf:
+                                  - const: ASSIGNMENT_ACTIVE
+                                    type: string
+                                  - const: ASSIGNMENT_COMPLETED
+                                    type: string
+                                  - const: ASSIGNMENT_INCOMPLETE
+                                    type: string
+                                  - const: ASSIGNMENT_CANCELLED
+                                    type: string
+                              startedAt:
+                                nullable: true
+                                anyOf:
+                                  - format: date-time
+                                    type: string
+                                  - type: "null"
+                              createdAt:
+                                format: date-time
+                                type: string
+                          proofSubmission:
+                            nullable: true
+                            anyOf:
+                              - type: object
+                                required:
+                                  - id
+                                  - workerId
+                                  - teamId
+                                  - submittedBy
+                                  - description
+                                  - workerMessage
+                                  - content
+                                  - submissionStatus
+                                  - reviewNote
+                                  - sentAt
+                                  - submittedAt
+                                  - reviewedAt
+                                  - createdAt
+                                  - updatedAt
+                                properties:
+                                  id:
+                                    format: uuid
+                                    type: string
+                                  workerId:
+                                    nullable: true
+                                    anyOf:
+                                      - format: uuid
+                                        type: string
+                                      - type: "null"
+                                  teamId:
+                                    nullable: true
+                                    anyOf:
+                                      - format: uuid
+                                        type: string
+                                      - type: "null"
+                                  submittedBy:
+                                    type: object
+                                    required:
+                                      - id
+                                      - email
+                                      - firstName
+                                      - lastName
+                                    properties:
+                                      id:
+                                        format: uuid
+                                        type: string
+                                      email:
+                                        type: string
+                                      firstName:
+                                        type: string
+                                      lastName:
+                                        type: string
+                                  description:
+                                    nullable: true
+                                    anyOf:
+                                      - type: string
+                                      - type: "null"
+                                  workerMessage:
+                                    nullable: true
+                                    anyOf:
+                                      - type: string
+                                      - type: "null"
+                                  content:
+                                    nullable: true
+                                    anyOf:
+                                      - type: string
+                                      - type: "null"
+                                  submissionStatus:
+                                    nullable: true
+                                    anyOf:
+                                      - anyOf:
+                                          - const: PROOF_PENDING
+                                            type: string
+                                          - const: PROOF_APPROVED
+                                            type: string
+                                          - const: PROOF_NOT_APPROVED
+                                            type: string
+                                      - type: "null"
+                                  reviewNote:
+                                    nullable: true
+                                    anyOf:
+                                      - type: string
+                                      - type: "null"
+                                  sentAt:
+                                    nullable: true
+                                    anyOf:
+                                      - format: date-time
+                                        type: string
+                                      - type: "null"
+                                  submittedAt:
+                                    nullable: true
+                                    anyOf:
+                                      - format: date-time
+                                        type: string
+                                      - type: "null"
+                                  reviewedAt:
+                                    nullable: true
+                                    anyOf:
+                                      - format: date-time
+                                        type: string
+                                      - type: "null"
+                                  createdAt:
+                                    format: date-time
+                                    type: string
+                                  updatedAt:
+                                    nullable: true
+                                    anyOf:
+                                      - format: date-time
+                                        type: string
+                                      - type: "null"
+                              - type: "null"
         "400":
           description: Response for status 400
           content:
@@ -40996,10 +42352,10 @@ paths:
     ws:
       tags:
         - Candidate Inquiry
-      summary: Subscribe to Candidate Inquiry Events
+      summary: Subscribe to Candidate Inquiry Events and send Messages
       description: Subscribes a current Candidate Inquiry participant to committed
-        Message Events. REST remains authoritative and this channel is
-        read-only.
+        Message Events and accepts optional SEND_MESSAGE commands. REST remains
+        authoritative for persistence and recovery.
       operationId: subscribeCandidateInquiryEvents
       security:
         - betterAuthSession: []
@@ -43533,9 +44889,10 @@ paths:
     ws:
       tags:
         - Work Chat
-      summary: Subscribe to committed Work Conversation Events
+      summary: Subscribe to Work Conversation Events and send Messages
       description: Subscribes a current Work Conversation Member to committed Message
-        Events. REST remains authoritative and this channel is read-only.
+        Events and accepts optional SEND_MESSAGE commands. REST remains
+        authoritative for persistence and recovery.
       operationId: subscribeWorkConversationEvents
       security:
         - betterAuthSession: []
@@ -43676,7 +45033,6 @@ paths:
                         anyOf:
                           - type: string
                           - type: "null"
-                additionalProperties: false
         "400":
           description: Response for status 400
           content:
@@ -44546,6 +45902,7 @@ paths:
                           - type: "null"
                       hasMore:
                         type: boolean
+                additionalProperties: false
         "400":
           description: Response for status 400
           content:

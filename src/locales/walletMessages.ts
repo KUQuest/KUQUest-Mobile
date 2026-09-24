@@ -76,8 +76,6 @@ export interface WalletMessages {
   payoutCardDesc: string;
   swapToWorkerView: string;
   swapToHirerView: string;
-  hirerViewLabel: string;
-  workerViewLabel: string;
   balanceCardsHint: string;
   swapAllButton: string;
   swapHint: string;
@@ -205,8 +203,6 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     payoutCardDesc: "Transferring to bank",
     swapToWorkerView: "Worker earnings",
     swapToHirerView: "Hirer balance",
-    hirerViewLabel: "Hirer funds",
-    workerViewLabel: "Worker funds",
     balanceCardsHint: "Tap card to swap view",
     swapAllButton: "Swap all",
     swapHint: "Tap to swap",
@@ -337,8 +333,6 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     payoutCardDesc: "รอโอนเข้าบัญชีธนาคาร",
     swapToWorkerView: "ดูรายได้ผู้รับงาน",
     swapToHirerView: "ดูเงินผู้ว่าจ้าง",
-    hirerViewLabel: "กระเป๋าผู้ว่าจ้าง",
-    workerViewLabel: "กระเป๋าผู้รับงาน",
     balanceCardsHint: "แตะการ์ดเพื่อสลับมุมมอง",
     swapAllButton: "สลับทั้งหมด",
     swapHint: "แตะเพื่อสลับ",

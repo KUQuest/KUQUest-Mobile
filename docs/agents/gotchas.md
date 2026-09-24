@@ -11,6 +11,14 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 ## Entries
 
+### 2026-09-25 — Shared screens stayed sage in the Worker workspace
+
+**What happened**: The redesigned Money tab and Profile hero kept Hirer sage after switching to the Worker workspace.
+
+**Root cause**: Only the ramp tokens (`ku-primary`, `ku-primary-dark`, `ku-primary-deep`, `ku-on-primary`, `ku-surface-accent`, `ku-border-accent`) change with the workspace; `ku-hirer*`, `ku-worker*` and `ku-primary-subtle` are fixed.
+
+**Rule**: On surfaces both workspaces open, use only ramp tokens or `useAppTheme().colors.primary*`; reserve `ku-hirer*` / `ku-worker*` for single-role surfaces.
+
 ### 2026-09-24 — Changing `font_scale` restarts the app at Home
 
 **What happened**: `adb shell settings put system font_scale 1.3` during a smoke check dropped the navigation stack; the next screenshot showed Hirer Home instead of the screen under test.

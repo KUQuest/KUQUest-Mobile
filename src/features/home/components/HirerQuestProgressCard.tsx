@@ -15,6 +15,7 @@ import { QuestStatus } from "@/domain/questLifecycle";
 import type { QuestMode } from "@/features/questBoard/domain/types";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { localizeFacultyName } from "@/locales/academicUnits";
 import {
   formatHirerDueAt,
   getQuestProgressStages,
@@ -243,7 +244,7 @@ export function HirerQuestProgressCard({
                 </Text>
                 <Text className={`${styles.workerRole} text-ku-text-secondary`}>
                   {primaryWorker.faculty
-                    ? `${primaryWorker.faculty} · ${messages.assignedWorkerRole}`
+                    ? `${localizeFacultyName(primaryWorker.faculty, locale)} · ${messages.assignedWorkerRole}`
                     : messages.assignedWorkerRole}
                 </Text>
               </View>

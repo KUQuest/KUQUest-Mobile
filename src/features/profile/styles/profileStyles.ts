@@ -1,5 +1,5 @@
 const styles = {
-  safeArea: "flex-1 bg-ku-surface",
+  safeArea: "flex-1 bg-ku-background",
   content: "w-full gap-ku-12",
   profileChrome: "w-full gap-ku-md",
   tabletContent: "self-center max-w-[720px]",

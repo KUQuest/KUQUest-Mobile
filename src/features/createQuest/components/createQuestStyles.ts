@@ -51,7 +51,7 @@ const styles = {
   validationSummaryText:
     "text-ku-danger-dark flex-1 font-ku-medium text-ku-meta",
   sectionCard:
-    "bg-ku-card border-ku-border-subtle rounded-[16px] border mb-ku-md p-ku-20",
+    "bg-ku-card border-ku-border-subtle rounded-ku-card border mb-ku-md p-ku-20",
   setupCard:
     "bg-ku-surface-accent border-ku-border-accent rounded-[16px] border mb-ku-md p-ku-md",
   setupTitleRow: "items-center flex-row gap-ku-sm",
@@ -105,7 +105,7 @@ const styles = {
     "text-ku-text-strong flex-1 font-ku-regular min-w-0 mr-ku-12 text-ku-control",
   placeholderText: "text-ku-text-muted",
   inputWithIcon:
-    "items-center bg-ku-card border-ku-border rounded-[12px] border flex-row min-h-[48px] px-ku-md",
+    "items-center bg-ku-surface border-ku-border rounded-ku-field border flex-row min-h-[48px] px-ku-md",
   timePickerBackdrop: "bg-ku-overlay flex-1 justify-end",
   timePickerSheet:
     "bg-ku-background rounded-tl-[24px] rounded-tr-[24px] px-ku-20 pb-ku-28 pt-ku-md",
@@ -173,45 +173,55 @@ const styles = {
   datePickerDayText: "text-ku-text-strong font-ku-semibold text-ku-body-small",
   datePickerDayTextToday: "text-ku-hirer font-ku-bold",
   datePickerDayTextSelected: "text-ku-on-hirer font-ku-bold",
-  scheduleCard:
-    "bg-ku-card border border-ku-border-subtle rounded-[14px] p-ku-12 mb-ku-12",
-  scheduleCardHeader: "flex-row items-center justify-between mb-ku-sm",
-  scheduleCardTitle:
-    "text-ku-text-strong font-ku-bold text-ku-body-small flex-row items-center gap-ku-6",
+  timeline: "mb-ku-xs",
+  timelineLine:
+    "absolute left-[9px] top-[11px] -bottom-[11px] w-[2px] bg-ku-border",
+  timelineRow: "flex-row gap-ku-12",
+  timelineRail: "w-[20px] items-center pt-[5px]",
+  timelineDot:
+    "h-[12px] w-[12px] rounded-ku-pill border-2 border-ku-hirer bg-ku-card",
+  timelineDotDone: "bg-ku-hirer",
+  timelineBody: "flex-1 min-w-0 gap-ku-sm pb-ku-md",
+  timelineLabel: "text-ku-text-strong font-ku-semibold text-ku-body-small",
   scheduleSplitRow: "flex-row gap-ku-sm",
   scheduleSplitBtn:
-    "flex-1 bg-ku-surface-subtle border border-ku-border rounded-[10px] px-ku-12 py-ku-10 flex-row items-center justify-between min-h-[48px]",
+    "min-w-0 min-h-[56px] flex-row items-center gap-ku-sm rounded-ku-field border border-ku-border bg-ku-surface px-ku-12 py-ku-sm",
+  scheduleDateBtn: "flex-[3]",
+  scheduleTimeBtn: "flex-[2]",
   scheduleSplitBtnError: "border-ku-danger bg-ku-surface-danger",
-  scheduleSplitBtnCopy: "flex-1 mr-ku-sm",
-  scheduleSplitBtnLabel: "text-ku-text-muted font-ku-regular text-ku-meta",
+  scheduleSplitBtnCopy: "flex-1 min-w-0",
+  scheduleSplitBtnLabel: "text-ku-text-secondary font-ku-regular text-ku-label",
   scheduleSplitBtnValue:
-    "text-ku-text-strong font-ku-semibold text-ku-body-small mt-ku-1",
+    "text-ku-text-strong font-ku-semibold text-ku-body-small",
   durationBadge:
-    "bg-ku-surface-accent border border-ku-border-accent rounded-[12px] p-ku-10 my-ku-sm flex-row items-center justify-between",
-  durationBadgeError: "bg-ku-surface-danger border-ku-border-danger",
-  durationBadgeText: "text-ku-hirer font-ku-semibold text-ku-body-small flex-1",
-  durationBadgeErrorText:
-    "text-ku-danger-dark font-ku-medium text-ku-body-small flex-1",
+    "ml-[32px] mb-ku-md self-start flex-row items-center gap-ku-6 rounded-ku-pill bg-ku-hirer-subtle px-ku-12 py-ku-6",
+  durationBadgeText: "text-ku-hirer-dark font-ku-semibold text-ku-label",
+  durationError:
+    "ml-[32px] mb-ku-md gap-ku-sm rounded-ku-field border border-ku-border-danger bg-ku-surface-danger p-ku-12",
+  durationErrorRow: "flex-row items-start gap-ku-6",
+  durationErrorText:
+    "flex-1 text-ku-danger-dark font-ku-medium text-ku-body-small",
   fixDeadlineButton:
-    "bg-ku-card border border-ku-border-danger rounded-[8px] px-ku-10 py-ku-xs ml-ku-sm",
-  fixDeadlineButtonText: "text-ku-danger-dark font-ku-bold text-ku-meta",
+    "self-start min-h-[48px] justify-center rounded-ku-pill border border-ku-border-danger bg-ku-surface px-ku-md",
+  fixDeadlineButtonText:
+    "text-ku-danger-dark font-ku-semibold text-ku-body-small",
   iconInput:
     "text-ku-text-strong flex-1 font-ku-regular text-ku-control ml-ku-sm min-h-[46px]",
-  onlineToggle:
-    "bg-ku-surface-subtle border-ku-border-subtle rounded-[12px] border flex-row items-center min-h-[64px] mb-ku-md p-ku-12",
+  onlineToggle: "flex-row items-center gap-ku-12 min-h-[56px] mb-ku-sm",
   checkbox:
     "border-ku-border bg-ku-card border h-[24px] items-center justify-center rounded-[7px] w-[24px]",
   checkboxChecked: "bg-ku-hirer border-ku-hirer",
-  onlineToggleCopy: "flex-1 ml-ku-12",
+  onlineToggleCopy: "flex-1 min-w-0",
   onlineToggleTitle: "text-ku-text-strong font-ku-semibold text-ku-control",
   onlineToggleHint: "text-ku-text-muted font-ku-regular text-ku-label mt-ku-1",
+  logisticsDivider: "h-px bg-ku-divider my-ku-md",
   proofToggle: "items-center flex-row min-h-[48px]",
   proofToggleLabel:
     "text-ku-text-strong flex-1 font-ku-semibold text-ku-control ml-ku-10",
   proofDescription:
     "text-ku-text-secondary font-ku-regular text-ku-label ml-ku-34 mt-ku-2",
   imagePicker:
-    "items-center bg-ku-surface-accent border-ku-border-accent rounded-[12px] border-dashed border justify-center min-h-[128px] p-ku-md",
+    "items-center bg-ku-surface-accent border-ku-border-accent rounded-ku-field border-dashed border justify-center min-h-[128px] p-ku-md",
   imageTitle: "text-ku-hirer font-ku-semibold text-ku-control mt-ku-sm",
   changeImagesButton:
     "items-center min-h-[48px] justify-center mt-ku-sm px-ku-12",
@@ -220,47 +230,47 @@ const styles = {
   previewImage: "rounded-[8px] h-[96px] w-[96px]",
   removeImageButton:
     "absolute bg-ku-black items-center justify-center rounded-ku-pill h-[32px] right-[4px] top-[4px] w-[32px]",
-  choiceGroup: "gap-ku-12 w-full",
-  choiceGroupFormat: "flex-row",
-  choiceGroupFormatStacked: "flex-col",
-  choiceGroupAcceptance: "flex-col",
-  choice:
-    "items-center bg-ku-card border-2 border-ku-border-muted flex-row min-w-0 rounded-[14px] px-ku-12",
-  choiceFormat: "flex-1 min-h-[104px] py-ku-10",
-  choiceFormatStacked: "min-h-[88px] w-full",
-  choiceAcceptance: "min-h-[88px] py-ku-10",
-  choiceSelected: "bg-ku-surface-accent border-ku-hirer",
+  choiceTiles: "flex-row gap-ku-12 w-full",
+  choiceList:
+    "w-full overflow-hidden rounded-ku-card border border-ku-border bg-ku-surface",
+  choiceTile:
+    "flex-1 min-w-0 min-h-[120px] gap-ku-sm rounded-ku-card border-2 border-ku-border bg-ku-surface p-ku-12",
+  choiceTileSelected: "border-ku-hirer bg-ku-hirer-subtle",
+  choiceTileTop: "flex-row items-start justify-between",
+  choiceRow: "items-center flex-row gap-ku-12 min-h-[72px] px-ku-12 py-ku-10",
+  choiceRowDivider: "border-t border-ku-divider",
+  choiceRowSelected: "bg-ku-hirer-subtle",
+  choiceIconSlot: "shrink-0",
   choiceIcon:
-    "items-center bg-ku-surface-accent rounded-[12px] h-[44px] justify-center w-[44px]",
-  choiceCopy: "flex-1 min-w-0 ml-ku-10 mr-ku-6",
-  choiceText: "text-ku-text-strong font-ku-bold text-ku-emphasis",
-  choiceTextSelected: "text-ku-hirer",
+    "items-center bg-ku-hirer-subtle rounded-ku-pill h-[40px] justify-center w-[40px]",
+  choiceIconSelected: "bg-ku-hirer",
+  choiceCopy: "flex-1 min-w-0",
+  choiceText: "text-ku-text-strong font-ku-semibold text-ku-body",
+  choiceTextSelected: "text-ku-hirer-dark",
   choiceDescription:
-    "text-ku-text-secondary font-ku-regular text-ku-body-small mt-ku-2",
+    "text-ku-text-secondary font-ku-regular text-ku-meta mt-ku-2",
   radio:
-    "border-2 border-ku-border-muted rounded-ku-pill h-[28px] items-center justify-center shrink-0 w-[28px]",
+    "border-2 border-ku-border rounded-ku-pill h-[24px] items-center justify-center shrink-0 w-[24px]",
   radioSelected: "border-ku-hirer",
-  radioDot: "bg-ku-hirer rounded-ku-pill h-[14px] w-[14px]",
-  modeSummary: "bg-ku-surface-accent rounded-[14px] flex-row mt-ku-14 p-ku-12",
+  radioDot: "bg-ku-hirer rounded-ku-pill h-[12px] w-[12px]",
+  modeSummary:
+    "bg-ku-surface-raised rounded-ku-card flex-row items-start gap-ku-12 mt-ku-md p-ku-md",
   modeIcon:
-    "items-center bg-ku-surface-success rounded-ku-pill h-[48px] justify-center mr-ku-10 w-[48px]",
+    "items-center bg-ku-surface rounded-ku-pill h-[40px] justify-center w-[40px]",
   modeCopy: "flex-1 min-w-0",
-  modeTitle: "text-ku-text-strong font-ku-semibold text-ku-body-small",
-  modeValue: "text-ku-hirer font-ku-bold",
+  modeTitle: "text-ku-text-secondary font-ku-medium text-ku-label",
+  modeValue: "text-ku-hirer-dark font-ku-semibold text-ku-body mt-ku-1",
   modeDescription:
-    "text-ku-text-secondary font-ku-regular text-ku-body-small mt-ku-6",
-  additionalSettings: "border-t-ku-border-subtle border-t mt-ku-lg pt-ku-20",
-  additionalSettingsTitle:
-    "text-ku-text-strong font-ku-bold text-ku-subtitle mb-ku-md",
+    "text-ku-text-secondary font-ku-regular text-ku-body-small mt-ku-xs",
   currencyInput:
-    "items-center bg-ku-card border-ku-border rounded-[12px] border flex-row min-h-[48px] px-ku-md",
-  currencySymbol: "text-ku-hirer font-ku-bold text-ku-emphasis",
+    "items-center bg-ku-surface border-ku-border rounded-ku-field border flex-row min-h-[56px] px-ku-md",
+  currencySymbol: "text-ku-hirer font-ku-bold text-ku-title",
   currencyTextInput:
-    "text-ku-text-strong flex-1 font-ku-regular text-ku-control ml-ku-sm min-h-[46px]",
-  currencyUnit: "text-ku-text-muted font-ku-medium text-ku-label",
+    "text-ku-text-strong flex-1 font-ku-bold text-ku-title ml-ku-sm min-h-[54px]",
+  currencyUnit: "text-ku-text-secondary font-ku-semibold text-ku-label",
   readOnlyField:
-    "items-start bg-ku-surface-muted border-ku-border-muted rounded-[12px] border justify-center min-h-[48px] px-ku-12",
-  readOnlyValue: "text-ku-text-strong font-ku-medium text-ku-body-small",
+    "justify-center bg-ku-surface-raised border-ku-border rounded-ku-field border min-h-[48px] px-ku-md",
+  readOnlyValue: "text-ku-text-strong font-ku-semibold text-ku-control",
   singleHeadcountHint:
     "text-ku-text-muted font-ku-regular text-ku-label mt-ku-xs",
   summaryHeading: "items-center flex-row gap-ku-sm mb-ku-sm mt-ku-sm",

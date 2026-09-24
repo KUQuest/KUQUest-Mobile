@@ -3,7 +3,6 @@ import {
   getPendingApplications,
   getPendingTeams,
   getSelectRosterPermissions,
-  getSelectRosterProposalCount,
 } from "../selectRosterSelectors";
 
 function application(
@@ -96,11 +95,5 @@ describe("SelectRoster selectors", () => {
       "submitted",
       "submitted-2",
     ]);
-    expect(
-      getSelectRosterProposalCount("SINGLE", pendingApplications, pendingTeams)
-    ).toBe(1);
-    expect(
-      getSelectRosterProposalCount("GROUP", pendingApplications, pendingTeams)
-    ).toBe(2);
   });
 });

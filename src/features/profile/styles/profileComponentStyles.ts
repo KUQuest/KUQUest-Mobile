@@ -1,36 +1,37 @@
 const styles = {
   heroCard:
-    "self-stretch rounded-[16px] bg-ku-card border-ku-border-accent border",
-  headerRow: "flex-row items-start w-full",
-  identityContent: "flex-1 ml-ku-md min-w-0",
+    "self-stretch items-center gap-ku-md rounded-ku-card bg-ku-surface-accent",
+  identityContent: "items-center gap-ku-xs self-stretch",
   photoFrame:
-    "overflow-hidden border-[4px] border-ku-border-subtle bg-ku-surface-image items-center justify-center",
+    "items-center justify-center overflow-hidden border-[4px] border-ku-surface bg-ku-surface-image",
   photo: "h-full w-full",
-  initials: "text-ku-primary-dark text-ku-display-small font-ku-bold",
-  name: "text-ku-text font-ku-bold",
-  metaRow: "flex-row items-center gap-ku-sm mt-ku-5 min-w-0",
-  meta: "text-ku-text font-ku-regular text-ku-body-small flex-1",
+  initials: "font-ku-bold text-ku-display-small text-ku-primary-dark",
+  name: "text-center font-ku-bold text-ku-text-strong",
+  metaList: "flex-row flex-wrap justify-center gap-x-ku-12 gap-y-ku-xs",
+  metaRow: "min-w-0 shrink flex-row items-center gap-ku-6",
+  meta: "shrink font-ku-regular text-ku-body-small text-ku-text",
   subtleMeta: "text-ku-text-subtle font-ku-regular text-ku-meta",
-  tagGroup: "self-stretch gap-ku-6 mt-ku-md",
-  tagGroupLabel: "text-ku-text-secondary font-ku-semibold text-ku-label",
-  tagList: "flex-row flex-wrap gap-ku-6",
+  tagGroup: "items-center gap-ku-6 self-stretch",
+  tagGroupLabel: "font-ku-semibold text-ku-label text-ku-text-secondary",
+  tagList: "flex-row flex-wrap justify-center gap-ku-6",
   tag: "rounded-ku-pill bg-ku-surface-accent border-ku-border-accent border px-ku-10 py-ku-xs",
   tagText: "text-ku-primary-dark font-ku-semibold text-ku-label",
-  editButton: "min-h-[48px] mt-ku-18 w-full",
-  editButtonText: "text-ku-on-primary font-ku-semibold text-ku-body-small",
+  editButton: "min-h-[48px] w-full bg-ku-surface",
+  editButtonText: "font-ku-semibold text-ku-body-small text-ku-primary",
   section:
     "self-stretch rounded-[16px] bg-ku-card border-ku-border-subtle border",
   statsCard:
-    "self-stretch rounded-[16px] bg-ku-surface-success border-ku-border-success border p-ku-md",
-  statsTopRow: "items-center flex-row justify-around",
-  statItem: "items-center flex-1",
-  statValue: "text-ku-primary-deep font-ku-bold text-ku-title font-ku-bold",
-  statEmptyValue: "text-ku-meta text-center",
+    "self-stretch rounded-ku-card border border-ku-border bg-ku-surface px-ku-sm py-ku-md",
+  statsTopRow: "flex-row items-stretch",
+  statItem: "flex-1 items-center justify-center px-ku-xs",
+  statValue: "font-ku-bold text-ku-title text-ku-text-strong",
+  statEmptyValue:
+    "text-center font-ku-semibold text-ku-body-small text-ku-text-secondary",
   statLabel:
-    "text-ku-text-secondary font-ku-semibold text-ku-label mt-ku-2 text-center",
-  statValueRow: "items-center flex-row gap-ku-3",
-  statStar: "text-ku-success text-ku-control",
-  statDivider: "bg-ku-border-success h-[44px] w-[1px]",
+    "mt-ku-2 text-center font-ku-medium text-ku-label text-ku-text-secondary",
+  statValueRow: "flex-row items-center gap-ku-xs",
+  statStar: "text-ku-control text-ku-gold",
+  statDivider: "w-px self-stretch bg-ku-divider",
   sectionNotice:
     "items-center bg-ku-surface-danger border-ku-border-danger rounded-[8px] border gap-ku-sm mb-ku-md p-ku-sm",
   sectionNoticeText:
@@ -58,13 +59,11 @@ const styles = {
   body: "text-ku-text-secondary font-ku-regular text-ku-body",
   emptyText: "text-ku-text-muted font-ku-regular text-ku-body-small",
   tabsScroll: "self-stretch",
-  tabList:
-    "bg-ku-surface border-ku-border-accent rounded-[16px] border flex-row px-ku-xs",
-  tab: "items-center justify-center min-h-[72px] min-w-[70px] px-ku-10 py-ku-sm border-b-[3px] border-b-transparent",
-  tabSelected: "bg-ku-surface-accent border-b-ku-primary",
-  tabText:
-    "text-ku-text-secondary font-ku-semibold text-ku-label mt-ku-xs text-center",
-  tabTextSelected: "text-ku-primary",
+  tabList: "flex-row gap-ku-sm py-ku-2",
+  tab: "min-h-[48px] flex-row items-center justify-center gap-ku-6 rounded-ku-pill border border-ku-border bg-ku-surface px-ku-md",
+  tabSelected: "border-ku-primary bg-ku-primary",
+  tabText: "font-ku-semibold text-ku-body-small text-ku-text-secondary",
+  tabTextSelected: "text-ku-on-primary",
   experience:
     "flex-row border-l-[2px] border-l-ku-border-subtle pl-ku-20 pb-ku-20",
   timelineIcon:

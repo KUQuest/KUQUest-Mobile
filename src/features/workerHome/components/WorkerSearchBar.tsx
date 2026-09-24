@@ -2,6 +2,7 @@ import React from "react";
 import { Search, SlidersHorizontal, X } from "lucide-react-native";
 
 import { Pressable, ScrollView, Text, TextInput, View } from "@/tw";
+import { cn } from "@/tw/cn";
 import type { TagItem } from "@/api/QuestApi";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
@@ -31,20 +32,47 @@ export function WorkerSearchBar({
   const { locale } = useLocale();
   const messages = workerHomeMessages[locale];
 
-  return (
-    <View testID="worker-search-and-tags-section">
-      <View
-        className={`${styles.searchBarContainer} border-ku-border-subtle bg-ku-surface`}
+  const renderTag = (id: string | null, name: string, testID: string) => {
+    const isSelected = selectedTagId === id;
+    return (
+      <Pressable
+        accessibilityLabel={`${name} filter`}
+        accessibilityRole="button"
+        accessibilityState={{ selected: isSelected }}
+        className={cn(
+          styles.tagPill,
+          isSelected ? styles.tagPillSelected : styles.tagPillIdle
+        )}
+        hitSlop={4}
+        key={testID}
+        onPress={() => onSelectTag(isSelected ? null : id)}
+        testID={testID}
       >
+        <Text
+          className={cn(
+            styles.tagPillText,
+            isSelected && styles.tagPillTextSelected
+          )}
+        >
+          {name}
+        </Text>
+      </Pressable>
+    );
+  };
+
+  return (
+    <View className="gap-ku-12" testID="worker-search-and-tags-section">
+      <View className={styles.searchBarContainer}>
         <Search size={18} color={themeColors.textSecondary} />
         <TextInput
           accessibilityLabel={messages.searchPlaceholder}
           accessibilityRole="search"
           autoCapitalize="none"
-          className={`${styles.searchInput} text-ku-text-strong`}
+          className={styles.searchInput}
           onChangeText={onQueryChange}
           placeholder={messages.searchPlaceholder}
-          placeholderTextColor={themeColors.textSecondary}
+          placeholderTextColor={themeColors.textMuted}
+          returnKeyType="search"
           testID="worker-quest-search-input"
           value={query}
         />
@@ -52,78 +80,33 @@ export function WorkerSearchBar({
           <Pressable
             accessibilityLabel="Clear search"
             accessibilityRole="button"
-            className="p-ku-xs"
+            className={styles.searchIconButton}
+            hitSlop={2}
             onPress={onClearQuery}
             testID="clear-search-button"
           >
-            <X size={16} color={themeColors.textSecondary} />
+            <X size={18} color={themeColors.textSecondary} />
           </Pressable>
         ) : null}
         <Pressable
           accessibilityLabel={messages.filter}
           accessibilityRole="button"
-          className={`${styles.filterIconButton} bg-ku-surface-muted`}
+          className={styles.filterIconButton}
+          hitSlop={2}
           onPress={onOpenFilter}
           testID="worker-filter-button"
         >
-          <SlidersHorizontal size={17} color={themeColors.workerDeep} />
+          <SlidersHorizontal size={18} color={themeColors.workerDark} />
         </Pressable>
       </View>
       <ScrollView
         contentContainerClassName={styles.tagFilterRow}
         horizontal
         showsHorizontalScrollIndicator={false}
-        className={styles.tagFilterScrollView}
         testID="worker-tag-filter-scroll"
       >
-        <Pressable
-          accessibilityLabel={`${messages.tagAll} filter`}
-          accessibilityRole="button"
-          className={`${styles.tagPill} ${
-            selectedTagId === null
-              ? "border-ku-worker-dark bg-ku-worker-dark"
-              : "border-ku-border-subtle bg-ku-surface"
-          }`}
-          onPress={() => onSelectTag(null)}
-          testID="tag-pill-all"
-        >
-          <Text
-            className={`${styles.tagPillText} ${
-              selectedTagId === null
-                ? "font-ku-semibold text-ku-on-worker"
-                : "text-ku-text-secondary"
-            }`}
-          >
-            {messages.tagAll}
-          </Text>
-        </Pressable>
-        {tags.map((tag) => {
-          const isSelected = selectedTagId === tag.id;
-          return (
-            <Pressable
-              accessibilityLabel={`${tag.name} filter`}
-              accessibilityRole="button"
-              className={`${styles.tagPill} ${
-                isSelected
-                  ? "border-ku-worker-dark bg-ku-worker-dark"
-                  : "border-ku-border-subtle bg-ku-surface"
-              }`}
-              key={tag.id}
-              onPress={() => onSelectTag(isSelected ? null : tag.id)}
-              testID={`tag-pill-${tag.id}`}
-            >
-              <Text
-                className={`${styles.tagPillText} ${
-                  isSelected
-                    ? "font-ku-semibold text-ku-on-worker"
-                    : "text-ku-text-secondary"
-                }`}
-              >
-                {tag.name}
-              </Text>
-            </Pressable>
-          );
-        })}
+        {renderTag(null, messages.tagAll, "tag-pill-all")}
+        {tags.map((tag) => renderTag(tag.id, tag.name, `tag-pill-${tag.id}`))}
       </ScrollView>
     </View>
   );

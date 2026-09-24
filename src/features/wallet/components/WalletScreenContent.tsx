@@ -1,17 +1,11 @@
 import React, { useCallback } from "react";
 import { RefreshControl, type ListRenderItemInfo } from "react-native";
-import {
-  ActivityIndicator,
-  FlatList,
-  Text,
-  TouchableOpacity,
-  View,
-} from "@/tw";
-import { AlertCircle, FileText, RefreshCw } from "lucide-react-native";
+import { ActivityIndicator, FlatList, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import type { WalletMessages } from "@/locales/walletMessages";
-import { colors } from "@/theme/colors";
+import { StateView } from "@/components/ui/StateView";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import {
   getBottomNavigationInset,
   type AppChromeMetrics,
@@ -25,7 +19,6 @@ import {
   type HirerHistoryFilterOption,
 } from "./HirerHistoryFilter";
 import { HirerTransactionItem } from "./HirerTransactionItem";
-import { HirerWalletBanner } from "./HirerWalletBanner";
 import { HirerWalletHeader } from "./HirerWalletHeader";
 import { TransactionDetailModal } from "./TransactionDetailModal";
 import { TransferEarningsModal } from "./TransferEarningsModal";
@@ -81,6 +74,7 @@ export function WalletScreenContent({
     onRefresh,
     onTopUp,
   } = presentationProps;
+  const { colors } = useAppTheme();
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<ClassifiedHirerTransaction>) => (
@@ -102,7 +96,6 @@ export function WalletScreenContent({
         subtitle={m.walletSubtitle}
         title={m.financeSubtitle}
       />
-      <HirerWalletBanner label={m.sendMoneyAction} onPress={onTopUp} />
       <HirerBalanceCards
         balanceCardsHint={m.balanceCardsHint}
         earningsBalanceSatang={balances?.earningsBalanceSatang ?? 0}
@@ -111,7 +104,6 @@ export function WalletScreenContent({
         escrowDesc={m.escrowCardDesc}
         escrowTitle={m.escrowCardTitle}
         fundingReservedSatang={balances?.fundingReservedSatang ?? 0}
-        hirerViewLabel={m.hirerViewLabel}
         payoutDesc={m.payoutCardDesc}
         payoutTitle={m.payoutCardTitle}
         reservedForPayoutsSatang={balances?.reservedForPayoutsSatang ?? 0}
@@ -120,7 +112,8 @@ export function WalletScreenContent({
         spendingTitle={m.spendingBalanceCardTitle}
         swapAllButton={m.swapAllButton}
         swapHint={m.swapHint}
-        workerViewLabel={m.workerViewLabel}
+        topUpLabel={m.sendMoneyAction}
+        onTopUp={onTopUp}
         onTransferEarnings={onOpenTransfer}
         transferButtonLabel={m.convertEarnings}
       />
@@ -136,30 +129,25 @@ export function WalletScreenContent({
   const emptyState =
     loading && !refreshing ? (
       <View className={styles.centerContainer} testID="hirer-wallet-loading">
-        <ActivityIndicator color={colors.hirer} size="large" />
+        <ActivityIndicator color={colors.primary} size="large" />
       </View>
     ) : error && !balances ? (
-      <View className={styles.errorCard} testID="hirer-wallet-error">
-        <AlertCircle color={colors.danger} size={32} />
-        <Text className={styles.errorText}>{error}</Text>
-        <TouchableOpacity
-          accessibilityLabel={m.retry}
-          accessibilityRole="button"
-          className={styles.retryButton}
-          onPress={onRefresh}
-          testID="hirer-wallet-retry-button"
-        >
-          <RefreshCw color={colors.onHirer} size={16} />
-          <Text className={styles.retryButtonText}>{m.retry}</Text>
-        </TouchableOpacity>
+      <View testID="hirer-wallet-error">
+        <StateView
+          actionLabel={m.retry}
+          description={error}
+          onAction={onRefresh}
+          title={m.errorLoadingWallet}
+          variant="error"
+        />
       </View>
     ) : (
-      <View className={styles.emptyCard} testID="hirer-wallet-empty">
-        <View className={styles.emptyIconBox}>
-          <FileText color={colors.textSubtle} size={28} />
-        </View>
-        <Text className={styles.emptyTitle}>{m.emptyHistoryTitle}</Text>
-        <Text className={styles.emptyDesc}>{m.emptyHistoryDesc}</Text>
+      <View testID="hirer-wallet-empty">
+        <StateView
+          description={m.emptyHistoryDesc}
+          title={m.emptyHistoryTitle}
+          variant="empty"
+        />
       </View>
     );
 
@@ -179,16 +167,14 @@ export function WalletScreenContent({
         ListHeaderComponent={listHeader}
         onScroll={handleNavigationScroll}
         scrollEventThrottle={16}
-        onRefresh={onRefresh}
         refreshControl={
           <RefreshControl
-            colors={[colors.hirer]}
+            colors={[colors.primary]}
             onRefresh={onRefresh}
             refreshing={refreshing}
-            tintColor={colors.hirer}
+            tintColor={colors.primary}
           />
         }
-        refreshing={refreshing}
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
         testID="hirer-wallet-transactions-list"
@@ -213,19 +199,4 @@ export function WalletScreenContent({
 const styles = {
   screen: "bg-ku-background",
   centerContainer: "items-center justify-center py-ku-40",
-  errorCard:
-    "mt-ku-sm items-center rounded-[16px] border border-ku-border-danger bg-ku-card p-ku-lg",
-  errorText:
-    "mb-ku-md mt-ku-10 text-center font-ku-medium text-ku-body-small text-ku-danger",
-  retryButton:
-    "flex-row items-center gap-ku-sm rounded-ku-pill bg-ku-hirer px-ku-18 py-ku-10",
-  retryButtonText: "font-ku-semibold text-ku-body-small text-ku-on-hirer",
-  emptyCard:
-    "mt-ku-xs items-center rounded-[16px] border border-ku-border-subtle bg-ku-card p-ku-xl",
-  emptyIconBox:
-    "mb-ku-14 h-[56px] w-[56px] items-center justify-center rounded-[28px] bg-ku-surface-muted",
-  emptyTitle:
-    "mb-ku-sm text-center font-ku-semibold text-ku-body text-ku-text-strong",
-  emptyDesc:
-    "text-center font-ku-regular text-ku-meta leading-[18px] text-ku-text-secondary",
 } as const;
