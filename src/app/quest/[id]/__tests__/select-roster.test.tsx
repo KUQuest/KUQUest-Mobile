@@ -131,6 +131,7 @@ describe("SelectRosterRoute", () => {
       lastName: "Candidate",
       avatar: null,
       department: { faculty: { name: "Design" } },
+      reputation: { totalQuests: 1, rating: { average: 4.7 } },
     });
   });
 
