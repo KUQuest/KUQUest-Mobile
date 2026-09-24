@@ -58,7 +58,7 @@ export function ProofReviewModal({
             onPress={() => undefined}
             testID="proof-review-modal"
           >
-            <SafeAreaView className="flex-1" edges={["bottom"]}>
+            <SafeAreaView className="shrink" edges={["bottom"]}>
               <View className={styles.proofSheetHeader}>
                 <View className={styles.proofSheetHeaderCopy}>
                   <View className="flex-row items-center gap-ku-sm">

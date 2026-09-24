@@ -116,7 +116,7 @@ export function ProofReviewPanel({
  return (
   <>
    <ScrollView
-    className="flex-1"
+    className="shrink"
     contentContainerClassName={styles.proofSheetContent}
     keyboardShouldPersistTaps="handled"
     showsVerticalScrollIndicator={false}
