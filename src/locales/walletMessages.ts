@@ -90,6 +90,8 @@ export interface WalletMessages {
   txStatusLabel: string;
   txDateLabel: string;
   txReferenceLabel: string;
+  txDetailsLabel: string;
+  txTopUpReferenceLabel: string;
   txAmountLabel: string;
   statusCompleted: string;
   statusPending: string;
@@ -217,6 +219,8 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     txStatusLabel: "Status",
     txDateLabel: "Date & Time",
     txReferenceLabel: "Reference",
+    txDetailsLabel: "Details",
+    txTopUpReferenceLabel: "Top-up reference",
     txAmountLabel: "Amount",
     statusCompleted: "Completed",
     statusPending: "Pending",
@@ -343,18 +347,20 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     filterTopUp: "เติมเงิน",
     filterPayout: "ถอนเงิน",
     transactionDetailTitle: "รายละเอียดธุรกรรม",
-    txSourceLabel: "ช่องทาง",
+    txSourceLabel: "แหล่งที่มา",
     txStatusLabel: "สถานะ",
     txDateLabel: "วันและเวลา",
     txReferenceLabel: "เลขอ้างอิง",
+    txDetailsLabel: "รายละเอียด",
+    txTopUpReferenceLabel: "รหัสอ้างอิงการเติมเงิน",
     txAmountLabel: "จำนวนเงิน",
     statusCompleted: "สำเร็จ",
     statusPending: "รอดำเนินการ",
     statusFailed: "ไม่สำเร็จ",
     statusExpired: "หมดอายุ",
-    sourceActivities: "กิจกรรมบัญชี (Activities API)",
-    sourceTopUps: "เติมเงิน PromptPay (Top-ups API)",
-    sourcePayouts: "ถอนเงินเข้าบัญชี (Payouts API)",
+    sourceActivities: "กิจกรรมบัญชี",
+    sourceTopUps: "เติมเงินผ่านพร้อมเพย์",
+    sourcePayouts: "ถอนเงินเข้าบัญชีธนาคาร",
     closeButton: "ปิด",
     emptyHistoryTitle: "ยังไม่มีประวัติการทำธุรกรรม",
     emptyHistoryDesc: "เมื่อคุณเติมเงินหรือลงภารกิจ ประวัติจะแสดงที่นี่",
