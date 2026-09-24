@@ -352,7 +352,7 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     txDateLabel: "วันและเวลา",
     txReferenceLabel: "เลขอ้างอิง",
     txDetailsLabel: "รายละเอียด",
-    txTopUpReferenceLabel: "รหัสอ้างอิงการเติมเงิน",
+    txTopUpReferenceLabel: "อ้างอิงเติมเงิน",
     txAmountLabel: "จำนวนเงิน",
     statusCompleted: "สำเร็จ",
     statusPending: "รอดำเนินการ",
