@@ -18,7 +18,7 @@ import { RefreshControl } from "react-native";
 import { ImageViewerModal } from "@/components/ui/ImageViewerModal";
 import { Image, Pressable, ScrollView, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { formatSatang } from "@/domain/satang";
 import type { GroupQuestMessages } from "@/locales/groupQuestMessages";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
@@ -79,6 +79,7 @@ function InfoRow({
   description?: string;
   divided?: boolean;
 }) {
+  const { colors } = useAppTheme();
   return (
     <View className={cn(styles.infoRow, divided && styles.infoRowDivided)}>
       <View className={styles.infoIcon}>
@@ -119,6 +120,7 @@ function QuestImage({
   onPress: () => void;
   featured?: boolean;
 }) {
+  const { colors } = useAppTheme();
   const [failed, setFailed] = useState(false);
   const label = messages.questImageLabel(index);
   const imageClassName = cn(
@@ -268,6 +270,7 @@ export function QuestDetailBody({
   canReportQuest,
   onReportQuest,
 }: QuestDetailBodyProps) {
+  const { colors } = useAppTheme();
   const [viewingImage, setViewingImage] = useState<number | null>(null);
   const StatusIcon = status?.Icon;
   return (
@@ -344,7 +347,9 @@ export function QuestDetailBody({
             ? ""
             : messages.questImageLabel(viewingImage + 1)
         }
-        imageUrl={viewingImage === null ? null : imageUris[viewingImage] ?? null}
+        imageUrl={
+          viewingImage === null ? null : (imageUris[viewingImage] ?? null)
+        }
         onClose={() => setViewingImage(null)}
         visible={viewingImage !== null}
       />

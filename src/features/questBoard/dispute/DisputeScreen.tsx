@@ -3,7 +3,7 @@ import { AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react-native";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { Button } from "@/components/ui/Button";
 import { TopBar } from "@/components/ui/TopBar";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { ScrollView, Text, View } from "@/tw";
 
 import { useQuestDisputeFeature } from "./useQuestDisputeFeature";
@@ -14,6 +14,7 @@ export default function DisputeScreen({
 }: {
   questId: string | undefined;
 }) {
+  const { colors } = useAppTheme();
   const {
     router,
     messages,

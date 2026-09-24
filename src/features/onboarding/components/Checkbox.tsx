@@ -2,7 +2,7 @@ import React from "react";
 import { cn } from "@/tw/cn";
 import { Pressable, Text, View } from "@/tw";
 import { Check } from "lucide-react-native";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import styles from "../styles/checkboxStyles";
 
 interface CheckboxProps {
@@ -13,6 +13,7 @@ interface CheckboxProps {
 }
 
 export function Checkbox({ label, checked, onChange, error }: CheckboxProps) {
+  const { colors } = useAppTheme();
   return (
     <View className={styles.container}>
       <Pressable

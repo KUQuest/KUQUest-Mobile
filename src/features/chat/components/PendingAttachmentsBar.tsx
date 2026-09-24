@@ -5,7 +5,7 @@ import { X } from "lucide-react-native";
 import { useLocale } from "@/features/preferences/localeStore";
 import { chatMessages } from "@/locales/chatMessages";
 import { Image, Pressable, ScrollView, View } from "@/tw";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import styles from "../chatStyles";
 
 export interface PendingAttachmentItem {
@@ -22,6 +22,7 @@ export function PendingAttachmentsBar({
   attachments: PendingAttachmentItem[];
   onRemove: (id: string) => void;
 }) {
+  const { colors } = useAppTheme();
   const { locale } = useLocale();
   const messages = chatMessages[locale];
 

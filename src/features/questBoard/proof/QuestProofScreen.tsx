@@ -2,7 +2,7 @@ import { ActivityIndicator } from "react-native";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { ScrollView, Text, View } from "@/tw";
 
 import { QuestProofActionSection } from "./components/QuestProofActionSection";
@@ -22,6 +22,7 @@ export default function QuestProofScreen({
   viewerId,
   onReturnToWorkHub,
 }: QuestProofScreenProps) {
+  const { colors } = useAppTheme();
   const {
     countdown,
     confirmCompletion,

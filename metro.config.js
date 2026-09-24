@@ -13,6 +13,8 @@ module.exports = withNativewind(config, {
       "--color-ku-primary",
       "--color-ku-primary-dark",
       "--color-ku-primary-deep",
+      "--color-ku-primary-subtle",
+      "--color-ku-primary-border",
       "--color-ku-surface-accent",
       "--color-ku-border-accent",
       "--color-ku-on-primary",

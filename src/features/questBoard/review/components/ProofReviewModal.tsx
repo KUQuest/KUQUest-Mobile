@@ -3,8 +3,14 @@ import { ShieldCheck, X } from "lucide-react-native";
 
 import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
-import { colors } from "@/theme/colors";
-import { KeyboardAvoidingView, Pressable, SafeAreaView, Text, View } from "@/tw";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import {
+  KeyboardAvoidingView,
+  Pressable,
+  SafeAreaView,
+  Text,
+  View,
+} from "@/tw";
 
 import type { QuestV2ProofReviewPayload } from "@/api/QuestApi";
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
@@ -29,6 +35,7 @@ export function ProofReviewModal({
   onReview,
 }: ProofReviewModalProps) {
   const { locale } = useLocale();
+  const { colors } = useAppTheme();
   const messages = questBoardMessages[locale];
 
   if (!proof) return null;

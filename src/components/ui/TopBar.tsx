@@ -5,7 +5,7 @@ import { ChevronLeft } from "lucide-react-native";
 import { useLocale } from "@/features/preferences/localeStore";
 import { navigationMessages } from "@/locales/navigationMessages";
 import { useWindowDimensions } from "react-native";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { getAppChromeMetrics } from "@/theme/layout";
 import styles from "./topBarStyles";
 
@@ -26,6 +26,7 @@ export function TopBar({
 }: TopBarProps) {
   const { width, fontScale } = useWindowDimensions();
   const { locale } = useLocale();
+  const { colors } = useAppTheme();
   const resolvedBackLabel = backLabel ?? navigationMessages[locale].back;
   const metrics = getAppChromeMetrics(width, fontScale);
 

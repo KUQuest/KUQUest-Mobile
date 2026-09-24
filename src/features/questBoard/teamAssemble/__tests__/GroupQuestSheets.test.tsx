@@ -1,6 +1,9 @@
 import React, { type ReactNode } from "react";
-import { act, fireEvent, render } from "@testing-library/react-native";
-import { renderWithQueryClient } from "@/testing/queryTestUtils";
+import { act, fireEvent } from "@testing-library/react-native";
+import {
+  renderWithQueryClient,
+  renderWithAppTheme,
+} from "@/testing/queryTestUtils";
 
 import { CandidateReviewSheet } from "../components/CandidateReviewSheet";
 import { PartialGroupStartConsentSheet } from "../components/PartialGroupStartConsentSheet";
@@ -243,7 +246,7 @@ describe("group Quest sheets", () => {
       "selected-leader",
       "rejected-leader",
     ]);
-    const view = await render(
+    const view = await renderWithAppTheme(
       <QueryClientProvider client={queryClient}>
         <CandidateReviewSheet
           applications={applications}
@@ -291,7 +294,7 @@ describe("group Quest sheets", () => {
       appliedAt: "2026-09-25T09:00:00.000Z",
     };
     const queryClient = queryClientWithRatings(["worker-1"]);
-    const view = await render(
+    const view = await renderWithAppTheme(
       <QueryClientProvider client={queryClient}>
         <CandidateReviewSheet
           applicantDirectory={[{ id: "worker-1", displayName: "Chat Worker" }]}
@@ -315,7 +318,7 @@ describe("group Quest sheets", () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date("2026-08-12T09:00:00.000Z"));
     const onVote = jest.fn();
-    const view = await render(
+    const view = await renderWithAppTheme(
       <PartialGroupStartConsentSheet
         actualHeadcount={1}
         consent={makeConsent()}
@@ -353,7 +356,7 @@ describe("group Quest sheets", () => {
   });
 
   it("shows approved and cancelled terminal consent states without vote actions", async () => {
-    const approved = await render(
+    const approved = await renderWithAppTheme(
       <PartialGroupStartConsentSheet
         consent={makeConsent(
           QuestPartialStartConsentStatus.PARTIAL_START_APPROVED
@@ -366,7 +369,7 @@ describe("group Quest sheets", () => {
     expect(approved.getByTestId("partial-group-start-approved")).toBeTruthy();
     expect(approved.queryByTestId("partial-group-start-approve")).toBeNull();
 
-    const cancelled = await render(
+    const cancelled = await renderWithAppTheme(
       <PartialGroupStartConsentSheet
         consent={makeConsent(
           QuestPartialStartConsentStatus.PARTIAL_START_TIMED_OUT
@@ -385,7 +388,7 @@ describe("group Quest sheets", () => {
   });
   it("joins the Team named by a pasted invite link with an uppercased Join Code", async () => {
     const onJoinTeam = jest.fn();
-    const view = await render(
+    const view = await renderWithAppTheme(
       <TeamAssembleView locale="en" onJoinTeam={onJoinTeam} team={null} />
     );
     const input = view.getByTestId("team-assemble-join-code-input");
@@ -412,7 +415,7 @@ describe("group Quest sheets", () => {
 
   it("creates a Team only with a non-blank trimmed name", async () => {
     const onCreateTeam = jest.fn();
-    const view = await render(
+    const view = await renderWithAppTheme(
       <TeamAssembleView locale="en" onCreateTeam={onCreateTeam} team={null} />
     );
 
@@ -446,7 +449,7 @@ describe("group Quest sheets", () => {
       createdAt: "2026-09-01T00:00:00Z",
     };
     const queryClient = queryClientWithRatings(["leader-9", "worker-9"]);
-    const view = await render(
+    const view = await renderWithAppTheme(
       <QueryClientProvider client={queryClient}>
         <TeamAssembleView
           locale="en"

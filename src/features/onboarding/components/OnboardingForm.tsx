@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { CircleAlert, Pencil, UserRound } from "lucide-react-native";
 import { Image, Pressable, ScrollView, Text, View } from "@/tw";
 
@@ -15,12 +16,6 @@ import { RegistrationStepThree } from "./RegistrationStepThree";
 import styles from "../styles/registrationStyles";
 
 type Messages = (typeof onboardingMessages)["en"];
-type ThemeColors = {
-  danger: string;
-  textMuted: string;
-  onPrimary: string;
-};
-
 type SelectOption = { label: string; value: string };
 
 export function OnboardingForm({
@@ -28,7 +23,6 @@ export function OnboardingForm({
   locale,
   isEditMode,
   currentStep,
-  colors,
   reduceMotion,
   formState,
   requiresStudentId,
@@ -46,9 +40,8 @@ export function OnboardingForm({
 }: {
   messages: Messages;
   locale: SupportedLocale;
-  isEditMode: boolean;
   currentStep: OnboardingStep;
-  colors: ThemeColors;
+  isEditMode: boolean;
   reduceMotion: boolean;
   formState: OnboardingFormState;
   requiresStudentId: boolean;
@@ -64,6 +57,7 @@ export function OnboardingForm({
   onRemoveExperience: (index: number) => void;
   onReadPolicy: () => void;
 }) {
+  const { colors } = useAppTheme();
   const { form, errors } = formState;
 
   return (

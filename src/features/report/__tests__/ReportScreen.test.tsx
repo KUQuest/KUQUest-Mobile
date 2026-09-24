@@ -1,4 +1,5 @@
-import { fireEvent, render } from "@testing-library/react-native";
+import { fireEvent } from "@testing-library/react-native";
+import { renderWithAppTheme } from "@/testing/queryTestUtils";
 
 import ReportScreen from "../ReportScreen";
 
@@ -31,7 +32,7 @@ describe("Report screen", () => {
   });
 
   it("shows the topic and details fields", async () => {
-    const view = await render(<ReportScreen />);
+    const view = await renderWithAppTheme(<ReportScreen />);
 
     expect(view.getByRole("header", { name: "ตรวจสอบรายงาน" })).toBeTruthy();
     expect(view.getByTestId("report-context")).toBeTruthy();
@@ -43,7 +44,7 @@ describe("Report screen", () => {
   });
 
   it("opens a full-screen picker with six report topic tags", async () => {
-    const view = await render(<ReportScreen />);
+    const view = await renderWithAppTheme(<ReportScreen />);
 
     await fireEvent.press(view.getByTestId("report-topic-trigger"));
 
@@ -52,7 +53,7 @@ describe("Report screen", () => {
   });
 
   it("validates the required report fields", async () => {
-    const view = await render(<ReportScreen />);
+    const view = await renderWithAppTheme(<ReportScreen />);
 
     await fireEvent.press(view.getByTestId("report-submit"));
 
@@ -64,7 +65,7 @@ describe("Report screen", () => {
   });
 
   it("selects multiple topics and submits the report details", async () => {
-    const view = await render(<ReportScreen />);
+    const view = await renderWithAppTheme(<ReportScreen />);
     const abusiveTopic = "ข้อความไม่เหมาะสมหรือการคุกคาม";
     const outOfScopeTopic = "งานนอกขอบเขตของเควสต์";
 
@@ -99,7 +100,7 @@ describe("Report screen", () => {
   });
 
   it("returns to the previous screen after submission", async () => {
-    const view = await render(<ReportScreen />);
+    const view = await renderWithAppTheme(<ReportScreen />);
 
     await fireEvent.press(view.getByTestId("report-topic-trigger"));
     await fireEvent.press(

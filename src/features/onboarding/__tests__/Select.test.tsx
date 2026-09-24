@@ -1,4 +1,5 @@
-import { fireEvent, render } from "@testing-library/react-native";
+import { fireEvent } from "@testing-library/react-native";
+import { renderWithAppTheme } from "@/testing/queryTestUtils";
 import mockReact, { type ReactNode } from "react";
 import { Select } from "@/components/ui/Select";
 
@@ -27,7 +28,7 @@ const options = [
 describe("Select", () => {
   test("filters searchable options, reports remote queries, and clears the query", async () => {
     const onSearchChange = jest.fn();
-    const view = await render(
+    const view = await renderWithAppTheme(
       <Select
         label="Faculty"
         options={options}
@@ -60,7 +61,7 @@ describe("Select", () => {
   });
 
   test("shows a no-results state when no option matches", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <Select
         label="Faculty"
         options={options}
@@ -85,7 +86,7 @@ describe("Select", () => {
 
   test("selects an option and closes the searchable picker", async () => {
     const onValueChange = jest.fn();
-    const view = await render(
+    const view = await renderWithAppTheme(
       <Select
         label="Faculty"
         options={options}
@@ -108,7 +109,7 @@ describe("Select", () => {
   });
 
   test("keeps non-searchable selects compatible with the existing behavior", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <Select
         label="Occupation"
         options={[{ label: "Student", value: "occupation-student" }]}
@@ -125,7 +126,7 @@ describe("Select", () => {
   });
 
   test("includes the field context in selected and option accessibility labels", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <Select
         label="Quest Tag"
         options={[{ label: "Technology", value: "technology" }]}
@@ -147,7 +148,7 @@ describe("Select", () => {
   });
 
   test("does not open when disabled", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <Select
         label="Department"
         options={options}
@@ -164,7 +165,7 @@ describe("Select", () => {
   });
 
   test("exposes localized action labels and closes from the close action", async () => {
-    const view = await render(
+    const view = await renderWithAppTheme(
       <Select
         label="Faculty"
         options={options}

@@ -10,8 +10,8 @@ import {
   Image as ImageIcon,
 } from "lucide-react-native";
 import { useLocale } from "@/features/preferences/localeStore";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { Image, Pressable, Text, View } from "../../../tw";
-import { colors } from "../../../theme/colors";
 import styles from "../profileEditStyles";
 import {
   profileEditMessages,
@@ -30,6 +30,7 @@ export function ScreenHeader({
   onBack: () => void;
   action?: React.ReactNode;
 }) {
+  const { colors } = useAppTheme();
   return (
     <View className={styles.header}>
       <Pressable
@@ -92,6 +93,7 @@ export function ImagePickerField({
   onChange: (uri: string) => void;
   onError: (message: string) => void;
 }) {
+  const { colors } = useAppTheme();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
   const [failedUri, setFailedUri] = useState<string | null>(null);
@@ -174,6 +176,7 @@ export function DateField({
   clearLabel?: string;
   onClear?: () => void;
 }) {
+  const { colors } = useAppTheme();
   const [open, setOpen] = useState(false);
   const handleChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
     if (event.type === "dismissed" || !selectedDate) {

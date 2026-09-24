@@ -2,8 +2,11 @@ import React from "react";
 import type ReactModule from "react";
 import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
-import { renderWithQueryClient } from "@/testing/queryTestUtils";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import {
+  renderWithQueryClient,
+  renderWithAppTheme,
+} from "@/testing/queryTestUtils";
 
 import ChatConversationScreen from "../ChatConversationScreen";
 import { ChatAvatar } from "../components/ChatConversationPresentation";
@@ -118,7 +121,7 @@ const mockConversation: ChatConversation = {
 
 it("renders the participant avatar and opens the participant public profile", async () => {
   const onPress = jest.fn();
-  const view = await render(
+  const view = await renderWithAppTheme(
     <ChatAvatar
       initials="SO"
       color="#059669"
@@ -154,7 +157,7 @@ describe("ChatConversationMedia", () => {
         kind: "image",
       };
 
-      const view = await render(
+      const view = await renderWithAppTheme(
         <InlineImageAttachment
           attachment={attachment}
           conversationId="conv-media-1"
@@ -201,7 +204,7 @@ describe("ChatConversationMedia", () => {
         kind: "image",
       };
 
-      const view = await render(
+      const view = await renderWithAppTheme(
         <InlineImageAttachment
           attachment={attachment}
           conversationId="inquiry-conv-1"
@@ -232,7 +235,7 @@ describe("ChatConversationMedia", () => {
       };
       const onImagePress = jest.fn();
 
-      const view = await render(
+      const view = await renderWithAppTheme(
         <InlineImageAttachment
           attachment={attachment}
           conversationId="conv-media-1"
@@ -266,7 +269,7 @@ describe("ChatConversationMedia", () => {
         kind: "image",
       };
 
-      const view = await render(
+      const view = await renderWithAppTheme(
         <InlineImageAttachment
           attachment={attachment}
           conversationId="conv-media-1"
@@ -302,7 +305,7 @@ describe("ChatConversationMedia", () => {
       };
       const onFilePress = jest.fn();
 
-      const view = await render(
+      const view = await renderWithAppTheme(
         <MessageBubble
           message={message}
           conversation={mockConversation}
@@ -340,7 +343,7 @@ describe("ChatConversationMedia", () => {
         attachments: [imgAttachment],
       };
 
-      const view = await render(
+      const view = await renderWithAppTheme(
         <MessageBubble
           message={message}
           conversation={mockConversation}
@@ -374,7 +377,7 @@ describe("ChatConversationMedia", () => {
         },
       ];
 
-      const view = await render(
+      const view = await renderWithAppTheme(
         <PendingAttachmentsBar attachments={items} onRemove={onRemove} />
       );
 
@@ -391,7 +394,7 @@ describe("ChatConversationMedia", () => {
     });
 
     it("returns null when attachments array is empty", async () => {
-      const view = await render(
+      const view = await renderWithAppTheme(
         <PendingAttachmentsBar attachments={[]} onRemove={jest.fn()} />
       );
       expect(view.toJSON()).toBeNull();

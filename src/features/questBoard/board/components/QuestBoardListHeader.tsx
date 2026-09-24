@@ -3,7 +3,7 @@ import { ArrowDownUp, SlidersHorizontal, X } from "lucide-react-native";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 import type {
   QuestBoardFilter,
@@ -54,6 +54,7 @@ export function QuestBoardListHeader({
   onRemoveStartTimeBucket,
   showRetryStatus,
 }: QuestBoardListHeaderProps) {
+  const { colors } = useAppTheme();
   return (
     <>
       <View className={styles.boardIntro}>

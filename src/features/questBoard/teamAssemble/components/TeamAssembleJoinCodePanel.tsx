@@ -3,7 +3,7 @@ import React from "react";
 import { RefreshCw, Share2 } from "lucide-react-native";
 
 import { Pressable, Text, TextInput, View } from "@/tw";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { formatTimestampDateTime } from "@/domain/datetime";
 import type { SupportedLocale } from "@/locales/locale";
 import type { GroupQuestMessages } from "@/locales/groupQuestMessages";
@@ -42,6 +42,7 @@ export function TeamAssembleJoinCodePanel({
   onShareInvite,
   canRegenerateJoinCode,
 }: TeamAssembleJoinCodePanelProps) {
+  const { colors } = useAppTheme();
   const canRegenerate =
     isLeader && canRegenerateJoinCode !== false && onRegenerateJoinCode;
   return (

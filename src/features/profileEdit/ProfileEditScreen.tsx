@@ -8,7 +8,7 @@ import { profileEditMessages } from "../../locales/profileEditMessages";
 import { useLocale } from "@/features/preferences/localeStore";
 import { Button } from "../../components/ui/Button";
 import { Image, Pressable, ScrollView, Text, View } from "../../tw";
-import { colors } from "../../theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { ScreenLayout } from "../../components/layout/ScreenLayout";
 import styles from "./profileEditStyles";
 import type {
@@ -41,6 +41,7 @@ function getParam(value: string | string[] | undefined): string | undefined {
 }
 
 function HubContent({ data }: { data: ProfileEditData }) {
+  const { colors } = useAppTheme();
   const router = useRouter();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
@@ -166,6 +167,7 @@ function SectionListScreen({
   data: ProfileEditData;
   onBack: () => void;
 }) {
+  const { colors } = useAppTheme();
   const router = useRouter();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
@@ -259,6 +261,7 @@ function ExperienceRow({
   presentLabel: string;
   onPress: () => void;
 }) {
+  const { colors } = useAppTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -292,6 +295,7 @@ function PortfolioRow({
 }) {
   const image = entry.images[0]?.url;
   const [imageFailed, setImageFailed] = useState(false);
+  const { colors } = useAppTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -333,6 +337,7 @@ function CertificateRow({
   onPress: () => void;
 }) {
   const [imageFailed, setImageFailed] = useState(false);
+  const { colors } = useAppTheme();
   return (
     <Pressable
       accessibilityRole="button"

@@ -15,8 +15,8 @@ import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { SkeletonBlock } from "@/components/ui/LoadingSkeleton";
 import { Pressable, Text, TextInput, View } from "@/tw";
 import { useLocale } from "@/features/preferences/localeStore";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { chatMessages } from "@/locales/chatMessages";
-import { colors } from "@/theme/colors";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 
 import { spacing } from "@/theme/spacing";
@@ -91,6 +91,7 @@ function ChatInboxItemSeparator() {
 export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
   const router = useRouter();
   const { locale } = useLocale();
+  const { colors } = useAppTheme();
   const { width, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const messages = chatMessages[locale];
@@ -184,6 +185,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
       </View>
     );
   }, [
+    colors,
     conversationsLoadFailed,
     conversationsPending,
     messages,
@@ -307,6 +309,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
       </View>
     ),
     [
+      colors,
       conversations,
       conversationsLoadFailed,
       conversationsPending,
@@ -403,6 +406,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
       }
     },
     [
+      colors,
       handleConversationPress,
       handleInquiryPress,
       handleOpenProfile,

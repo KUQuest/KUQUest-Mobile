@@ -28,7 +28,7 @@ import {
   TextInput,
   View,
 } from "@/tw";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { spacing } from "@/theme/spacing";
 import styles from "./chatStyles";
 import { cn } from "@/tw/cn";
@@ -55,6 +55,7 @@ export interface ChatConversationScreenProps {
 export default function ChatConversationScreen({
   conversationType = "WORK",
 }: ChatConversationScreenProps = {}) {
+  const { colors } = useAppTheme();
   const controller = useChatConversationController(conversationType);
   const {
     router,

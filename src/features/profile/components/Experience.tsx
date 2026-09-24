@@ -1,6 +1,6 @@
 import { BriefcaseBusiness } from "lucide-react-native";
 import { Text, View } from "@/tw";
-import { colors } from "../../../theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import type { SupportedLocale } from "@/locales/locale";
 import styles from "../styles/profileComponentStyles";
 import type { ProfileExperience } from "./profileTypes";
@@ -29,6 +29,7 @@ export function Experience({
   onEditPress?: () => void;
   sectionBottomMargin?: number;
 } & SectionNoticeProps) {
+  const { colors } = useAppTheme();
   return (
     <Section
       title={sectionTitle}

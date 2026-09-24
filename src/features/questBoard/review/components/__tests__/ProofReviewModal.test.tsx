@@ -1,5 +1,6 @@
 import React from "react";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { renderWithAppTheme } from "@/testing/queryTestUtils";
 
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
 
@@ -40,7 +41,7 @@ const proof: QuestV2ProofSubmission = {
 };
 
 async function renderModal(onReview: jest.Mock, onClose = jest.fn()) {
-  return await render(
+  return await renderWithAppTheme(
     <ProofReviewModal
       dueAt="2026-09-15T12:00:00Z"
       onClose={onClose}

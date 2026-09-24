@@ -1,7 +1,7 @@
 import { ChevronRight, CircleAlert } from "lucide-react-native";
 
 import { Button } from "@/components/ui/Button";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { spacing } from "@/theme/spacing";
 import { cn } from "@/tw/cn";
 import { Pressable, Text, View } from "@/tw";
@@ -48,6 +48,7 @@ export function CreateQuestActionBar({
   onPublish: () => void;
   onSaveDraft: () => void;
 }) {
+  const { colors } = useAppTheme();
   const editingServerQuest = isServerEditMode(mode);
   const nextLabel = step === 2 ? messages.reviewQuest : messages.next;
   const reviewPublishes = step === 3 && publishable;

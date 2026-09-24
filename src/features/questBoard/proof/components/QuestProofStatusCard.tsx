@@ -5,7 +5,7 @@ import {
   ShieldAlert,
 } from "lucide-react-native";
 
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { Text, View } from "@/tw";
 
 type QuestProofStatusIcon = "approved" | "not-approved" | "pending" | "draft";
@@ -27,6 +27,7 @@ export function QuestProofStatusCard({
   terminalDescription,
   lockDescription,
 }: QuestProofStatusCardProps) {
+  const { colors } = useAppTheme();
   return (
     <View className="mt-ku-md rounded-[18px] border border-ku-border bg-ku-card p-ku-md">
       <View className="flex-row items-center">

@@ -4,7 +4,7 @@ import { Plus, UsersRound } from "lucide-react-native";
 
 import { Pressable, Text, TextInput, View } from "@/tw";
 import { cn } from "@/tw/cn";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 
 import styles from "../groupQuestStyles";
 
@@ -28,6 +28,7 @@ export function TeamAssembleEmptyState({
   busy = false,
   onCreateTeam,
 }: TeamAssembleEmptyStateProps) {
+  const { colors } = useAppTheme();
   const [name, setName] = useState("");
   const disabled = busy || !name.trim();
   return (

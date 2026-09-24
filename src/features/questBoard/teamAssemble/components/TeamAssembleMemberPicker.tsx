@@ -3,7 +3,7 @@ import React from "react";
 import { Check, CircleX, Mail, Search } from "lucide-react-native";
 
 import { Pressable, Text, TextInput, View } from "@/tw";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import type { TeamDirectoryMember } from "../types";
 
 import styles from "../groupQuestStyles";
@@ -58,6 +58,7 @@ export function TeamAssembleMemberPicker({
   onInvite,
   memberId,
 }: TeamAssembleMemberPickerProps) {
+  const { colors } = useAppTheme();
   return (
     <View className={styles.section}>
       <Text accessibilityRole="header" className={styles.sectionTitle}>

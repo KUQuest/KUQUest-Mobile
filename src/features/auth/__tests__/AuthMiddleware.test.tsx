@@ -1,5 +1,8 @@
-import { act, render, screen, waitFor } from "@testing-library/react-native";
-import { renderWithQueryClient } from "@/testing/queryTestUtils";
+import { act, screen, waitFor } from "@testing-library/react-native";
+import {
+  renderWithQueryClient,
+  renderWithAppTheme,
+} from "@/testing/queryTestUtils";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Text } from "@/tw";
@@ -100,7 +103,7 @@ describe("AuthMiddleware", () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
-    const view = await render(
+    const view = await renderWithAppTheme(
       <QueryClientProvider client={queryClient}>
         <AuthMiddleware>
           <ProtectedContent />
