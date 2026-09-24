@@ -121,6 +121,7 @@ export function FlatList<ItemT>(
   props: FlatListProps<ItemT> & {
     className?: string;
     contentContainerClassName?: string;
+    ref?: React.Ref<RNFlatList<ItemT>>;
   }
 ) {
   return useCssElementCompat(RNFlatList, props, {

@@ -136,7 +136,7 @@ const styles = {
   searchEmptyText:
     "text-ku-text-secondary font-ku-regular text-ku-body-small text-center",
   composerWrap:
-    "bg-ku-background border-ku-border-subtle border-t px-ku-md pb-ku-sm pt-ku-sm",
+    "bg-ku-background border-ku-border-subtle border-t px-ku-md pb-ku-xs pt-ku-sm",
   composer:
     "items-center bg-ku-surface-muted rounded-ku-sheet flex-row min-h-ku-56 px-ku-6",
   composerButton:
