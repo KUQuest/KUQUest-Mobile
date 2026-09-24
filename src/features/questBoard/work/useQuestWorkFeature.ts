@@ -11,6 +11,7 @@ import { isTerminalStatus } from "@/domain/questLifecycle";
 import { getRouteParam } from "@/utils";
 import { useLiveQuestSnapshotQuery } from "../api/questBoardQueries";
 import { liveQuestService } from "../live/liveQuestService";
+import { useFileDispute } from "../dispute/useFileDispute";
 import type { LiveQuestSnapshot } from "../live/liveQuestTypes";
 import type { QuestStatus } from "../domain/types";
 
@@ -227,13 +228,10 @@ export function useQuestWorkFeature({
     }
   }, [messages, refreshSnapshot, routeQuestId, snapshot, startWorkSending]);
 
+  const { confirmFileDispute } = useFileDispute();
   const openDispute = useCallback(() => {
-    if (!routeQuestId) return;
-    router.push({
-      pathname: "/quest/[id]/dispute",
-      params: { id: routeQuestId },
-    });
-  }, [routeQuestId, router]);
+    if (routeQuestId) confirmFileDispute(routeQuestId);
+  }, [confirmFileDispute, routeQuestId]);
   const conversationId = snapshot?.workConversation?.id;
   const canOpenChat = Boolean(
     snapshot?.capabilities.canReadWorkChat && conversationId && resolvedViewerId
