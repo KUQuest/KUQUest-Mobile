@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { KeyboardAvoidingView, Platform, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, RefreshCw } from "lucide-react-native";
+import { RefreshCw } from "lucide-react-native";
 
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
+import { TopBar } from "@/components/ui/TopBar";
 import { WorkerProofForm } from "@/features/workerWork/components/WorkerProofForm";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { colors } from "@/theme/colors";
@@ -94,6 +95,12 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
         edges={["top", "left", "right", "bottom"]}
         className="flex-1 bg-ku-background"
       >
+        <TopBar
+          title={messages.title}
+          backLabel={questMessages.back}
+          onBackPress={handleBack}
+          variant="detail"
+        />
         <View
           className="flex-1 items-center justify-center px-ku-lg"
           testID="quest-work-loading"
@@ -113,6 +120,12 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
         edges={["top", "left", "right", "bottom"]}
         className="flex-1 bg-ku-background"
       >
+        <TopBar
+          title={messages.title}
+          backLabel={questMessages.back}
+          onBackPress={handleBack}
+          variant="detail"
+        />
         <View
           className="flex-1 justify-center px-ku-lg"
           testID="quest-work-error"
@@ -126,7 +139,7 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={messages.retry}
-            className="mt-ku-20 rounded-xl bg-ku-primary px-ku-md py-ku-12"
+            className="mt-ku-20 h-12 items-center justify-center rounded-xl bg-ku-primary px-ku-md"
             onPress={() => void refreshSnapshot().catch(() => undefined)}
           >
             <Text className="text-center font-ku-semibold text-ku-on-primary">
@@ -143,6 +156,23 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
       edges={["top", "left", "right", "bottom"]}
       className="flex-1 bg-ku-background"
     >
+      <TopBar
+        title={messages.title}
+        backLabel={questMessages.back}
+        onBackPress={handleBack}
+        variant="detail"
+        rightAction={
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={messages.refresh}
+            hitSlop={8}
+            className="h-12 w-12 items-center justify-center rounded-full"
+            onPress={() => void refreshSnapshot().catch(() => undefined)}
+          >
+            <RefreshCw color={colors.primaryDeep} size={18} />
+          </Pressable>
+        }
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -159,29 +189,7 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
           contentContainerStyle={{ paddingBottom: contentBottom }}
           testID="quest-work-screen"
         >
-          <View className="px-ku-20 pt-ku-12">
-            <View className="mb-ku-20 flex-row items-center justify-between">
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={questMessages.back}
-                className="h-10 w-10 items-center justify-center rounded-full bg-ku-surface"
-                onPress={handleBack}
-              >
-                <ChevronLeft color={colors.primaryDeep} size={23} />
-              </Pressable>
-              <Text className="font-ku-bold text-ku-body text-ku-text-strong">
-                {messages.title}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={messages.refresh}
-                className="h-10 w-10 items-center justify-center rounded-full bg-ku-surface"
-                onPress={() => void refreshSnapshot().catch(() => undefined)}
-              >
-                <RefreshCw color={colors.primaryDeep} size={18} />
-              </Pressable>
-            </View>
-
+          <View className="px-ku-20 pt-ku-16">
             <QuestWorkStatusCard
               snapshot={snapshot}
               status={status}

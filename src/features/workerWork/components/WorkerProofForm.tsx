@@ -31,7 +31,7 @@ const MAX_PROOF_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_DESCRIPTION_LENGTH = 1000;
 
 const card =
-  "mt-ku-12 rounded-[16px] border border-ku-border-subtle bg-ku-surface p-ku-md";
+  "mt-ku-16 rounded-2xl border border-ku-border/60 bg-ku-surface dark:bg-ku-card p-ku-16 shadow-sm";
 
 export interface WorkerProofFormProps {
   questId: string;
@@ -284,7 +284,7 @@ function SentProofCard({
         : messages.status.proofPending;
   return (
     <View
-      className="mt-ku-12 flex-row items-start gap-ku-12 rounded-[16px] border border-ku-border-subtle bg-ku-surface p-ku-md"
+      className="mt-ku-16 flex-row items-start gap-ku-12 rounded-2xl border border-ku-border/60 bg-ku-surface p-ku-16 shadow-sm dark:bg-ku-card"
       testID="worker-proof-sent"
     >
       <Icon color={color} size={24} strokeWidth={2} />

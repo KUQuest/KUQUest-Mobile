@@ -5,7 +5,11 @@ import {
 } from "@/locales/questStatusLabels";
 import type { SupportedLocale } from "@/locales/locale";
 import type { QuestWorkMessages } from "@/locales/questWorkMessages";
-import { QuestNextAction, QuestStatus } from "../domain/types";
+import {
+  QuestAssignmentStatus,
+  QuestNextAction,
+  QuestStatus,
+} from "../domain/types";
 import type { LiveQuestSnapshot } from "../live/liveQuestTypes";
 
 export function nextActionLabel(
@@ -33,12 +37,33 @@ export function workStatusLabel(
   return questStatusLabels[locale][state];
 }
 
+const assignmentStateLabels: Record<
+  SupportedLocale,
+  Record<QuestAssignmentStatus, string>
+> = {
+  en: {
+    [QuestAssignmentStatus.ASSIGNMENT_ACTIVE]: "Active",
+    [QuestAssignmentStatus.ASSIGNMENT_COMPLETED]: "Completed",
+    [QuestAssignmentStatus.ASSIGNMENT_INCOMPLETE]: "Incomplete",
+    [QuestAssignmentStatus.ASSIGNMENT_CANCELLED]: "Cancelled",
+  },
+  th: {
+    [QuestAssignmentStatus.ASSIGNMENT_ACTIVE]: "กำลังปฏิบัติงาน",
+    [QuestAssignmentStatus.ASSIGNMENT_COMPLETED]: "เสร็จสิ้น",
+    [QuestAssignmentStatus.ASSIGNMENT_INCOMPLETE]: "ไม่สำเร็จ",
+    [QuestAssignmentStatus.ASSIGNMENT_CANCELLED]: "ยกเลิกแล้ว",
+  },
+};
+
 export function assignmentLabel(
   assignment: LiveQuestSnapshot["assignment"],
   locale: SupportedLocale
 ): string {
-  return assignment?.state
-    ? (questStatusLabels[locale][assignment.state as QuestStatus] ??
-        assignment.state)
-    : "—";
+  if (!assignment?.state) return "—";
+  const state = assignment.state as QuestAssignmentStatus;
+  return (
+    assignmentStateLabels[locale]?.[state] ??
+    questStatusLabels[locale][assignment.state as QuestStatus] ??
+    assignment.state
+  );
 }
