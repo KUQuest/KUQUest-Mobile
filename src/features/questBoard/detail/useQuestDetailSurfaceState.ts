@@ -8,7 +8,6 @@ export interface QuestDetailSurfaceState {
   leftQuest: boolean;
   manualConfirmationOpen: boolean;
   dismissedIntent?: string;
-  teamSheetOpen: boolean;
   candidateReviewSheetOpen: boolean;
   partialStartSheetDismissed: boolean;
   teamSearchQuery: string;
@@ -26,8 +25,6 @@ type SurfaceAction =
   | { type: "open-confirmation" }
   | { type: "close-confirmation" }
   | { type: "dismiss-intent"; key: string }
-  | { type: "open-team" }
-  | { type: "close-team" }
   | { type: "open-candidate-review" }
   | { type: "close-candidate-review" }
   | { type: "dismiss-partial-consent" }
@@ -44,7 +41,6 @@ const initialState: QuestDetailSurfaceState = {
   leftQuest: false,
   manualConfirmationOpen: false,
   dismissedIntent: undefined,
-  teamSheetOpen: false,
   candidateReviewSheetOpen: false,
   partialStartSheetDismissed: false,
   teamSearchQuery: "",
@@ -73,16 +69,6 @@ function reduceSurfaceState(
       return { ...state, manualConfirmationOpen: false };
     case "dismiss-intent":
       return { ...state, dismissedIntent: action.key };
-    case "open-team":
-      return { ...state, teamSheetOpen: true };
-    case "close-team":
-      return {
-        ...state,
-        teamSheetOpen: false,
-        teamReviewing: false,
-        teamSelectedMemberIds: [],
-        teamSearchQuery: "",
-      };
     case "open-candidate-review":
       return {
         ...state,
@@ -120,8 +106,6 @@ export interface QuestDetailSurfaceTransitions {
   openConfirmation: () => void;
   closeConfirmation: () => void;
   dismissIntent: (key: string) => void;
-  openTeam: () => void;
-  closeTeam: () => void;
   openCandidateReview: () => void;
   closeCandidateReview: () => void;
   dismissPartialConsent: () => void;
@@ -168,8 +152,6 @@ export function useQuestDetailSurfaceState(): {
     (key: string) => dispatch({ type: "dismiss-intent", key }),
     []
   );
-  const openTeam = useCallback(() => dispatch({ type: "open-team" }), []);
-  const closeTeam = useCallback(() => dispatch({ type: "close-team" }), []);
   const openCandidateReview = useCallback(
     () => dispatch({ type: "open-candidate-review" }),
     []
@@ -217,8 +199,6 @@ export function useQuestDetailSurfaceState(): {
       openConfirmation,
       closeConfirmation,
       dismissIntent,
-      openTeam,
-      closeTeam,
       openCandidateReview,
       closeCandidateReview,
       dismissPartialConsent,

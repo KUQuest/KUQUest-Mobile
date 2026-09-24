@@ -11,7 +11,6 @@ import type { UploadAsset } from "@/api/fileUpload";
 import { useLocale } from "@/features/preferences/localeStore";
 import type { SupportedLocale } from "@/locales/locale";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
-import { BottomSheet } from "@/components/ui/BottomSheet";
 import { TeamAssembleEmptyState } from "./TeamAssembleEmptyState";
 import { TeamAssembleErrorState } from "./TeamAssembleErrorState";
 import { TeamAssembleInvitations } from "./TeamAssembleInvitations";
@@ -25,14 +24,14 @@ import { TeamAssembleProposalPanel } from "./TeamAssembleProposalPanel";
 import { TeamAssembleRoster } from "./TeamAssembleRoster";
 import { TeamAssembleSubmissionPanel } from "./TeamAssembleSubmissionPanel";
 import styles from "../groupQuestStyles";
-import { ScrollView } from "@/tw";
+import { spacing } from "@/theme/spacing";
+import { ScrollView, Text } from "@/tw";
 import type { ProposalFileItem, TeamDirectoryMember } from "../types";
 
 export type TeamAssembleSurfaceState =
   "ready" | "loading" | "error" | "empty" | "submitted";
 
-export interface TeamAssembleSheetProps {
-  visible: boolean;
+export interface TeamAssembleViewProps {
   team?: QuestTeam | QuestV2Team | null;
   invitations?: readonly QuestInvitation[];
   eligibleMembers?: readonly TeamDirectoryMember[];
@@ -82,9 +81,9 @@ export interface TeamAssembleSheetProps {
   onUploadFile?: (asset: UploadAsset) => Promise<ProposalFileItem>;
   onUploadProposalFile?: (asset: UploadAsset) => Promise<ProposalFileItem>;
   onRetry?: () => void;
-  onClose: () => void;
-  bottomInset?: number;
   locale?: SupportedLocale;
+  /** Bottom safe-area inset reserved below the scrollable content. */
+  bottomInset?: number;
 }
 
 function canonicalMemberRows(
@@ -114,8 +113,7 @@ function isActiveInvitation(invitation: QuestInvitation): boolean {
   );
 }
 
-export function TeamAssembleSheet({
-  visible,
+export function TeamAssembleView({
   team = null,
   invitations = [],
   eligibleMembers = [],
@@ -158,10 +156,9 @@ export function TeamAssembleSheet({
   onUploadFile,
   onUploadProposalFile,
   onRetry,
-  onClose,
-  bottomInset,
+  bottomInset = 0,
   locale: localeProp,
-}: TeamAssembleSheetProps) {
+}: TeamAssembleViewProps) {
   const contextLocale = useLocale().locale;
   const locale = localeProp ?? contextLocale;
   const messages = groupQuestMessages[locale];
@@ -378,201 +375,192 @@ export function TeamAssembleSheet({
       : teamStatus === QuestTeamStatus.TEAM_REJECTED
         ? messages.teamRejected
         : messages.teamSubmitted;
-  const sheetContent =
-    loading || surfaceState === "loading" ? (
-      <TeamAssembleLoadingState label={messages.loading} />
-    ) : surfaceState === "error" || error ? (
+  if (loading || surfaceState === "loading") {
+    return <TeamAssembleLoadingState label={messages.loading} />;
+  }
+  if (surfaceState === "error" || error) {
+    return (
       <TeamAssembleErrorState
         message={error ?? messages.errorTitle}
         onRetry={onRetry}
         retryLabel={messages.retry}
       />
-    ) : !team ? (
-      <ScrollView
-        className={styles.sheetScroll}
-        contentContainerClassName={styles.sheetContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <TeamAssembleEmptyState
-          createLabel={messages.createTeam}
-          description={messages.noTeamDescription}
-          onCreateTeam={onCreateTeam}
-          title={messages.noTeamTitle}
-        />
-        <TeamAssembleJoinTeamPanel
-          locale={locale}
-          onJoinTeam={(teamId, code) => onJoinTeam?.(teamId, code)}
-          submitting={submitting}
-          teams={joinableTeams ?? []}
-        />
-      </ScrollView>
-    ) : (
-      <ScrollView
-        className={styles.sheetScroll}
-        contentContainerClassName={styles.sheetContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        testID="team-assemble-scroll"
-      >
-        {isLocked ? (
-          <TeamAssembleLockedState
-            description={messages.lockedDescription}
-            rejectedLabel={messages.teamRejected}
-            selectedLabel={messages.teamSelected}
-            status={teamStatus}
-            submittedTitle={messages.submittedTitle}
-          />
-        ) : null}
-        {canonical && teamStatus === "TEAM_FORMING" ? (
-          <TeamAssembleJoinCodePanel
-            canRegenerateJoinCode={canRegenerateJoinCode}
-            code={code}
-            codeExpiry={codeExpiry}
-            inputCode={inputCode}
-            isLeader={isLeader}
-            locale={locale}
-            onInputCodeChange={(value) => {
-              if (joinCodeInput === undefined) setInternalJoinCode(value);
-              onJoinCodeInputChange?.(value);
-            }}
-            onJoinTeam={
-              onJoinTeam ? (code) => onJoinTeam(team.id, code) : undefined
-            }
-            onRegenerateJoinCode={onRegenerateJoinCode}
-            teamId={team.id}
-            viewerIsMember={viewerIsMember}
-          />
-        ) : null}
-        {canRenameTeam ? (
-          <TeamAssembleNameEditor
-            currentName={teamName ?? canonicalTeam?.name ?? ""}
-            locale={locale}
-            onChange={setTeamNameDraft}
-            onSave={renameTeam}
-            value={teamNameDraft}
-          />
-        ) : null}
-        <TeamAssembleRoster
-          acceptedLabel={messages.invitationAccepted}
-          canonical={canonical}
-          canLeaveTeam={canLeaveTeam}
-          canRemoveMember={canRemoveMember}
-          helper={
-            canonical
-              ? locale === "th"
-                ? `ต้องมีสมาชิกครบ ${requiredHeadcount} คนจึงจะส่งทีมได้`
-                : `Add exactly ${requiredHeadcount} members before submitting.`
-              : messages.partialRosterHint
-          }
-          isLeader={isLeader}
-          isLocked={isLocked}
-          leaderLabel={messages.leader}
-          leaveLabel={leaveLabel}
-          memberLabel={messages.member}
-          members={acceptedMembers}
-          onLeaveTeam={
-            onLeaveTeam && team ? () => onLeaveTeam(team.id) : undefined
-          }
-          onRemoveMember={
-            onRemoveMember && team
-              ? (memberId) => onRemoveMember(team.id, memberId)
-              : undefined
-          }
-          removeLabel={removeLabel}
-          rosterCountLabel={messages.rosterCount(
-            acceptedMembers.length,
-            requiredHeadcount
-          )}
-          rosterLabel={messages.roster}
-          teamStatusLabel={teamStatusLabel}
-          viewerId={viewerId}
-        />
-        {pendingInvitations.length > 0 ? (
-          <TeamAssembleInvitations
-            canRespond={canRespondToInvitations}
-            directoryNames={directoryNames}
-            invitations={pendingInvitations}
-            locale={locale}
-            messages={messages}
-            onRespond={invitationResponder}
-            title={messages.pendingInvitation}
-            viewerId={viewerId}
-          />
-        ) : null}
-        {!isLocked && !isReviewing && !canonical ? (
-          <TeamAssembleMemberPicker
-            acceptedCount={acceptedMembers.length}
-            eligibleMemberCount={eligibleMembers.length}
-            memberId={memberId}
-            members={visibleMembers}
-            messages={messages}
-            onInvite={inviteMembers}
-            onQueryChange={setQuery}
-            onToggle={toggleMember}
-            query={query}
-            requiredHeadcount={requiredHeadcount}
-            selectedIds={selectedIds}
-          />
-        ) : null}
-        {canonical && isLeader && !isLocked ? (
-          <TeamAssembleProposalPanel
-            filePickError={filePickError}
-            files={proposalFiles}
-            isPickingFile={isPickingFile}
-            locale={locale}
-            onPickFiles={handlePickFiles}
-            onRemoveFile={handleRemoveFile}
-            onTextChange={setProposalText}
-            text={proposalText}
-          />
-        ) : null}
-        {!isLocked && (!canonical || isLeader) ? (
-          <TeamAssembleSubmissionPanel
-            acceptedCount={acceptedMembers.length}
-            canonical={canonical}
-            files={proposalFiles}
-            isReviewing={isReviewing}
-            locale={locale}
-            messages={{
-              attachedFiles: locale === "th" ? "ไฟล์แนบ" : "Attached files",
-              cancel: messages.cancel,
-              confirmSubmit: messages.confirmSubmit,
-              partialRosterHint: messages.partialRosterHint,
-              proposal: locale === "th" ? "ข้อเสนอ" : "Proposal",
-              reviewDescription: messages.reviewDescription,
-              reviewRoster: messages.reviewRoster,
-              reviewTitle: messages.reviewTitle,
-              roster: messages.roster,
-              rosterCount: messages.rosterCount,
-              submittingTeam: messages.submittingTeam,
-              teamSubmissionUnavailable: "Team submission unavailable",
-            }}
-            onReviewChange={setReview}
-            onSubmit={submit}
-            requiredHeadcount={requiredHeadcount}
-            submissionBlocker={submissionBlocker}
-            submissionReady={submissionReady}
-            submitting={submitting}
-            text={proposalText}
-          />
-        ) : null}
-      </ScrollView>
     );
+  }
 
   return (
-    <BottomSheet
-      bottomInset={bottomInset}
-      closeLabel={messages.close}
-      onClose={onClose}
-      subtitle={messages.teamSubtitle}
-      testID="team-assemble-sheet"
-      title={messages.teamTitle}
-      visible={visible}
+    <ScrollView
+      className={styles.sheetScroll}
+      contentContainerClassName={styles.sheetContent}
+      contentContainerStyle={{ paddingBottom: bottomInset + spacing.md }}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+      testID="team-assemble-scroll"
     >
-      {sheetContent}
-    </BottomSheet>
+      <Text className={styles.sheetSubtitle}>{messages.teamSubtitle}</Text>
+      {!team ? (
+        <>
+          <TeamAssembleEmptyState
+            createLabel={messages.createTeam}
+            description={messages.noTeamDescription}
+            onCreateTeam={onCreateTeam}
+            title={messages.noTeamTitle}
+          />
+          <TeamAssembleJoinTeamPanel
+            locale={locale}
+            onJoinTeam={(teamId, code) => onJoinTeam?.(teamId, code)}
+            submitting={submitting}
+            teams={joinableTeams ?? []}
+          />
+        </>
+      ) : (
+        <>
+          {isLocked ? (
+            <TeamAssembleLockedState
+              description={messages.lockedDescription}
+              rejectedLabel={messages.teamRejected}
+              selectedLabel={messages.teamSelected}
+              status={teamStatus}
+              submittedTitle={messages.submittedTitle}
+            />
+          ) : null}
+          {canonical && teamStatus === "TEAM_FORMING" ? (
+            <TeamAssembleJoinCodePanel
+              canRegenerateJoinCode={canRegenerateJoinCode}
+              code={code}
+              codeExpiry={codeExpiry}
+              inputCode={inputCode}
+              isLeader={isLeader}
+              locale={locale}
+              onInputCodeChange={(value) => {
+                if (joinCodeInput === undefined) setInternalJoinCode(value);
+                onJoinCodeInputChange?.(value);
+              }}
+              onJoinTeam={
+                onJoinTeam ? (code) => onJoinTeam(team.id, code) : undefined
+              }
+              onRegenerateJoinCode={onRegenerateJoinCode}
+              teamId={team.id}
+              viewerIsMember={viewerIsMember}
+            />
+          ) : null}
+          {canRenameTeam ? (
+            <TeamAssembleNameEditor
+              currentName={teamName ?? canonicalTeam?.name ?? ""}
+              locale={locale}
+              onChange={setTeamNameDraft}
+              onSave={renameTeam}
+              value={teamNameDraft}
+            />
+          ) : null}
+          <TeamAssembleRoster
+            acceptedLabel={messages.invitationAccepted}
+            canonical={canonical}
+            canLeaveTeam={canLeaveTeam}
+            canRemoveMember={canRemoveMember}
+            helper={
+              canonical
+                ? locale === "th"
+                  ? `ต้องมีสมาชิกครบ ${requiredHeadcount} คนจึงจะส่งทีมได้`
+                  : `Add exactly ${requiredHeadcount} members before submitting.`
+                : messages.partialRosterHint
+            }
+            isLeader={isLeader}
+            isLocked={isLocked}
+            leaderLabel={messages.leader}
+            leaveLabel={leaveLabel}
+            memberLabel={messages.member}
+            members={acceptedMembers}
+            onLeaveTeam={
+              onLeaveTeam && team ? () => onLeaveTeam(team.id) : undefined
+            }
+            onRemoveMember={
+              onRemoveMember && team
+                ? (memberId) => onRemoveMember(team.id, memberId)
+                : undefined
+            }
+            removeLabel={removeLabel}
+            rosterCountLabel={messages.rosterCount(
+              acceptedMembers.length,
+              requiredHeadcount
+            )}
+            rosterLabel={messages.roster}
+            teamStatusLabel={teamStatusLabel}
+            viewerId={viewerId}
+          />
+          {pendingInvitations.length > 0 ? (
+            <TeamAssembleInvitations
+              canRespond={canRespondToInvitations}
+              directoryNames={directoryNames}
+              invitations={pendingInvitations}
+              locale={locale}
+              messages={messages}
+              onRespond={invitationResponder}
+              title={messages.pendingInvitation}
+              viewerId={viewerId}
+            />
+          ) : null}
+          {!isLocked && !isReviewing && !canonical ? (
+            <TeamAssembleMemberPicker
+              acceptedCount={acceptedMembers.length}
+              eligibleMemberCount={eligibleMembers.length}
+              memberId={memberId}
+              members={visibleMembers}
+              messages={messages}
+              onInvite={inviteMembers}
+              onQueryChange={setQuery}
+              onToggle={toggleMember}
+              query={query}
+              requiredHeadcount={requiredHeadcount}
+              selectedIds={selectedIds}
+            />
+          ) : null}
+          {canonical && isLeader && !isLocked ? (
+            <TeamAssembleProposalPanel
+              filePickError={filePickError}
+              files={proposalFiles}
+              isPickingFile={isPickingFile}
+              locale={locale}
+              onPickFiles={handlePickFiles}
+              onRemoveFile={handleRemoveFile}
+              onTextChange={setProposalText}
+              text={proposalText}
+            />
+          ) : null}
+          {!isLocked && (!canonical || isLeader) ? (
+            <TeamAssembleSubmissionPanel
+              acceptedCount={acceptedMembers.length}
+              canonical={canonical}
+              files={proposalFiles}
+              isReviewing={isReviewing}
+              locale={locale}
+              messages={{
+                attachedFiles: locale === "th" ? "ไฟล์แนบ" : "Attached files",
+                cancel: messages.cancel,
+                confirmSubmit: messages.confirmSubmit,
+                partialRosterHint: messages.partialRosterHint,
+                proposal: locale === "th" ? "ข้อเสนอ" : "Proposal",
+                reviewDescription: messages.reviewDescription,
+                reviewRoster: messages.reviewRoster,
+                reviewTitle: messages.reviewTitle,
+                roster: messages.roster,
+                rosterCount: messages.rosterCount,
+                submittingTeam: messages.submittingTeam,
+                teamSubmissionUnavailable: "Team submission unavailable",
+              }}
+              onReviewChange={setReview}
+              onSubmit={submit}
+              requiredHeadcount={requiredHeadcount}
+              submissionBlocker={submissionBlocker}
+              submissionReady={submissionReady}
+              submitting={submitting}
+              text={proposalText}
+            />
+          ) : null}
+        </>
+      )}
+    </ScrollView>
   );
 }
 
-TeamAssembleSheet.displayName = "TeamAssembleSheet";
+TeamAssembleView.displayName = "TeamAssembleView";

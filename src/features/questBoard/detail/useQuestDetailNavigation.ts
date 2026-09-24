@@ -5,6 +5,7 @@ import { Alert, BackHandler } from "react-native";
 import { getChatRouteParams } from "@/features/chat/chatData";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 import type { QuestBoardQuest } from "../domain/types";
+import type { BoardPreviewState } from "../fixtures/questBoardHarness";
 import type { QuestDetailProjection } from "./questDetailProjection";
 import type { QuestDetailReadSource } from "./useQuestDetailReadSource";
 
@@ -16,12 +17,16 @@ interface QuestDetailNavigationParams {
   messages: QuestBoardMessages;
   canMessageOwner: boolean;
   createCandidateInquiry: (questId: string) => Promise<{ id: string }>;
+  /** Carried to the Quest Team route so it reads the same source and viewer. */
+  previewState?: BoardPreviewState;
+  studentId?: string;
 }
 
 export interface QuestDetailNavigation {
   handleBack: () => void;
   openParticipantProfile: (participantId: string) => void;
   openWorkHub: () => void;
+  openTeam: () => void;
   openEditPost: () => void;
   openReview: () => void;
   openReportQuest: () => void;
@@ -36,6 +41,8 @@ export function useQuestDetailNavigation({
   messages,
   canMessageOwner,
   createCandidateInquiry,
+  previewState,
+  studentId,
 }: QuestDetailNavigationParams): QuestDetailNavigation {
   const router = useRouter();
   const handleBack = useCallback(() => {
@@ -69,6 +76,17 @@ export function useQuestDetailNavigation({
   const openWorkHub = useCallback(() => {
     router.push("/my-quests");
   }, [router]);
+  const openTeam = useCallback(() => {
+    if (!quest) return;
+    router.push({
+      pathname: "/quest/[id]/team",
+      params: {
+        id: quest.id,
+        ...(previewState ? { preview: previewState } : {}),
+        ...(studentId ? { studentId } : {}),
+      },
+    });
+  }, [previewState, quest, router, studentId]);
   const openEditPost = useCallback(() => {
     if (!quest) return;
     router.push({
@@ -147,6 +165,7 @@ export function useQuestDetailNavigation({
     handleBack,
     openParticipantProfile,
     openWorkHub,
+    openTeam,
     openEditPost,
     openReview,
     openReportQuest,
