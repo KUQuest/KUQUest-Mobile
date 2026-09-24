@@ -2,10 +2,7 @@ import { useCallback, useState } from "react";
 import { Alert } from "react-native";
 import { useRouter } from "expo-router";
 
-import {
-  createQuestIdempotencyKey,
-  type QuestV2ProofReviewPayload,
-} from "@/api/QuestApi";
+import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { getChatRouteParams } from "@/features/chat/chatData";
 import { useLocale } from "@/features/preferences/localeStore";
@@ -14,7 +11,6 @@ import {
   useCreateEditRequestMutation,
   useDecideUnderfilledMutation,
   useLiveQuestSnapshotQuery,
-  useReviewProofMutation,
   useSelectApplicationMutation,
   useSelectCandidateTeamMutation,
 } from "@/features/questBoard/api/questBoardQueries";
@@ -43,7 +39,6 @@ export function useHirerQuestManageFeature(questId?: string) {
   const [editRequestId, setEditRequestId] = useState<string>();
   const [conditionEditSubmitting, setConditionEditSubmitting] = useState(false);
   const [conditionEditError, setConditionEditError] = useState<string>();
-  const [proofReviewOpen, setProofReviewOpen] = useState(false);
   const snapshotQuery = useLiveQuestSnapshotQuery(
     questId ?? null,
     viewerId || null,
@@ -53,7 +48,6 @@ export function useHirerQuestManageFeature(questId?: string) {
   const selectCandidateTeamMutation = useSelectCandidateTeamMutation();
   const decideUnderfilledMutation = useDecideUnderfilledMutation();
   const cancelQuestMutation = useCancelQuestMutation();
-  const reviewProofMutation = useReviewProofMutation();
   const createEditRequestMutation = useCreateEditRequestMutation();
   const snapshot = snapshotQuery.data;
   const refetchSnapshot = snapshotQuery.refetch;
@@ -179,23 +173,10 @@ export function useHirerQuestManageFeature(questId?: string) {
   const reviewProof = () => {
     if (!snapshot || !pendingProof || !snapshot.capabilities.canReviewProof)
       return;
-    setProofReviewOpen(true);
-  };
-  const submitProofReview = (
-    payload: QuestV2ProofReviewPayload
-  ): Promise<boolean> => {
-    if (!snapshot || !pendingProof || !snapshot.capabilities.canReviewProof) {
-      return Promise.resolve(false);
-    }
-    return viewerCommand((key) =>
-      reviewProofMutation.mutateAsync({
-        questId: snapshot.quest.id,
-        proofSubmissionId: pendingProof.id,
-        payload,
-        viewerId,
-        idempotencyKey: key,
-      })
-    );
+    router.push({
+      pathname: "/quest/[id]/proof-review",
+      params: { id: snapshot.quest.id },
+    });
   };
   const submitConditionEdit = (items: string[]) => {
     if (!snapshot) return;
@@ -257,15 +238,12 @@ export function useHirerQuestManageFeature(questId?: string) {
     setConditionEditOpen,
     conditionEditSubmitting,
     conditionEditError,
-    proofReviewOpen,
-    setProofReviewOpen,
     decideUnderfilled,
     openChat,
     selectApplication,
     selectTeam,
     cancel,
     reviewProof,
-    submitProofReview,
     submitConditionEdit,
   };
 }

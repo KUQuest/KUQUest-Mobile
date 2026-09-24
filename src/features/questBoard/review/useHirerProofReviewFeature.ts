@@ -1,3 +1,5 @@
+import { useMemo, useState } from "react";
+
 import {
   createQuestIdempotencyKey,
   type QuestV2ProofReviewPayload,
@@ -10,27 +12,36 @@ import {
 } from "@/features/questBoard/api/questBoardQueries";
 
 import { QuestProofStatus } from "../domain/types";
+import { projectProofReviewRows } from "./proofReviewRows";
 
 export function useHirerProofReviewFeature(questId?: string) {
   const viewerId = useSessionQuery().data?.user.id || null;
   const snapshotQuery = useLiveQuestSnapshotQuery(questId ?? null, viewerId);
   const reviewProofMutation = useReviewProofMutation();
   const snapshot = snapshotQuery.data;
-  const pendingProof = snapshot?.capabilities.canReviewProof
-    ? snapshot.proofs.find(
-        (proof) => proof.status === QuestProofStatus.PROOF_PENDING
-      )
+  const [selectedProofId, setSelectedProofId] = useState<string | null>(null);
+
+  const rows = useMemo(
+    () => (snapshot ? projectProofReviewRows(snapshot) : []),
+    [snapshot]
+  );
+  const pendingCount = rows.filter(
+    (row) => row.proof?.status === QuestProofStatus.PROOF_PENDING
+  ).length;
+  const canReview = Boolean(snapshot?.capabilities.canReviewProof);
+  const selectedProof = canReview
+    ? snapshot?.proofs.find((proof) => proof.id === selectedProofId)
     : undefined;
   const proofFileLinksQuery = useProofFileLinksQuery(
     questId ?? null,
     viewerId,
-    pendingProof
+    selectedProof
   );
   const proofForReview =
-    pendingProof && proofFileLinksQuery.isSuccess
+    selectedProof && proofFileLinksQuery.isSuccess
       ? {
-          ...pendingProof,
-          files: pendingProof.files.map((file) => ({
+          ...selectedProof,
+          files: selectedProof.files.map((file) => ({
             ...file,
             url:
               proofFileLinksQuery.data.find(
@@ -41,28 +52,33 @@ export function useHirerProofReviewFeature(questId?: string) {
       : undefined;
 
   const review = async (payload: QuestV2ProofReviewPayload) => {
-    if (!questId || !pendingProof) return false;
+    if (!questId || !selectedProof) return false;
     try {
       await reviewProofMutation.mutateAsync({
         questId,
-        proofSubmissionId: pendingProof.id,
+        proofSubmissionId: selectedProof.id,
         payload,
         viewerId: viewerId ?? undefined,
         idempotencyKey: createQuestIdempotencyKey(),
       });
       return true;
     } catch (caught) {
-      // A conflict means the Server state moved; reload before the retry.
+      // Another device may have decided first; show the Server's current state.
       await snapshotQuery.refetch();
       throw caught;
     }
   };
 
   return {
-    pendingProof,
+    canReview,
+    closeProof: () => setSelectedProofId(null),
+    openProof: setSelectedProofId,
+    pendingCount,
     proofFileLinksQuery,
     proofForReview,
     review,
+    rows,
+    selectedProof,
     snapshot,
     snapshotQuery,
   };

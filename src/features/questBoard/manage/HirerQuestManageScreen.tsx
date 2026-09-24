@@ -23,7 +23,6 @@ import { CandidateReviewSheet } from "@/features/questBoard/teamAssemble/compone
 import { PartialGroupStartConsentSheet } from "@/features/questBoard/teamAssemble/components/PartialGroupStartConsentSheet";
 import { QuestConditionEditModal } from "@/features/questBoard/shared/components/QuestConditionEditModal";
 import { QuestConditionEditStatusCard } from "@/features/questBoard/shared/components/QuestConditionEditStatusCard";
-import { ProofReviewModal } from "@/features/questBoard/review/components/ProofReviewModal";
 import { myQuestMessages } from "@/locales/myQuestMessages";
 import { questNextActionLabels } from "@/locales/questStatusLabels";
 import { questWorkMessages } from "@/locales/questWorkMessages";
@@ -178,15 +177,12 @@ export default function HirerQuestManageScreen({
     setConditionEditOpen,
     conditionEditSubmitting,
     conditionEditError,
-    proofReviewOpen,
-    setProofReviewOpen,
     decideUnderfilled,
     openChat,
     selectApplication,
     selectTeam,
     cancel,
     reviewProof,
-    submitProofReview,
     submitConditionEdit,
   } = view;
   const topBar = (
@@ -473,13 +469,6 @@ export default function HirerQuestManageScreen({
         onSubmit={submitConditionEdit}
         submitting={conditionEditSubmitting}
         error={conditionEditError}
-      />
-      <ProofReviewModal
-        dueAt={snapshot.dueAt}
-        onClose={() => setProofReviewOpen(false)}
-        onReview={submitProofReview}
-        proof={pendingProof}
-        visible={proofReviewOpen && Boolean(pendingProof)}
       />
     </ScreenLayout>
   );

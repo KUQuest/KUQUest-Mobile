@@ -1,20 +1,29 @@
 import { useRouter } from "expo-router";
 
+import {
+  questV2ModeSchema,
+  questV2ParticipationSchema,
+} from "@/api/questV2Contracts";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
+import { Button } from "@/components/ui/Button";
 import { StateView } from "@/components/ui/StateView";
 import { TopBar } from "@/components/ui/TopBar";
 import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
-import { Text, View } from "@/tw";
+import { ScrollView, Text, View } from "@/tw";
 
 import { useHirerProofReviewFeature } from "./useHirerProofReviewFeature";
-import { ProofReviewPanel } from "./components/ProofReviewPanel";
+import { ProofReviewModal } from "./components/ProofReviewModal";
+import { ProofReviewSubmissionCard } from "./components/ProofReviewSubmissionCard";
 
 export interface HirerProofReviewScreenProps {
   questId?: string;
 }
 
-/** Dedicated page where the owning Hirer decides a pending Proof. */
+/**
+ * Hirer review list for every Proof Submission on a Quest. Each pending
+ * submission opens the review Popup; decisions are made one at a time.
+ */
 export default function HirerProofReviewScreen({
   questId,
 }: HirerProofReviewScreenProps) {
@@ -22,13 +31,25 @@ export default function HirerProofReviewScreen({
   const { locale } = useLocale();
   const messages = questBoardMessages[locale];
   const {
-    pendingProof,
+    canReview,
+    closeProof,
+    openProof,
+    pendingCount,
     proofFileLinksQuery,
     proofForReview,
     review,
+    rows,
+    selectedProof,
     snapshot,
     snapshotQuery,
   } = useHirerProofReviewFeature(questId);
+
+  const modeHint =
+    snapshot?.participation === questV2ParticipationSchema.enum.GROUP
+      ? snapshot.mode === questV2ModeSchema.enum.CANDIDATE
+        ? messages.proofReviewTeamHint
+        : messages.proofReviewGroupHint
+      : messages.proofReviewSingleHint;
 
   return (
     <ScreenLayout className="flex-1 bg-ku-background">
@@ -49,34 +70,7 @@ export default function HirerProofReviewScreen({
           title={messages.errorTitle}
           variant="error"
         />
-      ) : pendingProof ? (
-        <View className="flex-1" testID="hirer-proof-review-screen">
-          <Text className="px-ku-lg pt-ku-md font-ku-bold text-ku-body text-ku-text-strong">
-            {snapshot.quest.title}
-          </Text>
-          <View className="flex-1 px-ku-lg">
-            {proofFileLinksQuery.isPending ? (
-              <Text className="p-ku-lg">{messages.loading}</Text>
-            ) : proofFileLinksQuery.isError ? (
-              <StateView
-                actionLabel={messages.retry}
-                description={messages.errorDescription}
-                onAction={() => void proofFileLinksQuery.refetch()}
-                title={messages.errorTitle}
-                variant="error"
-              />
-            ) : proofForReview ? (
-              <ProofReviewPanel
-                dueAt={snapshot.dueAt}
-                key={proofForReview.id}
-                onDone={() => router.back()}
-                onReview={review}
-                proof={proofForReview}
-              />
-            ) : null}
-          </View>
-        </View>
-      ) : (
+      ) : rows.length === 0 ? (
         <StateView
           actionLabel={messages.back}
           description={messages.proofReviewNothingPending}
@@ -84,7 +78,68 @@ export default function HirerProofReviewScreen({
           title={messages.proofReviewTitle}
           variant="empty"
         />
+      ) : (
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="gap-ku-md px-ku-lg pt-ku-md pb-ku-xl"
+          testID="hirer-proof-review-screen"
+        >
+          <View className="gap-ku-xs">
+            <Text
+              accessibilityRole="header"
+              className="font-ku-bold text-ku-body text-ku-text-strong"
+            >
+              {snapshot.quest.title}
+            </Text>
+            <Text className="font-ku-regular text-ku-body-small text-ku-text-secondary">
+              {modeHint}
+            </Text>
+            <Text
+              accessibilityLiveRegion="polite"
+              className="font-ku-semibold text-ku-body-small text-ku-text-strong"
+              testID="proof-review-pending-count"
+            >
+              {messages.proofReviewPendingCount(pendingCount)}
+            </Text>
+          </View>
+          {selectedProof && proofFileLinksQuery.isError ? (
+            <View className="gap-ku-sm" testID="proof-review-links-error">
+              <Text
+                accessibilityRole="alert"
+                className="font-ku-regular text-ku-body-small text-ku-danger-dark"
+              >
+                {messages.errorDescription}
+              </Text>
+              <Button
+                onPress={() => void proofFileLinksQuery.refetch()}
+                variant="secondary"
+              >
+                {messages.retry}
+              </Button>
+            </View>
+          ) : null}
+          {rows.map((row) => (
+            <ProofReviewSubmissionCard
+              canReview={canReview}
+              key={row.key}
+              onReview={openProof}
+              opening={
+                Boolean(row.proof) &&
+                row.proof?.id === selectedProof?.id &&
+                proofFileLinksQuery.isPending
+              }
+              row={row}
+            />
+          ))}
+        </ScrollView>
       )}
+      <ProofReviewModal
+        dueAt={snapshot?.dueAt}
+        onClose={closeProof}
+        onReview={review}
+        proof={proofForReview}
+        visible={Boolean(proofForReview)}
+      />
     </ScreenLayout>
   );
 }
