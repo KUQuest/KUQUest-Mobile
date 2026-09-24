@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Share } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import {
   type QuestInvitation,
@@ -27,6 +28,7 @@ import styles from "../groupQuestStyles";
 import { spacing } from "@/theme/spacing";
 import { ScrollView, Text } from "@/tw";
 import type { ProposalFileItem, TeamDirectoryMember } from "../types";
+import { createTeamInviteLink } from "../teamInvite";
 
 export type TeamAssembleSurfaceState =
   "ready" | "loading" | "error" | "empty" | "submitted";
@@ -37,7 +39,8 @@ export interface TeamAssembleViewProps {
   eligibleMembers?: readonly TeamDirectoryMember[];
   requestedHeadcount?: number;
   viewerId?: string;
-  joinableTeams?: readonly QuestV2Team[];
+  /** Team invite link opened or pasted by a Prospective Worker. */
+  initialInvite?: string;
   /** Canonical v2 join code override; forming teams expose their server value by default. */
   joinCode?: string | null;
   joinCodeExpiresAt?: string | null;
@@ -64,7 +67,7 @@ export interface TeamAssembleViewProps {
   onSelectedMemberIdsChange?: (memberIds: string[]) => void;
   reviewing?: boolean;
   onReviewChange?: (reviewing: boolean) => void;
-  onCreateTeam?: () => void;
+  onCreateTeam?: (name: string) => void;
   onInviteMembers?: (memberIds: string[]) => void;
   onInviteMember?: (memberId: string) => void;
   onRespondInvitation?: (invitationId: string, accept: boolean) => void;
@@ -119,7 +122,7 @@ export function TeamAssembleView({
   eligibleMembers = [],
   requestedHeadcount,
   viewerId,
-  joinableTeams,
+  initialInvite,
   surfaceState = "ready",
   joinCode,
   joinCodeExpiresAt,
@@ -266,6 +269,20 @@ export function TeamAssembleView({
   const code = joinCode ?? canonicalTeam?.joinCode ?? null;
   const codeExpiry =
     joinCodeExpiresAt ?? canonicalTeam?.joinCodeExpiresAt ?? null;
+  const shareInvite =
+    canonicalTeam && code
+      ? () =>
+          void Share.share({
+            message: messages.teamInviteMessage(
+              teamName ?? canonicalTeam.name,
+              createTeamInviteLink(
+                canonicalTeam.questId,
+                canonicalTeam.id,
+                code
+              )
+            ),
+          })
+      : undefined;
   const canRenameTeam = Boolean(
     canonical &&
     teamStatus === QuestTeamStatus.TEAM_FORMING &&
@@ -401,17 +418,21 @@ export function TeamAssembleView({
       {!team ? (
         <>
           <TeamAssembleEmptyState
+            busy={submitting}
             createLabel={messages.createTeam}
             description={messages.noTeamDescription}
             onCreateTeam={onCreateTeam}
+            teamNameLabel={messages.teamNameLabel}
             title={messages.noTeamTitle}
           />
-          <TeamAssembleJoinTeamPanel
-            locale={locale}
-            onJoinTeam={(teamId, code) => onJoinTeam?.(teamId, code)}
-            submitting={submitting}
-            teams={joinableTeams ?? []}
-          />
+          {onJoinTeam ? (
+            <TeamAssembleJoinTeamPanel
+              initialInvite={initialInvite}
+              locale={locale}
+              onJoinTeam={onJoinTeam}
+              submitting={submitting}
+            />
+          ) : null}
         </>
       ) : (
         <>
@@ -440,6 +461,7 @@ export function TeamAssembleView({
                 onJoinTeam ? (code) => onJoinTeam(team.id, code) : undefined
               }
               onRegenerateJoinCode={onRegenerateJoinCode}
+              onShareInvite={shareInvite}
               teamId={team.id}
               viewerIsMember={viewerIsMember}
             />

@@ -39,7 +39,7 @@ export interface QuestDetailLiveActions {
   openUnderfilled: () => Promise<unknown>;
   decideUnderfilled: (decision: "PROCEED" | "CANCEL") => Promise<unknown>;
   respondUnderfilled: (decision: "ACCEPT" | "DECLINE") => Promise<unknown>;
-  createTeam: () => Promise<unknown>;
+  createTeam: (name: string) => Promise<unknown>;
   joinTeam: (teamId: string, joinCode: string) => Promise<unknown>;
   leaveTeam: (teamId: string) => Promise<unknown>;
   removeTeamMember: (teamId: string, memberId: string) => Promise<unknown>;

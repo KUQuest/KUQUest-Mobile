@@ -1,25 +1,35 @@
-import React from "react";
+import React, { useState } from "react";
 
 import { Plus, UsersRound } from "lucide-react-native";
 
-import { Pressable, Text, View } from "@/tw";
+import { Pressable, Text, TextInput, View } from "@/tw";
+import { cn } from "@/tw/cn";
 import { colors } from "@/theme/colors";
 
 import styles from "../groupQuestStyles";
+
+/** Candidate Team names are 1–100 characters on the Server. */
+const TEAM_NAME_MAX_LENGTH = 100;
 
 export interface TeamAssembleEmptyStateProps {
   title: string;
   description: string;
   createLabel: string;
-  onCreateTeam?: () => void;
+  teamNameLabel?: string;
+  busy?: boolean;
+  onCreateTeam?: (name: string) => void;
 }
 
 export function TeamAssembleEmptyState({
   title,
   description,
   createLabel,
+  teamNameLabel,
+  busy = false,
   onCreateTeam,
 }: TeamAssembleEmptyStateProps) {
+  const [name, setName] = useState("");
+  const disabled = busy || !name.trim();
   return (
     <View className={styles.emptyState} testID="team-assemble-empty">
       <View className={styles.emptyIcon}>
@@ -28,16 +38,36 @@ export function TeamAssembleEmptyState({
       <Text className={styles.emptyTitle}>{title}</Text>
       <Text className={styles.emptyText}>{description}</Text>
       {onCreateTeam ? (
-        <Pressable
-          accessibilityLabel={createLabel}
-          accessibilityRole="button"
-          className={styles.retryButton}
-          onPress={onCreateTeam}
-          testID="team-assemble-create"
-        >
-          <Plus color={colors.onPrimary} size={18} strokeWidth={2.5} />
-          <Text className={styles.retryButtonText}>{createLabel}</Text>
-        </Pressable>
+        <>
+          <View className={cn(styles.searchField, "self-stretch")}>
+            <TextInput
+              accessibilityLabel={teamNameLabel}
+              className={styles.searchInput}
+              maxLength={TEAM_NAME_MAX_LENGTH}
+              onChangeText={setName}
+              onSubmitEditing={() => {
+                if (!disabled) onCreateTeam(name.trim());
+              }}
+              placeholder={teamNameLabel}
+              placeholderTextColor={colors.textFaint}
+              returnKeyType="done"
+              testID="team-assemble-name-input"
+              value={name}
+            />
+          </View>
+          <Pressable
+            accessibilityLabel={createLabel}
+            accessibilityRole="button"
+            accessibilityState={{ disabled, busy }}
+            className={cn(styles.retryButton, disabled && "opacity-60")}
+            disabled={disabled}
+            onPress={() => onCreateTeam(name.trim())}
+            testID="team-assemble-create"
+          >
+            <Plus color={colors.onPrimary} size={18} strokeWidth={2.5} />
+            <Text className={styles.retryButtonText}>{createLabel}</Text>
+          </Pressable>
+        </>
       ) : null}
     </View>
   );

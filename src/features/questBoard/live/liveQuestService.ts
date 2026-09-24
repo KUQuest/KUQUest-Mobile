@@ -293,6 +293,38 @@ function ownTeam(teams: QuestV2Team[], viewerId: string): QuestV2Team | null {
   );
 }
 
+/**
+ * Candidate Team reads return `joinCode: null`; plaintext arrives only in the
+ * create and regenerate responses. Keep the last issued code per Team so the
+ * Team Leader can still share it after the post-command refetch.
+ */
+const issuedJoinCodes = new Map<
+  string,
+  { joinCode: string; expiresAt: string | null }
+>();
+
+function rememberJoinCode(team: QuestV2Team): QuestV2Team {
+  if (team.joinCode) {
+    issuedJoinCodes.set(team.id, {
+      joinCode: team.joinCode,
+      expiresAt: team.joinCodeExpiresAt,
+    });
+  }
+  return team;
+}
+
+function withIssuedJoinCode(team: QuestV2Team): QuestV2Team {
+  const issued = issuedJoinCodes.get(team.id);
+  const sameCode =
+    issued !== undefined &&
+    issued.expiresAt !== null &&
+    team.joinCodeExpiresAt !== null &&
+    Date.parse(issued.expiresAt) === Date.parse(team.joinCodeExpiresAt);
+  return team.joinCode === null && sameCode
+    ? { ...team, joinCode: issued.joinCode }
+    : team;
+}
+
 function deriveActor(
   routeActor: LiveQuestActor,
   assignment: LiveQuestAssignment | null,
@@ -319,7 +351,6 @@ function deriveCapabilities(input: {
   assignment: LiveQuestAssignment | null;
   application: QuestV2Application | null;
   team: QuestV2Team | null;
-  teams: QuestV2Team[];
   underfilled: QuestV2Underfilled | null;
   editRequest: QuestV2EditRequest | null;
   proofs: QuestV2ProofSubmission[];
@@ -337,7 +368,6 @@ function deriveCapabilities(input: {
     assignment,
     application,
     team,
-    teams,
     underfilled,
     editRequest,
     proofs,
@@ -373,13 +403,6 @@ function deriveCapabilities(input: {
     ownProof.status === null &&
     ownProof.submittedAt === null;
   const hasLockedProof = ownProof !== undefined && !hasEditableProofDraft;
-  const hasJoinableTeam = teams.some((candidateTeam) => {
-    return (
-      candidateTeam.state === "TEAM_FORMING" &&
-      candidateTeam.members.length < candidateTeam.headcount &&
-      !candidateTeam.members.some((member) => member.memberId === viewerId)
-    );
-  });
   const hasCapacity =
     assignments.filter(
       (candidate) => candidate.state !== "ASSIGNMENT_CANCELLED"
@@ -410,15 +433,17 @@ function deriveCapabilities(input: {
       mode === "CANDIDATE" &&
       participation === "GROUP" &&
       open &&
+      beforeStartTime &&
       team === null,
+    // Non-members cannot list other Teams; the Join Code invite carries the
+    // Team id, so joining does not depend on a listed joinable Team.
     canJoinTeam:
       isProspectiveWorker &&
       mode === "CANDIDATE" &&
       participation === "GROUP" &&
       open &&
       beforeStartTime &&
-      team === null &&
-      hasJoinableTeam,
+      team === null,
     canUpdateTeam:
       isProspectiveWorker &&
       team?.leaderId === viewerId &&
@@ -849,7 +874,8 @@ export class LiveQuestService {
         ? await this.loadParticipantProfiles(resolvedAssignments)
         : [];
     const application = ownApplication(applications, viewerId);
-    const team = ownTeam(teams, viewerId);
+    const listedTeam = ownTeam(teams, viewerId);
+    const team = listedTeam && withIssuedJoinCode(listedTeam);
     const actor = deriveActor(routeActor, assignment, application, team);
     const capabilities = deriveCapabilities({
       viewerId,
@@ -864,7 +890,6 @@ export class LiveQuestService {
       assignment,
       application,
       team,
-      teams,
       underfilled,
       editRequest,
       proofs,
@@ -1032,7 +1057,9 @@ export class LiveQuestService {
     payload: { name: string; headcount: number },
     idempotencyKey?: string
   ): Promise<QuestV2Team> {
-    return questApi.createCandidateTeam(questId, payload, idempotencyKey);
+    return rememberJoinCode(
+      await questApi.createCandidateTeam(questId, payload, idempotencyKey)
+    );
   }
 
   async listCandidateTeams(questId: string): Promise<QuestV2Team[]> {
@@ -1101,10 +1128,12 @@ export class LiveQuestService {
     teamId: string,
     idempotencyKey?: string
   ): Promise<QuestV2Team> {
-    return questApi.regenerateCandidateTeamJoinCode(
-      questId,
-      teamId,
-      idempotencyKey
+    return rememberJoinCode(
+      await questApi.regenerateCandidateTeamJoinCode(
+        questId,
+        teamId,
+        idempotencyKey
+      )
     );
   }
   async uploadCandidateTeamFile(

@@ -1,4 +1,5 @@
 import { liveQuestService } from "../liveQuestService";
+import { ApiError } from "@/api/ApiClient";
 import { questApi } from "@/api/QuestApi";
 import { chatApi } from "@/api/ChatApi";
 import type { CreateQuestV2Payload } from "@/api/QuestApi";
@@ -25,6 +26,7 @@ jest.mock("@/api/QuestApi", () => ({
     listQuestAssignments: jest.fn(),
     listApplications: jest.fn(),
     listCandidateTeams: jest.fn(),
+    createCandidateTeam: jest.fn(),
     getUnderfilled: jest.fn(),
     listProofSubmissions: jest.fn(),
   },
@@ -336,7 +338,7 @@ describe("LiveQuestService", () => {
       canWriteWorkChat: true,
     });
   });
-  it("blocks Candidate Team joins at or after startTime", async () => {
+  it("lets a non-member join by invite before startTime only", async () => {
     mockedQuestApi.getDetail.mockRejectedValue(new Error("not the Hirer"));
     mockedQuestApi.getPublicDetail.mockImplementation(
       async () =>
@@ -362,26 +364,10 @@ describe("LiveQuestService", () => {
     );
     mockedQuestApi.listQuestAssignments.mockResolvedValue([]);
     mockedQuestApi.listApplications.mockResolvedValue([]);
-    mockedQuestApi.listCandidateTeams.mockResolvedValue([
-      {
-        id: "team-1",
-        questId: "quest-join-1",
-        leaderId: "leader-1",
-        name: "Campus Gardeners",
-        headcount: 3,
-        state: "TEAM_FORMING",
-        joinCode: null,
-        joinCodeExpiresAt: null,
-        members: [
-          {
-            memberId: "leader-1",
-            joinedAt: new Date().toISOString(),
-          },
-        ],
-        submission: null,
-        createdAt: new Date().toISOString(),
-      },
-    ]);
+    // A non-member cannot list other Candidate Teams (Server: 404).
+    mockedQuestApi.listCandidateTeams.mockRejectedValue(
+      new ApiError(404, "QUEST_NOT_FOUND", "Quest not found")
+    );
     mockedQuestApi.getUnderfilled.mockResolvedValue(null as never);
     mockedQuestApi.listProofSubmissions.mockResolvedValue([]);
     mockedChatApi.listConversations.mockResolvedValue({
@@ -422,6 +408,78 @@ describe("LiveQuestService", () => {
       "worker-1"
     );
     expect(afterStart.capabilities.canJoinTeam).toBe(false);
+  });
+
+  it("keeps the issued Join Code for the Team Leader after the list read hides it", async () => {
+    const expiresAt = new Date(Date.now() + 86_400_000).toISOString();
+    const team = {
+      id: "team-code-1",
+      questId: "quest-code-1",
+      leaderId: "leader-1",
+      name: "Campus Gardeners",
+      headcount: 3,
+      state: "TEAM_FORMING" as const,
+      joinCode: null,
+      joinCodeExpiresAt: expiresAt,
+      members: [{ memberId: "leader-1", joinedAt: new Date().toISOString() }],
+      submission: null,
+      createdAt: new Date().toISOString(),
+    };
+    mockedQuestApi.createCandidateTeam.mockResolvedValue({
+      ...team,
+      joinCode: "ABCD2345",
+    });
+    mockedQuestApi.getDetail.mockRejectedValue(new Error("not the Hirer"));
+    mockedQuestApi.getPublicDetail.mockResolvedValue({
+      id: "quest-code-1",
+      title: "Team Quest",
+      description: "Form a team.",
+      condition: { items: [{ id: "condition-1", text: "Form a team." }] },
+      tag: null,
+      mode: "CANDIDATE",
+      participation: "GROUP",
+      state: "QUEST_OPEN",
+      questReward: 100,
+      headcount: 3,
+      activeWorkerCount: 0,
+      startTime: new Date(Date.now() + 60_000).toISOString(),
+      dueAt: null,
+      proofRequired: true,
+      hirerName: "Hirer Alice",
+      locations: [],
+      images: [],
+    } as never);
+    mockedQuestApi.listQuestAssignments.mockResolvedValue([]);
+    mockedQuestApi.listApplications.mockResolvedValue([]);
+    mockedQuestApi.getUnderfilled.mockResolvedValue(null as never);
+    mockedQuestApi.listProofSubmissions.mockResolvedValue([]);
+    mockedChatApi.listConversations.mockResolvedValue({
+      items: [],
+      nextCursor: null,
+    } as never);
+
+    await liveQuestService.createCandidateTeam("quest-code-1", {
+      name: "Campus Gardeners",
+      headcount: 3,
+    });
+    mockedQuestApi.listCandidateTeams.mockResolvedValue([team]);
+    const snapshot = await liveQuestService.getLiveSnapshot(
+      "quest-code-1",
+      "leader-1"
+    );
+    expect(snapshot.team?.joinCode).toBe("ABCD2345");
+
+    mockedQuestApi.listCandidateTeams.mockResolvedValue([
+      {
+        ...team,
+        joinCodeExpiresAt: new Date(Date.now() + 90_000_000).toISOString(),
+      },
+    ]);
+    const regeneratedElsewhere = await liveQuestService.getLiveSnapshot(
+      "quest-code-1",
+      "leader-1"
+    );
+    expect(regeneratedElsewhere.team?.joinCode).toBeNull();
   });
 
   it("rejects candidate application through questApi.rejectCandidateApplication", async () => {

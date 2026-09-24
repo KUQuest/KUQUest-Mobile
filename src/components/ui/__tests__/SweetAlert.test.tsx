@@ -1,7 +1,12 @@
-import { fireEvent, render } from "@testing-library/react-native";
+import { act, fireEvent, render } from "@testing-library/react-native";
 import React from "react";
 
-import { SweetAlert, SweetAlertVariant } from "../SweetAlert";
+import {
+  ErrorAlertHost,
+  SweetAlert,
+  SweetAlertVariant,
+  showErrorAlert,
+} from "../SweetAlert";
 
 describe("SweetAlert", () => {
   it("shows alert content and invokes close from the labeled action", async () => {
@@ -62,5 +67,17 @@ describe("SweetAlert", () => {
     );
 
     expect(view.queryByTestId("sweet-alert")).toBeNull();
+  });
+
+  it("shows raised errors app-wide with a localized fallback and dismisses them", async () => {
+    const view = await render(<ErrorAlertHost />);
+    expect(view.queryByTestId("error-alert")).toBeNull();
+
+    await act(async () => showErrorAlert("สร้างทีมไม่สำเร็จ", new Error("")));
+    expect(view.getByText("สร้างทีมไม่สำเร็จ")).toBeTruthy();
+    expect(view.getByText("เกิดข้อผิดพลาด โปรดลองอีกครั้ง")).toBeTruthy();
+
+    await fireEvent.press(view.getByRole("button", { name: "ตกลง" }));
+    expect(view.queryByTestId("error-alert")).toBeNull();
   });
 });

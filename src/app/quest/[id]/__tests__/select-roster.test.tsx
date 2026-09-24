@@ -2,6 +2,7 @@ import React from "react";
 import { Alert } from "react-native";
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
+import { ErrorAlertHost } from "@/components/ui/SweetAlert";
 
 import { studentApi } from "@/api/StudentApi";
 import { authService } from "@/features/auth/AuthService";
@@ -263,7 +264,10 @@ describe("SelectRosterRoute", () => {
     const alertSpy = jest.spyOn(Alert, "alert");
 
     const { getByTestId, getByText } = await renderWithQueryClient(
-      <SelectRosterRoute />
+      <>
+        <SelectRosterRoute />
+        <ErrorAlertHost />
+      </>
     );
 
     await waitFor(() => {
@@ -282,9 +286,8 @@ describe("SelectRosterRoute", () => {
         expect.any(String)
       );
       expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledTimes(2);
-      expect(alertSpy).toHaveBeenCalledTimes(2);
+      expect(getByText(failureMessage)).toBeTruthy();
     });
-    expect(alertSpy.mock.calls[1]?.[1]).toBe(failureMessage);
     expect(mockBack).not.toHaveBeenCalled();
   });
 

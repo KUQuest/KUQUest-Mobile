@@ -3,6 +3,7 @@ import { AccessibilityInfo, Alert, useWindowDimensions } from "react-native";
 import { useNavigation, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { showErrorAlert } from "@/components/ui/SweetAlert";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useWorkerTagsQuery } from "@/features/workerHome/api/workerHomeQueries";
 import { createQuestMessages } from "@/locales/createQuestMessages";
@@ -375,7 +376,7 @@ export function useCreateQuestController({
         onPress: () => {
           void editState.cancelQuest().then((result) => {
             if (!result.ok) {
-              Alert.alert(messages.cancelQuestTitle, result.message);
+              showErrorAlert(messages.cancelQuestTitle, result.message);
               return;
             }
             Alert.alert(

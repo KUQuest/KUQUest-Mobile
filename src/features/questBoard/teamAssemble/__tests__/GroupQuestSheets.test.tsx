@@ -6,7 +6,7 @@ import { PartialGroupStartConsentSheet } from "../components/PartialGroupStartCo
 import { TeamAssembleView } from "../components/TeamAssembleView";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { profileKeys } from "@/features/profile/api/profileQueries";
-import type { QuestV2Application, QuestV2Team } from "@/api/questV2Contracts";
+import type { QuestV2Application } from "@/api/questV2Contracts";
 import {
   QuestApplicationStatus,
   QuestPartialStartConsentStatus,
@@ -382,43 +382,51 @@ describe("group Quest sheets", () => {
       )
     ).toBeTruthy();
   });
-  it("joins the selected forming team with an uppercased Join Code", async () => {
+  it("joins the Team named by a pasted invite link with an uppercased Join Code", async () => {
     const onJoinTeam = jest.fn();
-    const teams: QuestV2Team[] = [
-      {
-        id: "team-1",
-        questId: "quest-1",
-        leaderId: "leader-1",
-        name: "Campus Gardeners",
-        headcount: 3,
-        state: "TEAM_FORMING",
-        joinCode: null,
-        joinCodeExpiresAt: null,
-        members: [
-          { memberId: "leader-1", joinedAt: "2026-09-25T00:00:00.000Z" },
-        ],
-        submission: null,
-        createdAt: "2026-09-25T00:00:00.000Z",
-      },
-    ];
     const view = await render(
-      <TeamAssembleView
-        joinableTeams={teams}
-        locale="en"
-        onJoinTeam={onJoinTeam}
-        team={null}
-      />
+      <TeamAssembleView locale="en" onJoinTeam={onJoinTeam} team={null} />
     );
+    const input = view.getByTestId("team-assemble-join-code-input");
 
-    await fireEvent.press(view.getByTestId("team-assemble-join-target-team-1"));
+    await fireEvent.changeText(input, "Join my team: https://example.test");
+    expect(
+      view.getByText(
+        "This invite link is incomplete. Ask your Team Leader to share it again."
+      )
+    ).toBeTruthy();
+    await fireEvent.press(view.getByTestId("team-assemble-join"));
+    expect(onJoinTeam).not.toHaveBeenCalled();
+
     await fireEvent.changeText(
-      view.getByTestId("team-assemble-join-code-input"),
-      "abcd2345"
-    );
-    expect(view.getByTestId("team-assemble-join-code-input").props.value).toBe(
-      "ABCD2345"
+      input,
+      'Join my KUQuest team "Gardeners": kuquestmobile://quest/q-1/team?teamId=0b8f1c2e-4d5a-4e6f-8a9b-1c2d3e4f5a6b&code=abcd2345'
     );
     await fireEvent.press(view.getByTestId("team-assemble-join"));
-    expect(onJoinTeam).toHaveBeenCalledWith("team-1", "ABCD2345");
+    expect(onJoinTeam).toHaveBeenCalledWith(
+      "0b8f1c2e-4d5a-4e6f-8a9b-1c2d3e4f5a6b",
+      "ABCD2345"
+    );
+  });
+
+  it("creates a Team only with a non-blank trimmed name", async () => {
+    const onCreateTeam = jest.fn();
+    const view = await render(
+      <TeamAssembleView locale="en" onCreateTeam={onCreateTeam} team={null} />
+    );
+
+    await fireEvent.changeText(
+      view.getByTestId("team-assemble-name-input"),
+      "   "
+    );
+    await fireEvent.press(view.getByTestId("team-assemble-create"));
+    expect(onCreateTeam).not.toHaveBeenCalled();
+
+    await fireEvent.changeText(
+      view.getByTestId("team-assemble-name-input"),
+      "  Campus Gardeners "
+    );
+    await fireEvent.press(view.getByTestId("team-assemble-create"));
+    expect(onCreateTeam).toHaveBeenCalledWith("Campus Gardeners");
   });
 });

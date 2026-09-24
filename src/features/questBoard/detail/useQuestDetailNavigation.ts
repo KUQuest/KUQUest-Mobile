@@ -1,6 +1,8 @@
 import { useCallback } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
-import { Alert, BackHandler } from "react-native";
+import { BackHandler } from "react-native";
+
+import { showErrorAlert } from "@/components/ui/SweetAlert";
 
 import { getChatRouteParams } from "@/features/chat/chatData";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
@@ -144,15 +146,15 @@ export function useQuestDetailNavigation({
         });
       })
       .catch((error) => {
-        Alert.alert(
-          messages.details,
+        showErrorAlert(
+          messages.actionFailedTitle,
           error instanceof Error ? error.message : messages.messageOwnerError
         );
       });
   }, [
     canMessageOwner,
     createCandidateInquiry,
-    messages.details,
+    messages.actionFailedTitle,
     messages.messageOwnerError,
     projection,
     quest,

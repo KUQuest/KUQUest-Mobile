@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Linking } from "react-native";
+
+import { showErrorAlert } from "@/components/ui/SweetAlert";
 import { useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -384,7 +386,7 @@ export function useChatConversationController(
     if (result.canceled || result.assets.length === 0) return;
     const asset = result.assets[0];
     if (asset.fileSize !== undefined && asset.fileSize > MAX_ATTACHMENT_BYTES) {
-      Alert.alert(
+      showErrorAlert(
         messages.addAttachment,
         locale === "th"
           ? "ไฟล์แนบต้องมีขนาดไม่เกิน 10 MB"
@@ -398,7 +400,7 @@ export function useChatConversationController(
       !mimeType.startsWith("video/") &&
       mimeType !== "application/pdf"
     ) {
-      Alert.alert(
+      showErrorAlert(
         messages.addAttachment,
         locale === "th"
           ? "รองรับเฉพาะรูปภาพ PDF และวิดีโอ"
@@ -452,7 +454,7 @@ export function useChatConversationController(
         text: messages.takePhoto,
         onPress: () => {
           void pickAttachment("camera").catch((error: unknown) => {
-            Alert.alert(
+            showErrorAlert(
               messages.addAttachment,
               error instanceof Error ? error.message : messages.loadError
             );
@@ -463,7 +465,7 @@ export function useChatConversationController(
         text: messages.choosePhoto,
         onPress: () => {
           void pickAttachment("library").catch((error: unknown) => {
-            Alert.alert(
+            showErrorAlert(
               messages.addAttachment,
               error instanceof Error ? error.message : messages.loadError
             );
@@ -474,7 +476,7 @@ export function useChatConversationController(
         text: messages.chooseFile,
         onPress: () => {
           void pickAttachment("library").catch((error: unknown) => {
-            Alert.alert(
+            showErrorAlert(
               messages.addAttachment,
               error instanceof Error ? error.message : messages.loadError
             );
@@ -489,7 +491,7 @@ export function useChatConversationController(
     if (pendingAttachments.some((item) => item.uploading)) return;
     const value = draft.trim();
     if (value.length > MAX_MESSAGE_LENGTH) {
-      Alert.alert(messages.send, messageLengthError);
+      showErrorAlert(messages.send, messageLengthError);
       return;
     }
     if (!value && pendingAttachmentIds.length === 0) return;
@@ -521,7 +523,7 @@ export function useChatConversationController(
       })
       .catch((error: unknown) => {
         const rateLimited = error instanceof ApiError && error.status === 429;
-        Alert.alert(
+        showErrorAlert(
           messages.send,
           rateLimited
             ? locale === "th"
@@ -556,7 +558,7 @@ export function useChatConversationController(
       }
       await Linking.openURL(url);
     } catch (error) {
-      Alert.alert(
+      showErrorAlert(
         messages.openFile,
         error instanceof Error ? error.message : messages.loadError
       );

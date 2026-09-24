@@ -18,6 +18,8 @@ export interface TeamAssembleJoinCodePanelProps {
   onInputCodeChange: (value: string) => void;
   onJoinTeam?: (joinCode: string) => void;
   onRegenerateJoinCode?: (teamId: string) => void;
+  /** Present only while the plaintext Join Code is known on this device. */
+  onShareInvite?: () => void;
   canRegenerateJoinCode?: boolean;
 }
 
@@ -32,6 +34,7 @@ export function TeamAssembleJoinCodePanel({
   onInputCodeChange,
   onJoinTeam,
   onRegenerateJoinCode,
+  onShareInvite,
   canRegenerateJoinCode,
 }: TeamAssembleJoinCodePanelProps) {
   const thai = locale === "th";
@@ -54,6 +57,19 @@ export function TeamAssembleJoinCodePanel({
           <Text selectable className={styles.proposalSummaryTitle}>
             {code ?? (thai ? "ยังไม่มีรหัส" : "No code available")}
           </Text>
+          {onShareInvite ? (
+            <Pressable
+              accessibilityLabel={thai ? "แชร์ลิงก์เชิญ" : "Share invite link"}
+              accessibilityRole="button"
+              className={styles.memberInvite}
+              onPress={onShareInvite}
+              testID="team-assemble-share-invite"
+            >
+              <Text className={styles.memberInviteText}>
+                {thai ? "แชร์ลิงก์เชิญ" : "Share invite"}
+              </Text>
+            </Pressable>
+          ) : null}
           {isLeader &&
           canRegenerateJoinCode !== false &&
           onRegenerateJoinCode ? (

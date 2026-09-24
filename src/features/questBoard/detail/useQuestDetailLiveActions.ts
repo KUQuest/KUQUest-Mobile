@@ -1,7 +1,7 @@
 import { useCallback } from "react";
-import { Alert } from "react-native";
 
-import { ApiError } from "@/api/ApiClient";
+import { showErrorAlert } from "@/components/ui/SweetAlert";
+import { getErrorMessage } from "@/utils/error";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import type { UploadAsset } from "@/api/fileUpload";
 import {
@@ -29,11 +29,6 @@ import {
   type QuestDetailLiveActionContext,
   type QuestDetailLiveActions,
 } from "./questDetailActions";
-
-function getLiveActionError(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) return `${error.code}: ${error.message}`;
-  return error instanceof Error ? error.message : fallback;
-}
 
 export function useQuestDetailLiveActions(
   context: QuestDetailLiveActionContext
@@ -82,13 +77,16 @@ export function useQuestDetailLiveActions(
       try {
         return await action();
       } catch (error) {
-        Alert.alert(messages.details, getLiveActionError(error, fallbackError));
+        showErrorAlert(
+          messages.actionFailedTitle,
+          getErrorMessage(error, fallbackError)
+        );
         return undefined;
       } finally {
         endLiveAction();
       }
     },
-    [beginLiveAction, endLiveAction, messages.details]
+    [beginLiveAction, endLiveAction, messages.actionFailedTitle]
   );
 
   const join = useCallback(
@@ -263,7 +261,7 @@ export function useQuestDetailLiveActions(
     [questId, respondUnderfilledConsentMutation, runLiveAction, viewerId]
   );
   const createTeam = useCallback(
-    () =>
+    (name: string) =>
       runLiveAction(
         "create-team",
         () => {
@@ -272,7 +270,7 @@ export function useQuestDetailLiveActions(
           return createCandidateTeamMutation.mutateAsync({
             questId,
             payload: {
-              name: `${quest?.title ?? "Quest"} Team`,
+              name: name.trim(),
               headcount: quest?.headcount ?? 2,
             },
             viewerId,
@@ -285,7 +283,6 @@ export function useQuestDetailLiveActions(
       capabilities?.canCreateTeam,
       createCandidateTeamMutation,
       quest?.headcount,
-      quest?.title,
       questId,
       runLiveAction,
       viewerId,

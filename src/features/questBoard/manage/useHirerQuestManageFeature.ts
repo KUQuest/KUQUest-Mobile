@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
 import { Alert } from "react-native";
+
+import { showErrorAlert } from "@/components/ui/SweetAlert";
 import { useRouter } from "expo-router";
 
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
@@ -59,10 +61,7 @@ export function useHirerQuestManageFeature(questId?: string) {
         return true;
       } catch (caught) {
         await refetchSnapshot();
-        Alert.alert(
-          messages.actionFailedTitle,
-          caught instanceof Error ? caught.message : undefined
-        );
+        showErrorAlert(messages.actionFailedTitle, caught);
         return false;
       }
     },
