@@ -56,15 +56,12 @@ const styles = {
     "items-center bg-ku-primary rounded-ku-pill justify-center min-h-ku-48 mt-ku-sm px-ku-lg",
   loadErrorActionText: "text-ku-on-primary font-ku-semibold text-ku-body-small",
   detailHeader: "bg-ku-surface border-b-ku-border-subtle border-b",
-  brandRow: "items-center flex-row justify-start min-h-ku-48 px-ku-md pt-ku-xs",
+  brandRow: "items-center flex-row min-h-ku-72 px-ku-md py-ku-xs",
   backButton:
-    "items-center justify-center rounded-ku-pill h-ku-48 w-ku-48 active:bg-ku-surface-muted",
-  identityRow:
-    "items-center flex-row min-h-ku-72 pl-ku-lg pr-ku-md pb-ku-12 pt-ku-xs",
+    "items-center justify-center rounded-ku-pill h-ku-48 w-ku-48 mr-ku-sm active:bg-ku-surface-muted",
   identityCopy: "flex-1 min-w-0 ml-ku-10",
   identityTitle: "text-ku-text-strong font-ku-semibold text-ku-body-small",
   identityMeta: "text-ku-text-secondary font-ku-regular text-ku-label mt-ku-1",
-  headerActions: "items-center flex-row ml-ku-sm",
   headerAction:
     "items-center justify-center rounded-ku-pill h-ku-44 w-ku-44 active:bg-ku-surface-muted",
   contextCard:

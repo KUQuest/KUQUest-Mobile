@@ -64,4 +64,42 @@ describe("ChatConversationScreen", () => {
     expect(view.getByTestId("chat-loading-back-button")).toBeTruthy();
     expect(view.getByLabelText(chatMessages.en.loading)).toBeTruthy();
   });
+
+  it("shows conversation identity without role or header actions", async () => {
+    const getController =
+      mockedUseChatConversationController.getMockImplementation();
+    if (!getController) {
+      throw new Error("Chat conversation controller mock is not configured");
+    }
+    mockedUseChatConversationController.mockReturnValue({
+      ...getController(),
+      conversationPending: false,
+      role: chatMessages.en.questOwner,
+      conversation: {
+        id: "conversation-1",
+        questId: "quest-1",
+        questTitle: { en: "Campus cleanup", th: "ทำความสะอาดวิทยาเขต" },
+        participantName: "Sora Student",
+        participantRole: "owner",
+        initials: "SS",
+        avatarColor: "#208AEF",
+        latestMessage: { en: "Hello", th: "สวัสดี" },
+        latestAt: "2026-09-24T03:30:00Z",
+        unreadCount: 0,
+        messages: [],
+      },
+    });
+
+    const view = await render(<ChatConversationScreen />);
+
+    expect(view.getByLabelText(chatMessages.en.backToChat)).toBeTruthy();
+    expect(view.getAllByText("Campus cleanup")).toHaveLength(2);
+    expect(view.getByText("Sora Student")).toBeTruthy();
+    expect(
+      view.queryByText(`Sora Student · ${chatMessages.en.questOwner}`)
+    ).toBeNull();
+    expect(view.queryByLabelText(chatMessages.en.search)).toBeNull();
+    expect(view.queryByLabelText(chatMessages.en.searchFiles)).toBeNull();
+    expect(view.queryByLabelText(chatMessages.en.moreOptions)).toBeNull();
+  });
 });
