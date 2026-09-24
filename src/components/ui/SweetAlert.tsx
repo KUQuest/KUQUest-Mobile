@@ -6,24 +6,46 @@ import { Button } from "@/components/ui/Button";
 import { colors } from "@/theme/colors";
 import { Text, View } from "@/tw";
 
-const variants = {
-  error: { Icon: CircleAlert, color: colors.dangerDark },
-  success: { Icon: CircleCheck, color: colors.successBright },
-  warning: { Icon: TriangleAlert, color: colors.warningDark },
-  info: { Icon: Info, color: colors.info },
+export const SweetAlertVariant = {
+  Error: "error",
+  Success: "success",
+  Warning: "warning",
+  Info: "info",
 } as const;
+
+export type SweetAlertVariant =
+  (typeof SweetAlertVariant)[keyof typeof SweetAlertVariant];
+
+const variants: Record<
+  SweetAlertVariant,
+  { Icon: typeof CircleAlert; color: string }
+> = {
+  [SweetAlertVariant.Error]: { Icon: CircleAlert, color: colors.dangerDark },
+  [SweetAlertVariant.Success]: {
+    Icon: CircleCheck,
+    color: colors.successBright,
+  },
+  [SweetAlertVariant.Warning]: {
+    Icon: TriangleAlert,
+    color: colors.warningDark,
+  },
+  [SweetAlertVariant.Info]: { Icon: Info, color: colors.info },
+};
 
 const styles = {
   overlay: "flex-1 items-center justify-center bg-ku-overlay px-ku-lg",
-  dialog: "w-full max-w-[420px] items-center rounded-ku-card bg-ku-card px-ku-lg py-ku-xl",
-  title: "mt-ku-md text-center text-ku-text-strong font-ku-semibold text-ku-title-small",
-  message: "mt-ku-sm text-center text-ku-text-secondary font-ku-regular text-ku-body",
+  dialog:
+    "w-full max-w-[420px] items-center rounded-ku-card bg-ku-card px-ku-lg py-ku-xl",
+  title:
+    "mt-ku-md text-center text-ku-text-strong font-ku-semibold text-ku-title-small",
+  message:
+    "mt-ku-sm text-center text-ku-text-secondary font-ku-regular text-ku-body",
   close: "mt-ku-lg",
 } as const;
 
 export interface SweetAlertProps {
   visible: boolean;
-  variant: keyof typeof variants;
+  variant: SweetAlertVariant;
   title: string;
   message: string;
   buttonLabel: string;

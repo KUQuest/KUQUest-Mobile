@@ -1,7 +1,7 @@
 import { fireEvent, render } from "@testing-library/react-native";
 import React from "react";
 
-import { SweetAlert } from "../SweetAlert";
+import { SweetAlert, SweetAlertVariant } from "../SweetAlert";
 
 describe("SweetAlert", () => {
   it("shows alert content and invokes close from the labeled action", async () => {
@@ -12,7 +12,7 @@ describe("SweetAlert", () => {
         message="Try again later."
         onClose={onClose}
         title="Request failed"
-        variant="error"
+        variant={SweetAlertVariant.Error}
         visible
       />
     );
@@ -32,7 +32,7 @@ describe("SweetAlert", () => {
         message="Saved."
         onClose={jest.fn()}
         title="Success"
-        variant="success"
+        variant={SweetAlertVariant.Success}
         visible={false}
       />
     );
