@@ -60,6 +60,7 @@ reason to weaken either contract.
 - `src/app/quest/[id]/proof.tsx` — Hirer-side proof screen; in the Worker workspace it redirects to the Work Hub, where proof is submitted inline.
 - `src/app/quest/[id]/proof-review.tsx` — Hirer proof review list: one row per Assignment (or the selected Candidate Team for `GROUP + CANDIDATE`), `PROOF_PENDING` first; each pending Proof Submission opens the review Popup. Reached from Home and from Quest management.
 - `src/app/quest/[id]/inquiry/[conversationId].tsx` — Candidate Inquiry conversation detail.
+- `src/app/quest/[id]/team.tsx` — Worker Quest Team screen for a `GROUP + CANDIDATE` Quest: create, join by Join Code, rename, roster, leave/remove, proposal, and submit. Reached from the Quest Detail team card; reads the same live snapshot as Quest Detail, so Quest and Candidate roster WebSocket invalidations refresh it.
 - Quest Board implementation and deterministic local states: `src/features/questBoard/board/QuestBoardScreen.tsx` and `src/features/questBoard/fixtures/questBoardHarness.ts`.
 - `src/app/profile/edit/index.tsx` and `src/app/profile/edit/[section].tsx` — Profile editing.
 - `src/app/settings.tsx` — Settings.

@@ -3,7 +3,7 @@ import { act, fireEvent, render } from "@testing-library/react-native";
 
 import { CandidateReviewSheet } from "../components/CandidateReviewSheet";
 import { PartialGroupStartConsentSheet } from "../components/PartialGroupStartConsentSheet";
-import { TeamAssembleSheet } from "../components/TeamAssembleSheet";
+import { TeamAssembleView } from "../components/TeamAssembleView";
 import type { QuestV2Team } from "@/api/questV2Contracts";
 import {
   QuestApplicationStatus,
@@ -73,23 +73,20 @@ describe("group Quest sheets", () => {
     const onInviteMembers = jest.fn();
     const onSubmit = jest.fn();
     const view = await render(
-      <TeamAssembleSheet
-        bottomInset={0}
+      <TeamAssembleView
         eligibleMembers={[
           { id: "worker-1", displayName: "Mali Worker", email: "mali@ku.th" },
           { id: "worker-2", displayName: "Niran Worker", email: "niran@ku.th" },
           { id: "worker-3", displayName: "Pim Worker", email: "pim@ku.th" },
         ]}
         locale="en"
-        onClose={() => undefined}
         onInviteMembers={onInviteMembers}
         onSubmit={onSubmit}
         team={team}
-        visible
       />
     );
 
-    expect(view.getByTestId("team-assemble-sheet")).toBeTruthy();
+    expect(view.getByTestId("team-assemble-scroll")).toBeTruthy();
     expect(view.getByTestId("team-assemble-roster-count")).toBeTruthy();
     expect(
       view.getByRole("search", { name: "Search by name or @ku.th email" })
@@ -118,14 +115,12 @@ describe("group Quest sheets", () => {
   it("shows pending invitations with accept and decline actions for the invited Worker", async () => {
     const onRespondInvitation = jest.fn();
     const view = await render(
-      <TeamAssembleSheet
+      <TeamAssembleView
         invitations={[invitation]}
         locale="en"
-        onClose={() => undefined}
         onRespondInvitation={onRespondInvitation}
         team={team}
         viewerId="worker-1"
-        visible
       />
     );
 
@@ -353,13 +348,11 @@ describe("group Quest sheets", () => {
       },
     ];
     const view = await render(
-      <TeamAssembleSheet
+      <TeamAssembleView
         joinableTeams={teams}
         locale="en"
-        onClose={() => undefined}
         onJoinTeam={onJoinTeam}
         team={null}
-        visible
       />
     );
 

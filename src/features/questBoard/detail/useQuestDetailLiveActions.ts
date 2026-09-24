@@ -70,7 +70,7 @@ export function useQuestDetailLiveActions(
     refresh,
     transitions,
   } = context;
-  const { beginLiveAction, endLiveAction, closeTeam } = transitions;
+  const { beginLiveAction, endLiveAction } = transitions;
 
   const runLiveAction = useCallback(
     async <T>(
@@ -438,19 +438,17 @@ export function useQuestDetailLiveActions(
         "submit-team",
         async () => {
           if (!questId) throw new Error("Quest ID is required");
-          const result = await submitCandidateTeamMutation.mutateAsync({
+          return submitCandidateTeamMutation.mutateAsync({
             questId,
             teamId,
             payload,
             viewerId,
             idempotencyKey: createQuestIdempotencyKey(),
           });
-          closeTeam();
-          return result;
         },
         "Failed to submit Quest Team"
       ),
-    [closeTeam, questId, runLiveAction, submitCandidateTeamMutation, viewerId]
+    [questId, runLiveAction, submitCandidateTeamMutation, viewerId]
   );
   const uploadTeamFile = useCallback(
     async (asset: UploadAsset) => {

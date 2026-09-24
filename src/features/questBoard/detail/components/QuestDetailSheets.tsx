@@ -19,10 +19,6 @@ import {
   PartialGroupStartConsentSheet,
   type PartialGroupStartConsentSheetProps,
 } from "../../teamAssemble/components/PartialGroupStartConsentSheet";
-import {
-  TeamAssembleSheet,
-  type TeamAssembleSheetProps,
-} from "../../teamAssemble/components/TeamAssembleSheet";
 
 type ConfirmationSheetProps = {
   locale: "en" | "th";
@@ -134,8 +130,6 @@ function ConfirmationSheet({
 }
 
 export interface QuestDetailSheetsProps {
-  prototypeTeamSheet?: TeamAssembleSheetProps;
-  liveTeamSheet?: TeamAssembleSheetProps;
   prototypeCandidateSheet?: CandidateReviewSheetProps;
   liveCandidateSheet?: CandidateReviewSheetProps;
   prototypeConsentSheet?: PartialGroupStartConsentSheetProps;
@@ -144,8 +138,6 @@ export interface QuestDetailSheetsProps {
 }
 
 export function QuestDetailSheets({
-  prototypeTeamSheet,
-  liveTeamSheet,
   prototypeCandidateSheet,
   liveCandidateSheet,
   prototypeConsentSheet,
@@ -154,10 +146,6 @@ export function QuestDetailSheets({
 }: QuestDetailSheetsProps) {
   return (
     <>
-      {prototypeTeamSheet ? (
-        <TeamAssembleSheet {...prototypeTeamSheet} />
-      ) : null}
-      {liveTeamSheet ? <TeamAssembleSheet {...liveTeamSheet} /> : null}
       {prototypeCandidateSheet ? (
         <CandidateReviewSheet {...prototypeCandidateSheet} />
       ) : null}

@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { useFocusEffect } from "expo-router";
 
 import { useLocale } from "@/features/preferences/localeStore";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
@@ -9,11 +10,13 @@ import {
 } from "@/locales/questBoardMessages";
 import type { QuestDetailBodyProps } from "./components/QuestDetailBody";
 import type { QuestDetailSheetsProps } from "./components/QuestDetailSheets";
+import type { TeamAssembleViewProps } from "../teamAssemble/components/TeamAssembleView";
 import type { QuestDetailReadModel } from "./useQuestDetailReadSource";
 import {
   buildQuestDetailActionBar,
   buildQuestDetailBodyProps,
   buildQuestDetailSheetsProps,
+  buildQuestDetailTeamProps,
   getQuestDetailPresentationFacts,
   type QuestDetailActionBarModel,
   type QuestDetailPresentationContext,
@@ -52,6 +55,8 @@ interface QuestDetailFeatureViewModel {
   quest: QuestDetailReadModel["quest"];
   bodyProps: QuestDetailBodyProps | null;
   sheets: QuestDetailSheetsProps;
+  /** Quest Team surface props; rendered by the Quest Team route. */
+  team: TeamAssembleViewProps | undefined;
   onRetry: () => void;
   actionBar: QuestDetailActionBarModel | null;
 }
@@ -78,6 +83,14 @@ export function useQuestDetailFeature({
     sessionReady,
   });
   const surface = useQuestDetailSurfaceState();
+  const { markFixtureChanged } = surface.transitions;
+  // Preview fixtures are module state; another route (the Quest Team screen)
+  // may change them while this screen is covered, so re-read on focus.
+  useFocusEffect(
+    useCallback(() => {
+      if (explicitPreview) markFixtureChanged();
+    }, [explicitPreview, markFixtureChanged])
+  );
   const liveActionContext: QuestDetailLiveActionContext = {
     questId: route.questId,
     viewerId,
@@ -119,6 +132,8 @@ export function useQuestDetailFeature({
       route.mode !== "post" && read.projection?.capabilities.canMessageOwner
     ),
     createCandidateInquiry: liveActions.createCandidateInquiry,
+    previewState: route.previewState,
+    studentId: explicitStudentId,
   });
   const facts = getQuestDetailPresentationFacts({
     read,
@@ -208,6 +223,9 @@ export function useQuestDetailFeature({
     sheets: presentationContext
       ? buildQuestDetailSheetsProps(presentationContext)
       : {},
+    team: presentationContext
+      ? buildQuestDetailTeamProps(presentationContext)
+      : undefined,
     onRetry,
     actionBar: presentationContext
       ? buildQuestDetailActionBar(presentationContext)

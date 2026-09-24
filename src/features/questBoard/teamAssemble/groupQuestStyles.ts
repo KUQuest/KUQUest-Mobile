@@ -14,6 +14,8 @@ const styles = {
     "text-ku-text-secondary font-ku-regular text-ku-body-small mt-ku-3",
   sheetClose:
     "items-center bg-ku-surface-muted rounded-ku-pill h-[44px] justify-center w-[44px]",
+  screen: "bg-ku-card flex-1",
+  screenBody: "flex-1 px-ku-20",
   sheetScroll: "flex-1",
   sheetContent: "pb-ku-sm pt-ku-md",
   section: "mt-ku-md",

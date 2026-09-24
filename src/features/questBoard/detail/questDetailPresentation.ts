@@ -13,6 +13,7 @@ import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 import type { SupportedLocale } from "@/locales/locale";
 import type { QuestDetailBodyProps } from "./components/QuestDetailBody";
 import type { QuestDetailSheetsProps } from "./components/QuestDetailSheets";
+import type { TeamAssembleViewProps } from "../teamAssemble/components/TeamAssembleView";
 import type {
   PartialGroupStartVoter,
   TeamDirectoryMember,
@@ -427,7 +428,7 @@ export function buildQuestDetailBodyProps(
           snapshot: facts.liveSnapshot,
           groupMessages: facts.groupMessages,
           busy: Boolean(surface.liveAction),
-          onOpenTeam: transitions.openTeam,
+          onOpenTeam: navigation.openTeam,
           onOpenCandidateReview: transitions.openCandidateReview,
           onOpenPartialConsent: context.openLiveUnderfilled,
         }
@@ -443,7 +444,7 @@ export function buildQuestDetailBodyProps(
           viewerId: facts.viewerId,
           isHirer: facts.isHirerView,
           messages: facts.groupMessages,
-          onOpenTeam: transitions.openTeam,
+          onOpenTeam: navigation.openTeam,
           onOpenCandidateReview: transitions.openCandidateReview,
           onOpenPartialConsent: transitions.reopenPartialConsent,
         }
@@ -568,47 +569,6 @@ export function buildQuestDetailSheetsProps(
             voters: facts.livePartialVoters,
           }
         : undefined,
-    liveTeamSheet:
-      facts.liveTeamSurface && facts.liveSnapshot
-        ? {
-            bottomInset,
-            canLeaveTeam: facts.projection?.capabilities.canLeaveTeam ?? false,
-            canRemoveMember:
-              facts.projection?.capabilities.canRemoveTeamMember ?? false,
-            canRegenerateJoinCode:
-              facts.projection?.capabilities.canRegenerateTeamCode ?? false,
-            canUpdateTeam:
-              facts.projection?.capabilities.canUpdateTeam ?? false,
-            eligibleMembers: [],
-            joinableTeams: facts.liveJoinableTeams,
-            joinCode: facts.liveTeamSheetTeam?.joinCode,
-            joinCodeExpiresAt: facts.liveTeamSheetTeam?.joinCodeExpiresAt,
-            teamName: facts.liveTeamSheetTeam?.name,
-            onClose: transitions.closeTeam,
-            onCreateTeam: facts.projection?.capabilities.canCreateTeam
-              ? context.liveCreateTeam
-              : undefined,
-            onJoinTeam: facts.projection?.capabilities.canJoinTeam
-              ? context.liveJoinTeam
-              : undefined,
-            onLeaveTeam: context.liveLeaveTeam,
-            onRemoveMember: context.liveRemoveTeamMember,
-            onRegenerateJoinCode: context.liveRegenerateTeamCode,
-            onUpdateTeamName: context.liveUpdateTeamName,
-            onReviewChange: transitions.setTeamReviewing,
-            onSubmitTeam: context.liveSubmitTeam,
-            onUploadProposalFile: context.uploadTeamFile,
-            requestedHeadcount: facts.liveSnapshot.quest.headcount,
-            reviewing: surface.teamReviewing,
-            searchQuery: surface.teamSearchQuery,
-            submitting:
-              surface.liveAction === "submit-team" ||
-              surface.liveAction === "join-team",
-            team: facts.liveTeamSheetTeam,
-            viewerId: facts.viewerId,
-            visible: surface.teamSheetOpen,
-          }
-        : undefined,
     prototypeCandidateSheet:
       facts.activePrototypeState &&
       facts.isHirerView &&
@@ -668,40 +628,84 @@ export function buildQuestDetailSheetsProps(
             visible: facts.partialStartSheetOpen,
           }
         : undefined,
-    prototypeTeamSheet:
-      facts.activePrototypeState && facts.candidateGroup && !facts.isHirerView
-        ? {
-            bottomInset,
-            eligibleMembers: facts.teamDirectory,
-            invitations: facts.activePrototypeState.invitations,
-            locale: facts.locale,
-            onClose: transitions.closeTeam,
-            onCreateTeam: facts.projection?.capabilities.canCreateTeam
-              ? context.fixtureCreateTeam
-              : undefined,
-            onInviteMembers: facts.projection?.capabilities.canInviteWorker
-              ? context.fixtureInviteMembers
-              : undefined,
-            onRespondInvitation: facts.projection?.capabilities
-              .canRespondInvitation
-              ? context.fixtureRespondInvitation
-              : undefined,
-            onSearchQueryChange: transitions.setTeamSearchQuery,
-            onSelectedMemberIdsChange: transitions.setTeamSelectedMemberIds,
-            onReviewChange: transitions.setTeamReviewing,
-            onSubmit: facts.projection?.capabilities.canSubmitTeam
-              ? context.fixtureSubmitTeam
-              : undefined,
-            requestedHeadcount: facts.activePrototypeState.quest.headcount,
-            reviewing: surface.teamReviewing,
-            searchQuery: surface.teamSearchQuery,
-            selectedMemberIds: surface.teamSelectedMemberIds,
-            team: facts.teamSheetTeam,
-            viewerId: facts.viewerId,
-            visible: surface.teamSheetOpen,
-          }
-        : undefined,
   };
+}
+
+export function buildQuestDetailTeamProps(
+  context: QuestDetailPresentationContext
+): TeamAssembleViewProps | undefined {
+  const { facts, surface, transitions, bottomInset } = context;
+  if (facts.liveTeamSurface && facts.liveSnapshot) {
+    return {
+      bottomInset,
+      canLeaveTeam: facts.projection?.capabilities.canLeaveTeam ?? false,
+      canRemoveMember:
+        facts.projection?.capabilities.canRemoveTeamMember ?? false,
+      canRegenerateJoinCode:
+        facts.projection?.capabilities.canRegenerateTeamCode ?? false,
+      canUpdateTeam: facts.projection?.capabilities.canUpdateTeam ?? false,
+      eligibleMembers: [],
+      joinableTeams: facts.liveJoinableTeams,
+      joinCode: facts.liveTeamSheetTeam?.joinCode,
+      joinCodeExpiresAt: facts.liveTeamSheetTeam?.joinCodeExpiresAt,
+      teamName: facts.liveTeamSheetTeam?.name,
+      onCreateTeam: facts.projection?.capabilities.canCreateTeam
+        ? context.liveCreateTeam
+        : undefined,
+      onJoinTeam: facts.projection?.capabilities.canJoinTeam
+        ? context.liveJoinTeam
+        : undefined,
+      onLeaveTeam: context.liveLeaveTeam,
+      onRemoveMember: context.liveRemoveTeamMember,
+      onRegenerateJoinCode: context.liveRegenerateTeamCode,
+      onUpdateTeamName: context.liveUpdateTeamName,
+      onReviewChange: transitions.setTeamReviewing,
+      onSubmitTeam: context.liveSubmitTeam,
+      onUploadProposalFile: context.uploadTeamFile,
+      requestedHeadcount: facts.liveSnapshot.quest.headcount,
+      reviewing: surface.teamReviewing,
+      searchQuery: surface.teamSearchQuery,
+      submitting:
+        surface.liveAction === "submit-team" ||
+        surface.liveAction === "join-team",
+      team: facts.liveTeamSheetTeam,
+      viewerId: facts.viewerId,
+    };
+  }
+  if (
+    facts.activePrototypeState &&
+    facts.candidateGroup &&
+    !facts.isHirerView
+  ) {
+    return {
+      bottomInset,
+      eligibleMembers: facts.teamDirectory,
+      invitations: facts.activePrototypeState.invitations,
+      locale: facts.locale,
+      onCreateTeam: facts.projection?.capabilities.canCreateTeam
+        ? context.fixtureCreateTeam
+        : undefined,
+      onInviteMembers: facts.projection?.capabilities.canInviteWorker
+        ? context.fixtureInviteMembers
+        : undefined,
+      onRespondInvitation: facts.projection?.capabilities.canRespondInvitation
+        ? context.fixtureRespondInvitation
+        : undefined,
+      onSearchQueryChange: transitions.setTeamSearchQuery,
+      onSelectedMemberIdsChange: transitions.setTeamSelectedMemberIds,
+      onReviewChange: transitions.setTeamReviewing,
+      onSubmit: facts.projection?.capabilities.canSubmitTeam
+        ? context.fixtureSubmitTeam
+        : undefined,
+      requestedHeadcount: facts.activePrototypeState.quest.headcount,
+      reviewing: surface.teamReviewing,
+      searchQuery: surface.teamSearchQuery,
+      selectedMemberIds: surface.teamSelectedMemberIds,
+      team: facts.teamSheetTeam,
+      viewerId: facts.viewerId,
+    };
+  }
+  return undefined;
 }
 
 export interface QuestDetailActionBarModel {
