@@ -24,11 +24,13 @@ const questUpdatedEventSchema = z
 
 type QuestUpdatedEvent = z.infer<typeof questUpdatedEventSchema>;
 
-const candidateRosterUpdatedEventSchema = z.object({
-  type: z.literal("CANDIDATE_ROSTER_UPDATED"),
-  version: z.literal(1).optional(),
-  questId: z.string().min(1).optional(),
-});
+const candidateRosterUpdatedEventSchema = z
+  .object({
+    type: z.literal("CANDIDATE_ROSTER_UPDATED"),
+    version: z.literal(1),
+    questId: z.string().uuid(),
+  })
+  .strict();
 
 export type CandidateRosterUpdatedEvent = z.infer<
   typeof candidateRosterUpdatedEventSchema
@@ -49,14 +51,14 @@ function reconnectDelayMs(attempt: number): number {
   );
 }
 
-function subscribeToQuestEventStream<T extends { questId?: string }>(
+function subscribeToQuestEventStream<T extends { questId: string }>(
   questId: string,
   eventsPath: string,
   updateSchema: z.ZodType<T>,
   onUpdate: (event: T) => void
 ): () => void {
   const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
-  if (!apiBaseUrl || !questId) return () => {};
+  if (!apiBaseUrl || !questId) return () => { };
 
   const eventsUrl = toWebSocketUrl(apiBaseUrl, eventsPath);
   const NativeWebSocket = WebSocket as unknown as NativeWebSocketConstructor;
@@ -120,7 +122,7 @@ function subscribeToQuestEventStream<T extends { questId?: string }>(
       const parsed = updateSchema.safeParse(payload);
       if (
         parsed.success &&
-        (!parsed.data.questId || parsed.data.questId === questId)
+        parsed.data.questId === questId
       ) {
         onUpdate(parsed.data);
       }

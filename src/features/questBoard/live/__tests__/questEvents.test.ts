@@ -69,12 +69,14 @@ describe("Quest event subscription", () => {
     expect(socket?.close).toHaveBeenCalledTimes(1);
   });
   it("subscribes to authorized Candidate roster updates", () => {
+    const questId = "00000000-0000-4000-8000-000000000001";
+    const otherQuestId = "00000000-0000-4000-8000-000000000002";
     const onRosterUpdated = jest.fn();
-    const stop = subscribeToCandidateRosterEvents("quest-1", onRosterUpdated);
+    const stop = subscribeToCandidateRosterEvents(questId, onRosterUpdated);
     const socket = MockWebSocket.instances[0];
 
     expect(socket?.url).toBe(
-      "wss://api.example.com/api/v2/quests/quest-1/candidate-roster/events"
+      `wss://api.example.com/api/v2/quests/${questId}/candidate-roster/events`
     );
     expect(socket?.options).toEqual({
       headers: { Cookie: "better-auth.session_token=session" },
@@ -85,58 +87,89 @@ describe("Quest event subscription", () => {
       JSON.stringify({
         type: "CANDIDATE_ROSTER_UPDATED",
         version: 1,
-        questId: "quest-1",
+        questId,
       })
     );
     socket.receive(
-      JSON.stringify({ type: "SUBSCRIBED", version: 1, questId: "other" })
+      JSON.stringify({ type: "SUBSCRIBED", version: 1, questId: otherQuestId })
     );
     socket.receive(
       JSON.stringify({
         type: "CANDIDATE_ROSTER_UPDATED",
         version: 1,
-        questId: "quest-1",
+        questId,
       })
     );
     socket.receive(
-      JSON.stringify({ type: "SUBSCRIBED", version: 1, questId: "quest-1" })
+      JSON.stringify({ type: "SUBSCRIBED", version: 1, questId })
+    );
+    socket.receive(
+      JSON.stringify({
+        type: "CANDIDATE_ROSTER_UPDATED",
+        version: 1,
+        questId,
+      })
     );
     socket.receive(
       JSON.stringify({
         type: "CANDIDATE_ROSTER_UPDATED",
         version: 2,
-        questId: "quest-1",
+        questId,
       })
     );
     socket.receive(
       JSON.stringify({
         type: "CANDIDATE_ROSTER_UPDATED",
         version: 1,
-        questId: "other",
+        questId: otherQuestId,
       })
     );
     socket.receive(
       JSON.stringify({
         type: "CANDIDATE_ROSTER_UPDATED",
         version: 1,
-        questId: "quest-1",
+        questId,
         team: { id: "ignored" },
       })
     );
-    socket.receive(JSON.stringify({ type: "CANDIDATE_ROSTER_UPDATED" }));
+    socket.receive(
+      JSON.stringify({ type: "CANDIDATE_ROSTER_UPDATED", version: 1 })
+    );
+    socket.receive(
+      JSON.stringify({ type: "CANDIDATE_ROSTER_UPDATED", questId })
+    );
 
-    expect(onRosterUpdated).toHaveBeenCalledTimes(2);
-    expect(onRosterUpdated).toHaveBeenNthCalledWith(1, {
+    expect(onRosterUpdated).toHaveBeenCalledTimes(1);
+    expect(onRosterUpdated).toHaveBeenCalledWith({
       type: "CANDIDATE_ROSTER_UPDATED",
       version: 1,
-      questId: "quest-1",
-    });
-    expect(onRosterUpdated).toHaveBeenNthCalledWith(2, {
-      type: "CANDIDATE_ROSTER_UPDATED",
+      questId,
     });
     expect(socket.send).not.toHaveBeenCalled();
     stop();
     expect(socket.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects Candidate roster messages with a non-UUID Quest ID", () => {
+    const questId = "not-a-uuid";
+    const onRosterUpdated = jest.fn();
+    const stop = subscribeToCandidateRosterEvents(questId, onRosterUpdated);
+    const socket = MockWebSocket.instances[0];
+    if (!socket) throw new Error("Expected a Candidate roster event socket");
+
+    socket.receive(
+      JSON.stringify({ type: "SUBSCRIBED", version: 1, questId })
+    );
+    socket.receive(
+      JSON.stringify({
+        type: "CANDIDATE_ROSTER_UPDATED",
+        version: 1,
+        questId,
+      })
+    );
+
+    expect(onRosterUpdated).not.toHaveBeenCalled();
+    stop();
   });
 
   it("forwards only matching versioned Quest updates", () => {
