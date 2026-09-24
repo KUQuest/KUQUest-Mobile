@@ -53,9 +53,12 @@ import type {
   QuestV2Team,
   QuestV2TeamFile,
   QuestV2TeamSelection,
+  QuestV2StartWork,
   QuestV2Underfilled,
 } from "@/api/questV2Contracts";
 import {
+  QuestMode,
+  QuestParticipation,
   type QuestBoardQuest,
   type QuestStatus,
   type QuestUnderfilledConsentDecision,
@@ -456,6 +459,14 @@ function deriveCapabilities(input: {
       proofRequired &&
       (participation !== "GROUP" || mode !== "CANDIDATE" || isTeamLeader) &&
       !hasLockedProof,
+    canStartWork:
+      isWorker &&
+      activeWorker === true &&
+      assigned &&
+      !assignment?.startedAt &&
+      (participation === QuestParticipation.SINGLE ||
+        mode === QuestMode.FIRST_COME_FIRST_SERVED ||
+        isTeamLeader),
     canConfirmCompletion:
       isWorker &&
       activeWorker === true &&
@@ -1285,6 +1296,13 @@ export class LiveQuestService {
     idempotencyKey?: string
   ): Promise<QuestV2Completion> {
     return questApi.confirmCompletion(questId, idempotencyKey);
+  }
+
+  async startWork(
+    questId: string,
+    idempotencyKey: string
+  ): Promise<QuestV2StartWork> {
+    return questApi.startWork(questId, idempotencyKey);
   }
 
   async createReview(

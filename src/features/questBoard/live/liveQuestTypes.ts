@@ -19,8 +19,8 @@ export type LiveQuestActor =
   "HIRER" | "PROSPECTIVE_WORKER" | "CANDIDATE" | "WORKER";
 
 /**
- * Server-derived action for the authenticated viewer. The lifecycle worker
- * starts assigned Quests; the client only refreshes this projection.
+ * Server-derived action for the authenticated viewer. Assigned Quests start
+ * once every required Worker records Start Work; the client only refreshes this projection.
  * Named values live in the canonical contract (`QuestNextAction` in `../domain/types`).
  */
 export type LiveQuestNextAction = QuestNextAction;
@@ -47,6 +47,8 @@ export interface LiveQuestCapabilities {
   canReadWorkChat: boolean;
   canWriteWorkChat: boolean;
   canSubmitProof: boolean;
+  /** Required starter with an Active Assignment who has not recorded Start Work; the startTime gate is checked against the clock. */
+  canStartWork: boolean;
   canConfirmCompletion: boolean;
   canCancel: boolean;
   canReviewProof: boolean;

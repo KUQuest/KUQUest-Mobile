@@ -9,6 +9,7 @@ import {
   questV2BoardResponseSchema,
   questV2CanonicalQuestResponseSchema,
   questV2CompletionResponseSchema,
+  questV2StartWorkResponseSchema,
   questV2CreatePayloadSchema,
   questV2DetailResponseSchema,
   questV2EditPayloadSchema,
@@ -67,6 +68,7 @@ import {
   type QuestV2PublicDetail,
   type QuestV2PublishCheck,
   type QuestV2Review,
+  type QuestV2StartWork,
   type QuestV2Team,
   type QuestV2TeamFile,
   type QuestV2TeamSelection,
@@ -464,6 +466,18 @@ export class QuestApi {
       { method: "POST", headers: mutationHeaders(idempotencyKey) }
     );
     return questV2CompletionResponseSchema.parse(body).data;
+  }
+
+  /** Records Start Work for the viewer's Active Assignment; no request body. */
+  async startWork(
+    questId: string,
+    idempotencyKey: string
+  ): Promise<QuestV2StartWork> {
+    const body = await this.client.request<unknown>(
+      `/api/v2/quests/${questId}/start-work`,
+      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+    );
+    return questV2StartWorkResponseSchema.parse(body).data;
   }
 
   async deleteQuestImage(

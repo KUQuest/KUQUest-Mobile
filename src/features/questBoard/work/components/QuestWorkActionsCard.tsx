@@ -15,6 +15,7 @@ import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { useLocale } from "@/features/preferences/localeStore";
 import { type QuestWorkMessages } from "@/locales/questWorkMessages";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
+import { QuestMode, QuestParticipation } from "../../domain/types";
 
 export interface QuestWorkActionsCardProps {
   snapshot: LiveQuestSnapshot;
@@ -25,6 +26,14 @@ export interface QuestWorkActionsCardProps {
   editSending: boolean;
   editFeedback?: string;
   confirmationSending: boolean;
+  /** Required starter, Start Work not recorded, and startTime reached. */
+  canPressStartWork: boolean;
+  /** Formatted startTime while the viewer must still wait to press Start Work. */
+  startWorkOpensAt?: string;
+  /** Formatted startedAt once the viewer's Start Work is recorded. */
+  startWorkRecordedAt?: string;
+  startWorkSending: boolean;
+  onStartWork: () => void | Promise<void>;
   isTerminal: boolean;
   canOpenChat: boolean;
   onRespondToEdit: (
@@ -44,6 +53,11 @@ export default function QuestWorkActionsCard({
   editSending,
   editFeedback,
   confirmationSending,
+  canPressStartWork,
+  startWorkOpensAt,
+  startWorkRecordedAt,
+  startWorkSending,
+  onStartWork,
   canOpenChat,
   onRespondToEdit,
   onConfirmCompletion,
@@ -54,6 +68,21 @@ export default function QuestWorkActionsCard({
   const { colors: palette } = useAppTheme();
   const { locale } = useLocale();
   const unreadCount = snapshot.workConversation?.unreadCount ?? 0;
+  const isGroup = snapshot.participation === QuestParticipation.GROUP;
+  const assignedDetails = startWorkRecordedAt
+    ? [
+        `${messages.startWorkRecordedAt} ${startWorkRecordedAt}`,
+        isGroup && snapshot.mode === QuestMode.FIRST_COME_FIRST_SERVED
+          ? messages.waitingForOtherWorkers
+          : messages.waitingForQuestStart,
+      ]
+    : canPressStartWork
+      ? [messages.startWorkDescription]
+      : startWorkOpensAt
+        ? [`${messages.startWorkOpensAt} ${startWorkOpensAt}`]
+        : isGroup && snapshot.mode === QuestMode.CANDIDATE
+          ? [messages.waitingForTeamLeader]
+          : [];
 
   return (
     <>
@@ -71,23 +100,53 @@ export default function QuestWorkActionsCard({
         </View>
       ) : null}
 
-      {/* Waiting for Start Callout */}
+      {/* Start Work Callout */}
       {snapshot.state === "QUEST_ASSIGNED" ? (
-        <View className="mt-ku-16 flex-row items-start gap-ku-12 rounded-2xl border border-ku-terracotta/30 bg-ku-surface-terracotta/60 p-ku-16 shadow-sm">
-          <View className="mt-0.5 h-9 w-9 items-center justify-center rounded-full bg-ku-surface-terracotta">
-            <ShieldCheck
-              color={palette.terracotta ?? colors.terracotta}
-              size={20}
-            />
+        <View className="mt-ku-16 rounded-2xl border border-ku-terracotta/30 bg-ku-surface-terracotta/60 p-ku-16 shadow-sm">
+          <View className="flex-row items-start gap-ku-12">
+            <View className="mt-0.5 h-9 w-9 items-center justify-center rounded-full bg-ku-surface-terracotta">
+              <ShieldCheck
+                color={palette.terracotta ?? colors.terracotta}
+                size={20}
+              />
+            </View>
+            <View className="flex-1">
+              <Text className="font-ku-bold text-ku-body text-ku-text-strong">
+                {canPressStartWork
+                  ? messages.startWorkCta
+                  : messages.waitingForStart}
+              </Text>
+              {assignedDetails.map((detail) => (
+                <Text
+                  key={detail}
+                  className="mt-ku-xs text-ku-body-small leading-[20px] text-ku-text-secondary"
+                >
+                  {detail}
+                </Text>
+              ))}
+            </View>
           </View>
-          <View className="flex-1">
-            <Text className="font-ku-bold text-ku-body text-ku-text-strong">
-              {messages.waitingForStart}
-            </Text>
-            <Text className="mt-ku-xs text-ku-body-small leading-[20px] text-ku-text-secondary">
-              {messages.startsAutomatically}
-            </Text>
-          </View>
+          {canPressStartWork ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={messages.startWorkCta}
+              accessibilityState={{
+                disabled: startWorkSending,
+                busy: startWorkSending,
+              }}
+              disabled={startWorkSending}
+              className="mt-ku-14 h-12 flex-row items-center justify-center rounded-xl bg-ku-primary px-ku-16 active:opacity-90 disabled:opacity-50"
+              onPress={() => void onStartWork()}
+            >
+              {startWorkSending ? (
+                <ActivityIndicator color={colors.onPrimary} />
+              ) : (
+                <Text className="text-center font-ku-semibold text-ku-body-small text-ku-on-primary">
+                  {messages.startWorkCta}
+                </Text>
+              )}
+            </Pressable>
+          ) : null}
         </View>
       ) : null}
 

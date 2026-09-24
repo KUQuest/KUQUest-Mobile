@@ -70,6 +70,7 @@ export function workerSnapshot({
     capabilities: {
       canReadWorkChat: Boolean(workConversationId),
       canSubmitProof: false,
+      canStartWork: false,
       canConfirmCompletion: false,
       ...capabilities,
     } as LiveQuestSnapshot["capabilities"],

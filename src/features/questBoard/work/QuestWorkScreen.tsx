@@ -43,6 +43,7 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
     messages,
     openChat,
     openDispute,
+    recordedStartedAt,
     refreshSnapshot,
     refreshing,
     respondToEdit,
@@ -51,6 +52,8 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
     snapshot,
     stale,
     confirmCompletion,
+    startWork,
+    startWorkSending,
   } = useQuestWorkFeature(props);
   const questMessages = questBoardMessages[locale];
   const [now, setNow] = useState(() => Date.now());
@@ -87,6 +90,14 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
         ) ?? [],
     [snapshot?.quest.condition.items]
   );
+  const startedAt = snapshot?.assignment?.startedAt ?? recordedStartedAt;
+  const mustStartWork = Boolean(
+    snapshot?.capabilities.canStartWork && !startedAt
+  );
+  const startTimeMs = snapshot
+    ? new Date(snapshot.quest.startTime).getTime()
+    : Number.NaN;
+  const canPressStartWork = mustStartWork && now >= startTimeMs;
   const contentBottom = Math.max(spacing.lg, insets.bottom + spacing.md);
 
   if (loading && !snapshot) {
@@ -229,6 +240,17 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
               editSending={editSending}
               editFeedback={editFeedback}
               confirmationSending={confirmationSending}
+              canPressStartWork={canPressStartWork}
+              startWorkOpensAt={
+                mustStartWork && !canPressStartWork
+                  ? formatTimestamp(snapshot.quest.startTime, locale, "")
+                  : undefined
+              }
+              startWorkRecordedAt={
+                startedAt ? formatTimestamp(startedAt, locale, "") : undefined
+              }
+              startWorkSending={startWorkSending}
+              onStartWork={startWork}
               isTerminal={isTerminal}
               canOpenChat={canOpenChat}
               onRespondToEdit={respondToEdit}

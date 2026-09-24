@@ -624,6 +624,18 @@ export const questV2CompletionResponseSchema = z.object({
 export type QuestV2Completion = z.infer<
   typeof questV2CompletionResponseSchema
 >["data"];
+export const questV2StartWorkResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    questId: questV2IdSchema,
+    assignmentId: questV2IdSchema,
+    startedAt: z.string(),
+    questState: questV2StateSchema,
+  }),
+});
+export type QuestV2StartWork = z.infer<
+  typeof questV2StartWorkResponseSchema
+>["data"];
 
 export const questV2ReviewSchema = z.object({
   id: questV2IdSchema,

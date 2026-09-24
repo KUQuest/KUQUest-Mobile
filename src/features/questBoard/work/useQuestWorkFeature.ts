@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useLocale } from "@/features/preferences/localeStore";
 
@@ -15,8 +15,14 @@ import type { LiveQuestSnapshot } from "../live/liveQuestTypes";
 import type { QuestStatus } from "../domain/types";
 
 const POLL_INTERVAL_MS = 5_000;
-const POLL_WINDOW_BEFORE_START_MS = 60_000;
-const POLL_WINDOW_AFTER_START_MS = 120_000;
+
+/** Start Work rejections that mean the local Quest/Assignment view is stale. */
+const START_WORK_RELOAD_CODES: Record<string, true> = {
+  START_WORK_ALREADY_RECORDED: true,
+  ASSIGNMENT_NOT_FOUND: true,
+  QUEST_NOT_ASSIGNED: true,
+  QUEST_NOT_FOUND: true,
+};
 
 export interface QuestWorkFeatureProps {
   questId?: string;
@@ -61,22 +67,19 @@ export function useQuestWorkFeature({
   const messages = questWorkMessages[locale];
   const snapshotPollingInterval = useCallback(
     (currentSnapshot: LiveQuestSnapshot | undefined): number | false => {
-      if (!currentSnapshot || currentSnapshot.state !== "QUEST_ASSIGNED")
+      // A viewer who still has to press Start Work drives the transition; the
+      // Start Work button follows the screen clock, not polling.
+      if (
+        !currentSnapshot ||
+        currentSnapshot.state !== "QUEST_ASSIGNED" ||
+        currentSnapshot.capabilities.canStartWork
+      )
         return false;
       const startAt = new Date(currentSnapshot.quest.startTime).getTime();
       if (!Number.isFinite(startAt)) return false;
-      const nowAt = Date.now();
-      const pollStartAt = startAt - POLL_WINDOW_BEFORE_START_MS;
-      const pollDeadline = startAt + POLL_WINDOW_AFTER_START_MS;
-      if (nowAt < pollStartAt) return pollStartAt - nowAt;
-      if (nowAt > pollDeadline) return false;
-
-      const elapsedPolls = Math.floor((nowAt - pollStartAt) / POLL_INTERVAL_MS);
-      const maxPolls =
-        (POLL_WINDOW_BEFORE_START_MS + POLL_WINDOW_AFTER_START_MS) /
-        POLL_INTERVAL_MS;
-      if (elapsedPolls >= maxPolls - 1) return false;
-      return POLL_INTERVAL_MS;
+      // Waiting on other required starters: refresh until the server reports
+      // QUEST_IN_PROGRESS or leaves QUEST_ASSIGNED.
+      return Math.max(startAt - Date.now(), POLL_INTERVAL_MS);
     },
     []
   );
@@ -97,6 +100,12 @@ export function useQuestWorkFeature({
   const [editSending, setEditSending] = useState(false);
   const [editFeedback, setEditFeedback] = useState<string>();
   const [confirmationSending, setConfirmationSending] = useState(false);
+  const [startWorkSending, setStartWorkSending] = useState(false);
+  const [recordedStartedAt, setRecordedStartedAt] = useState<string | null>(
+    null
+  );
+  // Kept across a failed delivery so a retry replays the same command.
+  const startWorkKeyRef = useRef<string | null>(null);
   const [commandError, setCommandError] = useState<string | null>(null);
   const snapshotErrorText = snapshotQuery.error
     ? getErrorText(snapshotQuery.error, messages.serverError)
@@ -173,6 +182,51 @@ export function useQuestWorkFeature({
     snapshot,
   ]);
 
+  const startWork = useCallback(async () => {
+    if (
+      !snapshot?.capabilities.canStartWork ||
+      !routeQuestId ||
+      startWorkSending
+    )
+      return;
+    const idempotencyKey = (startWorkKeyRef.current ??=
+      createQuestIdempotencyKey());
+    setStartWorkSending(true);
+    setCommandError(null);
+    try {
+      const result = await liveQuestService.startWork(
+        routeQuestId,
+        idempotencyKey
+      );
+      startWorkKeyRef.current = null;
+      setRecordedStartedAt(result.startedAt);
+      await refreshSnapshot().catch(() => undefined);
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status >= 500) {
+        // Outcome unknown: the next press retries with the same key.
+        setCommandError(getErrorText(error, messages.serverError));
+        return;
+      }
+      startWorkKeyRef.current = null;
+      if (START_WORK_RELOAD_CODES[error.code]) {
+        await refreshSnapshot().catch((refreshError: unknown) =>
+          setCommandError(getErrorText(refreshError, messages.serverError))
+        );
+        return;
+      }
+      const startWorkErrors: Record<string, string> = {
+        START_WORK_NOT_AVAILABLE: messages.startWorkNotAvailable,
+        START_WORK_DEADLINE_PASSED: messages.startWorkDeadlinePassed,
+        START_WORK_NOT_REQUIRED: messages.startWorkNotRequired,
+      };
+      setCommandError(
+        startWorkErrors[error.code] ?? getErrorText(error, messages.serverError)
+      );
+    } finally {
+      setStartWorkSending(false);
+    }
+  }, [messages, refreshSnapshot, routeQuestId, snapshot, startWorkSending]);
+
   const openDispute = useCallback(() => {
     if (!routeQuestId) return;
     router.push(`../quest/${routeQuestId}/dispute`);
@@ -205,6 +259,7 @@ export function useQuestWorkFeature({
     messages,
     openChat,
     openDispute,
+    recordedStartedAt,
     refreshSnapshot,
     refreshing: snapshotQuery.isRefetching,
     respondToEdit,
@@ -213,5 +268,7 @@ export function useQuestWorkFeature({
     snapshot,
     stale,
     confirmCompletion,
+    startWork,
+    startWorkSending,
   };
 }

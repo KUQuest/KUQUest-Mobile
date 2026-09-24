@@ -2,6 +2,7 @@ import { liveQuestService } from "../liveQuestService";
 import { questApi } from "@/api/QuestApi";
 import { chatApi } from "@/api/ChatApi";
 import type { CreateQuestV2Payload } from "@/api/QuestApi";
+import type { QuestV2Assignment } from "@/api/questV2Contracts";
 
 jest.mock("@/api/QuestApi", () => ({
   createQuestIdempotencyKey: jest.fn(() => "create-key-1"),
@@ -33,6 +34,12 @@ jest.mock("@/api/ChatApi", () => ({
   chatApi: {
     createCandidateInquiry: jest.fn(),
     listConversations: jest.fn(),
+  },
+}));
+
+jest.mock("@/features/auth/AuthService", () => ({
+  authService: {
+    getStudentApi: jest.fn(() => Promise.reject(new Error("offline"))),
   },
 }));
 
@@ -375,5 +382,128 @@ describe("LiveQuestService", () => {
     const result = await liveQuestService.listMyWorkerAssignments("completed");
     expect(result).toBe(assignments);
     expect(mockedQuestApi.listMyAssignments).toHaveBeenCalledWith("completed");
+  });
+
+  describe("Start Work required starter", () => {
+    const assignment = (
+      workerId: string,
+      startedAt: string | null = null
+    ): QuestV2Assignment => ({
+      id: `assignment-${workerId}`,
+      questId: "quest-start-1",
+      workerId,
+      state: "ASSIGNMENT_ACTIVE",
+      questState: "QUEST_ASSIGNED",
+      startedAt,
+      createdAt: "2099-08-25T09:00:00+07:00",
+    });
+
+    async function startCapability({
+      mode,
+      participation,
+      viewerAssignment = assignment("worker-1"),
+      leaderId,
+    }: {
+      mode: "FIRST_COME_FIRST_SERVED" | "CANDIDATE";
+      participation: "SINGLE" | "GROUP";
+      viewerAssignment?: QuestV2Assignment;
+      leaderId?: string;
+    }) {
+      // A Worker cannot read the Hirer detail; the snapshot falls back to public detail.
+      mockedQuestApi.getDetail.mockRejectedValue(new Error("forbidden"));
+      mockedQuestApi.getPublicDetail.mockResolvedValue({
+        id: "quest-start-1",
+        title: "Start Quest",
+        description: "Start the work.",
+        condition: { items: [{ id: "condition-1", text: "Do the work." }] },
+        tag: null,
+        mode,
+        participation,
+        state: "QUEST_ASSIGNED",
+        questReward: 100,
+        headcount: participation === "GROUP" ? 2 : 1,
+        activeWorkerCount: participation === "GROUP" ? 2 : 1,
+        startTime: "2099-08-26T09:00:00+07:00",
+        dueAt: "2099-08-27T12:00:00+07:00",
+        proofRequired: true,
+        hirerName: "Hirer Alice",
+        locations: [],
+        images: [],
+      } as never);
+      mockedQuestApi.listQuestAssignments.mockResolvedValue([
+        viewerAssignment,
+        ...(participation === "GROUP" ? [assignment("worker-2")] : []),
+      ] as never);
+      mockedQuestApi.listApplications.mockResolvedValue([]);
+      mockedQuestApi.listCandidateTeams.mockResolvedValue(
+        (leaderId
+          ? [
+              {
+                id: "team-1",
+                questId: "quest-start-1",
+                leaderId,
+                name: "Team",
+                headcount: 2,
+                state: "TEAM_SELECTED",
+                members: [{ memberId: "worker-1" }, { memberId: "worker-2" }],
+              },
+            ]
+          : []) as never
+      );
+      mockedQuestApi.getUnderfilled.mockResolvedValue(null as never);
+      mockedQuestApi.listProofSubmissions.mockResolvedValue([]);
+      mockedChatApi.listConversations.mockResolvedValue({
+        items: [],
+        nextCursor: null,
+      } as never);
+
+      const snapshot = await liveQuestService.getLiveSnapshot(
+        "quest-start-1",
+        "worker-1"
+      );
+      return snapshot.capabilities.canStartWork;
+    }
+
+    it("requires the Active Worker of a SINGLE Quest", async () => {
+      await expect(
+        startCapability({ mode: "CANDIDATE", participation: "SINGLE" })
+      ).resolves.toBe(true);
+    });
+
+    it("requires every Active Worker of a GROUP FIRST_COME_FIRST_SERVED Quest", async () => {
+      await expect(
+        startCapability({
+          mode: "FIRST_COME_FIRST_SERVED",
+          participation: "GROUP",
+        })
+      ).resolves.toBe(true);
+    });
+
+    it("requires only the Team Leader of a GROUP CANDIDATE Quest", async () => {
+      await expect(
+        startCapability({
+          mode: "CANDIDATE",
+          participation: "GROUP",
+          leaderId: "worker-1",
+        })
+      ).resolves.toBe(true);
+      await expect(
+        startCapability({
+          mode: "CANDIDATE",
+          participation: "GROUP",
+          leaderId: "worker-2",
+        })
+      ).resolves.toBe(false);
+    });
+
+    it("stops offering Start Work once the Assignment recorded it", async () => {
+      await expect(
+        startCapability({
+          mode: "FIRST_COME_FIRST_SERVED",
+          participation: "GROUP",
+          viewerAssignment: assignment("worker-1", "2099-08-26T09:01:00Z"),
+        })
+      ).resolves.toBe(false);
+    });
   });
 });

@@ -119,6 +119,7 @@ function createSnapshot(
       canReadWorkChat: false,
       canWriteWorkChat: false,
       canSubmitProof: false,
+      canStartWork: false,
       canConfirmCompletion: false,
       canCancel: true,
       canReviewProof: false,

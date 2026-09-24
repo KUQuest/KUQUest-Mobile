@@ -6,6 +6,7 @@ import {
   type LiveQuestSnapshot,
 } from "../../live/liveQuestService";
 import type { QuestV2Detail } from "@/api/questV2Contracts";
+import { ApiError } from "@/api/ApiClient";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 const mockBack = jest.fn();
@@ -43,6 +44,7 @@ jest.mock("../../live/liveQuestService", () => ({
     getLiveSnapshot: jest.fn(),
     respondToEditRequest: jest.fn(),
     confirmCompletion: jest.fn(),
+    startWork: jest.fn(),
   },
 }));
 
@@ -58,6 +60,9 @@ const mockedConfirmCompletion =
   liveQuestService.confirmCompletion as jest.MockedFunction<
     typeof liveQuestService.confirmCompletion
   >;
+const mockedStartWork = liveQuestService.startWork as jest.MockedFunction<
+  typeof liveQuestService.startWork
+>;
 
 type SnapshotOverrides = Omit<
   Partial<LiveQuestSnapshot>,
@@ -143,6 +148,7 @@ const defaultCapabilities = {
   canReadWorkChat: true,
   canWriteWorkChat: true,
   canSubmitProof: false,
+  canStartWork: false,
   canConfirmCompletion: false,
   canCancel: false,
   canReviewProof: false,
@@ -218,41 +224,142 @@ describe("QuestWorkScreen", () => {
     );
   });
 
-  it("refreshes the server-owned automatic transition without a Start Work command", async () => {
+  it("keeps refreshing while other Workers still have to press Start Work", async () => {
     jest.useFakeTimers();
-    const startTime = new Date(Date.now() + 65_000).toISOString();
-    const assigned = makeSnapshot({
-      quest: { ...defaultQuest, startTime },
+    const waiting = makeSnapshot({
+      participation: "GROUP",
+      assignment: { ...defaultAssignment, startedAt: "2020-01-01T08:00:00Z" },
     });
     const inProgress = makeSnapshot({
       state: "QUEST_IN_PROGRESS",
+      participation: "GROUP",
       nextAction: "SUBMIT_PROOF",
-      quest: { ...defaultQuest, startTime, state: "QUEST_IN_PROGRESS" },
+      quest: { ...defaultQuest, state: "QUEST_IN_PROGRESS" },
     });
-    let snapshotRequestCount = 0;
-    mockedGetSnapshot.mockImplementation(() => {
-      snapshotRequestCount += 1;
-      return Promise.resolve(
-        snapshotRequestCount === 1 ? assigned : inProgress
-      );
+    mockedGetSnapshot
+      .mockResolvedValueOnce(waiting)
+      .mockResolvedValue(inProgress);
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    expect(await view.findByText(/Waiting for the other Workers/)).toBeTruthy();
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(5_000);
+    });
+
+    expect(await view.findByText("In progress")).toBeTruthy();
+    expect(view.queryByRole("button", { name: "Start Work" })).toBeNull();
+    jest.useRealTimers();
+  });
+
+  it("offers Start Work to a required starter only once startTime is reached", async () => {
+    mockedGetSnapshot.mockResolvedValue(
+      makeSnapshot({
+        quest: {
+          ...defaultQuest,
+          startTime: new Date(Date.now() + 3_600_000).toISOString(),
+        },
+        capabilities: { canStartWork: true },
+      })
+    );
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+
+    expect(await view.findByText(/^Start Work opens at/)).toBeTruthy();
+    expect(view.queryByRole("button", { name: "Start Work" })).toBeNull();
+  });
+
+  it("records Start Work and waits for other Workers while the Quest stays assigned", async () => {
+    const required = makeSnapshot({
+      participation: "GROUP",
+      capabilities: { canStartWork: true },
+    });
+    const recorded = makeSnapshot({
+      participation: "GROUP",
+      assignment: { ...defaultAssignment, startedAt: "2020-01-01T08:00:00Z" },
+    });
+    mockedGetSnapshot
+      .mockResolvedValueOnce(required)
+      .mockResolvedValue(recorded);
+    mockedStartWork.mockResolvedValue({
+      questId: "quest-work-1",
+      assignmentId: "assignment-1",
+      startedAt: "2020-01-01T08:00:00Z",
+      questState: "QUEST_ASSIGNED",
     });
     const view = await renderWithQueryClient(
       <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
     );
-    await waitFor(() =>
-      expect(
-        view.getAllByText("Waiting for work to start").length
-      ).toBeGreaterThan(0)
+
+    await fireEvent.press(
+      await view.findByRole("button", { name: "Start Work" })
     );
 
-    await act(async () => {
-      await jest.advanceTimersByTimeAsync(65_000);
-    });
+    expect(mockedStartWork).toHaveBeenCalledWith(
+      "quest-work-1",
+      expect.any(String)
+    );
+    expect(await view.findByText(/Waiting for the other Workers/)).toBeTruthy();
+    expect(view.getByText(/^You pressed Start Work at/)).toBeTruthy();
+    expect(view.queryByRole("button", { name: "Start Work" })).toBeNull();
+    expect(view.queryByText("In progress")).toBeNull();
+  });
 
-    expect(await view.findByText("In progress")).toBeTruthy();
-    expect(mockedGetSnapshot.mock.calls.length).toBeGreaterThanOrEqual(2);
-    expect(view.queryByText("Start Work")).toBeNull();
-    jest.useRealTimers();
+  it("retries an undelivered Start Work with the same key and uses a new key for a new press", async () => {
+    mockedGetSnapshot.mockResolvedValue(
+      makeSnapshot({ capabilities: { canStartWork: true } })
+    );
+    mockedStartWork
+      .mockRejectedValueOnce(new TypeError("Network request failed"))
+      .mockRejectedValueOnce(
+        new ApiError(409, "START_WORK_NOT_AVAILABLE", "Not yet")
+      )
+      .mockRejectedValueOnce(
+        new ApiError(409, "START_WORK_NOT_AVAILABLE", "Not yet")
+      );
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    const press = async (calls: number) => {
+      await fireEvent.press(
+        await view.findByRole("button", { name: "Start Work", disabled: false })
+      );
+      await waitFor(() => expect(mockedStartWork).toHaveBeenCalledTimes(calls));
+    };
+
+    await press(1);
+    await press(2);
+    expect(
+      await view.findByText(
+        "Start Work is not open yet. Try again at the start time."
+      )
+    ).toBeTruthy();
+    await press(3);
+
+    const keys = mockedStartWork.mock.calls.map(([, key]) => key);
+    expect(keys).toHaveLength(3);
+    expect(keys[1]).toBe(keys[0]);
+    expect(keys[2]).not.toBe(keys[1]);
+  });
+
+  it("reloads the Quest when Start Work was already recorded", async () => {
+    mockedGetSnapshot.mockResolvedValue(
+      makeSnapshot({ capabilities: { canStartWork: true } })
+    );
+    mockedStartWork.mockRejectedValue(
+      new ApiError(409, "START_WORK_ALREADY_RECORDED", "Already recorded")
+    );
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    await fireEvent.press(
+      await view.findByRole("button", { name: "Start Work" })
+    );
+
+    await waitFor(() => expect(mockedGetSnapshot).toHaveBeenCalledTimes(2));
+    expect(view.queryByText(/START_WORK_ALREADY_RECORDED/)).toBeNull();
   });
 
   it("shows the proof CTA only when proof submission is allowed", async () => {

@@ -159,6 +159,7 @@ function createLiveSnapshot(
       canReadWorkChat: false,
       canWriteWorkChat: false,
       canSubmitProof: false,
+      canStartWork: false,
       canConfirmCompletion: false,
       canCancel: false,
       canReviewProof: false,
