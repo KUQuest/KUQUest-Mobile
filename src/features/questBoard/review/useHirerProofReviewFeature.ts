@@ -11,6 +11,7 @@ import {
   useReviewProofMutation,
 } from "@/features/questBoard/api/questBoardQueries";
 
+import { isTerminalStatus } from "@/domain/questLifecycle";
 import { QuestProofStatus } from "../domain/types";
 import { projectProofReviewRows } from "./proofReviewRows";
 
@@ -20,6 +21,7 @@ export function useHirerProofReviewFeature(questId?: string) {
   const reviewProofMutation = useReviewProofMutation();
   const snapshot = snapshotQuery.data;
   const [selectedProofId, setSelectedProofId] = useState<string | null>(null);
+  const [decided, setDecided] = useState(false);
 
   const rows = useMemo(
     () => (snapshot ? projectProofReviewRows(snapshot) : []),
@@ -61,6 +63,7 @@ export function useHirerProofReviewFeature(questId?: string) {
         viewerId: viewerId ?? undefined,
         idempotencyKey: createQuestIdempotencyKey(),
       });
+      setDecided(true);
       return true;
     } catch (caught) {
       // Another device may have decided first; show the Server's current state.
@@ -72,6 +75,16 @@ export function useHirerProofReviewFeature(questId?: string) {
   return {
     canReview,
     closeProof: () => setSelectedProofId(null),
+    // A decision can end the Quest; once it is Terminal, offer the Rating
+    // Review (rating-review-contract.md). GROUP Quests wait for every decision.
+    ratingReviewQuestId:
+      decided &&
+      !proofForReview &&
+      isTerminalStatus(snapshot?.state) &&
+      snapshot?.capabilities.canCreateReview
+        ? (questId ?? null)
+        : null,
+    closeRatingReview: () => setDecided(false),
     openProof: setSelectedProofId,
     pendingCount,
     proofFileLinksQuery,
