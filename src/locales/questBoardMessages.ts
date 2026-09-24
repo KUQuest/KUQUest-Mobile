@@ -228,6 +228,16 @@ export interface QuestBoardMessages {
   proofReviewReasonTooLong: string;
   proofReviewConfirmNotApproved: string;
   proofReviewNothingPending: string;
+  proofReviewSingleHint: string;
+  proofReviewGroupHint: string;
+  proofReviewTeamHint: string;
+  proofReviewPendingCount: (count: number) => string;
+  /** `null` means the submitter has not sent a Proof Submission yet. */
+  proofReviewStatus: (status: string | null) => string;
+  proofReviewWorkerFallback: string;
+  proofReviewTeamSubmittedBy: (leaderName: string) => string;
+  proofReviewOpen: string;
+  proofReviewOpenLabel: (submitterName: string) => string;
   disputeBannerTitle: string;
   disputeDescription: string;
   resolveDispute: string;
@@ -583,6 +593,33 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     proofReviewConfirmNotApproved: "Confirm non-approval",
     proofReviewNothingPending:
       "This Quest has no submitted work waiting for your review.",
+    proofReviewSingleHint:
+      "One Worker submits work for this Quest. Not approving it fails the Quest.",
+    proofReviewGroupHint:
+      "Each Worker submits their own work, and you review each submission separately. Not approving any submission fails the Quest; Workers you already approved keep their Reward.",
+    proofReviewTeamHint:
+      "The Team Leader submits one piece of work for the whole Team. Your decision applies to every teammate.",
+    proofReviewPendingCount: (count) =>
+      count === 0
+        ? "No submissions waiting for review"
+        : count === 1
+          ? "1 submission waiting for review"
+          : `${count} submissions waiting for review`,
+    proofReviewStatus: (status) =>
+      status === null
+        ? "Not submitted yet"
+        : ((
+            {
+              PROOF_PENDING: "Waiting for review",
+              PROOF_APPROVED: "Approved",
+              PROOF_NOT_APPROVED: "Not approved",
+            } as Record<string, string>
+          )[status] ?? status),
+    proofReviewWorkerFallback: "Worker",
+    proofReviewTeamSubmittedBy: (leaderName) => `Sent by ${leaderName}`,
+    proofReviewOpen: "Review",
+    proofReviewOpenLabel: (submitterName) =>
+      `Review submission from ${submitterName}`,
     disputeBannerTitle: "Quest dispute",
     disputeDescription:
       "This Quest is waiting for an authorized dispute resolution.",
@@ -932,6 +969,29 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
       })[status] ?? status,
     proofReviewConfirmNotApproved: "ยืนยันการไม่อนุมัติ",
     proofReviewNothingPending: "เควสต์นี้ไม่มีงานที่รอให้คุณตรวจ",
+    proofReviewSingleHint:
+      "ผู้ทำงานหนึ่งคนส่งงานสำหรับเควสต์นี้ หากไม่อนุมัติ เควสต์จะล้มเหลว",
+    proofReviewGroupHint:
+      "ผู้ทำงานแต่ละคนส่งงานของตนเอง และคุณต้องตรวจทีละรายการ หากไม่อนุมัติงานใดงานหนึ่ง เควสต์จะล้มเหลว ผู้ทำงานที่คุณอนุมัติแล้วยังได้รับรางวัล",
+    proofReviewTeamHint:
+      "หัวหน้าทีมส่งงานหนึ่งชิ้นแทนทั้งทีม การตัดสินใจของคุณมีผลกับสมาชิกทุกคนในทีม",
+    proofReviewPendingCount: (count) =>
+      count === 0 ? "ไม่มีงานที่รอตรวจ" : `มีงาน ${count} รายการรอตรวจ`,
+    proofReviewStatus: (status) =>
+      status === null
+        ? "ยังไม่ส่งงาน"
+        : ((
+            {
+              PROOF_PENDING: "รอตรวจ",
+              PROOF_APPROVED: "อนุมัติแล้ว",
+              PROOF_NOT_APPROVED: "ไม่อนุมัติ",
+            } as Record<string, string>
+          )[status] ?? status),
+    proofReviewWorkerFallback: "ผู้ทำงาน",
+    proofReviewTeamSubmittedBy: (leaderName) => `ส่งโดย ${leaderName}`,
+    proofReviewOpen: "ตรวจงาน",
+    proofReviewOpenLabel: (submitterName) =>
+      `ตรวจงานที่ส่งโดย ${submitterName}`,
     disputeBannerTitle: "ข้อพิพาทเควสต์",
     disputeDescription: "เควสต์นี้รอการแก้ไขข้อพิพาทจากผู้มีอำนาจ",
     resolveDispute: "แก้ไขข้อพิพาท",

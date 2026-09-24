@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 
 import type { UploadAsset } from "@/api/fileUpload";
-import { disputeApi, type DisputeReason } from "@/api/DisputeApi";
+import { disputeApi } from "@/api/DisputeApi";
 import type {
   QuestV2CreateEditRequestPayload,
   QuestV2ProofReviewPayload,
@@ -696,16 +696,8 @@ export function useCancelQuestMutation() {
 export function useFileDisputeMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      questId,
-      reason,
-      statement,
-    }: {
-      questId: string;
-      viewerId: string;
-      reason: DisputeReason;
-      statement: string;
-    }) => disputeApi.fileDispute(questId, { reason, statement }),
+    mutationFn: ({ questId }: { questId: string; viewerId: string }) =>
+      disputeApi.fileDispute(questId),
     onSuccess: (_, variables) =>
       invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
   });

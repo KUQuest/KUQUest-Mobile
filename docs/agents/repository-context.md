@@ -58,6 +58,7 @@ reason to weaken either contract.
 - `src/app/quest/[id]/dispute.tsx` — Dispute case submission.
 - `src/app/quest/[id]/work.tsx` — Worker Work Hub: one page per Quest for status, inline proof submission, completion, edit responses, conditions, and chat.
 - `src/app/quest/[id]/proof.tsx` — Hirer-side proof screen; in the Worker workspace it redirects to the Work Hub, where proof is submitted inline.
+- `src/app/quest/[id]/proof-review.tsx` — Hirer proof review list: one row per Assignment (or the selected Candidate Team for `GROUP + CANDIDATE`), `PROOF_PENDING` first; each pending Proof Submission opens the review Popup. Reached from Home and from Quest management.
 - `src/app/quest/[id]/inquiry/[conversationId].tsx` — Candidate Inquiry conversation detail.
 - Quest Board implementation and deterministic local states: `src/features/questBoard/board/QuestBoardScreen.tsx` and `src/features/questBoard/fixtures/questBoardHarness.ts`.
 - `src/app/profile/edit/index.tsx` and `src/app/profile/edit/[section].tsx` — Profile editing.

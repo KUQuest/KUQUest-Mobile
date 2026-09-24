@@ -1,91 +1,38 @@
 import { z } from "zod";
 import { ApiClient } from "./ApiClient";
-import type { RequestOptions } from "./WalletApi";
 
-export const disputeReasonSchema = z.enum([
-  "PROOF_REJECTED_UNFAIRLY",
-  "CONDITIONS_BREACHED",
-  "COMMUNICATION_BREAKDOWN",
-  "OTHER",
-]);
-export type DisputeReason = z.infer<typeof disputeReasonSchema>;
-
+/** Fields the mobile app reads from `fileQuestDispute` (docs/api/api.yaml). */
 export const disputeCaseSchema = z.object({
   id: z.string(),
+  displayId: z.string(),
   questId: z.string(),
-  filerId: z.string(),
-  filerRole: z.enum(["HIRER", "WORKER"]),
-  status: z.string(),
-  reason: disputeReasonSchema,
-  statement: z.string(),
-  heldSatang: z.number().int().nonnegative().optional(),
-  filingDeadline: z.string().optional(),
-  holdExpiresAt: z.string().optional(),
+  status: z.enum([
+    "DISPUTE_CASE_PENDING",
+    "DISPUTE_CASE_DISMISSED",
+    "DISPUTE_CASE_RESOLVED",
+  ]),
   createdAt: z.string(),
 });
 export type DisputeCase = z.infer<typeof disputeCaseSchema>;
 
 export const disputeCaseResponseSchema = z.object({
   success: z.literal(true),
-  data: z.object({
-    dispute: disputeCaseSchema,
-  }),
+  data: disputeCaseSchema,
 });
-export type DisputeCaseResponse = z.infer<typeof disputeCaseResponseSchema>;
-
-export const disputeQueryResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    dispute: disputeCaseSchema.nullable(),
-  }),
-});
-export type DisputeQueryResponse = z.infer<typeof disputeQueryResponseSchema>;
-
-export interface FileDisputePayload {
-  reason: DisputeReason;
-  statement: string;
-  evidenceFileIds?: string[];
-}
 
 export class DisputeApi {
   constructor(private readonly client: ApiClient = new ApiClient()) {}
 
-  async fileDispute(
-    questId: string,
-    payload: {
-      reason: DisputeReason;
-      statement: string;
-      evidenceFileIds?: string[];
-    },
-    idempotencyKey?: string
-  ): Promise<DisputeCase> {
-    const headers: Record<string, string> = {};
-    if (idempotencyKey) {
-      headers["idempotency-key"] = idempotencyKey;
-    }
-    const body = await this.client.requestJson<unknown>(
-      `/api/v1/quests/${questId}/disputes`,
-      payload,
-      {
-        method: "POST",
-        headers,
-      }
-    );
-    return disputeCaseResponseSchema.parse(body).data.dispute;
-  }
-
-  async getDispute(
-    questId: string,
-    options?: RequestOptions
-  ): Promise<DisputeCase | null> {
+  /**
+   * Files the viewer's one Dispute Case on a `QUEST_FAILED` Quest. The Server
+   * enforces the 1-day self-file window and the one-case-per-filer rule.
+   */
+  async fileDispute(questId: string): Promise<DisputeCase> {
     const body = await this.client.request<unknown>(
       `/api/v1/quests/${questId}/disputes`,
-      {
-        method: "GET",
-        signal: options?.signal,
-      }
+      { method: "POST" }
     );
-    return disputeQueryResponseSchema.parse(body).data.dispute;
+    return disputeCaseResponseSchema.parse(body).data;
   }
 }
 
