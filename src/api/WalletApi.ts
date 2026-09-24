@@ -126,8 +126,17 @@ export const payoutListItemSchema = z.object({
 });
 export type PayoutListItem = z.infer<typeof payoutListItemSchema>;
 
+export const WalletTransactionType = {
+  TOP_UP: "TOP_UP",
+  SPEND: "SPEND",
+  EARN: "EARN",
+  HOLD: "HOLD",
+  RELEASE: "RELEASE",
+  CONVERT: "CONVERT",
+  PAYOUT: "PAYOUT",
+} as const;
 export type TransactionType =
-  "TOP_UP" | "SPEND" | "EARN" | "HOLD" | "RELEASE" | "CONVERT" | "PAYOUT";
+  (typeof WalletTransactionType)[keyof typeof WalletTransactionType];
 
 export interface UserTransaction {
   id: string;
@@ -495,7 +504,7 @@ export const payoutsListResponseSchema = z.object({
 });
 
 export class WalletApi {
-  constructor(private readonly client: ApiClient = new ApiClient()) {}
+  constructor(private readonly client: ApiClient = new ApiClient()) { }
 
   async getWallet(options?: RequestOptions): Promise<WalletBalances> {
     const body = await this.client.request<unknown>("/api/v1/wallet", {
@@ -651,7 +660,7 @@ export class WalletApi {
           tx.amountSatang === topUp.creditSatang &&
           Math.abs(
             new Date(tx.createdAt).getTime() -
-              new Date(topUp.createdAt).getTime()
+            new Date(topUp.createdAt).getTime()
           ) < 60000
         ) {
           return true;
@@ -725,7 +734,7 @@ export class WalletApi {
           tx.amountSatang === payoutAmount &&
           Math.abs(
             new Date(tx.createdAt).getTime() -
-              new Date(payout.createdAt).getTime()
+            new Date(payout.createdAt).getTime()
           ) < 60000
         ) {
           return true;
