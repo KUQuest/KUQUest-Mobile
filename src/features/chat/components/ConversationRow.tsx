@@ -25,6 +25,7 @@ export const ConversationRow = memo(function ConversationRow({
   onOpenProfile,
 }: ConversationRowProps) {
   const messages = chatMessages[locale];
+  const participantId = conversation.participantId;
   const participantName = conversation.participantName.split(/\s+/)[0];
   const label = [
     conversation.questTitle[locale],
