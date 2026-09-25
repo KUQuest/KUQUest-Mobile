@@ -1,7 +1,11 @@
 import { useCallback, useState } from "react";
-import { Alert } from "react-native";
 
-import { showErrorAlert } from "@/components/ui/SweetAlert";
+import {
+  showConfirmModal,
+  showErrorAlert,
+  showSweetAlert,
+  SweetAlertVariant,
+} from "@/components/ui/SweetAlert";
 import { useRouter } from "expo-router";
 
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
@@ -136,38 +140,38 @@ export function useHirerQuestManageFeature(questId?: string) {
     );
   const cancel = () => {
     if (!snapshot) return;
-    Alert.alert(cancelMessages.cancelConfirmTitle, cancelDescription, [
-      { text: cancelMessages.keepQuest, style: "cancel" },
-      {
-        text: cancelMessages.cancelQuest,
-        style: "destructive",
-        onPress: () =>
-          void viewerCommand((key) =>
-            cancelQuestMutation
-              .mutateAsync({
-                questId: snapshot.quest.id,
-                viewerId,
-                idempotencyKey: key,
-              })
-              .then((outcome) => {
-                const settlement = [
-                  outcome.paidSatang > 0 &&
-                    cancelMessages.cancelPaidWorkers(
-                      formatSatang(outcome.paidSatang, locale)
-                    ),
-                  outcome.refundedSatang > 0 &&
-                    cancelMessages.cancelRefunded(
-                      formatSatang(outcome.refundedSatang, locale)
-                    ),
-                ].filter(Boolean);
-                Alert.alert(
-                  cancelMessages.cancelSuccessTitle,
-                  settlement.join("\n") || undefined
-                );
-              })
-          ),
-      },
-    ]);
+    showConfirmModal({
+      title: cancelMessages.cancelConfirmTitle,
+      message: cancelDescription ?? "",
+      confirmLabel: cancelMessages.cancelQuest,
+      cancelLabel: cancelMessages.keepQuest,
+      onConfirm: () =>
+        void viewerCommand((key) =>
+          cancelQuestMutation
+            .mutateAsync({
+              questId: snapshot.quest.id,
+              viewerId,
+              idempotencyKey: key,
+            })
+            .then((outcome) => {
+              const settlement = [
+                outcome.paidSatang > 0 &&
+                  cancelMessages.cancelPaidWorkers(
+                    formatSatang(outcome.paidSatang, locale)
+                  ),
+                outcome.refundedSatang > 0 &&
+                  cancelMessages.cancelRefunded(
+                    formatSatang(outcome.refundedSatang, locale)
+                  ),
+              ].filter(Boolean);
+              showSweetAlert({
+                title: cancelMessages.cancelSuccessTitle,
+                message: settlement.join("\n"),
+                variant: SweetAlertVariant.Success,
+              });
+            })
+        ),
+    });
   };
   const reviewProof = () => {
     if (!snapshot || !pendingProof || !snapshot.capabilities.canReviewProof)

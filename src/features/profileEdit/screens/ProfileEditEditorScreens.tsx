@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Alert } from "react-native";
 import { useNavigation, useRouter } from "expo-router";
+import { showConfirmModal } from "@/components/ui/SweetAlert";
 import { ApiError } from "@/api/ApiClient";
 import type { ProfileEditData } from "@/api/StudentApi";
 import type {
@@ -80,10 +80,13 @@ function useLeaveConfirmation(
       onLeave();
       return;
     }
-    Alert.alert(messages.unsavedTitle, messages.unsavedMessage, [
-      { text: messages.stay, style: "cancel" },
-      { text: messages.leave, style: "destructive", onPress: onLeave },
-    ]);
+    showConfirmModal({
+      title: messages.unsavedTitle,
+      message: messages.unsavedMessage,
+      cancelLabel: messages.stay,
+      confirmLabel: messages.leave,
+      onConfirm: onLeave,
+    });
   };
 }
 
@@ -107,17 +110,16 @@ function useUnsavedNavigationGuard(
           return;
         }
         event.preventDefault();
-        Alert.alert(messages.unsavedTitle, messages.unsavedMessage, [
-          { text: messages.stay, style: "cancel" },
-          {
-            text: messages.leave,
-            style: "destructive",
-            onPress: () => {
-              allowNavigationRef.current = true;
-              navigation.dispatch(event.data.action);
-            },
+        showConfirmModal({
+          title: messages.unsavedTitle,
+          message: messages.unsavedMessage,
+          cancelLabel: messages.stay,
+          confirmLabel: messages.leave,
+          onConfirm: () => {
+            allowNavigationRef.current = true;
+            navigation.dispatch(event.data.action);
           },
-        ]);
+        });
       }),
     [messages, navigation]
   );
@@ -293,25 +295,25 @@ export function ExperienceEditorScreen({
   };
   const remove = () => {
     if (!entry?.id || saving || deleting) return;
-    Alert.alert(messages.deleteTitle, messages.deleteMessage(entry.title), [
-      { text: messages.cancel, style: "cancel" },
-      {
-        text: messages.confirmDelete,
-        style: "destructive",
-        onPress: () => {
-          void (async () => {
-            try {
-              await deleteExperienceMutation.mutateAsync(entry.id as string);
-              allowNavigation();
-              router.back();
-            } catch (error) {
-              if (!(await redirectIfSessionExpired(error)))
-                setSaveError(getErrorText(error, messages));
-            }
-          })();
-        },
+    const entryId = entry.id;
+    showConfirmModal({
+      title: messages.deleteTitle,
+      message: messages.deleteMessage(entry.title),
+      cancelLabel: messages.cancel,
+      confirmLabel: messages.confirmDelete,
+      onConfirm: () => {
+        void (async () => {
+          try {
+            await deleteExperienceMutation.mutateAsync(entryId);
+            allowNavigation();
+            router.back();
+          } catch (error) {
+            if (!(await redirectIfSessionExpired(error)))
+              setSaveError(getErrorText(error, messages));
+          }
+        })();
       },
-    ]);
+    });
   };
   return (
     <ExperienceEditor
@@ -403,25 +405,25 @@ export function PortfolioEditorScreen({
   };
   const remove = () => {
     if (!entry?.id || saving || deleting) return;
-    Alert.alert(messages.deleteTitle, messages.deleteMessage(entry.title), [
-      { text: messages.cancel, style: "cancel" },
-      {
-        text: messages.confirmDelete,
-        style: "destructive",
-        onPress: () => {
-          void (async () => {
-            try {
-              await deletePortfolioMutation.mutateAsync(entry.id as string);
-              allowNavigation();
-              router.back();
-            } catch (error) {
-              if (!(await redirectIfSessionExpired(error)))
-                setSaveError(getErrorText(error, messages));
-            }
-          })();
-        },
+    const entryId = entry.id;
+    showConfirmModal({
+      title: messages.deleteTitle,
+      message: messages.deleteMessage(entry.title),
+      cancelLabel: messages.cancel,
+      confirmLabel: messages.confirmDelete,
+      onConfirm: () => {
+        void (async () => {
+          try {
+            await deletePortfolioMutation.mutateAsync(entryId);
+            allowNavigation();
+            router.back();
+          } catch (error) {
+            if (!(await redirectIfSessionExpired(error)))
+              setSaveError(getErrorText(error, messages));
+          }
+        })();
       },
-    ]);
+    });
   };
   return (
     <PortfolioEditor
@@ -525,25 +527,25 @@ export function CertificateEditorScreen({
   };
   const remove = () => {
     if (!entry?.id || saving || deleting) return;
-    Alert.alert(messages.deleteTitle, messages.deleteMessage(entry.name), [
-      { text: messages.cancel, style: "cancel" },
-      {
-        text: messages.confirmDelete,
-        style: "destructive",
-        onPress: () => {
-          void (async () => {
-            try {
-              await deleteCertificateMutation.mutateAsync(entry.id as string);
-              allowNavigation();
-              router.back();
-            } catch (error) {
-              if (!(await redirectIfSessionExpired(error)))
-                setSaveError(getErrorText(error, messages));
-            }
-          })();
-        },
+    const entryId = entry.id;
+    showConfirmModal({
+      title: messages.deleteTitle,
+      message: messages.deleteMessage(entry.name),
+      cancelLabel: messages.cancel,
+      confirmLabel: messages.confirmDelete,
+      onConfirm: () => {
+        void (async () => {
+          try {
+            await deleteCertificateMutation.mutateAsync(entryId);
+            allowNavigation();
+            router.back();
+          } catch (error) {
+            if (!(await redirectIfSessionExpired(error)))
+              setSaveError(getErrorText(error, messages));
+          }
+        })();
       },
-    ]);
+    });
   };
   return (
     <CertificateEditor

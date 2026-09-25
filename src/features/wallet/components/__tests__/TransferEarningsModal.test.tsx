@@ -1,8 +1,8 @@
 import React from "react";
-import { Alert } from "react-native";
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { walletApi, type WalletBalances } from "@/api/WalletApi";
+import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import { walletMessages } from "@/locales/walletMessages";
 import { TransferEarningsModal } from "../TransferEarningsModal";
 
@@ -35,7 +35,6 @@ const m = walletMessages.th;
 describe("TransferEarningsModal", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(Alert, "alert").mockImplementation(() => {});
   });
 
   it("renders modal with compartment flow, policy note, and available balances", async () => {
@@ -109,13 +108,16 @@ describe("TransferEarningsModal", () => {
     const onClose = jest.fn();
 
     const view = await renderWithQueryClient(
-      <TransferEarningsModal
-        balances={mockBalances}
-        messages={m}
-        onClose={onClose}
-        onSuccess={onSuccess}
-        visible={true}
-      />
+      <>
+        <TransferEarningsModal
+          balances={mockBalances}
+          messages={m}
+          onClose={onClose}
+          onSuccess={onSuccess}
+          visible={true}
+        />
+        <SweetAlertHost />
+      </>
     );
 
     // Enter 100 Baht (10,000 Satang)
@@ -132,11 +134,9 @@ describe("TransferEarningsModal", () => {
     await waitFor(() => {
       expect(walletApi.convertEarnings).toHaveBeenCalledWith(10_000);
       expect(onSuccess).toHaveBeenCalledWith(10_000);
-      expect(onClose).toHaveBeenCalled();
-      expect(Alert.alert).toHaveBeenCalledWith(
-        m.transferSuccessTitle,
-        expect.stringContaining("฿100")
-      );
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(view.getByText(m.transferSuccessTitle)).toBeTruthy();
+      expect(view.getByText(m.transferSuccessDesc("฿100"))).toBeTruthy();
     });
   });
 

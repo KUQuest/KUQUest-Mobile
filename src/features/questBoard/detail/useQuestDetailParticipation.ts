@@ -1,5 +1,11 @@
 import { useCallback } from "react";
-import { AccessibilityInfo, Alert } from "react-native";
+import { AccessibilityInfo } from "react-native";
+
+import {
+  showConfirmModal,
+  showSweetAlert,
+  SweetAlertVariant,
+} from "@/components/ui/SweetAlert";
 
 import type {
   QuestDetailLiveActions,
@@ -35,10 +41,11 @@ export function useQuestDetailParticipation({
       transitions.markJoined("accepted");
       transitions.closeConfirmation();
       navigation.openWorkHub();
-      Alert.alert(
-        facts.messages.confirmParticipationTitle,
-        facts.messages.participationConfirmed
-      );
+      showSweetAlert({
+        title: facts.messages.confirmParticipationTitle,
+        message: facts.messages.participationConfirmed,
+        variant: SweetAlertVariant.Success,
+      });
       return;
     }
     if (
@@ -62,35 +69,32 @@ export function useQuestDetailParticipation({
   const leaveQuest = useCallback(() => {
     if (!facts || !facts.canShowWithdraw) return;
     const label = facts.messages.withdrawApplication;
-    Alert.alert(label, facts.messages.withdrawApplicationDescription, [
-      { text: facts.messages.cancel, style: "cancel" },
-      {
-        text: label,
-        style: "destructive",
-        onPress: () => {
-          void (async () => {
-            const liveApplication = facts.liveSnapshot?.application;
-            if (
-              facts.source.kind !== "preview" &&
-              facts.projection?.capabilities.canWithdrawApplication &&
-              liveApplication
-            ) {
-              const result = await liveActions.withdraw(liveApplication.id);
-              if (result === undefined) return;
-            } else if (facts.source.kind === "preview") {
-              const result = previewActions.withdraw();
-              if (!result.ok) return;
-            } else {
-              return;
-            }
-            transitions.markLeft();
-            AccessibilityInfo.announceForAccessibility(
-              facts.messages.leftQuest
-            );
-          })();
-        },
+    showConfirmModal({
+      title: label,
+      message: facts.messages.withdrawApplicationDescription,
+      confirmLabel: label,
+      cancelLabel: facts.messages.cancel,
+      onConfirm: () => {
+        void (async () => {
+          const liveApplication = facts.liveSnapshot?.application;
+          if (
+            facts.source.kind !== "preview" &&
+            facts.projection?.capabilities.canWithdrawApplication &&
+            liveApplication
+          ) {
+            const result = await liveActions.withdraw(liveApplication.id);
+            if (result === undefined) return;
+          } else if (facts.source.kind === "preview") {
+            const result = previewActions.withdraw();
+            if (!result.ok) return;
+          } else {
+            return;
+          }
+          transitions.markLeft();
+          AccessibilityInfo.announceForAccessibility(facts.messages.leftQuest);
+        })();
       },
-    ]);
+    });
   }, [facts, liveActions, previewActions, transitions]);
 
   return { confirmApplication, leaveQuest };

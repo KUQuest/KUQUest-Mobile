@@ -1,6 +1,13 @@
 import mockReact from "react";
 import { BackHandler } from "react-native";
-import { act, fireEvent, screen, waitFor } from "@testing-library/react-native";
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react-native";
+import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import { ApiError } from "@/api/ApiClient";
@@ -555,5 +562,37 @@ describe("OnboardingScreen Academic Registration selections", () => {
 
     resolveSave();
     await waitFor(() => expect(api.updateProfile).toHaveBeenCalled());
+  });
+  test("asks before leaving registration and honors cancel versus confirm", async () => {
+    const api = createApi();
+    prepareAuth(api);
+    mockedAuthService.signOut.mockResolvedValue(undefined);
+    await renderWithQueryClient(
+      <>
+        <OnboardingScreen />
+        <SweetAlertHost />
+      </>
+    );
+    await waitFor(() => expect(screen.getByText("Step 1 of 3")).toBeTruthy());
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Leave registration" })
+    );
+    expect(screen.getByText("Leave registration?")).toBeTruthy();
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByText("Leave registration?")).toBeNull();
+    expect(mockedAuthService.signOut).not.toHaveBeenCalled();
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Leave registration" })
+    );
+    await fireEvent.press(
+      within(screen.getByTestId("sweet-alert")).getByRole("button", {
+        name: "Leave registration",
+      })
+    );
+    await waitFor(() =>
+      expect(mockedAuthService.signOut).toHaveBeenCalledTimes(1)
+    );
   });
 });

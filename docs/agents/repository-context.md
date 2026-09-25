@@ -102,7 +102,7 @@ The route tree currently has no dedicated route file for Sent Work, Wallet/Conve
 ### Shared and transport layer
 
 - `src/api/` — `ApiClient`, request/error boundary, Zod/API contracts, `StudentApi`, `ProfileApi`. Network behavior belongs here, not in screen render code.
-- `src/components/ui/` — shared UI primitives, loading/placeholder/button, TopBar, and Prototype Menu.
+- `src/components/ui/SweetAlert.tsx` — shared app-wide alerts and confirmations (`showSweetAlert`, `showConfirmModal`, `showErrorAlert`) rendered by the root `SweetAlertHost`.
 - `src/components/navigation/` — BottomNav; `src/features/profile/components/ProfileTopBar.tsx` owns profile top chrome. Both consume navigation state from `src/features/navigation/navigationUiStore.ts`.
 - `src/components/layout/` — shared screen roots and safe-area ownership (`ScreenLayout`).
 - `src/domain/` — cross-slice domain primitives; `questLifecycle.ts` owns shared Quest status and next-action values and predicates, while `satang.ts` owns Integer Satang parsing and display.

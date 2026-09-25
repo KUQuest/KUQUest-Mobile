@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Alert } from "react-native";
 
-import { showErrorAlert } from "@/components/ui/SweetAlert";
+import { showConfirmModal, showErrorAlert } from "@/components/ui/SweetAlert";
 
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import type { QuestV2Application, QuestV2Team } from "@/api/questV2Contracts";
@@ -81,17 +80,16 @@ export function useSelectRosterActions({
     run: RosterCommand
   ) {
     if (!questId || pendingAction) return;
-    Alert.alert(title, message, [
-      { text: groupMessages.cancel, style: "cancel" },
-      {
-        text:
-          action.kind === "select"
-            ? groupMessages.selectProposal
-            : groupMessages.reject,
-        style: action.kind === "reject" ? "destructive" : "default",
-        onPress: () => void perform(questId, action, run),
-      },
-    ]);
+    showConfirmModal({
+      title,
+      message,
+      confirmLabel:
+        action.kind === "select"
+          ? groupMessages.selectProposal
+          : groupMessages.reject,
+      cancelLabel: groupMessages.cancel,
+      onConfirm: () => void perform(questId, action, run),
+    });
   }
 
   return {

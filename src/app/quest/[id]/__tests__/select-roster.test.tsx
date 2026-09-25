@@ -1,9 +1,8 @@
-import React from "react";
-import { Alert } from "react-native";
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
-import { ErrorAlertHost } from "@/components/ui/SweetAlert";
-
+import { SweetAlertHost } from "@/components/ui/SweetAlert";
+import { groupQuestMessages } from "@/locales/groupQuestMessages";
+import { questBoardMessages } from "@/locales/questBoardMessages";
 import { studentApi } from "@/api/StudentApi";
 import { authService } from "@/features/auth/AuthService";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
@@ -154,22 +153,32 @@ describe("SelectRosterRoute", () => {
       },
     });
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
-    const alertSpy = jest.spyOn(Alert, "alert");
-
-    const { getByTestId, getByText } = await renderWithQueryClient(
-      <SelectRosterRoute />
+    const { getByTestId, getByText, getByRole } = await renderWithQueryClient(
+      <>
+        <SelectRosterRoute />
+        <SweetAlertHost />
+      </>
     );
 
     await waitFor(() => {
       expect(getByText("Nina Candidate")).toBeTruthy();
     });
 
-    fireEvent.press(getByTestId("select-roster-candidate-app-1-select"));
+    await fireEvent.press(getByTestId("select-roster-candidate-app-1-select"));
 
-    expect(alertSpy).toHaveBeenCalled();
-    const buttons = alertSpy.mock.calls[alertSpy.mock.calls.length - 1][2];
-    const confirm = buttons?.find((button) => button.style !== "cancel");
-    confirm?.onPress?.();
+    expect(
+      getByText(questBoardMessages.th.confirmSelectCandidateTitle)
+    ).toBeTruthy();
+    expect(liveQuestService.selectApplication).not.toHaveBeenCalled();
+    await fireEvent.press(
+      getByRole("button", { name: groupQuestMessages.th.cancel })
+    );
+    expect(liveQuestService.selectApplication).not.toHaveBeenCalled();
+
+    await fireEvent.press(getByTestId("select-roster-candidate-app-1-select"));
+    await fireEvent.press(
+      getByRole("button", { name: groupQuestMessages.th.selectProposal })
+    );
 
     await waitFor(() => {
       expect(liveQuestService.selectApplication).toHaveBeenCalledWith(
@@ -206,21 +215,30 @@ describe("SelectRosterRoute", () => {
     });
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
     (liveQuestService.rejectCandidateTeam as jest.Mock).mockResolvedValue({});
-    const alertSpy = jest.spyOn(Alert, "alert");
-
-    const { getByTestId, getByText } = await renderWithQueryClient(
-      <SelectRosterRoute />
+    const { getByTestId, getByText, getByRole } = await renderWithQueryClient(
+      <>
+        <SelectRosterRoute />
+        <SweetAlertHost />
+      </>
     );
 
     await waitFor(() => {
       expect(getByText("Nina Candidate")).toBeTruthy();
     });
 
-    fireEvent.press(getByTestId("select-roster-team-team-1-reject"));
-
-    const buttons = alertSpy.mock.calls[alertSpy.mock.calls.length - 1][2];
-    const confirm = buttons?.find((button) => button.style === "destructive");
-    confirm?.onPress?.();
+    await fireEvent.press(getByTestId("select-roster-team-team-1-reject"));
+    expect(
+      getByText(questBoardMessages.th.confirmRejectTeamTitle)
+    ).toBeTruthy();
+    expect(liveQuestService.rejectCandidateTeam).not.toHaveBeenCalled();
+    await fireEvent.press(
+      getByRole("button", { name: groupQuestMessages.th.cancel })
+    );
+    expect(liveQuestService.rejectCandidateTeam).not.toHaveBeenCalled();
+    await fireEvent.press(getByTestId("select-roster-team-team-1-reject"));
+    await fireEvent.press(
+      getByRole("button", { name: groupQuestMessages.th.reject })
+    );
 
     await waitFor(() => {
       expect(liveQuestService.rejectCandidateTeam).toHaveBeenCalledWith(
@@ -261,12 +279,10 @@ describe("SelectRosterRoute", () => {
     (liveQuestService.rejectCandidateTeam as jest.Mock).mockRejectedValue(
       new Error(failureMessage)
     );
-    const alertSpy = jest.spyOn(Alert, "alert");
-
-    const { getByTestId, getByText } = await renderWithQueryClient(
+    const { getByTestId, getByText, getByRole } = await renderWithQueryClient(
       <>
         <SelectRosterRoute />
-        <ErrorAlertHost />
+        <SweetAlertHost />
       </>
     );
 
@@ -274,10 +290,13 @@ describe("SelectRosterRoute", () => {
       expect(getByText("Nina Candidate")).toBeTruthy();
     });
 
-    fireEvent.press(getByTestId("select-roster-team-team-1-reject"));
-    const buttons = alertSpy.mock.calls[alertSpy.mock.calls.length - 1][2];
-    const confirm = buttons?.find((button) => button.style === "destructive");
-    confirm?.onPress?.();
+    await fireEvent.press(getByTestId("select-roster-team-team-1-reject"));
+    expect(
+      getByText(questBoardMessages.th.confirmRejectTeamTitle)
+    ).toBeTruthy();
+    await fireEvent.press(
+      getByRole("button", { name: groupQuestMessages.th.reject })
+    );
 
     await waitFor(() => {
       expect(liveQuestService.rejectCandidateTeam).toHaveBeenCalledWith(

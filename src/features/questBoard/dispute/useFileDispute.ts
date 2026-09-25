@@ -1,5 +1,10 @@
 import { useCallback } from "react";
-import { Alert } from "react-native";
+
+import {
+  showConfirmModal,
+  showSweetAlert,
+  SweetAlertVariant,
+} from "@/components/ui/SweetAlert";
 
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { useFileDisputeMutation } from "@/features/questBoard/api/questBoardQueries";
@@ -20,33 +25,31 @@ export function useFileDispute() {
   const confirmFileDispute = useCallback(
     (questId: string) => {
       if (!viewerId || isPending) return;
-      Alert.alert(
-        messages.confirmTitle,
-        messages.rules.map((rule) => `• ${rule}`).join("\n"),
-        [
-          { text: messages.cancel, style: "cancel" },
-          {
-            text: messages.confirm,
-            style: "destructive",
-            onPress: () =>
-              mutate(
-                { questId, viewerId },
-                {
-                  onSuccess: (filedCase) =>
-                    Alert.alert(
-                      messages.successTitle,
-                      messages.successDescription(filedCase.displayId)
-                    ),
-                  onError: (error) =>
-                    Alert.alert(
-                      messages.errorTitle,
-                      error.message || messages.errorFallback
-                    ),
-                }
-              ),
-          },
-        ]
-      );
+      showConfirmModal({
+        title: messages.confirmTitle,
+        message: messages.rules.map((rule) => `• ${rule}`).join("\n"),
+        confirmLabel: messages.confirm,
+        cancelLabel: messages.cancel,
+        onConfirm: () => {
+          mutate(
+            { questId, viewerId },
+            {
+              onSuccess: (filedCase) =>
+                showSweetAlert({
+                  title: messages.successTitle,
+                  message: messages.successDescription(filedCase.displayId),
+                  variant: SweetAlertVariant.Success,
+                }),
+              onError: (error) =>
+                showSweetAlert({
+                  title: messages.errorTitle,
+                  message: error.message || messages.errorFallback,
+                  variant: SweetAlertVariant.Error,
+                }),
+            }
+          );
+        },
+      });
     },
     [isPending, messages, mutate, viewerId]
   );

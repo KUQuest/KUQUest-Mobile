@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AccessibilityInfo, Alert, BackHandler } from "react-native";
+import { AccessibilityInfo, BackHandler } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
+import { showConfirmModal } from "@/components/ui/SweetAlert";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { useLocale } from "@/features/preferences/localeStore";
 import {
@@ -114,22 +115,17 @@ export function useOnboardingController() {
       router.back();
       return;
     }
-    Alert.alert(
-      messages.cancelRegistrationTitle,
-      messages.cancelRegistrationMessage,
-      [
-        { text: messages.cancel, style: "cancel" },
-        {
-          text: messages.cancelRegistration,
-          style: "destructive",
-          onPress: () =>
-            void authService.signOut().then(() => {
-              clearSessionCache(queryClient);
-              router.replace("/");
-            }),
-        },
-      ]
-    );
+    showConfirmModal({
+      title: messages.cancelRegistrationTitle,
+      message: messages.cancelRegistrationMessage,
+      cancelLabel: messages.cancel,
+      confirmLabel: messages.cancelRegistration,
+      onConfirm: () =>
+        void authService.signOut().then(() => {
+          clearSessionCache(queryClient);
+          router.replace("/");
+        }),
+    });
   }, [
     isEditMode,
     messages.cancel,
@@ -250,14 +246,13 @@ export function useOnboardingController() {
       formState.removeExperience(index);
       return;
     }
-    Alert.alert(messages.confirmDeleteTitle, messages.confirmDeleteMessage, [
-      { text: messages.cancel, style: "cancel" },
-      {
-        text: messages.confirm,
-        style: "destructive",
-        onPress: () => formState.removeExperience(index),
-      },
-    ]);
+    showConfirmModal({
+      title: messages.confirmDeleteTitle,
+      message: messages.confirmDeleteMessage,
+      cancelLabel: messages.cancel,
+      confirmLabel: messages.confirm,
+      onConfirm: () => formState.removeExperience(index),
+    });
   };
 
   const onBackPress = () => {

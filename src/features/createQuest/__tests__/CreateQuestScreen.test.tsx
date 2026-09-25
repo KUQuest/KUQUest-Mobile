@@ -1,7 +1,8 @@
-import { fireEvent, waitFor, within } from "@testing-library/react-native";
+import { StyleSheet, TextInput as RNTextInput } from "react-native";
+import { SweetAlertHost } from "@/components/ui/SweetAlert";
+import { act, fireEvent, waitFor, within } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import mockReact, { type ReactElement, type ReactNode } from "react";
-import { Alert, StyleSheet, TextInput as RNTextInput } from "react-native";
 import CreateQuestScreen from "../CreateQuestScreen";
 import { measureFieldRelativeToScroll } from "../components/createQuestFocus";
 import { initialDraft, toBangkokDateTime } from "../domain/createQuestModel";
@@ -55,6 +56,7 @@ const mockLiveGetPublishCheck = jest.fn();
 const mockLivePublishQuest = jest.fn();
 const mockLiveEditQuest = jest.fn();
 const mockWalletGetWallet = jest.fn();
+const mockCancelQuest = jest.fn();
 const defaultWalletBalances = {
   spendingBalanceSatang: 100_000,
   earningsBalanceSatang: 0,
@@ -151,6 +153,27 @@ jest.mock("../draft/createQuestPersistence", () => ({
   persistQuestDraft: (...args: unknown[]) => mockPersistQuestDraft(...args),
   deleteQuestDraft: (...args: unknown[]) => mockDeleteQuestDraft(...args),
 }));
+jest.mock("@/features/questBoard/api/questBoardQueries", () => ({
+  ...jest.requireActual("@/features/questBoard/api/questBoardQueries"),
+  useCancelQuestMutation: () => ({
+    mutateAsync: mockCancelQuest,
+    isPending: false,
+    isSuccess: false,
+    isError: false,
+    variables: undefined,
+  }),
+}));
+
+jest.mock("@/features/createQuest/api/createQuestQueries", () => ({
+  ...jest.requireActual("@/features/createQuest/api/createQuestQueries"),
+  useCancelQuestMutation: () => ({
+    mutateAsync: mockCancelQuest,
+    isPending: false,
+    isSuccess: false,
+    isError: false,
+    variables: undefined,
+  }),
+}));
 jest.mock("@/features/wallet/api/walletQueries", () => {
   const actual = jest.requireActual("@/features/wallet/api/walletQueries");
   return {
@@ -173,7 +196,13 @@ jest.mock("expo-status-bar", () => ({
 jest.mock("../../../features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "th" }),
 }));
-const render = (ui: ReactElement) => renderWithQueryClient(ui);
+const render = (ui: ReactElement) =>
+  renderWithQueryClient(
+    <>
+      {ui}
+      <SweetAlertHost />
+    </>
+  );
 
 async function fillQuestDetails(view: Awaited<ReturnType<typeof render>>) {
   await fireEvent.changeText(
@@ -211,13 +240,6 @@ async function waitForPublishCheck(view: Awaited<ReturnType<typeof render>>) {
   );
 }
 
-function spyOnAlert() {
-  const spy = jest.spyOn(Alert, "alert").mockImplementation(() => {});
-  // Alert is not auto-restored between tests in this repo's jest config.
-  spy.mockClear();
-  return spy;
-}
-
 async function renderServerEditQuest() {
   const view = await render(
     <CreateQuestScreen editMode editQuestId="server-quest-1" />
@@ -240,19 +262,6 @@ function fireBeforeRemove() {
   if (!listener) throw new Error("No beforeRemove guard is registered");
   listener(event);
   return event;
-}
-
-function lastAlertCall() {
-  const calls = jest.mocked(Alert.alert).mock.calls;
-  const last = calls[calls.length - 1];
-  if (!last) throw new Error("No Alert was shown");
-  return last;
-}
-
-function lastAlertButtons() {
-  const buttons = lastAlertCall()[2];
-  if (!buttons) throw new Error("The Alert rendered without buttons");
-  return buttons;
 }
 
 describe("CreateQuestScreen", () => {
@@ -281,6 +290,8 @@ describe("CreateQuestScreen", () => {
     mockNavigation.addListener.mockClear();
     mockNavigation.dispatch.mockClear();
     mockBeforeRemoveListeners.length = 0;
+    mockCancelQuest.mockReset();
+    mockCancelQuest.mockResolvedValue({});
   });
 
   it("keeps the page skeleton visible until draft hydration settles", async () => {
@@ -1071,43 +1082,45 @@ describe("CreateQuestScreen", () => {
   });
 
   it("confirms before system back can abandon an unsaved server edit", async () => {
-    spyOnAlert();
     const view = await renderServerEditQuest();
     await fireEvent.changeText(
       view.getByLabelText("ชื่อเควสต์ *"),
       "Clean the dorm fans, second floor"
     );
 
-    const removal = fireBeforeRemove();
+    let removal!: BeforeRemoveEvent;
+    await act(async () => {
+      removal = fireBeforeRemove();
+    });
     expect(removal.preventDefault).toHaveBeenCalled();
-    expect(lastAlertCall()[0]).toBe("ละทิ้งการเปลี่ยนแปลงหรือไม่");
-    // A server edit must never claim its changes are saved on the device.
-    expect(lastAlertCall()[1]).toBe("การเปลี่ยนแปลงของคุณยังไม่ได้บันทึก");
+    expect(view.getByText("ละทิ้งการเปลี่ยนแปลงหรือไม่")).toBeTruthy();
+    expect(view.getByText("การเปลี่ยนแปลงของคุณยังไม่ได้บันทึก")).toBeTruthy();
 
-    lastAlertButtons()[0].onPress?.();
+    await fireEvent.press(view.getByText("แก้ไขต่อ"));
     expect(mockNavigation.dispatch).not.toHaveBeenCalled();
     expect(view.getByLabelText("ชื่อเควสต์ *").props.value).toBe(
       "Clean the dorm fans, second floor"
     );
 
-    const secondRemoval = fireBeforeRemove();
+    let secondRemoval!: BeforeRemoveEvent;
+    await act(async () => {
+      secondRemoval = fireBeforeRemove();
+    });
     expect(secondRemoval.preventDefault).toHaveBeenCalled();
-    lastAlertButtons()[1].onPress?.();
+    await fireEvent.press(view.getByText("ออกจากหน้านี้"));
     expect(mockNavigation.dispatch).toHaveBeenCalledTimes(1);
     expect(mockNavigation.dispatch).toHaveBeenCalledWith({ type: "GO_BACK" });
   });
 
   it("lets system back leave a clean server edit without prompting", async () => {
-    const alertSpy = spyOnAlert();
-    await renderServerEditQuest();
+    const view = await renderServerEditQuest();
 
     const removal = fireBeforeRemove();
     expect(removal.preventDefault).not.toHaveBeenCalled();
-    expect(alertSpy).not.toHaveBeenCalled();
+    expect(view.queryByTestId("sweet-alert")).toBeNull();
   });
 
   it("disarms the guard exactly once when the header discard navigates", async () => {
-    spyOnAlert();
     const view = await renderServerEditQuest();
     await fireEvent.changeText(
       view.getByLabelText("ชื่อเควสต์ *"),
@@ -1115,8 +1128,8 @@ describe("CreateQuestScreen", () => {
     );
 
     await fireEvent.press(view.getByTestId("create-quest-header-back"));
-    expect(lastAlertCall()[0]).toBe("ละทิ้งการเปลี่ยนแปลงหรือไม่");
-    lastAlertButtons()[1].onPress?.();
+    expect(view.getByText("ละทิ้งการเปลี่ยนแปลงหรือไม่")).toBeTruthy();
+    await fireEvent.press(view.getByText("ออกจากหน้านี้"));
     expect(mockRouter.replace).toHaveBeenCalledTimes(1);
     expect(mockRouter.replace).toHaveBeenCalledWith({
       pathname: "/quest/[id]",
@@ -1130,7 +1143,6 @@ describe("CreateQuestScreen", () => {
   });
 
   it("guards step 2 of a server edit with the same unsaved confirmation", async () => {
-    spyOnAlert();
     const view = await renderServerEditQuest();
     await fireEvent.changeText(
       view.getByLabelText("ชื่อเควสต์ *"),
@@ -1138,31 +1150,39 @@ describe("CreateQuestScreen", () => {
     );
     await fireEvent.press(view.getByText("ถัดไป"));
 
-    const removal = fireBeforeRemove();
+    let removal!: BeforeRemoveEvent;
+    await act(async () => {
+      removal = fireBeforeRemove();
+    });
     expect(removal.preventDefault).toHaveBeenCalled();
-    expect(lastAlertCall()[0]).toBe("ละทิ้งการเปลี่ยนแปลงหรือไม่");
-    lastAlertButtons()[1].onPress?.();
+    expect(view.getByText("ละทิ้งการเปลี่ยนแปลงหรือไม่")).toBeTruthy();
+    await fireEvent.press(view.getByText("ออกจากหน้านี้"));
     expect(mockNavigation.dispatch).toHaveBeenCalledTimes(1);
     expect(mockNavigation.dispatch).toHaveBeenCalledWith({ type: "GO_BACK" });
   });
 
   it("keeps the local-draft wording when back interrupts a restored draft", async () => {
-    spyOnAlert();
     const view = await render(<CreateQuestScreen editQuestId="mock-draft" />);
     await waitFor(() =>
       expect(view.getByTestId("create-quest-logistics-toggle")).toBeTruthy()
     );
 
-    const removal = fireBeforeRemove();
+    let removal!: BeforeRemoveEvent;
+    await act(async () => {
+      removal = fireBeforeRemove();
+    });
     expect(removal.preventDefault).toHaveBeenCalled();
-    expect(lastAlertCall()[0]).toBe("ออกจากการสร้างเควสต์หรือไม่?");
-    expect(lastAlertCall()[1]).toBe(
-      "ฉบับร่างถูกบันทึกไว้ในอุปกรณ์ ออกจากแบบฟอร์มและทำต่อภายหลังได้"
-    );
+    expect(view.getByText("ออกจากการสร้างเควสต์หรือไม่?")).toBeTruthy();
+    expect(
+      view.getByText(
+        "ฉบับร่างถูกบันทึกไว้ในอุปกรณ์ ออกจากแบบฟอร์มและทำต่อภายหลังได้"
+      )
+    ).toBeTruthy();
+    await fireEvent.press(view.getByText("แก้ไขต่อ"));
+    expect(view.queryByTestId("sweet-alert")).toBeNull();
   });
 
   it("saves a server edit and leaves without a discard prompt", async () => {
-    spyOnAlert();
     const view = await renderServerEditQuest();
     await fireEvent.changeText(
       view.getByLabelText("ชื่อเควสต์ *"),
@@ -1184,14 +1204,67 @@ describe("CreateQuestScreen", () => {
     expect(mockRouter.replace).toHaveBeenCalledTimes(1);
   });
 
-  it("shows a localized action in the help dialog", async () => {
-    const alertSpy = spyOnAlert();
-    const view = await render(<CreateQuestScreen />);
+  it("keeps and confirms server Quest cancellation through visible dialogs", async () => {
+    const view = await renderServerEditQuest();
 
+    await fireEvent.press(view.getByTestId("edit-quest-cancel"));
+    expect(view.getByText("ยกเลิกเควสต์นี้หรือไม่?")).toBeTruthy();
+    expect(
+      view.getByText(
+        "ระบบจะยกเลิกเควสต์และคำนวณการชำระเงินตามกฎของเซิร์ฟเวอร์ การกระทำนี้ย้อนกลับไม่ได้"
+      )
+    ).toBeTruthy();
+    await fireEvent.press(
+      within(view.getByTestId("sweet-alert")).getByRole("button", {
+        name: "แก้ไขต่อ",
+      })
+    );
+    expect(mockCancelQuest).not.toHaveBeenCalled();
+
+    await fireEvent.press(view.getByTestId("edit-quest-cancel"));
+    await fireEvent.press(
+      within(view.getByTestId("sweet-alert")).getByRole("button", {
+        name: "ยกเลิกเควสต์",
+      })
+    );
+    await waitFor(() =>
+      expect(mockCancelQuest).toHaveBeenCalledWith({
+        questId: "server-quest-1",
+        idempotencyKey: expect.any(String),
+      })
+    );
+    expect(await view.findByText("ยกเลิกเควสต์แล้ว")).toBeTruthy();
+    expect(
+      view.getByText("เควสต์ถูกยกเลิกและระบบดำเนินการ settlement เรียบร้อยแล้ว")
+    ).toBeTruthy();
+    await fireEvent.press(
+      within(view.getByTestId("sweet-alert")).getByRole("button", {
+        name: "ย้อนกลับ",
+      })
+    );
+    expect(mockRouter.replace).toHaveBeenCalledWith({
+      pathname: "/quest/[id]",
+      params: { id: "server-quest-1", mode: "post" },
+    });
+  });
+
+  it("shows localized help content and dismisses it", async () => {
+    const view = await render(<CreateQuestScreen />);
     await fireEvent.press(view.getByTestId("create-quest-help"));
-    expect(alertSpy).toHaveBeenCalledWith("สร้างเควสต์", expect.any(String), [
-      { text: "ตกลง" },
-    ]);
+    expect(
+      within(view.getByTestId("sweet-alert")).getByText("สร้างเควสต์")
+    ).toBeTruthy();
+    expect(
+      within(view.getByTestId("sweet-alert")).getByText(
+        "ทำตามแต่ละขั้นตอนเพื่อกำหนดรายละเอียด เลือกจำนวนผู้เข้าร่วม เลือกวิธีรับผู้สมัคร และตรวจสอบข้อมูลก่อนบันทึก"
+      )
+    ).toBeTruthy();
+    await fireEvent.press(
+      within(view.getByTestId("sweet-alert")).getByRole("button", {
+        name: "ตกลง",
+      })
+    );
+    expect(view.queryByTestId("sweet-alert")).toBeNull();
   });
 
   it("starts a fresh blank form after the draft screen is unmounted", async () => {

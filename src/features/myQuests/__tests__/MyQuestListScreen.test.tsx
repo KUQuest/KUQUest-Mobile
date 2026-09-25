@@ -1,3 +1,4 @@
+import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import MyQuestListScreen from "../MyQuestListScreen";
@@ -5,6 +6,7 @@ import { projectMyQuestWorkspace } from "../myQuestWorkspaceProjection";
 const mockPush = jest.fn();
 const mockBack = jest.fn();
 const mockHirerList = jest.fn();
+const mockCancelAsync = jest.fn();
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({ back: mockBack, push: mockPush }),
@@ -30,6 +32,14 @@ jest.mock("../myQuestService", () => {
     },
   };
 });
+jest.mock("@/features/questBoard/api/questBoardQueries", () => ({
+  ...jest.requireActual("@/features/questBoard/api/questBoardQueries"),
+  useCancelQuestMutation: () => ({
+    mutateAsync: mockCancelAsync,
+    isPending: false,
+    variables: undefined,
+  }),
+}));
 
 const baseQuest = {
   version: 1,
@@ -66,6 +76,7 @@ describe("MyQuestListScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockHirerList.mockResolvedValue([]);
+    mockCancelAsync.mockResolvedValue({ refundedSatang: 0 });
   });
 
   it("reuses the same list for Hirer drafts and opens the editor", async () => {
@@ -75,9 +86,11 @@ describe("MyQuestListScreen", () => {
     ] as never);
 
     const screen = await renderWithQueryClient(
-      <MyQuestListScreen initialTab="draft" />
+      <>
+        <MyQuestListScreen initialTab="draft" />
+        <SweetAlertHost />
+      </>
     );
-
     await waitFor(() => expect(screen.getByText("Draft Quest")).toBeTruthy());
     expect(screen.queryByText("Published Quest")).toBeNull();
 
@@ -105,9 +118,11 @@ describe("MyQuestListScreen", () => {
     ] as never);
 
     const screen = await renderWithQueryClient(
-      <MyQuestListScreen initialTab="completed" />
+      <>
+        <MyQuestListScreen initialTab="completed" />
+        <SweetAlertHost />
+      </>
     );
-
     await waitFor(() => {
       expect(screen.getByText("Completed Quest")).toBeTruthy();
       expect(screen.getByText("Cancelled Quest")).toBeTruthy();
@@ -117,6 +132,71 @@ describe("MyQuestListScreen", () => {
     fireEvent.press(screen.getByTestId("my-quest-list-action-completed-1"));
     expect(mockPush).not.toHaveBeenCalled();
     expect(await screen.findByTestId("quest-review-modal")).toBeTruthy();
+  });
+
+  it("confirms cancellation and reports successful cancellation", async () => {
+    mockHirerList.mockResolvedValue([
+      draftQuest("open-1", "Published Quest", "QUEST_OPEN"),
+    ] as never);
+    mockCancelAsync.mockResolvedValue({ refundedSatang: 125 });
+
+    const screen = await renderWithQueryClient(
+      <>
+        <MyQuestListScreen initialTab="active" />
+        <SweetAlertHost />
+      </>
+    );
+    await waitFor(() =>
+      expect(screen.getByText("Published Quest")).toBeTruthy()
+    );
+
+    await fireEvent.press(screen.getByTestId("my-quest-list-cancel-open-1"));
+    expect(screen.getByText("Cancel this Quest?")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "The Quest stops accepting Workers and the money on hold is refunded to you in full."
+      )
+    ).toBeTruthy();
+    await fireEvent.press(screen.getByRole("button", { name: "Keep Quest" }));
+    expect(screen.queryByTestId("sweet-alert")).toBeNull();
+    expect(mockCancelAsync).not.toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByTestId("my-quest-list-cancel-open-1"));
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel Quest" }));
+    await waitFor(() =>
+      expect(mockCancelAsync).toHaveBeenCalledWith({
+        questId: "open-1",
+        idempotencyKey: expect.any(String),
+      })
+    );
+    expect(await screen.findByText("Quest cancelled")).toBeTruthy();
+    expect(screen.getByText(/refunded to you/)).toBeTruthy();
+  });
+
+  it("uses draft-specific cancellation copy and leaves draft unchanged when kept", async () => {
+    mockHirerList.mockResolvedValue([
+      draftQuest("draft-1", "Draft Quest", "QUEST_DRAFT"),
+    ] as never);
+
+    const screen = await renderWithQueryClient(
+      <>
+        <MyQuestListScreen initialTab="draft" />
+        <SweetAlertHost />
+      </>
+    );
+    await waitFor(() => expect(screen.getByText("Draft Quest")).toBeTruthy());
+
+    await fireEvent.press(screen.getByTestId("my-quest-list-cancel-draft-1"));
+    expect(
+      screen.getByText(
+        "This draft is cancelled and moved to History. No money is charged."
+      )
+    ).toBeTruthy();
+    await fireEvent.press(screen.getByRole("button", { name: "Keep Quest" }));
+
+    expect(screen.queryByTestId("sweet-alert")).toBeNull();
+    expect(screen.getByText("Draft Quest")).toBeTruthy();
+    expect(mockCancelAsync).not.toHaveBeenCalled();
   });
   it("projects Hirer tabs, normalizes invalid tabs, and projects drafts", () => {
     const projection = projectMyQuestWorkspace({

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { ActivityIndicator, Alert } from "react-native";
+import { ActivityIndicator } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import {
   CheckCircle2,
@@ -25,6 +25,7 @@ import {
   type WorkerWorkMessages,
 } from "@/locales/workerWorkMessages";
 import type { ThemeColors } from "@/theme/colors";
+import { showConfirmModal } from "@/components/ui/SweetAlert";
 import { latestSentProof } from "../workerWorkProjection";
 import { ProofFilePicker, type ProofFile } from "./ProofFilePicker";
 
@@ -163,10 +164,13 @@ export function WorkerProofForm({
 
   const confirmAndSend = () => {
     if (submitDisabled) return;
-    Alert.alert(messages.confirmSubmitTitle, messages.confirmSubmitMessage, [
-      { text: messages.cancel, style: "cancel" },
-      { text: messages.confirm, onPress: () => void sendProof() },
-    ]);
+    showConfirmModal({
+      title: messages.confirmSubmitTitle,
+      message: messages.confirmSubmitMessage,
+      confirmLabel: messages.confirm,
+      cancelLabel: messages.cancel,
+      onConfirm: () => void sendProof(),
+    });
   };
 
   return (

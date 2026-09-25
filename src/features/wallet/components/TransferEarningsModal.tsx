@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Alert, Modal, StyleSheet } from "react-native";
+import { Modal, StyleSheet } from "react-native";
 import type { ViewStyle } from "react-native";
 import {
   ActivityIndicator,
@@ -25,6 +25,7 @@ import type { WalletMessages } from "@/locales/walletMessages";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import { cn } from "@/tw/cn";
+import { showSweetAlert, SweetAlertVariant } from "@/components/ui/SweetAlert";
 import { useConvertEarningsMutation } from "../api/walletQueries";
 
 interface TransferEarningsModalProps {
@@ -79,10 +80,11 @@ export function TransferEarningsModal({
 
     try {
       await convertMutation.mutateAsync(parsedSatang);
-      Alert.alert(
-        m.transferSuccessTitle,
-        m.transferSuccessDesc(formatSatang(parsedSatang))
-      );
+      showSweetAlert({
+        title: m.transferSuccessTitle,
+        message: m.transferSuccessDesc(formatSatang(parsedSatang)),
+        variant: SweetAlertVariant.Success,
+      });
       onSuccess(parsedSatang);
       onClose();
       setInputAmount("");

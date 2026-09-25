@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Modal } from "react-native";
 import {
   CircleAlert,
@@ -128,36 +128,89 @@ export function SweetAlert({
 
 SweetAlert.displayName = "SweetAlert";
 
-interface ErrorAlertState {
+interface SweetAlertRequest {
   title: string;
   message: string;
+  variant: SweetAlertVariant;
+  buttonLabel?: string;
+  cancelLabel?: string;
+  onClose?: () => void;
+  onConfirm?: () => void;
 }
 
-const useErrorAlertStore = create<{ current: ErrorAlertState | null }>(() => ({
-  current: null,
-}));
+const useSweetAlertStore = create<{ current: SweetAlertRequest | null }>(
+  () => ({ current: null })
+);
 
-/**
- * Shows the app-wide error SweetAlert. `error` may be a message or a caught
- * value; an empty or unknown value falls back to the localized generic text.
- */
+export function showSweetAlert(alert: SweetAlertRequest): void {
+  useSweetAlertStore.setState({ current: alert });
+}
+
+export function showConfirmModal({
+  title,
+  message,
+  confirmLabel,
+  cancelLabel,
+  onConfirm,
+}: {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  cancelLabel: string;
+  onConfirm: () => void;
+}): void {
+  showSweetAlert({
+    title,
+    message,
+    variant: SweetAlertVariant.Warning,
+    buttonLabel: confirmLabel,
+    cancelLabel,
+    onConfirm,
+  });
+}
+
+/** Shows an app-wide error SweetAlert with a localized fallback message. */
 export function showErrorAlert(title: string, error?: unknown): void {
-  const message = getErrorMessage(error, "");
-  useErrorAlertStore.setState({ current: { title, message } });
+  showSweetAlert({
+    title,
+    message: getErrorMessage(error, ""),
+    variant: SweetAlertVariant.Error,
+  });
 }
 
-/** Mounted once at the app root; renders the alert raised by `showErrorAlert`. */
-export function ErrorAlertHost() {
-  const current = useErrorAlertStore((state) => state.current);
+/** Mounted once at the app root; renders alerts raised by the shared API. */
+export function SweetAlertHost() {
+  const current = useSweetAlertStore((state) => state.current);
   const messages = alertMessages[useLocale().locale];
+  const onConfirm = current?.onConfirm;
+  useEffect(() => () => useSweetAlertStore.setState({ current: null }), []);
   return (
     <SweetAlert
-      buttonLabel={messages.dismiss}
-      message={current?.message || messages.errorFallback}
-      onClose={() => useErrorAlertStore.setState({ current: null })}
-      testID="error-alert"
+      buttonLabel={current?.buttonLabel ?? messages.dismiss}
+      cancelLabel={current?.cancelLabel ?? messages.dismiss}
+      confirmLabel={current?.buttonLabel}
+      message={
+        current?.message ||
+        (current?.variant === SweetAlertVariant.Error
+          ? messages.errorFallback
+          : "")
+      }
+      onClose={() => {
+        const onClose = current?.onClose;
+        useSweetAlertStore.setState({ current: null });
+        onClose?.();
+      }}
+      onConfirm={
+        onConfirm
+          ? () => {
+              useSweetAlertStore.setState({ current: null });
+              onConfirm();
+            }
+          : undefined
+      }
+      testID="sweet-alert"
       title={current?.title ?? ""}
-      variant={SweetAlertVariant.Error}
+      variant={current?.variant ?? SweetAlertVariant.Info}
       visible={current !== null}
     />
   );

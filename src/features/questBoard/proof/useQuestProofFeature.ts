@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert } from "react-native";
+
+import { showConfirmModal } from "@/components/ui/SweetAlert";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
@@ -325,30 +326,24 @@ export function useQuestProofFeature({
     ) {
       return;
     }
-    Alert.alert(
-      messages.confirmCompletion,
-      messages.confirmCompletionDescription,
-      [
-        { text: messages.cancel, style: "cancel" },
-        {
-          text: messages.confirmCompletion,
-          onPress: () => {
-            void liveQuestService
-              .confirmCompletion(resolvedQuestId, createQuestIdempotencyKey())
-              .then(() => refreshAuthoritatively())
-              .then(() => {
-                onReturnToWorkHub?.();
-                if (!onReturnToWorkHub) router.replace("/my-quests");
-              })
-              .catch((caught) =>
-                setCommandError(
-                  getErrorMessage(caught, messages.errorDescription)
-                )
-              );
-          },
-        },
-      ]
-    );
+    showConfirmModal({
+      title: messages.confirmCompletion,
+      message: messages.confirmCompletionDescription,
+      confirmLabel: messages.confirmCompletion,
+      cancelLabel: messages.cancel,
+      onConfirm: () => {
+        void liveQuestService
+          .confirmCompletion(resolvedQuestId, createQuestIdempotencyKey())
+          .then(() => refreshAuthoritatively())
+          .then(() => {
+            onReturnToWorkHub?.();
+            if (!onReturnToWorkHub) router.replace("/my-quests");
+          })
+          .catch((caught) =>
+            setCommandError(getErrorMessage(caught, messages.errorDescription))
+          );
+      },
+    });
   }, [
     messages,
     onReturnToWorkHub,

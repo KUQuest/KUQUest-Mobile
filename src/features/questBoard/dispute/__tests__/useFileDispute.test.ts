@@ -1,8 +1,9 @@
-import { Alert } from "react-native";
-import { renderHook } from "@testing-library/react-native";
+import { createElement, Fragment } from "react";
+import { Pressable, Text } from "react-native";
+import { act, fireEvent, render } from "@testing-library/react-native";
 
+import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import { disputeMessages } from "@/locales/disputeMessages";
-
 import { useFileDispute } from "../useFileDispute";
 
 const messages = disputeMessages.en;
@@ -20,52 +21,84 @@ jest.mock("@/features/questBoard/api/questBoardQueries", () => ({
   useFileDisputeMutation: () => ({ mutate: mockMutate, isPending: false }),
 }));
 
-function alertButton(call: number, text: string) {
-  const buttons = jest.mocked(Alert.alert).mock.calls[call]?.[2] ?? [];
-  return buttons.find((button) => button.text === text);
+function DisputeAction() {
+  const { confirmFileDispute } = useFileDispute();
+  return createElement(
+    Pressable,
+    {
+      accessibilityRole: "button",
+      accessibilityLabel: "File dispute",
+      onPress: () => confirmFileDispute("quest-1"),
+    },
+    createElement(Text, null, "File dispute")
+  );
+}
+
+function renderDisputeAction() {
+  return render(
+    createElement(
+      Fragment,
+      null,
+      createElement(DisputeAction),
+      createElement(SweetAlertHost)
+    )
+  );
 }
 
 describe("useFileDispute", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(Alert, "alert").mockImplementation(() => {});
   });
 
   it("files only after the viewer confirms, then reports the case number", async () => {
-    const { result } = await renderHook(() => useFileDispute());
+    const dialog = await renderDisputeAction();
 
-    result.current.confirmFileDispute("quest-1");
-    expect(jest.mocked(Alert.alert).mock.calls[0]?.[0]).toBe(
-      messages.confirmTitle
+    await fireEvent.press(dialog.getByRole("button", { name: "File dispute" }));
+    expect(dialog.getByText(messages.confirmTitle)).toBeTruthy();
+    expect(
+      dialog.getByText(messages.rules.map((rule) => `• ${rule}`).join("\n"))
+    ).toBeTruthy();
+    await fireEvent.press(
+      dialog.getByRole("button", { name: messages.cancel })
     );
-    alertButton(0, messages.cancel)?.onPress?.();
     expect(mockMutate).not.toHaveBeenCalled();
 
-    alertButton(0, messages.confirm)?.onPress?.();
+    await fireEvent.press(dialog.getByRole("button", { name: "File dispute" }));
+    await fireEvent.press(
+      dialog.getByRole("button", { name: messages.confirm })
+    );
     expect(mockMutate).toHaveBeenCalledWith(
       { questId: "quest-1", viewerId: "viewer-1" },
       expect.anything()
     );
 
-    mockMutate.mock.calls[0][1].onSuccess({ displayId: "DC-000123" });
-    expect(Alert.alert).toHaveBeenLastCalledWith(
-      messages.successTitle,
-      messages.successDescription("DC-000123")
-    );
+    await act(async () => {
+      mockMutate.mock.calls[0][1].onSuccess({ displayId: "DC-000123" });
+    });
+    expect(dialog.getByText(messages.successTitle)).toBeTruthy();
+    expect(
+      dialog.getByText(messages.successDescription("DC-000123"))
+    ).toBeTruthy();
+    await fireEvent.press(dialog.getByRole("button", { name: "OK" }));
   });
 
   it("shows the Server's reason when filing is rejected", async () => {
-    const { result } = await renderHook(() => useFileDispute());
+    const dialog = await renderDisputeAction();
 
-    result.current.confirmFileDispute("quest-1");
-    alertButton(0, messages.confirm)?.onPress?.();
-    mockMutate.mock.calls[0][1].onError(
-      new Error("The dispute filing window has closed")
+    await fireEvent.press(dialog.getByRole("button", { name: "File dispute" }));
+    await fireEvent.press(
+      dialog.getByRole("button", { name: messages.confirm })
     );
+    await act(async () => {
+      mockMutate.mock.calls[0][1].onError(
+        new Error("The dispute filing window has closed")
+      );
+    });
 
-    expect(Alert.alert).toHaveBeenLastCalledWith(
-      messages.errorTitle,
-      "The dispute filing window has closed"
-    );
+    expect(dialog.getByText(messages.errorTitle)).toBeTruthy();
+    expect(
+      dialog.getByText("The dispute filing window has closed")
+    ).toBeTruthy();
+    await fireEvent.press(dialog.getByRole("button", { name: "OK" }));
   });
 });

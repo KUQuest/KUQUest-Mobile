@@ -1,5 +1,6 @@
 import React from "react";
 import { fireEvent, waitFor } from "@testing-library/react-native";
+import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import ProfileEditSectionScreen, {
@@ -9,12 +10,13 @@ import { authService } from "../../auth/AuthService";
 
 const mockRouteParams: Record<string, string> = {};
 const mockPush = jest.fn();
+const mockBack = jest.fn();
 
 jest.mock("expo-router", () => ({
   useLocalSearchParams: () => mockRouteParams,
   useRouter: () => ({
     push: mockPush,
-    back: jest.fn(),
+    back: mockBack,
     replace: jest.fn(),
     dispatch: jest.fn(),
   }),
@@ -197,6 +199,39 @@ describe("Edit Profile hub", () => {
     await waitFor(() => expect(view.getByText("Unavailable")).toBeTruthy());
     expect(view.queryByText("Save changes")).toBeNull();
     expect(view.queryByLabelText("Title")).toBeNull();
+  });
+  it("keeps unsaved basics edits on cancel and leaves only after confirmation", async () => {
+    mockRouteParams.section = "basics";
+    mockedGetStudentApi.mockResolvedValue({
+      getEditData: jest.fn().mockResolvedValue(editData),
+      updateBasics: jest.fn().mockResolvedValue(editData.profile),
+      uploadAvatar: jest.fn(),
+    } as never);
+    const view = await renderWithQueryClient(
+      <>
+        <ProfileEditSectionScreen />
+        <SweetAlertHost />
+      </>
+    );
+
+    await waitFor(() =>
+      expect(view.getByLabelText("Display name")).toBeTruthy()
+    );
+    await fireEvent.changeText(
+      view.getByLabelText("Display name"),
+      "Ada Byron"
+    );
+    await fireEvent.press(view.getByRole("button", { name: "Go back" }));
+    expect(view.getByText("Discard changes?")).toBeTruthy();
+    await fireEvent.press(view.getByRole("button", { name: "Keep editing" }));
+    expect(view.queryByText("Discard changes?")).toBeNull();
+    expect(view.getByLabelText("Display name").props.value).toBe("Ada Byron");
+    expect(mockBack).not.toHaveBeenCalled();
+
+    await fireEvent.press(view.getByRole("button", { name: "Go back" }));
+    await fireEvent.press(view.getByRole("button", { name: "Discard" }));
+    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(view.queryByText("Discard changes?")).toBeNull();
   });
   it("opens a focused new Experience editor from Add", async () => {
     mockRouteParams.section = "experience";

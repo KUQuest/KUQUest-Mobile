@@ -1,6 +1,5 @@
-import React from "react";
-import { Alert } from "react-native";
 import { fireEvent, waitFor } from "@testing-library/react-native";
+import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import { renderWithQueryClient as render } from "@/testing/queryTestUtils";
 
 import QuestBoardScreen from "../QuestBoardScreen";
@@ -393,7 +392,7 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
 
   it("rejects candidate application through live API when confirmed by Hirer", async () => {
     const base = createLiveSnapshot();
-    const alertSpy = jest.spyOn(Alert, "alert");
+
     const snapshot = createLiveSnapshot({
       actor: "HIRER",
       state: "QUEST_OPEN",
@@ -424,7 +423,10 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
     });
 
     const view = await render(
-      <QuestDetailScreen questId="quest-live-1" studentId="hirer-1" />
+      <>
+        <QuestDetailScreen questId="quest-live-1" studentId="hirer-1" />
+        <SweetAlertHost />
+      </>
     );
 
     await waitFor(() =>
@@ -432,19 +434,22 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
         view.getByTestId("quest-candidate-review-entry-action")
       ).toBeTruthy()
     );
-    fireEvent.press(view.getByTestId("quest-candidate-review-entry-action"));
+    await fireEvent.press(
+      view.getByTestId("quest-candidate-review-entry-action")
+    );
 
     const rejectButton = await view.findByTestId(
       "candidate-review-reject-app-live-1"
     );
-    fireEvent.press(rejectButton);
+    await fireEvent.press(rejectButton);
 
-    expect(alertSpy).toHaveBeenCalled();
-    const alertButtons = alertSpy.mock.calls[alertSpy.mock.calls.length - 1][2];
-    const confirmReject = alertButtons?.find((b) => b.style === "destructive");
-    expect(confirmReject).toBeTruthy();
+    expect(view.getByTestId("sweet-alert")).toBeTruthy();
+    expect(liveQuestService.rejectApplication).not.toHaveBeenCalled();
+    await fireEvent.press(view.getByRole("button", { name: "Cancel" }));
+    expect(liveQuestService.rejectApplication).not.toHaveBeenCalled();
 
-    confirmReject?.onPress?.();
+    await fireEvent.press(rejectButton);
+    await fireEvent.press(view.getByRole("button", { name: "Reject" }));
 
     await waitFor(() => {
       expect(liveQuestService.rejectApplication).toHaveBeenCalledWith(
@@ -453,7 +458,6 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
         expect.any(String)
       );
     });
-    alertSpy.mockRestore();
   });
   it("opens the live underfilled consent branch and invokes the worker callback", async () => {
     const base = createLiveSnapshot();

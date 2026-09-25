@@ -1,5 +1,6 @@
 import { useCallback } from "react";
-import { Alert } from "react-native";
+
+import { showConfirmModal } from "@/components/ui/SweetAlert";
 
 import type {
   QuestDetailLiveActions,
@@ -54,27 +55,22 @@ export function useQuestDetailCandidateActions({
           : facts.candidateGroup
             ? facts.groupMessages.teamProposal
             : facts.groupMessages.individualProposal;
-      Alert.alert(
-        facts.groupMessages.reject,
-        `${facts.quest.title}\n${proposalType}`,
-        [
-          { text: facts.groupMessages.cancel, style: "cancel" },
-          {
-            text: facts.groupMessages.reject,
-            style: "destructive",
-            onPress: () => {
-              if (facts.source.kind === "live-snapshot") {
-                void liveActions.rejectProposal(proposalId).then((result) => {
-                  if (result === undefined) return;
-                  transitions.selectProposal(null);
-                });
-                return;
-              }
-              previewActions.rejectProposal(proposalId);
-            },
-          },
-        ]
-      );
+      showConfirmModal({
+        title: facts.groupMessages.reject,
+        message: `${facts.quest.title}\n${proposalType}`,
+        confirmLabel: facts.groupMessages.reject,
+        cancelLabel: facts.groupMessages.cancel,
+        onConfirm: () => {
+          if (facts.source.kind === "live-snapshot") {
+            void liveActions.rejectProposal(proposalId).then((result) => {
+              if (result === undefined) return;
+              transitions.selectProposal(null);
+            });
+            return;
+          }
+          previewActions.rejectProposal(proposalId);
+        },
+      });
     },
     [facts, liveActions, previewActions, transitions]
   );

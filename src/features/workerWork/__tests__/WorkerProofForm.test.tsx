@@ -1,10 +1,11 @@
-import { Alert, type AlertButton } from "react-native";
-import { act, fireEvent, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor } from "@testing-library/react-native";
 import * as ImagePicker from "expo-image-picker";
 
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
+import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { workerSnapshot } from "@/testing/workerSnapshotFixtures";
+import { workerWorkMessages } from "@/locales/workerWorkMessages";
 import { WorkerProofForm } from "../components/WorkerProofForm";
 
 jest.mock("@/features/preferences/localeStore", () => ({
@@ -30,37 +31,27 @@ const submittable = workerSnapshot({
   capabilities: { canSubmitProof: true },
 });
 
-/** Presses the named button of the most recent Alert. */
-async function pressAlertButton(text: string) {
-  const calls = jest.mocked(Alert.alert).mock.calls;
-  const buttons = (calls[calls.length - 1]?.[2] ?? []) as AlertButton[];
-  const button = buttons.find((candidate) => candidate.text === text);
-  if (!button?.onPress) throw new Error(`No alert button "${text}"`);
-  const onPress = button.onPress;
-  await act(async () => {
-    onPress();
-  });
-}
-
 function renderForm(
   snapshot = submittable,
   onSubmitted: () => Promise<unknown> | void = jest.fn(),
   viewerId = "worker-1"
 ) {
   return renderWithQueryClient(
-    <WorkerProofForm
-      onSubmitted={onSubmitted}
-      questId="quest-1"
-      snapshot={snapshot}
-      viewerId={viewerId}
-    />
+    <>
+      <WorkerProofForm
+        onSubmitted={onSubmitted}
+        questId="quest-1"
+        snapshot={snapshot}
+        viewerId={viewerId}
+      />
+      <SweetAlertHost />
+    </>
   );
 }
 
 describe("WorkerProofForm", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(Alert, "alert").mockImplementation(() => undefined);
   });
 
   it("sends several proof files with a description after confirmation", async () => {
@@ -123,13 +114,17 @@ describe("WorkerProofForm", () => {
       screen.getByLabelText("Work description (optional)"),
       "  Printed and delivered.  "
     );
+    expect(mockedService.submitProofDraft).not.toHaveBeenCalled();
     await fireEvent.press(screen.getByRole("button", { name: "Submit proof" }));
-    expect(Alert.alert).toHaveBeenCalledWith(
-      "Send proof?",
-      expect.any(String),
-      expect.any(Array)
-    );
-    await pressAlertButton("Confirm");
+    expect(screen.getByText("Send proof?")).toBeTruthy();
+    expect(
+      screen.getByText(workerWorkMessages.en.confirmSubmitMessage)
+    ).toBeTruthy();
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByText("Send proof?")).toBeNull();
+    expect(mockedService.submitProofDraft).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByRole("button", { name: "Submit proof" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
 
     await waitFor(() => expect(onSubmitted).toHaveBeenCalled());
     expect(mockedService.createProofDraft).toHaveBeenCalledWith(
@@ -180,7 +175,7 @@ describe("WorkerProofForm", () => {
       "Done"
     );
     await fireEvent.press(screen.getByRole("button", { name: "Submit proof" }));
-    await pressAlertButton("Confirm");
+    await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
 
     await waitFor(() =>
       expect(
@@ -216,7 +211,7 @@ describe("WorkerProofForm", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Add files" }));
     await waitFor(() => expect(screen.getByText("1/5 files")).toBeTruthy());
     await fireEvent.press(screen.getByRole("button", { name: "Submit proof" }));
-    await pressAlertButton("Confirm");
+    await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
 
     await waitFor(() =>
       expect(screen.getByTestId("worker-proof-notice")).toBeTruthy()

@@ -1,9 +1,7 @@
 import React from "react";
 import { act, fireEvent } from "@testing-library/react-native";
-import { Alert } from "react-native";
 
 import { renderWithQueryClient as render } from "@/testing/queryTestUtils";
-import { disputeMessages } from "@/locales/disputeMessages";
 
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import type { QuestV2EditRequest } from "@/api/questV2Contracts";
@@ -11,9 +9,14 @@ import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestServ
 import HirerQuestManageRoute from "../manage";
 
 const mockPush = jest.fn();
+const mockConfirmFileDispute = jest.fn();
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn() }),
   useLocalSearchParams: () => ({ id: "quest-1" }),
+}));
+
+jest.mock("@/features/questBoard/dispute/useFileDispute", () => ({
+  useFileDispute: () => ({ confirmFileDispute: mockConfirmFileDispute }),
 }));
 
 jest.mock("@/features/preferences/localeStore", () => ({
@@ -259,9 +262,9 @@ describe("HirerQuestManageRoute condition edit", () => {
     expect(view.queryByTestId("hirer-manage-condition-edit")).toBeNull();
   });
 
-  it("asks the Hirer to confirm filing a Dispute Case when the Quest is QUEST_FAILED", async () => {
+  it("delegates failed-Quest dispute action to confirmation workflow", async () => {
     mockPush.mockClear();
-    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => {});
+    mockConfirmFileDispute.mockClear();
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
       createSnapshot({
         state: "QUEST_FAILED",
@@ -273,15 +276,9 @@ describe("HirerQuestManageRoute condition edit", () => {
     );
     const view = await render(<HirerQuestManageRoute />);
     const disputeButton = await view.findByTestId("hirer-manage-dispute");
-    expect(disputeButton).toBeTruthy();
     fireEvent.press(disputeButton);
-    expect(alertSpy).toHaveBeenCalledWith(
-      disputeMessages.en.confirmTitle,
-      expect.any(String),
-      expect.any(Array)
-    );
+    expect(mockConfirmFileDispute).toHaveBeenCalledWith("quest-1");
     expect(mockPush).not.toHaveBeenCalled();
-    alertSpy.mockRestore();
   });
 
   it("does not render the dispute action for non-failed Quests", async () => {

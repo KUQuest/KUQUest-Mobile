@@ -1,9 +1,13 @@
 import { useCallback, useMemo, useState } from "react";
-import { Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { showErrorAlert } from "@/components/ui/SweetAlert";
+import {
+  showConfirmModal,
+  showErrorAlert,
+  showSweetAlert,
+  SweetAlertVariant,
+} from "@/components/ui/SweetAlert";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import { formatSatang } from "@/domain/satang";
 import { useLocale } from "@/features/preferences/localeStore";
@@ -93,38 +97,36 @@ export function useMyQuestListController({
   const cancelQuest = useCallback(
     (quest: QuestSummary) => {
       if (!quest.cancelFromCard) return;
-      Alert.alert(
-        messages.cancelConfirmTitle,
-        quest.cancelFromCard === "draft"
-          ? messages.cancelDraftDescription
-          : messages.cancelOpenDescription,
-        [
-          { text: messages.keepQuest, style: "cancel" },
-          {
-            text: messages.cancelQuest,
-            style: "destructive",
-            onPress: () => {
-              cancelQuestAsync({
-                questId: quest.id,
-                idempotencyKey: createQuestIdempotencyKey(),
+      showConfirmModal({
+        title: messages.cancelConfirmTitle,
+        message:
+          quest.cancelFromCard === "draft"
+            ? messages.cancelDraftDescription
+            : messages.cancelOpenDescription,
+        confirmLabel: messages.cancelQuest,
+        cancelLabel: messages.keepQuest,
+        onConfirm: () => {
+          cancelQuestAsync({
+            questId: quest.id,
+            idempotencyKey: createQuestIdempotencyKey(),
+          })
+            .then((outcome) =>
+              showSweetAlert({
+                title: messages.cancelSuccessTitle,
+                message:
+                  outcome.refundedSatang > 0
+                    ? messages.cancelRefunded(
+                        formatSatang(outcome.refundedSatang, locale)
+                      )
+                    : "",
+                variant: SweetAlertVariant.Success,
               })
-                .then((outcome) =>
-                  Alert.alert(
-                    messages.cancelSuccessTitle,
-                    outcome.refundedSatang > 0
-                      ? messages.cancelRefunded(
-                          formatSatang(outcome.refundedSatang, locale)
-                        )
-                      : undefined
-                  )
-                )
-                .catch((caught: unknown) =>
-                  showErrorAlert(messages.cancelErrorTitle, caught)
-                );
-            },
-          },
-        ]
-      );
+            )
+            .catch((caught: unknown) =>
+              showErrorAlert(messages.cancelErrorTitle, caught)
+            );
+        },
+      });
     },
     [cancelQuestAsync, locale, messages]
   );

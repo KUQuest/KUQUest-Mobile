@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { AccessibilityInfo, Alert, useWindowDimensions } from "react-native";
+import { AccessibilityInfo, useWindowDimensions } from "react-native";
 import { useNavigation, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { showErrorAlert } from "@/components/ui/SweetAlert";
+import {
+  showConfirmModal,
+  showErrorAlert,
+  showSweetAlert,
+  SweetAlertVariant,
+} from "@/components/ui/SweetAlert";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useWorkerTagsQuery } from "@/features/workerHome/api/workerHomeQueries";
 import { createQuestMessages } from "@/locales/createQuestMessages";
@@ -181,14 +186,15 @@ export function useCreateQuestController({
   const requestLeaveConfirmation = useCallback(
     (onLeave: () => void) => {
       const serverEdit = isServerEditMode(mode);
-      Alert.alert(
-        serverEdit ? messages.unsavedTitle : messages.discardTitle,
-        serverEdit ? messages.unsavedMessage : messages.discardDescription,
-        [
-          { text: messages.keepEditing, style: "cancel" },
-          { text: messages.discard, style: "destructive", onPress: onLeave },
-        ]
-      );
+      showConfirmModal({
+        title: serverEdit ? messages.unsavedTitle : messages.discardTitle,
+        message: serverEdit
+          ? messages.unsavedMessage
+          : messages.discardDescription,
+        confirmLabel: messages.discard,
+        cancelLabel: messages.keepEditing,
+        onConfirm: onLeave,
+      });
     },
     [messages, mode]
   );
@@ -368,32 +374,36 @@ export function useCreateQuestController({
 
   const confirmCancel = () => {
     if (!isServerEditMode(mode)) return;
-    Alert.alert(messages.cancelQuestTitle, messages.cancelQuestDescription, [
-      { text: messages.cancelQuestKeep, style: "cancel" },
-      {
-        text: messages.cancelQuestConfirm,
-        style: "destructive",
-        onPress: () => {
-          void editState.cancelQuest().then((result) => {
-            if (!result.ok) {
-              showErrorAlert(messages.cancelQuestTitle, result.message);
-              return;
-            }
-            Alert.alert(
-              messages.cancelledQuestTitle,
-              messages.cancelledQuestDescription,
-              [{ text: messages.back, onPress: leaveCreateFlow }]
-            );
+    showConfirmModal({
+      title: messages.cancelQuestTitle,
+      message: messages.cancelQuestDescription,
+      confirmLabel: messages.cancelQuestConfirm,
+      cancelLabel: messages.cancelQuestKeep,
+      onConfirm: () => {
+        void editState.cancelQuest().then((result) => {
+          if (!result.ok) {
+            showErrorAlert(messages.cancelQuestTitle, result.message);
+            return;
+          }
+          showSweetAlert({
+            title: messages.cancelledQuestTitle,
+            message: messages.cancelledQuestDescription,
+            variant: SweetAlertVariant.Success,
+            buttonLabel: messages.back,
+            onClose: leaveCreateFlow,
           });
-        },
+        });
       },
-    ]);
+    });
   };
 
   const showHelp = () =>
-    Alert.alert(messages.helpTitle, messages.helpDescription, [
-      { text: messages.helpAction },
-    ]);
+    showSweetAlert({
+      title: messages.helpTitle,
+      message: messages.helpDescription,
+      variant: SweetAlertVariant.Info,
+      buttonLabel: messages.helpAction,
+    });
 
   const goBack = () => {
     setPendingInvalidField(null);
