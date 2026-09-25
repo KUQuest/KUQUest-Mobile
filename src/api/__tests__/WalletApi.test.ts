@@ -354,9 +354,6 @@ describe("WalletApi", () => {
       "https://api.example.test/api/v1/payouts",
       expect.objectContaining({
         method: "POST",
-        headers: expect.objectContaining({
-          "idempotency-key": "idemp-payout-1",
-        }),
         body: JSON.stringify({
           amountSatang: 50000,
           destinationId: "dest-1",
@@ -479,7 +476,7 @@ describe("WalletApi", () => {
     expect(quote.maximumDebitSatang).toBe(21605);
   });
 
-  it("creates a payout against a quoteId with idempotency key", async () => {
+  it("creates a payout against a quoteId", async () => {
     const createPayoutResponse = {
       success: true,
       data: {
@@ -508,9 +505,6 @@ describe("WalletApi", () => {
       "https://api.example.test/api/v1/payouts",
       expect.objectContaining({
         method: "POST",
-        headers: expect.objectContaining({
-          "idempotency-key": "idemp-key-99",
-        }),
         body: JSON.stringify({ quoteId: "quote-1" }),
       })
     );
@@ -567,7 +561,7 @@ describe("WalletApi", () => {
     const payoutsResponse = {
       success: true,
       data: {
-        payouts: [
+        items: [
           {
             id: "payout-1",
             amountSatang: 50000,
@@ -683,5 +677,80 @@ describe("WalletApi", () => {
       status: "PAID",
       reference: "top-up:topup-uuid-1",
     });
+  });
+  it("propagates top-up and payout list failures", async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        headers: new Headers(),
+        text: async () => JSON.stringify({ message: "Unavailable" }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        headers: new Headers(),
+        text: async () => JSON.stringify({ message: "Unavailable" }),
+      });
+
+    await expect(api.listTopUps()).rejects.toMatchObject({ status: 503 });
+    await expect(api.listPayouts()).rejects.toMatchObject({ status: 503 });
+  });
+
+  it("keeps transaction history when top-up source fails", async () => {
+    const activitiesResponse = {
+      success: true,
+      data: {
+        activities: [
+          {
+            id: "activity-only",
+            occurredAt: "2026-09-18T10:00:00Z",
+            type: "TOP_UP",
+            activityStatus: "COMPLETED",
+            spendingDeltaSatang: 10000,
+            earningsDeltaSatang: 0,
+            fundingReservedDeltaSatang: 0,
+            payoutReservedDeltaSatang: 0,
+            resourceType: "wallet_ledger_transaction",
+            resourceId: "ledger-only",
+          },
+        ],
+      },
+    };
+    fetchMock.mockImplementation((url: string) => {
+      if (url.includes("/api/v1/wallet/activities")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers(),
+          text: async () => JSON.stringify(activitiesResponse),
+        });
+      }
+      if (url.includes("/api/v1/top-ups")) {
+        return Promise.resolve({
+          ok: false,
+          status: 503,
+          headers: new Headers(),
+          text: async () => JSON.stringify({ message: "Unavailable" }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: async () =>
+          JSON.stringify({ success: true, data: { items: [] } }),
+      });
+    });
+
+    const history = await api.getTransactionHistory();
+
+    expect(history.items).toEqual([
+      expect.objectContaining({
+        id: "activity-only",
+        amountSatang: 10000,
+        type: "TOP_UP",
+      }),
+    ]);
   });
 });

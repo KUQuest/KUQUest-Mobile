@@ -1,5 +1,5 @@
 import { questApi, type QuestV2AssignmentMineStatus } from "@/api/QuestApi";
-import type { RequestOptions } from "@/api/WalletApi";
+import type { RequestOptions } from "@/api/ApiClient";
 import type {
   QuestV2Assignment,
   QuestV2CanonicalQuest,

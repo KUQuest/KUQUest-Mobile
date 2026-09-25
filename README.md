@@ -18,7 +18,8 @@ Do **not** run the local API. The mobile app's local API/LAN setup will not work
 ### Realtime connections
 
 - Work Chat and Candidate Inquiry use authenticated WebSocket endpoints: `/v1/chat/conversations/:conversationId/events` and `/v1/chat/candidate-inquiries/:conversationId/events`. Connected clients send messages over WebSocket; REST remains send fallback when disconnected.
-- Authorized Quest readers subscribe to `/api/v2/quests/:questId/events`; Hirers who can select Candidates and Candidate Team Members subscribe to `/api/v2/quests/:questId/candidate-roster/events`. Both streams are read-only and refresh authoritative REST state after updates.
+- Authorized Quest readers subscribe to `/api/v2/quests/:questId/events`; Hirers who can select Candidates and Candidate Team Members subscribe to `/api/v2/quests/:questId/candidate-roster/events`. Both read-only streams refresh authoritative REST snapshots after accepted `SUBSCRIBED` messages, matching updates, and reconnects.
+- Any authenticated Member can subscribe to read-only `/api/v2/quests/board/events`. `QUEST_BOARD_INVALIDATED` carries a Quest ID, not a Board Card; Board query owners refetch filtered `GET /api/v2/quests` results after accepted subscriptions, invalidations, and reconnects.
 - HTTPS API origins map to WSS. The app authenticates sockets with its current session cookie. `/health/ws` is an operational health endpoint; the app does not poll it.
 
 Create `.env.local` in the project root by copying the template:
@@ -128,6 +129,16 @@ bun run verify:staging
 This checks the staging health endpoint and the configured Quest, wallet, and Work Chat API surfaces.
 
 ---
+
+### Debugging API traffic
+
+Development builds print API diagnostics to the Metro terminal through `debugLog` (`src/api/debugLog.ts`); release builds and Jest stay silent:
+
+- `[api]` — every REST request: method, path, status, duration, and error `code` on failure.
+- `[socket]` — WebSocket open, close (code, reason, terminal, next attempt), and not-started reasons.
+- `[query]` / `[mutation]` — every failed TanStack query or mutation with its key, including response-schema (Zod) issue paths.
+
+Logs never include cookies, request or response bodies, or signed-URL query strings.
 
 ## 3. Standalone Offline Demo Mode
 

@@ -12,8 +12,7 @@ import {
   type QuestV2ProofUpdatePayload,
   type QuestV2ReviewPayload,
 } from "@/api/QuestApi";
-import { ApiError } from "@/api/ApiClient";
-import type { RequestOptions } from "@/api/WalletApi";
+import { ApiError, type RequestOptions } from "@/api/ApiClient";
 import { authService } from "../../auth/AuthService";
 import { chatApi } from "@/api/ChatApi";
 import type {

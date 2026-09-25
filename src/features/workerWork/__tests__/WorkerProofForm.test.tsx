@@ -1,6 +1,7 @@
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import * as ImagePicker from "expo-image-picker";
 
+import { ApiError } from "@/api/ApiClient";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
@@ -14,8 +15,30 @@ jest.mock("@/features/preferences/localeStore", () => ({
 jest.mock("@/features/questBoard/live/liveQuestService", () => ({
   liveQuestService: {
     createProofDraft: jest.fn(),
+    updateProofDraft: jest.fn(),
+    deleteProofDraft: jest.fn(),
     submitProofDraft: jest.fn(),
   },
+}));
+const mockResize = jest.fn();
+jest.mock("expo-image-manipulator", () => ({
+  SaveFormat: { JPEG: "jpeg", PNG: "png", WEBP: "webp" },
+  ImageManipulator: {
+    manipulate: () => ({
+      resize: (size: { width: number; height: number }) => {
+        mockResize(size);
+        return {
+          renderAsync: async () => ({
+            saveAsync: async () => ({ uri: "file:///resized.jpeg" }),
+          }),
+        };
+      },
+      renderAsync: async () => ({ width: 4592, height: 8160 }),
+    }),
+  },
+}));
+jest.mock("expo-file-system", () => ({
+  File: jest.fn().mockImplementation(() => ({ size: 2 * 1024 * 1024 })),
 }));
 jest.mock("expo-image-picker", () => ({
   launchImageLibraryAsync: jest.fn(),
@@ -188,6 +211,187 @@ describe("WorkerProofForm", () => {
     expect(onSubmitted).not.toHaveBeenCalled();
     expect(screen.getByDisplayValue("Done")).toBeTruthy();
   });
+  it.each([
+    [
+      "rejects the upload",
+      () =>
+        mockedService.createProofDraft.mockRejectedValue(
+          new ApiError(
+            415,
+            "PROOF_FILE_TYPE_NOT_SUPPORTED",
+            "Attachment must be a valid image, PDF, or video file"
+          )
+        ),
+    ],
+    [
+      "keeps a rejected file in the draft",
+      () =>
+        mockedService.createProofDraft.mockResolvedValue({
+          id: "draft-1",
+          files: [
+            {
+              uploadStatus: "PROOF_FILE_FAILED",
+              failureCode: "PROOF_FILE_TYPE_NOT_SUPPORTED",
+            },
+          ],
+        } as never),
+    ],
+  ])("explains a refused file when the server %s", async (_case, arrange) => {
+    mockedPicker.mockResolvedValue({
+      canceled: false,
+      assets: [
+        {
+          uri: "file:///refused.jpg",
+          fileName: "refused.jpg",
+          mimeType: "image/jpeg",
+          type: "image",
+          width: 10,
+          height: 10,
+        },
+      ],
+    });
+    arrange();
+
+    const screen = await renderForm();
+    await fireEvent.press(screen.getByRole("button", { name: "Add files" }));
+    await waitFor(() => expect(screen.getByText("1/5 files")).toBeTruthy());
+    await fireEvent.press(screen.getByRole("button", { name: "Submit proof" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() =>
+      expect(screen.getByText(workerWorkMessages.en.fileRejected)).toBeTruthy()
+    );
+    expect(mockedService.submitProofDraft).not.toHaveBeenCalled();
+    expect(screen.getByText("1/5 files")).toBeTruthy();
+  });
+  it("downscales a photo above 25 MP before uploading it", async () => {
+    mockedPicker.mockResolvedValue({
+      canceled: false,
+      assets: [
+        {
+          uri: "file:///camera.jpg",
+          fileName: "camera.jpg",
+          mimeType: "image/jpeg",
+          type: "image",
+          fileSize: 3_600_000,
+          width: 4592,
+          height: 8160,
+        },
+      ],
+    });
+    mockedService.createProofDraft.mockResolvedValue({
+      id: "draft-1",
+      files: [{ fileId: "file-1", uploadStatus: "PROOF_FILE_READY" }],
+    } as never);
+    mockedService.submitProofDraft.mockResolvedValue({
+      id: "draft-1",
+    } as never);
+
+    const screen = await renderForm();
+    await fireEvent.press(screen.getByRole("button", { name: "Add files" }));
+    await waitFor(() => expect(screen.getByText("1/5 files")).toBeTruthy());
+    await fireEvent.press(screen.getByRole("button", { name: "Submit proof" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() =>
+      expect(mockedService.submitProofDraft).toHaveBeenCalled()
+    );
+    const [size] = mockResize.mock.calls[0];
+    expect(size.width * size.height).toBeLessThanOrEqual(25_000_000);
+    expect(size.width / size.height).toBeCloseTo(4592 / 8160, 3);
+    expect(mockedService.createProofDraft).toHaveBeenCalledWith(
+      "quest-1",
+      {
+        assets: [
+          {
+            uri: "file:///resized.jpeg",
+            name: "camera.jpg",
+            type: "image/jpeg",
+          },
+        ],
+        description: undefined,
+      },
+      expect.any(String)
+    );
+  });
+
+  it("retries the failed position of the Worker's kept draft instead of creating another", async () => {
+    const snapshot = {
+      ...submittable,
+      proofs: [
+        {
+          id: "draft-1",
+          workerId: "worker-1",
+          submittedByUserId: "worker-1",
+          teamId: null,
+          submittedAt: null,
+          files: [
+            {
+              fileId: null,
+              position: 0,
+              uploadStatus: "PROOF_FILE_FAILED",
+              failureCode: "PROOF_FILE_TYPE_NOT_SUPPORTED",
+            },
+          ],
+        },
+      ],
+    } as never;
+    mockedPicker.mockResolvedValue({
+      canceled: false,
+      assets: [
+        {
+          uri: "file:///smaller.jpg",
+          fileName: "smaller.jpg",
+          mimeType: "image/jpeg",
+          type: "image",
+          width: 10,
+          height: 10,
+        },
+      ],
+    });
+    mockedService.updateProofDraft.mockResolvedValue({
+      id: "draft-1",
+      files: [
+        { fileId: "file-1", position: 0, uploadStatus: "PROOF_FILE_READY" },
+      ],
+    } as never);
+    mockedService.submitProofDraft.mockResolvedValue({
+      id: "draft-1",
+    } as never);
+    const onSubmitted = jest.fn();
+
+    const screen = await renderForm(snapshot, onSubmitted);
+    await fireEvent.press(screen.getByRole("button", { name: "Add files" }));
+    await waitFor(() => expect(screen.getByText("1/5 files")).toBeTruthy());
+    await fireEvent.press(screen.getByRole("button", { name: "Submit proof" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => expect(onSubmitted).toHaveBeenCalled());
+    expect(mockedService.updateProofDraft).toHaveBeenCalledWith(
+      "quest-1",
+      "draft-1",
+      {
+        assets: [
+          {
+            uri: "file:///smaller.jpg",
+            name: "smaller.jpg",
+            type: "image/jpeg",
+          },
+        ],
+        retryPosition: 0,
+        description: undefined,
+      },
+      expect.any(String)
+    );
+    expect(mockedService.createProofDraft).not.toHaveBeenCalled();
+    expect(mockedService.deleteProofDraft).not.toHaveBeenCalled();
+    expect(mockedService.submitProofDraft).toHaveBeenCalledWith(
+      "quest-1",
+      "draft-1",
+      expect.any(String)
+    );
+  });
+
   it("does not send a Proof when API reports no ready file", async () => {
     mockedPicker.mockResolvedValue({
       canceled: false,

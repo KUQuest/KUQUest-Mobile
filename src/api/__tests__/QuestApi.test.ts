@@ -149,8 +149,7 @@ describe("QuestApi", () => {
         method: "POST",
         body: JSON.stringify(payload),
         headers: expect.objectContaining({
-          "Content-Type": "application/json",
-          "Idempotency-Key": expect.any(String),
+          "idempotency-key": expect.any(String),
         }),
       })
     );
@@ -178,8 +177,7 @@ describe("QuestApi", () => {
         method: "PATCH",
         body: JSON.stringify({ title: "Updated Title" }),
         headers: expect.objectContaining({
-          "Content-Type": "application/json",
-          "Idempotency-Key": "idem-edit-1",
+          "idempotency-key": "idem-edit-1",
           "If-Match": "1",
         }),
       })
@@ -209,8 +207,7 @@ describe("QuestApi", () => {
         method: "PATCH",
         body: JSON.stringify({ questFundingTotal: 600 }),
         headers: expect.objectContaining({
-          "Content-Type": "application/json",
-          "Idempotency-Key": expect.any(String),
+          "idempotency-key": expect.any(String),
           "If-Match": "2",
         }),
       })
@@ -234,8 +231,7 @@ describe("QuestApi", () => {
         method: "POST",
         body: "{}",
         headers: expect.objectContaining({
-          "Content-Type": "application/json",
-          "Idempotency-Key": expect.any(String),
+          "idempotency-key": expect.any(String),
         }),
       })
     );
@@ -268,7 +264,7 @@ describe("QuestApi", () => {
         method: "POST",
         body: "{}",
         headers: expect.objectContaining({
-          "Idempotency-Key": "cancel-quest-1",
+          "idempotency-key": "cancel-quest-1",
         }),
       })
     );
@@ -487,7 +483,7 @@ describe("QuestApi", () => {
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
-          "Idempotency-Key": "idem-1",
+          "idempotency-key": "idem-1",
         }),
       })
     );
@@ -998,11 +994,11 @@ describe("QuestApi", () => {
         },
         {
           fileId: null,
-          contentType: "image/png",
-          sizeBytes: 100,
+          contentType: null,
+          sizeBytes: null,
           position: 1,
-          uploadStatus: "PROOF_FILE_READY",
-          failureCode: null,
+          uploadStatus: "PROOF_FILE_FAILED",
+          failureCode: "UPLOAD_FAILED",
         },
       ],
     };

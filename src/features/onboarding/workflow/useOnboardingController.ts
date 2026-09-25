@@ -1,3 +1,5 @@
+import { debugLog } from "@/api/debugLog";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AccessibilityInfo, BackHandler } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
@@ -31,9 +33,7 @@ function onboardingDebug(
   message: string,
   details: Record<string, unknown> = {}
 ): void {
-  if (__DEV__) {
-    console.log(`[onboarding] ${message}`, details);
-  }
+  debugLog("onboarding", message, details);
 }
 
 function useReducedMotionPreference(): boolean {

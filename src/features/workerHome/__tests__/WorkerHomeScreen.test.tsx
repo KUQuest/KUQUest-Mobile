@@ -1,6 +1,7 @@
-import { fireEvent, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { questApi } from "@/api/QuestApi";
+import { subscribeToQuestBoardEvents } from "@/features/questBoard/live/questEvents";
 import WorkerHomeScreen from "../WorkerHomeScreen";
 const mockPush = jest.fn();
 
@@ -21,9 +22,17 @@ jest.mock("@/api/QuestApi", () => ({
   },
 }));
 
+jest.mock("@/features/questBoard/live/questEvents", () => ({
+  subscribeToQuestBoardEvents: jest.fn(),
+}));
+
 describe("WorkerHomeScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest
+      .mocked(subscribeToQuestBoardEvents)
+      .mockReset()
+      .mockReturnValue(jest.fn());
     (questApi.listMyAssignments as jest.Mock).mockResolvedValue([]);
     (questApi.listBoard as jest.Mock).mockResolvedValue({
       items: [],
@@ -69,11 +78,10 @@ describe("WorkerHomeScreen", () => {
       expect(view.getByTestId("worker-quest-search-input")).toBeTruthy();
     });
 
-    fireEvent.changeText(
+    await fireEvent.changeText(
       view.getByTestId("worker-quest-search-input"),
       "poster"
     );
-
     await waitFor(() => {
       expect(questApi.listBoard).toHaveBeenCalledWith(
         expect.objectContaining({ q: "poster" }),
@@ -89,7 +97,7 @@ describe("WorkerHomeScreen", () => {
       expect(view.getByTestId("tag-pill-tag-1")).toBeTruthy();
     });
 
-    fireEvent.press(view.getByTestId("tag-pill-tag-1"));
+    await fireEvent.press(view.getByTestId("tag-pill-tag-1"));
 
     await waitFor(() => {
       expect(questApi.listBoard).toHaveBeenCalledWith(
@@ -97,6 +105,89 @@ describe("WorkerHomeScreen", () => {
         expect.anything()
       );
     });
+  });
+
+  it("refreshes filtered Worker Board results after an invalidation", async () => {
+    let boardChanged = false;
+    let invalidateBoard: (() => void) | undefined;
+    const boardQuest = (id: string, title: string, questReward: number) => ({
+      id,
+      title,
+      questReward,
+      tag: { id: "tag-1", name: "Printing" },
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "SINGLE",
+      headcount: 1,
+      activeWorkerCount: 0,
+      startTime: "2026-09-18T12:00:00Z",
+      dueAt: "2026-09-19T12:00:00Z",
+      hirerName: "Prof. Somchai",
+      location: "Main Library",
+    });
+    const currentQuest = boardQuest(
+      "quest-current",
+      "Poster Design Draft",
+      250
+    );
+    const publishedQuest = boardQuest(
+      "quest-published",
+      "Poster Design Published",
+      300
+    );
+    (questApi.listBoard as jest.Mock).mockImplementation(
+      ({ q, tagId }: { q?: string; tagId?: string | null }) =>
+        Promise.resolve({
+          items:
+            q === "poster" && tagId === "tag-1"
+              ? [boardChanged ? publishedQuest : currentQuest]
+              : [],
+          nextCursor: null,
+        })
+    );
+    jest
+      .mocked(subscribeToQuestBoardEvents)
+      .mockImplementation((onInvalidated) => {
+        invalidateBoard = () =>
+          onInvalidated({
+            type: "QUEST_BOARD_INVALIDATED",
+            version: 1,
+            questId: "00000000-0000-4000-8000-000000000001",
+          });
+        return jest.fn();
+      });
+
+    const view = await renderWithQueryClient(<WorkerHomeScreen />);
+    await waitFor(() =>
+      expect(view.getByTestId("worker-quest-search-input")).toBeTruthy()
+    );
+    await fireEvent.changeText(
+      view.getByTestId("worker-quest-search-input"),
+      "poster"
+    );
+    await fireEvent.press(view.getByTestId("tag-pill-tag-1"));
+
+    await waitFor(() =>
+      expect(view.getByTestId("worker-feed-card-quest-current")).toBeTruthy()
+    );
+    expect(questApi.listBoard).toHaveBeenLastCalledWith(
+      expect.objectContaining({ q: "poster", tagId: "tag-1" }),
+      expect.anything()
+    );
+    expect(subscribeToQuestBoardEvents).toHaveBeenCalledTimes(1);
+
+    boardChanged = true;
+    await act(async () => {
+      if (!invalidateBoard) throw new Error("Expected Board subscription");
+      invalidateBoard();
+    });
+
+    await waitFor(() =>
+      expect(view.getByTestId("worker-feed-card-quest-published")).toBeTruthy()
+    );
+    expect(questApi.listBoard).toHaveBeenLastCalledWith(
+      expect.objectContaining({ q: "poster", tagId: "tag-1" }),
+      expect.anything()
+    );
   });
 
   it("renders quest board cards and navigates to quest details on press", async () => {
@@ -128,7 +219,7 @@ describe("WorkerHomeScreen", () => {
       expect(view.getByText("฿250")).toBeTruthy();
     });
 
-    fireEvent.press(view.getByTestId("worker-feed-card-quest-100"));
+    await fireEvent.press(view.getByTestId("worker-feed-card-quest-100"));
 
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/quest/[id]",
@@ -174,7 +265,7 @@ describe("WorkerHomeScreen", () => {
       expect(view.getByText(/Library Setup/)).toBeTruthy();
     });
 
-    fireEvent.press(view.getByTestId("worker-quick-access-bar"));
+    await fireEvent.press(view.getByTestId("worker-quick-access-bar"));
 
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/quest/[id]/work",

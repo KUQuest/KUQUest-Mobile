@@ -1,6 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { questApi, type QuestV2AssignmentMineStatus } from "@/api/QuestApi";
+import { subscribeToQuestBoardEvents } from "@/features/questBoard/live/questEvents";
 import { workerHomeKeys } from "./workerHomeKeys";
 
 export { workerHomeKeys } from "./workerHomeKeys";
@@ -20,7 +23,8 @@ export function useWorkerAssignmentsQuery(status: QuestV2AssignmentMineStatus) {
 export function useWorkerBoardQuery({ q, tagId }: WorkerBoardQueryParams) {
   const normalizedQuery = q ?? "";
   const normalizedTagId = tagId ?? null;
-  return useQuery({
+  const queryClient = useQueryClient();
+  const query = useQuery({
     queryKey: workerHomeKeys.board(normalizedQuery, normalizedTagId),
     queryFn: ({ signal }) =>
       questApi.listBoard(
@@ -33,6 +37,17 @@ export function useWorkerBoardQuery({ q, tagId }: WorkerBoardQueryParams) {
       ),
     placeholderData: (previousData) => previousData,
   });
+  const hasBoardSnapshot = query.data !== undefined;
+  useEffect(() => {
+    if (!hasBoardSnapshot) return;
+    const invalidateBoard = () => {
+      void queryClient.invalidateQueries({
+        queryKey: [...workerHomeKeys.all, "board"],
+      });
+    };
+    return subscribeToQuestBoardEvents(invalidateBoard, invalidateBoard);
+  }, [hasBoardSnapshot, queryClient]);
+  return query;
 }
 
 export function useWorkerTagsQuery() {

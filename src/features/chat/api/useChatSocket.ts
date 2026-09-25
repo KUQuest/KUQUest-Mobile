@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
-import { toWebSocketUrl } from "@/api/ApiClient";
-import { authClient } from "@/features/auth/authClient";
+import { openServerSocket, type ServerSocket } from "@/api/ServerSocket";
 import {
   chatApi,
   chatMessageSchema,
@@ -88,7 +87,6 @@ export interface UseChatSocketResult {
   sendMessage: (message: ChatSocketSendMessage) => Promise<ServerChatMessage>;
 }
 
-const MAX_RECONNECT_DELAY_MS = 15_000;
 const MESSAGE_ACK_TIMEOUT_MS = 15_000;
 const sendMessageCommandSchema = z
   .object({
@@ -99,19 +97,6 @@ const sendMessageCommandSchema = z
   })
   .strict()
   .refine((command) => Boolean(command.text || command.attachmentIds?.length));
-type NativeWebSocketConstructor = new (
-  url: string,
-  protocols: string[],
-  options: { headers: Record<string, string> }
-) => WebSocket;
-
-function reconnectDelayMs(reconnectAttempt: number): number {
-  return Math.min(
-    1_000 * 2 ** Math.max(0, reconnectAttempt - 1),
-    MAX_RECONNECT_DELAY_MS
-  );
-}
-
 export function useChatSocket({
   conversationId,
   conversationType,
@@ -121,13 +106,13 @@ export function useChatSocket({
   const [status, setStatus] = useState<ChatSocketStatus>("idle");
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const onEventRef = useRef(onEvent);
-  const socketRef = useRef<WebSocket | null>(null);
+  const socketRef = useRef<ServerSocket | null>(null);
   const pendingMessagesRef = useRef(new Map<string, PendingMessage>());
 
   const sendMessage = useCallback((message: ChatSocketSendMessage) => {
     const { clientMessageId } = message;
     const socket = socketRef.current;
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
+    if (!socket) {
       return Promise.reject(new Error("Chat connection is not ready."));
     }
     if (pendingMessagesRef.current.has(clientMessageId)) {
@@ -164,7 +149,7 @@ export function useChatSocket({
       });
 
       try {
-        socket.send(JSON.stringify(command.data));
+        socket.send(command.data);
       } catch (error) {
         clearTimeout(timeout);
         pendingMessagesRef.current.delete(clientMessageId);
@@ -182,36 +167,11 @@ export function useChatSocket({
   }, [onEvent]);
   /* eslint-disable react-hooks/set-state-in-effect -- socket lifecycle updates status */
   useEffect(() => {
-    const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
-    if (!apiBaseUrl) {
-      setStatus("unavailable");
-      setReconnectAttempt(0);
-      return;
-    }
-
     if (!enabled || !conversationId) {
       setStatus("idle");
       setReconnectAttempt(0);
       return;
     }
-
-    const sessionCookie = authClient.getCookie().trim();
-    if (!sessionCookie) {
-      setStatus("unavailable");
-      setReconnectAttempt(0);
-      return;
-    }
-
-    const eventsPath =
-      conversationType === "CANDIDATE_INQUIRY"
-        ? chatApi.getCandidateInquiryEventsPath(conversationId)
-        : chatApi.getWorkConversationEventsPath(conversationId);
-    const eventsUrl = toWebSocketUrl(apiBaseUrl, eventsPath);
-    const NativeWebSocket = WebSocket as unknown as NativeWebSocketConstructor;
-    let active = true;
-    let socket: WebSocket | null = null;
-    let reconnectTimer: number | null = null;
-    let attempt = 0;
 
     const rejectPendingMessages = (error: Error) => {
       for (const pending of pendingMessagesRef.current.values()) {
@@ -221,97 +181,57 @@ export function useChatSocket({
       pendingMessagesRef.current.clear();
     };
 
-    const clearReconnectTimer = () => {
-      if (reconnectTimer !== null) {
-        clearTimeout(reconnectTimer);
-        reconnectTimer = null;
-      }
-    };
-
-    const connect = () => {
-      if (!active) return;
-      setStatus(attempt === 0 ? "connecting" : "reconnecting");
-      socket = new NativeWebSocket(eventsUrl, [], {
-        headers: { Cookie: sessionCookie },
-      });
-      const currentSocket = socket;
-
-      currentSocket.onopen = () => {
-        if (!active || socket !== currentSocket) return;
-        socketRef.current = currentSocket;
-        attempt = 0;
-        setReconnectAttempt(0);
-        setStatus("connected");
-      };
-
-      currentSocket.onmessage = (message) => {
-        if (!active || typeof message.data !== "string") return;
-        try {
-          const parsed = chatSocketEventSchema.safeParse(
-            JSON.parse(message.data) as unknown
-          );
+    setStatus("connecting");
+    const socket = openServerSocket(
+      conversationType === "CANDIDATE_INQUIRY"
+        ? chatApi.getCandidateInquiryEventsPath(conversationId)
+        : chatApi.getWorkConversationEventsPath(conversationId),
+      {
+        onOpen: () => {
+          socketRef.current = socket;
+          setReconnectAttempt(0);
+          setStatus("connected");
+        },
+        onFrame: (payload) => {
+          const parsed = chatSocketEventSchema.safeParse(payload);
           if (!parsed.success) return;
           const event = parsed.data;
-          if (event.type === ChatSocketEventType.MESSAGE_ACCEPTED) {
+          if (
+            event.type === ChatSocketEventType.MESSAGE_ACCEPTED ||
+            event.type === ChatSocketEventType.MESSAGE_REJECTED
+          ) {
             const pending = pendingMessagesRef.current.get(
               event.clientMessageId
             );
             if (pending) {
               clearTimeout(pending.timeout);
               pendingMessagesRef.current.delete(event.clientMessageId);
-              pending.resolve(event.message);
-            }
-          } else if (event.type === ChatSocketEventType.MESSAGE_REJECTED) {
-            const pending = pendingMessagesRef.current.get(
-              event.clientMessageId
-            );
-            if (pending) {
-              clearTimeout(pending.timeout);
-              pendingMessagesRef.current.delete(event.clientMessageId);
-              pending.reject(new Error(event.error.message));
+              if (event.type === ChatSocketEventType.MESSAGE_ACCEPTED) {
+                pending.resolve(event.message);
+              } else {
+                pending.reject(new Error(event.error.message));
+              }
             }
           }
           onEventRef.current(event);
-        } catch {
-          // Ignore malformed server messages without disrupting the connection.
-        }
-      };
-
-      currentSocket.onerror = () => {
-        if (active && socket === currentSocket) setStatus("reconnecting");
-      };
-
-      currentSocket.onclose = (event) => {
-        if (!active || socket !== currentSocket) return;
-        socket = null;
-        socketRef.current = null;
-        rejectPendingMessages(
-          new Error(
-            event.reason || "Chat connection closed before confirmation."
-          )
-        );
-        if (event.code === 1008 || event.code === 4403) {
-          setReconnectAttempt(0);
-          setStatus("unavailable");
-          return;
-        }
-        attempt += 1;
-        setReconnectAttempt(attempt);
-        setStatus("reconnecting");
-        reconnectTimer = setTimeout(connect, reconnectDelayMs(attempt));
-      };
-    };
-
-    connect();
+        },
+        onClose: ({ reason, terminal, attempt }) => {
+          socketRef.current = null;
+          rejectPendingMessages(
+            new Error(reason || "Chat connection closed before confirmation.")
+          );
+          setReconnectAttempt(attempt);
+          setStatus(terminal ? "unavailable" : "reconnecting");
+        },
+      }
+    );
 
     return () => {
-      active = false;
-      clearReconnectTimer();
+      socket.close();
       socketRef.current = null;
       rejectPendingMessages(
         new Error("Chat connection closed before confirmation.")
       );
-      socket?.close();
     };
   }, [conversationId, conversationType, enabled]);
   /* eslint-enable react-hooks/set-state-in-effect */

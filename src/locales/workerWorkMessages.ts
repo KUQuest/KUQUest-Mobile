@@ -64,6 +64,7 @@ export interface WorkerWorkMessages {
   confirm: string;
   submitFailed: string;
   uploadFailed: (count: number) => string;
+  fileRejected: string;
   submittedTitle: string;
   submittedAt: (value: string) => string;
   proofPendingDescription: string;
@@ -128,6 +129,8 @@ export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
     submitFailed: "ส่งไม่สำเร็จ ข้อมูลยังอยู่ ลองส่งใหม่อีกครั้ง",
     uploadFailed: (count) =>
       `อัปโหลดไม่สำเร็จ ${count} ไฟล์ ลบหรือเปลี่ยนไฟล์แล้วลองใหม่`,
+    fileRejected:
+      "ระบบไม่รับไฟล์นี้ รูปอาจมีความละเอียดสูงเกินไป ลองย่อรูปหรือเลือกรูปอื่น",
     submittedTitle: "ส่งหลักฐานแล้ว",
     submittedAt: (value) => `ส่งเมื่อ ${value}`,
     proofPendingDescription:
@@ -191,6 +194,8 @@ export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
     submitFailed: "Sending failed. Your draft is kept — try again.",
     uploadFailed: (count) =>
       `${count} file(s) failed to upload. Remove or replace them and try again.`,
+    fileRejected:
+      "This file was not accepted. The image may be too high-resolution — resize it or choose another.",
     submittedTitle: "Proof sent",
     submittedAt: (value) => `Sent ${value}`,
     proofPendingDescription:

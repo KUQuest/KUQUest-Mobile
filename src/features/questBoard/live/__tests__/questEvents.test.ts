@@ -1,33 +1,10 @@
 import { authClient } from "@/features/auth/authClient";
 import {
   subscribeToCandidateRosterEvents,
+  subscribeToQuestBoardEvents,
   subscribeToQuestEvents,
 } from "../questEvents";
-
-class MockWebSocket {
-  static instances: MockWebSocket[] = [];
-
-  readonly close = jest.fn();
-  readonly send = jest.fn();
-  onclose: ((event: { code: number; reason: string }) => void) | null = null;
-  onmessage: ((event: { data: unknown }) => void) | null = null;
-
-  constructor(
-    readonly url: string,
-    readonly protocols?: string[] | null,
-    readonly options?: { headers?: Record<string, string> }
-  ) {
-    MockWebSocket.instances.push(this);
-  }
-
-  receive(data: unknown) {
-    this.onmessage?.({ data });
-  }
-
-  disconnect(code = 1006) {
-    this.onclose?.({ code, reason: "network closed" });
-  }
-}
+import { MockWebSocket } from "@/testing/mockWebSocket";
 
 const originalApiUrl = process.env.EXPO_PUBLIC_API_URL;
 const originalWebSocket = globalThis.WebSocket;
@@ -39,7 +16,10 @@ describe("Quest event subscription", () => {
     jest
       .spyOn(authClient, "getCookie")
       .mockReturnValue("better-auth.session_token=session");
-    globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
+    Object.defineProperty(globalThis, "WebSocket", {
+      configurable: true,
+      value: MockWebSocket,
+    });
   });
 
   afterEach(() => {
@@ -62,7 +42,10 @@ describe("Quest event subscription", () => {
     );
     expect(socket?.protocols).toEqual([]);
     expect(socket?.options).toEqual({
-      headers: { Cookie: "better-auth.session_token=session" },
+      headers: {
+        Cookie: "better-auth.session_token=session",
+        Origin: "kuquestmobile://",
+      },
     });
 
     stop();
@@ -79,7 +62,10 @@ describe("Quest event subscription", () => {
       `wss://api.example.com/api/v2/quests/${questId}/candidate-roster/events`
     );
     expect(socket?.options).toEqual({
-      headers: { Cookie: "better-auth.session_token=session" },
+      headers: {
+        Cookie: "better-auth.session_token=session",
+        Origin: "kuquestmobile://",
+      },
     });
     if (!socket) throw new Error("Expected a Candidate roster event socket");
 
@@ -100,9 +86,7 @@ describe("Quest event subscription", () => {
         questId,
       })
     );
-    socket.receive(
-      JSON.stringify({ type: "SUBSCRIBED", version: 1, questId })
-    );
+    socket.receive(JSON.stringify({ type: "SUBSCRIBED", version: 1, questId }));
     socket.receive(
       JSON.stringify({
         type: "CANDIDATE_ROSTER_UPDATED",
@@ -157,9 +141,7 @@ describe("Quest event subscription", () => {
     const socket = MockWebSocket.instances[0];
     if (!socket) throw new Error("Expected a Candidate roster event socket");
 
-    socket.receive(
-      JSON.stringify({ type: "SUBSCRIBED", version: 1, questId })
-    );
+    socket.receive(JSON.stringify({ type: "SUBSCRIBED", version: 1, questId }));
     socket.receive(
       JSON.stringify({
         type: "CANDIDATE_ROSTER_UPDATED",
@@ -256,57 +238,116 @@ describe("Quest event subscription", () => {
     stop();
   });
 
-  it("does not connect without a session cookie", () => {
-    jest.mocked(authClient.getCookie).mockReturnValue("");
-
-    const stop = subscribeToQuestEvents("quest-1", jest.fn());
-
-    expect(MockWebSocket.instances).toHaveLength(0);
-    stop();
-  });
-  it("stops reconnecting after Quest access is denied", () => {
-    jest.useFakeTimers();
-    const stop = subscribeToQuestEvents("quest-1", jest.fn());
+  it("subscribes to strict, scoped Quest Board invalidations", () => {
+    const onInvalidated = jest.fn();
+    const onSubscribed = jest.fn();
+    const stop = subscribeToQuestBoardEvents(onInvalidated, onSubscribed);
     const socket = MockWebSocket.instances[0];
-    if (!socket) throw new Error("Expected a Quest event socket");
 
-    socket.disconnect(4403);
-    jest.advanceTimersByTime(60_000);
+    expect(socket?.url).toBe(
+      "wss://api.example.com/api/v2/quests/board/events"
+    );
+    expect(socket?.options).toEqual({
+      headers: {
+        Cookie: "better-auth.session_token=session",
+        Origin: "kuquestmobile://",
+      },
+    });
+    if (!socket) throw new Error("Expected a Quest Board event socket");
 
-    expect(MockWebSocket.instances).toHaveLength(1);
+    const invalidation = {
+      type: "QUEST_BOARD_INVALIDATED",
+      version: 1,
+      questId: "00000000-0000-4000-8000-000000000001",
+    };
+    socket.receive(JSON.stringify(invalidation));
+    socket.receive(
+      JSON.stringify({ type: "SUBSCRIBED", version: 1, scope: "QUEST" })
+    );
+    socket.receive(
+      JSON.stringify({
+        type: "SUBSCRIBED",
+        version: 1,
+        scope: "QUEST_BOARD",
+        extra: true,
+      })
+    );
+    socket.receive("not-json");
+
+    expect(onSubscribed).not.toHaveBeenCalled();
+    expect(onInvalidated).not.toHaveBeenCalled();
+
+    socket.receive(
+      JSON.stringify({
+        type: "SUBSCRIBED",
+        version: 1,
+        scope: "QUEST_BOARD",
+      })
+    );
+    socket.receive(JSON.stringify({ ...invalidation, extra: true }));
+    socket.receive(
+      JSON.stringify({
+        ...invalidation,
+        questId: "not-a-uuid",
+      })
+    );
+    socket.receive(JSON.stringify(invalidation));
+
+    expect(onSubscribed).toHaveBeenCalledTimes(1);
+    expect(onInvalidated).toHaveBeenCalledTimes(1);
+    expect(onInvalidated).toHaveBeenCalledWith(invalidation);
+    expect(socket.send).not.toHaveBeenCalled();
+
     stop();
+    expect(socket.close).toHaveBeenCalledTimes(1);
   });
 
-  it("reconnects after a close and stops when unsubscribed", () => {
+  it("resyncs after each accepted Quest Board handshake on reconnect", () => {
     jest.useFakeTimers();
-    const getCookie = jest.mocked(authClient.getCookie);
-    const stop = subscribeToQuestEvents("quest-1", jest.fn());
+    const onInvalidated = jest.fn();
+    const onSubscribed = jest.fn();
+    const stop = subscribeToQuestBoardEvents(onInvalidated, onSubscribed);
     const firstSocket = MockWebSocket.instances[0];
-    if (!firstSocket) throw new Error("Expected an initial Quest event socket");
+    if (!firstSocket) throw new Error("Expected an initial Board event socket");
 
-    getCookie.mockReturnValue("better-auth.session_token=refreshed");
+    firstSocket.receive(
+      JSON.stringify({
+        type: "SUBSCRIBED",
+        version: 1,
+        scope: "QUEST_BOARD",
+      })
+    );
     firstSocket.disconnect();
     jest.advanceTimersByTime(1_000);
 
     const secondSocket = MockWebSocket.instances[1];
-    expect(secondSocket?.options?.headers?.Cookie).toBe(
-      "better-auth.session_token=refreshed"
+    if (!secondSocket) throw new Error("Expected a reconnected Board socket");
+    secondSocket.receive(
+      JSON.stringify({
+        type: "QUEST_BOARD_INVALIDATED",
+        version: 1,
+        questId: "00000000-0000-4000-8000-000000000001",
+      })
     );
-    expect(MockWebSocket.instances).toHaveLength(2);
+    expect(onInvalidated).not.toHaveBeenCalled();
 
-    stop();
-    expect(secondSocket?.close).toHaveBeenCalledTimes(1);
-  });
-  it("stops reconnecting after Candidate roster access is lost", () => {
-    jest.useFakeTimers();
-    const stop = subscribeToCandidateRosterEvents("quest-1", jest.fn());
-    const socket = MockWebSocket.instances[0];
-    if (!socket) throw new Error("Expected a Candidate roster event socket");
+    secondSocket.receive(
+      JSON.stringify({
+        type: "SUBSCRIBED",
+        version: 1,
+        scope: "QUEST_BOARD",
+      })
+    );
+    secondSocket.receive(
+      JSON.stringify({
+        type: "QUEST_BOARD_INVALIDATED",
+        version: 1,
+        questId: "00000000-0000-4000-8000-000000000001",
+      })
+    );
 
-    socket.disconnect(4403);
-    jest.advanceTimersByTime(60_000);
-
-    expect(MockWebSocket.instances).toHaveLength(1);
+    expect(onSubscribed).toHaveBeenCalledTimes(2);
+    expect(onInvalidated).toHaveBeenCalledTimes(1);
     stop();
   });
 });

@@ -9,26 +9,43 @@ export type {
   WorkerWorkProjection,
 } from "./workerWorkTypes";
 
+function proofOwnership(snapshot: LiveQuestSnapshot, viewerId: string) {
+  const teamId =
+    snapshot.mode === "CANDIDATE" && snapshot.participation === "GROUP"
+      ? snapshot.team?.id
+      : undefined;
+  return (proof: QuestV2ProofSubmission) =>
+    proof.submittedByUserId === viewerId ||
+    proof.workerId === viewerId ||
+    (teamId !== undefined && proof.teamId === teamId);
+}
+
 /** Latest sent Proof Submission belonging to this Worker's Assignment. */
 export function latestSentProof(
   snapshot: LiveQuestSnapshot,
   viewerId: string
 ): QuestV2ProofSubmission | null {
-  const teamId =
-    snapshot.mode === "CANDIDATE" && snapshot.participation === "GROUP"
-      ? snapshot.team?.id
-      : undefined;
+  const belongsToViewer = proofOwnership(snapshot, viewerId);
   return snapshot.proofs.reduce<QuestV2ProofSubmission | null>(
     (latest, proof) => {
-      const belongsToViewer =
-        proof.submittedByUserId === viewerId ||
-        proof.workerId === viewerId ||
-        (teamId !== undefined && proof.teamId === teamId);
-      if (!belongsToViewer || !proof.submittedAt) return latest;
+      if (!belongsToViewer(proof) || !proof.submittedAt) return latest;
       if (!latest?.submittedAt) return proof;
       return proof.submittedAt > latest.submittedAt ? proof : latest;
     },
     null
+  );
+}
+
+/** This Worker's unsent Proof draft, if the server kept one. */
+export function unsentProofDraft(
+  snapshot: LiveQuestSnapshot,
+  viewerId: string
+): QuestV2ProofSubmission | null {
+  const belongsToViewer = proofOwnership(snapshot, viewerId);
+  return (
+    snapshot.proofs.find(
+      (proof) => belongsToViewer(proof) && !proof.submittedAt
+    ) ?? null
   );
 }
 

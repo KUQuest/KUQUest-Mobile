@@ -13,6 +13,7 @@ import { workerHomeKeys } from "@/features/workerHome/api/workerHomeQueries";
 import { liveQuestService } from "../../live/liveQuestService";
 import {
   subscribeToCandidateRosterEvents,
+  subscribeToQuestBoardEvents,
   subscribeToQuestEvents,
 } from "../../live/questEvents";
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
@@ -22,12 +23,14 @@ import {
   useCancelQuestMutation,
   useLiveQuestSnapshotQuery,
   useProofFileLinksQuery,
+  useQuestBoardQuery,
 } from "../questBoardQueries";
 
 jest.mock("../../live/liveQuestService", () => ({
   liveQuestService: {
     getProofFileLink: jest.fn(),
     getLiveSnapshot: jest.fn(),
+    listBoardQuests: jest.fn(),
     applyQuest: jest.fn(),
     cancelQuest: jest.fn(),
   },
@@ -35,6 +38,7 @@ jest.mock("../../live/liveQuestService", () => ({
 
 jest.mock("../../live/questEvents", () => ({
   subscribeToCandidateRosterEvents: jest.fn(),
+  subscribeToQuestBoardEvents: jest.fn(),
   subscribeToQuestEvents: jest.fn(),
 }));
 
@@ -47,6 +51,83 @@ describe("quest board query ownership", () => {
         </QueryClientProvider>
       );
     };
+
+  it("subscribes after its enabled REST snapshot and refetches on acceptance or invalidation", async () => {
+    jest.mocked(liveQuestService.listBoardQuests).mockReset();
+    jest.mocked(subscribeToQuestBoardEvents).mockReset();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const disabled = await renderHook(() => useQuestBoardQuery(false), {
+      wrapper: wrapper(queryClient),
+    });
+    expect(liveQuestService.listBoardQuests).not.toHaveBeenCalled();
+    expect(subscribeToQuestBoardEvents).not.toHaveBeenCalled();
+    await disabled.unmount();
+
+    let resolveInitialBoard: ((board: never) => void) | undefined;
+    jest
+      .mocked(liveQuestService.listBoardQuests)
+      .mockImplementationOnce(
+        () =>
+          new Promise<never>((resolve) => {
+            resolveInitialBoard = resolve;
+          })
+      )
+      .mockResolvedValueOnce([{ id: "after-subscription" }] as never)
+      .mockResolvedValueOnce([{ id: "after-invalidation" }] as never);
+
+    let emitInvalidation: (() => void) | undefined;
+    let emitSubscribed: (() => void) | undefined;
+    const stopSubscription = jest.fn();
+    jest
+      .mocked(subscribeToQuestBoardEvents)
+      .mockImplementation((onInvalidated, onSubscribed) => {
+        emitInvalidation = () =>
+          onInvalidated({
+            type: "QUEST_BOARD_INVALIDATED",
+            version: 1,
+            questId: "00000000-0000-4000-8000-000000000001",
+          });
+        emitSubscribed = onSubscribed;
+        return stopSubscription;
+      });
+    const { result, unmount } = await renderHook(() => useQuestBoardQuery(), {
+      wrapper: wrapper(queryClient),
+    });
+
+    expect(subscribeToQuestBoardEvents).not.toHaveBeenCalled();
+    await act(async () => {
+      if (!resolveInitialBoard)
+        throw new Error("Expected the initial Board REST request");
+      resolveInitialBoard([{ id: "initial" }] as never);
+    });
+    await waitFor(() => expect(result.current.data?.[0]?.id).toBe("initial"));
+    await waitFor(() =>
+      expect(subscribeToQuestBoardEvents).toHaveBeenCalledTimes(1)
+    );
+
+    await act(async () => {
+      if (!emitSubscribed) throw new Error("Expected Board subscription");
+      emitSubscribed();
+    });
+    await waitFor(() =>
+      expect(result.current.data?.[0]?.id).toBe("after-subscription")
+    );
+    await act(async () => {
+      if (!emitInvalidation) throw new Error("Expected Board invalidation");
+      emitInvalidation();
+    });
+    await waitFor(() =>
+      expect(result.current.data?.[0]?.id).toBe("after-invalidation")
+    );
+    expect(liveQuestService.listBoardQuests).toHaveBeenCalledTimes(3);
+    expect(subscribeToQuestBoardEvents).toHaveBeenCalledTimes(1);
+
+    await unmount();
+    expect(stopSubscription).toHaveBeenCalledTimes(1);
+    queryClient.clear();
+  });
 
   it("invalidates Hirer projections and every live snapshot edit variant", async () => {
     const queryClient = new QueryClient();
@@ -230,19 +311,21 @@ describe("quest board query ownership", () => {
     );
     queryClient.clear();
   });
-  it("reloads the REST snapshot after a Quest update event", async () => {
+  it("reloads the REST snapshot after Quest updates and subscription acceptance", async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
     let emitQuestUpdate: (() => void) | undefined;
+    let emitQuestSubscribed: (() => void) | undefined;
     const stopSubscription = jest.fn();
     jest
       .mocked(liveQuestService.getLiveSnapshot)
       .mockResolvedValueOnce({ state: "QUEST_IN_PROGRESS" } as never)
-      .mockResolvedValueOnce({ state: "QUEST_FAILED" } as never);
+      .mockResolvedValueOnce({ state: "QUEST_FAILED" } as never)
+      .mockResolvedValueOnce({ state: "QUEST_COMPLETED" } as never);
     jest
       .mocked(subscribeToQuestEvents)
-      .mockImplementation((_questId, onQuestUpdated) => {
+      .mockImplementation((_questId, onQuestUpdated, onSubscribed) => {
         emitQuestUpdate = () =>
           onQuestUpdated({
             type: "QUEST_UPDATED",
@@ -250,6 +333,7 @@ describe("quest board query ownership", () => {
             questId: "quest-1",
             changeType: "PROOF_SUBMITTED",
           });
+        emitQuestSubscribed = onSubscribed;
         return stopSubscription;
       });
     const { result, unmount } = await renderHook(
@@ -273,6 +357,15 @@ describe("quest board query ownership", () => {
     }
     expect(result.current.data?.state).toBe("QUEST_FAILED");
     expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      if (!emitQuestSubscribed)
+        throw new Error("Expected Quest subscription handshake");
+      emitQuestSubscribed();
+    });
+    await waitFor(() =>
+      expect(result.current.data?.state).toBe("QUEST_COMPLETED")
+    );
+    expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledTimes(3);
 
     await unmount();
     expect(stopSubscription).toHaveBeenCalledTimes(1);
@@ -310,7 +403,7 @@ describe("quest board query ownership", () => {
     queryClient.clear();
   });
 
-  it("refetches the REST snapshot after an authorized Candidate roster event", async () => {
+  it("refetches the REST snapshot after Candidate roster events and subscription acceptance", async () => {
     jest.mocked(subscribeToCandidateRosterEvents).mockReset();
     jest.mocked(subscribeToQuestEvents).mockReset();
     const queryClient = new QueryClient({
@@ -332,18 +425,21 @@ describe("quest board query ownership", () => {
     jest
       .mocked(liveQuestService.getLiveSnapshot)
       .mockResolvedValueOnce(snapshot(1))
-      .mockResolvedValueOnce(snapshot(2));
+      .mockResolvedValueOnce(snapshot(2))
+      .mockResolvedValueOnce(snapshot(3));
     let emitRosterUpdate: (() => void) | undefined;
+    let emitRosterSubscribed: (() => void) | undefined;
     const stopRosterSubscription = jest.fn();
     jest
       .mocked(subscribeToCandidateRosterEvents)
-      .mockImplementation((questId, onRosterUpdated) => {
+      .mockImplementation((questId, onRosterUpdated, onSubscribed) => {
         emitRosterUpdate = () =>
           onRosterUpdated({
             type: "CANDIDATE_ROSTER_UPDATED",
             version: 1,
             questId,
           });
+        emitRosterSubscribed = onSubscribed;
         return stopRosterSubscription;
       });
     jest.mocked(subscribeToQuestEvents).mockReturnValue(jest.fn());
@@ -368,6 +464,15 @@ describe("quest board query ownership", () => {
       expect(result.current.data).toMatchObject({ rosterRevision: 2 })
     );
     expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      if (!emitRosterSubscribed)
+        throw new Error("Expected Candidate roster handshake");
+      emitRosterSubscribed();
+    });
+    await waitFor(() =>
+      expect(result.current.data).toMatchObject({ rosterRevision: 3 })
+    );
+    expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledTimes(3);
 
     await unmount();
     expect(stopRosterSubscription).toHaveBeenCalledTimes(1);

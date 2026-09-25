@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { ActivityIndicator } from "react-native";
+import { File } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import {
   CheckCircle2,
@@ -12,6 +13,7 @@ import {
 
 import { Pressable, Text, TextInput, View } from "@/tw";
 import { cn } from "@/tw/cn";
+import { limitImagePixels } from "@/api/fileUpload";
 import { formatTimestampDateTime } from "@/domain/datetime";
 import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestTypes";
 import { useLocale } from "@/features/preferences/localeStore";
@@ -26,7 +28,8 @@ import {
 } from "@/locales/workerWorkMessages";
 import type { ThemeColors } from "@/theme/colors";
 import { showConfirmModal } from "@/components/ui/SweetAlert";
-import { latestSentProof } from "../workerWorkProjection";
+import { planProofSend, type ProofDraftRef } from "../proofDraftPlan";
+import { latestSentProof, unsentProofDraft } from "../workerWorkProjection";
 import { ProofFilePicker, type ProofFile } from "./ProofFilePicker";
 
 const MAX_PROOF_FILES = 5;
@@ -67,6 +70,7 @@ export function WorkerProofForm({
   const [files, setFiles] = useState<ProofFile[]>([]);
   const [description, setDescription] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
+  const [failedDraft, setFailedDraft] = useState<ProofDraftRef | null>(null);
   const fileKeySeed = useRef(0);
 
   const sentProof = latestSentProof(snapshot, viewerId);
@@ -113,17 +117,30 @@ export function WorkerProofForm({
         const name =
           asset.fileName ??
           `proof-${Date.now()}.${kind === "video" ? "mp4" : "jpg"}`;
-        if (asset.fileSize && asset.fileSize > MAX_PROOF_FILE_BYTES) {
+        const pickedType =
+          asset.mimeType ?? (kind === "video" ? "video/mp4" : "image/jpeg");
+        const upload =
+          kind === "image"
+            ? await limitImagePixels({
+                uri: asset.uri,
+                type: pickedType,
+                width: asset.width,
+                height: asset.height,
+              })
+            : { uri: asset.uri, type: pickedType, resized: false };
+        const fileSize = upload.resized
+          ? new File(upload.uri).size
+          : asset.fileSize;
+        if (fileSize && fileSize > MAX_PROOF_FILE_BYTES) {
           tooLarge.push(name);
           continue;
         }
         fileKeySeed.current += 1;
         picked.push({
           key: `proof-file-${fileKeySeed.current}`,
-          uri: asset.uri,
+          uri: upload.uri,
           name,
-          type:
-            asset.mimeType ?? (kind === "video" ? "video/mp4" : "image/jpeg"),
+          type: upload.type,
           kind,
         });
       }
@@ -143,21 +160,51 @@ export function WorkerProofForm({
 
   const sendProof = async () => {
     setNotice(null);
+    const serverDraft = unsentProofDraft(snapshot, viewerId);
+    const plan = planProofSend(
+      failedDraft ??
+        (serverDraft && {
+          id: serverDraft.id,
+          files: serverDraft.files,
+          fileKeys: [],
+        }),
+      files
+    );
     try {
       await proofMutation.mutateAsync({
         questId,
         viewerId,
-        assets: files.map(({ uri, name, type }) => ({ uri, name, type })),
+        plan,
         description: description.trim() || undefined,
       });
       setFiles([]);
       setDescription("");
+      setFailedDraft(null);
       await onSubmitted?.();
     } catch (error) {
+      if (error instanceof ProofFileUploadError && error.draft) {
+        const fileKeys =
+          plan.kind === "create"
+            ? plan.files.map((file) => file.key)
+            : plan.retries.reduce<(string | null)[]>(
+                (keys, { position, file }) => {
+                  keys[position] = file.key;
+                  return keys;
+                },
+                [...(failedDraft?.fileKeys ?? [])]
+              );
+        setFailedDraft({
+          id: error.draft.id,
+          files: error.draft.files,
+          fileKeys,
+        });
+      }
       setNotice(
-        error instanceof ProofFileUploadError
-          ? messages.uploadFailed(error.failedCount)
-          : messages.submitFailed
+        !(error instanceof ProofFileUploadError)
+          ? messages.submitFailed
+          : error.rejected
+            ? messages.fileRejected
+            : messages.uploadFailed(error.failedCount)
       );
     }
   };

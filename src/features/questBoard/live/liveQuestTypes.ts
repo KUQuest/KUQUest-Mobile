@@ -1,4 +1,4 @@
-import type { RequestOptions } from "@/api/WalletApi";
+import type { RequestOptions } from "@/api/ApiClient";
 import type {
   QuestV2Application,
   QuestV2Assignment,

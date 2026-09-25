@@ -15,11 +15,6 @@ export const disputeCaseSchema = z.object({
 });
 export type DisputeCase = z.infer<typeof disputeCaseSchema>;
 
-export const disputeCaseResponseSchema = z.object({
-  success: z.literal(true),
-  data: disputeCaseSchema,
-});
-
 export class DisputeApi {
   constructor(private readonly client: ApiClient = new ApiClient()) {}
 
@@ -28,11 +23,11 @@ export class DisputeApi {
    * enforces the 1-day self-file window and the one-case-per-filer rule.
    */
   async fileDispute(questId: string): Promise<DisputeCase> {
-    const body = await this.client.request<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v1/quests/${questId}/disputes`,
-      { method: "POST" }
+      disputeCaseSchema
     );
-    return disputeCaseResponseSchema.parse(body).data;
   }
 }
 

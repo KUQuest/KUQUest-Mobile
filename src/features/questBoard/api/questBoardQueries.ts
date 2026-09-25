@@ -19,6 +19,7 @@ import { myQuestsKeys } from "@/features/myQuests/api/myQuestsQueries";
 import { workerHomeKeys } from "@/features/workerHome/api/workerHomeKeys";
 import {
   subscribeToCandidateRosterEvents,
+  subscribeToQuestBoardEvents,
   subscribeToQuestEvents,
 } from "../live/questEvents";
 import {
@@ -89,11 +90,23 @@ export function useProofFileLinksQuery(
 }
 
 export function useQuestBoardQuery(enabled = true) {
-  return useQuery({
+  const queryClient = useQueryClient();
+  const query = useQuery({
     enabled,
     queryKey: questBoardKeys.board(),
     queryFn: ({ signal }) => liveQuestService.listBoardQuests({ signal }),
   });
+  const hasBoardSnapshot = query.data !== undefined;
+  useEffect(() => {
+    if (!enabled || !hasBoardSnapshot) return;
+    const invalidateBoard = () => {
+      void queryClient.invalidateQueries({
+        queryKey: questBoardKeys.board(),
+      });
+    };
+    return subscribeToQuestBoardEvents(invalidateBoard, invalidateBoard);
+  }, [enabled, hasBoardSnapshot, queryClient]);
+  return query;
 }
 
 export function useQuestDetailQuery(questId: string | null, enabled = true) {
@@ -160,11 +173,16 @@ export function useLiveQuestSnapshotQuery(
   const canReadQuest = query.data !== undefined;
   useEffect(() => {
     if (!enabled || !questId || !viewerId || !canReadQuest) return;
-    return subscribeToQuestEvents(questId, () => {
+    const invalidateSnapshot = () => {
       void queryClient.invalidateQueries({
         queryKey: questBoardKeys.liveSnapshotScope(questId, viewerId),
       });
-    });
+    };
+    return subscribeToQuestEvents(
+      questId,
+      invalidateSnapshot,
+      invalidateSnapshot
+    );
   }, [canReadQuest, enabled, queryClient, questId, viewerId]);
   const canReadCandidateRoster = Boolean(
     query.data?.mode === "CANDIDATE" &&
@@ -177,11 +195,16 @@ export function useLiveQuestSnapshotQuery(
     if (!enabled || !questId || !viewerId || !canReadCandidateRoster) {
       return;
     }
-    return subscribeToCandidateRosterEvents(questId, () => {
+    const invalidateSnapshot = () => {
       void queryClient.invalidateQueries({
         queryKey: questBoardKeys.liveSnapshotScope(questId, viewerId),
       });
-    });
+    };
+    return subscribeToCandidateRosterEvents(
+      questId,
+      invalidateSnapshot,
+      invalidateSnapshot
+    );
   }, [canReadCandidateRoster, enabled, queryClient, questId, viewerId]);
   return query;
 }

@@ -1,41 +1,8 @@
 import { act, renderHook } from "@testing-library/react-native";
 
-import { toWebSocketUrl } from "@/api/ApiClient";
 import { authClient } from "@/features/auth/authClient";
 import { useChatSocket } from "../api/useChatSocket";
-
-class MockWebSocket {
-  static instances: MockWebSocket[] = [];
-  static readonly OPEN = 1;
-  static readonly CLOSED = 3;
-
-  readonly close = jest.fn(() => {
-    this.readyState = MockWebSocket.CLOSED;
-  });
-  readonly send = jest.fn();
-  readyState = 0;
-  onclose: ((event: { code: number; reason: string }) => void) | null = null;
-  onerror: (() => void) | null = null;
-  onmessage: ((event: { data: unknown }) => void) | null = null;
-  onopen: (() => void) | null = null;
-
-  constructor(
-    readonly url: string,
-    readonly protocols?: string | string[] | null,
-    readonly options?: { headers?: Record<string, string> }
-  ) {
-    MockWebSocket.instances.push(this);
-  }
-
-  open() {
-    this.readyState = MockWebSocket.OPEN;
-    this.onopen?.();
-  }
-
-  receive(data: unknown) {
-    this.onmessage?.({ data });
-  }
-}
+import { MockWebSocket } from "@/testing/mockWebSocket";
 
 const originalApiUrl = process.env.EXPO_PUBLIC_API_URL;
 const originalWebSocket = globalThis.WebSocket;
@@ -46,7 +13,10 @@ describe("useChatSocket", () => {
     jest
       .spyOn(authClient, "getCookie")
       .mockReturnValue("better-auth.session_token=session");
-    globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
+    Object.defineProperty(globalThis, "WebSocket", {
+      configurable: true,
+      value: MockWebSocket,
+    });
   });
 
   afterEach(() => {
@@ -61,46 +31,6 @@ describe("useChatSocket", () => {
   afterAll(() => {
     globalThis.WebSocket = originalWebSocket;
   });
-
-  it("converts HTTP API URLs into WebSocket URLs", () => {
-    expect(toWebSocketUrl("https://api.example.com///", "/api/v1/events")).toBe(
-      "wss://api.example.com/api/v1/events"
-    );
-    expect(toWebSocketUrl("http://localhost:3000", "api/v1/events")).toBe(
-      "ws://localhost:3000/api/v1/events"
-    );
-  });
-
-  it.each([
-    ["WORK", "/api/v1/chat/conversations/conversation-1/events"],
-    [
-      "CANDIDATE_INQUIRY",
-      "/api/v1/chat/candidate-inquiries/conversation-1/events",
-    ],
-  ] as const)(
-    "uses the correct %s event path",
-    async (conversationType, path) => {
-      const { unmount } = await renderHook(() =>
-        useChatSocket({
-          conversationId: "conversation-1",
-          conversationType,
-          enabled: true,
-          onEvent: jest.fn(),
-        })
-      );
-
-      expect(MockWebSocket.instances).toHaveLength(1);
-      expect(MockWebSocket.instances[0]?.url).toBe(
-        `wss://api.example.com${path}`
-      );
-      expect(MockWebSocket.instances[0]?.protocols).toEqual([]);
-      expect(MockWebSocket.instances[0]?.options).toEqual({
-        headers: { Cookie: "better-auth.session_token=session" },
-      });
-
-      await unmount();
-    }
-  );
 
   it("does not create a socket when the API URL is blank", async () => {
     process.env.EXPO_PUBLIC_API_URL = "   ";

@@ -1,52 +1,51 @@
 import { z } from "zod";
-import type { RequestOptions } from "./WalletApi";
+import type { RequestOptions } from "./ApiClient";
 import { ApiClient } from "./ApiClient";
 import {
-  questV2ApplicationListResponseSchema,
-  questV2AssignmentResponseSchema,
-  questV2ApplicationResponseSchema,
-  questV2ApplicationSelectionResponseSchema,
-  questV2BoardResponseSchema,
-  questV2CanonicalQuestResponseSchema,
-  questV2CompletionResponseSchema,
-  questV2StartWorkResponseSchema,
+  questV2ApplicationListDataSchema,
+  questV2AssignmentSchema,
+  questV2ApplicationSchema,
+  questV2ApplicationSelectionSchema,
+  questV2BoardPageSchema,
+  questV2CanonicalQuestSchema,
+  questV2CompletionSchema,
+  questV2StartWorkSchema,
   questV2CreatePayloadSchema,
-  questV2DetailResponseSchema,
+  questV2DetailSchema,
   questV2EditPayloadSchema,
   questV2EditRequestCreatePayloadSchema,
   questV2EditRequestRespondPayloadSchema,
-  questV2EditRequestResponseSchema,
-  questV2ImagesResponseSchema,
-  questV2AssignmentsMineResponseSchema,
-  questV2AssignmentsResponseSchema,
-  questV2MineResponseSchema,
+  questV2EditRequestSchema,
+  questV2ImagesDataSchema,
+  questV2AssignmentsDataSchema,
+  questV2MineDataSchema,
   questV2ProofCreatePayloadSchema,
-  questV2ProofDeleteResponseSchema,
-  questV2ProofListResponseSchema,
-  questV2ProofResponseSchema,
+  questV2ProofDeleteSchema,
+  questV2ProofListDataSchema,
+  questV2ProofSubmissionSchema,
   questV2ProofReviewPayloadSchema,
-  questV2ProofReviewResponseSchema,
+  questV2ProofReviewSchema,
   questV2ProofRetryPayloadSchema,
   questV2ProofUpdatePayloadSchema,
-  questV2PublishCheckResponseSchema,
-  questV2PublishResponseSchema,
-  questV2CancellationResponseSchema,
-  questV2PublicDetailResponseSchema,
-  questV2ParticipationDetailResponseSchema,
+  questV2PublishCheckSchema,
+  questV2PublishDataSchema,
+  questV2CancellationOutcomeSchema,
+  questV2PublicDetailSchema,
+  questV2ParticipationDetailSchema,
   questV2ReviewCreatePayloadSchema,
-  questV2ReviewResponseSchema,
+  questV2ReviewSchema,
   questV2ReviewUpdatePayloadSchema,
   questV2TeamCreatePayloadSchema,
   questV2TeamJoinPayloadSchema,
   questV2TeamSubmitPayloadSchema,
   questV2TeamUpdatePayloadSchema,
-  questV2TeamListResponseSchema,
-  questV2TeamResponseSchema,
-  questV2TeamFileResponseSchema,
-  questV2TeamSelectionResponseSchema,
-  questV2ProofFileLinkResponseSchema,
+  questV2TeamListDataSchema,
+  questV2TeamSchema,
+  questV2TeamFileSchema,
+  questV2TeamSelectionSchema,
+  questV2ProofFileLinkSchema,
   type QuestV2ProofFileLink,
-  questV2UnderfilledResponseSchema,
+  questV2UnderfilledSchema,
   questV2UnderfilledDecisionPayloadSchema,
   questV2UnderfilledConsentPayloadSchema,
   type QuestV2ApplicationSelection,
@@ -102,18 +101,15 @@ export const tagItemSchema = z.object({
   createdAt: z.string().optional(),
 });
 
-export const tagListResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.union([
-    z.array(tagItemSchema),
-    z
-      .object({
-        items: z.array(tagItemSchema),
-        nextCursor: z.string().nullable().optional(),
-      })
-      .transform((val) => val.items),
-  ]),
-});
+export const tagListDataSchema = z.union([
+  z.array(tagItemSchema),
+  z
+    .object({
+      items: z.array(tagItemSchema),
+      nextCursor: z.string().nullable().optional(),
+    })
+    .transform((val) => val.items),
+]);
 
 export type TagItem = z.infer<typeof tagItemSchema>;
 
@@ -163,27 +159,6 @@ export interface QuestV2ReviewPayload {
   comment?: string;
 }
 
-function requiredIdempotencyKey(value?: string): string {
-  if (typeof value !== "string" || value.trim().length === 0) {
-    throw new Error("Quest v2 mutations require a non-blank idempotency key");
-  }
-  if (value.length > 200) {
-    throw new Error("Quest v2 idempotency keys must be at most 200 characters");
-  }
-  return value;
-}
-
-function mutationHeaders(
-  idempotencyKey?: string,
-  additional: Record<string, string> = {}
-): Record<string, string> {
-  const key = requiredIdempotencyKey(idempotencyKey);
-  return {
-    "idempotency-key": key,
-    "Idempotency-Key": key,
-    ...additional,
-  };
-}
 export class QuestApi {
   constructor(readonly client: ApiClient = new ApiClient()) {}
   async listBoard(
@@ -202,68 +177,47 @@ export class QuestApi {
     } = {},
     options?: RequestOptions
   ): Promise<{ items: QuestV2BoardCard[]; nextCursor: string | null }> {
-    const query = new URLSearchParams();
-    if (params.tagId) query.set("tagId", params.tagId);
-    if (params.q) query.set("q", params.q);
-    if (params.mode) query.set("mode", params.mode);
-    if (params.participation) query.set("participation", params.participation);
-    if (params.minQuestReward !== undefined)
-      query.set("minQuestReward", String(params.minQuestReward));
-    if (params.maxQuestReward !== undefined)
-      query.set("maxQuestReward", String(params.maxQuestReward));
-    if (params.maxDurationMinutes !== undefined)
-      query.set("maxDurationMinutes", String(params.maxDurationMinutes));
-    if (params.startFrom) query.set("startFrom", params.startFrom);
-    if (params.startTo) query.set("startTo", params.startTo);
-    if (params.limit !== undefined) query.set("limit", String(params.limit));
-    if (params.cursor) query.set("cursor", params.cursor);
-
-    const queryString = query.toString();
-    const endpoint = `/api/v2/quests${queryString ? `?${queryString}` : ""}`;
-    const body = await this.client.request<unknown>(endpoint, {
-      signal: options?.signal,
+    return this.client.get("/api/v2/quests", questV2BoardPageSchema, {
+      ...options,
+      query: params,
     });
-    return questV2BoardResponseSchema.parse(body).data;
   }
 
   async listTags(options?: RequestOptions): Promise<TagItem[]> {
-    const body = await this.client.request<unknown>("/api/v1/tags", {
-      signal: options?.signal,
-    });
-    return tagListResponseSchema.parse(body).data;
+    return this.client.get("/api/v1/tags", tagListDataSchema, options);
   }
 
   async getPublicDetail(
     questId: string,
     options?: RequestOptions
   ): Promise<QuestV2PublicDetail> {
-    const body = await this.client.request<unknown>(
+    return this.client.get(
       `/api/v2/quests/${questId}/public`,
-      { signal: options?.signal }
+      questV2PublicDetailSchema,
+      options
     );
-    return questV2PublicDetailResponseSchema.parse(body).data;
   }
 
   async getParticipationDetail(
     questId: string,
     options?: RequestOptions
   ): Promise<QuestV2ParticipationDetail> {
-    const body = await this.client.request<unknown>(
+    return this.client.get(
       `/api/v2/quests/${questId}/participation`,
-      { signal: options?.signal }
+      questV2ParticipationDetailSchema,
+      options
     );
-    return questV2ParticipationDetailResponseSchema.parse(body).data;
   }
 
   async getDetail(
     questId: string,
     options?: RequestOptions
   ): Promise<QuestV2Detail> {
-    const body = await this.client.request<unknown>(
+    return this.client.get(
       `/api/v2/quests/${questId}`,
-      { signal: options?.signal }
+      questV2DetailSchema,
+      options
     );
-    return questV2DetailResponseSchema.parse(body).data;
   }
 
   async uploadQuestImages(
@@ -292,12 +246,17 @@ export class QuestApi {
     assets.forEach((asset, index) => {
       appendUploadFile(formData, "images", asset, `quest-${index}`);
     });
-    const body = await this.client.requestForm<unknown>(
-      `/api/v2/quests/${questId}/images`,
-      formData,
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
-    );
-    return questV2ImagesResponseSchema.parse(body).data.images;
+    return this.client
+      .send(
+        "POST",
+        `/api/v2/quests/${questId}/images`,
+        questV2ImagesDataSchema,
+        {
+          form: formData,
+          idempotencyKey,
+        }
+      )
+      .then((data) => data.images);
   }
 
   async listMine(
@@ -307,54 +266,49 @@ export class QuestApi {
     } = {},
     options?: RequestOptions
   ): Promise<{ items: QuestV2CanonicalQuest[]; nextCursor: string | null }> {
-    const query = new URLSearchParams();
-    if (params.cursor) query.set("cursor", params.cursor);
-    if (params.limit) query.set("limit", String(params.limit));
-
-    const queryString = query.toString();
-    const endpoint = `/api/v2/quests/mine${queryString ? `?${queryString}` : ""}`;
-    const body = await this.client.request<unknown>(endpoint, {
-      signal: options?.signal,
+    return this.client.get("/api/v2/quests/mine", questV2MineDataSchema, {
+      ...options,
+      query: params,
     });
-    return questV2MineResponseSchema.parse(body).data;
   }
   async listMyAssignments(
     status?: QuestV2AssignmentMineStatus,
     options?: RequestOptions
   ): Promise<QuestV2Assignment[]> {
-    const query = status ? `?status=${status}` : "";
-    const body = await this.client.request<unknown>(
-      `/api/v2/assignments/mine${query}`,
-      { signal: options?.signal }
+    const data = await this.client.get(
+      "/api/v2/assignments/mine",
+      questV2AssignmentsDataSchema,
+      { ...options, query: { status } }
     );
-    return questV2AssignmentsMineResponseSchema.parse(body).data.items;
+    return data.items;
   }
 
   async listQuestAssignments(
     questId: string,
     options?: RequestOptions
   ): Promise<QuestV2Assignment[]> {
-    const body = await this.client.request<unknown>(
+    const data = await this.client.get(
       `/api/v2/quests/${questId}/assignments`,
-      { signal: options?.signal }
+      questV2AssignmentsDataSchema,
+      options
     );
-    return questV2AssignmentsResponseSchema.parse(body).data.items;
+    return data.items;
   }
 
   async createQuest(
     payload: CreateQuestV2Payload,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2CanonicalQuest> {
     const validatedPayload = questV2CreatePayloadSchema.parse(payload);
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       "/api/v2/quests",
-      validatedPayload,
+      questV2CanonicalQuestSchema,
       {
-        method: "POST",
-        headers: mutationHeaders(idempotencyKey),
+        json: validatedPayload,
+        idempotencyKey,
       }
     );
-    return questV2CanonicalQuestResponseSchema.parse(body).data;
   }
 
   async editQuest(
@@ -393,126 +347,127 @@ export class QuestApi {
       throw new Error("Quest edits require a positive current version");
     }
     const validatedPayload = questV2EditPayloadSchema.parse(payload);
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "PATCH",
       `/api/v2/quests/${questId}`,
-      validatedPayload,
+      questV2CanonicalQuestSchema,
       {
-        method: "PATCH",
-        headers: mutationHeaders(options.idempotencyKey, {
-          "If-Match": String(options.version),
-        }),
+        json: validatedPayload,
+        idempotencyKey: options.idempotencyKey ?? createQuestIdempotencyKey(),
+        headers: { "If-Match": String(options.version) },
       }
     );
-    return questV2CanonicalQuestResponseSchema.parse(body).data;
   }
 
   async getPublishCheck(
     questId: string,
     options?: RequestOptions
   ): Promise<QuestV2PublishCheck> {
-    const body = await this.client.request<unknown>(
+    return this.client.get(
       `/api/v2/quests/${questId}/publish-check`,
-      { signal: options?.signal }
+      questV2PublishCheckSchema,
+      options
     );
-    return questV2PublishCheckResponseSchema.parse(body).data;
   }
 
   async publishQuest(
     questId: string,
     idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2CanonicalQuest> {
-    const body = await this.client.requestJson<unknown>(
+    const data = await this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/publish`,
-      {},
-      {
-        method: "POST",
-        headers: mutationHeaders(idempotencyKey),
-      }
+      questV2PublishDataSchema,
+      { json: {}, idempotencyKey }
     );
-    return questV2PublishResponseSchema.parse(body).data.quest;
+    return data.quest;
   }
 
   async cancelQuest(
     questId: string,
     idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2CancellationOutcome> {
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/cancel`,
-      {},
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2CancellationOutcomeSchema,
+      { json: {}, idempotencyKey }
     );
-    return questV2CancellationResponseSchema.parse(body).data;
   }
 
   async joinQuest(
     questId: string,
     idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Assignment> {
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/join`,
-      {},
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2AssignmentSchema,
+      { json: {}, idempotencyKey }
     );
-    return questV2AssignmentResponseSchema.parse(body).data;
   }
 
   async confirmCompletion(
     questId: string,
     idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Completion> {
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/completion-confirmation`,
-      {},
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2CompletionSchema,
+      { json: {}, idempotencyKey }
     );
-    return questV2CompletionResponseSchema.parse(body).data;
   }
 
   /** Records Start Work for the viewer's Active Assignment; no request body. */
   async startWork(
     questId: string,
-    idempotencyKey: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2StartWork> {
-    const body = await this.client.request<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/start-work`,
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2StartWorkSchema,
+      { idempotencyKey }
     );
-    return questV2StartWorkResponseSchema.parse(body).data;
   }
 
   async deleteQuestImage(
     questId: string,
     imageId: string,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Image[]> {
-    const body = await this.client.request<unknown>(
+    const data = await this.client.send(
+      "DELETE",
       `/api/v2/quests/${questId}/images/${imageId}`,
-      { method: "DELETE", headers: mutationHeaders(idempotencyKey) }
+      questV2ImagesDataSchema,
+      { idempotencyKey }
     );
-    return questV2ImagesResponseSchema.parse(body).data.images;
+    return data.images;
   }
 
   async applyQuest(
     questId: string,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Application> {
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/applications`,
-      {},
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2ApplicationSchema,
+      { json: {}, idempotencyKey }
     );
-    return questV2ApplicationResponseSchema.parse(body).data;
   }
 
   async listApplications(
     questId: string,
     options?: RequestOptions
   ): Promise<QuestV2Application[]> {
-    const body = await this.client.request<unknown>(
+    const data = await this.client.get(
       `/api/v2/quests/${questId}/applications`,
-      { signal: options?.signal }
+      questV2ApplicationListDataSchema,
+      options
     );
-    return questV2ApplicationListResponseSchema.parse(body).data.items;
+    return data.items;
   }
 
   async getApplication(
@@ -520,74 +475,76 @@ export class QuestApi {
     applicationId: string,
     options?: RequestOptions
   ): Promise<QuestV2Application> {
-    const body = await this.client.request<unknown>(
+    return this.client.get(
       `/api/v2/quests/${questId}/applications/${applicationId}`,
-      { signal: options?.signal }
+      questV2ApplicationSchema,
+      options
     );
-    return questV2ApplicationResponseSchema.parse(body).data;
   }
 
   async withdrawApplication(
     questId: string,
     applicationId: string,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Application> {
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/applications/${applicationId}/withdraw`,
-      {},
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2ApplicationSchema,
+      { json: {}, idempotencyKey }
     );
-    return questV2ApplicationResponseSchema.parse(body).data;
   }
 
   async selectApplication(
     questId: string,
     applicationId: string,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2ApplicationSelection> {
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/applications/${applicationId}/select`,
-      {},
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2ApplicationSelectionSchema,
+      { json: {}, idempotencyKey }
     );
-    return questV2ApplicationSelectionResponseSchema.parse(body).data;
   }
+
   async rejectCandidateApplication(
     questId: string,
     applicationId: string,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Application> {
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/applications/${applicationId}/reject`,
-      {},
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2ApplicationSchema,
+      { json: {}, idempotencyKey }
     );
-    return questV2ApplicationResponseSchema.parse(body).data;
   }
 
   async createCandidateTeam(
     questId: string,
     payload: { name: string; headcount: number },
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Team> {
     const validatedPayload = questV2TeamCreatePayloadSchema.parse(payload);
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/teams`,
-      validatedPayload,
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2TeamSchema,
+      { json: validatedPayload, idempotencyKey }
     );
-    return questV2TeamResponseSchema.parse(body).data;
   }
 
   async listCandidateTeams(
     questId: string,
     options?: RequestOptions
   ): Promise<QuestV2Team[]> {
-    const body = await this.client.request<unknown>(
+    const data = await this.client.get(
       `/api/v2/quests/${questId}/teams`,
-      { signal: options?.signal }
+      questV2TeamListDataSchema,
+      options
     );
-    return questV2TeamListResponseSchema.parse(body).data.items;
+    return data.items;
   }
 
   async getCandidateTeam(
@@ -595,219 +552,227 @@ export class QuestApi {
     teamId: string,
     options?: RequestOptions
   ): Promise<QuestV2Team> {
-    const body = await this.client.request<unknown>(
+    return this.client.get(
       `/api/v2/quests/${questId}/teams/${teamId}`,
-      { signal: options?.signal }
+      questV2TeamSchema,
+      options
     );
-    return questV2TeamResponseSchema.parse(body).data;
   }
+
   async updateCandidateTeam(
     questId: string,
     teamId: string,
     payload: { name: string },
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Team> {
     const validatedPayload = questV2TeamUpdatePayloadSchema.parse(payload);
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "PATCH",
       `/api/v2/quests/${questId}/teams/${teamId}`,
-      validatedPayload,
-      { method: "PATCH", headers: mutationHeaders(idempotencyKey) }
+      questV2TeamSchema,
+      { json: validatedPayload, idempotencyKey }
     );
-    return questV2TeamResponseSchema.parse(body).data;
   }
 
   async joinCandidateTeam(
     questId: string,
     teamId: string,
     joinCode: string,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Team> {
     const validatedPayload = questV2TeamJoinPayloadSchema.parse({
       joinCode: joinCode.toUpperCase(),
     });
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/teams/${teamId}/join`,
-      validatedPayload,
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2TeamSchema,
+      { json: validatedPayload, idempotencyKey }
     );
-    return questV2TeamResponseSchema.parse(body).data;
   }
 
   async leaveCandidateTeam(
     questId: string,
     teamId: string,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Team> {
-    const body = await this.client.request<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/teams/${teamId}/leave`,
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2TeamSchema,
+      { idempotencyKey }
     );
-    return questV2TeamResponseSchema.parse(body).data;
   }
 
   async removeCandidateTeamMember(
     questId: string,
     teamId: string,
     memberId: string,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Team> {
-    const body = await this.client.request<unknown>(
+    return this.client.send(
+      "DELETE",
       `/api/v2/quests/${questId}/teams/${teamId}/members/${memberId}`,
-      { method: "DELETE", headers: mutationHeaders(idempotencyKey) }
+      questV2TeamSchema,
+      { idempotencyKey }
     );
-    return questV2TeamResponseSchema.parse(body).data;
   }
 
   async regenerateCandidateTeamJoinCode(
     questId: string,
     teamId: string,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Team> {
-    const body = await this.client.request<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/teams/${teamId}/join-code`,
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2TeamSchema,
+      { idempotencyKey }
     );
-    return questV2TeamResponseSchema.parse(body).data;
   }
+
   async uploadCandidateTeamFile(
     questId: string,
     teamId: string,
     asset: UploadAsset,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2TeamFile> {
     const formData = new FormData();
     appendUploadFile(formData, "file", asset, `team-${teamId}`);
-    const body = await this.client.requestForm<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/teams/${teamId}/files`,
-      formData,
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2TeamFileSchema,
+      { form: formData, idempotencyKey }
     );
-    return questV2TeamFileResponseSchema.parse(body).data;
   }
 
   async submitCandidateTeam(
     questId: string,
     teamId: string,
     payload: { text?: string; fileIds?: string[] },
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Team> {
     const validatedPayload = questV2TeamSubmitPayloadSchema.parse({
       text: payload.text ?? "",
       fileIds: payload.fileIds ?? [],
     });
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/teams/${teamId}/submit`,
-      validatedPayload,
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2TeamSchema,
+      { json: validatedPayload, idempotencyKey }
     );
-    return questV2TeamResponseSchema.parse(body).data;
   }
 
   async selectCandidateTeam(
     questId: string,
     teamId: string,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2TeamSelection> {
-    const body = await this.client.request<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/teams/${teamId}/select`,
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2TeamSelectionSchema,
+      { idempotencyKey }
     );
-    return questV2TeamSelectionResponseSchema.parse(body).data;
   }
+
   async rejectCandidateTeam(
     questId: string,
     teamId: string,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Team> {
-    const body = await this.client.request<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/teams/${teamId}/reject`,
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2TeamSchema,
+      { idempotencyKey }
     );
-    return questV2TeamResponseSchema.parse(body).data;
   }
 
   async getUnderfilled(
     questId: string,
     options?: RequestOptions
   ): Promise<QuestV2Underfilled> {
-    const body = await this.client.request<unknown>(
+    return this.client.get(
       `/api/v2/quests/${questId}/underfilled`,
-      { signal: options?.signal }
+      questV2UnderfilledSchema,
+      options
     );
-    return questV2UnderfilledResponseSchema.parse(body).data;
   }
 
   async decideUnderfilled(
     questId: string,
     decision: "PROCEED" | "CANCEL",
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Underfilled> {
     const validatedPayload = questV2UnderfilledDecisionPayloadSchema.parse({
       decision,
     });
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/underfilled/decision`,
-      validatedPayload,
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2UnderfilledSchema,
+      { json: validatedPayload, idempotencyKey }
     );
-    return questV2UnderfilledResponseSchema.parse(body).data;
   }
 
   async respondUnderfilledConsent(
     questId: string,
     decision: "ACCEPT" | "DECLINE",
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Underfilled> {
     const validatedPayload = questV2UnderfilledConsentPayloadSchema.parse({
       decision,
     });
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/underfilled/consent`,
-      validatedPayload,
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2UnderfilledSchema,
+      { json: validatedPayload, idempotencyKey }
     );
-    return questV2UnderfilledResponseSchema.parse(body).data;
   }
 
   async createEditRequest(
     questId: string,
     payload: QuestV2CreateEditRequestPayload,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2EditRequest> {
     const validatedPayload =
       questV2EditRequestCreatePayloadSchema.parse(payload);
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/edit-requests`,
-      validatedPayload,
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2EditRequestSchema,
+      { json: validatedPayload, idempotencyKey }
     );
-    return questV2EditRequestResponseSchema.parse(body).data;
   }
 
   async getEditRequest(
     requestId: string,
     options?: RequestOptions
   ): Promise<QuestV2EditRequest> {
-    const body = await this.client.request<unknown>(
+    return this.client.get(
       `/api/v2/quests/edit-requests/${requestId}`,
-      { signal: options?.signal }
+      questV2EditRequestSchema,
+      options
     );
-    return questV2EditRequestResponseSchema.parse(body).data;
   }
 
   async respondToEditRequest(
     requestId: string,
     payload: QuestV2EditRequestResponsePayload,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2EditRequest> {
     const validatedPayload =
       questV2EditRequestRespondPayloadSchema.parse(payload);
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/edit-requests/${requestId}/respond`,
-      validatedPayload,
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2EditRequestSchema,
+      { json: validatedPayload, idempotencyKey }
     );
-    return questV2EditRequestResponseSchema.parse(body).data;
   }
 
   async createProofDraft(
@@ -815,7 +780,7 @@ export class QuestApi {
     payload:
       | QuestV2ProofCreatePayload
       | { assets: UploadAsset[]; description?: string },
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2ProofSubmission> {
     if ("assets" in payload) {
       if (payload.assets.length > 5) {
@@ -840,21 +805,22 @@ export class QuestApi {
       payload.assets.forEach((asset, index) =>
         appendUploadFile(formData, "files", asset, `proof-${index}`)
       );
-      const body = await this.client.requestForm<unknown>(
+      return this.client.send(
+        "POST",
         `/api/v2/quests/${questId}/proof-submissions`,
-        formData,
-        { method: "POST", headers: mutationHeaders(idempotencyKey) }
+        questV2ProofSubmissionSchema,
+        { form: formData, idempotencyKey }
       );
-      return questV2ProofResponseSchema.parse(body).data;
     }
     const validatedPayload = questV2ProofCreatePayloadSchema.parse(payload);
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/proof-submissions`,
-      validatedPayload,
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2ProofSubmissionSchema,
+      { json: validatedPayload, idempotencyKey }
     );
-    return questV2ProofResponseSchema.parse(body).data;
   }
+
   async updateProofDraft(
     questId: string,
     proofSubmissionId: string,
@@ -862,7 +828,7 @@ export class QuestApi {
       | QuestV2ProofUpdatePayload
       | QuestV2ProofRetryPayload
       | QuestV2ProofFileUploadPayload,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2ProofSubmission> {
     if ("assets" in payload) {
       if (payload.assets.length < 1 || payload.assets.length > 5) {
@@ -893,112 +859,115 @@ export class QuestApi {
       payload.assets.forEach((asset, index) =>
         appendUploadFile(formData, "files", asset, `proof-${index}`)
       );
-      const body = await this.client.requestForm<unknown>(
+      return this.client.send(
+        "PATCH",
         `/api/v2/quests/${questId}/proof-submissions/${proofSubmissionId}`,
-        formData,
-        { method: "PATCH", headers: mutationHeaders(idempotencyKey) }
+        questV2ProofSubmissionSchema,
+        { form: formData, idempotencyKey }
       );
-      return questV2ProofResponseSchema.parse(body).data;
     }
     const validatedPayload = questV2ProofUpdatePayloadSchema.parse(payload);
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "PATCH",
       `/api/v2/quests/${questId}/proof-submissions/${proofSubmissionId}`,
-      validatedPayload,
-      { method: "PATCH", headers: mutationHeaders(idempotencyKey) }
+      questV2ProofSubmissionSchema,
+      { json: validatedPayload, idempotencyKey }
     );
-    return questV2ProofResponseSchema.parse(body).data;
   }
 
   async deleteProofDraft(
     questId: string,
     proofSubmissionId: string,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2ProofDelete> {
-    const body = await this.client.request<unknown>(
+    return this.client.send(
+      "DELETE",
       `/api/v2/quests/${questId}/proof-submissions/${proofSubmissionId}`,
-      { method: "DELETE", headers: mutationHeaders(idempotencyKey) }
+      questV2ProofDeleteSchema,
+      { idempotencyKey }
     );
-    return questV2ProofDeleteResponseSchema.parse(body).data;
   }
 
   async submitProofDraft(
     questId: string,
     proofSubmissionId: string,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2ProofSubmission> {
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/proof-submissions/${proofSubmissionId}/submit`,
-      {},
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2ProofSubmissionSchema,
+      { json: {}, idempotencyKey }
     );
-    return questV2ProofResponseSchema.parse(body).data;
   }
 
   async listProofSubmissions(
     questId: string,
     options?: RequestOptions
   ): Promise<QuestV2ProofSubmission[]> {
-    const body = await this.client.request<unknown>(
+    const data = await this.client.get(
       `/api/v2/quests/${questId}/proof-submissions`,
-      { signal: options?.signal }
+      questV2ProofListDataSchema,
+      options
     );
-    return questV2ProofListResponseSchema.parse(body).data.items;
+    return data.items;
   }
+
   async getProofFileLink(
     questId: string,
     proofSubmissionId: string,
     fileId: string,
     options?: RequestOptions
   ): Promise<QuestV2ProofFileLink> {
-    const body = await this.client.request<unknown>(
+    return this.client.get(
       `/api/v2/quests/${questId}/proof-submissions/${proofSubmissionId}/files/${fileId}`,
-      { signal: options?.signal }
+      questV2ProofFileLinkSchema,
+      options
     );
-    return questV2ProofFileLinkResponseSchema.parse(body).data;
   }
 
   async reviewProof(
     questId: string,
     proofSubmissionId: string,
     payload: QuestV2ProofReviewPayload,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2ProofReview> {
     const validatedPayload = questV2ProofReviewPayloadSchema.parse(payload);
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/proof-submissions/${proofSubmissionId}/review`,
-      validatedPayload,
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2ProofReviewSchema,
+      { json: validatedPayload, idempotencyKey }
     );
-    return questV2ProofReviewResponseSchema.parse(body).data;
   }
 
   async createReview(
     questId: string,
     input: QuestV2ReviewPayload,
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Review> {
     const validatedPayload = questV2ReviewCreatePayloadSchema.parse(input);
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v2/quests/${questId}/reviews`,
-      validatedPayload,
-      { method: "POST", headers: mutationHeaders(idempotencyKey) }
+      questV2ReviewSchema,
+      { json: validatedPayload, idempotencyKey }
     );
-    return questV2ReviewResponseSchema.parse(body).data;
   }
 
   async updateReview(
     questId: string,
     reviewId: string,
     input: { rating?: number; comment?: string },
-    idempotencyKey?: string
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Review> {
     const validatedPayload = questV2ReviewUpdatePayloadSchema.parse(input);
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "PATCH",
       `/api/v2/quests/${questId}/reviews/${reviewId}`,
-      validatedPayload,
-      { method: "PATCH", headers: mutationHeaders(idempotencyKey) }
+      questV2ReviewSchema,
+      { json: validatedPayload, idempotencyKey }
     );
-    return questV2ReviewResponseSchema.parse(body).data;
   }
 }
 

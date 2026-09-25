@@ -63,14 +63,11 @@ export const questV2BoardCardSchema = z.object({
 });
 export type QuestV2BoardCard = z.infer<typeof questV2BoardCardSchema>;
 
-export const questV2BoardResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    items: z.array(questV2BoardCardSchema),
-    nextCursor: z.string().nullable(),
-  }),
+export const questV2BoardPageSchema = z.object({
+  items: z.array(questV2BoardCardSchema),
+  nextCursor: z.string().nullable(),
 });
-export type QuestV2BoardResponse = z.infer<typeof questV2BoardResponseSchema>;
+export type QuestV2BoardResponse = z.infer<typeof questV2BoardPageSchema>;
 
 export const questV2OwnerImageSchema = z.object({
   imageId: questV2IdSchema,
@@ -116,20 +113,10 @@ export const questV2CanonicalQuestSchema = z.object({
 });
 export type QuestV2CanonicalQuest = z.infer<typeof questV2CanonicalQuestSchema>;
 
-export const questV2CanonicalQuestResponseSchema = z.object({
-  success: z.literal(true),
-  data: questV2CanonicalQuestSchema,
-});
-
 export const questV2DetailSchema = questV2CanonicalQuestSchema.extend({
   images: z.array(questV2ImageSchema),
 });
 export type QuestV2Detail = z.infer<typeof questV2DetailSchema>;
-
-export const questV2DetailResponseSchema = z.object({
-  success: z.literal(true),
-  data: questV2DetailSchema,
-});
 
 export const questV2PublicDetailSchema = z.object({
   id: questV2IdSchema,
@@ -157,11 +144,6 @@ export const questV2PublicDetailSchema = z.object({
 });
 export type QuestV2PublicDetail = z.infer<typeof questV2PublicDetailSchema>;
 
-export const questV2PublicDetailResponseSchema = z.object({
-  success: z.literal(true),
-  data: questV2PublicDetailSchema,
-});
-
 export const questV2ParticipationDetailSchema =
   questV2PublicDetailSchema.extend({
     assignment: z.object({
@@ -176,18 +158,10 @@ export type QuestV2ParticipationDetail = z.infer<
   typeof questV2ParticipationDetailSchema
 >;
 
-export const questV2ParticipationDetailResponseSchema = z.object({
-  success: z.literal(true),
-  data: questV2ParticipationDetailSchema,
+export const questV2ImagesDataSchema = z.object({
+  images: z.array(questV2ImageSchema),
 });
-
-export const questV2ImagesResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    images: z.array(questV2ImageSchema),
-  }),
-});
-export type QuestV2ImagesResponse = z.infer<typeof questV2ImagesResponseSchema>;
+export type QuestV2ImagesResponse = z.infer<typeof questV2ImagesDataSchema>;
 
 export const questV2EscrowSchema = z.object({
   reservationId: z.string().min(1),
@@ -208,23 +182,15 @@ export const questV2EscrowSchema = z.object({
 
 export type QuestV2Escrow = z.infer<typeof questV2EscrowSchema>;
 
-export const questV2PublishResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    quest: questV2CanonicalQuestSchema,
-    questEscrow: questV2EscrowSchema,
-  }),
+export const questV2PublishDataSchema = z.object({
+  quest: questV2CanonicalQuestSchema,
+  questEscrow: questV2EscrowSchema,
 });
-
-export const questV2MineResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    items: z.array(questV2CanonicalQuestSchema),
-    nextCursor: z.string().nullable(),
-  }),
+export const questV2MineDataSchema = z.object({
+  items: z.array(questV2CanonicalQuestSchema),
+  nextCursor: z.string().nullable(),
 });
-export type QuestV2MineResponse = z.infer<typeof questV2MineResponseSchema>;
-
+export type QuestV2MineResponse = z.infer<typeof questV2MineDataSchema>;
 export const questV2AssignmentSchema = z.object({
   id: questV2IdSchema,
   questId: questV2IdSchema,
@@ -236,24 +202,13 @@ export const questV2AssignmentSchema = z.object({
 });
 export type QuestV2Assignment = z.infer<typeof questV2AssignmentSchema>;
 
-export const questV2AssignmentsResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    items: z.array(questV2AssignmentSchema),
-  }),
+export const questV2AssignmentsDataSchema = z.object({
+  items: z.array(questV2AssignmentSchema),
 });
 export type QuestV2AssignmentsResponse = z.infer<
-  typeof questV2AssignmentsResponseSchema
+  typeof questV2AssignmentsDataSchema
 >;
 
-export const questV2AssignmentsMineResponseSchema =
-  questV2AssignmentsResponseSchema;
-export type QuestV2AssignmentsMineResponse = QuestV2AssignmentsResponse;
-
-export const questV2AssignmentResponseSchema = z.object({
-  success: z.literal(true),
-  data: questV2AssignmentSchema,
-});
 export const questV2PublishCheckReasonSchema = z.object({
   code: z.string(),
   message: z.string(),
@@ -279,10 +234,7 @@ export const questV2PublishCheckSchema = z.object({
 });
 export type QuestV2PublishCheck = z.infer<typeof questV2PublishCheckSchema>;
 
-export const questV2PublishCheckResponseSchema = z.object({
-  success: z.literal(true),
-  data: questV2PublishCheckSchema,
-});
+export const questV2PublishCheckDataSchema = questV2PublishCheckSchema;
 
 export const questV2CancellationOutcomeSchema = z.object({
   questStatus: z.literal("QUEST_CANCELLED"),
@@ -294,10 +246,6 @@ export type QuestV2CancellationOutcome = z.infer<
   typeof questV2CancellationOutcomeSchema
 >;
 
-export const questV2CancellationResponseSchema = z.object({
-  success: z.literal(true),
-  data: questV2CancellationOutcomeSchema,
-});
 export const questV2ApplicationStateSchema = z.enum([
   "APPLICATION_APPLIED",
   "APPLICATION_SELECTED",
@@ -317,24 +265,16 @@ export const questV2ApplicationSchema = z.object({
 });
 export type QuestV2Application = z.infer<typeof questV2ApplicationSchema>;
 
-export const questV2ApplicationListResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({ items: z.array(questV2ApplicationSchema) }),
+export const questV2ApplicationListDataSchema = z.object({
+  items: z.array(questV2ApplicationSchema),
 });
-export const questV2ApplicationResponseSchema = z.object({
-  success: z.literal(true),
-  data: questV2ApplicationSchema,
-});
-export const questV2ApplicationSelectionResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    assignments: z.array(questV2AssignmentSchema),
-    questState: questV2StateSchema,
-  }),
+export const questV2ApplicationSelectionSchema = z.object({
+  assignments: z.array(questV2AssignmentSchema),
+  questState: questV2StateSchema,
 });
 export type QuestV2ApplicationSelection = z.infer<
-  typeof questV2ApplicationSelectionResponseSchema
->["data"];
+  typeof questV2ApplicationSelectionSchema
+>;
 
 export const questV2TeamStateSchema = z.enum([
   "TEAM_FORMING",
@@ -372,15 +312,6 @@ export const questV2TeamSchema = z.object({
   createdAt: z.string(),
 });
 export type QuestV2Team = z.infer<typeof questV2TeamSchema>;
-
-export const questV2TeamListResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({ items: z.array(questV2TeamSchema) }),
-});
-export const questV2TeamResponseSchema = z.object({
-  success: z.literal(true),
-  data: questV2TeamSchema,
-});
 export const questV2TeamFileSchema = z.object({
   fileId: z.string().min(1),
   fileName: z.string().min(1),
@@ -389,20 +320,15 @@ export const questV2TeamFileSchema = z.object({
   createdAt: z.string().optional(),
 });
 export type QuestV2TeamFile = z.infer<typeof questV2TeamFileSchema>;
-export const questV2TeamFileResponseSchema = z.object({
-  success: z.literal(true),
-  data: questV2TeamFileSchema,
+
+export const questV2TeamListDataSchema = z.object({
+  items: z.array(questV2TeamSchema),
 });
-export const questV2TeamSelectionResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    questState: questV2StateSchema,
-    assignments: z.array(questV2AssignmentSchema),
-  }),
+export const questV2TeamSelectionSchema = z.object({
+  questState: questV2StateSchema,
+  assignments: z.array(questV2AssignmentSchema),
 });
-export type QuestV2TeamSelection = z.infer<
-  typeof questV2TeamSelectionResponseSchema
->["data"];
+export type QuestV2TeamSelection = z.infer<typeof questV2TeamSelectionSchema>;
 
 export const questV2UnderfilledStateSchema = z.enum([
   "UNDERFILLED_DECISION_PENDING",
@@ -472,10 +398,6 @@ export const questV2UnderfilledSchema = z.object({
   ownResponse: questV2UnderfilledOwnResponseSchema.nullable().optional(),
 });
 export type QuestV2Underfilled = z.infer<typeof questV2UnderfilledSchema>;
-export const questV2UnderfilledResponseSchema = z.object({
-  success: z.literal(true),
-  data: questV2UnderfilledSchema,
-});
 
 export const questV2EditRequestStatusSchema = z.enum([
   "EDIT_REQUEST_PENDING",
@@ -525,10 +447,6 @@ export const questV2EditRequestSchema = z.object({
   ownResponse: questV2EditWorkerResponseSchema.nullable().optional(),
 });
 export type QuestV2EditRequest = z.infer<typeof questV2EditRequestSchema>;
-export const questV2EditRequestResponseSchema = z.object({
-  success: z.literal(true),
-  data: questV2EditRequestSchema,
-});
 
 export const questV2ProofStatusSchema = z.enum([
   "PROOF_PENDING",
@@ -542,27 +460,22 @@ export const questV2ProofFileStatusSchema = z.enum([
 ]);
 export const questV2ProofFileSchema = z.object({
   fileId: questV2IdSchema.nullable(),
-  contentType: z.string(),
-  sizeBytes: z.number().int().positive().nullable(),
-  position: z.number().int().nonnegative(),
+  contentType: z.string().nullable(),
+  sizeBytes: z.coerce.number().int().positive().nullable(),
+  position: z.coerce.number().int().nonnegative(),
   uploadStatus: questV2ProofFileStatusSchema,
   failureCode: z.string().nullable(),
   url: z.string().url().nullable().optional(),
 });
-export const questV2ProofFileLinkResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    fileId: questV2IdSchema,
-    contentType: z.string(),
-    sizeBytes: z.coerce.number().int().positive(),
-    position: z.coerce.number().int().nonnegative(),
-    url: z.string().url(),
-    urlExpiresAt: z.string(),
-  }),
+export const questV2ProofFileLinkSchema = z.object({
+  fileId: questV2IdSchema,
+  contentType: z.string(),
+  sizeBytes: z.coerce.number().int().positive(),
+  position: z.coerce.number().int().nonnegative(),
+  url: z.string().url(),
+  urlExpiresAt: z.string(),
 });
-export type QuestV2ProofFileLink = z.infer<
-  typeof questV2ProofFileLinkResponseSchema
->["data"];
+export type QuestV2ProofFileLink = z.infer<typeof questV2ProofFileLinkSchema>;
 
 export const questV2ProofSubmissionSchema = z.object({
   id: questV2IdSchema,
@@ -582,60 +495,35 @@ export const questV2ProofSubmissionSchema = z.object({
 export type QuestV2ProofSubmission = z.infer<
   typeof questV2ProofSubmissionSchema
 >;
-export const questV2ProofResponseSchema = z.object({
-  success: z.literal(true),
-  data: questV2ProofSubmissionSchema,
+export const questV2ProofListDataSchema = z.object({
+  items: z.array(questV2ProofSubmissionSchema),
 });
-export const questV2ProofListResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({ items: z.array(questV2ProofSubmissionSchema) }),
+export const questV2ProofDeleteSchema = z.object({
+  deleted: z.literal(true),
+  proofSubmissionId: questV2IdSchema,
 });
-export const questV2ProofDeleteResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    deleted: z.literal(true),
-    proofSubmissionId: questV2IdSchema,
+export type QuestV2ProofDelete = z.infer<typeof questV2ProofDeleteSchema>;
+export const questV2ProofReviewSchema = z.object({
+  proof: z.object({
+    id: questV2IdSchema,
+    status: questV2ProofStatusSchema,
   }),
+  questStatus: questV2StateSchema,
 });
-export type QuestV2ProofDelete = z.infer<
-  typeof questV2ProofDeleteResponseSchema
->["data"];
-export const questV2ProofReviewResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    proof: z.object({
-      id: questV2IdSchema,
-      status: questV2ProofStatusSchema,
-    }),
-    questStatus: questV2StateSchema,
-  }),
+export type QuestV2ProofReview = z.infer<typeof questV2ProofReviewSchema>;
+export const questV2CompletionSchema = z.object({
+  confirmed: z.literal(true),
+  confirmedAt: z.string(),
+  questStatus: questV2StateSchema,
 });
-export type QuestV2ProofReview = z.infer<
-  typeof questV2ProofReviewResponseSchema
->["data"];
-export const questV2CompletionResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    confirmed: z.literal(true),
-    confirmedAt: z.string(),
-    questStatus: questV2StateSchema,
-  }),
+export type QuestV2Completion = z.infer<typeof questV2CompletionSchema>;
+export const questV2StartWorkSchema = z.object({
+  questId: questV2IdSchema,
+  assignmentId: questV2IdSchema,
+  startedAt: z.string(),
+  questState: questV2StateSchema,
 });
-export type QuestV2Completion = z.infer<
-  typeof questV2CompletionResponseSchema
->["data"];
-export const questV2StartWorkResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    questId: questV2IdSchema,
-    assignmentId: questV2IdSchema,
-    startedAt: z.string(),
-    questState: questV2StateSchema,
-  }),
-});
-export type QuestV2StartWork = z.infer<
-  typeof questV2StartWorkResponseSchema
->["data"];
+export type QuestV2StartWork = z.infer<typeof questV2StartWorkSchema>;
 
 export const questV2ReviewSchema = z.object({
   id: questV2IdSchema,
@@ -888,7 +776,3 @@ export const questV2ReviewUpdatePayloadSchema = z
     "At least one field is required"
   );
 export type QuestV2Review = z.infer<typeof questV2ReviewSchema>;
-export const questV2ReviewResponseSchema = z.object({
-  success: z.literal(true),
-  data: questV2ReviewSchema,
-});

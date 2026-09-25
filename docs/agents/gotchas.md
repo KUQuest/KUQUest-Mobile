@@ -11,6 +11,22 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 ## Entries
 
+### 2026-09-26 — Payout history silently dropped every Payout
+
+**What happened**: `WalletApi.listPayouts` parsed `data.payouts`, but `GET /api/v1/payouts` returns `data.items`; a catch-all `return []` hid the failure, and a test fixture copied the wrong shape.
+
+**Root cause**: Resource methods hand-parsed envelopes and swallowed errors, so a contract mismatch looked like an empty list.
+
+**Rule**: Call endpoints only through `ApiClient.get`/`send` with the `data` schema taken from `bun run query-api` (not from fixtures or existing code); never catch-all to an empty value in `src/api` — let callers decide, as `getTransactionHistory` does with `Promise.allSettled`.
+
+### 2026-09-26 — Quest event sockets closed silently with 4403
+
+**What happened**: A Hirer Publish never reached the Worker Board in realtime; the Worker saw the Quest only after a manual refresh.
+
+**Root cause**: React Native adds `Origin: https://<api-host>` when a WebSocket sets none. The Quest, Candidate-roster, and Board event endpoints reject that Origin with `4403 Origin not allowed`, which the client treats as terminal. The server accepts `kuquestmobile://` or no Origin.
+
+**Rule**: Open every API WebSocket through `openServerSocket` (`src/api/ServerSocket.ts`), which sends `Origin: kuquestmobile://` with `Cookie`; never construct `WebSocket` directly. Before blaming the backend, probe a staging socket with the staging test-auth cookie and the Origin the app sends.
+
 ### 2026-09-25 — Shared screens stayed sage in the Worker workspace
 
 **What happened**: The redesigned Money tab and Profile hero kept Hirer sage after switching to the Worker workspace.

@@ -215,7 +215,7 @@ export interface QuestBoardMessages {
   proofReviewNoEvidence: string;
   proofReviewFileLabel: (
     position: number,
-    contentType: string,
+    contentType: string | null,
     size: string
   ) => string;
   proofReviewFileStatus: (status: string) => string;
@@ -575,7 +575,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     proofReviewEvidenceLabel: "Attached evidence",
     proofReviewNoEvidence: "No evidence files were attached.",
     proofReviewFileLabel: (position, contentType, size) =>
-      `File ${position} · ${contentType}${size ? ` · ${size}` : ""}`,
+      `File ${position}${contentType ? ` · ${contentType}` : ""}${size ? ` · ${size}` : ""}`,
     proofReviewPreview: "Preview",
     proofReviewPreviewUnavailable:
       "A preview link is not available for this private file.",
@@ -613,12 +613,12 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
       status === null
         ? "Not submitted yet"
         : ((
-          {
-            PROOF_PENDING: "Waiting for review",
-            PROOF_APPROVED: "Approved",
-            PROOF_NOT_APPROVED: "Not approved",
-          } as Record<string, string>
-        )[status] ?? status),
+            {
+              PROOF_PENDING: "Waiting for review",
+              PROOF_APPROVED: "Approved",
+              PROOF_NOT_APPROVED: "Not approved",
+            } as Record<string, string>
+          )[status] ?? status),
     proofReviewWorkerFallback: "Worker",
     proofReviewTeamSubmittedBy: (leaderName) => `Sent by ${leaderName}`,
     proofReviewOpen: "Review",
@@ -956,7 +956,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     proofReviewEvidenceLabel: "หลักฐานที่แนบ",
     proofReviewNoEvidence: "ไม่ได้แนบไฟล์หลักฐาน",
     proofReviewFileLabel: (position, contentType, size) =>
-      `ไฟล์ที่ ${position} · ${contentType}${size ? ` · ${size}` : ""}`,
+      `ไฟล์ที่ ${position}${contentType ? ` · ${contentType}` : ""}${size ? ` · ${size}` : ""}`,
     proofReviewPreview: "ดูตัวอย่าง",
     proofReviewPreviewUnavailable: "ไม่มีลิงก์ตัวอย่างสำหรับไฟล์ส่วนตัวนี้",
     proofReviewPreviewError: "ไม่สามารถเปิดหลักฐานนี้ได้",
@@ -987,12 +987,12 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
       status === null
         ? "ยังไม่ส่งงาน"
         : ((
-          {
-            PROOF_PENDING: "รอตรวจ",
-            PROOF_APPROVED: "อนุมัติแล้ว",
-            PROOF_NOT_APPROVED: "ไม่อนุมัติ",
-          } as Record<string, string>
-        )[status] ?? status),
+            {
+              PROOF_PENDING: "รอตรวจ",
+              PROOF_APPROVED: "อนุมัติแล้ว",
+              PROOF_NOT_APPROVED: "ไม่อนุมัติ",
+            } as Record<string, string>
+          )[status] ?? status),
     proofReviewWorkerFallback: "ผู้ทำงาน",
     proofReviewTeamSubmittedBy: (leaderName) => `ส่งโดย ${leaderName}`,
     proofReviewOpen: "ตรวจงาน",

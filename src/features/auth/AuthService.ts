@@ -1,6 +1,7 @@
 import type { SignInResponse } from "@react-native-google-signin/google-signin";
 import * as SecureStore from "expo-secure-store";
 import { ApiClient, ApiError } from "../../api/ApiClient";
+import { debugLog } from "../../api/debugLog";
 import { authUserSchema } from "../../api/contracts";
 import { StudentApi } from "../../api/StudentApi";
 import {
@@ -69,9 +70,7 @@ async function settleWithin<T>(
 }
 
 function authDebug(message: string, details?: Record<string, unknown>): void {
-  if (__DEV__) {
-    console.log(`[auth] ${message}`, details ?? "");
-  }
+  debugLog("auth", message, details);
 }
 
 function getSessionUser(data: unknown) {

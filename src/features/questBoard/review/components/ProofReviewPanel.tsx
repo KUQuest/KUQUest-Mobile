@@ -35,9 +35,9 @@ function formatFileSize(sizeBytes: number | null): string {
   return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function fileKind(contentType: string): "image" | "video" | "file" {
-  if (contentType.startsWith("image/")) return "image";
-  if (contentType.startsWith("video/")) return "video";
+function fileKind(contentType: string | null): "image" | "video" | "file" {
+  if (contentType?.startsWith("image/")) return "image";
+  if (contentType?.startsWith("video/")) return "video";
   return "file";
 }
 
