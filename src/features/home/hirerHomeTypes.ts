@@ -62,4 +62,5 @@ export interface HirerHomeData {
   activeQuestCount: number;
   draftCount: number;
   completedCount: number;
+  hasPartialFailure?: boolean;
 }

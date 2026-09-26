@@ -185,7 +185,8 @@ describe("TransferEarningsModal", () => {
     fireEvent.press(view.getByTestId("transfer-confirm-btn"));
 
     await waitFor(() => {
-      expect(view.getByText("Wallet is frozen")).toBeTruthy();
+      expect(view.getByText(m.convertError)).toBeTruthy();
+      expect(view.queryByText("Wallet is frozen")).toBeNull();
     });
   });
 

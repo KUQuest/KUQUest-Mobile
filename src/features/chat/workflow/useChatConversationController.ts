@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Linking } from "react-native";
 
 import { showErrorAlert } from "@/components/ui/SweetAlert";
+import { getLocalizedErrorMessage } from "@/utils/error";
 import { useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -25,11 +26,13 @@ import type { ChatConversation, ChatRouteParams } from "../chatTypes";
 import { isImageAttachment } from "../components/MessageBubble";
 import type { PendingAttachmentItem } from "../components/PendingAttachmentsBar";
 import {
+  isReportableMessage,
   mergeDisplayMessages,
   toDisplayMessage,
   type DisplayChatMessage,
   type RenderAttachment,
 } from "../domain/conversationModule";
+import { localizedText } from "../components/ChatConversationPresentation";
 import { attachmentLinkCache } from "../api/attachmentLinkCache";
 import {
   chatKeys,
@@ -45,8 +48,9 @@ import {
   useChatSocket,
   type ChatSocketEvent,
 } from "../api/useChatSocket";
+import { ConversationMode } from "../chatTypes";
 
-export type ConversationMode = "WORK" | "CANDIDATE_INQUIRY";
+export { ConversationMode };
 export const MAX_MESSAGE_LENGTH = 1000;
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 
@@ -77,7 +81,7 @@ export function useChatConversationController(
   const lastReadMessageIdRef = useRef<string | null>(null);
   const listConversationsQuery = useListConversationsQuery(
     viewerId,
-    conversationType === "WORK" && !routeQuestId
+    conversationType === ConversationMode.WORK && !routeQuestId
   );
   const fallbackQuestId =
     routeQuestId ??
@@ -88,12 +92,12 @@ export function useChatConversationController(
     routeConversationId ?? "",
     fallbackQuestId,
     viewerId,
-    conversationType === "WORK"
+    conversationType === ConversationMode.WORK
   );
   const candidateConversationQuery = useCandidateConversationQuery(
     routeConversationId ?? "",
     viewerId,
-    conversationType === "CANDIDATE_INQUIRY"
+    conversationType === ConversationMode.CANDIDATE_INQUIRY
   );
   const messagesQuery = useMessagesQuery(
     routeConversationId ?? "",
@@ -185,6 +189,10 @@ export function useChatConversationController(
   ]);
   const handleChatSocketEvent = useCallback(
     (event: ChatSocketEvent) => {
+      if (event.type === ChatSocketEventType.MESSAGE_REJECTED) {
+        showErrorAlert(messages.send, event.error.message);
+        return;
+      }
       const eventMessage =
         event.type === ChatSocketEventType.WORK_CONVERSATION_MESSAGE ||
         event.type === ChatSocketEventType.CANDIDATE_INQUIRY_MESSAGE ||
@@ -193,9 +201,9 @@ export function useChatConversationController(
           : undefined;
       const messageTypeMatches =
         (event.type === ChatSocketEventType.WORK_CONVERSATION_MESSAGE &&
-          conversationType === "WORK") ||
+          conversationType === ConversationMode.WORK) ||
         (event.type === ChatSocketEventType.CANDIDATE_INQUIRY_MESSAGE &&
-          conversationType === "CANDIDATE_INQUIRY") ||
+          conversationType === ConversationMode.CANDIDATE_INQUIRY) ||
         event.type === ChatSocketEventType.MESSAGE_ACCEPTED;
 
       if (
@@ -216,7 +224,9 @@ export function useChatConversationController(
           routeConversationId,
           viewerId,
           conversationType,
-          conversationType === "WORK" ? fallbackQuestId : undefined
+          conversationType === ConversationMode.WORK
+            ? fallbackQuestId
+            : undefined
         );
         queryClient.setQueryData<ChatConversation | null>(
           conversationKey,
@@ -232,7 +242,7 @@ export function useChatConversationController(
         );
         void queryClient.invalidateQueries({
           queryKey:
-            conversationType === "WORK"
+            conversationType === ConversationMode.WORK
               ? chatKeys.conversations(viewerId)
               : chatKeys.candidateInquiries(viewerId),
         });
@@ -244,6 +254,7 @@ export function useChatConversationController(
     [
       conversationType,
       fallbackQuestId,
+      messages.send,
       queryClient,
       routeConversationId,
       viewerId,
@@ -335,25 +346,17 @@ export function useChatConversationController(
 
   const role = conversation
     ? conversationType === "CANDIDATE_INQUIRY"
-      ? locale === "th"
-        ? conversation.participantRole === "owner"
-          ? "ผู้ว่าจ้าง · Inquiry"
-          : "ผู้สนใจทำงาน · Inquiry"
-        : conversation.participantRole === "owner"
-          ? "Hirer · Inquiry"
-          : "Prospective Worker · Inquiry"
+      ? conversation.participantRole === "owner"
+        ? messages.hirerInquiryRole
+        : messages.prospectiveWorkerInquiryRole
       : conversation.participantRole === "owner"
         ? messages.questOwner
         : messages.questMember
     : "";
   const conversationKind =
     conversationType === "CANDIDATE_INQUIRY"
-      ? locale === "th"
-        ? "Candidate Inquiry"
-        : "Candidate Inquiry"
-      : locale === "th"
-        ? "Work Chat"
-        : "Work Chat";
+      ? messages.candidateInquiry
+      : messages.workChat;
   const canWrite = Boolean(
     conversation?.capability?.canRead &&
     conversation.capability.canWrite &&
@@ -363,8 +366,17 @@ export function useChatConversationController(
     conversation?.capability?.readOnlyReason === "TERMINAL"
       ? messages.conversationReadOnlyTerminal
       : messages.conversationNotWritable;
-  const canReportConversation = false;
-  const handleReportConversation = () => undefined;
+  const handleReportMessage = (message: DisplayChatMessage) => {
+    if (!isReportableMessage(message) || !conversation) return;
+    router.push({
+      pathname: "/report",
+      params: {
+        messageId: message.id,
+        conversationTitle: localizedText(conversation.questTitle, locale),
+        senderName: conversation.participantName,
+      },
+    });
+  };
   const messagePlaceholder =
     conversation?.participantRole === "owner"
       ? messages.typeOwnerMessage
@@ -386,12 +398,7 @@ export function useChatConversationController(
     if (result.canceled || result.assets.length === 0) return;
     const asset = result.assets[0];
     if (asset.fileSize !== undefined && asset.fileSize > MAX_ATTACHMENT_BYTES) {
-      showErrorAlert(
-        messages.addAttachment,
-        locale === "th"
-          ? "ไฟล์แนบต้องมีขนาดไม่เกิน 10 MB"
-          : "Attachments must be 10 MB or smaller."
-      );
+      showErrorAlert(messages.addAttachment, messages.attachmentSizeError);
       return;
     }
     const mimeType = asset.mimeType ?? mimeTypeFromUri(asset.uri);
@@ -400,12 +407,7 @@ export function useChatConversationController(
       !mimeType.startsWith("video/") &&
       mimeType !== "application/pdf"
     ) {
-      showErrorAlert(
-        messages.addAttachment,
-        locale === "th"
-          ? "รองรับเฉพาะรูปภาพ PDF และวิดีโอ"
-          : "Only images, PDF, and video files are supported."
-      );
+      showErrorAlert(messages.addAttachment, messages.attachmentTypeError);
       return;
     }
     const assetName =
@@ -443,10 +445,6 @@ export function useChatConversationController(
       throw error;
     }
   };
-  const messageLengthError =
-    locale === "th"
-      ? "ข้อความต้องมีความยาวไม่เกิน 1,000 ตัวอักษร"
-      : "Messages must be 1,000 characters or fewer.";
   const openAttachmentMenu = () => {
     if (!canWrite) return;
     Alert.alert(messages.addAttachment, undefined, [
@@ -456,7 +454,9 @@ export function useChatConversationController(
           void pickAttachment("camera").catch((error: unknown) => {
             showErrorAlert(
               messages.addAttachment,
-              error instanceof Error ? error.message : messages.loadError
+              getLocalizedErrorMessage(error, locale, {
+                fallback: messages.loadError,
+              })
             );
           });
         },
@@ -467,7 +467,9 @@ export function useChatConversationController(
           void pickAttachment("library").catch((error: unknown) => {
             showErrorAlert(
               messages.addAttachment,
-              error instanceof Error ? error.message : messages.loadError
+              getLocalizedErrorMessage(error, locale, {
+                fallback: messages.loadError,
+              })
             );
           });
         },
@@ -478,7 +480,9 @@ export function useChatConversationController(
           void pickAttachment("library").catch((error: unknown) => {
             showErrorAlert(
               messages.addAttachment,
-              error instanceof Error ? error.message : messages.loadError
+              getLocalizedErrorMessage(error, locale, {
+                fallback: messages.loadError,
+              })
             );
           });
         },
@@ -491,7 +495,7 @@ export function useChatConversationController(
     if (pendingAttachments.some((item) => item.uploading)) return;
     const value = draft.trim();
     if (value.length > MAX_MESSAGE_LENGTH) {
-      showErrorAlert(messages.send, messageLengthError);
+      showErrorAlert(messages.send, messages.messageLengthError);
       return;
     }
     if (!value && pendingAttachmentIds.length === 0) return;
@@ -505,6 +509,7 @@ export function useChatConversationController(
       text: { en: value, th: value },
       createdAt: new Date().toISOString(),
       attachments: [],
+      pending: true,
     };
     void sendMessageMutation
       .mutateAsync({
@@ -526,12 +531,10 @@ export function useChatConversationController(
         showErrorAlert(
           messages.send,
           rateLimited
-            ? locale === "th"
-              ? "ส่งข้อความถี่เกินไป ลองอีกครั้งในอีกสักครู่"
-              : "You are sending messages too quickly. Try again shortly."
-            : error instanceof Error
-              ? error.message
-              : messages.loadError
+            ? messages.sendRateLimited
+            : getLocalizedErrorMessage(error, locale, {
+                fallback: messages.loadError,
+              })
         );
       });
   };
@@ -560,7 +563,9 @@ export function useChatConversationController(
     } catch (error) {
       showErrorAlert(
         messages.openFile,
-        error instanceof Error ? error.message : messages.loadError
+        getLocalizedErrorMessage(error, locale, {
+          fallback: messages.loadError,
+        })
       );
     }
   };
@@ -586,8 +591,7 @@ export function useChatConversationController(
     canWrite,
     readOnlyDescription,
     messagePlaceholder,
-    canReportConversation,
-    handleReportConversation,
+    handleReportMessage,
     searchOpen,
     setSearchOpen,
     searchScope,

@@ -83,9 +83,9 @@ export default function configureApp({ config }: ConfigContext): ExpoConfig {
       },
     },
   ] as [
-      string,
-      { android: { usesCleartextTraffic: boolean; buildArchs?: string[] } },
-    ];
+    string,
+    { android: { usesCleartextTraffic: boolean; buildArchs?: string[] } },
+  ];
 
   return {
     ...baseConfig,
@@ -119,11 +119,11 @@ export default function configureApp({ config }: ConfigContext): ExpoConfig {
       ["expo-image-picker", { microphonePermission: false }],
       ...(iosUrlScheme
         ? [
-          ["@react-native-google-signin/google-signin", { iosUrlScheme }] as [
-            string,
-            { iosUrlScheme: string },
-          ],
-        ]
+            ["@react-native-google-signin/google-signin", { iosUrlScheme }] as [
+              string,
+              { iosUrlScheme: string },
+            ],
+          ]
         : []),
     ],
   };

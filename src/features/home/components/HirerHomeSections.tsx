@@ -13,7 +13,7 @@ import {
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { Pressable, Text, View } from "@/tw";
 import type { HirerAttentionItem } from "../hirerHomeData";
-import type { HirerHomeMessages } from "../hirerHomeMessages";
+import type { HirerHomeMessages } from "@/locales/hirerHomeMessages";
 import { hirerHomeStyles as styles } from "../hirerHomeStyles";
 
 export type HirerMyQuestsTab = "active" | "draft" | "completed";

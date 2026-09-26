@@ -79,7 +79,7 @@ export function QuestTopUpModal({
               step={flow.topUpStep}
             />
             <ScrollView
-              contentContainerClassName="px-ku-md pb-ku-lg pt-ku-md"
+              contentContainerClassName="px-ku-md pt-ku-md pb-ku-lg"
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >

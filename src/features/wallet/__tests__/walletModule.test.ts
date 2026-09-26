@@ -1,4 +1,4 @@
-import { walletApi } from "@/api/WalletApi";
+import { WalletTransactionTitleKey, walletApi } from "@/api/WalletApi";
 import type { TopUpData, TopUpQuote, WalletBalances } from "@/api/WalletApi";
 import { formatSatang } from "@/domain/satang";
 
@@ -275,8 +275,7 @@ describe("Hirer wallet formatting and classification", () => {
       {
         id: "tx-1",
         type: "HOLD",
-        title: "Quest Escrow",
-        titleTh: "กันเงินประกันเควสต์",
+        titleKey: WalletTransactionTitleKey.QUEST_ESCROW_RESERVED,
         amountSatang: 50_000,
         direction: "OUTFLOW",
         status: "COMPLETED",
@@ -298,8 +297,7 @@ describe("Hirer wallet formatting and classification", () => {
       {
         id: "tx-2",
         type: "TOP_UP",
-        title: "PromptPay Top-Up",
-        titleTh: "เติมเงินผ่านพร้อมเพย์",
+        titleKey: WalletTransactionTitleKey.PROMPT_PAY_TOP_UP,
         amountSatang: 100_000,
         direction: "INFLOW",
         status: "COMPLETED",
@@ -312,6 +310,19 @@ describe("Hirer wallet formatting and classification", () => {
     expect(classified).not.toHaveProperty("amountText");
     expect(classified.isInflow).toBe(true);
     expect(classified.iconKind).toBe("top_up");
+    const classifiedEn = classifyHirerTransaction(
+      {
+        id: "tx-2",
+        type: "TOP_UP",
+        titleKey: WalletTransactionTitleKey.PROMPT_PAY_TOP_UP,
+        amountSatang: 100_000,
+        direction: "INFLOW",
+        status: "COMPLETED",
+        createdAt: "2024-04-10T10:00:00Z",
+      },
+      "en"
+    );
+    expect(classifiedEn.title).toBe("Top up to Wallet");
   });
 
   it("classifies fee transactions accurately", () => {
@@ -319,8 +330,7 @@ describe("Hirer wallet formatting and classification", () => {
       {
         id: "tx-3",
         type: "SPEND",
-        title: "Platform Fee",
-        titleTh: "ค่าธรรมเนียม",
+        titleKey: WalletTransactionTitleKey.SYSTEM_FEE,
         amountSatang: 1_000,
         direction: "OUTFLOW",
         status: "COMPLETED",

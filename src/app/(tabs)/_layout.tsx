@@ -12,7 +12,7 @@ export default function TabsLayout() {
   const metrics = getAppChromeMetrics(width, fontScale);
   const segments = useSegments();
   const { locale } = useLocale();
-  const { workspace } = useRoleWorkspace();
+  const { isWorker } = useRoleWorkspace();
   const messages = navigationMessages[locale];
   const isTablet = metrics.isTablet;
   const isCreateQuest = segments[segments.length - 1] === "create";
@@ -20,7 +20,7 @@ export default function TabsLayout() {
   // Worker Work Management is a primary destination and keeps the nav;
   // the Hirer's My Quests is a sub-page with its own back button.
   const isHirerMyQuests =
-    segments[segments.length - 1] === "my-quests" && workspace !== "worker";
+    segments[segments.length - 1] === "my-quests" && !isWorker;
 
   return (
     <Tabs

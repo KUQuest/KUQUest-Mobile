@@ -58,9 +58,9 @@ export const ConversationRow = memo(function ConversationRow({
         onPress={
           participantId && onOpenProfile
             ? (event) => {
-              event.stopPropagation();
-              onOpenProfile(participantId);
-            }
+                event.stopPropagation();
+                onOpenProfile(participantId);
+              }
             : undefined
         }
         style={{ backgroundColor: conversation.avatarColor }}

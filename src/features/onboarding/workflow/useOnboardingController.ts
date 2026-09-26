@@ -121,10 +121,13 @@ export function useOnboardingController() {
       cancelLabel: messages.cancel,
       confirmLabel: messages.cancelRegistration,
       onConfirm: () =>
-        void authService.signOut().then(() => {
-          clearSessionCache(queryClient);
-          router.replace("/");
-        }),
+        void authService
+          .signOut()
+          .catch(() => {})
+          .finally(() => {
+            clearSessionCache(queryClient);
+            router.replace("/");
+          }),
     });
   }, [
     isEditMode,
@@ -227,7 +230,7 @@ export function useOnboardingController() {
       setSubmitError(
         result.failure.error instanceof Error &&
           result.failure.error.message.includes("EXPO_PUBLIC_TERMS_VERSION")
-          ? result.failure.error.message
+          ? messages.termsConfigError
           : result.failure.partial
             ? `${messages.submitErrorMsg} ${messages.partialSaveMsg}`
             : messages.submitErrorMsg ||

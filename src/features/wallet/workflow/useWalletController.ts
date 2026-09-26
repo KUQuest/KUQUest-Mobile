@@ -1,3 +1,4 @@
+import { getLocalizedErrorMessage } from "@/utils/error";
 import { useCallback, useMemo, useState } from "react";
 import { useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
@@ -31,12 +32,8 @@ export function useWalletController() {
   const balances = hasLoadedWalletData ? (walletQuery.data ?? null) : null;
   const loading = walletQuery.isPending || historyQuery.isPending;
   const refreshing = walletQuery.isRefetching || historyQuery.isRefetching;
-  const error =
-    walletQuery.error?.message ??
-    historyQuery.error?.message ??
-    (walletQuery.isError || historyQuery.isError
-      ? messages.errorLoadingWallet
-      : null);
+  const loadError = walletQuery.error ?? historyQuery.error;
+  const error = loadError ? getLocalizedErrorMessage(loadError, locale) : null;
   const [filter, setFilter] = useState<HirerHistoryFilterOption>("all");
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =

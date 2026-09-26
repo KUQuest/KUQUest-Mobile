@@ -2,6 +2,7 @@ import { createElement, Fragment } from "react";
 import { Pressable, Text } from "react-native";
 import { act, fireEvent, render } from "@testing-library/react-native";
 
+import { ApiError } from "@/api/ApiClient";
 import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import { disputeMessages } from "@/locales/disputeMessages";
 import { useFileDispute } from "../useFileDispute";
@@ -82,7 +83,7 @@ describe("useFileDispute", () => {
     await fireEvent.press(dialog.getByRole("button", { name: "OK" }));
   });
 
-  it("shows the Server's reason when filing is rejected", async () => {
+  it("explains a rejected filing in localized copy, not the Server's text", async () => {
     const dialog = await renderDisputeAction();
 
     await fireEvent.press(dialog.getByRole("button", { name: "File dispute" }));
@@ -91,14 +92,19 @@ describe("useFileDispute", () => {
     );
     await act(async () => {
       mockMutate.mock.calls[0][1].onError(
-        new Error("The dispute filing window has closed")
+        new ApiError(
+          409,
+          "DISPUTE_WINDOW_CLOSED",
+          "The dispute filing window has closed"
+        )
       );
     });
 
     expect(dialog.getByText(messages.errorTitle)).toBeTruthy();
+    expect(dialog.getByText(messages.errorFallback)).toBeTruthy();
     expect(
-      dialog.getByText("The dispute filing window has closed")
-    ).toBeTruthy();
+      dialog.queryByText("The dispute filing window has closed")
+    ).toBeNull();
     await fireEvent.press(dialog.getByRole("button", { name: "OK" }));
   });
 });

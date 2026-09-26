@@ -2,7 +2,6 @@ import { useState, type ReactNode } from "react";
 import {
   CalendarCheck,
   CalendarClock,
-  CircleAlert,
   CircleUserRound,
   ClipboardCheck,
   FileCheck,
@@ -244,8 +243,6 @@ export interface QuestDetailBodyProps {
     onOpenCandidateReview: () => void;
     onOpenPartialConsent: () => void;
   };
-  canReportQuest: boolean;
-  onReportQuest: () => void;
 }
 
 export function QuestDetailBody({
@@ -267,8 +264,6 @@ export function QuestDetailBody({
   onOpenWorkHub,
   prototypeEntry,
   liveEntry,
-  canReportQuest,
-  onReportQuest,
 }: QuestDetailBodyProps) {
   const { colors } = useAppTheme();
   const [viewingImage, setViewingImage] = useState<number | null>(null);
@@ -521,33 +516,6 @@ export function QuestDetailBody({
           onOpenCandidateReview={liveEntry.onOpenCandidateReview}
           onOpenPartialConsent={liveEntry.onOpenPartialConsent}
         />
-      ) : null}
-      {canReportQuest ? (
-        <View className={styles.reportCard} testID="quest-report-card">
-          <View className={styles.reportHeader}>
-            <View className={styles.reportIcon}>
-              <CircleAlert color={colors.danger} size={21} strokeWidth={2.2} />
-            </View>
-            <View className={styles.reportCopy}>
-              <Text className={styles.reportTitle}>{messages.reportQuest}</Text>
-              <Text className={styles.reportDescription}>
-                {messages.reportQuestDescription}
-              </Text>
-            </View>
-          </View>
-          <Pressable
-            accessibilityLabel={messages.reportQuest}
-            accessibilityRole="button"
-            className={styles.reportAction}
-            onPress={onReportQuest}
-            style={{ backgroundColor: colors.danger }}
-            testID="quest-report-button"
-          >
-            <Text className={styles.reportActionText}>
-              {messages.reportQuest}
-            </Text>
-          </Pressable>
-        </View>
       ) : null}
     </ScrollView>
   );

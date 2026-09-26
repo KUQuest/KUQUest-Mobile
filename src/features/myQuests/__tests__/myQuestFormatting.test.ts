@@ -11,9 +11,9 @@ describe("My Quests formatting", () => {
     });
 
     it("returns a dash for empty or invalid values", () => {
-      expect(formatQuestDate(null)).toBe("—");
-      expect(formatQuestDate(undefined)).toBe("—");
-      expect(formatQuestDate("invalid-date")).toBe("—");
+      expect(formatQuestDate(null, "en")).toBe("—");
+      expect(formatQuestDate(undefined, "en")).toBe("—");
+      expect(formatQuestDate("invalid-date", "en")).toBe("—");
     });
   });
 

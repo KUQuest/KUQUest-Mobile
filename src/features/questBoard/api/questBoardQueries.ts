@@ -27,6 +27,7 @@ import {
   type LiveQuestSnapshot,
   type LiveQuestSnapshotOptions,
 } from "../live/liveQuestService";
+import { QuestActor } from "../domain/types";
 
 export const questBoardKeys = {
   all: ["questBoard"] as const,
@@ -187,7 +188,7 @@ export function useLiveQuestSnapshotQuery(
   const canReadCandidateRoster = Boolean(
     query.data?.mode === "CANDIDATE" &&
     (query.data.team != null ||
-      (query.data.actor === "HIRER" &&
+      (query.data.actor === QuestActor.HIRER &&
         (query.data.capabilities.canSelectCandidate ||
           query.data.capabilities.canSelectTeam)))
   );
@@ -402,17 +403,23 @@ export function useJoinCandidateTeamMutation() {
       idempotencyKey,
     }: {
       questId: string;
-      teamId: string;
+      teamId?: string;
       joinCode: string;
       viewerId?: string;
       idempotencyKey?: string;
     }) =>
-      liveQuestService.joinCandidateTeam(
-        questId,
-        teamId,
-        joinCode,
-        idempotencyKey
-      ),
+      teamId
+        ? liveQuestService.joinCandidateTeam(
+            questId,
+            teamId,
+            joinCode,
+            idempotencyKey
+          )
+        : liveQuestService.joinCandidateTeamByCode(
+            questId,
+            joinCode,
+            idempotencyKey
+          ),
     onSuccess: (_, variables) =>
       invalidateQuestReads(
         queryClient,

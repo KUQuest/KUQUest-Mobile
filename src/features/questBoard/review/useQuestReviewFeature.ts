@@ -10,6 +10,7 @@ import {
 } from "@/features/questBoard/api/questBoardQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import { questReviewMessages } from "@/locales/questReviewMessages";
+import { getLocalizedErrorMessage } from "@/utils/error";
 
 interface QuestReviewFeatureProps {
   questId?: string;
@@ -82,6 +83,11 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
     assignmentsQuery.isPending;
   const loadError =
     snapshotQuery.error || assignmentsQuery.error || sessionQuery.error;
+  const loadErrorMessage = loadError
+    ? getLocalizedErrorMessage(loadError, locale, {
+        fallback: messages.errorDescription,
+      })
+    : undefined;
   const retryLoad = () => {
     void snapshotQuery.refetch();
     void assignmentsQuery.refetch();
@@ -131,7 +137,9 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
         delete reviewKeysRef.current[revieweeId];
       }
       setSubmitError(
-        caught instanceof Error ? caught.message : messages.errorDescription
+        getLocalizedErrorMessage(caught, locale, {
+          fallback: messages.errorDescription,
+        })
       );
     }
   };
@@ -143,7 +151,7 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
     createReviewMutation,
     handleSubmit,
     loading,
-    loadError,
+    loadError: loadErrorMessage,
     messages,
     rating,
     remainingWorkers,

@@ -22,6 +22,7 @@ import type {
   SelectRosterScreenViewModel,
 } from "./selectRosterViewModel";
 import { useSelectRosterActions } from "./useSelectRosterActions";
+import { getLocalizedErrorMessage } from "@/utils/error";
 
 export function useSelectRosterScreen(
   questId?: string
@@ -68,10 +69,9 @@ export function useSelectRosterScreen(
       ...baseViewModel,
       status: "error",
       errorTitle: groupMessages.errorTitle,
-      errorMessage:
-        snapshotQuery.error instanceof Error
-          ? snapshotQuery.error.message
-          : groupMessages.errorDescription,
+      errorMessage: getLocalizedErrorMessage(snapshotQuery.error, locale, {
+        fallback: groupMessages.errorDescription,
+      }),
       retryLabel: groupMessages.retry,
       onRetry: () => void snapshotQuery.refetch(),
     };

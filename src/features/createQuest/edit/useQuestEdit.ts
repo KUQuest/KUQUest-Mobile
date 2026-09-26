@@ -1,12 +1,14 @@
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
 import type { Dispatch, RefObject, SetStateAction } from "react";
+import { ZodError } from "zod";
 
 import { createQuestIdempotencyKey, questApi } from "@/api/QuestApi";
 import type { QuestV2Image } from "@/api/questV2Contracts";
 import { QuestStatus } from "@/domain/questLifecycle";
 import { useLocale } from "@/features/preferences/localeStore";
 import { createQuestMessages } from "@/locales/createQuestMessages";
+import { getLocalizedErrorMessage } from "@/utils/error";
 
 import {
   useCancelQuestMutation,
@@ -29,7 +31,6 @@ import type {
   SaveErrorIntent,
   Step,
 } from "../createQuestTypes";
-import { getPublishErrorMessage } from "../publish/useQuestPublish";
 
 export interface UseQuestEditOptions {
   questId?: string;
@@ -132,7 +133,7 @@ export function useQuestEdit({
       idempotencyKey,
     }: SaveVariables) => {
       if (!questId || versionRef.current === null) {
-        throw new Error("The Quest is not ready to be saved.");
+        throw new Error(createQuestMessages[locale].saveError);
       }
       const normalizedDraft = {
         ...draftToSave,
@@ -203,8 +204,9 @@ export function useQuestEdit({
   );
 
   const cancelQuest = useCallback(async (): Promise<CancelQuestResult> => {
+    const messages = createQuestMessages[locale];
     if (!questId) {
-      return { ok: false, message: "The Quest ID is missing." };
+      return { ok: false, message: messages.cancelQuestError };
     }
 
     try {
@@ -214,15 +216,16 @@ export function useQuestEdit({
       });
       return { ok: true };
     } catch (error) {
+      const messages = createQuestMessages[locale];
       return {
         ok: false,
-        message:
-          error instanceof Error
-            ? error.message
-            : "Unable to cancel the Quest.",
+        message: getLocalizedErrorMessage(error, locale, {
+          codes: messages.apiErrors,
+          fallback: messages.cancelQuestError,
+        }),
       };
     }
-  }, [cancelMutation, questId]);
+  }, [cancelMutation, locale, questId]);
 
   const saveState = saveMutation.isPending
     ? "saving"
@@ -246,9 +249,42 @@ export function useQuestEdit({
     saveState,
     saveErrorIntent,
     saveErrorMessage:
-      saveMutation.error && failedState === "OPEN"
-        ? getPublishErrorMessage(saveMutation.error, locale)
-        : (saveMutation.error?.message ?? null),
+      saveMutation.error && failedState
+        ? (() => {
+            const messages = createQuestMessages[locale];
+            const code =
+              typeof saveMutation.error === "object" &&
+              saveMutation.error !== null &&
+              "code" in saveMutation.error &&
+              typeof saveMutation.error.code === "string"
+                ? saveMutation.error.code
+                : undefined;
+            const blockerGuidance = code
+              ? messages.blockingGuidance[
+                  code as keyof typeof messages.blockingGuidance
+                ]
+              : undefined;
+            const fallback =
+              failedState === "OPEN"
+                ? saveMutation.error instanceof ZodError
+                  ? saveMutation.error.issues.some(
+                      (issue) => issue.path[0] === "headcount"
+                    )
+                    ? messages.headcountError
+                    : messages.publishError
+                  : messages.publishError
+                : messages.saveError;
+            return (
+              (code && messages.apiErrors[code]) ||
+              (typeof blockerGuidance === "string" && blockerGuidance) ||
+              (blockerGuidance && messages.publishCheckBlocked) ||
+              getLocalizedErrorMessage(saveMutation.error, locale, {
+                codes: messages.apiErrors,
+                fallback,
+              })
+            );
+          })()
+        : null,
     savingAction: saveMutation.isPending
       ? (saveMutation.variables?.state ?? null)
       : null,

@@ -8,7 +8,8 @@ import {
 import type { UseChatSocketResult } from "./useChatSocket";
 import { isTerminalStatus } from "@/domain/questLifecycle";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
-import type { ChatConversation } from "../chatTypes";
+import { QuestActor } from "@/features/questBoard/domain/types";
+import { ConversationMode, type ChatConversation } from "../chatTypes";
 import { enrichChatConversation } from "./chatProfile";
 import {
   mergeDisplayMessages,
@@ -16,7 +17,7 @@ import {
   toDisplayMessage,
 } from "../domain/conversationModule";
 
-export type ChatConversationMode = "WORK" | "CANDIDATE_INQUIRY";
+export type ChatConversationMode = ConversationMode;
 
 export const chatKeys = {
   all: ["chat"] as const,
@@ -37,12 +38,12 @@ export const chatKeys = {
       mode,
       conversationId,
       viewerId,
-      ...(mode === "WORK" ? [questId] : []),
+      ...(mode === ConversationMode.WORK ? [questId] : []),
     ] as const,
   messages: (
     conversationId: string,
     viewerId: string,
-    mode: ChatConversationMode = "WORK"
+    mode: ChatConversationMode = ConversationMode.WORK
   ) => [...chatKeys.all, "messages", mode, conversationId, viewerId] as const,
 };
 
@@ -60,7 +61,8 @@ function candidateInquiryToConversation(
     questTitle: { en: inquiry.quest.title, th: inquiry.quest.title },
     ...(otherParticipant?.id ? { participantId: otherParticipant.id } : {}),
     participantName: otherParticipant?.displayName ?? inquiry.quest.title,
-    participantRole: otherParticipant?.role === "HIRER" ? "owner" : "member",
+    participantRole:
+      otherParticipant?.role === QuestActor.HIRER ? "owner" : "member",
     initials: (otherParticipant?.displayName ?? inquiry.quest.title)
       .slice(0, 2)
       .toUpperCase(),
@@ -108,7 +110,9 @@ export function useListConversationsQuery(viewerId: string, enabled = true) {
               participantName:
                 otherParticipant?.displayName ?? converted.participantName,
               participantRole:
-                otherParticipant?.role === "HIRER" ? "owner" : "member",
+                otherParticipant?.role === QuestActor.HIRER
+                  ? "owner"
+                  : "member",
               initials: (
                 otherParticipant?.displayName ?? converted.participantName
               )
@@ -206,7 +210,12 @@ export function useWorkConversationQuery(
 ) {
   return useQuery({
     enabled: Boolean(conversationId && viewerId && questId) && enabled,
-    queryKey: chatKeys.conversation(conversationId, viewerId, "WORK", questId),
+    queryKey: chatKeys.conversation(
+      conversationId,
+      viewerId,
+      ConversationMode.WORK,
+      questId
+    ),
     queryFn: async ({ signal }) => {
       const liveSnapshot = await liveQuestService.getLiveSnapshot(
         questId as string,
@@ -241,7 +250,7 @@ export function useWorkConversationQuery(
         participantName:
           otherParticipant?.displayName ?? converted.participantName,
         participantRole:
-          otherParticipant?.role === "HIRER" ? "owner" : "member",
+          otherParticipant?.role === QuestActor.HIRER ? "owner" : "member",
         initials: (otherParticipant?.displayName ?? converted.participantName)
           .slice(0, 2)
           .toUpperCase(),
@@ -358,7 +367,7 @@ export function useSendChatMessageMutation(socket: UseChatSocketResult) {
         );
       void queryClient.invalidateQueries({
         queryKey:
-          variables.mode === "WORK"
+          variables.mode === ConversationMode.WORK
             ? chatKeys.conversations(variables.viewerId)
             : chatKeys.candidateInquiries(variables.viewerId),
       });

@@ -1,4 +1,3 @@
-import React from "react";
 import { Search, SlidersHorizontal, X } from "lucide-react-native";
 
 import { Pressable, ScrollView, Text, TextInput, View } from "@/tw";
@@ -6,7 +5,7 @@ import { cn } from "@/tw/cn";
 import type { TagItem } from "@/api/QuestApi";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
-import { workerHomeMessages } from "../workerHomeMessages";
+import { workerHomeMessages } from "@/locales/workerHomeMessages";
 import { workerHomeStyles as styles } from "../workerHomeStyles";
 
 interface WorkerSearchBarProps {
@@ -17,6 +16,8 @@ interface WorkerSearchBarProps {
   selectedTagId: string | null;
   onSelectTag: (tagId: string | null) => void;
   onOpenFilter?: () => void;
+  tagsError?: boolean;
+  onRetryTags?: () => void;
 }
 
 export function WorkerSearchBar({
@@ -27,6 +28,8 @@ export function WorkerSearchBar({
   selectedTagId,
   onSelectTag,
   onOpenFilter,
+  tagsError,
+  onRetryTags,
 }: WorkerSearchBarProps) {
   const { colors: themeColors } = useAppTheme();
   const { locale } = useLocale();
@@ -36,7 +39,7 @@ export function WorkerSearchBar({
     const isSelected = selectedTagId === id;
     return (
       <Pressable
-        accessibilityLabel={`${name} filter`}
+        accessibilityLabel={messages.tagFilter(name)}
         accessibilityRole="button"
         accessibilityState={{ selected: isSelected }}
         className={cn(
@@ -78,7 +81,7 @@ export function WorkerSearchBar({
         />
         {query ? (
           <Pressable
-            accessibilityLabel="Clear search"
+            accessibilityLabel={messages.clearSearch}
             accessibilityRole="button"
             className={styles.searchIconButton}
             hitSlop={2}
@@ -108,6 +111,26 @@ export function WorkerSearchBar({
         {renderTag(null, messages.tagAll, "tag-pill-all")}
         {tags.map((tag) => renderTag(tag.id, tag.name, `tag-pill-${tag.id}`))}
       </ScrollView>
+      {tagsError && onRetryTags ? (
+        <View
+          accessibilityRole="alert"
+          className="flex-row items-center justify-between px-ku-md"
+          testID="worker-tags-error"
+        >
+          <Text className="font-ku-regular text-ku-label text-ku-text-secondary">
+            {messages.tagsUnavailable}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            className="min-h-[48px] justify-center px-ku-sm"
+            onPress={onRetryTags}
+          >
+            <Text className="font-ku-semibold text-ku-label text-ku-worker-dark">
+              {messages.errorRetry}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 }

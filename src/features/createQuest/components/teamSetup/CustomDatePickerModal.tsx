@@ -5,7 +5,11 @@ import { Check, ChevronLeft, ChevronRight, X } from "lucide-react-native";
 import { Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { colors } from "@/theme/colors";
-import { formatDate } from "@/domain/datetime";
+import {
+  formatCalendarMonthYear,
+  formatCalendarWeekday,
+  formatDate,
+} from "@/domain/datetime";
 import type { CreateQuestMessages } from "@/locales/createQuestMessages";
 import type { SupportedLocale } from "@/locales/locale";
 import styles from "../createQuestStyles";
@@ -69,20 +73,16 @@ export function CustomDatePickerModal({
     (view.year === minimumView.year && view.month > minimumView.month);
 
   const { monthTitle, weekdays } = useMemo(() => {
-    const localeTag = locale === "th" ? "th-TH-u-ca-gregory" : "en-GB";
-    const weekdayFormatter = new Intl.DateTimeFormat(localeTag, {
-      weekday: "narrow",
-    });
-    return {
-      monthTitle: new Intl.DateTimeFormat(localeTag, {
-        month: "long",
-        year: "numeric",
-      }).format(new Date(view.year, view.month, 1)),
-      // 7 Jan 2024 is a Sunday; the grid starts on Sunday like getDay().
-      weekdays: Array.from({ length: 7 }, (_, index) =>
-        weekdayFormatter.format(new Date(2024, 0, 7 + index))
-      ),
-    };
+    const monthTitle = formatCalendarMonthYear(
+      new Date(view.year, view.month, 1),
+      locale,
+      "long"
+    );
+    // 7 Jan 2024 is a Sunday; the grid starts on Sunday like getDay().
+    const weekdays = Array.from({ length: 7 }, (_, index) =>
+      formatCalendarWeekday(new Date(2024, 0, 7 + index), locale)
+    );
+    return { monthTitle, weekdays };
   }, [locale, view]);
   const weeks = useMemo(() => getMonthWeeks(view.year, view.month), [view]);
   const selectedLabel = selected ? formatDate(selected, locale, "") : "";

@@ -1,8 +1,10 @@
 import { useCallback, useState } from "react";
+import { getLocalizedErrorMessage } from "@/utils/error";
 import { useQueryClient } from "@tanstack/react-query";
 import type { TopUpData, TopUpQuote } from "@/api/WalletApi";
 import type { SupportedLocale } from "@/locales/locale";
 import { questBoardMessages } from "@/locales/questBoardMessages";
+import { walletMessages } from "@/locales/walletMessages";
 import {
   checkTopUpAmount,
   checkTopUpPayment,
@@ -91,7 +93,9 @@ export function useQuestTopUpFlow({
       setTopUpStep("confirmation");
     } catch (err: unknown) {
       setVerificationError(
-        err instanceof Error ? err.message : messages.topUpCreateError
+        getLocalizedErrorMessage(err, locale, {
+          fallback: messages.topUpCreateError,
+        })
       );
     }
   };
@@ -110,7 +114,9 @@ export function useQuestTopUpFlow({
       setTopUpStep("promptPay");
     } catch (err: unknown) {
       setVerificationError(
-        err instanceof Error ? err.message : messages.topUpCreateError
+        getLocalizedErrorMessage(err, locale, {
+          fallback: messages.topUpCreateError,
+        })
       );
     } finally {
       setIsConfirming(false);
@@ -132,9 +138,11 @@ export function useQuestTopUpFlow({
     try {
       await settleTopUp(await checkTopUpPayment(activeTopUp.id));
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Verification failed";
-      setVerificationError(message);
+      setVerificationError(
+        getLocalizedErrorMessage(err, locale, {
+          fallback: walletMessages[locale].topUpPaymentFailed,
+        })
+      );
     } finally {
       setIsVerifying(false);
     }
@@ -148,9 +156,11 @@ export function useQuestTopUpFlow({
       if (!topUp) return;
       await settleTopUp(topUp);
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Verification failed";
-      setVerificationError(message);
+      setVerificationError(
+        getLocalizedErrorMessage(err, locale, {
+          fallback: walletMessages[locale].topUpPaymentFailed,
+        })
+      );
     } finally {
       setIsVerifying(false);
     }

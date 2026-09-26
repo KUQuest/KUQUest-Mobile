@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckCircle2 } from "lucide-react-native";
+import { AlertCircle, CheckCircle2 } from "lucide-react-native";
 import { Text, View } from "@/tw";
 import { Button } from "@/components/ui/Button";
 import { formatSatang } from "@/domain/satang";
@@ -14,6 +14,9 @@ export interface TopUpSuccessStepProps {
   onDone: () => void;
   currentBalanceSatang: number | null;
   transactionReference: string;
+  balanceRefreshFailed?: boolean;
+  onRetryBalanceRefresh?: () => void;
+  isRefreshingBalance?: boolean;
 }
 
 export function TopUpSuccessStep({
@@ -22,6 +25,9 @@ export function TopUpSuccessStep({
   onDone,
   currentBalanceSatang,
   transactionReference,
+  balanceRefreshFailed = false,
+  onRetryBalanceRefresh,
+  isRefreshingBalance = false,
 }: TopUpSuccessStepProps) {
   const m = walletMessages[locale];
   const { colors } = useAppTheme();
@@ -71,6 +77,30 @@ export function TopUpSuccessStep({
           </View>
         </View>
       </View>
+      {balanceRefreshFailed && (
+        <View
+          className="gap-ku-sm rounded-ku-card border border-ku-border-danger bg-ku-surface-danger p-ku-md"
+          testID="top-up-balance-refresh-notice"
+        >
+          <View className="flex-row items-start gap-ku-sm">
+            <AlertCircle color={colors.danger} size={18} strokeWidth={2.2} />
+            <Text className="flex-1 font-ku-medium text-ku-body-small text-ku-danger-dark">
+              {m.balanceRefreshFailed}
+            </Text>
+          </View>
+          {onRetryBalanceRefresh && (
+            <Button
+              accessibilityLabel={m.topUpBalanceRefreshRetry}
+              disabled={isRefreshingBalance}
+              onPress={onRetryBalanceRefresh}
+              testID="top-up-retry-balance-btn"
+              variant="secondary"
+            >
+              {m.topUpBalanceRefreshRetry}
+            </Button>
+          )}
+        </View>
+      )}
 
       <Button
         accessibilityLabel={m.done}

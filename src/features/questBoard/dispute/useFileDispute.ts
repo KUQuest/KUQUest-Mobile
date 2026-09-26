@@ -10,6 +10,7 @@ import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { useFileDisputeMutation } from "@/features/questBoard/api/questBoardQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import { disputeMessages } from "@/locales/disputeMessages";
+import { getLocalizedErrorMessage } from "@/utils/error";
 
 /**
  * Files the viewer's Dispute Case on a failed Quest. `fileQuestDispute` takes
@@ -43,7 +44,9 @@ export function useFileDispute() {
               onError: (error) =>
                 showSweetAlert({
                   title: messages.errorTitle,
-                  message: error.message || messages.errorFallback,
+                  message: getLocalizedErrorMessage(error, locale, {
+                    fallback: messages.errorFallback,
+                  }),
                   variant: SweetAlertVariant.Error,
                 }),
             }
@@ -51,7 +54,7 @@ export function useFileDispute() {
         },
       });
     },
-    [isPending, messages, mutate, viewerId]
+    [isPending, locale, messages, mutate, viewerId]
   );
 
   return { confirmFileDispute, filingDispute: isPending };

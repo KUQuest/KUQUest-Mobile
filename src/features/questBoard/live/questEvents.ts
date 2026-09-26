@@ -54,6 +54,25 @@ const questBoardInvalidatedEventSchema = z
 export type QuestBoardInvalidatedEvent = z.infer<
   typeof questBoardInvalidatedEventSchema
 >;
+const hirerQuestSubscribedEventSchema = z
+  .object({
+    type: z.literal("SUBSCRIBED"),
+    version: z.literal(1),
+  })
+  .strict();
+
+const hirerQuestUpdatedEventSchema = z
+  .object({
+    type: z.literal("HIRER_QUEST_UPDATED"),
+    version: z.literal(1),
+    questId: z.string().uuid(),
+    changeType: z.string().min(1),
+  })
+  .strict();
+
+export type HirerQuestUpdatedEvent = z.infer<
+  typeof hirerQuestUpdatedEventSchema
+>;
 
 function subscribeToEventStream<TSubscription, TUpdate>(
   path: string,
@@ -132,6 +151,20 @@ export function subscribeToQuestBoardEvents(
     questBoardInvalidatedEventSchema,
     () => true,
     onInvalidated,
+    onSubscribed
+  );
+}
+export function subscribeToHirerQuestEvents(
+  onQuestUpdated: (event: HirerQuestUpdatedEvent) => void,
+  onSubscribed?: () => void
+): () => void {
+  return subscribeToEventStream(
+    "/api/v2/me/hirer-quests/events",
+    hirerQuestSubscribedEventSchema,
+    (event) => event.type === "SUBSCRIBED" && event.version === 1,
+    hirerQuestUpdatedEventSchema,
+    (event) => event.type === "HIRER_QUEST_UPDATED" && event.version === 1,
+    onQuestUpdated,
     onSubscribed
   );
 }

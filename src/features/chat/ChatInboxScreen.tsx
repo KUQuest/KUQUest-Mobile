@@ -375,9 +375,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
                 className={styles.loadErrorState}
               >
                 <Text className={styles.loadErrorTitle}>
-                  {locale === "th"
-                    ? "ไม่สามารถโหลด Inquiry ได้"
-                    : "Candidate inquiries could not be loaded."}
+                  {messages.candidateInquiriesLoadError}
                 </Text>
                 <Pressable
                   accessibilityRole="button"

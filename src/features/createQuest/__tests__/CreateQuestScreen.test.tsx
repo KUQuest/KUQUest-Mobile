@@ -1,4 +1,5 @@
 import { StyleSheet, TextInput as RNTextInput } from "react-native";
+import { ApiError } from "@/api/ApiClient";
 import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import { act, fireEvent, waitFor, within } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
@@ -57,6 +58,7 @@ const mockLivePublishQuest = jest.fn();
 const mockLiveEditQuest = jest.fn();
 const mockWalletGetWallet = jest.fn();
 const mockCancelQuest = jest.fn();
+const mockUseWorkerTagsQuery = jest.fn();
 const defaultWalletBalances = {
   spendingBalanceSatang: 100_000,
   earningsBalanceSatang: 0,
@@ -183,6 +185,10 @@ jest.mock("@/features/wallet/api/walletQueries", () => {
     ).useQueryClient,
   };
 });
+jest.mock("@/features/workerHome/api/workerHomeQueries", () => ({
+  ...jest.requireActual("@/features/workerHome/api/workerHomeQueries"),
+  useWorkerTagsQuery: () => mockUseWorkerTagsQuery(),
+}));
 
 jest.mock("expo-router", () => ({
   useRouter: () => mockRouter,
@@ -292,6 +298,11 @@ describe("CreateQuestScreen", () => {
     mockBeforeRemoveListeners.length = 0;
     mockCancelQuest.mockReset();
     mockCancelQuest.mockResolvedValue({});
+    mockUseWorkerTagsQuery.mockReturnValue({
+      data: undefined,
+      isError: false,
+      refetch: jest.fn(),
+    });
   });
 
   it("keeps the page skeleton visible until draft hydration settles", async () => {
@@ -312,6 +323,26 @@ describe("CreateQuestScreen", () => {
     await waitFor(() =>
       expect(view.getByLabelText("ชื่อเควสต์ *")).toBeTruthy()
     );
+  });
+  it("shows tag-load failure and retry beside the tag selector", async () => {
+    mockLoadQuestDraft.mockResolvedValueOnce(null);
+    const refetchTags = jest.fn();
+    mockUseWorkerTagsQuery.mockReturnValue({
+      data: undefined,
+      isError: true,
+      refetch: refetchTags,
+    });
+
+    const view = await render(<CreateQuestScreen />);
+    await waitFor(() =>
+      expect(view.getByLabelText("ชื่อเควสต์ *")).toBeTruthy()
+    );
+
+    expect(
+      view.getByText("ไม่สามารถโหลดแท็กเควสต์ได้ กรุณาลองอีกครั้ง")
+    ).toBeTruthy();
+    await fireEvent.press(view.getByTestId("create-quest-retry-tags"));
+    expect(refetchTags).toHaveBeenCalledTimes(1);
   });
 
   it("restores the persisted draft and step on mount", async () => {
@@ -655,6 +686,7 @@ describe("CreateQuestScreen", () => {
     await waitFor(() =>
       expect(view.getByText("เผยแพร่เควสต์แล้ว")).toBeTruthy()
     );
+    expect(view.queryByRole("button", { name: /ขั้นตอนที่/ })).toBeNull();
     expect(mockLiveCreateQuest).toHaveBeenCalledWith(
       expect.objectContaining({
         mode: "CANDIDATE",
@@ -1204,6 +1236,29 @@ describe("CreateQuestScreen", () => {
     expect(mockRouter.replace).toHaveBeenCalledTimes(1);
   });
 
+  it("localizes server edit failures without exposing exception text", async () => {
+    const view = await renderServerEditQuest();
+    mockLiveEditQuest.mockRejectedValueOnce(
+      Object.assign(new Error("server edit details"), {
+        code: "QUEST_EDIT_CONFLICT",
+      })
+    );
+
+    await fireEvent.changeText(view.getByLabelText("ชื่อเควสต์ *"), "Updated");
+    await fireEvent.press(view.getByText("ถัดไป"));
+    await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
+    await fireEvent.press(view.getByTestId("edit-quest-save"));
+
+    await waitFor(() =>
+      expect(
+        view.getByText(
+          "ฉบับร่างนี้ถูกแก้ไขจากที่อื่น กรุณาโหลดใหม่แล้วลองอีกครั้ง"
+        )
+      ).toBeTruthy()
+    );
+    expect(view.queryByText("server edit details")).toBeNull();
+  });
+
   it("keeps and confirms server Quest cancellation through visible dialogs", async () => {
     const view = await renderServerEditQuest();
 
@@ -1246,6 +1301,30 @@ describe("CreateQuestScreen", () => {
       pathname: "/quest/[id]",
       params: { id: "server-quest-1", mode: "post" },
     });
+  });
+  it("localizes server cancellation failures without exposing exception text", async () => {
+    const view = await renderServerEditQuest();
+    mockCancelQuest.mockRejectedValueOnce(
+      new ApiError(
+        503,
+        "QUEST_ESCROW_UNAVAILABLE",
+        "server cancellation details"
+      )
+    );
+
+    await fireEvent.press(view.getByTestId("edit-quest-cancel"));
+    await fireEvent.press(
+      within(view.getByTestId("sweet-alert")).getByRole("button", {
+        name: "ยกเลิกเควสต์",
+      })
+    );
+
+    await waitFor(() =>
+      expect(
+        view.getByText("ระบบการเงินไม่พร้อมใช้งานชั่วคราว กรุณาลองอีกครั้ง")
+      ).toBeTruthy()
+    );
+    expect(view.queryByText("server cancellation details")).toBeNull();
   });
 
   it("shows localized help content and dismisses it", async () => {

@@ -24,7 +24,9 @@ import { isTerminalStatus } from "@/domain/questLifecycle";
 import { formatSatang } from "@/domain/satang";
 import { myQuestMessages } from "@/locales/myQuestMessages";
 import { questBoardMessages } from "@/locales/questBoardMessages";
+import { getLocalizedErrorMessage } from "@/utils/error";
 import {
+  isHirerActor,
   QuestEditRequestStatus,
   QuestMode,
   QuestParticipation,
@@ -71,12 +73,11 @@ export function useHirerQuestManageFeature(questId?: string) {
     },
     [messages, questId, refetchSnapshot, viewerId]
   );
-  const error =
-    snapshotQuery.error instanceof Error
-      ? snapshotQuery.error.message
-      : snapshotQuery.error
-        ? "Unable to load Quest"
-        : undefined;
+  const error = snapshotQuery.error
+    ? getLocalizedErrorMessage(snapshotQuery.error, locale, {
+        fallback: messages.manageSnapshotError,
+      })
+    : undefined;
   const originalConditionItems = snapshot?.quest.condition.items
     .slice()
     .sort((a, b) => a.position - b.position)
@@ -95,13 +96,13 @@ export function useHirerQuestManageFeature(questId?: string) {
           ? cancelMessages.cancelInProgressDescription
           : undefined;
   const canReviewCandidateProposals =
-    snapshot?.actor === "HIRER" &&
+    isHirerActor(snapshot?.actor) &&
     snapshot.mode === QuestMode.CANDIDATE &&
     (snapshot.participation === QuestParticipation.GROUP
       ? snapshot.capabilities.canSelectTeam
       : snapshot.capabilities.canSelectCandidate);
   const canProposeConditionEdit =
-    snapshot?.actor === "HIRER" &&
+    isHirerActor(snapshot?.actor) &&
     snapshot.state === QuestStatus.QUEST_ASSIGNED &&
     snapshot.capabilities.canRequestEdit &&
     snapshot.editRequest?.status !==
@@ -198,9 +199,9 @@ export function useHirerQuestManageFeature(questId?: string) {
       })
       .catch((caught) => {
         setConditionEditError(
-          caught instanceof Error
-            ? caught.message
-            : messages.conditionEditSubmitError
+          getLocalizedErrorMessage(caught, locale, {
+            fallback: messages.conditionEditSubmitError,
+          })
         );
         return snapshotQuery.refetch();
       })

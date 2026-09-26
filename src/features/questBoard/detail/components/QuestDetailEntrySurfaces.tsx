@@ -10,8 +10,10 @@ import type {
   LiveQuestSnapshot,
 } from "../../live/liveQuestService";
 import {
+  isHirerActor,
   QuestCandidateMode,
   QuestInvitationStatus,
+  QuestNextAction,
   QuestPartialStartConsentStatus,
   QuestParticipation,
   QuestTeamStatus,
@@ -24,17 +26,17 @@ function getNextActionLabel(
   messages: QuestBoardMessages
 ): string {
   switch (action) {
-    case "JOIN":
+    case QuestNextAction.JOIN:
       return messages.joinNow;
-    case "APPLY":
+    case QuestNextAction.APPLY:
       return messages.applyNow;
-    case "WITHDRAW_APPLICATION":
+    case QuestNextAction.WITHDRAW_APPLICATION:
       return messages.withdrawApplication;
-    case "CREATE_TEAM":
-    case "JOIN_TEAM":
-    case "SUBMIT_TEAM":
-    case "SELECT_CANDIDATE":
-    case "SELECT_TEAM":
+    case QuestNextAction.CREATE_TEAM:
+    case QuestNextAction.JOIN_TEAM:
+    case QuestNextAction.SUBMIT_TEAM:
+    case QuestNextAction.SELECT_CANDIDATE:
+    case QuestNextAction.SELECT_TEAM:
       return messages.viewMyQuests;
     default:
       return messages.viewMyQuests;
@@ -60,11 +62,12 @@ export function LiveEntrySurface({
 }) {
   const { colors } = useAppTheme();
   const isGroupCandidate =
-    snapshot.participation === "GROUP" && snapshot.mode === "CANDIDATE";
-  const isHirer = snapshot.actor === "HIRER";
+    snapshot.participation === QuestParticipation.GROUP &&
+    snapshot.mode === QuestCandidateMode.CANDIDATE;
+  const isHirer = isHirerActor(snapshot.actor);
   const isUnderfilled =
-    snapshot.nextAction === "DECIDE_UNDERFILLED" ||
-    snapshot.nextAction === "CONSENT_UNDERFILLED";
+    snapshot.nextAction === QuestNextAction.DECIDE_UNDERFILLED ||
+    snapshot.nextAction === QuestNextAction.CONSENT_UNDERFILLED;
   const shouldRender =
     isUnderfilled ||
     (isGroupCandidate &&

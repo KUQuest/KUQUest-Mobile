@@ -14,6 +14,7 @@ import type { QuestV2ProofReviewPayload } from "@/api/QuestApi";
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
 import styles from "../../styles/questDetailStyles";
 import { formatTimestamp } from "@/domain/datetime";
+import { getLocalizedErrorMessage } from "@/utils/error";
 
 const MAX_REVIEW_REASON_LENGTH = 1000;
 
@@ -80,10 +81,12 @@ export function ProofReviewPanel({
     try {
       const result = await onReview(payload);
       if (result !== false) onDone();
-      else setError(messages.errorDescription);
+      else setError(messages.manageSnapshotError);
     } catch (caught) {
       setError(
-        caught instanceof Error ? caught.message : messages.errorDescription
+        getLocalizedErrorMessage(caught, locale, {
+          fallback: messages.manageSnapshotError,
+        })
       );
     } finally {
       setBusy(false);

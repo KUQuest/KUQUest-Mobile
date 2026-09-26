@@ -26,7 +26,7 @@ import {
   type CanonicalHirerQuestStatus,
   type QuestMemberProfile,
 } from "../hirerHomeData";
-import { hirerHomeMessages } from "../hirerHomeMessages";
+import { hirerHomeMessages } from "@/locales/hirerHomeMessages";
 import { hirerHomeStyles as styles } from "../hirerHomeStyles";
 
 export interface HirerQuestProgressCardProps {

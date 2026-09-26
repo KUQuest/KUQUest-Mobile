@@ -234,6 +234,8 @@ export function useCreateQuestController({
     () => workerTagsQuery.data ?? [],
     [workerTagsQuery.data]
   );
+  const tagLoadError =
+    workerTagsQuery.isError && workerTagsQuery.data === undefined;
   const tagOptions = useMemo(
     () => getCreateQuestTagOptions(liveTags, locale),
     [liveTags, locale]
@@ -530,6 +532,8 @@ export function useCreateQuestController({
       saveState,
       step,
       tagOptions,
+      tagLoadError,
+      onRetryTags: () => void workerTagsQuery.refetch(),
       updateDraft,
       updateParticipation,
       useStackedChoices,

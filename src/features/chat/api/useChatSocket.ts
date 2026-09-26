@@ -7,6 +7,7 @@ import {
   chatMessageSchema,
   type ServerChatMessage,
 } from "@/api/ChatApi";
+import { ConversationMode } from "../chatTypes";
 export const ChatSocketEventType = {
   WORK_CONVERSATION_MESSAGE: "WORK_CONVERSATION_MESSAGE",
   CANDIDATE_INQUIRY_MESSAGE: "CANDIDATE_INQUIRY_MESSAGE",
@@ -47,7 +48,7 @@ const chatSocketEventSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal(ChatSocketEventType.MESSAGE_REJECTED),
-    clientMessageId: clientMessageIdSchema,
+    clientMessageId: clientMessageIdSchema.nullable(),
     error: z.object({
       code: z.string().min(1),
       message: z.string().min(1),
@@ -60,7 +61,7 @@ export type ChatSocketEvent = z.infer<typeof chatSocketEventSchema>;
 export type ChatSocketStatus =
   "idle" | "connecting" | "connected" | "reconnecting" | "unavailable";
 
-type ConversationType = "WORK" | "CANDIDATE_INQUIRY";
+export type ConversationType = ConversationMode;
 
 export interface ChatSocketSendMessage {
   clientMessageId: string;
@@ -183,7 +184,7 @@ export function useChatSocket({
 
     setStatus("connecting");
     const socket = openServerSocket(
-      conversationType === "CANDIDATE_INQUIRY"
+      conversationType === ConversationMode.CANDIDATE_INQUIRY
         ? chatApi.getCandidateInquiryEventsPath(conversationId)
         : chatApi.getWorkConversationEventsPath(conversationId),
       {
@@ -197,8 +198,9 @@ export function useChatSocket({
           if (!parsed.success) return;
           const event = parsed.data;
           if (
-            event.type === ChatSocketEventType.MESSAGE_ACCEPTED ||
-            event.type === ChatSocketEventType.MESSAGE_REJECTED
+            (event.type === ChatSocketEventType.MESSAGE_ACCEPTED ||
+              event.type === ChatSocketEventType.MESSAGE_REJECTED) &&
+            event.clientMessageId !== null
           ) {
             const pending = pendingMessagesRef.current.get(
               event.clientMessageId

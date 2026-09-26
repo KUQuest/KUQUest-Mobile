@@ -10,6 +10,8 @@ import type {
 } from "@/api/contracts";
 import { AuthError } from "@/features/auth/types";
 import { useProfileEditSessionExpiryRedirect as useSessionExpiryRedirect } from "../sessionHandling";
+import type { SupportedLocale } from "@/locales/locale";
+import { getLocalizedErrorMessage } from "@/utils/error";
 import { useLocale } from "@/features/preferences/localeStore";
 import { onboardingMessages } from "@/locales/registrationOnboarding";
 import {
@@ -58,8 +60,11 @@ import { PortfolioEditor } from "../components/PortfolioEditor";
 function isLocalAsset(uri: string): boolean {
   return Boolean(uri) && !/^https?:\/\//i.test(uri);
 }
-
-function getErrorText(error: unknown, messages: ProfileEditMessages): string {
+function getErrorText(
+  error: unknown,
+  messages: ProfileEditMessages,
+  locale: SupportedLocale
+): string {
   if (
     error instanceof AuthError ||
     (error instanceof ApiError && error.status === 401)
@@ -67,7 +72,9 @@ function getErrorText(error: unknown, messages: ProfileEditMessages): string {
     return messages.sessionExpired;
   if (error instanceof ApiError && error.status === 409)
     return messages.conflict;
-  return messages.saveError;
+  return getLocalizedErrorMessage(error, locale, {
+    fallback: messages.saveError,
+  });
 }
 
 function useLeaveConfirmation(
@@ -194,7 +201,7 @@ export function BasicsEditorScreen({
       router.back();
     } catch (error) {
       if (await redirectIfSessionExpired(error)) return;
-      setSaveError(getErrorText(error, messages));
+      setSaveError(getErrorText(error, messages, locale));
     }
   };
   const profileName = form.name || data.profile.firstName;
@@ -290,7 +297,7 @@ export function ExperienceEditorScreen({
       router.back();
     } catch (error) {
       if (await redirectIfSessionExpired(error)) return;
-      setSaveError(getErrorText(error, messages));
+      setSaveError(getErrorText(error, messages, locale));
     }
   };
   const remove = () => {
@@ -309,7 +316,7 @@ export function ExperienceEditorScreen({
             router.back();
           } catch (error) {
             if (!(await redirectIfSessionExpired(error)))
-              setSaveError(getErrorText(error, messages));
+              setSaveError(getErrorText(error, messages, locale));
           }
         })();
       },
@@ -400,7 +407,7 @@ export function PortfolioEditorScreen({
       router.back();
     } catch (error) {
       if (await redirectIfSessionExpired(error)) return;
-      setSaveError(getErrorText(error, messages));
+      setSaveError(getErrorText(error, messages, locale));
     }
   };
   const remove = () => {
@@ -419,7 +426,7 @@ export function PortfolioEditorScreen({
             router.back();
           } catch (error) {
             if (!(await redirectIfSessionExpired(error)))
-              setSaveError(getErrorText(error, messages));
+              setSaveError(getErrorText(error, messages, locale));
           }
         })();
       },
@@ -522,7 +529,7 @@ export function CertificateEditorScreen({
       router.back();
     } catch (error) {
       if (await redirectIfSessionExpired(error)) return;
-      setSaveError(getErrorText(error, messages));
+      setSaveError(getErrorText(error, messages, locale));
     }
   };
   const remove = () => {
@@ -541,7 +548,7 @@ export function CertificateEditorScreen({
             router.back();
           } catch (error) {
             if (!(await redirectIfSessionExpired(error)))
-              setSaveError(getErrorText(error, messages));
+              setSaveError(getErrorText(error, messages, locale));
           }
         })();
       },

@@ -1,6 +1,7 @@
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { SweetAlertHost } from "@/components/ui/SweetAlert";
+import { alertMessages } from "@/locales/alertMessages";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { studentApi } from "@/api/StudentApi";
@@ -253,7 +254,7 @@ describe("SelectRosterRoute", () => {
     expect(mockBack).not.toHaveBeenCalled();
   });
 
-  it("shows the rejection error and refetches when team rejection fails", async () => {
+  it("shows a localized rejection error and refetches when team rejection fails", async () => {
     const base = createSnapshot();
     const snapshot = createSnapshot({
       participation: "GROUP",
@@ -279,12 +280,13 @@ describe("SelectRosterRoute", () => {
     (liveQuestService.rejectCandidateTeam as jest.Mock).mockRejectedValue(
       new Error(failureMessage)
     );
-    const { getByTestId, getByText, getByRole } = await renderWithQueryClient(
-      <>
-        <SelectRosterRoute />
-        <SweetAlertHost />
-      </>
-    );
+    const { getByTestId, getByText, getByRole, queryByText } =
+      await renderWithQueryClient(
+        <>
+          <SelectRosterRoute />
+          <SweetAlertHost />
+        </>
+      );
 
     await waitFor(() => {
       expect(getByText("Nina Candidate")).toBeTruthy();
@@ -305,8 +307,9 @@ describe("SelectRosterRoute", () => {
         expect.any(String)
       );
       expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledTimes(2);
-      expect(getByText(failureMessage)).toBeTruthy();
+      expect(getByText(alertMessages.th.errorFallback)).toBeTruthy();
     });
+    expect(queryByText(failureMessage)).toBeNull();
     expect(mockBack).not.toHaveBeenCalled();
   });
 

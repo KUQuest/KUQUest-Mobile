@@ -23,7 +23,7 @@ export function CreateQuestFrame({
   messages: CreateQuestMessages;
   onBackPress: () => void;
   onHelpPress: () => void;
-  onStepPress: (step: Step) => void;
+  onStepPress?: (step: Step) => void;
   step: Step;
   subtitle?: string;
   title?: string;

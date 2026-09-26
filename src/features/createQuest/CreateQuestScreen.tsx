@@ -69,7 +69,7 @@ export default function CreateQuestScreen({
         {...frame}
         step={3}
         onBackPress={content.onLeave}
-        onStepPress={() => {}}
+        onStepPress={undefined}
       >
         <CreateQuestCompletionState
           completedState={content.completedState}

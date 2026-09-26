@@ -26,6 +26,8 @@ import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import { cn } from "@/tw/cn";
 import { showSweetAlert, SweetAlertVariant } from "@/components/ui/SweetAlert";
+import { useLocale } from "@/features/preferences/localeStore";
+import { getLocalizedErrorMessage } from "@/utils/error";
 import { useConvertEarningsMutation } from "../api/walletQueries";
 
 interface TransferEarningsModalProps {
@@ -43,6 +45,7 @@ export function TransferEarningsModal({
   onClose,
   onSuccess,
 }: TransferEarningsModalProps) {
+  const { locale } = useLocale();
   const earningsSatang = balances?.earningsBalanceSatang ?? 0;
   const spendingSatang = balances?.spendingBalanceSatang ?? 0;
   const [inputAmount, setInputAmount] = useState("");
@@ -82,15 +85,18 @@ export function TransferEarningsModal({
       await convertMutation.mutateAsync(parsedSatang);
       showSweetAlert({
         title: m.transferSuccessTitle,
-        message: m.transferSuccessDesc(formatSatang(parsedSatang)),
+        message: m.transferSuccessDesc(formatSatang(parsedSatang, locale)),
         variant: SweetAlertVariant.Success,
       });
       onSuccess(parsedSatang);
       onClose();
       setInputAmount("");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : m.convertError;
-      setErrorMsg(message);
+      setErrorMsg(
+        getLocalizedErrorMessage(err, locale, {
+          fallback: m.convertError,
+        })
+      );
     }
   };
 
@@ -161,7 +167,7 @@ export function TransferEarningsModal({
                     className={styles.flowAmount}
                     testID="transfer-current-earnings"
                   >
-                    {formatSatang(earningsSatang, "en", "exact")}
+                    {formatSatang(earningsSatang, locale, "exact")}
                   </Text>
                 </View>
               </View>
@@ -188,7 +194,7 @@ export function TransferEarningsModal({
                     className={styles.flowAmount}
                     testID="transfer-current-spending"
                   >
-                    {formatSatang(spendingSatang, "en", "exact")}
+                    {formatSatang(spendingSatang, locale, "exact")}
                   </Text>
                 </View>
               </View>
@@ -255,7 +261,7 @@ export function TransferEarningsModal({
                             !isAvailable && styles.presetChipTextDisabled
                           )}
                         >
-                          {formatSatang(presetSatang, "en")}
+                          {formatSatang(presetSatang, locale)}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -317,18 +323,18 @@ export function TransferEarningsModal({
               <View className={styles.previewCard}>
                 <View className={styles.previewRow}>
                   <Text className={styles.previewLabel}>
-                    ยอดเงินพร้อมใช้หลังโอน:
+                    {m.transferPreviewSpendingAfter}
                   </Text>
                   <Text className={styles.previewValueSuccess}>
-                    {formatSatang(newSpendingSatang, "en", "exact")}
+                    {formatSatang(newSpendingSatang, locale, "exact")}
                   </Text>
                 </View>
                 <View className={styles.previewRow}>
                   <Text className={styles.previewLabel}>
-                    รายได้สะสมคงเหลือ:
+                    {m.transferPreviewEarningsRemaining}
                   </Text>
                   <Text className={styles.previewValue}>
-                    {formatSatang(newEarningsSatang, "en", "exact")}
+                    {formatSatang(newEarningsSatang, locale, "exact")}
                   </Text>
                 </View>
               </View>

@@ -38,8 +38,7 @@ describe("ChatConversationScreen", () => {
       canWrite: false,
       readOnlyDescription: "",
       messagePlaceholder: "Message",
-      canReportConversation: false,
-      handleReportConversation: jest.fn(),
+      handleReportMessage: jest.fn(),
       searchOpen: false,
       setSearchOpen: jest.fn(),
       searchScope: "messages",
@@ -239,5 +238,87 @@ describe("ChatConversationScreen", () => {
       { width: 320, height: 480 }
     );
     expect(scrollToEnd).toHaveBeenCalledTimes(2);
+  });
+
+  it("navigates to report on long-press of another participant's message, but not own message", async () => {
+    const getController =
+      mockedUseChatConversationController.getMockImplementation();
+    if (!getController) {
+      throw new Error("Chat conversation controller mock is not configured");
+    }
+    const push = jest.fn();
+    const controller = getController("WORK");
+    const router = { ...controller.router, push };
+    const conversation = {
+      id: "conversation-1",
+      questId: "quest-1",
+      questTitle: { en: "Campus cleanup", th: "ทำความสะอาดวิทยาเขต" },
+      participantName: "Sora Student",
+      participantRole: "owner" as const,
+      initials: "SS",
+      avatarColor: "#208AEF",
+      latestMessage: { en: "Hello", th: "สวัสดี" },
+      latestAt: "2026-09-24T03:30:00Z",
+      unreadCount: 0,
+      messages: [],
+    };
+    const otherMessage: DisplayChatMessage = {
+      id: "msg-other-1",
+      sender: "other",
+      text: { en: "Other text", th: "ข้อความคนอื่น" },
+      createdAt: "2026-09-24T03:30:00Z",
+      attachments: [],
+      kind: "USER",
+    };
+    const ownMessage: DisplayChatMessage = {
+      id: "msg-me-1",
+      sender: "me",
+      text: { en: "My text", th: "ข้อความของฉัน" },
+      createdAt: "2026-09-24T03:31:00Z",
+      attachments: [],
+    };
+
+    const handleReportMessage = (message: DisplayChatMessage) => {
+      push({
+        pathname: "/report",
+        params: {
+          messageId: message.id,
+          conversationTitle: conversation.questTitle.en,
+          senderName: conversation.participantName,
+        },
+      });
+    };
+
+    mockedUseChatConversationController.mockReturnValue({
+      ...controller,
+      router,
+      conversationPending: false,
+      conversation,
+      searchedMessages: [otherMessage, ownMessage],
+      handleReportMessage,
+    });
+
+    const view = await renderWithAppTheme(<ChatConversationScreen />);
+
+    const ownBubble = view.getByTestId("chat-message-bubble-msg-me-1");
+    fireEvent(ownBubble, "longPress");
+    expect(push).not.toHaveBeenCalled();
+
+    const otherBubble = view.getByTestId("chat-message-bubble-msg-other-1");
+    fireEvent(otherBubble, "longPress");
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledWith({
+      pathname: "/report",
+      params: {
+        messageId: "msg-other-1",
+        conversationTitle: "Campus cleanup",
+        senderName: "Sora Student",
+      },
+    });
+
+    fireEvent(otherBubble, "accessibilityAction", {
+      nativeEvent: { actionName: "report" },
+    });
+    expect(push).toHaveBeenCalledTimes(2);
   });
 });

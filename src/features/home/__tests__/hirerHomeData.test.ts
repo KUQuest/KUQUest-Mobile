@@ -4,7 +4,7 @@ import {
   QuestStatus,
 } from "@/features/questBoard/domain/types";
 
-import { hirerHomeMessages } from "../hirerHomeMessages";
+import { hirerHomeMessages } from "@/locales/hirerHomeMessages";
 import {
   formatHirerDateTime,
   getHirerAttentionItems,

@@ -5,10 +5,10 @@ import { useRoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
 import { getRouteParam } from "@/utils/navigation";
 
 export default function QuestProofRoute() {
-  const { workspace } = useRoleWorkspace();
+  const { isWorker } = useRoleWorkspace();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const questId = getRouteParam(params.id);
-  if (workspace === "worker" && questId) {
+  if (isWorker && questId) {
     // Workers submit proof inline in the Work Hub.
     return (
       <Redirect

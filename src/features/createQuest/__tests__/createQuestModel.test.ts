@@ -222,7 +222,13 @@ describe("Create Quest model", () => {
     test("parses THB input into integer satang without floating point rounding", () => {
       expect(getDraftRewardSatang({ wage: "1250.50" })).toBe(125050);
       expect(getDraftRewardSatang({ wage: "12.345" })).toBeNull();
-      expect(formatDraftReward({ wage: "1250.50" })).toBe("฿1,250.50");
+      expect(formatDraftReward({ wage: "1250.50" }, "en")).toBe("฿1,250.50");
+      expect(createQuestMessages.en.rewardBoundsError(700_000)).toBe(
+        "Reward must be between ฿0 and ฿700,000."
+      );
+      expect(createQuestMessages.th.rewardBoundsError(700_000)).toBe(
+        "ค่าตอบแทนต้องอยู่ระหว่าง ฿0 ถึง ฿700,000"
+      );
     });
 
     test("uses a label-only location and canonical mode values in the payload", () => {
@@ -473,8 +479,8 @@ describe("Create Quest model", () => {
 
     test("returns empty string when end is before or equal to start", () => {
       const time = new Date("2026-09-20T09:00:00").getTime();
-      expect(formatQuestDuration(time, time)).toBe("");
-      expect(formatQuestDuration(time, time - 1000)).toBe("");
+      expect(formatQuestDuration(time, time, "en")).toBe("");
+      expect(formatQuestDuration(time, time - 1000, "en")).toBe("");
     });
   });
 

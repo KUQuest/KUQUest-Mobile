@@ -32,7 +32,6 @@ export interface QuestDetailProjectionCapabilities {
   canConsentUnderfilled: boolean;
   canRespondPartialStart: boolean;
   canMessageOwner: boolean;
-  canReportQuest: boolean;
 }
 
 export interface QuestDetailProjection {

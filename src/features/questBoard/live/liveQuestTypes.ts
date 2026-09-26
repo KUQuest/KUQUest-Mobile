@@ -13,10 +13,11 @@ import type {
   QuestV2EditRequest,
 } from "@/api/questV2Contracts";
 import type { ServerChatConversation } from "@/api/ChatApi";
-import type { QuestNextAction } from "../domain/types";
+import { QuestActor, type QuestNextAction } from "../domain/types";
 
+export const LiveQuestActor = QuestActor;
 export type LiveQuestActor =
-  "HIRER" | "PROSPECTIVE_WORKER" | "CANDIDATE" | "WORKER";
+  (typeof LiveQuestActor)[keyof typeof LiveQuestActor];
 
 /**
  * Server-derived action for the authenticated viewer. Assigned Quests start

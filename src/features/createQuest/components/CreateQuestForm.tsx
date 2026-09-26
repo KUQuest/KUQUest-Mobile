@@ -55,6 +55,7 @@ export function CreateQuestForm({
   onFixBlocker,
   onRefreshPublishCheck,
   onRetrySave,
+  onRetryTags,
   onToggleLogistics,
   participationOptions,
   pendingInvalidField,
@@ -64,6 +65,7 @@ export function CreateQuestForm({
   saveErrorTitle,
   saveState,
   step,
+  tagLoadError,
   tagOptions,
   updateDraft,
   updateParticipation,
@@ -93,7 +95,9 @@ export function CreateQuestForm({
   saveErrorTitle: string;
   saveState: SaveState;
   step: Step;
+  tagLoadError: boolean;
   tagOptions: CreateQuestTagOption[];
+  onRetryTags: () => void;
   updateDraft: DraftUpdater;
   updateParticipation: (value: QuestDraft["participation"]) => void;
   useStackedChoices: boolean;
@@ -275,6 +279,8 @@ export function CreateQuestForm({
             draft={draft}
             errors={errors}
             tagOptions={tagOptions}
+            tagLoadError={tagLoadError}
+            onRetryTags={onRetryTags}
             proofRequired={draft.proofRequired !== "none"}
             titleRef={titleRef}
             tagRef={tagRef}

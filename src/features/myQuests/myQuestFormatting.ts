@@ -8,7 +8,7 @@ import type { SupportedLocale } from "@/locales/locale";
 /** Formats the date shown on compact My Quests cards. */
 export function formatQuestDate(
   value: string | null | undefined,
-  locale: SupportedLocale = "en"
+  locale: SupportedLocale
 ): string {
   if (!value) return "—";
   if (value.includes("T")) {

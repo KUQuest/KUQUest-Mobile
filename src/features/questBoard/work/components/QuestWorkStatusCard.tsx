@@ -111,29 +111,17 @@ export default function QuestWorkStatusCard({
 
   const isCandidateMode = snapshot.mode === QuestCandidateMode.CANDIDATE;
   const modeLabel = isCandidateMode
-    ? locale === "th"
-      ? "คัดเลือกผู้สมัคร"
-      : "Candidate"
-    : locale === "th"
-      ? "รับทันที (FCFS)"
-      : "FCFS";
+    ? messages.modeCandidate
+    : messages.modeFcfs;
 
   const isGroup = snapshot.participation === QuestParticipation.GROUP;
   const participationLabel = isGroup
-    ? locale === "th"
-      ? "งานกลุ่ม"
-      : "Team"
-    : locale === "th"
-      ? "งานเดี่ยว"
-      : "Solo";
+    ? messages.participationTeam
+    : messages.participationSolo;
 
   const proofBadgeText = snapshot.proofRequired
-    ? locale === "th"
-      ? "ต้องส่งหลักฐาน"
-      : "Proof required"
-    : locale === "th"
-      ? "ไม่ต้องส่งหลักฐาน"
-      : "Proof-free";
+    ? messages.proofRequiredBadge
+    : messages.proofFreeBadge;
 
   const locationLabel = snapshot.quest.locations?.[0]?.label;
   const ParticipationIcon = isGroup ? Users : User;
@@ -169,9 +157,7 @@ export default function QuestWorkStatusCard({
         {formattedReward ? (
           <>
             <View className={styles.statTile}>
-              <Text className={styles.statLabel}>
-                {locale === "th" ? "ค่าตอบแทน" : "Reward"}
-              </Text>
+              <Text className={styles.statLabel}>{messages.reward}</Text>
               <Text className={styles.rewardValue}>{formattedReward}</Text>
             </View>
             <View className={styles.statDivider} />
@@ -207,7 +193,7 @@ export default function QuestWorkStatusCard({
           <DetailRow
             icon={MapPin}
             iconColor={palette.textSecondary}
-            label={locale === "th" ? "สถานที่" : "Location"}
+            label={messages.location}
             value={locationLabel}
           />
         ) : null}

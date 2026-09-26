@@ -21,6 +21,7 @@ import {
   questBoardKeys,
   useApplyQuestMutation,
   useCancelQuestMutation,
+  useJoinCandidateTeamMutation,
   useLiveQuestSnapshotQuery,
   useProofFileLinksQuery,
   useQuestBoardQuery,
@@ -33,6 +34,8 @@ jest.mock("../../live/liveQuestService", () => ({
     listBoardQuests: jest.fn(),
     applyQuest: jest.fn(),
     cancelQuest: jest.fn(),
+    joinCandidateTeam: jest.fn(),
+    joinCandidateTeamByCode: jest.fn(),
   },
 }));
 
@@ -539,5 +542,49 @@ describe("quest board query ownership", () => {
 
     await unmount();
     queryClient.clear();
+  });
+  it("joins candidate teams using teamId or by code directly", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    jest.mocked(liveQuestService.joinCandidateTeam).mockResolvedValue({
+      id: "team-1",
+    } as never);
+    jest.mocked(liveQuestService.joinCandidateTeamByCode).mockResolvedValue({
+      id: "team-2",
+    } as never);
+
+    const { result } = await renderHook(() => useJoinCandidateTeamMutation(), {
+      wrapper: wrapper(queryClient),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        questId: "quest-1",
+        teamId: "team-1",
+        joinCode: "CODE123",
+      });
+    });
+
+    expect(liveQuestService.joinCandidateTeam).toHaveBeenCalledWith(
+      "quest-1",
+      "team-1",
+      "CODE123",
+      undefined
+    );
+    expect(liveQuestService.joinCandidateTeamByCode).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        questId: "quest-1",
+        joinCode: "CODE999",
+      });
+    });
+
+    expect(liveQuestService.joinCandidateTeamByCode).toHaveBeenCalledWith(
+      "quest-1",
+      "CODE999",
+      undefined
+    );
   });
 });

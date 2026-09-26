@@ -1,6 +1,6 @@
 import React from "react";
 import { fireEvent, waitFor } from "@testing-library/react-native";
-import { walletApi } from "@/api/WalletApi";
+import { WalletTransactionTitleKey, walletApi } from "@/api/WalletApi";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import WalletScreen from "../WalletScreen";
 import {
@@ -55,8 +55,7 @@ const mockTransactions = [
   {
     id: "tx-1",
     type: "HOLD" as const,
-    title: "Quest Escrow Reserved",
-    titleTh: "กันเงินประกันเควสต์",
+    titleKey: WalletTransactionTitleKey.QUEST_ESCROW_RESERVED,
     amountSatang: 50_000,
     direction: "OUTFLOW" as const,
     status: "COMPLETED",
@@ -66,8 +65,7 @@ const mockTransactions = [
   {
     id: "tx-2",
     type: "TOP_UP" as const,
-    title: "PromptPay Top-Up",
-    titleTh: "เติมเงินผ่านพร้อมเพย์",
+    titleKey: WalletTransactionTitleKey.PROMPT_PAY_TOP_UP,
     amountSatang: 100_000,
     direction: "INFLOW" as const,
     status: "COMPLETED",
@@ -76,8 +74,7 @@ const mockTransactions = [
   {
     id: "tx-3",
     type: "SPEND" as const,
-    title: "Platform Fee",
-    titleTh: "ค่าธรรมเนียม",
+    titleKey: WalletTransactionTitleKey.SYSTEM_FEE,
     amountSatang: 1_000,
     direction: "OUTFLOW" as const,
     status: "COMPLETED",
@@ -373,7 +370,10 @@ describe("WalletScreen", () => {
     await waitFor(() => {
       expect(view.getByTestId("hirer-wallet-error")).toBeTruthy();
     });
-    expect(view.getByText("Network connection failed")).toBeTruthy();
+    expect(
+      view.getByText("เกิดข้อผิดพลาดในการโหลดข้อมูลกระเป๋าเงิน")
+    ).toBeTruthy();
+    expect(view.queryByText("Network connection failed")).toBeNull();
 
     await fireEvent.press(view.getByRole("button", { name: "ลองอีกครั้ง" }));
 

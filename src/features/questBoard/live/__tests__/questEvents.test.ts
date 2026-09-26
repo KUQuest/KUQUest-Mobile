@@ -1,6 +1,7 @@
 import { authClient } from "@/features/auth/authClient";
 import {
   subscribeToCandidateRosterEvents,
+  subscribeToHirerQuestEvents,
   subscribeToQuestBoardEvents,
   subscribeToQuestEvents,
 } from "../questEvents";
@@ -349,5 +350,46 @@ describe("Quest event subscription", () => {
     expect(onSubscribed).toHaveBeenCalledTimes(2);
     expect(onInvalidated).toHaveBeenCalledTimes(1);
     stop();
+  });
+  it("subscribes to owned Quest updates on hirer-quests/events", () => {
+    const onQuestUpdated = jest.fn();
+    const onSubscribed = jest.fn();
+    const stop = subscribeToHirerQuestEvents(onQuestUpdated, onSubscribed);
+    const socket = MockWebSocket.instances[0];
+
+    expect(socket?.url).toBe(
+      "wss://api.example.com/api/v2/me/hirer-quests/events"
+    );
+    expect(socket?.options).toEqual({
+      headers: {
+        Cookie: "better-auth.session_token=session",
+        Origin: "kuquestmobile://",
+      },
+    });
+
+    const update = {
+      type: "HIRER_QUEST_UPDATED",
+      version: 1,
+      questId: "00000000-0000-4000-8000-000000000001",
+      changeType: "QUEST_STARTED",
+    };
+
+    socket?.receive(JSON.stringify(update));
+    expect(onQuestUpdated).not.toHaveBeenCalled();
+
+    socket?.receive(
+      JSON.stringify({
+        type: "SUBSCRIBED",
+        version: 1,
+      })
+    );
+    socket?.receive(JSON.stringify(update));
+
+    expect(onSubscribed).toHaveBeenCalledTimes(1);
+    expect(onQuestUpdated).toHaveBeenCalledTimes(1);
+    expect(onQuestUpdated).toHaveBeenCalledWith(update);
+
+    stop();
+    expect(socket?.close).toHaveBeenCalledTimes(1);
   });
 });

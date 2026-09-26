@@ -3,7 +3,7 @@ import WorkerHomeScreen from "@/features/workerHome/WorkerHomeScreen";
 import { useRoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
 
 export default function HomeRoute() {
-  const { workspace } = useRoleWorkspace();
+  const { isWorker } = useRoleWorkspace();
 
-  return workspace === "worker" ? <WorkerHomeScreen /> : <HomeScreen />;
+  return isWorker ? <WorkerHomeScreen /> : <HomeScreen />;
 }

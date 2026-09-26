@@ -6,13 +6,14 @@ import {
 } from "react-native";
 
 import { Search } from "lucide-react-native";
-import { FlatList, Text, View } from "@/tw";
+import { FlatList, Pressable, Text, View } from "@/tw";
 import { StateView } from "@/components/ui/StateView";
 import type { QuestV2BoardCard } from "@/api/questV2Contracts";
 import { spacing } from "@/theme/spacing";
 import { WorkerQuestFeedCard } from "./WorkerQuestFeedCard";
 import { WorkerQuickAccessBar } from "./WorkerQuickAccessBar";
 import { WorkerSearchBar } from "./WorkerSearchBar";
+import { QuestBoardFilterSheet } from "@/features/questBoard/board/components/QuestBoardFilters";
 import { workerHomeStyles as styles } from "../workerHomeStyles";
 
 import type { WorkerHomeContentProps } from "../workflow/useWorkerHomeController";
@@ -32,11 +33,20 @@ export function WorkerHomeContent({
   boardError,
   boardPending,
   bottomNavInset,
+  filterOpen,
+  filterDraft,
+  filterMessages,
+  handleApplyFilters,
+  handleChangeFilter,
   handleClearSearch,
+  handleCloseFilter,
   handleOpenCurrentWork,
   handleOpenFilter,
   handleQuestPress,
   handleRefresh,
+  handleRetryAssignments,
+  handleRetryBoard,
+  handleRetryTags,
   handleSearchChange,
   handleScroll,
   handleSelectTag,
@@ -46,6 +56,7 @@ export function WorkerHomeContent({
   scrollBottomPadding,
   searchQuery,
   selectedTagId,
+  tagsError,
   tags,
   themeColors,
 }: WorkerHomeContentProps) {
@@ -59,7 +70,6 @@ export function WorkerHomeContent({
     [handleQuestPress]
   );
   const keyExtractor = useCallback((quest: QuestV2BoardCard) => quest.id, []);
-  const showFeedError = assignmentsError && boardError;
   return (
     <>
       <FlatList
@@ -73,21 +83,11 @@ export function WorkerHomeContent({
         keyExtractor={keyExtractor}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
-          showFeedError ? (
-            <View className={styles.feedError} testID="worker-home-error">
-              <StateView
-                actionLabel={messages.errorRetry}
-                description={messages.errorDescription}
-                onAction={handleRefresh}
-                title={messages.errorTitle}
-                variant="error"
-              />
-            </View>
-          ) : boardPending ? (
+          boardPending ? (
             <View className="items-center py-ku-xl">
               <ActivityIndicator color={themeColors.workerDark} />
             </View>
-          ) : (
+          ) : boardError ? null : (
             <View className={styles.emptyState} testID="worker-feed-empty">
               <View className={styles.emptyIconCircle}>
                 <Search size={24} color={themeColors.workerDark} />
@@ -118,6 +118,29 @@ export function WorkerHomeContent({
                 <Text className={styles.screenSubtitle}>
                   {messages.subtitle}
                 </Text>
+                {assignmentsError ? (
+                  <View
+                    accessibilityRole="alert"
+                    className="mx-ku-md mb-ku-sm rounded-ku-card border border-ku-border bg-ku-surface p-ku-md"
+                    testID="worker-assignment-error"
+                  >
+                    <Text className="font-ku-semibold text-ku-body-small text-ku-text-strong">
+                      {messages.assignmentsError}
+                    </Text>
+                    <Text className="mt-ku-xs font-ku-regular text-ku-label text-ku-text-secondary">
+                      {messages.assignmentsErrorDescription}
+                    </Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      className="mt-ku-sm min-h-[48px] justify-center"
+                      onPress={handleRetryAssignments}
+                    >
+                      <Text className="font-ku-semibold text-ku-label text-ku-worker-dark">
+                        {messages.errorRetry}
+                      </Text>
+                    </Pressable>
+                  </View>
+                ) : null}
               </View>
               <WorkerSearchBar
                 onClearQuery={handleClearSearch}
@@ -127,6 +150,8 @@ export function WorkerHomeContent({
                 query={searchQuery}
                 selectedTagId={selectedTagId}
                 tags={tags}
+                onRetryTags={handleRetryTags}
+                tagsError={tagsError}
               />
             </View>
             <View className={styles.sectionHeader}>
@@ -147,6 +172,17 @@ export function WorkerHomeContent({
                 {messages.feedSectionSubtitle}
               </Text>
             </View>
+            {boardError ? (
+              <View className={styles.feedError} testID="worker-home-error">
+                <StateView
+                  actionLabel={messages.errorRetry}
+                  description={messages.errorDescription}
+                  onAction={handleRetryBoard}
+                  title={messages.boardErrorTitle}
+                  variant="error"
+                />
+              </View>
+            ) : null}
           </View>
         }
         onScroll={handleScroll}
@@ -172,6 +208,16 @@ export function WorkerHomeContent({
         }
         questTitle={activeQuestDetail?.title}
       />
+      {filterOpen ? (
+        <QuestBoardFilterSheet
+          availableTags={tags.map((tag) => tag.name)}
+          filter={filterDraft}
+          messages={filterMessages}
+          onApply={handleApplyFilters}
+          onChange={handleChangeFilter}
+          onClose={handleCloseFilter}
+        />
+      ) : null}
     </>
   );
 }

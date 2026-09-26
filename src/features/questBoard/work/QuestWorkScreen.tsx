@@ -20,7 +20,7 @@ import {
   nextActionLabel,
   workStatusLabel,
 } from "../presentation/questLabels";
-import type { QuestStatus } from "../domain/types";
+import { isWorkerActor, type QuestStatus } from "../domain/types";
 import QuestWorkActionsCard from "./components/QuestWorkActionsCard";
 import QuestWorkStatusCard from "./components/QuestWorkStatusCard";
 import {
@@ -210,7 +210,7 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
               messages={messages}
             />
 
-            {snapshot.actor === "WORKER" &&
+            {isWorkerActor(snapshot.actor) &&
             resolvedQuestId &&
             resolvedViewerId ? (
               <WorkerProofForm

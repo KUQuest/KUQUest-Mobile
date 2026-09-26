@@ -3,6 +3,8 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { BackHandler } from "react-native";
 
 import { showErrorAlert } from "@/components/ui/SweetAlert";
+import { useLocale } from "@/features/preferences/localeStore";
+import { getLocalizedErrorMessage } from "@/utils/error";
 
 import { getChatRouteParams } from "@/features/chat/chatData";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
@@ -30,7 +32,6 @@ export interface QuestDetailNavigation {
   openWorkHub: () => void;
   openTeam: () => void;
   openEditPost: () => void;
-  openReportQuest: () => void;
   openMessageOwner: () => void;
 }
 
@@ -46,6 +47,7 @@ export function useQuestDetailNavigation({
   studentId,
 }: QuestDetailNavigationParams): QuestDetailNavigation {
   const router = useRouter();
+  const { locale } = useLocale();
   const handleBack = useCallback(() => {
     if (router.canGoBack()) {
       router.back();
@@ -95,19 +97,6 @@ export function useQuestDetailNavigation({
       params: { id: quest.id },
     });
   }, [quest, router]);
-  const openReportQuest = useCallback(() => {
-    if (!quest) return;
-    router.push({
-      pathname: "/report",
-      params: {
-        source: "quest",
-        questId: quest.id,
-        questTitle: quest.title,
-        viewerId,
-        reportedMemberId: quest.ownerStudentId,
-      },
-    });
-  }, [quest, router, viewerId]);
   const openMessageOwner = useCallback(() => {
     if (!quest || !canMessageOwner) return;
     if (source.kind === "preview") {
@@ -140,12 +129,15 @@ export function useQuestDetailNavigation({
       .catch((error) => {
         showErrorAlert(
           messages.actionFailedTitle,
-          error instanceof Error ? error.message : messages.messageOwnerError
+          getLocalizedErrorMessage(error, locale, {
+            fallback: messages.messageOwnerError,
+          })
         );
       });
   }, [
     canMessageOwner,
     createCandidateInquiry,
+    locale,
     messages.actionFailedTitle,
     messages.messageOwnerError,
     projection,
@@ -161,7 +153,6 @@ export function useQuestDetailNavigation({
     openWorkHub,
     openTeam,
     openEditPost,
-    openReportQuest,
     openMessageOwner,
   };
 }

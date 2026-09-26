@@ -11,9 +11,10 @@ import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import type { ChatMessages } from "@/locales/chatMessages";
 import type { ChatConversation } from "../chatTypes";
 import { localizedText } from "./ChatConversationPresentation";
-import type {
-  DisplayChatMessage,
-  RenderAttachment,
+import {
+  type DisplayChatMessage,
+  isReportableMessage,
+  type RenderAttachment,
 } from "../domain/conversationModule";
 import { attachmentLinkCache } from "../api/attachmentLinkCache";
 import { formatTimeInBangkok } from "@/domain/datetime";
@@ -48,11 +49,19 @@ export function AttachmentRow({
   mine,
   messages,
   onPress,
+  onLongPress,
+  accessibilityActions,
+  onAccessibilityAction,
 }: {
   attachment: RenderAttachment;
   mine: boolean;
   messages: ChatMessages;
   onPress: () => void;
+  onLongPress?: () => void;
+  accessibilityActions?: { name: string; label: string }[];
+  onAccessibilityAction?: (event: {
+    nativeEvent: { actionName: string };
+  }) => void;
 }) {
   const { colors } = useAppTheme();
   return (
@@ -64,6 +73,9 @@ export function AttachmentRow({
         !mine && styles.attachmentBubbleOther
       )}
       onPress={onPress}
+      onLongPress={onLongPress}
+      accessibilityActions={accessibilityActions}
+      onAccessibilityAction={onAccessibilityAction}
     >
       <View className={styles.attachmentIcon}>
         {attachment.kind === "pdf" ? (
@@ -110,6 +122,9 @@ export function InlineImageAttachment({
   messageTime,
   onFilePress,
   onImagePress,
+  onLongPress,
+  accessibilityActions,
+  onAccessibilityAction,
 }: {
   attachment: RenderAttachment;
   conversationId: string;
@@ -119,6 +134,11 @@ export function InlineImageAttachment({
   messageTime?: string;
   onFilePress: () => void;
   onImagePress: (url: string, name: string, timestamp?: string) => void;
+  onLongPress?: () => void;
+  accessibilityActions?: { name: string; label: string }[];
+  onAccessibilityAction?: (event: {
+    nativeEvent: { actionName: string };
+  }) => void;
 }) {
   const { colors } = useAppTheme();
   const imageSize = getImageSize(attachment.width, attachment.height);
@@ -181,6 +201,9 @@ export function InlineImageAttachment({
         mine={mine}
         messages={messages}
         onPress={onFilePress}
+        onLongPress={onLongPress}
+        accessibilityActions={accessibilityActions}
+        onAccessibilityAction={onAccessibilityAction}
       />
     );
   }
@@ -215,6 +238,9 @@ export function InlineImageAttachment({
       accessibilityLabel={messages.openFile + ": " + attachment.name}
       testID={"inline-image-" + attachment.id}
       onPress={handlePress}
+      onLongPress={onLongPress}
+      accessibilityActions={accessibilityActions}
+      onAccessibilityAction={onAccessibilityAction}
       className={styles.inlineImageWrap}
     >
       <Image
@@ -235,6 +261,7 @@ export function MessageBubble({
   onFilePress,
   onImagePress = () => undefined,
   onProfilePress,
+  onReportMessage,
   isCandidateInquiry = false,
 }: {
   message: DisplayChatMessage;
@@ -244,14 +271,34 @@ export function MessageBubble({
   onFilePress: (attachment: RenderAttachment) => void;
   onImagePress?: (url: string, name: string, timestamp?: string) => void;
   onProfilePress?: () => void;
+  onReportMessage?: (message: DisplayChatMessage) => void;
   isCandidateInquiry?: boolean;
 }) {
   const mine = message.sender === "me";
   const text = message.text ? localizedText(message.text, locale) : undefined;
   const messageTime = formatTimeInBangkok(message.createdAt);
-
+  const canReport =
+    !mine && isReportableMessage(message) && Boolean(onReportMessage);
+  const reportActions = canReport
+    ? [{ name: "report", label: messages.reportMessage }]
+    : undefined;
+  const handleLongPress = canReport
+    ? () => {
+        onReportMessage?.(message);
+      }
+    : undefined;
+  const handleAccessibilityAction = canReport
+    ? (event: { nativeEvent: { actionName: string } }) => {
+        if (event.nativeEvent.actionName === "report") {
+          onReportMessage?.(message);
+        }
+      }
+    : undefined;
   return (
-    <View className={cn(styles.messageRow, mine && styles.messageRowMe)}>
+    <View
+      className={cn(styles.messageRow, mine && styles.messageRowMe)}
+      testID={`chat-message-${message.id}`}
+    >
       {!mine ? (
         <Avatar
           accessibilityLabel={
@@ -273,11 +320,17 @@ export function MessageBubble({
       ) : null}
       <View className={cn(styles.messageStack, mine && styles.messageStackMe)}>
         {text ? (
-          <View
+          <Pressable
+            accessibilityActions={reportActions}
+            accessibilityRole={canReport ? "button" : undefined}
             className={cn(styles.messageBubble, mine && styles.messageBubbleMe)}
+            delayLongPress={350}
+            onAccessibilityAction={handleAccessibilityAction}
+            onLongPress={handleLongPress}
+            testID={`chat-message-bubble-${message.id}`}
           >
             <Text className={styles.messageText}>{text}</Text>
-          </View>
+          </Pressable>
         ) : null}
         {message.attachments.map((attachment) =>
           isImageAttachment(attachment) ? (
@@ -289,9 +342,11 @@ export function MessageBubble({
               mine={mine}
               messages={messages}
               messageTime={messageTime}
-
               onFilePress={() => onFilePress(attachment)}
               onImagePress={onImagePress}
+              onLongPress={handleLongPress}
+              accessibilityActions={reportActions}
+              onAccessibilityAction={handleAccessibilityAction}
             />
           ) : (
             <AttachmentRow
@@ -300,6 +355,9 @@ export function MessageBubble({
               messages={messages}
               mine={mine}
               onPress={() => onFilePress(attachment)}
+              onLongPress={handleLongPress}
+              accessibilityActions={reportActions}
+              onAccessibilityAction={handleAccessibilityAction}
             />
           )
         )}

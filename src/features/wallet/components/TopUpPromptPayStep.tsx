@@ -134,8 +134,7 @@ const styles = {
   badge:
     "flex-row items-center gap-ku-6 rounded-ku-pill bg-ku-surface-accent px-ku-12 py-ku-6",
   badgeText: "font-ku-semibold text-ku-label text-ku-primary-dark",
-  qrFrame:
-    "rounded-ku-image-large border border-ku-border bg-ku-white p-ku-12",
+  qrFrame: "rounded-ku-image-large border border-ku-border bg-ku-white p-ku-12",
   qrImage: "h-[208px] w-[208px]",
   scanLabel: "text-center font-ku-medium text-ku-label text-ku-text-secondary",
   qrUnavailable:

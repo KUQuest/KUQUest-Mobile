@@ -9,7 +9,6 @@ import { showErrorAlert } from "@/components/ui/SweetAlert";
 import {
   Camera,
   ChevronLeft,
-  CircleAlert,
   ClipboardCheck,
   Download,
   FileText,
@@ -72,8 +71,7 @@ export default function ChatConversationScreen({
     canWrite,
     readOnlyDescription,
     messagePlaceholder,
-    canReportConversation,
-    handleReportConversation,
+    handleReportMessage,
     searchOpen,
     setSearchOpen,
     searchScope,
@@ -127,6 +125,7 @@ export default function ChatConversationScreen({
           onImagePress={handleImagePress}
           onProfilePress={openParticipantProfile}
           isCandidateInquiry={conversationType === "CANDIDATE_INQUIRY"}
+          onReportMessage={handleReportMessage}
         />
       );
     },
@@ -138,6 +137,7 @@ export default function ChatConversationScreen({
       messages,
       openFile,
       openParticipantProfile,
+      handleReportMessage,
     ]
   );
 
@@ -259,9 +259,7 @@ export default function ChatConversationScreen({
             if (!conversation.questId) {
               showErrorAlert(
                 messages.viewQuest,
-                locale === "th"
-                  ? "ไม่พบบริบทเควสต์สำหรับการนำทาง"
-                  : "Quest context is unavailable for navigation."
+                messages.questContextUnavailable
               );
               return;
             }
@@ -299,27 +297,6 @@ export default function ChatConversationScreen({
             </Text>
           </View>
         </Pressable>
-        {canReportConversation ? (
-          <Pressable
-            accessibilityLabel={messages.reportConversation}
-            accessibilityRole="button"
-            className={styles.reportAction}
-            onPress={handleReportConversation}
-            testID="chat-report-button"
-          >
-            <View className={styles.reportActionIcon}>
-              <CircleAlert color={colors.danger} size={20} strokeWidth={2.2} />
-            </View>
-            <View className={styles.reportActionCopy}>
-              <Text className={styles.reportActionText}>
-                {messages.reportConversation}
-              </Text>
-              <Text className={styles.reportActionDescription}>
-                {messages.reportConversationDescription}
-              </Text>
-            </View>
-          </Pressable>
-        ) : null}
         {!canWrite ? (
           <View
             accessibilityRole="alert"

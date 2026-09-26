@@ -1,7 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { subscribeToHirerQuestEvents } from "@/features/questBoard/live/questEvents";
 import { myQuestService } from "../myQuestService";
-
 export const myQuestsKeys = {
   all: ["myQuests"] as const,
   hirer: () => [...myQuestsKeys.all, "hirer"] as const,
@@ -10,11 +11,23 @@ export const myQuestsKeys = {
 };
 
 export function useMyHirerQuestsQuery(enabled = true) {
-  return useQuery({
+  const queryClient = useQueryClient();
+  const query = useQuery({
     enabled,
     queryKey: myQuestsKeys.hirer(),
     queryFn: ({ signal }) => myQuestService.listAllMyHirerQuests({ signal }),
   });
+  const hasSnapshot = query.data !== undefined;
+
+  useEffect(() => {
+    if (!enabled || !hasSnapshot) return;
+    const invalidate = () => {
+      void queryClient.invalidateQueries({ queryKey: myQuestsKeys.hirer() });
+    };
+    return subscribeToHirerQuestEvents(invalidate, invalidate);
+  }, [enabled, hasSnapshot, queryClient]);
+
+  return query;
 }
 
 export function useMyWorkerQuestSnapshotsQuery(

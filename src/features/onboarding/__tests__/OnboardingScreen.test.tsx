@@ -40,8 +40,9 @@ jest.mock("react-native/Libraries/Modal/Modal", () => {
   };
 });
 
+const mockReplace = jest.fn();
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ replace: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ replace: mockReplace, back: jest.fn() }),
   useLocalSearchParams: () => mockRouteParams,
 }));
 
@@ -594,5 +595,54 @@ describe("OnboardingScreen Academic Registration selections", () => {
     await waitFor(() =>
       expect(mockedAuthService.signOut).toHaveBeenCalledTimes(1)
     );
+  });
+
+  test("proceeds with navigation on leaving registration even if signOut rejects", async () => {
+    const api = createApi();
+    prepareAuth(api);
+    mockedAuthService.signOut.mockRejectedValue(new Error("Network failed"));
+    await renderWithQueryClient(
+      <>
+        <OnboardingScreen />
+        <SweetAlertHost />
+      </>
+    );
+    await waitFor(() => expect(screen.getByText("Step 1 of 3")).toBeTruthy());
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Leave registration" })
+    );
+    await fireEvent.press(
+      within(screen.getByTestId("sweet-alert")).getByRole("button", {
+        name: "Leave registration",
+      })
+    );
+    await waitFor(() => {
+      expect(mockedAuthService.signOut).toHaveBeenCalledTimes(1);
+      expect(mockReplace).toHaveBeenCalledWith("/");
+    });
+  });
+
+  test("renders localized terms configuration error when terms version is missing", async () => {
+    const previousTermsVersion = process.env.EXPO_PUBLIC_TERMS_VERSION;
+    delete process.env.EXPO_PUBLIC_TERMS_VERSION;
+    try {
+      const api = createCompletedApi();
+      prepareAuth(api);
+      mockRouteParams = { step: "3" };
+      await renderWithQueryClient(<OnboardingScreen />);
+      await waitFor(() => expect(screen.getByText("Step 3 of 3")).toBeTruthy());
+
+      await fireEvent.press(screen.getByRole("button", { name: "Complete" }));
+      await waitFor(() => {
+        expect(
+          screen.getByText(
+            "Terms configuration is missing or invalid. Please try again later."
+          )
+        ).toBeTruthy();
+      });
+    } finally {
+      process.env.EXPO_PUBLIC_TERMS_VERSION = previousTermsVersion;
+    }
   });
 });

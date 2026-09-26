@@ -4,6 +4,25 @@ import type {
   WorkConversationCapability,
 } from "../questBoard/domain/types";
 
+export const ConversationMode = {
+  WORK: "WORK",
+  CANDIDATE_INQUIRY: "CANDIDATE_INQUIRY",
+} as const;
+
+export type ConversationMode =
+  (typeof ConversationMode)[keyof typeof ConversationMode];
+
+export function isWorkConversation(
+  mode: unknown
+): mode is typeof ConversationMode.WORK {
+  return mode === ConversationMode.WORK;
+}
+
+export function isCandidateInquiryConversation(
+  mode: unknown
+): mode is typeof ConversationMode.CANDIDATE_INQUIRY {
+  return mode === ConversationMode.CANDIDATE_INQUIRY;
+}
 export type LocalizedText = Record<SupportedLocale, string>;
 
 export interface ChatAttachment {
@@ -18,6 +37,9 @@ export interface ChatMessage {
   text?: LocalizedText;
   createdAt: string;
   attachment?: ChatAttachment;
+  kind?: "USER" | "SYSTEM";
+  pending?: boolean;
+  hidden?: boolean;
 }
 
 export interface ChatConversation {

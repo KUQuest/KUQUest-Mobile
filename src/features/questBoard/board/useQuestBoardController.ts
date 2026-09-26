@@ -7,6 +7,7 @@ import { showErrorAlert } from "@/components/ui/SweetAlert";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
+import { getLocalizedErrorMessage } from "@/utils/error";
 import { getLocalizedQuest } from "../fixtures/questFixtureLocalization";
 import type { BoardPreviewState } from "../fixtures/questBoardHarness";
 import { useQuestBoardQuery } from "../api/questBoardQueries";
@@ -202,12 +203,21 @@ export function useQuestBoardController(
       try {
         const hirer = await liveQuestService.getHirerParticipant(quest.id);
         if (hirer?.id) router.push(`/profile/${hirer.id}`);
-        else showErrorAlert("Profile", "Profile unavailable for this quest.");
-      } catch {
-        showErrorAlert("Profile", "Profile unavailable for this quest.");
+        else
+          showErrorAlert(
+            messages.profileUnavailableTitle,
+            messages.profileUnavailableMessage
+          );
+      } catch (error) {
+        showErrorAlert(
+          messages.profileUnavailableTitle,
+          getLocalizedErrorMessage(error, locale, {
+            fallback: messages.profileUnavailableMessage,
+          })
+        );
       }
     },
-    [router]
+    [locale, messages, router]
   );
   const retryBoard = () => {
     setRetryAttempt((attempt) => attempt + 1);

@@ -171,8 +171,12 @@ describe("QuestReviewModal", () => {
       <QuestReviewModal onClose={mockClose} questId="quest-1" />
     );
 
-    expect(screen.getByText("Forbidden")).toBeTruthy();
-    expect(screen.queryByText("No Workers to review")).toBeNull();
+    expect(
+      screen.getByText("We couldn't load the Workers for this Quest.")
+    ).toBeTruthy();
+    expect(screen.queryByText("Forbidden")).toBeNull();
+    await fireEvent.press(screen.getByText("Try again"));
+    expect(mockRefetch).toHaveBeenCalled();
   });
 
   it("replays an undelivered review with its key and gives each Worker's review a new key", async () => {

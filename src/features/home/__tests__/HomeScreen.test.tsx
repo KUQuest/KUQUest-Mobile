@@ -6,7 +6,7 @@ import { questApi } from "@/api/QuestApi";
 import { studentApi } from "@/api/StudentApi";
 import HomeScreen from "../HomeScreen";
 import { DEFAULT_LOCALE } from "@/locales/locale";
-import { hirerHomeMessages } from "../hirerHomeMessages";
+import { hirerHomeMessages } from "@/locales/hirerHomeMessages";
 
 const mockPush = jest.fn();
 
@@ -478,6 +478,60 @@ describe("HomeScreen live active quests syncing", () => {
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/quest/[id]/proof-review",
       params: { id: "live-proof" },
+    });
+  });
+
+  it("renders localized partial-failure notice with retry when enrichment fails", async () => {
+    (questApi.listMine as jest.Mock).mockResolvedValue({
+      items: [
+        {
+          id: "live-enrich-fail",
+          title: "Lab Assistant",
+          state: "QUEST_ASSIGNED",
+          mode: "FIRST_COME_FIRST_SERVED",
+          participation: "SINGLE",
+          headcount: 1,
+          dueAt: "2026-09-30T17:00:00.000+07:00",
+        },
+      ],
+      nextCursor: null,
+    });
+    (questApi.listQuestAssignments as jest.Mock).mockRejectedValueOnce(
+      new Error("Network error")
+    );
+
+    const { getByTestId, getByText } = await renderWithQueryClient(
+      <HomeScreen />
+    );
+    const messages = hirerHomeMessages[DEFAULT_LOCALE];
+
+    await waitFor(() => {
+      expect(getByTestId("hirer-home-partial-failure")).toBeTruthy();
+    });
+
+    expect(getByText(messages.partialFailureTitle)).toBeTruthy();
+    expect(getByText(messages.partialFailureDescription)).toBeTruthy();
+
+    // Now mock success for retry
+    (questApi.listQuestAssignments as jest.Mock).mockResolvedValueOnce([
+      {
+        id: "assign-retry",
+        questId: "live-enrich-fail",
+        workerId: "worker-retry-1",
+        state: "ASSIGNMENT_ACTIVE",
+      },
+    ]);
+    (studentApi.getPublicProfile as jest.Mock).mockResolvedValue({
+      firstName: "Somchai",
+      lastName: "Dee",
+      avatar: null,
+      department: { faculty: { name: "Science" } },
+    });
+
+    fireEvent.press(getByTestId("hirer-home-partial-failure-retry"));
+
+    await waitFor(() => {
+      expect(questApi.listQuestAssignments).toHaveBeenCalledTimes(2);
     });
   });
 });

@@ -193,15 +193,17 @@ export function TransactionDetailModal({
           >
             <View className={styles.heroSection}>
               <View
-                className={`${styles.iconWrap} ${tx.isInflow ? styles.iconWrapInflow : styles.iconWrapNeutral
-                  }`}
+                className={`${styles.iconWrap} ${
+                  tx.isInflow ? styles.iconWrapInflow : styles.iconWrapNeutral
+                }`}
               >
                 {renderIcon()}
               </View>
 
               <Text
-                className={`${styles.amountText} ${tx.isInflow ? styles.amountInflow : styles.amountOutflow
-                  }`}
+                className={`${styles.amountText} ${
+                  tx.isInflow ? styles.amountInflow : styles.amountOutflow
+                }`}
                 testID="tx-detail-amount"
               >
                 {formattedAmount}
@@ -255,10 +257,7 @@ export function TransactionDetailModal({
                   className={styles.detailRow}
                   style={detailRowDividerStyle}
                 >
-                  <Text
-                    className={styles.detailLabel}
-                    numberOfLines={1}
-                  >
+                  <Text className={styles.detailLabel} numberOfLines={1}>
                     {tx.type === WalletTransactionType.TOP_UP
                       ? m.txTopUpReferenceLabel
                       : m.txDetailsLabel}

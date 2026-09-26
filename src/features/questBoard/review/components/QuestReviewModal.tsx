@@ -141,9 +141,7 @@ function QuestReviewSheet({
             ) : loadError ? (
               notice(
                 messages.errorTitle,
-                loadError instanceof Error
-                  ? loadError.message
-                  : messages.errorDescription,
+                loadError,
                 <Button className="mt-ku-20 max-w-[280px]" onPress={retryLoad}>
                   {messages.retry}
                 </Button>

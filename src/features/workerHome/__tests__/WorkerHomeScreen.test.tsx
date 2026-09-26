@@ -189,6 +189,140 @@ describe("WorkerHomeScreen", () => {
       expect.anything()
     );
   });
+  it("shows Board error and retries Board while assignments succeed", async () => {
+    (questApi.listBoard as jest.Mock)
+      .mockRejectedValueOnce(new TypeError("offline"))
+      .mockResolvedValue({ items: [], nextCursor: null });
+
+    const view = await renderWithQueryClient(<WorkerHomeScreen />);
+
+    await waitFor(() => {
+      expect(view.getByText("Couldn't load available quests")).toBeTruthy();
+      expect(questApi.listMyAssignments).toHaveBeenCalled();
+    });
+    expect(view.queryByText("No open quests right now")).toBeNull();
+
+    await fireEvent.press(view.getByText("Try again"));
+
+    await waitFor(() => {
+      expect(questApi.listBoard).toHaveBeenCalledTimes(2);
+      expect(view.getByText("No open quests right now")).toBeTruthy();
+    });
+  });
+
+  it("shows tag-unavailable copy and retries the tag request", async () => {
+    (questApi.listTags as jest.Mock)
+      .mockRejectedValueOnce(new TypeError("offline"))
+      .mockResolvedValue([{ id: "tag-1", name: "Printing" }]);
+
+    const view = await renderWithQueryClient(<WorkerHomeScreen />);
+
+    await waitFor(() => {
+      expect(view.getByText("Tags unavailable")).toBeTruthy();
+    });
+    await fireEvent.press(view.getByText("Try again"));
+
+    await waitFor(() => {
+      expect(questApi.listTags).toHaveBeenCalledTimes(2);
+      expect(view.getByTestId("tag-pill-tag-1")).toBeTruthy();
+    });
+  });
+
+  it("keeps the quest feed available when active assignments fail", async () => {
+    (questApi.listMyAssignments as jest.Mock)
+      .mockRejectedValueOnce(new TypeError("offline"))
+      .mockResolvedValue([]);
+    (questApi.listBoard as jest.Mock).mockResolvedValue({
+      items: [
+        {
+          id: "quest-available",
+          title: "Available Quest",
+          questReward: 250,
+          tag: { id: "tag-1", name: "Printing" },
+          mode: "FIRST_COME_FIRST_SERVED",
+          participation: "SINGLE",
+          headcount: 1,
+          activeWorkerCount: 0,
+          startTime: "2026-09-18T12:00:00Z",
+          dueAt: "2026-09-19T12:00:00Z",
+          hirerName: "Prof. Somchai",
+          location: "Main Library",
+        },
+      ],
+      nextCursor: null,
+    });
+
+    const view = await renderWithQueryClient(<WorkerHomeScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("worker-assignment-error")).toBeTruthy();
+      expect(view.getByTestId("worker-feed-card-quest-available")).toBeTruthy();
+    });
+    await fireEvent.press(view.getByText("Try again"));
+
+    await waitFor(() => {
+      expect(questApi.listMyAssignments).toHaveBeenCalledTimes(2);
+      expect(view.getByTestId("worker-feed-card-quest-available")).toBeTruthy();
+    });
+  });
+
+  it("applies shared filter-sheet tag and reward bounds to Worker Board", async () => {
+    const boardQuest = (id: string, title: string, questReward: number) => ({
+      id,
+      title,
+      questReward,
+      tag: { id: "tag-1", name: "Printing" },
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "SINGLE",
+      headcount: 1,
+      activeWorkerCount: 0,
+      startTime: "2026-09-18T12:00:00Z",
+      dueAt: "2026-09-19T12:00:00Z",
+      hirerName: "Prof. Somchai",
+      location: "Main Library",
+    });
+    (questApi.listBoard as jest.Mock).mockResolvedValue({
+      items: [
+        boardQuest("quest-in-range", "In range", 300),
+        boardQuest("quest-out-of-range", "Out of range", 700),
+      ],
+      nextCursor: null,
+    });
+    const view = await renderWithQueryClient(<WorkerHomeScreen />);
+    await waitFor(() =>
+      expect(view.getByTestId("worker-filter-button")).toBeTruthy()
+    );
+
+    await fireEvent.press(view.getByTestId("worker-filter-button"));
+    await fireEvent.changeText(
+      view.getByTestId("quest-filter-tag-search"),
+      "Print"
+    );
+    await fireEvent.press(view.getByTestId("quest-filter-tag-Printing"));
+    await fireEvent.changeText(
+      view.getByTestId("quest-filter-reward-min"),
+      "100"
+    );
+    await fireEvent.changeText(
+      view.getByTestId("quest-filter-reward-max"),
+      "500"
+    );
+    await fireEvent.press(view.getByTestId("apply-quest-filters"));
+
+    await waitFor(() => {
+      expect(questApi.listBoard).toHaveBeenLastCalledWith(
+        expect.objectContaining({ tagId: "tag-1" }),
+        expect.anything()
+      );
+      expect(view.getByTestId("worker-feed-card-quest-in-range")).toBeTruthy();
+      expect(
+        view.queryByTestId("worker-feed-card-quest-out-of-range")
+      ).toBeNull();
+      expect(
+        view.getByTestId("tag-pill-tag-1").props.accessibilityState
+      ).toEqual(expect.objectContaining({ selected: true }));
+    });
+  });
 
   it("renders quest board cards and navigates to quest details on press", async () => {
     (questApi.listBoard as jest.Mock).mockResolvedValue({

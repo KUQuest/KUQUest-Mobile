@@ -89,7 +89,6 @@ describe("buildQuestDetailActionBar", () => {
       canShowWithdraw: false,
       confirmationOpen: false,
       canMessageOwner: false,
-      canReportQuest: false,
       ...overrides,
     } as unknown as QuestDetailPresentationFacts;
 
@@ -131,7 +130,6 @@ describe("buildQuestDetailActionBar", () => {
         openWorkHub: jest.fn(),
         openTeam: jest.fn(),
         openEditPost: mockOpenEditPost,
-        openReportQuest: jest.fn(),
         openMessageOwner: mockOpenMessageOwner,
       },
       leaveQuest: mockLeaveQuest,

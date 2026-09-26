@@ -24,7 +24,7 @@ export function Experience({
   sectionTitle: string;
   emptyText: string;
   presentLabel: string;
-  locale?: SupportedLocale;
+  locale: SupportedLocale;
   emptyActionLabel?: string;
   onEditPress?: () => void;
   sectionBottomMargin?: number;

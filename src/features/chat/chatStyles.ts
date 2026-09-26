@@ -73,14 +73,6 @@ const styles = {
   contextTitle: "text-ku-primary font-ku-semibold text-ku-body-small mt-ku-1",
   contextAction: "items-center justify-center min-h-ku-40 ml-ku-sm px-ku-xs",
   contextActionText: "text-ku-primary font-ku-semibold text-ku-label",
-  reportAction:
-    "items-center bg-ku-surface-danger border-ku-border-danger rounded-ku-card border flex-row mx-ku-md mt-ku-12 p-ku-12",
-  reportActionIcon:
-    "items-center bg-ku-white rounded-ku-image h-ku-36 justify-center w-ku-36",
-  reportActionCopy: "flex-1 min-w-0 ml-ku-10",
-  reportActionText: "text-ku-danger-dark font-ku-semibold text-ku-body-small",
-  reportActionDescription:
-    "text-ku-text-secondary font-ku-regular text-ku-label mt-ku-2",
   readOnlyBanner:
     "bg-ku-surface-muted border-ku-border-subtle rounded-ku-control border mx-ku-md mt-ku-12 px-ku-12 py-ku-10",
   readOnlyBannerTitle:

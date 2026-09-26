@@ -56,7 +56,9 @@ import type {
   QuestV2Underfilled,
 } from "@/api/questV2Contracts";
 import {
+  QuestActor,
   QuestMode,
+  QuestNextAction,
   QuestParticipation,
   type QuestBoardQuest,
   type QuestStatus,
@@ -330,10 +332,10 @@ function deriveActor(
   application: QuestV2Application | null,
   team: QuestV2Team | null
 ): LiveQuestActor {
-  if (routeActor === "HIRER") return routeActor;
-  if (assignment) return "WORKER";
-  if (application) return "CANDIDATE";
-  if (team) return "PROSPECTIVE_WORKER";
+  if (routeActor === QuestActor.HIRER) return routeActor;
+  if (assignment) return QuestActor.WORKER;
+  if (application) return QuestActor.CANDIDATE;
+  if (team) return QuestActor.PROSPECTIVE_WORKER;
   return routeActor;
 }
 
@@ -373,10 +375,11 @@ function deriveCapabilities(input: {
     workConversation,
     startTime,
   } = input;
-  const isHirer = actor === "HIRER";
-  const isWorker = actor === "WORKER";
-  const isCandidate = actor === "CANDIDATE";
-  const isProspectiveWorker = isCandidate || actor === "PROSPECTIVE_WORKER";
+  const isHirer = actor === QuestActor.HIRER;
+  const isWorker = actor === QuestActor.WORKER;
+  const isCandidate = actor === QuestActor.CANDIDATE;
+  const isProspectiveWorker =
+    isCandidate || actor === QuestActor.PROSPECTIVE_WORKER;
   const activeWorker = assignment?.state === "ASSIGNMENT_ACTIVE";
   const open = state === "QUEST_OPEN";
   const beforeStartTime = Date.now() < Date.parse(startTime);
@@ -521,50 +524,56 @@ function deriveNextAction(
   underfilled: QuestV2Underfilled | null,
   editRequest: QuestV2EditRequest | null
 ): LiveQuestNextAction {
-  if (capabilities.canRespondToEdit) return "RESPOND_TO_EDIT";
-  if (capabilities.canDecideUnderfilled) return "DECIDE_UNDERFILLED";
-  if (capabilities.canConsentUnderfilled) return "CONSENT_UNDERFILLED";
+  if (capabilities.canRespondToEdit) return QuestNextAction.RESPOND_TO_EDIT;
+  if (capabilities.canDecideUnderfilled)
+    return QuestNextAction.DECIDE_UNDERFILLED;
+  if (capabilities.canConsentUnderfilled)
+    return QuestNextAction.CONSENT_UNDERFILLED;
   if (state === "QUEST_OPEN") {
-    if (capabilities.canJoin) return "JOIN";
+    if (capabilities.canJoin) return QuestNextAction.JOIN;
     if (
       capabilities.canSelectCandidate &&
       applications.some(
         (candidate) => candidate.state === "APPLICATION_APPLIED"
       )
     )
-      return "SELECT_CANDIDATE";
+      return QuestNextAction.SELECT_CANDIDATE;
     if (
       capabilities.canSelectTeam &&
       teams.some((candidate) => candidate.state === "TEAM_SUBMITTED")
     )
-      return "SELECT_TEAM";
-    if (capabilities.canWithdrawApplication) return "WITHDRAW_APPLICATION";
-    if (capabilities.canApply) return "APPLY";
-    if (capabilities.canSubmitTeam) return "SUBMIT_TEAM";
-    if (capabilities.canCreateTeam) return "CREATE_TEAM";
-    if (capabilities.canJoinTeam && team === null) return "JOIN_TEAM";
+      return QuestNextAction.SELECT_TEAM;
+    if (capabilities.canWithdrawApplication)
+      return QuestNextAction.WITHDRAW_APPLICATION;
+    if (capabilities.canApply) return QuestNextAction.APPLY;
+    if (capabilities.canSubmitTeam) return QuestNextAction.SUBMIT_TEAM;
+    if (capabilities.canCreateTeam) return QuestNextAction.CREATE_TEAM;
+    if (capabilities.canJoinTeam && team === null)
+      return QuestNextAction.JOIN_TEAM;
   }
-  if (state === "QUEST_ASSIGNED" && actor === "WORKER")
+  if (state === "QUEST_ASSIGNED" && actor === QuestActor.WORKER)
     return editRequest?.status === "EDIT_REQUEST_PENDING"
-      ? "RESPOND_TO_EDIT"
-      : "WAIT_FOR_START";
+      ? QuestNextAction.RESPOND_TO_EDIT
+      : QuestNextAction.WAIT_FOR_START;
   if (
     (state === "QUEST_IN_PROGRESS" || state === "QUEST_FAILED") &&
     capabilities.canReviewProof
   )
-    return "REVIEW_PROOF";
+    return QuestNextAction.REVIEW_PROOF;
   if (state === "QUEST_IN_PROGRESS") {
-    if (capabilities.canSubmitProof) return "SUBMIT_PROOF";
-    if (capabilities.canConfirmCompletion) return "CONFIRM_COMPLETION";
+    if (capabilities.canSubmitProof) return QuestNextAction.SUBMIT_PROOF;
+    if (capabilities.canConfirmCompletion)
+      return QuestNextAction.CONFIRM_COMPLETION;
   }
-  if (capabilities.canCreateReview) return "CREATE_REVIEW";
-  if (capabilities.canCancel) return "CANCEL";
-  if (application?.state === "APPLICATION_SELECTED") return "WAIT_FOR_START";
+  if (capabilities.canCreateReview) return QuestNextAction.CREATE_REVIEW;
+  if (capabilities.canCancel) return QuestNextAction.CANCEL;
+  if (application?.state === "APPLICATION_SELECTED")
+    return QuestNextAction.WAIT_FOR_START;
   if (mode === "CANDIDATE" && participation === "GROUP" && team) {
-    return "NONE";
+    return QuestNextAction.NONE;
   }
-  if (underfilled) return "NONE";
-  return "NONE";
+  if (underfilled) return QuestNextAction.NONE;
+  return QuestNextAction.NONE;
 }
 
 export class LiveQuestService {
@@ -636,7 +645,7 @@ export class LiveQuestService {
     try {
       const inquiry = await chatApi.createCandidateInquiry(questId);
       const hirer = inquiry.participants.find(
-        (participant) => participant.role === "HIRER"
+        (participant) => participant.role === QuestActor.HIRER
       );
       if (hirer?.id) {
         const result = { id: hirer.id, displayName: hirer.displayName };
@@ -801,10 +810,10 @@ export class LiveQuestService {
     options: LiveQuestSnapshotOptions = {}
   ): Promise<LiveQuestSnapshot> {
     let quest: QuestV2Detail | QuestV2PublicDetail | QuestV2ParticipationDetail;
-    let routeActor: LiveQuestActor = "PROSPECTIVE_WORKER";
+    let routeActor: LiveQuestActor = QuestActor.PROSPECTIVE_WORKER;
     try {
       quest = await questApi.getDetail(questId, options);
-      routeActor = "HIRER";
+      routeActor = QuestActor.HIRER;
     } catch {
       try {
         quest = await questApi.getPublicDetail(questId, options);
@@ -1098,6 +1107,13 @@ export class LiveQuestService {
       joinCode,
       idempotencyKey
     );
+  }
+  async joinCandidateTeamByCode(
+    questId: string,
+    joinCode: string,
+    idempotencyKey?: string
+  ): Promise<QuestV2Team> {
+    return questApi.joinCandidateTeamByCode(questId, joinCode, idempotencyKey);
   }
 
   async leaveCandidateTeam(

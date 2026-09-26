@@ -12,6 +12,7 @@ import type { UploadAsset } from "@/api/fileUpload";
 import { useLocale } from "@/features/preferences/localeStore";
 import type { SupportedLocale } from "@/locales/locale";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
+import { getLocalizedErrorMessage } from "@/utils/error";
 import { TeamAssembleEmptyState } from "./TeamAssembleEmptyState";
 import { TeamAssembleErrorState } from "./TeamAssembleErrorState";
 import { TeamAssembleInvitations } from "./TeamAssembleInvitations";
@@ -223,7 +224,9 @@ export function TeamAssembleView({
       setProposalFiles((prev) => [...prev, ...newFiles]);
     } catch (err) {
       setFilePickError(
-        err instanceof Error ? err.message : messages.filePickFailed
+        getLocalizedErrorMessage(err, locale, {
+          fallback: messages.filePickFailed,
+        })
       );
     } finally {
       setIsPickingFile(false);

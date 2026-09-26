@@ -110,18 +110,6 @@ const styles = {
   prototypeActionTextPrimary: "text-ku-on-primary",
   prototypeActionDanger: "border-ku-danger-dark",
   prototypeActionTextDanger: "text-ku-danger-dark",
-  reportCard:
-    "bg-ku-surface-danger border-ku-border-danger rounded-[16px] mt-ku-md p-ku-14",
-  reportHeader: "items-start flex-row gap-ku-10",
-  reportIcon:
-    "items-center bg-ku-on-primary rounded-ku-pill h-[36px] justify-center shrink-0 w-[36px]",
-  reportCopy: "flex-1 min-w-0",
-  reportTitle: "text-ku-danger-dark font-ku-bold text-ku-body",
-  reportDescription:
-    "text-ku-text-secondary font-ku-regular text-ku-label mt-ku-xs",
-  reportAction:
-    "items-center bg-ku-danger rounded-ku-pill justify-center min-h-[48px] mt-ku-14 px-ku-md",
-  reportActionText: "text-ku-on-primary font-ku-semibold text-ku-body-small",
   prototypeProgress:
     "bg-ku-border-accent rounded-ku-pill h-[6px] mt-ku-10 overflow-hidden w-full",
   prototypeProgressFill: "bg-ku-primary h-full",

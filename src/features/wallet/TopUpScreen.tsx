@@ -1,3 +1,4 @@
+import { getLocalizedErrorMessage } from "@/utils/error";
 import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Platform } from "react-native";
@@ -43,6 +44,7 @@ export default function TopUpScreen() {
     number | null
   >(null);
   const [refreshingBalance, setRefreshingBalance] = useState(false);
+  const [balanceRefreshFailed, setBalanceRefreshFailed] = useState(false);
   const quoteMutation = useQuoteTopUpMutation();
   const createMutation = useCreateTopUpMutation();
   const simulateMutation = useSimulateTopUpMutation();
@@ -59,6 +61,7 @@ export default function TopUpScreen() {
     setActiveTopUp(null);
     setPaymentVerified(false);
     setCurrentBalanceSatang(null);
+    setBalanceRefreshFailed(false);
     setStatusMessage(null);
   };
 
@@ -85,7 +88,11 @@ export default function TopUpScreen() {
       setQuote(nextQuote);
       setStep("confirmation");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : m.paymentFailed);
+      setError(
+        getLocalizedErrorMessage(err, locale, {
+          fallback: m.paymentFailed,
+        })
+      );
     }
   };
 
@@ -103,7 +110,11 @@ export default function TopUpScreen() {
       setActiveTopUp(topUp);
       setStep("promptPay");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : m.paymentFailed);
+      setError(
+        getLocalizedErrorMessage(err, locale, {
+          fallback: m.paymentFailed,
+        })
+      );
     }
   };
 
@@ -111,12 +122,14 @@ export default function TopUpScreen() {
     setActiveTopUp(latest);
     if (latest.topUpStatus === "PAID") {
       setRefreshingBalance(true);
+      setBalanceRefreshFailed(false);
       try {
         const result = await walletQuery.refetch();
         if (result.error) throw result.error;
         setCurrentBalanceSatang(result.data?.spendingBalanceSatang ?? null);
       } catch {
         setCurrentBalanceSatang(null);
+        setBalanceRefreshFailed(true);
       } finally {
         setRefreshingBalance(false);
       }
@@ -129,6 +142,21 @@ export default function TopUpScreen() {
       setStatusMessage(m.paymentPending);
     }
   };
+  const handleRetryBalanceRefresh = async () => {
+    if (refreshingBalance) return;
+    setRefreshingBalance(true);
+    setBalanceRefreshFailed(false);
+    try {
+      const result = await walletQuery.refetch();
+      if (result.error) throw result.error;
+      setCurrentBalanceSatang(result.data?.spendingBalanceSatang ?? null);
+    } catch {
+      setCurrentBalanceSatang(null);
+      setBalanceRefreshFailed(true);
+    } finally {
+      setRefreshingBalance(false);
+    }
+  };
 
   const handleVerifyPayment = async () => {
     if (!activeTopUp || checkingStatus) return;
@@ -138,7 +166,11 @@ export default function TopUpScreen() {
       if (result.error) throw result.error;
       if (result.data) await applyPaymentStatus(result.data);
     } catch (err: unknown) {
-      setStatusMessage(err instanceof Error ? err.message : m.paymentFailed);
+      setStatusMessage(
+        getLocalizedErrorMessage(err, locale, {
+          fallback: m.paymentFailed,
+        })
+      );
     }
   };
 
@@ -149,7 +181,11 @@ export default function TopUpScreen() {
       const latest = await simulateMutation.mutateAsync(activeTopUp.id);
       await applyPaymentStatus(latest);
     } catch (err: unknown) {
-      setStatusMessage(err instanceof Error ? err.message : m.paymentFailed);
+      setStatusMessage(
+        getLocalizedErrorMessage(err, locale, {
+          fallback: m.paymentFailed,
+        })
+      );
     }
   };
 
@@ -211,11 +247,14 @@ export default function TopUpScreen() {
               />
             ) : activeTopUp && paymentVerified ? (
               <TopUpSuccessStep
+                balanceRefreshFailed={balanceRefreshFailed}
                 creditSatang={activeTopUp.creditSatang}
                 currentBalanceSatang={currentBalanceSatang}
-                transactionReference={activeTopUp.internalReference}
+                isRefreshingBalance={refreshingBalance}
                 locale={locale}
                 onDone={handleFinish}
+                onRetryBalanceRefresh={handleRetryBalanceRefresh}
+                transactionReference={activeTopUp.internalReference}
               />
             ) : activeTopUp ? (
               <TopUpPromptPayStep

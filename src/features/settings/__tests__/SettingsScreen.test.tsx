@@ -45,17 +45,17 @@ describe("Settings screen", () => {
     mockWorkspace = "worker";
   });
 
-  it("renders grouped account, preference, support, and about content", async () => {
+  it("renders grouped account, preference, and about content", async () => {
     const view = await renderWithQueryClient(<SettingsScreen />);
 
     expect(view.getByRole("header", { name: "Settings" })).toBeTruthy();
     expect(view.getByText("Account")).toBeTruthy();
     expect(view.getByText("Preferences")).toBeTruthy();
-    expect(view.getByText("Support")).toBeTruthy();
+    expect(view.queryByText("Support")).toBeNull();
     expect(view.getByText("Version 1.0.0")).toBeTruthy();
     expect(view.getByText("Edit Profile")).toBeTruthy();
     expect(view.queryByTestId("settings-switch-account")).toBeNull();
-    expect(view.getByTestId("settings-notifications")).toBeTruthy();
+    expect(view.queryByTestId("settings-notifications")).toBeNull();
     expect(
       view.getByTestId("settings-scroll").props.contentContainerStyle
         ?.paddingBottom
@@ -139,20 +139,6 @@ describe("Settings screen", () => {
       expect(authService.signOut).toHaveBeenCalledTimes(1);
       expect(mockReplace).toHaveBeenCalledWith("/");
     });
-  });
-
-  it("toggles quest notifications", async () => {
-    const view = await renderWithQueryClient(<SettingsScreen />);
-    const toggle = view.getByTestId("settings-notifications");
-
-    expect(toggle.props.accessibilityState.checked).toBe(true);
-    fireEvent.press(toggle);
-    await waitFor(() =>
-      expect(
-        view.getByTestId("settings-notifications").props.accessibilityState
-          .checked
-      ).toBe(false)
-    );
   });
 
   it("does not render account switcher", async () => {

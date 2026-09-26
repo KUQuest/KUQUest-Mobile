@@ -15,7 +15,7 @@ import { SATANG_PER_BAHT, formatSatang } from "@/domain/satang";
 import { formatTimeInBangkok, formatTimestampDate } from "@/domain/datetime";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
-import { workerHomeMessages } from "../workerHomeMessages";
+import { workerHomeMessages } from "@/locales/workerHomeMessages";
 import { workerHomeStyles as styles } from "../workerHomeStyles";
 
 interface WorkerQuestFeedCardProps {

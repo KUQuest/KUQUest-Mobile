@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { cn } from "@/tw/cn";
 import { useWindowDimensions } from "react-native";
 import { Pressable, ScrollView, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
@@ -28,7 +27,6 @@ type LoginErrorCode = AuthErrorCode | "STAGING_TEST_AUTH_FAILED";
 
 interface LoginErrorState {
   code: LoginErrorCode;
-  message?: string;
   retry: () => void;
 }
 
@@ -77,8 +75,7 @@ export default function LoginScreen({
       setIsLoading(false);
       const errorCode: LoginErrorCode =
         err instanceof AuthError ? err.code : "OAUTH_FAILED";
-      const message = err instanceof Error ? err.message : JSON.stringify(err);
-      setError({ code: errorCode, message, retry: handleAuth });
+      setError({ code: errorCode, retry: handleAuth });
     }
   };
 
@@ -90,12 +87,10 @@ export default function LoginScreen({
     try {
       await signInWithStagingTestAccount(accountId);
       await completeSignIn();
-    } catch (err: unknown) {
+    } catch {
       setIsLoading(false);
-      const message = err instanceof Error ? err.message : JSON.stringify(err);
       setError({
         code: "STAGING_TEST_AUTH_FAILED",
-        message,
         retry: () => handleStagingTestAuth(accountId),
       });
     }
@@ -153,11 +148,6 @@ export default function LoginScreen({
                   <Text className={styles.errorText} testID="error-message">
                     {errorText}
                   </Text>
-                  {error.message && (
-                    <Text className={cn(styles.errorText, "text-ku-label")}>
-                      {error.message}
-                    </Text>
-                  )}
                   <Pressable
                     className={styles.retryButton}
                     onPress={error.retry}

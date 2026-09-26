@@ -347,6 +347,38 @@ describe("useChatSocket", () => {
     await expect(rejected).rejects.toThrow("Try again later.");
     await unmount();
   });
+  it("delivers MESSAGE_REJECTED with null clientMessageId to onEvent", async () => {
+    const onEvent = jest.fn();
+    const { unmount } = await renderHook(() =>
+      useChatSocket({
+        conversationId: "conversation-1",
+        conversationType: "WORK",
+        enabled: true,
+        onEvent,
+      })
+    );
+    const socket = MockWebSocket.instances[0];
+    if (!socket) throw new Error("Expected a WebSocket connection");
+
+    await act(async () => {
+      socket.open();
+    });
+
+    socket.receive(
+      JSON.stringify({
+        type: "MESSAGE_REJECTED",
+        clientMessageId: null,
+        error: { code: "MALFORMED_FRAME", message: "Frame was unparseable." },
+      })
+    );
+
+    expect(onEvent).toHaveBeenCalledWith({
+      type: "MESSAGE_REJECTED",
+      clientMessageId: null,
+      error: { code: "MALFORMED_FRAME", message: "Frame was unparseable." },
+    });
+    await unmount();
+  });
 
   it("closes the socket when the hook unmounts", async () => {
     const { unmount } = await renderHook(() =>

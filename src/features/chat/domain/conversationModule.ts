@@ -84,3 +84,17 @@ export function mergeDisplayMessages(
     return Date.parse(left.createdAt) - Date.parse(right.createdAt);
   });
 }
+
+export function isReportableMessage(
+  message: DisplayChatMessage | null | undefined
+): boolean {
+  if (!message) return false;
+  if (message.sender === "me") return false;
+  if (message.kind === "SYSTEM") return false;
+  if (Boolean(message.pending)) return false;
+  if (Boolean(message.hidden)) return false;
+  if (message.id.startsWith("temp-") || message.id.startsWith("pending-")) {
+    return false;
+  }
+  return Boolean(message.id && message.id.trim().length > 0);
+}
