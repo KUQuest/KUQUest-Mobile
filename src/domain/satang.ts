@@ -19,7 +19,7 @@ export type SatangFormat = "compact" | "exact" | "signed";
 
 export function formatSatang(
   value: number,
-  locale: "en" | "th" = "en",
+  locale: "en" | "th",
   format: SatangFormat = "compact"
 ): string {
   const signed = format === "signed";

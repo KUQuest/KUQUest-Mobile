@@ -113,3 +113,45 @@ export function formatTimeInBangkok(
   if (Number.isNaN(date.getTime())) return "";
   return bangkokTimeFormatter.format(date);
 }
+
+const calendarFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function getCalendarFormatter(
+  locale: "en" | "th",
+  key: string,
+  options: Intl.DateTimeFormatOptions
+): Intl.DateTimeFormat {
+  const cacheKey = `${locale}:${key}`;
+  let formatter = calendarFormatters.get(cacheKey);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(
+      locale === "th" ? THAI_GREGORIAN_LOCALE : "en-GB",
+      options
+    );
+    calendarFormatters.set(cacheKey, formatter);
+  }
+  return formatter;
+}
+
+/**
+ * Month and Gregorian year of a device-local calendar date (no time-zone
+ * shift), e.g. a date-picker month or a profile issue month.
+ */
+export function formatCalendarMonthYear(
+  date: Date,
+  locale: "en" | "th",
+  month: "short" | "long" = "short"
+): string {
+  if (Number.isNaN(date.getTime())) return "";
+  return getCalendarFormatter(locale, `month-year-${month}`, {
+    month,
+    year: "numeric",
+  }).format(date);
+}
+
+/** Narrow weekday label of a device-local calendar date. */
+export function formatCalendarWeekday(date: Date, locale: "en" | "th"): string {
+  return getCalendarFormatter(locale, "weekday-narrow", {
+    weekday: "narrow",
+  }).format(date);
+}

@@ -142,6 +142,8 @@ export const onboardingMessages = {
     invalidTelephone: "รูปแบบเบอร์โทรศัพท์ไม่ถูกต้อง",
     invalidStudentId: "กรุณากรอกรหัสนิสิต 10 หลัก",
     requiredField: "จำเป็นต้องระบุ",
+    termsConfigError:
+      "เกิดข้อผิดพลาดในการตั้งค่าข้อกำหนดการใช้งาน กรุณาลองใหม่อีกครั้ง",
   },
   en: {
     title: "KUQUEST",
@@ -283,6 +285,8 @@ Your data will be stored securely in accordance with applicable Personal Data Pr
     invalidTelephone: "Invalid telephone format",
     invalidStudentId: "Enter a 10-digit student ID",
     requiredField: "This field is required",
+    termsConfigError:
+      "Terms configuration is missing or invalid. Please try again later.",
   },
 };
 

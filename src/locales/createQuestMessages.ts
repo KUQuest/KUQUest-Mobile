@@ -1,3 +1,5 @@
+import { formatSatang } from "@/domain/satang";
+
 import type { SupportedLocale } from "./locale";
 
 export interface CreateQuestMessages {
@@ -49,6 +51,7 @@ export interface CreateQuestMessages {
   titlePlaceholder: string;
   questTag: string;
   chooseQuestTag: string;
+  tagUnavailable: string;
   searchQuestTags: string;
   noMatchingQuestTags: string;
   clearSearch: string;
@@ -131,12 +134,14 @@ export interface CreateQuestMessages {
   cancelQuestDescription: string;
   cancelQuestConfirm: string;
   cancelQuestKeep: string;
+  cancelQuestError: string;
   cancelledQuestTitle: string;
   cancelledQuestDescription: string;
   publishQuest: string;
   publishingQuest: string;
   loadingDraft: string;
   loadingTags: string;
+  retryTags: string;
   savedDraftTitle: string;
   savedDraftDescription: string;
   updatedQuestTitle: string;
@@ -150,6 +155,11 @@ export interface CreateQuestMessages {
   onlineOrAgreed: string;
   noImages: string;
   selectedImages: (count: number) => string;
+  rewardPerPersonValue: (reward: string) => string;
+  fallbackTags: Record<
+    "design" | "technology" | "tutoring" | "campusLife",
+    { label: string; shortLabel: string }
+  >;
   discardTitle: string;
   discardDescription: string;
   discard: string;
@@ -222,6 +232,12 @@ export interface CreateQuestMessages {
     participation: string;
     headcount: string;
     reward: string;
+  };
+  durationUnits: {
+    days: (count: number) => string;
+    hours: (count: number) => string;
+    minutes: (count: number) => string;
+    lessThanMinute: string;
   };
 }
 
@@ -395,6 +411,13 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       onlineOrAgreed: "Online or to be agreed",
       noImages: "None",
       selectedImages: (count) => `${count} selected`,
+      rewardPerPersonValue: (reward) => `${reward} / person`,
+      fallbackTags: {
+        design: { label: "Design & creative", shortLabel: "Design" },
+        technology: { label: "Technology", shortLabel: "Technology" },
+        tutoring: { label: "Tutoring", shortLabel: "Tutoring" },
+        campusLife: { label: "Campus life", shortLabel: "Campus life" },
+      },
       discardTitle: "Leave this Quest?",
       discardDescription:
         "Your draft is saved locally. Leave the form and continue later?",
@@ -445,11 +468,14 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         "We couldn't publish this Quest. Check the details and try again.",
       publishErrorTitle: "Couldn't publish Quest",
       saveErrorTitle: "Couldn't save",
+      cancelQuestError: "We couldn't cancel this Quest. Try again.",
+      tagUnavailable: "Quest Tags are unavailable. Try again.",
+      retryTags: "Try again",
       rewardEmptyError: "Enter a reward amount in THB.",
       rewardFormatError:
         "Enter a valid amount in THB with up to 2 decimal places.",
       rewardBoundsError: (maximum) =>
-        `Reward must be between ฿0 and ฿${maximum.toLocaleString("en-US")}.`,
+        `Reward must be between ฿0 and ${formatSatang(maximum * 100, "en")}.`,
       blockingGuidance: {
         QUEST_TAG_REQUIRED:
           "Please select a skill category Tag for your Quest.",
@@ -481,6 +507,12 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         QUEST_NOT_FOUND:
           "We could not find this Quest, or you are not the Hirer.",
         QUEST_NOT_DRAFT: "This Quest is no longer a draft.",
+        QUEST_OPEN_FIELD_LOCKED:
+          "Reward and headcount cannot be changed after a Quest is published.",
+        QUEST_OPEN_EDIT_CLOSED:
+          "This Quest can no longer be edited because participation has already started.",
+        INVALID_OPEN_QUEST:
+          "An open Quest must keep a Tag, a future start time, and a deadline after the start time.",
         QUEST_IMAGE_LIMIT_REACHED: "A Quest gallery can hold at most 3 images.",
         IMAGE_TOO_LARGE: "Each image must be 5 MB or smaller.",
         UNSUPPORTED_IMAGE_TYPE: "Images must be JPEG, PNG, or WebP.",
@@ -509,6 +541,12 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         participation: "Participation",
         headcount: "Headcount",
         reward: "Reward",
+      },
+      durationUnits: {
+        days: (count) => `${count}d`,
+        hours: (count) => `${count}h`,
+        minutes: (count) => `${count}m`,
+        lessThanMinute: "< 1 min",
       },
     },
     th: {
@@ -675,6 +713,16 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       onlineOrAgreed: "ออนไลน์หรือรอตกลงกัน",
       noImages: "ไม่มี",
       selectedImages: (count) => `เลือกแล้ว ${count} รูป`,
+      rewardPerPersonValue: (reward) => `${reward} / คน`,
+      fallbackTags: {
+        design: { label: "การออกแบบและงานสร้างสรรค์", shortLabel: "การออกแบบ" },
+        technology: { label: "เทคโนโลยี", shortLabel: "เทคโนโลยี" },
+        tutoring: { label: "การสอนพิเศษ", shortLabel: "ติว" },
+        campusLife: {
+          label: "ชีวิตในมหาวิทยาลัย",
+          shortLabel: "ชีวิตมหาวิทยาลัย",
+        },
+      },
       discardTitle: "ออกจากการสร้างเควสต์หรือไม่?",
       discardDescription:
         "ฉบับร่างถูกบันทึกไว้ในอุปกรณ์ ออกจากแบบฟอร์มและทำต่อภายหลังได้",
@@ -686,6 +734,9 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       autosaveSaved: "บันทึกฉบับร่างแล้ว",
       saveError: "ไม่สามารถบันทึกฉบับร่างเควสต์ลงในอุปกรณ์ได้ ลองอีกครั้ง",
       retrySave: "ลองอีกครั้ง",
+      cancelQuestError: "ไม่สามารถยกเลิกเควสต์ได้ กรุณาลองอีกครั้ง",
+      tagUnavailable: "ไม่สามารถโหลดแท็กเควสต์ได้ กรุณาลองอีกครั้ง",
+      retryTags: "ลองอีกครั้ง",
       loadDraftError: "ไม่สามารถกู้คืนฉบับร่างเควสต์ได้ ลองอีกครั้ง",
       retryLoadDraft: "ลองอีกครั้ง",
       savePreview: "บันทึกตัวอย่างเควสต์",
@@ -727,7 +778,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       rewardEmptyError: "กรอกค่าตอบแทนเป็นเงินบาท",
       rewardFormatError: "กรอกจำนวนเงินที่ถูกต้อง โดยมีทศนิยมไม่เกิน 2 ตำแหน่ง",
       rewardBoundsError: (maximum) =>
-        `ค่าตอบแทนต้องอยู่ระหว่าง ฿0 ถึง ฿${maximum.toLocaleString("th-TH")}`,
+        `ค่าตอบแทนต้องอยู่ระหว่าง ฿0 ถึง ${formatSatang(maximum * 100, "th")}`,
       blockingGuidance: {
         QUEST_TAG_REQUIRED: "กรุณาเลือกแท็กหมวดหมู่สำหรับเควสต์",
         QUEST_DUE_AT_REQUIRED: "กรุณากำหนดเวลาส่งงาน (Deadline)",
@@ -757,6 +808,12 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         TAG_NOT_FOUND: "ไม่พบแท็กเควสต์ที่เลือก",
         QUEST_NOT_FOUND: "ไม่พบเควสต์นี้ หรือคุณไม่ใช่ผู้ว่าจ้าง",
         QUEST_NOT_DRAFT: "เควสต์นี้ไม่ได้อยู่ในสถานะฉบับร่างแล้ว",
+        QUEST_OPEN_FIELD_LOCKED:
+          "ไม่สามารถแก้ไขค่าตอบแทนหรือจำนวนคนได้หลังจากเผยแพร่เควสต์แล้ว",
+        QUEST_OPEN_EDIT_CLOSED:
+          "ไม่สามารถแก้ไขเควสต์นี้ได้เนื่องจากมีผู้สมัครหรือเริ่มการเข้าร่วมแล้ว",
+        INVALID_OPEN_QUEST:
+          "เควสต์ที่เปิดอยู่ต้องมีแท็ก เวลาเริ่มต้นในอนาคต และเวลาสิ้นสุดที่อยู่หลังเวลาเริ่มต้น",
         QUEST_IMAGE_LIMIT_REACHED: "แนบรูปภาพได้ไม่เกิน 3 รูป",
         IMAGE_TOO_LARGE: "รูปภาพแต่ละรูปต้องไม่เกิน 5 MB",
         UNSUPPORTED_IMAGE_TYPE: "รองรับเฉพาะไฟล์ JPEG, PNG หรือ WebP",
@@ -785,6 +842,12 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         participation: "การเข้าร่วม",
         headcount: "จำนวนผู้เข้าร่วม",
         reward: "ค่าตอบแทน",
+      },
+      durationUnits: {
+        days: (count) => `${count} วัน`,
+        hours: (count) => `${count} ชั่วโมง`,
+        minutes: (count) => `${count} นาที`,
+        lessThanMinute: "< 1 นาที",
       },
     },
   };

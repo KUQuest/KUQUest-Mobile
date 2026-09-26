@@ -13,7 +13,7 @@ import { useLocale } from "@/features/preferences/localeStore";
 import { alertMessages } from "@/locales/alertMessages";
 import { colors } from "@/theme/colors";
 import { Text, View } from "@/tw";
-import { getErrorMessage } from "@/utils/error";
+import { getLocalizedErrorMessage } from "@/utils/error";
 
 export const SweetAlertVariant = {
   Error: "error",
@@ -21,7 +21,7 @@ export const SweetAlertVariant = {
   Warning: "warning",
   Info: "info",
 } as const;
-
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 export type SweetAlertVariant =
   (typeof SweetAlertVariant)[keyof typeof SweetAlertVariant];
 
@@ -131,6 +131,8 @@ SweetAlert.displayName = "SweetAlert";
 interface SweetAlertRequest {
   title: string;
   message: string;
+  /** Failure to describe with localized copy when `message` is empty. */
+  error?: unknown;
   variant: SweetAlertVariant;
   buttonLabel?: string;
   cancelLabel?: string;
@@ -169,11 +171,17 @@ export function showConfirmModal({
   });
 }
 
-/** Shows an app-wide error SweetAlert with a localized fallback message. */
+/**
+ * Shows an app-wide error SweetAlert. A string `error` is caller-authored,
+ * already-localized copy; anything else is described with localized copy
+ * for its failure class (never raw server or exception text).
+ */
 export function showErrorAlert(title: string, error?: unknown): void {
+  const isCopy = typeof error === "string";
   showSweetAlert({
     title,
-    message: getErrorMessage(error, ""),
+    message: isCopy ? error : "",
+    error: isCopy ? undefined : error,
     variant: SweetAlertVariant.Error,
   });
 }
@@ -181,7 +189,8 @@ export function showErrorAlert(title: string, error?: unknown): void {
 /** Mounted once at the app root; renders alerts raised by the shared API. */
 export function SweetAlertHost() {
   const current = useSweetAlertStore((state) => state.current);
-  const messages = alertMessages[useLocale().locale];
+  const { locale } = useLocale();
+  const messages = alertMessages[locale];
   const onConfirm = current?.onConfirm;
   useEffect(() => () => useSweetAlertStore.setState({ current: null }), []);
   return (
@@ -192,7 +201,7 @@ export function SweetAlertHost() {
       message={
         current?.message ||
         (current?.variant === SweetAlertVariant.Error
-          ? messages.errorFallback
+          ? getLocalizedErrorMessage(current.error, locale)
           : "")
       }
       onClose={() => {

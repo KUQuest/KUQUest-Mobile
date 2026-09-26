@@ -19,6 +19,8 @@ export interface NavigationMessages {
   logout: string;
   back: string;
   unreadMessages: string;
+  workerWorkspace: string;
+  hirerWorkspace: string;
 }
 
 export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
@@ -43,6 +45,8 @@ export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
     logout: "Log out",
     back: "Go back",
     unreadMessages: "Unread messages",
+    workerWorkspace: "Worker workspace",
+    hirerWorkspace: "Hirer workspace",
   },
   th: {
     board: "หน้าหลัก",
@@ -63,5 +67,7 @@ export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
     logout: "ออกจากระบบ",
     back: "ย้อนกลับ",
     unreadMessages: "ข้อความที่ยังไม่ได้อ่าน",
+    workerWorkspace: "พื้นที่ทำงานผู้ปฏิบัติงาน",
+    hirerWorkspace: "พื้นที่ทำงานผู้ว่าจ้าง",
   },
 };

@@ -1,4 +1,4 @@
-import type { ReportTopic } from "@/features/report/reportTypes";
+import type { MessageReportReason } from "@/api/ChatApi";
 import type { SupportedLocale } from "./locale";
 
 export interface ReportMessages {
@@ -7,115 +7,115 @@ export interface ReportMessages {
   reviewIntro: string;
   contextLabel: string;
   contextDescription: string;
-  questContextLabel: string;
-  chatContextLabel: string;
-  topicLabel: string;
-  topicPlaceholder: string;
-  topicPickerTitle: string;
-  topicPickerDescription: string;
-  topicPickerDone: string;
-  topicSelectedCount: (count: number) => string;
+  contextSender: (name: string) => string;
+  contextConversation: (title: string) => string;
+  reasonLabel: string;
+  reasonRequired: string;
   detailsLabel: string;
   detailsPlaceholder: string;
   detailsHint: string;
-  reviewTopic: string;
+  detailsTooLong: string;
+  noDetails: string;
+  reviewReason: string;
   reviewDetails: string;
   close: string;
   review: string;
   edit: string;
   submit: string;
+  submitting: string;
+  retry: string;
+  submitError: string;
   back: string;
-  topicRequired: string;
-  detailsRequired: string;
+  backToChat: string;
   successTitle: string;
   successDescription: string;
-  backToQuest: string;
-  backToChat: string;
-  topicOptions: Record<ReportTopic, string>;
+  unavailableTitle: string;
+  unavailableDescription: string;
+  reasonOptions: Record<MessageReportReason, string>;
 }
 
 export const reportMessages: Record<SupportedLocale, ReportMessages> = {
   en: {
-    title: "Report review",
+    title: "Report message",
     intro:
-      "Tell the KUQuest Admin team what happened so they can review this report.",
+      "Select a reason and optionally provide details for KUQuest Admin review.",
     reviewIntro:
       "Review the information before sending it to the KUQuest Admin team.",
     contextLabel: "Report context",
     contextDescription:
       "This report will be sent to the KUQuest Admin team for review.",
-    questContextLabel: "Joined Quest",
-    chatContextLabel: "Work Chat",
-    topicLabel: "Report topics",
-    topicPlaceholder: "Choose report topics",
-    topicPickerTitle: "Choose report topics",
-    topicPickerDescription: "Select all topics that describe this issue.",
-    topicPickerDone: "Done",
-    topicSelectedCount: (count) => `${count} topics selected`,
+    contextSender: (name) => `Reported sender: ${name}`,
+    contextConversation: (title) => `Conversation: ${title}`,
+    reasonLabel: "Reason for report",
+    reasonRequired: "Choose a report reason.",
     detailsLabel: "Report details",
     detailsPlaceholder:
       "Describe what happened and include the relevant context.",
     detailsHint:
       "Avoid sharing passwords or other sensitive account information.",
-    reviewTopic: "Topics",
+    detailsTooLong: "Details must not exceed 1000 characters.",
+    noDetails: "No additional details provided.",
+    reviewReason: "Reason",
     reviewDetails: "Details",
     close: "Close",
     review: "Review report",
     edit: "Edit report",
     submit: "Send report to Admin",
+    submitting: "Sending report...",
+    retry: "Try again",
+    submitError: "Failed to send report. Please try again.",
     back: "Go back",
-    topicRequired: "Choose at least one report topic.",
-    detailsRequired: "Add details about the report.",
+    backToChat: "Back to chat",
     successTitle: "Report sent to Admin",
     successDescription: "Your report was recorded for KUQuest Admin review.",
-    backToQuest: "Back to Quest",
-    backToChat: "Back to chat",
-    topicOptions: {
+    unavailableTitle: "Report unavailable",
+    unavailableDescription:
+      "The message cannot be found or is not available to report.",
+    reasonOptions: {
       REPORT_ABUSIVE_OR_HARASSMENT: "Abusive language or harassment",
-      CONDUCT_ABANDONED: "Work abandoned or not submitted",
-      CONDUCT_OUT_OF_SCOPE: "Work outside the Quest scope",
-      CONDUCT_NO_SHOW: "Worker did not show up",
-      REPORT_PROOF_REVIEW: "Proof submission or review issue",
-      REPORT_REWARD_SETTLEMENT: "Reward or settlement issue",
+      REPORT_SPAM: "Spam or unwanted advertising",
+      REPORT_INAPPROPRIATE_CONTENT: "Inappropriate or explicit content",
+      REPORT_DANGER_OR_THREAT: "Danger, threat, or harm",
+      REPORT_OTHER: "Other issue",
     },
   },
   th: {
-    title: "ตรวจสอบรายงาน",
-    intro: "แจ้งเหตุการณ์ให้ทีมแอดมิน KUQuest ตรวจสอบรายงานนี้",
+    title: "รายงานข้อความ",
+    intro:
+      "เลือกเหตุผลและระบุรายละเอียดเพิ่มเติม (หากมี) เพื่อให้ทีมแอดมิน KUQuest ตรวจสอบ",
     reviewIntro: "ตรวจสอบข้อมูลก่อนส่งให้ทีมแอดมิน KUQuest",
     contextLabel: "บริบทการรายงาน",
     contextDescription: "รายงานนี้จะถูกส่งให้ทีมแอดมิน KUQuest ตรวจสอบ",
-    questContextLabel: "เควสต์ที่เข้าร่วม",
-    chatContextLabel: "แชตการทำงาน",
-    topicLabel: "หัวข้อการรายงาน",
-    topicPlaceholder: "เลือกหัวข้อการรายงาน",
-    topicPickerTitle: "เลือกหัวข้อการรายงาน",
-    topicPickerDescription: "เลือกได้มากกว่าหนึ่งหัวข้อที่ตรงกับปัญหานี้",
-    topicPickerDone: "เสร็จสิ้น",
-    topicSelectedCount: (count) => `เลือกแล้ว ${count} หัวข้อ`,
+    contextSender: (name) => `ผู้ส่งที่ถูกรายงาน: ${name}`,
+    contextConversation: (title) => `บทสนทนา: ${title}`,
+    reasonLabel: "เหตุผลในการรายงาน",
+    reasonRequired: "กรุณาเลือกเหตุผลในการรายงาน",
     detailsLabel: "รายละเอียดการรายงาน",
     detailsPlaceholder: "อธิบายเหตุการณ์และบริบทที่เกี่ยวข้องโดยละเอียด",
     detailsHint: "หลีกเลี่ยงการระบุรหัสผ่านหรือข้อมูลบัญชีที่เป็นความลับ",
-    reviewTopic: "หัวข้อ",
+    detailsTooLong: "รายละเอียดต้องมีความยาวไม่เกิน 1,000 ตัวอักษร",
+    noDetails: "ไม่มีรายละเอียดเพิ่มเติม",
+    reviewReason: "เหตุผล",
     reviewDetails: "รายละเอียด",
     close: "ปิด",
     review: "ตรวจสอบรายงาน",
     edit: "แก้ไขรายงาน",
     submit: "ส่งรายงานให้แอดมิน",
+    submitting: "กำลังส่งรายงาน...",
+    retry: "ลองใหม่อีกครั้ง",
+    submitError: "ไม่สามารถส่งรายงานได้ กรุณาลองใหม่อีกครั้ง",
     back: "ย้อนกลับ",
-    topicRequired: "กรุณาเลือกหัวข้อการรายงานอย่างน้อย 1 หัวข้อ",
-    detailsRequired: "กรุณากรอกรายละเอียดการรายงาน",
+    backToChat: "กลับไปแชต",
     successTitle: "ส่งรายงานให้แอดมินแล้ว",
     successDescription: "รายงานนี้ถูกบันทึกเพื่อให้ทีมแอดมิน KUQuest ตรวจสอบ",
-    backToQuest: "กลับไปยังเควสต์",
-    backToChat: "กลับไปแชต",
-    topicOptions: {
+    unavailableTitle: "ไม่สามารถรายงานได้",
+    unavailableDescription: "ไม่พบข้อความหรือไม่สามารถรายงานข้อความนี้ได้",
+    reasonOptions: {
       REPORT_ABUSIVE_OR_HARASSMENT: "ข้อความไม่เหมาะสมหรือการคุกคาม",
-      CONDUCT_ABANDONED: "ละทิ้งงานหรือไม่ส่งงาน",
-      CONDUCT_OUT_OF_SCOPE: "งานนอกขอบเขตของเควสต์",
-      CONDUCT_NO_SHOW: "ไม่มาเข้าร่วมงาน",
-      REPORT_PROOF_REVIEW: "ปัญหาการส่งหลักฐานหรือการตรวจงาน",
-      REPORT_REWARD_SETTLEMENT: "ปัญหาเงินรางวัลหรือการชำระเงิน",
+      REPORT_SPAM: "สแปมหรือโฆษณาที่ไม่พึงประสงค์",
+      REPORT_INAPPROPRIATE_CONTENT: "เนื้อหาที่ไม่เหมาะสมหรือไม่สมควร",
+      REPORT_DANGER_OR_THREAT: "อันตราย การคุกคาม หรือความรุนแรง",
+      REPORT_OTHER: "ปัญหาอื่นๆ",
     },
   },
 };

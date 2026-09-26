@@ -41,6 +41,21 @@ export interface QuestWorkMessages {
   noDueAt: string;
   dueNow: string;
   remaining: string;
+  saveProofDraft: string;
+  retryFailedProofFile: string;
+  proofFileTooLarge: string;
+  proofFileFallback: string;
+  unreadMessages: (count: number) => string;
+  conditionCount: (count: number) => string;
+  workChatHint: string;
+  reward: string;
+  location: string;
+  modeCandidate: string;
+  modeFcfs: string;
+  participationTeam: string;
+  participationSolo: string;
+  proofRequiredBadge: string;
+  proofFreeBadge: string;
 }
 
 export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
@@ -95,6 +110,21 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     noDueAt: "No due date set",
     dueNow: "Due now",
     remaining: "remaining",
+    saveProofDraft: "Save draft",
+    retryFailedProofFile: "Choose the failed file again before retrying.",
+    proofFileTooLarge: "Each proof file must be 10 MB or smaller.",
+    proofFileFallback: "Proof file",
+    unreadMessages: (count) => `${count} unread messages`,
+    conditionCount: (count) => `${count} items`,
+    workChatHint: "Coordinate with Hirer on this quest",
+    reward: "Reward",
+    location: "Location",
+    modeCandidate: "Candidate",
+    modeFcfs: "FCFS",
+    participationTeam: "Team",
+    participationSolo: "Solo",
+    proofRequiredBadge: "Proof required",
+    proofFreeBadge: "Proof-free",
   },
   th: {
     title: "ศูนย์งาน",
@@ -143,5 +173,21 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     fileDispute: "ยื่นคำร้องข้อพิพาท",
     dueNow: "ถึงกำหนดแล้ว",
     remaining: "เหลือเวลา",
+    saveProofDraft: "บันทึกฉบับร่าง",
+    retryFailedProofFile:
+      "กรุณาเลือกไฟล์ที่อัปโหลดไม่สำเร็จอีกครั้งก่อนลองใหม่",
+    proofFileTooLarge: "ไฟล์หลักฐานแต่ละไฟล์ต้องมีขนาดไม่เกิน 10 MB",
+    proofFileFallback: "ไฟล์หลักฐาน",
+    unreadMessages: (count) => `${count} ข้อความใหม่`,
+    conditionCount: (count) => `${count} ข้อ`,
+    workChatHint: "สื่อสารและประสานงานเควสต์นี้กับผู้ว่าจ้าง",
+    reward: "ค่าตอบแทน",
+    location: "สถานที่",
+    modeCandidate: "คัดเลือกผู้สมัคร",
+    modeFcfs: "รับทันที (FCFS)",
+    participationTeam: "งานกลุ่ม",
+    participationSolo: "งานเดี่ยว",
+    proofRequiredBadge: "ต้องส่งหลักฐาน",
+    proofFreeBadge: "ไม่ต้องส่งหลักฐาน",
   },
 };

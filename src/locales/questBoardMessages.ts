@@ -72,6 +72,7 @@ export interface QuestBoardMessages {
   clearFilters: string;
   errorTitle: string;
   errorDescription: string;
+  manageSnapshotError: string;
   retry: string;
   retrySuccess: string;
   loading: string;
@@ -94,8 +95,8 @@ export interface QuestBoardMessages {
   messageOwnerShort: string;
   messageOwnerLoading: string;
   messageOwnerError: string;
-  reportQuest: string;
-  reportQuestDescription: string;
+  profileUnavailableTitle: string;
+  profileUnavailableMessage: string;
   requirements: string;
   description: string;
   completionCriteria: string;
@@ -120,6 +121,7 @@ export interface QuestBoardMessages {
   rosterProposalsTitle: string;
   rosterOpenProfile: (name: string) => string;
   actionFailedTitle: string;
+  actionFailedDescription: string;
   firstCome: string;
   reviewCandidates: string;
   applyForReview: string;
@@ -365,6 +367,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     clearFilters: "Clear filters",
     errorTitle: "Quest Board unavailable",
     errorDescription: "We could not load available Quests. Try again.",
+    manageSnapshotError: "We could not load this Quest. Try again.",
     retry: "Try again",
     retrySuccess: "Quest Board refreshed",
     loading: "Loading Quests",
@@ -388,9 +391,9 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     messageOwnerLoading: "Opening chat…",
     messageOwnerError:
       "We could not open a chat with the Quest owner. Try again.",
-    reportQuest: "Report a Quest issue",
-    reportQuestDescription:
-      "Send this joined Quest issue to the KUQuest Admin team for review.",
+    profileUnavailableTitle: "Profile unavailable",
+    profileUnavailableMessage:
+      "This Quest owner's profile could not be loaded.",
     requirements: "Requirements",
     description: "Description",
     completionCriteria: "Completion criteria",
@@ -418,6 +421,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     rosterProposalsTitle: "Candidate proposals",
     rosterOpenProfile: (name) => `Open ${name}'s profile`,
     actionFailedTitle: "Action failed",
+    actionFailedDescription: "The action could not be completed. Try again.",
     firstCome: "First-come, first-served",
     reviewCandidates: "Review candidates",
     applyForReview: "Apply for review",
@@ -754,6 +758,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     clearFilters: "ล้างตัวกรอง",
     errorTitle: "ไม่สามารถโหลดกระดานเควสต์ได้",
     errorDescription: "โหลดเควสต์ที่พร้อมใช้งานไม่สำเร็จ ลองอีกครั้ง",
+    manageSnapshotError: "โหลดข้อมูลเควสต์นี้ไม่สำเร็จ ลองอีกครั้ง",
     retry: "ลองอีกครั้ง",
     retrySuccess: "รีเฟรชกระดานเควสต์แล้ว",
     loading: "กำลังโหลดเควสต์",
@@ -776,9 +781,8 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     messageOwnerShort: "แชทผู้ว่าจ้าง",
     messageOwnerLoading: "กำลังเปิดแชท…",
     messageOwnerError: "ไม่สามารถเปิดแชทกับผู้ว่าจ้างได้ ลองอีกครั้ง",
-    reportQuest: "รายงาน",
-    reportQuestDescription:
-      "ส่งปัญหาของเควสต์ที่เข้าร่วมให้ทีมแอดมิน KUQuest ตรวจสอบ",
+    profileUnavailableTitle: "ไม่สามารถเปิดโปรไฟล์ได้",
+    profileUnavailableMessage: "ไม่สามารถโหลดโปรไฟล์ผู้ว่าจ้างของเควสต์นี้ได้",
     requirements: "รายละเอียดที่ต้องทำ",
     description: "คำอธิบาย",
     completionCriteria: "เกณฑ์การเสร็จงาน",
@@ -806,6 +810,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     rosterProposalsTitle: "ข้อเสนอผู้สมัคร",
     rosterOpenProfile: (name) => `ดูโปรไฟล์ของ ${name}`,
     actionFailedTitle: "การดำเนินการล้มเหลว",
+    actionFailedDescription: "ดำเนินการไม่สำเร็จ โปรดลองอีกครั้ง",
     firstCome: "มาก่อนได้ก่อน",
     reviewCandidates: "ตรวจสอบผู้สมัคร",
     applyForReview: "สมัครเพื่อรอการคัดเลือก",

@@ -1,3 +1,4 @@
+import type { WalletTransactionTitleKey } from "@/api/WalletApi";
 import type { SupportedLocale } from "./locale";
 
 export interface WalletMessages {
@@ -120,6 +121,12 @@ export interface WalletMessages {
   noEarningsAvailable: string;
   transferSuccessTitle: string;
   transferSuccessDesc: (amount: string) => string;
+  transactionTitles: Record<WalletTransactionTitleKey, string>;
+  balanceRefreshFailed: string;
+  topUpBalanceRefreshRetry: string;
+  topUpPaymentFailed: string;
+  transferPreviewSpendingAfter: string;
+  transferPreviewEarningsRemaining: string;
 }
 export const walletMessages: Record<SupportedLocale, WalletMessages> = {
   en: {
@@ -253,6 +260,27 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     transferSuccessTitle: "Transfer Successful",
     transferSuccessDesc: (amount: string) =>
       `Successfully transferred ${amount} to spending balance.`,
+    transactionTitles: {
+      promptPayTopUp: "PromptPay Top-Up",
+      walletPayment: "Wallet Payment",
+      questEarnings: "Quest Earnings",
+      questEscrowReserved: "Quest Escrow Reserved",
+      questEscrowReleased: "Quest Escrow Released",
+      earningsConverted: "Earnings Converted",
+      bankPayout: "Bank Payout",
+      reservedForQuest: "Reserved for Quest",
+      topUpToWallet: "Top up to Wallet",
+      questRefund: "Quest Refund",
+      unlockAndPay: "Unlock & Pay",
+      systemFee: "System Fee",
+      convertedToSpending: "Converted to Spending",
+    },
+    balanceRefreshFailed:
+      "Payment succeeded, but your balance could not refresh.",
+    topUpBalanceRefreshRetry: "Retry balance refresh",
+    topUpPaymentFailed: "Payment could not be verified. Please try again.",
+    transferPreviewSpendingAfter: "Spending balance after transfer:",
+    transferPreviewEarningsRemaining: "Remaining earnings:",
   },
   th: {
     walletTitle: "ภาพรวมกระเป๋าเงิน",
@@ -384,5 +412,25 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     transferSuccessTitle: "โอนเงินสำเร็จ",
     transferSuccessDesc: (amount: string) =>
       `โอน ${amount} เข้าสู่ยอดเงินพร้อมใช้สำเร็จแล้ว`,
+    transactionTitles: {
+      promptPayTopUp: "เติมเงินผ่านพร้อมเพย์",
+      walletPayment: "การชำระเงินจากกระเป๋าเงิน",
+      questEarnings: "รายได้จากเควสต์",
+      questEscrowReserved: "กันเงินประกันเควสต์",
+      questEscrowReleased: "คืนเงินประกันเควสต์",
+      earningsConverted: "โอนรายได้เข้าสู่ยอดเงินพร้อมใช้",
+      bankPayout: "ถอนเงินเข้าบัญชีธนาคาร",
+      reservedForQuest: "พักเงินสำหรับเควสต์",
+      topUpToWallet: "เติมเงินเข้า Wallet",
+      questRefund: "คืนเงินจากภารกิจ",
+      unlockAndPay: "ปลดล็อกและจ่ายเงิน",
+      systemFee: "ค่าธรรมเนียมระบบ",
+      convertedToSpending: "โอนรายได้เข้าสู่ยอดเงินพร้อมใช้",
+    },
+    balanceRefreshFailed: "ชำระเงินสำเร็จ แต่ไม่สามารถรีเฟรชยอดเงินได้",
+    topUpBalanceRefreshRetry: "ลองรีเฟรชยอดเงินอีกครั้ง",
+    topUpPaymentFailed: "ไม่สามารถยืนยันการชำระเงินได้ โปรดลองอีกครั้ง",
+    transferPreviewSpendingAfter: "ยอดเงินพร้อมใช้หลังโอน:",
+    transferPreviewEarningsRemaining: "รายได้สะสมคงเหลือ:",
   },
 };

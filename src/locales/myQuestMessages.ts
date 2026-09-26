@@ -40,6 +40,7 @@ export interface MyQuestMessages {
   modeCandidate: string;
   peopleCount: (count: string) => string;
   rewardPerPerson: (amount: string) => string;
+  statusFailed: string;
 }
 
 export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
@@ -94,6 +95,7 @@ export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
     modeCandidate: "คัดเลือกผู้สมัคร",
     peopleCount: (count) => `${count} คน`,
     rewardPerPerson: (amount) => `${amount} / คน`,
+    statusFailed: "ล้มเหลว",
   },
   en: {
     back: "Go back",
@@ -142,5 +144,6 @@ export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
     modeCandidate: "Choose candidates",
     peopleCount: (count) => `${count} ${count === "1" ? "person" : "people"}`,
     rewardPerPerson: (amount) => `${amount} / person`,
+    statusFailed: "Failed",
   },
 };
