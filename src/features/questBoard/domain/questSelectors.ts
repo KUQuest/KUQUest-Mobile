@@ -1,17 +1,10 @@
 import { isValidSatang } from "@/domain/satang";
-import type { ChatConversation, ChatMessage } from "../../chat/chatTypes";
-import {
-  FixtureChatConversation,
-  FixtureChatMessage,
-  FixtureChatSeed,
-  chatSentAt,
-  questConversationId,
-} from "../fixtures/chatSeeds";
+import { isTerminalStatus } from "@/domain/questLifecycle";
 import {
   DEFAULT_PLATFORM_FEE_BASIS_POINTS,
   PARTIAL_GROUP_START_CONSENT_WINDOW_MS,
 } from "./constants";
-import { addMilliseconds, blankCapabilities, clone } from "./questValidation";
+import { addMilliseconds, blankCapabilities, clone } from "./questStateUtils";
 import {
   QuestApplicationStatus,
   QuestAssignmentStatus,
@@ -26,20 +19,18 @@ import {
   type QuestAction,
   type QuestApplication,
   type QuestAssignment,
-  type QuestBoardQuest,
   type QuestContract,
   type QuestDetailState,
   type QuestEditConsent,
   type QuestEscrowSummary,
-  type QuestLocation,
   type QuestPartialStartConsent,
   type QuestPublishCheck,
   type QuestSettlementSummary,
   type QuestStatus as QuestStatusValue,
   type QuestTeam,
   type WorkConversationCapability,
-} from "../types";
-// Pure quest lifecycle projection, selectors, and view-model builders live here.
+} from "./types";
+// Pure Quest lifecycle rules and selectors live here.
 function normalizeStateShape(value: QuestDetailState): QuestDetailState {
   const state = value;
   if (!Array.isArray(state.teams)) state.teams = state.team ? [state.team] : [];
@@ -160,27 +151,6 @@ function transitionToInProgress(state: QuestDetailState): void {
   activeAssignments(state).forEach((item) => {
     item.startedAt = item.startedAt ?? state.quest.startAt;
   });
-}
-
-function ensureConversation(
-  state: QuestDetailState,
-  memberIds: string[]
-): void {
-  // IDs come from the fixture's server-shaped conversation seed. The
-  // deterministic fallback is used only by custom adapter states that provide
-  // no conversation id of their own.
-  const conversationId =
-    state.conversation.conversationId ?? questConversationId(state.quest.id);
-  state.conversation = {
-    conversationId,
-    canRead: true,
-    canWrite: true,
-    readOnly: false,
-  };
-  state.conversationMemberIds = unique([
-    ...(state.conversationMemberIds ?? []),
-    ...memberIds,
-  ]);
 }
 
 function normalizeInvitationStatuses(state: QuestDetailState, now: Date): void {
@@ -427,13 +397,7 @@ function isTeamParticipant(state: QuestDetailState, workerId: string): boolean {
   return isTeamMember(state, workerId) || isPendingInvitation(state, workerId);
 }
 
-function isTerminal(status: QuestStatusValue): boolean {
-  return (
-    status === QuestStatus.QUEST_COMPLETED ||
-    status === QuestStatus.QUEST_FAILED ||
-    status === QuestStatus.QUEST_CANCELLED
-  );
-}
+const isTerminal = isTerminalStatus;
 
 function conversationFor(
   state: QuestDetailState,
@@ -462,7 +426,7 @@ function conversationFor(
   ) {
     return { ...state.conversation, conversationId };
   }
-  if (isTerminal(state.quest.status)) {
+  if (isTerminalStatus(state.quest.status)) {
     return {
       conversationId,
       canRead: true,
@@ -472,104 +436,6 @@ function conversationFor(
     };
   }
   return { conversationId, canRead: true, canWrite: true, readOnly: false };
-}
-
-function hydrateChatSeed(seed: FixtureChatSeed): FixtureChatConversation {
-  return {
-    id: seed.id,
-    questId: seed.questId,
-    memberIds: unique(seed.memberIds),
-    questTitle: clone(seed.questTitle),
-    participantName: seed.participantName,
-    participantRole: seed.participantRole,
-    initials: seed.initials,
-    avatarColor: seed.avatarColor,
-    messages: seed.messages.map((message) => ({
-      ...message,
-      sentAt: message.sentAt ?? chatSentAt(message.minutesAgo),
-    })),
-    readAt: { ...(seed.readAt ?? {}) },
-  };
-}
-
-function projectChatMessage(
-  message: FixtureChatMessage,
-  viewerId: string
-): ChatMessage {
-  return {
-    id: message.id,
-    sender: message.senderId === viewerId ? "me" : "other",
-    createdAt: message.sentAt,
-    ...(message.text ? { text: clone(message.text) } : {}),
-    ...(message.attachment ? { attachment: clone(message.attachment) } : {}),
-  };
-}
-
-function latestChatMessage(
-  conversation: FixtureChatConversation
-): FixtureChatMessage | undefined {
-  return conversation.messages.reduce<FixtureChatMessage | undefined>(
-    (latest, message) => {
-      if (!latest) return message;
-      return new Date(message.sentAt).getTime() >=
-        new Date(latest.sentAt).getTime()
-        ? message
-        : latest;
-    },
-    undefined
-  );
-}
-
-function chatUnreadCount(
-  conversation: FixtureChatConversation,
-  viewerId: string
-): number {
-  const readAt = conversation.readAt[viewerId];
-  const readAtMs = readAt
-    ? new Date(readAt).getTime()
-    : Number.NEGATIVE_INFINITY;
-  return conversation.messages.filter(
-    (message) =>
-      message.senderId !== viewerId &&
-      Number.isFinite(new Date(message.sentAt).getTime()) &&
-      new Date(message.sentAt).getTime() > readAtMs
-  ).length;
-}
-
-function projectChatConversation(
-  conversation: FixtureChatConversation,
-  viewerId: string,
-  capability: WorkConversationCapability,
-  state?: QuestDetailState
-): ChatConversation {
-  const latest = latestChatMessage(conversation);
-  const latestMessage = latest?.text
-    ? clone(latest.text)
-    : {
-        en: latest?.attachment?.name ?? "",
-        th: latest?.attachment?.name ?? "",
-      };
-  return {
-    id: conversation.id,
-    ...(conversation.questId ? { questId: conversation.questId } : {}),
-    ...(state ? { status: state.quest.status } : {}),
-    capability: clone(capability),
-    questTitle: clone(conversation.questTitle),
-    participantName: conversation.participantName,
-    participantRole: conversation.participantRole,
-    initials: conversation.initials,
-    avatarColor: conversation.avatarColor,
-    latestMessage,
-    latestAt: latest?.sentAt ?? "",
-    unreadCount: chatUnreadCount(conversation, viewerId),
-    messages: conversation.messages
-      .slice()
-      .sort(
-        (left, right) =>
-          new Date(left.sentAt).getTime() - new Date(right.sentAt).getTime()
-      )
-      .map((message) => projectChatMessage(message, viewerId)),
-  };
 }
 
 function eligibleCandidateApplications(
@@ -729,7 +595,7 @@ function actionForViewer(
   )
     actions.push("REVIEW_PROOF");
   if (
-    !isTerminal(quest.status) &&
+    !isTerminalStatus(quest.status) &&
     (active || (isHirer && activeAssignments(state).length > 0))
   )
     actions.push("OPEN_DISPUTE");
@@ -884,80 +750,24 @@ export function formatConsentCountdown(
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-export const getPartialStartConsentRemainingMs = getConsentRemainingMs;
-export const formatPartialStartConsentCountdown = formatConsentCountdown;
-
-export function getQuestRewardSatang(quest: QuestBoardQuest): number {
-  return quest.rewardSatang ?? Math.round(quest.rewardPerPerson * 100);
-}
-
-export function toBoardQuest(state: QuestDetailState): QuestBoardQuest {
-  const quest = state.quest;
-  const start = new Date(quest.startAt);
-  const end = new Date(quest.endAt ?? quest.deadlineAt);
-  const timeRange =
-    Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())
-      ? undefined
-      : `${start.toISOString().slice(11, 16)}–${end.toISOString().slice(11, 16)}`;
-  const location: QuestLocation = quest.location;
-  const label = location.label ?? "Online";
-  return {
-    id: quest.id,
-    title: quest.title,
-    tags: [...quest.tags],
-    description: quest.description,
-    completionCriteria: quest.completionCriteria,
-    proofRequired: quest.proofRequired,
-    rewardPerPerson: quest.reward.rewardSatang / 100,
-    rewardSatang: quest.reward.rewardSatang,
-    headcount: quest.headcount,
-    acceptedParticipants: countAdmitted(state),
-    startDate: quest.startAt.slice(0, 10),
-    deadline: quest.deadlineAt.slice(0, 10),
-    timeRange,
-    postedAt: quest.postedAt,
-    location: label,
-    locationDetails: location,
-    locationMode: location.label === null ? "online" : "on-campus",
-    participationMode:
-      quest.participation === QuestParticipation.GROUP ? "team" : "single",
-    candidateMode:
-      quest.candidateMode === QuestCandidateMode.CANDIDATE
-        ? "CANDIDATE"
-        : "NO_CANDIDATE",
-    creator: { name: quest.hirerId },
-    imageUris: [...quest.imageUris],
-    studentInterestMatch: false,
-    ownerStudentId: quest.hirerId,
-    prototypeOnly: state.quest.id.endsWith("-demo"),
-    status: quest.status,
-    conversation: state.conversation,
-  };
-}
 export {
   actionForViewer,
   activeAssignments,
   applyEditChanges,
   cancelBeforeStart,
   cancelPartialStart,
-  chatUnreadCount,
   conversationFor,
   countAdmitted,
   eligibleCandidateApplications,
-  ensureConversation,
   hasActiveAssignment,
   hasAssignment,
-  hydrateChatSeed,
   isPendingInvitation,
   isTeamMember,
   isTeamParticipant,
   isTerminal,
-  latestChatMessage,
   makeReadOnly,
   normalizeStateShape,
   openPartialStartConsent,
-  projectChatConversation,
-  projectChatMessage,
   projectLifecycle,
   projectedState,
   setActualHeadcount,

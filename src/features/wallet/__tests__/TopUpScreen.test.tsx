@@ -20,6 +20,7 @@ jest.mock("@/api/WalletApi", () => {
     ...original,
     walletApi: {
       quoteTopUp: jest.fn(),
+      getWallet: jest.fn(),
       createTopUp: jest.fn(),
       getTopUpStatus: jest.fn(),
       simulateTopUp: jest.fn(),
@@ -38,6 +39,7 @@ const mockQuote = {
 
 const mockTopUpRecord = {
   id: "topup-456",
+  internalReference: "top-up:topup-456",
   creditSatang: 10000,
   chargedFeeSatang: 0,
   chargedTaxSatang: 0,
@@ -52,6 +54,12 @@ const mockTopUpRecord = {
 describe("TopUpScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (walletApi.getWallet as jest.Mock).mockResolvedValue({
+      spendingBalanceSatang: 100_000,
+      earningsBalanceSatang: 0,
+      fundingReservedSatang: 0,
+      reservedForPayoutsSatang: 0,
+    });
     (walletApi.quoteTopUp as jest.Mock).mockResolvedValue(mockQuote);
     (walletApi.createTopUp as jest.Mock).mockResolvedValue(mockTopUpRecord);
   });
@@ -144,10 +152,16 @@ describe("TopUpScreen", () => {
     });
   });
 
-  it("handles status check and verified payment state", async () => {
+  it("shows refreshed balance and transaction reference after payment", async () => {
     (walletApi.getTopUpStatus as jest.Mock).mockResolvedValue({
       ...mockTopUpRecord,
       topUpStatus: "PAID",
+    });
+    (walletApi.getWallet as jest.Mock).mockResolvedValueOnce({
+      spendingBalanceSatang: 30_000,
+      earningsBalanceSatang: 0,
+      fundingReservedSatang: 0,
+      reservedForPayoutsSatang: 0,
     });
 
     const view = await renderWithQueryClient(<TopUpScreen />);
@@ -174,10 +188,17 @@ describe("TopUpScreen", () => {
         mockTopUpRecord.id,
         expect.objectContaining({ signal: expect.any(AbortSignal) })
       );
+      expect(walletApi.getWallet).toHaveBeenCalledTimes(1);
       expect(view.getByTestId("top-up-success-view")).toBeTruthy();
       expect(view.getByTestId("top-up-verified-badge")).toBeTruthy();
       expect(view.getByText("เติมเงินสำเร็จ")).toBeTruthy();
       expect(view.getByText("฿100.00")).toBeTruthy();
+      expect(view.getByTestId("top-up-current-balance")).toHaveTextContent(
+        "฿300.00"
+      );
+      expect(view.getByTestId("top-up-reference-value")).toHaveTextContent(
+        "top-up:topup-456"
+      );
       expect(view.getByTestId("top-up-done-btn")).toBeTruthy();
     });
 
@@ -185,15 +206,91 @@ describe("TopUpScreen", () => {
     await fireEvent.press(view.getByTestId("top-up-done-btn"));
     expect(mockBack).toHaveBeenCalled();
   });
+  it("shows payment success plus localized refresh notice with retry when wallet refetch fails", async () => {
+    (walletApi.getTopUpStatus as jest.Mock).mockResolvedValue({
+      ...mockTopUpRecord,
+      topUpStatus: "PAID",
+    });
+    (walletApi.getWallet as jest.Mock)
+      .mockRejectedValueOnce(new Error("Network timeout"))
+      .mockResolvedValueOnce({
+        spendingBalanceSatang: 30_000,
+        earningsBalanceSatang: 0,
+        fundingReservedSatang: 0,
+        reservedForPayoutsSatang: 0,
+      });
+
+    const view = await renderWithQueryClient(<TopUpScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("top-up-continue-btn")).toBeTruthy();
+    });
+
+    await fireEvent.press(view.getByTestId("top-up-continue-btn"));
+    await waitFor(() => {
+      expect(view.getByTestId("top-up-confirmation-step")).toBeTruthy();
+    });
+    await fireEvent.press(view.getByTestId("top-up-confirm-btn"));
+    await waitFor(() => {
+      expect(view.getByTestId("top-up-promptpay-step")).toBeTruthy();
+    });
+
+    await fireEvent.press(view.getByTestId("top-up-check-status-btn"));
+
+    await waitFor(() => {
+      expect(view.getByTestId("top-up-success-view")).toBeTruthy();
+      expect(view.getByText("เติมเงินสำเร็จ")).toBeTruthy();
+      expect(view.getByTestId("top-up-current-balance")).toHaveTextContent(
+        "ไม่สามารถโหลดยอดเงินพร้อมใช้ปัจจุบันได้"
+      );
+      expect(view.getByTestId("top-up-balance-refresh-notice")).toBeTruthy();
+      expect(
+        view.getByText("ชำระเงินสำเร็จ แต่ไม่สามารถรีเฟรชยอดเงินได้")
+      ).toBeTruthy();
+      expect(view.getByTestId("top-up-retry-balance-btn")).toBeTruthy();
+      expect(view.queryByText("Network timeout")).toBeNull();
+    });
+
+    await fireEvent.press(view.getByTestId("top-up-retry-balance-btn"));
+
+    await waitFor(() => {
+      expect(walletApi.getWallet).toHaveBeenCalledTimes(2);
+      expect(view.getByTestId("top-up-current-balance")).toHaveTextContent(
+        "฿300.00"
+      );
+      expect(view.queryByTestId("top-up-balance-refresh-notice")).toBeNull();
+    });
+  });
+
+  it("shows localized error and never displays raw exception message on quote failure", async () => {
+    (walletApi.quoteTopUp as jest.Mock).mockRejectedValueOnce(
+      new Error("Internal DB connection crashed")
+    );
+
+    const view = await renderWithQueryClient(<TopUpScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("top-up-continue-btn")).toBeTruthy();
+    });
+
+    await fireEvent.press(view.getByTestId("top-up-continue-btn"));
+
+    await waitFor(() => {
+      expect(
+        view.getByText("ยังไม่พบการชำระเงิน กรุณาตรวจสอบอีกครั้ง")
+      ).toBeTruthy();
+      expect(view.queryByText("Internal DB connection crashed")).toBeNull();
+    });
+  });
 
   it("calls router.back when header back button is pressed on Step 1", async () => {
     const view = await renderWithQueryClient(<TopUpScreen />);
 
     await waitFor(() => {
-      expect(view.getByTestId("top-up-screen-back-btn")).toBeTruthy();
+      expect(view.getByTestId("top-up-back-btn")).toBeTruthy();
     });
 
-    await fireEvent.press(view.getByTestId("top-up-screen-back-btn"));
+    await fireEvent.press(view.getByTestId("top-up-back-btn"));
     expect(mockBack).toHaveBeenCalled();
   });
 });

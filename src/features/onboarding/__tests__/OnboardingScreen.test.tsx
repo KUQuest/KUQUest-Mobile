@@ -1,9 +1,17 @@
 import mockReact from "react";
 import { BackHandler } from "react-native";
-import { act, fireEvent, screen, waitFor } from "@testing-library/react-native";
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react-native";
+import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import { ApiError } from "@/api/ApiClient";
+import { StudentApi } from "@/api/StudentApi";
 
 import OnboardingScreen from "../screens/OnboardingScreen";
 import { authService } from "../../auth/AuthService";
@@ -32,8 +40,9 @@ jest.mock("react-native/Libraries/Modal/Modal", () => {
   };
 });
 
+const mockReplace = jest.fn();
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ replace: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ replace: mockReplace, back: jest.fn() }),
   useLocalSearchParams: () => mockRouteParams,
 }));
 
@@ -42,7 +51,7 @@ jest.mock("expo-localization", () => ({
 }));
 
 jest.mock("../../../features/preferences/localeStore", () => ({
-  useLocale: () => ({ locale: "en" }),
+  useLocale: () => ({ locale: mockLocale }),
 }));
 
 jest.mock("expo-image-picker", () => ({
@@ -53,16 +62,15 @@ jest.mock("@expo/vector-icons", () => ({
   MaterialIcons: () => null,
 }));
 
-const mockedAuthService = authService as unknown as {
-  getSession: jest.Mock;
-  getStudentApi: jest.Mock;
-  signOut: jest.Mock;
-};
+const mockedAuthService = jest.mocked(authService);
 let mockRouteParams: { mode?: string; step?: string } = {};
+let mockLocale: "en" | "th" = "en";
 
 const options = {
   occupations: [
     { id: "occupation-student", name: "Student", requiresStudentId: true },
+    { id: "occupation-lecturer", name: "Lecturer", requiresStudentId: false },
+    { id: "occupation-staff", name: "Staff", requiresStudentId: false },
   ],
   faculties: [
     {
@@ -81,38 +89,41 @@ const options = {
 };
 
 function createApi(overrides: Record<string, unknown> = {}) {
-  return {
-    getAcademicRegistrationOptions: jest.fn().mockResolvedValue(options),
-    getAcademicRegistrationStatus: jest.fn().mockResolvedValue({
-      firstName: "",
-      lastName: "",
-      telephone: null,
-      occupationId: null,
-      studentId: null,
-      departmentId: null,
-      termsAcceptedAt: null,
-      termsVersion: null,
-      completed: false,
-    }),
-    getProfile: jest.fn().mockResolvedValue({
-      email: "student@ku.th",
-      firstName: "",
-      lastName: "",
-      bio: null,
-      telephone: null,
-      studentId: null,
-      academicYear: null,
-      department: null,
-      avatar: null,
-    }),
-    listCertificates: jest.fn().mockResolvedValue([]),
-    listPortfolio: jest.fn().mockResolvedValue([]),
-    listExperience: jest.fn().mockResolvedValue([]),
-    updateAcademicRegistration: jest.fn().mockResolvedValue(undefined),
-    updateProfile: jest.fn().mockResolvedValue(undefined),
-    updateExperience: jest.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
+  return Object.assign(
+    new StudentApi(),
+    {
+      getAcademicRegistrationOptions: jest.fn().mockResolvedValue(options),
+      getAcademicRegistrationStatus: jest.fn().mockResolvedValue({
+        firstName: "",
+        lastName: "",
+        telephone: null,
+        occupationId: null,
+        studentId: null,
+        departmentId: null,
+        termsAcceptedAt: null,
+        termsVersion: null,
+        completed: false,
+      }),
+      getProfile: jest.fn().mockResolvedValue({
+        email: "student@ku.th",
+        firstName: "",
+        lastName: "",
+        bio: null,
+        telephone: null,
+        studentId: null,
+        academicYear: null,
+        department: null,
+        avatar: null,
+      }),
+      listCertificates: jest.fn().mockResolvedValue([]),
+      listPortfolio: jest.fn().mockResolvedValue([]),
+      listExperience: jest.fn().mockResolvedValue([]),
+      updateAcademicRegistration: jest.fn().mockResolvedValue(undefined),
+      updateProfile: jest.fn().mockResolvedValue(undefined),
+      updateExperience: jest.fn().mockResolvedValue(undefined),
+    },
+    overrides
+  );
 }
 function createCompletedApi(overrides: Record<string, unknown> = {}) {
   return createApi({
@@ -148,7 +159,17 @@ function createCompletedApi(overrides: Record<string, unknown> = {}) {
 
 function prepareAuth(api: ReturnType<typeof createApi>) {
   mockedAuthService.getSession.mockResolvedValue({
-    user: { image: null },
+    user: {
+      id: "member-1",
+      name: "KU Member",
+      email: "student@ku.th",
+      emailVerified: true,
+      image: null,
+      firstName: "",
+      lastName: "",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    },
   });
   mockedAuthService.getStudentApi.mockResolvedValue(api);
 }
@@ -157,6 +178,7 @@ describe("OnboardingScreen Academic Registration selections", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRouteParams = {};
+    mockLocale = "en";
     process.env.EXPO_PUBLIC_TERMS_VERSION = "2026-08-11";
   });
 
@@ -253,6 +275,27 @@ describe("OnboardingScreen Academic Registration selections", () => {
     expect(screen.queryByText("Software Engineering")).toBeNull();
   });
 
+  test("localizes the Student, Lecturer, and Staff occupation options", async () => {
+    mockLocale = "th";
+    prepareAuth(createApi());
+    await renderWithQueryClient(<OnboardingScreen />);
+
+    await waitFor(() =>
+      expect(screen.getAllByTestId("select-trigger")).toHaveLength(3)
+    );
+    await fireEvent.press(screen.getAllByTestId("select-trigger")[0]);
+
+    expect(screen.getByLabelText("อาชีพ: นักศึกษา")).toBeTruthy();
+    expect(screen.getByLabelText("อาชีพ: อาจารย์")).toBeTruthy();
+    expect(screen.getByLabelText("อาชีพ: บุคลากร")).toBeTruthy();
+
+    await fireEvent.press(screen.getByLabelText("อาชีพ: อาจารย์"));
+    expect(
+      screen.getAllByTestId("select-trigger")[0].props.accessibilityLabel
+    ).toBe("อาชีพ: อาจารย์");
+    await fireEvent.press(screen.getAllByTestId("select-trigger")[1]);
+    expect(screen.getByText("คณะวิศวกรรมศาสตร์")).toBeTruthy();
+  });
   test("opens searchable dropdowns for occupation, faculty, and department", async () => {
     const api = createApi();
     prepareAuth(api);
@@ -520,5 +563,86 @@ describe("OnboardingScreen Academic Registration selections", () => {
 
     resolveSave();
     await waitFor(() => expect(api.updateProfile).toHaveBeenCalled());
+  });
+  test("asks before leaving registration and honors cancel versus confirm", async () => {
+    const api = createApi();
+    prepareAuth(api);
+    mockedAuthService.signOut.mockResolvedValue(undefined);
+    await renderWithQueryClient(
+      <>
+        <OnboardingScreen />
+        <SweetAlertHost />
+      </>
+    );
+    await waitFor(() => expect(screen.getByText("Step 1 of 3")).toBeTruthy());
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Leave registration" })
+    );
+    expect(screen.getByText("Leave registration?")).toBeTruthy();
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByText("Leave registration?")).toBeNull();
+    expect(mockedAuthService.signOut).not.toHaveBeenCalled();
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Leave registration" })
+    );
+    await fireEvent.press(
+      within(screen.getByTestId("sweet-alert")).getByRole("button", {
+        name: "Leave registration",
+      })
+    );
+    await waitFor(() =>
+      expect(mockedAuthService.signOut).toHaveBeenCalledTimes(1)
+    );
+  });
+
+  test("proceeds with navigation on leaving registration even if signOut rejects", async () => {
+    const api = createApi();
+    prepareAuth(api);
+    mockedAuthService.signOut.mockRejectedValue(new Error("Network failed"));
+    await renderWithQueryClient(
+      <>
+        <OnboardingScreen />
+        <SweetAlertHost />
+      </>
+    );
+    await waitFor(() => expect(screen.getByText("Step 1 of 3")).toBeTruthy());
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Leave registration" })
+    );
+    await fireEvent.press(
+      within(screen.getByTestId("sweet-alert")).getByRole("button", {
+        name: "Leave registration",
+      })
+    );
+    await waitFor(() => {
+      expect(mockedAuthService.signOut).toHaveBeenCalledTimes(1);
+      expect(mockReplace).toHaveBeenCalledWith("/");
+    });
+  });
+
+  test("renders localized terms configuration error when terms version is missing", async () => {
+    const previousTermsVersion = process.env.EXPO_PUBLIC_TERMS_VERSION;
+    delete process.env.EXPO_PUBLIC_TERMS_VERSION;
+    try {
+      const api = createCompletedApi();
+      prepareAuth(api);
+      mockRouteParams = { step: "3" };
+      await renderWithQueryClient(<OnboardingScreen />);
+      await waitFor(() => expect(screen.getByText("Step 3 of 3")).toBeTruthy());
+
+      await fireEvent.press(screen.getByRole("button", { name: "Complete" }));
+      await waitFor(() => {
+        expect(
+          screen.getByText(
+            "Terms configuration is missing or invalid. Please try again later."
+          )
+        ).toBeTruthy();
+      });
+    } finally {
+      process.env.EXPO_PUBLIC_TERMS_VERSION = previousTermsVersion;
+    }
   });
 });

@@ -36,6 +36,8 @@ files, read:
 Then read the owning feature, adjacent tests, and the routed domain documents.
 Read `docs/agents/engineering-workflow.md` for planning, delegation, Git
 safety, behavioral tests, validation order, and delivery evidence.
+For review, refactor, decomposition, or restructuring work, read
+`docs/agents/codebase-review.md` before proposing or changing files.
 
 ## Domain authority
 

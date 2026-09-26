@@ -5,7 +5,7 @@ import {
 } from "@/components/ui/LoadingSkeleton";
 import { cn } from "@/tw/cn";
 import { spacing } from "@/theme/spacing";
-import styles from "../createQuestStyles";
+import styles from "./createQuestStyles";
 import type { Step } from "../createQuestTypes";
 
 export function CreateQuestSkeleton({

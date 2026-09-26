@@ -1,6 +1,6 @@
-import { memo, useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter, type Href } from "expo-router";
-import { MessageCircle, Search } from "lucide-react-native";
+import { MessageCircle, Search, X } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   FlatList,
@@ -10,35 +10,25 @@ import {
 } from "react-native";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { Avatar } from "@/components/ui/Avatar";
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
-import {
-  LoadingSkeleton,
-  SkeletonBlock,
-} from "@/components/ui/LoadingSkeleton";
+import { SkeletonBlock } from "@/components/ui/LoadingSkeleton";
 import { Pressable, Text, TextInput, View } from "@/tw";
 import { useLocale } from "@/features/preferences/localeStore";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { chatMessages } from "@/locales/chatMessages";
-import { colors } from "@/theme/colors";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
-import { formatTimeInBangkok } from "@/domain/datetime";
 
 import { spacing } from "@/theme/spacing";
 import { getChatRouteParams } from "./chatData";
+import { ChatInboxSkeleton } from "./components/ChatInboxSkeleton";
+import { ConversationRow } from "./components/ConversationRow";
 import type { ChatConversation } from "./chatTypes";
 import styles from "./chatStyles";
 import {
   useListCandidateInquiriesQuery,
   useListConversationsQuery,
 } from "./api/chatQueries";
-
-function localizedText(
-  value: Record<"en" | "th", string>,
-  locale: "en" | "th"
-): string {
-  return value[locale];
-}
 
 function filterChatConversations(
   items: ChatConversation[],
@@ -48,158 +38,11 @@ function filterChatConversations(
   return items.filter((conversation) => {
     if (!query) return true;
     return [
-      localizedText(conversation.questTitle, locale),
+      conversation.questTitle[locale],
       conversation.participantName,
-      localizedText(conversation.latestMessage, locale),
+      conversation.latestMessage[locale],
     ].some((value) => value.toLocaleLowerCase().includes(query));
   });
-}
-
-function ConversationAvatar({
-  conversation,
-  onPress,
-}: {
-  conversation: ChatConversation;
-  onPress?: (participantId: string) => void;
-}) {
-  const participantId = conversation.participantId;
-  return (
-    <Avatar
-      accessibilityLabel={
-        participantId
-          ? `View profile of ${conversation.participantName}`
-          : undefined
-      }
-      className={styles.avatar}
-      imageTestID={`chat-avatar-image-${conversation.participantId ?? conversation.id}`}
-      name={conversation.participantName}
-      onPress={
-        participantId && onPress
-          ? (event) => {
-              event.stopPropagation();
-              onPress(participantId);
-            }
-          : undefined
-      }
-      style={{ backgroundColor: conversation.avatarColor }}
-      testID={`chat-avatar-${conversation.participantId ?? conversation.id}`}
-      textClassName={styles.avatarText}
-      uri={conversation.participantAvatarUrl}
-    />
-  );
-}
-
-const ConversationRow = memo(function ConversationRow({
-  conversation,
-  locale,
-  onPress,
-  onOpenProfile,
-}: {
-  conversation: ChatConversation;
-  locale: "en" | "th";
-  onPress: (conversation: ChatConversation) => void;
-  onOpenProfile?: (participantId: string) => void;
-}) {
-  const messages = chatMessages[locale];
-  const role =
-    conversation.participantRole === "owner"
-      ? messages.questOwner
-      : messages.questMember;
-  const accessibilityLabel = [
-    localizedText(conversation.questTitle, locale),
-    conversation.participantName,
-    role,
-    localizedText(conversation.latestMessage, locale),
-    conversation.unreadCount > 0
-      ? messages.unreadCount(conversation.unreadCount)
-      : undefined,
-  ]
-    .filter(Boolean)
-    .join(". ");
-
-  return (
-    <Pressable
-      accessibilityLabel={accessibilityLabel}
-      accessibilityRole="button"
-      className={styles.conversationRow}
-      onPress={() => onPress(conversation)}
-      testID={`chat-conversation-${conversation.id}`}
-    >
-      <ConversationAvatar conversation={conversation} onPress={onOpenProfile} />
-      <View className={styles.rowCopy}>
-        <Text className={styles.questTitle} numberOfLines={1}>
-          {localizedText(conversation.questTitle, locale)}
-        </Text>
-        <Text className={styles.participant} numberOfLines={1}>
-          {conversation.participantName} · {role}
-        </Text>
-        <Text className={styles.latestMessage} numberOfLines={1}>
-          {localizedText(conversation.latestMessage, locale)}
-        </Text>
-      </View>
-      <View className={styles.rowMeta}>
-        <Text className={styles.rowTime}>
-          {formatTimeInBangkok(conversation.latestAt)}
-        </Text>
-        {conversation.unreadCount > 0 ? (
-          <View
-            accessibilityLabel={messages.unreadCount(conversation.unreadCount)}
-            className={styles.unreadBadge}
-          >
-            <Text className={styles.unreadText}>
-              {conversation.unreadCount}
-            </Text>
-          </View>
-        ) : null}
-      </View>
-    </Pressable>
-  );
-});
-
-function ChatInboxSkeleton({ loadingLabel }: { loadingLabel: string }) {
-  return (
-    <LoadingSkeleton
-      loadingLabel={loadingLabel}
-      style={{ width: "100%" }}
-      contentStyle={{ gap: spacing.sm }}
-      testID="chat-inbox-loading-skeleton"
-    >
-      {[1, 2, 3, 4].map((item) => (
-        <View
-          key={item}
-          className={styles.conversationRow}
-          testID={`chat-skeleton-${item}`}
-        >
-          <SkeletonBlock
-            variant="image"
-            height={48}
-            width={48}
-            borderRadius={24}
-          />
-          <View style={{ flex: 1, gap: spacing.xs, marginLeft: spacing.md }}>
-            <SkeletonBlock height={18} width="76%" borderRadius={4} />
-            <SkeletonBlock height={16} width="58%" borderRadius={4} />
-            <SkeletonBlock
-              height={14}
-              width="88%"
-              borderRadius={4}
-              style={{ marginTop: spacing.xs }}
-            />
-          </View>
-          <View
-            style={{
-              alignItems: "flex-end",
-              gap: spacing.sm,
-              marginLeft: spacing.sm,
-            }}
-          >
-            <SkeletonBlock height={13} width={34} borderRadius={4} />
-            <SkeletonBlock height={22} width={22} borderRadius={11} />
-          </View>
-        </View>
-      ))}
-    </LoadingSkeleton>
-  );
 }
 
 export interface ChatInboxScreenProps {
@@ -248,6 +91,7 @@ function ChatInboxItemSeparator() {
 export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
   const router = useRouter();
   const { locale } = useLocale();
+  const { colors } = useAppTheme();
   const { width, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const messages = chatMessages[locale];
@@ -284,10 +128,6 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
       ),
     [conversationsQuery.data, locale, normalizedQuery]
   );
-  const candidateInquiryTitle =
-    locale === "th"
-      ? "การสอบถามก่อนเริ่มงาน · Inquiry"
-      : "Candidate inquiries · Inquiry";
   const candidateInquiries = useMemo(
     () =>
       filterChatConversations(
@@ -345,6 +185,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
       </View>
     );
   }, [
+    colors,
     conversationsLoadFailed,
     conversationsPending,
     messages,
@@ -414,6 +255,16 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
               returnKeyType="search"
               value={query}
             />
+            {query ? (
+              <Pressable
+                accessibilityLabel={messages.clearSearch}
+                accessibilityRole="button"
+                className={styles.clearSearch}
+                onPress={() => setQuery("")}
+              >
+                <X color={colors.textSecondary} size={20} strokeWidth={2.2} />
+              </Pressable>
+            ) : null}
           </View>
         </View>
         <View className={styles.sectionHeading}>
@@ -422,9 +273,9 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
           </Text>
           {conversationsPending ? (
             <SkeletonBlock
-              height={16}
-              width={78}
-              borderRadius={4}
+              height={spacing.px16}
+              width={spacing.px78}
+              borderRadius={spacing.px4}
               testID="chat-inbox-loading-count"
             />
           ) : (
@@ -442,6 +293,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
             <Text className={styles.loadErrorTitle}>{messages.loadError}</Text>
             <Pressable
               accessibilityRole="button"
+              className={styles.loadErrorAction}
               onPress={() => {
                 void refresh().catch(() => undefined);
               }}
@@ -457,6 +309,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
       </View>
     ),
     [
+      colors,
       conversations,
       conversationsLoadFailed,
       conversationsPending,
@@ -467,7 +320,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
     ]
   );
   const renderItem = useCallback(
-    ({ item, index }: ListRenderItemInfo<ChatInboxListItem>) => {
+    ({ item }: ListRenderItemInfo<ChatInboxListItem>) => {
       switch (item.type) {
         case "conversation":
           return (
@@ -482,18 +335,18 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
           return renderEmptyState();
         case "inquiry-heading":
           return (
-            <View
-              className={styles.sectionHeading}
-              style={
-                index === 0
-                  ? { marginBottom: 0 }
-                  : { marginBottom: 0, marginTop: 0 }
-              }
-            >
-              <Text accessibilityRole="header" className={styles.sectionTitle}>
-                {candidateInquiryTitle}
+            <View className={styles.inquiryHeading}>
+              <View className={styles.inquiryIcon}>
+                <MessageCircle
+                  color={colors.support}
+                  size={22}
+                  strokeWidth={2}
+                />
+              </View>
+              <Text accessibilityRole="header" className={styles.inquiryTitle}>
+                {messages.candidateInquiries}
               </Text>
-              <Text className={styles.sectionCount}>
+              <Text className={styles.inquiryCount}>
                 {messages.conversationCount(item.count)}
               </Text>
             </View>
@@ -501,15 +354,19 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
         case "inquiry-error":
           return (
             <>
-              <View
-                className={styles.sectionHeading}
-                style={index === 0 ? undefined : { marginTop: 0 }}
-              >
+              <View className={styles.inquiryHeading}>
+                <View className={styles.inquiryIcon}>
+                  <MessageCircle
+                    color={colors.support}
+                    size={22}
+                    strokeWidth={2}
+                  />
+                </View>
                 <Text
                   accessibilityRole="header"
-                  className={styles.sectionTitle}
+                  className={styles.inquiryTitle}
                 >
-                  {candidateInquiryTitle}
+                  {messages.candidateInquiries}
                 </Text>
               </View>
               <View
@@ -518,12 +375,11 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
                 className={styles.loadErrorState}
               >
                 <Text className={styles.loadErrorTitle}>
-                  {locale === "th"
-                    ? "ไม่สามารถโหลด Inquiry ได้"
-                    : "Candidate inquiries could not be loaded."}
+                  {messages.candidateInquiriesLoadError}
                 </Text>
                 <Pressable
                   accessibilityRole="button"
+                  className={styles.loadErrorAction}
                   onPress={() => {
                     void refresh().catch(() => undefined);
                   }}
@@ -539,6 +395,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
           return (
             <ConversationRow
               conversation={item.conversation}
+              inquiry
               locale={locale}
               onOpenProfile={handleOpenProfile}
               onPress={handleInquiryPress}
@@ -547,7 +404,7 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
       }
     },
     [
-      candidateInquiryTitle,
+      colors,
       handleConversationPress,
       handleInquiryPress,
       handleOpenProfile,
@@ -564,12 +421,12 @@ export default function ChatInboxScreen({ viewerId }: ChatInboxScreenProps) {
         <FlatList
           contentContainerStyle={{
             paddingBottom: bottomPadding + spacing.lg,
-            paddingHorizontal: spacing.lg,
+            paddingHorizontal: spacing.md,
           }}
           data={listItems}
           ItemSeparatorComponent={ChatInboxItemSeparator}
           keyExtractor={getChatInboxItemKey}
-          keyboardShouldPersistTaps="never"
+          keyboardShouldPersistTaps="handled"
           ListEmptyComponent={renderEmptyState}
           ListHeaderComponent={listHeader}
           onScroll={handleNavigationScroll}

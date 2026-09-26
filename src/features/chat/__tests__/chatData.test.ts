@@ -2,9 +2,9 @@ import {
   DEFAULT_PROTOTYPE_VIEWER_ID,
   createQuestFixtureAdapter,
   questFixtureAdapter,
-} from "../../questBoard/questFixtureAdapter";
+} from "../../questBoard/fixtures/adapters/questFixtureAdapter";
 import { getChatRouteParams } from "../chatData";
-import { QuestStatus } from "../../questBoard/types";
+import { QuestStatus } from "../../questBoard/domain/types";
 
 describe("adapter-owned fixture chat data", () => {
   const fixedNow = new Date("2026-08-12T09:00:00.000Z");

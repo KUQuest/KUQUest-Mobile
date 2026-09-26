@@ -7,9 +7,9 @@ describe("Satang domain primitives", () => {
     expect(formatSatang(28, "en", "exact")).toEqual("฿0.28");
   });
 
-  test("keeps compact output unchanged by default", () => {
-    expect(formatSatang(125000)).toEqual("฿1,250");
-    expect(formatSatang(50428)).toEqual("฿504.28");
+  test("keeps compact output unchanged", () => {
+    expect(formatSatang(125000, "en")).toEqual("฿1,250");
+    expect(formatSatang(50428, "en")).toEqual("฿504.28");
   });
 
   test("parses THB input without floating-point arithmetic", () => {

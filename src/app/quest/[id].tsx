@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 
-import QuestDetailScreen from "@/features/questBoard/QuestDetailScreen";
+import QuestDetailScreen from "@/features/questBoard/detail/QuestDetailScreen";
 import { resolveQuestDetailRoute } from "@/features/questBoard/detail/questDetailRoute";
 
 export default function QuestDetailRoute() {

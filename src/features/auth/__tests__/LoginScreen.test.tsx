@@ -5,6 +5,18 @@ import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import LoginScreen from "../LoginScreen";
 import { AuthAdapter, AuthError, type AuthSession } from "../types";
 import { authMessages } from "../../../locales/authMessages";
+import { signInWithStagingTestAccount } from "../stagingTestAuth";
+
+const mockSignInWithStagingTestAccount =
+  signInWithStagingTestAccount as jest.Mock;
+
+jest.mock("../stagingTestAuth", () => {
+  const actual = jest.requireActual("../stagingTestAuth");
+  return {
+    ...actual,
+    signInWithStagingTestAccount: jest.fn(),
+  };
+});
 
 jest.mock("expo-localization", () => ({
   getLocales: () => [{ languageCode: "th" }],
@@ -91,6 +103,52 @@ describe("LoginScreen", () => {
     await waitFor(() => {
       expect(screen.getByTestId("error-message").props.children).toBe(
         authMessages.th.errors.OAUTH_FAILED
+      );
+      expect(screen.getByTestId("retry-button")).toBeTruthy();
+    });
+  });
+
+  test("offers every staging test account as a debug-only sign-in action", async () => {
+    const authAdapter = createAdapter();
+    await renderWithQueryClient(<LoginScreen authAdapter={authAdapter} />);
+
+    expect(screen.getByTestId("staging-test-signin-default")).toBeTruthy();
+    expect(screen.getByTestId("staging-test-signin-account-1")).toBeTruthy();
+    expect(screen.getByTestId("staging-test-signin-account-2")).toBeTruthy();
+  });
+
+  test("signs in with a staging test account and routes to the resolved destination", async () => {
+    const authAdapter = createAdapter();
+    mockSignInWithStagingTestAccount.mockResolvedValue(undefined);
+    authAdapter.getRoutingDestination.mockResolvedValue({ type: "HOME" });
+    const onNavigate = jest.fn();
+    await renderWithQueryClient(
+      <LoginScreen authAdapter={authAdapter} onNavigate={onNavigate} />
+    );
+
+    await fireEvent.press(screen.getByTestId("staging-test-signin-account-1"));
+
+    await waitFor(() => {
+      expect(mockSignInWithStagingTestAccount).toHaveBeenCalledWith(
+        "account-1"
+      );
+      expect(authAdapter.authenticate).not.toHaveBeenCalled();
+      expect(onNavigate).toHaveBeenCalledWith({ type: "HOME" });
+    });
+  });
+
+  test("shows a retry action for a staging test sign-in failure", async () => {
+    const authAdapter = createAdapter();
+    mockSignInWithStagingTestAccount.mockRejectedValue(
+      new Error("STAGING_TEST_AUTH_ENABLED")
+    );
+    await renderWithQueryClient(<LoginScreen authAdapter={authAdapter} />);
+
+    await fireEvent.press(screen.getByTestId("staging-test-signin-default"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("error-message").props.children).toBe(
+        authMessages.th.stagingTestSignInFailed
       );
       expect(screen.getByTestId("retry-button")).toBeTruthy();
     });

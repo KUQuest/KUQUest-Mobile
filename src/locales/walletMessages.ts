@@ -1,3 +1,4 @@
+import type { WalletTransactionTitleKey } from "@/api/WalletApi";
 import type { SupportedLocale } from "./locale";
 
 export interface WalletMessages {
@@ -13,7 +14,6 @@ export interface WalletMessages {
   convertPrompt: string;
   convertSuccess: string;
   convertError: string;
-  topUpTitle: string;
   enterAmount: string;
   minTopUpHint: string;
   continue: string;
@@ -31,8 +31,9 @@ export interface WalletMessages {
   editAmount: string;
   promptPayScanLabel: string;
   topUpConfirmationTitle: string;
-  promptPayQrCode: string;
+  topUpQrUnavailable: string;
   topUpCredit: string;
+  topUpBalanceUnavailable: string;
   topUpFee: string;
   topUpTax: string;
   topUpPaymentTotal: string;
@@ -75,8 +76,6 @@ export interface WalletMessages {
   payoutCardDesc: string;
   swapToWorkerView: string;
   swapToHirerView: string;
-  hirerViewLabel: string;
-  workerViewLabel: string;
   balanceCardsHint: string;
   swapAllButton: string;
   swapHint: string;
@@ -92,6 +91,8 @@ export interface WalletMessages {
   txStatusLabel: string;
   txDateLabel: string;
   txReferenceLabel: string;
+  txDetailsLabel: string;
+  txTopUpReferenceLabel: string;
   txAmountLabel: string;
   statusCompleted: string;
   statusPending: string;
@@ -120,6 +121,12 @@ export interface WalletMessages {
   noEarningsAvailable: string;
   transferSuccessTitle: string;
   transferSuccessDesc: (amount: string) => string;
+  transactionTitles: Record<WalletTransactionTitleKey, string>;
+  balanceRefreshFailed: string;
+  topUpBalanceRefreshRetry: string;
+  topUpPaymentFailed: string;
+  transferPreviewSpendingAfter: string;
+  transferPreviewEarningsRemaining: string;
 }
 export const walletMessages: Record<SupportedLocale, WalletMessages> = {
   en: {
@@ -136,7 +143,6 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
       "Transfer your entire earnings balance to your spending balance? This action is instant and irreversible.",
     convertSuccess: "Earnings transferred to spending balance successfully.",
     convertError: "Failed to convert earnings.",
-    topUpTitle: "PromptPay QR Top-Up",
     enterAmount: "Enter amount (฿)",
     minTopUpHint: "Minimum amount is ฿10.00",
     continue: "Continue",
@@ -156,9 +162,11 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     clearAmount: "Clear amount",
     editAmount: "Edit amount",
     promptPayScanLabel: "Scan to pay",
-    promptPayQrCode: "PromptPay QR Code",
+    topUpQrUnavailable:
+      "The payment provider did not return a PromptPay QR. Please try again.",
     topUpConfirmationTitle: "Confirm top-up",
     topUpCredit: "Credit to Spending Balance",
+    topUpBalanceUnavailable: "Unable to load the current balance.",
     topUpFee: "Payment fee",
     topUpTax: "VAT",
     topUpPaymentTotal: "Payment total",
@@ -203,8 +211,6 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     payoutCardDesc: "Transferring to bank",
     swapToWorkerView: "Worker earnings",
     swapToHirerView: "Hirer balance",
-    hirerViewLabel: "Hirer funds",
-    workerViewLabel: "Worker funds",
     balanceCardsHint: "Tap card to swap view",
     swapAllButton: "Swap all",
     swapHint: "Tap to swap",
@@ -220,6 +226,8 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     txStatusLabel: "Status",
     txDateLabel: "Date & Time",
     txReferenceLabel: "Reference",
+    txDetailsLabel: "Details",
+    txTopUpReferenceLabel: "Top-up reference",
     txAmountLabel: "Amount",
     statusCompleted: "Completed",
     statusPending: "Pending",
@@ -252,6 +260,27 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     transferSuccessTitle: "Transfer Successful",
     transferSuccessDesc: (amount: string) =>
       `Successfully transferred ${amount} to spending balance.`,
+    transactionTitles: {
+      promptPayTopUp: "PromptPay Top-Up",
+      walletPayment: "Wallet Payment",
+      questEarnings: "Quest Earnings",
+      questEscrowReserved: "Quest Escrow Reserved",
+      questEscrowReleased: "Quest Escrow Released",
+      earningsConverted: "Earnings Converted",
+      bankPayout: "Bank Payout",
+      reservedForQuest: "Reserved for Quest",
+      topUpToWallet: "Top up to Wallet",
+      questRefund: "Quest Refund",
+      unlockAndPay: "Unlock & Pay",
+      systemFee: "System Fee",
+      convertedToSpending: "Converted to Spending",
+    },
+    balanceRefreshFailed:
+      "Payment succeeded, but your balance could not refresh.",
+    topUpBalanceRefreshRetry: "Retry balance refresh",
+    topUpPaymentFailed: "Payment could not be verified. Please try again.",
+    transferPreviewSpendingAfter: "Spending balance after transfer:",
+    transferPreviewEarningsRemaining: "Remaining earnings:",
   },
   th: {
     walletTitle: "ภาพรวมกระเป๋าเงิน",
@@ -267,7 +296,6 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
       "ต้องการโอนยอดรายได้สะสมทั้งหมดเข้าสู่ยอดเงินพร้อมใช้หรือไม่? การดำเนินการนี้จะเกิดขึ้นทันทีและไม่สามารถยกเลิกได้",
     convertSuccess: "โอนรายได้เข้าสู่ยอดเงินพร้อมใช้สำเร็จแล้ว",
     convertError: "ไม่สามารถโอนรายได้ได้",
-    topUpTitle: "เติมเงินผ่าน PromptPay QR",
     enterAmount: "ระบุจำนวนเงิน (บาท)",
     minTopUpHint: "ยอดเติมเงินขั้นต่ำ ฿10.00",
     continue: "ดำเนินการต่อ",
@@ -287,9 +315,11 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     clearAmount: "ล้าง",
     editAmount: "แก้ไขจำนวนเงิน",
     promptPayScanLabel: "สแกนเพื่อชำระเงิน",
-    promptPayQrCode: "PromptPay QR Code",
+    topUpQrUnavailable:
+      "ผู้ให้บริการชำระเงินไม่ส่ง QR พร้อมเพย์กลับมา โปรดลองอีกครั้ง",
     topUpConfirmationTitle: "ยืนยันการเติมเงิน",
     topUpCredit: "เครดิตเข้ายอดเงินพร้อมใช้",
+    topUpBalanceUnavailable: "ไม่สามารถโหลดยอดเงินพร้อมใช้ปัจจุบันได้",
     topUpFee: "ค่าธรรมเนียมการชำระเงิน",
     topUpTax: "ภาษีมูลค่าเพิ่ม",
     topUpPaymentTotal: "ยอดชำระทั้งหมด",
@@ -324,18 +354,16 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     financeSubtitle: "การเงิน",
     amaWalletTitle: "Ama Wallet",
     sendMoneyAction: "เติมเงิน",
-    spendingBalanceCardTitle: "เงินพร้อมใช้",
+    spendingBalanceCardTitle: "เงินที่พร้อมใช้",
     spendingBalanceCardDesc: "ใช้จ้างงานได้ทันที",
     escrowCardTitle: "เงินที่พักไว้",
     escrowCardDesc: "รอจ่ายเมื่องานเสร็จ",
-    earningsCardTitle: "รายได้สะสม",
+    earningsCardTitle: "รายได้",
     earningsCardDesc: "รายได้จากการทำเควสต์",
     payoutCardTitle: "กำลังถอนเงิน",
     payoutCardDesc: "รอโอนเข้าบัญชีธนาคาร",
     swapToWorkerView: "ดูรายได้ผู้รับงาน",
     swapToHirerView: "ดูเงินผู้ว่าจ้าง",
-    hirerViewLabel: "กระเป๋าผู้ว่าจ้าง",
-    workerViewLabel: "กระเป๋าผู้รับงาน",
     balanceCardsHint: "แตะการ์ดเพื่อสลับมุมมอง",
     swapAllButton: "สลับทั้งหมด",
     swapHint: "แตะเพื่อสลับ",
@@ -347,18 +375,20 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     filterTopUp: "เติมเงิน",
     filterPayout: "ถอนเงิน",
     transactionDetailTitle: "รายละเอียดธุรกรรม",
-    txSourceLabel: "ช่องทาง",
+    txSourceLabel: "แหล่งที่มา",
     txStatusLabel: "สถานะ",
     txDateLabel: "วันและเวลา",
     txReferenceLabel: "เลขอ้างอิง",
+    txDetailsLabel: "รายละเอียด",
+    txTopUpReferenceLabel: "อ้างอิงเติมเงิน",
     txAmountLabel: "จำนวนเงิน",
     statusCompleted: "สำเร็จ",
     statusPending: "รอดำเนินการ",
     statusFailed: "ไม่สำเร็จ",
     statusExpired: "หมดอายุ",
-    sourceActivities: "กิจกรรมบัญชี (Activities API)",
-    sourceTopUps: "เติมเงิน PromptPay (Top-ups API)",
-    sourcePayouts: "ถอนเงินเข้าบัญชี (Payouts API)",
+    sourceActivities: "กิจกรรมบัญชี",
+    sourceTopUps: "เติมเงินผ่านพร้อมเพย์",
+    sourcePayouts: "ถอนเงินเข้าบัญชีธนาคาร",
     closeButton: "ปิด",
     emptyHistoryTitle: "ยังไม่มีประวัติการทำธุรกรรม",
     emptyHistoryDesc: "เมื่อคุณเติมเงินหรือลงภารกิจ ประวัติจะแสดงที่นี่",
@@ -382,5 +412,25 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     transferSuccessTitle: "โอนเงินสำเร็จ",
     transferSuccessDesc: (amount: string) =>
       `โอน ${amount} เข้าสู่ยอดเงินพร้อมใช้สำเร็จแล้ว`,
+    transactionTitles: {
+      promptPayTopUp: "เติมเงินผ่านพร้อมเพย์",
+      walletPayment: "การชำระเงินจากกระเป๋าเงิน",
+      questEarnings: "รายได้จากเควสต์",
+      questEscrowReserved: "กันเงินประกันเควสต์",
+      questEscrowReleased: "คืนเงินประกันเควสต์",
+      earningsConverted: "โอนรายได้เข้าสู่ยอดเงินพร้อมใช้",
+      bankPayout: "ถอนเงินเข้าบัญชีธนาคาร",
+      reservedForQuest: "พักเงินสำหรับเควสต์",
+      topUpToWallet: "เติมเงินเข้า Wallet",
+      questRefund: "คืนเงินจากภารกิจ",
+      unlockAndPay: "ปลดล็อกและจ่ายเงิน",
+      systemFee: "ค่าธรรมเนียมระบบ",
+      convertedToSpending: "โอนรายได้เข้าสู่ยอดเงินพร้อมใช้",
+    },
+    balanceRefreshFailed: "ชำระเงินสำเร็จ แต่ไม่สามารถรีเฟรชยอดเงินได้",
+    topUpBalanceRefreshRetry: "ลองรีเฟรชยอดเงินอีกครั้ง",
+    topUpPaymentFailed: "ไม่สามารถยืนยันการชำระเงินได้ โปรดลองอีกครั้ง",
+    transferPreviewSpendingAfter: "ยอดเงินพร้อมใช้หลังโอน:",
+    transferPreviewEarningsRemaining: "รายได้สะสมคงเหลือ:",
   },
 };

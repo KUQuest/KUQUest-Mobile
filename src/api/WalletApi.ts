@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { ApiClient } from "./ApiClient";
-export type RequestOptions = { signal?: AbortSignal };
+import { ApiClient, type RequestOptions } from "./ApiClient";
 
 export const walletBalancesSchema = z.object({
   spendingBalanceSatang: z.number().int().nonnegative(),
@@ -10,11 +9,8 @@ export const walletBalancesSchema = z.object({
 });
 export type WalletBalances = z.infer<typeof walletBalancesSchema>;
 
-export const walletResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    wallet: walletBalancesSchema,
-  }),
+export const walletDataSchema = z.object({
+  wallet: walletBalancesSchema,
 });
 
 export const topUpStatusSchema = z.enum([
@@ -25,21 +21,19 @@ export const topUpStatusSchema = z.enum([
 ]);
 export type TopUpStatus = z.infer<typeof topUpStatusSchema>;
 
-export const topUpQuoteResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    id: z.string().min(1),
-    creditSatang: z.number().int().positive(),
-    chargedFeeSatang: z.number().int().nonnegative(),
-    chargedTaxSatang: z.number().int().nonnegative(),
-    paymentTotalSatang: z.number().int().positive(),
-    expiresAt: z.string(),
-  }),
+export const topUpQuoteDataSchema = z.object({
+  id: z.string().min(1),
+  creditSatang: z.number().int().positive(),
+  chargedFeeSatang: z.number().int().nonnegative(),
+  chargedTaxSatang: z.number().int().nonnegative(),
+  paymentTotalSatang: z.number().int().positive(),
+  expiresAt: z.string(),
 });
-export type TopUpQuote = z.infer<typeof topUpQuoteResponseSchema>["data"];
+export type TopUpQuote = z.infer<typeof topUpQuoteDataSchema>;
 
 export const topUpDataSchema = z.object({
   id: z.string().min(1),
+  internalReference: z.string().min(1),
   creditSatang: z.number().int().positive(),
   chargedFeeSatang: z.number().int().nonnegative(),
   chargedTaxSatang: z.number().int().nonnegative(),
@@ -52,10 +46,6 @@ export const topUpDataSchema = z.object({
 });
 export type TopUpData = z.infer<typeof topUpDataSchema>;
 
-export const topUpResponseSchema = z.object({
-  success: z.literal(true),
-  data: topUpDataSchema,
-});
 export const walletActivitySchema = z.object({
   id: z.string().min(1),
   ledgerTransactionId: z.string().min(1).optional(),
@@ -71,11 +61,8 @@ export const walletActivitySchema = z.object({
 });
 export type WalletActivity = z.infer<typeof walletActivitySchema>;
 
-export const walletActivitiesResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    activities: z.array(walletActivitySchema),
-  }),
+export const walletActivitiesDataSchema = z.object({
+  activities: z.array(walletActivitySchema),
 });
 export const topUpListItemSchema = z.object({
   id: z.string().min(1),
@@ -92,13 +79,9 @@ export const topUpListItemSchema = z.object({
 });
 export type TopUpListItem = z.infer<typeof topUpListItemSchema>;
 
-export const topUpsListResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    items: z.array(topUpListItemSchema),
-  }),
+export const topUpsListDataSchema = z.object({
+  items: z.array(topUpListItemSchema),
 });
-
 export const payoutListItemSchema = z.object({
   id: z.string().min(1),
   internalReference: z.string().optional(),
@@ -125,14 +108,39 @@ export const payoutListItemSchema = z.object({
 });
 export type PayoutListItem = z.infer<typeof payoutListItemSchema>;
 
+export const WalletTransactionType = {
+  TOP_UP: "TOP_UP",
+  SPEND: "SPEND",
+  EARN: "EARN",
+  HOLD: "HOLD",
+  RELEASE: "RELEASE",
+  CONVERT: "CONVERT",
+  PAYOUT: "PAYOUT",
+} as const;
 export type TransactionType =
-  "TOP_UP" | "SPEND" | "EARN" | "HOLD" | "RELEASE" | "CONVERT" | "PAYOUT";
+  (typeof WalletTransactionType)[keyof typeof WalletTransactionType];
+export const WalletTransactionTitleKey = {
+  PROMPT_PAY_TOP_UP: "promptPayTopUp",
+  WALLET_PAYMENT: "walletPayment",
+  QUEST_EARNINGS: "questEarnings",
+  QUEST_ESCROW_RESERVED: "questEscrowReserved",
+  QUEST_ESCROW_RELEASED: "questEscrowReleased",
+  EARNINGS_CONVERTED: "earningsConverted",
+  BANK_PAYOUT: "bankPayout",
+  RESERVED_FOR_QUEST: "reservedForQuest",
+  TOP_UP_TO_WALLET: "topUpToWallet",
+  QUEST_REFUND: "questRefund",
+  UNLOCK_AND_PAY: "unlockAndPay",
+  SYSTEM_FEE: "systemFee",
+  CONVERTED_TO_SPENDING: "convertedToSpending",
+} as const;
+export type WalletTransactionTitleKey =
+  (typeof WalletTransactionTitleKey)[keyof typeof WalletTransactionTitleKey];
 
 export interface UserTransaction {
   id: string;
   type: TransactionType;
-  title: string;
-  titleTh: string;
+  titleKey: WalletTransactionTitleKey;
   amountSatang: number;
   direction: "INFLOW" | "OUTFLOW";
   status: string;
@@ -159,38 +167,14 @@ export function createIdempotencyKey(): string {
   );
 }
 
-const activityLabels: Record<
-  TransactionType,
-  Pick<UserTransaction, "title" | "titleTh">
-> = {
-  TOP_UP: {
-    title: "PromptPay Top-Up",
-    titleTh: "เติมเงินผ่านพร้อมเพย์",
-  },
-  SPEND: {
-    title: "Wallet Payment",
-    titleTh: "การชำระเงินจากกระเป๋าเงิน",
-  },
-  EARN: {
-    title: "Quest Earnings",
-    titleTh: "รายได้จากเควสต์",
-  },
-  HOLD: {
-    title: "Quest Escrow Reserved",
-    titleTh: "กันเงินประกันเควสต์",
-  },
-  RELEASE: {
-    title: "Quest Escrow Released",
-    titleTh: "คืนเงินประกันเควสต์",
-  },
-  CONVERT: {
-    title: "Earnings Converted",
-    titleTh: "โอนรายได้เข้าสู่ยอดเงินพร้อมใช้",
-  },
-  PAYOUT: {
-    title: "Bank Payout",
-    titleTh: "ถอนเงินเข้าบัญชีธนาคาร",
-  },
+const activityTitleKeys: Record<TransactionType, WalletTransactionTitleKey> = {
+  TOP_UP: WalletTransactionTitleKey.PROMPT_PAY_TOP_UP,
+  SPEND: WalletTransactionTitleKey.WALLET_PAYMENT,
+  EARN: WalletTransactionTitleKey.QUEST_EARNINGS,
+  HOLD: WalletTransactionTitleKey.QUEST_ESCROW_RESERVED,
+  RELEASE: WalletTransactionTitleKey.QUEST_ESCROW_RELEASED,
+  CONVERT: WalletTransactionTitleKey.EARNINGS_CONVERTED,
+  PAYOUT: WalletTransactionTitleKey.BANK_PAYOUT,
 };
 
 function transactionFromActivity(activity: WalletActivity): UserTransaction {
@@ -201,13 +185,12 @@ function transactionFromActivity(activity: WalletActivity): UserTransaction {
     activity.payoutReservedDeltaSatang,
   ];
   const primaryDelta = deltas.find((delta) => delta !== 0) ?? 0;
-  const labels = activityLabels[activity.type];
+  const titleKey = activityTitleKeys[activity.type];
 
   return {
     id: activity.id,
     type: activity.type,
-    title: labels.title,
-    titleTh: labels.titleTh,
+    titleKey,
     amountSatang: Math.abs(primaryDelta),
     direction: primaryDelta > 0 ? "INFLOW" : "OUTFLOW",
     status: activity.activityStatus,
@@ -221,13 +204,10 @@ function transactionFromActivity(activity: WalletActivity): UserTransaction {
     payoutReservedDeltaSatang: activity.payoutReservedDeltaSatang,
   };
 }
-export const earningsConversionResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    id: z.string().min(1),
-    amountSatang: z.coerce.number().int().positive(),
-    createdAt: z.string(),
-  }),
+export const earningsConversionDataSchema = z.object({
+  id: z.string().min(1),
+  amountSatang: z.coerce.number().int().positive(),
+  createdAt: z.string(),
 });
 
 export const payoutDestinationTypeSchema = z.enum([
@@ -297,70 +277,44 @@ export type CreatePayoutDestinationPayload = z.input<
   typeof createPayoutDestinationPayloadSchema
 >;
 
-export const activePayoutDestinationResponseSchema = z.union([
-  z.object({
-    success: z.literal(true),
-    data: payoutDestinationSchema.nullable(),
-  }),
+export const activePayoutDestinationDataSchema = z.union([
+  payoutDestinationSchema.nullable(),
   z
     .object({
-      success: z.literal(true),
-      data: z.object({
-        destinations: z.array(payoutDestinationSchema),
-      }),
+      destinations: z.array(payoutDestinationSchema),
     })
-    .transform((val) => ({
-      success: true as const,
-      data: val.data.destinations[0] ?? null,
-    })),
+    .transform((val) => val.destinations[0] ?? null),
 ]);
 
-export const payoutDestinationsResponseSchema = z.union([
+export const payoutDestinationsDataSchema = z.union([
   z.object({
-    success: z.literal(true),
-    data: z.object({
-      destinations: z.array(payoutDestinationSchema),
-    }),
+    destinations: z.array(payoutDestinationSchema),
   }),
-  z
-    .object({
-      success: z.literal(true),
-      data: payoutDestinationSchema.nullable(),
-    })
-    .transform((val) => ({
-      success: true as const,
-      data: {
-        destinations: val.data ? [normalizePayoutDestination(val.data)] : [],
-      },
-    })),
+  payoutDestinationSchema.nullable().transform((destination) => ({
+    destinations: destination ? [normalizePayoutDestination(destination)] : [],
+  })),
 ]);
 export type PayoutDestinationsResponse = z.infer<
-  typeof payoutDestinationsResponseSchema
+  typeof payoutDestinationsDataSchema
 >;
 
-export const payoutDestinationResponseSchema = z.object({
-  success: z.literal(true),
-  data: z
-    .union([
-      z
-        .object({
-          destination: payoutDestinationSchema,
-        })
-        .transform((val) => val.destination),
-      payoutDestinationSchema,
-    ])
-    .nullable(),
-});
+export const payoutDestinationDataSchema = z
+  .union([
+    z
+      .object({
+        destination: payoutDestinationSchema,
+      })
+      .transform((val) => val.destination),
+    payoutDestinationSchema,
+  ])
+  .nullable();
 
-export const deletePayoutDestinationResponseSchema = z.object({
-  success: z.literal(true),
-  data: z
-    .object({
-      retired: z.boolean().optional(),
-      id: z.string().optional(),
-    })
-    .optional(),
-});
+export const deletePayoutDestinationDataSchema = z
+  .object({
+    retired: z.boolean().optional(),
+    id: z.string().optional(),
+  })
+  .optional();
 
 export const payoutStatusSchema = z.enum([
   "PENDING_ADMIN_APPROVAL",
@@ -389,11 +343,6 @@ export const payoutQuoteSchema = z.object({
 });
 export type PayoutQuote = z.infer<typeof payoutQuoteSchema>;
 
-export const payoutQuoteResponseSchema = z.object({
-  success: z.literal(true),
-  data: payoutQuoteSchema,
-});
-
 export const payoutStatusHistoryItemSchema = z.object({
   id: z.string().min(1),
   fromStatus: z.string().nullable(),
@@ -409,10 +358,9 @@ export type PayoutStatusHistoryItem = z.infer<
   typeof payoutStatusHistoryItemSchema
 >;
 
-export const payoutStatusHistoryResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.array(payoutStatusHistoryItemSchema),
-});
+export const payoutStatusHistoryDataSchema = z.array(
+  payoutStatusHistoryItemSchema
+);
 
 export const payoutRecordSchema = z.object({
   id: z.string().min(1),
@@ -474,124 +422,112 @@ export const requestPayoutPayloadSchema = z.object({
 });
 export type RequestPayoutPayload = z.infer<typeof requestPayoutPayloadSchema>;
 
-export const payoutResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.union([
-    z
-      .object({
-        payout: payoutRecordSchema,
-      })
-      .transform((val) => val.payout),
-    payoutRecordSchema,
-  ]),
-});
+export const payoutDataSchema = z.union([
+  z
+    .object({
+      payout: payoutRecordSchema,
+    })
+    .transform((val) => val.payout),
+  payoutRecordSchema,
+]);
 
-export const payoutsListResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    payouts: z.array(payoutRecordSchema),
-  }),
+export const payoutsListDataSchema = z.object({
+  items: z.array(payoutListItemSchema),
 });
+function normalizePayout(raw: PayoutRecord): PayoutRecord {
+  const resolvedStatus =
+    raw.status ?? raw.payoutStatus ?? "PENDING_ADMIN_APPROVAL";
+  return {
+    ...raw,
+    amountSatang:
+      raw.amountSatang ?? raw.receiptSatang ?? raw.principalSatang ?? 0,
+    feeSatang:
+      raw.feeSatang ?? raw.actualFeeSatang ?? raw.maximumFeeSatang ?? 0,
+    status: resolvedStatus,
+    payoutStatus: resolvedStatus,
+  };
+}
 
 export class WalletApi {
   constructor(private readonly client: ApiClient = new ApiClient()) {}
 
   async getWallet(options?: RequestOptions): Promise<WalletBalances> {
-    const body = await this.client.request<unknown>("/api/v1/wallet", {
-      signal: options?.signal,
-    });
-    return walletResponseSchema.parse(body).data.wallet;
+    return (await this.client.get("/api/v1/wallet", walletDataSchema, options))
+      .wallet;
   }
 
   async convertEarnings(
     amountSatang: number,
     idempotencyKey = createIdempotencyKey()
   ): Promise<{ id: string; amountSatang: number }> {
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       "/api/v1/wallet/earnings-conversions",
-      { amountSatang },
-      {
-        method: "POST",
-        headers: { "idempotency-key": idempotencyKey },
-      }
+      earningsConversionDataSchema,
+      { json: { amountSatang }, idempotencyKey }
     );
-    return earningsConversionResponseSchema.parse(body).data;
   }
 
   async quoteTopUp(creditSatang: number): Promise<TopUpQuote> {
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       "/api/v1/top-ups/quotes",
-      { creditSatang },
-      { method: "POST" }
+      topUpQuoteDataSchema,
+      { json: { creditSatang } }
     );
-    return topUpQuoteResponseSchema.parse(body).data;
   }
 
   async createTopUp(
     quoteId: string,
     idempotencyKey = createIdempotencyKey()
   ): Promise<TopUpData> {
-    const body = await this.client.requestJson<unknown>(
-      "/api/v1/top-ups",
-      { quoteId },
-      {
-        method: "POST",
-        headers: { "idempotency-key": idempotencyKey },
-      }
-    );
-    return topUpResponseSchema.parse(body).data;
+    return this.client.send("POST", "/api/v1/top-ups", topUpDataSchema, {
+      json: { quoteId },
+      idempotencyKey,
+    });
   }
 
   async simulateTopUp(topUpId: string): Promise<TopUpData> {
-    const body = await this.client.request<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v1/top-ups/${topUpId}/simulate`,
-      { method: "POST" }
+      topUpDataSchema
     );
-    return topUpResponseSchema.parse(body).data;
   }
 
   async getTopUpStatus(
     topUpId: string,
     options?: RequestOptions
   ): Promise<TopUpData> {
-    const body = await this.client.request<unknown>(
+    return this.client.get(
       `/api/v1/top-ups/${topUpId}`,
-      { signal: options?.signal }
+      topUpDataSchema,
+      options
     );
-    return topUpResponseSchema.parse(body).data;
   }
 
   async listTopUps(
     limit?: number,
     options?: RequestOptions
   ): Promise<TopUpListItem[]> {
-    try {
-      const path = limit ? `/api/v1/top-ups?limit=${limit}` : "/api/v1/top-ups";
-      const body = await this.client.request<unknown>(path, {
-        signal: options?.signal,
-      });
-      return topUpsListResponseSchema.parse(body).data.items;
-    } catch {
-      return [];
-    }
+    const result = await this.client.get(
+      "/api/v1/top-ups",
+      topUpsListDataSchema,
+      { ...options, query: { limit } }
+    );
+    return result.items;
   }
 
   async listPayouts(
     limit?: number,
     options?: RequestOptions
   ): Promise<PayoutListItem[]> {
-    try {
-      const path = limit ? `/api/v1/payouts?limit=${limit}` : "/api/v1/payouts";
-      const body = await this.client.request<unknown>(path, {
-        signal: options?.signal,
-      });
-      const parsed = payoutsListResponseSchema.parse(body).data;
-      return "items" in parsed
-        ? (parsed.items as unknown as PayoutListItem[])
-        : (parsed.payouts as unknown as PayoutListItem[]);
-    } catch {
-      return [];
-    }
+    const result = await this.client.get(
+      "/api/v1/payouts",
+      payoutsListDataSchema,
+      { ...options, query: { limit } }
+    );
+    return result.items;
   }
 
   async getTransactionHistory(
@@ -600,12 +536,11 @@ export class WalletApi {
   ): Promise<UserTransactionHistoryResult> {
     const [activitiesRes, topUpsRes, payoutsRes] = await Promise.allSettled([
       this.client
-        .request<unknown>(`/api/v1/wallet/activities?limit=${limit}`, {
-          signal: options?.signal,
+        .get("/api/v1/wallet/activities", walletActivitiesDataSchema, {
+          ...options,
+          query: { limit },
         })
-        .then(
-          (body) => walletActivitiesResponseSchema.parse(body).data.activities
-        ),
+        .then((data) => data.activities),
       this.listTopUps(limit, options),
       this.listPayouts(limit, options),
     ]);
@@ -672,8 +607,7 @@ export class WalletApi {
         itemsMap.set(topUp.id, {
           id: topUp.id,
           type: "TOP_UP",
-          title: "PromptPay Top-Up",
-          titleTh: "เติมเงินผ่านพร้อมเพย์",
+          titleKey: WalletTransactionTitleKey.PROMPT_PAY_TOP_UP,
           amountSatang: topUp.creditSatang,
           direction: "INFLOW",
           status: topUp.topUpStatus,
@@ -736,7 +670,8 @@ export class WalletApi {
         matched.sourceApi = "PAYOUTS";
         if (destinationInfo) matched.destinationInfo = destinationInfo;
         if (payout.payoutStatus || payout.status) {
-          matched.status = payout.payoutStatus ?? payout.status!;
+          matched.status =
+            payout.payoutStatus ?? payout.status ?? matched.status;
         }
         if (payout.internalReference) {
           matched.reference = payout.internalReference;
@@ -745,8 +680,7 @@ export class WalletApi {
         itemsMap.set(payout.id, {
           id: payout.id,
           type: "PAYOUT",
-          title: "Bank Payout",
-          titleTh: "ถอนเงินเข้าบัญชีธนาคาร",
+          titleKey: WalletTransactionTitleKey.BANK_PAYOUT,
           amountSatang: payoutAmount,
           direction: "OUTFLOW",
           status: payout.payoutStatus ?? payout.status ?? "PENDING",
@@ -792,12 +726,12 @@ export class WalletApi {
   async getActivePayoutDestination(
     options?: RequestOptions
   ): Promise<PayoutDestination | null> {
-    const body = await this.client.request<unknown>(
+    const destination = await this.client.get(
       "/api/v1/payout-destinations",
-      { signal: options?.signal }
+      activePayoutDestinationDataSchema,
+      options
     );
-    const parsed = activePayoutDestinationResponseSchema.parse(body);
-    return parsed.data ? normalizePayoutDestination(parsed.data) : null;
+    return destination ? normalizePayoutDestination(destination) : null;
   }
 
   async listPayoutDestinations(
@@ -849,27 +783,27 @@ export class WalletApi {
       bodyPayload.accountCurrency = validatedPayload.accountCurrency;
     }
 
-    const body = await this.client.requestJson<unknown>(
+    const destination = await this.client.send(
+      "POST",
       "/api/v1/payout-destinations",
-      bodyPayload,
-      { method: "POST" }
+      payoutDestinationDataSchema,
+      { json: bodyPayload }
     );
-    const parsed = payoutDestinationResponseSchema.parse(body);
-    if (!parsed.data) {
+    if (!destination) {
       throw new Error("Payout destination creation returned null data");
     }
-    return normalizePayoutDestination(parsed.data);
+    return normalizePayoutDestination(destination);
   }
 
   async deletePayoutDestination(
     id?: string
   ): Promise<{ id?: string; retired: boolean }> {
-    const body = await this.client.request<unknown>(
+    const data = await this.client.send(
+      "DELETE",
       "/api/v1/payout-destinations",
-      { method: "DELETE" }
+      deletePayoutDestinationDataSchema
     );
-    const parsed = deletePayoutDestinationResponseSchema.parse(body);
-    return { id, retired: parsed.data?.retired ?? true };
+    return { id, retired: data?.retired ?? true };
   }
 
   async retireActivePayoutDestination(): Promise<boolean> {
@@ -878,39 +812,25 @@ export class WalletApi {
   }
 
   async quotePayout(receiptSatang: number): Promise<PayoutQuote> {
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       "/api/v1/payouts/quotes",
-      { receiptSatang },
-      { method: "POST" }
+      payoutQuoteSchema,
+      { json: { receiptSatang } }
     );
-    return payoutQuoteResponseSchema.parse(body).data;
   }
 
   async createPayout(
     quoteId: string,
     idempotencyKey = createIdempotencyKey()
   ): Promise<PayoutRecord> {
-    const body = await this.client.requestJson<unknown>(
+    const raw = await this.client.send(
+      "POST",
       "/api/v1/payouts",
-      { quoteId },
-      {
-        method: "POST",
-        headers: { "idempotency-key": idempotencyKey },
-      }
+      payoutDataSchema,
+      { json: { quoteId }, idempotencyKey }
     );
-    const raw = payoutResponseSchema.parse(body).data;
-    const resolvedStatus = (raw.status ??
-      raw.payoutStatus ??
-      "PENDING_ADMIN_APPROVAL") as PayoutStatus;
-    return {
-      ...raw,
-      amountSatang:
-        raw.amountSatang ?? raw.receiptSatang ?? raw.principalSatang ?? 0,
-      feeSatang:
-        raw.feeSatang ?? raw.actualFeeSatang ?? raw.maximumFeeSatang ?? 0,
-      status: resolvedStatus,
-      payoutStatus: resolvedStatus,
-    };
+    return normalizePayout(raw);
   }
 
   async requestPayout(
@@ -926,27 +846,13 @@ export class WalletApi {
         amountSatang: amountSatangOrQuoteId,
         destinationId,
       };
-      const body = await this.client.requestJson<unknown>(
+      const raw = await this.client.send(
+        "POST",
         "/api/v1/payouts",
-        payload,
-        {
-          method: "POST",
-          headers: { "idempotency-key": idempotencyKey },
-        }
+        payoutDataSchema,
+        { json: payload, idempotencyKey }
       );
-      const raw = payoutResponseSchema.parse(body).data;
-      const resolvedStatus = (raw.status ??
-        raw.payoutStatus ??
-        "PENDING_ADMIN_APPROVAL") as PayoutStatus;
-      return {
-        ...raw,
-        amountSatang:
-          raw.amountSatang ?? raw.receiptSatang ?? raw.principalSatang ?? 0,
-        feeSatang:
-          raw.feeSatang ?? raw.actualFeeSatang ?? raw.maximumFeeSatang ?? 0,
-        status: resolvedStatus,
-        payoutStatus: resolvedStatus,
-      };
+      return normalizePayout(raw);
     }
     const quote = await this.quotePayout(amountSatangOrQuoteId);
     return this.createPayout(quote.id, idempotencyKey);
@@ -956,33 +862,22 @@ export class WalletApi {
     payoutId: string,
     options?: RequestOptions
   ): Promise<PayoutRecord> {
-    const body = await this.client.request<unknown>(
+    const raw = await this.client.get(
       `/api/v1/payouts/${payoutId}`,
-      { signal: options?.signal }
+      payoutDataSchema,
+      options
     );
-    const raw = payoutResponseSchema.parse(body).data;
-    const resolvedStatus = (raw.status ??
-      raw.payoutStatus ??
-      "PENDING_ADMIN_APPROVAL") as PayoutStatus;
-    return {
-      ...raw,
-      amountSatang:
-        raw.amountSatang ?? raw.receiptSatang ?? raw.principalSatang ?? 0,
-      feeSatang:
-        raw.feeSatang ?? raw.actualFeeSatang ?? raw.maximumFeeSatang ?? 0,
-      status: resolvedStatus,
-      payoutStatus: resolvedStatus,
-    };
+    return normalizePayout(raw);
   }
   async listPayoutStatusHistory(
     payoutId: string,
     options?: RequestOptions
   ): Promise<PayoutStatusHistoryItem[]> {
-    const body = await this.client.request<unknown>(
+    return this.client.get(
       `/api/v1/payouts/${payoutId}/status-history`,
-      { signal: options?.signal }
+      payoutStatusHistoryDataSchema,
+      options
     );
-    return payoutStatusHistoryResponseSchema.parse(body).data;
   }
 }
 

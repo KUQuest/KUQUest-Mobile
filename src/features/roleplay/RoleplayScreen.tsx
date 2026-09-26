@@ -11,9 +11,9 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { PrototypePersonaId } from "@/components/ui/prototypeMenuData";
-import { QuestTeamStatus } from "@/features/questBoard/types";
+import { QuestTeamStatus } from "@/features/questBoard/domain/types";
 import { useLocale } from "@/features/preferences/localeStore";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { spacing } from "@/theme/spacing";
 import { Pressable, ScrollView, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
@@ -113,6 +113,7 @@ function actionTestId(action: RoleplayAction): string {
 export default function RoleplayScreen() {
   const router = useRouter();
   const { locale } = useLocale();
+  const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
   const messages = roleplayMessages[locale];
 

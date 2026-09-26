@@ -1,18 +1,17 @@
-import { useCallback } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import {
-  Alert,
-  Platform,
   RefreshControl,
   type ListRenderItemInfo,
+  type FlatList as NativeFlatList,
 } from "react-native";
+
+import { showErrorAlert } from "@/components/ui/SweetAlert";
 import {
   Camera,
   ChevronLeft,
-  CircleAlert,
   ClipboardCheck,
   Download,
   FileText,
-  MoreHorizontal,
   Paperclip,
   Search,
   Send,
@@ -28,39 +27,25 @@ import {
   TextInput,
   View,
 } from "@/tw";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { spacing } from "@/theme/spacing";
 import styles from "./chatStyles";
 import { cn } from "@/tw/cn";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { ImageViewerModal } from "./ImageViewerModal";
+import { ImageViewerModal } from "@/components/ui/ImageViewerModal";
 import {
   ChatAvatar,
   ChatConversationSkeleton,
-  MessageBubble,
-  PendingAttachmentsBar,
   localizedText,
-  type DisplayChatMessage,
-} from "./ChatConversationPresentation";
+} from "./components/ChatConversationPresentation";
+import { MessageBubble } from "./components/MessageBubble";
+import { PendingAttachmentsBar } from "./components/PendingAttachmentsBar";
+import type { DisplayChatMessage } from "./domain/conversationModule";
 import {
   MAX_MESSAGE_LENGTH,
   useChatConversationController,
-} from "./useChatConversationController";
-import type { ConversationMode } from "./useChatConversationController";
-
-export {
-  AttachmentRow,
-  ChatAvatar,
-  InlineImageAttachment,
-  MessageBubble,
-  PendingAttachmentsBar,
-} from "./ChatConversationPresentation";
-export type {
-  DisplayChatMessage,
-  PendingAttachmentItem,
-  RenderAttachment,
-} from "./ChatConversationPresentation";
-export type { ConversationMode } from "./useChatConversationController";
+} from "./workflow/useChatConversationController";
+import type { ConversationMode } from "./workflow/useChatConversationController";
 
 export interface ChatConversationScreenProps {
   conversationType?: ConversationMode;
@@ -69,12 +54,12 @@ export interface ChatConversationScreenProps {
 export default function ChatConversationScreen({
   conversationType = "WORK",
 }: ChatConversationScreenProps = {}) {
+  const { colors } = useAppTheme();
   const controller = useChatConversationController(conversationType);
   const {
     router,
     locale,
     messages,
-    insets,
     viewerId,
     conversationPending,
     conversationLoadFailed,
@@ -82,13 +67,11 @@ export default function ChatConversationScreen({
     refreshing,
     refresh,
     retryLoad,
-    role,
     conversationKind,
     canWrite,
     readOnlyDescription,
     messagePlaceholder,
-    canReportConversation,
-    handleReportConversation,
+    handleReportMessage,
     searchOpen,
     setSearchOpen,
     searchScope,
@@ -109,9 +92,26 @@ export default function ChatConversationScreen({
     handleImagePress,
     openFile,
   } = controller;
-  const openParticipantProfile = conversation?.participantId
-    ? () => router.push(`/profile/${conversation.participantId}`)
-    : undefined;
+  const messageListRef = useRef<NativeFlatList<DisplayChatMessage>>(null);
+  const lastMessageIdRef = useRef<string | null>(null);
+  const handleMessageListContentSizeChange = useCallback(() => {
+    if (searchOpen) return;
+    const latestMessageId = searchedMessages.at(-1)?.id;
+    if (!latestMessageId || latestMessageId === lastMessageIdRef.current) {
+      return;
+    }
+    const animated = lastMessageIdRef.current !== null;
+    lastMessageIdRef.current = latestMessageId;
+    messageListRef.current?.scrollToEnd({ animated });
+  }, [searchOpen, searchedMessages]);
+  const participantId = conversation?.participantId;
+  const openParticipantProfile = useMemo(
+    () =>
+      participantId
+        ? () => router.push(`/profile/${participantId}`)
+        : undefined,
+    [participantId, router]
+  );
   const renderMessage = useCallback(
     ({ item }: ListRenderItemInfo<DisplayChatMessage>) => {
       if (!conversation) return null;
@@ -125,6 +125,7 @@ export default function ChatConversationScreen({
           onImagePress={handleImagePress}
           onProfilePress={openParticipantProfile}
           isCandidateInquiry={conversationType === "CANDIDATE_INQUIRY"}
+          onReportMessage={handleReportMessage}
         />
       );
     },
@@ -136,6 +137,7 @@ export default function ChatConversationScreen({
       messages,
       openFile,
       openParticipantProfile,
+      handleReportMessage,
     ]
   );
 
@@ -214,10 +216,7 @@ export default function ChatConversationScreen({
       edges={["top", "left", "right", "bottom"]}
       className={styles.safeArea}
     >
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <KeyboardAvoidingView className="flex-1" behavior="padding">
         <View className={styles.detailHeader}>
           <View className={styles.brandRow}>
             <Pressable
@@ -232,8 +231,6 @@ export default function ChatConversationScreen({
                 strokeWidth={2.5}
               />
             </Pressable>
-          </View>
-          <View className={styles.identityRow}>
             <ChatAvatar
               initials={conversation.initials}
               color={conversation.avatarColor}
@@ -248,48 +245,8 @@ export default function ChatConversationScreen({
                 {localizedText(conversation.questTitle, locale)}
               </Text>
               <Text className={styles.identityMeta} numberOfLines={1}>
-                {conversation.participantName} · {role}
+                {conversation.participantName}
               </Text>
-            </View>
-            <View className={styles.headerActions}>
-              <Pressable
-                accessibilityLabel={messages.search}
-                accessibilityRole="button"
-                className={styles.headerAction}
-                onPress={() => {
-                  setSearchOpen(true);
-                  setSearchScope("messages");
-                }}
-              >
-                <Search color={colors.textStrong} size={21} strokeWidth={2.2} />
-              </Pressable>
-              <Pressable
-                accessibilityLabel={messages.searchFiles}
-                accessibilityRole="button"
-                className={styles.headerAction}
-                onPress={() => {
-                  setSearchOpen(true);
-                  setSearchScope("files");
-                }}
-              >
-                <FileText
-                  color={colors.textStrong}
-                  size={20}
-                  strokeWidth={2.1}
-                />
-              </Pressable>
-              <Pressable
-                accessibilityLabel={messages.moreOptions}
-                accessibilityRole="button"
-                className={styles.headerAction}
-                onPress={() => Alert.alert(messages.moreOptions)}
-              >
-                <MoreHorizontal
-                  color={colors.textStrong}
-                  size={21}
-                  strokeWidth={2.2}
-                />
-              </Pressable>
             </View>
           </View>
         </View>
@@ -300,20 +257,21 @@ export default function ChatConversationScreen({
           className={styles.contextCard}
           onPress={() => {
             if (!conversation.questId) {
-              Alert.alert(
+              showErrorAlert(
                 messages.viewQuest,
-                locale === "th"
-                  ? "ไม่พบบริบทเควสต์สำหรับการนำทาง"
-                  : "Quest context is unavailable for navigation."
+                messages.questContextUnavailable
               );
               return;
             }
             router.push(
               conversationType === "CANDIDATE_INQUIRY"
-                ? `../../${conversation.questId}`
+                ? {
+                    pathname: "/quest/[id]",
+                    params: { id: conversation.questId },
+                  }
                 : {
-                    pathname: `../quest/${conversation.questId}/work`,
-                    params: { viewerId },
+                    pathname: "/quest/[id]/work",
+                    params: { id: conversation.questId, viewerId },
                   }
             );
           }}
@@ -339,27 +297,6 @@ export default function ChatConversationScreen({
             </Text>
           </View>
         </Pressable>
-        {canReportConversation ? (
-          <Pressable
-            accessibilityLabel={messages.reportConversation}
-            accessibilityRole="button"
-            className={styles.reportAction}
-            onPress={handleReportConversation}
-            testID="chat-report-button"
-          >
-            <View className={styles.reportActionIcon}>
-              <CircleAlert color={colors.danger} size={20} strokeWidth={2.2} />
-            </View>
-            <View className={styles.reportActionCopy}>
-              <Text className={styles.reportActionText}>
-                {messages.reportConversation}
-              </Text>
-              <Text className={styles.reportActionDescription}>
-                {messages.reportConversationDescription}
-              </Text>
-            </View>
-          </Pressable>
-        ) : null}
         {!canWrite ? (
           <View
             accessibilityRole="alert"
@@ -514,13 +451,19 @@ export default function ChatConversationScreen({
           </ScrollView>
         ) : (
           <FlatList
+            ref={messageListRef}
+            testID="chat-message-list"
             contentContainerClassName={
               searchOpen && searchedMessages.length === 0
-                ? undefined
+                ? "pb-ku-md"
                 : styles.messageContent
             }
-            contentContainerStyle={{ paddingBottom: spacing.md }}
             data={searchedMessages}
+            onContentSizeChange={handleMessageListContentSizeChange}
+            onLayout={() => {
+              // Keyboard show/hide resizes the list; keep the newest message in view.
+              if (!searchOpen) messageListRef.current?.scrollToEnd();
+            }}
             keyExtractor={(message) => message.id}
             ListEmptyComponent={
               searchOpen ? (
@@ -564,7 +507,6 @@ export default function ChatConversationScreen({
                 styles.composerWrap,
                 pendingAttachments.length > 0 && "border-t-0 pt-ku-xs"
               )}
-              style={{ paddingBottom: Math.max(insets.bottom, spacing.sm) }}
             >
               <View className={styles.composer}>
                 <Pressable
@@ -592,7 +534,7 @@ export default function ChatConversationScreen({
                 />
                 <Text
                   accessibilityLiveRegion="polite"
-                  className={styles.resultMeta}
+                  className={styles.composerCounter}
                   style={{
                     color:
                       draft.length > MAX_MESSAGE_LENGTH
@@ -638,6 +580,8 @@ export default function ChatConversationScreen({
       </KeyboardAvoidingView>
       <ImageViewerModal
         visible={viewerState.visible}
+        closeLabel={messages.close}
+        imageAccessibilityLabel={viewerState.name ?? messages.attachment}
         imageUrl={viewerState.url}
         fileName={viewerState.name}
         timestamp={viewerState.timestamp}

@@ -30,95 +30,82 @@ export const authUserSchema = z.object({
   updatedAt: authTimestampSchema,
 });
 
-const successSchema = z.object({ success: z.literal(true) });
-
-export const academicRegistrationOptionsResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    occupations: z.array(
-      z.object({
-        id: z.string().min(1),
-        name: z.string().min(1),
-        requiresStudentId: z.boolean(),
-      })
-    ),
-    faculties: z.array(
-      z.object({
-        id: z.string().min(1),
-        name: z.string().min(1),
-        departments: z.array(
-          z.object({
-            id: z.string().min(1),
-            name: z.string().min(1),
-          })
-        ),
-      })
-    ),
-  }),
+export const academicRegistrationOptionsDataSchema = z.object({
+  occupations: z.array(
+    z.object({
+      id: z.string().min(1),
+      name: z.string().min(1),
+      requiresStudentId: z.boolean(),
+    })
+  ),
+  faculties: z.array(
+    z.object({
+      id: z.string().min(1),
+      name: z.string().min(1),
+      departments: z.array(
+        z.object({
+          id: z.string().min(1),
+          name: z.string().min(1),
+        })
+      ),
+    })
+  ),
 });
 
-export const academicRegistrationStatusResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    firstName: z.string(),
-    lastName: z.string(),
-    telephone: z.string().nullable(),
-    occupationId: z.string().nullable(),
-    studentId: z.string().nullable(),
-    departmentId: z.string().nullable(),
-    termsAcceptedAt: z.string().nullable(),
-    termsVersion: z.string().nullable(),
-    completed: z.boolean(),
-  }),
+export const academicRegistrationStatusDataSchema = z.object({
+  firstName: z.string(),
+  lastName: z.string(),
+  telephone: z.string().nullable(),
+  occupationId: z.string().nullable(),
+  studentId: z.string().nullable(),
+  departmentId: z.string().nullable(),
+  termsAcceptedAt: z.string().nullable(),
+  termsVersion: z.string().nullable(),
+  completed: z.boolean(),
 });
 
-export const profileResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    version: nonNegativeIntegerSchema,
-    email: z.string().email(),
-    firstName: z.string(),
-    lastName: z.string(),
-    bio: z.string().nullable(),
-    telephone: z.string().nullable(),
-    studentId: z.string().nullable(),
-    academicYear: z.union([z.string(), z.number()]).nullable(),
-    university: z.string().nullable().optional(),
-    occupation: z.object({ id: z.string(), name: z.string() }).nullable(),
-    tags: z.array(
-      z.object({
-        id: z.string(),
-        name: z.string(),
-        questCount: nonNegativeIntegerSchema.optional(),
-      })
-    ),
-    department: z
-      .object({
-        id: z.string(),
-        name: z.string(),
-        faculty: z.object({ name: z.string() }),
-      })
-      .nullable(),
-    avatar: z
-      .object({
-        fileId: z.string(),
-        url: z.string().url(),
-      })
-      .nullable(),
-  }),
+export const profileDataSchema = z.object({
+  version: nonNegativeIntegerSchema,
+  email: z.string().email(),
+  firstName: z.string(),
+  lastName: z.string(),
+  bio: z.string().nullable(),
+  telephone: z.string().nullable(),
+  studentId: z.string().nullable(),
+  academicYear: z.union([z.string(), z.number()]).nullable(),
+  university: z.string().nullable().optional(),
+  occupation: z.object({ id: z.string(), name: z.string() }).nullable(),
+  tags: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      questCount: nonNegativeIntegerSchema.optional(),
+    })
+  ),
+  department: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      faculty: z.object({ name: z.string() }),
+    })
+    .nullable(),
+  avatar: z
+    .object({
+      fileId: z.string(),
+      url: z.string().url(),
+    })
+    .nullable(),
 });
-export const avatarMutationResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    fileId: z.string().nullable(),
-    version: nonNegativeIntegerSchema,
-    avatar: z
-      .object({
-        fileId: z.string(),
-        url: z.string().url(),
-      })
-      .nullable(),
-  }),
+
+export const avatarMutationDataSchema = z.object({
+  fileId: z.string().nullable(),
+  version: nonNegativeIntegerSchema,
+  avatar: z
+    .object({
+      fileId: z.string(),
+      url: z.string().url(),
+    })
+    .nullable(),
 });
 
 const experienceSchema = z.object({
@@ -134,30 +121,23 @@ const experienceSchema = z.object({
 });
 export const experienceEntrySchema = experienceSchema;
 
-export const experienceResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.array(experienceSchema),
-});
+export const experienceDataSchema = z.array(experienceSchema);
 
-export const experienceMutationResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({ experience: experienceSchema }).optional(),
-});
+export const experienceMutationDataSchema = z
+  .object({ experience: experienceSchema })
+  .optional();
 
-export const reputationResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    totalQuests: nonNegativeIntegerSchema,
-    rating: z.object({
-      average: ratingAverageSchema.nullable(),
-      count: nonNegativeIntegerSchema,
-      distribution: z.object({
-        "5": nonNegativeIntegerSchema,
-        "4": nonNegativeIntegerSchema,
-        "3": nonNegativeIntegerSchema,
-        "2": nonNegativeIntegerSchema,
-        "1": nonNegativeIntegerSchema,
-      }),
+export const reputationDataSchema = z.object({
+  totalQuests: nonNegativeIntegerSchema,
+  rating: z.object({
+    average: ratingAverageSchema.nullable(),
+    count: nonNegativeIntegerSchema,
+    distribution: z.object({
+      "5": nonNegativeIntegerSchema,
+      "4": nonNegativeIntegerSchema,
+      "3": nonNegativeIntegerSchema,
+      "2": nonNegativeIntegerSchema,
+      "1": nonNegativeIntegerSchema,
     }),
   }),
 });
@@ -188,51 +168,40 @@ export const profileReviewSchema = z.object({
   quest: z.object({ id: z.string(), title: z.string() }).nullable().optional(),
 });
 
-export const reviewsResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    items: z.array(reviewSchema),
-    total: nonNegativeIntegerSchema,
-    nextCursor: z.string().nullable().optional(),
-  }),
+export const reviewsDataSchema = z.object({
+  items: z.array(reviewSchema),
+  total: nonNegativeIntegerSchema,
+  nextCursor: z.string().nullable().optional(),
 });
 
-export const portfolioResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.array(
-    z.object({
-      id: z.string(),
-      title: z.string(),
-      description: z.string().nullable(),
-      images: z.array(
-        z.object({
-          fileId: z.string(),
-          position: z.union([z.string(), z.number()]),
-          url: z.string().url(),
-        })
-      ),
-      createdAt: z.string(),
-    })
-  ),
-});
-
-export const certificateResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    certificates: z.array(
+export const portfolioDataSchema = z.array(
+  z.object({
+    id: z.string(),
+    title: z.string(),
+    description: z.string().nullable(),
+    images: z.array(
       z.object({
-        id: z.string(),
-        name: z.string(),
-        issuer: z.string(),
-        issuedAt: z.string(),
-        image: z
-          .object({ fileId: z.string(), url: z.string().url() })
-          .nullable(),
-        createdAt: z.string(),
-        updatedAt: z.string(),
+        fileId: z.string(),
+        position: z.union([z.string(), z.number()]),
+        url: z.string().url(),
       })
     ),
-  }),
+    createdAt: z.string(),
+  })
+);
+
+export const certificateDataSchema = z.object({
+  certificates: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      issuer: z.string(),
+      issuedAt: z.string(),
+      image: z.object({ fileId: z.string(), url: z.string().url() }).nullable(),
+      createdAt: z.string(),
+      updatedAt: z.string(),
+    })
+  ),
 });
 export const portfolioEntrySchema = z.object({
   id: z.string(),
@@ -263,83 +232,73 @@ export const certificateEntrySchema = z.object({
   updatedAt: z.string().optional(),
 });
 
-export const publicProfileResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    version: z.number().int().min(1).default(1),
-    firstName: z.string(),
-    lastName: z.string(),
-    bio: z.string().nullable().optional(),
-    academicYear: z.union([z.number().int(), z.string()]).nullable().optional(),
-    department: z
-      .object({
-        id: z.string().optional(),
-        name: z.string(),
-        faculty: z.object({ name: z.string() }),
-      })
-      .nullable()
-      .optional(),
-    avatar: z
-      .object({
-        fileId: z.string().optional(),
-        url: z.string(),
-      })
-      .nullable()
-      .optional(),
-    occupation: z
-      .object({
-        id: z.string().optional(),
-        name: z.string(),
-      })
-      .nullable()
-      .optional(),
-    experience: z.array(experienceEntrySchema).default([]),
-    portfolio: z.array(portfolioEntrySchema).default([]),
-    certificates: z.array(certificateEntrySchema).default([]),
+export const publicProfileDataSchema = z.object({
+  version: z.number().int().min(1).default(1),
+  firstName: z.string(),
+  lastName: z.string(),
+  bio: z.string().nullable().optional(),
+  academicYear: z.union([z.number().int(), z.string()]).nullable().optional(),
+  department: z
+    .object({
+      id: z.string().optional(),
+      name: z.string(),
+      faculty: z.object({ name: z.string() }),
+    })
+    .nullable()
+    .optional(),
+  avatar: z
+    .object({
+      fileId: z.string().optional(),
+      url: z.string(),
+    })
+    .nullable()
+    .optional(),
+  occupation: z
+    .object({
+      id: z.string().optional(),
+      name: z.string(),
+    })
+    .nullable()
+    .optional(),
+  reputation: z.object({
+    totalQuests: nonNegativeIntegerSchema,
+    rating: z.object({
+      average: ratingAverageSchema.nullable(),
+    }),
   }),
+  experience: z.array(experienceEntrySchema).default([]),
+  portfolio: z.array(portfolioEntrySchema).default([]),
+  certificates: z.array(certificateEntrySchema).default([]),
 });
 
-export const publicProfileReviewsResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    items: z.array(profileReviewSchema).default([]),
-    total: z.union([z.number().int(), z.string()]).default(0),
-    nextCursor: z.string().nullable().optional(),
-  }),
+export const publicProfileReviewsDataSchema = z.object({
+  items: z.array(profileReviewSchema).default([]),
+  total: z.union([z.number().int(), z.string()]).default(0),
+  nextCursor: z.string().nullable().optional(),
 });
 
-export const certificateCreateResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({ certificate: z.object({ id: z.string() }).passthrough() }),
+export const certificateCreateDataSchema = z.object({
+  certificate: z.object({ id: z.string() }).passthrough(),
 });
 
-export const portfolioCreateResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({ id: z.string() }),
-});
-
-export const successResponseSchema = successSchema;
+export const portfolioCreateDataSchema = z.object({ id: z.string() });
 
 export type AuthUser = z.infer<typeof authUserSchema>;
 export type AcademicRegistrationOptions = z.infer<
-  typeof academicRegistrationOptionsResponseSchema
->["data"];
+  typeof academicRegistrationOptionsDataSchema
+>;
 export type AcademicRegistrationStatus = z.infer<
-  typeof academicRegistrationStatusResponseSchema
->["data"];
-export type ProfileResponse = z.infer<typeof profileResponseSchema>["data"];
+  typeof academicRegistrationStatusDataSchema
+>;
+export type ProfileResponse = z.infer<typeof profileDataSchema>;
 export type ExperienceEntry = z.infer<typeof experienceSchema>;
-export type Reputation = z.infer<typeof reputationResponseSchema>["data"];
+export type Reputation = z.infer<typeof reputationDataSchema>;
 export type ProfileReview = z.infer<typeof reviewSchema>;
-export type PortfolioEntry = z.infer<
-  typeof portfolioResponseSchema
->["data"][number];
+export type PortfolioEntry = z.infer<typeof portfolioDataSchema>[number];
 export type CertificateEntry = z.infer<
-  typeof certificateResponseSchema
->["data"]["certificates"][number];
-export type PublicProfileResponse = z.infer<
-  typeof publicProfileResponseSchema
->["data"];
+  typeof certificateDataSchema
+>["certificates"][number];
+export type PublicProfileResponse = z.infer<typeof publicProfileDataSchema>;
 export type PublicProfileReviewsData = z.infer<
-  typeof publicProfileReviewsResponseSchema
->["data"];
+  typeof publicProfileReviewsDataSchema
+>;

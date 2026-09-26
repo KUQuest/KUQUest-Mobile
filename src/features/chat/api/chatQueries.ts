@@ -5,15 +5,19 @@ import {
   serverConversationToChatConversation,
   type ServerCandidateInquiry,
 } from "@/api/ChatApi";
-import { liveQuestService } from "@/features/questBoard/liveQuestService";
-import type { ChatConversation } from "../chatTypes";
-import { enrichChatConversation } from "../chatProfile";
+import type { UseChatSocketResult } from "./useChatSocket";
+import { isTerminalStatus } from "@/domain/questLifecycle";
+import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
+import { QuestActor } from "@/features/questBoard/domain/types";
+import { ConversationMode, type ChatConversation } from "../chatTypes";
+import { enrichChatConversation } from "./chatProfile";
 import {
+  mergeDisplayMessages,
   type DisplayChatMessage,
   toDisplayMessage,
-} from "../conversationModule";
+} from "../domain/conversationModule";
 
-export type ChatConversationMode = "WORK" | "CANDIDATE_INQUIRY";
+export type ChatConversationMode = ConversationMode;
 
 export const chatKeys = {
   all: ["chat"] as const,
@@ -34,16 +38,12 @@ export const chatKeys = {
       mode,
       conversationId,
       viewerId,
-      ...(mode === "WORK" ? [questId] : []),
+      ...(mode === ConversationMode.WORK ? [questId] : []),
     ] as const,
-  participants: (conversationId: string) =>
-    [...chatKeys.all, "participants", conversationId] as const,
-  candidateParticipants: (conversationId: string) =>
-    [...chatKeys.all, "candidate-participants", conversationId] as const,
   messages: (
     conversationId: string,
     viewerId: string,
-    mode: ChatConversationMode = "WORK"
+    mode: ChatConversationMode = ConversationMode.WORK
   ) => [...chatKeys.all, "messages", mode, conversationId, viewerId] as const,
 };
 
@@ -61,7 +61,8 @@ function candidateInquiryToConversation(
     questTitle: { en: inquiry.quest.title, th: inquiry.quest.title },
     ...(otherParticipant?.id ? { participantId: otherParticipant.id } : {}),
     participantName: otherParticipant?.displayName ?? inquiry.quest.title,
-    participantRole: otherParticipant?.role === "HIRER" ? "owner" : "member",
+    participantRole:
+      otherParticipant?.role === QuestActor.HIRER ? "owner" : "member",
     initials: (otherParticipant?.displayName ?? inquiry.quest.title)
       .slice(0, 2)
       .toUpperCase(),
@@ -109,7 +110,9 @@ export function useListConversationsQuery(viewerId: string, enabled = true) {
               participantName:
                 otherParticipant?.displayName ?? converted.participantName,
               participantRole:
-                otherParticipant?.role === "HIRER" ? "owner" : "member",
+                otherParticipant?.role === QuestActor.HIRER
+                  ? "owner"
+                  : "member",
               initials: (
                 otherParticipant?.displayName ?? converted.participantName
               )
@@ -166,41 +169,18 @@ export function useHasUnreadChatQuery(viewerId: string, enabled = true) {
   });
 }
 
-export function useListParticipantsQuery(
-  conversationId: string,
-  enabled = true
-) {
-  return useQuery({
-    enabled: Boolean(conversationId) && enabled,
-    queryKey: chatKeys.participants(conversationId),
-    queryFn: ({ signal }) =>
-      chatApi.listParticipants(conversationId, { signal }),
-  });
-}
-
-export function useCandidateInquiryParticipantsQuery(
-  conversationId: string,
-  enabled = true
-) {
-  return useQuery({
-    enabled: Boolean(conversationId) && enabled,
-    queryKey: chatKeys.candidateParticipants(conversationId),
-    queryFn: ({ signal }) =>
-      liveQuestService.listCandidateInquiryParticipants(conversationId, {
-        signal,
-      }),
-  });
-}
-
 export function useMessagesQuery(
   conversationId: string,
   viewerId: string,
   mode: ChatConversationMode,
   enabled = true
 ) {
+  const queryClient = useQueryClient();
+  const queryKey = chatKeys.messages(conversationId, viewerId, mode);
+
   return useQuery({
     enabled: Boolean(conversationId && viewerId) && enabled,
-    queryKey: chatKeys.messages(conversationId, viewerId, mode),
+    queryKey,
     queryFn: async ({ signal }) => {
       const page =
         mode === "CANDIDATE_INQUIRY"
@@ -214,7 +194,10 @@ export function useMessagesQuery(
               { limit: 50 },
               { signal }
             );
-      return page.items.map((message) => toDisplayMessage(message, viewerId));
+      return mergeDisplayMessages(
+        queryClient.getQueryData<DisplayChatMessage[]>(queryKey) ?? [],
+        page.items.map((message) => toDisplayMessage(message, viewerId))
+      );
     },
   });
 }
@@ -227,7 +210,12 @@ export function useWorkConversationQuery(
 ) {
   return useQuery({
     enabled: Boolean(conversationId && viewerId && questId) && enabled,
-    queryKey: chatKeys.conversation(conversationId, viewerId, "WORK", questId),
+    queryKey: chatKeys.conversation(
+      conversationId,
+      viewerId,
+      ConversationMode.WORK,
+      questId
+    ),
     queryFn: async ({ signal }) => {
       const liveSnapshot = await liveQuestService.getLiveSnapshot(
         questId as string,
@@ -255,17 +243,14 @@ export function useWorkConversationQuery(
       const canWrite = Boolean(
         liveSnapshot.capabilities.canWriteWorkChat && !workConversation.readOnly
       );
-      const terminal =
-        liveSnapshot.state === "QUEST_COMPLETED" ||
-        liveSnapshot.state === "QUEST_CANCELLED" ||
-        liveSnapshot.state === "QUEST_FAILED";
+      const terminal = isTerminalStatus(liveSnapshot.state);
       return enrichChatConversation({
         ...converted,
         ...(otherParticipant?.id ? { participantId: otherParticipant.id } : {}),
         participantName:
           otherParticipant?.displayName ?? converted.participantName,
         participantRole:
-          otherParticipant?.role === "HIRER" ? "owner" : "member",
+          otherParticipant?.role === QuestActor.HIRER ? "owner" : "member",
         initials: (otherParticipant?.displayName ?? converted.participantName)
           .slice(0, 2)
           .toUpperCase(),
@@ -325,17 +310,24 @@ export interface SendChatMessageVariables {
   optimisticMessage?: DisplayChatMessage;
 }
 
-export function useSendChatMessageMutation() {
+export function useSendChatMessageMutation(socket: UseChatSocketResult) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       conversationId,
       mode,
       text,
       clientMessageId,
       attachmentIds,
-    }: SendChatMessageVariables) =>
-      mode === "CANDIDATE_INQUIRY"
+    }: SendChatMessageVariables) => {
+      if (socket.status === "connected") {
+        return await socket.sendMessage({
+          clientMessageId,
+          ...(text.trim() ? { text } : {}),
+          ...(attachmentIds.length > 0 ? { attachmentIds } : {}),
+        });
+      }
+      return mode === "CANDIDATE_INQUIRY"
         ? liveQuestService.sendCandidateInquiryMessage(
             conversationId,
             text,
@@ -347,7 +339,8 @@ export function useSendChatMessageMutation() {
             text,
             clientMessageId,
             attachmentIds
-          ),
+          );
+    },
     onMutate: async (variables) => {
       const queryKey = chatKeys.messages(
         variables.conversationId,
@@ -358,31 +351,69 @@ export function useSendChatMessageMutation() {
       const previous = queryClient.getQueryData<DisplayChatMessage[]>(queryKey);
       const optimisticMessage = variables.optimisticMessage;
       if (optimisticMessage) {
-        queryClient.setQueryData<DisplayChatMessage[]>(queryKey, (current) => [
-          ...(current ?? []),
-          optimisticMessage,
-        ]);
+        queryClient.setQueryData<DisplayChatMessage[]>(queryKey, (current) =>
+          mergeDisplayMessages(current ?? [], [optimisticMessage])
+        );
       }
       return { previous, queryKey };
     },
-    onSuccess: (sentMessage, variables, context) => {
-      const sent = toDisplayMessage(sentMessage, variables.viewerId);
-      queryClient.setQueryData<DisplayChatMessage[]>(
+    onSuccess: async (sentMessage, variables, context) => {
+      const queryKey =
         context?.queryKey ??
-          chatKeys.messages(
-            variables.conversationId,
-            variables.viewerId,
-            variables.mode
-          ),
-        (current) =>
-          (current ?? []).map((message) =>
-            message.id === variables.clientMessageId ? sent : message
+        chatKeys.messages(
+          variables.conversationId,
+          variables.viewerId,
+          variables.mode
+        );
+      void queryClient.invalidateQueries({
+        queryKey:
+          variables.mode === ConversationMode.WORK
+            ? chatKeys.conversations(variables.viewerId)
+            : chatKeys.candidateInquiries(variables.viewerId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: chatKeys.unread(variables.viewerId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [
+          ...chatKeys.all,
+          "conversation",
+          variables.mode,
+          variables.conversationId,
+        ],
+      });
+      if (sentMessage) {
+        const sent = toDisplayMessage(sentMessage, variables.viewerId);
+        queryClient.setQueryData<DisplayChatMessage[]>(queryKey, (current) =>
+          mergeDisplayMessages(
+            (current ?? []).filter(
+              (message) => message.id !== variables.clientMessageId
+            ),
+            [sent]
           )
+        );
+        return;
+      }
+
+      queryClient.setQueryData<DisplayChatMessage[]>(queryKey, (current) =>
+        (current ?? []).filter(
+          (message) => message.id !== variables.clientMessageId
+        )
       );
+      await queryClient.invalidateQueries({ queryKey });
     },
-    onError: (_error, _variables, context) => {
+    onError: (_error, variables, context) => {
       if (context?.queryKey) {
-        queryClient.setQueryData(context.queryKey, context.previous);
+        queryClient.setQueryData<DisplayChatMessage[]>(
+          context.queryKey,
+          (current) =>
+            mergeDisplayMessages(
+              context.previous ?? [],
+              (current ?? []).filter(
+                (message) => message.id !== variables.clientMessageId
+              )
+            )
+        );
       }
     },
   });

@@ -19,6 +19,28 @@
     --color-ku-support-border: #b79aaf;
     --color-ku-on-support: #ffffff;
 
+    /* Role colors */
+    --color-ku-hirer: #5f7655;
+    --color-ku-hirer-dark: #465b3e;
+    --color-ku-hirer-deep: #34462f;
+    --color-ku-hirer-subtle: #edf2ea;
+    --color-ku-hirer-border: #b6c4af;
+    --color-ku-on-hirer: #ffffff;
+
+    --color-ku-worker: #96533f;
+    --color-ku-worker-dark: #713d30;
+    --color-ku-worker-deep: #4f2a22;
+    --color-ku-worker-subtle: #f8ece8;
+    --color-ku-worker-border: #c9a79a;
+    --color-ku-on-worker: #ffffff;
+
+    --color-ku-additional: #7c4ba8;
+    --color-ku-additional-dark: #623784;
+    --color-ku-additional-deep: #412357;
+    --color-ku-additional-subtle: #f1ebf8;
+    --color-ku-additional-border: #c2aed7;
+    --color-ku-on-additional: #ffffff;
+
     /* Neutral */
     --color-ku-background: #f7f9f8;
     --color-ku-surface: #ffffff;
@@ -108,12 +130,21 @@
     --spacing-ku-34: 34px;
     --spacing-ku-36: 36px;
     --spacing-ku-40: 40px;
+    --spacing-ku-42: 42px;
+    --spacing-ku-44: 44px;
     --spacing-ku-48: 48px;
+    --spacing-ku-52: 52px;
     --spacing-ku-56: 56px;
+    --spacing-ku-60: 60px;
     --spacing-ku-64: 64px;
+    --spacing-ku-68: 68px;
+    --spacing-ku-72: 72px;
     --spacing-ku-76: 76px;
+    --spacing-ku-78: 78px;
+    --spacing-ku-88: 88px;
     --spacing-ku-120: 120px;
     --spacing-ku-132: 132px;
+    --spacing-ku-180: 180px;
 
     --spacing-ku-xs: 4px;
     --spacing-ku-sm: 8px;
@@ -161,6 +192,14 @@
     --text-ku-nav--line-height: 1.2;
     --text-ku-heading: 24px;
     --text-ku-heading--line-height: 1.208333;
+    --radius-ku-field: 8px;
+    --radius-ku-image: 10px;
+    --radius-ku-image-large: 12px;
+    --radius-ku-control: 14px;
+    --radius-ku-card: 16px;
+    --radius-ku-search: 18px;
+    --radius-ku-sheet: 24px;
+    --radius-ku-navigation: 28px;
     --radius-ku-pill: 9999px;
   }
 }
@@ -181,6 +220,28 @@
     --color-ku-support-subtle: #342832;
     --color-ku-support-border: #72556d;
     --color-ku-on-support: #21171f;
+
+    /* Role colors */
+    --color-ku-hirer: #a9c79e;
+    --color-ku-hirer-dark: #7fa273;
+    --color-ku-hirer-deep: #5f7655;
+    --color-ku-hirer-subtle: #243128;
+    --color-ku-hirer-border: #526b58;
+    --color-ku-on-hirer: #142019;
+
+    --color-ku-worker: #e1a08c;
+    --color-ku-worker-dark: #c77b65;
+    --color-ku-worker-deep: #a75d4b;
+    --color-ku-worker-subtle: #3b2924;
+    --color-ku-worker-border: #805044;
+    --color-ku-on-worker: #241a17;
+
+    --color-ku-additional: #c7a3ea;
+    --color-ku-additional-dark: #a77acf;
+    --color-ku-additional-deep: #8759b0;
+    --color-ku-additional-subtle: #302541;
+    --color-ku-additional-border: #735896;
+    --color-ku-on-additional: #241b2b;
 
     /* Neutral */
     --color-ku-background: #101713;

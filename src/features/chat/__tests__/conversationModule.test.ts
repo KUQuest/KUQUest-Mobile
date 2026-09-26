@@ -1,5 +1,9 @@
 import type { ServerChatMessage } from "../../../api/ChatApi";
-import { toDisplayMessage } from "../conversationModule";
+import {
+  isReportableMessage,
+  toDisplayMessage,
+  type DisplayChatMessage,
+} from "../domain/conversationModule";
 
 function makeServerMessage(
   overrides: Partial<ServerChatMessage> = {}
@@ -25,7 +29,9 @@ describe("conversationModule Canonical Adapter", () => {
       sender: "me",
       text: { en: "First message", th: "First message" },
       createdAt: "2026-09-15T12:05:00Z",
+      sequence: 1,
       attachments: [],
+      kind: "USER",
     });
   });
 
@@ -126,5 +132,59 @@ describe("conversationModule Canonical Adapter", () => {
     expect(normalized.text).toEqual({ en: "", th: "" });
     expect(normalized.attachments).toHaveLength(1);
     expect(normalized.attachments[0].kind).toBe("image");
+  });
+
+  describe("isReportableMessage", () => {
+    const validOtherMessage: DisplayChatMessage = {
+      id: "a1b2c3d4-e5f6-4789-a012-3456789abcde",
+      sender: "other",
+      text: { en: "Hello", th: "สวัสดี" },
+      createdAt: "2026-09-26T10:00:00Z",
+      attachments: [],
+      kind: "USER",
+    };
+
+    it("allows reporting a visible message sent by another participant", () => {
+      expect(isReportableMessage(validOtherMessage)).toBe(true);
+    });
+
+    it("disallows reporting own messages", () => {
+      expect(isReportableMessage({ ...validOtherMessage, sender: "me" })).toBe(
+        false
+      );
+    });
+
+    it("disallows reporting system messages", () => {
+      expect(
+        isReportableMessage({ ...validOtherMessage, kind: "SYSTEM" })
+      ).toBe(false);
+    });
+
+    it("disallows reporting pending or temporary messages", () => {
+      expect(isReportableMessage({ ...validOtherMessage, pending: true })).toBe(
+        false
+      );
+      expect(
+        isReportableMessage({ ...validOtherMessage, id: "temp-12345" })
+      ).toBe(false);
+      expect(
+        isReportableMessage({ ...validOtherMessage, id: "pending-client-1" })
+      ).toBe(false);
+    });
+
+    it("disallows reporting hidden messages", () => {
+      expect(isReportableMessage({ ...validOtherMessage, hidden: true })).toBe(
+        false
+      );
+    });
+
+    it("disallows reporting messages with missing or empty id", () => {
+      expect(isReportableMessage(null)).toBe(false);
+      expect(isReportableMessage(undefined)).toBe(false);
+      expect(isReportableMessage({ ...validOtherMessage, id: "" })).toBe(false);
+      expect(isReportableMessage({ ...validOtherMessage, id: "   " })).toBe(
+        false
+      );
+    });
   });
 });

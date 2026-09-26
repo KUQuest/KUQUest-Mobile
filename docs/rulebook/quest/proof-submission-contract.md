@@ -16,7 +16,7 @@ Part of the [Quest and Work Chat Rulebook](quest-work-chat-rulebook.md). Defines
 - Description is optional and is at most 1,000 characters.
 - The submitter can attach up to five files.
 - Allowed file types are image, PDF, and video. Each file is at most 10 MB. The system does not scan files for malware. Other types are rejected.
-- At least one description or file is required.
+- A Proof Submission can be sent only when at least one attached file is ready; description remains optional.
 - Before sending, the Worker can add, remove, or replace files. After sending, the Proof Submission is locked.
 - A successful partial upload stays in the draft. A failed file is identified and can be retried or removed. Sending is blocked while a failed file remains.
 - If the device is offline, sending is shown as failed and the draft remains available. The Worker must retry manually. `dueAt` remains authoritative.

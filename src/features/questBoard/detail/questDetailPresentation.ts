@@ -6,27 +6,35 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 
-import { colors } from "@/theme/colors";
+import type { ThemeColors } from "@/theme/colors";
+import { isTerminalStatus } from "@/domain/questLifecycle";
 import type { GroupQuestMessages } from "@/locales/groupQuestMessages";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 import type { SupportedLocale } from "@/locales/locale";
-import type { QuestDetailBodyProps } from "../components/QuestDetailBody";
-import type { QuestDetailSheetsProps } from "../components/QuestDetailSheets";
-import type { PartialGroupStartVoter } from "../components/PartialGroupStartConsentSheet";
-import type { TeamDirectoryMember } from "../components/TeamAssembleSheet";
-import { getQuestRewardSatang } from "../questWorkflow";
+import type { QuestDetailBodyProps } from "./components/QuestDetailBody";
+import type { QuestDetailSheetsProps } from "./components/QuestDetailSheets";
+import type { TeamAssembleViewProps } from "../teamAssemble/components/TeamAssembleView";
+import type {
+  PartialGroupStartVoter,
+  TeamDirectoryMember,
+} from "../teamAssemble/types";
+import { getQuestRewardSatang } from "../presentation/questBoardViewData";
 import {
+  isHirerActor,
   MAX_QUEST_IMAGES,
   QuestCandidateMode,
   QuestInvitationStatus,
+  QuestMode,
   QuestPartialStartConsentStatus,
   QuestParticipation,
   QuestStatus,
   QuestTeamStatus,
+  type QuestUnderfilledConsentDecision,
+  type QuestUnderfilledDecision,
   type QuestBoardQuest,
   type QuestDetailState,
-} from "../types";
-import type { QuestDetailProjection } from "../questDetailProjection";
+} from "../domain/types";
+import type { QuestDetailProjection } from "./questDetailProjection";
 import type {
   QuestDetailReadModel,
   QuestDetailReadSource,
@@ -70,7 +78,6 @@ export interface QuestDetailPresentationFacts {
   canShowWithdraw: boolean;
   confirmationOpen: boolean;
   canMessageOwner: boolean;
-  canReportQuest: boolean;
   statusTitle: string;
   statusDescription: string;
   statusIsUnavailable: boolean;
@@ -100,10 +107,10 @@ export interface QuestDetailPresentationContext {
   selectCandidate: (proposalId: string) => void;
   rejectCandidate: (proposalId: string) => void;
   openLiveUnderfilled: () => void;
-  liveUnderfilledDecision: (decision: "PROCEED" | "CANCEL") => void;
-  liveUnderfilledConsent: (decision: "ACCEPT" | "DECLINE") => void;
-  liveCreateTeam: () => void;
-  liveJoinTeam: (joinCode: string) => void;
+  liveUnderfilledDecision: (decision: QuestUnderfilledDecision) => void;
+  liveUnderfilledConsent: (decision: QuestUnderfilledConsentDecision) => void;
+  liveCreateTeam: (name: string) => void;
+  liveJoinTeam: (teamId: string, joinCode: string) => void;
   liveLeaveTeam: (teamId: string) => void;
   liveRemoveTeamMember: (teamId: string, memberId: string) => void;
   liveRegenerateTeamCode: (teamId: string) => void;
@@ -129,6 +136,7 @@ export function getQuestDetailPresentationFacts({
   viewerId,
   surface,
   teamDirectory,
+  colors,
 }: {
   read: QuestDetailReadModel;
   route: ResolvedQuestDetailRoute;
@@ -138,6 +146,7 @@ export function getQuestDetailPresentationFacts({
   viewerId: string;
   surface: QuestDetailSurfaceState;
   teamDirectory: TeamDirectoryMember[];
+  colors: ThemeColors;
 }): QuestDetailPresentationFacts | null {
   const quest = read.quest;
   if (!quest) return null;
@@ -151,7 +160,7 @@ export function getQuestDetailPresentationFacts({
   const isPostView = route.mode === "post";
   const isHirerView = explicitPreview
     ? (projection?.isOwner ?? false)
-    : liveSnapshot?.actor === "HIRER";
+    : isHirerActor(liveSnapshot?.actor);
   const firstCome = quest.candidateMode === QuestCandidateMode.NO_CANDIDATE;
   const candidateGroup = Boolean(
     quest && !firstCome && quest.participationMode === "team"
@@ -216,12 +225,6 @@ export function getQuestDetailPresentationFacts({
       surface.dismissedIntent !== routeIntentKey &&
       canApply);
   const canMessageOwner = Boolean(!isPostView && capabilities?.canMessageOwner);
-  const canReportQuest = Boolean(
-    isJoinView &&
-    !surface.leftQuest &&
-    (joinedStatus === "accepted" || joinedStatus === "history") &&
-    capabilities?.canReportQuest
-  );
   const statusTitle = isPostView
     ? messages.postOwnerView
     : isJoinView
@@ -316,8 +319,8 @@ export function getQuestDetailPresentationFacts({
         }));
   const liveCandidateGroup = Boolean(
     liveSnapshot &&
-    liveSnapshot.participation === "GROUP" &&
-    liveSnapshot.mode === "CANDIDATE" &&
+    liveSnapshot.participation === QuestParticipation.GROUP &&
+    liveSnapshot.mode === QuestMode.CANDIDATE &&
     !isHirerView
   );
   const liveTeamSheetTeam = liveCandidateGroup
@@ -371,7 +374,6 @@ export function getQuestDetailPresentationFacts({
     canShowWithdraw,
     confirmationOpen,
     canMessageOwner,
-    canReportQuest,
     statusTitle,
     statusDescription,
     statusIsUnavailable,
@@ -400,7 +402,6 @@ export function buildQuestDetailBodyProps(
     participants: facts.participants,
     participantCount: facts.participantCount,
     onOpenParticipantProfile: navigation.openParticipantProfile,
-    canReportQuest: facts.canReportQuest,
     canonicalStatus: facts.projection?.lifecycleState,
     imageUris: facts.imageUris,
     liveEntry: facts.liveSnapshot
@@ -408,7 +409,7 @@ export function buildQuestDetailBodyProps(
           snapshot: facts.liveSnapshot,
           groupMessages: facts.groupMessages,
           busy: Boolean(surface.liveAction),
-          onOpenTeam: transitions.openTeam,
+          onOpenTeam: navigation.openTeam,
           onOpenCandidateReview: transitions.openCandidateReview,
           onOpenPartialConsent: context.openLiveUnderfilled,
         }
@@ -417,14 +418,13 @@ export function buildQuestDetailBodyProps(
     locale: facts.locale,
     onOpenWorkHub: navigation.openWorkHub,
     onRefresh: context.onRefresh,
-    onReportQuest: navigation.openReportQuest,
     prototypeEntry: facts.activePrototypeState
       ? {
           state: facts.activePrototypeState,
           viewerId: facts.viewerId,
           isHirer: facts.isHirerView,
           messages: facts.groupMessages,
-          onOpenTeam: transitions.openTeam,
+          onOpenTeam: navigation.openTeam,
           onOpenCandidateReview: transitions.openCandidateReview,
           onOpenPartialConsent: transitions.reopenPartialConsent,
         }
@@ -475,8 +475,8 @@ export function buildQuestDetailSheetsProps(
     liveCandidateSheet:
       facts.source.kind === "live-snapshot" &&
       facts.liveSnapshot &&
-      facts.liveSnapshot.actor === "HIRER" &&
-      facts.liveSnapshot.mode === "CANDIDATE" &&
+      isHirerActor(facts.liveSnapshot.actor) &&
+      facts.liveSnapshot.mode === QuestMode.CANDIDATE &&
       (facts.projection?.capabilities.canSelectCandidate ||
         facts.projection?.capabilities.canSelectTeam ||
         facts.projection?.capabilities.canRejectCandidate ||
@@ -491,7 +491,7 @@ export function buildQuestDetailSheetsProps(
               surface.liveAction === "reject-candidate",
             locale: facts.locale,
             mode:
-              facts.liveSnapshot.participation === "GROUP"
+              facts.liveSnapshot.participation === QuestParticipation.GROUP
                 ? "team"
                 : "individual",
             onAcceptProposal: surface.liveAction
@@ -506,7 +506,7 @@ export function buildQuestDetailSheetsProps(
             requestedHeadcount: facts.liveSnapshot.quest.headcount,
             selectedProposalId: surface.selectedProposalId,
             teams:
-              facts.liveSnapshot.participation === "GROUP"
+              facts.liveSnapshot.participation === QuestParticipation.GROUP
                 ? facts.liveSnapshot.teams
                 : [],
             visible: surface.candidateReviewSheetOpen,
@@ -514,8 +514,8 @@ export function buildQuestDetailSheetsProps(
         : undefined,
     liveConsentSheet:
       facts.source.kind === "live-snapshot" &&
-      facts.liveSnapshot?.participation === "GROUP" &&
-      facts.liveSnapshot.mode === "FIRST_COME_FIRST_SERVED" &&
+      facts.liveSnapshot?.participation === QuestParticipation.GROUP &&
+      facts.liveSnapshot.mode === QuestMode.FIRST_COME_FIRST_SERVED &&
       facts.liveSnapshot.underfilled
         ? {
             actualHeadcount: facts.liveSnapshot.underfilled.activeWorkerCount,
@@ -547,44 +547,6 @@ export function buildQuestDetailSheetsProps(
                 facts.projection?.capabilities.canConsentUnderfilled
               ),
             voters: facts.livePartialVoters,
-          }
-        : undefined,
-    liveTeamSheet:
-      facts.liveTeamSurface && facts.liveSnapshot
-        ? {
-            bottomInset,
-            canLeaveTeam: facts.projection?.capabilities.canLeaveTeam ?? false,
-            canRemoveMember:
-              facts.projection?.capabilities.canRemoveTeamMember ?? false,
-            canRegenerateJoinCode:
-              facts.projection?.capabilities.canRegenerateTeamCode ?? false,
-            canUpdateTeam:
-              facts.projection?.capabilities.canUpdateTeam ?? false,
-            eligibleMembers: [],
-            joinCode: facts.liveTeamSheetTeam?.joinCode,
-            joinCodeExpiresAt: facts.liveTeamSheetTeam?.joinCodeExpiresAt,
-            teamName: facts.liveTeamSheetTeam?.name,
-            onClose: transitions.closeTeam,
-            onCreateTeam: facts.projection?.capabilities.canCreateTeam
-              ? context.liveCreateTeam
-              : undefined,
-            onJoinTeam: facts.projection?.capabilities.canJoinTeam
-              ? context.liveJoinTeam
-              : undefined,
-            onLeaveTeam: context.liveLeaveTeam,
-            onRemoveMember: context.liveRemoveTeamMember,
-            onRegenerateJoinCode: context.liveRegenerateTeamCode,
-            onUpdateTeamName: context.liveUpdateTeamName,
-            onReviewChange: transitions.setTeamReviewing,
-            onSubmitTeam: context.liveSubmitTeam,
-            onUploadProposalFile: context.uploadTeamFile,
-            requestedHeadcount: facts.liveSnapshot.quest.headcount,
-            reviewing: surface.teamReviewing,
-            searchQuery: surface.teamSearchQuery,
-            submitting: surface.liveAction === "submit-team",
-            team: facts.liveTeamSheetTeam,
-            viewerId: facts.viewerId,
-            visible: surface.teamSheetOpen,
           }
         : undefined,
     prototypeCandidateSheet:
@@ -646,40 +608,84 @@ export function buildQuestDetailSheetsProps(
             visible: facts.partialStartSheetOpen,
           }
         : undefined,
-    prototypeTeamSheet:
-      facts.activePrototypeState && facts.candidateGroup && !facts.isHirerView
-        ? {
-            bottomInset,
-            eligibleMembers: facts.teamDirectory,
-            invitations: facts.activePrototypeState.invitations,
-            locale: facts.locale,
-            onClose: transitions.closeTeam,
-            onCreateTeam: facts.projection?.capabilities.canCreateTeam
-              ? context.fixtureCreateTeam
-              : undefined,
-            onInviteMembers: facts.projection?.capabilities.canInviteWorker
-              ? context.fixtureInviteMembers
-              : undefined,
-            onRespondInvitation: facts.projection?.capabilities
-              .canRespondInvitation
-              ? context.fixtureRespondInvitation
-              : undefined,
-            onSearchQueryChange: transitions.setTeamSearchQuery,
-            onSelectedMemberIdsChange: transitions.setTeamSelectedMemberIds,
-            onReviewChange: transitions.setTeamReviewing,
-            onSubmit: facts.projection?.capabilities.canSubmitTeam
-              ? context.fixtureSubmitTeam
-              : undefined,
-            requestedHeadcount: facts.activePrototypeState.quest.headcount,
-            reviewing: surface.teamReviewing,
-            searchQuery: surface.teamSearchQuery,
-            selectedMemberIds: surface.teamSelectedMemberIds,
-            team: facts.teamSheetTeam,
-            viewerId: facts.viewerId,
-            visible: surface.teamSheetOpen,
-          }
-        : undefined,
   };
+}
+
+export function buildQuestDetailTeamProps(
+  context: QuestDetailPresentationContext
+): TeamAssembleViewProps | undefined {
+  const { facts, surface, transitions, bottomInset } = context;
+  if (facts.liveTeamSurface && facts.liveSnapshot) {
+    return {
+      bottomInset,
+      canLeaveTeam: facts.projection?.capabilities.canLeaveTeam ?? false,
+      canRemoveMember:
+        facts.projection?.capabilities.canRemoveTeamMember ?? false,
+      canRegenerateJoinCode:
+        facts.projection?.capabilities.canRegenerateTeamCode ?? false,
+      canUpdateTeam: facts.projection?.capabilities.canUpdateTeam ?? false,
+      eligibleMembers: [],
+      joinCode: facts.liveTeamSheetTeam?.joinCode,
+      joinCodeExpiresAt: facts.liveTeamSheetTeam?.joinCodeExpiresAt,
+      teamName: facts.liveTeamSheetTeam?.name,
+      onCreateTeam: facts.projection?.capabilities.canCreateTeam
+        ? context.liveCreateTeam
+        : undefined,
+      onJoinTeam: facts.projection?.capabilities.canJoinTeam
+        ? context.liveJoinTeam
+        : undefined,
+      onLeaveTeam: context.liveLeaveTeam,
+      onRemoveMember: context.liveRemoveTeamMember,
+      onRegenerateJoinCode: context.liveRegenerateTeamCode,
+      onUpdateTeamName: context.liveUpdateTeamName,
+      onReviewChange: transitions.setTeamReviewing,
+      onSubmitTeam: context.liveSubmitTeam,
+      onUploadProposalFile: context.uploadTeamFile,
+      requestedHeadcount: facts.liveSnapshot.quest.headcount,
+      reviewing: surface.teamReviewing,
+      searchQuery: surface.teamSearchQuery,
+      submitting:
+        surface.liveAction === "create-team" ||
+        surface.liveAction === "submit-team" ||
+        surface.liveAction === "join-team",
+      team: facts.liveTeamSheetTeam,
+      viewerId: facts.viewerId,
+    };
+  }
+  if (
+    facts.activePrototypeState &&
+    facts.candidateGroup &&
+    !facts.isHirerView
+  ) {
+    return {
+      bottomInset,
+      eligibleMembers: facts.teamDirectory,
+      invitations: facts.activePrototypeState.invitations,
+      locale: facts.locale,
+      onCreateTeam: facts.projection?.capabilities.canCreateTeam
+        ? context.fixtureCreateTeam
+        : undefined,
+      onInviteMembers: facts.projection?.capabilities.canInviteWorker
+        ? context.fixtureInviteMembers
+        : undefined,
+      onRespondInvitation: facts.projection?.capabilities.canRespondInvitation
+        ? context.fixtureRespondInvitation
+        : undefined,
+      onSearchQueryChange: transitions.setTeamSearchQuery,
+      onSelectedMemberIdsChange: transitions.setTeamSelectedMemberIds,
+      onReviewChange: transitions.setTeamReviewing,
+      onSubmit: facts.projection?.capabilities.canSubmitTeam
+        ? context.fixtureSubmitTeam
+        : undefined,
+      requestedHeadcount: facts.activePrototypeState.quest.headcount,
+      reviewing: surface.teamReviewing,
+      searchQuery: surface.teamSearchQuery,
+      selectedMemberIds: surface.teamSelectedMemberIds,
+      team: facts.teamSheetTeam,
+      viewerId: facts.viewerId,
+    };
+  }
+  return undefined;
 }
 
 export interface QuestDetailActionBarModel {
@@ -694,7 +700,6 @@ export interface QuestDetailActionBarModel {
   firstCome: boolean;
   onOpenApply: () => void;
   onEditPost: () => void;
-  onOpenReview: () => void;
   busy: boolean;
 }
 
@@ -711,9 +716,7 @@ export function buildQuestDetailActionBar(
     canReview:
       facts.isPostView &&
       facts.isHirerView &&
-      (facts.quest.status === QuestStatus.QUEST_COMPLETED ||
-        facts.quest.status === QuestStatus.QUEST_CANCELLED ||
-        facts.quest.status === QuestStatus.QUEST_FAILED) &&
+      isTerminalStatus(facts.quest.status) &&
       facts.liveSnapshot?.capabilities.canCreateReview === true,
     canMessageOwner: facts.canMessageOwner,
     onMessageOwner: navigation.openMessageOwner,
@@ -723,7 +726,6 @@ export function buildQuestDetailActionBar(
     firstCome: facts.firstCome,
     onOpenApply: transitions.openConfirmation,
     onEditPost: navigation.openEditPost,
-    onOpenReview: navigation.openReview,
     busy: Boolean(surface.liveAction),
   };
 }

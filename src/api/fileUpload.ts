@@ -1,4 +1,5 @@
 import { File } from "expo-file-system";
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 
 export interface UploadAsset {
   uri: string;
@@ -18,6 +19,55 @@ export function mimeTypeFromUri(uri: string): string {
   if (clean.endsWith(".pdf")) return "application/pdf";
   if (clean.endsWith(".mp4")) return "video/mp4";
   return "image/jpeg";
+}
+
+/** Server image-upload limit on width × height; the server does not resize. */
+export const MAX_UPLOAD_IMAGE_PIXELS = 25_000_000;
+
+/** Largest same-aspect size within the pixel limit, or `null` when it already fits. */
+export function fitWithinPixelLimit(
+  width: number,
+  height: number,
+  maxPixels = MAX_UPLOAD_IMAGE_PIXELS
+): { width: number; height: number } | null {
+  if (width * height <= maxPixels) return null;
+  const scale = Math.sqrt(maxPixels / (width * height));
+  return {
+    width: Math.max(1, Math.floor(width * scale)),
+    height: Math.max(1, Math.floor(height * scale)),
+  };
+}
+
+const SAVE_FORMAT_BY_MIME: Record<string, SaveFormat> = {
+  "image/png": SaveFormat.PNG,
+  "image/webp": SaveFormat.WEBP,
+};
+
+/**
+ * Downscales an image above `MAX_UPLOAD_IMAGE_PIXELS` into a new local file.
+ * Returns the asset unchanged when it already fits.
+ */
+export async function limitImagePixels(asset: {
+  uri: string;
+  type: string;
+  width: number;
+  height: number;
+}): Promise<{ uri: string; type: string; resized: boolean }> {
+  if (!fitWithinPixelLimit(asset.width, asset.height)) {
+    return { uri: asset.uri, type: asset.type, resized: false };
+  }
+  // Picker dimensions may ignore EXIF rotation; size from the decoded image.
+  const decoded = await ImageManipulator.manipulate(asset.uri).renderAsync();
+  const size = fitWithinPixelLimit(decoded.width, decoded.height) ?? {
+    width: decoded.width,
+    height: decoded.height,
+  };
+  const format = SAVE_FORMAT_BY_MIME[asset.type] ?? SaveFormat.JPEG;
+  const rendered = await ImageManipulator.manipulate(decoded)
+    .resize(size)
+    .renderAsync();
+  const saved = await rendered.saveAsync({ format, compress: 0.9 });
+  return { uri: saved.uri, type: `image/${format}`, resized: true };
 }
 
 export function appendUploadFile(

@@ -1,3 +1,5 @@
+import { formatSatang } from "@/domain/satang";
+
 import type { SupportedLocale } from "./locale";
 
 export interface CreateQuestMessages {
@@ -9,6 +11,7 @@ export interface CreateQuestMessages {
   helpLabel: string;
   helpTitle: string;
   helpDescription: string;
+  helpAction: string;
   missionInfo: string;
   teamSetup: string;
   review: string;
@@ -48,6 +51,7 @@ export interface CreateQuestMessages {
   titlePlaceholder: string;
   questTag: string;
   chooseQuestTag: string;
+  tagUnavailable: string;
   searchQuestTags: string;
   noMatchingQuestTags: string;
   clearSearch: string;
@@ -64,11 +68,15 @@ export interface CreateQuestMessages {
   optional: string;
   notNeeded: string;
   startDate: string;
+  endDate: string;
   deadline: string;
   startDateTime: string;
   deadlineDateTime: string;
   dateTimeHelper: string;
-  dateDone: string;
+  confirmDate: string;
+  previousMonth: string;
+  nextMonth: string;
+  today: string;
   startTime: string;
   endTime: string;
   selectTime: string;
@@ -79,16 +87,6 @@ export interface CreateQuestMessages {
   minute: string;
   confirmTime: string;
   cancel: string;
-  quickPresets: string;
-  now: string;
-  in30m: string;
-  in1h: string;
-  in2h: string;
-  today: string;
-  tomorrow: string;
-  sameDay: string;
-  plus1Day: string;
-  endOfDay: string;
   questDuration: string;
   nextDay: string;
   fixDeadlineQuick: string;
@@ -136,12 +134,14 @@ export interface CreateQuestMessages {
   cancelQuestDescription: string;
   cancelQuestConfirm: string;
   cancelQuestKeep: string;
+  cancelQuestError: string;
   cancelledQuestTitle: string;
   cancelledQuestDescription: string;
   publishQuest: string;
   publishingQuest: string;
   loadingDraft: string;
   loadingTags: string;
+  retryTags: string;
   savedDraftTitle: string;
   savedDraftDescription: string;
   updatedQuestTitle: string;
@@ -155,10 +155,17 @@ export interface CreateQuestMessages {
   onlineOrAgreed: string;
   noImages: string;
   selectedImages: (count: number) => string;
+  rewardPerPersonValue: (reward: string) => string;
+  fallbackTags: Record<
+    "design" | "technology" | "tutoring" | "campusLife",
+    { label: string; shortLabel: string }
+  >;
   discardTitle: string;
   discardDescription: string;
   discard: string;
   keepEditing: string;
+  unsavedTitle: string;
+  unsavedMessage: string;
   autosaveSaving: string;
   autosaveSaved: string;
   saveError: string;
@@ -171,11 +178,14 @@ export interface CreateQuestMessages {
   publishCheckTitle: string;
   publishCheckReady: string;
   publishCheckBlocked: string;
+  fixBlocker: string;
+  moreBlockers: (count: number) => string;
   publishCheckWarning: string;
   rewardPool: string;
   platformFee: string;
   escrowTotal: string;
   escrowDescription: string;
+  fundingPerPerson: (amount: string, headcount: number) => string;
   imageError: string;
   titleError: string;
   questTagError: string;
@@ -183,12 +193,16 @@ export interface CreateQuestMessages {
   completionCriteriaError: string;
   startDateError: string;
   startDatePastError: string;
+  startTimePastError: string;
   deadlineError: string;
   deadlineOrderError: string;
   startTimeError: string;
   endTimeError: string;
   timeOrderError: string;
   headcountError: string;
+  publishError: string;
+  publishErrorTitle: string;
+  saveErrorTitle: string;
   rewardEmptyError: string;
   rewardFormatError: string;
   rewardBoundsError: (maximum: number) => string;
@@ -210,13 +224,20 @@ export interface CreateQuestMessages {
     description: string;
     completionCriteria: string;
     proof: string;
-    schedule: string;
+    startTime: string;
+    endTime: string;
     location: string;
     images: string;
     candidateMode: string;
     participation: string;
     headcount: string;
     reward: string;
+  };
+  durationUnits: {
+    days: (count: number) => string;
+    hours: (count: number) => string;
+    minutes: (count: number) => string;
+    lessThanMinute: string;
   };
 }
 
@@ -232,6 +253,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       helpTitle: "Create a Quest",
       helpDescription:
         "Complete each step to define the Quest, choose whether one person or multiple people can join, select how applicants are accepted, and review the details before saving.",
+      helpAction: "OK",
       missionInfo: "Quest Info",
       teamSetup: "Team Setup",
       review: "Review",
@@ -295,11 +317,15 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       optional: "Optional",
       notNeeded: "Not needed",
       startDate: "Start date",
+      endDate: "End date",
       deadline: "Deadline",
       startDateTime: "Start date & time",
       deadlineDateTime: "Deadline date & time",
       dateTimeHelper: "Choose the date and time together.",
-      dateDone: "Done",
+      confirmDate: "Confirm date",
+      previousMonth: "Previous month",
+      nextMonth: "Next month",
+      today: "Today",
       startTime: "Start time",
       endTime: "End time",
       selectTime: "Select time",
@@ -310,16 +336,6 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       minute: "Minute",
       confirmTime: "Confirm time",
       cancel: "Cancel",
-      quickPresets: "Quick presets",
-      now: "Now",
-      in30m: "+30m",
-      in1h: "+1 hr",
-      in2h: "+2 hrs",
-      today: "Today",
-      tomorrow: "Tomorrow",
-      sameDay: "Same day",
-      plus1Day: "+1 day",
-      endOfDay: "End of day (23:59)",
       nextDay: "Next day",
       questDuration: "Duration",
       fixDeadlineQuick: "Set to +2 hrs from start",
@@ -395,11 +411,20 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       onlineOrAgreed: "Online or to be agreed",
       noImages: "None",
       selectedImages: (count) => `${count} selected`,
+      rewardPerPersonValue: (reward) => `${reward} / person`,
+      fallbackTags: {
+        design: { label: "Design & creative", shortLabel: "Design" },
+        technology: { label: "Technology", shortLabel: "Technology" },
+        tutoring: { label: "Tutoring", shortLabel: "Tutoring" },
+        campusLife: { label: "Campus life", shortLabel: "Campus life" },
+      },
       discardTitle: "Leave this Quest?",
       discardDescription:
         "Your draft is saved locally. Leave the form and continue later?",
       discard: "Leave",
       keepEditing: "Keep editing",
+      unsavedTitle: "Discard changes?",
+      unsavedMessage: "Your changes have not been saved.",
       autosaveSaving: "Saving draft…",
       autosaveSaved: "Draft saved",
       saveError: "We couldn't save this Quest draft on your device. Try again.",
@@ -412,6 +437,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       publishCheckTitle: "Publish check & Escrow",
       publishCheckReady: "Ready to publish",
       publishCheckBlocked: "Resolve the publish blockers before publishing.",
+      fixBlocker: "Fix",
+      moreBlockers: (count) => `+${count} more`,
       publishCheckWarning:
         "Images are optional; this warning does not block publishing.",
       rewardPool: "Reward pool",
@@ -419,6 +446,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       escrowTotal: "Total Escrow required",
       escrowDescription:
         "The server reserves this inclusive Quest Funding Total for each participant.",
+      fundingPerPerson: (amount, headcount) =>
+        `${amount} per person × ${headcount}`,
       imageError:
         "We could not add images. Check photo permissions and try again.",
       titleError: "Add a short title so people know what they will do.",
@@ -428,17 +457,25 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         "Add the criteria for marking the Quest complete.",
       startDateError: "Choose when the Quest can begin.",
       startDatePastError: "Start date cannot be in the past.",
+      startTimePastError: "Start time must be later than now.",
       deadlineError: "Choose the final date for applications or work.",
       deadlineOrderError: "Deadline must be on or after the start date.",
       startTimeError: "Enter a start time, for example 09:00.",
       endTimeError: "Enter an end time, for example 12:00.",
       timeOrderError: "End time must be after the start time.",
-      headcountError: "Enter at least 1 participant.",
+      headcountError: "A Team Quest needs 2 to 20 participants.",
+      publishError:
+        "We couldn't publish this Quest. Check the details and try again.",
+      publishErrorTitle: "Couldn't publish Quest",
+      saveErrorTitle: "Couldn't save",
+      cancelQuestError: "We couldn't cancel this Quest. Try again.",
+      tagUnavailable: "Quest Tags are unavailable. Try again.",
+      retryTags: "Try again",
       rewardEmptyError: "Enter a reward amount in THB.",
       rewardFormatError:
         "Enter a valid amount in THB with up to 2 decimal places.",
       rewardBoundsError: (maximum) =>
-        `Reward must be between ฿0 and ฿${maximum.toLocaleString("en-US")}.`,
+        `Reward must be between ฿0 and ${formatSatang(maximum * 100, "en")}.`,
       blockingGuidance: {
         QUEST_TAG_REQUIRED:
           "Please select a skill category Tag for your Quest.",
@@ -470,6 +507,12 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         QUEST_NOT_FOUND:
           "We could not find this Quest, or you are not the Hirer.",
         QUEST_NOT_DRAFT: "This Quest is no longer a draft.",
+        QUEST_OPEN_FIELD_LOCKED:
+          "Reward and headcount cannot be changed after a Quest is published.",
+        QUEST_OPEN_EDIT_CLOSED:
+          "This Quest can no longer be edited because participation has already started.",
+        INVALID_OPEN_QUEST:
+          "An open Quest must keep a Tag, a future start time, and a deadline after the start time.",
         QUEST_IMAGE_LIMIT_REACHED: "A Quest gallery can hold at most 3 images.",
         IMAGE_TOO_LARGE: "Each image must be 5 MB or smaller.",
         UNSUPPORTED_IMAGE_TYPE: "Images must be JPEG, PNG, or WebP.",
@@ -490,13 +533,20 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         description: "Description",
         completionCriteria: "Completion criteria",
         proof: "Proof",
-        schedule: "Schedule",
+        startTime: "Start time",
+        endTime: "End time",
         location: "Location",
         images: "Images",
         candidateMode: "Acceptance method",
         participation: "Participation",
         headcount: "Headcount",
         reward: "Reward",
+      },
+      durationUnits: {
+        days: (count) => `${count}d`,
+        hours: (count) => `${count}h`,
+        minutes: (count) => `${count}m`,
+        lessThanMinute: "< 1 min",
       },
     },
     th: {
@@ -509,6 +559,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       helpTitle: "สร้างเควสต์",
       helpDescription:
         "ทำตามแต่ละขั้นตอนเพื่อกำหนดรายละเอียด เลือกจำนวนผู้เข้าร่วม เลือกวิธีรับผู้สมัคร และตรวจสอบข้อมูลก่อนบันทึก",
+      helpAction: "ตกลง",
       missionInfo: "ข้อมูลเควสต์",
       teamSetup: "ตั้งค่าทีม",
       review: "ตรวจสอบ",
@@ -571,13 +622,17 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       optional: "ไม่บังคับ",
       notNeeded: "ไม่ต้องมี",
       startDate: "วันที่เริ่มต้น",
+      endDate: "วันที่สิ้นสุด",
       deadline: "กำหนดส่ง",
       startDateTime: "วันที่และเวลาเริ่มต้น",
       deadlineDateTime: "วันที่และเวลาสิ้นสุด",
       dateTimeHelper: "เลือกวันและเวลาได้ในครั้งเดียว",
-      dateDone: "เสร็จสิ้น",
+      confirmDate: "ยืนยันวันที่",
+      previousMonth: "เดือนก่อนหน้า",
+      nextMonth: "เดือนถัดไป",
+      today: "วันนี้",
       startTime: "เวลาเริ่มต้น",
-      endTime: "เวลาสิ้นสุด",
+      endTime: "เวลาที่สิ้นสุด",
       selectTime: "เลือกเวลา",
       selectDate: "เลือกวันที่",
       selectStartTime: "เลือกเวลาเริ่มต้น",
@@ -586,16 +641,6 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       minute: "นาที",
       confirmTime: "ยืนยันเวลา",
       cancel: "ยกเลิก",
-      quickPresets: "เลือกด่วน",
-      now: "ตอนนี้",
-      in30m: "+30 นาที",
-      in1h: "+1 ชม.",
-      in2h: "+2 ชม.",
-      today: "วันนี้",
-      tomorrow: "พรุ่งนี้",
-      sameDay: "วันเดียวกัน",
-      plus1Day: "+1 วัน",
-      endOfDay: "สิ้นสุดวัน (23:59)",
       nextDay: "วันถัดไป",
       questDuration: "ระยะเวลาเควสต์",
       fixDeadlineQuick: "ตั้งเป็น +2 ชม. จากเวลาเริ่ม",
@@ -660,7 +705,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       updatedQuestDescription: "บันทึกการแก้ไขเควสต์ไปยังเซิร์ฟเวอร์แล้ว",
       publishedQuestTitle: "เผยแพร่เควสต์แล้ว",
       publishedQuestDescription:
-        "เควสต์ของคุณเผยแพร่บนกระดานเควสต์แล้ว และจะแสดงใน My Quests ของผู้ว่าจ้าง",
+        "เควสต์ของคุณเผยแพร่บนกระดานเควสต์แล้ว และจะแสดงในรายการเควสต์ของผู้ว่าจ้าง",
       createAnotherDraft: "สร้างฉบับร่างใหม่",
       createNewQuest: "สร้างเควสต์ใหม่",
       backToQuest: "กลับไปที่เควสต์",
@@ -668,30 +713,49 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       onlineOrAgreed: "ออนไลน์หรือรอตกลงกัน",
       noImages: "ไม่มี",
       selectedImages: (count) => `เลือกแล้ว ${count} รูป`,
+      rewardPerPersonValue: (reward) => `${reward} / คน`,
+      fallbackTags: {
+        design: { label: "การออกแบบและงานสร้างสรรค์", shortLabel: "การออกแบบ" },
+        technology: { label: "เทคโนโลยี", shortLabel: "เทคโนโลยี" },
+        tutoring: { label: "การสอนพิเศษ", shortLabel: "ติว" },
+        campusLife: {
+          label: "ชีวิตในมหาวิทยาลัย",
+          shortLabel: "ชีวิตมหาวิทยาลัย",
+        },
+      },
       discardTitle: "ออกจากการสร้างเควสต์หรือไม่?",
       discardDescription:
         "ฉบับร่างถูกบันทึกไว้ในอุปกรณ์ ออกจากแบบฟอร์มและทำต่อภายหลังได้",
       discard: "ออกจากหน้านี้",
       keepEditing: "แก้ไขต่อ",
+      unsavedTitle: "ละทิ้งการเปลี่ยนแปลงหรือไม่",
+      unsavedMessage: "การเปลี่ยนแปลงของคุณยังไม่ได้บันทึก",
       autosaveSaving: "กำลังบันทึกฉบับร่าง…",
       autosaveSaved: "บันทึกฉบับร่างแล้ว",
       saveError: "ไม่สามารถบันทึกฉบับร่างเควสต์ลงในอุปกรณ์ได้ ลองอีกครั้ง",
       retrySave: "ลองอีกครั้ง",
+      cancelQuestError: "ไม่สามารถยกเลิกเควสต์ได้ กรุณาลองอีกครั้ง",
+      tagUnavailable: "ไม่สามารถโหลดแท็กเควสต์ได้ กรุณาลองอีกครั้ง",
+      retryTags: "ลองอีกครั้ง",
       loadDraftError: "ไม่สามารถกู้คืนฉบับร่างเควสต์ได้ ลองอีกครั้ง",
       retryLoadDraft: "ลองอีกครั้ง",
       savePreview: "บันทึกตัวอย่างเควสต์",
       savingPreview: "กำลังบันทึกตัวอย่าง…",
       viewQuestBoard: "กลับหน้าหลัก",
-      publishCheckTitle: "ตรวจสอบการเผยแพร่และ Escrow",
+      publishCheckTitle: "ตรวจสอบก่อนเผยแพร่",
       publishCheckReady: "พร้อมเผยแพร่",
       publishCheckBlocked: "แก้ไขข้อขัดข้องก่อนเผยแพร่เควสต์",
+      fixBlocker: "แก้ไข",
+      moreBlockers: (count) => `และอีก ${count} รายการ`,
       publishCheckWarning:
         "รูปภาพเป็นข้อมูลเสริม คำเตือนนี้ไม่ขัดขวางการเผยแพร่",
-      rewardPool: "รวมค่าตอบแทน",
+      rewardPool: "ค่าตอบแทนที่ผู้ทำงานได้รับ",
       platformFee: "ค่าธรรมเนียมแพลตฟอร์ม",
-      escrowTotal: "Escrow ที่ต้องสำรองทั้งหมด",
+      escrowTotal: "ยอดเงินที่จะพักไว้",
       escrowDescription:
-        "ระบบจะสำรองเงินทุนเควสต์รวมต่อผู้เข้าร่วมตามผลจากเซิร์ฟเวอร์",
+        "เมื่อเผยแพร่ ระบบจะพักเงินจำนวนนี้จากยอดเงินพร้อมใช้ และจ่ายให้ผู้ทำงานเมื่องานเสร็จ",
+      fundingPerPerson: (amount, headcount) =>
+        `${amount} ต่อคน × ${headcount} คน`,
       imageError:
         "ไม่สามารถเพิ่มรูปภาพได้ ตรวจสอบสิทธิ์การเข้าถึงรูปภาพแล้วลองอีกครั้ง",
       titleError: "เพิ่มชื่อสั้น ๆ เพื่อให้ผู้สนใจเข้าใจว่าจะต้องทำอะไร",
@@ -700,16 +764,21 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       completionCriteriaError: "เพิ่มเกณฑ์สำหรับตรวจว่างานเสร็จสมบูรณ์",
       startDateError: "เลือกวันที่เริ่มต้นเควสต์",
       startDatePastError: "วันที่เริ่มต้นต้องไม่อยู่ในอดีต",
+      startTimePastError: "เวลาเริ่มต้นต้องเป็นเวลาหลังจากตอนนี้",
       deadlineError: "เลือกวันสุดท้ายสำหรับสมัครหรือทำงาน",
       deadlineOrderError: "กำหนดส่งต้องไม่ก่อนวันที่เริ่มต้น",
       startTimeError: "กรอกเวลาเริ่มต้น เช่น 09:00",
       endTimeError: "กรอกเวลาสิ้นสุด เช่น 12:00",
       timeOrderError: "เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มต้น",
-      headcountError: "ระบุผู้เข้าร่วมอย่างน้อย 1 คน",
+      headcountError: "เควสต์แบบทีมต้องมีผู้เข้าร่วม 2-20 คน",
+      publishError:
+        "ไม่สามารถเผยแพร่เควสต์ได้ ตรวจสอบรายละเอียดแล้วลองอีกครั้ง",
+      publishErrorTitle: "เผยแพร่เควสต์ไม่สำเร็จ",
+      saveErrorTitle: "บันทึกไม่สำเร็จ",
       rewardEmptyError: "กรอกค่าตอบแทนเป็นเงินบาท",
       rewardFormatError: "กรอกจำนวนเงินที่ถูกต้อง โดยมีทศนิยมไม่เกิน 2 ตำแหน่ง",
       rewardBoundsError: (maximum) =>
-        `ค่าตอบแทนต้องอยู่ระหว่าง ฿0 ถึง ฿${maximum.toLocaleString("th-TH")}`,
+        `ค่าตอบแทนต้องอยู่ระหว่าง ฿0 ถึง ${formatSatang(maximum * 100, "th")}`,
       blockingGuidance: {
         QUEST_TAG_REQUIRED: "กรุณาเลือกแท็กหมวดหมู่สำหรับเควสต์",
         QUEST_DUE_AT_REQUIRED: "กรุณากำหนดเวลาส่งงาน (Deadline)",
@@ -739,6 +808,12 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         TAG_NOT_FOUND: "ไม่พบแท็กเควสต์ที่เลือก",
         QUEST_NOT_FOUND: "ไม่พบเควสต์นี้ หรือคุณไม่ใช่ผู้ว่าจ้าง",
         QUEST_NOT_DRAFT: "เควสต์นี้ไม่ได้อยู่ในสถานะฉบับร่างแล้ว",
+        QUEST_OPEN_FIELD_LOCKED:
+          "ไม่สามารถแก้ไขค่าตอบแทนหรือจำนวนคนได้หลังจากเผยแพร่เควสต์แล้ว",
+        QUEST_OPEN_EDIT_CLOSED:
+          "ไม่สามารถแก้ไขเควสต์นี้ได้เนื่องจากมีผู้สมัครหรือเริ่มการเข้าร่วมแล้ว",
+        INVALID_OPEN_QUEST:
+          "เควสต์ที่เปิดอยู่ต้องมีแท็ก เวลาเริ่มต้นในอนาคต และเวลาสิ้นสุดที่อยู่หลังเวลาเริ่มต้น",
         QUEST_IMAGE_LIMIT_REACHED: "แนบรูปภาพได้ไม่เกิน 3 รูป",
         IMAGE_TOO_LARGE: "รูปภาพแต่ละรูปต้องไม่เกิน 5 MB",
         UNSUPPORTED_IMAGE_TYPE: "รองรับเฉพาะไฟล์ JPEG, PNG หรือ WebP",
@@ -759,13 +834,20 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         description: "รายละเอียดงาน",
         completionCriteria: "เกณฑ์การเสร็จงาน",
         proof: "หลักฐาน",
-        schedule: "กำหนดการ",
+        startTime: "เวลาเริ่ม",
+        endTime: "เวลาสิ้นสุด",
         location: "สถานที่",
         images: "รูปภาพ",
         candidateMode: "วิธีรับผู้สมัคร",
         participation: "การเข้าร่วม",
         headcount: "จำนวนผู้เข้าร่วม",
         reward: "ค่าตอบแทน",
+      },
+      durationUnits: {
+        days: (count) => `${count} วัน`,
+        hours: (count) => `${count} ชั่วโมง`,
+        minutes: (count) => `${count} นาที`,
+        lessThanMinute: "< 1 นาที",
       },
     },
   };

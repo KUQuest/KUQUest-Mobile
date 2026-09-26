@@ -5,13 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Pressable, ScrollView, Text, View } from "@/tw";
 import { Chip } from "@/components/ui/Chip";
-import {
-  Clock3,
-  FileText,
-  History,
-  LayoutDashboard,
-  WalletCards,
-} from "lucide-react-native";
+import { AlertCircle, Plus } from "lucide-react-native";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 
@@ -23,15 +17,26 @@ import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 
 import { StateView } from "@/components/ui/StateView";
-import { QuestBoardSkeleton } from "@/features/questBoard/components/QuestBoardStates";
+import { QuestBoardSkeleton } from "@/features/questBoard/board/components/QuestBoardStates";
 import { useHirerHomeQuery } from "./api/homeQueries";
 import { HirerQuestProgressCard } from "./components/HirerQuestProgressCard";
-import { HirerQuestRosterModal } from "./components/HirerQuestRosterModal";
 import {
+  HirerAttentionSection,
+  HirerHomeMasthead,
+  type HirerMyQuestsTab,
+  HirerShortcutsSection,
+  type HirerShortcutRoute,
+} from "./components/HirerHomeSections";
+import {
+  getHirerAttentionItems,
+  type HirerAttentionItem,
   hirerHomeQuestFixtures,
-  type LiveHirerQuestCardData,
 } from "./hirerHomeData";
-import { hirerHomeMessages } from "./hirerHomeMessages";
+import {
+  QuestMode,
+  QuestParticipation,
+} from "@/features/questBoard/domain/types";
+import { hirerHomeMessages } from "@/locales/hirerHomeMessages";
 import { hirerHomeStyles as styles } from "./hirerHomeStyles";
 export default function HomeScreen() {
   const router = useRouter();
@@ -54,9 +59,6 @@ export default function HomeScreen() {
   const activeQuestCount = homeData?.activeQuestCount ?? 0;
   const draftCount = homeData?.draftCount ?? 0;
   const completedCount = homeData?.completedCount ?? 0;
-  const [rosterModalQuest, setRosterModalQuest] =
-    useState<LiveHirerQuestCardData | null>(null);
-
   const isPrototypeDemo = isPrototypeDemoEnabled();
   const displayQuests =
     liveQuests.length > 0
@@ -67,9 +69,10 @@ export default function HomeScreen() {
             title: f.title[locale],
             tag: f.tag?.[locale],
             status: f.status,
-            mode: "FIRST_COME_FIRST_SERVED" as const,
-            participation: "SINGLE" as const,
+            mode: QuestMode.FIRST_COME_FIRST_SERVED,
+            participation: QuestParticipation.SINGLE,
             headcount: 1,
+            startTime: f.startTime,
             dueAt: f.dueAt,
             assignedWorkers: [
               {
@@ -113,6 +116,31 @@ export default function HomeScreen() {
     },
     [router]
   );
+
+  const handleOpenRoster = useCallback(
+    (questId: string) => {
+      router.push({
+        pathname: "/quest/[id]/select-roster",
+        params: { id: questId },
+      });
+    },
+    [router]
+  );
+
+  const attentionItems = getHirerAttentionItems(liveQuests);
+
+  const handleOpenMyQuests = (tab: HirerMyQuestsTab) =>
+    router.push({ pathname: "/my-quests", params: { role: "hirer", tab } });
+
+  const handleOpenAttentionItem = (item: HirerAttentionItem) =>
+    item.kind === "proof"
+      ? handleReviewProof(item.questId)
+      : handleOpenRoster(item.questId);
+
+  const handleOpenShortcut = (route: HirerShortcutRoute) =>
+    route === "/my-quests"
+      ? router.push({ pathname: route, params: { role: "hirer" } })
+      : router.push(route);
 
   if (isPending) {
     return (
@@ -160,8 +188,8 @@ export default function HomeScreen() {
             onRefresh={() => {
               void refetch();
             }}
-            colors={[themeColors.primary]}
-            tintColor={themeColors.primary}
+            colors={[themeColors.hirer]}
+            tintColor={themeColors.hirer}
           />
         }
         scrollEventThrottle={16}
@@ -169,23 +197,65 @@ export default function HomeScreen() {
         testID="hirer-home-scroll"
       >
         <View className={styles.screenContent}>
-          <View className={styles.screenHeader}>
-            <Text
-              accessibilityRole="header"
-              className={`${styles.screenTitle} text-ku-text-strong`}
-              testID="hirer-home-title"
+          <HirerHomeMasthead
+            activeCount={displayedActiveQuestCount}
+            completedCount={completedCount}
+            draftCount={draftCount}
+            messages={messages}
+            onOpenMyQuests={handleOpenMyQuests}
+          />
+
+          {homeData?.hasPartialFailure ? (
+            <View
+              accessibilityLiveRegion="assertive"
+              accessibilityRole="alert"
+              className="flex-row items-center justify-between rounded-ku-card border border-ku-border-danger bg-ku-surface-danger p-ku-md"
+              testID="hirer-home-partial-failure"
             >
-              {messages.title}
-            </Text>
-            <Text className={`${styles.screenSubtitle} text-ku-text-secondary`}>
-              {messages.subtitle}
-            </Text>
-          </View>
+              <View className="flex-1 flex-row items-center gap-ku-sm">
+                <AlertCircle
+                  color={themeColors.dangerDark}
+                  size={20}
+                  strokeWidth={2}
+                />
+                <View className="flex-1">
+                  <Text className="font-ku-semibold text-ku-body-small text-ku-danger-dark">
+                    {messages.partialFailureTitle}
+                  </Text>
+                  <Text className="font-ku-regular text-ku-meta text-ku-text-secondary">
+                    {messages.partialFailureDescription}
+                  </Text>
+                </View>
+              </View>
+              <Pressable
+                accessibilityLabel={messages.retry}
+                accessibilityRole="button"
+                className="ml-ku-sm min-h-[36px] items-center justify-center rounded-ku-pill border border-ku-border-danger bg-ku-surface px-ku-md"
+                onPress={() => {
+                  void refetch();
+                }}
+                testID="hirer-home-partial-failure-retry"
+              >
+                <Text className="font-ku-semibold text-ku-meta text-ku-danger-dark">
+                  {messages.retry}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          <HirerAttentionSection
+            items={attentionItems}
+            messages={messages}
+            onOpenItem={handleOpenAttentionItem}
+          />
 
           {displayQuests.length > 0 ? (
-            <>
+            <View className={styles.section}>
               <View className={styles.sectionHeaderRow}>
-                <Text className={`${styles.sectionTitle} text-ku-text-strong`}>
+                <Text
+                  accessibilityRole="header"
+                  className={styles.sectionTitle}
+                >
                   {messages.activeQuestTitle}
                 </Text>
                 <View className="flex-row items-center gap-ku-sm">
@@ -196,7 +266,7 @@ export default function HomeScreen() {
                         activeCardIndex + 1,
                         displayedActiveQuestCount
                       )}
-                      textClassName={`${styles.sectionCounterText} text-ku-primary`}
+                      textClassName={`${styles.sectionCounterText} text-ku-hirer`}
                       testID="hirer-quest-counter"
                       tone="accent"
                     />
@@ -206,15 +276,10 @@ export default function HomeScreen() {
                       accessibilityLabel={messages.viewAllActive}
                       accessibilityRole="button"
                       className={styles.viewAllButton}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/my-quests",
-                          params: { role: "hirer", tab: "active" },
-                        })
-                      }
+                      onPress={() => handleOpenMyQuests("active")}
                       testID="hirer-view-all-active"
                     >
-                      <Text className={`${styles.viewAllText} text-ku-primary`}>
+                      <Text className={`${styles.viewAllText} text-ku-hirer`}>
                         {messages.viewAllActive}
                       </Text>
                     </Pressable>
@@ -245,10 +310,11 @@ export default function HomeScreen() {
                   {displayQuests.map((item) => (
                     <View key={item.id} style={{ width: cardWidth }}>
                       <HirerQuestProgressCard
+                        startTime={item.startTime}
                         dueAt={item.dueAt}
                         onOpenDetails={() => handleOpenDetails(item.id)}
                         onOpenWorkerProfile={handleOpenWorkerProfile}
-                        onViewRoster={() => setRosterModalQuest(item)}
+                        onViewRoster={() => handleOpenRoster(item.id)}
                         questId={item.id}
                         status={item.status}
                         tag={item.tag}
@@ -283,7 +349,7 @@ export default function HomeScreen() {
                       <View
                         className={`${styles.paginationDot} ${
                           index === activeCardIndex
-                            ? `${styles.paginationDotActive} bg-ku-primary`
+                            ? `${styles.paginationDotActive} bg-ku-hirer`
                             : `${styles.paginationDotInactive} bg-ku-border-subtle`
                         }`}
                         key={item.id}
@@ -293,239 +359,39 @@ export default function HomeScreen() {
                   </View>
                 ) : null}
               </View>
-            </>
+            </View>
           ) : (
-            <View
-              className={`${styles.emptyState} border-ku-border-subtle bg-ku-surface-muted`}
-              testID="hirer-home-empty"
-            >
-              <Text className={`${styles.emptyTitle} text-ku-text-strong`}>
+            <View className={styles.emptyState} testID="hirer-home-empty">
+              <Text accessibilityRole="header" className={styles.emptyTitle}>
                 {messages.emptyTitle}
               </Text>
-              <Text
-                className={`${styles.emptyDescription} text-ku-text-secondary`}
-              >
+              <Text className={styles.emptyDescription}>
                 {messages.emptyDescription}
               </Text>
+              <Pressable
+                accessibilityRole="button"
+                className={styles.emptyAction}
+                onPress={() => router.push("/create")}
+                testID="hirer-home-empty-create"
+              >
+                <Plus
+                  color={themeColors.hirerDark}
+                  size={20}
+                  strokeWidth={2.2}
+                />
+                <Text className={styles.emptyActionText}>
+                  {messages.emptyAction}
+                </Text>
+              </Pressable>
             </View>
           )}
 
-          <View
-            className={styles.quickAccessSection}
-            testID="hirer-home-quick-access"
-          >
-            <Text
-              accessibilityRole="header"
-              className={`${styles.quickAccessTitle} text-ku-text-strong`}
-            >
-              {messages.quickAccessTitle}
-            </Text>
-
-            <View className={styles.quickAccessGrid}>
-              <Pressable
-                accessibilityLabel={`${messages.quickActiveTitle}: ${messages.quickActiveCount(displayedActiveQuestCount)}`}
-                accessibilityRole="button"
-                className={`${styles.quickAccessCard} border-ku-border-subtle bg-ku-surface`}
-                onPress={() =>
-                  router.push({
-                    pathname: "/my-quests",
-                    params: { role: "hirer", tab: "active" },
-                  })
-                }
-                testID="hirer-quick-access-active"
-              >
-                <View
-                  className={`${styles.quickAccessIconBox} bg-ku-surface-accent`}
-                >
-                  <Clock3
-                    color={themeColors.primary}
-                    size={22}
-                    strokeWidth={2.2}
-                  />
-                </View>
-                <View className={styles.quickAccessCopy}>
-                  <Text
-                    className={`${styles.quickAccessItemTitle} text-ku-text-strong`}
-                    numberOfLines={1}
-                  >
-                    {messages.quickActiveTitle}
-                  </Text>
-                  <Text
-                    className={`${styles.quickAccessItemDesc} text-ku-text-secondary`}
-                    numberOfLines={1}
-                  >
-                    {messages.quickActiveCount(displayedActiveQuestCount)}
-                  </Text>
-                </View>
-              </Pressable>
-
-              <Pressable
-                accessibilityLabel={`${messages.quickDraftTitle}: ${messages.quickDraftCount(draftCount)}`}
-                accessibilityRole="button"
-                className={`${styles.quickAccessCard} border-ku-border-subtle bg-ku-surface`}
-                onPress={() =>
-                  router.push({
-                    pathname: "/my-quests",
-                    params: { role: "hirer", tab: "draft" },
-                  })
-                }
-                testID="hirer-quick-access-draft"
-              >
-                <View
-                  className={`${styles.quickAccessIconBox} bg-ku-surface-accent`}
-                >
-                  <FileText
-                    color={themeColors.primary}
-                    size={22}
-                    strokeWidth={2.2}
-                  />
-                </View>
-                <View className={styles.quickAccessCopy}>
-                  <Text
-                    className={`${styles.quickAccessItemTitle} text-ku-text-strong`}
-                    numberOfLines={1}
-                  >
-                    {messages.quickDraftTitle}
-                  </Text>
-                  <Text
-                    className={`${styles.quickAccessItemDesc} text-ku-text-secondary`}
-                    numberOfLines={1}
-                  >
-                    {messages.quickDraftCount(draftCount)}
-                  </Text>
-                </View>
-              </Pressable>
-
-              <Pressable
-                accessibilityLabel={`${messages.quickHistoryTitle}: ${messages.quickHistoryCount(completedCount)}`}
-                accessibilityRole="button"
-                className={`${styles.quickAccessCard} border-ku-border-subtle bg-ku-surface`}
-                onPress={() =>
-                  router.push({
-                    pathname: "/my-quests",
-                    params: { role: "hirer", tab: "completed" },
-                  })
-                }
-                testID="hirer-quick-access-history"
-              >
-                <View
-                  className={`${styles.quickAccessIconBox} bg-ku-surface-accent`}
-                >
-                  <History
-                    color={themeColors.primary}
-                    size={22}
-                    strokeWidth={2.2}
-                  />
-                </View>
-                <View className={styles.quickAccessCopy}>
-                  <Text
-                    className={`${styles.quickAccessItemTitle} text-ku-text-strong`}
-                    numberOfLines={1}
-                  >
-                    {messages.quickHistoryTitle}
-                  </Text>
-                  <Text
-                    className={`${styles.quickAccessItemDesc} text-ku-text-secondary`}
-                    numberOfLines={1}
-                  >
-                    {messages.quickHistoryCount(completedCount)}
-                  </Text>
-                </View>
-              </Pressable>
-
-              <Pressable
-                accessibilityLabel={`${messages.quickBoardTitle}: ${messages.quickBoardDesc}`}
-                accessibilityRole="button"
-                className={`${styles.quickAccessCard} border-ku-border-subtle bg-ku-surface`}
-                onPress={() => router.push("/quest-board")}
-                testID="hirer-quick-access-board"
-              >
-                <View
-                  className={`${styles.quickAccessIconBox} bg-ku-surface-accent`}
-                >
-                  <LayoutDashboard
-                    color={themeColors.primary}
-                    size={22}
-                    strokeWidth={2.2}
-                  />
-                </View>
-                <View className={styles.quickAccessCopy}>
-                  <Text
-                    className={`${styles.quickAccessItemTitle} text-ku-text-strong`}
-                    numberOfLines={1}
-                  >
-                    {messages.quickBoardTitle}
-                  </Text>
-                  <Text
-                    className={`${styles.quickAccessItemDesc} text-ku-text-secondary`}
-                    numberOfLines={1}
-                  >
-                    {messages.quickBoardDesc}
-                  </Text>
-                </View>
-              </Pressable>
-
-              <Pressable
-                accessibilityLabel={`${messages.quickTopUpTitle}: ${messages.quickTopUpDesc}`}
-                accessibilityRole="button"
-                className={`${styles.quickAccessCard} border-ku-border-subtle bg-ku-surface`}
-                onPress={() => router.push("/money")}
-                testID="hirer-quick-access-topup"
-              >
-                <View
-                  className={`${styles.quickAccessIconBox} bg-ku-surface-accent`}
-                >
-                  <WalletCards
-                    color={themeColors.primary}
-                    size={22}
-                    strokeWidth={2.2}
-                  />
-                </View>
-                <View className={styles.quickAccessCopy}>
-                  <Text
-                    className={`${styles.quickAccessItemTitle} text-ku-text-strong`}
-                    numberOfLines={1}
-                  >
-                    {messages.quickTopUpTitle}
-                  </Text>
-                  <Text
-                    className={`${styles.quickAccessItemDesc} text-ku-text-secondary`}
-                    numberOfLines={1}
-                  >
-                    {messages.quickTopUpDesc}
-                  </Text>
-                </View>
-              </Pressable>
-            </View>
-          </View>
+          <HirerShortcutsSection
+            messages={messages}
+            onNavigate={handleOpenShortcut}
+          />
         </View>
       </ScrollView>
-      {rosterModalQuest && (
-        <HirerQuestRosterModal
-          visible={Boolean(rosterModalQuest)}
-          questTitle={rosterModalQuest.title}
-          questId={rosterModalQuest.id}
-          status={rosterModalQuest.status}
-          headcount={rosterModalQuest.headcount}
-          assignedWorkers={rosterModalQuest.assignedWorkers}
-          applicants={rosterModalQuest.applicants}
-          onClose={() => setRosterModalQuest(null)}
-          onOpenWorkerProfile={handleOpenWorkerProfile}
-          onOpenManageQuest={() => {
-            const hasPendingSelection =
-              rosterModalQuest.mode === "CANDIDATE" &&
-              rosterModalQuest.applicants.length > 0;
-            if (hasPendingSelection) {
-              router.push({
-                pathname: "/quest/[id]/select-roster",
-                params: { id: rosterModalQuest.id },
-              });
-            } else {
-              handleOpenDetails(rosterModalQuest.id);
-            }
-          }}
-        />
-      )}
     </ScreenLayout>
   );
 }

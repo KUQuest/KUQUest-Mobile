@@ -6,29 +6,17 @@ Android and iOS are the product targets. A web run is not evidence for native be
 
 - Read `README.md` for the environment contract before starting Metro.
 - The normal connected flow uses `bun run staging:start`, which targets the develop staging API and the development client.
-- Use `bun run dev:start`, `bun run dev:local`, or demo scripts only when the task explicitly requires that environment.
-- Build and install a development build with `bun run dev:android` or `bun run dev:ios`; Expo Go is not evidence for native modules.
+- Use `bun run dev:local` or demo scripts only when the task explicitly requires that environment.
+- Build and install with `bun android` or `bun ios`; Expo Go is not evidence for native modules.
 
-### Physical Android device preparation
+### Android device selection and Metro reverse
 
-Before opening a development build on a connected Android device, run:
-
-```bash
-bun run mobile:android:prepare
-```
-
-The command selects `ANDROID_SERIAL` or the single online device and runs
-`adb reverse` for `METRO_PORT` (default `8081`). Bind device tooling to the
-same `metroHost`, `metroPort`, and `bundleUrl` values printed by the command.
-When `8081` is occupied by a healthy project-owned Metro listener, use one
-alternate port consistently:
+`bun android` selects the sole online Android device automatically, prompts when multiple devices are online, and honors `ANDROID_SERIAL=<serial>` without prompting. It applies `adb reverse` to the selected serial using `EXPO_PORT` (default `6767`) before invoking Expo for that same device. Use the same port for Metro:
 
 ```bash
-METRO_PORT=8082 bun run mobile:android:prepare
 EXPO_PORT=8082 bun run staging:start
+EXPO_PORT=8082 ANDROID_SERIAL=<serial> bun android
 ```
-
-Pass `ANDROID_SERIAL` when more than one device is online.
 
 ### Preflight
 

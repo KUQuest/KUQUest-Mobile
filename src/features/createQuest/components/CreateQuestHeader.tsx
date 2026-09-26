@@ -4,8 +4,8 @@ import { ArrowLeft, Check, CircleHelp } from "lucide-react-native";
 import { Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { createQuestMessages } from "@/locales/createQuestMessages";
-import { colors } from "@/theme/colors";
-import styles from "../createQuestStyles";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import styles from "./createQuestStyles";
 import type { Step } from "../createQuestTypes";
 
 export function CreateQuestHeader({
@@ -21,10 +21,11 @@ export function CreateQuestHeader({
   step: Step;
   onBackPress: () => void;
   onHelpPress: () => void;
-  onStepPress: (step: Step) => void;
+  onStepPress?: (step: Step) => void;
   title?: string;
   subtitle?: string;
 }) {
+  const { colors } = useAppTheme();
   const stepLabels = [
     messages.missionInfo,
     messages.teamSetup,
@@ -67,46 +68,55 @@ export function CreateQuestHeader({
         accessibilityValue={{ min: 1, max: 3, now: step }}
         className={styles.progressTrack}
       >
-        {[1, 2, 3].map((item, index) => (
-          <React.Fragment key={item}>
-            <Pressable
-              accessibilityLabel={`${messages.step(item, 3)}: ${stepLabels[index]}`}
-              accessibilityRole="button"
-              accessibilityState={{
-                disabled: item > step,
-                selected: item === step,
-              }}
-              className={styles.progressNodePressable}
-              disabled={item > step}
-              onPress={() => onStepPress(item as Step)}
+        {[1, 2, 3].map((item, index) => {
+          const node = (
+            <View
+              className={cn(
+                styles.progressNode,
+                item <= step
+                  ? "bg-ku-success-bright"
+                  : "bg-ku-on-primary/[0.34]"
+              )}
             >
-              <View
-                className={cn(
-                  styles.progressNode,
-                  item <= step
-                    ? "bg-ku-success-bright"
-                    : "bg-ku-on-primary/[0.34]"
-                )}
-              >
-                {item < step ? (
-                  <Check color={colors.onPrimary} size={26} strokeWidth={2.8} />
-                ) : (
-                  <Text className={styles.progressNodeText}>{item}</Text>
-                )}
-              </View>
-            </Pressable>
-            {index < 2 ? (
-              <View
-                className={cn(
-                  styles.progressConnector,
-                  item < step
-                    ? "bg-ku-success-bright"
-                    : "bg-ku-on-primary/[0.3]"
-                )}
-              />
-            ) : null}
-          </React.Fragment>
-        ))}
+              {item < step ? (
+                <Check color={colors.onPrimary} size={26} strokeWidth={2.8} />
+              ) : (
+                <Text className={styles.progressNodeText}>{item}</Text>
+              )}
+            </View>
+          );
+          return (
+            <React.Fragment key={item}>
+              {onStepPress ? (
+                <Pressable
+                  accessibilityLabel={`${messages.step(item, 3)}: ${stepLabels[index]}`}
+                  accessibilityRole="button"
+                  accessibilityState={{
+                    disabled: item > step,
+                    selected: item === step,
+                  }}
+                  className={styles.progressNodePressable}
+                  disabled={item > step}
+                  onPress={() => onStepPress(item as Step)}
+                >
+                  {node}
+                </Pressable>
+              ) : (
+                <View className={styles.progressNodePressable}>{node}</View>
+              )}
+              {index < 2 ? (
+                <View
+                  className={cn(
+                    styles.progressConnector,
+                    item < step
+                      ? "bg-ku-success-bright"
+                      : "bg-ku-on-primary/[0.3]"
+                  )}
+                />
+              ) : null}
+            </React.Fragment>
+          );
+        })}
       </View>
       <View className={styles.stepLabels}>
         {stepLabels.map((label, index) => (

@@ -1,18 +1,15 @@
 import * as SecureStore from "expo-secure-store";
 
-import { liveQuestService } from "@/features/questBoard/liveQuestService";
-import {
-  initialDraft,
-  toQuestV2Payload,
-  type QuestDraft,
-} from "../createQuestModel";
+import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
+import { initialDraft, type QuestDraft } from "../domain/createQuestModel";
+import { toQuestV2Payload } from "../api/createQuestApiAdapter";
 import {
   CREATE_QUEST_DRAFT_KEY,
   listQuestDrafts,
   persistQuestDraft,
-} from "../createQuestPersistence";
+} from "../draft/createQuestPersistence";
 
-jest.mock("@/features/questBoard/liveQuestService", () => ({
+jest.mock("@/features/questBoard/live/liveQuestService", () => ({
   liveQuestService: {
     createQuest: jest.fn(),
     getPublishCheck: jest.fn(),

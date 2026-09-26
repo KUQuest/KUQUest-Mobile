@@ -7,6 +7,19 @@ export type OnboardingDatePickerTarget = {
   kind: "certificate" | "experience";
   field?: "startedAt" | "endedAt";
 };
+export type OnboardingDatePickerState = {
+  target: OnboardingDatePickerTarget | null;
+  today: Date;
+  datePickerIndex: number | null;
+  openCertificate: (index: number, value: string) => void;
+  openExperience: (
+    index: number,
+    field: "startedAt" | "endedAt",
+    value: string
+  ) => void;
+  handleChange: (event: DateTimePickerChangeEvent, selectedDate?: Date) => void;
+  close: () => void;
+};
 
 export function useOnboardingDatePicker({
   onCertificateDate,

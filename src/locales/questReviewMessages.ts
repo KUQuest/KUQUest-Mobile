@@ -1,7 +1,7 @@
 import type { SupportedLocale } from "./locale";
 
 export interface QuestReviewMessages {
-  back: string;
+  close: string;
   title: string;
   description: string;
   loading: string;
@@ -30,7 +30,7 @@ export interface QuestReviewMessages {
 export const questReviewMessages: Record<SupportedLocale, QuestReviewMessages> =
   {
     en: {
-      back: "Back",
+      close: "Close",
       title: "Review Quest",
       description: "Share feedback about the Worker after this Quest.",
       loading: "Loading review details…",
@@ -58,7 +58,7 @@ export const questReviewMessages: Record<SupportedLocale, QuestReviewMessages> =
         "Reviews can only be submitted after a Quest reaches a terminal state.",
     },
     th: {
-      back: "ย้อนกลับ",
+      close: "ปิด",
       title: "รีวิวเควสต์",
       description: "แบ่งปันความคิดเห็นเกี่ยวกับผู้ทำงานหลังจบเควสต์นี้",
       loading: "กำลังโหลดข้อมูลรีวิว…",

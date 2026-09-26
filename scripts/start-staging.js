@@ -74,9 +74,8 @@ function runStagingStart({
 } = {}) {
   const stagingEnvironment = createStagingEnvironment(environment);
   const expoArgs = ["x", "expo", "start", "--dev-client"];
-  if (stagingEnvironment.EXPO_PORT) {
-    expoArgs.push("--port", stagingEnvironment.EXPO_PORT);
-  }
+  const port = stagingEnvironment.EXPO_PORT || "6767";
+  expoArgs.push("--port", port);
   const result = spawn("bun", expoArgs, {
     env: stagingEnvironment,
     stdio: "inherit",

@@ -65,15 +65,14 @@ describe("StudentApi", () => {
       expect.objectContaining({
         method: "GET",
         credentials: "omit",
-        headers: expect.objectContaining({
-          Cookie: "better-auth.session_token=session-cookie",
-        }),
       })
     );
     const request = fetchMock.mock.calls[0][1] as RequestInit;
-    const headers = request.headers as Record<string, string>;
-    expect(headers.Authorization).toBeUndefined();
-    expect(headers["authorization"]).toBeUndefined();
+    const headers = new Headers(request.headers);
+    expect(headers.get("cookie")).toBe(
+      "better-auth.session_token=session-cookie"
+    );
+    expect(headers.get("authorization")).toBeNull();
   });
 
   test("accepts staging Profile version and nullable fields", async () => {
@@ -117,14 +116,14 @@ describe("StudentApi", () => {
     await publicApi.listPortfolio();
 
     const request = fetchMock.mock.calls[0][1] as RequestInit;
-    const headers = request.headers as Record<string, string>;
+    const headers = new Headers(request.headers);
     expect(request.credentials).toBe("omit");
-    expect(headers.Cookie).toBeUndefined();
-    expect(headers.Authorization).toBeUndefined();
+    expect(headers.get("cookie")).toBeNull();
+    expect(headers.get("authorization")).toBeNull();
   });
 
   test("updates academic registration using the documented field names", async () => {
-    fetchMock.mockResolvedValue(response({ success: true }));
+    fetchMock.mockResolvedValue(response({ success: true, data: null }));
     await api.updateAcademicRegistration({
       firstName: "KU",
       lastName: "Student",
@@ -174,7 +173,7 @@ describe("StudentApi", () => {
     const request = fetchMock.mock.calls[0][1] as RequestInit;
     expect(request.headers).toEqual(
       expect.objectContaining({
-        "Idempotency-Key": "profile-bio-update-1",
+        "idempotency-key": "profile-bio-update-1",
       })
     );
   });
@@ -406,8 +405,8 @@ describe("StudentApi", () => {
             name: "Software",
             faculty: { name: "Engineering" },
           },
-          avatar: { fileId: "f-1", url: "https://example.test/avatar.png" },
           occupation: { id: "occ-1", name: "Student" },
+          reputation: { totalQuests: 4, rating: { average: 4.5 } },
           experience: [],
           portfolio: [],
           certificates: [],
@@ -418,6 +417,7 @@ describe("StudentApi", () => {
     const result = await api.getPublicProfile("user-uuid-1");
     expect(result.firstName).toBe("Public");
     expect(result.lastName).toBe("User");
+    expect(result.reputation.rating.average).toBe(4.5);
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.example.test/api/v1/profile/user-uuid-1",
       expect.objectContaining({ method: "GET" })

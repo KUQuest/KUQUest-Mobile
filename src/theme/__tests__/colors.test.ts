@@ -3,6 +3,7 @@ import {
   darkColors,
   getThemeColors,
   hirerRamp,
+  setActiveRamp,
   workerRamp,
 } from "../colors";
 
@@ -24,6 +25,37 @@ describe("Theme Colors — Organic Editorial Palette", () => {
       expect(lightColors.supportSubtle).toBe("#F3ECF2");
       expect(lightColors.supportBorder).toBe("#B79AAF");
       expect(lightColors.onSupport).toBe("#FFFFFF");
+    });
+
+    it("defines the static Worker and Hirer role palettes", () => {
+      expect(lightColors).toMatchObject({
+        hirer: "#5F7655",
+        hirerDark: "#465B3E",
+        hirerDeep: "#34462F",
+        hirerSubtle: "#EDF2EA",
+        hirerBorder: "#B6C4AF",
+        onHirer: "#FFFFFF",
+        worker: "#96533F",
+        workerDark: "#713D30",
+        workerDeep: "#4F2A22",
+        workerSubtle: "#F8ECE8",
+        workerBorder: "#C9A79A",
+        onWorker: "#FFFFFF",
+      });
+      expect(darkColors).toMatchObject({
+        hirer: "#A9C79E",
+        hirerDark: "#7FA273",
+        hirerDeep: "#5F7655",
+        hirerSubtle: "#243128",
+        hirerBorder: "#526B58",
+        onHirer: "#142019",
+        worker: "#E1A08C",
+        workerDark: "#C77B65",
+        workerDeep: "#A75D4B",
+        workerSubtle: "#3B2924",
+        workerBorder: "#805044",
+        onWorker: "#241A17",
+      });
     });
 
     it("defines the authoritative neutral tokens", () => {
@@ -102,11 +134,11 @@ describe("Theme Colors — Organic Editorial Palette", () => {
   });
 
   describe("Ramps and Theme Resolution", () => {
-    it("unifies hirer and worker ramps with the brand primary", () => {
+    it("keeps the workspace ramps role-specific", () => {
       expect(hirerRamp.light.primary).toBe("#5F7655");
-      expect(workerRamp.light.primary).toBe("#5F7655");
+      expect(workerRamp.light.primary).toBe("#96533F");
       expect(hirerRamp.dark.primary).toBe("#A9C79E");
-      expect(workerRamp.dark.primary).toBe("#A9C79E");
+      expect(workerRamp.dark.primary).toBe("#E1A08C");
     });
 
     it("resolves the light and dark theme palettes correctly", () => {
@@ -117,6 +149,19 @@ describe("Theme Colors — Organic Editorial Palette", () => {
       expect(light.background).toBe("#F7F9F8");
       expect(dark.primary).toBe("#A9C79E");
       expect(dark.background).toBe("#101713");
+    });
+
+    it("switches the whole primary family to the Worker ramp", () => {
+      setActiveRamp("worker");
+      try {
+        const light = getThemeColors("light");
+        expect(light.primary).toBe("#96533F");
+        expect(light.primarySubtle).toBe("#F8ECE8");
+        expect(light.primaryBorder).toBe("#C9A79A");
+        expect(light.onPrimary).toBe("#FFFFFF");
+      } finally {
+        setActiveRamp("hirer");
+      }
     });
   });
 });

@@ -228,7 +228,7 @@ Example flow shape:
 appId: com.kuquest.mobile.staging
 ---
 - launchApp
-- assertVisible: "KUQUEST"
+- assertVisible: "KUQuest"
 - tapOn:
     id: "signin-button"
 ```

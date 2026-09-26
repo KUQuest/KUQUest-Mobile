@@ -1,7 +1,6 @@
-import { ScrollView, Text, View } from "@/tw";
+import { ScrollView, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { getProfileLayoutMetrics } from "../../../theme/profileLayout";
-import { colors } from "../../../theme/colors";
 import { spacing } from "../../../theme/spacing";
 import {
   LoadingSkeleton,
@@ -72,69 +71,42 @@ export function ProfileSkeleton({
       >
         <View
           className={styles.heroCard}
-          style={{ gap: spacing.md, padding: metrics.cardPadding }}
+          style={{ padding: metrics.cardPadding }}
         >
+          <SkeletonBlock
+            variant="image"
+            height={metrics.photoSize}
+            width={metrics.photoSize}
+            borderRadius={metrics.photoSize / 2}
+            testID="profile-skeleton-avatar"
+          />
           <View
-            style={{
-              alignItems: "flex-start",
-              flexDirection: "row",
-              gap: spacing.md,
-            }}
+            style={{ alignItems: "center", gap: spacing.sm, width: "100%" }}
           >
-            <SkeletonBlock
-              variant="image"
-              height={metrics.photoSize}
-              width={metrics.photoSize}
-              borderRadius={metrics.photoSize / 2}
-              testID="profile-skeleton-avatar"
-            />
-            <View style={{ flex: 1, gap: spacing.sm, paddingTop: spacing.xs }}>
-              <SkeletonBlock height={28} width="76%" borderRadius={5} />
-              <SkeletonBlock height={16} width="58%" borderRadius={4} />
-              <SkeletonBlock height={16} width="72%" borderRadius={4} />
-              <SkeletonBlock height={16} width="64%" borderRadius={4} />
-            </View>
+            <SkeletonBlock height={28} width="64%" borderRadius={5} />
+            <SkeletonBlock height={16} width="82%" borderRadius={4} />
           </View>
-          <View style={{ gap: spacing.sm }}>
-            <SkeletonBlock height={14} width="54%" borderRadius={4} />
-            <View style={{ flexDirection: "row", gap: spacing.sm }}>
-              <SkeletonBlock height={28} width={82} borderRadius={15} />
-              <SkeletonBlock height={28} width={96} borderRadius={15} />
-              <SkeletonBlock height={28} width={72} borderRadius={15} />
-            </View>
+          <View style={{ flexDirection: "row", gap: spacing.sm }}>
+            <SkeletonBlock height={28} width={82} borderRadius={15} />
+            <SkeletonBlock height={28} width={96} borderRadius={15} />
+            <SkeletonBlock height={28} width={72} borderRadius={15} />
           </View>
+          <SkeletonBlock height={48} borderRadius={24} />
         </View>
-        <View
-          className={styles.statsCard}
-          style={{
-            backgroundColor: colors.surfaceMuted,
-            borderColor: colors.borderSubtle,
-            gap: spacing.sm,
-          }}
-        >
+        <View className={styles.statsCard}>
           <View style={{ flexDirection: "row", gap: spacing.sm }}>
             <SkeletonBlock height={42} borderRadius={6} style={{ flex: 1 }} />
             <SkeletonBlock height={42} borderRadius={6} style={{ flex: 1 }} />
             <SkeletonBlock height={42} borderRadius={6} style={{ flex: 1 }} />
           </View>
         </View>
-        <View
-          className={styles.tabList}
-          style={{
-            backgroundColor: colors.surfaceMuted,
-            borderColor: colors.borderSubtle,
-            borderRadius: 16,
-            flexDirection: "row",
-            gap: spacing.xs,
-            padding: spacing.xs,
-          }}
-        >
+        <View className={cn(styles.tabList, "overflow-hidden")}>
           {[1, 2, 3, 4, 5].map((item) => (
             <SkeletonBlock
               key={item}
-              height={64}
-              borderRadius={10}
-              style={{ flex: 1 }}
+              height={48}
+              width={96}
+              borderRadius={24}
               testID={`profile-skeleton-tab-${item}`}
             />
           ))}

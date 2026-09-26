@@ -94,13 +94,13 @@ describe("staging:start", () => {
     ).toThrow("EXPO_PUBLIC_TERMS_VERSION is required");
   });
 
-  test("starts Expo in dev-client mode with staging selectors", () => {
+  test("starts Expo in dev-client mode on the default 6767 port", () => {
     const spawn = jest.fn().mockReturnValue({ status: 0 });
 
     expect(runStagingStart({ environment, spawn })).toBe(0);
     expect(spawn).toHaveBeenCalledWith(
       "bun",
-      ["x", "expo", "start", "--dev-client"],
+      ["x", "expo", "start", "--dev-client", "--port", "6767"],
       expect.objectContaining({
         env: expect.objectContaining({
           APP_VARIANT: "staging",

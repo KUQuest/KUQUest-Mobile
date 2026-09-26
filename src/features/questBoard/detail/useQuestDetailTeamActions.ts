@@ -6,13 +6,17 @@ import type {
 } from "./questDetailActions";
 import type { QuestDetailPresentationFacts } from "./questDetailPresentation";
 import type { QuestDetailSurfaceTransitions } from "./useQuestDetailSurfaceState";
+import {
+  QuestUnderfilledConsentDecision,
+  QuestUnderfilledDecision,
+} from "../domain/types";
 
 export interface QuestDetailTeamHandlers {
   openLiveUnderfilled: () => void;
-  liveUnderfilledDecision: (decision: "PROCEED" | "CANCEL") => void;
-  liveUnderfilledConsent: (decision: "ACCEPT" | "DECLINE") => void;
-  liveCreateTeam: () => void;
-  liveJoinTeam: (joinCode: string) => void;
+  liveUnderfilledDecision: (decision: QuestUnderfilledDecision) => void;
+  liveUnderfilledConsent: (decision: QuestUnderfilledConsentDecision) => void;
+  liveCreateTeam: (name: string) => void;
+  liveJoinTeam: (teamId: string, joinCode: string) => void;
   liveLeaveTeam: (teamId: string) => void;
   liveRemoveTeamMember: (teamId: string, memberId: string) => void;
   liveRegenerateTeamCode: (teamId: string) => void;
@@ -50,23 +54,26 @@ export function useQuestDetailTeamActions({
     void liveActions.openUnderfilled();
   }, [facts, liveActions, transitions]);
   const liveUnderfilledDecision = useCallback(
-    (decision: "PROCEED" | "CANCEL") => {
+    (decision: QuestUnderfilledDecision) => {
       void liveActions.decideUnderfilled(decision);
     },
     [liveActions]
   );
   const liveUnderfilledConsent = useCallback(
-    (decision: "ACCEPT" | "DECLINE") => {
+    (decision: QuestUnderfilledConsentDecision) => {
       void liveActions.respondUnderfilled(decision);
     },
     [liveActions]
   );
-  const liveCreateTeam = useCallback(() => {
-    void liveActions.createTeam();
-  }, [liveActions]);
+  const liveCreateTeam = useCallback(
+    (name: string) => {
+      void liveActions.createTeam(name);
+    },
+    [liveActions]
+  );
   const liveJoinTeam = useCallback(
-    (joinCode: string) => {
-      void liveActions.joinTeam(joinCode);
+    (teamId: string, joinCode: string) => {
+      void liveActions.joinTeam(teamId, joinCode);
     },
     [liveActions]
   );
@@ -129,7 +136,11 @@ export function useQuestDetailTeamActions({
         facts.source.kind !== "preview" &&
         facts.projection?.capabilities.canConsentUnderfilled
       ) {
-        void liveActions.respondUnderfilled(approve ? "ACCEPT" : "DECLINE");
+        void liveActions.respondUnderfilled(
+          approve
+            ? QuestUnderfilledConsentDecision.ACCEPT
+            : QuestUnderfilledConsentDecision.DECLINE
+        );
         return;
       }
       previewActions.votePartialStart(approve);

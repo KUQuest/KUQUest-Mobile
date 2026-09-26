@@ -1,5 +1,6 @@
-import { ApiClient, ApiError } from "./ApiClient";
-import type { RequestOptions } from "./WalletApi";
+import { z } from "zod";
+import { ApiClient, ApiError, type RequestOptions } from "./ApiClient";
+import { debugLog, errorDetails } from "./debugLog";
 import {
   appendUploadFile,
   fileNameFromUri,
@@ -7,21 +8,20 @@ import {
   type UploadAsset,
 } from "./fileUpload";
 import {
-  academicRegistrationOptionsResponseSchema,
-  academicRegistrationStatusResponseSchema,
-  avatarMutationResponseSchema,
-  certificateResponseSchema,
-  certificateCreateResponseSchema,
-  experienceMutationResponseSchema,
-  experienceResponseSchema,
-  portfolioResponseSchema,
-  portfolioCreateResponseSchema,
-  profileResponseSchema,
-  reputationResponseSchema,
-  reviewsResponseSchema,
-  publicProfileResponseSchema,
-  publicProfileReviewsResponseSchema,
-  successResponseSchema,
+  academicRegistrationOptionsDataSchema,
+  academicRegistrationStatusDataSchema,
+  avatarMutationDataSchema,
+  certificateDataSchema,
+  certificateCreateDataSchema,
+  experienceMutationDataSchema,
+  experienceDataSchema,
+  portfolioDataSchema,
+  portfolioCreateDataSchema,
+  profileDataSchema,
+  reputationDataSchema,
+  reviewsDataSchema,
+  publicProfileDataSchema,
+  publicProfileReviewsDataSchema,
   type AcademicRegistrationOptions,
   type AcademicRegistrationStatus,
   type CertificateEntry,
@@ -97,47 +97,11 @@ export interface MutationOptions {
   idempotencyKey?: string;
 }
 
-function mutationHeaders(
-  options?: MutationOptions
-): Record<string, string> | undefined {
-  return options?.idempotencyKey
-    ? { "Idempotency-Key": options.idempotencyKey }
-    : undefined;
-}
-
 function studentApiDebug(
   message: string,
   details: Record<string, unknown> = {}
 ): void {
-  if (__DEV__) {
-    console.log(`[student-api] ${message}`, details);
-  }
-}
-
-function getErrorDetails(error: unknown): Record<string, unknown> {
-  if (error instanceof ApiError) {
-    return {
-      name: error.name,
-      status: error.status,
-      code: error.code,
-      message: error.message,
-    };
-  }
-  if (error instanceof Error) {
-    const issues =
-      "issues" in error && Array.isArray(error.issues)
-        ? error.issues.map((issue: { path?: unknown; message?: unknown }) => ({
-            path: issue.path,
-            message: issue.message,
-          }))
-        : undefined;
-    return {
-      name: error.name,
-      message: error.message,
-      ...(issues ? { issues } : {}),
-    };
-  }
-  return { message: String(error) };
+  debugLog("student-api", message, details);
 }
 
 type OptionalCollectionResult<T> = {
@@ -194,7 +158,10 @@ export class StudentApi {
     } catch (error) {
       studentApiDebug(`${operation} failed`, {
         ...details,
-        error: getErrorDetails(error),
+        error:
+          error instanceof Error
+            ? errorDetails(error)
+            : { message: String(error) },
       });
       throw error;
     }
@@ -203,21 +170,21 @@ export class StudentApi {
   async getAcademicRegistrationOptions(
     options?: RequestOptions
   ): Promise<AcademicRegistrationOptions> {
-    const body = await this.client.request<unknown>(
+    return this.client.get(
       "/api/v1/academic-registration/options",
-      { signal: options?.signal }
+      academicRegistrationOptionsDataSchema,
+      options
     );
-    return academicRegistrationOptionsResponseSchema.parse(body).data;
   }
 
   async getAcademicRegistrationStatus(
     options?: RequestOptions
   ): Promise<AcademicRegistrationStatus> {
-    const body = await this.client.request<unknown>(
+    return this.client.get(
       "/api/v1/academic-registration/status",
-      { signal: options?.signal }
+      academicRegistrationStatusDataSchema,
+      options
     );
-    return academicRegistrationStatusResponseSchema.parse(body).data;
   }
 
   async updateAcademicRegistration(
@@ -243,31 +210,29 @@ export class StudentApi {
             "Academic Registration update must contain at least one field"
           );
         }
-        const body = await this.client.requestJson<unknown>(
+        await this.client.send(
+          "PATCH",
           "/api/v1/academic-registration",
-          update,
-          { method: "PATCH", headers: mutationHeaders(options) }
+          z.unknown(),
+          { json: update, idempotencyKey: options?.idempotencyKey }
         );
-        successResponseSchema.parse(body);
       }
     );
   }
 
   async getProfile(options?: RequestOptions): Promise<ProfileResponse> {
-    const body = await this.client.request<unknown>("/api/v1/profile", {
-      signal: options?.signal,
-    });
-    return profileResponseSchema.parse(body).data;
+    return this.client.get("/api/v1/profile", profileDataSchema, options);
   }
+
   async getPublicProfile(
     userId: string,
     options?: RequestOptions
   ): Promise<PublicProfileResponse> {
-    const body = await this.client.request<unknown>(
+    return this.client.get(
       `/api/v1/profile/${userId}`,
-      { signal: options?.signal }
+      publicProfileDataSchema,
+      options
     );
-    return publicProfileResponseSchema.parse(body).data;
   }
 
   async listPublicReviews(
@@ -275,12 +240,11 @@ export class StudentApi {
     rating?: number,
     options?: RequestOptions
   ): Promise<PublicProfileReviewsData> {
-    const query = rating ? `?rating=${rating}` : "";
-    const body = await this.client.request<unknown>(
-      `/api/v1/profile/${userId}/reviews${query}`,
-      { signal: options?.signal }
+    return this.client.get(
+      `/api/v1/profile/${userId}/reviews`,
+      publicProfileReviewsDataSchema,
+      { ...options, query: { rating } }
     );
-    return publicProfileReviewsResponseSchema.parse(body).data;
   }
 
   async updateProfile(
@@ -312,12 +276,10 @@ export class StudentApi {
             ? {}
             : { departmentId: update.departmentId }),
         };
-        const body = await this.client.requestJson<unknown>(
-          "/api/v1/profile",
-          normalizedUpdate,
-          { method: "PATCH", headers: mutationHeaders(options) }
-        );
-        successResponseSchema.parse(body);
+        await this.client.send("PATCH", "/api/v1/profile", z.unknown(), {
+          json: normalizedUpdate,
+          idempotencyKey: options?.idempotencyKey,
+        });
       }
     );
   }
@@ -370,23 +332,25 @@ export class StudentApi {
   }
 
   async listExperience(options?: RequestOptions): Promise<ExperienceEntry[]> {
-    const body = await this.client.request<unknown>(
+    return this.client.get(
       "/api/v1/profile/experience",
-      { signal: options?.signal }
+      experienceDataSchema,
+      options
     );
-    return experienceResponseSchema.parse(body).data;
   }
 
   async createExperience(
     entry: ExperienceCreate,
     options?: MutationOptions
   ): Promise<ExperienceEntry | undefined> {
-    const body = await this.client.requestJson<unknown>(
-      "/api/v1/profile/experience",
-      entry,
-      { method: "POST", headers: mutationHeaders(options) }
-    );
-    return experienceMutationResponseSchema.parse(body).data?.experience;
+    return (
+      await this.client.send(
+        "POST",
+        "/api/v1/profile/experience",
+        experienceMutationDataSchema,
+        { json: entry, idempotencyKey: options?.idempotencyKey }
+      )
+    )?.experience;
   }
 
   async updateExperience(
@@ -394,28 +358,30 @@ export class StudentApi {
     update: Partial<ExperienceCreate>,
     options?: MutationOptions
   ): Promise<ExperienceEntry | undefined> {
-    const body = await this.client.requestJson<unknown>(
-      `/api/v1/profile/experience/${id}`,
-      update,
-      { method: "PATCH", headers: mutationHeaders(options) }
-    );
-    return experienceMutationResponseSchema.parse(body).data?.experience;
+    return (
+      await this.client.send(
+        "PATCH",
+        `/api/v1/profile/experience/${id}`,
+        experienceMutationDataSchema,
+        { json: update, idempotencyKey: options?.idempotencyKey }
+      )
+    )?.experience;
   }
 
   async deleteExperience(id: string): Promise<void> {
-    const body = await this.client.request<unknown>(
+    await this.client.send(
+      "DELETE",
       `/api/v1/profile/experience/${id}`,
-      { method: "DELETE" }
+      z.unknown()
     );
-    successResponseSchema.parse(body);
   }
 
   async getReputation(options?: RequestOptions): Promise<Reputation> {
-    const body = await this.client.request<unknown>(
+    return this.client.get(
       "/api/v1/profile/reputation",
-      { signal: options?.signal }
+      reputationDataSchema,
+      options
     );
-    return reputationResponseSchema.parse(body).data;
   }
 
   async listReviews(
@@ -426,12 +392,11 @@ export class StudentApi {
     total: number;
     nextCursor?: string | null;
   }> {
-    const query = rating === "all" ? "" : `?rating=${rating}`;
-    const body = await this.client.request<unknown>(
-      `/api/v1/profile/reviews${query}`,
-      { signal: options?.signal }
+    const parsed = await this.client.get(
+      "/api/v1/profile/reviews",
+      reviewsDataSchema,
+      { ...options, query: { rating: rating === "all" ? undefined : rating } }
     );
-    const parsed = reviewsResponseSchema.parse(body).data;
     return {
       items: parsed.items,
       total: parsed.total,
@@ -464,22 +429,24 @@ export class StudentApi {
           name: fileName,
           type: mimeType,
         });
-        const body = await this.client.requestForm<unknown>(
-          "/api/v1/profile/avatar",
-          formData,
-          { method: "POST", headers: mutationHeaders(options) }
-        );
-        return avatarMutationResponseSchema.parse(body).data.fileId;
+        return (
+          await this.client.send(
+            "POST",
+            "/api/v1/profile/avatar",
+            avatarMutationDataSchema,
+            { form: formData, idempotencyKey: options?.idempotencyKey }
+          )
+        ).fileId;
       }
     );
   }
 
   async listPortfolio(options?: RequestOptions): Promise<PortfolioEntry[]> {
-    const body = await this.client.request<unknown>(
+    return this.client.get(
       "/api/v1/profile/portfolio",
-      { signal: options?.signal }
+      portfolioDataSchema,
+      options
     );
-    return portfolioResponseSchema.parse(body).data;
   }
 
   async createPortfolio(
@@ -512,12 +479,14 @@ export class StudentApi {
             `portfolio-${index}`
           )
         );
-        const body = await this.client.requestForm<unknown>(
-          "/api/v1/profile/portfolio",
-          formData,
-          { method: "POST", headers: mutationHeaders(options) }
-        );
-        return portfolioCreateResponseSchema.parse(body).data.id;
+        return (
+          await this.client.send(
+            "POST",
+            "/api/v1/profile/portfolio",
+            portfolioCreateDataSchema,
+            { form: formData, idempotencyKey: options?.idempotencyKey }
+          )
+        ).id;
       }
     );
   }
@@ -535,12 +504,12 @@ export class StudentApi {
         descriptionLength: update.description?.length ?? 0,
       },
       async () => {
-        const body = await this.client.requestJson<unknown>(
+        await this.client.send(
+          "PATCH",
           `/api/v1/profile/portfolio/${id}`,
-          update,
-          { method: "PATCH", headers: mutationHeaders(options) }
+          z.unknown(),
+          { json: update, idempotencyKey: options?.idempotencyKey }
         );
-        successResponseSchema.parse(body);
       }
     );
   }
@@ -573,42 +542,44 @@ export class StudentApi {
           name: fileName,
           type: mimeType,
         });
-        const body = await this.client.requestForm<unknown>(
+        await this.client.send(
+          "POST",
           `/api/v1/profile/portfolio/${id}/image`,
-          formData,
-          { method: "POST", headers: mutationHeaders(options) }
+          z.unknown(),
+          { form: formData, idempotencyKey: options?.idempotencyKey }
         );
-        successResponseSchema.parse(body);
       }
     );
   }
 
   async deletePortfolioImage(id: string): Promise<void> {
-    const body = await this.client.request<unknown>(
+    await this.client.send(
+      "DELETE",
       `/api/v1/profile/portfolio/${id}/image`,
-      { method: "DELETE" }
+      z.unknown()
     );
-    successResponseSchema.parse(body);
   }
 
   async deletePortfolio(id: string): Promise<void> {
     return this.trace("portfolio delete", { id }, async () => {
-      const body = await this.client.request<unknown>(
+      await this.client.send(
+        "DELETE",
         `/api/v1/profile/portfolio/${id}`,
-        { method: "DELETE" }
+        z.unknown()
       );
-      successResponseSchema.parse(body);
     });
   }
 
   async listCertificates(
     options?: RequestOptions
   ): Promise<CertificateEntry[]> {
-    const body = await this.client.request<unknown>(
-      "/api/v1/profile/certificates",
-      { signal: options?.signal }
-    );
-    return certificateResponseSchema.parse(body).data.certificates;
+    return (
+      await this.client.get(
+        "/api/v1/profile/certificates",
+        certificateDataSchema,
+        options
+      )
+    ).certificates;
   }
 
   async createCertificate(
@@ -623,12 +594,14 @@ export class StudentApi {
         issuedAt: entry.issuedAt,
       },
       async () => {
-        const body = await this.client.requestJson<unknown>(
-          "/api/v1/profile/certificates",
-          entry,
-          { method: "POST", headers: mutationHeaders(options) }
-        );
-        return certificateCreateResponseSchema.parse(body).data.certificate.id;
+        return (
+          await this.client.send(
+            "POST",
+            "/api/v1/profile/certificates",
+            certificateCreateDataSchema,
+            { json: entry, idempotencyKey: options?.idempotencyKey }
+          )
+        ).certificate.id;
       }
     );
   }
@@ -647,23 +620,23 @@ export class StudentApi {
         issuedAt: update.issuedAt,
       },
       async () => {
-        const body = await this.client.requestJson<unknown>(
+        await this.client.send(
+          "PATCH",
           `/api/v1/profile/certificates/${id}`,
-          update,
-          { method: "PATCH", headers: mutationHeaders(options) }
+          z.unknown(),
+          { json: update, idempotencyKey: options?.idempotencyKey }
         );
-        successResponseSchema.parse(body);
       }
     );
   }
 
   async deleteCertificate(id: string): Promise<void> {
     return this.trace("certificate delete", { id }, async () => {
-      const body = await this.client.request<unknown>(
+      await this.client.send(
+        "DELETE",
         `/api/v1/profile/certificates/${id}`,
-        { method: "DELETE" }
+        z.unknown()
       );
-      successResponseSchema.parse(body);
     });
   }
 
@@ -695,22 +668,22 @@ export class StudentApi {
           name: fileName,
           type: mimeType,
         });
-        const body = await this.client.requestForm<unknown>(
+        await this.client.send(
+          "POST",
           `/api/v1/profile/certificates/${id}/image`,
-          formData,
-          { method: "POST", headers: mutationHeaders(options) }
+          z.unknown(),
+          { form: formData, idempotencyKey: options?.idempotencyKey }
         );
-        successResponseSchema.parse(body);
       }
     );
   }
 
   async deleteCertificateImage(id: string): Promise<void> {
-    const body = await this.client.request<unknown>(
+    await this.client.send(
+      "DELETE",
       `/api/v1/profile/certificates/${id}/image`,
-      { method: "DELETE" }
+      z.unknown()
     );
-    successResponseSchema.parse(body);
   }
 }
 export const studentApi = new StudentApi();

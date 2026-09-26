@@ -2,9 +2,25 @@ import { create } from "zustand";
 
 import { secureStorage } from "@/infrastructure/storage/keyValueStorage";
 
-export type RoleWorkspace = "hirer" | "worker";
-export const ROLE_WORKSPACE_STORAGE_KEY = "kuquest_active_workspace";
+export const RoleWorkspace = {
+  HIRER: "hirer",
+  WORKER: "worker",
+} as const;
 
+export type RoleWorkspace = (typeof RoleWorkspace)[keyof typeof RoleWorkspace];
+
+export function isRoleWorkspace(value: unknown): value is RoleWorkspace {
+  return value === RoleWorkspace.HIRER || value === RoleWorkspace.WORKER;
+}
+
+export function resolveRoleWorkspace(
+  raw: unknown,
+  fallback: RoleWorkspace = RoleWorkspace.HIRER
+): RoleWorkspace {
+  return isRoleWorkspace(raw) ? raw : fallback;
+}
+
+export const ROLE_WORKSPACE_STORAGE_KEY = "kuquest_active_workspace";
 interface RoleWorkspaceStoreState {
   workspace: RoleWorkspace;
   setWorkspace: (workspace: RoleWorkspace) => Promise<void>;
@@ -14,7 +30,7 @@ interface RoleWorkspaceStoreState {
 
 export const useRoleWorkspaceStore = create<RoleWorkspaceStoreState>(
   (set, get) => ({
-    workspace: "hirer",
+    workspace: RoleWorkspace.HIRER,
     setWorkspace: async (workspace) => {
       set({ workspace });
       try {
@@ -26,7 +42,10 @@ export const useRoleWorkspaceStore = create<RoleWorkspaceStoreState>(
     switchWorkspace: async (target) => {
       const currentWorkspace = get().workspace;
       const nextWorkspace =
-        target ?? (currentWorkspace === "hirer" ? "worker" : "hirer");
+        target ??
+        (currentWorkspace === RoleWorkspace.HIRER
+          ? RoleWorkspace.WORKER
+          : RoleWorkspace.HIRER);
       await get().setWorkspace(nextWorkspace);
     },
     hydrateWorkspace: async () => {
@@ -34,7 +53,7 @@ export const useRoleWorkspaceStore = create<RoleWorkspaceStoreState>(
         const storedWorkspace = await secureStorage.get(
           ROLE_WORKSPACE_STORAGE_KEY
         );
-        if (storedWorkspace === "hirer" || storedWorkspace === "worker") {
+        if (isRoleWorkspace(storedWorkspace)) {
           set({ workspace: storedWorkspace });
         }
       } catch {
@@ -52,9 +71,10 @@ export function useRoleWorkspace() {
   );
   return {
     workspace,
-    isHirer: workspace === "hirer",
-    isWorker: workspace === "worker",
+    isHirer: workspace === RoleWorkspace.HIRER,
+    isWorker: workspace === RoleWorkspace.WORKER,
     switchWorkspace,
     setWorkspace,
+    resolveWorkspace: (raw?: unknown) => resolveRoleWorkspace(raw, workspace),
   };
 }

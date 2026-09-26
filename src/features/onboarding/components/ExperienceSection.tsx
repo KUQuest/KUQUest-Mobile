@@ -1,4 +1,5 @@
 import React from "react";
+import { formatCalendarMonthYear } from "@/domain/datetime";
 import { Pressable, Text, View } from "@/tw";
 import { CalendarDays, Trash2 } from "lucide-react-native";
 import { cn } from "@/tw/cn";
@@ -37,12 +38,7 @@ export interface ExperienceSectionProps {
 function formatMonthYear(value: string, locale: "en" | "th"): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";
   const date = new Date(`${value}T12:00:00`);
-  return Number.isNaN(date.getTime())
-    ? ""
-    : new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", {
-        year: "numeric",
-        month: "short",
-      }).format(date);
+  return formatCalendarMonthYear(date, locale);
 }
 
 export function ExperienceSection({

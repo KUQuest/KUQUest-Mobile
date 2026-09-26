@@ -1,11 +1,14 @@
 import React from "react";
-import { render } from "@testing-library/react-native";
+import { fireEvent } from "@testing-library/react-native";
+import { renderWithAppTheme } from "@/testing/queryTestUtils";
 import type { ImperativeRouter } from "expo-router";
+import { FlatList as NativeFlatList } from "react-native";
 import { chatMessages } from "@/locales/chatMessages";
 import ChatConversationScreen from "../ChatConversationScreen";
-import { useChatConversationController } from "../useChatConversationController";
+import { useChatConversationController } from "../workflow/useChatConversationController";
+import type { DisplayChatMessage } from "../domain/conversationModule";
 
-jest.mock("../useChatConversationController", () => ({
+jest.mock("../workflow/useChatConversationController", () => ({
   MAX_MESSAGE_LENGTH: 1000,
   useChatConversationController: jest.fn(),
 }));
@@ -35,8 +38,7 @@ describe("ChatConversationScreen", () => {
       canWrite: false,
       readOnlyDescription: "",
       messagePlaceholder: "Message",
-      canReportConversation: false,
-      handleReportConversation: jest.fn(),
+      handleReportMessage: jest.fn(),
       searchOpen: false,
       setSearchOpen: jest.fn(),
       searchScope: "messages",
@@ -59,9 +61,264 @@ describe("ChatConversationScreen", () => {
     });
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it("renders the loading shell while the conversation is pending", async () => {
-    const view = await render(<ChatConversationScreen />);
+    const view = await renderWithAppTheme(<ChatConversationScreen />);
     expect(view.getByTestId("chat-loading-back-button")).toBeTruthy();
     expect(view.getByLabelText(chatMessages.en.loading)).toBeTruthy();
+  });
+
+  it("shows conversation identity without role or header actions", async () => {
+    const getController =
+      mockedUseChatConversationController.getMockImplementation();
+    if (!getController) {
+      throw new Error("Chat conversation controller mock is not configured");
+    }
+    mockedUseChatConversationController.mockReturnValue({
+      ...getController("WORK"),
+      conversationPending: false,
+      role: chatMessages.en.questOwner,
+      conversation: {
+        id: "conversation-1",
+        questId: "quest-1",
+        questTitle: { en: "Campus cleanup", th: "ทำความสะอาดวิทยาเขต" },
+        participantName: "Sora Student",
+        participantRole: "owner",
+        initials: "SS",
+        avatarColor: "#208AEF",
+        latestMessage: { en: "Hello", th: "สวัสดี" },
+        latestAt: "2026-09-24T03:30:00Z",
+        unreadCount: 0,
+        messages: [],
+      },
+    });
+
+    const view = await renderWithAppTheme(<ChatConversationScreen />);
+
+    expect(view.getByLabelText(chatMessages.en.backToChat)).toBeTruthy();
+    expect(view.getAllByText("Campus cleanup")).toHaveLength(2);
+    expect(view.getByText("Sora Student")).toBeTruthy();
+    expect(
+      view.queryByText(`Sora Student · ${chatMessages.en.questOwner}`)
+    ).toBeNull();
+    expect(view.queryByLabelText(chatMessages.en.search)).toBeNull();
+    expect(view.queryByLabelText(chatMessages.en.searchFiles)).toBeNull();
+    expect(view.queryByLabelText(chatMessages.en.moreOptions)).toBeNull();
+  });
+
+  it("opens the correct quest route from each conversation type", async () => {
+    const getController =
+      mockedUseChatConversationController.getMockImplementation();
+    if (!getController) {
+      throw new Error("Chat conversation controller mock is not configured");
+    }
+    const push = jest.fn();
+    const controller = getController("WORK");
+    mockedUseChatConversationController.mockReturnValue({
+      ...controller,
+      router: { back: jest.fn(), push } as unknown as ImperativeRouter,
+      conversationPending: false,
+      conversation: {
+        id: "conversation-1",
+        questId: "quest-1",
+        questTitle: { en: "Campus cleanup", th: "ทำความสะอาดวิทยาเขต" },
+        participantName: "Sora Student",
+        participantRole: "owner",
+        initials: "SS",
+        avatarColor: "#208AEF",
+        latestMessage: { en: "Hello", th: "สวัสดี" },
+        latestAt: "2026-09-24T03:30:00Z",
+        unreadCount: 0,
+        messages: [],
+      },
+    });
+
+    const view = await renderWithAppTheme(<ChatConversationScreen />);
+    await fireEvent.press(view.getByLabelText(chatMessages.en.viewQuest));
+    expect(push).toHaveBeenLastCalledWith({
+      pathname: "/quest/[id]/work",
+      params: { id: "quest-1", viewerId: "viewer-1" },
+    });
+
+    await view.rerender(
+      <ChatConversationScreen conversationType="CANDIDATE_INQUIRY" />
+    );
+    await fireEvent.press(view.getByLabelText(chatMessages.en.viewQuest));
+    expect(push).toHaveBeenLastCalledWith({
+      pathname: "/quest/[id]",
+      params: { id: "quest-1" },
+    });
+  });
+
+  it("follows new messages without jumping when history is prepended", async () => {
+    const scrollToEnd = jest
+      .spyOn(NativeFlatList.prototype, "scrollToEnd")
+      .mockImplementation(() => undefined);
+    const getController =
+      mockedUseChatConversationController.getMockImplementation();
+    if (!getController) {
+      throw new Error("Chat conversation controller mock is not configured");
+    }
+    const controller = getController("WORK");
+    const conversation = {
+      id: "conversation-1",
+      questId: "quest-1",
+      questTitle: { en: "Campus cleanup", th: "ทำความสะอาดวิทยาเขต" },
+      participantName: "Sora Student",
+      participantRole: "owner" as const,
+      initials: "SS",
+      avatarColor: "#208AEF",
+      latestMessage: { en: "Hello", th: "สวัสดี" },
+      latestAt: "2026-09-24T03:30:00Z",
+      unreadCount: 0,
+      messages: [],
+    };
+    const firstMessage: DisplayChatMessage = {
+      id: "message-1",
+      sender: "other",
+      text: { en: "First", th: "แรก" },
+      createdAt: "2026-09-24T03:30:00Z",
+      attachments: [],
+    };
+
+    mockedUseChatConversationController.mockReturnValue({
+      ...controller,
+      conversationPending: false,
+      conversation,
+      searchedMessages: [firstMessage],
+    });
+    const view = await renderWithAppTheme(<ChatConversationScreen />);
+    await fireEvent(
+      view.getByTestId("chat-message-list"),
+      "contentSizeChange",
+      { width: 320, height: 240 }
+    );
+    expect(scrollToEnd).toHaveBeenCalledTimes(1);
+
+    const newMessage: DisplayChatMessage = {
+      ...firstMessage,
+      id: "message-2",
+      text: { en: "Second", th: "ที่สอง" },
+      createdAt: "2026-09-24T03:31:00Z",
+    };
+    mockedUseChatConversationController.mockReturnValue({
+      ...controller,
+      conversationPending: false,
+      conversation,
+      searchedMessages: [firstMessage, newMessage],
+    });
+    await view.rerender(<ChatConversationScreen />);
+    expect(view.getByText("Second")).toBeTruthy();
+    await fireEvent(
+      view.getByTestId("chat-message-list"),
+      "contentSizeChange",
+      { width: 320, height: 360 }
+    );
+    expect(scrollToEnd).toHaveBeenCalledTimes(2);
+
+    const olderMessage: DisplayChatMessage = {
+      ...firstMessage,
+      id: "message-0",
+      text: { en: "Earlier", th: "ก่อนหน้า" },
+      createdAt: "2026-09-24T03:29:00Z",
+    };
+    mockedUseChatConversationController.mockReturnValue({
+      ...controller,
+      conversationPending: false,
+      conversation,
+      searchedMessages: [olderMessage, firstMessage, newMessage],
+    });
+    await view.rerender(<ChatConversationScreen />);
+    await fireEvent(
+      view.getByTestId("chat-message-list"),
+      "contentSizeChange",
+      { width: 320, height: 480 }
+    );
+    expect(scrollToEnd).toHaveBeenCalledTimes(2);
+  });
+
+  it("navigates to report on long-press of another participant's message, but not own message", async () => {
+    const getController =
+      mockedUseChatConversationController.getMockImplementation();
+    if (!getController) {
+      throw new Error("Chat conversation controller mock is not configured");
+    }
+    const push = jest.fn();
+    const controller = getController("WORK");
+    const router = { ...controller.router, push };
+    const conversation = {
+      id: "conversation-1",
+      questId: "quest-1",
+      questTitle: { en: "Campus cleanup", th: "ทำความสะอาดวิทยาเขต" },
+      participantName: "Sora Student",
+      participantRole: "owner" as const,
+      initials: "SS",
+      avatarColor: "#208AEF",
+      latestMessage: { en: "Hello", th: "สวัสดี" },
+      latestAt: "2026-09-24T03:30:00Z",
+      unreadCount: 0,
+      messages: [],
+    };
+    const otherMessage: DisplayChatMessage = {
+      id: "msg-other-1",
+      sender: "other",
+      text: { en: "Other text", th: "ข้อความคนอื่น" },
+      createdAt: "2026-09-24T03:30:00Z",
+      attachments: [],
+      kind: "USER",
+    };
+    const ownMessage: DisplayChatMessage = {
+      id: "msg-me-1",
+      sender: "me",
+      text: { en: "My text", th: "ข้อความของฉัน" },
+      createdAt: "2026-09-24T03:31:00Z",
+      attachments: [],
+    };
+
+    const handleReportMessage = (message: DisplayChatMessage) => {
+      push({
+        pathname: "/report",
+        params: {
+          messageId: message.id,
+          conversationTitle: conversation.questTitle.en,
+          senderName: conversation.participantName,
+        },
+      });
+    };
+
+    mockedUseChatConversationController.mockReturnValue({
+      ...controller,
+      router,
+      conversationPending: false,
+      conversation,
+      searchedMessages: [otherMessage, ownMessage],
+      handleReportMessage,
+    });
+
+    const view = await renderWithAppTheme(<ChatConversationScreen />);
+
+    const ownBubble = view.getByTestId("chat-message-bubble-msg-me-1");
+    fireEvent(ownBubble, "longPress");
+    expect(push).not.toHaveBeenCalled();
+
+    const otherBubble = view.getByTestId("chat-message-bubble-msg-other-1");
+    fireEvent(otherBubble, "longPress");
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledWith({
+      pathname: "/report",
+      params: {
+        messageId: "msg-other-1",
+        conversationTitle: "Campus cleanup",
+        senderName: "Sora Student",
+      },
+    });
+
+    fireEvent(otherBubble, "accessibilityAction", {
+      nativeEvent: { actionName: "report" },
+    });
+    expect(push).toHaveBeenCalledTimes(2);
   });
 });

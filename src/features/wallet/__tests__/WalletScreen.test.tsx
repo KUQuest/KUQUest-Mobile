@@ -1,12 +1,13 @@
 import React from "react";
 import { fireEvent, waitFor } from "@testing-library/react-native";
-import { walletApi } from "@/api/WalletApi";
+import { WalletTransactionTitleKey, walletApi } from "@/api/WalletApi";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import WalletScreen from "../WalletScreen";
 import {
   resetNavigationVisibility,
   useNavigationUiStore,
 } from "@/features/navigation/navigationUiStore";
+import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
 
 const mockPush = jest.fn();
 jest.mock("expo-router", () => ({
@@ -54,8 +55,7 @@ const mockTransactions = [
   {
     id: "tx-1",
     type: "HOLD" as const,
-    title: "Quest Escrow Reserved",
-    titleTh: "กันเงินประกันเควสต์",
+    titleKey: WalletTransactionTitleKey.QUEST_ESCROW_RESERVED,
     amountSatang: 50_000,
     direction: "OUTFLOW" as const,
     status: "COMPLETED",
@@ -65,8 +65,7 @@ const mockTransactions = [
   {
     id: "tx-2",
     type: "TOP_UP" as const,
-    title: "PromptPay Top-Up",
-    titleTh: "เติมเงินผ่านพร้อมเพย์",
+    titleKey: WalletTransactionTitleKey.PROMPT_PAY_TOP_UP,
     amountSatang: 100_000,
     direction: "INFLOW" as const,
     status: "COMPLETED",
@@ -75,8 +74,7 @@ const mockTransactions = [
   {
     id: "tx-3",
     type: "SPEND" as const,
-    title: "Platform Fee",
-    titleTh: "ค่าธรรมเนียม",
+    titleKey: WalletTransactionTitleKey.SYSTEM_FEE,
     amountSatang: 1_000,
     direction: "OUTFLOW" as const,
     status: "COMPLETED",
@@ -85,10 +83,11 @@ const mockTransactions = [
   },
 ];
 
-describe("Hirer WalletScreen", () => {
+describe("WalletScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     resetNavigationVisibility();
+    useRoleWorkspaceStore.setState({ workspace: "hirer" });
     (walletApi.getWallet as jest.Mock).mockResolvedValue(mockBalances);
     (walletApi.getTransactionHistory as jest.Mock).mockResolvedValue({
       items: mockTransactions,
@@ -113,7 +112,7 @@ describe("Hirer WalletScreen", () => {
     expect(navigationState.navigationCompact).toBe(true);
   });
 
-  it("renders header, slogan badge, banner, balances, and transaction history", async () => {
+  it("renders header, top-up action, balances, and transaction history", async () => {
     const view = await renderWithQueryClient(<WalletScreen />);
 
     // Header
@@ -125,15 +124,17 @@ describe("Hirer WalletScreen", () => {
     expect(view.getByText("ยอดเงินคงเหลือและระบบชำระเงิน")).toBeTruthy();
     expect(view.queryByText("Ama Wallet")).toBeNull();
     expect(view.queryByTestId("brighter-campus-badge")).toBeNull();
-    // Banner
-    expect(view.getByTestId("hirer-wallet-banner")).toBeTruthy();
-    expect(view.getByText("เติมเงิน")).toBeTruthy();
-    expect(view.getByTestId("hirer-wallet-banner-action-btn")).toBeTruthy();
+    // Top-up action
+    expect(view.getByTestId("hirer-wallet-top-up")).toBeTruthy();
     // Balance cards
     expect(view.getByTestId("hirer-balance-cards")).toBeTruthy();
     expect(view.getByTestId("hirer-spending-balance")).toBeTruthy();
+    await waitFor(() => {
+      expect(view.getByText("฿2,450.00")).toBeTruthy();
+      expect(view.getByText("฿1,200.00")).toBeTruthy();
+    });
     expect(view.getByText("฿2,450.00")).toBeTruthy();
-    expect(view.getByText("เงินพร้อมใช้")).toBeTruthy();
+    expect(view.getByText("เงินที่พร้อมใช้")).toBeTruthy();
     expect(view.getByText("ใช้จ้างงานได้ทันที")).toBeTruthy();
 
     expect(view.getByTestId("hirer-escrow-balance")).toBeTruthy();
@@ -169,7 +170,7 @@ describe("Hirer WalletScreen", () => {
     // Initial state: Both in Hirer perspective
     expect(view.getByText("แตะการ์ดเพื่อสลับมุมมอง")).toBeTruthy();
     expect(view.getByText("สลับทั้งหมด")).toBeTruthy();
-    expect(view.getByText("เงินพร้อมใช้")).toBeTruthy();
+    expect(view.getByText("เงินที่พร้อมใช้")).toBeTruthy();
     expect(view.getByText("฿2,450.00")).toBeTruthy();
     expect(view.getByText("ใช้จ้างงานได้ทันที")).toBeTruthy();
     expect(view.getByText("เงินที่พักไว้")).toBeTruthy();
@@ -180,7 +181,7 @@ describe("Hirer WalletScreen", () => {
     fireEvent.press(view.getByTestId("hirer-card-1"));
 
     await waitFor(() => {
-      expect(view.getByText("รายได้สะสม")).toBeTruthy();
+      expect(view.getByText("รายได้")).toBeTruthy();
     });
     expect(view.getByText("฿4,000.00")).toBeTruthy();
     expect(view.getByText("รายได้จากการทำเควสต์")).toBeTruthy();
@@ -197,14 +198,14 @@ describe("Hirer WalletScreen", () => {
     expect(view.getByText("฿1,000.00")).toBeTruthy();
     expect(view.getByText("รอโอนเข้าบัญชีธนาคาร")).toBeTruthy();
     // Card 1 remains in Earnings
-    expect(view.getByText("รายได้สะสม")).toBeTruthy();
+    expect(view.getByText("รายได้")).toBeTruthy();
     expect(view.getByText("฿4,000.00")).toBeTruthy();
 
     // 3. Tap Card 1 again -> Card 1 swaps back to Spending balance while Card 2 stays in Payout
     fireEvent.press(view.getByTestId("hirer-card-1"));
 
     await waitFor(() => {
-      expect(view.getByText("เงินพร้อมใช้")).toBeTruthy();
+      expect(view.getByText("เงินที่พร้อมใช้")).toBeTruthy();
     });
     expect(view.getByText("฿2,450.00")).toBeTruthy();
     expect(view.getByText("กำลังถอนเงิน")).toBeTruthy();
@@ -214,9 +215,26 @@ describe("Hirer WalletScreen", () => {
     fireEvent.press(view.getByTestId("hirer-balance-swap-all-btn"));
 
     await waitFor(() => {
-      expect(view.getByText("รายได้สะสม")).toBeTruthy();
+      expect(view.getByText("รายได้")).toBeTruthy();
     });
     expect(view.getByText("เงินที่พักไว้")).toBeTruthy();
+  });
+  it("shows worker earnings and pending payout by default", async () => {
+    useRoleWorkspaceStore.setState({ workspace: "worker" });
+    const view = await renderWithQueryClient(<WalletScreen />);
+
+    await waitFor(() => {
+      expect(view.getByText("รายได้")).toBeTruthy();
+      expect(view.getByText("กำลังถอนเงิน")).toBeTruthy();
+      expect(view.getByText("฿4,000.00")).toBeTruthy();
+      expect(view.getByText("฿1,000.00")).toBeTruthy();
+    });
+    expect(view.getByText("฿4,000.00")).toBeTruthy();
+    expect(view.getByText("รายได้จากการทำเควสต์")).toBeTruthy();
+    expect(view.getByText("฿1,000.00")).toBeTruthy();
+    expect(view.getByText("รอโอนเข้าบัญชีธนาคาร")).toBeTruthy();
+    expect(view.queryByText("เงินที่พร้อมใช้")).toBeNull();
+    expect(view.queryByText("เงินที่พักไว้")).toBeNull();
   });
 
   it("filters transactions when a filter is chosen", async () => {
@@ -300,49 +318,26 @@ describe("Hirer WalletScreen", () => {
     });
   });
 
-  it("navigates to /top-up when banner action button is pressed", async () => {
+  it("navigates to /top-up when the Top Up action is pressed", async () => {
     const view = await renderWithQueryClient(<WalletScreen />);
 
     await waitFor(() => {
-      expect(view.getByTestId("hirer-wallet-banner-action-btn")).toBeTruthy();
+      expect(view.getByTestId("hirer-wallet-top-up")).toBeTruthy();
     });
 
-    fireEvent.press(view.getByTestId("hirer-wallet-banner-action-btn"));
+    await fireEvent.press(view.getByRole("button", { name: "เติมเงิน" }));
 
     expect(mockPush).toHaveBeenCalledWith("/top-up");
   });
-  it("opens transfer earnings modal when switcher bar shortcut button is pressed", async () => {
+
+  it("opens the transfer earnings modal from the balance card", async () => {
     const view = await renderWithQueryClient(<WalletScreen />);
 
     await waitFor(() => {
-      expect(
-        view.getByTestId("hirer-balance-transfer-shortcut-btn")
-      ).toBeTruthy();
+      expect(view.getByTestId("hirer-balance-transfer-btn")).toBeTruthy();
     });
 
-    fireEvent.press(view.getByTestId("hirer-balance-transfer-shortcut-btn"));
-
-    await waitFor(() => {
-      expect(view.getByTestId("transfer-earnings-modal")).toBeTruthy();
-      expect(view.getByText("โอนรายได้เข้าเงินพร้อมใช้")).toBeTruthy();
-    });
-  });
-
-  it("opens transfer earnings modal from Card 1 when swapped to earnings mode", async () => {
-    const view = await renderWithQueryClient(<WalletScreen />);
-
-    await waitFor(() => {
-      expect(view.getByTestId("hirer-card-1")).toBeTruthy();
-    });
-
-    // Flip Card 1 to earnings
-    fireEvent.press(view.getByTestId("hirer-card-1"));
-
-    await waitFor(() => {
-      expect(view.getByTestId("hirer-card1-transfer-btn")).toBeTruthy();
-    });
-
-    fireEvent.press(view.getByTestId("hirer-card1-transfer-btn"));
+    await fireEvent.press(view.getByRole("button", { name: "โอนรายได้" }));
 
     await waitFor(() => {
       expect(view.getByTestId("transfer-earnings-modal")).toBeTruthy();
@@ -375,7 +370,13 @@ describe("Hirer WalletScreen", () => {
     await waitFor(() => {
       expect(view.getByTestId("hirer-wallet-error")).toBeTruthy();
     });
-    expect(view.getByText("Network connection failed")).toBeTruthy();
-    expect(view.getByTestId("hirer-wallet-retry-button")).toBeTruthy();
+    expect(
+      view.getByText("เกิดข้อผิดพลาดในการโหลดข้อมูลกระเป๋าเงิน")
+    ).toBeTruthy();
+    expect(view.queryByText("Network connection failed")).toBeNull();
+
+    await fireEvent.press(view.getByRole("button", { name: "ลองอีกครั้ง" }));
+
+    await waitFor(() => expect(walletApi.getWallet).toHaveBeenCalledTimes(2));
   });
 });

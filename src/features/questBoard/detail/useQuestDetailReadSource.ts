@@ -4,17 +4,20 @@ import {
   useLiveQuestSnapshotQuery,
   useQuestDetailQuery,
 } from "../api/questBoardQueries";
-import { liveQuestService, type LiveQuestSnapshot } from "../liveQuestService";
+import {
+  liveQuestService,
+  type LiveQuestSnapshot,
+} from "../live/liveQuestService";
 import {
   getQuestDetailFixture,
   type BoardPreviewState,
-} from "../questBoardHarness";
-import { questWorkflow } from "../questWorkflow";
+} from "../fixtures/questBoardHarness";
+import { questWorkflow } from "../workflow/questWorkflow";
 import {
   getQuestDetailProjection,
   type QuestDetailProjection,
-} from "../questDetailProjection";
-import type { QuestBoardQuest, QuestDetailState } from "../types";
+} from "./questDetailProjection";
+import type { QuestBoardQuest, QuestDetailState } from "../domain/types";
 
 export type QuestDetailReadSource =
   | {

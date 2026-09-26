@@ -1,4 +1,5 @@
 import {
+  WalletTransactionTitleKey,
   walletApi,
   type TopUpData,
   type TopUpQuote,
@@ -6,6 +7,9 @@ import {
   type WalletBalances,
 } from "@/api/WalletApi";
 import { parseSatangInput } from "@/domain/satang";
+import { formatTimeInBangkok, formatTimestampDate } from "@/domain/datetime";
+import type { SupportedLocale } from "@/locales/locale";
+import { walletMessages } from "@/locales/walletMessages";
 
 /**
  * Client-side rules and lifecycle sequencing for the Wallet slice.
@@ -141,45 +145,11 @@ export async function convertEarnings(
 
 export function formatTransactionDate(
   dateInput: string | Date,
-  locale: "th" | "en" = "th"
+  locale: SupportedLocale
 ): string {
   const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
   if (Number.isNaN(date.getTime())) return "";
-
-  if (locale === "th") {
-    try {
-      return date.toLocaleDateString("th-TH-u-ca-buddhist", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
-    } catch {
-      const thaiMonths = [
-        "ม.ค.",
-        "ก.พ.",
-        "มี.ค.",
-        "เม.ย.",
-        "พ.ค.",
-        "มิ.ย.",
-        "ก.ค.",
-        "ส.ค.",
-        "ก.ย.",
-        "ต.ค.",
-        "พ.ย.",
-        "ธ.ค.",
-      ];
-      const day = date.getDate();
-      const month = thaiMonths[date.getMonth()];
-      const year = date.getFullYear() + 543;
-      return `${day} ${month} ${year}`;
-    }
-  }
-
-  return date.toLocaleDateString("en-US", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return formatTimestampDate(date, locale) ?? "";
 }
 
 export type HirerTransactionIconKind =
@@ -196,10 +166,10 @@ export type TransactionStatusKind =
 
 export function formatTransactionStatus(
   status: string,
-  locale: "th" | "en" = "th"
+  locale: SupportedLocale
 ): { label: string; kind: TransactionStatusKind } {
   const upper = status.toUpperCase();
-  const isTh = locale === "th";
+  const messages = walletMessages[locale];
 
   if (
     upper === "COMPLETED" ||
@@ -207,27 +177,25 @@ export function formatTransactionStatus(
     upper === "SUCCEEDED" ||
     upper === "SETTLED"
   ) {
-    return { label: isTh ? "สำเร็จ" : "Completed", kind: "completed" };
+    return { label: messages.statusCompleted, kind: "completed" };
   }
   if (
     upper.includes("PENDING") ||
     upper.includes("SUBMITTED") ||
     upper === "WAITING"
   ) {
-    return { label: isTh ? "รอดำเนินการ" : "Pending", kind: "pending" };
+    return { label: messages.statusPending, kind: "pending" };
   }
   if (upper === "EXPIRED") {
-    return { label: isTh ? "หมดอายุ" : "Expired", kind: "expired" };
+    return { label: messages.statusExpired, kind: "expired" };
   }
-  return { label: isTh ? "ไม่สำเร็จ" : "Failed", kind: "failed" };
+  return { label: messages.statusFailed, kind: "failed" };
 }
 
 export function formatTransactionTime(dateInput: string | Date): string {
   const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
   if (Number.isNaN(date.getTime())) return "";
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${hours}:${minutes}`;
+  return formatTimeInBangkok(date);
 }
 
 export interface ClassifiedHirerTransaction {
@@ -252,20 +220,20 @@ export interface ClassifiedHirerTransaction {
 
 export function classifyHirerTransaction(
   tx: UserTransaction,
-  locale: "th" | "en" = "th"
+  locale: SupportedLocale
 ): ClassifiedHirerTransaction {
-  const isTh = locale === "th";
-  let title = isTh ? tx.titleTh : tx.title;
+  const messages = walletMessages[locale];
+  let titleKey = tx.titleKey;
   let iconKind: HirerTransactionIconKind =
     tx.direction === "INFLOW" ? "generic_inflow" : "generic_outflow";
   let direction: "INFLOW" | "OUTFLOW" = tx.direction;
 
   if (tx.type === "HOLD") {
-    title = isTh ? "พักเงินสำหรับเควสต์" : "Reserved for Quest";
+    titleKey = WalletTransactionTitleKey.RESERVED_FOR_QUEST;
     iconKind = "escrow_pay";
     direction = "OUTFLOW";
   } else if (tx.type === "TOP_UP") {
-    title = isTh ? "เติมเงินเข้า Wallet" : "Top up to Wallet";
+    titleKey = WalletTransactionTitleKey.TOP_UP_TO_WALLET;
     iconKind = "top_up";
     direction = "INFLOW";
   } else if (tx.type === "RELEASE") {
@@ -273,11 +241,11 @@ export function classifyHirerTransaction(
       tx.direction === "INFLOW" ||
       (tx.spendingDeltaSatang && tx.spendingDeltaSatang > 0)
     ) {
-      title = isTh ? "คืนเงินจากภารกิจ" : "Quest Refund";
+      titleKey = WalletTransactionTitleKey.QUEST_REFUND;
       iconKind = "refund";
       direction = "INFLOW";
     } else {
-      title = isTh ? "ปลดล็อกและจ่ายเงิน" : "Unlock & Pay";
+      titleKey = WalletTransactionTitleKey.UNLOCK_AND_PAY;
       iconKind = "unlock_pay";
       direction = "OUTFLOW";
     }
@@ -286,38 +254,35 @@ export function classifyHirerTransaction(
       tx.resourceType === "platform_fee" ||
       (tx.reference && tx.reference.toLowerCase().includes("fee"))
     ) {
-      title = isTh ? "ค่าธรรมเนียมระบบ" : "System Fee";
+      titleKey = WalletTransactionTitleKey.SYSTEM_FEE;
       iconKind = "fee";
       direction = "OUTFLOW";
     } else if (
       tx.resourceType === "quest_escrow" ||
       (tx.fundingReservedDeltaSatang && tx.fundingReservedDeltaSatang > 0)
     ) {
-      title = isTh ? "พักเงินสำหรับเควสต์" : "Reserved for Quest";
+      titleKey = WalletTransactionTitleKey.RESERVED_FOR_QUEST;
       iconKind = "escrow_pay";
       direction = "OUTFLOW";
     } else if (
       tx.payoutReservedDeltaSatang &&
       tx.payoutReservedDeltaSatang > 0
     ) {
-      title = isTh ? "ปลดล็อกและจ่ายเงิน" : "Unlock & Pay";
+      titleKey = WalletTransactionTitleKey.UNLOCK_AND_PAY;
       iconKind = "unlock_pay";
       direction = "OUTFLOW";
     } else {
-      title = isTh ? "พักเงินสำหรับเควสต์" : "Wallet Payment";
       iconKind = "escrow_pay";
       direction = "OUTFLOW";
     }
   } else if (tx.type === "EARN") {
-    title = isTh ? "รายได้จากเควสต์" : "Quest Earnings";
     iconKind = "generic_inflow";
     direction = "INFLOW";
   } else if (tx.type === "CONVERT") {
-    title = isTh ? "โอนรายได้เข้าสู่ยอดเงินพร้อมใช้" : "Converted to Spending";
+    titleKey = WalletTransactionTitleKey.CONVERTED_TO_SPENDING;
     iconKind = "generic_inflow";
     direction = "INFLOW";
   } else if (tx.type === "PAYOUT") {
-    title = isTh ? "ถอนเงินเข้าบัญชีธนาคาร" : "Bank Payout";
     iconKind = "unlock_pay";
     direction = "OUTFLOW";
   }
@@ -347,20 +312,14 @@ export function classifyHirerTransaction(
 
   const sourceApiLabel =
     sourceApi === "TOP_UPS"
-      ? isTh
-        ? "เติมเงิน PromptPay (Top-ups API)"
-        : "PromptPay Top-up"
+      ? messages.sourceTopUps
       : sourceApi === "PAYOUTS"
-        ? isTh
-          ? "ถอนเงินเข้าบัญชี (Payouts API)"
-          : "Bank Payout"
-        : isTh
-          ? "กิจกรรมบัญชี (Activities API)"
-          : "Wallet Activities";
+        ? messages.sourcePayouts
+        : messages.sourceActivities;
 
   return {
     id: tx.id,
-    title,
+    title: messages.transactionTitles[titleKey],
     subtitle,
     dateFormatted,
     timeFormatted,

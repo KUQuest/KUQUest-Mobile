@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Modal } from "react-native";
 import { Check, ChevronDown } from "lucide-react-native";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { Pressable, Text, TouchableOpacity, View } from "@/tw";
+import { cn } from "@/tw/cn";
 
 export type HirerHistoryFilterOption =
   "all" | "top_up" | "payout" | "escrow" | "inflow" | "outflow";
@@ -23,6 +24,7 @@ export function HirerHistoryFilter({
   onSelectFilter,
   options,
 }: HirerHistoryFilterProps) {
+  const { colors } = useAppTheme();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const selectedLabel =
@@ -31,7 +33,9 @@ export function HirerHistoryFilter({
 
   return (
     <View className={styles.headerRow}>
-      <Text className={styles.title}>{title}</Text>
+      <Text accessibilityRole="header" className={styles.title}>
+        {title}
+      </Text>
       <TouchableOpacity
         accessibilityLabel={`กรองรายการ: ${selectedLabel}`}
         accessibilityRole="button"
@@ -54,7 +58,7 @@ export function HirerHistoryFilter({
           onPress={() => setMenuOpen(false)}
           testID="filter-modal-backdrop"
         >
-          <View className={styles.menuCard} style={menuCardShadow}>
+          <View className={styles.menuCard}>
             {options.map((opt) => {
               const isSelected = opt.key === selectedFilter;
               return (
@@ -64,9 +68,10 @@ export function HirerHistoryFilter({
                   accessibilityState={{ selected: isSelected }}
                   key={opt.key}
                   activeOpacity={0.7}
-                  className={`${styles.menuOption} ${
-                    isSelected ? styles.menuOptionSelected : ""
-                  }`}
+                  className={cn(
+                    styles.menuOption,
+                    isSelected && styles.menuOptionSelected
+                  )}
                   onPress={() => {
                     onSelectFilter(opt.key);
                     setMenuOpen(false);
@@ -74,14 +79,15 @@ export function HirerHistoryFilter({
                   testID={`filter-opt-${opt.key}`}
                 >
                   <Text
-                    className={`${styles.menuOptionText} ${
-                      isSelected ? styles.menuOptionTextSelected : ""
-                    }`}
+                    className={cn(
+                      styles.menuOptionText,
+                      isSelected && styles.menuOptionTextSelected
+                    )}
                   >
                     {opt.label}
                   </Text>
                   {isSelected ? (
-                    <Check color={colors.primary} size={16} strokeWidth={2.4} />
+                    <Check color={colors.primary} size={18} strokeWidth={2.4} />
                   ) : null}
                 </TouchableOpacity>
               );
@@ -94,24 +100,16 @@ export function HirerHistoryFilter({
 }
 
 const styles = {
-  headerRow: "mb-ku-14 flex-row items-center justify-between",
-  title: "font-ku-bold text-[22px] leading-[28px] text-ku-text-strong",
+  headerRow: "mb-ku-12 flex-row items-center justify-between gap-ku-sm",
+  title: "shrink font-ku-bold text-ku-title text-ku-text-strong",
   filterPill:
-    "flex-row items-center gap-ku-sm rounded-ku-pill bg-ku-surface-muted px-ku-14 py-ku-7",
-  filterText: "font-ku-medium text-ku-meta text-ku-text-secondary",
+    "min-h-[48px] flex-row items-center gap-ku-sm rounded-ku-pill border border-ku-border bg-ku-surface px-ku-md",
+  filterText: "font-ku-medium text-ku-body-small text-ku-text",
   modalBackdrop: "flex-1 items-center justify-center bg-ku-overlay p-ku-md",
   menuCard:
-    "w-[80%] max-w-[280px] rounded-[16px] border border-ku-border-subtle bg-ku-card py-ku-sm",
-  menuOption: "flex-row items-center justify-between px-ku-md py-ku-12",
-  menuOptionSelected: "bg-ku-surface-success",
+    "w-[80%] max-w-[320px] overflow-hidden rounded-ku-card border border-ku-border bg-ku-surface py-ku-xs",
+  menuOption: "min-h-[48px] flex-row items-center justify-between px-ku-md",
+  menuOptionSelected: "bg-ku-surface-accent",
   menuOptionText: "font-ku-medium text-ku-body-small text-ku-text-secondary",
   menuOptionTextSelected: "font-ku-semibold text-ku-primary-dark",
-} as const;
-
-const menuCardShadow = {
-  shadowColor: colors.black,
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.15,
-  shadowRadius: 10,
-  elevation: 5,
 } as const;

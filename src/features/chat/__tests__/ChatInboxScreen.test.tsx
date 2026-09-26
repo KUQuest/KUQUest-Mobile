@@ -1,5 +1,5 @@
 import React from "react";
-import { act, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import ChatInboxScreen from "../ChatInboxScreen";
@@ -94,5 +94,27 @@ describe("ChatInboxScreen initial loading", () => {
       );
       expect(view.getByText("Campus cleanup")).toBeTruthy();
     });
+  });
+
+  it("clears a search and restores the conversations", async () => {
+    mockGetSession.mockResolvedValue({ user: { id: "worker-1" } });
+    const view = await renderWithQueryClient(
+      <ChatInboxScreen viewerId="worker-1" />
+    );
+
+    await waitFor(() => expect(view.getByText("Campus cleanup")).toBeTruthy());
+    fireEvent.changeText(
+      view.getByPlaceholderText("Search conversations"),
+      "missing quest"
+    );
+    await waitFor(() => {
+      expect(view.queryByText("Campus cleanup")).toBeNull();
+      expect(
+        view.getByText("No conversations match your search.")
+      ).toBeTruthy();
+    });
+
+    fireEvent.press(view.getByRole("button", { name: "Clear search" }));
+    await waitFor(() => expect(view.getByText("Campus cleanup")).toBeTruthy());
   });
 });

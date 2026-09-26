@@ -2,28 +2,33 @@ import React from "react";
 import type ReactModule from "react";
 import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
-import { renderWithQueryClient } from "@/testing/queryTestUtils";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import {
+  renderWithQueryClient,
+  renderWithAppTheme,
+} from "@/testing/queryTestUtils";
 
-import ChatConversationScreen, {
-  AttachmentRow,
-  ChatAvatar,
+import ChatConversationScreen from "../ChatConversationScreen";
+import { ChatAvatar } from "../components/ChatConversationPresentation";
+import {
   InlineImageAttachment,
   MessageBubble,
-  PendingAttachmentsBar,
-  type DisplayChatMessage,
-  type PendingAttachmentItem,
-  type RenderAttachment,
-} from "../ChatConversationScreen";
-import { attachmentLinkCache } from "../attachmentLinkCache";
+} from "../components/MessageBubble";
+import { PendingAttachmentsBar } from "../components/PendingAttachmentsBar";
+import type {
+  DisplayChatMessage,
+  RenderAttachment,
+} from "../domain/conversationModule";
+import type { PendingAttachmentItem } from "../components/PendingAttachmentsBar";
+import { attachmentLinkCache } from "../api/attachmentLinkCache";
 import { chatApi } from "@/api/ChatApi";
 import type {
   ServerChatMessage,
   ServerChatMessagePage,
   ServerChatParticipant,
 } from "@/api/ChatApi";
-import { liveQuestService } from "@/features/questBoard/liveQuestService";
-import type { LiveQuestSnapshot } from "@/features/questBoard/liveQuestService";
+import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
+import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestService";
 import { chatMessages } from "@/locales/chatMessages";
 import type { ChatConversation } from "../chatTypes";
 
@@ -34,7 +39,6 @@ jest.mock("expo-router", () => {
   const ReactActual = jest.requireActual("react") as typeof ReactModule;
   return {
     useFocusEffect: (effect: () => (() => void) | void) => {
-      // eslint-disable-next-line react-hooks/rules-of-hooks
       ReactActual.useEffect(effect, []);
     },
     useLocalSearchParams: () => ({
@@ -83,7 +87,7 @@ jest.mock("@/api/ChatApi", () => {
   };
 });
 
-jest.mock("@/features/questBoard/liveQuestService", () => ({
+jest.mock("@/features/questBoard/live/liveQuestService", () => ({
   liveQuestService: {
     getLiveSnapshot: jest.fn(),
     getCandidateInquiry: jest.fn(),
@@ -117,7 +121,7 @@ const mockConversation: ChatConversation = {
 
 it("renders the participant avatar and opens the participant public profile", async () => {
   const onPress = jest.fn();
-  const view = await render(
+  const view = await renderWithAppTheme(
     <ChatAvatar
       initials="SO"
       color="#059669"
@@ -153,7 +157,7 @@ describe("ChatConversationMedia", () => {
         kind: "image",
       };
 
-      const view = await render(
+      const view = await renderWithAppTheme(
         <InlineImageAttachment
           attachment={attachment}
           conversationId="conv-media-1"
@@ -200,7 +204,7 @@ describe("ChatConversationMedia", () => {
         kind: "image",
       };
 
-      const view = await render(
+      const view = await renderWithAppTheme(
         <InlineImageAttachment
           attachment={attachment}
           conversationId="inquiry-conv-1"
@@ -231,7 +235,7 @@ describe("ChatConversationMedia", () => {
       };
       const onImagePress = jest.fn();
 
-      const view = await render(
+      const view = await renderWithAppTheme(
         <InlineImageAttachment
           attachment={attachment}
           conversationId="conv-media-1"
@@ -265,7 +269,7 @@ describe("ChatConversationMedia", () => {
         kind: "image",
       };
 
-      const view = await render(
+      const view = await renderWithAppTheme(
         <InlineImageAttachment
           attachment={attachment}
           conversationId="conv-media-1"
@@ -301,7 +305,7 @@ describe("ChatConversationMedia", () => {
       };
       const onFilePress = jest.fn();
 
-      const view = await render(
+      const view = await renderWithAppTheme(
         <MessageBubble
           message={message}
           conversation={mockConversation}
@@ -339,7 +343,7 @@ describe("ChatConversationMedia", () => {
         attachments: [imgAttachment],
       };
 
-      const view = await render(
+      const view = await renderWithAppTheme(
         <MessageBubble
           message={message}
           conversation={mockConversation}
@@ -373,7 +377,7 @@ describe("ChatConversationMedia", () => {
         },
       ];
 
-      const view = await render(
+      const view = await renderWithAppTheme(
         <PendingAttachmentsBar attachments={items} onRemove={onRemove} />
       );
 
@@ -390,7 +394,7 @@ describe("ChatConversationMedia", () => {
     });
 
     it("returns null when attachments array is empty", async () => {
-      const view = await render(
+      const view = await renderWithAppTheme(
         <PendingAttachmentsBar attachments={[]} onRemove={jest.fn()} />
       );
       expect(view.toJSON()).toBeNull();
@@ -592,10 +596,10 @@ describe("ChatConversationMedia", () => {
 
       // Find the "Choose from Library" option in the alert buttons
       const alertCall = alertSpy.mock.calls[alertSpy.mock.calls.length - 1];
-      const alertButtons = alertCall[2] as Array<{
+      const alertButtons = alertCall[2] as {
         text?: string;
         onPress?: () => void;
-      }>;
+      }[];
       const choosePhotoButton = alertButtons.find(
         (b) => b.text === chatMessages.en.choosePhoto
       );

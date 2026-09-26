@@ -14,7 +14,6 @@ const styles = {
   rowDescription: "text-ku-text-secondary font-ku-regular text-ku-meta mt-ku-2",
   rowValue: "text-ku-text-muted font-ku-medium text-ku-meta mr-ku-sm",
   chevron: "ml-ku-sm",
-  switchHost: "ml-ku-sm min-w-[52px] items-end",
   version:
     "text-ku-text-muted font-ku-regular text-ku-meta px-ku-xs text-center",
   footer: "gap-ku-xs pb-ku-md pt-ku-xs",

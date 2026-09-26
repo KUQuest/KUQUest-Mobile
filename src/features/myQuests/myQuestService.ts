@@ -1,247 +1,109 @@
 import { questApi, type QuestV2AssignmentMineStatus } from "@/api/QuestApi";
-import type { RequestOptions } from "@/api/WalletApi";
+import type { RequestOptions } from "@/api/ApiClient";
 import type {
   QuestV2Assignment,
   QuestV2CanonicalQuest,
 } from "@/api/questV2Contracts";
-import { liveQuestService } from "@/features/questBoard/liveQuestService";
-import type { LiveQuestSnapshot } from "@/features/questBoard/liveQuestService";
-import type { WorkConversationCapability } from "@/features/questBoard/types";
+import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
+import { isTerminalStatus, QuestStatus } from "@/domain/questLifecycle";
+import { QuestMode } from "@/features/questBoard/domain/types";
+import { formatSatang } from "@/domain/satang";
+import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestService";
 import type { SupportedLocale } from "@/locales/locale";
+import { myQuestMessages } from "@/locales/myQuestMessages";
 import { questBoardMessages } from "@/locales/questBoardMessages";
-import { formatQuestDate } from "@/utils/datetime";
-import { getCategoryTone } from "@/utils/format";
+import type { HirerTab, StatusTone, QuestSummary } from "./myQuestTypes";
+import { formatQuestDateTime, getCategoryTone } from "./myQuestFormatting";
 /** The v2 endpoint accepts limits from 1 through 50. */
 const PAGE_LIMIT = 50;
 
-export type HirerTab = "active" | "draft" | "completed";
-export type WorkerTab = "pending" | "accepted" | "history";
-export type StatusTone = "success" | "warning" | "danger" | "neutral";
-export type CategoryTone = "green" | "blue" | "purple";
+export type {
+  HirerTab,
+  StatusTone,
+  CategoryTone,
+  QuestSummary,
+} from "./myQuestTypes";
 
-export type QuestSummary = {
-  id: string;
-  title: string;
-  tag: string;
-  categoryTone: CategoryTone;
-  date: string;
-  location: string;
-  description: string;
-  detail: string;
-  teamSize: string;
-  status: string;
-  statusTone: StatusTone;
-  action: string;
-  actionType?: "edit" | "applicants" | "detail" | "review";
-  secondaryAction?: string;
-  groupChatId?: string;
-  groupChatCapability?: WorkConversationCapability;
-  groupChatViewerId?: string;
-  host?: string;
-  appliedOn?: string;
-  reason?: string;
-};
-
-export const actionLabels: Record<
-  SupportedLocale,
-  {
-    detail: string;
-    applicants: string;
-    edit: string;
-    review: string;
-    message: string;
-    start: string;
-  }
-> = {
-  th: {
-    detail: "ดูรายละเอียด",
-    applicants: "ดูผู้สมัคร",
-    edit: "แก้ไข",
-    review: "เขียนรีวิว",
-    message: "ข้อความ",
-    start: "รอเริ่มงาน",
-  },
-  en: {
-    detail: "View Detail",
-    applicants: "View Applicants",
-    edit: "Edit",
-    review: "Write review",
-    message: "Message",
-    start: "Awaiting start",
-  },
-};
-
-export { formatQuestDate, getCategoryTone };
 export function getLiveHirerItems(
   quests: QuestV2CanonicalQuest[],
   tab: HirerTab,
   locale: SupportedLocale
 ): QuestSummary[] {
+  const messages = myQuestMessages[locale];
   return quests.flatMap((quest) => {
-    const terminal =
-      quest.state === "QUEST_COMPLETED" ||
-      quest.state === "QUEST_CANCELLED" ||
-      quest.state === "QUEST_FAILED";
+    const terminal = isTerminalStatus(quest.state);
     const matchesTab =
       tab === "draft"
-        ? quest.state === "QUEST_DRAFT"
+        ? quest.state === QuestStatus.QUEST_DRAFT
         : tab === "completed"
           ? terminal
-          : !terminal && quest.state !== "QUEST_DRAFT";
+          : !terminal && quest.state !== QuestStatus.QUEST_DRAFT;
     if (!matchesTab) return [];
 
     const tag = quest.tag?.name ?? "Quest";
-    const statusValue = quest.hiddenAt ? "QUEST_HIDDEN" : quest.state;
+    const statusValue = quest.hiddenAt ? QuestStatus.QUEST_HIDDEN : quest.state;
     const status = liveQuestStatusLabel(statusValue, locale);
-    const isDraft = quest.state === "QUEST_DRAFT";
+    const isDraft = quest.state === QuestStatus.QUEST_DRAFT;
     return [
       {
         id: quest.id,
         title: quest.title,
         tag,
         categoryTone: getCategoryTone(tag),
-        date: formatQuestDate(quest.startTime, locale),
-        location: quest.locations[0]?.label ?? "—",
+        startsAt: formatQuestDateTime(quest.startTime, locale),
+        endsAt: quest.dueAt
+          ? formatQuestDateTime(quest.dueAt, locale)
+          : messages.notSet,
+        location: quest.locations[0]?.label ?? "",
+        online: quest.locations.length === 0,
         description: quest.description ?? "",
         detail: status,
         teamSize: String(quest.headcount),
+        mode:
+          quest.mode === QuestMode.CANDIDATE
+            ? messages.modeCandidate
+            : messages.modeFirstCome,
+        reward: formatSatang(Math.round(quest.questFundingTotal * 100), locale),
         status,
         statusTone: liveQuestStatusTone(statusValue),
-        action: isDraft
-          ? actionLabels[locale].edit
-          : terminal
-            ? actionLabels[locale].review
-            : actionLabels[locale].detail,
-        actionType: isDraft
-          ? ("edit" as const)
-          : terminal
-            ? ("review" as const)
-            : ("detail" as const),
+        primaryAction: isDraft ? "edit" : terminal ? "review" : "manage",
+        secondaryAction:
+          quest.state === QuestStatus.QUEST_FAILED
+            ? ("dispute" as const)
+            : undefined,
+        cancelFromCard: isDraft
+          ? ("draft" as const)
+          : quest.state === QuestStatus.QUEST_OPEN
+            ? ("open" as const)
+            : undefined,
       },
     ];
   });
 }
 
 export function liveQuestStatusTone(
-  status: QuestV2CanonicalQuest["state"] | "QUEST_HIDDEN"
+  status: QuestV2CanonicalQuest["state"] | typeof QuestStatus.QUEST_HIDDEN
 ): StatusTone {
-  if (status === "QUEST_COMPLETED") return "success";
-  if (status === "QUEST_CANCELLED" || status === "QUEST_FAILED") {
+  if (status === QuestStatus.QUEST_COMPLETED) return "success";
+  if (
+    status === QuestStatus.QUEST_CANCELLED ||
+    status === QuestStatus.QUEST_FAILED
+  ) {
     return "danger";
   }
-  if (status === "QUEST_DRAFT") return "neutral";
-  if (status === "QUEST_HIDDEN") return "warning";
+  if (status === QuestStatus.QUEST_DRAFT) return "neutral";
+  if (status === QuestStatus.QUEST_HIDDEN) return "warning";
   return "success";
 }
 
 export function liveQuestStatusLabel(
-  status: QuestV2CanonicalQuest["state"] | "QUEST_HIDDEN",
+  status: QuestV2CanonicalQuest["state"] | typeof QuestStatus.QUEST_HIDDEN,
   locale: SupportedLocale
 ): string {
-  if (status === "QUEST_FAILED") return locale === "th" ? "ล้มเหลว" : "Failed";
+  if (status === QuestStatus.QUEST_FAILED)
+    return myQuestMessages[locale].statusFailed;
   return questBoardMessages[locale].statusLabel(status);
 }
-function getLiveWorkerAction(
-  snapshot: LiveQuestSnapshot,
-  locale: SupportedLocale
-): string {
-  const thai = locale === "th";
-  switch (snapshot.nextAction) {
-    case "WAIT_FOR_START":
-      return actionLabels[locale].start;
-    case "SUBMIT_PROOF":
-      return thai ? "ส่งหลักฐาน" : "Submit proof";
-    case "CONFIRM_COMPLETION":
-      return thai ? "ยืนยันการเสร็จสิ้น" : "Confirm completion";
-    case "RESPOND_TO_EDIT":
-      return thai ? "ตอบกลับคำขอแก้ไข" : "Respond to edit";
-    case "CREATE_REVIEW":
-      return thai ? "เขียนรีวิว" : "Write review";
-    default:
-      return actionLabels[locale].detail;
-  }
-}
-
-export function getLiveWorkerItems(
-  snapshots: LiveQuestSnapshot[],
-  tab: WorkerTab,
-  locale: SupportedLocale,
-  viewerId: string
-): QuestSummary[] {
-  return snapshots.flatMap((snapshot) => {
-    const quest = snapshot.quest;
-    const isCompleted = snapshot.state === "QUEST_COMPLETED";
-    const isCancelledOrFailed =
-      snapshot.state === "QUEST_CANCELLED" || snapshot.state === "QUEST_FAILED";
-    const isInactiveAssignment =
-      snapshot.assignment?.state !== "ASSIGNMENT_ACTIVE";
-
-    if (isCancelledOrFailed || (!isCompleted && isInactiveAssignment)) {
-      return [];
-    }
-
-    const pending =
-      !isCompleted &&
-      (snapshot.state === "QUEST_ASSIGNED" ||
-        snapshot.nextAction === "WAIT_FOR_START");
-    const snapshotTab: WorkerTab = isCompleted
-      ? "history"
-      : pending
-        ? "pending"
-        : "accepted";
-    if (snapshotTab !== tab) return [];
-
-    const tag = quest.tag?.name ?? "Quest";
-    const statusValue =
-      "hiddenAt" in quest && quest.hiddenAt ? "QUEST_HIDDEN" : snapshot.state;
-    const status = liveQuestStatusLabel(statusValue, locale);
-    const acceptedCount =
-      snapshot.team?.members.length ??
-      (quest as QuestV2CanonicalQuest & { activeWorkerCount?: number })
-        .activeWorkerCount ??
-      (snapshot.assignment ? 1 : 0);
-    const groupChatId =
-      snapshot.capabilities.canReadWorkChat && snapshot.workConversation
-        ? snapshot.workConversation.id
-        : undefined;
-    const groupChatCapability = groupChatId
-      ? {
-          conversationId: groupChatId,
-          canRead: snapshot.capabilities.canReadWorkChat,
-          canWrite: snapshot.capabilities.canWriteWorkChat,
-          readOnly: !snapshot.capabilities.canWriteWorkChat,
-        }
-      : undefined;
-
-    return [
-      {
-        id: quest.id,
-        title: quest.title,
-        tag,
-        categoryTone: getCategoryTone(tag),
-        date: `${formatQuestDate(quest.startTime, locale)}${
-          quest.dueAt ? ` · ${formatQuestDate(quest.dueAt, locale)}` : ""
-        }`,
-        location: quest.locations[0]?.label ?? "—",
-        description: quest.description ?? "",
-        detail: status,
-        teamSize: `${acceptedCount} / ${quest.headcount}`,
-        status,
-        statusTone: liveQuestStatusTone(statusValue),
-        action: getLiveWorkerAction(snapshot, locale),
-        actionType: "detail",
-        groupChatId,
-        groupChatCapability,
-        groupChatViewerId: viewerId,
-        host: "hirerName" in quest ? quest.hirerName : undefined,
-        appliedOn: snapshot.assignment?.createdAt
-          ? formatQuestDate(snapshot.assignment.createdAt, locale)
-          : undefined,
-      },
-    ];
-  });
-}
-
 /**
  * Loads every Quest owned by the authenticated Hirer from the canonical v2
  * endpoint. Cursors are opaque and must only be carried forward from the API.
@@ -306,20 +168,6 @@ export async function listMyHirerQuestSnapshots(
     quests.map((quest) => liveQuestService.getLiveSnapshot(quest.id, viewerId))
   );
 }
-export async function getMyHirerQuestSnapshot(
-  questId: string,
-  viewerId: string
-): Promise<LiveQuestSnapshot> {
-  return liveQuestService.getLiveSnapshot(questId, viewerId);
-}
-
-export async function refreshMyHirerQuestSnapshot(
-  questId: string,
-  viewerId: string
-): Promise<LiveQuestSnapshot> {
-  return liveQuestService.refreshLiveSnapshot(questId, viewerId);
-}
-
 /** Explicit alias for callers that name the Worker surface first. */
 export const listAllMyWorkerQuestSnapshots = listMyWorkerQuestSnapshots;
 

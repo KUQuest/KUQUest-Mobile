@@ -1,9 +1,9 @@
 import type { UploadAsset } from "@/api/fileUpload";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
-import type { QuestDetailProjectionCapabilities } from "../questDetailProjection";
-import type { LiveQuestSnapshot } from "../liveQuestService";
-import type { QuestBoardQuest } from "../types";
-import type { QuestActionResult } from "../questFixtureAdapter";
+import type { QuestDetailProjectionCapabilities } from "./questDetailProjection";
+import type { LiveQuestSnapshot } from "../live/liveQuestService";
+import type { QuestBoardQuest } from "../domain/types";
+import type { QuestActionResult } from "../fixtures/adapters/questFixtureAdapter";
 import type { QuestDetailSurfaceTransitions } from "./useQuestDetailSurfaceState";
 export interface QuestDetailLiveActionContext {
   questId?: string;
@@ -26,14 +26,7 @@ export interface QuestDetailPreviewActionContext {
 export function getQuestDetailLiveTeam(
   snapshot: LiveQuestSnapshot | null
 ): NonNullable<LiveQuestSnapshot["team"]> | null {
-  return (
-    snapshot?.team ??
-    snapshot?.teams.find(
-      (team) =>
-        team.state === "TEAM_FORMING" && team.members.length < team.headcount
-    ) ??
-    null
-  );
+  return snapshot?.team ?? null;
 }
 
 export interface QuestDetailLiveActions {
@@ -46,8 +39,8 @@ export interface QuestDetailLiveActions {
   openUnderfilled: () => Promise<unknown>;
   decideUnderfilled: (decision: "PROCEED" | "CANCEL") => Promise<unknown>;
   respondUnderfilled: (decision: "ACCEPT" | "DECLINE") => Promise<unknown>;
-  createTeam: () => Promise<unknown>;
-  joinTeam: (joinCode: string) => Promise<unknown>;
+  createTeam: (name: string) => Promise<unknown>;
+  joinTeam: (teamId: string, joinCode: string) => Promise<unknown>;
   leaveTeam: (teamId: string) => Promise<unknown>;
   removeTeamMember: (teamId: string, memberId: string) => Promise<unknown>;
   regenerateTeamCode: (teamId: string) => Promise<unknown>;

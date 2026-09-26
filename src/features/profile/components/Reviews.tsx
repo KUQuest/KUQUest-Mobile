@@ -1,3 +1,4 @@
+import { formatTimestampDate } from "@/domain/datetime";
 import React, { useMemo, useState } from "react";
 import { FlatList, Pressable, Text, View } from "@/tw";
 import {
@@ -8,7 +9,7 @@ import {
 import { cn } from "@/tw/cn";
 import { Star } from "lucide-react-native";
 import { Avatar } from "../../../components/ui/Avatar";
-import { colors } from "../../../theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { getProfileLayoutMetrics } from "../../../theme/profileLayout";
 import type { SupportedLocale } from "@/locales/locale";
 import styles from "../styles/profileComponentStyles";
@@ -24,28 +25,6 @@ import {
 } from "./ProfileSection";
 import { defaultAccessibilityLabels } from "./profileShared";
 
-const reviewDateFormatters: Record<SupportedLocale, Intl.DateTimeFormat> = {
-  en: new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }),
-  th: new Intl.DateTimeFormat("th-TH", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }),
-};
-
-function formatReviewDate(
-  value: string,
-  locale: SupportedLocale = "en"
-): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return reviewDateFormatters[locale].format(date);
-}
-
 function ReviewCard({
   review,
   locale,
@@ -57,6 +36,7 @@ function ReviewCard({
   reviewerAvatarLabel: (name: string) => string;
   reviewRatingLabel: (rating: number) => string;
 }) {
+  const { colors } = useAppTheme();
   return (
     <View className={styles.reviewCard}>
       <View className={styles.reviewHeader}>
@@ -72,7 +52,8 @@ function ReviewCard({
         <View className={styles.reviewHeaderText}>
           <Text className={styles.itemTitle}>{review.reviewerName}</Text>
           <Text className={styles.itemMeta}>
-            {formatReviewDate(review.createdAt, locale)}
+            {formatTimestampDate(review.createdAt, locale ?? "en") ??
+              review.createdAt}
           </Text>
         </View>
       </View>
@@ -156,6 +137,7 @@ export function Reviews({
   initialScrollOffset?: number;
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
 } & SectionNoticeProps) {
+  const { colors } = useAppTheme();
   const { width, fontScale } = useWindowDimensions();
   const metrics = getProfileLayoutMetrics(width, fontScale);
   const [filter, setFilter] = useState<1 | 2 | 3 | 4 | 5 | null>(null);

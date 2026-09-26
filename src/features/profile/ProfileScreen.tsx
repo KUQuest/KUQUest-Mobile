@@ -129,41 +129,25 @@ export default function Profile() {
     );
   }
   const content = viewData;
-  const profileStats = (
-    <ProfileStats
-      stats={content.stats}
-      ratingLabel={messages.rating}
-      questsLabel={messages.totalQuests}
-      reviewsLabel={messages.reviews}
-      noRatingLabel={messages.noRating}
-      accessibilityLabel={messages.statisticsLabel}
-      errorText={
-        content.sectionUnavailable.reputation ||
-        content.sectionErrors.reputation
-          ? messages.ratingUnavailable
-          : undefined
-      }
-      retryLabel={
-        content.sectionUnavailable.reputation ? undefined : messages.retry
-      }
-      onRetry={
-        content.sectionUnavailable.reputation ? undefined : () => void refetch()
-      }
-    />
-  );
-  const profileTabs = (
-    <ProfileTabs
-      activeTab={activeTab}
-      labels={tabLabels}
-      accessibilityLabel={messages.sectionsLabel}
-      onChange={handleTabChange}
-    />
+  // Unavailable sections have no retry; transient section errors can refetch.
+  const sectionNotice = (
+    section: keyof typeof content.sectionUnavailable,
+    errorText: string
+  ) => {
+    const unavailable = Boolean(content.sectionUnavailable[section]);
+    return {
+      errorText:
+        unavailable || content.sectionErrors[section] ? errorText : undefined,
+      retryLabel: unavailable ? undefined : messages.retry,
+      onRetry: unavailable ? undefined : () => void refetch(),
+    };
+  };
+  const reputationNotice = sectionNotice(
+    "reputation",
+    messages.ratingUnavailable
   );
   const profileChrome = (
-    <View
-      className={styles.profileChrome}
-      style={{ paddingTop: profileTopBarHeight }}
-    >
+    <View className={styles.profileChrome}>
       <ProfileHeader
         data={content}
         editProfileLabel={messages.edit}
@@ -173,8 +157,21 @@ export default function Profile() {
           questCategoriesLabel: messages.questCategoriesLabel,
         }}
       />
-      {profileStats}
-      {profileTabs}
+      <ProfileStats
+        stats={content.stats}
+        ratingLabel={messages.rating}
+        questsLabel={messages.totalQuests}
+        reviewsLabel={messages.reviews}
+        noRatingLabel={messages.noRating}
+        accessibilityLabel={messages.statisticsLabel}
+        {...reputationNotice}
+      />
+      <ProfileTabs
+        activeTab={activeTab}
+        labels={tabLabels}
+        accessibilityLabel={messages.sectionsLabel}
+        onChange={handleTabChange}
+      />
     </View>
   );
 
@@ -195,20 +192,9 @@ export default function Profile() {
           noRatingLabel={messages.noRating}
           noMatchingReviewsText={messages.noMatchingReviews}
           showAllLabel={messages.showAllReviews}
-          ratingErrorText={
-            content.sectionUnavailable.reputation ||
-            content.sectionErrors.reputation
-              ? messages.ratingUnavailable
-              : undefined
-          }
-          ratingRetryLabel={
-            content.sectionUnavailable.reputation ? undefined : messages.retry
-          }
-          onRatingRetry={
-            content.sectionUnavailable.reputation
-              ? undefined
-              : () => void refetch()
-          }
+          ratingErrorText={reputationNotice.errorText}
+          ratingRetryLabel={reputationNotice.retryLabel}
+          onRatingRetry={reputationNotice.onRetry}
           accessibilityLabels={{
             ratingSummaryLabel: messages.ratingSummaryLabel,
             ratingDistributionLabel: messages.ratingDistributionLabel,
@@ -217,23 +203,15 @@ export default function Profile() {
             reviewRatingLabel: messages.reviewRatingLabel,
           }}
           locale={locale}
-          listHeader={profileChrome}
+          listHeader={
+            <View style={{ paddingTop: profileTopBarHeight }}>
+              {profileChrome}
+            </View>
+          }
           bottomPadding={bottomPadding}
           initialScrollOffset={initialScrollOffset}
           onScroll={handleProfileScroll}
-          errorText={
-            content.sectionUnavailable.reviews || content.sectionErrors.reviews
-              ? messages.sectionUnavailable
-              : undefined
-          }
-          retryLabel={
-            content.sectionUnavailable.reviews ? undefined : messages.retry
-          }
-          onRetry={
-            content.sectionUnavailable.reviews
-              ? undefined
-              : () => void refetch()
-          }
+          {...sectionNotice("reviews", messages.sectionUnavailable)}
         />
       ) : (
         <ScrollView
@@ -254,17 +232,7 @@ export default function Profile() {
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
         >
-          <ProfileHeader
-            data={content}
-            editProfileLabel={messages.edit}
-            onEditPress={openEditProfile}
-            accessibilityLabels={{
-              profileImageLabel: messages.profileImageLabel,
-              questCategoriesLabel: messages.questCategoriesLabel,
-            }}
-          />
-          {profileStats}
-          {profileTabs}
+          {profileChrome}
           {activeTab === "about" ? (
             <AboutMe
               about={content.about}
@@ -283,22 +251,7 @@ export default function Profile() {
               locale={locale}
               emptyActionLabel={messages.edit}
               onEditPress={openEditProfile}
-              errorText={
-                content.sectionUnavailable.experience ||
-                content.sectionErrors.experience
-                  ? messages.sectionUnavailable
-                  : undefined
-              }
-              retryLabel={
-                content.sectionUnavailable.experience
-                  ? undefined
-                  : messages.retry
-              }
-              onRetry={
-                content.sectionUnavailable.experience
-                  ? undefined
-                  : () => void refetch()
-              }
+              {...sectionNotice("experience", messages.sectionUnavailable)}
             />
           ) : null}
           {activeTab === "works" ? (
@@ -314,19 +267,7 @@ export default function Profile() {
               accessibilityLabels={{
                 workImageLabel: messages.workImageLabel,
               }}
-              errorText={
-                content.sectionUnavailable.works || content.sectionErrors.works
-                  ? messages.sectionUnavailable
-                  : undefined
-              }
-              retryLabel={
-                content.sectionUnavailable.works ? undefined : messages.retry
-              }
-              onRetry={
-                content.sectionUnavailable.works
-                  ? undefined
-                  : () => void refetch()
-              }
+              {...sectionNotice("works", messages.sectionUnavailable)}
             />
           ) : null}
           {activeTab === "certificates" ? (
@@ -344,22 +285,7 @@ export default function Profile() {
                 certificatePreviewLabel: messages.certificatePreviewLabel,
                 certificateImageLabel: messages.certificateImageLabel,
               }}
-              errorText={
-                content.sectionUnavailable.certificates ||
-                content.sectionErrors.certificates
-                  ? messages.sectionUnavailable
-                  : undefined
-              }
-              retryLabel={
-                content.sectionUnavailable.certificates
-                  ? undefined
-                  : messages.retry
-              }
-              onRetry={
-                content.sectionUnavailable.certificates
-                  ? undefined
-                  : () => void refetch()
-              }
+              {...sectionNotice("certificates", messages.sectionUnavailable)}
             />
           ) : null}
         </ScrollView>

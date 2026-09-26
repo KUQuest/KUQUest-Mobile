@@ -1,21 +1,15 @@
 import React from "react";
-import type { ViewStyle } from "react-native";
-import { ActivityIndicator, Text, TouchableOpacity, View } from "@/tw";
-import { AlertCircle, Clock } from "lucide-react-native";
+import { Clock } from "lucide-react-native";
+import { ActivityIndicator, Text, View } from "@/tw";
 import type { TopUpQuote } from "@/api/WalletApi";
+import { Button } from "@/components/ui/Button";
 import { formatSatang } from "@/domain/satang";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import type { SupportedLocale } from "@/locales/locale";
 import { walletMessages } from "@/locales/walletMessages";
-import { colors } from "@/theme/colors";
-
-function formatExpiry(expiresAt: string, locale: SupportedLocale): string {
-  const date = new Date(expiresAt);
-  if (Number.isNaN(date.getTime())) return expiresAt;
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
-}
+import { formatTopUpExpiry } from "../walletFormatting";
+import { TopUpNotice } from "./TopUpNotice";
+import { topUpStyles } from "./topUpStyles";
 
 export interface TopUpConfirmationStepProps {
   error: string | null;
@@ -26,44 +20,6 @@ export interface TopUpConfirmationStepProps {
   quote: TopUpQuote;
 }
 
-const styles = {
-  summaryCard:
-    "mb-ku-md rounded-[20px] border border-ku-border-subtle bg-ku-surface p-ku-18",
-  summaryHeader: "mb-ku-md border-b border-ku-border-subtle pb-ku-sm",
-  summaryTitle: "mb-ku-2 font-ku-bold text-[16px] text-ku-text-strong",
-  summarySubtitle: "font-ku-regular text-[12px] text-ku-text-secondary",
-  breakdownTable: "gap-ku-sm",
-  breakdownRow: "flex-row items-center justify-between",
-  breakdownLabel: "font-ku-medium text-ku-meta text-ku-text-secondary",
-  breakdownValue: "font-ku-semibold text-ku-body-small text-ku-text-strong",
-  breakdownValueMuted: "font-ku-regular text-ku-meta text-ku-text-muted",
-  breakdownDivider: "my-ku-xs h-[1px] bg-ku-border-subtle",
-  breakdownTotalRow: "flex-row items-center justify-between pt-ku-xs",
-  breakdownTotalLabel: "font-ku-bold text-ku-control text-ku-text-strong",
-  breakdownTotalValue: "font-ku-bold text-ku-title-small text-ku-primary-deep",
-  expiryRow:
-    "mt-ku-md flex-row items-center gap-ku-6 border-t border-ku-border-subtle pt-ku-sm",
-  expiryText: "font-ku-regular text-[11px] text-ku-text-muted",
-  errorBanner:
-    "mt-ku-sm flex-row items-center gap-ku-6 rounded-[10px] bg-ku-surface-danger p-ku-10",
-  errorText: "flex-1 font-ku-medium text-[12px] text-ku-danger",
-  primaryActionButton:
-    "h-[52px] items-center justify-center rounded-[16px] bg-ku-primary-deep",
-  primaryActionButtonText: "font-ku-bold text-ku-body text-ku-on-primary",
-  secondaryButton:
-    "mt-ku-10 h-[48px] items-center justify-center rounded-[16px] bg-ku-surface-muted",
-  secondaryButtonText:
-    "font-ku-medium text-ku-body-small text-ku-text-secondary",
-} as const;
-
-const primaryActionShadow = {
-  shadowColor: colors.primaryDeep,
-  shadowOffset: { width: 0, height: 3 },
-  shadowOpacity: 0.25,
-  shadowRadius: 6,
-  elevation: 3,
-} satisfies ViewStyle;
-
 export function TopUpConfirmationStep({
   error,
   loading,
@@ -73,101 +29,87 @@ export function TopUpConfirmationStep({
   quote,
 }: TopUpConfirmationStepProps) {
   const m = walletMessages[locale];
+  const { colors } = useAppTheme();
+  const rows = [
+    { label: m.topUpCredit, satang: quote.creditSatang },
+    { label: m.topUpFee, satang: quote.chargedFeeSatang },
+    { label: m.topUpTax, satang: quote.chargedTaxSatang },
+  ];
 
   return (
-    <View testID="top-up-confirmation-step">
-      <View className={styles.summaryCard}>
-        <View className={styles.summaryHeader}>
-          <Text className={styles.summaryTitle}>
-            {m.topUpConfirmationTitle}
+    <View className={topUpStyles.step} testID="top-up-confirmation-step">
+      <Text accessibilityRole="header" className={topUpStyles.headline}>
+        {m.topUpConfirmationTitle}
+      </Text>
+
+      <View className={topUpStyles.receipt}>
+        <View className={topUpStyles.receiptHero}>
+          <Text className={topUpStyles.receiptHeroLabel}>
+            {m.topUpPaymentTotal}
           </Text>
-          <Text className={styles.summarySubtitle}>
-            {m.topUpConfirmationStepSubtitle}
+          <Text
+            className={topUpStyles.receiptHeroValue}
+            testID="top-up-payment-total"
+          >
+            {formatSatang(quote.paymentTotalSatang, locale, "exact")}
           </Text>
         </View>
 
-        <View className={styles.breakdownTable}>
-          <View className={styles.breakdownRow}>
-            <Text className={styles.breakdownLabel}>{m.topUpCredit}</Text>
-            <Text className={styles.breakdownValue}>
-              {formatSatang(quote.creditSatang, locale, "exact")}
-            </Text>
-          </View>
-
-          <View className={styles.breakdownRow}>
-            <Text className={styles.breakdownLabel}>{m.topUpFee}</Text>
-            <Text className={styles.breakdownValueMuted}>
-              {formatSatang(quote.chargedFeeSatang, locale, "exact")}
-            </Text>
-          </View>
-
-          <View className={styles.breakdownRow}>
-            <Text className={styles.breakdownLabel}>{m.topUpTax}</Text>
-            <Text className={styles.breakdownValueMuted}>
-              {formatSatang(quote.chargedTaxSatang, locale, "exact")}
-            </Text>
-          </View>
-
-          <View className={styles.breakdownDivider} />
-
-          <View className={styles.breakdownTotalRow}>
-            <Text className={styles.breakdownTotalLabel}>
-              {m.topUpPaymentTotal}
-            </Text>
-            <Text
-              className={styles.breakdownTotalValue}
-              testID="top-up-payment-total"
-            >
-              {formatSatang(quote.paymentTotalSatang, locale, "exact")}
-            </Text>
-          </View>
+        <View className={styles.rows}>
+          {rows.map((row) => (
+            <View className={styles.row} key={row.label}>
+              <Text className={styles.rowLabel}>{row.label}</Text>
+              <Text className={styles.rowValue}>
+                {formatSatang(row.satang, locale, "exact")}
+              </Text>
+            </View>
+          ))}
         </View>
 
-        <View className={styles.expiryRow}>
-          <Clock color={colors.textMuted} size={14} />
+        <View className={styles.expiry}>
+          <Clock color={colors.textSecondary} size={16} strokeWidth={2.2} />
           <Text className={styles.expiryText}>
-            {m.topUpExpiresAt}: {formatExpiry(quote.expiresAt, locale)}
+            {m.topUpExpiresAt}: {formatTopUpExpiry(quote.expiresAt, locale)}
           </Text>
         </View>
       </View>
 
-      {error ? (
-        <View className={styles.errorBanner}>
-          <AlertCircle color={colors.danger} size={15} />
-          <Text className={styles.errorText}>{error}</Text>
-        </View>
-      ) : null}
+      {error ? <TopUpNotice message={error} tone="error" /> : null}
 
-      <TouchableOpacity
-        accessibilityLabel={m.topUpConfirm}
-        accessibilityRole="button"
-        activeOpacity={0.8}
-        disabled={loading}
-        onPress={onConfirm}
-        className={styles.primaryActionButton}
-        style={primaryActionShadow}
-        testID="top-up-confirm-btn"
-      >
-        {loading ? (
-          <ActivityIndicator color={colors.onPrimary} size="small" />
-        ) : (
-          <Text className={styles.primaryActionButtonText}>
-            {m.topUpConfirm}
-          </Text>
-        )}
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        accessibilityLabel={m.editAmount}
-        accessibilityRole="button"
-        activeOpacity={0.7}
-        disabled={loading}
-        onPress={onEdit}
-        className={styles.secondaryButton}
-        testID="top-up-edit-amount-btn"
-      >
-        <Text className={styles.secondaryButtonText}>{m.editAmount}</Text>
-      </TouchableOpacity>
+      <View className={topUpStyles.actions}>
+        <Button
+          accessibilityLabel={m.topUpConfirm}
+          accessibilityState={{ disabled: loading, busy: loading }}
+          disabled={loading}
+          onPress={onConfirm}
+          testID="top-up-confirm-btn"
+        >
+          {loading ? (
+            <ActivityIndicator color={colors.onPrimary} size="small" />
+          ) : (
+            m.topUpConfirm
+          )}
+        </Button>
+        <Button
+          accessibilityLabel={m.editAmount}
+          disabled={loading}
+          onPress={onEdit}
+          testID="top-up-edit-amount-btn"
+          variant="secondary"
+        >
+          {m.editAmount}
+        </Button>
+      </View>
     </View>
   );
 }
+
+const styles = {
+  rows: "gap-ku-12 p-ku-md",
+  row: "flex-row items-start justify-between gap-ku-md",
+  rowLabel: "flex-1 font-ku-regular text-ku-body-small text-ku-text-secondary",
+  rowValue: "font-ku-semibold text-ku-body-small text-ku-text-strong",
+  expiry:
+    "flex-row items-center gap-ku-sm border-t border-ku-divider px-ku-md py-ku-12",
+  expiryText: "flex-1 font-ku-regular text-ku-label text-ku-text-secondary",
+} as const;

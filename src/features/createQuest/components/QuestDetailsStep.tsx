@@ -11,9 +11,9 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { TextArea } from "@/components/ui/TextArea";
 import { createQuestMessages } from "@/locales/createQuestMessages";
-import { colors } from "@/theme/colors";
-import styles from "../createQuestStyles";
-import type { QuestDraft } from "../createQuestModel";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import styles from "./createQuestStyles";
+import type { QuestDraft } from "../domain/createQuestModel";
 import { SectionHeading } from "./SectionHeading";
 
 export function QuestDetailsStep({
@@ -21,6 +21,8 @@ export function QuestDetailsStep({
   draft,
   errors,
   tagOptions,
+  tagLoadError,
+  onRetryTags,
   proofRequired,
   titleRef,
   tagRef,
@@ -32,6 +34,8 @@ export function QuestDetailsStep({
   draft: QuestDraft;
   errors: Record<string, string>;
   tagOptions: { label: string; value: string }[];
+  tagLoadError: boolean;
+  onRetryTags: () => void;
   proofRequired: boolean;
   titleRef: Ref<ComponentRef<typeof RNTextInput>>;
   tagRef: Ref<ComponentRef<typeof RNPressable>>;
@@ -42,6 +46,7 @@ export function QuestDetailsStep({
     value: QuestDraft[K]
   ) => void;
 }) {
+  const { colors } = useAppTheme();
   return (
     <View className={styles.sectionCard}>
       <SectionHeading
@@ -65,13 +70,24 @@ export function QuestDetailsStep({
         value={draft.tag}
         onValueChange={(value) => updateDraft("tag", value)}
         placeholder={messages.chooseQuestTag}
-        error={errors.tag}
+        error={tagLoadError ? messages.tagUnavailable : errors.tag}
+        disabled={tagLoadError}
         searchable
         searchPlaceholder={messages.searchQuestTags}
         noResultsMessage={messages.noMatchingQuestTags}
         clearSearchLabel={messages.clearSearch}
         closeLabel={messages.close}
       />
+      {tagLoadError ? (
+        <Pressable
+          accessibilityLabel={messages.retryTags}
+          className={cn(styles.retryButton, "min-h-[48px]")}
+          onPress={onRetryTags}
+          testID="create-quest-retry-tags"
+        >
+          <Text className={styles.retryButtonText}>{messages.retryTags}</Text>
+        </Pressable>
+      ) : null}
       <TextArea
         ref={descriptionRef}
         label={`${messages.description} *`}

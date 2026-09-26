@@ -54,6 +54,8 @@ export interface ProfileMessages {
   student: string;
   professor: string;
   back: string;
+  missingUserId: string;
+  reviewsError: string;
 }
 
 export const profileMessages: Record<SupportedLocale, ProfileMessages> = {
@@ -113,6 +115,8 @@ export const profileMessages: Record<SupportedLocale, ProfileMessages> = {
     student: "Student",
     professor: "Professor",
     back: "Go back",
+    missingUserId: "User ID is required",
+    reviewsError: "Unable to load reviews.",
   },
   th: {
     loading: "กำลังโหลดโปรไฟล์...",
@@ -168,5 +172,7 @@ export const profileMessages: Record<SupportedLocale, ProfileMessages> = {
     student: "นักศึกษา",
     professor: "อาจารย์",
     back: "ย้อนกลับ",
+    missingUserId: "จำเป็นต้องระบุรหัสผู้ใช้",
+    reviewsError: "ไม่สามารถโหลดรีวิวได้",
   },
 };

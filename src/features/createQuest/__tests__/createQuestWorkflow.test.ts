@@ -1,3 +1,4 @@
+import { createQuestMessages } from "@/locales/createQuestMessages";
 import {
   canNavigateToCreateQuestStep,
   getInitialCreateQuestStep,
@@ -5,7 +6,7 @@ import {
   getPreviousCreateQuestStep,
   isServerEditMode,
   resolveCreateQuestFlowMode,
-} from "../createQuestWorkflow";
+} from "../workflow/createQuestWorkflow";
 
 describe("Create Quest workflow boundaries", () => {
   it("keeps local draft ids separate from server edit ids", () => {
@@ -38,5 +39,13 @@ describe("Create Quest workflow boundaries", () => {
     expect(getPreviousCreateQuestStep(3)).toBe(2);
     expect(canNavigateToCreateQuestStep(3, 2)).toBe(true);
     expect(canNavigateToCreateQuestStep(2, 3)).toBe(false);
+  });
+  it("provides localized error messages for open quest edit constraints", () => {
+    for (const locale of ["en", "th"] as const) {
+      const messages = createQuestMessages[locale];
+      expect(messages.apiErrors.QUEST_OPEN_FIELD_LOCKED).toBeDefined();
+      expect(messages.apiErrors.QUEST_OPEN_EDIT_CLOSED).toBeDefined();
+      expect(messages.apiErrors.INVALID_OPEN_QUEST).toBeDefined();
+    }
   });
 });

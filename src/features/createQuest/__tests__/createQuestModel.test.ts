@@ -1,5 +1,9 @@
 import {
   adaptV2PublishCheck,
+  questDetailToDraft,
+  toQuestV2Payload,
+} from "../api/createQuestApiAdapter";
+import {
   addDaysToDate,
   addHoursToTime,
   calculateQuestEscrow,
@@ -10,24 +14,19 @@ import {
   getDraftRewardSatang,
   getHeadcountForParticipation,
   getNearestQuarterHour,
-  getQuestApiErrorMessage,
   getQuestPublishCheck,
   getRelativeDateValue,
   getRewardValidationError,
-  getSchedulePickerValue,
-  getScheduleTimeValue,
   initialDraft,
   isQuestDraftDirty,
   MAX_REWARD_THB,
   MIN_REWARD_THB,
   parseStoredQuestDraft,
   parseStoredQuestSnapshot,
-  questDetailToDraft,
   toBangkokDateTime,
   toQuestDraftPayload,
-  toQuestV2Payload,
   toQuestBoardModeValues,
-} from "../createQuestModel";
+} from "../domain/createQuestModel";
 import type {
   QuestV2Detail,
   QuestV2PublishCheck,
@@ -171,7 +170,7 @@ describe("Create Quest model", () => {
       participation: "GROUP" as const,
     };
 
-    test.each(["0", "-2", "", "not-a-number", "2.5"])(
+    test.each(["0", "1", "21", "-2", "", "not-a-number", "2.5"])(
       "blocks invalid GROUP headcount %p without one-place escrow fallback",
       (headcount) => {
         const check = getQuestPublishCheck({
@@ -223,7 +222,13 @@ describe("Create Quest model", () => {
     test("parses THB input into integer satang without floating point rounding", () => {
       expect(getDraftRewardSatang({ wage: "1250.50" })).toBe(125050);
       expect(getDraftRewardSatang({ wage: "12.345" })).toBeNull();
-      expect(formatDraftReward({ wage: "1250.50" })).toBe("฿1,250.50");
+      expect(formatDraftReward({ wage: "1250.50" }, "en")).toBe("฿1,250.50");
+      expect(createQuestMessages.en.rewardBoundsError(700_000)).toBe(
+        "Reward must be between ฿0 and ฿700,000."
+      );
+      expect(createQuestMessages.th.rewardBoundsError(700_000)).toBe(
+        "ค่าตอบแทนต้องอยู่ระหว่าง ฿0 ถึง ฿700,000"
+      );
     });
 
     test("uses a label-only location and canonical mode values in the payload", () => {
@@ -421,27 +426,6 @@ describe("Create Quest model", () => {
     });
   });
 
-  describe("getQuestApiErrorMessage", () => {
-    test("maps known API error codes to localized messages", () => {
-      expect(
-        getQuestApiErrorMessage("INVALID_QUEST_FUNDING_TOTAL", "en")
-      ).toContain("700,000");
-      expect(getQuestApiErrorMessage("INVALID_TITLE", "th")).toContain("120");
-      expect(getQuestApiErrorMessage("INVALID_TITLE", "en")).not.toBe(
-        getQuestApiErrorMessage("INVALID_TITLE", "th")
-      );
-    });
-
-    test("falls back to the generic save error for unknown codes", () => {
-      expect(getQuestApiErrorMessage("MYSTERY_CODE", "en")).toBe(
-        createQuestMessages.en.saveError
-      );
-      expect(getQuestApiErrorMessage("MYSTERY_CODE", "th")).toBe(
-        createQuestMessages.th.saveError
-      );
-    });
-  });
-
   describe("localized blocking guidance", () => {
     test("covers every publish blocker code in both locales", () => {
       const codes = [
@@ -466,35 +450,6 @@ describe("Create Quest model", () => {
           0
         );
       }
-    });
-  });
-
-  describe("getSchedulePickerValue", () => {
-    test("uses the latest draft value on Android instead of stale iOS picker state", () => {
-      const draftValue = new Date(2026, 9, 20, 15, 45);
-      const stalePickerValue = new Date(2026, 7, 20, 9, 0);
-
-      expect(
-        getSchedulePickerValue("android", draftValue, stalePickerValue)
-      ).toBe(draftValue);
-    });
-
-    test("keeps the temporary spinner value on iOS", () => {
-      const draftValue = new Date(2026, 9, 20, 15, 45);
-      const temporaryPickerValue = new Date(2026, 9, 21, 16, 0);
-
-      expect(
-        getSchedulePickerValue("ios", draftValue, temporaryPickerValue)
-      ).toBe(temporaryPickerValue);
-    });
-  });
-
-  describe("getScheduleTimeValue", () => {
-    test("keeps the selected time independent from an epoch date", () => {
-      const timeOnlyPickerValue = new Date(0);
-      timeOnlyPickerValue.setHours(7, 0, 0, 0);
-
-      expect(getScheduleTimeValue(timeOnlyPickerValue)).toBe("07:00");
     });
   });
 
@@ -524,8 +479,8 @@ describe("Create Quest model", () => {
 
     test("returns empty string when end is before or equal to start", () => {
       const time = new Date("2026-09-20T09:00:00").getTime();
-      expect(formatQuestDuration(time, time)).toBe("");
-      expect(formatQuestDuration(time, time - 1000)).toBe("");
+      expect(formatQuestDuration(time, time, "en")).toBe("");
+      expect(formatQuestDuration(time, time - 1000, "en")).toBe("");
     });
   });
 
@@ -542,8 +497,8 @@ describe("Create Quest model", () => {
         "Not selected"
       );
 
-      expect(display.range).toContain("15 Oct 2026 · 21:00");
-      expect(display.range).toContain("16 Oct 2026 · 01:30");
+      expect(display.range).toContain("15 Oct 2026, 21:00");
+      expect(display.range).toContain("16 Oct 2026, 01:30");
       expect(display.duration).toBe("4h 30m");
       expect(display.crossesMidnight).toBe(true);
     });

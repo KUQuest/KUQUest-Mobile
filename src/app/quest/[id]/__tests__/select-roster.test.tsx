@@ -1,18 +1,20 @@
-import React from "react";
-import { Alert } from "react-native";
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
-
+import { SweetAlertHost } from "@/components/ui/SweetAlert";
+import { alertMessages } from "@/locales/alertMessages";
+import { groupQuestMessages } from "@/locales/groupQuestMessages";
+import { questBoardMessages } from "@/locales/questBoardMessages";
 import { studentApi } from "@/api/StudentApi";
 import { authService } from "@/features/auth/AuthService";
-import { liveQuestService } from "@/features/questBoard/liveQuestService";
-import type { LiveQuestSnapshot } from "@/features/questBoard/liveQuestService";
+import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
+import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestService";
 import SelectRosterRoute from "../select-roster";
 
 const mockBack = jest.fn();
+const mockPush = jest.fn();
 
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: mockBack }),
+  useRouter: () => ({ push: mockPush, replace: jest.fn(), back: mockBack }),
   useLocalSearchParams: () => ({ id: "quest-1" }),
 }));
 
@@ -29,8 +31,10 @@ jest.mock("@/api/StudentApi", () => ({
   },
 }));
 
-jest.mock("@/features/questBoard/liveQuestService", () => {
-  const actual = jest.requireActual("@/features/questBoard/liveQuestService");
+jest.mock("@/features/questBoard/live/liveQuestService", () => {
+  const actual = jest.requireActual(
+    "@/features/questBoard/live/liveQuestService"
+  );
   return {
     ...actual,
     liveQuestService: {
@@ -109,6 +113,7 @@ function createSnapshot(
       canReadWorkChat: false,
       canWriteWorkChat: false,
       canSubmitProof: false,
+      canStartWork: false,
       canConfirmCompletion: false,
       canCancel: false,
       canReviewProof: false,
@@ -127,6 +132,7 @@ describe("SelectRosterRoute", () => {
       lastName: "Candidate",
       avatar: null,
       department: { faculty: { name: "Design" } },
+      reputation: { totalQuests: 1, rating: { average: 4.7 } },
     });
   });
 
@@ -148,22 +154,32 @@ describe("SelectRosterRoute", () => {
       },
     });
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
-    const alertSpy = jest.spyOn(Alert, "alert");
-
-    const { getByTestId, getByText } = await renderWithQueryClient(
-      <SelectRosterRoute />
+    const { getByTestId, getByText, getByRole } = await renderWithQueryClient(
+      <>
+        <SelectRosterRoute />
+        <SweetAlertHost />
+      </>
     );
 
     await waitFor(() => {
       expect(getByText("Nina Candidate")).toBeTruthy();
     });
 
-    fireEvent.press(getByTestId("select-roster-candidate-app-1-select"));
+    await fireEvent.press(getByTestId("select-roster-candidate-app-1-select"));
 
-    expect(alertSpy).toHaveBeenCalled();
-    const buttons = alertSpy.mock.calls[alertSpy.mock.calls.length - 1][2];
-    const confirm = buttons?.find((button) => button.style !== "cancel");
-    confirm?.onPress?.();
+    expect(
+      getByText(questBoardMessages.th.confirmSelectCandidateTitle)
+    ).toBeTruthy();
+    expect(liveQuestService.selectApplication).not.toHaveBeenCalled();
+    await fireEvent.press(
+      getByRole("button", { name: groupQuestMessages.th.cancel })
+    );
+    expect(liveQuestService.selectApplication).not.toHaveBeenCalled();
+
+    await fireEvent.press(getByTestId("select-roster-candidate-app-1-select"));
+    await fireEvent.press(
+      getByRole("button", { name: groupQuestMessages.th.selectProposal })
+    );
 
     await waitFor(() => {
       expect(liveQuestService.selectApplication).toHaveBeenCalledWith(
@@ -200,21 +216,30 @@ describe("SelectRosterRoute", () => {
     });
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
     (liveQuestService.rejectCandidateTeam as jest.Mock).mockResolvedValue({});
-    const alertSpy = jest.spyOn(Alert, "alert");
-
-    const { getByTestId, getByText } = await renderWithQueryClient(
-      <SelectRosterRoute />
+    const { getByTestId, getByText, getByRole } = await renderWithQueryClient(
+      <>
+        <SelectRosterRoute />
+        <SweetAlertHost />
+      </>
     );
 
     await waitFor(() => {
       expect(getByText("Nina Candidate")).toBeTruthy();
     });
 
-    fireEvent.press(getByTestId("select-roster-team-team-1-reject"));
-
-    const buttons = alertSpy.mock.calls[alertSpy.mock.calls.length - 1][2];
-    const confirm = buttons?.find((button) => button.style === "destructive");
-    confirm?.onPress?.();
+    await fireEvent.press(getByTestId("select-roster-team-team-1-reject"));
+    expect(
+      getByText(questBoardMessages.th.confirmRejectTeamTitle)
+    ).toBeTruthy();
+    expect(liveQuestService.rejectCandidateTeam).not.toHaveBeenCalled();
+    await fireEvent.press(
+      getByRole("button", { name: groupQuestMessages.th.cancel })
+    );
+    expect(liveQuestService.rejectCandidateTeam).not.toHaveBeenCalled();
+    await fireEvent.press(getByTestId("select-roster-team-team-1-reject"));
+    await fireEvent.press(
+      getByRole("button", { name: groupQuestMessages.th.reject })
+    );
 
     await waitFor(() => {
       expect(liveQuestService.rejectCandidateTeam).toHaveBeenCalledWith(
@@ -226,6 +251,65 @@ describe("SelectRosterRoute", () => {
     await waitFor(() => {
       expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledTimes(2);
     });
+    expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  it("shows a localized rejection error and refetches when team rejection fails", async () => {
+    const base = createSnapshot();
+    const snapshot = createSnapshot({
+      participation: "GROUP",
+      teams: [
+        {
+          id: "team-1",
+          questId: "quest-1",
+          leaderId: "leader-1",
+          name: "Muralists",
+          headcount: 3,
+          state: "TEAM_SUBMITTED",
+          joinCode: null,
+          joinCodeExpiresAt: null,
+          members: [{ memberId: "leader-1", joinedAt: "2026-09-01T00:00:00Z" }],
+          submission: null,
+          createdAt: "2026-09-01T00:00:00Z",
+        },
+      ],
+      capabilities: { ...base.capabilities, canRejectTeam: true },
+    });
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
+    const failureMessage = "The team could not be rejected";
+    (liveQuestService.rejectCandidateTeam as jest.Mock).mockRejectedValue(
+      new Error(failureMessage)
+    );
+    const { getByTestId, getByText, getByRole, queryByText } =
+      await renderWithQueryClient(
+        <>
+          <SelectRosterRoute />
+          <SweetAlertHost />
+        </>
+      );
+
+    await waitFor(() => {
+      expect(getByText("Nina Candidate")).toBeTruthy();
+    });
+
+    await fireEvent.press(getByTestId("select-roster-team-team-1-reject"));
+    expect(
+      getByText(questBoardMessages.th.confirmRejectTeamTitle)
+    ).toBeTruthy();
+    await fireEvent.press(
+      getByRole("button", { name: groupQuestMessages.th.reject })
+    );
+
+    await waitFor(() => {
+      expect(liveQuestService.rejectCandidateTeam).toHaveBeenCalledWith(
+        "quest-1",
+        "team-1",
+        expect.any(String)
+      );
+      expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledTimes(2);
+      expect(getByText(alertMessages.th.errorFallback)).toBeTruthy();
+    });
+    expect(queryByText(failureMessage)).toBeNull();
     expect(mockBack).not.toHaveBeenCalled();
   });
 
@@ -242,6 +326,44 @@ describe("SelectRosterRoute", () => {
         getByText("เควสต์นี้รับผู้ทำงานอัตโนมัติ ไม่ต้องคัดเลือก")
       ).toBeTruthy();
     });
+  });
+
+  it("lists assigned Workers without cancelled assignments and opens a Worker profile", async () => {
+    const base = createSnapshot();
+    const snapshot = createSnapshot({
+      mode: "FIRST_COME_FIRST_SERVED",
+      assignments: [
+        {
+          questId: "quest-1",
+          workerId: "worker-1",
+          state: "ASSIGNMENT_ACTIVE",
+          questState: "QUEST_ASSIGNED",
+          startedAt: null,
+        },
+        {
+          questId: "quest-1",
+          workerId: "worker-2",
+          state: "ASSIGNMENT_CANCELLED",
+          questState: "QUEST_ASSIGNED",
+          startedAt: null,
+        },
+      ],
+      quest: { ...base.quest, headcount: 2 },
+    });
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
+
+    const { getByTestId, getByText, queryByTestId } =
+      await renderWithQueryClient(<SelectRosterRoute />);
+
+    await waitFor(() => {
+      expect(getByText("Nina Candidate")).toBeTruthy();
+    });
+    expect(getByText("ผู้ทำงาน 1/2 คน")).toBeTruthy();
+    expect(queryByTestId("select-roster-worker-worker-2")).toBeNull();
+
+    await fireEvent.press(getByTestId("select-roster-worker-worker-1"));
+
+    expect(mockPush).toHaveBeenCalledWith("/profile/worker-1");
   });
 
   it("shows the empty state when no candidates have applied yet", async () => {

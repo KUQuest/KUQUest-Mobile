@@ -1,82 +1,27 @@
-import { QuestStatus } from "@/features/questBoard/types";
+import { formatTimestampDateTime } from "@/domain/datetime";
+import { isTerminalStatus, QuestStatus } from "@/domain/questLifecycle";
 import type { SupportedLocale } from "@/locales/locale";
+import { QuestMode } from "@/features/questBoard/domain/types";
+import type {
+  CanonicalHirerQuestStatus,
+  TimelineStageKey,
+  QuestProgressStage,
+  HirerHomeQuestFixture,
+  LiveHirerQuestCardData,
+} from "./hirerHomeTypes";
+import { timelineStageOrder } from "./hirerHomeTypes";
 
-export const canonicalHirerQuestStatuses = [
-  QuestStatus.QUEST_DRAFT,
-  QuestStatus.QUEST_OPEN,
-  QuestStatus.QUEST_ASSIGNED,
-  QuestStatus.QUEST_IN_PROGRESS,
-  QuestStatus.QUEST_COMPLETED,
-  QuestStatus.QUEST_CANCELLED,
-  QuestStatus.QUEST_FAILED,
-] as const;
-
-export type CanonicalHirerQuestStatus =
-  (typeof canonicalHirerQuestStatuses)[number];
-
-export const timelineStageOrder = [
-  "open",
-  "assigned",
-  "inProgress",
-  "review",
-  "completed",
-] as const;
-
-export type TimelineStageKey = (typeof timelineStageOrder)[number];
-export type TimelineStageState =
-  "completed" | "current" | "upcoming" | "terminal";
-
-export interface QuestProgressStage {
-  key: TimelineStageKey;
-  state: TimelineStageState;
-}
-
-export interface LocalizedHirerCopy {
-  en: string;
-  th: string;
-}
-
-export interface HirerHomeQuestFixture {
-  id: string;
-  title: LocalizedHirerCopy;
-  tag?: LocalizedHirerCopy;
-  status: CanonicalHirerQuestStatus;
-  worker: {
-    id: string;
-    displayName: LocalizedHirerCopy;
-    avatarUri?: string;
-    faculty?: LocalizedHirerCopy;
-  };
-  dueAt: string;
-}
-export interface QuestMemberProfile {
-  id: string;
-  displayName: string;
-  avatarUri?: string;
-  faculty?: string;
-}
-
-export interface LiveHirerQuestCardData {
-  id: string;
-  title: string;
-  tag?: string;
-  status: CanonicalHirerQuestStatus;
-  mode: "FIRST_COME_FIRST_SERVED" | "CANDIDATE";
-  participation: "SINGLE" | "GROUP";
-  headcount: number;
-  dueAt?: string | null;
-  assignedWorkers: QuestMemberProfile[];
-  applicants: QuestMemberProfile[];
-  /** A Worker sent a Proof Submission that awaits the Hirer decision. */
-  proofPending: boolean;
-}
-
-export interface HirerHomeData {
-  activeQuests: LiveHirerQuestCardData[];
-  activeQuestCount: number;
-  draftCount: number;
-  completedCount: number;
-}
+export type {
+  CanonicalHirerQuestStatus,
+  TimelineStageKey,
+  TimelineStageState,
+  QuestProgressStage,
+  LocalizedHirerCopy,
+  HirerHomeQuestFixture,
+  QuestMemberProfile,
+  LiveHirerQuestCardData,
+  HirerHomeData,
+} from "./hirerHomeTypes";
 
 export const HIRER_HOME_MAX_ACTIVE_QUESTS = 5;
 
@@ -132,16 +77,6 @@ export function prioritizeHirerHomeQuests<
     .map(({ quest }) => quest);
 }
 
-const terminalStatuses: Record<CanonicalHirerQuestStatus, boolean> = {
-  QUEST_DRAFT: false,
-  QUEST_OPEN: false,
-  QUEST_ASSIGNED: false,
-  QUEST_IN_PROGRESS: false,
-  QUEST_COMPLETED: false,
-  QUEST_CANCELLED: true,
-  QUEST_FAILED: true,
-};
-
 export function getQuestProgressStages(
   status: CanonicalHirerQuestStatus,
   proofPending = false
@@ -154,7 +89,7 @@ export function getQuestProgressStages(
       : activeStageByStatus[status]
   );
   const isCompleted = status === QuestStatus.QUEST_COMPLETED;
-  const isTerminal = terminalStatuses[status];
+  const isTerminal = isTerminalStatus(status);
 
   return timelineStageOrder.map((key, index) => ({
     key,
@@ -174,35 +109,52 @@ export function getQuestProgressStages(
   }));
 }
 
-export function formatHirerDueAt(
-  dueAt: string | null | undefined,
+export function formatHirerDateTime(
+  value: string | null | undefined,
   locale: SupportedLocale
 ): string {
-  if (!dueAt) return "—";
-  const date = new Date(dueAt);
-  if (Number.isNaN(date.getTime())) return dueAt;
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return formatTimestampDateTime(date, locale);
+}
 
-  const datePart = new Intl.DateTimeFormat(
-    locale === "th" ? "th-TH-u-ca-buddhist" : "en-GB",
-    {
-      day: "numeric",
-      month: "short",
-      timeZone: "Asia/Bangkok",
-    }
-  ).format(date);
-  const timePart = new Intl.DateTimeFormat(
-    locale === "th" ? "th-TH" : "en-GB",
-    {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: "Asia/Bangkok",
-    }
-  ).format(date);
+export type HirerAttentionItem =
+  | { kind: "proof"; questId: string; questTitle: string }
+  | {
+      kind: "applicants";
+      questId: string;
+      questTitle: string;
+      count: number;
+    };
 
-  return locale === "th"
-    ? `ครบกำหนด ${datePart} · ${timePart}`
-    : `Due ${datePart} · ${timePart}`;
+/**
+ * Hirer decisions that block a Quest from moving forward: a sent Proof waiting
+ * for review, or submitted Candidate proposals waiting for selection.
+ */
+export function getHirerAttentionItems(
+  quests: readonly LiveHirerQuestCardData[]
+): HirerAttentionItem[] {
+  return quests.flatMap((quest): HirerAttentionItem[] => {
+    if (quest.proofPending) {
+      return [{ kind: "proof", questId: quest.id, questTitle: quest.title }];
+    }
+    if (
+      quest.mode === QuestMode.CANDIDATE &&
+      quest.status === QuestStatus.QUEST_OPEN &&
+      quest.applicants.length > 0
+    ) {
+      return [
+        {
+          kind: "applicants",
+          questId: quest.id,
+          questTitle: quest.title,
+          count: quest.applicants.length,
+        },
+      ];
+    }
+    return [];
+  });
 }
 
 export const hirerHomeQuestFixtures: HirerHomeQuestFixture[] = [
@@ -228,6 +180,7 @@ export const hirerHomeQuestFixtures: HirerHomeQuestFixture[] = [
         th: "คณะวิศวกรรมศาสตร์",
       },
     },
+    startTime: "2026-09-19T09:00:00+07:00",
     dueAt: "2026-09-19T18:00:00+07:00",
   },
   {
@@ -252,6 +205,7 @@ export const hirerHomeQuestFixtures: HirerHomeQuestFixture[] = [
         th: "คณะวิทยาศาสตร์",
       },
     },
+    startTime: "2026-09-20T08:00:00+07:00",
     dueAt: "2026-09-20T12:00:00+07:00",
   },
   {
@@ -276,9 +230,7 @@ export const hirerHomeQuestFixtures: HirerHomeQuestFixture[] = [
         th: "คณะเกษตร",
       },
     },
+    startTime: "2026-09-18T10:00:00+07:00",
     dueAt: "2026-09-18T16:00:00+07:00",
   },
 ];
-
-export const hirerHomeQuestFixture: HirerHomeQuestFixture =
-  hirerHomeQuestFixtures[0];

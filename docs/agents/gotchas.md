@@ -11,13 +11,53 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 ## Entries
 
+### 2026-09-26 — Payout history silently dropped every Payout
+
+**What happened**: `WalletApi.listPayouts` parsed `data.payouts`, but `GET /api/v1/payouts` returns `data.items`; a catch-all `return []` hid the failure, and a test fixture copied the wrong shape.
+
+**Root cause**: Resource methods hand-parsed envelopes and swallowed errors, so a contract mismatch looked like an empty list.
+
+**Rule**: Call endpoints only through `ApiClient.get`/`send` with the `data` schema taken from `bun run query-api` (not from fixtures or existing code); never catch-all to an empty value in `src/api` — let callers decide, as `getTransactionHistory` does with `Promise.allSettled`.
+
+### 2026-09-26 — Quest event sockets closed silently with 4403
+
+**What happened**: A Hirer Publish never reached the Worker Board in realtime; the Worker saw the Quest only after a manual refresh.
+
+**Root cause**: React Native adds `Origin: https://<api-host>` when a WebSocket sets none. The Quest, Candidate-roster, and Board event endpoints reject that Origin with `4403 Origin not allowed`, which the client treats as terminal. The server accepts `kuquestmobile://` or no Origin.
+
+**Rule**: Open every API WebSocket through `openServerSocket` (`src/api/ServerSocket.ts`), which sends `Origin: kuquestmobile://` with `Cookie`; never construct `WebSocket` directly. Before blaming the backend, probe a staging socket with the staging test-auth cookie and the Origin the app sends.
+
+### 2026-09-25 — Shared screens stayed sage in the Worker workspace
+
+**What happened**: The redesigned Money tab and Profile hero kept Hirer sage after switching to the Worker workspace.
+
+**Root cause**: Only the ramp tokens (`ku-primary`, `ku-primary-dark`, `ku-primary-deep`, `ku-primary-subtle`, `ku-primary-border`, `ku-on-primary`, `ku-surface-accent`, `ku-border-accent`) change with the workspace; `ku-hirer*` / `ku-worker*` are fixed. The `colors` Proxy from `src/theme/colors.ts` reads the current ramp but never re-renders, so mounted tabs kept Hirer icons.
+
+**Rule**: On surfaces both workspaces open, use only ramp tokens; in components read colors via `useAppTheme().colors`, not the `colors` import. Every ramp token must stay in the `inlineVariables.exclude` list in `metro.config.js`.
+
+### 2026-09-24 — Changing `font_scale` restarts the app at Home
+
+**What happened**: `adb shell settings put system font_scale 1.3` during a smoke check dropped the navigation stack; the next screenshot showed Hirer Home instead of the screen under test.
+
+**Root cause**: `MainActivity` `android:configChanges` omits `fontScale`, so Android recreates the Activity (unlike `uiMode`, which dark-mode toggles survive).
+
+**Rule**: Set `font_scale` first, then navigate or deep-link to the screen under test; restore `1.0` afterwards and expect another restart.
+
+### 2026-09-24 — Unawaited React Native test events leak `act()` scopes
+
+**What happened**: A Hirer card test passed alone, but later tests rendered empty after it pressed three controls; awaiting the presses made the full file pass.
+
+**Root cause**: React Native Testing Library v14 returns a Promise from `fireEvent.press`, so unawaited presses leave overlapping React `act()` scopes.
+
+**Rule**: In async component tests, `await fireEvent.press(...)` (and other `fireEvent` helpers) before asserting or rendering the next case. Do not work around leakage by reordering tests.
+
 ### 2026-09-23 — Jest runs from `bash` hang and report misleading counts
 
 **What happened**: `bunx jest` through the agent shell showed "N passed" summaries while a test had failed, and runs never exited, so later runs overwrote the same `--outputFile` concurrently.
 
 **Root cause**: The shell's output filter condenses Jest output, and Jest keeps open handles after `HomeScreen` query tests.
 
-**Rule**: Run Jest with `--forceExit --json --outputFile=<unique path>` and read failures from the JSON (or run it via a subprocess in `eval`); never trust the condensed summary. New `HomeScreen.test.tsx` cases go before the Quick Access test, which leaves an overlapping `act()` scope that blanks later renders.
+**Rule**: Run Jest with `--forceExit --json --outputFile=<unique path>` and read failures from the JSON (or run it via a subprocess in `eval`); never trust the condensed summary.
 
 ### 2026-09-23 — `contentContainerStyle` replaces `contentContainerClassName`
 

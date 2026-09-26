@@ -1,11 +1,16 @@
 import { useCallback } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
-import { Alert, BackHandler } from "react-native";
+import { BackHandler } from "react-native";
+
+import { showErrorAlert } from "@/components/ui/SweetAlert";
+import { useLocale } from "@/features/preferences/localeStore";
+import { getLocalizedErrorMessage } from "@/utils/error";
 
 import { getChatRouteParams } from "@/features/chat/chatData";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
-import type { QuestBoardQuest } from "../types";
-import type { QuestDetailProjection } from "../questDetailProjection";
+import type { QuestBoardQuest } from "../domain/types";
+import type { BoardPreviewState } from "../fixtures/questBoardHarness";
+import type { QuestDetailProjection } from "./questDetailProjection";
 import type { QuestDetailReadSource } from "./useQuestDetailReadSource";
 
 interface QuestDetailNavigationParams {
@@ -16,15 +21,17 @@ interface QuestDetailNavigationParams {
   messages: QuestBoardMessages;
   canMessageOwner: boolean;
   createCandidateInquiry: (questId: string) => Promise<{ id: string }>;
+  /** Carried to the Quest Team route so it reads the same source and viewer. */
+  previewState?: BoardPreviewState;
+  studentId?: string;
 }
 
 export interface QuestDetailNavigation {
   handleBack: () => void;
   openParticipantProfile: (participantId: string) => void;
   openWorkHub: () => void;
+  openTeam: () => void;
   openEditPost: () => void;
-  openReview: () => void;
-  openReportQuest: () => void;
   openMessageOwner: () => void;
 }
 
@@ -36,8 +43,11 @@ export function useQuestDetailNavigation({
   messages,
   canMessageOwner,
   createCandidateInquiry,
+  previewState,
+  studentId,
 }: QuestDetailNavigationParams): QuestDetailNavigation {
   const router = useRouter();
+  const { locale } = useLocale();
   const handleBack = useCallback(() => {
     if (router.canGoBack()) {
       router.back();
@@ -69,6 +79,17 @@ export function useQuestDetailNavigation({
   const openWorkHub = useCallback(() => {
     router.push("/my-quests");
   }, [router]);
+  const openTeam = useCallback(() => {
+    if (!quest) return;
+    router.push({
+      pathname: "/quest/[id]/team",
+      params: {
+        id: quest.id,
+        ...(previewState ? { preview: previewState } : {}),
+        ...(studentId ? { studentId } : {}),
+      },
+    });
+  }, [previewState, quest, router, studentId]);
   const openEditPost = useCallback(() => {
     if (!quest) return;
     router.push({
@@ -76,26 +97,6 @@ export function useQuestDetailNavigation({
       params: { id: quest.id },
     });
   }, [quest, router]);
-  const openReview = useCallback(() => {
-    if (!quest) return;
-    router.push({
-      pathname: "/quest/[id]/review",
-      params: { id: quest.id },
-    });
-  }, [quest, router]);
-  const openReportQuest = useCallback(() => {
-    if (!quest) return;
-    router.push({
-      pathname: "/report",
-      params: {
-        source: "quest",
-        questId: quest.id,
-        questTitle: quest.title,
-        viewerId,
-        reportedMemberId: quest.ownerStudentId,
-      },
-    });
-  }, [quest, router, viewerId]);
   const openMessageOwner = useCallback(() => {
     if (!quest || !canMessageOwner) return;
     if (source.kind === "preview") {
@@ -126,15 +127,18 @@ export function useQuestDetailNavigation({
         });
       })
       .catch((error) => {
-        Alert.alert(
-          messages.details,
-          error instanceof Error ? error.message : messages.messageOwnerError
+        showErrorAlert(
+          messages.actionFailedTitle,
+          getLocalizedErrorMessage(error, locale, {
+            fallback: messages.messageOwnerError,
+          })
         );
       });
   }, [
     canMessageOwner,
     createCandidateInquiry,
-    messages.details,
+    locale,
+    messages.actionFailedTitle,
     messages.messageOwnerError,
     projection,
     quest,
@@ -147,9 +151,8 @@ export function useQuestDetailNavigation({
     handleBack,
     openParticipantProfile,
     openWorkHub,
+    openTeam,
     openEditPost,
-    openReview,
-    openReportQuest,
     openMessageOwner,
   };
 }

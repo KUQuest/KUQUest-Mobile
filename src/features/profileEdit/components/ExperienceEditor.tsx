@@ -26,7 +26,7 @@ export interface ExperienceEditorProps {
   isExisting: boolean;
   form: ExperienceForm;
   messages: ProfileEditMessages;
-  employmentTypes: ReadonlyArray<{ label: string; value: string }>;
+  employmentTypes: readonly { label: string; value: string }[];
   errors: Record<string, string>;
   saveError: string | null;
   saving: boolean;

@@ -89,4 +89,4 @@ Use these paths after reading ADR 0011:
 - Shared Money route: [`src/app/(tabs)/money.tsx`](<../../src/app/(tabs)/money.tsx>)
 - Shared Chat route: [`src/app/(tabs)/chat.tsx`](<../../src/app/(tabs)/chat.tsx>)
 - Shared Profile and Settings: [`src/app/(tabs)/profile.tsx`](<../../src/app/(tabs)/profile.tsx>), [`src/app/settings.tsx`](../../src/app/settings.tsx)
-- Role-adapted Work Management: [`src/app/(tabs)/my-quests.tsx`](<../../src/app/(tabs)/my-quests.tsx>), [`src/features/myQuests/myQuestWorkspaceProjection.ts`](../../src/features/myQuests/myQuestWorkspaceProjection.ts)
+- Role-adapted Work Management: [`src/app/(tabs)/my-quests.tsx`](<../../src/app/(tabs)/my-quests.tsx>); Hirer: [`src/features/myQuests/myQuestWorkspaceProjection.ts`](../../src/features/myQuests/myQuestWorkspaceProjection.ts); Worker: [`src/features/workerWork/workerWorkProjection.ts`](../../src/features/workerWork/workerWorkProjection.ts)

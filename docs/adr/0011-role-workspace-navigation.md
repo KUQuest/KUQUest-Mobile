@@ -25,4 +25,7 @@ KUQuest presents separate Hirer and Worker Role Workspaces for the same Member r
 The authenticated route owns the Home selection, while the page implementations
 remain separate. Shared pages keep one implementation and derive only the
 workspace-specific labels or data they actually need. Work Management keeps one
-route with role-specific projections rather than duplicating the page shell.
+route (`my-quests`) that selects the Hirer or Worker page by Role Workspace; the
+Worker page (`src/features/workerWork/`) is a separate implementation because
+its tasks (active Assignments, proof submission, history) do not share the
+Hirer page's owned-Quest tabs.

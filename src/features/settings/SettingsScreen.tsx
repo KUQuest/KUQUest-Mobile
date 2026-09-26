@@ -2,22 +2,17 @@ import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { Modal } from "react-native";
-import { Host, Switch } from "@expo/ui";
 import {
   ArrowRightLeft,
-  Bell,
   Check,
   ChevronLeft,
   ChevronRight,
-  CircleHelp,
   Code2,
-  FileText,
   Globe2,
   Info,
-  LockKeyhole,
   LogOut,
-  Moon,
   Pencil,
+  type LucideIcon,
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -29,7 +24,7 @@ import { settingsMessages } from "@/locales/settingsMessages";
 import { authService } from "@/features/auth/AuthService";
 import { authEnvironment } from "@/features/auth/authEnvironment";
 import { clearSessionCache } from "@/features/auth/sessionQueries";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { spacing } from "@/theme/spacing";
 import styles from "./styles/settingsStyles";
 
@@ -39,21 +34,25 @@ function SettingsRow({
   description,
   value,
   onPress,
-  trailing,
   last = false,
   testID,
 }: {
-  icon: typeof Bell;
+  icon: LucideIcon;
   title: string;
   description?: string;
   value?: string;
-  onPress?: () => void;
-  trailing?: React.ReactNode;
+  onPress: () => void;
   last?: boolean;
   testID?: string;
 }) {
-  const content = (
-    <>
+  const { colors } = useAppTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      className={`${styles.row} ${last ? "" : styles.rowWithDivider}`}
+      testID={testID}
+    >
       <View className={styles.iconContainer}>
         <Icon color={colors.primary} size={20} strokeWidth={2} />
       </View>
@@ -64,54 +63,31 @@ function SettingsRow({
         ) : null}
       </View>
       {value ? <Text className={styles.rowValue}>{value}</Text> : null}
-      {trailing ??
-        (onPress ? (
-          <ChevronRight
-            color={colors.textMuted}
-            size={20}
-            strokeWidth={2}
-            className={styles.chevron}
-          />
-        ) : null)}
-    </>
-  );
-
-  return onPress ? (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      className={`${styles.row} ${last ? "" : styles.rowWithDivider}`}
-      testID={testID}
-    >
-      {content}
+      <ChevronRight
+        color={colors.textMuted}
+        size={20}
+        strokeWidth={2}
+        className={styles.chevron}
+      />
     </Pressable>
-  ) : (
-    <View
-      className={`${styles.row} ${last ? "" : styles.rowWithDivider}`}
-      testID={testID}
-    >
-      {content}
-    </View>
   );
 }
 
 export default function SettingsScreen() {
+  const { colors } = useAppTheme();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { locale, setLocale } = useLocale();
   const messages = settingsMessages[locale];
   const insets = useSafeAreaInsets();
   const bottomPadding = insets.bottom + spacing.lg;
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [switchingAccount, setSwitchingAccount] = useState(false);
-  const { workspace, switchWorkspace } = useRoleWorkspace();
+  const { isWorker, switchWorkspace } = useRoleWorkspace();
   const [switchingWorkspace, setSwitchingWorkspace] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const devOverlayEnabled = authEnvironment.isDemoEnabled();
-  const switchAccount = () => {
-    if (switchingAccount) return;
-    setSwitchingAccount(true);
+  const completeSignOut = () => {
     void authService
       .signOut()
       .catch(() => undefined)
@@ -119,6 +95,12 @@ export default function SettingsScreen() {
         clearSessionCache(queryClient);
         router.replace("/");
       });
+  };
+
+  const switchAccount = () => {
+    if (switchingAccount) return;
+    setSwitchingAccount(true);
+    completeSignOut();
   };
 
   const handleSwitchWorkspace = () => {
@@ -132,13 +114,7 @@ export default function SettingsScreen() {
   const logout = () => {
     if (loggingOut) return;
     setLoggingOut(true);
-    void authService
-      .signOut()
-      .catch(() => undefined)
-      .finally(() => {
-        clearSessionCache(queryClient);
-        router.replace("/");
-      });
+    completeSignOut();
   };
 
   return (
@@ -186,7 +162,7 @@ export default function SettingsScreen() {
                 value={
                   switchingWorkspace
                     ? messages.switchingWorkspace
-                    : workspace === "worker"
+                    : isWorker
                       ? messages.workerWorkspace
                       : messages.hirerWorkspace
                 }
@@ -214,24 +190,9 @@ export default function SettingsScreen() {
             <Text className={styles.sectionTitle}>{messages.preferences}</Text>
             <View className={styles.sectionBody}>
               <SettingsRow
-                description={messages.notificationsDescription}
-                icon={Bell}
-                title={messages.notifications}
-                trailing={
-                  <View className={styles.switchHost}>
-                    <Host matchContents seedColor={colors.primary}>
-                      <Switch
-                        testID="settings-notifications"
-                        value={notificationsEnabled}
-                        onValueChange={setNotificationsEnabled}
-                      />
-                    </Host>
-                  </View>
-                }
-              />
-              <SettingsRow
                 description={messages.languageDescription}
                 icon={Globe2}
+                last
                 onPress={() => setLanguageModalVisible(true)}
                 title={messages.language}
                 value={
@@ -240,36 +201,6 @@ export default function SettingsScreen() {
                     : messages.englishLanguage
                 }
                 testID="settings-language"
-              />
-              <SettingsRow
-                description={messages.appearanceDescription}
-                icon={Moon}
-                title={messages.appearance}
-                value={messages.systemAppearance}
-                last
-              />
-            </View>
-          </View>
-
-          <View className={styles.section}>
-            <Text className={styles.sectionTitle}>{messages.support}</Text>
-            <View className={styles.sectionBody}>
-              <SettingsRow
-                description={messages.helpDescription}
-                icon={CircleHelp}
-                onPress={() => undefined}
-                title={messages.help}
-              />
-              <SettingsRow
-                icon={FileText}
-                onPress={() => undefined}
-                title={messages.terms}
-              />
-              <SettingsRow
-                icon={LockKeyhole}
-                onPress={() => undefined}
-                title={messages.privacy}
-                last
               />
             </View>
           </View>

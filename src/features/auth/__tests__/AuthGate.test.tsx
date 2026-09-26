@@ -20,8 +20,10 @@ jest.mock("../AuthService", () => ({
 }));
 
 jest.mock("../LoginScreen", () => {
-  const React = require("react");
-  const { View, Text } = require("react-native");
+  const React = jest.requireActual("react") as typeof import("react");
+  const { View, Text } = jest.requireActual(
+    "react-native"
+  ) as typeof import("react-native");
   return {
     __esModule: true,
     default: () => (

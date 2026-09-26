@@ -1,4 +1,4 @@
-import React from "react";
+import { WalletTransactionType } from "@/api/WalletApi";
 import { Modal, StyleSheet } from "react-native";
 import type { ViewStyle } from "react-native";
 import { Pressable, ScrollView, Text, TouchableOpacity, View } from "@/tw";
@@ -243,7 +243,11 @@ export function TransactionDetailModal({
                   testID="tx-detail-source-tag"
                 >
                   <Text className={styles.sourceTagText}>
-                    {tx.sourceApiLabel}
+                    {tx.sourceApi === "TOP_UPS"
+                      ? m.sourceTopUps
+                      : tx.sourceApi === "PAYOUTS"
+                        ? m.sourcePayouts
+                        : m.sourceActivities}
                   </Text>
                 </View>
               </View>
@@ -253,7 +257,11 @@ export function TransactionDetailModal({
                   className={styles.detailRow}
                   style={detailRowDividerStyle}
                 >
-                  <Text className={styles.detailLabel}>รายละเอียด</Text>
+                  <Text className={styles.detailLabel} numberOfLines={1}>
+                    {tx.type === WalletTransactionType.TOP_UP
+                      ? m.txTopUpReferenceLabel
+                      : m.txDetailsLabel}
+                  </Text>
                   <Text className={styles.detailValue} numberOfLines={2}>
                     {tx.subtitle}
                   </Text>

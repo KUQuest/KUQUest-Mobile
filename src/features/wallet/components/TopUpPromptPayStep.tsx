@@ -1,12 +1,14 @@
 import React from "react";
-import type { ViewStyle } from "react-native";
-import { ActivityIndicator, Image, Text, TouchableOpacity, View } from "@/tw";
-import { QrCode, RefreshCw, Sparkles } from "lucide-react-native";
+import { Clock, QrCode, RefreshCw } from "lucide-react-native";
+import { ActivityIndicator, Image, Text, View } from "@/tw";
 import type { TopUpData } from "@/api/WalletApi";
+import { Button } from "@/components/ui/Button";
 import { formatSatang } from "@/domain/satang";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import type { SupportedLocale } from "@/locales/locale";
 import { walletMessages } from "@/locales/walletMessages";
-import { colors } from "@/theme/colors";
+import { TopUpNotice } from "./TopUpNotice";
+import { topUpStyles } from "./topUpStyles";
 
 export interface TopUpPromptPayStepProps {
   activeTopUp: TopUpData;
@@ -17,51 +19,6 @@ export interface TopUpPromptPayStepProps {
   statusMessage: string | null;
 }
 
-const styles = {
-  promptPayContainer: "items-center",
-  promptPayDesc:
-    "mb-ku-md px-ku-sm text-center font-ku-regular text-[13px] text-ku-text-secondary",
-  qrCard:
-    "mb-ku-md w-full items-center rounded-[24px] border border-ku-border-subtle bg-ku-surface p-ku-md",
-  qrHeader: "mb-ku-md items-center",
-  qrHeaderPromptPay: "font-ku-bold text-ku-subtitle text-ku-primary-dark",
-  qrHeaderSubtitle: "mt-ku-2 font-ku-medium text-[12px] text-ku-text-secondary",
-  qrImageWrapper:
-    "mb-ku-md h-[220px] w-[220px] items-center justify-center overflow-hidden rounded-[16px] border border-ku-border-subtle bg-ku-white",
-  qrImage: "h-[200px] w-[200px]",
-  qrPlaceholder: "items-center justify-center",
-  qrPlaceholderText: "mt-ku-sm font-ku-medium text-[11px] text-ku-text-muted",
-  qrAmountBox: "items-center",
-  qrAmountLabel: "font-ku-medium text-[12px] text-ku-text-secondary",
-  qrAmountValue: "mt-ku-2 font-ku-bold text-[26px] text-ku-text-strong",
-  statusBanner:
-    "mb-ku-18 w-full items-center rounded-[12px] bg-ku-surface-muted p-ku-sm",
-  statusBannerText: "font-ku-medium text-[13px] text-ku-text-secondary",
-  promptPayActions: "w-full gap-ku-10",
-  checkStatusButton:
-    "h-[50px] flex-row items-center justify-center gap-ku-sm rounded-[16px] bg-ku-primary-deep",
-  checkStatusButtonText: "font-ku-semibold text-ku-control text-ku-on-primary",
-  simulateButton:
-    "h-[44px] flex-row items-center justify-center gap-ku-6 rounded-[16px] border border-ku-border-success bg-ku-surface-success",
-  simulateButtonText: "font-ku-medium text-[13px] text-ku-primary-deep",
-} as const;
-
-const qrCardShadow = {
-  shadowColor: colors.black,
-  shadowOffset: { width: 0, height: 3 },
-  shadowOpacity: 0.08,
-  shadowRadius: 10,
-  elevation: 3,
-} satisfies ViewStyle;
-
-const checkStatusShadow = {
-  shadowColor: colors.primaryDeep,
-  shadowOffset: { width: 0, height: 3 },
-  shadowOpacity: 0.25,
-  shadowRadius: 6,
-  elevation: 3,
-} satisfies ViewStyle;
-
 export function TopUpPromptPayStep({
   activeTopUp,
   checkingStatus,
@@ -71,95 +28,122 @@ export function TopUpPromptPayStep({
   statusMessage,
 }: TopUpPromptPayStepProps) {
   const m = walletMessages[locale];
+  const { colors } = useAppTheme();
+  const total = formatSatang(activeTopUp.paymentTotalSatang, locale, "exact");
 
   return (
-    <View className={styles.promptPayContainer} testID="top-up-promptpay-step">
-      <Text className={styles.promptPayDesc}>
-        {m.topUpPromptPayDescription}
-      </Text>
+    <View className={topUpStyles.step} testID="top-up-promptpay-step">
+      <View className={topUpStyles.intro}>
+        <Text accessibilityRole="header" className={topUpStyles.headline}>
+          {m.topUpPromptPayTitle}
+        </Text>
+        <Text className={topUpStyles.description}>
+          {m.topUpPromptPayDescription}
+        </Text>
+      </View>
 
-      <View className={styles.qrCard} style={qrCardShadow}>
-        <View className={styles.qrHeader}>
-          <Text className={styles.qrHeaderPromptPay}>PromptPay</Text>
-          <Text className={styles.qrHeaderSubtitle}>
-            {m.promptPayScanLabel}
-          </Text>
+      <View className={styles.qrCard}>
+        <View className={styles.badge}>
+          <QrCode color={colors.primaryDark} size={16} strokeWidth={2.2} />
+          <Text className={styles.badgeText}>PromptPay</Text>
         </View>
 
-        <View className={styles.qrImageWrapper}>
-          {activeTopUp.qrDataUrl ? (
-            <Image
-              resizeMode="contain"
-              source={{ uri: activeTopUp.qrDataUrl }}
-              className={styles.qrImage}
-            />
-          ) : (
-            <View className={styles.qrPlaceholder}>
-              <QrCode color={colors.primary} size={120} strokeWidth={1.8} />
-              <Text className={styles.qrPlaceholderText}>
-                {m.promptPayQrCode}
-              </Text>
+        {activeTopUp.qrDataUrl ? (
+          <>
+            {/* QR scanners need a light quiet zone in both appearances. */}
+            <View
+              accessibilityLabel={`${m.promptPayScanLabel}. ${m.topUpPaymentTotal}: ${total}`}
+              accessibilityRole="image"
+              accessible
+              className={styles.qrFrame}
+              testID="top-up-qr-image"
+            >
+              <Image
+                className={styles.qrImage}
+                contentFit="contain"
+                source={{ uri: activeTopUp.qrDataUrl }}
+              />
             </View>
-          )}
-        </View>
+            <Text className={styles.scanLabel}>{m.promptPayScanLabel}</Text>
+          </>
+        ) : (
+          <View className={styles.qrUnavailable} testID="top-up-qr-unavailable">
+            <QrCode color={colors.textMuted} size={40} strokeWidth={1.8} />
+            <Text className={styles.qrUnavailableText}>
+              {m.topUpQrUnavailable}
+            </Text>
+          </View>
+        )}
 
-        <View className={styles.qrAmountBox}>
-          <Text className={styles.qrAmountLabel}>{m.topUpPaymentTotal}</Text>
+        <View className={styles.amountRow}>
+          <Text className={styles.amountLabel}>{m.topUpPaymentTotal}</Text>
           <Text
-            className={styles.qrAmountValue}
+            className={styles.amountValue}
+            selectable
             testID="top-up-qr-amount-value"
           >
-            {formatSatang(activeTopUp.paymentTotalSatang, locale, "exact")}
+            {total}
           </Text>
         </View>
       </View>
 
       {statusMessage ? (
-        <View className={styles.statusBanner}>
-          <Text className={styles.statusBannerText}>{statusMessage}</Text>
-        </View>
+        <TopUpNotice icon={Clock} message={statusMessage} tone="info" />
       ) : null}
 
-      <View className={styles.promptPayActions}>
-        <TouchableOpacity
+      <View className={topUpStyles.actions}>
+        <Button
           accessibilityLabel={m.checkStatus}
-          accessibilityRole="button"
-          activeOpacity={0.8}
+          accessibilityState={{
+            disabled: checkingStatus,
+            busy: checkingStatus,
+          }}
           disabled={checkingStatus}
           onPress={onVerifyPayment}
-          className={styles.checkStatusButton}
-          style={checkStatusShadow}
           testID="top-up-check-status-btn"
         >
           {checkingStatus ? (
             <ActivityIndicator color={colors.onPrimary} size="small" />
           ) : (
             <>
-              <RefreshCw color={colors.onPrimary} size={16} />
-              <Text className={styles.checkStatusButtonText}>
-                {m.checkStatus}
-              </Text>
+              <RefreshCw color={colors.onPrimary} size={18} strokeWidth={2.4} />
+              <Text className={styles.checkStatusText}>{m.checkStatus}</Text>
             </>
           )}
-        </TouchableOpacity>
+        </Button>
 
         {__DEV__ ? (
-          <TouchableOpacity
+          <Button
             accessibilityLabel={m.simulateSuccess}
-            accessibilityRole="button"
-            activeOpacity={0.7}
             disabled={checkingStatus}
             onPress={onSimulatePayment}
-            className={styles.simulateButton}
             testID="top-up-simulate-btn"
+            variant="secondary"
           >
-            <Sparkles color={colors.primaryDeep} size={15} />
-            <Text className={styles.simulateButtonText}>
-              {m.simulateSuccess}
-            </Text>
-          </TouchableOpacity>
+            {m.simulateSuccess}
+          </Button>
         ) : null}
       </View>
     </View>
   );
 }
+
+const styles = {
+  qrCard:
+    "items-center gap-ku-md rounded-ku-card border border-ku-border bg-ku-surface p-ku-lg",
+  badge:
+    "flex-row items-center gap-ku-6 rounded-ku-pill bg-ku-surface-accent px-ku-12 py-ku-6",
+  badgeText: "font-ku-semibold text-ku-label text-ku-primary-dark",
+  qrFrame: "rounded-ku-image-large border border-ku-border bg-ku-white p-ku-12",
+  qrImage: "h-[208px] w-[208px]",
+  scanLabel: "text-center font-ku-medium text-ku-label text-ku-text-secondary",
+  qrUnavailable:
+    "min-h-[208px] w-full items-center justify-center gap-ku-sm rounded-ku-image-large bg-ku-surface-raised p-ku-lg",
+  qrUnavailableText:
+    "text-center font-ku-medium text-ku-body-small text-ku-text-secondary",
+  amountRow:
+    "w-full flex-row flex-wrap items-center justify-between gap-ku-sm border-t border-ku-divider pt-ku-md",
+  amountLabel: "font-ku-semibold text-ku-body-small text-ku-text-secondary",
+  amountValue: "font-ku-bold text-ku-title text-ku-text-strong",
+  checkStatusText: "font-ku-semibold text-ku-body text-ku-on-primary",
+} as const;

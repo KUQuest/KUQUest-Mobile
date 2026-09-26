@@ -12,7 +12,16 @@ export interface QuestWorkMessages {
   workChat: string;
   noChat: string;
   waitingForStart: string;
-  startsAutomatically: string;
+  startWorkCta: string;
+  startWorkDescription: string;
+  startWorkOpensAt: string;
+  startWorkRecordedAt: string;
+  waitingForOtherWorkers: string;
+  waitingForQuestStart: string;
+  waitingForTeamLeader: string;
+  startWorkNotAvailable: string;
+  startWorkDeadlinePassed: string;
+  startWorkNotRequired: string;
   stale: string;
   retry: string;
   serverError: string;
@@ -24,7 +33,6 @@ export interface QuestWorkMessages {
   editUpdated: string;
   actionUnavailable: string;
   proofCta: string;
-  proofPlaceholder: string;
   confirmationCta: string;
   confirmationPlaceholder: string;
   archiveDescription: string;
@@ -33,6 +41,21 @@ export interface QuestWorkMessages {
   noDueAt: string;
   dueNow: string;
   remaining: string;
+  saveProofDraft: string;
+  retryFailedProofFile: string;
+  proofFileTooLarge: string;
+  proofFileFallback: string;
+  unreadMessages: (count: number) => string;
+  conditionCount: (count: number) => string;
+  workChatHint: string;
+  reward: string;
+  location: string;
+  modeCandidate: string;
+  modeFcfs: string;
+  participationTeam: string;
+  participationSolo: string;
+  proofRequiredBadge: string;
+  proofFreeBadge: string;
 }
 
 export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
@@ -48,8 +71,22 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     workChat: "Open Work Chat",
     noChat: "Work Chat is not available yet.",
     waitingForStart: "Waiting for work to start",
-    startsAutomatically:
-      "The server starts this Quest automatically. This screen will refresh around the start time.",
+    startWorkCta: "Start Work",
+    startWorkDescription:
+      "Press Start Work between the start time and the due time.",
+    startWorkOpensAt: "Start Work opens at",
+    startWorkRecordedAt: "You pressed Start Work at",
+    waitingForOtherWorkers:
+      "Waiting for the other Workers to press Start Work. Work opens when every Active Worker has pressed it.",
+    waitingForQuestStart:
+      "Waiting for the server to start this Quest. Refresh to see the latest status.",
+    waitingForTeamLeader: "Waiting for the Team Leader to press Start Work.",
+    startWorkNotAvailable:
+      "Start Work is not open yet. Try again at the start time.",
+    startWorkDeadlinePassed:
+      "The due time has passed, so Start Work can no longer be recorded.",
+    startWorkNotRequired:
+      "You are not required to press Start Work for this Quest.",
     stale: "Showing the last saved server state. Refresh to try again.",
     retry: "Try again",
     serverError: "We could not load the Work Hub.",
@@ -63,7 +100,6 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     editUpdated: "Your edit response was sent.",
     actionUnavailable: "This action is not available for your Assignment.",
     proofCta: "Proof submission",
-    proofPlaceholder: "Proof submission will open when this action is enabled.",
     confirmationCta: "Confirm completion",
     confirmationPlaceholder:
       "Completion confirmation will open when this action is enabled.",
@@ -74,6 +110,21 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     noDueAt: "No due date set",
     dueNow: "Due now",
     remaining: "remaining",
+    saveProofDraft: "Save draft",
+    retryFailedProofFile: "Choose the failed file again before retrying.",
+    proofFileTooLarge: "Each proof file must be 10 MB or smaller.",
+    proofFileFallback: "Proof file",
+    unreadMessages: (count) => `${count} unread messages`,
+    conditionCount: (count) => `${count} items`,
+    workChatHint: "Coordinate with Hirer on this quest",
+    reward: "Reward",
+    location: "Location",
+    modeCandidate: "Candidate",
+    modeFcfs: "FCFS",
+    participationTeam: "Team",
+    participationSolo: "Solo",
+    proofRequiredBadge: "Proof required",
+    proofFreeBadge: "Proof-free",
   },
   th: {
     title: "ศูนย์งาน",
@@ -87,8 +138,19 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     workChat: "เปิดแชตงาน",
     noChat: "ยังไม่พร้อมใช้งานแชตงาน",
     waitingForStart: "กำลังรอเริ่มงาน",
-    startsAutomatically:
-      "เซิร์ฟเวอร์จะเริ่มเควสต์นี้โดยอัตโนมัติ หน้านี้จะรีเฟรชในช่วงเวลาเริ่มงาน",
+    startWorkCta: "เริ่มงาน",
+    startWorkDescription: "กดเริ่มงานได้ตั้งแต่เวลาเริ่มงานจนถึงกำหนดส่ง",
+    startWorkOpensAt: "กดเริ่มงานได้ตั้งแต่",
+    startWorkRecordedAt: "คุณกดเริ่มงานแล้วเมื่อ",
+    waitingForOtherWorkers:
+      "กำลังรอผู้ทำงานคนอื่นกดเริ่มงาน งานจะเปิดเมื่อผู้ทำงานทุกคนกดเริ่มงานครบ",
+    waitingForQuestStart:
+      "กำลังรอเซิร์ฟเวอร์เริ่มเควสต์นี้ รีเฟรชเพื่อดูสถานะล่าสุด",
+    waitingForTeamLeader: "กำลังรอหัวหน้าทีมกดเริ่มงาน",
+    startWorkNotAvailable:
+      "ยังไม่ถึงเวลาเริ่มงาน ลองอีกครั้งเมื่อถึงเวลาเริ่มงาน",
+    startWorkDeadlinePassed: "เลยกำหนดส่งแล้ว ไม่สามารถกดเริ่มงานได้",
+    startWorkNotRequired: "คุณไม่ต้องกดเริ่มงานสำหรับเควสต์นี้",
     stale: "กำลังแสดงสถานะล่าสุดที่บันทึกจากเซิร์ฟเวอร์ ลองรีเฟรชอีกครั้ง",
     retry: "ลองอีกครั้ง",
     serverError: "ไม่สามารถโหลดศูนย์งานได้",
@@ -101,7 +163,6 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     editUpdated: "ส่งการตอบกลับการแก้ไขแล้ว",
     actionUnavailable: "การดำเนินการนี้ไม่พร้อมใช้งานสำหรับการมอบหมายของคุณ",
     proofCta: "ส่งหลักฐาน",
-    proofPlaceholder: "หน้าส่งหลักฐานจะแสดงเมื่อเปิดใช้การดำเนินการนี้",
     confirmationCta: "ยืนยันการเสร็จสิ้น",
     confirmationPlaceholder:
       "หน้ายืนยันการเสร็จสิ้นจะแสดงเมื่อเปิดใช้การดำเนินการนี้",
@@ -112,5 +173,21 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     fileDispute: "ยื่นคำร้องข้อพิพาท",
     dueNow: "ถึงกำหนดแล้ว",
     remaining: "เหลือเวลา",
+    saveProofDraft: "บันทึกฉบับร่าง",
+    retryFailedProofFile:
+      "กรุณาเลือกไฟล์ที่อัปโหลดไม่สำเร็จอีกครั้งก่อนลองใหม่",
+    proofFileTooLarge: "ไฟล์หลักฐานแต่ละไฟล์ต้องมีขนาดไม่เกิน 10 MB",
+    proofFileFallback: "ไฟล์หลักฐาน",
+    unreadMessages: (count) => `${count} ข้อความใหม่`,
+    conditionCount: (count) => `${count} ข้อ`,
+    workChatHint: "สื่อสารและประสานงานเควสต์นี้กับผู้ว่าจ้าง",
+    reward: "ค่าตอบแทน",
+    location: "สถานที่",
+    modeCandidate: "คัดเลือกผู้สมัคร",
+    modeFcfs: "รับทันที (FCFS)",
+    participationTeam: "งานกลุ่ม",
+    participationSolo: "งานเดี่ยว",
+    proofRequiredBadge: "ต้องส่งหลักฐาน",
+    proofFreeBadge: "ไม่ต้องส่งหลักฐาน",
   },
 };

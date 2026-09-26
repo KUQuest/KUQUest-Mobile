@@ -3,7 +3,7 @@ import type { LucideIcon } from "lucide-react-native";
 import { Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { colors } from "@/theme/colors";
-import styles from "../createQuestStyles";
+import styles from "./createQuestStyles";
 
 export function SectionHeading({
   icon: Icon,
@@ -21,7 +21,7 @@ export function SectionHeading({
       className={cn(styles.sectionHeading, compact && styles.subsectionHeading)}
     >
       <View className={styles.sectionIcon}>
-        <Icon color={colors.primary} size={20} strokeWidth={2.2} />
+        <Icon color={colors.hirer} size={20} strokeWidth={2.2} />
       </View>
       <View className={styles.sectionHeadingText}>
         <Text accessibilityRole="header" className={styles.sectionTitle}>

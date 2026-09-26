@@ -1,4 +1,4 @@
-import { walletApi } from "@/api/WalletApi";
+import { WalletTransactionTitleKey, walletApi } from "@/api/WalletApi";
 import type { TopUpData, TopUpQuote, WalletBalances } from "@/api/WalletApi";
 import { formatSatang } from "@/domain/satang";
 
@@ -10,6 +10,7 @@ import {
   convertEarnings,
   createTopUpFromQuote,
   formatTransactionDate,
+  formatTransactionTime,
   type WalletCompartments,
   MAX_WALLET_SATANG,
   MIN_TOP_UP_SATANG,
@@ -35,6 +36,7 @@ const now = new Date("2026-01-01T00:00:00.000Z");
 
 const topUpData: TopUpData = {
   id: "topup-1",
+  internalReference: "top-up:topup-1",
   creditSatang: 50_000,
   chargedFeeSatang: 0,
   chargedTaxSatang: 0,
@@ -260,12 +262,12 @@ describe("Hirer wallet formatting and classification", () => {
     expect(formatSatang(100_000, "en", "signed")).toBe("+฿1,000.00");
   });
 
-  it("formats dates in Thai Buddhist calendar", () => {
-    const date = "2024-04-12T10:00:00Z";
-    const formatted = formatTransactionDate(date, "th");
-    expect(formatted).toContain("12");
-    expect(formatted).toContain("เม.ย.");
-    expect(formatted).toContain("2567");
+  it("formats transaction date and time with the shared Bangkok format", () => {
+    const timestamp = "2024-04-12T10:00:00Z";
+    expect(formatTransactionDate(timestamp, "th")).toBe("12 เม.ย. 2024");
+    expect(formatTransactionTime(timestamp)).toBe("17:00");
+    expect(formatTransactionDate("invalid", "th")).toBe("");
+    expect(formatTransactionTime("invalid")).toBe("");
   });
 
   it("classifies HOLD transaction as escrow payment", () => {
@@ -273,8 +275,7 @@ describe("Hirer wallet formatting and classification", () => {
       {
         id: "tx-1",
         type: "HOLD",
-        title: "Quest Escrow",
-        titleTh: "กันเงินประกันเควสต์",
+        titleKey: WalletTransactionTitleKey.QUEST_ESCROW_RESERVED,
         amountSatang: 50_000,
         direction: "OUTFLOW",
         status: "COMPLETED",
@@ -296,8 +297,7 @@ describe("Hirer wallet formatting and classification", () => {
       {
         id: "tx-2",
         type: "TOP_UP",
-        title: "PromptPay Top-Up",
-        titleTh: "เติมเงินผ่านพร้อมเพย์",
+        titleKey: WalletTransactionTitleKey.PROMPT_PAY_TOP_UP,
         amountSatang: 100_000,
         direction: "INFLOW",
         status: "COMPLETED",
@@ -310,6 +310,19 @@ describe("Hirer wallet formatting and classification", () => {
     expect(classified).not.toHaveProperty("amountText");
     expect(classified.isInflow).toBe(true);
     expect(classified.iconKind).toBe("top_up");
+    const classifiedEn = classifyHirerTransaction(
+      {
+        id: "tx-2",
+        type: "TOP_UP",
+        titleKey: WalletTransactionTitleKey.PROMPT_PAY_TOP_UP,
+        amountSatang: 100_000,
+        direction: "INFLOW",
+        status: "COMPLETED",
+        createdAt: "2024-04-10T10:00:00Z",
+      },
+      "en"
+    );
+    expect(classifiedEn.title).toBe("Top up to Wallet");
   });
 
   it("classifies fee transactions accurately", () => {
@@ -317,8 +330,7 @@ describe("Hirer wallet formatting and classification", () => {
       {
         id: "tx-3",
         type: "SPEND",
-        title: "Platform Fee",
-        titleTh: "ค่าธรรมเนียม",
+        titleKey: WalletTransactionTitleKey.SYSTEM_FEE,
         amountSatang: 1_000,
         direction: "OUTFLOW",
         status: "COMPLETED",

@@ -14,6 +14,8 @@ export interface AuthMessages {
   contactUs: string;
   retryButton: string;
   loadingAuth: string;
+  stagingTestHeading: string;
+  stagingTestSignInFailed: string;
   errors: Record<AuthErrorCode, string>;
 }
 
@@ -31,6 +33,9 @@ export const authMessages: Record<SupportedLocale, AuthMessages> = {
     contactUs: "Contact Us",
     retryButton: "Try again",
     loadingAuth: "Authenticating...",
+    stagingTestHeading: "Debug: sign in with a staging test account",
+    stagingTestSignInFailed:
+      "Failed to sign in with the staging test account. Please try again.",
     errors: {
       INVALID_EMAIL_DOMAIN:
         "Access restricted to @ku.th student email addresses only.",
@@ -46,7 +51,7 @@ export const authMessages: Record<SupportedLocale, AuthMessages> = {
     signInWithGoogle: "ดำเนินการต่อด้วย Google",
     sessionLoadTitle: "ไม่สามารถโหลดเซสชันของคุณได้",
     sessionLoadDescription: "โปรดตรวจสอบการเชื่อมต่อแล้วลองใหม่อีกครั้ง",
-    subtitle: "เครือข่ายนวัตกรรมทางวิชาการ",
+    subtitle: "",
     noticeTextPrefix: "กรุณาเข้าสู่ระบบด้วยอีเมลนิสิต",
     noticeEmailDomain: "@ku.th",
     noticeTextSuffix: "เพื่อเข้าใช้งานระบบ",
@@ -55,6 +60,9 @@ export const authMessages: Record<SupportedLocale, AuthMessages> = {
     contactUs: "ติดต่อเรา",
     retryButton: "ลองอีกครั้ง",
     loadingAuth: "กำลังตรวจสอบสิทธิ์...",
+    stagingTestHeading: "ดีบัก: เข้าสู่ระบบด้วยบัญชีทดสอบ Staging",
+    stagingTestSignInFailed:
+      "เข้าสู่ระบบด้วยบัญชีทดสอบ Staging ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
     errors: {
       INVALID_EMAIL_DOMAIN:
         "จำกัดสิทธิ์เฉพาะอีเมลนิสิตที่ลงท้ายด้วย @ku.th เท่านั้น",

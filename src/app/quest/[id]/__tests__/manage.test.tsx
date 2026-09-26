@@ -3,15 +3,20 @@ import { act, fireEvent } from "@testing-library/react-native";
 
 import { renderWithQueryClient as render } from "@/testing/queryTestUtils";
 
-import { liveQuestService } from "@/features/questBoard/liveQuestService";
+import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import type { QuestV2EditRequest } from "@/api/questV2Contracts";
-import type { LiveQuestSnapshot } from "@/features/questBoard/liveQuestService";
+import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestService";
 import HirerQuestManageRoute from "../manage";
 
 const mockPush = jest.fn();
+const mockConfirmFileDispute = jest.fn();
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn() }),
   useLocalSearchParams: () => ({ id: "quest-1" }),
+}));
+
+jest.mock("@/features/questBoard/dispute/useFileDispute", () => ({
+  useFileDispute: () => ({ confirmFileDispute: mockConfirmFileDispute }),
 }));
 
 jest.mock("@/features/preferences/localeStore", () => ({
@@ -35,8 +40,10 @@ jest.mock("react-native/Libraries/Modal/Modal", () => ({
   }) => (visible ? <>{children}</> : null),
 }));
 
-jest.mock("@/features/questBoard/liveQuestService", () => {
-  const actual = jest.requireActual("@/features/questBoard/liveQuestService");
+jest.mock("@/features/questBoard/live/liveQuestService", () => {
+  const actual = jest.requireActual(
+    "@/features/questBoard/live/liveQuestService"
+  );
   return {
     ...actual,
     liveQuestService: {
@@ -117,6 +124,7 @@ function createSnapshot(
       canReadWorkChat: false,
       canWriteWorkChat: false,
       canSubmitProof: false,
+      canStartWork: false,
       canConfirmCompletion: false,
       canCancel: true,
       canReviewProof: false,
@@ -169,6 +177,22 @@ describe("HirerQuestManageRoute condition edit", () => {
     expect(view.queryByTestId("hirer-condition-edit-pending-title")).toBeNull();
   });
 
+  it("does not offer condition edits while a published Quest is open", async () => {
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        state: "QUEST_OPEN",
+        quest: {
+          ...createSnapshot().quest,
+          state: "QUEST_OPEN",
+        },
+      })
+    );
+    const view = await render(<HirerQuestManageRoute />);
+    await view.findByTestId("hirer-manage-cancel");
+
+    expect(view.queryByTestId("hirer-manage-condition-edit")).toBeNull();
+  });
+
   it("opens the composer, submits a proposal, and refreshes with the new pending edit", async () => {
     const pendingSnapshot = createSnapshot({
       editRequest: makeEditRequest(),
@@ -189,14 +213,13 @@ describe("HirerQuestManageRoute condition edit", () => {
       "Finish the mural in blue"
     );
     await fireEvent.press(view.getByTestId("quest-condition-submit"));
-    await act(async () => undefined);
 
     expect(liveQuestService.createEditRequest).toHaveBeenCalledWith(
       "quest-1",
       { condition: { items: ["Finish the mural in blue", "Clean the wall"] } },
       expect.any(String)
     );
-    expect(view.getByTestId("hirer-condition-edit-pending-title")).toBeTruthy();
+    await view.findByTestId("hirer-condition-edit-pending-title");
     expect(view.queryByTestId("hirer-manage-condition-edit")).toBeNull();
   });
 
@@ -239,8 +262,9 @@ describe("HirerQuestManageRoute condition edit", () => {
     expect(view.queryByTestId("hirer-manage-condition-edit")).toBeNull();
   });
 
-  it("renders a file dispute action when the Quest state is QUEST_FAILED and navigates to dispute", async () => {
+  it("delegates failed-Quest dispute action to confirmation workflow", async () => {
     mockPush.mockClear();
+    mockConfirmFileDispute.mockClear();
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
       createSnapshot({
         state: "QUEST_FAILED",
@@ -252,12 +276,9 @@ describe("HirerQuestManageRoute condition edit", () => {
     );
     const view = await render(<HirerQuestManageRoute />);
     const disputeButton = await view.findByTestId("hirer-manage-dispute");
-    expect(disputeButton).toBeTruthy();
     fireEvent.press(disputeButton);
-    expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/quest/[id]/dispute",
-      params: { id: "quest-1" },
-    });
+    expect(mockConfirmFileDispute).toHaveBeenCalledWith("quest-1");
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
   it("does not render the dispute action for non-failed Quests", async () => {

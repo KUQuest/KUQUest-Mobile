@@ -2,8 +2,8 @@ import React from "react";
 import { act, renderHook } from "@testing-library/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import { initialDraft } from "../createQuestModel";
-import { useQuestPublish } from "../useQuestPublish";
+import { initialDraft } from "../domain/createQuestModel";
+import { useQuestPublish } from "../publish/useQuestPublish";
 
 const mockCreateQuest = jest.fn();
 const mockEditQuest = jest.fn();
@@ -49,7 +49,7 @@ jest.mock("../../preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 
-jest.mock("../../questBoard/liveQuestService", () => ({
+jest.mock("../../questBoard/live/liveQuestService", () => ({
   liveQuestService: {
     getPublishCheck: mockGetPublishCheck,
   },

@@ -23,22 +23,29 @@ describe("MyQuestSummaryCard theme", () => {
       const screen = await render(
         <MyQuestSummaryCard
           messages={myQuestMessages.en}
-          onOpen={jest.fn()}
           palette={palette}
+          cancelling={false}
+          onOpen={jest.fn()}
+          onAction={jest.fn()}
+          onCancel={jest.fn()}
           quest={{
             id: "draft-1",
             title: "Draft Quest",
             tag: "Campus",
             categoryTone: "green",
-            date: "1 Oct · 1 Oct",
+            startsAt: "1 Oct 2026 · 16:00",
+            endsAt: "1 Oct 2026 · 19:00",
             location: "Main Campus",
+            online: false,
             description: "Complete the campus task.",
             detail: "Draft",
-            teamSize: "0 / 1",
+            teamSize: "1",
+            mode: "First come, first served",
+            reward: "฿250",
             status: "Draft",
             statusTone: "neutral",
-            action: "Edit",
-            actionType: "edit",
+            primaryAction: "edit",
+            cancelFromCard: "draft",
           }}
         />
       );

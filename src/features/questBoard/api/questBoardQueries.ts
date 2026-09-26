@@ -1,25 +1,33 @@
+import { useEffect } from "react";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 
 import type { UploadAsset } from "@/api/fileUpload";
-import { disputeApi, type DisputeReason } from "@/api/DisputeApi";
+import { disputeApi } from "@/api/DisputeApi";
 import type {
   QuestV2CreateEditRequestPayload,
-  QuestV2ProofCreatePayload,
-  QuestV2ProofFileUploadPayload,
   QuestV2ProofReviewPayload,
-  QuestV2ProofRetryPayload,
-  QuestV2ProofUpdatePayload,
   QuestV2ReviewPayload,
 } from "@/api/QuestApi";
+import {
+  questV2ProofFileStatusSchema,
+  type QuestV2ProofSubmission,
+} from "@/api/questV2Contracts";
 import { homeKeys } from "@/features/home/api/homeQueries";
 import { myQuestsKeys } from "@/features/myQuests/api/myQuestsQueries";
-import { workerHomeKeys } from "@/features/workerHome/api/workerHomeQueries";
+import { workerHomeKeys } from "@/features/workerHome/api/workerHomeKeys";
+import {
+  subscribeToCandidateRosterEvents,
+  subscribeToQuestBoardEvents,
+  subscribeToQuestEvents,
+} from "../live/questEvents";
 import {
   liveQuestService,
   type LiveQuestSnapshot,
   type LiveQuestSnapshotOptions,
-} from "../liveQuestService";
+} from "../live/liveQuestService";
+import { QuestActor } from "../domain/types";
 
 export const questBoardKeys = {
   all: ["questBoard"] as const,
@@ -33,14 +41,73 @@ export const questBoardKeys = {
       ...questBoardKeys.liveSnapshotScope(questId, viewerId),
       editRequestId ?? null,
     ] as const,
+  assignments: (questId: string, viewerId: string) =>
+    [...questBoardKeys.all, "assignments", questId, viewerId] as const,
 };
 
-export function useQuestBoardQuery(enabled = true) {
+export function useProofFileLinksQuery(
+  questId: string | null,
+  viewerId: string | null,
+  proof: QuestV2ProofSubmission | undefined
+) {
+  const fileIds =
+    proof?.files.flatMap((file) =>
+      file.fileId !== null &&
+      file.uploadStatus === questV2ProofFileStatusSchema.enum.PROOF_FILE_READY
+        ? [file.fileId]
+        : []
+    ) ?? [];
+
   return useQuery({
+    enabled: Boolean(questId && viewerId && proof),
+    queryKey: [
+      ...questBoardKeys.all,
+      "proof-file-links",
+      questId ?? "",
+      viewerId ?? "",
+      proof?.id ?? "",
+      fileIds,
+    ],
+    queryFn: async ({ signal }) => {
+      if (!questId || !proof) {
+        throw new Error("A quest and proof submission are required");
+      }
+      const fileLinks = await Promise.all(
+        fileIds.map((fileId) =>
+          liveQuestService.getProofFileLink(questId, proof.id, fileId, {
+            signal,
+          })
+        )
+      );
+      if (
+        fileLinks.some((fileLink, index) => fileLink.fileId !== fileIds[index])
+      ) {
+        throw new Error("Proof file endpoint returned a mismatched file");
+      }
+      return fileLinks;
+    },
+    staleTime: 0,
+  });
+}
+
+export function useQuestBoardQuery(enabled = true) {
+  const queryClient = useQueryClient();
+  const query = useQuery({
     enabled,
     queryKey: questBoardKeys.board(),
     queryFn: ({ signal }) => liveQuestService.listBoardQuests({ signal }),
   });
+  const hasBoardSnapshot = query.data !== undefined;
+  useEffect(() => {
+    if (!enabled || !hasBoardSnapshot) return;
+    const invalidateBoard = () => {
+      void queryClient.invalidateQueries({
+        queryKey: questBoardKeys.board(),
+      });
+    };
+    return subscribeToQuestBoardEvents(invalidateBoard, invalidateBoard);
+  }, [enabled, hasBoardSnapshot, queryClient]);
+  return query;
 }
 
 export function useQuestDetailQuery(questId: string | null, enabled = true) {
@@ -50,6 +117,21 @@ export function useQuestDetailQuery(questId: string | null, enabled = true) {
     queryFn: ({ signal }) => {
       if (!questId) throw new Error("A quest ID is required");
       return liveQuestService.getQuestDetail(questId, { signal });
+    },
+  });
+}
+
+/** Assignments the viewer may read; a Hirer receives every Worker's. */
+export function useQuestAssignmentsQuery(
+  questId: string | null,
+  viewerId: string | null
+) {
+  return useQuery({
+    enabled: Boolean(questId && viewerId),
+    queryKey: questBoardKeys.assignments(questId ?? "", viewerId ?? ""),
+    queryFn: ({ signal }) => {
+      if (!questId) throw new Error("A quest ID is required");
+      return liveQuestService.listQuestAssignments(questId, { signal });
     },
   });
 }
@@ -65,7 +147,9 @@ export function useLiveQuestSnapshotQuery(
     | false
     | ((snapshot: LiveQuestSnapshot | undefined) => number | false)
 ) {
-  return useQuery<LiveQuestSnapshot>({
+  const queryClient = useQueryClient();
+
+  const query = useQuery<LiveQuestSnapshot>({
     enabled: Boolean(questId && viewerId) && enabled,
     refetchInterval:
       typeof refetchIntervalMs === "function"
@@ -87,6 +171,43 @@ export function useLiveQuestSnapshotQuery(
       });
     },
   });
+  const canReadQuest = query.data !== undefined;
+  useEffect(() => {
+    if (!enabled || !questId || !viewerId || !canReadQuest) return;
+    const invalidateSnapshot = () => {
+      void queryClient.invalidateQueries({
+        queryKey: questBoardKeys.liveSnapshotScope(questId, viewerId),
+      });
+    };
+    return subscribeToQuestEvents(
+      questId,
+      invalidateSnapshot,
+      invalidateSnapshot
+    );
+  }, [canReadQuest, enabled, queryClient, questId, viewerId]);
+  const canReadCandidateRoster = Boolean(
+    query.data?.mode === "CANDIDATE" &&
+    (query.data.team != null ||
+      (query.data.actor === QuestActor.HIRER &&
+        (query.data.capabilities.canSelectCandidate ||
+          query.data.capabilities.canSelectTeam)))
+  );
+  useEffect(() => {
+    if (!enabled || !questId || !viewerId || !canReadCandidateRoster) {
+      return;
+    }
+    const invalidateSnapshot = () => {
+      void queryClient.invalidateQueries({
+        queryKey: questBoardKeys.liveSnapshotScope(questId, viewerId),
+      });
+    };
+    return subscribeToCandidateRosterEvents(
+      questId,
+      invalidateSnapshot,
+      invalidateSnapshot
+    );
+  }, [canReadCandidateRoster, enabled, queryClient, questId, viewerId]);
+  return query;
 }
 
 type QuestReadProjection = "hirer" | "worker";
@@ -282,17 +403,23 @@ export function useJoinCandidateTeamMutation() {
       idempotencyKey,
     }: {
       questId: string;
-      teamId: string;
+      teamId?: string;
       joinCode: string;
       viewerId?: string;
       idempotencyKey?: string;
     }) =>
-      liveQuestService.joinCandidateTeam(
-        questId,
-        teamId,
-        joinCode,
-        idempotencyKey
-      ),
+      teamId
+        ? liveQuestService.joinCandidateTeam(
+            questId,
+            teamId,
+            joinCode,
+            idempotencyKey
+          )
+        : liveQuestService.joinCandidateTeamByCode(
+            questId,
+            joinCode,
+            idempotencyKey
+          ),
     onSuccess: (_, variables) =>
       invalidateQuestReads(
         queryClient,
@@ -575,21 +702,6 @@ export function useRespondUnderfilledConsentMutation() {
   });
 }
 
-export function usePublishQuestMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      questId,
-      idempotencyKey,
-    }: {
-      questId: string;
-      idempotencyKey?: string;
-    }) => liveQuestService.publishQuest(questId, idempotencyKey),
-    onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, undefined, "hirer"),
-  });
-}
-
 export function useCancelQuestMutation() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -614,105 +726,10 @@ export function useCancelQuestMutation() {
 export function useFileDisputeMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      questId,
-      reason,
-      statement,
-    }: {
-      questId: string;
-      viewerId: string;
-      reason: DisputeReason;
-      statement: string;
-    }) => disputeApi.fileDispute(questId, { reason, statement }),
+    mutationFn: ({ questId }: { questId: string; viewerId: string }) =>
+      disputeApi.fileDispute(questId),
     onSuccess: (_, variables) =>
       invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
-  });
-}
-
-export function useProofDraftMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      questId,
-      proofSubmissionId,
-      payload,
-      idempotencyKey,
-    }: {
-      questId: string;
-      proofSubmissionId: string;
-      payload:
-        | QuestV2ProofUpdatePayload
-        | QuestV2ProofRetryPayload
-        | QuestV2ProofFileUploadPayload;
-      viewerId?: string;
-      idempotencyKey?: string;
-    }) =>
-      liveQuestService.updateProofDraft(
-        questId,
-        proofSubmissionId,
-        payload,
-        idempotencyKey
-      ),
-    onSuccess: (_, variables) =>
-      invalidateQuestReads(
-        queryClient,
-        variables.questId,
-        variables.viewerId,
-        "worker"
-      ),
-  });
-}
-
-export function useCreateProofDraftMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      questId,
-      payload,
-      idempotencyKey,
-    }: {
-      questId: string;
-      payload:
-        | QuestV2ProofCreatePayload
-        | { assets: { uri: string }[]; description?: string };
-      viewerId?: string;
-      idempotencyKey?: string;
-    }) => liveQuestService.createProofDraft(questId, payload, idempotencyKey),
-    onSuccess: (_, variables) =>
-      invalidateQuestReads(
-        queryClient,
-        variables.questId,
-        variables.viewerId,
-        "worker"
-      ),
-  });
-}
-
-export function useSubmitProofDraftMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      questId,
-      proofSubmissionId,
-      idempotencyKey,
-    }: {
-      questId: string;
-      proofSubmissionId: string;
-      viewerId?: string;
-      idempotencyKey?: string;
-    }) =>
-      liveQuestService.submitProofDraft(
-        questId,
-        proofSubmissionId,
-        idempotencyKey
-      ),
-    onSuccess: (_, variables) =>
-      invalidateQuestReads(
-        queryClient,
-        variables.questId,
-        variables.viewerId,
-        "worker"
-      ),
   });
 }
 

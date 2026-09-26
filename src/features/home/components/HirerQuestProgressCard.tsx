@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { Pressable, Text, View } from "@/tw";
+import { cn } from "@/tw/cn";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
@@ -8,30 +9,32 @@ import {
   Check,
   ChevronRight,
   Clock3,
+  Flag,
+  Play,
   Users,
+  X,
 } from "lucide-react-native";
 
+import { QuestStatus } from "@/domain/questLifecycle";
+import type { QuestMode } from "@/features/questBoard/domain/types";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { localizeFacultyName } from "@/locales/academicUnits";
 import {
-  formatHirerDueAt,
+  formatHirerDateTime,
   getQuestProgressStages,
   type CanonicalHirerQuestStatus,
   type QuestMemberProfile,
 } from "../hirerHomeData";
-import { hirerHomeMessages } from "../hirerHomeMessages";
-import {
-  hirerHomeCardShadow,
-  hirerHomePalette,
-  hirerHomeStyles as styles,
-} from "../hirerHomeStyles";
+import { hirerHomeMessages } from "@/locales/hirerHomeMessages";
+import { hirerHomeStyles as styles } from "../hirerHomeStyles";
 
 export interface HirerQuestProgressCardProps {
   questId: string;
   title: string;
   tag?: string;
   status: CanonicalHirerQuestStatus;
-  mode?: "FIRST_COME_FIRST_SERVED" | "CANDIDATE";
+  mode?: QuestMode;
   headcount?: number;
   worker?: {
     id: string;
@@ -42,6 +45,7 @@ export interface HirerQuestProgressCardProps {
   assignedWorkers?: QuestMemberProfile[];
   applicants?: QuestMemberProfile[];
   dueAt?: string | null;
+  startTime?: string | null;
   proofPending?: boolean;
   onOpenDetails: () => void;
   onOpenWorkerProfile?: (workerId: string) => void;
@@ -49,6 +53,19 @@ export interface HirerQuestProgressCardProps {
   onReviewProof?: () => void;
 }
 
+const timelineDotColors = {
+  completed: "border-ku-hirer bg-ku-hirer",
+  current: "border-[5px] border-ku-hirer-dark bg-ku-surface",
+  upcoming: "border-ku-hirer-border bg-ku-surface",
+  terminal: "border-ku-danger bg-ku-surface-danger",
+} as const;
+
+const timelineLabelColors = {
+  completed: "font-ku-medium text-ku-text-secondary",
+  current: "font-ku-semibold text-ku-hirer-dark",
+  upcoming: "font-ku-regular text-ku-text-muted",
+  terminal: "font-ku-semibold text-ku-danger-dark",
+} as const;
 export function HirerQuestProgressCard({
   questId,
   title,
@@ -59,6 +76,7 @@ export function HirerQuestProgressCard({
   applicants,
   headcount,
   dueAt,
+  startTime,
   proofPending,
   onOpenDetails,
   onOpenWorkerProfile,
@@ -66,16 +84,14 @@ export function HirerQuestProgressCard({
   onReviewProof,
 }: HirerQuestProgressCardProps) {
   const { locale } = useLocale();
-  const { scheme } = useAppTheme();
+  const { colors } = useAppTheme();
   const messages = hirerHomeMessages[locale];
-  const palette =
-    scheme === "dark" ? hirerHomePalette.dark : hirerHomePalette.light;
   const statusLabel = messages.statusLabels[status];
-  const isTerminal = status === "QUEST_FAILED" || status === "QUEST_CANCELLED";
-  const dueLabel = useMemo(
-    () => messages.dueAt(formatHirerDueAt(dueAt, locale)),
-    [dueAt, locale, messages]
-  );
+  const isTerminal =
+    status === QuestStatus.QUEST_FAILED ||
+    status === QuestStatus.QUEST_CANCELLED;
+  const startLabel = formatHirerDateTime(startTime, locale);
+  const endLabel = formatHirerDateTime(dueAt, locale);
   const stages = useMemo(
     () =>
       getQuestProgressStages(status, proofPending).map((stage) => ({
@@ -86,15 +102,11 @@ export function HirerQuestProgressCard({
       })),
     [messages, proofPending, status]
   );
-  const activeStageIndex = useMemo(() => {
-    const stageIndex = stages.findIndex(
-      (stage) => stage.state === "current" || stage.state === "terminal"
-    );
-    return stageIndex >= 0
-      ? stageIndex
-      : stages.findIndex((stage) => stage.state === "completed");
-  }, [stages]);
-  const activeStageNumber = Math.max(1, activeStageIndex + 1);
+  const activeStageIndex = stages.findIndex(
+    (stage) => stage.state === "current" || stage.state === "terminal"
+  );
+  const activeStageNumber =
+    activeStageIndex === -1 ? stages.length : activeStageIndex + 1;
   const timelineAccessibility = stages.map((stage) => {
     if (stage.state === "current")
       return `${stage.label}, ${messages.currentStageLabel}`;
@@ -109,164 +121,239 @@ export function HirerQuestProgressCard({
   );
   const hasApplicants = Boolean(applicants && applicants.length > 0);
   const applicantCount = applicants?.length ?? 0;
-  const accessibilityLabel = [
-    statusLabel,
-    title,
-    primaryWorker?.displayName ?? messages.waitingForApplicants,
+  const progressAccessibilityLabel = [
     messages.timelineTitle,
+    messages.stepProgress(activeStageNumber, stages.length),
     ...timelineAccessibility,
-    dueLabel,
-    messages.openDetails,
   ].join(". ");
-  const workerBanner = "border-ku-border-accent bg-ku-surface";
-  const avatarClass = `${styles.workerAvatar} border-ku-border-accent bg-ku-surface-success`;
+
   return (
-    <Pressable
-      accessibilityLabel={accessibilityLabel}
-      accessibilityRole="button"
-      className={`${styles.card} border-ku-border-success bg-ku-surface-success`}
-      onPress={onOpenDetails}
-      style={{ ...hirerHomeCardShadow, shadowColor: palette.cardShadow }}
+    <View
+      className={cn(
+        styles.card,
+        isTerminal ? "border-ku-border-danger" : "border-ku-border-subtle",
+        "bg-ku-surface"
+      )}
       testID={`hirer-quest-card-${questId}`}
     >
       <View className={styles.cardHeader}>
         <View className={styles.cardHeaderMetaRow}>
           {tag ? (
             <Chip
-              className={`${styles.tagBadge} border-ku-border-accent bg-ku-surface`}
+              className={styles.tagBadge}
               label={tag}
               leadingIcon={
                 <BriefcaseBusiness
-                  color={palette.tagText}
-                  size={12}
-                  strokeWidth={2.2}
+                  color={colors.additionalDark}
+                  size={14}
+                  strokeWidth={2.1}
                 />
               }
-              textClassName={`${styles.tagText} text-ku-primary`}
+              textClassName={`${styles.tagText} text-ku-additional-dark`}
               tone="accent"
             />
           ) : (
             <View />
           )}
           <Chip
-            className={`${styles.statusBadge} ${
+            className={cn(
+              styles.statusBadge,
               isTerminal
                 ? "border-ku-border-danger bg-ku-surface-danger"
-                : "border-ku-primary bg-ku-primary"
-            }`}
+                : "border-ku-primary-border bg-ku-primary"
+            )}
             label={statusLabel}
-            textClassName={`${styles.statusLabel} ${
-              isTerminal ? "text-ku-danger" : "text-ku-on-primary"
-            }`}
+            textClassName={cn(
+              styles.statusLabel,
+              isTerminal ? "text-ku-danger-dark" : "text-ku-on-primary"
+            )}
             tone="primary"
           />
         </View>
-        <View className={styles.cardTitleRow}>
-          <Text
-            accessibilityRole="header"
-            className={`${styles.cardTitle} text-ku-primary-deep`}
-            numberOfLines={2}
-          >
-            {title}
-          </Text>
-          <View className={styles.headerArrow}>
-            <ChevronRight color={palette.muted} size={20} strokeWidth={2.2} />
+        <Text
+          accessibilityRole="header"
+          className={`${styles.cardTitle} text-ku-text-strong`}
+        >
+          {title}
+        </Text>
+      </View>
+      <View className={styles.progressSection}>
+        <View
+          accessibilityLabel={`${messages.scheduleStart} ${startLabel}. ${messages.scheduleEnd} ${endLabel}`}
+          accessible
+          className={styles.scheduleRow}
+          testID={`hirer-quest-card-schedule-${questId}`}
+        >
+          <View className={styles.scheduleItem}>
+            <View className={styles.scheduleLabelRow}>
+              <Play color={colors.hirer} size={12} strokeWidth={2.4} />
+              <Text
+                className={`${styles.scheduleLabel} text-ku-text-secondary`}
+              >
+                {messages.scheduleStart}
+              </Text>
+            </View>
+            <Text className={`${styles.scheduleValue} text-ku-text-strong`}>
+              {startLabel}
+            </Text>
+          </View>
+          <View className={styles.scheduleDivider} />
+          <View className={styles.scheduleItem}>
+            <View className={styles.scheduleLabelRow}>
+              <Flag
+                color={isTerminal ? colors.danger : colors.hirer}
+                size={12}
+                strokeWidth={2.4}
+              />
+              <Text
+                className={`${styles.scheduleLabel} text-ku-text-secondary`}
+              >
+                {messages.scheduleEnd}
+              </Text>
+            </View>
+            <Text className={`${styles.scheduleValue} text-ku-text-strong`}>
+              {endLabel}
+            </Text>
           </View>
         </View>
+        <View
+          accessibilityLabel={progressAccessibilityLabel}
+          accessibilityRole="progressbar"
+          accessibilityValue={{
+            min: 1,
+            max: stages.length,
+            now: activeStageNumber,
+          }}
+          accessible
+          testID={`hirer-quest-card-progress-${questId}`}
+        >
+          <View className={styles.progressHeaderRow}>
+            <Text className={`${styles.timelineTitle} text-ku-text-secondary`}>
+              {messages.timelineTitle}
+            </Text>
+            <Text className={`${styles.stepProgressText} text-ku-primary-dark`}>
+              {messages.stepProgress(activeStageNumber, stages.length)}
+            </Text>
+          </View>
+          {stages.map((stage, index) => (
+            <View className={styles.timelineRow} key={stage.key}>
+              <View className={styles.timelineRail}>
+                <View className={styles.timelineDotSlot}>
+                  <View
+                    className={cn(
+                      styles.timelineDot,
+                      timelineDotColors[stage.state]
+                    )}
+                  >
+                    {stage.state === "completed" ? (
+                      <Check color={colors.onHirer} size={10} strokeWidth={3} />
+                    ) : stage.state === "terminal" ? (
+                      <X color={colors.danger} size={10} strokeWidth={3} />
+                    ) : null}
+                  </View>
+                </View>
+                {index < stages.length - 1 ? (
+                  <View
+                    className={cn(
+                      styles.timelineConnector,
+                      stage.state === "completed"
+                        ? "bg-ku-hirer"
+                        : "bg-ku-hirer-border"
+                    )}
+                  />
+                ) : null}
+              </View>
+              <Text
+                className={cn(
+                  styles.timelineLabel,
+                  timelineLabelColors[stage.state],
+                  index === stages.length - 1 && "pb-ku-0"
+                )}
+              >
+                {stage.label}
+              </Text>
+            </View>
+          ))}
+        </View>
       </View>
-      <View className={`${styles.divider} bg-ku-border-success`} />
       <View className={styles.cardBody}>
         {primaryWorker && !hasMultipleWorkers ? (
-          <Pressable
-            accessibilityLabel={`${messages.workerProfile}: ${primaryWorker.displayName}`}
-            accessibilityRole="button"
-            className={`${styles.workerBanner} ${workerBanner}`}
-            onPress={(event) => {
-              event.stopPropagation();
-              if (onViewRoster) onViewRoster();
-              else onOpenWorkerProfile?.(primaryWorker.id);
-            }}
-            testID={`hirer-quest-card-worker-${questId}`}
-          >
-            <View className={styles.workerLeading}>
+          <View className={styles.workerBanner}>
+            <Pressable
+              accessibilityLabel={`${onViewRoster ? messages.viewParticipants : messages.workerProfile}: ${primaryWorker.displayName}`}
+              accessibilityRole="button"
+              className={styles.workerLeading}
+              onPress={() => {
+                if (onViewRoster) onViewRoster();
+                else onOpenWorkerProfile?.(primaryWorker.id);
+              }}
+              testID={`hirer-quest-card-worker-${questId}`}
+            >
               <Avatar
-                className={avatarClass}
+                className={styles.workerAvatar}
                 name={primaryWorker.displayName}
-                size={40}
-                textClassName={`${styles.workerAvatarText} text-ku-primary`}
+                size={44}
+                textClassName={`${styles.workerAvatarText} text-ku-additional-dark`}
                 uri={primaryWorker.avatarUri}
               />
               <View className={styles.workerCopy}>
-                <Text
-                  className={`${styles.workerName} text-ku-primary-deep`}
-                  numberOfLines={1}
-                >
+                <Text className={`${styles.workerName} text-ku-text-strong`}>
                   {primaryWorker.displayName}
                 </Text>
-                <Text
-                  className={`${styles.workerRole} text-ku-text-secondary`}
-                  numberOfLines={1}
-                >
+                <Text className={`${styles.workerRole} text-ku-text-secondary`}>
                   {primaryWorker.faculty
-                    ? `${primaryWorker.faculty} · ${messages.assignedWorkerRole}`
+                    ? `${localizeFacultyName(primaryWorker.faculty, locale)} · ${messages.assignedWorkerRole}`
                     : messages.assignedWorkerRole}
                 </Text>
               </View>
-            </View>
-            <Pressable
-              accessibilityLabel={`${messages.workerProfile}: ${primaryWorker.displayName}`}
-              accessibilityRole="button"
-              className={styles.workerProfileButton}
-              onPress={(event) => {
-                event.stopPropagation();
-                onOpenWorkerProfile?.(primaryWorker.id);
-              }}
-              testID={`hirer-quest-card-worker-profile-${questId}`}
-            >
-              <Text className={`${styles.workerProfileText} text-ku-primary`}>
-                {messages.workerProfile}
-              </Text>
-              <ChevronRight
-                color={palette.primary}
-                size={15}
-                strokeWidth={2.4}
-              />
             </Pressable>
-          </Pressable>
+            {onOpenWorkerProfile ? (
+              <Pressable
+                accessibilityLabel={`${messages.workerProfile}: ${primaryWorker.displayName}`}
+                accessibilityRole="button"
+                className={styles.workerProfileButton}
+                onPress={() => onOpenWorkerProfile(primaryWorker.id)}
+                testID={`hirer-quest-card-worker-profile-${questId}`}
+              >
+                <Text
+                  className={`${styles.workerProfileText} text-ku-primary-dark`}
+                >
+                  {messages.workerProfile}
+                </Text>
+                <ChevronRight
+                  color={colors.primary}
+                  size={18}
+                  strokeWidth={2.4}
+                />
+              </Pressable>
+            ) : null}
+          </View>
         ) : hasMultipleWorkers ? (
           <Pressable
-            accessibilityLabel={messages.joinedLabel(
-              assignedWorkers?.length ?? 0,
-              headcount
-            )}
+            accessibilityLabel={`${messages.viewParticipants}: ${messages.joinedLabel(assignedWorkers?.length ?? 0, headcount)}`}
             accessibilityRole="button"
-            className={`${styles.workerBanner} ${workerBanner}`}
-            onPress={(event) => {
-              event.stopPropagation();
-              onViewRoster?.();
-            }}
+            className={styles.workerBanner}
+            onPress={() => onViewRoster?.()}
             testID={`hirer-quest-card-workers-${questId}`}
           >
             <View className={styles.workerLeading}>
-              <View className={avatarClass}>
-                <Users color={palette.avatarText} size={18} strokeWidth={2.2} />
+              <View className={styles.workerAvatar}>
+                <Users
+                  color={colors.additionalDark}
+                  size={18}
+                  strokeWidth={2.2}
+                />
               </View>
               <View className={styles.workerCopy}>
-                <Text
-                  className={`${styles.workerName} text-ku-primary-deep`}
-                  numberOfLines={1}
-                >
+                <Text className={`${styles.workerName} text-ku-text-strong`}>
                   {messages.joinedLabel(
                     assignedWorkers?.length ?? 0,
                     headcount
                   )}
                 </Text>
-                <Text
-                  className={`${styles.workerRole} text-ku-text-secondary`}
-                  numberOfLines={1}
-                >
+                <Text className={`${styles.workerRole} text-ku-text-secondary`}>
                   {assignedWorkers
-                    ?.map((w) => w.displayName)
+                    ?.map((assignedWorker) => assignedWorker.displayName)
                     .slice(0, 2)
                     .join(", ")}
                 </Text>
@@ -276,11 +363,13 @@ export function HirerQuestProgressCard({
               className={styles.workerProfileButton}
               testID={`hirer-quest-card-view-roster-${questId}`}
             >
-              <Text className={`${styles.workerProfileText} text-ku-primary`}>
+              <Text
+                className={`${styles.workerProfileText} text-ku-primary-dark`}
+              >
                 {messages.viewParticipants}
               </Text>
               <ChevronRight
-                color={palette.primary}
+                color={colors.primary}
                 size={15}
                 strokeWidth={2.4}
               />
@@ -288,30 +377,25 @@ export function HirerQuestProgressCard({
           </Pressable>
         ) : hasApplicants ? (
           <Pressable
-            accessibilityLabel={messages.applicantsLabel(applicantCount)}
+            accessibilityLabel={`${messages.viewApplicants}: ${messages.applicantsLabel(applicantCount)}`}
             accessibilityRole="button"
-            className={`${styles.workerBanner} ${workerBanner}`}
-            onPress={(event) => {
-              event.stopPropagation();
-              onViewRoster?.();
-            }}
+            className={styles.workerBanner}
+            onPress={() => onViewRoster?.()}
             testID={`hirer-quest-card-applicants-${questId}`}
           >
             <View className={styles.workerLeading}>
-              <View className={avatarClass}>
-                <Users color={palette.primary} size={18} strokeWidth={2.2} />
+              <View className={styles.workerAvatar}>
+                <Users
+                  color={colors.additionalDark}
+                  size={18}
+                  strokeWidth={2.2}
+                />
               </View>
               <View className={styles.workerCopy}>
-                <Text
-                  className={`${styles.workerName} text-ku-primary-deep`}
-                  numberOfLines={1}
-                >
+                <Text className={`${styles.workerName} text-ku-text-strong`}>
                   {messages.applicantsLabel(applicantCount)}
                 </Text>
-                <Text
-                  className={`${styles.workerRole} text-ku-text-secondary`}
-                  numberOfLines={1}
-                >
+                <Text className={`${styles.workerRole} text-ku-text-secondary`}>
                   {messages.waitingForApplicants}
                 </Text>
               </View>
@@ -320,11 +404,13 @@ export function HirerQuestProgressCard({
               className={styles.workerProfileButton}
               testID={`hirer-quest-card-view-applicants-${questId}`}
             >
-              <Text className={`${styles.workerProfileText} text-ku-primary`}>
+              <Text
+                className={`${styles.workerProfileText} text-ku-primary-dark`}
+              >
                 {messages.viewApplicants}
               </Text>
               <ChevronRight
-                color={palette.primary}
+                color={colors.primary}
                 size={15}
                 strokeWidth={2.4}
               />
@@ -332,33 +418,22 @@ export function HirerQuestProgressCard({
           </Pressable>
         ) : (
           <Pressable
-            accessibilityLabel={messages.waitingForApplicants}
+            accessibilityLabel={`${messages.waitingForApplicants}: ${messages.manageQuest}`}
             accessibilityRole="button"
-            className={`${styles.workerBanner} ${workerBanner}`}
-            onPress={(event) => {
-              event.stopPropagation();
-              onOpenDetails();
-            }}
+            className={styles.workerBanner}
+            onPress={onOpenDetails}
             testID={`hirer-quest-card-waiting-${questId}`}
           >
             <View className={styles.workerLeading}>
-              <View className={avatarClass}>
-                <Clock3 color={palette.muted} size={18} strokeWidth={2} />
+              <View className={styles.workerAvatar}>
+                <Clock3 color={colors.textMuted} size={18} strokeWidth={2} />
               </View>
               <View className={styles.workerCopy}>
-                <Text
-                  className={`${styles.workerName} text-ku-primary-deep`}
-                  numberOfLines={1}
-                >
-                  {status === "QUEST_DRAFT"
-                    ? messages.statusLabels.QUEST_DRAFT
-                    : messages.statusLabels.QUEST_OPEN}
+                <Text className={`${styles.workerName} text-ku-text-strong`}>
+                  {messages.waitingForApplicants}
                 </Text>
-                <Text
-                  className={`${styles.workerRole} text-ku-text-secondary`}
-                  numberOfLines={1}
-                >
-                  {status === "QUEST_DRAFT"
+                <Text className={`${styles.workerRole} text-ku-text-secondary`}>
+                  {status === QuestStatus.QUEST_DRAFT
                     ? messages.quickDraftDesc
                     : messages.noApplicantsYet}
                 </Text>
@@ -368,117 +443,46 @@ export function HirerQuestProgressCard({
               className={styles.workerProfileButton}
               testID={`hirer-quest-card-manage-${questId}`}
             >
-              <Text className={`${styles.workerProfileText} text-ku-primary`}>
+              <Text
+                className={`${styles.workerProfileText} text-ku-primary-dark`}
+              >
                 {messages.manageQuest}
               </Text>
               <ChevronRight
-                color={palette.primary}
+                color={colors.primary}
                 size={15}
                 strokeWidth={2.4}
               />
             </View>
           </Pressable>
         )}
-        <View className={styles.progressSection}>
-          <View className={styles.progressHeaderRow}>
-            <Text className={`${styles.timelineTitle} text-ku-text-muted`}>
-              {messages.timelineTitle}
-            </Text>
-            <Text className={`${styles.stepProgressText} text-ku-primary`}>
-              {messages.stepProgress(activeStageNumber, stages.length)}
-            </Text>
-          </View>
-          <View className={styles.stagesTrack}>
-            <View className={`${styles.trackLine} bg-ku-border-success`} />
-            {stages.map((stage) => {
-              const isCompleted = stage.state === "completed";
-              const isCurrent = stage.state === "current";
-              const isTerminalStage = stage.state === "terminal";
-              return (
-                <View key={stage.key} className={styles.stageStep}>
-                  {isCurrent ? (
-                    <View
-                      className={`${styles.stepDotCurrentOuter} bg-ku-surface`}
-                    >
-                      <View
-                        className={`${styles.stepDotCurrentInner} bg-ku-primary`}
-                      />
-                    </View>
-                  ) : (
-                    <View
-                      className={`${styles.stepDot} ${
-                        isCompleted
-                          ? "border-ku-primary bg-ku-primary"
-                          : "border-ku-disabled bg-ku-surface-success"
-                      }`}
-                    >
-                      {isCompleted ? (
-                        <Check
-                          color={palette.stepCompletedCheck}
-                          size={11}
-                          strokeWidth={3}
-                        />
-                      ) : null}
-                    </View>
-                  )}
-                  <Text
-                    className={`${styles.stepLabel} ${
-                      isCurrent || isCompleted
-                        ? "font-ku-bold text-ku-primary"
-                        : isTerminalStage
-                          ? "text-ku-danger"
-                          : "text-ku-text-muted"
-                    }`}
-                    numberOfLines={1}
-                  >
-                    {stage.label}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        </View>
         {proofPending && onReviewProof ? (
           <Button
             accessibilityLabel={messages.reviewProof}
             accessibilityRole="button"
             className="mt-ku-md"
-            onPress={(event) => {
-              event.stopPropagation();
-              onReviewProof();
-            }}
+            onPress={onReviewProof}
             testID={`hirer-quest-card-review-proof-${questId}`}
           >
             {messages.reviewProof}
           </Button>
         ) : null}
       </View>
-      <View
-        className={`${styles.cardFooter} border-t border-ku-border-success bg-ku-surface-success`}
-      >
-        <View className={styles.dueRow}>
-          <Clock3 color={palette.secondaryText} size={15} strokeWidth={2} />
-          <Text className={`${styles.dueLabel} text-ku-text-secondary`}>
-            {dueLabel}
-          </Text>
-        </View>
+      <View className={styles.cardFooter}>
         <Pressable
           accessibilityLabel={messages.openDetails}
           accessibilityRole="button"
           className={styles.detailsButton}
-          onPress={(event) => {
-            event.stopPropagation();
-            onOpenDetails();
-          }}
+          onPress={onOpenDetails}
           testID={`hirer-quest-card-details-${questId}`}
         >
-          <Text className={`${styles.detailsText} text-ku-primary`}>
+          <Text className={`${styles.detailsText} text-ku-on-hirer`}>
             {messages.openDetails}
           </Text>
-          <ChevronRight color={palette.primary} size={15} strokeWidth={2.4} />
+          <ChevronRight color={colors.onHirer} size={15} strokeWidth={2.4} />
         </Pressable>
       </View>
-    </Pressable>
+    </View>
   );
 }
 

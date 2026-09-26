@@ -43,6 +43,9 @@ export function Button({
             "font-ku-semibold text-ku-body",
             isPrimary ? "text-ku-on-primary" : "text-ku-primary"
           )}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
         >
           {children}
         </Text>

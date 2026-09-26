@@ -3,18 +3,19 @@ import { useRouter } from "expo-router";
 import {
   CalendarDays,
   ChevronRight,
-  Clock3,
   MapPin,
   UserRound,
   Users,
 } from "lucide-react-native";
 
 import { Pressable, Text, View } from "@/tw";
+import { cn } from "@/tw/cn";
 import type { QuestV2BoardCard } from "@/api/questV2Contracts";
 import { SATANG_PER_BAHT, formatSatang } from "@/domain/satang";
+import { formatTimeInBangkok, formatTimestampDate } from "@/domain/datetime";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
-import { workerHomeMessages } from "../workerHomeMessages";
+import { workerHomeMessages } from "@/locales/workerHomeMessages";
 import { workerHomeStyles as styles } from "../workerHomeStyles";
 
 interface WorkerQuestFeedCardProps {
@@ -22,24 +23,7 @@ interface WorkerQuestFeedCardProps {
   onPress?: () => void;
 }
 
-function formatQuestDate(value: string, locale: "en" | "th"): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat(
-    locale === "th" ? "th-TH-u-ca-buddhist" : "en-GB",
-    { day: "numeric", month: "short", timeZone: "Asia/Bangkok" }
-  ).format(date);
-}
-
-function formatQuestTime(value: string, locale: "en" | "th"): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Asia/Bangkok",
-  }).format(date);
-}
+const PLACEHOLDER = "—";
 
 export function WorkerQuestFeedCard({
   quest,
@@ -49,6 +33,14 @@ export function WorkerQuestFeedCard({
   const { colors: themeColors } = useAppTheme();
   const { locale } = useLocale();
   const messages = workerHomeMessages[locale];
+  const questStartDateTime = new Date(quest.startTime);
+  const hasValidQuestStartTime = !Number.isNaN(questStartDateTime.getTime());
+  const formattedStartDate = hasValidQuestStartTime
+    ? (formatTimestampDate(questStartDateTime, locale) ?? PLACEHOLDER)
+    : PLACEHOLDER;
+  const formattedStartTime = hasValidQuestStartTime
+    ? formatTimeInBangkok(questStartDateTime) || PLACEHOLDER
+    : PLACEHOLDER;
 
   const handlePress = () => {
     if (onPress) {
@@ -68,88 +60,55 @@ export function WorkerQuestFeedCard({
     <Pressable
       accessibilityLabel={`${quest.title}, ${messages.reward} ${rewardFormatted}`}
       accessibilityRole="button"
-      className="rounded-[18px] border border-ku-border-subtle bg-ku-surface p-ku-md"
+      className={styles.feedCard}
       onPress={handlePress}
       testID={`worker-feed-card-${quest.id}`}
     >
       <View className={styles.feedCardTop}>
         <View className={styles.feedCardIdentity}>
           {quest.tag?.name ? (
-            <View className={`${styles.tagChip} bg-ku-surface-muted`}>
-              <Text className={`${styles.tagText} text-ku-primary-dark`}>
+            <View className={styles.tagChip}>
+              <Text className={styles.tagText} numberOfLines={1}>
                 {quest.tag.name}
               </Text>
             </View>
           ) : null}
-          <Text
-            className={`${styles.feedCardTitle} text-ku-text-strong`}
-            numberOfLines={2}
-          >
+          <Text className={styles.feedCardTitle} numberOfLines={2}>
             {quest.title}
           </Text>
           <View className={styles.feedCardOwner}>
-            <UserRound size={13} color={themeColors.textSecondary} />
-            <Text
-              className={`${styles.feedCardOwnerText} text-ku-text-secondary`}
-              numberOfLines={1}
-            >
+            <UserRound size={14} color={themeColors.textSecondary} />
+            <Text className={styles.feedCardOwnerText} numberOfLines={1}>
               {quest.hirerName}
             </Text>
           </View>
         </View>
-        <View className={styles.feedRewardBlock}>
-          <Text className={`${styles.feedRewardText} text-ku-primary-dark`}>
-            {rewardFormatted}
-          </Text>
-          <Text className={`${styles.feedRewardUnit} text-ku-text-secondary`}>
-            {messages.perPerson}
-          </Text>
+        <View className={styles.feedReward}>
+          <Text className={styles.feedRewardText}>{rewardFormatted}</Text>
+          <Text className={styles.feedRewardUnit}>{messages.perPerson}</Text>
         </View>
       </View>
-      <View className={styles.feedMetaGrid}>
+      <View className={styles.feedMetaRow}>
         <View className={styles.feedMetaItem}>
-          <CalendarDays size={15} color={themeColors.primaryDeep} />
-          <Text
-            className={`${styles.feedMetaText} text-ku-text-strong`}
-            numberOfLines={1}
-          >
-            {formatQuestDate(quest.startTime, locale)}
+          <CalendarDays size={15} color={themeColors.textSecondary} />
+          <Text className={styles.feedMetaText} numberOfLines={1}>
+            {`${formattedStartDate} · ${formattedStartTime}`}
           </Text>
         </View>
-        <View className={styles.feedMetaItem}>
-          <Clock3 size={15} color={themeColors.primaryDeep} />
-          <Text
-            className={`${styles.feedMetaText} text-ku-text-strong`}
-            numberOfLines={1}
-          >
-            {formatQuestTime(quest.startTime, locale)}
-          </Text>
-        </View>
-        <View className={styles.feedMetaItem}>
-          <MapPin size={15} color={themeColors.primaryDeep} />
-          <Text
-            className={`${styles.feedMetaText} text-ku-text-strong`}
-            numberOfLines={1}
-          >
+        <View className={cn(styles.feedMetaItem, styles.feedMetaGrow)}>
+          <MapPin size={15} color={themeColors.textSecondary} />
+          <Text className={styles.feedMetaText} numberOfLines={1}>
             {location}
           </Text>
         </View>
         <View className={styles.feedMetaItem}>
-          <Users size={15} color={themeColors.primaryDeep} />
-          <Text
-            className={`${styles.feedMetaText} text-ku-text-strong`}
-            numberOfLines={1}
-          >
+          <Users size={15} color={themeColors.textSecondary} />
+          <Text className={styles.feedMetaText} numberOfLines={1}>
             {`${quest.activeWorkerCount}/${quest.headcount}`}
           </Text>
         </View>
-      </View>
-      <View className={`${styles.feedCardFooter} border-ku-border-subtle`}>
-        <Text className={`${styles.feedCardFooterText} text-ku-primary-dark`}>
-          {messages.viewDetails}
-        </Text>
         <ChevronRight
-          color={themeColors.primaryDeep}
+          color={themeColors.textSecondary}
           size={18}
           strokeWidth={2.2}
         />

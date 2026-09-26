@@ -13,12 +13,13 @@ import {
 import { Image, Pressable, ScrollView, Text, View } from "@/tw";
 import { Chip } from "@/components/ui/Chip";
 import { ScreenLayout } from "../../components/layout/ScreenLayout";
-import { colors } from "@/theme/colors";
-import { formatDisplayMonthYear } from "@/utils";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { formatDisplayMonthYear } from "./profileFormatting";
 import { getProfileLayoutMetrics } from "@/theme/profileLayout";
 import { spacing } from "@/theme/spacing";
 import { useLocale } from "@/features/preferences/localeStore";
 import { profileMessages } from "@/locales/profileMessages";
+import { getLocalizedErrorMessage } from "@/utils/error";
 import {
   usePublicProfileQuery,
   usePublicProfileReviewsQuery,
@@ -62,14 +63,16 @@ function sortExperiences(
 }
 
 export default function PublicProfileScreen() {
+  const { colors } = useAppTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
-  const userId =
+  const userId = (
     typeof params.id === "string"
       ? params.id
       : Array.isArray(params.id)
-        ? params.id[0]
-        : "";
+        ? (params.id[0] ?? "")
+        : ""
+  ).trim();
   const { width, fontScale } = useWindowDimensions();
   const { locale } = useLocale();
   const messages = profileMessages[locale];
@@ -81,11 +84,11 @@ export default function PublicProfileScreen() {
   const profile = profileQuery.data;
   const reviewsData = reviewsQuery.isError ? undefined : reviewsQuery.data;
   const profileErrorMessage = !userId
-    ? "User ID is required"
+    ? messages.missingUserId
     : profileQuery.isError
-      ? profileQuery.error instanceof Error
-        ? profileQuery.error.message
-        : messages.error
+      ? getLocalizedErrorMessage(profileQuery.error, locale, {
+          fallback: messages.error,
+        })
       : null;
   const reviewsUnavailable = Boolean(profile) && reviewsQuery.isError;
 
@@ -203,7 +206,7 @@ export default function PublicProfileScreen() {
         testID="public-profile-back-button"
         hitSlop={8}
         onPress={() => router.back()}
-        className="h-[44px] w-[44px] items-center justify-center rounded-ku-pill active:bg-ku-surface-muted"
+        className="h-[48px] w-[48px] items-center justify-center rounded-ku-pill active:bg-ku-surface-muted"
       >
         <ChevronLeft color={colors.primaryDeep} size={24} strokeWidth={2.5} />
       </Pressable>
@@ -222,7 +225,7 @@ export default function PublicProfileScreen() {
           {displayName || messages.title}
         </Text>
       </View>
-      <View className="w-[44px]" />
+      <View className="w-[48px]" />
     </View>
   );
 
@@ -242,7 +245,7 @@ export default function PublicProfileScreen() {
           return (
             <Chip
               accessibilityLabel={label}
-              className="min-h-[40px] gap-ku-6 px-ku-md py-ku-sm"
+              className="min-h-[48px] gap-ku-6 px-ku-md py-ku-sm"
               key={key}
               label={label}
               leadingIcon={
@@ -267,6 +270,7 @@ export default function PublicProfileScreen() {
   const profileHeader = (
     <View>
       <ProfileHeader
+        presentation="public"
         data={{
           name: displayName,
           faculty: facultyName,
@@ -283,7 +287,7 @@ export default function PublicProfileScreen() {
         }}
       />
       {bio ? (
-        <View className="rounded-ku-card mt-ku-12 border border-ku-border-subtle bg-ku-surface p-ku-12">
+        <View className="mt-ku-12 rounded-ku-card border border-ku-border-subtle bg-ku-surface p-ku-12">
           <Text className="font-ku-regular text-ku-body-small text-ku-text-secondary">
             {bio}
           </Text>
@@ -312,7 +316,7 @@ export default function PublicProfileScreen() {
     </View>
   );
 
-  if (profileQuery.isPending) {
+  if (userId && profileQuery.isPending) {
     return (
       <ScreenLayout
         edges={["top", "left", "right"]}
@@ -340,15 +344,17 @@ export default function PublicProfileScreen() {
           <Text className="mb-ku-md text-center text-ku-text-secondary">
             {profileErrorMessage}
           </Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => void profileQuery.refetch()}
-            className="min-h-[48px] min-w-[140px] items-center justify-center rounded-ku-pill bg-ku-primary px-ku-lg active:opacity-90"
-          >
-            <Text className="font-ku-semibold text-ku-on-primary">
-              {messages.retry}
-            </Text>
-          </Pressable>
+          {userId ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void profileQuery.refetch()}
+              className="min-h-[48px] min-w-[140px] items-center justify-center rounded-ku-pill bg-ku-primary px-ku-lg active:opacity-90"
+            >
+              <Text className="font-ku-semibold text-ku-on-primary">
+                {messages.retry}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
       </ScreenLayout>
     );
@@ -376,8 +382,14 @@ export default function PublicProfileScreen() {
           showAllLabel={messages.showAllReviews}
           ratingErrorText={`${messages.rating}: ${messages.ratingUnavailable}`}
           errorText={
-            reviewsUnavailable ? messages.sectionUnavailable : undefined
+            reviewsUnavailable
+              ? getLocalizedErrorMessage(reviewsQuery.error, locale, {
+                  fallback: messages.reviewsError,
+                })
+              : undefined
           }
+          retryLabel={messages.retry}
+          onRetry={() => void reviewsQuery.refetch()}
           accessibilityLabels={{
             ratingSummaryLabel: messages.ratingSummaryLabel,
             ratingDistributionLabel: messages.ratingDistributionLabel,

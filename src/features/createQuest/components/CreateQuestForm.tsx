@@ -6,7 +6,7 @@ import {
   TextInput as RNTextInput,
 } from "react-native";
 
-import { CircleAlert, Check } from "lucide-react-native";
+import { CircleAlert, Check, RotateCw } from "lucide-react-native";
 
 import { cn } from "@/tw/cn";
 import { Pressable, ScrollView, Text, View } from "@/tw";
@@ -19,10 +19,10 @@ import type { CreateQuestLayoutMetrics } from "@/theme/layout";
 import {
   type CreateQuestReviewView,
   type CreateQuestTagOption,
-} from "../createQuestPresentation";
-import { measureFieldRelativeToScroll } from "../createQuestFocus";
-import type { QuestDraft } from "../createQuestModel";
-import type { QuestPublishCheck } from "../../questBoard/types";
+} from "../presentation/createQuestPresentation";
+import { measureFieldRelativeToScroll } from "./createQuestFocus";
+import type { QuestDraft } from "../domain/createQuestModel";
+import type { QuestPublishCheck } from "../../questBoard/domain/types";
 import {
   LOGISTICS_FIELDS,
   QUEST_DETAIL_FIELDS,
@@ -31,10 +31,10 @@ import {
   type SaveState,
   type Step,
 } from "../createQuestTypes";
-import styles from "../createQuestStyles";
+import styles from "./createQuestStyles";
 import { CreateQuestReviewPanel } from "./CreateQuestReviewPanel";
 import { QuestDetailsStep } from "./QuestDetailsStep";
-import { TeamSetupStep } from "./TeamSetupStep";
+import { TeamSetupStep } from "./teamSetup/TeamSetupStep";
 
 type DraftUpdater = <K extends keyof QuestDraft>(
   field: K,
@@ -52,16 +52,20 @@ export function CreateQuestForm({
   logisticsExpanded,
   logisticsSummary,
   messages,
+  onFixBlocker,
   onRefreshPublishCheck,
   onRetrySave,
+  onRetryTags,
   onToggleLogistics,
   participationOptions,
   pendingInvalidField,
   publishCheck,
   review,
   saveErrorMessage,
+  saveErrorTitle,
   saveState,
   step,
+  tagLoadError,
   tagOptions,
   updateDraft,
   updateParticipation,
@@ -79,6 +83,7 @@ export function CreateQuestForm({
   logisticsExpanded: boolean;
   logisticsSummary: string;
   messages: CreateQuestMessages;
+  onFixBlocker: (field: string) => void;
   onRefreshPublishCheck: () => void;
   onRetrySave: () => void;
   onToggleLogistics: () => void;
@@ -87,9 +92,12 @@ export function CreateQuestForm({
   publishCheck: QuestPublishCheck;
   review: CreateQuestReviewView;
   saveErrorMessage: string | null;
+  saveErrorTitle: string;
   saveState: SaveState;
   step: Step;
+  tagLoadError: boolean;
   tagOptions: CreateQuestTagOption[];
+  onRetryTags: () => void;
   updateDraft: DraftUpdater;
   updateParticipation: (value: QuestDraft["participation"]) => void;
   useStackedChoices: boolean;
@@ -232,27 +240,34 @@ export function CreateQuestForm({
         {saveState === "error" ? (
           <View
             accessibilityLiveRegion="assertive"
+            accessibilityRole="alert"
             className={styles.saveErrorCard}
             testID="create-quest-save-error"
           >
-            <CircleAlert
-              color={colors.dangerDark}
-              size={22}
-              strokeWidth={2.2}
-            />
-            <View className={styles.saveErrorCopy}>
-              <Text className={styles.saveErrorText}>
-                {saveErrorMessage ?? messages.saveError}
-              </Text>
+            <View className={styles.saveErrorHeader}>
+              <View className={styles.saveErrorIcon}>
+                <CircleAlert
+                  color={colors.dangerDark}
+                  size={20}
+                  strokeWidth={2.2}
+                />
+              </View>
+              <View className={styles.saveErrorCopy}>
+                <Text className={styles.saveErrorTitle}>{saveErrorTitle}</Text>
+                <Text className={styles.saveErrorText}>
+                  {saveErrorMessage ?? messages.saveError}
+                </Text>
+              </View>
             </View>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={messages.retrySave}
               onPress={onRetrySave}
-              className={styles.retryButton}
+              className={styles.saveErrorRetry}
               testID="create-quest-retry-save"
             >
-              <Text className={styles.retryButtonText}>
+              <RotateCw color={colors.dangerDark} size={16} strokeWidth={2.4} />
+              <Text className={styles.saveErrorRetryText}>
                 {messages.retrySave}
               </Text>
             </Pressable>
@@ -264,6 +279,8 @@ export function CreateQuestForm({
             draft={draft}
             errors={errors}
             tagOptions={tagOptions}
+            tagLoadError={tagLoadError}
+            onRetryTags={onRetryTags}
             proofRequired={draft.proofRequired !== "none"}
             titleRef={titleRef}
             tagRef={tagRef}
@@ -304,6 +321,7 @@ export function CreateQuestForm({
             wide={useWideSummary}
             isCheckingPublish={isCheckingPublish}
             publishCheck={publishCheck}
+            onFixBlocker={onFixBlocker}
             onRefreshPublishCheck={onRefreshPublishCheck}
           />
         ) : null}

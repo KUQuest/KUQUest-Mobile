@@ -1,18 +1,22 @@
 import { z } from "zod";
-import { ApiClient } from "./ApiClient";
-import type { RequestOptions } from "./WalletApi";
+import { ApiClient, type RequestOptions } from "./ApiClient";
 import { appendUploadFile, type UploadAsset } from "./fileUpload";
 import type {
   ChatConversation,
   ChatMessage,
   LocalizedText,
 } from "@/features/chat/chatTypes";
-import type { QuestStatus } from "@/features/questBoard/types";
+import type { QuestStatus } from "@/domain/questLifecycle";
+const positiveWireIntegerSchema = z.union([
+  z.number().int().positive(),
+  z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().positive()),
+]);
+
 export const chatAttachmentSchema = z.object({
   id: z.string().min(1),
   fileName: z.string(),
   mediaType: z.string(),
-  sizeBytes: z.number().int().positive(),
+  sizeBytes: positiveWireIntegerSchema,
   width: z.number().int().positive().optional(),
   height: z.number().int().positive().optional(),
   createdAt: z.string(),
@@ -21,7 +25,7 @@ export type ServerChatAttachment = z.infer<typeof chatAttachmentSchema>;
 export const chatMessageSchema = z.object({
   id: z.string().min(1),
   conversationId: z.string().min(1),
-  sequence: z.number().int().positive(),
+  sequence: positiveWireIntegerSchema,
   kind: z.enum(["USER", "SYSTEM"]),
   sender: z
     .object({
@@ -61,28 +65,19 @@ export const chatConversationSchema = z.object({
 });
 export type ServerChatConversation = z.infer<typeof chatConversationSchema>;
 
-export const chatConversationListResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    items: z.array(chatConversationSchema),
-    nextCursor: z.string().nullable(),
-  }),
+export const chatConversationPageDataSchema = z.object({
+  items: z.array(chatConversationSchema),
+  nextCursor: z.string().nullable(),
 });
 
-export const chatMessageListResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    items: z.array(chatMessageSchema),
-    nextCursor: z.string().nullable(),
-    hasMore: z.boolean(),
-  }),
+export const chatMessagePageDataSchema = z.object({
+  items: z.array(chatMessageSchema),
+  nextCursor: z.string().nullable(),
+  hasMore: z.boolean(),
 });
 
-export const chatSendMessageResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    message: chatMessageSchema,
-  }),
+export const chatSendMessageDataSchema = z.object({
+  message: chatMessageSchema,
 });
 export interface ServerChatConversationPage {
   items: ServerChatConversation[];
@@ -113,32 +108,20 @@ export const chatParticipantSchema = z.object({
 });
 export type ServerChatParticipant = z.infer<typeof chatParticipantSchema>;
 
-export const chatParticipantsResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({ participants: z.array(chatParticipantSchema) }),
+export const chatParticipantsDataSchema = z.object({
+  participants: z.array(chatParticipantSchema),
 });
-export const chatAttachmentResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({ attachment: chatAttachmentSchema }),
+export const chatAttachmentDataSchema = z.object({
+  attachment: chatAttachmentSchema,
 });
-export const chatAttachmentLinkResponseSchema = z.object({
-  success: z.literal(true),
-  data: chatAttachmentLinkSchema,
+export const chatAttachmentDeleteDataSchema = z.object({
+  attachmentId: z.string().min(1),
 });
-export const chatAttachmentDeleteResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({ attachmentId: z.string().min(1) }),
+export const chatReadCursorSchema = z.object({
+  conversationId: z.string().min(1),
+  messageId: z.string().min(1),
 });
-export const chatReadResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    conversationId: z.string().min(1),
-    messageId: z.string().min(1),
-  }),
-});
-export type ServerChatReadCursor = z.infer<
-  typeof chatReadResponseSchema
->["data"];
+export type ServerChatReadCursor = z.infer<typeof chatReadCursorSchema>;
 
 export const candidateInquiryParticipantSchema = z.object({
   id: z.string().nullable(),
@@ -176,35 +159,54 @@ export interface ServerCandidateInquiryPage {
   items: ServerCandidateInquiry[];
   nextCursor: string | null;
 }
-export const candidateInquiryResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({ inquiry: candidateInquirySummarySchema }),
+export const candidateInquiryDataSchema = z.object({
+  inquiry: candidateInquirySummarySchema,
 });
-export const candidateInquiryListResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    items: z.array(candidateInquirySummarySchema),
-    nextCursor: z.string().nullable(),
-  }),
+export const candidateInquiryPageDataSchema = z.object({
+  items: z.array(candidateInquirySummarySchema),
+  nextCursor: z.string().nullable(),
 });
-export const candidateInquiryParticipantsResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({ participants: z.array(candidateInquiryParticipantSchema) }),
+export const candidateInquiryParticipantsDataSchema = z.object({
+  participants: z.array(candidateInquiryParticipantSchema),
 });
-export const chatEventSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("WORK_CONVERSATION_MESSAGE"),
-    message: chatMessageSchema,
-  }),
-  z.object({
-    type: z.literal("CANDIDATE_INQUIRY_MESSAGE"),
-    message: chatMessageSchema,
-  }),
-]);
-export type ServerChatEvent = z.infer<typeof chatEventSchema>;
-export function parseChatEvent(payload: unknown): ServerChatEvent {
-  return chatEventSchema.parse(payload);
-}
+export const MESSAGE_REPORT_REASONS = [
+  "REPORT_ABUSIVE_OR_HARASSMENT",
+  "REPORT_SPAM",
+  "REPORT_INAPPROPRIATE_CONTENT",
+  "REPORT_DANGER_OR_THREAT",
+  "REPORT_OTHER",
+] as const;
+
+export type MessageReportReason = (typeof MESSAGE_REPORT_REASONS)[number];
+
+export const REPORT_CASE_STATUSES = [
+  "REPORT_CASE_PENDING",
+  "REPORT_CASE_DISMISSED",
+  "REPORT_CASE_HIDDEN",
+  "REPORT_CASE_RESTORED",
+] as const;
+
+export type ReportCaseStatus = (typeof REPORT_CASE_STATUSES)[number];
+
+export const messageReporterEntrySchema = z.object({
+  id: z.string().uuid(),
+  messageId: z.string().uuid(),
+  reason: z.enum(MESSAGE_REPORT_REASONS),
+  detail: z.string().nullable(),
+  caseStatus: z.enum(REPORT_CASE_STATUSES),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type ServerMessageReporterEntry = z.infer<
+  typeof messageReporterEntrySchema
+>;
+
+export const submitMessageReportDataSchema = z.object({
+  reporterEntry: messageReporterEntrySchema,
+});
+export type SubmitMessageReportData = z.infer<
+  typeof submitMessageReportDataSchema
+>;
 
 export function serverMessageToChatMessage(
   msg: ServerChatMessage,
@@ -219,6 +221,7 @@ export function serverMessageToChatMessage(
     sender: isMe ? "me" : "other",
     text: localizedText,
     createdAt: msg.createdAt,
+    kind: msg.kind,
   };
 }
 
@@ -321,16 +324,14 @@ export class ChatApi {
     } = {},
     options?: RequestOptions
   ): Promise<ServerChatConversationPage> {
-    const query = new URLSearchParams();
-    if (params.limit) query.set("limit", String(params.limit));
-    if (params.cursor) query.set("cursor", params.cursor);
-
-    const queryString = query.toString();
-    const endpoint = `/api/v1/chat/conversations${queryString ? `?${queryString}` : ""}`;
-    const body = await this.client.request<unknown>(endpoint, {
-      signal: options?.signal,
-    });
-    return chatConversationListResponseSchema.parse(body).data;
+    return this.client.get(
+      "/api/v1/chat/conversations",
+      chatConversationPageDataSchema,
+      {
+        ...options,
+        query: { limit: params.limit, cursor: params.cursor },
+      }
+    );
   }
 
   async getMessages(
@@ -338,17 +339,18 @@ export class ChatApi {
     params: { limit?: number; before?: string; after?: string } = {},
     options?: RequestOptions
   ): Promise<ServerChatMessagePage> {
-    const query = new URLSearchParams();
-    if (params.limit) query.set("limit", String(params.limit));
-    if (params.before) query.set("before", params.before);
-    if (params.after) query.set("after", params.after);
-
-    const queryString = query.toString();
-    const endpoint = `/api/v1/chat/conversations/${conversationId}/messages${queryString ? `?${queryString}` : ""}`;
-    const body = await this.client.request<unknown>(endpoint, {
-      signal: options?.signal,
-    });
-    return chatMessageListResponseSchema.parse(body).data;
+    return this.client.get(
+      `/api/v1/chat/conversations/${conversationId}/messages`,
+      chatMessagePageDataSchema,
+      {
+        ...options,
+        query: {
+          limit: params.limit,
+          before: params.before,
+          after: params.after,
+        },
+      }
+    );
   }
 
   async loadConversation(
@@ -383,27 +385,31 @@ export class ChatApi {
     clientMessageId: string = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     attachmentIds?: string[]
   ): Promise<ServerChatMessage> {
-    const body = await this.client.requestJson<unknown>(
+    const result = await this.client.send(
+      "POST",
       `/api/v1/chat/conversations/${conversationId}/messages`,
+      chatSendMessageDataSchema,
       {
-        clientMessageId,
-        ...(text?.trim() ? { text } : {}),
-        ...(attachmentIds ? { attachmentIds } : {}),
-      },
-      { method: "POST" }
+        json: {
+          clientMessageId,
+          ...(text?.trim() ? { text } : {}),
+          ...(attachmentIds ? { attachmentIds } : {}),
+        },
+      }
     );
-    return chatSendMessageResponseSchema.parse(body).data.message;
+    return result.message;
   }
 
   async listParticipants(
     conversationId: string,
     options?: RequestOptions
   ): Promise<ServerChatParticipant[]> {
-    const body = await this.client.request<unknown>(
+    const result = await this.client.get(
       `/api/v1/chat/conversations/${conversationId}/participants`,
-      { signal: options?.signal }
+      chatParticipantsDataSchema,
+      options
     );
-    return chatParticipantsResponseSchema.parse(body).data.participants;
+    return result.participants;
   }
 
   async uploadAttachment(
@@ -412,12 +418,13 @@ export class ChatApi {
   ): Promise<ServerChatAttachment> {
     const formData = new FormData();
     appendUploadFile(formData, "file", asset, "chat-attachment");
-    const body = await this.client.requestForm<unknown>(
+    const result = await this.client.send(
+      "POST",
       `/api/v1/chat/conversations/${conversationId}/attachments`,
-      formData,
-      { method: "POST" }
+      chatAttachmentDataSchema,
+      { form: formData }
     );
-    return chatAttachmentResponseSchema.parse(body).data.attachment;
+    return result.attachment;
   }
 
   async getAttachmentLink(
@@ -431,11 +438,11 @@ export class ChatApi {
         return cached;
       }
     }
-    const body = await this.client.request<unknown>(
+    const link = await this.client.get(
       `/api/v1/chat/conversations/${conversationId}/attachments/${attachmentId}/link`,
+      chatAttachmentLinkSchema,
       { signal: options?.signal }
     );
-    const link = chatAttachmentLinkResponseSchema.parse(body).data;
     this.cacheAttachmentLink(attachmentId, link);
     return link;
   }
@@ -445,90 +452,94 @@ export class ChatApi {
     attachmentId: string
   ): Promise<{ attachmentId: string }> {
     this.attachmentLinkCache.delete(attachmentId);
-    const body = await this.client.request<unknown>(
+    return this.client.send(
+      "DELETE",
       `/api/v1/chat/conversations/${conversationId}/attachments/${attachmentId}`,
-      { method: "DELETE" }
+      chatAttachmentDeleteDataSchema
     );
-    return chatAttachmentDeleteResponseSchema.parse(body).data;
   }
 
   async markRead(
     conversationId: string,
     messageId: string
   ): Promise<ServerChatReadCursor> {
-    const body = await this.client.requestJson<unknown>(
+    const result = await this.client.send(
+      "POST",
       `/api/v1/chat/conversations/${conversationId}/read`,
-      { messageId },
-      { method: "POST" }
+      chatReadCursorSchema,
+      { json: { messageId } }
     );
-    return chatReadResponseSchema.parse(body).data;
+    return result;
   }
 
   getWorkConversationEventsPath(conversationId: string): string {
-    return `/api/v1/chat/conversations/${conversationId}/events`;
+    return `/api/v1/chat/conversations/${encodeURIComponent(conversationId)}/events`;
   }
 
   async createCandidateInquiry(
     questId: string
   ): Promise<ServerCandidateInquiry> {
-    const body = await this.client.requestJson<unknown>(
+    const result = await this.client.send(
+      "POST",
       "/api/v1/chat/candidate-inquiries",
-      { questId },
-      { method: "POST" }
+      candidateInquiryDataSchema,
+      { json: { questId } }
     );
-    return candidateInquiryResponseSchema.parse(body).data.inquiry;
+    return result.inquiry;
   }
 
   async listCandidateInquiries(
     params: { limit?: number; cursor?: string } = {},
     options?: RequestOptions
   ): Promise<ServerCandidateInquiryPage> {
-    const query = new URLSearchParams();
-    if (params.limit !== undefined) query.set("limit", String(params.limit));
-    if (params.cursor) query.set("cursor", params.cursor);
-    const queryString = query.toString();
-    const endpoint = `/api/v1/chat/candidate-inquiries${queryString ? `?${queryString}` : ""}`;
-    const body = await this.client.request<unknown>(endpoint, {
-      signal: options?.signal,
-    });
-    return candidateInquiryListResponseSchema.parse(body).data;
+    return this.client.get(
+      "/api/v1/chat/candidate-inquiries",
+      candidateInquiryPageDataSchema,
+      {
+        ...options,
+        query: { limit: params.limit, cursor: params.cursor },
+      }
+    );
   }
   async getCandidateInquiry(
     conversationId: string,
     options?: RequestOptions
   ): Promise<ServerCandidateInquiry> {
-    const body = await this.client.request<unknown>(
+    const result = await this.client.get(
       `/api/v1/chat/candidate-inquiries/${conversationId}`,
-      { signal: options?.signal }
+      candidateInquiryDataSchema,
+      options
     );
-    return candidateInquiryResponseSchema.parse(body).data.inquiry;
+    return result.inquiry;
   }
   async listCandidateInquiryParticipants(
     conversationId: string,
     options?: RequestOptions
   ): Promise<CandidateInquiryParticipant[]> {
-    const body = await this.client.request<unknown>(
+    const result = await this.client.get(
       `/api/v1/chat/candidate-inquiries/${conversationId}/participants`,
-      { signal: options?.signal }
+      candidateInquiryParticipantsDataSchema,
+      options
     );
-    return candidateInquiryParticipantsResponseSchema.parse(body).data
-      .participants;
+    return result.participants;
   }
   async getCandidateInquiryMessages(
     conversationId: string,
     params: { limit?: number; before?: string; after?: string } = {},
     options?: RequestOptions
   ): Promise<ServerChatMessagePage> {
-    const query = new URLSearchParams();
-    if (params.limit !== undefined) query.set("limit", String(params.limit));
-    if (params.before) query.set("before", params.before);
-    if (params.after) query.set("after", params.after);
-    const queryString = query.toString();
-    const endpoint = `/api/v1/chat/candidate-inquiries/${conversationId}/messages${queryString ? `?${queryString}` : ""}`;
-    const body = await this.client.request<unknown>(endpoint, {
-      signal: options?.signal,
-    });
-    return chatMessageListResponseSchema.parse(body).data;
+    return this.client.get(
+      `/api/v1/chat/candidate-inquiries/${conversationId}/messages`,
+      chatMessagePageDataSchema,
+      {
+        ...options,
+        query: {
+          limit: params.limit,
+          before: params.before,
+          after: params.after,
+        },
+      }
+    );
   }
 
   async sendCandidateInquiryMessage(
@@ -537,28 +548,31 @@ export class ChatApi {
     clientMessageId: string = `inquiry_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     attachmentIds?: string[]
   ): Promise<ServerChatMessage> {
-    const body = await this.client.requestJson<unknown>(
+    const result = await this.client.send(
+      "POST",
       `/api/v1/chat/candidate-inquiries/${conversationId}/messages`,
+      chatSendMessageDataSchema,
       {
-        clientMessageId,
-        ...(text?.trim() ? { text } : {}),
-        ...(attachmentIds ? { attachmentIds } : {}),
-      },
-      { method: "POST" }
+        json: {
+          clientMessageId,
+          ...(text?.trim() ? { text } : {}),
+          ...(attachmentIds ? { attachmentIds } : {}),
+        },
+      }
     );
-    return chatSendMessageResponseSchema.parse(body).data.message;
+    return result.message;
   }
 
   async markCandidateInquiryRead(
     conversationId: string,
     messageId: string
   ): Promise<ServerChatReadCursor> {
-    const body = await this.client.requestJson<unknown>(
+    return this.client.send(
+      "POST",
       `/api/v1/chat/candidate-inquiries/${conversationId}/read`,
-      { messageId },
-      { method: "POST" }
+      chatReadCursorSchema,
+      { json: { messageId } }
     );
-    return chatReadResponseSchema.parse(body).data;
   }
 
   async uploadCandidateInquiryAttachment(
@@ -567,12 +581,13 @@ export class ChatApi {
   ): Promise<ServerChatAttachment> {
     const formData = new FormData();
     appendUploadFile(formData, "file", asset, "inquiry-attachment");
-    const body = await this.client.requestForm<unknown>(
+    const result = await this.client.send(
+      "POST",
       `/api/v1/chat/candidate-inquiries/${conversationId}/attachments`,
-      formData,
-      { method: "POST" }
+      chatAttachmentDataSchema,
+      { form: formData }
     );
-    return chatAttachmentResponseSchema.parse(body).data.attachment;
+    return result.attachment;
   }
 
   async getCandidateInquiryAttachmentLink(
@@ -586,11 +601,11 @@ export class ChatApi {
         return cached;
       }
     }
-    const body = await this.client.request<unknown>(
+    const link = await this.client.get(
       `/api/v1/chat/candidate-inquiries/${conversationId}/attachments/${attachmentId}/link`,
+      chatAttachmentLinkSchema,
       { signal: options?.signal }
     );
-    const link = chatAttachmentLinkResponseSchema.parse(body).data;
     this.cacheAttachmentLink(attachmentId, link);
     return link;
   }
@@ -600,15 +615,40 @@ export class ChatApi {
     attachmentId: string
   ): Promise<{ attachmentId: string }> {
     this.attachmentLinkCache.delete(attachmentId);
-    const body = await this.client.request<unknown>(
+    return this.client.send(
+      "DELETE",
       `/api/v1/chat/candidate-inquiries/${conversationId}/attachments/${attachmentId}`,
-      { method: "DELETE" }
+      chatAttachmentDeleteDataSchema
     );
-    return chatAttachmentDeleteResponseSchema.parse(body).data;
   }
 
   getCandidateInquiryEventsPath(conversationId: string): string {
-    return `/api/v1/chat/candidate-inquiries/${conversationId}/events`;
+    return `/api/v1/chat/candidate-inquiries/${encodeURIComponent(conversationId)}/events`;
+  }
+
+  async submitMessageReport(
+    payload: {
+      messageId: string;
+      reason: MessageReportReason;
+      detail?: string;
+    },
+    options?: RequestOptions
+  ): Promise<ServerMessageReporterEntry> {
+    const trimmedDetail = payload.detail?.trim();
+    const result = await this.client.send(
+      "POST",
+      "/api/v1/chat/reports",
+      submitMessageReportDataSchema,
+      {
+        ...options,
+        json: {
+          messageId: payload.messageId,
+          reason: payload.reason,
+          ...(trimmedDetail ? { detail: trimmedDetail } : {}),
+        },
+      }
+    );
+    return result.reporterEntry;
   }
 }
 

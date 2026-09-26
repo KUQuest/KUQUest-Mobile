@@ -19,7 +19,7 @@ EXPO_PUBLIC_TERMS_VERSION=v1.0
 EXPO_PUBLIC_GOOGLE_CLIENT_ID=673221928877-d133t4thj3ipo94a3kfj4vle2hokmbi4.apps.googleusercontent.com
 ```
 
-> **Important**: `scripts/update-api-env.js` is guarded and will **not** overwrite remote HTTPS URLs. Do not run `bun run dev:start` for staging; that command is for local-LAN development. Use `bun run staging:start`. To force local LAN development, run `bun run dev:local`.
+> **Important**: `scripts/update-api-env.js` is guarded and will **not** overwrite remote HTTPS URLs. Use `bun run staging:start` for staging Metro. To force local LAN development, run `bun run dev:local`.
 
 ---
 

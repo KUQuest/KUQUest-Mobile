@@ -13,7 +13,14 @@ The mobile app must connect to the remote **develop staging API**:
 https://kuquest-dev-api.kubits.org
 ```
 
-Do **not** run the local API. The mobile app's local API/LAN setup will not work for the normal development flow. Do not use `bun run start`, `bun run dev:start`, `bun run dev:local`, or `bun run update-api-env`.
+Do **not** run the local API. The mobile app's local API/LAN setup will not work for the normal development flow. Use `bun run staging:start` for the staging API; `bun run dev:local` is only for explicitly requested local-LAN work.
+
+### Realtime connections
+
+- Work Chat and Candidate Inquiry use authenticated WebSocket endpoints: `/v1/chat/conversations/:conversationId/events` and `/v1/chat/candidate-inquiries/:conversationId/events`. Connected clients send messages over WebSocket; REST remains send fallback when disconnected.
+- Authorized Quest readers subscribe to `/api/v2/quests/:questId/events`; Hirers who can select Candidates and Candidate Team Members subscribe to `/api/v2/quests/:questId/candidate-roster/events`. Both read-only streams refresh authoritative REST snapshots after accepted `SUBSCRIBED` messages, matching updates, and reconnects.
+- Any authenticated Member can subscribe to read-only `/api/v2/quests/board/events`. `QUEST_BOARD_INVALIDATED` carries a Quest ID, not a Board Card; Board query owners refetch filtered `GET /api/v2/quests` results after accepted subscriptions, invalidations, and reconnects.
+- HTTPS API origins map to WSS. The app authenticates sockets with its current session cookie. `/health/ws` is an operational health endpoint; the app does not poll it.
 
 Create `.env.local` in the project root by copying the template:
 
@@ -65,11 +72,16 @@ This project uses native modules, including Google Sign-In and `@expo/ui`. Build
 
 ```bash
 # Android
-bun run dev:android
+bun android
 
 # iOS
-bun run dev:ios
+bun ios
 ```
+
+To choose a connected Android device before building and installing, run `./scripts/android-device.sh`. It lists authorized devices and passes your selection to `bun android`. `bun android` by itself also prompts when multiple devices are online.
+
+Apps already connected to the same Metro server receive the same JavaScript updates; this picker only targets the native build/install to the selected device.
+The picker already opens the selected device. In an Expo terminal, lowercase `a` opens on the first Android device (often an emulator); press `Shift+A` only if you need to choose a different device to open.
 
 Do not open the project in Expo Go. Expo Go cannot load the native modules used by this app.
 
@@ -90,13 +102,7 @@ This command:
 
 ### Step 4: Launch the app
 
-For Android, use a running emulator and launch the installed Development Build:
-
-```bash
-bun run android
-```
-
-For iOS, open the installed Development Build from the simulator after Metro starts.
+After Metro starts, run `bun android` to build and install the debug development client on the selected Android device; use `bun ios` for the iOS development build.
 
 ### Android Google Sign-In
 
@@ -123,6 +129,16 @@ bun run verify:staging
 This checks the staging health endpoint and the configured Quest, wallet, and Work Chat API surfaces.
 
 ---
+
+### Debugging API traffic
+
+Development builds print API diagnostics to the Metro terminal through `debugLog` (`src/api/debugLog.ts`); release builds and Jest stay silent:
+
+- `[api]` — every REST request: method, path, status, duration, and error `code` on failure.
+- `[socket]` — WebSocket open, close (code, reason, terminal, next attempt), and not-started reasons.
+- `[query]` / `[mutation]` — every failed TanStack query or mutation with its key, including response-schema (Zod) issue paths.
+
+Logs never include cookies, request or response bodies, or signed-URL query strings.
 
 ## 3. Standalone Offline Demo Mode
 

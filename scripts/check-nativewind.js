@@ -19,9 +19,8 @@ const ACCENT_VARIABLES = [
   "--color-ku-on-primary",
 ];
 const INTENTIONAL_LITERAL_FILES = new Set([
-  "src/features/chat/components/ImageViewerModal.tsx",
+  "src/components/ui/ImageViewerModal.tsx",
   "src/features/onboarding/styles/registrationStyles.ts",
-  "src/features/wallet/components/QuestFundingSummary.tsx",
   "src/features/wallet/components/TopUpPromptPayStep.tsx",
   "src/features/wallet/WalletPaymentModal.tsx",
 ]);

@@ -3,8 +3,10 @@ import type { SupportedLocale } from "./locale";
 export interface ChatMessages {
   title: string;
   subtitle: string;
+  clearSearch: string;
   searchConversations: string;
   recentConversations: string;
+  candidateInquiries: string;
   conversationCount: (count: number) => string;
   loading: string;
   loadError: string;
@@ -15,8 +17,7 @@ export interface ChatMessages {
   questMember: string;
   questTeam: string;
   viewQuest: string;
-  reportConversation: string;
-  reportConversationDescription: string;
+  reportMessage: string;
   search: string;
   searchMessages: string;
   searchFiles: string;
@@ -36,6 +37,7 @@ export interface ChatMessages {
   choosePhoto: string;
   chooseFile: string;
   cancel: string;
+  close: string;
   mockAttachmentDescription: string;
   removeAttachment: (name: string) => string;
   conversationNotFound: string;
@@ -47,6 +49,16 @@ export interface ChatMessages {
   conversationReadOnly: string;
   conversationReadOnlyTerminal: string;
   conversationNotWritable: string;
+  candidateInquiriesLoadError: string;
+  questContextUnavailable: string;
+  hirerInquiryRole: string;
+  prospectiveWorkerInquiryRole: string;
+  candidateInquiry: string;
+  workChat: string;
+  attachmentSizeError: string;
+  attachmentTypeError: string;
+  messageLengthError: string;
+  sendRateLimited: string;
 }
 
 export const chatMessages: Record<SupportedLocale, ChatMessages> = {
@@ -54,7 +66,9 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     title: "Chat",
     subtitle: "Coordinate with people from your Quests.",
     searchConversations: "Search conversations",
+    clearSearch: "Clear search",
     recentConversations: "Recent conversations",
+    candidateInquiries: "Candidate inquiries",
     conversationCount: (count) => `${count} conversations`,
     loading: "Loading conversations",
     loadError: "We could not load your conversations.",
@@ -65,9 +79,7 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     questMember: "Quest member",
     questTeam: "Quest team",
     viewQuest: "View Quest details",
-    reportConversation: "Report this chat",
-    reportConversationDescription:
-      "Send an abuse or harassment report to the KUQuest Admin team for review.",
+    reportMessage: "Report message",
     search: "Search",
     searchMessages: "Messages",
     searchFiles: "Files",
@@ -87,6 +99,7 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     choosePhoto: "Choose photo",
     chooseFile: "Choose file",
     cancel: "Cancel",
+    close: "Close",
     removeAttachment: (name) => `Remove attachment ${name}`,
     mockAttachmentDescription:
       "Attachment actions are ready for the API connection.",
@@ -101,12 +114,24 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
       "This Quest is complete or cancelled. You can still read the conversation, but new messages are disabled.",
     conversationNotWritable:
       "The server has disabled writing for this conversation.",
+    candidateInquiriesLoadError: "Candidate inquiries could not be loaded.",
+    questContextUnavailable: "Quest context is unavailable for navigation.",
+    hirerInquiryRole: "Hirer · Inquiry",
+    prospectiveWorkerInquiryRole: "Prospective Worker · Inquiry",
+    candidateInquiry: "Candidate Inquiry",
+    workChat: "Work Chat",
+    attachmentSizeError: "Attachments must be 10 MB or smaller.",
+    attachmentTypeError: "Only images, PDF, and video files are supported.",
+    messageLengthError: "Messages must be 1,000 characters or fewer.",
+    sendRateLimited: "You are sending messages too quickly. Try again shortly.",
   },
   th: {
     title: "แชต",
     subtitle: "ประสานงานกับคนในเควสต์ของคุณ",
     searchConversations: "ค้นหาบทสนทนา",
+    clearSearch: "ล้างการค้นหา",
     recentConversations: "บทสนทนาล่าสุด",
+    candidateInquiries: "การสอบถามก่อนเริ่มงาน",
     conversationCount: (count) => `${count} บทสนทนา`,
     loading: "กำลังโหลดบทสนทนา",
     loadError: "ไม่สามารถโหลดบทสนทนาของคุณได้",
@@ -117,9 +142,7 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     questMember: "สมาชิกเควสต์",
     questTeam: "ทีมเควสต์",
     viewQuest: "ดูรายละเอียดเควสต์",
-    reportConversation: "รายงานแชตนี้",
-    reportConversationDescription:
-      "ส่งรายงานข้อความไม่เหมาะสมหรือการคุกคามให้ทีมแอดมิน KUQuest ตรวจสอบ",
+    reportMessage: "รายงานข้อความ",
     search: "ค้นหา",
     searchMessages: "ข้อความ",
     searchFiles: "ไฟล์",
@@ -140,6 +163,7 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     choosePhoto: "เลือกรูปภาพ",
     chooseFile: "เลือกไฟล์",
     cancel: "ยกเลิก",
+    close: "ปิด",
     removeAttachment: (name) => `ลบไฟล์แนบ ${name}`,
     mockAttachmentDescription: "เมนูไฟล์แนบพร้อมเชื่อมต่อกับ API ในขั้นถัดไป",
     conversationNotFound: "ไม่พบบทสนทนาของเควสต์นี้",
@@ -152,5 +176,15 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     conversationReadOnlyTerminal:
       "เควสต์นี้เสร็จสิ้นหรือยกเลิกแล้ว คุณยังอ่านประวัติได้แต่ส่งข้อความใหม่ไม่ได้",
     conversationNotWritable: "เซิร์ฟเวอร์ปิดการส่งข้อความในบทสนทนานี้",
+    candidateInquiriesLoadError: "ไม่สามารถโหลด Inquiry ได้",
+    questContextUnavailable: "ไม่พบบริบทเควสต์สำหรับการนำทาง",
+    hirerInquiryRole: "ผู้ว่าจ้าง · Inquiry",
+    prospectiveWorkerInquiryRole: "ผู้สนใจทำงาน · Inquiry",
+    candidateInquiry: "Candidate Inquiry",
+    workChat: "Work Chat",
+    attachmentSizeError: "ไฟล์แนบต้องมีขนาดไม่เกิน 10 MB",
+    attachmentTypeError: "รองรับเฉพาะรูปภาพ PDF และวิดีโอ",
+    messageLengthError: "ข้อความต้องมีความยาวไม่เกิน 1,000 ตัวอักษร",
+    sendRateLimited: "ส่งข้อความถี่เกินไป ลองอีกครั้งในอีกสักครู่",
   },
 };

@@ -2,7 +2,7 @@ import {
   QuestCandidateMode,
   QuestStatus,
   type QuestBoardQuest,
-} from "../../types";
+} from "../../domain/types";
 import {
   buildQuestDetailActionBar,
   type QuestDetailPresentationContext,
@@ -38,7 +38,6 @@ function makeQuest(status: QuestStatus): QuestBoardQuest {
 }
 
 describe("buildQuestDetailActionBar", () => {
-  const mockOpenReview = jest.fn();
   const mockOpenEditPost = jest.fn();
   const mockOpenMessageOwner = jest.fn();
   const mockLeaveQuest = jest.fn();
@@ -90,7 +89,6 @@ describe("buildQuestDetailActionBar", () => {
       canShowWithdraw: false,
       confirmationOpen: false,
       canMessageOwner: false,
-      canReportQuest: false,
       ...overrides,
     } as unknown as QuestDetailPresentationFacts;
 
@@ -100,7 +98,6 @@ describe("buildQuestDetailActionBar", () => {
         liveAction: null,
         leftQuest: false,
         manualConfirmationOpen: false,
-        teamSheetOpen: false,
         candidateReviewSheetOpen: false,
         partialStartSheetDismissed: false,
         teamSearchQuery: "",
@@ -117,8 +114,6 @@ describe("buildQuestDetailActionBar", () => {
         openConfirmation: mockOpenConfirmation,
         closeConfirmation: jest.fn(),
         dismissIntent: jest.fn(),
-        openTeam: jest.fn(),
-        closeTeam: jest.fn(),
         openCandidateReview: jest.fn(),
         closeCandidateReview: jest.fn(),
         dismissPartialConsent: jest.fn(),
@@ -133,9 +128,8 @@ describe("buildQuestDetailActionBar", () => {
         handleBack: jest.fn(),
         openParticipantProfile: jest.fn(),
         openWorkHub: jest.fn(),
+        openTeam: jest.fn(),
         openEditPost: mockOpenEditPost,
-        openReview: mockOpenReview,
-        openReportQuest: jest.fn(),
         openMessageOwner: mockOpenMessageOwner,
       },
       leaveQuest: mockLeaveQuest,
@@ -146,15 +140,12 @@ describe("buildQuestDetailActionBar", () => {
     jest.clearAllMocks();
   });
 
-  it("enables canReview for a terminal Hirer view with review capabilities and triggers navigation", () => {
+  it("enables canReview for a terminal Hirer view with review capabilities", () => {
     const context = makeContext();
     const actionBar = buildQuestDetailActionBar(context);
 
     expect(actionBar.canReview).toBe(true);
     expect(actionBar.canEditPost).toBe(false);
-
-    actionBar.onOpenReview();
-    expect(mockOpenReview).toHaveBeenCalledTimes(1);
   });
 
   it("enables canEditPost and disables canReview for draft Quests", () => {

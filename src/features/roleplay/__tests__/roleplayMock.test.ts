@@ -1,5 +1,5 @@
 import { authEnvironment } from "@/features/auth/authEnvironment";
-import { QuestStatus } from "@/features/questBoard/types";
+import { QuestStatus } from "@/features/questBoard/domain/types";
 
 import { roleplayMock } from "../roleplayMock";
 

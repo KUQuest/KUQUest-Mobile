@@ -1,68 +1,133 @@
 import { useState } from "react";
-import { Modal, Platform } from "react-native";
+import { Platform } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Check, ChevronLeft, ChevronRight } from "lucide-react-native";
+import { AlertCircle, Check, ChevronLeft } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getRouteParam } from "@/utils/navigation";
 
+import {
+  chatApi,
+  MESSAGE_REPORT_REASONS,
+  type MessageReportReason,
+} from "@/api/ChatApi";
 import { Button } from "@/components/ui/Button";
 import { TextArea } from "@/components/ui/TextArea";
 import { useLocale } from "@/features/preferences/localeStore";
 import { reportMessages } from "@/locales/reportMessages";
-import { colors } from "@/theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { spacing } from "@/theme/spacing";
 import { cn } from "@/tw/cn";
-import {
-  KeyboardAvoidingView,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  Text,
-  View,
-} from "@/tw";
+import { KeyboardAvoidingView, Pressable, ScrollView, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import {
-  REPORT_TOPIC_VALUES,
-  type ReportRouteParams,
-  type ReportSource,
-  type ReportTopic,
-} from "./reportTypes";
+import { getLocalizedErrorMessage } from "@/utils/error";
+import type { ReportRouteParams } from "./reportTypes";
 import styles from "./reportStyles";
 
 type ReportRouteSearchParams = Partial<
   Record<keyof ReportRouteParams, string | string[]>
 >;
 
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isValidMessageId(id?: string | null): id is string {
+  if (!id || typeof id !== "string") return false;
+  return UUID_REGEX.test(id.trim());
+}
+
 export default function ReportScreen() {
+  const { colors } = useAppTheme();
   const router = useRouter();
   const params = useLocalSearchParams<ReportRouteSearchParams>();
   const { locale } = useLocale();
   const insets = useSafeAreaInsets();
   const messages = reportMessages[locale];
-  const sourceParam = getRouteParam(params.source);
-  const source: ReportSource | undefined =
-    sourceParam === "chat" || sourceParam === "quest" ? sourceParam : undefined;
-  const questTitle = getRouteParam(params.questTitle);
-  const contextType =
-    source === "chat"
-      ? messages.chatContextLabel
-      : source === "quest"
-        ? messages.questContextLabel
-        : undefined;
-  const topicOptions = REPORT_TOPIC_VALUES.map((value) => ({
-    value,
-    label: messages.topicOptions[value],
-  }));
+
+  const rawMessageId = getRouteParam(params.messageId);
+  const conversationTitle = getRouteParam(params.conversationTitle);
+  const senderName = getRouteParam(params.senderName);
+
+  const [reason, setReason] = useState<MessageReportReason | null>(null);
+  const [detail, setDetail] = useState("");
+  const [attempted, setAttempted] = useState(false);
+  const [step, setStep] = useState<"form" | "review" | "submitted">("form");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  if (!isValidMessageId(rawMessageId)) {
+    return (
+      <ScreenLayout
+        edges={["top", "left", "right"]}
+        className={styles.safeArea}
+      >
+        <View className={styles.header}>
+          <Pressable
+            accessibilityLabel={messages.back}
+            accessibilityRole="button"
+            className={styles.backButton}
+            onPress={() => router.back()}
+            testID="report-back"
+          >
+            <ChevronLeft
+              color={colors.primaryDeep}
+              size={26}
+              strokeWidth={2.3}
+            />
+          </Pressable>
+          <Text accessibilityRole="header" className={styles.headerTitle}>
+            {messages.title}
+          </Text>
+        </View>
+        <ScrollView
+          className={styles.scroll}
+          contentContainerClassName={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          <View
+            accessibilityRole="alert"
+            className={styles.unavailable}
+            testID="report-unavailable"
+          >
+            <View className={styles.unavailableIcon}>
+              <AlertCircle
+                color={colors.textMuted}
+                size={34}
+                strokeWidth={2.5}
+              />
+            </View>
+            <Text className={styles.unavailableTitle}>
+              {messages.unavailableTitle}
+            </Text>
+            <Text className={styles.unavailableDescription}>
+              {messages.unavailableDescription}
+            </Text>
+            <Button
+              className={styles.unavailableButton}
+              onPress={() => router.back()}
+              testID="report-unavailable-back"
+            >
+              {messages.back}
+            </Button>
+          </View>
+        </ScrollView>
+      </ScreenLayout>
+    );
+  }
+
+  const messageId = rawMessageId.trim();
+
   const contextCard =
-    source || questTitle ? (
+    conversationTitle || senderName ? (
       <View className={styles.contextCard} testID="report-context">
         <Text className={styles.contextLabel}>{messages.contextLabel}</Text>
-        {contextType ? (
-          <Text className={styles.contextType}>{contextType}</Text>
+        {conversationTitle ? (
+          <Text className={styles.contextItem} numberOfLines={2}>
+            {messages.contextConversation(conversationTitle)}
+          </Text>
         ) : null}
-        {questTitle ? (
-          <Text className={styles.contextTitle} numberOfLines={2}>
-            {questTitle}
+        {senderName ? (
+          <Text className={styles.contextItem} numberOfLines={1}>
+            {messages.contextSender(senderName)}
           </Text>
         ) : null}
         <Text className={styles.contextDescription}>
@@ -70,56 +135,45 @@ export default function ReportScreen() {
         </Text>
       </View>
     ) : null;
-  const successAction =
-    source === "chat" ? messages.backToChat : messages.backToQuest;
-  const [topics, setTopics] = useState<ReportTopic[]>([]);
-  const [draftTopics, setDraftTopics] = useState<ReportTopic[]>([]);
-  const [details, setDetails] = useState("");
-  const [attempted, setAttempted] = useState(false);
-  const [topicPickerOpen, setTopicPickerOpen] = useState(false);
-  const [step, setStep] = useState<"form" | "review" | "submitted">("form");
-  const selectedTopicLabels = topics.map(
-    (topic) => messages.topicOptions[topic]
-  );
-  const topicSelectionSummary = topics.length
-    ? messages.topicSelectedCount(topics.length)
-    : messages.topicPlaceholder;
-  const topicError =
-    attempted && topics.length === 0 ? messages.topicRequired : undefined;
+
+  const reasonError =
+    attempted && !reason ? messages.reasonRequired : undefined;
+  const detailTooLong = detail.length > 1000;
   const detailsError =
-    attempted && !details.trim() ? messages.detailsRequired : undefined;
-
-  const openTopicPicker = () => {
-    setDraftTopics(topics);
-    setTopicPickerOpen(true);
-  };
-
-  const closeTopicPicker = () => {
-    setTopicPickerOpen(false);
-  };
-
-  const toggleTopic = (value: ReportTopic) => {
-    setDraftTopics((currentTopics) =>
-      currentTopics.includes(value)
-        ? currentTopics.filter((topic) => topic !== value)
-        : [...currentTopics, value]
-    );
-  };
-
-  const confirmTopicSelection = () => {
-    setTopics(draftTopics);
-    setTopicPickerOpen(false);
-  };
+    attempted && detailTooLong ? messages.detailsTooLong : undefined;
 
   const handleReview = () => {
     setAttempted(true);
-    if (topics.length === 0 || !details.trim()) return;
-
+    if (!reason || detailTooLong) return;
+    setSubmitError(null);
     setStep("review");
   };
 
-  const handleSubmit = () => {
-    setStep("submitted");
+  const handleEdit = () => {
+    setSubmitError(null);
+    setStep("form");
+  };
+
+  const handleSubmit = async () => {
+    if (!reason || isSubmitting) return;
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      await chatApi.submitMessageReport({
+        messageId,
+        reason,
+        detail,
+      });
+      setStep("submitted");
+    } catch (error) {
+      setSubmitError(
+        getLocalizedErrorMessage(error, locale, {
+          fallback: messages.submitError,
+        })
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -169,7 +223,7 @@ export default function ReportScreen() {
                 onPress={() => router.back()}
                 testID="report-success-back"
               >
-                {successAction}
+                {messages.backToChat}
               </Button>
             </View>
           </ScrollView>
@@ -182,32 +236,41 @@ export default function ReportScreen() {
             {contextCard}
             <Text className={styles.intro}>{messages.reviewIntro}</Text>
             <View className={styles.reviewCard} testID="report-review">
+              {submitError ? (
+                <View
+                  accessibilityRole="alert"
+                  className={styles.errorBanner}
+                  testID="report-error-banner"
+                >
+                  <Text className={styles.errorText}>{submitError}</Text>
+                </View>
+              ) : null}
               <View className={styles.reviewField}>
                 <Text className={styles.reviewLabel}>
-                  {messages.reviewTopic}
+                  {messages.reviewReason}
                 </Text>
-                <View
-                  className={styles.reviewTags}
-                  testID="report-review-topics"
+                <Text
+                  className={styles.reviewValue}
+                  testID="report-review-reason"
                 >
-                  {selectedTopicLabels.map((label) => (
-                    <View key={label} className={styles.reviewTag}>
-                      <Text className={styles.reviewTagText}>{label}</Text>
-                    </View>
-                  ))}
-                </View>
+                  {reason ? messages.reasonOptions[reason] : ""}
+                </Text>
               </View>
               <View className={styles.reviewField}>
                 <Text className={styles.reviewLabel}>
                   {messages.reviewDetails}
                 </Text>
-                <Text className={styles.reviewDetailsValue}>
-                  {details.trim()}
+                <Text
+                  className={styles.reviewDetailsValue}
+                  testID="report-review-details"
+                >
+                  {detail.trim() || messages.noDetails}
                 </Text>
               </View>
               <View className={styles.reviewActions}>
                 <Button
-                  onPress={() => setStep("form")}
+                  disabled={isSubmitting}
+                  onPress={handleEdit}
                   testID="report-edit"
                   variant="secondary"
                 >
@@ -215,11 +278,16 @@ export default function ReportScreen() {
                 </Button>
                 <Button
                   className={styles.submitButton}
+                  disabled={isSubmitting}
                   onPress={handleSubmit}
                   style={{ backgroundColor: colors.danger }}
                   testID="report-submit-confirm"
                 >
-                  {messages.submit}
+                  {isSubmitting
+                    ? messages.submitting
+                    : submitError
+                      ? messages.retry
+                      : messages.submit}
                 </Button>
               </View>
             </View>
@@ -235,67 +303,74 @@ export default function ReportScreen() {
               {contextCard}
               <Text className={styles.intro}>{messages.intro}</Text>
               <View className={styles.form}>
-                <View className={styles.topicField}>
-                  <Text className={styles.topicLabel}>
-                    {messages.topicLabel}
+                <View className={styles.reasonField}>
+                  <Text className={styles.reasonLabel}>
+                    {messages.reasonLabel}
                   </Text>
-                  <Pressable
-                    accessibilityLabel={`${messages.topicLabel}: ${topicSelectionSummary}`}
-                    accessibilityRole="button"
-                    accessibilityState={{ expanded: topicPickerOpen }}
-                    className={cn(
-                      styles.topicTrigger,
-                      topicError && styles.topicTriggerError
-                    )}
-                    onPress={openTopicPicker}
-                    testID="report-topic-trigger"
+                  <View
+                    className={styles.choiceList}
+                    accessibilityRole="radiogroup"
                   >
-                    <Text
-                      className={cn(
-                        styles.topicTriggerText,
-                        topics.length === 0 && styles.topicTriggerPlaceholder
-                      )}
-                    >
-                      {topicSelectionSummary}
-                    </Text>
-                    <ChevronRight
-                      color={colors.textMuted}
-                      size={20}
-                      strokeWidth={2.2}
-                    />
-                  </Pressable>
-                  {topics.length > 0 ? (
-                    <View
-                      className={styles.selectedTopics}
-                      testID="report-selected-topics"
-                    >
-                      {selectedTopicLabels.map((label) => (
-                        <View key={label} className={styles.selectedTopicTag}>
-                          <Text className={styles.selectedTopicTagText}>
+                    {MESSAGE_REPORT_REASONS.map((reasonKey) => {
+                      const selected = reason === reasonKey;
+                      const label = messages.reasonOptions[reasonKey];
+                      return (
+                        <Pressable
+                          key={reasonKey}
+                          accessibilityLabel={`${messages.reasonLabel}: ${label}`}
+                          accessibilityRole="radio"
+                          accessibilityState={{ selected, checked: selected }}
+                          className={cn(
+                            styles.choiceItem,
+                            selected && styles.choiceItemSelected
+                          )}
+                          onPress={() => setReason(reasonKey)}
+                          testID={`report-reason-${reasonKey}`}
+                        >
+                          <Text
+                            className={cn(
+                              styles.choiceLabel,
+                              selected && styles.choiceLabelSelected
+                            )}
+                          >
                             {label}
                           </Text>
-                        </View>
-                      ))}
-                    </View>
-                  ) : null}
-                  {topicError ? (
+                          <View
+                            className={cn(
+                              styles.radioIndicator,
+                              selected && styles.radioIndicatorSelected
+                            )}
+                          >
+                            {selected ? (
+                              <View className={styles.radioDot} />
+                            ) : null}
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  {reasonError ? (
                     <Text
                       accessibilityRole="alert"
-                      className={styles.topicError}
+                      className={styles.reasonError}
                     >
-                      {topicError}
+                      {reasonError}
                     </Text>
                   ) : null}
                 </View>
-                <TextArea
-                  error={detailsError}
-                  label={messages.detailsLabel}
-                  maxLength={1000}
-                  onChangeText={setDetails}
-                  placeholder={messages.detailsPlaceholder}
-                  value={details}
-                />
-                <Text className={styles.helper}>{messages.detailsHint}</Text>
+                <View className={styles.detailsField}>
+                  <TextArea
+                    error={detailsError}
+                    label={messages.detailsLabel}
+                    maxLength={1000}
+                    onChangeText={setDetail}
+                    placeholder={messages.detailsPlaceholder}
+                    value={detail}
+                    testID="report-details-input"
+                  />
+                  <Text className={styles.counter}>{detail.length}/1000</Text>
+                  <Text className={styles.helper}>{messages.detailsHint}</Text>
+                </View>
               </View>
             </ScrollView>
             <View
@@ -309,99 +384,6 @@ export default function ReportScreen() {
           </>
         )}
       </KeyboardAvoidingView>
-
-      <Modal
-        animationType="slide"
-        onRequestClose={closeTopicPicker}
-        visible={topicPickerOpen}
-      >
-        <SafeAreaView
-          accessibilityViewIsModal
-          className={styles.topicPicker}
-          edges={["top", "bottom"]}
-          testID="report-topic-picker"
-        >
-          <View className={styles.topicPickerHeader}>
-            <Pressable
-              accessibilityLabel={messages.close}
-              accessibilityRole="button"
-              className={styles.topicPickerBack}
-              onPress={closeTopicPicker}
-              testID="report-topic-picker-close"
-            >
-              <ChevronLeft
-                color={colors.primaryDeep}
-                size={26}
-                strokeWidth={2.3}
-              />
-            </Pressable>
-            <Text
-              accessibilityRole="header"
-              className={styles.topicPickerTitle}
-            >
-              {messages.topicPickerTitle}
-            </Text>
-            <View className={styles.topicPickerHeaderSpacer} />
-          </View>
-          <ScrollView
-            className={styles.topicPickerScroll}
-            contentContainerClassName={styles.topicPickerContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <Text className={styles.topicPickerDescription}>
-              {messages.topicPickerDescription}
-            </Text>
-            <View className={styles.topicTagList}>
-              {topicOptions.map(({ value, label }) => {
-                const selected = draftTopics.includes(value);
-                return (
-                  <Pressable
-                    accessibilityLabel={`${messages.topicLabel}: ${label}`}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: selected }}
-                    className={cn(
-                      styles.topicTag,
-                      selected && styles.topicTagSelected
-                    )}
-                    key={value}
-                    onPress={() => toggleTopic(value)}
-                    testID={`report-topic-${value}`}
-                  >
-                    <Text
-                      className={cn(
-                        styles.topicTagText,
-                        selected && styles.topicTagTextSelected
-                      )}
-                    >
-                      {label}
-                    </Text>
-                    {selected ? (
-                      <View className={styles.topicTagCheck}>
-                        <Check
-                          color={colors.primary}
-                          size={18}
-                          strokeWidth={2.5}
-                        />
-                      </View>
-                    ) : null}
-                  </Pressable>
-                );
-              })}
-            </View>
-          </ScrollView>
-          <View
-            className={styles.topicPickerFooter}
-            style={{ paddingBottom: Math.max(insets.bottom, spacing.md) }}
-          >
-            <Button
-              onPress={confirmTopicSelection}
-              testID="report-topic-picker-done"
-            >
-              {messages.topicPickerDone}
-            </Button>
-          </View>
-        </SafeAreaView>
-      </Modal>
     </ScreenLayout>
   );
 }

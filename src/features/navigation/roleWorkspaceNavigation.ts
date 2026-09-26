@@ -1,16 +1,18 @@
-import { BriefcaseBusiness } from "lucide-react-native";
+import type { LucideIcon } from "lucide-react-native";
 
-import type { RoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
+import { RoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
 import type { SupportedLocale } from "@/locales/locale";
+import { navigationMessages } from "@/locales/navigationMessages";
 
 const navigationHomeIcon = require("@/assets/icons/navigation-home.svg");
 const navigationWalletIcon = require("@/assets/icons/navigation-wallet.svg");
 const navigationProfileIcon = require("@/assets/icons/navigation-profile.svg");
 const navigationCreateIcon = require("@/assets/icons/navigation-create.svg");
 const navigationChatIcon = require("@/assets/icons/navigation-chat.svg");
+const navigationWorkIcon = require("@/assets/icons/navigation-work.svg");
 
 type NavigationAsset = number;
-type NavigationIcon = typeof BriefcaseBusiness;
+type NavigationIcon = LucideIcon;
 
 export type NavigationItem = {
   routeName: string;
@@ -64,7 +66,7 @@ export const workerNavigationItems: readonly NavigationItem[] = [
   {
     routeName: "my-quests",
     labelKey: "workManagement",
-    icon: BriefcaseBusiness,
+    asset: navigationWorkIcon,
     isCreate: true,
   },
   baseNavigationItems.chat,
@@ -74,16 +76,17 @@ export const workerNavigationItems: readonly NavigationItem[] = [
 export function getRoleWorkspaceNavigation(
   workspace: RoleWorkspace
 ): readonly NavigationItem[] {
-  return workspace === "worker" ? workerNavigationItems : hirerNavigationItems;
+  return workspace === RoleWorkspace.WORKER
+    ? workerNavigationItems
+    : hirerNavigationItems;
 }
 
 export function getRoleWorkspaceAccessibilityLabel(
   workspace: RoleWorkspace,
   locale: SupportedLocale
 ): string {
-  if (workspace === "worker") {
-    return locale === "th" ? "พื้นที่ทำงานผู้ปฏิบัติงาน" : "Worker workspace";
-  }
-
-  return locale === "th" ? "พื้นที่ทำงานผู้ว่าจ้าง" : "Hirer workspace";
+  const messages = navigationMessages[locale];
+  return workspace === RoleWorkspace.WORKER
+    ? messages.workerWorkspace
+    : messages.hirerWorkspace;
 }

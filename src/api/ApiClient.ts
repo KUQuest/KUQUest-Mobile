@@ -1,11 +1,39 @@
 import { fetch as expoFetch } from "expo/fetch";
+import { z } from "zod";
 import { authClient } from "../features/auth/authClient";
+import { debugLog, errorDetails } from "./debugLog";
 
 export interface ApiClientOptions {
   baseUrl?: string;
   fetchImpl?: typeof fetch;
   cookieProvider?: () => string;
 }
+
+export interface RequestOptions {
+  signal?: AbortSignal;
+}
+
+export type QueryValue = string | number | boolean | null | undefined;
+
+export interface CallOptions extends RequestOptions {
+  /** Appended to the path; `null`, `undefined`, and `""` are omitted, `0` and `false` are sent. */
+  query?: Record<string, QueryValue>;
+  /** Sent as the `idempotency-key` header; must be non-blank and at most 200 characters. */
+  idempotencyKey?: string;
+  /** Extra request headers such as `If-Match`. */
+  headers?: Record<string, string>;
+}
+
+export interface SendOptions extends CallOptions {
+  /** JSON request body. */
+  json?: unknown;
+  /** Multipart request body; takes precedence over `json`. */
+  form?: FormData;
+}
+
+export type MutationMethod = "POST" | "PUT" | "PATCH" | "DELETE";
+
+const MAX_IDEMPOTENCY_KEY_LENGTH = 200;
 
 export class ApiError extends Error {
   constructor(
@@ -40,22 +68,38 @@ function hasHeader(headers: Record<string, string>, name: string): boolean {
     (header) => header.toLowerCase() === name.toLowerCase()
   );
 }
-
-function isQuestPublishRequest(pathOrUrl: string): boolean {
-  return /\/api\/v2\/quests\/[^/]+\/publish$/.test(pathOrUrl.split("?")[0]);
+function safeLogPath(pathOrUrl: string): string {
+  if (!/^https?:\/\//.test(pathOrUrl)) return pathOrUrl;
+  const { origin, pathname } = new URL(pathOrUrl);
+  return `${origin}${pathname}`;
 }
 
-function logQuestPublishResponse(
-  pathOrUrl: string,
-  status: number,
-  body: unknown
-): void {
-  if (__DEV__ && isQuestPublishRequest(pathOrUrl)) {
-    console.log(
-      "[quest-api] publishQuest response",
-      JSON.stringify({ path: pathOrUrl, status, body }, null, 2)
+function withQuery(path: string, query: CallOptions["query"]): string {
+  if (!query) return path;
+  const params = new URLSearchParams();
+  for (const [name, value] of Object.entries(query)) {
+    if (value === undefined || value === null || value === "") continue;
+    params.set(name, String(value));
+  }
+  const search = params.toString();
+  if (!search) return path;
+  return `${path}${path.includes("?") ? "&" : "?"}${search}`;
+}
+
+function callHeaders(options: CallOptions): Record<string, string> {
+  const headers = { ...options.headers };
+  const key = options.idempotencyKey;
+  if (key === undefined) return headers;
+  if (key.trim().length === 0) {
+    throw new Error("Idempotency keys must be non-blank");
+  }
+  if (key.length > MAX_IDEMPOTENCY_KEY_LENGTH) {
+    throw new Error(
+      `Idempotency keys must be at most ${MAX_IDEMPOTENCY_KEY_LENGTH} characters`
     );
   }
+  headers["idempotency-key"] = key;
+  return headers;
 }
 
 export class ApiClient {
@@ -72,7 +116,66 @@ export class ApiClient {
       options.cookieProvider ?? (() => authClient.getCookie());
   }
 
-  async request<T>(pathOrUrl: string, init: RequestInit = {}): Promise<T> {
+  /**
+   * GETs `path` and returns the validated `data` of the Server's
+   * `{ success: true, data }` envelope.
+   * Throws `ApiError` for non-2xx responses and `ZodError` when the body
+   * does not match `data`.
+   */
+  get<S extends z.ZodTypeAny>(
+    path: string,
+    data: S,
+    options: CallOptions = {}
+  ): Promise<z.output<S>> {
+    return this.call("GET", path, data, options, undefined);
+  }
+
+  /**
+   * Sends a mutation and returns the validated envelope `data`, with the same
+   * error modes as `get`. Pass `z.unknown()` when the endpoint returns no data.
+   */
+  send<S extends z.ZodTypeAny>(
+    method: MutationMethod,
+    path: string,
+    data: S,
+    options: SendOptions = {}
+  ): Promise<z.output<S>> {
+    const body =
+      options.form ??
+      (options.json === undefined ? undefined : JSON.stringify(options.json));
+    return this.call(method, path, data, options, body);
+  }
+
+  private async call<S extends z.ZodTypeAny>(
+    method: "GET" | MutationMethod,
+    path: string,
+    data: S,
+    options: CallOptions,
+    body: BodyInit | undefined
+  ): Promise<z.output<S>> {
+    const url = withQuery(path, options.query);
+    const raw = await this.request(url, {
+      method,
+      body,
+      headers: callHeaders(options),
+      signal: options.signal,
+    });
+    const parsed = z.object({ success: z.literal(true), data }).safeParse(raw);
+    if (!parsed.success) {
+      debugLog(
+        "api",
+        `${method} ${safeLogPath(url)} response does not match contract`,
+        errorDetails(parsed.error)
+      );
+      throw parsed.error;
+    }
+    return parsed.data.data;
+  }
+
+  private async request(
+    pathOrUrl: string,
+    init: RequestInit
+  ): Promise<unknown> {
     const url = this.resolveUrl(pathOrUrl);
     const headers = toHeaderRecord(init.headers);
 
@@ -83,21 +186,33 @@ export class ApiClient {
     ) {
       headers["Content-Type"] = "application/json";
     }
+    const method = init.method ?? "GET";
+    const logPath = safeLogPath(pathOrUrl);
+    const startedAt = Date.now();
     const cookie = this.cookieProvider();
     if (cookie && !hasHeader(headers, "Cookie")) {
       headers.Cookie = cookie;
     }
 
-    const response = await this.fetchImpl(url, {
-      ...init,
-      method: init.method ?? "GET",
-      credentials: "omit",
-      headers,
-    });
+    let response: Response;
+    try {
+      response = await this.fetchImpl(url, {
+        ...init,
+        method,
+        credentials: "omit",
+        headers,
+      });
+    } catch (error) {
+      debugLog(
+        "api",
+        `${method} ${logPath} failed (${Date.now() - startedAt}ms)`,
+        errorDetails(error)
+      );
+      throw error;
+    }
 
     const rawBody = response.status === 204 ? "" : await response.text();
     const body = rawBody ? this.parseBody(rawBody) : undefined;
-    logQuestPublishResponse(pathOrUrl, response.status, body);
     if (!response.ok) {
       const error =
         body && typeof body === "object"
@@ -107,7 +222,7 @@ export class ApiClient {
         error.error && typeof error.error === "object"
           ? (error.error as Record<string, unknown>)
           : error;
-      throw new ApiError(
+      const apiError = new ApiError(
         response.status,
         typeof nestedError.code === "string"
           ? nestedError.code
@@ -116,35 +231,18 @@ export class ApiClient {
           ? nestedError.message
           : "Request failed"
       );
+      debugLog(
+        "api",
+        `${method} ${logPath} -> ${response.status} (${Date.now() - startedAt}ms)`,
+        { code: apiError.code }
+      );
+      throw apiError;
     }
-
-    return body as T;
-  }
-
-  async requestJson<T>(
-    pathOrUrl: string,
-    body: unknown,
-    init: Omit<RequestInit, "body"> = {}
-  ): Promise<T> {
-    return await this.request<T>(pathOrUrl, {
-      ...init,
-      body: JSON.stringify(body),
-      headers: {
-        "Content-Type": "application/json",
-        ...toHeaderRecord(init.headers),
-      },
-    });
-  }
-
-  async requestForm<T>(
-    pathOrUrl: string,
-    formData: FormData,
-    init: Omit<RequestInit, "body"> = {}
-  ): Promise<T> {
-    return await this.request<T>(pathOrUrl, {
-      ...init,
-      body: formData,
-    });
+    debugLog(
+      "api",
+      `${method} ${logPath} -> ${response.status} (${Date.now() - startedAt}ms)`
+    );
+    return body;
   }
 
   private resolveUrl(pathOrUrl: string): string {

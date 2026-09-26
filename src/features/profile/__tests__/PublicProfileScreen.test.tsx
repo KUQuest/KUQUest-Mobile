@@ -7,10 +7,11 @@ import { authService } from "../../auth/AuthService";
 
 const mockBack = jest.fn();
 const mockPush = jest.fn();
+let mockParams: { id?: string | string[] } = { id: "public-student-1" };
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({ back: mockBack, push: mockPush, replace: jest.fn() }),
-  useLocalSearchParams: () => ({ id: "public-student-1" }),
+  useLocalSearchParams: () => mockParams,
 }));
 
 jest.mock("../../auth/AuthService", () => ({
@@ -97,6 +98,7 @@ const mockReviews = {
 describe("PublicProfileScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockParams = { id: "public-student-1" };
     (authService.getStudentApi as jest.Mock).mockResolvedValue({
       getPublicProfile: jest.fn().mockResolvedValue(mockPublicProfile),
       listPublicReviews: jest.fn().mockResolvedValue(mockReviews),
@@ -164,6 +166,75 @@ describe("PublicProfileScreen", () => {
     fireEvent.press(reviewsTab);
     await waitFor(() => {
       expect(view.getByText("Super reliable worker!")).toBeTruthy();
+    });
+  });
+
+  it("renders localized missing-ID state and navigates back", async () => {
+    mockParams = { id: "" };
+    const view = await renderWithQueryClient(<PublicProfileScreen />);
+
+    await waitFor(() => {
+      expect(view.getByText("User ID is required")).toBeTruthy();
+    });
+
+    const backButton = view.getByRole("button", { name: "Go back" });
+    fireEvent.press(backButton);
+    expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders localized profile error with retry button", async () => {
+    const getPublicProfile = jest
+      .fn()
+      .mockRejectedValueOnce(new Error("Internal error"))
+      .mockResolvedValueOnce(mockPublicProfile);
+    (authService.getStudentApi as jest.Mock).mockResolvedValue({
+      getPublicProfile,
+      listPublicReviews: jest.fn().mockResolvedValue(mockReviews),
+    });
+
+    const view = await renderWithQueryClient(<PublicProfileScreen />);
+
+    await waitFor(() => {
+      expect(view.getByText("Unable to load your profile.")).toBeTruthy();
+    });
+
+    const retryButton = view.getByRole("button", { name: "Try again" });
+    fireEvent.press(retryButton);
+
+    await waitFor(() => {
+      expect(getPublicProfile).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it("renders localized reviews error and retries calling refetch", async () => {
+    const listPublicReviews = jest
+      .fn()
+      .mockRejectedValueOnce(new Error("Reviews network failed"))
+      .mockResolvedValueOnce(mockReviews);
+    (authService.getStudentApi as jest.Mock).mockResolvedValue({
+      getPublicProfile: jest.fn().mockResolvedValue(mockPublicProfile),
+      listPublicReviews,
+    });
+
+    const view = await renderWithQueryClient(<PublicProfileScreen />);
+
+    await waitFor(() => {
+      expect(view.getAllByText("Jane Doe").length).toBeGreaterThan(0);
+    });
+
+    // Switch to Reviews tab
+    const reviewsTab = view.getByTestId("public-profile-tab-reviews");
+    fireEvent.press(reviewsTab);
+
+    await waitFor(() => {
+      expect(view.getByText("Unable to load reviews.")).toBeTruthy();
+    });
+
+    const retryButton = view.getByRole("button", { name: "Try again" });
+    fireEvent.press(retryButton);
+
+    await waitFor(() => {
+      expect(listPublicReviews).toHaveBeenCalledTimes(2);
     });
   });
 });

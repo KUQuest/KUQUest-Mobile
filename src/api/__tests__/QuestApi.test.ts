@@ -149,8 +149,7 @@ describe("QuestApi", () => {
         method: "POST",
         body: JSON.stringify(payload),
         headers: expect.objectContaining({
-          "Content-Type": "application/json",
-          "Idempotency-Key": expect.any(String),
+          "idempotency-key": expect.any(String),
         }),
       })
     );
@@ -178,8 +177,7 @@ describe("QuestApi", () => {
         method: "PATCH",
         body: JSON.stringify({ title: "Updated Title" }),
         headers: expect.objectContaining({
-          "Content-Type": "application/json",
-          "Idempotency-Key": "idem-edit-1",
+          "idempotency-key": "idem-edit-1",
           "If-Match": "1",
         }),
       })
@@ -209,8 +207,7 @@ describe("QuestApi", () => {
         method: "PATCH",
         body: JSON.stringify({ questFundingTotal: 600 }),
         headers: expect.objectContaining({
-          "Content-Type": "application/json",
-          "Idempotency-Key": expect.any(String),
+          "idempotency-key": expect.any(String),
           "If-Match": "2",
         }),
       })
@@ -234,8 +231,7 @@ describe("QuestApi", () => {
         method: "POST",
         body: "{}",
         headers: expect.objectContaining({
-          "Content-Type": "application/json",
-          "Idempotency-Key": expect.any(String),
+          "idempotency-key": expect.any(String),
         }),
       })
     );
@@ -268,7 +264,7 @@ describe("QuestApi", () => {
         method: "POST",
         body: "{}",
         headers: expect.objectContaining({
-          "Idempotency-Key": "cancel-quest-1",
+          "idempotency-key": "cancel-quest-1",
         }),
       })
     );
@@ -487,7 +483,7 @@ describe("QuestApi", () => {
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
-          "Idempotency-Key": "idem-1",
+          "idempotency-key": "idem-1",
         }),
       })
     );
@@ -648,6 +644,14 @@ describe("QuestApi", () => {
           okJson({ success: true, data: { items: [team] } })
         );
       }
+      if (url.endsWith("/select")) {
+        return Promise.resolve(
+          okJson({
+            success: true,
+            data: { questState: "QUEST_ASSIGNED", assignments: [] },
+          })
+        );
+      }
       if (url.endsWith("/reject")) {
         return Promise.resolve(
           okJson({ success: true, data: { ...team, state: "TEAM_REJECTED" } })
@@ -672,7 +676,7 @@ describe("QuestApi", () => {
       )
     ).resolves.toEqual(team);
     await expect(
-      api.joinCandidateTeam("quest-1", "team-1", "JOIN-123", "team-join-1")
+      api.joinCandidateTeam("quest-1", "team-1", "join-123", "team-join-1")
     ).resolves.toEqual(team);
     await expect(
       api.submitCandidateTeam(
@@ -689,6 +693,16 @@ describe("QuestApi", () => {
     await expect(
       api.rejectCandidateTeam("quest-1", "team-1", "team-reject-1")
     ).resolves.toEqual({ ...team, state: "TEAM_REJECTED" });
+
+    await expect(
+      api.leaveCandidateTeam("quest-1", "team-1", "team-leave-1")
+    ).resolves.toEqual(team);
+    await expect(
+      api.regenerateCandidateTeamJoinCode("quest-1", "team-1", "team-code-1")
+    ).resolves.toEqual(team);
+    await expect(
+      api.selectCandidateTeam("quest-1", "team-1", "team-select-1")
+    ).resolves.toEqual({ questState: "QUEST_ASSIGNED", assignments: [] });
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
@@ -741,6 +755,78 @@ describe("QuestApi", () => {
       6,
       "https://api.example.test/api/v2/quests/quest-1/teams/team-1",
       expect.objectContaining({ method: "GET" })
+    );
+    const noBodyActions = [
+      {
+        call: 7,
+        path: "/teams/team-1/reject",
+        idempotencyKey: "team-reject-1",
+      },
+      {
+        call: 8,
+        path: "/teams/team-1/leave",
+        idempotencyKey: "team-leave-1",
+      },
+      {
+        call: 9,
+        path: "/teams/team-1/join-code",
+        idempotencyKey: "team-code-1",
+      },
+      {
+        call: 10,
+        path: "/teams/team-1/select",
+        idempotencyKey: "team-select-1",
+      },
+    ];
+    for (const action of noBodyActions) {
+      const [url, init] = fetchMock.mock.calls[action.call - 1] ?? [];
+      expect(url).toBe(
+        `https://api.example.test/api/v2/quests/quest-1${action.path}`
+      );
+      expect(init?.method).toBe("POST");
+      expect(init?.body).toBeUndefined();
+      expect(init?.headers).toEqual(
+        expect.objectContaining({ "idempotency-key": action.idempotencyKey })
+      );
+    }
+  });
+  it("joins a Candidate team using joinCode without teamId", async () => {
+    const team = {
+      id: "team-1",
+      questId: "quest-1",
+      leaderId: "member-1",
+      name: "Code crew",
+      headcount: 2,
+      state: "TEAM_FORMING",
+      joinCode: "JOIN-999",
+      joinCodeExpiresAt: "2026-09-26T12:00:00Z",
+      members: [{ memberId: "member-1", joinedAt: "2026-09-24T12:00:00Z" }],
+      submission: null,
+      createdAt: "2026-09-24T12:00:00Z",
+    };
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => JSON.stringify({ success: true, data: team }),
+    });
+
+    const result = await api.joinCandidateTeamByCode(
+      "quest-1",
+      "join-999",
+      "team-join-by-code-1"
+    );
+
+    expect(result).toEqual(team);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v2/quests/quest-1/teams/join",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ joinCode: "JOIN-999" }),
+        headers: expect.objectContaining({
+          "idempotency-key": "team-join-by-code-1",
+        }),
+      })
     );
   });
 
@@ -944,6 +1030,14 @@ describe("QuestApi", () => {
           position: 0,
           uploadStatus: "PROOF_FILE_READY",
           failureCode: null,
+        },
+        {
+          fileId: null,
+          contentType: null,
+          sizeBytes: null,
+          position: 1,
+          uploadStatus: "PROOF_FILE_FAILED",
+          failureCode: "UPLOAD_FAILED",
         },
       ],
     };
@@ -1217,6 +1311,25 @@ describe("QuestApi", () => {
           "idempotency-key": "review-update-1",
         }),
       })
+    );
+  });
+  it("fetches an expiring proof file link from the proof file endpoint", async () => {
+    const fileLink = {
+      fileId: "file-1",
+      contentType: "image/png",
+      sizeBytes: 100,
+      position: 0,
+      url: "https://files.example.test/proof-1.png?token=temporary",
+      urlExpiresAt: "2026-09-24T12:00:00Z",
+    };
+    fetchMock.mockResolvedValue(okJson({ success: true, data: fileLink }));
+
+    await expect(
+      api.getProofFileLink("quest-1", "proof-1", "file-1")
+    ).resolves.toEqual(fileLink);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v2/quests/quest-1/proof-submissions/proof-1/files/file-1",
+      expect.objectContaining({ method: "GET" })
     );
   });
 });

@@ -14,32 +14,8 @@ export interface QuestBoardMessages {
   fundingTopUp: string;
   fundingTransfer: string;
   fundingActionsUnavailable: string;
-  topUpTitle: string;
-  topUpAmountTitle: string;
-  topUpAmountDescription: string;
-  topUpAmountLabel: string;
-  topUpQuickAmountLabel: (amount: number) => string;
-  topUpPromptPayTitle: string;
-  topUpPromptPayDescription: string;
-  topUpPromptPayQrUnavailable: string;
-  topUpConfirmationTitle: string;
-  topUpCredit: string;
-  topUpFee: string;
-  topUpTax: string;
-  topUpPaymentTotal: string;
-  topUpExpiresAt: string;
-  topUpConfirm: string;
-  topUpPaymentVerified: string;
-  topUpPaymentCredited: (credit: string) => string;
-  topUpDone: string;
   topUpCreateError: string;
-  topUpVerifyPayment: string;
-  topUpVerifyingPayment: string;
   topUpPaymentPending: string;
-  topUpSimulateDev: string;
-  topUpClose: string;
-  topUpBack: string;
-  topUpContinue: string;
   settlement: string;
   settlementDescription: string;
   refunds: string;
@@ -75,26 +51,28 @@ export interface QuestBoardMessages {
   afternoon: string;
   evening: string;
   schedule: string;
-  scheduleDescription: string;
+  scheduleLocation: string;
   startWork: string;
-  workWindow: string;
   finishBy: string;
-  finishByDescription: string;
   timeNotSpecified: string;
+  endTime: string;
   location: string;
-  spots: string;
   spotsSummary: (remaining: number, total: number) => string;
   participantsSummary: (accepted: number, total: number) => string;
+  manageQuestTitle: string;
+  submittedTeamCount: (count: number) => string;
   endingSoon: string;
   imageCount: (count: number) => string;
   questImageLabel: (index: number) => string;
   imageUnavailable: string;
+  closeImageViewer: string;
   perPerson: string;
   noQuests: string;
   noMatches: string;
   clearFilters: string;
   errorTitle: string;
   errorDescription: string;
+  manageSnapshotError: string;
   retry: string;
   retrySuccess: string;
   loading: string;
@@ -117,8 +95,8 @@ export interface QuestBoardMessages {
   messageOwnerShort: string;
   messageOwnerLoading: string;
   messageOwnerError: string;
-  reportQuest: string;
-  reportQuestDescription: string;
+  profileUnavailableTitle: string;
+  profileUnavailableMessage: string;
   requirements: string;
   description: string;
   completionCriteria: string;
@@ -128,6 +106,22 @@ export interface QuestBoardMessages {
   notNeeded: string;
   candidateMode: string;
   candidate: string;
+  selectRosterTitle: string;
+  confirmSelectCandidateTitle: string;
+  confirmSelectCandidateMessage: string;
+  confirmSelectTeamTitle: string;
+  confirmSelectTeamMessage: string;
+  confirmRejectCandidateTitle: string;
+  confirmRejectTeamTitle: string;
+  confirmRejectMessage: string;
+  noSelectionNeeded: string;
+  rosterWorkersTitle: string;
+  rosterWorkerCount: (count: number, headcount: number) => string;
+  rosterNoWorkers: string;
+  rosterProposalsTitle: string;
+  rosterOpenProfile: (name: string) => string;
+  actionFailedTitle: string;
+  actionFailedDescription: string;
   firstCome: string;
   reviewCandidates: string;
   applyForReview: string;
@@ -223,7 +217,7 @@ export interface QuestBoardMessages {
   proofReviewNoEvidence: string;
   proofReviewFileLabel: (
     position: number,
-    contentType: string,
+    contentType: string | null,
     size: string
   ) => string;
   proofReviewFileStatus: (status: string) => string;
@@ -238,6 +232,16 @@ export interface QuestBoardMessages {
   proofReviewReasonTooLong: string;
   proofReviewConfirmNotApproved: string;
   proofReviewNothingPending: string;
+  proofReviewSingleHint: string;
+  proofReviewGroupHint: string;
+  proofReviewTeamHint: string;
+  proofReviewPendingCount: (count: number) => string;
+  /** `null` means the submitter has not sent a Proof Submission yet. */
+  proofReviewStatus: (status: string | null) => string;
+  proofReviewWorkerFallback: string;
+  proofReviewTeamSubmittedBy: (leaderName: string) => string;
+  proofReviewOpen: string;
+  proofReviewOpenLabel: (submitterName: string) => string;
   disputeBannerTitle: string;
   disputeDescription: string;
   resolveDispute: string;
@@ -294,36 +298,8 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     fundingTransfer: "Transfer",
     fundingActionsUnavailable:
       "Transfers between Members are not supported. Use a funded Quest instead.",
-    topUpTitle: "Top up",
-    topUpAmountTitle: "Enter amount",
-    topUpAmountDescription: "Choose an amount to add to your funding balance.",
-    topUpAmountLabel: "Amount (THB)",
-    topUpQuickAmountLabel: (amount) =>
-      `Choose ฿${amount.toLocaleString("en-US")}`,
-    topUpPromptPayTitle: "PromptPay QR",
-    topUpPromptPayDescription:
-      "Scan this PromptPay QR with your mobile banking app, then check payment status.",
-    topUpPromptPayQrUnavailable:
-      "The payment provider did not return a PromptPay QR. Please try again.",
-    topUpConfirmationTitle: "Confirm top-up",
-    topUpCredit: "Credit to Spending Balance",
-    topUpFee: "Payment fee",
-    topUpTax: "VAT",
-    topUpPaymentTotal: "Payment total",
-    topUpExpiresAt: "Quote expires",
-    topUpConfirm: "Confirm and create QR",
-    topUpPaymentVerified: "Payment Verified (PAID)",
-    topUpPaymentCredited: (credit) =>
-      `${credit} credited to your Spending Balance`,
-    topUpDone: "Done",
     topUpCreateError: "Unable to create the PromptPay QR. Please try again.",
-    topUpVerifyPayment: "Check payment status",
-    topUpVerifyingPayment: "Checking payment status…",
     topUpPaymentPending: "Awaiting payment confirmation…",
-    topUpSimulateDev: "Simulate Paid (Dev)",
-    topUpClose: "Close",
-    topUpBack: "Back",
-    topUpContinue: "Continue",
     settlement: "Settlement",
     settlementDescription: "Settlement pays rewards for the Actual Headcount.",
     refunds: "Refunds",
@@ -368,27 +344,30 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     afternoon: "Afternoon",
     evening: "Evening",
     schedule: "Schedule",
-    scheduleDescription: "Plan the work window and deadline.",
+    scheduleLocation: "Schedule & location",
     startWork: "Start work",
-    workWindow: "Work window",
     finishBy: "Finish by",
-    finishByDescription: "Complete the Quest by this date.",
     timeNotSpecified: "Time not specified",
+    endTime: "End time",
     location: "Where",
-    spots: "spots",
     spotsSummary: (remaining, total) => `${remaining} of ${total} spots left`,
     participantsSummary: (accepted, total) =>
       `Participants ${accepted}/${total}`,
+    manageQuestTitle: "Manage Quest",
+    submittedTeamCount: (count) =>
+      `${count} submitted team${count === 1 ? "" : "s"}`,
     endingSoon: "Ending soon",
     imageCount: (count) => `${count} photo${count === 1 ? "" : "s"}`,
     questImageLabel: (index) => `Quest image ${index}`,
     imageUnavailable: "Quest image unavailable",
+    closeImageViewer: "Close image viewer",
     perPerson: "/ person",
     noQuests: "No quests available yet.",
     noMatches: "No quests found",
     clearFilters: "Clear filters",
     errorTitle: "Quest Board unavailable",
     errorDescription: "We could not load available Quests. Try again.",
+    manageSnapshotError: "We could not load this Quest. Try again.",
     retry: "Try again",
     retrySuccess: "Quest Board refreshed",
     loading: "Loading Quests",
@@ -412,9 +391,9 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     messageOwnerLoading: "Opening chat…",
     messageOwnerError:
       "We could not open a chat with the Quest owner. Try again.",
-    reportQuest: "Report a Quest issue",
-    reportQuestDescription:
-      "Send this joined Quest issue to the KUQuest Admin team for review.",
+    profileUnavailableTitle: "Profile unavailable",
+    profileUnavailableMessage:
+      "This Quest owner's profile could not be loaded.",
     requirements: "Requirements",
     description: "Description",
     completionCriteria: "Completion criteria",
@@ -424,6 +403,25 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     notNeeded: "Not needed",
     candidateMode: "Candidate mode",
     candidate: "Candidate",
+    selectRosterTitle: "Quest roster",
+    confirmSelectCandidateTitle: "Select this candidate?",
+    confirmSelectCandidateMessage:
+      "This assigns the Quest to them and automatically rejects every other applicant. This can't be undone.",
+    confirmSelectTeamTitle: "Select this team?",
+    confirmSelectTeamMessage:
+      "This assigns the Quest to every team member and automatically rejects every other team. This can't be undone.",
+    confirmRejectCandidateTitle: "Reject this candidate?",
+    confirmRejectTeamTitle: "Reject this team?",
+    confirmRejectMessage: "They will no longer be considered for this Quest.",
+    noSelectionNeeded: "This Quest fills automatically — no selection needed.",
+    rosterWorkersTitle: "Workers",
+    rosterWorkerCount: (count, headcount) =>
+      `${count} of ${headcount} ${headcount === 1 ? "Worker" : "Workers"}`,
+    rosterNoWorkers: "No Workers have joined yet.",
+    rosterProposalsTitle: "Candidate proposals",
+    rosterOpenProfile: (name) => `Open ${name}'s profile`,
+    actionFailedTitle: "Action failed",
+    actionFailedDescription: "The action could not be completed. Try again.",
     firstCome: "First-come, first-served",
     reviewCandidates: "Review candidates",
     applyForReview: "Apply for review",
@@ -581,7 +579,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     proofReviewEvidenceLabel: "Attached evidence",
     proofReviewNoEvidence: "No evidence files were attached.",
     proofReviewFileLabel: (position, contentType, size) =>
-      `File ${position} · ${contentType}${size ? ` · ${size}` : ""}`,
+      `File ${position}${contentType ? ` · ${contentType}` : ""}${size ? ` · ${size}` : ""}`,
     proofReviewPreview: "Preview",
     proofReviewPreviewUnavailable:
       "A preview link is not available for this private file.",
@@ -603,6 +601,33 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     proofReviewConfirmNotApproved: "Confirm non-approval",
     proofReviewNothingPending:
       "This Quest has no submitted work waiting for your review.",
+    proofReviewSingleHint:
+      "One Worker submits work for this Quest. Not approving it fails the Quest.",
+    proofReviewGroupHint:
+      "Each Worker submits their own work, and you review each submission separately. Not approving any submission fails the Quest; Workers you already approved keep their Reward.",
+    proofReviewTeamHint:
+      "The Team Leader submits one piece of work for the whole Team. Your decision applies to every teammate.",
+    proofReviewPendingCount: (count) =>
+      count === 0
+        ? "No submissions waiting for review"
+        : count === 1
+          ? "1 submission waiting for review"
+          : `${count} submissions waiting for review`,
+    proofReviewStatus: (status) =>
+      status === null
+        ? "Not submitted yet"
+        : ((
+            {
+              PROOF_PENDING: "Waiting for review",
+              PROOF_APPROVED: "Approved",
+              PROOF_NOT_APPROVED: "Not approved",
+            } as Record<string, string>
+          )[status] ?? status),
+    proofReviewWorkerFallback: "Worker",
+    proofReviewTeamSubmittedBy: (leaderName) => `Sent by ${leaderName}`,
+    proofReviewOpen: "Review",
+    proofReviewOpenLabel: (submitterName) =>
+      `Review submission from ${submitterName}`,
     disputeBannerTitle: "Quest dispute",
     disputeDescription:
       "This Quest is waiting for an authorized dispute resolution.",
@@ -663,36 +688,8 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     fundingTransfer: "โอนเงิน",
     fundingActionsUnavailable:
       "ไม่รองรับการโอนเงินระหว่าง Member โปรดใช้เควสต์ที่มีการกันเงินแทน",
-    topUpTitle: "เติมเงิน",
-    topUpAmountTitle: "ระบุจำนวนเงิน",
-    topUpAmountDescription: "เลือกจำนวนเงินที่ต้องการเติมในยอดเงินพร้อมใช้",
-    topUpAmountLabel: "จำนวนเงิน (บาท)",
-    topUpQuickAmountLabel: (amount) =>
-      `เลือก ฿${amount.toLocaleString("en-US")}`,
-    topUpPromptPayTitle: "QR พร้อมเพย์",
-    topUpPromptPayDescription:
-      "สแกน QR พร้อมเพย์นี้ด้วยแอปธนาคาร แล้วตรวจสอบสถานะการชำระเงิน",
-    topUpPromptPayQrUnavailable:
-      "ผู้ให้บริการชำระเงินไม่ส่ง QR พร้อมเพย์กลับมา โปรดลองอีกครั้ง",
-    topUpConfirmationTitle: "ยืนยันการเติมเงิน",
-    topUpCredit: "เครดิตเข้ายอดเงินพร้อมใช้",
-    topUpFee: "ค่าธรรมเนียมการชำระเงิน",
-    topUpTax: "ภาษีมูลค่าเพิ่ม",
-    topUpPaymentTotal: "ยอดชำระทั้งหมด",
-    topUpExpiresAt: "ใบเสนอราคาหมดอายุ",
-    topUpConfirm: "ยืนยันและสร้าง QR",
-    topUpPaymentVerified: "ยืนยันการชำระเงินแล้ว (PAID)",
-    topUpPaymentCredited: (credit) =>
-      `เครดิต ${credit} เข้ายอดเงินพร้อมใช้แล้ว`,
-    topUpDone: "เสร็จสิ้น",
     topUpCreateError: "ไม่สามารถสร้าง QR พร้อมเพย์ได้ โปรดลองอีกครั้ง",
-    topUpVerifyPayment: "ตรวจสอบสถานะการชำระเงิน",
-    topUpVerifyingPayment: "กำลังตรวจสอบสถานะการชำระเงิน…",
     topUpPaymentPending: "กำลังรอการยืนยันการชำระเงิน…",
-    topUpSimulateDev: "จำลองชำระสำเร็จ (Dev)",
-    topUpClose: "ปิด",
-    topUpBack: "ย้อนกลับ",
-    topUpContinue: "ดำเนินการต่อ",
     settlement: "การชำระเงิน",
     settlementDescription:
       "การชำระเงินจ่ายค่าตอบแทนตามจำนวน Worker จริง (Actual Headcount)",
@@ -738,28 +735,30 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     afternoon: "ช่วงบ่าย",
     evening: "ช่วงเย็น",
     schedule: "เวลา",
-    scheduleDescription: "ดูช่วงเวลาทำงานและกำหนดส่งได้ที่นี่",
+    scheduleLocation: "กำหนดการและสถานที่",
     startWork: "เริ่มงาน",
-    workWindow: "ช่วงเวลาทำงาน",
     finishBy: "ส่งงานภายใน",
-    finishByDescription: "ทำเควสต์ให้เสร็จภายในวันนี้",
     timeNotSpecified: "ยังไม่ระบุเวลา",
+    endTime: "เวลาสิ้นสุด",
     location: "สถานที่",
-    spots: "ที่ว่าง",
     spotsSummary: (remaining, total) =>
       `เหลือ ${remaining} จาก ${total} ที่ว่าง`,
     participantsSummary: (accepted, total) =>
       `ผู้เข้าร่วม ${accepted}/${total} คน`,
+    manageQuestTitle: "จัดการเควสต์",
+    submittedTeamCount: (count) => `${count} ทีมที่ส่งแล้ว`,
     endingSoon: "ใกล้ปิดรับสมัคร",
     imageCount: (count) => `${count} รูป`,
     questImageLabel: (index) => `รูปเควสต์ที่ ${index}`,
     imageUnavailable: "ไม่สามารถแสดงรูปเควสต์ได้",
+    closeImageViewer: "ปิดโปรแกรมดูรูปภาพ",
     perPerson: "/ คน",
     noQuests: "ยังไม่มีเควสต์ที่พร้อมให้ค้นหา",
     noMatches: "ไม่พบเควสต์",
     clearFilters: "ล้างตัวกรอง",
     errorTitle: "ไม่สามารถโหลดกระดานเควสต์ได้",
     errorDescription: "โหลดเควสต์ที่พร้อมใช้งานไม่สำเร็จ ลองอีกครั้ง",
+    manageSnapshotError: "โหลดข้อมูลเควสต์นี้ไม่สำเร็จ ลองอีกครั้ง",
     retry: "ลองอีกครั้ง",
     retrySuccess: "รีเฟรชกระดานเควสต์แล้ว",
     loading: "กำลังโหลดเควสต์",
@@ -782,9 +781,8 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     messageOwnerShort: "แชทผู้ว่าจ้าง",
     messageOwnerLoading: "กำลังเปิดแชท…",
     messageOwnerError: "ไม่สามารถเปิดแชทกับผู้ว่าจ้างได้ ลองอีกครั้ง",
-    reportQuest: "รายงาน",
-    reportQuestDescription:
-      "ส่งปัญหาของเควสต์ที่เข้าร่วมให้ทีมแอดมิน KUQuest ตรวจสอบ",
+    profileUnavailableTitle: "ไม่สามารถเปิดโปรไฟล์ได้",
+    profileUnavailableMessage: "ไม่สามารถโหลดโปรไฟล์ผู้ว่าจ้างของเควสต์นี้ได้",
     requirements: "รายละเอียดที่ต้องทำ",
     description: "คำอธิบาย",
     completionCriteria: "เกณฑ์การเสร็จงาน",
@@ -794,6 +792,25 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     notNeeded: "ไม่ต้องมี",
     candidateMode: "รูปแบบการคัดเลือก",
     candidate: "คัดเลือก",
+    selectRosterTitle: "รายชื่อในเควสต์",
+    confirmSelectCandidateTitle: "เลือกผู้สมัครคนนี้หรือไม่",
+    confirmSelectCandidateMessage:
+      "การเลือกจะมอบหมายเควสต์ให้ผู้สมัครคนนี้และปฏิเสธผู้สมัครคนอื่นโดยอัตโนมัติ ไม่สามารถย้อนกลับได้",
+    confirmSelectTeamTitle: "เลือกทีมนี้หรือไม่",
+    confirmSelectTeamMessage:
+      "การเลือกจะมอบหมายเควสต์ให้สมาชิกทุกคนในทีมนี้และปฏิเสธทีมอื่นโดยอัตโนมัติ ไม่สามารถย้อนกลับได้",
+    confirmRejectCandidateTitle: "ปฏิเสธผู้สมัครคนนี้หรือไม่",
+    confirmRejectTeamTitle: "ปฏิเสธทีมนี้หรือไม่",
+    confirmRejectMessage: "ผู้สมัครนี้จะไม่ถูกพิจารณาสำหรับเควสต์นี้อีก",
+    noSelectionNeeded: "เควสต์นี้รับผู้ทำงานอัตโนมัติ ไม่ต้องคัดเลือก",
+    rosterWorkersTitle: "ผู้ทำงาน",
+    rosterWorkerCount: (count, headcount) =>
+      `ผู้ทำงาน ${count}/${headcount} คน`,
+    rosterNoWorkers: "ยังไม่มีผู้ทำงานเข้าร่วม",
+    rosterProposalsTitle: "ข้อเสนอผู้สมัคร",
+    rosterOpenProfile: (name) => `ดูโปรไฟล์ของ ${name}`,
+    actionFailedTitle: "การดำเนินการล้มเหลว",
+    actionFailedDescription: "ดำเนินการไม่สำเร็จ โปรดลองอีกครั้ง",
     firstCome: "มาก่อนได้ก่อน",
     reviewCandidates: "ตรวจสอบผู้สมัคร",
     applyForReview: "สมัครเพื่อรอการคัดเลือก",
@@ -944,7 +961,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     proofReviewEvidenceLabel: "หลักฐานที่แนบ",
     proofReviewNoEvidence: "ไม่ได้แนบไฟล์หลักฐาน",
     proofReviewFileLabel: (position, contentType, size) =>
-      `ไฟล์ที่ ${position} · ${contentType}${size ? ` · ${size}` : ""}`,
+      `ไฟล์ที่ ${position}${contentType ? ` · ${contentType}` : ""}${size ? ` · ${size}` : ""}`,
     proofReviewPreview: "ดูตัวอย่าง",
     proofReviewPreviewUnavailable: "ไม่มีลิงก์ตัวอย่างสำหรับไฟล์ส่วนตัวนี้",
     proofReviewPreviewError: "ไม่สามารถเปิดหลักฐานนี้ได้",
@@ -963,6 +980,29 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
       })[status] ?? status,
     proofReviewConfirmNotApproved: "ยืนยันการไม่อนุมัติ",
     proofReviewNothingPending: "เควสต์นี้ไม่มีงานที่รอให้คุณตรวจ",
+    proofReviewSingleHint:
+      "ผู้ทำงานหนึ่งคนส่งงานสำหรับเควสต์นี้ หากไม่อนุมัติ เควสต์จะล้มเหลว",
+    proofReviewGroupHint:
+      "ผู้ทำงานแต่ละคนส่งงานของตนเอง และคุณต้องตรวจทีละรายการ หากไม่อนุมัติงานใดงานหนึ่ง เควสต์จะล้มเหลว ผู้ทำงานที่คุณอนุมัติแล้วยังได้รับรางวัล",
+    proofReviewTeamHint:
+      "หัวหน้าทีมส่งงานหนึ่งชิ้นแทนทั้งทีม การตัดสินใจของคุณมีผลกับสมาชิกทุกคนในทีม",
+    proofReviewPendingCount: (count) =>
+      count === 0 ? "ไม่มีงานที่รอตรวจ" : `มีงาน ${count} รายการรอตรวจ`,
+    proofReviewStatus: (status) =>
+      status === null
+        ? "ยังไม่ส่งงาน"
+        : ((
+            {
+              PROOF_PENDING: "รอตรวจ",
+              PROOF_APPROVED: "อนุมัติแล้ว",
+              PROOF_NOT_APPROVED: "ไม่อนุมัติ",
+            } as Record<string, string>
+          )[status] ?? status),
+    proofReviewWorkerFallback: "ผู้ทำงาน",
+    proofReviewTeamSubmittedBy: (leaderName) => `ส่งโดย ${leaderName}`,
+    proofReviewOpen: "ตรวจงาน",
+    proofReviewOpenLabel: (submitterName) =>
+      `ตรวจงานที่ส่งโดย ${submitterName}`,
     disputeBannerTitle: "ข้อพิพาทเควสต์",
     disputeDescription: "เควสต์นี้รอการแก้ไขข้อพิพาทจากผู้มีอำนาจ",
     resolveDispute: "แก้ไขข้อพิพาท",
@@ -971,7 +1011,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     publishQuest: "เผยแพร่เควสต์",
     escrowRewardPool: "เงินรางวัลรวม",
     escrowPlatformFee: "ค่าธรรมเนียมแพลตฟอร์ม",
-    escrowTotal: "ยอด Escrow ที่ต้องใช้",
+    escrowTotal: "ยอดเงินที่ต้องพักไว้",
     terminalBannerTitle: "ปิดเควสต์แล้ว",
     terminalDescription:
       "เควสต์นี้อยู่ในสถานะสิ้นสุด ไม่สามารถเปิดใหม่หรือรับผู้เข้าร่วมเพิ่มได้",

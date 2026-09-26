@@ -25,6 +25,35 @@ type BasicField =
   | "acceptedTerms"
   | "description"
   | "profileImage";
+export type OnboardingFormState = {
+  form: ProfileDraft;
+  errors: Record<string, string>;
+  hydrationState: OnboardingHydrationState;
+  isDirty: boolean;
+  updateField: <K extends BasicField>(field: K, value: ProfileDraft[K]) => void;
+  updateCertificate: (
+    index: number,
+    field: keyof Certificate,
+    value: string
+  ) => void;
+  updateExperience: (
+    index: number,
+    field: keyof Experience,
+    value: string
+  ) => void;
+  updateWork: (index: number, field: keyof Work, value: string) => void;
+  addCertificate: () => void;
+  addExperience: () => void;
+  addWork: () => void;
+  removeCertificate: (index: number) => void;
+  removeExperience: (index: number) => void;
+  removeWork: (index: number) => void;
+  clearErrors: (...keys: string[]) => void;
+  validateBasics: (requiresStudentId: boolean) => boolean;
+  validateDetails: () => boolean;
+  replaceForm: (nextForm: ProfileDraft, dirty: boolean) => void;
+  resetToServer: () => void;
+};
 
 type LocalFormState = {
   form: ProfileDraft | null;
