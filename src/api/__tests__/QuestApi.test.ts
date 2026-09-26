@@ -790,6 +790,45 @@ describe("QuestApi", () => {
       );
     }
   });
+  it("joins a Candidate team using joinCode without teamId", async () => {
+    const team = {
+      id: "team-1",
+      questId: "quest-1",
+      leaderId: "member-1",
+      name: "Code crew",
+      headcount: 2,
+      state: "TEAM_FORMING",
+      joinCode: "JOIN-999",
+      joinCodeExpiresAt: "2026-09-26T12:00:00Z",
+      members: [{ memberId: "member-1", joinedAt: "2026-09-24T12:00:00Z" }],
+      submission: null,
+      createdAt: "2026-09-24T12:00:00Z",
+    };
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => JSON.stringify({ success: true, data: team }),
+    });
+
+    const result = await api.joinCandidateTeamByCode(
+      "quest-1",
+      "join-999",
+      "team-join-by-code-1"
+    );
+
+    expect(result).toEqual(team);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v2/quests/quest-1/teams/join",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ joinCode: "JOIN-999" }),
+        headers: expect.objectContaining({
+          "idempotency-key": "team-join-by-code-1",
+        }),
+      })
+    );
+  });
 
   it("handles underfilled decisions through separate routes", async () => {
     const underfilled = {

@@ -119,12 +119,28 @@ export const WalletTransactionType = {
 } as const;
 export type TransactionType =
   (typeof WalletTransactionType)[keyof typeof WalletTransactionType];
+export const WalletTransactionTitleKey = {
+  PROMPT_PAY_TOP_UP: "promptPayTopUp",
+  WALLET_PAYMENT: "walletPayment",
+  QUEST_EARNINGS: "questEarnings",
+  QUEST_ESCROW_RESERVED: "questEscrowReserved",
+  QUEST_ESCROW_RELEASED: "questEscrowReleased",
+  EARNINGS_CONVERTED: "earningsConverted",
+  BANK_PAYOUT: "bankPayout",
+  RESERVED_FOR_QUEST: "reservedForQuest",
+  TOP_UP_TO_WALLET: "topUpToWallet",
+  QUEST_REFUND: "questRefund",
+  UNLOCK_AND_PAY: "unlockAndPay",
+  SYSTEM_FEE: "systemFee",
+  CONVERTED_TO_SPENDING: "convertedToSpending",
+} as const;
+export type WalletTransactionTitleKey =
+  (typeof WalletTransactionTitleKey)[keyof typeof WalletTransactionTitleKey];
 
 export interface UserTransaction {
   id: string;
   type: TransactionType;
-  title: string;
-  titleTh: string;
+  titleKey: WalletTransactionTitleKey;
   amountSatang: number;
   direction: "INFLOW" | "OUTFLOW";
   status: string;
@@ -151,38 +167,14 @@ export function createIdempotencyKey(): string {
   );
 }
 
-const activityLabels: Record<
-  TransactionType,
-  Pick<UserTransaction, "title" | "titleTh">
-> = {
-  TOP_UP: {
-    title: "PromptPay Top-Up",
-    titleTh: "เติมเงินผ่านพร้อมเพย์",
-  },
-  SPEND: {
-    title: "Wallet Payment",
-    titleTh: "การชำระเงินจากกระเป๋าเงิน",
-  },
-  EARN: {
-    title: "Quest Earnings",
-    titleTh: "รายได้จากเควสต์",
-  },
-  HOLD: {
-    title: "Quest Escrow Reserved",
-    titleTh: "กันเงินประกันเควสต์",
-  },
-  RELEASE: {
-    title: "Quest Escrow Released",
-    titleTh: "คืนเงินประกันเควสต์",
-  },
-  CONVERT: {
-    title: "Earnings Converted",
-    titleTh: "โอนรายได้เข้าสู่ยอดเงินพร้อมใช้",
-  },
-  PAYOUT: {
-    title: "Bank Payout",
-    titleTh: "ถอนเงินเข้าบัญชีธนาคาร",
-  },
+const activityTitleKeys: Record<TransactionType, WalletTransactionTitleKey> = {
+  TOP_UP: WalletTransactionTitleKey.PROMPT_PAY_TOP_UP,
+  SPEND: WalletTransactionTitleKey.WALLET_PAYMENT,
+  EARN: WalletTransactionTitleKey.QUEST_EARNINGS,
+  HOLD: WalletTransactionTitleKey.QUEST_ESCROW_RESERVED,
+  RELEASE: WalletTransactionTitleKey.QUEST_ESCROW_RELEASED,
+  CONVERT: WalletTransactionTitleKey.EARNINGS_CONVERTED,
+  PAYOUT: WalletTransactionTitleKey.BANK_PAYOUT,
 };
 
 function transactionFromActivity(activity: WalletActivity): UserTransaction {
@@ -193,13 +185,12 @@ function transactionFromActivity(activity: WalletActivity): UserTransaction {
     activity.payoutReservedDeltaSatang,
   ];
   const primaryDelta = deltas.find((delta) => delta !== 0) ?? 0;
-  const labels = activityLabels[activity.type];
+  const titleKey = activityTitleKeys[activity.type];
 
   return {
     id: activity.id,
     type: activity.type,
-    title: labels.title,
-    titleTh: labels.titleTh,
+    titleKey,
     amountSatang: Math.abs(primaryDelta),
     direction: primaryDelta > 0 ? "INFLOW" : "OUTFLOW",
     status: activity.activityStatus,
@@ -616,8 +607,7 @@ export class WalletApi {
         itemsMap.set(topUp.id, {
           id: topUp.id,
           type: "TOP_UP",
-          title: "PromptPay Top-Up",
-          titleTh: "เติมเงินผ่านพร้อมเพย์",
+          titleKey: WalletTransactionTitleKey.PROMPT_PAY_TOP_UP,
           amountSatang: topUp.creditSatang,
           direction: "INFLOW",
           status: topUp.topUpStatus,
@@ -690,8 +680,7 @@ export class WalletApi {
         itemsMap.set(payout.id, {
           id: payout.id,
           type: "PAYOUT",
-          title: "Bank Payout",
-          titleTh: "ถอนเงินเข้าบัญชีธนาคาร",
+          titleKey: WalletTransactionTitleKey.BANK_PAYOUT,
           amountSatang: payoutAmount,
           direction: "OUTFLOW",
           status: payout.payoutStatus ?? payout.status ?? "PENDING",

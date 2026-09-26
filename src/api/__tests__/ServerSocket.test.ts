@@ -45,6 +45,18 @@ describe("openServerSocket", () => {
     });
     socket.close();
   });
+  it("appends traceId query parameter when requested for log correlation", () => {
+    const socket = openServerSocket(
+      "/api/v2/events",
+      { onFrame: jest.fn() },
+      { traceId: "test-trace-uuid" }
+    );
+
+    expect(latestSocket().url).toBe(
+      "wss://api.example.com/api/v2/events?traceId=test-trace-uuid"
+    );
+    socket.close();
+  });
 
   it("uses ws for an http API host", () => {
     process.env.EXPO_PUBLIC_API_URL = "http://localhost:3000";

@@ -590,6 +590,21 @@ export class QuestApi {
       { json: validatedPayload, idempotencyKey }
     );
   }
+  async joinCandidateTeamByCode(
+    questId: string,
+    joinCode: string,
+    idempotencyKey = createQuestIdempotencyKey()
+  ): Promise<QuestV2Team> {
+    const validatedPayload = questV2TeamJoinPayloadSchema.parse({
+      joinCode: joinCode.toUpperCase(),
+    });
+    return this.client.send(
+      "POST",
+      `/api/v2/quests/${questId}/teams/join`,
+      questV2TeamSchema,
+      { json: validatedPayload, idempotencyKey }
+    );
+  }
 
   async leaveCandidateTeam(
     questId: string,

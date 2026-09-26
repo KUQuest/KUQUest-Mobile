@@ -39,13 +39,21 @@ const TERMINAL_CLOSE_CODES = [1008, 4401, 4403];
 // endpoints reject with 4403. The server allows the app scheme (app.json).
 const APP_ORIGIN = "kuquestmobile://";
 
-function toWebSocketUrl(apiBaseUrl: string, path: string): string {
+function toWebSocketUrl(
+  apiBaseUrl: string,
+  path: string,
+  traceId?: string
+): string {
   const socketBaseUrl = apiBaseUrl
     .trim()
     .replace(/\/+$/, "")
     .replace(/^https:/i, "wss:")
     .replace(/^http:/i, "ws:");
-  return `${socketBaseUrl}/${path.replace(/^\/+/, "")}`;
+  const normalizedPath = path.replace(/^\/+/, "");
+  const base = `${socketBaseUrl}/${normalizedPath}`;
+  if (!traceId || base.includes("traceId=")) return base;
+  const separator = base.includes("?") ? "&" : "?";
+  return `${base}${separator}traceId=${encodeURIComponent(traceId)}`;
 }
 
 function reconnectDelayMs(attempt: number): number {
@@ -62,7 +70,8 @@ function reconnectDelayMs(attempt: number): number {
  */
 export function openServerSocket(
   path: string,
-  handlers: ServerSocketHandlers
+  handlers: ServerSocketHandlers,
+  options?: { traceId?: string }
 ): ServerSocket {
   const NativeWebSocket: NativeWebSocketConstructor = WebSocket;
   const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
@@ -110,7 +119,7 @@ export function openServerSocket(
     let currentSocket: WebSocket;
     try {
       currentSocket = new NativeWebSocket(
-        toWebSocketUrl(apiBaseUrl, path),
+        toWebSocketUrl(apiBaseUrl, path, options?.traceId),
         [],
         { headers: { Cookie: sessionCookie, Origin: APP_ORIGIN } }
       );

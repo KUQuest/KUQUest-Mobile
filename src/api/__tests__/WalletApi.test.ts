@@ -212,6 +212,7 @@ describe("WalletApi", () => {
     expect(history.items[0]).toEqual(
       expect.objectContaining({
         type: "TOP_UP",
+        titleKey: "promptPayTopUp",
         amountSatang: 20000,
         direction: "INFLOW",
       })
@@ -219,6 +220,7 @@ describe("WalletApi", () => {
     expect(history.items[1]).toEqual(
       expect.objectContaining({
         type: "HOLD",
+        titleKey: "questEscrowReserved",
         amountSatang: 50000,
         direction: "OUTFLOW",
       })
@@ -674,6 +676,7 @@ describe("WalletApi", () => {
       amountSatang: 10000,
       direction: "INFLOW",
       type: "TOP_UP",
+      titleKey: "promptPayTopUp",
       status: "PAID",
       reference: "top-up:topup-uuid-1",
     });

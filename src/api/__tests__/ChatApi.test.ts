@@ -510,4 +510,92 @@ describe("ChatApi", () => {
       )
     ).toBe(true);
   });
+
+  it("posts message report payload and returns reporter entry", async () => {
+    const entry = {
+      id: "b2c3d4e5-f6a7-4890-b123-456789abcdef",
+      messageId: "a1b2c3d4-e5f6-4789-a012-3456789abcde",
+      reason: "REPORT_ABUSIVE_OR_HARASSMENT" as const,
+      detail: "Harassing message in work chat",
+      caseStatus: "REPORT_CASE_PENDING" as const,
+      createdAt: "2026-09-26T10:00:00.000Z",
+      updatedAt: "2026-09-26T10:00:00.000Z",
+    };
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () =>
+        JSON.stringify({
+          success: true,
+          data: { reporterEntry: entry },
+        }),
+    });
+
+    const result = await api.submitMessageReport({
+      messageId: "a1b2c3d4-e5f6-4789-a012-3456789abcde",
+      reason: "REPORT_ABUSIVE_OR_HARASSMENT",
+      detail: "   Harassing message in work chat   ",
+    });
+
+    expect(result).toEqual(entry);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v1/chat/reports",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          messageId: "a1b2c3d4-e5f6-4789-a012-3456789abcde",
+          reason: "REPORT_ABUSIVE_OR_HARASSMENT",
+          detail: "Harassing message in work chat",
+        }),
+      })
+    );
+    const headers = fetchMock.mock.calls[0][1]?.headers as Record<
+      string,
+      string
+    >;
+    expect(headers?.["idempotency-key"]).toBeUndefined();
+  });
+
+  it("omits detail property when detail is blank or omitted", async () => {
+    const entry = {
+      id: "c3d4e5f6-a7b8-4901-c234-56789abcdef0",
+      messageId: "a1b2c3d4-e5f6-4789-a012-3456789abcde",
+      reason: "REPORT_SPAM" as const,
+      detail: null,
+      caseStatus: "REPORT_CASE_PENDING" as const,
+      createdAt: "2026-09-26T10:05:00.000Z",
+      updatedAt: "2026-09-26T10:05:00.000Z",
+    };
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () =>
+        JSON.stringify({
+          success: true,
+          data: { reporterEntry: entry },
+        }),
+    });
+
+    const result = await api.submitMessageReport({
+      messageId: "a1b2c3d4-e5f6-4789-a012-3456789abcde",
+      reason: "REPORT_SPAM",
+      detail: "   ",
+    });
+
+    expect(result).toEqual(entry);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v1/chat/reports",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          messageId: "a1b2c3d4-e5f6-4789-a012-3456789abcde",
+          reason: "REPORT_SPAM",
+        }),
+      })
+    );
+  });
 });

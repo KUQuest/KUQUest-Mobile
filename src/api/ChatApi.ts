@@ -169,6 +169,45 @@ export const candidateInquiryPageDataSchema = z.object({
 export const candidateInquiryParticipantsDataSchema = z.object({
   participants: z.array(candidateInquiryParticipantSchema),
 });
+export const MESSAGE_REPORT_REASONS = [
+  "REPORT_ABUSIVE_OR_HARASSMENT",
+  "REPORT_SPAM",
+  "REPORT_INAPPROPRIATE_CONTENT",
+  "REPORT_DANGER_OR_THREAT",
+  "REPORT_OTHER",
+] as const;
+
+export type MessageReportReason = (typeof MESSAGE_REPORT_REASONS)[number];
+
+export const REPORT_CASE_STATUSES = [
+  "REPORT_CASE_PENDING",
+  "REPORT_CASE_DISMISSED",
+  "REPORT_CASE_HIDDEN",
+  "REPORT_CASE_RESTORED",
+] as const;
+
+export type ReportCaseStatus = (typeof REPORT_CASE_STATUSES)[number];
+
+export const messageReporterEntrySchema = z.object({
+  id: z.string().uuid(),
+  messageId: z.string().uuid(),
+  reason: z.enum(MESSAGE_REPORT_REASONS),
+  detail: z.string().nullable(),
+  caseStatus: z.enum(REPORT_CASE_STATUSES),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type ServerMessageReporterEntry = z.infer<
+  typeof messageReporterEntrySchema
+>;
+
+export const submitMessageReportDataSchema = z.object({
+  reporterEntry: messageReporterEntrySchema,
+});
+export type SubmitMessageReportData = z.infer<
+  typeof submitMessageReportDataSchema
+>;
+
 export function serverMessageToChatMessage(
   msg: ServerChatMessage,
   currentUserId?: string
@@ -182,6 +221,7 @@ export function serverMessageToChatMessage(
     sender: isMe ? "me" : "other",
     text: localizedText,
     createdAt: msg.createdAt,
+    kind: msg.kind,
   };
 }
 
@@ -584,6 +624,31 @@ export class ChatApi {
 
   getCandidateInquiryEventsPath(conversationId: string): string {
     return `/api/v1/chat/candidate-inquiries/${encodeURIComponent(conversationId)}/events`;
+  }
+
+  async submitMessageReport(
+    payload: {
+      messageId: string;
+      reason: MessageReportReason;
+      detail?: string;
+    },
+    options?: RequestOptions
+  ): Promise<ServerMessageReporterEntry> {
+    const trimmedDetail = payload.detail?.trim();
+    const result = await this.client.send(
+      "POST",
+      "/api/v1/chat/reports",
+      submitMessageReportDataSchema,
+      {
+        ...options,
+        json: {
+          messageId: payload.messageId,
+          reason: payload.reason,
+          ...(trimmedDetail ? { detail: trimmedDetail } : {}),
+        },
+      }
+    );
+    return result.reporterEntry;
   }
 }
 
