@@ -15501,6 +15501,307 @@ paths:
                       message:
                         type: string
                 additionalProperties: false
+  /api/v2/quests/{questId}/teams/join:
+    post:
+      tags:
+        - Quest Candidate Teams v2
+      summary: Join a forming Candidate Team with a Join Code
+      description: An eligible Prospective Worker joins the Candidate Team identified
+        by its current, unexpired Join Code.
+      operationId: joinQuestCandidateTeamByCodeV2
+      security:
+        - betterAuthSession: []
+      parameters:
+        - name: questId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+        - name: idempotency-key
+          in: header
+          required: true
+          schema:
+            minLength: 1
+            maxLength: 200
+            pattern: \S
+            description: Non-blank command identity for replay-safe Candidate Team
+              commands
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              additionalProperties: false
+              type: object
+              required:
+                - joinCode
+              properties:
+                joinCode:
+                  minLength: 1
+                  maxLength: 32
+                  pattern: \S
+                  type: string
+          application/x-www-form-urlencoded:
+            schema:
+              additionalProperties: false
+              type: object
+              required:
+                - joinCode
+              properties:
+                joinCode:
+                  minLength: 1
+                  maxLength: 32
+                  pattern: \S
+                  type: string
+          multipart/form-data:
+            schema:
+              additionalProperties: false
+              type: object
+              required:
+                - joinCode
+              properties:
+                joinCode:
+                  minLength: 1
+                  maxLength: 32
+                  pattern: \S
+                  type: string
+      responses:
+        '200':
+          description: Response for status 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - id
+                      - questId
+                      - leaderId
+                      - name
+                      - headcount
+                      - state
+                      - joinCode
+                      - joinCodeExpiresAt
+                      - members
+                      - submission
+                      - createdAt
+                    properties:
+                      id:
+                        format: uuid
+                        type: string
+                      questId:
+                        format: uuid
+                        type: string
+                      leaderId:
+                        format: uuid
+                        type: string
+                      name:
+                        minLength: 1
+                        maxLength: 100
+                        pattern: \S
+                        type: string
+                      headcount:
+                        minimum: 2
+                        maximum: 20
+                        anyOf:
+                          - format: integer
+                            default: 0
+                            type: string
+                          - minimum: 2
+                            maximum: 20
+                            type: integer
+                      state:
+                        type: string
+                        enum:
+                          - TEAM_FORMING
+                          - TEAM_SUBMITTED
+                          - TEAM_SELECTED
+                          - TEAM_REJECTED
+                          - TEAM_DISBANDED
+                      joinCode:
+                        nullable: true
+                        anyOf:
+                          - pattern: ^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$
+                            type: string
+                          - type: 'null'
+                      joinCodeExpiresAt:
+                        nullable: true
+                        anyOf:
+                          - format: date-time
+                            type: string
+                          - type: 'null'
+                      members:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - memberId
+                            - joinedAt
+                          properties:
+                            memberId:
+                              format: uuid
+                              type: string
+                            joinedAt:
+                              format: date-time
+                              type: string
+                      submission:
+                        nullable: true
+                        anyOf:
+                          - type: object
+                            required:
+                              - text
+                              - fileIds
+                              - submittedAt
+                            properties:
+                              text:
+                                minLength: 1
+                                maxLength: 1000
+                                pattern: \S
+                                type: string
+                              fileIds:
+                                minItems: 1
+                                uniqueItems: true
+                                type: array
+                                items:
+                                  format: uuid
+                                  type: string
+                              submittedAt:
+                                format: date-time
+                                type: string
+                          - type: 'null'
+                      createdAt:
+                        format: date-time
+                        type: string
+        '400':
+          description: Response for status 400
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        '401':
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        '404':
+          description: Response for status 404
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        '409':
+          description: Response for status 409
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        '503':
+          description: Response for status 503
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
   /api/v2/quests/{questId}/teams/{teamId}:
     get:
       tags:
@@ -22099,13 +22400,22 @@ paths:
                       message:
                         type: string
                 additionalProperties: false
+  /api/v2/quests/board/events:
+    ws:
+      tags:
+        - Quest
+      summary: Subscribe to Quest Board updates
+      description: Subscribes an authenticated Member to Quest Board invalidations.
+        Read the Board from REST after SUBSCRIBED and each invalidation.
+      operationId: subscribeQuestBoardUpdates
   /api/v2/quests/{questId}/events:
     ws:
       tags:
         - Quest
       summary: Subscribe to read-only Quest updates
-      description: Subscribes an authorized Hirer or Worker to current Quest updates.
-        Read Quest state from REST after SUBSCRIBED.
+      description: Subscribes the Hirer, an Active Worker, or a Prospective Worker
+        with an open Candidate Inquiry Conversation to realtime Quest updates. Read
+        Quest state from REST after SUBSCRIBED.
       operationId: subscribeQuestUpdates
       parameters:
         - name: questId
@@ -22129,6 +22439,15 @@ paths:
           schema:
             format: uuid
             type: string
+  /api/v2/me/hirer-quests/events:
+    ws:
+      tags:
+        - Quest
+      summary: Subscribe to owned Quest updates
+      description: Sends SUBSCRIBED, then HIRER_QUEST_UPDATED for owned v2 Quest creation,
+        publication, lifecycle, application, and Candidate Team changes. Read Quest
+        state from REST after each update.
+      operationId: subscribeHirerQuestUpdates
   /api/v2/quests:
     get:
       tags:
@@ -24985,10 +25304,17 @@ paths:
     patch:
       tags:
         - Quests v2
-      summary: Edit a v2 Quest Draft
-      description: Updates the supplied fields of an owned QUEST_DRAFT with optimistic
-        concurrency.
-      operationId: editQuestV2Draft
+      summary: Edit a v2 Quest Draft or eligible open Quest
+      description: Updates supplied fields of an owned Quest with optimistic concurrency.
+        In QUEST_OPEN, the Hirer may edit title, description, Condition, mode, participation,
+        schedule, Tag, proof requirement, and locations before the first Candidate
+        application, Candidate Team, or Assignment. `questFundingTotal` and `headcount`
+        are locked. The API returns 409 `QUEST_OPEN_FIELD_LOCKED` for locked fields
+        and 409 `QUEST_OPEN_EDIT_CLOSED` after participation starts. A Quest must
+        retain a Tag, a future `startTime`, and a `dueAt` after `startTime`; otherwise
+        the API returns 400 `INVALID_OPEN_QUEST`. `QUEST_ASSIGNED` Condition changes
+        use the separate Quest Edit Request protocol.
+      operationId: editQuestV2
       security:
         - betterAuthSession: []
       parameters:
