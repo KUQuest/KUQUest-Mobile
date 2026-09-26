@@ -9,16 +9,19 @@ import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
-import {
-  formatRelativeRemaining,
-  getErrorMessage,
-  getRouteParam,
-} from "@/utils";
+import { questWorkMessages } from "@/locales/questWorkMessages";
+import { formatRelativeRemaining, getRouteParam } from "@/utils";
+import { getLocalizedErrorMessage } from "@/utils/error";
 
 import { useLiveQuestSnapshotQuery } from "../api/questBoardQueries";
 import { liveQuestService } from "../live/liveQuestService";
 import type { LiveQuestSnapshot } from "../live/liveQuestTypes";
 import type { ProofDraftAsset } from "./components/ProofSubmissionSheet";
+import {
+  QuestNextAction,
+  QuestProofStatus,
+  QuestStatus,
+} from "../domain/types";
 
 interface QuestProofFeatureOptions {
   questId?: string;
@@ -58,6 +61,7 @@ export function useQuestProofFeature({
   }>();
   const { locale } = useLocale();
   const messages = questBoardMessages[locale];
+  const workMessages = questWorkMessages[locale];
   const resolvedQuestId = questId ?? getRouteParam(params.id);
   const explicitViewerId =
     viewerId ??
@@ -69,8 +73,8 @@ export function useQuestProofFeature({
     (currentSnapshot: LiveQuestSnapshot | undefined): number | false => {
       if (!currentSnapshot || !resolvedViewerId) return false;
       const currentStatus = ownProof(currentSnapshot, resolvedViewerId)?.status;
-      return currentSnapshot.nextAction === "WAIT_FOR_START" ||
-        currentStatus === "PROOF_PENDING"
+      return currentSnapshot.nextAction === QuestNextAction.WAIT_FOR_START ||
+        currentStatus === QuestProofStatus.PROOF_PENDING
         ? 10_000
         : false;
     },
@@ -95,7 +99,9 @@ export function useQuestProofFeature({
   const [now, setNow] = useState(() => Date.now());
   const [commandError, setCommandError] = useState<string | null>(null);
   const snapshotError = snapshotQuery.error
-    ? getErrorMessage(snapshotQuery.error, messages.errorDescription)
+    ? getLocalizedErrorMessage(snapshotQuery.error, locale, {
+        fallback: messages.manageSnapshotError,
+      })
     : undefined;
   const error = commandError ?? snapshotError;
 
@@ -122,15 +128,15 @@ export function useQuestProofFeature({
   const refreshAuthoritatively =
     useCallback(async (): Promise<LiveQuestSnapshot> => {
       if (!resolvedQuestId || !resolvedViewerId) {
-        throw new Error(messages.errorDescription);
+        throw new Error(messages.manageSnapshotError);
       }
       const result = await refetchSnapshot();
       if (result.error) throw result.error;
-      if (!result.data) throw new Error(messages.errorDescription);
+      if (!result.data) throw new Error(messages.manageSnapshotError);
       setCommandError(null);
       return result.data;
     }, [
-      messages.errorDescription,
+      messages.manageSnapshotError,
       refetchSnapshot,
       resolvedQuestId,
       resolvedViewerId,
@@ -139,10 +145,10 @@ export function useQuestProofFeature({
   const saveDraft = useCallback(
     async (assets: ProofDraftAsset[], note: string) => {
       if (!resolvedQuestId || !resolvedViewerId) {
-        throw new Error(messages.errorDescription);
+        throw new Error(messages.manageSnapshotError);
       }
       if (!snapshot?.capabilities.canSubmitProof) {
-        throw new Error(messages.errorDescription);
+        throw new Error(messages.manageSnapshotError);
       }
       const key = createQuestIdempotencyKey();
       const normalizedNote = note.trim();
@@ -182,7 +188,7 @@ export function useQuestProofFeature({
     },
     [
       isDraft,
-      messages.errorDescription,
+      messages.manageSnapshotError,
       proof,
       refreshAuthoritatively,
       resolvedQuestId,
@@ -197,10 +203,10 @@ export function useQuestProofFeature({
       pendingNote = ""
     ) => {
       if (!resolvedQuestId || !resolvedViewerId) {
-        throw new Error(messages.errorDescription);
+        throw new Error(messages.manageSnapshotError);
       }
       if (!snapshot?.capabilities.canSubmitProof) {
-        throw new Error(messages.errorDescription);
+        throw new Error(messages.manageSnapshotError);
       }
       let submission = proof;
       const normalizedNote = pendingNote.trim();
@@ -244,7 +250,7 @@ export function useQuestProofFeature({
     [
       draftAssets,
       isDraft,
-      messages.errorDescription,
+      messages.manageSnapshotError,
       messages.proofContentRequired,
       onReturnToWorkHub,
       proof,
@@ -291,8 +297,7 @@ export function useQuestProofFeature({
         return;
       }
       const asset = retryAssets[position] ?? draftAssets[position];
-      if (!asset)
-        throw new Error("Choose the failed file again before retrying.");
+      if (!asset) throw new Error(workMessages.retryFailedProofFile);
       await liveQuestService.updateProofDraft(
         resolvedQuestId,
         proof.id,
@@ -312,6 +317,7 @@ export function useQuestProofFeature({
       refreshAuthoritatively,
       resolvedQuestId,
       retryAssets,
+      workMessages.retryFailedProofFile,
       snapshot?.capabilities.canSubmitProof,
     ]
   );
@@ -321,7 +327,7 @@ export function useQuestProofFeature({
       !resolvedQuestId ||
       !snapshot ||
       snapshot.proofRequired ||
-      snapshot.state !== "QUEST_IN_PROGRESS" ||
+      snapshot.state !== QuestStatus.QUEST_IN_PROGRESS ||
       !snapshot.capabilities.canConfirmCompletion
     ) {
       return;
@@ -340,11 +346,16 @@ export function useQuestProofFeature({
             if (!onReturnToWorkHub) router.replace("/my-quests");
           })
           .catch((caught) =>
-            setCommandError(getErrorMessage(caught, messages.errorDescription))
+            setCommandError(
+              getLocalizedErrorMessage(caught, locale, {
+                fallback: messages.manageSnapshotError,
+              })
+            )
           );
       },
     });
   }, [
+    locale,
     messages,
     onReturnToWorkHub,
     refreshAuthoritatively,
@@ -354,11 +365,11 @@ export function useQuestProofFeature({
   ]);
 
   const statusLabel =
-    status === "PROOF_APPROVED"
-      ? messages.statusLabel("PROOF_APPROVED")
-      : status === "PROOF_NOT_APPROVED"
-        ? messages.statusLabel("PROOF_NOT_APPROVED")
-        : status === "PROOF_PENDING"
+    status === QuestProofStatus.PROOF_APPROVED
+      ? messages.statusLabel(QuestProofStatus.PROOF_APPROVED)
+      : status === QuestProofStatus.PROOF_NOT_APPROVED
+        ? messages.statusLabel(QuestProofStatus.PROOF_NOT_APPROVED)
+        : status === QuestProofStatus.PROOF_PENDING
           ? messages.proofPending
           : isDraft
             ? messages.proofSubmissionTitle

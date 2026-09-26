@@ -1,4 +1,5 @@
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
+import { QuestProofFileStatus } from "@/features/questBoard/domain/types";
 
 /** An unsent Proof draft plus which local file (by key) sits at each position. */
 export interface ProofDraftRef {
@@ -44,7 +45,10 @@ export function planProofSend<TFile extends { key: string }>(
   const failedPositions: number[] = [];
   for (const file of draft.files) {
     const key = draft.fileKeys[file.position] ?? null;
-    if (file.uploadStatus === "PROOF_FILE_READY" && file.fileId !== null) {
+    if (
+      file.uploadStatus === QuestProofFileStatus.PROOF_FILE_READY &&
+      file.fileId !== null
+    ) {
       if (key !== null && !selectedKeys.has(key)) return replace;
       if (key !== null) readyKeys.add(key);
     } else {

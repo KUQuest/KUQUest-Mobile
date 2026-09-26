@@ -4,9 +4,13 @@ import { BriefcaseBusiness, ChevronRight, Clock3 } from "lucide-react-native";
 
 import { Pressable, Text, View } from "@/tw";
 import type { QuestV2Assignment, QuestV2State } from "@/api/questV2Contracts";
+import {
+  QuestAssignmentStatus,
+  QuestStatus,
+} from "@/features/questBoard/domain/types";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
-import { workerHomeMessages } from "../workerHomeMessages";
+import { workerHomeMessages } from "@/locales/workerHomeMessages";
 import { spacing } from "@/theme/spacing";
 import {
   workerHomeDockShadow,
@@ -35,18 +39,18 @@ export function WorkerQuickAccessBar({
 
   const currentQuestState = questState ?? assignment?.questState;
   const isActiveQuest =
-    currentQuestState === "QUEST_ASSIGNED" ||
-    currentQuestState === "QUEST_IN_PROGRESS";
+    currentQuestState === QuestStatus.QUEST_ASSIGNED ||
+    currentQuestState === QuestStatus.QUEST_IN_PROGRESS;
 
   if (
     !assignment ||
-    assignment.state !== "ASSIGNMENT_ACTIVE" ||
+    assignment.state !== QuestAssignmentStatus.ASSIGNMENT_ACTIVE ||
     !isActiveQuest
   ) {
     return null;
   }
 
-  const isWaitingToStart = currentQuestState === "QUEST_ASSIGNED";
+  const isWaitingToStart = currentQuestState === QuestStatus.QUEST_ASSIGNED;
   const stateLabel = isWaitingToStart
     ? messages.stateAssigned
     : messages.stateInProgress;

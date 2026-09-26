@@ -4,6 +4,11 @@ import type {
   QuestV2Participation,
   QuestV2Team,
 } from "@/api/questV2Contracts";
+import {
+  QuestApplicationStatus,
+  QuestParticipation,
+  QuestTeamStatus,
+} from "../domain/types";
 import type { SupportedLocale } from "@/locales/locale";
 import type { LiveQuestCapabilities } from "../live/liveQuestTypes";
 
@@ -27,16 +32,16 @@ export function getSelectRosterPermissions(snapshot?: {
 }): SelectRosterPermissions {
   return {
     canSelectCandidate:
-      snapshot?.participation === "SINGLE" &&
+      snapshot?.participation === QuestParticipation.SINGLE &&
       snapshot.capabilities.canSelectCandidate,
     canRejectCandidate:
-      snapshot?.participation === "SINGLE" &&
+      snapshot?.participation === QuestParticipation.SINGLE &&
       snapshot.capabilities.canRejectCandidate,
     canSelectTeam:
-      snapshot?.participation === "GROUP" &&
+      snapshot?.participation === QuestParticipation.GROUP &&
       snapshot.capabilities.canSelectTeam,
     canRejectTeam:
-      snapshot?.participation === "GROUP" &&
+      snapshot?.participation === QuestParticipation.GROUP &&
       snapshot.capabilities.canRejectTeam,
   };
 }
@@ -45,12 +50,13 @@ export function getPendingApplications(
   applications: readonly QuestV2Application[]
 ): QuestV2Application[] {
   return applications.filter(
-    (application) => application.state === "APPLICATION_APPLIED"
+    (application) =>
+      application.state === QuestApplicationStatus.APPLICATION_APPLIED
   );
 }
 
 export function getPendingTeams(teams: readonly QuestV2Team[]): QuestV2Team[] {
-  return teams.filter((team) => team.state === "TEAM_SUBMITTED");
+  return teams.filter((team) => team.state === QuestTeamStatus.TEAM_SUBMITTED);
 }
 
 export function getApplicationSubmissionDetail(

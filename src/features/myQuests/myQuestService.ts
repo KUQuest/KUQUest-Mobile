@@ -5,7 +5,8 @@ import type {
   QuestV2CanonicalQuest,
 } from "@/api/questV2Contracts";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
-import { isTerminalStatus } from "@/domain/questLifecycle";
+import { isTerminalStatus, QuestStatus } from "@/domain/questLifecycle";
+import { QuestMode } from "@/features/questBoard/domain/types";
 import { formatSatang } from "@/domain/satang";
 import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestService";
 import type { SupportedLocale } from "@/locales/locale";
@@ -33,16 +34,16 @@ export function getLiveHirerItems(
     const terminal = isTerminalStatus(quest.state);
     const matchesTab =
       tab === "draft"
-        ? quest.state === "QUEST_DRAFT"
+        ? quest.state === QuestStatus.QUEST_DRAFT
         : tab === "completed"
           ? terminal
-          : !terminal && quest.state !== "QUEST_DRAFT";
+          : !terminal && quest.state !== QuestStatus.QUEST_DRAFT;
     if (!matchesTab) return [];
 
     const tag = quest.tag?.name ?? "Quest";
-    const statusValue = quest.hiddenAt ? "QUEST_HIDDEN" : quest.state;
+    const statusValue = quest.hiddenAt ? QuestStatus.QUEST_HIDDEN : quest.state;
     const status = liveQuestStatusLabel(statusValue, locale);
-    const isDraft = quest.state === "QUEST_DRAFT";
+    const isDraft = quest.state === QuestStatus.QUEST_DRAFT;
     return [
       {
         id: quest.id,
@@ -59,7 +60,7 @@ export function getLiveHirerItems(
         detail: status,
         teamSize: String(quest.headcount),
         mode:
-          quest.mode === "CANDIDATE"
+          quest.mode === QuestMode.CANDIDATE
             ? messages.modeCandidate
             : messages.modeFirstCome,
         reward: formatSatang(Math.round(quest.questFundingTotal * 100), locale),
@@ -67,10 +68,12 @@ export function getLiveHirerItems(
         statusTone: liveQuestStatusTone(statusValue),
         primaryAction: isDraft ? "edit" : terminal ? "review" : "manage",
         secondaryAction:
-          quest.state === "QUEST_FAILED" ? ("dispute" as const) : undefined,
+          quest.state === QuestStatus.QUEST_FAILED
+            ? ("dispute" as const)
+            : undefined,
         cancelFromCard: isDraft
           ? ("draft" as const)
-          : quest.state === "QUEST_OPEN"
+          : quest.state === QuestStatus.QUEST_OPEN
             ? ("open" as const)
             : undefined,
       },
@@ -79,22 +82,26 @@ export function getLiveHirerItems(
 }
 
 export function liveQuestStatusTone(
-  status: QuestV2CanonicalQuest["state"] | "QUEST_HIDDEN"
+  status: QuestV2CanonicalQuest["state"] | typeof QuestStatus.QUEST_HIDDEN
 ): StatusTone {
-  if (status === "QUEST_COMPLETED") return "success";
-  if (status === "QUEST_CANCELLED" || status === "QUEST_FAILED") {
+  if (status === QuestStatus.QUEST_COMPLETED) return "success";
+  if (
+    status === QuestStatus.QUEST_CANCELLED ||
+    status === QuestStatus.QUEST_FAILED
+  ) {
     return "danger";
   }
-  if (status === "QUEST_DRAFT") return "neutral";
-  if (status === "QUEST_HIDDEN") return "warning";
+  if (status === QuestStatus.QUEST_DRAFT) return "neutral";
+  if (status === QuestStatus.QUEST_HIDDEN) return "warning";
   return "success";
 }
 
 export function liveQuestStatusLabel(
-  status: QuestV2CanonicalQuest["state"] | "QUEST_HIDDEN",
+  status: QuestV2CanonicalQuest["state"] | typeof QuestStatus.QUEST_HIDDEN,
   locale: SupportedLocale
 ): string {
-  if (status === "QUEST_FAILED") return locale === "th" ? "ล้มเหลว" : "Failed";
+  if (status === QuestStatus.QUEST_FAILED)
+    return myQuestMessages[locale].statusFailed;
   return questBoardMessages[locale].statusLabel(status);
 }
 /**

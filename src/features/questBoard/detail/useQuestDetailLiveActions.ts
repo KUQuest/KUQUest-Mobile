@@ -1,7 +1,8 @@
 import { useCallback } from "react";
 
 import { showErrorAlert } from "@/components/ui/SweetAlert";
-import { getErrorMessage } from "@/utils/error";
+import { getLocalizedErrorMessage } from "@/utils/error";
+import { useLocale } from "@/features/preferences/localeStore";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import type { UploadAsset } from "@/api/fileUpload";
 import {
@@ -25,6 +26,11 @@ import {
   useWithdrawApplicationMutation,
 } from "../api/questBoardQueries";
 import {
+  QuestParticipation,
+  type QuestUnderfilledConsentDecision,
+  type QuestUnderfilledDecision,
+} from "../domain/types";
+import {
   getQuestDetailLiveTeam,
   type QuestDetailLiveActionContext,
   type QuestDetailLiveActions,
@@ -33,6 +39,7 @@ import {
 export function useQuestDetailLiveActions(
   context: QuestDetailLiveActionContext
 ): QuestDetailLiveActions {
+  const { locale } = useLocale();
   const joinQuestMutation = useJoinQuestMutation();
   const applyQuestMutation = useApplyQuestMutation();
   const withdrawApplicationMutation = useWithdrawApplicationMutation();
@@ -70,8 +77,7 @@ export function useQuestDetailLiveActions(
   const runLiveAction = useCallback(
     async <T>(
       actionName: string,
-      action: () => Promise<T>,
-      fallbackError: string
+      action: () => Promise<T>
     ): Promise<T | undefined> => {
       if (!beginLiveAction(actionName)) return undefined;
       try {
@@ -79,62 +85,55 @@ export function useQuestDetailLiveActions(
       } catch (error) {
         showErrorAlert(
           messages.actionFailedTitle,
-          getErrorMessage(error, fallbackError)
+          getLocalizedErrorMessage(error, locale, {
+            fallback: messages.actionFailedDescription,
+          })
         );
         return undefined;
       } finally {
         endLiveAction();
       }
     },
-    [beginLiveAction, endLiveAction, messages.actionFailedTitle]
+    [
+      beginLiveAction,
+      endLiveAction,
+      locale,
+      messages.actionFailedDescription,
+      messages.actionFailedTitle,
+    ]
   );
 
   const join = useCallback(
     () =>
-      runLiveAction(
-        "join",
-        () => {
-          if (!questId)
-            return Promise.reject(new Error("Quest ID is required"));
-          return joinQuestMutation.mutateAsync({ questId, viewerId });
-        },
-        "Failed to join quest"
-      ),
+      runLiveAction("join", () => {
+        if (!questId) return Promise.reject(new Error("Quest ID is required"));
+        return joinQuestMutation.mutateAsync({ questId, viewerId });
+      }),
     [joinQuestMutation, questId, runLiveAction, viewerId]
   );
   const apply = useCallback(
     () =>
-      runLiveAction(
-        "apply",
-        () => {
-          if (!questId)
-            return Promise.reject(new Error("Quest ID is required"));
-          return applyQuestMutation.mutateAsync({
-            questId,
-            viewerId,
-            idempotencyKey: createQuestIdempotencyKey(),
-          });
-        },
-        "Failed to apply"
-      ),
+      runLiveAction("apply", () => {
+        if (!questId) return Promise.reject(new Error("Quest ID is required"));
+        return applyQuestMutation.mutateAsync({
+          questId,
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
     [applyQuestMutation, questId, runLiveAction, viewerId]
   );
   const withdraw = useCallback(
     (applicationId: string) =>
-      runLiveAction(
-        "withdraw",
-        () => {
-          if (!questId)
-            return Promise.reject(new Error("Quest ID is required"));
-          return withdrawApplicationMutation.mutateAsync({
-            questId,
-            applicationId,
-            viewerId,
-            idempotencyKey: createQuestIdempotencyKey(),
-          });
-        },
-        "Failed to withdraw application"
-      ),
+      runLiveAction("withdraw", () => {
+        if (!questId) return Promise.reject(new Error("Quest ID is required"));
+        return withdrawApplicationMutation.mutateAsync({
+          questId,
+          applicationId,
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
     [questId, runLiveAction, viewerId, withdrawApplicationMutation]
   );
   const createCandidateInquiry = useCallback(
@@ -147,27 +146,23 @@ export function useQuestDetailLiveActions(
   );
   const selectProposal = useCallback(
     (proposalId: string) =>
-      runLiveAction(
-        "select-candidate",
-        () => {
-          if (!questId || !liveSnapshot)
-            return Promise.reject(new Error("Quest snapshot is required"));
-          return liveSnapshot.participation === "GROUP"
-            ? selectCandidateTeamMutation.mutateAsync({
-                questId,
-                teamId: proposalId,
-                viewerId,
-                idempotencyKey: createQuestIdempotencyKey(),
-              })
-            : selectApplicationMutation.mutateAsync({
-                questId,
-                applicationId: proposalId,
-                viewerId,
-                idempotencyKey: createQuestIdempotencyKey(),
-              });
-        },
-        "Failed to select candidate proposal"
-      ),
+      runLiveAction("select-candidate", () => {
+        if (!questId || !liveSnapshot)
+          return Promise.reject(new Error("Quest snapshot is required"));
+        return liveSnapshot.participation === QuestParticipation.GROUP
+          ? selectCandidateTeamMutation.mutateAsync({
+              questId,
+              teamId: proposalId,
+              viewerId,
+              idempotencyKey: createQuestIdempotencyKey(),
+            })
+          : selectApplicationMutation.mutateAsync({
+              questId,
+              applicationId: proposalId,
+              viewerId,
+              idempotencyKey: createQuestIdempotencyKey(),
+            });
+      }),
     [
       liveSnapshot,
       questId,
@@ -179,27 +174,23 @@ export function useQuestDetailLiveActions(
   );
   const rejectProposal = useCallback(
     (proposalId: string) =>
-      runLiveAction<unknown>(
-        "reject-candidate",
-        () => {
-          if (!questId || !liveSnapshot)
-            return Promise.reject(new Error("Quest snapshot is required"));
-          return liveSnapshot.participation === "GROUP"
-            ? rejectCandidateTeamMutation.mutateAsync({
-                questId,
-                teamId: proposalId,
-                viewerId,
-                idempotencyKey: createQuestIdempotencyKey(),
-              })
-            : rejectApplicationMutation.mutateAsync({
-                questId,
-                applicationId: proposalId,
-                viewerId,
-                idempotencyKey: createQuestIdempotencyKey(),
-              });
-        },
-        "Failed to reject candidate proposal"
-      ),
+      runLiveAction<unknown>("reject-candidate", () => {
+        if (!questId || !liveSnapshot)
+          return Promise.reject(new Error("Quest snapshot is required"));
+        return liveSnapshot.participation === QuestParticipation.GROUP
+          ? rejectCandidateTeamMutation.mutateAsync({
+              questId,
+              teamId: proposalId,
+              viewerId,
+              idempotencyKey: createQuestIdempotencyKey(),
+            })
+          : rejectApplicationMutation.mutateAsync({
+              questId,
+              applicationId: proposalId,
+              viewerId,
+              idempotencyKey: createQuestIdempotencyKey(),
+            });
+      }),
     [
       liveSnapshot,
       questId,
@@ -211,11 +202,7 @@ export function useQuestDetailLiveActions(
   );
   const openUnderfilled = useCallback(async () => {
     if (liveSnapshot?.underfilled) return liveSnapshot.underfilled;
-    const result = await runLiveAction(
-      "underfilled-load",
-      refresh,
-      "Failed to load underfilled Quest status"
-    );
+    const result = await runLiveAction("underfilled-load", refresh);
     if (result && typeof result === "object" && "data" in result) {
       const data = result.data;
       return data && typeof data === "object" && "underfilled" in data
@@ -225,60 +212,46 @@ export function useQuestDetailLiveActions(
     return null;
   }, [liveSnapshot, refresh, runLiveAction]);
   const decideUnderfilled = useCallback(
-    (decision: "PROCEED" | "CANCEL") =>
-      runLiveAction(
-        "underfilled-decision",
-        () => {
-          if (!questId)
-            return Promise.reject(new Error("Quest ID is required"));
-          return decideUnderfilledMutation.mutateAsync({
-            questId,
-            decision,
-            viewerId,
-            idempotencyKey: createQuestIdempotencyKey(),
-          });
-        },
-        "Failed to update underfilled Quest decision"
-      ),
+    (decision: QuestUnderfilledDecision) =>
+      runLiveAction("underfilled-decision", () => {
+        if (!questId) return Promise.reject(new Error("Quest ID is required"));
+        return decideUnderfilledMutation.mutateAsync({
+          questId,
+          decision,
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
     [decideUnderfilledMutation, questId, runLiveAction, viewerId]
   );
   const respondUnderfilled = useCallback(
-    (decision: "ACCEPT" | "DECLINE") =>
-      runLiveAction(
-        "underfilled-consent",
-        () => {
-          if (!questId)
-            return Promise.reject(new Error("Quest ID is required"));
-          return respondUnderfilledConsentMutation.mutateAsync({
-            questId,
-            decision,
-            viewerId,
-            idempotencyKey: createQuestIdempotencyKey(),
-          });
-        },
-        "Failed to respond to underfilled consent"
-      ),
+    (decision: QuestUnderfilledConsentDecision) =>
+      runLiveAction("underfilled-consent", () => {
+        if (!questId) return Promise.reject(new Error("Quest ID is required"));
+        return respondUnderfilledConsentMutation.mutateAsync({
+          questId,
+          decision,
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
     [questId, respondUnderfilledConsentMutation, runLiveAction, viewerId]
   );
   const createTeam = useCallback(
     (name: string) =>
-      runLiveAction(
-        "create-team",
-        () => {
-          if (!questId || !capabilities?.canCreateTeam)
-            return Promise.reject(new Error("Team creation is unavailable"));
-          return createCandidateTeamMutation.mutateAsync({
-            questId,
-            payload: {
-              name: name.trim(),
-              headcount: quest?.headcount ?? 2,
-            },
-            viewerId,
-            idempotencyKey: createQuestIdempotencyKey(),
-          });
-        },
-        "Failed to create Quest Team"
-      ),
+      runLiveAction("create-team", () => {
+        if (!questId || !capabilities?.canCreateTeam)
+          return Promise.reject(new Error("Team creation is unavailable"));
+        return createCandidateTeamMutation.mutateAsync({
+          questId,
+          payload: {
+            name: name.trim(),
+            headcount: quest?.headcount ?? 2,
+          },
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
     [
       capabilities?.canCreateTeam,
       createCandidateTeamMutation,
@@ -292,27 +265,23 @@ export function useQuestDetailLiveActions(
   const liveStartTime = liveSnapshot?.quest.startTime;
   const joinTeam = useCallback(
     (teamId: string, joinCode: string) =>
-      runLiveAction(
-        "join-team",
-        () => {
-          if (
-            !questId ||
-            !capabilities?.canJoinTeam ||
-            !liveStartTime ||
-            Date.now() >= Date.parse(liveStartTime)
-          ) {
-            return Promise.reject(new Error("Team joining is unavailable"));
-          }
-          return joinCandidateTeamMutation.mutateAsync({
-            questId,
-            teamId,
-            joinCode: joinCode.toUpperCase(),
-            viewerId,
-            idempotencyKey: createQuestIdempotencyKey(),
-          });
-        },
-        "Failed to join Quest Team"
-      ),
+      runLiveAction("join-team", () => {
+        if (
+          !questId ||
+          !capabilities?.canJoinTeam ||
+          !liveStartTime ||
+          Date.now() >= Date.parse(liveStartTime)
+        ) {
+          return Promise.reject(new Error("Team joining is unavailable"));
+        }
+        return joinCandidateTeamMutation.mutateAsync({
+          questId,
+          teamId,
+          joinCode: joinCode.toUpperCase(),
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
     [
       capabilities?.canJoinTeam,
       joinCandidateTeamMutation,
@@ -324,20 +293,16 @@ export function useQuestDetailLiveActions(
   );
   const leaveTeam = useCallback(
     (teamId: string) =>
-      runLiveAction(
-        "leave-team",
-        () => {
-          if (!questId || !capabilities?.canLeaveTeam)
-            return Promise.reject(new Error("Leaving the team is unavailable"));
-          return leaveCandidateTeamMutation.mutateAsync({
-            questId,
-            teamId,
-            viewerId,
-            idempotencyKey: createQuestIdempotencyKey(),
-          });
-        },
-        "Failed to leave Quest Team"
-      ),
+      runLiveAction("leave-team", () => {
+        if (!questId || !capabilities?.canLeaveTeam)
+          return Promise.reject(new Error("Leaving the team is unavailable"));
+        return leaveCandidateTeamMutation.mutateAsync({
+          questId,
+          teamId,
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
     [
       capabilities?.canLeaveTeam,
       leaveCandidateTeamMutation,
@@ -348,23 +313,19 @@ export function useQuestDetailLiveActions(
   );
   const removeTeamMember = useCallback(
     (teamId: string, memberId: string) =>
-      runLiveAction(
-        "remove-team-member",
-        () => {
-          if (!questId || !capabilities?.canRemoveTeamMember)
-            return Promise.reject(
-              new Error("Removing a team member is unavailable")
-            );
-          return removeCandidateTeamMemberMutation.mutateAsync({
-            questId,
-            teamId,
-            memberId,
-            viewerId,
-            idempotencyKey: createQuestIdempotencyKey(),
-          });
-        },
-        "Failed to remove team member"
-      ),
+      runLiveAction("remove-team-member", () => {
+        if (!questId || !capabilities?.canRemoveTeamMember)
+          return Promise.reject(
+            new Error("Removing a team member is unavailable")
+          );
+        return removeCandidateTeamMemberMutation.mutateAsync({
+          questId,
+          teamId,
+          memberId,
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
     [
       capabilities?.canRemoveTeamMember,
       questId,
@@ -375,22 +336,18 @@ export function useQuestDetailLiveActions(
   );
   const regenerateTeamCode = useCallback(
     (teamId: string) =>
-      runLiveAction(
-        "regenerate-team-code",
-        () => {
-          if (!questId || !capabilities?.canRegenerateTeamCode)
-            return Promise.reject(
-              new Error("Regenerating the team code is unavailable")
-            );
-          return regenerateCandidateTeamCodeMutation.mutateAsync({
-            questId,
-            teamId,
-            viewerId,
-            idempotencyKey: createQuestIdempotencyKey(),
-          });
-        },
-        "Failed to regenerate team join code"
-      ),
+      runLiveAction("regenerate-team-code", () => {
+        if (!questId || !capabilities?.canRegenerateTeamCode)
+          return Promise.reject(
+            new Error("Regenerating the team code is unavailable")
+          );
+        return regenerateCandidateTeamCodeMutation.mutateAsync({
+          questId,
+          teamId,
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
     [
       capabilities?.canRegenerateTeamCode,
       questId,
@@ -403,23 +360,17 @@ export function useQuestDetailLiveActions(
     (teamId: string, name: string) => {
       const trimmedName = name.trim();
       if (!trimmedName) return Promise.resolve(undefined);
-      return runLiveAction(
-        "update-team",
-        () => {
-          if (!questId || !capabilities?.canUpdateTeam)
-            return Promise.reject(
-              new Error("Updating the team is unavailable")
-            );
-          return updateCandidateTeamMutation.mutateAsync({
-            questId,
-            teamId,
-            payload: { name: trimmedName },
-            viewerId,
-            idempotencyKey: createQuestIdempotencyKey(),
-          });
-        },
-        "Failed to update Quest Team name"
-      );
+      return runLiveAction("update-team", () => {
+        if (!questId || !capabilities?.canUpdateTeam)
+          return Promise.reject(new Error("Updating the team is unavailable"));
+        return updateCandidateTeamMutation.mutateAsync({
+          questId,
+          teamId,
+          payload: { name: trimmedName },
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      });
     },
     [
       capabilities?.canUpdateTeam,
@@ -431,20 +382,16 @@ export function useQuestDetailLiveActions(
   );
   const submitTeam = useCallback(
     (teamId: string, payload?: { text?: string; fileIds?: string[] }) =>
-      runLiveAction(
-        "submit-team",
-        async () => {
-          if (!questId) throw new Error("Quest ID is required");
-          return submitCandidateTeamMutation.mutateAsync({
-            questId,
-            teamId,
-            payload,
-            viewerId,
-            idempotencyKey: createQuestIdempotencyKey(),
-          });
-        },
-        "Failed to submit Quest Team"
-      ),
+      runLiveAction("submit-team", async () => {
+        if (!questId) throw new Error("Quest ID is required");
+        return submitCandidateTeamMutation.mutateAsync({
+          questId,
+          teamId,
+          payload,
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
     [questId, runLiveAction, submitCandidateTeamMutation, viewerId]
   );
   const uploadTeamFile = useCallback(

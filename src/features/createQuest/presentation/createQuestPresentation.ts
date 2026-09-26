@@ -5,7 +5,11 @@ import {
   UsersRound,
 } from "lucide-react-native";
 
-import type { QuestPublishCheck } from "../../questBoard/domain/types";
+import {
+  QuestMode,
+  QuestParticipation,
+  type QuestPublishCheck,
+} from "../../questBoard/domain/types";
 import { formatDateTime } from "@/domain/datetime";
 import { formatSatang } from "@/domain/satang";
 import {
@@ -14,7 +18,10 @@ import {
   type QuestDraft,
 } from "../domain/createQuestModel";
 import type { ChoiceOption } from "../createQuestTypes";
-import type { CreateQuestMessages } from "@/locales/createQuestMessages";
+import {
+  createQuestMessages,
+  type CreateQuestMessages,
+} from "@/locales/createQuestMessages";
 import type { SupportedLocale } from "@/locales/locale";
 
 export type CreateQuestTagOption = {
@@ -104,28 +111,12 @@ export function getCreateQuestTagOptions(
     }));
   }
 
+  const { fallbackTags } = createQuestMessages[locale];
   return [
-    {
-      label:
-        locale === "th" ? "การออกแบบและงานสร้างสรรค์" : "Design & creative",
-      shortLabel: locale === "th" ? "การออกแบบ" : "Design",
-      value: "design",
-    },
-    {
-      label: locale === "th" ? "เทคโนโลยี" : "Technology",
-      shortLabel: locale === "th" ? "เทคโนโลยี" : "Technology",
-      value: "technology",
-    },
-    {
-      label: locale === "th" ? "การสอนพิเศษ" : "Tutoring",
-      shortLabel: locale === "th" ? "ติว" : "Tutoring",
-      value: "tutoring",
-    },
-    {
-      label: locale === "th" ? "ชีวิตในมหาวิทยาลัย" : "Campus life",
-      shortLabel: locale === "th" ? "ชีวิตมหาวิทยาลัย" : "Campus life",
-      value: "campus-life",
-    },
+    { ...fallbackTags.design, value: "design" },
+    { ...fallbackTags.technology, value: "technology" },
+    { ...fallbackTags.tutoring, value: "tutoring" },
+    { ...fallbackTags.campusLife, value: "campus-life" },
   ];
 }
 
@@ -136,13 +127,13 @@ export function getCreateQuestChoiceOptions(messages: CreateQuestMessages): {
   return {
     candidateOptions: [
       {
-        value: "FIRST_COME_FIRST_SERVED",
+        value: QuestMode.FIRST_COME_FIRST_SERVED,
         label: messages.instantAccept,
         description: messages.instantAcceptDescription,
         icon: Clock3,
       },
       {
-        value: "CANDIDATE",
+        value: QuestMode.CANDIDATE,
         label: messages.selectCandidate,
         description: messages.selectCandidateDescription,
         icon: UserRoundCheck,
@@ -150,13 +141,13 @@ export function getCreateQuestChoiceOptions(messages: CreateQuestMessages): {
     ],
     participationOptions: [
       {
-        value: "SINGLE",
+        value: QuestParticipation.SINGLE,
         label: messages.singleFormat,
         description: messages.singleFormatDescription,
         icon: UserRound,
       },
       {
-        value: "GROUP",
+        value: QuestParticipation.GROUP,
         label: messages.teamFormat,
         description: messages.teamFormatDescription,
         icon: UsersRound,
@@ -169,12 +160,12 @@ export function getCreateQuestCombinationHint(
   draft: Pick<QuestDraft, "candidateMode" | "participation">,
   messages: CreateQuestMessages
 ): string {
-  if (draft.participation === "SINGLE") {
-    return draft.candidateMode === "FIRST_COME_FIRST_SERVED"
+  if (draft.participation === QuestParticipation.SINGLE) {
+    return draft.candidateMode === QuestMode.FIRST_COME_FIRST_SERVED
       ? messages.singleFirstComeHint
       : messages.singleCandidateHint;
   }
-  return draft.candidateMode === "FIRST_COME_FIRST_SERVED"
+  return draft.candidateMode === QuestMode.FIRST_COME_FIRST_SERVED
     ? messages.groupFirstComeHint
     : messages.groupCandidateHint;
 }
@@ -209,13 +200,13 @@ export function getCreateQuestReviewView({
     tagOptions.find((option) => option.value === draft.tag)?.shortLabel ??
     messages.notSelected;
   const selectedTeamSize =
-    draft.participation === "SINGLE"
+    draft.participation === QuestParticipation.SINGLE
       ? messages.teamSizeValue("1")
       : draft.headcount
         ? messages.teamSizeValue(draft.headcount)
         : messages.notSelected;
   const selectedAcceptanceMethod =
-    draft.candidateMode === "CANDIDATE"
+    draft.candidateMode === QuestMode.CANDIDATE
       ? messages.selectCandidate
       : messages.instantAccept;
   const logisticsSummary =
@@ -278,7 +269,7 @@ export function getCreateQuestReviewView({
       {
         label: messages.summary.reward,
         value: draft.wage
-          ? `${rewardPerPerson} / ${locale === "th" ? "คน" : "person"}`
+          ? messages.rewardPerPersonValue(rewardPerPerson)
           : messages.notSelected,
       },
     ],

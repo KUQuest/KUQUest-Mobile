@@ -1,5 +1,13 @@
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
 import { isTerminalStatus } from "@/domain/questLifecycle";
+import {
+  QuestAssignmentStatus,
+  QuestMode,
+  QuestNextAction,
+  QuestParticipation,
+  QuestProofStatus,
+  QuestStatus,
+} from "@/features/questBoard/domain/types";
 import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestTypes";
 import type { WorkerWorkItem, WorkerWorkProjection } from "./workerWorkTypes";
 
@@ -11,7 +19,8 @@ export type {
 
 function proofOwnership(snapshot: LiveQuestSnapshot, viewerId: string) {
   const teamId =
-    snapshot.mode === "CANDIDATE" && snapshot.participation === "GROUP"
+    snapshot.mode === QuestMode.CANDIDATE &&
+    snapshot.participation === QuestParticipation.GROUP
       ? snapshot.team?.id
       : undefined;
   return (proof: QuestV2ProofSubmission) =>
@@ -74,7 +83,7 @@ function activeStatus(
         action: "confirmCompletion",
         needsAction: true,
       };
-    case "CONSENT_UNDERFILLED":
+    case QuestNextAction.CONSENT_UNDERFILLED:
       return {
         status: "consentUnderfilled",
         tone: "action",
@@ -84,7 +93,7 @@ function activeStatus(
     default:
       break;
   }
-  if (snapshot.state !== "QUEST_IN_PROGRESS") {
+  if (snapshot.state !== QuestStatus.QUEST_IN_PROGRESS) {
     return {
       status: "awaitingStart",
       tone: "neutral",
@@ -95,7 +104,9 @@ function activeStatus(
   const sentProof = latestSentProof(snapshot, snapshot.viewerId);
   return {
     status:
-      sentProof?.status === "PROOF_PENDING" ? "proofPending" : "inProgress",
+      sentProof?.status === QuestProofStatus.PROOF_PENDING
+        ? "proofPending"
+        : "inProgress",
     tone: "progress",
     action: "open",
     needsAction: false,
@@ -107,15 +118,15 @@ function historyStatus(
 ): Pick<WorkerWorkItem, "status" | "tone"> {
   const assignmentState = snapshot.assignment?.state;
   if (
-    assignmentState === "ASSIGNMENT_COMPLETED" ||
-    (!assignmentState && snapshot.state === "QUEST_COMPLETED")
+    assignmentState === QuestAssignmentStatus.ASSIGNMENT_COMPLETED ||
+    (!assignmentState && snapshot.state === QuestStatus.QUEST_COMPLETED)
   ) {
     return { status: "completed", tone: "success" };
   }
-  if (assignmentState === "ASSIGNMENT_INCOMPLETE") {
+  if (assignmentState === QuestAssignmentStatus.ASSIGNMENT_INCOMPLETE) {
     return { status: "incomplete", tone: "danger" };
   }
-  if (snapshot.state === "QUEST_FAILED") {
+  if (snapshot.state === QuestStatus.QUEST_FAILED) {
     return { status: "failed", tone: "danger" };
   }
   return { status: "cancelled", tone: "neutral" };
@@ -159,7 +170,7 @@ export function projectWorkerWork(
 
   for (const snapshot of snapshots) {
     const isActive =
-      snapshot.assignment?.state === "ASSIGNMENT_ACTIVE" &&
+      snapshot.assignment?.state === QuestAssignmentStatus.ASSIGNMENT_ACTIVE &&
       !isTerminalStatus(snapshot.state);
     if (isActive) {
       const item = toItem(snapshot, activeStatus(snapshot));

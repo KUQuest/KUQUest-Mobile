@@ -20,13 +20,17 @@ import type {
 } from "../teamAssemble/types";
 import { getQuestRewardSatang } from "../presentation/questBoardViewData";
 import {
+  isHirerActor,
   MAX_QUEST_IMAGES,
   QuestCandidateMode,
   QuestInvitationStatus,
+  QuestMode,
   QuestPartialStartConsentStatus,
   QuestParticipation,
   QuestStatus,
   QuestTeamStatus,
+  type QuestUnderfilledConsentDecision,
+  type QuestUnderfilledDecision,
   type QuestBoardQuest,
   type QuestDetailState,
 } from "../domain/types";
@@ -74,7 +78,6 @@ export interface QuestDetailPresentationFacts {
   canShowWithdraw: boolean;
   confirmationOpen: boolean;
   canMessageOwner: boolean;
-  canReportQuest: boolean;
   statusTitle: string;
   statusDescription: string;
   statusIsUnavailable: boolean;
@@ -104,8 +107,8 @@ export interface QuestDetailPresentationContext {
   selectCandidate: (proposalId: string) => void;
   rejectCandidate: (proposalId: string) => void;
   openLiveUnderfilled: () => void;
-  liveUnderfilledDecision: (decision: "PROCEED" | "CANCEL") => void;
-  liveUnderfilledConsent: (decision: "ACCEPT" | "DECLINE") => void;
+  liveUnderfilledDecision: (decision: QuestUnderfilledDecision) => void;
+  liveUnderfilledConsent: (decision: QuestUnderfilledConsentDecision) => void;
   liveCreateTeam: (name: string) => void;
   liveJoinTeam: (teamId: string, joinCode: string) => void;
   liveLeaveTeam: (teamId: string) => void;
@@ -157,7 +160,7 @@ export function getQuestDetailPresentationFacts({
   const isPostView = route.mode === "post";
   const isHirerView = explicitPreview
     ? (projection?.isOwner ?? false)
-    : liveSnapshot?.actor === "HIRER";
+    : isHirerActor(liveSnapshot?.actor);
   const firstCome = quest.candidateMode === QuestCandidateMode.NO_CANDIDATE;
   const candidateGroup = Boolean(
     quest && !firstCome && quest.participationMode === "team"
@@ -222,12 +225,6 @@ export function getQuestDetailPresentationFacts({
       surface.dismissedIntent !== routeIntentKey &&
       canApply);
   const canMessageOwner = Boolean(!isPostView && capabilities?.canMessageOwner);
-  const canReportQuest = Boolean(
-    isJoinView &&
-    !surface.leftQuest &&
-    (joinedStatus === "accepted" || joinedStatus === "history") &&
-    capabilities?.canReportQuest
-  );
   const statusTitle = isPostView
     ? messages.postOwnerView
     : isJoinView
@@ -322,8 +319,8 @@ export function getQuestDetailPresentationFacts({
         }));
   const liveCandidateGroup = Boolean(
     liveSnapshot &&
-    liveSnapshot.participation === "GROUP" &&
-    liveSnapshot.mode === "CANDIDATE" &&
+    liveSnapshot.participation === QuestParticipation.GROUP &&
+    liveSnapshot.mode === QuestMode.CANDIDATE &&
     !isHirerView
   );
   const liveTeamSheetTeam = liveCandidateGroup
@@ -377,7 +374,6 @@ export function getQuestDetailPresentationFacts({
     canShowWithdraw,
     confirmationOpen,
     canMessageOwner,
-    canReportQuest,
     statusTitle,
     statusDescription,
     statusIsUnavailable,
@@ -406,7 +402,6 @@ export function buildQuestDetailBodyProps(
     participants: facts.participants,
     participantCount: facts.participantCount,
     onOpenParticipantProfile: navigation.openParticipantProfile,
-    canReportQuest: facts.canReportQuest,
     canonicalStatus: facts.projection?.lifecycleState,
     imageUris: facts.imageUris,
     liveEntry: facts.liveSnapshot
@@ -423,7 +418,6 @@ export function buildQuestDetailBodyProps(
     locale: facts.locale,
     onOpenWorkHub: navigation.openWorkHub,
     onRefresh: context.onRefresh,
-    onReportQuest: navigation.openReportQuest,
     prototypeEntry: facts.activePrototypeState
       ? {
           state: facts.activePrototypeState,
@@ -481,8 +475,8 @@ export function buildQuestDetailSheetsProps(
     liveCandidateSheet:
       facts.source.kind === "live-snapshot" &&
       facts.liveSnapshot &&
-      facts.liveSnapshot.actor === "HIRER" &&
-      facts.liveSnapshot.mode === "CANDIDATE" &&
+      isHirerActor(facts.liveSnapshot.actor) &&
+      facts.liveSnapshot.mode === QuestMode.CANDIDATE &&
       (facts.projection?.capabilities.canSelectCandidate ||
         facts.projection?.capabilities.canSelectTeam ||
         facts.projection?.capabilities.canRejectCandidate ||
@@ -497,7 +491,7 @@ export function buildQuestDetailSheetsProps(
               surface.liveAction === "reject-candidate",
             locale: facts.locale,
             mode:
-              facts.liveSnapshot.participation === "GROUP"
+              facts.liveSnapshot.participation === QuestParticipation.GROUP
                 ? "team"
                 : "individual",
             onAcceptProposal: surface.liveAction
@@ -512,7 +506,7 @@ export function buildQuestDetailSheetsProps(
             requestedHeadcount: facts.liveSnapshot.quest.headcount,
             selectedProposalId: surface.selectedProposalId,
             teams:
-              facts.liveSnapshot.participation === "GROUP"
+              facts.liveSnapshot.participation === QuestParticipation.GROUP
                 ? facts.liveSnapshot.teams
                 : [],
             visible: surface.candidateReviewSheetOpen,
@@ -520,8 +514,8 @@ export function buildQuestDetailSheetsProps(
         : undefined,
     liveConsentSheet:
       facts.source.kind === "live-snapshot" &&
-      facts.liveSnapshot?.participation === "GROUP" &&
-      facts.liveSnapshot.mode === "FIRST_COME_FIRST_SERVED" &&
+      facts.liveSnapshot?.participation === QuestParticipation.GROUP &&
+      facts.liveSnapshot.mode === QuestMode.FIRST_COME_FIRST_SERVED &&
       facts.liveSnapshot.underfilled
         ? {
             actualHeadcount: facts.liveSnapshot.underfilled.activeWorkerCount,

@@ -11,10 +11,15 @@ import {
 import { ActivityIndicator, Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
-import { useLocale } from "@/features/preferences/localeStore";
 import { type QuestWorkMessages } from "@/locales/questWorkMessages";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
-import { QuestMode, QuestParticipation } from "../../domain/types";
+import {
+  QuestEditRequestStatus,
+  QuestEditResponseDecision,
+  QuestMode,
+  QuestParticipation,
+  QuestStatus,
+} from "../../domain/types";
 
 export interface QuestWorkActionsCardProps {
   snapshot: LiveQuestSnapshot;
@@ -36,7 +41,7 @@ export interface QuestWorkActionsCardProps {
   isTerminal: boolean;
   canOpenChat: boolean;
   onRespondToEdit: (
-    decision: "EDIT_RESPONSE_ACCEPTED" | "EDIT_RESPONSE_DECLINED"
+    decision: QuestEditResponseDecision
   ) => void | Promise<void>;
   onConfirmCompletion: () => void | Promise<void>;
   onFileDispute?: () => void;
@@ -65,7 +70,6 @@ export default function QuestWorkActionsCard({
   isTerminal,
 }: QuestWorkActionsCardProps) {
   const { colors: palette } = useAppTheme();
-  const { locale } = useLocale();
   const unreadCount = snapshot.workConversation?.unreadCount ?? 0;
   const isGroup = snapshot.participation === QuestParticipation.GROUP;
   const assignedDetails = startWorkRecordedAt
@@ -82,7 +86,7 @@ export default function QuestWorkActionsCard({
         : isGroup && snapshot.mode === QuestMode.CANDIDATE
           ? [messages.waitingForTeamLeader]
           : [];
-  const unreadLabel = `${unreadCount} ${locale === "th" ? "ข้อความใหม่" : "unread messages"}`;
+  const unreadLabel = messages.unreadMessages(unreadCount);
 
   return (
     <>
@@ -95,7 +99,7 @@ export default function QuestWorkActionsCard({
         </View>
       ) : null}
 
-      {snapshot.state === "QUEST_ASSIGNED" ? (
+      {snapshot.state === QuestStatus.QUEST_ASSIGNED ? (
         <View className={styles.startCard}>
           <View className={styles.calloutRow}>
             <View className={styles.calloutIcon}>
@@ -141,7 +145,7 @@ export default function QuestWorkActionsCard({
       {isTerminal ? (
         <View className={styles.mutedCard}>
           <Text className={styles.bodyText}>{messages.archiveDescription}</Text>
-          {snapshot.state === "QUEST_FAILED" && onFileDispute ? (
+          {snapshot.state === QuestStatus.QUEST_FAILED && onFileDispute ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={messages.fileDispute}
@@ -164,7 +168,7 @@ export default function QuestWorkActionsCard({
           </Text>
           {conditions.length > 0 ? (
             <Text className={styles.countPill}>
-              {conditions.length} {locale === "th" ? "ข้อ" : "items"}
+              {messages.conditionCount(conditions.length)}
             </Text>
           ) : null}
         </View>
@@ -190,7 +194,8 @@ export default function QuestWorkActionsCard({
         </View>
       </View>
 
-      {snapshot.editRequest?.status === "EDIT_REQUEST_PENDING" ? (
+      {snapshot.editRequest?.status ===
+      QuestEditRequestStatus.EDIT_REQUEST_PENDING ? (
         <View className={styles.warningCard}>
           <View className={styles.calloutRow}>
             <FileEdit color={palette.warningDark} size={20} />
@@ -219,7 +224,11 @@ export default function QuestWorkActionsCard({
                 accessibilityState={{ disabled: editSending }}
                 disabled={editSending}
                 className={cn(styles.primaryButton, styles.buttonFlex)}
-                onPress={() => void onRespondToEdit("EDIT_RESPONSE_ACCEPTED")}
+                onPress={() =>
+                  void onRespondToEdit(
+                    QuestEditResponseDecision.EDIT_RESPONSE_ACCEPTED
+                  )
+                }
               >
                 <Text className={styles.primaryButtonText}>
                   {messages.acceptEdit}
@@ -231,7 +240,11 @@ export default function QuestWorkActionsCard({
                 accessibilityState={{ disabled: editSending }}
                 disabled={editSending}
                 className={cn(styles.secondaryButton, styles.buttonFlex)}
-                onPress={() => void onRespondToEdit("EDIT_RESPONSE_DECLINED")}
+                onPress={() =>
+                  void onRespondToEdit(
+                    QuestEditResponseDecision.EDIT_RESPONSE_DECLINED
+                  )
+                }
               >
                 <Text className={styles.secondaryButtonText}>
                   {messages.declineEdit}
@@ -304,11 +317,7 @@ export default function QuestWorkActionsCard({
           <View className={styles.calloutCopy}>
             <Text className={styles.calloutTitle}>{messages.workChat}</Text>
             <Text className={styles.chatHint} numberOfLines={2}>
-              {unreadCount > 0
-                ? unreadLabel
-                : locale === "th"
-                  ? "สื่อสารและประสานงานเควสต์นี้กับผู้ว่าจ้าง"
-                  : "Coordinate with Hirer on this quest"}
+              {unreadCount > 0 ? unreadLabel : messages.workChatHint}
             </Text>
           </View>
           {unreadCount > 0 ? (

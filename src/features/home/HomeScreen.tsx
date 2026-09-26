@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Pressable, ScrollView, Text, View } from "@/tw";
 import { Chip } from "@/components/ui/Chip";
-import { Plus } from "lucide-react-native";
+import { AlertCircle, Plus } from "lucide-react-native";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 
@@ -32,7 +32,11 @@ import {
   type HirerAttentionItem,
   hirerHomeQuestFixtures,
 } from "./hirerHomeData";
-import { hirerHomeMessages } from "./hirerHomeMessages";
+import {
+  QuestMode,
+  QuestParticipation,
+} from "@/features/questBoard/domain/types";
+import { hirerHomeMessages } from "@/locales/hirerHomeMessages";
 import { hirerHomeStyles as styles } from "./hirerHomeStyles";
 export default function HomeScreen() {
   const router = useRouter();
@@ -65,8 +69,8 @@ export default function HomeScreen() {
             title: f.title[locale],
             tag: f.tag?.[locale],
             status: f.status,
-            mode: "FIRST_COME_FIRST_SERVED" as const,
-            participation: "SINGLE" as const,
+            mode: QuestMode.FIRST_COME_FIRST_SERVED,
+            participation: QuestParticipation.SINGLE,
             headcount: 1,
             startTime: f.startTime,
             dueAt: f.dueAt,
@@ -200,6 +204,44 @@ export default function HomeScreen() {
             messages={messages}
             onOpenMyQuests={handleOpenMyQuests}
           />
+
+          {homeData?.hasPartialFailure ? (
+            <View
+              accessibilityLiveRegion="assertive"
+              accessibilityRole="alert"
+              className="flex-row items-center justify-between rounded-ku-card border border-ku-border-danger bg-ku-surface-danger p-ku-md"
+              testID="hirer-home-partial-failure"
+            >
+              <View className="flex-1 flex-row items-center gap-ku-sm">
+                <AlertCircle
+                  color={themeColors.dangerDark}
+                  size={20}
+                  strokeWidth={2}
+                />
+                <View className="flex-1">
+                  <Text className="font-ku-semibold text-ku-body-small text-ku-danger-dark">
+                    {messages.partialFailureTitle}
+                  </Text>
+                  <Text className="font-ku-regular text-ku-meta text-ku-text-secondary">
+                    {messages.partialFailureDescription}
+                  </Text>
+                </View>
+              </View>
+              <Pressable
+                accessibilityLabel={messages.retry}
+                accessibilityRole="button"
+                className="ml-ku-sm min-h-[36px] items-center justify-center rounded-ku-pill border border-ku-border-danger bg-ku-surface px-ku-md"
+                onPress={() => {
+                  void refetch();
+                }}
+                testID="hirer-home-partial-failure-retry"
+              >
+                <Text className="font-ku-semibold text-ku-meta text-ku-danger-dark">
+                  {messages.retry}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
 
           <HirerAttentionSection
             items={attentionItems}

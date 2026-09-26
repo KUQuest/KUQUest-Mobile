@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/Input";
 import { createQuestMessages } from "@/locales/createQuestMessages";
 import type { SupportedLocale } from "@/locales/locale";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { QuestParticipation } from "@/features/questBoard/domain/types";
 import styles from "../createQuestStyles";
 import type { QuestDraft } from "../../domain/createQuestModel";
 import type { ChoiceOption } from "../../createQuestTypes";
@@ -118,7 +119,7 @@ export function TeamSetupStep({
           title={`3. ${messages.capacityAndReward}`}
           description={messages.participantsRewardDescription}
         />
-        {draft.participation === "SINGLE" ? (
+        {draft.participation === QuestParticipation.SINGLE ? (
           <View className={styles.fieldGroup}>
             <FieldLabel optionalLabel="">{messages.headcount}</FieldLabel>
             <View

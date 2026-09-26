@@ -10,6 +10,7 @@ import { QuestProofStatusCard } from "./components/QuestProofStatusCard";
 import { QuestProofSummaryCard } from "./components/QuestProofSummaryCard";
 import { ProofSubmissionSheet } from "./components/ProofSubmissionSheet";
 import { useQuestProofFeature } from "./useQuestProofFeature";
+import { QuestProofStatus } from "../domain/types";
 
 export interface QuestProofScreenProps {
   questId?: string;
@@ -98,11 +99,11 @@ export default function QuestProofScreen({
           <QuestProofStatusCard
             description={proof?.description}
             icon={
-              status === "PROOF_APPROVED"
+              status === QuestProofStatus.PROOF_APPROVED
                 ? "approved"
-                : status === "PROOF_NOT_APPROVED"
+                : status === QuestProofStatus.PROOF_NOT_APPROVED
                   ? "not-approved"
-                  : status === "PROOF_PENDING"
+                  : status === QuestProofStatus.PROOF_PENDING
                     ? "pending"
                     : "draft"
             }
@@ -111,10 +112,12 @@ export default function QuestProofScreen({
               isDraft ? messages.proofLockDescription : undefined
             }
             pendingDescription={
-              status === "PROOF_PENDING" ? messages.proofPending : undefined
+              status === QuestProofStatus.PROOF_PENDING
+                ? messages.proofPending
+                : undefined
             }
             terminalDescription={
-              status === "PROOF_NOT_APPROVED"
+              status === QuestProofStatus.PROOF_NOT_APPROVED
                 ? messages.terminalDescription
                 : undefined
             }

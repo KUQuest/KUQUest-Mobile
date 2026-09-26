@@ -10,6 +10,7 @@ import {
 import { Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { formatTimestampDateTime } from "@/domain/datetime";
+import { QuestStatus } from "@/features/questBoard/domain/types";
 import type { SupportedLocale } from "@/locales/locale";
 import type { WorkerWorkMessages } from "@/locales/workerWorkMessages";
 import type { ThemeColors } from "@/theme/colors";
@@ -77,7 +78,8 @@ export function WorkerWorkCard({
   const tone = toneClasses[item.tone];
   const statusLabel = messages.status[item.status];
   const awaitingStart =
-    item.questState === "QUEST_OPEN" || item.questState === "QUEST_ASSIGNED";
+    item.questState === QuestStatus.QUEST_OPEN ||
+    item.questState === QuestStatus.QUEST_ASSIGNED;
   const timeLabel = awaitingStart ? messages.startsLabel : messages.dueLabel;
   const timeValue = awaitingStart
     ? formatTimestampDateTime(item.startTime, locale)

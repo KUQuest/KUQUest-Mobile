@@ -4,6 +4,10 @@ import { Text, View } from "@/tw";
 import { createQuestMessages } from "@/locales/createQuestMessages";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import styles from "../createQuestStyles";
+import {
+  QuestMode,
+  QuestParticipation,
+} from "@/features/questBoard/domain/types";
 import type { QuestDraft } from "../../domain/createQuestModel";
 
 export function ModeSummary({
@@ -19,12 +23,15 @@ export function ModeSummary({
 }) {
   const { colors } = useAppTheme();
   const participationLabel =
-    participation === "SINGLE" ? messages.singleFormat : messages.teamFormat;
+    participation === QuestParticipation.SINGLE
+      ? messages.singleFormat
+      : messages.teamFormat;
   const candidateLabel =
-    candidateMode === "FIRST_COME_FIRST_SERVED"
+    candidateMode === QuestMode.FIRST_COME_FIRST_SERVED
       ? messages.instantAccept
       : messages.selectCandidate;
-  const Icon = participation === "SINGLE" ? UserRoundCheck : UsersRound;
+  const Icon =
+    participation === QuestParticipation.SINGLE ? UserRoundCheck : UsersRound;
 
   return (
     <View accessibilityLiveRegion="polite" className={styles.modeSummary}>

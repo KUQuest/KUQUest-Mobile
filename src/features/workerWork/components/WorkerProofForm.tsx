@@ -16,6 +16,7 @@ import { cn } from "@/tw/cn";
 import { limitImagePixels } from "@/api/fileUpload";
 import { formatTimestampDateTime } from "@/domain/datetime";
 import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestTypes";
+import { QuestProofStatus } from "@/features/questBoard/domain/types";
 import { useLocale } from "@/features/preferences/localeStore";
 import {
   ProofFileUploadError,
@@ -335,37 +336,37 @@ function SentProofCard({
 }: {
   messages: WorkerWorkMessages;
   palette: ThemeColors;
-  status: "PROOF_PENDING" | "PROOF_APPROVED" | "PROOF_NOT_APPROVED" | null;
+  status: QuestProofStatus | null;
   submittedAt: string | null;
 }) {
   const Icon =
-    status === "PROOF_APPROVED"
+    status === QuestProofStatus.PROOF_APPROVED
       ? CheckCircle2
-      : status === "PROOF_NOT_APPROVED"
+      : status === QuestProofStatus.PROOF_NOT_APPROVED
         ? CircleX
         : Clock3;
   const color =
-    status === "PROOF_APPROVED"
+    status === QuestProofStatus.PROOF_APPROVED
       ? palette.success
-      : status === "PROOF_NOT_APPROVED"
+      : status === QuestProofStatus.PROOF_NOT_APPROVED
         ? palette.dangerDark
         : palette.workerDark;
   const sentIconTone =
-    status === "PROOF_APPROVED"
+    status === QuestProofStatus.PROOF_APPROVED
       ? "bg-ku-surface-success"
-      : status === "PROOF_NOT_APPROVED"
+      : status === QuestProofStatus.PROOF_NOT_APPROVED
         ? "bg-ku-surface-danger"
         : "bg-ku-worker-subtle";
   const description =
-    status === "PROOF_APPROVED"
+    status === QuestProofStatus.PROOF_APPROVED
       ? messages.proofApprovedDescription
-      : status === "PROOF_NOT_APPROVED"
+      : status === QuestProofStatus.PROOF_NOT_APPROVED
         ? messages.proofNotApprovedDescription
         : messages.proofPendingDescription;
   const statusLabel =
-    status === "PROOF_APPROVED"
+    status === QuestProofStatus.PROOF_APPROVED
       ? messages.status.completed
-      : status === "PROOF_NOT_APPROVED"
+      : status === QuestProofStatus.PROOF_NOT_APPROVED
         ? messages.status.incomplete
         : messages.status.proofPending;
   return (

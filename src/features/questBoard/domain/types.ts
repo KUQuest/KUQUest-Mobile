@@ -90,6 +90,20 @@ export const QuestEditResponseStatus = {
 } as const;
 export type QuestEditResponseStatus =
   (typeof QuestEditResponseStatus)[keyof typeof QuestEditResponseStatus];
+export const QuestEditResponseDecision = {
+  EDIT_RESPONSE_ACCEPTED: "EDIT_RESPONSE_ACCEPTED",
+  EDIT_RESPONSE_DECLINED: "EDIT_RESPONSE_DECLINED",
+} as const;
+export type QuestEditResponseDecision =
+  (typeof QuestEditResponseDecision)[keyof typeof QuestEditResponseDecision];
+
+export const QuestProofFileStatus = {
+  PROOF_FILE_PENDING: "PROOF_FILE_PENDING",
+  PROOF_FILE_READY: "PROOF_FILE_READY",
+  PROOF_FILE_FAILED: "PROOF_FILE_FAILED",
+} as const;
+export type QuestProofFileStatus =
+  (typeof QuestProofFileStatus)[keyof typeof QuestProofFileStatus];
 
 /** v2 wire selection modes (`questV2ModeSchema`). */
 export const QuestMode = {
@@ -113,6 +127,15 @@ export const QuestUnderfilledConsentDecision = {
 } as const;
 export type QuestUnderfilledConsentDecision =
   (typeof QuestUnderfilledConsentDecision)[keyof typeof QuestUnderfilledConsentDecision];
+/** v2 underfilled state (`questV2UnderfilledStateSchema`). */
+export const QuestUnderfilledState = {
+  UNDERFILLED_DECISION_PENDING: "UNDERFILLED_DECISION_PENDING",
+  UNDERFILLED_CONSENT_PENDING: "UNDERFILLED_CONSENT_PENDING",
+  UNDERFILLED_COMPLETED: "UNDERFILLED_COMPLETED",
+  UNDERFILLED_CANCELLED: "UNDERFILLED_CANCELLED",
+} as const;
+export type QuestUnderfilledState =
+  (typeof QuestUnderfilledState)[keyof typeof QuestUnderfilledState];
 
 /** Hirer verdict on a submitted proof (v2 review payload). */
 export const QuestProofDecision = {
@@ -234,12 +257,30 @@ export const QuestPartialStartVoteStatus = {
 } as const;
 export type QuestPartialStartVoteStatus =
   (typeof QuestPartialStartVoteStatus)[keyof typeof QuestPartialStartVoteStatus];
+export const QuestActor = {
+  HIRER: "HIRER",
+  WORKER: "WORKER",
+  CANDIDATE: "CANDIDATE",
+  PROSPECTIVE_WORKER: "PROSPECTIVE_WORKER",
+} as const;
+export type CanonicalQuestActor = (typeof QuestActor)[keyof typeof QuestActor];
+export type QuestActor = CanonicalQuestActor;
+
+export function isHirerActor(actor: unknown): actor is typeof QuestActor.HIRER {
+  return actor === QuestActor.HIRER;
+}
+
+export function isWorkerActor(
+  actor: unknown
+): actor is typeof QuestActor.WORKER {
+  return actor === QuestActor.WORKER;
+}
 
 export interface QuestPartialStartConsentResponse {
   voterId: string;
   /** Compatibility alias for consumers that model every voter as a Worker. */
   workerId?: string;
-  role: "HIRER" | "WORKER";
+  role: typeof QuestActor.HIRER | typeof QuestActor.WORKER;
   status: QuestPartialStartVoteStatus;
   respondedAt: string;
 }

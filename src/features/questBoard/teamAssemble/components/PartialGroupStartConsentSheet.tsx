@@ -14,8 +14,12 @@ import type { SupportedLocale } from "@/locales/locale";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import { formatSatang } from "@/domain/satang";
 import {
+  QuestActor,
   QuestPartialStartConsentStatus,
   QuestPartialStartVoteStatus,
+  QuestUnderfilledConsentDecision,
+  QuestUnderfilledDecision,
+  QuestUnderfilledState,
   type QuestPartialStartConsent,
 } from "../../domain/types";
 import type { QuestV2Underfilled } from "@/api/questV2Contracts";
@@ -40,8 +44,8 @@ export interface PartialGroupStartConsentSheetProps {
   canRespond?: boolean;
   canDecide?: boolean;
   canConsent?: boolean;
-  onHirerDecision?: (decision: "PROCEED" | "CANCEL") => void;
-  onWorkerConsent?: (decision: "ACCEPT" | "DECLINE") => void;
+  onHirerDecision?: (decision: QuestUnderfilledDecision) => void;
+  onWorkerConsent?: (decision: QuestUnderfilledConsentDecision) => void;
   splitRewardSatang?: number;
   surfaceState?: PartialGroupStartSurfaceState;
   loading?: boolean;
@@ -202,9 +206,9 @@ export function PartialGroupStartConsentSheet({
       return new Map(
         (underfilled.responses ?? []).map((response) => [
           response.workerId,
-          response.decision === "ACCEPT"
+          response.decision === QuestUnderfilledConsentDecision.ACCEPT
             ? QuestPartialStartVoteStatus.PARTIAL_START_VOTE_APPROVED
-            : response.decision === "DECLINE"
+            : response.decision === QuestUnderfilledConsentDecision.DECLINE
               ? QuestPartialStartVoteStatus.PARTIAL_START_VOTE_REJECTED
               : undefined,
         ])
@@ -217,8 +221,10 @@ export function PartialGroupStartConsentSheet({
       ])
     );
   }, [consent?.responses, underfilled]);
-  const decisionPending = underfilled?.state === "UNDERFILLED_DECISION_PENDING";
-  const consentPending = underfilled?.state === "UNDERFILLED_CONSENT_PENDING";
+  const decisionPending =
+    underfilled?.state === QuestUnderfilledState.UNDERFILLED_DECISION_PENDING;
+  const consentPending =
+    underfilled?.state === QuestUnderfilledState.UNDERFILLED_CONSENT_PENDING;
   const deadline = underfilled
     ? new Date(
         (decisionPending
@@ -295,20 +301,24 @@ export function PartialGroupStartConsentSheet({
   const vote = (approve: boolean) => {
     if (!canVote) return;
     if (underfilled && onWorkerConsent)
-      onWorkerConsent(approve ? "ACCEPT" : "DECLINE");
+      onWorkerConsent(
+        approve
+          ? QuestUnderfilledConsentDecision.ACCEPT
+          : QuestUnderfilledConsentDecision.DECLINE
+      );
     else if (onVote) onVote(approve);
     else if (approve) onApprove?.();
     else onReject?.();
   };
-  const decide = (decision: "PROCEED" | "CANCEL") => {
+  const decide = (decision: QuestUnderfilledDecision) => {
     if (underfilled && decisionPending && canDecide)
       onHirerDecision?.(decision);
   };
 
   const terminal = underfilled
-    ? underfilled.state === "UNDERFILLED_COMPLETED"
+    ? underfilled.state === QuestUnderfilledState.UNDERFILLED_COMPLETED
       ? "approved"
-      : underfilled.state === "UNDERFILLED_CANCELLED"
+      : underfilled.state === QuestUnderfilledState.UNDERFILLED_CANCELLED
         ? "cancelled"
         : "pending"
     : consent?.status === QuestPartialStartConsentStatus.PARTIAL_START_APPROVED
@@ -539,7 +549,7 @@ export function PartialGroupStartConsentSheet({
               accessibilityLabel={messages.proceedLabel}
               accessibilityRole="button"
               className={`${styles.consentAction} ${styles.consentActionApprove}`}
-              onPress={() => decide("PROCEED")}
+              onPress={() => decide(QuestUnderfilledDecision.PROCEED)}
               testID="partial-group-start-proceed"
             >
               <Check color={colors.onPrimary} size={17} strokeWidth={2.7} />
@@ -553,7 +563,7 @@ export function PartialGroupStartConsentSheet({
               accessibilityLabel={messages.cancelQuest}
               accessibilityRole="button"
               className={`${styles.consentAction} ${styles.consentActionReject}`}
-              onPress={() => decide("CANCEL")}
+              onPress={() => decide(QuestUnderfilledDecision.CANCEL)}
               testID="partial-group-start-cancel"
             >
               <CircleX color={colors.dangerDark} size={17} strokeWidth={2.2} />
@@ -640,7 +650,7 @@ function VoterRow({
       : labels.pendingVote;
   return (
     <View
-      accessibilityLabel={`${voter.displayName}. ${voter.role === "HIRER" ? labels.hirer : labels.worker}. ${statusLabel}`}
+      accessibilityLabel={`${voter.displayName}. ${voter.role === QuestActor.HIRER ? labels.hirer : labels.worker}. ${statusLabel}`}
       className={styles.voterRow}
       testID={`partial-group-start-voter-${voter.id}`}
     >
@@ -654,7 +664,7 @@ function VoterRow({
           {voter.displayName}
         </Text>
         <Text className={styles.voterRole}>
-          {voter.role === "HIRER" ? labels.hirer : labels.worker}
+          {voter.role === QuestActor.HIRER ? labels.hirer : labels.worker}
         </Text>
       </View>
       <Text

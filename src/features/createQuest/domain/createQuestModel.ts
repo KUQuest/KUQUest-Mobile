@@ -1,9 +1,12 @@
 import {
   MAX_QUEST_IMAGES,
+  QuestCandidateMode,
   type QuestCandidateMode as QuestBoardCandidateMode,
   type QuestEscrowSummary,
   type QuestLocation,
   type QuestLocationMode as QuestBoardLocationMode,
+  QuestMode,
+  QuestParticipation,
   type QuestParticipationMode as QuestBoardParticipationMode,
   type QuestPublishCheck,
 } from "../../questBoard/domain/types";
@@ -12,8 +15,8 @@ import { formatDateTime } from "@/domain/datetime";
 import { createQuestMessages } from "@/locales/createQuestMessages";
 import { formatSatang, parseSatangInput } from "@/domain/satang";
 
-export type QuestDraftCandidateMode = "FIRST_COME_FIRST_SERVED" | "CANDIDATE";
-export type QuestDraftParticipation = "SINGLE" | "GROUP";
+export type QuestDraftCandidateMode = QuestMode;
+export type QuestDraftParticipation = QuestParticipation;
 export type QuestDraftProofRequirement = "required" | "optional" | "none";
 export type QuestDraftLocationMode = "ONLINE" | "ON_CAMPUS";
 export type QuestDraftState = "DRAFT" | "OPEN";
@@ -29,13 +32,13 @@ export function getHeadcountForParticipation(
   participation: QuestDraftParticipation,
   currentHeadcount: string
 ): string {
-  return participation === "SINGLE" ? "1" : currentHeadcount;
+  return participation === QuestParticipation.SINGLE ? "1" : currentHeadcount;
 }
 
 export function formatQuestDuration(
   startMs: number,
   endMs: number,
-  locale: "en" | "th" = "th"
+  locale: "en" | "th"
 ): string {
   const diffMs = endMs - startMs;
   if (diffMs <= 0) return "";
@@ -44,18 +47,12 @@ export function formatQuestDuration(
   const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
   const minutes = totalMinutes % 60;
 
-  if (locale === "th") {
-    const parts: string[] = [];
-    if (days > 0) parts.push(`${days} วัน`);
-    if (hours > 0) parts.push(`${hours} ชั่วโมง`);
-    if (minutes > 0 && days === 0) parts.push(`${minutes} นาที`);
-    return parts.join(" ") || "< 1 นาที";
-  }
+  const units = createQuestMessages[locale].durationUnits;
   const parts: string[] = [];
-  if (days > 0) parts.push(`${days}d`);
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0 && days === 0) parts.push(`${minutes}m`);
-  return parts.join(" ") || "< 1 min";
+  if (days > 0) parts.push(units.days(days));
+  if (hours > 0) parts.push(units.hours(hours));
+  if (minutes > 0 && days === 0) parts.push(units.minutes(minutes));
+  return parts.join(" ") || units.lessThanMinute;
 }
 export interface QuestScheduleDisplay {
   range: string;
@@ -174,8 +171,8 @@ export const initialDraft: QuestDraft = {
   locationMode: "ON_CAMPUS",
   location: "",
   imageUris: [],
-  candidateMode: "FIRST_COME_FIRST_SERVED",
-  participation: "SINGLE",
+  candidateMode: QuestMode.FIRST_COME_FIRST_SERVED,
+  participation: QuestParticipation.SINGLE,
   headcount: "1",
   wage: "",
 };
@@ -191,8 +188,11 @@ export function toQuestBoardModeValues(
 ): QuestBoardModeValues {
   return {
     candidateMode:
-      draft.candidateMode === "CANDIDATE" ? "CANDIDATE" : "NO_CANDIDATE",
-    participationMode: draft.participation === "GROUP" ? "team" : "single",
+      draft.candidateMode === QuestMode.CANDIDATE
+        ? QuestCandidateMode.CANDIDATE
+        : QuestCandidateMode.NO_CANDIDATE,
+    participationMode:
+      draft.participation === QuestParticipation.GROUP ? "team" : "single",
     locationMode: draft.locationMode === "ONLINE" ? "online" : "on-campus",
   };
 }
@@ -225,8 +225,10 @@ export interface QuestDraftPayload {
   startTime: string;
   endTime: string;
   location: QuestLocation;
-  candidateMode: "NO_CANDIDATE" | "CANDIDATE";
-  participation: "SOLO" | "GROUP";
+  candidateMode:
+    | typeof QuestCandidateMode.NO_CANDIDATE
+    | typeof QuestCandidateMode.CANDIDATE;
+  participation: "SOLO" | typeof QuestParticipation.GROUP;
   headcount: number;
   rewardSatang: number;
   imageUris: string[];
@@ -239,7 +241,7 @@ const MAX_GROUP_HEADCOUNT = 20;
 export function getValidDraftHeadcount(
   draft: Pick<QuestDraft, "participation" | "headcount">
 ): number | null {
-  if (draft.participation === "SINGLE") return 1;
+  if (draft.participation === QuestParticipation.SINGLE) return 1;
   const rawHeadcount = draft.headcount.trim();
   if (!rawHeadcount) return null;
 
@@ -274,9 +276,17 @@ export function toQuestDraftPayload(draft: QuestDraft): QuestDraftPayload {
         draft.locationMode === "ONLINE" ? null : draft.location.trim() || null,
     },
     candidateMode:
-      draft.candidateMode === "CANDIDATE" ? "CANDIDATE" : "NO_CANDIDATE",
-    participation: draft.participation === "GROUP" ? "GROUP" : "SOLO",
-    headcount: draft.participation === "SINGLE" ? 1 : Number(draft.headcount),
+      draft.candidateMode === QuestMode.CANDIDATE
+        ? QuestCandidateMode.CANDIDATE
+        : QuestCandidateMode.NO_CANDIDATE,
+    participation:
+      draft.participation === QuestParticipation.GROUP
+        ? QuestParticipation.GROUP
+        : "SOLO",
+    headcount:
+      draft.participation === QuestParticipation.SINGLE
+        ? 1
+        : Number(draft.headcount),
     rewardSatang: getDraftRewardSatang(draft) ?? 0,
     imageUris: [...draft.imageUris].slice(0, MAX_QUEST_IMAGES),
   };
@@ -378,7 +388,7 @@ export function getQuestPublishCheck(
 
 export function formatDraftReward(
   draft: Pick<QuestDraft, "wage">,
-  locale: "en" | "th" = "en"
+  locale: "en" | "th"
 ): string {
   return formatSatang(getDraftRewardSatang(draft) ?? 0, locale);
 }
@@ -522,7 +532,7 @@ export function validateQuestDraftStep(
       findings.push({ field: "endTime", code: "timeOrder" });
     if (draft.locationMode === "ON_CAMPUS" && !draft.location.trim())
       findings.push({ field: "location", code: "required" });
-    if (draft.participation === "GROUP") {
+    if (draft.participation === QuestParticipation.GROUP) {
       if (!draft.headcount.trim())
         findings.push({ field: "headcount", code: "required" });
       else if (getValidDraftHeadcount(draft) === null)
@@ -540,13 +550,15 @@ export function validateQuestDraftStep(
 }
 
 function normalizeCandidateMode(value: string): QuestDraftCandidateMode {
-  if (value === "CANDIDATE" || value === "review") return "CANDIDATE";
-  return "FIRST_COME_FIRST_SERVED";
+  if (value === QuestMode.CANDIDATE || value === "review")
+    return QuestMode.CANDIDATE;
+  return QuestMode.FIRST_COME_FIRST_SERVED;
 }
 
 function normalizeParticipation(value: string): QuestDraftParticipation {
-  if (value === "GROUP" || value === "team") return "GROUP";
-  return "SINGLE";
+  if (value === QuestParticipation.GROUP || value === "team")
+    return QuestParticipation.GROUP;
+  return QuestParticipation.SINGLE;
 }
 
 function normalizeLocationMode(value: string): QuestDraftLocationMode {

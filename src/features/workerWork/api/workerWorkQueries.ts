@@ -9,6 +9,7 @@ import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import { myQuestsKeys } from "@/features/myQuests/api/myQuestsQueries";
 import { workerHomeKeys } from "@/features/workerHome/api/workerHomeKeys";
 import type { ProofSendPlan } from "../proofDraftPlan";
+import { QuestProofFileStatus } from "@/features/questBoard/domain/types";
 
 type WorkerMutationInput = {
   questId: string;
@@ -117,7 +118,7 @@ export function useSubmitProofMutation() {
     }) => {
       const proofDraft = await uploadProofDraft(questId, plan, description);
       const failedFiles = proofDraft.files.filter(
-        (file) => file.uploadStatus === "PROOF_FILE_FAILED"
+        (file) => file.uploadStatus === QuestProofFileStatus.PROOF_FILE_FAILED
       );
       if (failedFiles.length > 0) {
         throw new ProofFileUploadError(
@@ -130,7 +131,8 @@ export function useSubmitProofMutation() {
       }
       const readyFileCount = proofDraft.files.filter(
         (file) =>
-          file.uploadStatus === "PROOF_FILE_READY" && file.fileId !== null
+          file.uploadStatus === QuestProofFileStatus.PROOF_FILE_READY &&
+          file.fileId !== null
       ).length;
       if (readyFileCount === 0) {
         throw new Error("At least one proof file must be ready before sending");

@@ -12,9 +12,12 @@ import type {
   LiveQuestSnapshot,
 } from "../live/liveQuestTypes";
 import {
+  isHirerActor,
   QuestApplicationStatus,
   QuestAssignmentStatus,
+  QuestNextAction,
   QuestPartialStartConsentStatus,
+  QuestStatus,
   type QuestAction,
   type QuestBoardQuest,
   type QuestDetailState,
@@ -60,8 +63,7 @@ function hasAction(
 
 function fixtureCapabilities(
   state: QuestDetailState,
-  isOwner: boolean,
-  isAssigned: boolean
+  isOwner: boolean
 ): QuestDetailProjectionCapabilities {
   const availableActions = state.capabilities.availableActions;
   const canRespondPartialStart = hasAction(
@@ -91,7 +93,6 @@ function fixtureCapabilities(
     canMessageOwner:
       !isOwner &&
       Boolean(state.conversation.conversationId && state.conversation.canRead),
-    canReportQuest: isAssigned,
   };
 }
 
@@ -102,7 +103,7 @@ function liveCapabilities(
 ): QuestDetailProjectionCapabilities {
   const capabilities: LiveQuestCapabilities = snapshot.capabilities;
   const canMessageOwner =
-    snapshot.state === "QUEST_OPEN" && !isOwner && !isAssigned;
+    snapshot.state === QuestStatus.QUEST_OPEN && !isOwner && !isAssigned;
   return {
     canApply: capabilities.canApply,
     canJoin: capabilities.canJoin,
@@ -124,7 +125,6 @@ function liveCapabilities(
     canConsentUnderfilled: capabilities.canConsentUnderfilled,
     canRespondPartialStart: capabilities.canConsentUnderfilled,
     canMessageOwner,
-    canReportQuest: isAssigned,
   };
 }
 
@@ -135,22 +135,23 @@ export function getQuestDetailProjection(
 ): QuestDetailProjection {
   if (isLiveSnapshot(source)) {
     const quest = liveQuest(source);
-    const isOwner = source.actor === "HIRER";
+    const isOwner = isHirerActor(source.actor);
     const isAssigned = source.assignment?.state !== undefined;
     const hasPendingApplication =
-      source.application?.state === "APPLICATION_APPLIED";
+      source.application?.state === QuestApplicationStatus.APPLICATION_APPLIED;
     const applicationStatus: QuestDetailApplicationStatus =
-      source.assignment?.state === "ASSIGNMENT_ACTIVE"
+      source.assignment?.state === QuestAssignmentStatus.ASSIGNMENT_ACTIVE
         ? "accepted"
         : hasPendingApplication
           ? "pending"
           : "none";
     const joinStatus =
-      source.assignment?.state === "ASSIGNMENT_COMPLETED" ||
-      source.assignment?.state === "ASSIGNMENT_INCOMPLETE" ||
-      source.assignment?.state === "ASSIGNMENT_CANCELLED"
+      source.assignment?.state === QuestAssignmentStatus.ASSIGNMENT_COMPLETED ||
+      source.assignment?.state ===
+        QuestAssignmentStatus.ASSIGNMENT_INCOMPLETE ||
+      source.assignment?.state === QuestAssignmentStatus.ASSIGNMENT_CANCELLED
         ? ("history" as const)
-        : source.assignment?.state === "ASSIGNMENT_ACTIVE"
+        : source.assignment?.state === QuestAssignmentStatus.ASSIGNMENT_ACTIVE
           ? ("accepted" as const)
           : hasPendingApplication
             ? ("pending" as const)
@@ -158,7 +159,10 @@ export function getQuestDetailProjection(
     const participants =
       source.participants ??
       source.assignments
-        .filter((assignment) => assignment.state !== "ASSIGNMENT_CANCELLED")
+        .filter(
+          (assignment) =>
+            assignment.state !== QuestAssignmentStatus.ASSIGNMENT_CANCELLED
+        )
         .map((assignment) => ({
           id: assignment.workerId,
           displayName: assignment.workerId,
@@ -167,7 +171,8 @@ export function getQuestDetailProjection(
       "activeWorkerCount" in source.quest
         ? source.quest.activeWorkerCount
         : source.assignments.filter(
-            (assignment) => assignment.state !== "ASSIGNMENT_CANCELLED"
+            (assignment) =>
+              assignment.state !== QuestAssignmentStatus.ASSIGNMENT_CANCELLED
           ).length;
     return {
       state: null,
@@ -179,7 +184,8 @@ export function getQuestDetailProjection(
       isOwner,
       isAssigned,
       hasPendingApplication,
-      partialStartPending: source.nextAction === "CONSENT_UNDERFILLED",
+      partialStartPending:
+        source.nextAction === QuestNextAction.CONSENT_UNDERFILLED,
       settlement: null,
       conversationCapability: {
         conversationId: source.workConversation?.id ?? null,
@@ -248,6 +254,6 @@ export function getQuestDetailProjection(
     conversationCapability: source.conversation,
     participants,
     participantCount: source.actualHeadcount ?? participants.length,
-    capabilities: fixtureCapabilities(source, isOwner, isAssigned),
+    capabilities: fixtureCapabilities(source, isOwner),
   };
 }

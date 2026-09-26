@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/Button";
 import { TextArea } from "@/components/ui/TextArea";
 import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
+import { questWorkMessages } from "@/locales/questWorkMessages";
+import { getLocalizedErrorMessage } from "@/utils/error";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import { cn } from "@/tw/cn";
@@ -19,6 +21,7 @@ import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
 import {
   MAX_PROOF_ATTACHMENTS,
   MAX_PROOF_NOTE_LENGTH,
+  QuestProofFileStatus,
 } from "../../domain/types";
 import styles from "../../styles/questDetailStyles";
 
@@ -52,10 +55,8 @@ export interface ProofSubmissionSheetProps {
   error?: string;
 }
 
-function fileLabel(asset: ProofDraftAsset): string {
-  return (
-    asset.name ?? asset.uri.split("/").pop()?.split("?")[0] ?? "Proof file"
-  );
+function fileLabel(asset: ProofDraftAsset, fallback: string): string {
+  return asset.name ?? asset.uri.split("/").pop()?.split("?")[0] ?? fallback;
 }
 
 export function ProofSubmissionSheet({
@@ -75,7 +76,8 @@ export function ProofSubmissionSheet({
   const insets = useSafeAreaInsets();
   const { locale } = useLocale();
   const messages = questBoardMessages[locale];
-  const saveDraftLabel = locale === "th" ? "บันทึกฉบับร่าง" : "Save draft";
+  const workMessages = questWorkMessages[locale];
+  const saveDraftLabel = workMessages.saveProofDraft;
   const [note, setNote] = useState("");
   const [assets, setAssets] = useState<ProofDraftAsset[]>(draftAssets);
   const [attempted, setAttempted] = useState(false);
@@ -99,7 +101,7 @@ export function ProofSubmissionSheet({
     note.trim() || assets.length > 0 || serverFiles.length > 0
   );
   const hasFailedUploads = serverFiles.some(
-    (file) => file.uploadStatus === "PROOF_FILE_FAILED"
+    (file) => file.uploadStatus === QuestProofFileStatus.PROOF_FILE_FAILED
   );
   const canSubmit = hasContent && !hasFailedUploads && !locked && !loading;
   const displayedError = actionError ?? error;
@@ -117,7 +119,9 @@ export function ProofSubmissionSheet({
 
   const failedFiles = useMemo(
     () =>
-      serverFiles.filter((file) => file.uploadStatus === "PROOF_FILE_FAILED"),
+      serverFiles.filter(
+        (file) => file.uploadStatus === QuestProofFileStatus.PROOF_FILE_FAILED
+      ),
     [serverFiles]
   );
 
@@ -145,7 +149,7 @@ export function ProofSubmissionSheet({
         (file) => file.size > MAX_PROOF_FILE_SIZE_BYTES
       );
       if (oversized) {
-        setPickerError("Each proof file must be 10 MB or smaller.");
+        setPickerError(workMessages.proofFileTooLarge);
         return;
       }
       const selectedAssets: ProofDraftAsset[] = result.result.map((file) => ({
@@ -202,7 +206,13 @@ export function ProofSubmissionSheet({
       await callback();
     } catch (caught) {
       setActionError(
-        caught instanceof Error ? caught.message : messages.errorDescription
+        caught instanceof Error &&
+          (caught.message === messages.proofContentRequired ||
+            caught.message === messages.manageSnapshotError)
+          ? caught.message
+          : getLocalizedErrorMessage(caught, locale, {
+              fallback: messages.manageSnapshotError,
+            })
       );
     } finally {
       setBusyAction(undefined);
@@ -325,7 +335,7 @@ export function ProofSubmissionSheet({
                         className="ml-ku-sm flex-1 font-ku-medium text-ku-label text-ku-text-strong"
                         numberOfLines={1}
                       >
-                        {fileLabel(asset)}
+                        {fileLabel(asset, workMessages.proofFileFallback)}
                       </Text>
                       {!locked ? (
                         <Pressable
@@ -358,7 +368,8 @@ export function ProofSubmissionSheet({
                     >
                       <FileText
                         color={
-                          file.uploadStatus === "PROOF_FILE_FAILED"
+                          file.uploadStatus ===
+                          QuestProofFileStatus.PROOF_FILE_FAILED
                             ? colors.danger
                             : colors.worker
                         }
@@ -368,12 +379,13 @@ export function ProofSubmissionSheet({
                         className="ml-ku-sm flex-1 font-ku-medium text-ku-label text-ku-text-strong"
                         numberOfLines={1}
                       >
-                        {file.contentType || "Proof file"} ·{" "}
+                        {file.contentType || workMessages.proofFileFallback} ·{" "}
                         {file.uploadStatus
                           .replace("PROOF_FILE_", "")
                           .toLowerCase()}
                       </Text>
-                      {file.uploadStatus === "PROOF_FILE_FAILED" &&
+                      {file.uploadStatus ===
+                        QuestProofFileStatus.PROOF_FILE_FAILED &&
                       onRetryUpload ? (
                         <Pressable
                           accessibilityLabel={messages.retry}
@@ -385,9 +397,17 @@ export function ProofSubmissionSheet({
                             void Promise.resolve(onRetryUpload(file.position))
                               .catch((caught) => {
                                 setActionError(
-                                  caught instanceof Error
+                                  caught instanceof Error &&
+                                    (caught.message ===
+                                      messages.proofContentRequired ||
+                                      caught.message ===
+                                        messages.manageSnapshotError ||
+                                      caught.message ===
+                                        workMessages.retryFailedProofFile)
                                     ? caught.message
-                                    : messages.errorDescription
+                                    : getLocalizedErrorMessage(caught, locale, {
+                                        fallback: messages.manageSnapshotError,
+                                      })
                                 );
                               })
                               .finally(() => setBusyAction(undefined));

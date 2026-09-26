@@ -7,6 +7,8 @@ import { createQuestMessages } from "@/locales/createQuestMessages";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import { useWalletQuery } from "@/features/wallet/api/walletQueries";
 import { useLocale } from "@/features/preferences/localeStore";
+import { getLocalizedErrorMessage } from "@/utils/error";
+import { QuestStatus } from "@/features/questBoard/domain/types";
 import {
   useCreateQuestMutation,
   usePublishEditQuestMutation,
@@ -59,9 +61,9 @@ export function getPublishErrorMessage(
     return error.issues.some((issue) => issue.path[0] === "headcount")
       ? messages.headcountError
       : messages.publishError;
-  return error instanceof Error && error.message
-    ? error.message
-    : messages.publishError;
+  return getLocalizedErrorMessage(error, locale, {
+    fallback: messages.publishError,
+  });
 }
 function derivePublishCheck(
   data: Parameters<typeof adaptV2PublishCheck>[0] | undefined,
@@ -344,7 +346,7 @@ export function useQuestPublish({
           questId: publishedQuestId,
           idempotencyKey: publishIdempotencyKey,
         });
-        if (published.state !== "QUEST_OPEN") {
+        if (published.state !== QuestStatus.QUEST_OPEN) {
           throw new Error(messages.publishError);
         }
 
@@ -354,7 +356,9 @@ export function useQuestPublish({
             await deleteQuestDraft(draftStorageKey, activeDraftId);
           } catch (error) {
             setFailureMessage(
-              error instanceof Error ? error.message : messages.saveError
+              getLocalizedErrorMessage(error, locale, {
+                fallback: messages.saveError,
+              })
             );
             setSaveErrorIntent({ state: "OPEN", completesFlow: true });
             return false;

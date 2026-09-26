@@ -19,6 +19,7 @@ import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 import { projectWorkerWork } from "../workerWorkProjection";
 import type { WorkerWorkItem, WorkerWorkProjection } from "../workerWorkTypes";
+import { QuestStatus } from "@/features/questBoard/domain/types";
 
 export interface WorkerWorkControllerProps {
   initialTab?: string;
@@ -88,7 +89,7 @@ export function useWorkerWorkController({
       // Underfilled-start consent and still-open Quests live on Quest Detail;
       // everything else, including proof submission, is in the Work Hub.
       if (
-        item.questState === "QUEST_OPEN" ||
+        item.questState === QuestStatus.QUEST_OPEN ||
         item.action === "consentUnderfilled"
       ) {
         router.push({ pathname: "/quest/[id]", params: { id: item.questId } });

@@ -9,11 +9,12 @@ import { getChatRouteParams } from "@/features/chat/chatData";
 import { questWorkMessages } from "@/locales/questWorkMessages";
 import { isTerminalStatus } from "@/domain/questLifecycle";
 import { getRouteParam } from "@/utils";
+import { getLocalizedErrorMessage } from "@/utils/error";
 import { useLiveQuestSnapshotQuery } from "../api/questBoardQueries";
 import { liveQuestService } from "../live/liveQuestService";
 import { useFileDispute } from "../dispute/useFileDispute";
 import type { LiveQuestSnapshot } from "../live/liveQuestTypes";
-import type { QuestStatus } from "../domain/types";
+import { QuestEditResponseDecision, QuestStatus } from "../domain/types";
 
 const POLL_INTERVAL_MS = 5_000;
 
@@ -31,14 +32,6 @@ export interface QuestWorkFeatureProps {
   /** Compatibility alias used by existing Quest detail routes. */
   studentId?: string;
   editRequestId?: string;
-}
-
-function getErrorText(error: unknown, serverError: string): string {
-  if (error instanceof ApiError && error.code)
-    return `${serverError} (${error.code})`;
-  if (error instanceof Error && error.message)
-    return `${serverError} ${error.message}`;
-  return serverError;
 }
 
 export function useQuestWorkFeature({
@@ -72,7 +65,7 @@ export function useQuestWorkFeature({
       // Start Work button follows the screen clock, not polling.
       if (
         !currentSnapshot ||
-        currentSnapshot.state !== "QUEST_ASSIGNED" ||
+        currentSnapshot.state !== QuestStatus.QUEST_ASSIGNED ||
         currentSnapshot.capabilities.canStartWork
       )
         return false;
@@ -109,7 +102,9 @@ export function useQuestWorkFeature({
   const startWorkKeyRef = useRef<string | null>(null);
   const [commandError, setCommandError] = useState<string | null>(null);
   const snapshotErrorText = snapshotQuery.error
-    ? getErrorText(snapshotQuery.error, messages.serverError)
+    ? getLocalizedErrorMessage(snapshotQuery.error, locale, {
+        fallback: messages.serverError,
+      })
     : undefined;
   const errorText = commandError ?? snapshotErrorText;
   const stale = Boolean(snapshot && (snapshotQuery.isError || commandError));
@@ -127,7 +122,7 @@ export function useQuestWorkFeature({
   }, [router]);
 
   const respondToEdit = useCallback(
-    async (decision: "EDIT_RESPONSE_ACCEPTED" | "EDIT_RESPONSE_DECLINED") => {
+    async (decision: QuestEditResponseDecision) => {
       if (!snapshot?.editRequest || !snapshot.capabilities.canRespondToEdit)
         return;
       setEditSending(true);
@@ -141,12 +136,16 @@ export function useQuestWorkFeature({
         setEditFeedback(messages.editUpdated);
         await refreshSnapshot().catch(() => undefined);
       } catch (error) {
-        setCommandError(getErrorText(error, messages.serverError));
+        setCommandError(
+          getLocalizedErrorMessage(error, locale, {
+            fallback: messages.serverError,
+          })
+        );
       } finally {
         setEditSending(false);
       }
     },
-    [messages, refreshSnapshot, snapshot]
+    [locale, messages, refreshSnapshot, snapshot]
   );
   const confirmCompletion = useCallback(async () => {
     if (
@@ -170,12 +169,17 @@ export function useQuestWorkFeature({
         router.replace("/my-quests");
       }
     } catch (error) {
-      setCommandError(getErrorText(error, messages.serverError));
+      setCommandError(
+        getLocalizedErrorMessage(error, locale, {
+          fallback: messages.serverError,
+        })
+      );
     } finally {
       setConfirmationSending(false);
     }
   }, [
     confirmationSending,
+    locale,
     messages,
     refreshSnapshot,
     routeQuestId,
@@ -205,13 +209,21 @@ export function useQuestWorkFeature({
     } catch (error) {
       if (!(error instanceof ApiError) || error.status >= 500) {
         // Outcome unknown: the next press retries with the same key.
-        setCommandError(getErrorText(error, messages.serverError));
+        setCommandError(
+          getLocalizedErrorMessage(error, locale, {
+            fallback: messages.serverError,
+          })
+        );
         return;
       }
       startWorkKeyRef.current = null;
       if (START_WORK_RELOAD_CODES[error.code]) {
         await refreshSnapshot().catch((refreshError: unknown) =>
-          setCommandError(getErrorText(refreshError, messages.serverError))
+          setCommandError(
+            getLocalizedErrorMessage(refreshError, locale, {
+              fallback: messages.serverError,
+            })
+          )
         );
         return;
       }
@@ -221,12 +233,22 @@ export function useQuestWorkFeature({
         START_WORK_NOT_REQUIRED: messages.startWorkNotRequired,
       };
       setCommandError(
-        startWorkErrors[error.code] ?? getErrorText(error, messages.serverError)
+        startWorkErrors[error.code] ??
+          getLocalizedErrorMessage(error, locale, {
+            fallback: messages.serverError,
+          })
       );
     } finally {
       setStartWorkSending(false);
     }
-  }, [messages, refreshSnapshot, routeQuestId, snapshot, startWorkSending]);
+  }, [
+    locale,
+    messages,
+    refreshSnapshot,
+    routeQuestId,
+    snapshot,
+    startWorkSending,
+  ]);
 
   const { confirmFileDispute } = useFileDispute();
   const openDispute = useCallback(() => {
