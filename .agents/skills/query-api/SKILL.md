@@ -3,17 +3,19 @@ name: query-api
 description: Query and inspect the KUQuest OpenAPI specification from docs/api/api.yaml. Use when looking up API endpoints, operation IDs, request/response schemas, status codes, required parameters, headers, or verifying mobile API contract compatibility.
 ---
 
-The canonical KUQuest API specification lives at `docs/api/api.yaml` (50,000+ lines, 218 operations across 41 tags). Never read or grep the raw file directly into context: use the `query-api` CLI for instant, cached lookups.
+The staging OpenAPI document is the latest contract source. Before every API lookup or contract check, refresh `api-1.yaml`:
+
+```bash
+curl -s https://kuquest-dev-api.kubits.org/openapi/json \
+  | yq -P \
+  > api-1.yaml
+```
+
+Use `api-1.yaml` as source for current contract details. `docs/api/api.yaml` and the `query-api` CLI are repository snapshots; do not treat them as current after the refresh.
 
 ## CLI Execution
 
-Run via `bun` or `node`:
-
-```bash
-bun run query-api <command> [options]
-# or
-node scripts/query-api.js <command> [options]
-```
+The CLI queries `docs/api/api.yaml`, not refreshed `api-1.yaml`. Use it only when repository snapshot details are sufficient; use the refreshed file for current API contracts.
 
 ## Discovery
 
