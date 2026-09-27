@@ -1,11 +1,12 @@
 import { createElement, Fragment } from "react";
 import { Pressable, Text } from "react-native";
-import { act, fireEvent, render } from "@testing-library/react-native";
+import { act, fireEvent } from "@testing-library/react-native";
 
 import { ApiError } from "@/api/ApiClient";
 import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import { disputeMessages } from "@/locales/disputeMessages";
 import { useFileDispute } from "../useFileDispute";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 const messages = disputeMessages.en;
 const mockMutate = jest.fn();
@@ -20,6 +21,15 @@ jest.mock("@/features/preferences/localeStore", () => ({
 
 jest.mock("@/features/questBoard/api/questBoardQueries", () => ({
   useFileDisputeMutation: () => ({ mutate: mockMutate, isPending: false }),
+  questBoardKeys: {
+    disputeFiling: () => ["questBoard", "dispute-filing"],
+    myDisputeCase: (questId: string, viewerId: string) => [
+      "questBoard",
+      "my-dispute-case",
+      questId,
+      viewerId,
+    ],
+  },
 }));
 
 function DisputeAction() {
@@ -36,7 +46,7 @@ function DisputeAction() {
 }
 
 function renderDisputeAction() {
-  return render(
+  return renderWithQueryClient(
     createElement(
       Fragment,
       null,
@@ -106,5 +116,17 @@ describe("useFileDispute", () => {
       dialog.queryByText("The dispute filing window has closed")
     ).toBeNull();
     await fireEvent.press(dialog.getByRole("button", { name: "OK" }));
+  });
+  it("submits only once when confirmation fires twice while pending", async () => {
+    const dialog = await renderDisputeAction();
+    await fireEvent.press(dialog.getByRole("button", { name: "File dispute" }));
+    const confirmButton = dialog.getByRole("button", {
+      name: messages.confirm,
+    });
+
+    await fireEvent.press(confirmButton);
+    await fireEvent.press(confirmButton);
+
+    expect(mockMutate).toHaveBeenCalledTimes(1);
   });
 });

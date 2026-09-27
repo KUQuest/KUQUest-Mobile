@@ -224,6 +224,11 @@ export interface QuestBoardMessages {
   proofReviewPreview: string;
   proofReviewPreviewUnavailable: string;
   proofReviewPreviewError: string;
+  proofReviewDownload: string;
+  proofReviewDownloading: string;
+  proofReviewDownloadErrorTitle: string;
+  proofReviewDownloadError: string;
+  proofReviewSharingUnavailable: string;
   proofReviewDoNotApprove: string;
   proofReviewApprove: string;
   proofReviewReasonLabel: string;
@@ -584,6 +589,13 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     proofReviewPreviewUnavailable:
       "A preview link is not available for this private file.",
     proofReviewPreviewError: "This evidence could not be opened.",
+    proofReviewDownload: "Download",
+    proofReviewDownloading: "Downloading…",
+    proofReviewDownloadErrorTitle: "Download failed",
+    proofReviewDownloadError:
+      "This proof file could not be downloaded. Try again.",
+    proofReviewSharingUnavailable:
+      "File sharing is not available on this device.",
     proofReviewDoNotApprove: "Do not approve",
     proofReviewApprove: "Approve work",
     proofReviewReasonLabel: "Reason for non-approval",
@@ -965,6 +977,12 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     proofReviewPreview: "ดูตัวอย่าง",
     proofReviewPreviewUnavailable: "ไม่มีลิงก์ตัวอย่างสำหรับไฟล์ส่วนตัวนี้",
     proofReviewPreviewError: "ไม่สามารถเปิดหลักฐานนี้ได้",
+    proofReviewDownload: "ดาวน์โหลด",
+    proofReviewDownloading: "กำลังดาวน์โหลด…",
+    proofReviewDownloadErrorTitle: "ดาวน์โหลดไม่สำเร็จ",
+    proofReviewDownloadError:
+      "ไม่สามารถดาวน์โหลดไฟล์หลักฐานได้ โปรดลองอีกครั้ง",
+    proofReviewSharingUnavailable: "อุปกรณ์นี้ไม่รองรับการแชร์ไฟล์",
     proofReviewDoNotApprove: "ไม่อนุมัติงาน",
     proofReviewApprove: "อนุมัติงาน",
     proofReviewReasonLabel: "เหตุผลที่ไม่อนุมัติ",

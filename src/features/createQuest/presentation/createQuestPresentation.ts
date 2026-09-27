@@ -99,16 +99,26 @@ function getPublishBlockers(
   }));
 }
 
+function getTagLabel(
+  tag: { name: string; nameTh?: string | null },
+  locale: SupportedLocale
+): string {
+  return locale === "th" && tag.nameTh ? tag.nameTh : tag.name;
+}
+
 export function getCreateQuestTagOptions(
-  liveTags: readonly { id: string; name: string }[],
+  liveTags: readonly { id: string; name: string; nameTh?: string | null }[],
   locale: SupportedLocale
 ): CreateQuestTagOption[] {
   if (liveTags.length > 0) {
-    return liveTags.map((tag) => ({
-      label: tag.name,
-      shortLabel: tag.name,
-      value: tag.id,
-    }));
+    return liveTags.map((tag) => {
+      const label = getTagLabel(tag, locale);
+      return {
+        label,
+        shortLabel: label,
+        value: tag.id,
+      };
+    });
   }
 
   const { fallbackTags } = createQuestMessages[locale];

@@ -77,6 +77,81 @@ describe("MessageBubble", () => {
       "11:05"
     );
   });
+  it("shows each group-chat message author and opens matching profile", async () => {
+    const onProfilePress = jest.fn();
+    const otherMessages: DisplayChatMessage[] = [
+      {
+        id: "hirer-message",
+        sender: "other",
+        senderId: "hirer-1",
+        senderName: "Hirer One",
+        text: { en: "Please begin", th: "เริ่มงานได้" },
+        createdAt: "2026-09-15T04:05:00Z",
+        attachments: [],
+        kind: "USER",
+      },
+      {
+        id: "worker-message",
+        sender: "other",
+        senderId: "worker-2",
+        senderName: "Worker Two",
+        text: { en: "Ready", th: "พร้อม" },
+        createdAt: "2026-09-15T04:06:00Z",
+        attachments: [],
+        kind: "USER",
+      },
+    ];
+
+    const view = await renderWithAppTheme(
+      <>
+        {otherMessages.map((message) => (
+          <MessageBubble
+            key={message.id}
+            message={message}
+            conversation={conversation}
+            locale="en"
+            messages={chatMessages.en}
+            onFilePress={jest.fn()}
+            onProfilePress={onProfilePress}
+          />
+        ))}
+      </>
+    );
+
+    expect(view.getByText("Hirer One")).toBeTruthy();
+    expect(view.getByText("Worker Two")).toBeTruthy();
+    await fireEvent.press(view.getByLabelText("View profile of Hirer One"));
+    expect(onProfilePress).toHaveBeenCalledWith("hirer-1");
+  });
+
+  it("renders system messages without a participant avatar", async () => {
+    const systemMessage: DisplayChatMessage = {
+      id: "system-message",
+      sender: "other",
+      text: {
+        en: "A Worker joined the Work Conversation",
+        th: "มีผู้เข้าร่วม",
+      },
+      createdAt: "2026-09-15T04:05:00Z",
+      attachments: [],
+      kind: "SYSTEM",
+    };
+
+    const view = await renderWithAppTheme(
+      <MessageBubble
+        message={systemMessage}
+        conversation={conversation}
+        locale="en"
+        messages={chatMessages.en}
+        onFilePress={jest.fn()}
+      />
+    );
+
+    expect(
+      view.getByText("A Worker joined the Work Conversation")
+    ).toBeTruthy();
+    expect(view.queryByTestId("chat-avatar-Alex")).toBeNull();
+  });
 
   it("triggers onReportMessage on long-press and accessibility action for other's message", async () => {
     const onReportMessage = jest.fn();

@@ -48,6 +48,7 @@ export interface TeamAssembleViewProps {
   joinCodeInput?: string;
   onJoinCodeInputChange?: (joinCode: string) => void;
   onJoinTeam?: (teamId: string, joinCode: string) => void;
+  joinError?: string | null;
   teamName?: string | null;
   onUpdateTeamName?: (teamId: string, name: string) => void;
   canUpdateTeam?: boolean;
@@ -130,6 +131,7 @@ export function TeamAssembleView({
   joinCodeInput,
   onJoinCodeInputChange,
   onJoinTeam,
+  joinError,
   teamName,
   onUpdateTeamName,
   canUpdateTeam,
@@ -375,7 +377,15 @@ export function TeamAssembleView({
   };
 
   const submit = () => {
-    if (!team || !submissionReady || isLocked || submitting) return;
+    if (
+      !team ||
+      !submissionReady ||
+      isLocked ||
+      submitting ||
+      (canonical && (!proposalText.trim() || proposalFiles.length === 0))
+    ) {
+      return;
+    }
     const payload = {
       text: proposalText,
       fileIds: proposalFiles.map((f) => f.id),
@@ -428,6 +438,7 @@ export function TeamAssembleView({
           />
           {onJoinTeam ? (
             <TeamAssembleJoinTeamPanel
+              error={joinError}
               initialInvite={initialInvite}
               locale={locale}
               onJoinTeam={onJoinTeam}

@@ -1,4 +1,5 @@
-import { useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useRef } from "react";
 
 import {
   showConfirmModal,
@@ -6,8 +7,13 @@ import {
   SweetAlertVariant,
 } from "@/components/ui/SweetAlert";
 
+import { ApiError } from "@/api/ApiClient";
+import type { DisputeCase } from "@/api/DisputeApi";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
-import { useFileDisputeMutation } from "@/features/questBoard/api/questBoardQueries";
+import {
+  questBoardKeys,
+  useFileDisputeMutation,
+} from "@/features/questBoard/api/questBoardQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import { disputeMessages } from "@/locales/disputeMessages";
 import { getLocalizedErrorMessage } from "@/utils/error";
@@ -21,17 +27,21 @@ export function useFileDispute() {
   const { locale } = useLocale();
   const messages = disputeMessages[locale];
   const viewerId = useSessionQuery().data?.user.id ?? "";
+  const queryClient = useQueryClient();
   const { mutate, isPending } = useFileDisputeMutation();
 
+  const filingRef = useRef(false);
   const confirmFileDispute = useCallback(
     (questId: string) => {
-      if (!viewerId || isPending) return;
+      if (!viewerId || filingRef.current || isPending) return;
       showConfirmModal({
         title: messages.confirmTitle,
         message: messages.rules.map((rule) => `• ${rule}`).join("\n"),
         confirmLabel: messages.confirm,
         cancelLabel: messages.cancel,
         onConfirm: () => {
+          if (filingRef.current) return;
+          filingRef.current = true;
           mutate(
             { questId, viewerId },
             {
@@ -41,20 +51,32 @@ export function useFileDispute() {
                   message: messages.successDescription(filedCase.displayId),
                   variant: SweetAlertVariant.Success,
                 }),
-              onError: (error) =>
+              onError: (error) => {
+                const alreadyFiled =
+                  error instanceof ApiError &&
+                  error.status === 409 &&
+                  queryClient.getQueryData<{ case: DisputeCase | null }>(
+                    questBoardKeys.myDisputeCase(questId, viewerId)
+                  )?.case != null;
                 showSweetAlert({
                   title: messages.errorTitle,
-                  message: getLocalizedErrorMessage(error, locale, {
-                    fallback: messages.errorFallback,
-                  }),
+                  message: alreadyFiled
+                    ? messages.alreadyFiled
+                    : getLocalizedErrorMessage(error, locale, {
+                        fallback: messages.errorFallback,
+                      }),
                   variant: SweetAlertVariant.Error,
-                }),
+                });
+              },
+              onSettled: () => {
+                filingRef.current = false;
+              },
             }
           );
         },
       });
     },
-    [isPending, locale, messages, mutate, viewerId]
+    [isPending, locale, messages, mutate, queryClient, viewerId]
   );
 
   return { confirmFileDispute, filingDispute: isPending };

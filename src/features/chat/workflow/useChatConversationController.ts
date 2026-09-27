@@ -78,6 +78,7 @@ export function useChatConversationController(
   const sessionQuery = useSessionQuery();
   const viewerId = routeViewerId || sessionQuery.data?.user.id || "";
   const queryClient = useQueryClient();
+  const [sendClosedInquiry, setSendClosedInquiry] = useState(false);
   const lastReadMessageIdRef = useRef<string | null>(null);
   const listConversationsQuery = useListConversationsQuery(
     viewerId,
@@ -105,6 +106,12 @@ export function useChatConversationController(
     conversationType,
     Boolean(routeConversationId && viewerId)
   );
+  const candidateInquiryClosed =
+    conversationType === ConversationMode.CANDIDATE_INQUIRY &&
+    (sendClosedInquiry ||
+      [candidateConversationQuery.error, messagesQuery.error].some(
+        (error) => error instanceof ApiError && error.status === 404
+      ));
   const conversation =
     conversationType === "CANDIDATE_INQUIRY"
       ? (candidateConversationQuery.data ?? null)
@@ -114,12 +121,14 @@ export function useChatConversationController(
     [messagesQuery.data]
   );
   const conversationPending =
+    !candidateInquiryClosed &&
     Boolean(routeConversationId && viewerId) &&
     (messagesQuery.isPending ||
       (conversationType === "CANDIDATE_INQUIRY"
         ? candidateConversationQuery.isPending
         : Boolean(fallbackQuestId) && workConversationQuery.isPending));
   const conversationLoadFailed =
+    !candidateInquiryClosed &&
     Boolean(routeConversationId && viewerId) &&
     (messagesQuery.isError ||
       (conversationType === "CANDIDATE_INQUIRY"
@@ -363,9 +372,13 @@ export function useChatConversationController(
     !conversation.capability.readOnly
   );
   const readOnlyDescription =
-    conversation?.capability?.readOnlyReason === "TERMINAL"
-      ? messages.conversationReadOnlyTerminal
-      : messages.conversationNotWritable;
+    candidateInquiryClosed ||
+    (conversationType === ConversationMode.CANDIDATE_INQUIRY &&
+      conversation?.capability?.readOnly)
+      ? messages.candidateInquiryClosed
+      : conversation?.capability?.readOnlyReason === "TERMINAL"
+        ? messages.conversationReadOnlyTerminal
+        : messages.conversationNotWritable;
   const handleReportMessage = (message: DisplayChatMessage) => {
     if (!isReportableMessage(message) || !conversation) return;
     router.push({
@@ -527,14 +540,30 @@ export function useChatConversationController(
         setPendingAttachments([]);
       })
       .catch((error: unknown) => {
+        const closedInquiry =
+          conversationType === ConversationMode.CANDIDATE_INQUIRY &&
+          error instanceof ApiError &&
+          (error.status === 404 || error.status === 409);
+        if (closedInquiry) {
+          setSendClosedInquiry(true);
+          void queryClient.invalidateQueries({
+            queryKey: chatKeys.conversation(
+              conversation.id,
+              viewerId,
+              ConversationMode.CANDIDATE_INQUIRY
+            ),
+          });
+        }
         const rateLimited = error instanceof ApiError && error.status === 429;
         showErrorAlert(
           messages.send,
-          rateLimited
-            ? messages.sendRateLimited
-            : getLocalizedErrorMessage(error, locale, {
-                fallback: messages.loadError,
-              })
+          closedInquiry
+            ? messages.candidateInquiryClosed
+            : rateLimited
+              ? messages.sendRateLimited
+              : getLocalizedErrorMessage(error, locale, {
+                  fallback: messages.loadError,
+                })
         );
       });
   };
@@ -581,6 +610,7 @@ export function useChatConversationController(
     viewerId,
     conversationType,
     conversationPending,
+    candidateInquiryClosed,
     conversationLoadFailed,
     conversation,
     refreshing,

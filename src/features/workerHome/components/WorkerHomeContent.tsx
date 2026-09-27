@@ -6,6 +6,7 @@ import {
 } from "react-native";
 
 import { Search } from "lucide-react-native";
+import { WorkspaceQuickSwitch } from "@/features/workspace/WorkspaceQuickSwitch";
 import { FlatList, Pressable, Text, View } from "@/tw";
 import { StateView } from "@/components/ui/StateView";
 import type { QuestV2BoardCard } from "@/api/questV2Contracts";
@@ -107,41 +108,44 @@ export function WorkerHomeContent({
         ListHeaderComponent={
           <View>
             <View className={styles.masthead}>
-              <View className={styles.mastheadCopy}>
-                <Text
-                  accessibilityRole="header"
-                  className={styles.screenTitle}
-                  testID="worker-home-title"
-                >
-                  {messages.workTitle}
-                </Text>
-                <Text className={styles.screenSubtitle}>
-                  {messages.subtitle}
-                </Text>
-                {assignmentsError ? (
-                  <View
-                    accessibilityRole="alert"
-                    className="mx-ku-md mb-ku-sm rounded-ku-card border border-ku-border bg-ku-surface p-ku-md"
-                    testID="worker-assignment-error"
+              <View className="flex-row items-start justify-between gap-ku-sm px-ku-md">
+                <View className={`${styles.mastheadCopy} min-w-0 flex-1`}>
+                  <Text
+                    accessibilityRole="header"
+                    className={styles.screenTitle}
+                    testID="worker-home-title"
                   >
-                    <Text className="font-ku-semibold text-ku-body-small text-ku-text-strong">
-                      {messages.assignmentsError}
-                    </Text>
-                    <Text className="mt-ku-xs font-ku-regular text-ku-label text-ku-text-secondary">
-                      {messages.assignmentsErrorDescription}
-                    </Text>
-                    <Pressable
-                      accessibilityRole="button"
-                      className="mt-ku-sm min-h-[48px] justify-center"
-                      onPress={handleRetryAssignments}
-                    >
-                      <Text className="font-ku-semibold text-ku-label text-ku-worker-dark">
-                        {messages.errorRetry}
-                      </Text>
-                    </Pressable>
-                  </View>
-                ) : null}
+                    {messages.workTitle}
+                  </Text>
+                  <Text className={styles.screenSubtitle}>
+                    {messages.subtitle}
+                  </Text>
+                </View>
+                <WorkspaceQuickSwitch />
               </View>
+              {assignmentsError ? (
+                <View
+                  accessibilityRole="alert"
+                  className="mx-ku-md mb-ku-sm rounded-ku-card border border-ku-border bg-ku-surface p-ku-md"
+                  testID="worker-assignment-error"
+                >
+                  <Text className="font-ku-semibold text-ku-body-small text-ku-text-strong">
+                    {messages.assignmentsError}
+                  </Text>
+                  <Text className="mt-ku-xs font-ku-regular text-ku-label text-ku-text-secondary">
+                    {messages.assignmentsErrorDescription}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    className="mt-ku-sm min-h-[48px] justify-center"
+                    onPress={handleRetryAssignments}
+                  >
+                    <Text className="font-ku-semibold text-ku-label text-ku-worker-dark">
+                      {messages.errorRetry}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : null}
               <WorkerSearchBar
                 onClearQuery={handleClearSearch}
                 onOpenFilter={handleOpenFilter}

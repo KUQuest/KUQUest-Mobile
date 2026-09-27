@@ -15,9 +15,17 @@ import type { LiveQuestSnapshot } from "../../live/liveQuestService";
 import type { QuestBoardQuest } from "../../domain/types";
 
 const mockPush = jest.fn();
+const mockBack = jest.fn();
+const mockReplace = jest.fn();
+const mockCanGoBack = jest.fn();
 
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({
+    push: mockPush,
+    replace: mockReplace,
+    back: mockBack,
+    canGoBack: mockCanGoBack,
+  }),
   useLocalSearchParams: () => ({
     id: "quest-live-1",
     mode: "browse",
@@ -177,6 +185,7 @@ function createLiveSnapshot(
 describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockCanGoBack.mockReturnValue(false);
     (liveQuestService.listBoardQuests as jest.Mock).mockResolvedValue([
       mockQuestItem,
     ]);
@@ -184,6 +193,23 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
       id: "hirer-oak-uuid",
       displayName: "Prof Oak",
     });
+  });
+  it("returns to the previous route or workspace Home from the board", async () => {
+    const view = await render(
+      <QuestBoardScreen currentStudentId="current-worker-1" />
+    );
+    await waitFor(() =>
+      expect(view.getByTestId("header-back-button")).toBeTruthy()
+    );
+
+    mockCanGoBack.mockReturnValue(true);
+    await fireEvent.press(view.getByTestId("header-back-button"));
+    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(mockReplace).not.toHaveBeenCalled();
+
+    mockCanGoBack.mockReturnValue(false);
+    await fireEvent.press(view.getByTestId("header-back-button"));
+    expect(mockReplace).toHaveBeenCalledWith("/(tabs)");
   });
 
   afterEach(() => {

@@ -21,6 +21,8 @@ export interface NavigationMessages {
   unreadMessages: string;
   workerWorkspace: string;
   hirerWorkspace: string;
+  switchToWorkerWorkspace: string;
+  switchToHirerWorkspace: string;
 }
 
 export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
@@ -47,6 +49,8 @@ export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
     unreadMessages: "Unread messages",
     workerWorkspace: "Worker workspace",
     hirerWorkspace: "Hirer workspace",
+    switchToWorkerWorkspace: "Switch to Worker workspace",
+    switchToHirerWorkspace: "Switch to Hirer workspace",
   },
   th: {
     board: "หน้าหลัก",
@@ -69,5 +73,7 @@ export const navigationMessages: Record<SupportedLocale, NavigationMessages> = {
     unreadMessages: "ข้อความที่ยังไม่ได้อ่าน",
     workerWorkspace: "พื้นที่ทำงานผู้ปฏิบัติงาน",
     hirerWorkspace: "พื้นที่ทำงานผู้ว่าจ้าง",
+    switchToWorkerWorkspace: "สลับไปพื้นที่ทำงานผู้รับงาน",
+    switchToHirerWorkspace: "สลับไปพื้นที่ทำงานผู้ว่าจ้าง",
   },
 };

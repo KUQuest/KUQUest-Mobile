@@ -44,7 +44,12 @@ export function TopUpPromptPayStep({
 
       <View className={styles.qrCard}>
         <View className={styles.badge}>
-          <QrCode color={colors.primaryDark} size={16} strokeWidth={2.2} />
+          <QrCode
+            color={colors.primaryDark}
+            size={16}
+            strokeWidth={2.2}
+            testID="top-up-promptpay-accent"
+          />
           <Text className={styles.badgeText}>PromptPay</Text>
         </View>
 

@@ -58,6 +58,7 @@ export default function ChatConversationScreen({
   const controller = useChatConversationController(conversationType);
   const {
     router,
+    candidateInquiryClosed,
     locale,
     messages,
     viewerId,
@@ -112,6 +113,10 @@ export default function ChatConversationScreen({
         : undefined,
     [participantId, router]
   );
+  const openMessageSenderProfile = useCallback(
+    (senderId: string) => router.push(`/profile/${senderId}`),
+    [router]
+  );
   const renderMessage = useCallback(
     ({ item }: ListRenderItemInfo<DisplayChatMessage>) => {
       if (!conversation) return null;
@@ -123,7 +128,7 @@ export default function ChatConversationScreen({
           messages={messages}
           onFilePress={openFile}
           onImagePress={handleImagePress}
-          onProfilePress={openParticipantProfile}
+          onProfilePress={openMessageSenderProfile}
           isCandidateInquiry={conversationType === "CANDIDATE_INQUIRY"}
           onReportMessage={handleReportMessage}
         />
@@ -136,7 +141,7 @@ export default function ChatConversationScreen({
       locale,
       messages,
       openFile,
-      openParticipantProfile,
+      openMessageSenderProfile,
       handleReportMessage,
     ]
   );
@@ -182,6 +187,42 @@ export default function ChatConversationScreen({
           >
             <Text className={styles.loadErrorActionText}>{messages.retry}</Text>
           </Pressable>
+        </View>
+      </ScreenLayout>
+    );
+  }
+
+  if (candidateInquiryClosed && !conversation) {
+    return (
+      <ScreenLayout
+        edges={["top", "left", "right", "bottom"]}
+        className={styles.safeArea}
+      >
+        <View className={styles.detailHeader}>
+          <View className={styles.brandRow}>
+            <Pressable
+              accessibilityLabel={messages.backToChat}
+              accessibilityRole="button"
+              className={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <ChevronLeft
+                color={colors.primaryDeep}
+                size={24}
+                strokeWidth={2.5}
+              />
+            </Pressable>
+          </View>
+        </View>
+        <View className={styles.emptyState}>
+          <Text
+            accessibilityRole="text"
+            accessibilityLiveRegion="polite"
+            className={styles.emptyTitle}
+            testID="candidate-inquiry-closed"
+          >
+            {messages.candidateInquiryClosed}
+          </Text>
         </View>
       </ScreenLayout>
     );
@@ -298,18 +339,32 @@ export default function ChatConversationScreen({
           </View>
         </Pressable>
         {!canWrite ? (
-          <View
-            accessibilityRole="alert"
-            className={styles.readOnlyBanner}
-            testID="conversation-read-only-banner"
-          >
-            <Text className={styles.readOnlyBannerTitle}>
-              {messages.conversationReadOnly}
-            </Text>
-            <Text className={styles.readOnlyBannerText}>
-              {readOnlyDescription}
-            </Text>
-          </View>
+          conversationType === "CANDIDATE_INQUIRY" &&
+          (candidateInquiryClosed || conversation?.capability?.readOnly) ? (
+            <View className={styles.readOnlyBanner}>
+              <Text
+                accessibilityRole="text"
+                accessibilityLiveRegion="polite"
+                className={styles.readOnlyBannerText}
+                testID="candidate-inquiry-closed"
+              >
+                {messages.candidateInquiryClosed}
+              </Text>
+            </View>
+          ) : (
+            <View
+              accessibilityRole="alert"
+              className={styles.readOnlyBanner}
+              testID="conversation-read-only-banner"
+            >
+              <Text className={styles.readOnlyBannerTitle}>
+                {messages.conversationReadOnly}
+              </Text>
+              <Text className={styles.readOnlyBannerText}>
+                {readOnlyDescription}
+              </Text>
+            </View>
+          )
         ) : null}
 
         {searchOpen ? (

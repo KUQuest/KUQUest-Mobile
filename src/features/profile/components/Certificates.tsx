@@ -6,7 +6,7 @@ import {
 } from "react-native";
 import { Image, Pressable, ScrollView, Text, View } from "@/tw";
 import { X } from "lucide-react-native";
-import { colors } from "../../../theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import type {
   ProfileAccessibilityLabels,
   ProfileCertificate,
@@ -111,6 +111,7 @@ export function Certificates({
     "certificatePreviewLabel" | "certificateImageLabel"
   >;
 } & SectionNoticeProps) {
+  const { colors } = useAppTheme();
   const { height } = useWindowDimensions();
   const [preview, setPreview] = useState<ProfileCertificate | null>(null);
   const [failedCertificateIds, setFailedCertificateIds] = useState<Set<string>>(

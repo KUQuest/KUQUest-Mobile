@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { openServerSocket } from "@/api/ServerSocket";
+import { openServerSocket, type ServerSocket } from "@/api/ServerSocket";
 
 const questSubscribedEventSchema = z.object({
   type: z.literal("SUBSCRIBED"),
@@ -73,6 +73,15 @@ const hirerQuestUpdatedEventSchema = z
 export type HirerQuestUpdatedEvent = z.infer<
   typeof hirerQuestUpdatedEventSchema
 >;
+
+type HirerQuestListener = {
+  onQuestUpdated: (event: HirerQuestUpdatedEvent) => void;
+  onSubscribed?: () => void;
+};
+
+const hirerQuestListeners = new Set<HirerQuestListener>();
+let hirerQuestSocket: ServerSocket | null = null;
+let hirerQuestSubscribed = false;
 
 function subscribeToEventStream<TSubscription, TUpdate>(
   path: string,
@@ -158,13 +167,53 @@ export function subscribeToHirerQuestEvents(
   onQuestUpdated: (event: HirerQuestUpdatedEvent) => void,
   onSubscribed?: () => void
 ): () => void {
-  return subscribeToEventStream(
-    "/api/v2/me/hirer-quests/events",
-    hirerQuestSubscribedEventSchema,
-    (event) => event.type === "SUBSCRIBED" && event.version === 1,
-    hirerQuestUpdatedEventSchema,
-    (event) => event.type === "HIRER_QUEST_UPDATED" && event.version === 1,
-    onQuestUpdated,
-    onSubscribed
-  );
+  const listener = { onQuestUpdated, onSubscribed };
+  hirerQuestListeners.add(listener);
+
+  if (hirerQuestSubscribed) onSubscribed?.();
+
+  if (!hirerQuestSocket) {
+    let terminalCloseDuringOpen = false;
+    const socket = openServerSocket("/api/v2/me/hirer-quests/events", {
+      onClose: (close) => {
+        hirerQuestSubscribed = false;
+        if (close.terminal) {
+          terminalCloseDuringOpen = true;
+          hirerQuestSocket = null;
+        }
+      },
+      onFrame: (payload) => {
+        const subscription = hirerQuestSubscribedEventSchema.safeParse(payload);
+        if (subscription.success) {
+          hirerQuestSubscribed = true;
+          for (const current of hirerQuestListeners) {
+            current.onSubscribed?.();
+          }
+          return;
+        }
+        if (!hirerQuestSubscribed) return;
+
+        const update = hirerQuestUpdatedEventSchema.safeParse(payload);
+        if (update.success) {
+          for (const current of hirerQuestListeners) {
+            current.onQuestUpdated(update.data);
+          }
+        }
+      },
+    });
+    if (!terminalCloseDuringOpen) hirerQuestSocket = socket;
+  }
+
+  let active = true;
+  return () => {
+    if (!active) return;
+    active = false;
+    hirerQuestListeners.delete(listener);
+    if (hirerQuestListeners.size === 0) {
+      const socket = hirerQuestSocket;
+      hirerQuestSocket = null;
+      hirerQuestSubscribed = false;
+      socket?.close();
+    }
+  };
 }

@@ -98,6 +98,7 @@ The route tree currently has no dedicated route file for Sent Work, Wallet/Conve
 - `preferences/` — locale preference store (`localeStore.ts`); owns the persisted `kuquest_user_locale` value.
 - `workspace/` — Hirer/Worker role workspace store (`roleWorkspaceStore.ts`); owns the persisted `kuquest_active_workspace` value.
 - `navigation/` — navigation chrome UI store (`navigationUiStore.ts`); owns bottom-nav compactness, profile top-bar visibility, and scroll accumulation. Scroll owners: `home/`, `questBoard/`, `chat/`, `profile/`, `workerHome/`, `workerWork/`, and `myQuests/screens/`.
+- `notifications/` — foreground in-app notice banner (`NotificationBannerHost`) and root-mounted `useNotificationCoordinator`: Hirer-owned Quest stream events, chat unread increases, and Worker Candidate application decisions. No inbox endpoint or push registration exists in the API contract.
 
 ### Shared and transport layer
 

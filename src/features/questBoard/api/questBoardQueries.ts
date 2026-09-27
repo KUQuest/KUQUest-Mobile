@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 
+import { ApiError } from "@/api/ApiClient";
 import type { UploadAsset } from "@/api/fileUpload";
 import { disputeApi } from "@/api/DisputeApi";
 import type {
@@ -43,6 +44,9 @@ export const questBoardKeys = {
     ] as const,
   assignments: (questId: string, viewerId: string) =>
     [...questBoardKeys.all, "assignments", questId, viewerId] as const,
+  myDisputeCase: (questId: string, viewerId: string) =>
+    [...questBoardKeys.all, "my-dispute-case", questId, viewerId] as const,
+  disputeFiling: () => [...questBoardKeys.all, "dispute-filing"] as const,
 };
 
 export function useProofFileLinksQuery(
@@ -723,13 +727,48 @@ export function useCancelQuestMutation() {
   });
 }
 
+export function useMyDisputeCaseQuery(
+  questId: string | null,
+  viewerId: string | null,
+  enabled = true
+) {
+  return useQuery({
+    enabled: Boolean(questId && viewerId) && enabled,
+    queryKey: questBoardKeys.myDisputeCase(questId ?? "", viewerId ?? ""),
+    queryFn: ({ signal }) => {
+      if (!questId) throw new Error("Quest ID is required");
+      return disputeApi.getMyDisputeCase(questId, signal);
+    },
+  });
+}
+
 export function useFileDisputeMutation() {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: questBoardKeys.disputeFiling(),
     mutationFn: ({ questId }: { questId: string; viewerId: string }) =>
       disputeApi.fileDispute(questId),
-    onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId, variables.viewerId),
+    onSuccess: async (filedCase, variables) => {
+      queryClient.setQueryData(
+        questBoardKeys.myDisputeCase(variables.questId, variables.viewerId),
+        { case: filedCase }
+      );
+      await invalidateQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId
+      );
+    },
+    onError: async (error, variables) => {
+      if (error instanceof ApiError && error.status === 409) {
+        await queryClient.invalidateQueries({
+          queryKey: questBoardKeys.myDisputeCase(
+            variables.questId,
+            variables.viewerId
+          ),
+        });
+      }
+    },
   });
 }
 

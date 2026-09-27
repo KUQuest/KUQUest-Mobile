@@ -1,10 +1,16 @@
-import React from "react";
+import { ScrollView as NativeScrollView } from "react-native";
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithAppTheme } from "@/testing/queryTestUtils";
 
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
 
 import { ProofReviewModal } from "../ProofReviewModal";
+jest.mock("@/features/auth/sessionQueries", () => ({
+  useSessionQuery: () => ({ data: { user: { id: "hirer-1" } } }),
+}));
+jest.mock("@/features/questBoard/api/questBoardQueries", () => ({
+  useProofFileLinksQuery: () => ({ refetch: jest.fn() }),
+}));
 
 const proof: QuestV2ProofSubmission = {
   id: "proof-1",
@@ -90,6 +96,19 @@ describe("ProofReviewModal", () => {
       expect(onReview).toHaveBeenCalledWith({ decision: "PROOF_APPROVED" });
       expect(onClose).toHaveBeenCalled();
     });
+  });
+
+  it("scrolls the non-approval reason into view when focused", async () => {
+    const scrollToEnd = jest
+      .spyOn(NativeScrollView.prototype, "scrollToEnd")
+      .mockImplementation(() => undefined);
+    const view = await renderModal(jest.fn());
+
+    await fireEvent.press(view.getByTestId("proof-review-not-approve"));
+    await fireEvent(view.getByTestId("proof-review-reason-input"), "focus");
+
+    expect(scrollToEnd).toHaveBeenCalledWith({ animated: true });
+    scrollToEnd.mockRestore();
   });
 
   it("requires a non-empty reason before submitting non-approval", async () => {

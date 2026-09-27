@@ -11,6 +11,7 @@ import {
 } from "lucide-react-native";
 
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { WorkspaceQuickSwitch } from "@/features/workspace/WorkspaceQuickSwitch";
 import { Pressable, Text, View } from "@/tw";
 import type { HirerAttentionItem } from "../hirerHomeData";
 import type { HirerHomeMessages } from "@/locales/hirerHomeMessages";
@@ -39,16 +40,19 @@ export function HirerHomeMasthead({
 
   return (
     <View className={styles.masthead}>
-      <View className={styles.mastheadCopy}>
-        <Text className={styles.mastheadEyebrow}>{messages.eyebrow}</Text>
-        <Text
-          accessibilityRole="header"
-          className={styles.mastheadTitle}
-          testID="hirer-home-title"
-        >
-          {messages.title}
-        </Text>
-        <Text className={styles.mastheadSubtitle}>{messages.subtitle}</Text>
+      <View className="flex-row items-start justify-between gap-ku-sm">
+        <View className={`${styles.mastheadCopy} min-w-0 flex-1`}>
+          <Text className={styles.mastheadEyebrow}>{messages.eyebrow}</Text>
+          <Text
+            accessibilityRole="header"
+            className={styles.mastheadTitle}
+            testID="hirer-home-title"
+          >
+            {messages.title}
+          </Text>
+          <Text className={styles.mastheadSubtitle}>{messages.subtitle}</Text>
+        </View>
+        <WorkspaceQuickSwitch />
       </View>
       <View className={styles.statsRow}>
         {stats.map(({ tab, label, count }, index) => (

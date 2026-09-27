@@ -12,7 +12,6 @@ import {
 } from "../domain/types";
 
 export interface QuestDetailTeamHandlers {
-  openLiveUnderfilled: () => void;
   liveUnderfilledDecision: (decision: QuestUnderfilledDecision) => void;
   liveUnderfilledConsent: (decision: QuestUnderfilledConsentDecision) => void;
   liveCreateTeam: (name: string) => void;
@@ -43,16 +42,6 @@ export function useQuestDetailTeamActions({
   previewActions: QuestDetailPreviewActions;
   transitions: QuestDetailSurfaceTransitions;
 }): QuestDetailTeamHandlers {
-  const openLiveUnderfilled = useCallback(() => {
-    transitions.reopenPartialConsent();
-    if (
-      facts?.source.kind !== "live-snapshot" ||
-      facts.liveSnapshot?.underfilled
-    ) {
-      return;
-    }
-    void liveActions.openUnderfilled();
-  }, [facts, liveActions, transitions]);
   const liveUnderfilledDecision = useCallback(
     (decision: QuestUnderfilledDecision) => {
       void liveActions.decideUnderfilled(decision);
@@ -149,7 +138,6 @@ export function useQuestDetailTeamActions({
   );
 
   return {
-    openLiveUnderfilled,
     liveUnderfilledDecision,
     liveUnderfilledConsent,
     liveCreateTeam,

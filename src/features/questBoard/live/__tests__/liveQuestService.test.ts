@@ -36,6 +36,7 @@ jest.mock("@/api/ChatApi", () => ({
   chatApi: {
     createCandidateInquiry: jest.fn(),
     listConversations: jest.fn(),
+    listParticipants: jest.fn(),
   },
 }));
 
@@ -529,6 +530,119 @@ describe("LiveQuestService", () => {
     expect(mockedQuestApi.listMyAssignments).toHaveBeenCalledWith("completed");
   });
 
+  it("uses Work Conversation Workers for the FCFS group roster and falls back if participants fail", async () => {
+    mockedQuestApi.getDetail.mockRejectedValue(new Error("not hirer"));
+    mockedQuestApi.getPublicDetail.mockResolvedValue({
+      id: "quest-team",
+      title: "Team Quest",
+      description: "Coordinate the work.",
+      condition: { items: [{ id: "condition-1", text: "Complete work." }] },
+      tag: null,
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "GROUP",
+      state: "QUEST_IN_PROGRESS",
+      questReward: 100,
+      headcount: 3,
+      activeWorkerCount: 3,
+      startTime: "2099-08-26T09:00:00+07:00",
+      dueAt: "2099-08-27T12:00:00+07:00",
+      proofRequired: false,
+      hirerName: "Hirer Alice",
+      locations: [],
+      images: [],
+    } as never);
+    mockedQuestApi.listQuestAssignments.mockResolvedValue([
+      {
+        id: "assignment-worker-1",
+        questId: "quest-team",
+        workerId: "worker-1",
+        state: "ASSIGNMENT_ACTIVE",
+        questState: "QUEST_IN_PROGRESS",
+        startedAt: null,
+        createdAt: "2099-08-26T09:00:00+07:00",
+      },
+    ]);
+    mockedQuestApi.listApplications.mockResolvedValue([]);
+    mockedQuestApi.listCandidateTeams.mockResolvedValue([]);
+    mockedQuestApi.getUnderfilled.mockResolvedValue(null as never);
+    mockedQuestApi.listProofSubmissions.mockResolvedValue([]);
+    mockedChatApi.listConversations.mockResolvedValue({
+      items: [
+        {
+          id: "conversation-team",
+          type: "CONVERSATION_WORK",
+          quest: {
+            id: "quest-team",
+            title: "Team Quest",
+            status: "QUEST_IN_PROGRESS",
+          },
+          latestMessage: null,
+          lastActivityAt: null,
+          archived: false,
+          readOnly: false,
+          unreadCount: 0,
+        },
+      ],
+      nextCursor: null,
+    } as never);
+    mockedChatApi.listParticipants.mockResolvedValue([
+      {
+        id: "hirer-1",
+        role: "HIRER",
+        displayName: "Hirer Alice",
+        avatar: null,
+      },
+      {
+        id: "worker-1",
+        role: "WORKER",
+        displayName: "Worker One",
+        avatar: {
+          fileId: "11111111-1111-4111-8111-111111111111",
+          url: "https://cdn.example/one.png",
+        },
+      },
+      {
+        id: "worker-2",
+        role: "WORKER",
+        displayName: "Worker Two",
+        avatar: null,
+      },
+      {
+        id: "worker-3",
+        role: "WORKER",
+        displayName: "Worker Three",
+        avatar: null,
+      },
+    ]);
+
+    const snapshot = await liveQuestService.getLiveSnapshot(
+      "quest-team",
+      "worker-1"
+    );
+
+    expect(snapshot.participants).toEqual([
+      {
+        id: "worker-1",
+        displayName: "Worker One",
+        avatarUrl: "https://cdn.example/one.png",
+        avatarFileId: "11111111-1111-4111-8111-111111111111",
+      },
+      { id: "worker-2", displayName: "Worker Two" },
+      { id: "worker-3", displayName: "Worker Three" },
+    ]);
+
+    mockedChatApi.listParticipants.mockRejectedValueOnce(
+      new Error("participants unavailable")
+    );
+    const fallbackSnapshot = await liveQuestService.getLiveSnapshot(
+      "quest-team",
+      "worker-1"
+    );
+
+    expect(fallbackSnapshot.participants).toEqual([
+      { id: "worker-1", displayName: "worker-1" },
+    ]);
+  });
   describe("Start Work required starter", () => {
     const assignment = (
       workerId: string,

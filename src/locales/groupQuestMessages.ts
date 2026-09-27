@@ -39,6 +39,7 @@ export interface GroupQuestMessages {
   removeFile: (name: string) => string;
   filePickFailed: string;
   teamSubmissionUnavailable: string;
+  submissionContentRequired: string;
   teamTitle: string;
   teamSubtitle: string;
   roster: string;
@@ -50,10 +51,12 @@ export interface GroupQuestMessages {
   joinTeamDescription: string;
   joinTeamCodeLabel: string;
   joinTeamCodePlaceholder: string;
-  joinTeamInvalidInvite: string;
   teamInviteMessage: (teamName: string, link: string) => string;
   joinTeam: string;
   joiningTeam: string;
+  joinCodeInvalid: string;
+  joinTeamFull: string;
+  joinTeamFailed: string;
   partialRosterHint: string;
   reviewPartialStart: string;
   reviewRoster: string;
@@ -173,9 +176,9 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     enterJoinCode: "Enter team join code",
     joinShort: "Join",
     proposalTitle: "Proposal & Supporting Files",
-    proposalHelper: "Add a proposal note and supporting documents or images",
+    proposalHelper: "Add a proposal note and at least one supporting file",
     proposalNoteLabel: "Proposal note",
-    proposalNotePlaceholder: "Proposal note or message (optional)",
+    proposalNotePlaceholder: "Required proposal note",
     proposal: "Proposal",
     fileCount: (count) => `${count} ${count === 1 ? "file" : "files"}`,
     attachedFiles: "Attached files",
@@ -183,21 +186,24 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     removeFile: (name) => `Remove file ${name}`,
     filePickFailed: "Failed to pick file",
     teamSubmissionUnavailable: "Team submission unavailable",
+    submissionContentRequired:
+      "Add a proposal note and at least one supporting file to submit.",
     leader: "Team Leader",
     member: "Member",
     memberCount: (count) => `${count} ${count === 1 ? "member" : "members"}`,
     rosterCount: (actual, requested) => `Roster ${actual}/${requested}`,
     joinTeamTitle: "Join a Candidate Team",
     joinTeamDescription:
-      "Paste the invite link your Team Leader shared with you.",
-    joinTeamCodeLabel: "Team invite link",
-    joinTeamCodePlaceholder: "Paste the invite link",
-    joinTeamInvalidInvite:
-      "This invite link is incomplete. Ask your Team Leader to share it again.",
+      "Enter the Join Code your Team Leader shared with you.",
+    joinTeamCodeLabel: "Join Code",
+    joinTeamCodePlaceholder: "Enter Join Code",
     teamInviteMessage: (teamName, link) =>
       `Join my KUQuest team "${teamName}": ${link}`,
     joinTeam: "Join team",
     joiningTeam: "Joining…",
+    joinCodeInvalid: "This Join Code is invalid or expired.",
+    joinTeamFull: "This team is full or no longer accepting members.",
+    joinTeamFailed: "Could not join this team. Try again.",
     partialRosterHint:
       "You can submit with one or more accepted members. The roster locks after confirmation.",
     reviewRoster: "Review roster",
@@ -318,10 +324,9 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     enterJoinCode: "กรอกรหัสเข้าร่วมทีม",
     joinShort: "เข้าร่วม",
     proposalTitle: "ข้อเสนอและเอกสารแนบ",
-    proposalHelper: "เพิ่มรายละเอียดหรือแนบเอกสารเพื่อประกอบการพิจารณา",
-    proposalNoteLabel: "ข้อความเสนอตัว",
-    proposalNotePlaceholder:
-      "ข้อความเสนอตัวหรือรายละเอียดเพิ่มเติม (ไม่บังคับ)",
+    proposalHelper: "เพิ่มข้อความข้อเสนอและไฟล์ประกอบอย่างน้อยหนึ่งไฟล์",
+    proposalNoteLabel: "ข้อความข้อเสนอ",
+    proposalNotePlaceholder: "ข้อความข้อเสนอ (จำเป็น)",
     proposal: "ข้อเสนอ",
     fileCount: (count) => `${count} ไฟล์`,
     attachedFiles: "ไฟล์แนบ",
@@ -329,20 +334,23 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     removeFile: (name) => `ลบไฟล์ ${name}`,
     filePickFailed: "เลือกไฟล์ไม่สำเร็จ",
     teamSubmissionUnavailable: "ยังส่งทีมไม่ได้",
+    submissionContentRequired:
+      "เพิ่มข้อความข้อเสนอและไฟล์ประกอบอย่างน้อยหนึ่งไฟล์ก่อนส่งทีม",
     leader: "หัวหน้าทีม",
     member: "สมาชิก",
     memberCount: (count) => `สมาชิก ${count} คน`,
     rosterCount: (actual, requested) => `สมาชิก ${actual}/${requested} คน`,
     joinTeamTitle: "เข้าร่วม Candidate Team",
-    joinTeamDescription: "วางลิงก์เชิญที่หัวหน้าทีมแชร์ให้คุณ",
-    joinTeamCodeLabel: "ลิงก์เชิญเข้าทีม",
-    joinTeamCodePlaceholder: "วางลิงก์เชิญ",
-    joinTeamInvalidInvite:
-      "ลิงก์เชิญไม่ครบถ้วน ขอให้หัวหน้าทีมแชร์ลิงก์อีกครั้ง",
+    joinTeamDescription: "กรอก Join Code ที่หัวหน้าทีมแชร์ให้คุณ",
+    joinTeamCodeLabel: "Join Code",
+    joinTeamCodePlaceholder: "กรอก Join Code",
     teamInviteMessage: (teamName, link) =>
       `เข้าร่วมทีม "${teamName}" ของฉันใน KUQuest: ${link}`,
     joinTeam: "เข้าร่วมทีม",
     joiningTeam: "กำลังเข้าร่วมทีม…",
+    joinCodeInvalid: "Join Code ไม่ถูกต้องหรือหมดอายุแล้ว",
+    joinTeamFull: "ทีมนี้เต็มแล้วหรือไม่สามารถรับสมาชิกเพิ่มได้",
+    joinTeamFailed: "เข้าร่วมทีมไม่สำเร็จ ลองอีกครั้ง",
     partialRosterHint:
       "ส่งทีมได้เมื่อมีสมาชิกที่ตอบรับแล้วอย่างน้อย 1 คน และรายชื่อจะถูกล็อกเมื่อยืนยัน",
     reviewRoster: "ตรวจสอบรายชื่อทีม",

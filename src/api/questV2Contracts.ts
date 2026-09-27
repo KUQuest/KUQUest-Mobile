@@ -265,6 +265,42 @@ export const questV2ApplicationSchema = z.object({
 });
 export type QuestV2Application = z.infer<typeof questV2ApplicationSchema>;
 
+export const questV2CandidateApplicationStateSchema = z.enum([
+  "APPLICATION_APPLIED",
+  "APPLICATION_SELECTED",
+  "APPLICATION_REJECTED",
+  "APPLICATION_WITHDRAWN",
+  "TEAM_FORMING",
+  "TEAM_SUBMITTED",
+  "TEAM_SELECTED",
+  "TEAM_REJECTED",
+  "TEAM_DISBANDED",
+]);
+
+export const questV2CandidateApplicationSchema = z.object({
+  id: questV2IdSchema,
+  questId: questV2IdSchema,
+  memberId: questV2IdSchema,
+  kind: z.enum(["SINGLE", "TEAM"]),
+  state: questV2CandidateApplicationStateSchema,
+  appliedAt: z.string().datetime(),
+  quest: z.object({
+    title: z.string(),
+    startTime: z.string().datetime(),
+    dueAt: z.string().datetime().nullable(),
+    mode: z.literal("CANDIDATE"),
+    participation: questV2ParticipationSchema,
+    state: questV2StateSchema,
+  }),
+});
+export type QuestV2CandidateApplication = z.infer<
+  typeof questV2CandidateApplicationSchema
+>;
+
+export const questV2CandidateApplicationsDataSchema = z.object({
+  items: z.array(questV2CandidateApplicationSchema),
+});
+
 export const questV2ApplicationListDataSchema = z.object({
   items: z.array(questV2ApplicationSchema),
 });

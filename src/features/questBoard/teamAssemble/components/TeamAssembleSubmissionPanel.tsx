@@ -10,6 +10,7 @@ import styles from "../groupQuestStyles";
 
 export interface TeamAssembleSubmissionMessages {
   teamSubmissionUnavailable: string;
+  submissionContentRequired: string;
   reviewTitle: string;
   reviewDescription: string;
   roster: string;
@@ -53,6 +54,8 @@ export function TeamAssembleSubmissionPanel({
   onReviewChange,
 }: TeamAssembleSubmissionPanelProps) {
   const { colors } = useAppTheme();
+  const canSubmit =
+    submissionReady && (!canonical || Boolean(text.trim() && files.length > 0));
   if (submissionBlocker && canonical && submissionReady) {
     return (
       <View
@@ -117,14 +120,22 @@ export function TeamAssembleSubmissionPanel({
             </View>
           ) : null}
         </View>
+        {canonical && (!text.trim() || files.length === 0) ? (
+          <Text
+            accessibilityRole="alert"
+            className={styles.noticeText}
+            testID="team-assemble-content-required"
+          >
+            {messages.submissionContentRequired}
+          </Text>
+        ) : null}
         <Pressable
           accessibilityLabel={
             submitting ? messages.submittingTeam : messages.confirmSubmit
           }
-          accessibilityRole="button"
-          accessibilityState={{ disabled: submitting || !submissionReady }}
-          className={`${styles.submitButton} ${submitting || !submissionReady ? styles.submitButtonDisabled : ""}`}
-          disabled={submitting || !submissionReady}
+          accessibilityState={{ disabled: submitting || !canSubmit }}
+          className={`${styles.submitButton} ${submitting || !canSubmit ? styles.submitButtonDisabled : ""}`}
+          disabled={submitting || !canSubmit}
           onPress={onSubmit}
           testID="team-assemble-confirm-submit"
         >
@@ -132,13 +143,13 @@ export function TeamAssembleSubmissionPanel({
             <ActivityIndicator color={colors.onPrimary} size="small" />
           ) : (
             <Check
-              color={!submissionReady ? colors.textMuted : colors.onPrimary}
+              color={!canSubmit ? colors.textMuted : colors.onPrimary}
               size={18}
               strokeWidth={2.7}
             />
           )}
           <Text
-            className={`${styles.submitButtonText} ${!submissionReady ? styles.submitButtonTextDisabled : ""}`}
+            className={`${styles.submitButtonText} ${!canSubmit ? styles.submitButtonTextDisabled : ""}`}
           >
             {submitting ? messages.submittingTeam : messages.confirmSubmit}
           </Text>

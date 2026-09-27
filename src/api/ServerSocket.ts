@@ -1,5 +1,20 @@
+import { TurboModuleRegistry, type TurboModule } from "react-native";
+
 import { debugLog } from "./debugLog";
 import { authClient } from "@/features/auth/authClient";
+
+interface NativeNetworking extends TurboModule {
+  clearCookies(callback: (cleared: boolean) => void): void;
+}
+
+// React Native puts the native cookie jar's cookie ahead of the Cookie header
+// set below, and the server authenticates the first one. The session lives in
+// SecureStore and every request omits credentials, so a jar cookie is a stale
+// session (older staging test-auth builds stored one) that would make this
+// socket act as another Member. Empty the jar before any socket connects.
+TurboModuleRegistry.get<NativeNetworking>("Networking")?.clearCookies(
+  () => undefined
+);
 
 export interface ServerSocketClose {
   /** `null` when no socket was opened: API URL or session cookie is missing. */

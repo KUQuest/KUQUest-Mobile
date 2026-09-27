@@ -51,7 +51,7 @@ jest.mock("../../preferences/localeStore", () => ({
 
 jest.mock("../../questBoard/live/liveQuestService", () => ({
   liveQuestService: {
-    getPublishCheck: mockGetPublishCheck,
+    getPublishCheck: (...args: unknown[]) => mockGetPublishCheck(...args),
   },
 }));
 
@@ -69,6 +69,7 @@ describe("useQuestPublish", () => {
     mockUploadImage.mockReset();
     mockUploadImage.mockResolvedValue([]);
     mockPublishQuest.mockReset();
+    mockPublishQuest.mockResolvedValue({ state: "QUEST_OPEN" });
     mockRefetch.mockReset();
     mockRefetch.mockResolvedValue({ error: null });
     mockGetPublishCheck.mockReset();
@@ -201,5 +202,35 @@ describe("useQuestPublish", () => {
     });
     const nextOperationKey = mockCreateQuest.mock.calls[2][0].idempotencyKey;
     expect(nextOperationKey).not.toBe(firstKey);
+  });
+  it("retries image upload before publishing when the first upload fails", async () => {
+    const props = createProps();
+    const draft = { ...initialDraft, imageUris: ["file:///quest.jpg"] };
+    mockUploadImage
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce([]);
+    const { result } = await renderHook(() => useQuestPublish(props), {
+      wrapper,
+    });
+
+    await act(async () => {
+      expect(await result.current.publishQuest(draft)).toBe(false);
+    });
+    expect(mockPublishQuest).not.toHaveBeenCalled();
+    expect(result.current.saveErrorMessage).toMatch(
+      /quest images failed to upload/i
+    );
+
+    await act(async () => {
+      expect(await result.current.publishQuest(draft)).toBe(true);
+    });
+    expect(mockUploadImage).toHaveBeenCalledTimes(2);
+    expect(mockUploadImage.mock.calls[0][0].idempotencyKey).toBe(
+      mockUploadImage.mock.calls[1][0].idempotencyKey
+    );
+    expect(mockPublishQuest).toHaveBeenCalledTimes(1);
+    expect(mockUploadImage.mock.invocationCallOrder[1]).toBeLessThan(
+      mockPublishQuest.mock.invocationCallOrder[0]
+    );
   });
 });

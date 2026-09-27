@@ -8,12 +8,22 @@ import {
   ShieldCheck,
 } from "lucide-react-native";
 
+import { useIsMutating } from "@tanstack/react-query";
+
 import { ActivityIndicator, Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { type QuestWorkMessages } from "@/locales/questWorkMessages";
+import { useLocale } from "@/features/preferences/localeStore";
+import {
+  questBoardKeys,
+  useMyDisputeCaseQuery,
+} from "../../api/questBoardQueries";
+import { disputeMessages } from "@/locales/disputeMessages";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
 import {
+  isWorkerActor,
   QuestEditRequestStatus,
   QuestEditResponseDecision,
   QuestMode,
@@ -70,6 +80,21 @@ export default function QuestWorkActionsCard({
   isTerminal,
 }: QuestWorkActionsCardProps) {
   const { colors: palette } = useAppTheme();
+  const { locale } = useLocale();
+  const disputeCopy = disputeMessages[locale];
+  const viewerId = useSessionQuery().data?.user.id ?? null;
+  const isFailedWorker =
+    snapshot.state === QuestStatus.QUEST_FAILED &&
+    isWorkerActor(snapshot.actor);
+  const disputeQuery = useMyDisputeCaseQuery(
+    snapshot.quest.id,
+    viewerId,
+    isFailedWorker
+  );
+  const filingDispute =
+    useIsMutating({
+      mutationKey: questBoardKeys.disputeFiling(),
+    }) > 0;
   const unreadCount = snapshot.workConversation?.unreadCount ?? 0;
   const isGroup = snapshot.participation === QuestParticipation.GROUP;
   const assignedDetails = startWorkRecordedAt
@@ -145,18 +170,53 @@ export default function QuestWorkActionsCard({
       {isTerminal ? (
         <View className={styles.mutedCard}>
           <Text className={styles.bodyText}>{messages.archiveDescription}</Text>
-          {snapshot.state === QuestStatus.QUEST_FAILED && onFileDispute ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={messages.fileDispute}
-              className={styles.warningButton}
-              onPress={onFileDispute}
-            >
-              <AlertTriangle color={palette.warningDark} size={18} />
-              <Text className={styles.warningButtonText}>
-                {messages.fileDispute}
+          {isFailedWorker ? (
+            disputeQuery.isError ? (
+              <View className="gap-ku-xs">
+                <Text className={styles.bodyText}>
+                  {disputeCopy.statusError}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={disputeCopy.retryStatus}
+                  accessibilityState={{ disabled: disputeQuery.isFetching }}
+                  disabled={disputeQuery.isFetching}
+                  className={styles.warningButton}
+                  onPress={() => void disputeQuery.refetch()}
+                >
+                  <Text className={styles.warningButtonText}>
+                    {disputeCopy.retryStatus}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : disputeQuery.isSuccess && disputeQuery.data.case ? (
+              <Text accessibilityRole="text" className={styles.bodyText}>
+                {disputeCopy.filedStatus}
               </Text>
-            </Pressable>
+            ) : disputeQuery.isSuccess &&
+              disputeQuery.data.case === null &&
+              onFileDispute ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={messages.fileDispute}
+                accessibilityState={{
+                  disabled: filingDispute,
+                  busy: filingDispute,
+                }}
+                disabled={filingDispute}
+                className={styles.warningButton}
+                onPress={onFileDispute}
+              >
+                {filingDispute ? (
+                  <ActivityIndicator color={palette.warningDark} />
+                ) : (
+                  <AlertTriangle color={palette.warningDark} size={18} />
+                )}
+                <Text className={styles.warningButtonText}>
+                  {messages.fileDispute}
+                </Text>
+              </Pressable>
+            ) : null
           ) : null}
         </View>
       ) : null}

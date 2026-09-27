@@ -7,6 +7,7 @@ import WorkerWorkManagementScreen from "../WorkerWorkManagementScreen";
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
 const mockListSnapshots = jest.fn();
+const mockListApplications = jest.fn();
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush, replace: mockReplace }),
@@ -26,12 +27,15 @@ jest.mock("@/features/myQuests/myQuestService", () => ({
   myQuestService: {
     listMyWorkerQuestSnapshots: (...args: unknown[]) =>
       mockListSnapshots(...args),
+    listMyWorkerCandidateApplications: (...args: unknown[]) =>
+      mockListApplications(...args),
   },
 }));
 
 describe("WorkerWorkManagementScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockListApplications.mockResolvedValue([]);
   });
 
   it("groups work that needs the Worker and opens proof submission", async () => {
@@ -147,5 +151,52 @@ describe("WorkerWorkManagementScreen", () => {
     await waitFor(() =>
       expect(screen.getByTestId("worker-work-active-empty")).toBeTruthy()
     );
+  });
+  it("opens an application card on Quest Detail", async () => {
+    mockListSnapshots.mockResolvedValue([]);
+    mockListApplications.mockResolvedValue([
+      {
+        id: "application-1",
+        questId: "quest-application",
+        memberId: "worker-1",
+        kind: "SINGLE",
+        state: "APPLICATION_APPLIED",
+        appliedAt: "2026-09-01T09:00:00Z",
+        quest: {
+          title: "Applied Quest",
+          startTime: "2026-10-01T09:00:00Z",
+          dueAt: null,
+          mode: "CANDIDATE",
+          participation: "SINGLE",
+          state: "QUEST_OPEN",
+        },
+      },
+    ]);
+
+    const screen = await renderWithQueryClient(<WorkerWorkManagementScreen />);
+
+    await waitFor(() =>
+      expect(screen.getByText("Pending selection")).toBeTruthy()
+    );
+    await fireEvent.press(
+      screen.getByTestId("worker-work-open-quest-application")
+    );
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]",
+      params: { id: "quest-application" },
+    });
+  });
+  it("keeps Assignment cards visible when Candidate applications fail to load", async () => {
+    mockListSnapshots.mockResolvedValue([
+      workerSnapshot({ id: "quest-assignment", title: "Assigned Quest" }),
+    ]);
+    mockListApplications.mockRejectedValueOnce(new Error("offline"));
+
+    const screen = await renderWithQueryClient(<WorkerWorkManagementScreen />);
+
+    await waitFor(() =>
+      expect(screen.getByText("Assigned Quest")).toBeTruthy()
+    );
+    expect(screen.queryByTestId("worker-work-error")).toBeNull();
   });
 });

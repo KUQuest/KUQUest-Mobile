@@ -117,6 +117,15 @@ export function useQuestPublish({
   const syncInFlightRef = useRef<Promise<string | null> | null>(null);
   const opIdempotencyKeyRef = useRef<string | null>(null);
   const serverSavedRevisionRef = useRef(-1);
+  const imageUploadBatchRef = useRef<{
+    questId: string;
+    imageSetKey: string;
+    idempotencyKey: string;
+  } | null>(null);
+  const uploadedImageBatchRef = useRef<{
+    questId: string;
+    imageSetKey: string;
+  } | null>(null);
   const publishCheckEnabled =
     enabled && step === 3 && draftHydrated && !completedState;
   const publishCheckQuery = useQuestPublishCheckQuery(
@@ -200,16 +209,8 @@ export function useQuestPublish({
         });
         if (requestIdAtStart !== saveRequestRef.current) return null;
         questId = created.id;
-        if (normalizedDraft.imageUris && normalizedDraft.imageUris.length > 0) {
-          try {
-            await imageUploadMutation.mutateAsync({
-              questId,
-              imageUris: normalizedDraft.imageUris,
-            });
-          } catch (imageError) {
-            console.warn("Failed to upload quest images:", imageError);
-          }
-        }
+        imageUploadBatchRef.current = null;
+        uploadedImageBatchRef.current = null;
         if (requestIdAtStart !== saveRequestRef.current) return null;
         opIdempotencyKeyRef.current = null;
         serverSavedRevisionRef.current = revisionAtStart;
@@ -228,7 +229,6 @@ export function useQuestPublish({
       draftStorageKey,
       editMutation,
       editQuestId,
-      imageUploadMutation,
       publishedQuestRef,
       saveRequestRef,
       takeOperationKey,
@@ -332,6 +332,59 @@ export function useQuestPublish({
             publishIdempotencyKey,
           };
         }
+        const imageUris = draftToPublish.imageUris;
+        if (imageUris.length === 0) {
+          imageUploadBatchRef.current = null;
+          uploadedImageBatchRef.current = null;
+        } else {
+          const imageSetKey = JSON.stringify(imageUris);
+          const uploadedImageBatch = uploadedImageBatchRef.current;
+          const imagesUploaded =
+            uploadedImageBatch?.questId === publishedQuestId &&
+            uploadedImageBatch.imageSetKey === imageSetKey;
+          if (!imagesUploaded) {
+            let imageBatch = imageUploadBatchRef.current;
+            if (
+              imageBatch?.questId !== publishedQuestId ||
+              imageBatch.imageSetKey !== imageSetKey
+            ) {
+              imageBatch = {
+                questId: publishedQuestId,
+                imageSetKey,
+                idempotencyKey: createQuestIdempotencyKey(),
+              };
+              imageUploadBatchRef.current = imageBatch;
+            }
+            try {
+              await imageUploadMutation.mutateAsync({
+                questId: publishedQuestId,
+                imageUris,
+                idempotencyKey: imageBatch.idempotencyKey,
+              });
+              if (requestId !== saveRequestRef.current) return false;
+              uploadedImageBatchRef.current = {
+                questId: publishedQuestId,
+                imageSetKey,
+              };
+            } catch (error) {
+              if (requestId !== saveRequestRef.current) return false;
+              const status =
+                typeof error === "object" &&
+                error !== null &&
+                "status" in error &&
+                typeof error.status === "number"
+                  ? error.status
+                  : undefined;
+              setFailureMessage(
+                status === 400
+                  ? messages.imageUploadValidationError
+                  : messages.imageUploadError
+              );
+              setSaveErrorIntent({ state: "OPEN", completesFlow: true });
+              return false;
+            }
+          }
+        }
 
         const check = await liveQuestService.getPublishCheck(publishedQuestId);
         if (!check.canPublish) {
@@ -383,6 +436,7 @@ export function useQuestPublish({
       editQuestId,
       enabled,
       ensureServerQuest,
+      imageUploadMutation,
       locale,
       messages,
       publishMutation,

@@ -4,10 +4,12 @@ import { BackHandler } from "react-native";
 
 import { showErrorAlert } from "@/components/ui/SweetAlert";
 import { useLocale } from "@/features/preferences/localeStore";
+import { ApiError } from "@/api/ApiClient";
 import { getLocalizedErrorMessage } from "@/utils/error";
 
 import { getChatRouteParams } from "@/features/chat/chatData";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
+import { chatMessages } from "@/locales/chatMessages";
 import type { QuestBoardQuest } from "../domain/types";
 import type { BoardPreviewState } from "../fixtures/questBoardHarness";
 import type { QuestDetailProjection } from "./questDetailProjection";
@@ -139,11 +141,16 @@ export function useQuestDetailNavigation({
         });
       })
       .catch((error) => {
+        const closedInquiry =
+          error instanceof ApiError &&
+          (error.status === 404 || error.status === 409);
         showErrorAlert(
           messages.actionFailedTitle,
-          getLocalizedErrorMessage(error, locale, {
-            fallback: messages.messageOwnerError,
-          })
+          closedInquiry
+            ? chatMessages[locale].candidateInquiryClosed
+            : getLocalizedErrorMessage(error, locale, {
+                fallback: messages.messageOwnerError,
+              })
         );
       });
   }, [

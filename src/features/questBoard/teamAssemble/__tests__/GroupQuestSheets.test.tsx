@@ -1,5 +1,6 @@
 import React, { type ReactNode } from "react";
 import { act, fireEvent } from "@testing-library/react-native";
+import { ApiError } from "@/api/ApiClient";
 import {
   renderWithQueryClient,
   renderWithAppTheme,
@@ -8,18 +9,59 @@ import {
 import { CandidateReviewSheet } from "../components/CandidateReviewSheet";
 import { PartialGroupStartConsentContent } from "../components/PartialGroupStartConsentContent";
 import { TeamAssembleView } from "../components/TeamAssembleView";
+import { TeamAssembleSubmissionPanel } from "../components/TeamAssembleSubmissionPanel";
+import TeamAssembleScreen from "../TeamAssembleScreen";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { profileKeys } from "@/features/profile/api/profileQueries";
-import type { QuestV2Application } from "@/api/questV2Contracts";
+import type {
+  QuestV2Application,
+  QuestV2Underfilled,
+} from "@/api/questV2Contracts";
 import {
   QuestApplicationStatus,
   QuestPartialStartConsentStatus,
   QuestTeamStatus,
+  QuestUnderfilledConsentDecision,
   type QuestApplication,
   type QuestInvitation,
   type QuestPartialStartConsent,
   type QuestTeam,
 } from "../../domain/types";
+
+const mockJoinMutateAsync = jest.fn();
+const mockTeamDetailView = {
+  state: "ready",
+  team: {
+    onJoinTeam: jest.fn(),
+    viewerId: "worker-1",
+    submitting: false,
+  },
+  messages: { back: "Back" },
+  handleBack: jest.fn(),
+  onRetry: jest.fn(),
+};
+
+jest.mock("@/features/questBoard/api/questBoardQueries", () => ({
+  useJoinCandidateTeamMutation: () => ({
+    mutateAsync: mockJoinMutateAsync,
+    isPending: false,
+  }),
+}));
+
+jest.mock("../../detail/useQuestDetailFeature", () => ({
+  useQuestDetailFeature: () => mockTeamDetailView,
+}));
+jest.mock("@/components/layout/ScreenLayout", () => ({
+  ScreenLayout: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+jest.mock("@/components/ui/TopBar", () => ({
+  TopBar: () => null,
+}));
+
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
 
 jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
@@ -92,6 +134,84 @@ function makeConsent(
 }
 
 describe("group Quest sheets", () => {
+  it("blocks empty Candidate Team submission before the API call", async () => {
+    const onSubmit = jest.fn();
+    const view = await renderWithQueryClient(
+      <TeamAssembleSubmissionPanel
+        acceptedCount={3}
+        canonical
+        files={[]}
+        isReviewing
+        messages={{
+          teamSubmissionUnavailable: "Team submission unavailable",
+          submissionContentRequired:
+            "Add a proposal note and at least one supporting file to submit.",
+          reviewTitle: "Review team",
+          reviewDescription: "Check proposal",
+          roster: "Roster",
+          rosterCount: (actual, required) => `${actual}/${required}`,
+          partialRosterHint: "Full team",
+          attachedFiles: "Files",
+          proposal: "Proposal",
+          submittingTeam: "Submitting",
+          confirmSubmit: "Confirm submission",
+          cancel: "Cancel",
+          reviewRoster: "Review roster",
+        }}
+        onReviewChange={jest.fn()}
+        onSubmit={onSubmit}
+        requiredHeadcount={3}
+        submissionReady
+        submitting={false}
+        text=""
+      />
+    );
+
+    expect(
+      view.getByTestId("team-assemble-confirm-submit").props.accessibilityState
+    ).toEqual({ disabled: true });
+    await fireEvent.press(view.getByTestId("team-assemble-confirm-submit"));
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("requires a proposal note even when supporting files are attached", async () => {
+    const view = await renderWithQueryClient(
+      <TeamAssembleSubmissionPanel
+        acceptedCount={3}
+        canonical
+        files={[{ id: "file-1", name: "proof.pdf" }]}
+        isReviewing
+        messages={{
+          teamSubmissionUnavailable: "Team submission unavailable",
+          submissionContentRequired:
+            "Add a proposal note and at least one supporting file to submit.",
+          reviewTitle: "Review team",
+          reviewDescription: "Check proposal",
+          roster: "Roster",
+          rosterCount: (actual, required) => `${actual}/${required}`,
+          partialRosterHint: "Full team",
+          attachedFiles: "Files",
+          proposal: "Proposal",
+          submittingTeam: "Submitting",
+          confirmSubmit: "Confirm submission",
+          cancel: "Cancel",
+          reviewRoster: "Review roster",
+        }}
+        onReviewChange={jest.fn()}
+        onSubmit={jest.fn()}
+        requiredHeadcount={3}
+        submissionReady
+        submitting={false}
+        text=" "
+      />
+    );
+
+    expect(
+      view.getByTestId("team-assemble-confirm-submit").props.accessibilityState
+        .disabled
+    ).toBe(true);
+  });
+
   it("supports a partial roster, directory search, multi-invite, and review before submit", async () => {
     const onInviteMembers = jest.fn();
     const onSubmit = jest.fn();
@@ -314,6 +434,77 @@ describe("group Quest sheets", () => {
     ).toBeTruthy();
   });
 
+  it("lets a Worker vote from ownResponse when shared response list is absent", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-08-12T09:00:00.000Z"));
+    const onWorkerConsent = jest.fn();
+    const underfilled: QuestV2Underfilled = {
+      id: "underfilled-1",
+      questId: "quest-1",
+      questState: "QUEST_OPEN",
+      state: "UNDERFILLED_CONSENT_PENDING",
+      activeWorkerCount: 1,
+      headcount: 3,
+      workerRewardPool: 300,
+      questReward: 300,
+      dueAt: null,
+      decision: {
+        status: "UNDERFILLED_DECISION_PENDING",
+        value: null,
+        expiresAt: "2026-08-12T09:10:00.000Z",
+      },
+      consent: {
+        status: "UNDERFILLED_CONSENT_PENDING",
+        expiresAt: "2026-08-12T09:10:00.000Z",
+        totalCount: 1,
+        acceptedCount: 0,
+        declinedCount: 0,
+        pendingCount: 1,
+      },
+      ownResponse: {
+        decision: null,
+        questReward: 100,
+        respondedAt: null,
+      },
+    };
+    const view = await renderWithAppTheme(
+      <PartialGroupStartConsentContent
+        canConsent
+        locale="en"
+        onWorkerConsent={onWorkerConsent}
+        underfilled={underfilled}
+        viewerId="worker-1"
+      />
+    );
+
+    expect(view.getByTestId("partial-group-start-approve")).toBeTruthy();
+    expect(view.getByTestId("partial-group-start-reject")).toBeTruthy();
+    await fireEvent.press(view.getByTestId("partial-group-start-approve"));
+    expect(onWorkerConsent).toHaveBeenCalledWith(
+      QuestUnderfilledConsentDecision.ACCEPT
+    );
+
+    await view.rerender(
+      <PartialGroupStartConsentContent
+        canConsent
+        locale="en"
+        onWorkerConsent={onWorkerConsent}
+        underfilled={{
+          ...underfilled,
+          ownResponse: {
+            decision: "ACCEPT",
+            questReward: 100,
+            respondedAt: "2026-08-12T09:01:00.000Z",
+          },
+        }}
+        viewerId="worker-1"
+      />
+    );
+    expect(view.queryByTestId("partial-group-start-approve")).toBeNull();
+    expect(view.getAllByText("Approved")).toHaveLength(2);
+    jest.useRealTimers();
+  });
+
   it("counts down the five-minute partial-start consent window and exposes voter actions", async () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date("2026-08-12T09:00:00.000Z"));
@@ -352,7 +543,6 @@ describe("group Quest sheets", () => {
     expect(view.getByText("04:00")).toBeTruthy();
     jest.useRealTimers();
   });
-
   it("shows approved and cancelled terminal consent states without vote actions", async () => {
     const approved = await renderWithAppTheme(
       <PartialGroupStartConsentContent
@@ -380,26 +570,70 @@ describe("group Quest sheets", () => {
       )
     ).toBeTruthy();
   });
-  it("joins the Team named by a pasted invite link with an uppercased Join Code", async () => {
+  it("joins a team with a trimmed Join Code and shows its localized error", async () => {
     const onJoinTeam = jest.fn();
     const view = await renderWithAppTheme(
-      <TeamAssembleView locale="en" onJoinTeam={onJoinTeam} team={null} />
+      <TeamAssembleView
+        joinError="This Join Code is invalid or expired."
+        locale="en"
+        onJoinTeam={onJoinTeam}
+        team={null}
+      />
     );
     const input = view.getByTestId("team-assemble-join-code-input");
 
-    await fireEvent.changeText(input, "Join my team: https://example.test");
     expect(
-      view.getByText(
-        "This invite link is incomplete. Ask your Team Leader to share it again."
-      )
+      view.getByTestId("team-assemble-join").props.accessibilityState.disabled
+    ).toBe(true);
+    expect(input.props.accessibilityLabel).toBe("Join Code");
+    expect(
+      view.getByText("This Join Code is invalid or expired.")
     ).toBeTruthy();
+    await fireEvent.changeText(input, "  abcd2345  ");
     await fireEvent.press(view.getByTestId("team-assemble-join"));
-    expect(onJoinTeam).not.toHaveBeenCalled();
+    expect(onJoinTeam).toHaveBeenCalledWith("", "abcd2345");
+  });
 
-    await fireEvent.changeText(
-      input,
-      'Join my KUQuest team "Gardeners": kuquestmobile://quest/q-1/team?teamId=0b8f1c2e-4d5a-4e6f-8a9b-1c2d3e4f5a6b&code=abcd2345'
+  it("sends trimmed Join Code and maps invalid and full-team errors", async () => {
+    mockJoinMutateAsync
+      .mockReset()
+      .mockRejectedValueOnce(new ApiError(404, "TEAM_NOT_FOUND", "not found"))
+      .mockRejectedValueOnce(new ApiError(409, "TEAM_FULL", "conflict"));
+    const view = await renderWithAppTheme(
+      <TeamAssembleScreen questId="quest-1" />
     );
+    const input = view.getByTestId("team-assemble-join-code-input");
+
+    await fireEvent.changeText(input, "  abcd2345  ");
+    await fireEvent.press(view.getByTestId("team-assemble-join"));
+    expect(mockJoinMutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        questId: "quest-1",
+        viewerId: "worker-1",
+        joinCode: "abcd2345",
+      })
+    );
+    expect(
+      await view.findByText("This Join Code is invalid or expired.")
+    ).toBeTruthy();
+
+    await fireEvent.press(view.getByTestId("team-assemble-join"));
+    expect(
+      await view.findByText("This team is full or no longer accepting members.")
+    ).toBeTruthy();
+  });
+
+  it("joins a team named by an invite link opened from another app", async () => {
+    const onJoinTeam = jest.fn();
+    const view = await renderWithAppTheme(
+      <TeamAssembleView
+        initialInvite='Join my KUQuest team "Gardeners": kuquestmobile://quest/q-1/team?teamId=0b8f1c2e-4d5a-4e6f-8a9b-1c2d3e4f5a6b&code=abcd2345'
+        locale="en"
+        onJoinTeam={onJoinTeam}
+        team={null}
+      />
+    );
+
     await fireEvent.press(view.getByTestId("team-assemble-join"));
     expect(onJoinTeam).toHaveBeenCalledWith(
       "0b8f1c2e-4d5a-4e6f-8a9b-1c2d3e4f5a6b",

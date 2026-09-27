@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { View } from "@/tw";
+import { ApiError } from "@/api/ApiClient";
+import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
-import { groupQuestMessages } from "@/locales/groupQuestMessages";
+import { useJoinCandidateTeamMutation } from "@/features/questBoard/api/questBoardQueries";
 import { useLocale } from "@/features/preferences/localeStore";
+import { groupQuestMessages } from "@/locales/groupQuestMessages";
+import { View } from "@/tw";
 import type { QuestDetailScreenProps } from "../detail/questDetailRoute";
 import { useQuestDetailFeature } from "../detail/useQuestDetailFeature";
 import { TeamAssembleEmptyState } from "./components/TeamAssembleEmptyState";
@@ -27,6 +31,33 @@ export default function TeamAssembleScreen({
   const { locale } = useLocale();
   const messages = groupQuestMessages[locale];
   const view = useQuestDetailFeature({ ...props, bottomInset: insets.bottom });
+  const joinMutation = useJoinCandidateTeamMutation();
+  const [joinError, setJoinError] = useState<string | null>(null);
+
+  const joinByCode = async (teamId: string, joinCode: string) => {
+    if (!props.questId) {
+      view.team?.onJoinTeam?.(teamId, joinCode);
+      return;
+    }
+    setJoinError(null);
+    try {
+      await joinMutation.mutateAsync({
+        questId: props.questId,
+        joinCode: joinCode.trim(),
+        viewerId: view.team?.viewerId,
+        idempotencyKey: createQuestIdempotencyKey(),
+      });
+    } catch (error) {
+      setJoinError(
+        error instanceof ApiError &&
+          (error.status === 400 || error.status === 404)
+          ? messages.joinCodeInvalid
+          : error instanceof ApiError && error.status === 409
+            ? messages.joinTeamFull
+            : messages.joinTeamFailed
+      );
+    }
+  };
 
   return (
     <ScreenLayout
@@ -46,7 +77,13 @@ export default function TeamAssembleScreen({
       >
         <View className={styles.screenBody}>
           {view.state === "ready" && view.team ? (
-            <TeamAssembleView {...view.team} initialInvite={initialInvite} />
+            <TeamAssembleView
+              {...view.team}
+              initialInvite={initialInvite}
+              joinError={joinError}
+              onJoinTeam={view.team.onJoinTeam ? joinByCode : undefined}
+              submitting={view.team.submitting || joinMutation.isPending}
+            />
           ) : (
             <View className={styles.sheetContent}>
               {view.state === "loading" ? (
