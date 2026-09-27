@@ -59,6 +59,7 @@ export interface ChatMessages {
   attachmentTypeError: string;
   messageLengthError: string;
   sendRateLimited: string;
+  candidateInquiryClosed: string;
 }
 
 export const chatMessages: Record<SupportedLocale, ChatMessages> = {
@@ -123,6 +124,8 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     attachmentSizeError: "Attachments must be 10 MB or smaller.",
     attachmentTypeError: "Only images, PDF, and video files are supported.",
     messageLengthError: "Messages must be 1,000 characters or fewer.",
+    candidateInquiryClosed:
+      "This Quest is no longer accepting applications; the inquiry is closed.",
     sendRateLimited: "You are sending messages too quickly. Try again shortly.",
   },
   th: {
@@ -185,6 +188,7 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     attachmentSizeError: "ไฟล์แนบต้องมีขนาดไม่เกิน 10 MB",
     attachmentTypeError: "รองรับเฉพาะรูปภาพ PDF และวิดีโอ",
     messageLengthError: "ข้อความต้องมีความยาวไม่เกิน 1,000 ตัวอักษร",
+    candidateInquiryClosed: "เควสต์นี้ไม่รับสมัครแล้ว การสอบถามจึงปิดลง",
     sendRateLimited: "ส่งข้อความถี่เกินไป ลองอีกครั้งในอีกสักครู่",
   },
 };

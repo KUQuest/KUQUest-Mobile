@@ -181,9 +181,11 @@ export function usePublishImageUploadMutation() {
     mutationFn: ({
       questId,
       imageUris,
+      idempotencyKey,
     }: {
       questId: string;
       imageUris: string[];
-    }) => liveQuestService.uploadImages(questId, imageUris),
+      idempotencyKey?: string;
+    }) => liveQuestService.uploadImages(questId, imageUris, idempotencyKey),
   });
 }

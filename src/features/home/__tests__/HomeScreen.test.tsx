@@ -274,6 +274,33 @@ describe("HomeScreen live active quests syncing", () => {
 
     expect(queryByTestId("hirer-quest-carousel")).toBeNull();
   });
+  it("shows empty state when all Hirer Quests are completed", async () => {
+    (questApi.listMine as jest.Mock).mockResolvedValue({
+      items: [
+        {
+          id: "completed-1",
+          title: "Completed Quest",
+          state: "QUEST_COMPLETED",
+          mode: "FIRST_COME_FIRST_SERVED",
+          participation: "SINGLE",
+          headcount: 1,
+          dueAt: "2026-09-20T17:00:00.000+07:00",
+          tag: { name: "Design" },
+        },
+      ],
+      nextCursor: null,
+    });
+
+    const { getByTestId, queryByTestId, queryByText } =
+      await renderWithQueryClient(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(getByTestId("hirer-home-empty")).toBeTruthy();
+    });
+    expect(queryByTestId("hirer-quest-carousel")).toBeNull();
+    expect(queryByText("Completed Quest")).toBeNull();
+  });
+
   it("keeps the home carousel compact while counting every Hirer Quest", async () => {
     const activeQuests = Array.from({ length: 6 }, (_, index) => ({
       id: `active-${index + 1}`,

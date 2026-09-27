@@ -11,7 +11,10 @@ import {
 } from "@/locales/workerWorkMessages";
 import type { ThemeColors } from "@/theme/colors";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
-import { useMyWorkerQuestSnapshotsQuery } from "@/features/myQuests/api/myQuestsQueries";
+import {
+  useMyWorkerQuestSnapshotsQuery,
+  useMyWorkerCandidateApplicationsQuery,
+} from "@/features/myQuests/api/myQuestsQueries";
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
@@ -71,9 +74,14 @@ export function useWorkerWorkController({
   const sessionQuery = useSessionQuery();
   const viewerId = sessionQuery.data?.user.id ?? null;
   const snapshotsQuery = useMyWorkerQuestSnapshotsQuery(viewerId);
+  const applicationsQuery = useMyWorkerCandidateApplicationsQuery(viewerId);
   const projection = useMemo(
-    () => projectWorkerWork(snapshotsQuery.data ?? []),
-    [snapshotsQuery.data]
+    () =>
+      projectWorkerWork(
+        snapshotsQuery.data ?? [],
+        applicationsQuery.data ?? []
+      ),
+    [snapshotsQuery.data, applicationsQuery.data]
   );
   const counts: Record<WorkerWorkTab, number> = {
     active: projection.activeCount,
@@ -93,8 +101,11 @@ export function useWorkerWorkController({
         });
         return;
       }
-      // Still-open Quests live on Quest Detail; proof work stays in the Work Hub.
-      if (item.questState === QuestStatus.QUEST_OPEN) {
+      // Applications and still-open Quests live on Quest Detail.
+      if (
+        item.destination === "questDetail" ||
+        item.questState === QuestStatus.QUEST_OPEN
+      ) {
         router.push({ pathname: "/quest/[id]", params: { id: item.questId } });
         return;
       }
@@ -116,13 +127,20 @@ export function useWorkerWorkController({
     },
     content: {
       counts,
-      hasData: Boolean(snapshotsQuery.data),
+      hasData: snapshotsQuery.data !== undefined,
       isError: snapshotsQuery.isError,
-      isRefetching: snapshotsQuery.isRefetching,
+      isRefetching:
+        snapshotsQuery.isRefetching || applicationsQuery.isRefetching,
       onFindQuests: () => router.replace("/(tabs)"),
       onOpenWork: openWork,
-      onRefresh: () => void snapshotsQuery.refetch(),
-      onRetry: () => void snapshotsQuery.refetch(),
+      onRefresh: () => {
+        void snapshotsQuery.refetch();
+        void applicationsQuery.refetch();
+      },
+      onRetry: () => {
+        void snapshotsQuery.refetch();
+        void applicationsQuery.refetch();
+      },
       onTabChange: setTab,
       projection,
       tab,

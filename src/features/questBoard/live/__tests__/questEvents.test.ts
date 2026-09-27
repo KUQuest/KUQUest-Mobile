@@ -392,4 +392,85 @@ describe("Quest event subscription", () => {
     stop();
     expect(socket?.close).toHaveBeenCalledTimes(1);
   });
+  it("shares hirer updates and closes the socket after the last unsubscribe", () => {
+    const firstUpdate = jest.fn();
+    const firstSubscribed = jest.fn();
+    const stopFirst = subscribeToHirerQuestEvents(firstUpdate, firstSubscribed);
+    const socket = MockWebSocket.instances[0];
+    if (!socket) throw new Error("Expected a hirer event socket");
+    socket.receive(JSON.stringify({ type: "SUBSCRIBED", version: 1 }));
+
+    const lateUpdate = jest.fn();
+    const lateSubscribed = jest.fn();
+    const stopLate = subscribeToHirerQuestEvents(lateUpdate, lateSubscribed);
+
+    expect(MockWebSocket.instances).toHaveLength(1);
+    expect(lateSubscribed).toHaveBeenCalledTimes(1);
+    socket.receive(
+      JSON.stringify({
+        type: "HIRER_QUEST_UPDATED",
+        version: 1,
+        questId: "00000000-0000-4000-8000-000000000001",
+        changeType: "QUEST_STARTED",
+      })
+    );
+    expect(firstUpdate).toHaveBeenCalledTimes(1);
+    expect(lateUpdate).toHaveBeenCalledTimes(1);
+
+    stopFirst();
+    expect(socket.close).not.toHaveBeenCalled();
+    stopLate();
+    expect(socket.close).toHaveBeenCalledTimes(1);
+    stopLate();
+    expect(socket.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("notifies hirer listeners after each accepted handshake on reconnect", () => {
+    jest.useFakeTimers();
+    const onSubscribed = jest.fn();
+    const stop = subscribeToHirerQuestEvents(jest.fn(), onSubscribed);
+    const firstSocket = MockWebSocket.instances[0];
+    if (!firstSocket) throw new Error("Expected an initial hirer event socket");
+    firstSocket.receive(JSON.stringify({ type: "SUBSCRIBED", version: 1 }));
+    firstSocket.disconnect();
+    jest.advanceTimersByTime(1_000);
+
+    const secondSocket = MockWebSocket.instances[1];
+    if (!secondSocket)
+      throw new Error("Expected a reconnected hirer event socket");
+    secondSocket.receive(JSON.stringify({ type: "SUBSCRIBED", version: 1 }));
+
+    expect(onSubscribed).toHaveBeenCalledTimes(2);
+    stop();
+    expect(secondSocket.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens a fresh hirer socket after a terminal close and keeps listeners", () => {
+    const firstUpdate = jest.fn();
+    const stopFirst = subscribeToHirerQuestEvents(firstUpdate);
+    const firstSocket = MockWebSocket.instances[0];
+    if (!firstSocket) throw new Error("Expected an initial hirer event socket");
+    firstSocket.disconnect(4403, "Origin not allowed");
+
+    const nextUpdate = jest.fn();
+    const stopNext = subscribeToHirerQuestEvents(nextUpdate);
+    const nextSocket = MockWebSocket.instances[1];
+    if (!nextSocket) throw new Error("Expected a fresh hirer event socket");
+
+    nextSocket.receive(JSON.stringify({ type: "SUBSCRIBED", version: 1 }));
+    const update = {
+      type: "HIRER_QUEST_UPDATED",
+      version: 1,
+      questId: "00000000-0000-4000-8000-000000000001",
+      changeType: "QUEST_STARTED",
+    };
+    nextSocket.receive(JSON.stringify(update));
+
+    expect(firstUpdate).toHaveBeenCalledWith(update);
+    expect(nextUpdate).toHaveBeenCalledWith(update);
+    stopFirst();
+    expect(nextSocket.close).not.toHaveBeenCalled();
+    stopNext();
+    expect(nextSocket.close).toHaveBeenCalledTimes(1);
+  });
 });

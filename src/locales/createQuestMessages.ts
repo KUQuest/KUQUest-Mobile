@@ -187,6 +187,8 @@ export interface CreateQuestMessages {
   escrowDescription: string;
   fundingPerPerson: (amount: string, headcount: number) => string;
   imageError: string;
+  imageUploadError: string;
+  imageUploadValidationError: string;
   titleError: string;
   questTagError: string;
   descriptionError: string;
@@ -450,6 +452,9 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         `${amount} per person × ${headcount}`,
       imageError:
         "We could not add images. Check photo permissions and try again.",
+      imageUploadError: "Quest images failed to upload. Try publishing again.",
+      imageUploadValidationError:
+        "Quest images failed to upload. Use JPEG, PNG, or WebP images no larger than 5 MB each.",
       titleError: "Add a short title so people know what they will do.",
       questTagError: "Choose the Quest Tag that best matches this Quest.",
       descriptionError: "Describe the work and expected outcome.",
@@ -758,6 +763,9 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         `${amount} ต่อคน × ${headcount} คน`,
       imageError:
         "ไม่สามารถเพิ่มรูปภาพได้ ตรวจสอบสิทธิ์การเข้าถึงรูปภาพแล้วลองอีกครั้ง",
+      imageUploadError: "อัปโหลดรูปเควสต์ไม่สำเร็จ กรุณาลองเผยแพร่อีกครั้ง",
+      imageUploadValidationError:
+        "อัปโหลดรูปเควสต์ไม่สำเร็จ ใช้ไฟล์ JPEG, PNG หรือ WebP ขนาดไม่เกิน 5 MB ต่อรูป",
       titleError: "เพิ่มชื่อสั้น ๆ เพื่อให้ผู้สนใจเข้าใจว่าจะต้องทำอะไร",
       questTagError: "เลือกแท็กเควสต์ที่ตรงกับเควสต์นี้ที่สุด",
       descriptionError: "อธิบายงานและผลลัพธ์ที่คาดหวัง",

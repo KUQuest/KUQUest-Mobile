@@ -11,6 +11,7 @@ import AuthMiddleware from "@/features/auth/AuthMiddleware";
 import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
 import { AppThemeProvider } from "@/features/workspace/AppThemeProvider";
 import { SweetAlertHost } from "@/components/ui/SweetAlert";
+import { NotificationCoordinator } from "@/features/notifications/NotificationBannerHost";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -38,6 +39,7 @@ export default function RootLayout() {
           <AuthMiddleware>
             <Stack screenOptions={{ headerShown: false }} />
           </AuthMiddleware>
+          <NotificationCoordinator />
           <SweetAlertHost />
         </QueryProvider>
       </AppThemeProvider>

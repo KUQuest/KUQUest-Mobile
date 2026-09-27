@@ -879,7 +879,33 @@ export class LiveQuestService {
         : [...assignments, participationAssignment];
     const participants =
       quest.participation === "GROUP"
-        ? await this.loadParticipantProfiles(resolvedAssignments)
+        ? routeActor === QuestActor.PROSPECTIVE_WORKER &&
+          quest.mode === QuestMode.FIRST_COME_FIRST_SERVED &&
+          conversations
+          ? await chatApi
+              .listParticipants(conversations.id, options)
+              .then((conversationParticipants) =>
+                conversationParticipants.reduce<LiveQuestParticipant[]>(
+                  (workers, participant) => {
+                    if (participant.role !== "WORKER" || !participant.id)
+                      return workers;
+                    workers.push({
+                      id: participant.id,
+                      displayName: participant.displayName,
+                      ...(participant.avatar?.url
+                        ? { avatarUrl: participant.avatar.url }
+                        : {}),
+                      ...(participant.avatar?.fileId
+                        ? { avatarFileId: participant.avatar.fileId }
+                        : {}),
+                    });
+                    return workers;
+                  },
+                  []
+                )
+              )
+              .catch(() => this.loadParticipantProfiles(resolvedAssignments))
+          : await this.loadParticipantProfiles(resolvedAssignments)
         : [];
     const application = ownApplication(applications, viewerId);
     const listedTeam = ownTeam(teams, viewerId);
@@ -964,14 +990,11 @@ export class LiveQuestService {
 
   async uploadImages(
     questId: string,
-    imageUris: string[]
+    imageUris: string[],
+    idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Image[]> {
     const assets = imageUris.map((uri) => ({ uri }));
-    return questApi.uploadQuestImages(
-      questId,
-      assets,
-      createQuestIdempotencyKey()
-    );
+    return questApi.uploadQuestImages(questId, assets, idempotencyKey);
   }
 
   async getPublishCheck(questId: string): Promise<QuestV2PublishCheck> {

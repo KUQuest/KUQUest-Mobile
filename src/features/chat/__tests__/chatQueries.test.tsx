@@ -10,6 +10,7 @@ import {
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import {
   chatKeys,
+  useChatNotificationConversationsQuery,
   useHasUnreadChatQuery,
   useMessagesQuery,
   useSendChatMessageMutation,
@@ -49,6 +50,35 @@ function makeServerMessage(id: string, sequence: number): ServerChatMessage {
   };
 }
 
+function workConversation(unreadCount: number) {
+  return {
+    id: "work-1",
+    type: "CONVERSATION_WORK",
+    quest: { id: "quest-1", title: "Work Quest", status: "QUEST_ASSIGNED" },
+    latestMessage: null,
+    lastActivityAt: null,
+    archived: false,
+    readOnly: false,
+    unreadCount,
+  };
+}
+
+function candidateInquiry(unreadCount: number) {
+  return {
+    id: "inquiry-1",
+    type: "CONVERSATION_CANDIDATE_INQUIRY",
+    state: "INQUIRY_OPEN",
+    quest: { id: "quest-2", title: "Inquiry Quest", status: "QUEST_OPEN" },
+    participants: [
+      { id: "hirer-1", role: "HIRER", displayName: "Hirer" },
+      { id: "viewer-1", role: "PROSPECTIVE_WORKER", displayName: "Worker" },
+    ],
+    latestMessage: null,
+    lastActivityAt: null,
+    unreadCount,
+  };
+}
+
 describe("useHasUnreadChatQuery", () => {
   afterEach(() => {
     jest.restoreAllMocks();
@@ -58,13 +88,13 @@ describe("useHasUnreadChatQuery", () => {
     const listConversations = jest
       .spyOn(chatApi, "listConversations")
       .mockResolvedValue({
-        items: [{ unreadCount: 0 }],
+        items: [workConversation(0)],
         nextCursor: null,
       } as never);
     const listCandidateInquiries = jest
       .spyOn(chatApi, "listCandidateInquiries")
       .mockResolvedValue({
-        items: [{ unreadCount: 1 }],
+        items: [candidateInquiry(1)],
         nextCursor: null,
       } as never);
 
@@ -80,11 +110,11 @@ describe("useHasUnreadChatQuery", () => {
 
   it("returns false when both inbox sections have no unread activity", async () => {
     jest.spyOn(chatApi, "listConversations").mockResolvedValue({
-      items: [{ unreadCount: 0 }],
+      items: [workConversation(0)],
       nextCursor: null,
     } as never);
     jest.spyOn(chatApi, "listCandidateInquiries").mockResolvedValue({
-      items: [{ unreadCount: 0 }],
+      items: [candidateInquiry(0)],
       nextCursor: null,
     } as never);
 
@@ -94,6 +124,47 @@ describe("useHasUnreadChatQuery", () => {
     );
 
     await waitFor(() => expect(result.current.data).toBe(false));
+  });
+
+  it("loads notification conversations with two list requests and no participant fetches", async () => {
+    const listConversations = jest
+      .spyOn(chatApi, "listConversations")
+      .mockResolvedValue({
+        items: [workConversation(2)],
+        nextCursor: null,
+      } as never);
+    const listCandidateInquiries = jest
+      .spyOn(chatApi, "listCandidateInquiries")
+      .mockResolvedValue({
+        items: [candidateInquiry(1)],
+        nextCursor: null,
+      } as never);
+    const listParticipants = jest
+      .spyOn(chatApi, "listParticipants")
+      .mockResolvedValue([]);
+
+    const { result } = await renderHook(
+      () => useChatNotificationConversationsQuery("viewer-1"),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() =>
+      expect(
+        result.current.data?.conversations.map(({ id, unreadCount }) => [
+          id,
+          unreadCount,
+        ])
+      ).toEqual([["work-1", 2]])
+    );
+    expect(
+      result.current.data?.inquiries.map(({ id, unreadCount }) => [
+        id,
+        unreadCount,
+      ])
+    ).toEqual([["inquiry-1", 1]]);
+    expect(listConversations).toHaveBeenCalledTimes(1);
+    expect(listCandidateInquiries).toHaveBeenCalledTimes(1);
+    expect(listParticipants).not.toHaveBeenCalled();
   });
 });
 

@@ -281,8 +281,11 @@ export function setActiveRamp(name: RampName) {
   activeRamp = name;
 }
 
-export function getThemeColors(colorScheme: AppColorScheme): ThemeColors {
-  return palettes[activeRamp][colorScheme === "dark" ? "dark" : "light"];
+export function getThemeColors(
+  colorScheme: AppColorScheme,
+  workspace: RampName = activeRamp
+): ThemeColors {
+  return palettes[workspace][colorScheme === "dark" ? "dark" : "light"];
 }
 
 // Existing consumers can keep reading `colors.foo`; the proxy resolves the

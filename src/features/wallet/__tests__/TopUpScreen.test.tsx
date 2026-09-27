@@ -2,6 +2,8 @@ import React from "react";
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import { walletApi } from "@/api/WalletApi";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
+import { workerRamp } from "@/theme/colors";
+import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
 import TopUpScreen from "../TopUpScreen";
 
 const mockBack = jest.fn();
@@ -53,6 +55,7 @@ const mockTopUpRecord = {
 
 describe("TopUpScreen", () => {
   beforeEach(() => {
+    useRoleWorkspaceStore.setState({ workspace: "hirer" });
     jest.clearAllMocks();
     (walletApi.getWallet as jest.Mock).mockResolvedValue({
       spendingBalanceSatang: 100_000,
@@ -62,6 +65,22 @@ describe("TopUpScreen", () => {
     });
     (walletApi.quoteTopUp as jest.Mock).mockResolvedValue(mockQuote);
     (walletApi.createTopUp as jest.Mock).mockResolvedValue(mockTopUpRecord);
+  });
+
+  it("uses the Worker accent on the PromptPay step", async () => {
+    useRoleWorkspaceStore.setState({ workspace: "worker" });
+    const view = await renderWithQueryClient(<TopUpScreen />);
+
+    await fireEvent.press(view.getByTestId("top-up-continue-btn"));
+    await waitFor(() => {
+      expect(view.getByTestId("top-up-confirmation-step")).toBeTruthy();
+    });
+    await fireEvent.press(view.getByTestId("top-up-confirm-btn"));
+    await waitFor(() => {
+      expect(view.getByTestId("top-up-promptpay-accent").props.color).toBe(
+        workerRamp.light.primaryDark
+      );
+    });
   });
 
   it("renders Step 1 (amount selection) with default amount and quick options", async () => {

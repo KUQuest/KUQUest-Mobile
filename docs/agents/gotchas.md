@@ -11,6 +11,14 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 ## Entries
 
+### 2026-09-26 — Chat sockets sent Messages as another Member
+
+**What happened**: On a device signed in as the Hirer, every Work Chat Message sent over the socket was stored with the Worker as sender; REST reads stayed correct.
+
+**Root cause**: React Native puts the native cookie jar's cookie ahead of `openServerSocket`'s `Cookie` header, and the server authenticates the first one. Staging test-auth used credentialed `expo/fetch`, which left a stale staging session in the jar.
+
+**Rule**: Send every HTTP request with `credentials: "omit"`; the session lives only in SecureStore. When a socket acts as the wrong Member, dump `app_webview/Default/Cookies` with `adb exec-out run-as <applicationId>` and resolve the token with `GET /api/auth/get-session`.
+
 ### 2026-09-26 — Payout history silently dropped every Payout
 
 **What happened**: `WalletApi.listPayouts` parsed `data.payouts`, but `GET /api/v1/payouts` returns `data.items`; a catch-all `return []` hid the failure, and a test fixture copied the wrong shape.

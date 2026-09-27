@@ -1,5 +1,13 @@
-import { fireEvent, waitFor } from "@testing-library/react-native";
+import {
+  act,
+  fireEvent,
+  renderHook,
+  waitFor,
+} from "@testing-library/react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import { renderWithQueryClient as render } from "@/testing/queryTestUtils";
+import * as questDetailProjection from "../questDetailProjection";
 import { getQuestDetailProjection } from "../questDetailProjection";
 import {
   DEFAULT_PROTOTYPE_VIEWER_ID,
@@ -7,6 +15,8 @@ import {
 } from "../../fixtures/adapters/questFixtureAdapter";
 import { questWorkflow } from "../../workflow/questWorkflow";
 import QuestDetailScreen from "../QuestDetailScreen";
+import { useQuestDetailReadSource } from "../useQuestDetailReadSource";
+import * as questBoardQueries from "../../api/questBoardQueries";
 
 const mockGetQuestDetail = jest.fn();
 const mockGetLiveSnapshot = jest.fn();
@@ -134,6 +144,170 @@ describe("QuestDetailScreen smoke", () => {
       expect(mockGetQuestDetail).not.toHaveBeenCalled();
     } finally {
       dispatch.mockRestore();
+    }
+  });
+  it("polls while a Worker has a pending Candidate application on an open Quest", async () => {
+    const mockLiveSnapshotQuery = jest.spyOn(
+      questBoardQueries,
+      "useLiveQuestSnapshotQuery"
+    );
+    const mockDetailQuery = jest.spyOn(
+      questBoardQueries,
+      "useQuestDetailQuery"
+    );
+    mockLiveSnapshotQuery.mockReturnValue({
+      data: undefined,
+      error: null,
+      isPending: false,
+      isRefetching: false,
+      refetch: jest.fn(),
+    } as never);
+    mockDetailQuery.mockReturnValue({
+      data: undefined,
+      error: null,
+      isPending: false,
+      isRefetching: false,
+      refetch: jest.fn(),
+    } as never);
+    const queryClient = new QueryClient();
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    try {
+      await renderHook(
+        () =>
+          useQuestDetailReadSource({
+            questId: "quest-1",
+            viewerId: "worker-1",
+            explicitPreview: false,
+            sessionReady: true,
+          }),
+        { wrapper }
+      );
+      const interval = mockLiveSnapshotQuery.mock.calls[0]?.[4] as (
+        snapshot: unknown
+      ) => number | false;
+
+      expect(
+        interval({
+          actor: "CANDIDATE",
+          mode: "CANDIDATE",
+          state: "QUEST_OPEN",
+          application: { state: "APPLICATION_APPLIED" },
+          team: null,
+        })
+      ).toBe(15_000);
+      expect(
+        interval({
+          actor: "PROSPECTIVE_WORKER",
+          mode: "CANDIDATE",
+          state: "QUEST_OPEN",
+          application: null,
+          team: { state: "TEAM_SUBMITTED" },
+        })
+      ).toBe(15_000);
+      expect(
+        interval({
+          actor: "CANDIDATE",
+          mode: "CANDIDATE",
+          state: "QUEST_OPEN",
+          application: { state: "APPLICATION_REJECTED" },
+          team: null,
+        })
+      ).toBe(false);
+      expect(
+        interval({
+          actor: "HIRER",
+          mode: "CANDIDATE",
+          state: "QUEST_OPEN",
+          application: { state: "APPLICATION_APPLIED" },
+          team: null,
+        })
+      ).toBe(false);
+      expect(
+        interval({
+          actor: "CANDIDATE",
+          mode: "CANDIDATE",
+          state: "QUEST_ASSIGNED",
+          application: { state: "APPLICATION_APPLIED" },
+          team: null,
+        })
+      ).toBe(false);
+    } finally {
+      mockLiveSnapshotQuery.mockRestore();
+      mockDetailQuery.mockRestore();
+      queryClient.clear();
+    }
+  });
+  it("refetches an underfilled Group FCFS Quest when its start time arrives", async () => {
+    jest.useFakeTimers();
+    const mockLiveSnapshotQuery = jest.spyOn(
+      questBoardQueries,
+      "useLiveQuestSnapshotQuery"
+    );
+    const mockDetailQuery = jest.spyOn(
+      questBoardQueries,
+      "useQuestDetailQuery"
+    );
+    const mockProjection = jest
+      .spyOn(questDetailProjection, "getQuestDetailProjection")
+      .mockReturnValue(null as never);
+    const refetch = jest.fn();
+    const startTime = new Date(Date.now() + 10_000).toISOString();
+    const snapshot = {
+      actor: "HIRER",
+      quest: { id: "quest-1", startTime },
+      state: "QUEST_ASSIGNED",
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "GROUP",
+      underfilled: null,
+    } as never;
+    refetch.mockResolvedValue({ data: snapshot } as never);
+    mockExposeLiveSnapshot = true;
+    mockLiveSnapshotQuery.mockReturnValue({
+      data: snapshot,
+      error: null,
+      isPending: false,
+      isRefetching: false,
+      refetch,
+    } as never);
+    mockDetailQuery.mockReturnValue({
+      data: undefined,
+      error: null,
+      isPending: false,
+      isRefetching: false,
+      refetch: jest.fn(),
+    } as never);
+    const queryClient = new QueryClient();
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    try {
+      await renderHook(
+        () =>
+          useQuestDetailReadSource({
+            questId: "quest-1",
+            viewerId: "hirer-1",
+            explicitPreview: false,
+            sessionReady: true,
+          }),
+        { wrapper }
+      );
+      expect(refetch).not.toHaveBeenCalled();
+
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(12_001);
+      });
+
+      expect(refetch).toHaveBeenCalledTimes(1);
+    } finally {
+      mockLiveSnapshotQuery.mockRestore();
+      mockDetailQuery.mockRestore();
+      mockProjection.mockRestore();
+      queryClient.clear();
+      jest.useRealTimers();
     }
   });
 });

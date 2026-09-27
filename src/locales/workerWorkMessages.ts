@@ -13,7 +13,13 @@ export type WorkerWorkStatusKey =
   | "completed"
   | "incomplete"
   | "cancelled"
-  | "failed";
+  | "failed"
+  | "pendingSelection"
+  | "teamForming"
+  | "selected"
+  | "notSelected"
+  | "rejected"
+  | "withdrawn";
 
 export type WorkerWorkActionKey =
   | "submitProof"
@@ -101,6 +107,12 @@ export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
       incomplete: "ไม่ผ่าน",
       cancelled: "ยกเลิก",
       failed: "ล้มเหลว",
+      pendingSelection: "รอพิจารณา",
+      teamForming: "กำลังรวบรวมทีม",
+      selected: "ได้รับเลือก",
+      notSelected: "ไม่ได้รับเลือก",
+      rejected: "ถูกปฏิเสธ",
+      withdrawn: "ถอนใบสมัคร",
     },
     dueLabel: "กำหนดส่ง",
     startsLabel: "เริ่มงาน",
@@ -167,6 +179,12 @@ export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
       incomplete: "Not approved",
       cancelled: "Cancelled",
       failed: "Failed",
+      pendingSelection: "Pending selection",
+      teamForming: "Team forming",
+      selected: "Selected",
+      notSelected: "Not selected",
+      rejected: "Rejected",
+      withdrawn: "Withdrawn",
     },
     dueLabel: "Due",
     startsLabel: "Starts",

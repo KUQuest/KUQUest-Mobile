@@ -171,13 +171,25 @@ export function PartialGroupStartConsentContent({
   const hasUnderfilled = Boolean(underfilled);
   const consentFrozenWorkerIds = consent?.frozenWorkerIds;
   const consentRequiredVoterIds = consent?.requiredVoterIds;
-  const frozenWorkerIds = useMemo(
-    () =>
-      underfilledResponses?.map((response) => response.workerId) ??
-      consentFrozenWorkerIds ??
-      EMPTY_VOTER_IDS,
-    [consentFrozenWorkerIds, underfilledResponses]
+  const ownResponse = underfilled?.ownResponse;
+  const ownResponseBelongsToViewer = Boolean(
+    viewerId &&
+    ownResponse &&
+    (!ownResponse.workerId || ownResponse.workerId === viewerId)
   );
+  const frozenWorkerIds = useMemo(() => {
+    const ids = underfilledResponses
+      ? underfilledResponses.map((response) => response.workerId)
+      : [...(consentFrozenWorkerIds ?? EMPTY_VOTER_IDS)];
+    return ownResponseBelongsToViewer && viewerId && !ids.includes(viewerId)
+      ? [...ids, viewerId]
+      : ids;
+  }, [
+    consentFrozenWorkerIds,
+    ownResponseBelongsToViewer,
+    underfilledResponses,
+    viewerId,
+  ]);
   const requiredVoterIds = useMemo(
     () =>
       hasUnderfilled
@@ -196,7 +208,7 @@ export function PartialGroupStartConsentContent({
   );
   const responseMap = useMemo(() => {
     if (underfilled) {
-      return new Map(
+      const responses = new Map(
         (underfilled.responses ?? []).map((response) => [
           response.workerId,
           response.decision === QuestUnderfilledConsentDecision.ACCEPT
@@ -206,6 +218,17 @@ export function PartialGroupStartConsentContent({
               : undefined,
         ])
       );
+      if (ownResponseBelongsToViewer && viewerId && ownResponse) {
+        responses.set(
+          ownResponse.workerId ?? viewerId,
+          ownResponse.decision === QuestUnderfilledConsentDecision.ACCEPT
+            ? QuestPartialStartVoteStatus.PARTIAL_START_VOTE_APPROVED
+            : ownResponse.decision === QuestUnderfilledConsentDecision.DECLINE
+              ? QuestPartialStartVoteStatus.PARTIAL_START_VOTE_REJECTED
+              : undefined
+        );
+      }
+      return responses;
     }
     return new Map(
       (consent?.responses ?? []).map((response) => [
@@ -213,7 +236,13 @@ export function PartialGroupStartConsentContent({
         response.status,
       ])
     );
-  }, [consent?.responses, underfilled]);
+  }, [
+    consent?.responses,
+    ownResponse,
+    ownResponseBelongsToViewer,
+    underfilled,
+    viewerId,
+  ]);
   const decisionPending =
     underfilled?.state === QuestUnderfilledState.UNDERFILLED_DECISION_PENDING;
   const consentPending =

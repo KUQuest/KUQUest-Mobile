@@ -104,6 +104,10 @@ const styles = {
   messageStackMe: "items-end",
   messageBubble: "bg-ku-surface-muted rounded-ku-search px-ku-14 py-ku-10",
   messageBubbleMe: "bg-ku-success-light rounded-ku-search px-ku-14 py-ku-10",
+  messageRowSystem: "justify-center",
+  messageStackSystem: "items-center max-w-[90%]",
+  messageBubbleSystem: "bg-ku-surface-high",
+  messageAuthor: "text-ku-text-secondary font-ku-medium text-ku-label mb-ku-xs",
   messageText: "text-ku-text-strong font-ku-regular text-ku-body-small",
   messageMeta:
     "text-ku-text-muted font-ku-regular text-ku-caption mt-ku-xs px-ku-xs",

@@ -9,6 +9,10 @@ export interface DisputeMessages {
   successDescription: (caseId: string) => string;
   errorTitle: string;
   errorFallback: string;
+  alreadyFiled: string;
+  filedStatus: string;
+  statusError: string;
+  retryStatus: string;
 }
 
 export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
@@ -27,6 +31,10 @@ export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
       `Case ${caseId} is waiting for Admin review.`,
     errorTitle: "Couldn't file the Dispute Case",
     errorFallback: "Please try again.",
+    alreadyFiled: "A Dispute Case has already been filed for this Quest.",
+    filedStatus: "Dispute filed",
+    statusError: "Couldn't check dispute status.",
+    retryStatus: "Retry",
   },
   th: {
     rules: [
@@ -43,5 +51,9 @@ export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
       `คำร้อง ${caseId} กำลังรอผู้ดูแลระบบตรวจสอบ`,
     errorTitle: "ยื่นคำร้องข้อพิพาทไม่สำเร็จ",
     errorFallback: "โปรดลองอีกครั้ง",
+    alreadyFiled: "มีการยื่นคำร้องข้อพิพาทสำหรับเควสต์นี้แล้ว",
+    filedStatus: "ยื่นคำร้องข้อพิพาทแล้ว",
+    statusError: "ตรวจสอบสถานะคำร้องข้อพิพาทไม่สำเร็จ",
+    retryStatus: "ลองอีกครั้ง",
   },
 };

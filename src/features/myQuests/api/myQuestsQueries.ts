@@ -8,6 +8,8 @@ export const myQuestsKeys = {
   hirer: () => [...myQuestsKeys.all, "hirer"] as const,
   worker: (viewerId: string) =>
     [...myQuestsKeys.all, "worker", viewerId] as const,
+  workerCandidateApplications: (viewerId: string) =>
+    [...myQuestsKeys.worker(viewerId), "candidateApplications"] as const,
 };
 
 export function useMyHirerQuestsQuery(enabled = true) {
@@ -44,6 +46,22 @@ export function useMyWorkerQuestSnapshotsQuery(
       return myQuestService.listMyWorkerQuestSnapshots(viewerId, "all", {
         signal,
       });
+    },
+  });
+}
+
+export function useMyWorkerCandidateApplicationsQuery(
+  viewerId: string | null,
+  enabled = true
+) {
+  return useQuery({
+    enabled: Boolean(viewerId) && enabled,
+    queryKey: myQuestsKeys.workerCandidateApplications(viewerId ?? ""),
+    queryFn: ({ signal }) => {
+      if (!viewerId) {
+        throw new Error("A viewer ID is required");
+      }
+      return myQuestService.listMyWorkerCandidateApplications({ signal });
     },
   });
 }

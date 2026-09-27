@@ -15,6 +15,8 @@ export type RenderAttachment = ChatAttachment & {
 
 export type DisplayChatMessage = ChatMessage & {
   sequence?: number;
+  senderId?: string;
+  senderName?: string;
   attachment?: RenderAttachment;
   attachments: RenderAttachment[];
 };
@@ -62,6 +64,8 @@ export function toDisplayMessage(
     converted;
   return {
     ...convertedWithoutAttachment,
+    ...(message.sender?.id != null ? { senderId: message.sender.id } : {}),
+    ...(message.sender ? { senderName: message.sender.displayName } : {}),
     sequence: message.sequence,
     attachments,
     ...(attachments[0] ? { attachment: attachments[0] } : {}),

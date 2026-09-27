@@ -1,7 +1,7 @@
 import React from "react";
 import type { Tabs } from "expo-router";
 import { cn } from "@/tw/cn";
-import { useWindowDimensions } from "react-native";
+import { useColorScheme, useWindowDimensions } from "react-native";
 import { useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { Image, Pressable, View } from "@/tw";
 import { Animated } from "@/tw/animated";
@@ -9,7 +9,7 @@ import { Animated } from "@/tw/animated";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { navigationMessages } from "@/locales/navigationMessages";
-import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { getThemeColors } from "@/theme/colors";
 import { getAppChromeMetrics } from "@/theme/layout";
 import { useHasUnreadChatQuery } from "@/features/chat/api/chatQueries";
 import {
@@ -35,12 +35,13 @@ export function BottomNav({
   insets,
 }: TabBarProps) {
   const { width, fontScale } = useWindowDimensions();
-  const { colors: navigationColors } = useAppTheme();
+  const colorScheme = useColorScheme();
   const metrics = getAppChromeMetrics(width, fontScale);
   const { locale } = useLocale();
   const messages = navigationMessages[locale];
   const focusedRouteKey = state.routes[state.index]?.key;
   const { workspace } = useRoleWorkspace();
+  const navigationColors = getThemeColors(colorScheme, workspace);
   const navigationCompact = useNavigationCompact();
   const sessionQuery = useSessionQuery();
   const viewerId = sessionQuery.data?.user.id ?? "";
@@ -132,8 +133,13 @@ export function BottomNav({
     >
       <Animated.View
         className={cn(styles.bar, metrics.isTablet && styles.tabletBar)}
+        testID="bottom-nav-surface"
         style={[
-          { minHeight: metrics.isTablet ? undefined : metrics.navHeight },
+          {
+            minHeight: metrics.isTablet ? undefined : metrics.navHeight,
+            backgroundColor: navigationColors.surfaceAccent,
+            borderColor: navigationColors.primaryBorder,
+          },
           !metrics.isTablet && navigationBarAnimationStyle,
         ]}
       >
@@ -158,6 +164,7 @@ export function BottomNav({
           const iconColor = isFocused
             ? navigationColors.primaryDeep
             : navigationColors.navIconMuted;
+          const isActiveDestination = item.isCreate !== true && isFocused;
 
           const onPress = () => {
             showNavigation();
@@ -189,7 +196,12 @@ export function BottomNav({
                 item.isCreate && styles.createItem,
                 metrics.isTablet && item.isCreate && styles.tabletCreateItem
               )}
-              style={{ minHeight: metrics.navItemHeight }}
+              style={{
+                minHeight: metrics.navItemHeight,
+                ...(isActiveDestination
+                  ? { backgroundColor: navigationColors.primaryBorder }
+                  : {}),
+              }}
               testID={`tab-${item.routeName}`}
             >
               <View

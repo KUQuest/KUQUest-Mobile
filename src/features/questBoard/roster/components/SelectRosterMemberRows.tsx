@@ -33,14 +33,22 @@ function MemberIdentity({
 }) {
   const { colors } = useAppTheme();
   const name = identity?.displayName ?? "…";
+  const academicDetail = [identity?.faculty, identity?.department]
+    .filter(Boolean)
+    .join(" · ");
+  const profileLabel = [
+    openProfileLabel(name),
+    identity?.ratingAverage != null
+      ? `${identity.ratingAverage.toFixed(1)}/5`
+      : "",
+    academicDetail,
+  ]
+    .filter(Boolean)
+    .join(". ");
 
   return (
     <Pressable
-      accessibilityLabel={`${openProfileLabel(name)}${
-        identity?.ratingAverage != null
-          ? `. ${identity.ratingAverage.toFixed(1)}/5`
-          : ""
-      }`}
+      accessibilityLabel={profileLabel}
       accessibilityRole="button"
       className={styles.memberRow}
       onPress={() => onOpenProfile(memberId)}
@@ -67,6 +75,11 @@ function MemberIdentity({
             </Text>
           ) : null}
         </View>
+        {academicDetail ? (
+          <Text className={styles.memberDetail} numberOfLines={2}>
+            {academicDetail}
+          </Text>
+        ) : null}
         {detail ? (
           <Text className={styles.memberDetail} numberOfLines={2}>
             {detail}

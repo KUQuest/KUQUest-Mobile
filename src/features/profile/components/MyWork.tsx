@@ -7,7 +7,7 @@ import {
 import { Image, Pressable, ScrollView, Text, View } from "@/tw";
 import { X } from "lucide-react-native";
 import { cn } from "@/tw/cn";
-import { colors } from "../../../theme/colors";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import styles from "../styles/profileComponentStyles";
 import type { ProfileAccessibilityLabels, ProfileWork } from "./profileTypes";
 import {
@@ -79,6 +79,7 @@ export function MyWork({
   accessibilityLabels?: Pick<ProfileAccessibilityLabels, "workImageLabel">;
   sectionBottomMargin?: number;
 } & SectionNoticeProps) {
+  const { colors } = useAppTheme();
   const { width, height } = useWindowDimensions();
   const labels = { ...defaultAccessibilityLabels, ...accessibilityLabels };
   const [selectedWork, setSelectedWork] = useState<ProfileWork | null>(null);

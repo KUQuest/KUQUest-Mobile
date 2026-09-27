@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { RequestOptions } from "./ApiClient";
 import { ApiClient } from "./ApiClient";
 import {
+  questV2CandidateApplicationsDataSchema,
   questV2ApplicationListDataSchema,
   questV2AssignmentSchema,
   questV2ApplicationSchema,
@@ -44,10 +45,9 @@ import {
   questV2TeamFileSchema,
   questV2TeamSelectionSchema,
   questV2ProofFileLinkSchema,
+  type QuestV2CandidateApplication,
   type QuestV2ProofFileLink,
-  questV2UnderfilledSchema,
-  questV2UnderfilledDecisionPayloadSchema,
-  questV2UnderfilledConsentPayloadSchema,
+  type QuestV2ProofSubmission,
   type QuestV2ApplicationSelection,
   type QuestV2Application,
   type QuestV2Assignment,
@@ -63,7 +63,6 @@ import {
   type QuestV2ProofDelete,
   type QuestV2ProofReview,
   type QuestV2CancellationOutcome,
-  type QuestV2ProofSubmission,
   type QuestV2PublicDetail,
   type QuestV2PublishCheck,
   type QuestV2Review,
@@ -72,6 +71,9 @@ import {
   type QuestV2TeamFile,
   type QuestV2TeamSelection,
   type QuestV2Underfilled,
+  questV2UnderfilledSchema,
+  questV2UnderfilledDecisionPayloadSchema,
+  questV2UnderfilledConsentPayloadSchema,
 } from "./questV2Contracts";
 import { appendUploadFile, type UploadAsset } from "./fileUpload";
 import { createIdempotencyKey } from "@/utils/idempotency";
@@ -98,6 +100,7 @@ export interface CreateQuestV2Payload {
 export const tagItemSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
+  nameTh: z.string().nullable().optional(),
   createdAt: z.string().optional(),
 });
 
@@ -279,6 +282,17 @@ export class QuestApi {
       "/api/v2/assignments/mine",
       questV2AssignmentsDataSchema,
       { ...options, query: { status } }
+    );
+    return data.items;
+  }
+
+  async listMyCandidateApplications(
+    options?: RequestOptions
+  ): Promise<QuestV2CandidateApplication[]> {
+    const data = await this.client.get(
+      "/api/v2/applications/mine",
+      questV2CandidateApplicationsDataSchema,
+      options
     );
     return data.items;
   }

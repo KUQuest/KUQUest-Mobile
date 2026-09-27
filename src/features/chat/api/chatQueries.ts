@@ -6,7 +6,7 @@ import {
   type ServerCandidateInquiry,
 } from "@/api/ChatApi";
 import type { UseChatSocketResult } from "./useChatSocket";
-import { isTerminalStatus } from "@/domain/questLifecycle";
+import { QuestStatus, isTerminalStatus } from "@/domain/questLifecycle";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import { QuestActor } from "@/features/questBoard/domain/types";
 import { ConversationMode, type ChatConversation } from "../chatTypes";
@@ -74,16 +74,25 @@ function candidateInquiryToConversation(
     capability: {
       conversationId: inquiry.id,
       canRead: true,
-      canWrite: inquiry.state === "INQUIRY_OPEN",
-      readOnly: inquiry.state !== "INQUIRY_OPEN",
+      canWrite:
+        inquiry.state === "INQUIRY_OPEN" &&
+        inquiry.quest.status === QuestStatus.QUEST_OPEN,
+      readOnly:
+        inquiry.state !== "INQUIRY_OPEN" ||
+        inquiry.quest.status !== QuestStatus.QUEST_OPEN,
     },
   };
 }
 
-export function useListConversationsQuery(viewerId: string, enabled = true) {
+export function useListConversationsQuery(
+  viewerId: string,
+  enabled = true,
+  refetchIntervalMs?: number
+) {
   return useQuery<ChatConversation[]>({
     enabled: Boolean(viewerId) && enabled,
     queryKey: chatKeys.conversations(viewerId),
+    refetchInterval: refetchIntervalMs,
     queryFn: async ({ signal }) => {
       const page = await chatApi.listConversations({ limit: 20 }, { signal });
       return Promise.all(
@@ -95,9 +104,7 @@ export function useListConversationsQuery(viewerId: string, enabled = true) {
           try {
             const participants = await chatApi.listParticipants(
               conversation.id,
-              {
-                signal,
-              }
+              { signal }
             );
             const otherParticipant =
               participants.find((participant) => participant.id !== viewerId) ??
@@ -130,11 +137,13 @@ export function useListConversationsQuery(viewerId: string, enabled = true) {
 
 export function useListCandidateInquiriesQuery(
   viewerId: string,
-  enabled = true
+  enabled = true,
+  refetchIntervalMs?: number
 ) {
   return useQuery<ChatConversation[]>({
     enabled: Boolean(viewerId) && enabled,
     queryKey: chatKeys.candidateInquiries(viewerId),
+    refetchInterval: refetchIntervalMs,
     queryFn: async ({ signal }) => {
       const page = await chatApi.listCandidateInquiries(
         { limit: 20 },
@@ -151,21 +160,52 @@ export function useListCandidateInquiriesQuery(
   });
 }
 
-export function useHasUnreadChatQuery(viewerId: string, enabled = true) {
-  return useQuery<boolean>({
+export interface ChatNotificationConversations {
+  conversations: ChatConversation[];
+  inquiries: ChatConversation[];
+}
+
+async function fetchChatNotificationConversations(
+  viewerId: string,
+  signal: AbortSignal
+): Promise<ChatNotificationConversations> {
+  const [conversationPage, inquiryPage] = await Promise.all([
+    chatApi.listConversations({ limit: 20 }, { signal }),
+    chatApi.listCandidateInquiries({ limit: 20 }, { signal }),
+  ]);
+  return {
+    conversations: conversationPage.items.map((conversation) =>
+      serverConversationToChatConversation(conversation, viewerId)
+    ),
+    inquiries: inquiryPage.items.map((inquiry) =>
+      candidateInquiryToConversation(inquiry, viewerId)
+    ),
+  };
+}
+
+export function useChatNotificationConversationsQuery(
+  viewerId: string,
+  enabled = true,
+  refetchIntervalMs?: number
+) {
+  return useQuery({
     enabled: Boolean(viewerId) && enabled,
     queryKey: chatKeys.unread(viewerId),
-    queryFn: async ({ signal }) => {
-      const [conversations, candidateInquiries] = await Promise.all([
-        chatApi.listConversations({ limit: 20 }, { signal }),
-        chatApi.listCandidateInquiries({ limit: 20 }, { signal }),
-      ]);
-      return (
-        conversations.items.some(
-          (conversation) => conversation.unreadCount > 0
-        ) || candidateInquiries.items.some((inquiry) => inquiry.unreadCount > 0)
-      );
-    },
+    queryFn: ({ signal }) =>
+      fetchChatNotificationConversations(viewerId, signal),
+    refetchInterval: refetchIntervalMs,
+  });
+}
+
+export function useHasUnreadChatQuery(viewerId: string, enabled = true) {
+  return useQuery({
+    enabled: Boolean(viewerId) && enabled,
+    queryKey: chatKeys.unread(viewerId),
+    queryFn: ({ signal }) =>
+      fetchChatNotificationConversations(viewerId, signal),
+    select: ({ conversations, inquiries }) =>
+      conversations.some((conversation) => conversation.unreadCount > 0) ||
+      inquiries.some((inquiry) => inquiry.unreadCount > 0),
   });
 }
 

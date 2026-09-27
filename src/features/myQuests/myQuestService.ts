@@ -1,9 +1,10 @@
-import { questApi, type QuestV2AssignmentMineStatus } from "@/api/QuestApi";
-import type { RequestOptions } from "@/api/ApiClient";
 import type {
   QuestV2Assignment,
+  QuestV2CandidateApplication,
   QuestV2CanonicalQuest,
 } from "@/api/questV2Contracts";
+import { questApi, type QuestV2AssignmentMineStatus } from "@/api/QuestApi";
+import type { RequestOptions } from "@/api/ApiClient";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import { isTerminalStatus, QuestStatus } from "@/domain/questLifecycle";
 import { QuestMode } from "@/features/questBoard/domain/types";
@@ -156,6 +157,13 @@ export async function listMyWorkerQuestSnapshots(
   );
 }
 
+/** Loads the authenticated Worker's individual and Candidate Team applications. */
+export async function listMyWorkerCandidateApplications(
+  options?: RequestOptions
+): Promise<QuestV2CandidateApplication[]> {
+  return questApi.listMyCandidateApplications(options);
+}
+
 /**
  * Loads fresh live snapshots for Quests owned by the authenticated Hirer.
  * `listAllMyHirerQuests` remains available for the existing card projection.
@@ -176,6 +184,7 @@ export const myQuestService = {
   getLiveHirerItems,
   liveQuestStatusTone,
   liveQuestStatusLabel,
+  listMyWorkerCandidateApplications,
   listAllMyWorkerAssignments,
   listMyWorkerAssignments: listAllMyWorkerAssignments,
   listMyWorkerQuestSnapshots,

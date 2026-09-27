@@ -47,6 +47,7 @@ async function signOutOfStagingTestAccount(
   try {
     await fetchImpl(`${baseUrl}/api/staging/test-auth/sign-out`, {
       method: "POST",
+      credentials: "omit",
       headers: { Cookie: cookie },
     });
   } catch {
@@ -81,6 +82,10 @@ export async function signInWithStagingTestAccount(
     `${baseUrl}/api/staging/test-auth/sign-in/${accountId}`,
     {
       method: "POST",
+      // Keep the session out of the native cookie jar: React Native sends that
+      // jar's cookie ahead of openServerSocket's Cookie header, so a stale jar
+      // session authenticates chat and Quest sockets as another Member.
+      credentials: "omit",
       headers: { "Content-Type": "application/json", Origin: baseUrl },
     }
   );

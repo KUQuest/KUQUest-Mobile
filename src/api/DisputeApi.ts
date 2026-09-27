@@ -14,9 +14,23 @@ export const disputeCaseSchema = z.object({
   createdAt: z.string(),
 });
 export type DisputeCase = z.infer<typeof disputeCaseSchema>;
+export const myDisputeCaseResponseSchema = z.object({
+  case: disputeCaseSchema.nullable(),
+});
 
 export class DisputeApi {
   constructor(private readonly client: ApiClient = new ApiClient()) {}
+
+  async getMyDisputeCase(
+    questId: string,
+    signal?: AbortSignal
+  ): Promise<z.infer<typeof myDisputeCaseResponseSchema>> {
+    return this.client.get(
+      `/api/v1/quests/${questId}/disputes/mine`,
+      myDisputeCaseResponseSchema,
+      { signal }
+    );
+  }
 
   /**
    * Files the viewer's one Dispute Case on a `QUEST_FAILED` Quest. The Server

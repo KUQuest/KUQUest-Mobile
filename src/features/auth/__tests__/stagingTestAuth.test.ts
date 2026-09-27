@@ -45,7 +45,7 @@ describe("signInWithStagingTestAccount", () => {
 
     expect(fetchImpl).toHaveBeenCalledWith(
       `${API_BASE_URL}/api/staging/test-auth/sign-in/account-1`,
-      expect.objectContaining({ method: "POST" })
+      expect.objectContaining({ method: "POST", credentials: "omit" })
     );
     expect(SecureStore.setItemAsync).toHaveBeenCalledWith(
       AUTH_COOKIE_STORAGE_KEY,
@@ -76,6 +76,7 @@ describe("signInWithStagingTestAccount", () => {
       `${API_BASE_URL}/api/staging/test-auth/sign-out`,
       expect.objectContaining({
         method: "POST",
+        credentials: "omit",
         headers: { Cookie: "better-auth.session_token=previous-session" },
       })
     );

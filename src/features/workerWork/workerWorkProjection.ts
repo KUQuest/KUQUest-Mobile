@@ -1,12 +1,17 @@
-import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
+import type {
+  QuestV2CandidateApplication,
+  QuestV2ProofSubmission,
+} from "@/api/questV2Contracts";
 import { isTerminalStatus } from "@/domain/questLifecycle";
 import {
+  QuestApplicationStatus,
   QuestAssignmentStatus,
   QuestMode,
   QuestNextAction,
   QuestParticipation,
   QuestProofStatus,
   QuestStatus,
+  QuestTeamStatus,
 } from "@/features/questBoard/domain/types";
 import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestTypes";
 import type { WorkerWorkItem, WorkerWorkProjection } from "./workerWorkTypes";
@@ -145,6 +150,7 @@ function toItem(
     dueAt: snapshot.dueAt,
     action: "open",
     needsAction: false,
+    destination: "workHub",
     ...status,
   };
 }
@@ -155,19 +161,59 @@ function compareDueAsc(a: WorkerWorkItem, b: WorkerWorkItem): number {
   return aKey.localeCompare(bKey);
 }
 
+function candidateApplicationItem(
+  application: QuestV2CandidateApplication
+): WorkerWorkItem {
+  const { quest } = application;
+  const base = {
+    questId: application.questId,
+    title: quest.title,
+    questState: quest.state,
+    startTime: quest.startTime,
+    dueAt: quest.dueAt,
+    action: "open" as const,
+    needsAction: false,
+    destination: "questDetail" as const,
+  };
+  switch (application.state) {
+    case QuestApplicationStatus.APPLICATION_APPLIED:
+    case QuestTeamStatus.TEAM_SUBMITTED:
+      return {
+        ...base,
+        status:
+          quest.state === QuestStatus.QUEST_OPEN
+            ? "pendingSelection"
+            : "notSelected",
+        tone: quest.state === QuestStatus.QUEST_OPEN ? "progress" : "neutral",
+      };
+    case QuestTeamStatus.TEAM_FORMING:
+      return { ...base, status: "teamForming", tone: "progress" };
+    case QuestApplicationStatus.APPLICATION_SELECTED:
+    case QuestTeamStatus.TEAM_SELECTED:
+      return { ...base, status: "selected", tone: "success" };
+    case QuestApplicationStatus.APPLICATION_REJECTED:
+    case QuestTeamStatus.TEAM_REJECTED:
+      return { ...base, status: "rejected", tone: "danger" };
+    case QuestApplicationStatus.APPLICATION_WITHDRAWN:
+    case QuestTeamStatus.TEAM_DISBANDED:
+      return { ...base, status: "withdrawn", tone: "neutral" };
+  }
+}
+
 /**
- * Splits the Worker's Assignment snapshots into the Work Management
- * sections. Active work is an Active Assignment on a non-terminal Quest
- * (an FCFS Quest can still be open while it fills); everything else the
- * Worker took part in is history.
+ * Projects Worker Assignments and Candidate applications into Work Management
+ * without representing an application as an Assignment.
  */
 export function projectWorkerWork(
-  snapshots: readonly LiveQuestSnapshot[]
+  snapshots: readonly LiveQuestSnapshot[],
+  applications: readonly QuestV2CandidateApplication[] = []
 ): WorkerWorkProjection {
   const needsAction: WorkerWorkItem[] = [];
   const otherActive: WorkerWorkItem[] = [];
   const history: WorkerWorkItem[] = [];
+  const seenQuestIds = new Set(snapshots.map((snapshot) => snapshot.quest.id));
 
+  // Assignment-backed snapshots take precedence over application records.
   for (const snapshot of snapshots) {
     const isActive =
       snapshot.assignment?.state === QuestAssignmentStatus.ASSIGNMENT_ACTIVE &&
@@ -177,6 +223,20 @@ export function projectWorkerWork(
       (item.needsAction ? needsAction : otherActive).push(item);
     } else if (snapshot.assignment || isTerminalStatus(snapshot.state)) {
       history.push(toItem(snapshot, historyStatus(snapshot)));
+    }
+  }
+  for (const application of applications) {
+    if (seenQuestIds.has(application.questId)) continue;
+    seenQuestIds.add(application.questId);
+    const item = candidateApplicationItem(application);
+    if (
+      item.status === "rejected" ||
+      item.status === "withdrawn" ||
+      item.status === "notSelected"
+    ) {
+      history.push(item);
+    } else {
+      otherActive.push(item);
     }
   }
 

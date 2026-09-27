@@ -2,6 +2,9 @@ const React = require("react");
 const { jest } = require("@jest/globals");
 const { View, Pressable, Text } = require("react-native");
 
+// React Native's jest Networking mock lacks clearCookies (src/api/ServerSocket.ts).
+require("react-native").NativeModules.Networking.clearCookies = jest.fn();
+
 // reanimated 4 / worklets 0.10's official jest mocks still hit native-module
 // init code outside a real app runtime (upstream immaturity, both packages
 // are brand new). Stub the minimal surface the generated template uses

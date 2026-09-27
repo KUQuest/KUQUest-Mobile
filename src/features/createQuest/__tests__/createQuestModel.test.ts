@@ -32,6 +32,28 @@ import type {
   QuestV2PublishCheck,
 } from "@/api/questV2Contracts";
 import { createQuestMessages } from "@/locales/createQuestMessages";
+import { getCreateQuestTagOptions } from "../presentation/createQuestPresentation";
+
+describe("Create Quest tag labels", () => {
+  const tags = [
+    { id: "tag-th", name: "Design", nameTh: "ออกแบบ" },
+    { id: "tag-null", name: "Technology", nameTh: null },
+  ];
+
+  test("uses Thai names when available and falls back to English names", () => {
+    expect(getCreateQuestTagOptions(tags, "th")).toEqual([
+      { label: "ออกแบบ", shortLabel: "ออกแบบ", value: "tag-th" },
+      { label: "Technology", shortLabel: "Technology", value: "tag-null" },
+    ]);
+  });
+
+  test("uses English names for English locale", () => {
+    expect(getCreateQuestTagOptions(tags, "en")).toEqual([
+      { label: "Design", shortLabel: "Design", value: "tag-th" },
+      { label: "Technology", shortLabel: "Technology", value: "tag-null" },
+    ]);
+  });
+});
 
 describe("Create Quest model", () => {
   describe("questDetailToDraft", () => {

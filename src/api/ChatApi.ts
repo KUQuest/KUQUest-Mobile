@@ -105,6 +105,12 @@ export const chatParticipantSchema = z.object({
   id: z.string().nullable(),
   role: z.enum(["HIRER", "WORKER"]),
   displayName: z.string(),
+  avatar: z
+    .object({
+      fileId: z.string().uuid(),
+      url: z.string().url(),
+    })
+    .nullable(),
 });
 export type ServerChatParticipant = z.infer<typeof chatParticipantSchema>;
 

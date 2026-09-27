@@ -1,4 +1,4 @@
-import { fireEvent } from "@testing-library/react-native";
+import { act, fireEvent } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import React from "react";
 import { BottomNav } from "../BottomNav";
@@ -10,6 +10,7 @@ import {
 } from "@/features/navigation/roleWorkspaceNavigation";
 import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
 import { navigationMessages } from "../../../locales/navigationMessages";
+import { StyleSheet } from "react-native";
 
 const mockUseProfileQuery = jest.fn();
 const mockUseSessionQuery = jest.fn();
@@ -415,5 +416,45 @@ describe("authenticated primary navigation", () => {
 
     expect(useRoleWorkspaceStore.getState().workspace).toBe("hirer");
     expect(navigate).toHaveBeenCalledTimes(2);
+  });
+
+  it("tints the navigation surface and selected destination with the active workspace", async () => {
+    const routes = hirerNavigationItems.map((item) => ({
+      key: `${item.routeName}-key`,
+      name: item.routeName,
+    }));
+    const view = await renderWithQueryClient(
+      React.createElement(BottomNav, {
+        state: { index: 0, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate: jest.fn(),
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
+    );
+
+    const getWorkspaceColors = () => {
+      const surface = StyleSheet.flatten(
+        view.getByTestId("bottom-nav-surface").props.style
+      );
+      const selected = StyleSheet.flatten(
+        view.getByTestId("tab-index").props.style
+      );
+      return [surface.backgroundColor, selected.backgroundColor];
+    };
+    const hirerColors = getWorkspaceColors();
+
+    await act(async () => {
+      await useRoleWorkspaceStore.getState().switchWorkspace("worker");
+    });
+
+    const workerColors = getWorkspaceColors();
+    expect(workerColors).not.toEqual(hirerColors);
+    expect(workerColors[0]).toBe("#F8ECE8");
+    expect(workerColors[1]).toBe("#C9A79A");
   });
 });

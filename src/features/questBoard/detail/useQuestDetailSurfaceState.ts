@@ -9,6 +9,7 @@ export interface QuestDetailSurfaceState {
   manualConfirmationOpen: boolean;
   dismissedIntent?: string;
   candidateReviewSheetOpen: boolean;
+
   teamSearchQuery: string;
   teamSelectedMemberIds: string[];
   teamReviewing: boolean;
@@ -39,6 +40,7 @@ const initialState: QuestDetailSurfaceState = {
   manualConfirmationOpen: false,
   dismissedIntent: undefined,
   candidateReviewSheetOpen: false,
+
   teamSearchQuery: "",
   teamSelectedMemberIds: [],
   teamReviewing: false,
@@ -77,6 +79,7 @@ function reduceSurfaceState(
         candidateReviewSheetOpen: false,
         selectedProposalId: null,
       };
+
     case "set-team-search":
       return { ...state, teamSearchQuery: action.value };
     case "set-team-selection":
@@ -100,6 +103,7 @@ export interface QuestDetailSurfaceTransitions {
   dismissIntent: (key: string) => void;
   openCandidateReview: () => void;
   closeCandidateReview: () => void;
+
   setTeamSearchQuery: (value: string) => void;
   setTeamSelectedMemberIds: (value: string[]) => void;
   setTeamReviewing: (value: boolean) => void;

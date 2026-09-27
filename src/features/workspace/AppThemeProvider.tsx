@@ -47,7 +47,7 @@ export function AppThemeProvider({ children }: PropsWithChildren) {
   // Keep imperative `colors` consumers synchronized during same render.
   setActiveRamp(workspace);
 
-  const themeColors = getThemeColors(scheme);
+  const themeColors = getThemeColors(scheme, workspace);
   const contextValue = useMemo<AppTheme>(
     () => ({ scheme, colors: themeColors }),
     [scheme, themeColors]

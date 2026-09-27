@@ -1,9 +1,11 @@
+import { useRouter } from "expo-router";
 import { useCallback } from "react";
 import { RefreshControl, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { StateView } from "@/components/ui/StateView";
+import { TopBar } from "@/components/ui/TopBar";
 import { QuestList } from "@/components/ui/QuestList";
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import { spacing } from "@/theme/spacing";
@@ -32,6 +34,7 @@ export default function QuestBoardScreen({
   currentStudentId,
   initialPreviewState = "populated",
 }: QuestBoardScreenProps) {
+  const router = useRouter();
   const board = useQuestBoardController(currentStudentId, initialPreviewState);
   const { locale, openOwnerProfile, openQuest, rewardSatang } = board;
   const { width, fontScale } = useWindowDimensions();
@@ -128,6 +131,13 @@ export default function QuestBoardScreen({
 
   return (
     <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
+      <TopBar
+        backLabel={board.messages.back}
+        onBackPress={() =>
+          router.canGoBack() ? router.back() : router.replace("/(tabs)")
+        }
+        variant="board"
+      />
       <QuestList
         accessibilityLabel={board.messages.resultsLabel}
         refreshControl={

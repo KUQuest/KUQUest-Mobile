@@ -17,6 +17,7 @@ export interface WorkerWorkItem {
   tone: WorkerWorkTone;
   action: WorkerWorkActionKey;
   needsAction: boolean;
+  destination: "questDetail" | "workHub";
 }
 
 export interface WorkerWorkProjection {

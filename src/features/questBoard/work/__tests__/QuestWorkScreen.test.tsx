@@ -1,5 +1,7 @@
+import { Fragment, useState } from "react";
 import { act, fireEvent, waitFor } from "@testing-library/react-native";
 
+import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import QuestWorkScreen from "../QuestWorkScreen";
 import {
   liveQuestService,
@@ -13,7 +15,14 @@ const mockBack = jest.fn();
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
 const mockGetSession = jest.fn();
+const mockMineDisputeQuery = jest.fn();
+const mockIsMutating = jest.fn(() => 0);
+const mockFileDispute = jest.fn();
 
+jest.mock("@tanstack/react-query", () => ({
+  ...jest.requireActual("@tanstack/react-query"),
+  useIsMutating: () => mockIsMutating(),
+}));
 jest.mock("expo-router", () => ({
   useFocusEffect: (effect: () => (() => void) | void) =>
     jest.requireActual("react").useEffect(effect, []),
@@ -35,6 +44,9 @@ jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 
+jest.mock("@/features/auth/sessionQueries", () => ({
+  useSessionQuery: () => ({ data: { user: { id: "worker-1" } } }),
+}));
 jest.mock("@/features/auth/AuthService", () => ({
   authService: { getSession: mockGetSession },
 }));
@@ -46,6 +58,15 @@ jest.mock("../../live/liveQuestService", () => ({
     confirmCompletion: jest.fn(),
     startWork: jest.fn(),
   },
+}));
+
+jest.mock("../../api/questBoardQueries", () => ({
+  ...jest.requireActual("../../api/questBoardQueries"),
+  useMyDisputeCaseQuery: () => mockMineDisputeQuery(),
+  useFileDisputeMutation: () => ({
+    mutate: (...args: unknown[]) => mockFileDispute(...args),
+    isPending: false,
+  }),
 }));
 
 const mockedGetSnapshot =
@@ -200,7 +221,115 @@ describe("QuestWorkScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetSession.mockResolvedValue({ user: { id: "worker-1" } });
+    mockIsMutating.mockReturnValue(0);
     mockedRespondToEdit.mockResolvedValue(makeSnapshot().editRequest as never);
+  });
+
+  it("gates Work Hub dispute action on server status and hides it after filing", async () => {
+    type MineQueryState = {
+      isPending: boolean;
+      isError: boolean;
+      isSuccess: boolean;
+      isFetching: boolean;
+      data: { case: { displayId: string } | null } | undefined;
+      refetch: () => void;
+    };
+    let updateDisputeQueryState: ((next: MineQueryState) => void) | undefined;
+    mockMineDisputeQuery.mockImplementation(() => {
+      const [state, setState] = useState<MineQueryState>({
+        isPending: true,
+        isError: false,
+        isSuccess: false,
+        isFetching: true,
+        data: undefined,
+        refetch: jest.fn(),
+      });
+      updateDisputeQueryState = setState;
+      return state;
+    });
+    mockedGetSnapshot.mockResolvedValue(
+      makeSnapshot({
+        state: "QUEST_FAILED",
+        nextAction: "CREATE_REVIEW",
+        quest: { state: "QUEST_FAILED" },
+        assignment: {
+          ...defaultAssignment,
+          state: "ASSIGNMENT_INCOMPLETE",
+          questState: "QUEST_FAILED",
+        },
+      })
+    );
+    const view = await renderWithQueryClient(
+      <Fragment>
+        <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+        <SweetAlertHost />
+      </Fragment>
+    );
+    await waitFor(() =>
+      expect(
+        view.getByText(
+          "This Quest is terminal. Work Chat remains available as a read-only archive."
+        )
+      ).toBeTruthy()
+    );
+    expect(view.queryByRole("button", { name: "File Dispute" })).toBeNull();
+
+    await act(async () =>
+      updateDisputeQueryState?.({
+        isPending: false,
+        isError: true,
+        isSuccess: false,
+        isFetching: false,
+        data: undefined,
+        refetch: jest.fn(),
+      })
+    );
+    expect(view.getByText("Couldn't check dispute status.")).toBeTruthy();
+    expect(view.getByRole("button", { name: "Retry" })).toBeTruthy();
+    expect(view.queryByRole("button", { name: "File Dispute" })).toBeNull();
+
+    await act(async () =>
+      updateDisputeQueryState?.({
+        isPending: false,
+        isError: false,
+        isSuccess: true,
+        isFetching: false,
+        data: { case: null },
+        refetch: jest.fn(),
+      })
+    );
+    await fireEvent.press(view.getByRole("button", { name: "File Dispute" }));
+    await fireEvent.press(view.getByRole("button", { name: "File" }));
+    await act(async () => {
+      mockIsMutating.mockReturnValue(1);
+      updateDisputeQueryState?.({
+        isPending: false,
+        isError: false,
+        isSuccess: true,
+        isFetching: false,
+        data: { case: null },
+        refetch: jest.fn(),
+      });
+    });
+    expect(
+      view.getByRole("button", { name: "File Dispute" }).props
+        .accessibilityState
+    ).toEqual({ disabled: true, busy: true });
+    await act(async () => {
+      mockIsMutating.mockReturnValue(0);
+      mockFileDispute.mock.calls[0][1].onSuccess({ displayId: "DC-000123" });
+      updateDisputeQueryState?.({
+        isPending: false,
+        isError: false,
+        isSuccess: true,
+        isFetching: false,
+        data: { case: { displayId: "DC-000123" } },
+        refetch: jest.fn(),
+      });
+    });
+
+    expect(view.getByText("Dispute filed")).toBeTruthy();
+    expect(view.queryByRole("button", { name: "File Dispute" })).toBeNull();
   });
 
   it("renders an assigned wait state with canonical conditions and due countdown", async () => {

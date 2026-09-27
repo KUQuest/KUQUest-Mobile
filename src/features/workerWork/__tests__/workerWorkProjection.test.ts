@@ -135,4 +135,148 @@ describe("projectWorkerWork", () => {
       cancelled: "cancelled",
     });
   });
+  it("projects Candidate applications without Assignments into active and history", () => {
+    const quest = {
+      title: "Candidate Quest",
+      startTime: "2026-10-01T09:00:00Z",
+      dueAt: null,
+      mode: "CANDIDATE" as const,
+      participation: "SINGLE" as const,
+      state: "QUEST_OPEN" as const,
+    };
+    const applications = [
+      {
+        id: "application-applied",
+        questId: "quest-applied",
+        memberId: "worker-1",
+        kind: "SINGLE" as const,
+        state: "APPLICATION_APPLIED" as const,
+        appliedAt: "2026-09-01T09:00:00Z",
+        quest,
+      },
+      {
+        id: "application-team-submitted",
+        questId: "quest-team-submitted",
+        memberId: "worker-1",
+        kind: "TEAM" as const,
+        state: "TEAM_SUBMITTED" as const,
+        appliedAt: "2026-09-01T09:00:00Z",
+        quest: { ...quest, participation: "GROUP" as const },
+      },
+      {
+        id: "application-rejected",
+        questId: "quest-rejected",
+        memberId: "worker-1",
+        kind: "SINGLE" as const,
+        state: "APPLICATION_REJECTED" as const,
+        appliedAt: "2026-09-01T09:00:00Z",
+        quest,
+      },
+      {
+        id: "application-closed",
+        questId: "quest-closed",
+        memberId: "worker-1",
+        kind: "SINGLE" as const,
+        state: "APPLICATION_APPLIED" as const,
+        appliedAt: "2026-09-01T09:00:00Z",
+        quest: { ...quest, state: "QUEST_ASSIGNED" as const },
+      },
+      {
+        id: "application-selected-active",
+        questId: "quest-selected",
+        memberId: "worker-1",
+        kind: "SINGLE" as const,
+        state: "APPLICATION_SELECTED" as const,
+        appliedAt: "2026-09-01T09:00:00Z",
+        quest: { ...quest, state: "QUEST_ASSIGNED" as const },
+      },
+      {
+        id: "application-selected",
+        questId: "quest-assigned",
+        memberId: "worker-1",
+        kind: "SINGLE" as const,
+        state: "APPLICATION_SELECTED" as const,
+        appliedAt: "2026-09-01T09:00:00Z",
+        quest: { ...quest, state: "QUEST_ASSIGNED" as const },
+      },
+    ];
+
+    const projection = projectWorkerWork(
+      [workerSnapshot({ id: "quest-assigned", title: "Assigned Quest" })],
+      applications
+    );
+
+    expect(projection.otherActive).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          questId: "quest-applied",
+          status: "pendingSelection",
+        }),
+        expect.objectContaining({
+          questId: "quest-team-submitted",
+          status: "pendingSelection",
+        }),
+        expect.objectContaining({
+          questId: "quest-selected",
+          status: "selected",
+          destination: "questDetail",
+        }),
+      ])
+    );
+    expect(projection.history).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          questId: "quest-rejected",
+          status: "rejected",
+        }),
+        expect.objectContaining({
+          questId: "quest-closed",
+          status: "notSelected",
+        }),
+      ])
+    );
+    expect(
+      [
+        ...projection.needsAction,
+        ...projection.otherActive,
+        ...projection.history,
+      ].filter((item) => item.questId === "quest-assigned")
+    ).toEqual([
+      expect.objectContaining({
+        status: "inProgress",
+        questState: "QUEST_IN_PROGRESS",
+      }),
+    ]);
+  });
+
+  it("shows forming Candidate Teams as active", () => {
+    const projection = projectWorkerWork(
+      [],
+      [
+        {
+          id: "forming-team",
+          questId: "quest-forming",
+          memberId: "worker-1",
+          kind: "TEAM",
+          state: "TEAM_FORMING",
+          appliedAt: "2026-09-01T09:00:00Z",
+          quest: {
+            title: "Form a team",
+            startTime: "2026-10-01T09:00:00Z",
+            dueAt: null,
+            mode: "CANDIDATE",
+            participation: "GROUP",
+            state: "QUEST_OPEN",
+          },
+        },
+      ]
+    );
+
+    expect(projection.otherActive[0]).toEqual(
+      expect.objectContaining({
+        questId: "quest-forming",
+        status: "teamForming",
+      })
+    );
+  });
 });

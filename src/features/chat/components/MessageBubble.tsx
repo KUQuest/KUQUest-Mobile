@@ -270,11 +270,16 @@ export function MessageBubble({
   messages: ChatMessages;
   onFilePress: (attachment: RenderAttachment) => void;
   onImagePress?: (url: string, name: string, timestamp?: string) => void;
-  onProfilePress?: () => void;
+  onProfilePress?: (senderId: string) => void;
   onReportMessage?: (message: DisplayChatMessage) => void;
   isCandidateInquiry?: boolean;
 }) {
-  const mine = message.sender === "me";
+  const isSystem = message.kind === "SYSTEM";
+  const mine = message.sender === "me" && !isSystem;
+  const senderId = message.senderId;
+  const senderName = message.senderName ?? conversation.participantName;
+  const onAvatarPress =
+    senderId && onProfilePress ? () => onProfilePress(senderId) : undefined;
   const text = message.text ? localizedText(message.text, locale) : undefined;
   const messageTime = formatTimeInBangkok(message.createdAt);
   const canReport =
@@ -296,34 +301,49 @@ export function MessageBubble({
     : undefined;
   return (
     <View
-      className={cn(styles.messageRow, mine && styles.messageRowMe)}
+      className={cn(
+        styles.messageRow,
+        mine && styles.messageRowMe,
+        isSystem && styles.messageRowSystem
+      )}
       testID={`chat-message-${message.id}`}
     >
-      {!mine ? (
+      {!mine && !isSystem ? (
         <Avatar
           accessibilityLabel={
-            onProfilePress
-              ? `View profile of ${conversation.participantName}`
-              : undefined
+            onAvatarPress ? `View profile of ${senderName}` : undefined
           }
-          cacheKey={conversation.participantAvatarFileId}
           className={styles.messageAvatar}
-          imageTestID={`chat-avatar-image-${conversation.participantId ?? conversation.participantName}`}
-          name={conversation.participantName}
-          onPress={onProfilePress}
+          imageTestID={`chat-avatar-image-${senderId ?? `${senderName}-${message.id}`}`}
+          name={senderName}
+          onPress={onAvatarPress}
           size={32}
           style={{ backgroundColor: conversation.avatarColor }}
-          testID={`chat-avatar-${conversation.participantId ?? conversation.participantName}`}
+          testID={`chat-avatar-${senderId ?? `${senderName}-${message.id}`}`}
           textClassName={styles.messageAvatarText}
-          uri={conversation.participantAvatarUrl}
         />
       ) : null}
-      <View className={cn(styles.messageStack, mine && styles.messageStackMe)}>
+      <View
+        className={cn(
+          styles.messageStack,
+          mine && styles.messageStackMe,
+          isSystem && styles.messageStackSystem
+        )}
+      >
+        {!mine && !isSystem && !isCandidateInquiry && message.senderName ? (
+          <Text className={styles.messageAuthor}>{message.senderName}</Text>
+        ) : null}
         {text ? (
           <Pressable
             accessibilityActions={reportActions}
-            accessibilityRole={canReport ? "button" : undefined}
-            className={cn(styles.messageBubble, mine && styles.messageBubbleMe)}
+            accessibilityRole={
+              isSystem ? "text" : canReport ? "button" : undefined
+            }
+            className={cn(
+              styles.messageBubble,
+              mine && styles.messageBubbleMe,
+              isSystem && styles.messageBubbleSystem
+            )}
             delayLongPress={350}
             onAccessibilityAction={handleAccessibilityAction}
             onLongPress={handleLongPress}

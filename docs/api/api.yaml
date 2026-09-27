@@ -1159,6 +1159,7 @@ paths:
                                 type: string
                               - minimum: 0
                                 type: integer
+                additionalProperties: false
         '401':
           description: Response for status 401
           content:
@@ -1549,6 +1550,7 @@ paths:
                               anyOf:
                                 - type: string
                                 - type: 'null'
+                additionalProperties: false
         '400':
           description: Response for status 400
           content:
@@ -2221,6 +2223,7 @@ paths:
                                   name:
                                     example: Computer Engineering
                                     type: string
+                additionalProperties: false
         '401':
           description: Response for status 401
           content:
@@ -2289,7 +2292,7 @@ paths:
                       telephone:
                         nullable: true
                         anyOf:
-                          - example: '0800000000'
+                          - example: 0800000000
                             type: string
                           - type: 'null'
                       occupationId:
@@ -2324,6 +2327,7 @@ paths:
                           - type: 'null'
                       completed:
                         type: boolean
+                additionalProperties: false
         '401':
           description: Response for status 401
           content:
@@ -2403,7 +2407,7 @@ paths:
                   type: string
                 telephone:
                   pattern: ^0[0-9]{9}$
-                  example: '0800000000'
+                  example: 0800000000
                   type: string
                 occupationId:
                   format: uuid
@@ -2438,7 +2442,7 @@ paths:
                   type: string
                 telephone:
                   pattern: ^0[0-9]{9}$
-                  example: '0800000000'
+                  example: 0800000000
                   type: string
                 occupationId:
                   format: uuid
@@ -2473,7 +2477,7 @@ paths:
                   type: string
                 telephone:
                   pattern: ^0[0-9]{9}$
-                  example: '0800000000'
+                  example: 0800000000
                   type: string
                 occupationId:
                   format: uuid
@@ -2503,6 +2507,7 @@ paths:
                   success:
                     const: true
                     type: boolean
+                additionalProperties: false
         '400':
           description: Response for status 400
           content:
@@ -2663,7 +2668,7 @@ paths:
                       telephone:
                         nullable: true
                         anyOf:
-                          - example: '0800000000'
+                          - example: 0800000000
                             type: string
                           - type: 'null'
                       studentId:
@@ -2837,7 +2842,7 @@ paths:
                   type: string
                 telephone:
                   pattern: ^0[0-9]{9}$
-                  example: '0800000000'
+                  example: 0800000000
                   type: string
                 departmentId:
                   format: uuid
@@ -2864,7 +2869,7 @@ paths:
                   type: string
                 telephone:
                   pattern: ^0[0-9]{9}$
-                  example: '0800000000'
+                  example: 0800000000
                   type: string
                 departmentId:
                   format: uuid
@@ -2891,7 +2896,7 @@ paths:
                   type: string
                 telephone:
                   pattern: ^0[0-9]{9}$
-                  example: '0800000000'
+                  example: 0800000000
                   type: string
                 departmentId:
                   format: uuid
@@ -2950,7 +2955,7 @@ paths:
                       telephone:
                         nullable: true
                         anyOf:
-                          - example: '0800000000'
+                          - example: 0800000000
                             type: string
                           - type: 'null'
                       studentId:
@@ -3245,6 +3250,7 @@ paths:
                                     type: string
                                   - minimum: 0
                                     type: integer
+                additionalProperties: false
         '401':
           description: Response for status 401
           content:
@@ -3407,6 +3413,7 @@ paths:
                         anyOf:
                           - type: string
                           - type: 'null'
+                additionalProperties: false
         '400':
           description: Response for status 400
           content:
@@ -3602,6 +3609,7 @@ paths:
                         anyOf:
                           - type: string
                           - type: 'null'
+                additionalProperties: false
         '400':
           description: Response for status 400
           content:
@@ -9944,6 +9952,7 @@ paths:
                   success:
                     const: true
                     type: boolean
+                additionalProperties: false
         '401':
           description: Response for status 401
           content:
@@ -10180,6 +10189,178 @@ paths:
                 additionalProperties: false
         '409':
           description: Response for status 409
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+  /api/v1/quests/{questId}/disputes/mine:
+    get:
+      tags:
+        - Quest Disputes
+      summary: Read authenticated Member's filed Dispute Case on a Quest
+      description: Returns the Dispute Case filed by the authenticated Member on this
+        Quest, or null if none exists.
+      operationId: getMyQuestDisputeCase
+      security:
+        - betterAuthSession: []
+      parameters:
+        - name: questId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        '200':
+          description: Response for status 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - case
+                    properties:
+                      case:
+                        nullable: true
+                        anyOf:
+                          - type: object
+                            required:
+                              - id
+                              - displayId
+                              - questId
+                              - filerUserId
+                              - openedByAdminId
+                              - status
+                              - version
+                              - resolvedWorkerId
+                              - resolvedAmountSatang
+                              - resolvedByAdminId
+                              - resolvedAt
+                              - createdAt
+                              - updatedAt
+                            properties:
+                              id:
+                                format: uuid
+                                type: string
+                              displayId:
+                                type: string
+                              questId:
+                                format: uuid
+                                type: string
+                              filerUserId:
+                                format: uuid
+                                type: string
+                              openedByAdminId:
+                                nullable: true
+                                anyOf:
+                                  - format: uuid
+                                    type: string
+                                  - type: 'null'
+                              status:
+                                anyOf:
+                                  - const: DISPUTE_CASE_PENDING
+                                    type: string
+                                  - const: DISPUTE_CASE_DISMISSED
+                                    type: string
+                                  - const: DISPUTE_CASE_RESOLVED
+                                    type: string
+                              version:
+                                minimum: 1
+                                anyOf:
+                                  - format: integer
+                                    default: 0
+                                    type: string
+                                  - minimum: 1
+                                    type: integer
+                              resolvedWorkerId:
+                                nullable: true
+                                anyOf:
+                                  - format: uuid
+                                    type: string
+                                  - type: 'null'
+                              resolvedAmountSatang:
+                                nullable: true
+                                anyOf:
+                                  - minimum: 1
+                                    anyOf:
+                                      - format: integer
+                                        default: 0
+                                        type: string
+                                      - minimum: 1
+                                        type: integer
+                                  - type: 'null'
+                              resolvedByAdminId:
+                                nullable: true
+                                anyOf:
+                                  - format: uuid
+                                    type: string
+                                  - type: 'null'
+                              resolvedAt:
+                                nullable: true
+                                anyOf:
+                                  - format: date-time
+                                    type: string
+                                  - type: 'null'
+                              createdAt:
+                                format: date-time
+                                type: string
+                              updatedAt:
+                                format: date-time
+                                type: string
+                          - type: 'null'
+        '401':
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        '500':
+          description: Response for status 500
           content:
             application/json:
               schema:
@@ -11958,6 +12139,7 @@ paths:
                             createdAt:
                               format: date-time
                               type: string
+                additionalProperties: false
         '400':
           description: Response for status 400
           content:
@@ -12115,6 +12297,7 @@ paths:
                             createdAt:
                               format: date-time
                               type: string
+                additionalProperties: false
         '400':
           description: Response for status 400
           content:
@@ -13865,6 +14048,167 @@ paths:
                 additionalProperties: false
         '503':
           description: Response for status 503
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+  /api/v2/applications/mine:
+    get:
+      tags:
+        - Quest Candidates v2
+      summary: List authenticated Member's Candidate applications
+      description: Lists the authenticated Member's individual Candidate applications
+        and Candidate Team memberships across all Quests, including rejected and terminal
+        history.
+      operationId: listMyCandidateApplicationsV2
+      security:
+        - betterAuthSession: []
+      responses:
+        '200':
+          description: Response for status 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - items
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - id
+                            - questId
+                            - memberId
+                            - kind
+                            - state
+                            - appliedAt
+                            - quest
+                          properties:
+                            id:
+                              format: uuid
+                              type: string
+                            questId:
+                              format: uuid
+                              type: string
+                            memberId:
+                              format: uuid
+                              type: string
+                            kind:
+                              type: string
+                              enum:
+                                - SINGLE
+                                - TEAM
+                            state:
+                              anyOf:
+                                - anyOf:
+                                    - const: APPLICATION_APPLIED
+                                      type: string
+                                    - const: APPLICATION_SELECTED
+                                      type: string
+                                    - const: APPLICATION_REJECTED
+                                      type: string
+                                    - const: APPLICATION_WITHDRAWN
+                                      type: string
+                                - anyOf:
+                                    - const: TEAM_FORMING
+                                      type: string
+                                    - const: TEAM_SUBMITTED
+                                      type: string
+                                    - const: TEAM_SELECTED
+                                      type: string
+                                    - const: TEAM_REJECTED
+                                      type: string
+                                    - const: TEAM_DISBANDED
+                                      type: string
+                            appliedAt:
+                              format: date-time
+                              type: string
+                            quest:
+                              type: object
+                              required:
+                                - title
+                                - startTime
+                                - dueAt
+                                - mode
+                                - participation
+                                - state
+                              properties:
+                                title:
+                                  type: string
+                                startTime:
+                                  format: date-time
+                                  type: string
+                                dueAt:
+                                  nullable: true
+                                  anyOf:
+                                    - format: date-time
+                                      type: string
+                                    - type: 'null'
+                                mode:
+                                  const: CANDIDATE
+                                  type: string
+                                participation:
+                                  type: string
+                                  enum:
+                                    - SINGLE
+                                    - GROUP
+                                state:
+                                  type: string
+        '401':
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        '500':
+          description: Response for status 500
           content:
             application/json:
               schema:
@@ -22757,6 +23101,7 @@ paths:
                         anyOf:
                           - type: string
                           - type: 'null'
+                additionalProperties: false
         '400':
           description: Response for status 400
           content:
@@ -32185,6 +32530,7 @@ paths:
                   success:
                     const: true
                     type: boolean
+                additionalProperties: false
         '401':
           description: Response for status 401
           content:
@@ -39553,6 +39899,7 @@ paths:
                             updatedAt:
                               format: date-time
                               type: string
+                additionalProperties: false
         '401':
           description: Response for status 401
           content:
@@ -40804,6 +41151,7 @@ paths:
                         createdAt:
                           format: date-time
                           type: string
+                additionalProperties: false
         '401':
           description: Response for status 401
           content:
@@ -41153,6 +41501,7 @@ paths:
                   success:
                     const: true
                     type: boolean
+                additionalProperties: false
         '400':
           description: Response for status 400
           content:
@@ -42246,6 +42595,7 @@ paths:
                         updatedAt:
                           format: date-time
                           type: string
+                additionalProperties: false
         '401':
           description: Response for status 401
           content:
@@ -43054,17 +43404,24 @@ paths:
                           required:
                             - id
                             - name
+                            - nameTh
                           properties:
                             id:
                               format: uuid
                               type: string
                             name:
                               type: string
+                            nameTh:
+                              nullable: true
+                              anyOf:
+                                - type: string
+                                - type: 'null'
                       nextCursor:
                         nullable: true
                         anyOf:
                           - type: string
                           - type: 'null'
+                additionalProperties: false
         '400':
           description: Response for status 400
           content:
@@ -43562,6 +43919,7 @@ paths:
                         anyOf:
                           - type: string
                           - type: 'null'
+                additionalProperties: false
         '400':
           description: Response for status 400
           content:
@@ -45799,6 +46157,7 @@ paths:
                         anyOf:
                           - type: string
                           - type: 'null'
+                additionalProperties: false
         '400':
           description: Response for status 400
           content:
@@ -48083,6 +48442,7 @@ paths:
                               type: string
                       nextCursor:
                         type: 'null'
+                additionalProperties: false
         '400':
           description: Response for status 400
           content:
@@ -51511,6 +51871,7 @@ paths:
                   success:
                     const: true
                     type: boolean
+                additionalProperties: false
         '400':
           description: Response for status 400
           content:
@@ -52404,6 +52765,7 @@ paths:
                               type: boolean
                       nextCursor:
                         type: 'null'
+                additionalProperties: false
         '400':
           description: Response for status 400
           content:
@@ -53137,6 +53499,7 @@ paths:
                   success:
                     const: true
                     type: boolean
+                additionalProperties: false
         '400':
           description: Response for status 400
           content:

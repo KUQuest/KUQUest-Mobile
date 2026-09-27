@@ -78,7 +78,7 @@ export function WorkerWorkCard({
   const tone = toneClasses[item.tone];
   const statusLabel = messages.status[item.status];
   const openHint =
-    item.action === "consentUnderfilled"
+    item.action === "consentUnderfilled" || item.destination === "questDetail"
       ? messages.openQuest(item.title)
       : messages.openWork(item.title);
   const awaitingStart =

@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 
-KUQuest presents separate Hirer and Worker Role Workspaces for the same Member rather than treating either role as a permanent account type. The Hirer Workspace uses Home, Money, Create Quest, Chat, and Profile as its five primary destinations; the Worker Workspace uses Home, Money, Work Management, Chat, and Profile. The selected workspace remembers the last choice after the first launch defaults to Hirer. Workspace switching is explicit from Settings and returns to the target workspace Home; primary navigation and workspace Home headers do not switch roles implicitly.
+KUQuest presents separate Hirer and Worker Role Workspaces for the same Member rather than treating either role as a permanent account type. The Hirer Workspace uses Home, Money, Create Quest, Chat, and Profile as its five primary destinations; the Worker Workspace uses Home, Money, Work Management, Chat, and Profile. The selected workspace remembers the last choice after the first launch defaults to Hirer. Workspace switching is explicit from Settings and via an upper-right quick switch on either Home; both return to the target workspace Home.
 
 ## Consequences
 

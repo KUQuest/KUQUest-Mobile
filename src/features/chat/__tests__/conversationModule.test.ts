@@ -27,6 +27,8 @@ describe("conversationModule Canonical Adapter", () => {
     expect(toDisplayMessage(makeServerMessage(), "user-1")).toEqual({
       id: "server-message-1",
       sender: "me",
+      senderId: "user-1",
+      senderName: "Somchai",
       text: { en: "First message", th: "First message" },
       createdAt: "2026-09-15T12:05:00Z",
       sequence: 1,
@@ -46,6 +48,32 @@ describe("conversationModule Canonical Adapter", () => {
 
     expect(normalized.id).toBe("server-accepted-id");
     expect(normalized.sender).toBe("other");
+  });
+  it("preserves each message author's identity for group conversations", () => {
+    const hirerMessage = toDisplayMessage(
+      makeServerMessage({
+        sender: { id: "hirer-1", displayName: "Hirer" },
+      }),
+      "worker-1"
+    );
+    const workerMessage = toDisplayMessage(
+      makeServerMessage({
+        id: "worker-message",
+        sender: { id: "worker-2", displayName: "Worker Two" },
+      }),
+      "worker-1"
+    );
+
+    expect(hirerMessage).toMatchObject({
+      sender: "other",
+      senderId: "hirer-1",
+      senderName: "Hirer",
+    });
+    expect(workerMessage).toMatchObject({
+      sender: "other",
+      senderId: "worker-2",
+      senderName: "Worker Two",
+    });
   });
 
   it("normalizes attachment metadata, dimensions, and presentation kind", () => {

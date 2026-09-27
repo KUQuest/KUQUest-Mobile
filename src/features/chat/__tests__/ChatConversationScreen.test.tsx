@@ -30,6 +30,7 @@ describe("ChatConversationScreen", () => {
       conversationPending: true,
       conversationLoadFailed: false,
       conversation: null,
+      candidateInquiryClosed: false,
       refreshing: false,
       refresh: jest.fn(),
       retryLoad: jest.fn(),
@@ -107,6 +108,75 @@ describe("ChatConversationScreen", () => {
     expect(view.queryByLabelText(chatMessages.en.search)).toBeNull();
     expect(view.queryByLabelText(chatMessages.en.searchFiles)).toBeNull();
     expect(view.queryByLabelText(chatMessages.en.moreOptions)).toBeNull();
+  });
+
+  it("shows why a closed Quest inquiry is read-only", async () => {
+    const getController =
+      mockedUseChatConversationController.getMockImplementation();
+    if (!getController) {
+      throw new Error("Chat conversation controller mock is not configured");
+    }
+    mockedUseChatConversationController.mockReturnValue({
+      ...getController("CANDIDATE_INQUIRY"),
+      conversationPending: false,
+      conversationType: "CANDIDATE_INQUIRY",
+      canWrite: false,
+      readOnlyDescription: chatMessages.en.candidateInquiryClosed,
+      conversation: {
+        id: "inquiry-1",
+        questId: "quest-1",
+        questTitle: { en: "Campus cleanup", th: "ทำความสะอาดวิทยาเขต" },
+        participantName: "Sora Student",
+        participantRole: "owner",
+        initials: "SS",
+        avatarColor: "#208AEF",
+        latestMessage: { en: "Hello", th: "สวัสดี" },
+        latestAt: "2026-09-24T03:30:00Z",
+        unreadCount: 0,
+        messages: [],
+        capability: {
+          conversationId: "inquiry-1",
+          canRead: true,
+          canWrite: false,
+          readOnly: true,
+        },
+      },
+    });
+
+    const view = await renderWithAppTheme(
+      <ChatConversationScreen conversationType="CANDIDATE_INQUIRY" />
+    );
+
+    expect(view.queryByLabelText(chatMessages.en.typeOwnerMessage)).toBeNull();
+    expect(view.getByText(chatMessages.en.candidateInquiryClosed)).toBeTruthy();
+    expect(
+      view.getByTestId("candidate-inquiry-closed").props.accessibilityRole
+    ).toBe("text");
+  });
+
+  it("shows closed explanation after a candidate inquiry send returns 409", async () => {
+    const getController =
+      mockedUseChatConversationController.getMockImplementation();
+    if (!getController) {
+      throw new Error("Chat conversation controller mock is not configured");
+    }
+    mockedUseChatConversationController.mockReturnValue({
+      ...getController("CANDIDATE_INQUIRY"),
+      conversationPending: false,
+      conversationLoadFailed: false,
+      conversationType: "CANDIDATE_INQUIRY",
+      candidateInquiryClosed: true,
+      conversation: null,
+    });
+
+    const view = await renderWithAppTheme(
+      <ChatConversationScreen conversationType="CANDIDATE_INQUIRY" />
+    );
+
+    expect(view.getByTestId("candidate-inquiry-closed")).toHaveTextContent(
+      chatMessages.en.candidateInquiryClosed
+    );
+    expect(view.queryByText(chatMessages.en.loadError)).toBeNull();
   });
 
   it("opens the correct quest route from each conversation type", async () => {
