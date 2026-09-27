@@ -55,6 +55,7 @@ export interface GroupQuestMessages {
   joinTeam: string;
   joiningTeam: string;
   partialRosterHint: string;
+  reviewPartialStart: string;
   reviewRoster: string;
   reviewTitle: string;
   reviewDescription: string;
@@ -249,6 +250,7 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     partialConsentTitle: "Start with the current team?",
     partialConsentSubtitle:
       "The roster is frozen while every required person votes.",
+    reviewPartialStart: "Review roster and respond",
     frozenRoster: "Frozen roster",
     voteStatus: "Vote status",
     hirer: "Hirer",
@@ -390,6 +392,7 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     proposalCount: (count) => `ข้อเสนอ ${count} รายการ`,
     partialConsentTitle: "เริ่มงานด้วยทีมปัจจุบันไหม",
     partialConsentSubtitle: "รายชื่อถูกล็อกไว้ระหว่างรอทุกคนลงคะแนน",
+    reviewPartialStart: "ดูรายชื่อและตอบรับการเริ่มงาน",
     frozenRoster: "รายชื่อที่ล็อกไว้",
     voteStatus: "สถานะการลงคะแนน",
     hirer: "ผู้ว่าจ้าง",

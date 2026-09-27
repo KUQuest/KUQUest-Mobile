@@ -25,13 +25,11 @@ import {
 import type { QuestV2Underfilled } from "@/api/questV2Contracts";
 import type { PartialGroupStartVoter } from "../types";
 import styles from "../groupQuestStyles";
-import { BottomSheet } from "@/components/ui/BottomSheet";
 
 export type PartialGroupStartSurfaceState =
   "ready" | "loading" | "error" | "empty";
 
-export interface PartialGroupStartConsentSheetProps {
-  visible: boolean;
+export interface PartialGroupStartConsentContentProps {
   consent?: QuestPartialStartConsent | null;
   /** Canonical v2 underfilled projection. Legacy consent remains supported for fixtures. */
   underfilled?: QuestV2Underfilled | null;
@@ -54,8 +52,6 @@ export interface PartialGroupStartConsentSheetProps {
   onApprove?: () => void;
   onReject?: () => void;
   onRetry?: () => void;
-  onClose: () => void;
-  bottomInset?: number;
   locale?: SupportedLocale;
 }
 
@@ -137,8 +133,7 @@ function ErrorState({
   );
 }
 
-export function PartialGroupStartConsentSheet({
-  visible,
+export function PartialGroupStartConsentContent({
   consent = null,
   underfilled = null,
   voters = [],
@@ -160,10 +155,8 @@ export function PartialGroupStartConsentSheet({
   onApprove,
   onReject,
   onRetry,
-  onClose,
-  bottomInset,
   locale: localeProp,
-}: PartialGroupStartConsentSheetProps) {
+}: PartialGroupStartConsentContentProps) {
   const { colors } = useAppTheme();
   const contextLocale = useLocale().locale;
   const locale = localeProp ?? contextLocale;
@@ -236,10 +229,10 @@ export function PartialGroupStartConsentSheet({
       : Number.NaN;
   const hasLiveDeadline = Number.isFinite(deadline) && deadline > clock;
   useEffect(() => {
-    if (!visible || !hasLiveDeadline) return undefined;
+    if (!hasLiveDeadline) return undefined;
     const interval = setInterval(() => setClock(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, [hasLiveDeadline, visible]);
+  }, [hasLiveDeadline]);
   const remaining = Number.isFinite(deadline)
     ? Math.max(0, deadline - clock)
     : 0;
@@ -612,19 +605,7 @@ export function PartialGroupStartConsentSheet({
       </ScrollView>
     );
 
-  return (
-    <BottomSheet
-      bottomInset={bottomInset}
-      closeLabel={messages.close}
-      onClose={onClose}
-      subtitle={messages.partialConsentSubtitle}
-      testID="partial-group-start-consent-sheet"
-      title={messages.partialConsentTitle}
-      visible={visible}
-    >
-      {content}
-    </BottomSheet>
-  );
+  return content;
 }
 
 function VoterRow({
@@ -676,4 +657,4 @@ function VoterRow({
   );
 }
 
-PartialGroupStartConsentSheet.displayName = "PartialGroupStartConsentSheet";
+PartialGroupStartConsentContent.displayName = "PartialGroupStartConsentContent";

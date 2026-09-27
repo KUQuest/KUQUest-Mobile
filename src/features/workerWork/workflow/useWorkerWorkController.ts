@@ -86,12 +86,15 @@ export function useWorkerWorkController({
 
   const openWork = useCallback(
     (item: WorkerWorkItem) => {
-      // Underfilled-start consent and still-open Quests live on Quest Detail;
-      // everything else, including proof submission, is in the Work Hub.
-      if (
-        item.questState === QuestStatus.QUEST_OPEN ||
-        item.action === "consentUnderfilled"
-      ) {
+      if (item.action === "consentUnderfilled") {
+        router.push({
+          pathname: "/quest/[id]/partial-start",
+          params: { id: item.questId },
+        });
+        return;
+      }
+      // Still-open Quests live on Quest Detail; proof work stays in the Work Hub.
+      if (item.questState === QuestStatus.QUEST_OPEN) {
         router.push({ pathname: "/quest/[id]", params: { id: item.questId } });
         return;
       }

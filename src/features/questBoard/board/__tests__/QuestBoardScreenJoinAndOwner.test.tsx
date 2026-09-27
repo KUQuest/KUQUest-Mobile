@@ -1,9 +1,14 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import { SweetAlertHost } from "@/components/ui/SweetAlert";
-import { renderWithQueryClient as render } from "@/testing/queryTestUtils";
+import {
+  renderWithAppTheme,
+  renderWithQueryClient as render,
+} from "@/testing/queryTestUtils";
 
 import QuestBoardScreen from "../QuestBoardScreen";
 import QuestDetailScreen from "../../detail/QuestDetailScreen";
+import PartialGroupStartConsentScreen from "../../teamAssemble/PartialGroupStartConsentScreen";
 import { liveQuestService } from "../../live/liveQuestService";
 import { authService } from "@/features/auth/AuthService";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
@@ -528,21 +533,53 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
       },
     });
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
-    (liveQuestService.respondUnderfilledConsent as jest.Mock).mockResolvedValue(
-      snapshot.underfilled
+    const consentResponse = Promise.withResolvers<unknown>();
+    (liveQuestService.respondUnderfilledConsent as jest.Mock).mockReturnValue(
+      consentResponse.promise
+    );
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        mutations: { retry: false },
+        queries: { retry: false },
+      },
+    });
+
+    const view = await renderWithAppTheme(
+      <QueryClientProvider client={queryClient}>
+        <QuestDetailScreen
+          questId="quest-live-1"
+          studentId="current-worker-1"
+        />
+      </QueryClientProvider>
     );
 
-    const view = await render(
-      <QuestDetailScreen questId="quest-live-1" studentId="current-worker-1" />
-    );
-
-    await waitFor(() =>
+    await waitFor(() => {
       expect(
         view.getByTestId("quest-live-underfilled-entry-action")
-      ).toBeTruthy()
+      ).toBeTruthy();
+      expect(view.getByText("Review roster and respond")).toBeTruthy();
+    });
+    expect(view.queryByTestId("partial-group-start-approve")).toBeNull();
+    await fireEvent.press(
+      view.getByTestId("quest-live-underfilled-entry-action")
     );
-    fireEvent.press(view.getByTestId("quest-live-underfilled-entry-action"));
-    fireEvent.press(await view.findByTestId("partial-group-start-approve"));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]/partial-start",
+      params: { id: "quest-live-1", studentId: "current-worker-1" },
+    });
+    expect(view.queryByTestId("partial-group-start-approve")).toBeNull();
+
+    await view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <PartialGroupStartConsentScreen
+          questId="quest-live-1"
+          studentId="current-worker-1"
+        />
+      </QueryClientProvider>
+    );
+    await fireEvent.press(
+      await view.findByTestId("partial-group-start-approve")
+    );
 
     await waitFor(() =>
       expect(liveQuestService.respondUnderfilledConsent).toHaveBeenCalledWith(
@@ -551,6 +588,14 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
         expect.any(String)
       )
     );
+    await waitFor(() =>
+      expect(view.getByTestId("partial-group-start-loading")).toBeTruthy()
+    );
+    consentResponse.resolve(snapshot.underfilled);
+    await waitFor(() =>
+      expect(view.getByTestId("partial-group-start-approve")).toBeTruthy()
+    );
+    view.unmount();
   });
 
   it("does not offer voluntary leave to an active Worker", async () => {
