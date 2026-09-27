@@ -69,7 +69,6 @@ export function useQuestDetailLiveActions(
     projectionCapabilities: capabilities,
     liveSnapshot,
     messages,
-    refresh,
     transitions,
   } = context;
   const { beginLiveAction, endLiveAction } = transitions;
@@ -200,17 +199,6 @@ export function useQuestDetailLiveActions(
       viewerId,
     ]
   );
-  const openUnderfilled = useCallback(async () => {
-    if (liveSnapshot?.underfilled) return liveSnapshot.underfilled;
-    const result = await runLiveAction("underfilled-load", refresh);
-    if (result && typeof result === "object" && "data" in result) {
-      const data = result.data;
-      return data && typeof data === "object" && "underfilled" in data
-        ? data.underfilled
-        : null;
-    }
-    return null;
-  }, [liveSnapshot, refresh, runLiveAction]);
   const decideUnderfilled = useCallback(
     (decision: QuestUnderfilledDecision) =>
       runLiveAction("underfilled-decision", () => {
@@ -420,7 +408,6 @@ export function useQuestDetailLiveActions(
     createCandidateInquiry,
     selectProposal,
     rejectProposal,
-    openUnderfilled,
     decideUnderfilled,
     respondUnderfilled,
     createTeam,

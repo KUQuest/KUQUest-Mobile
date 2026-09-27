@@ -6,7 +6,7 @@ import {
 } from "@/testing/queryTestUtils";
 
 import { CandidateReviewSheet } from "../components/CandidateReviewSheet";
-import { PartialGroupStartConsentSheet } from "../components/PartialGroupStartConsentSheet";
+import { PartialGroupStartConsentContent } from "../components/PartialGroupStartConsentContent";
 import { TeamAssembleView } from "../components/TeamAssembleView";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { profileKeys } from "@/features/profile/api/profileQueries";
@@ -319,12 +319,11 @@ describe("group Quest sheets", () => {
     jest.setSystemTime(new Date("2026-08-12T09:00:00.000Z"));
     const onVote = jest.fn();
     const view = await renderWithAppTheme(
-      <PartialGroupStartConsentSheet
+      <PartialGroupStartConsentContent
         actualHeadcount={1}
         consent={makeConsent()}
         hirerId="hirer-1"
         locale="en"
-        onClose={() => undefined}
         onVote={onVote}
         requestedHeadcount={3}
         voters={[
@@ -332,7 +331,6 @@ describe("group Quest sheets", () => {
           { id: "worker-1", displayName: "Joined Worker", role: "WORKER" },
         ]}
         viewerId="hirer-1"
-        visible
       />
     );
 
@@ -357,26 +355,22 @@ describe("group Quest sheets", () => {
 
   it("shows approved and cancelled terminal consent states without vote actions", async () => {
     const approved = await renderWithAppTheme(
-      <PartialGroupStartConsentSheet
+      <PartialGroupStartConsentContent
         consent={makeConsent(
           QuestPartialStartConsentStatus.PARTIAL_START_APPROVED
         )}
         locale="en"
-        onClose={() => undefined}
-        visible
       />
     );
     expect(approved.getByTestId("partial-group-start-approved")).toBeTruthy();
     expect(approved.queryByTestId("partial-group-start-approve")).toBeNull();
 
     const cancelled = await renderWithAppTheme(
-      <PartialGroupStartConsentSheet
+      <PartialGroupStartConsentContent
         consent={makeConsent(
           QuestPartialStartConsentStatus.PARTIAL_START_TIMED_OUT
         )}
         locale="en"
-        onClose={() => undefined}
-        visible
       />
     );
     expect(cancelled.getByTestId("partial-group-start-cancelled")).toBeTruthy();

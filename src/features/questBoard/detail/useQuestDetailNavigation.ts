@@ -31,6 +31,7 @@ export interface QuestDetailNavigation {
   openParticipantProfile: (participantId: string) => void;
   openWorkHub: () => void;
   openTeam: () => void;
+  openPartialStart: () => void;
   openEditPost: () => void;
   openMessageOwner: () => void;
 }
@@ -83,6 +84,17 @@ export function useQuestDetailNavigation({
     if (!quest) return;
     router.push({
       pathname: "/quest/[id]/team",
+      params: {
+        id: quest.id,
+        ...(previewState ? { preview: previewState } : {}),
+        ...(studentId ? { studentId } : {}),
+      },
+    });
+  }, [previewState, quest, router, studentId]);
+  const openPartialStart = useCallback(() => {
+    if (!quest) return;
+    router.push({
+      pathname: "/quest/[id]/partial-start",
       params: {
         id: quest.id,
         ...(previewState ? { preview: previewState } : {}),
@@ -152,6 +164,7 @@ export function useQuestDetailNavigation({
     openParticipantProfile,
     openWorkHub,
     openTeam,
+    openPartialStart,
     openEditPost,
     openMessageOwner,
   };

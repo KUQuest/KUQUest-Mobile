@@ -72,7 +72,7 @@ describe("WorkerWorkManagementScreen", () => {
     expect(screen.queryByRole("button", { name: /Open Work Chat/ })).toBeNull();
   });
 
-  it("sends underfilled-start consent to Quest Detail", async () => {
+  it("sends underfilled-start consent directly to its route", async () => {
     mockListSnapshots.mockResolvedValue([
       workerSnapshot({
         id: "quest-underfilled",
@@ -85,13 +85,17 @@ describe("WorkerWorkManagementScreen", () => {
     const screen = await renderWithQueryClient(<WorkerWorkManagementScreen />);
 
     await waitFor(() =>
-      expect(screen.getByText("Underfilled start")).toBeTruthy()
+      expect(screen.getByText("Respond to underfilled start")).toBeTruthy()
     );
+    expect(
+      screen.getByTestId("worker-work-open-quest-underfilled").props
+        .accessibilityHint
+    ).toBe("Open Quest Group survey");
     await fireEvent.press(
       screen.getByTestId("worker-work-open-quest-underfilled")
     );
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/quest/[id]",
+      pathname: "/quest/[id]/partial-start",
       params: { id: "quest-underfilled" },
     });
   });

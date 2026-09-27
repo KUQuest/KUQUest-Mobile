@@ -10,7 +10,6 @@ export interface QuestDetailLiveActionContext {
   viewerId: string;
   quest: QuestBoardQuest | null;
   messages: QuestBoardMessages;
-  refresh: () => Promise<unknown>;
   transitions: QuestDetailSurfaceTransitions;
   projectionCapabilities?: QuestDetailProjectionCapabilities;
   liveSnapshot: LiveQuestSnapshot | null;
@@ -36,7 +35,6 @@ export interface QuestDetailLiveActions {
   createCandidateInquiry: (questId: string) => Promise<{ id: string }>;
   selectProposal: (proposalId: string) => Promise<unknown>;
   rejectProposal: (proposalId: string) => Promise<unknown>;
-  openUnderfilled: () => Promise<unknown>;
   decideUnderfilled: (decision: "PROCEED" | "CANCEL") => Promise<unknown>;
   respondUnderfilled: (decision: "ACCEPT" | "DECLINE") => Promise<unknown>;
   createTeam: (name: string) => Promise<unknown>;

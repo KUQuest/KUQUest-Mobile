@@ -77,6 +77,10 @@ export function WorkerWorkCard({
 }: WorkerWorkCardProps) {
   const tone = toneClasses[item.tone];
   const statusLabel = messages.status[item.status];
+  const openHint =
+    item.action === "consentUnderfilled"
+      ? messages.openQuest(item.title)
+      : messages.openWork(item.title);
   const awaitingStart =
     item.questState === QuestStatus.QUEST_OPEN ||
     item.questState === QuestStatus.QUEST_ASSIGNED;
@@ -89,7 +93,7 @@ export function WorkerWorkCard({
 
   return (
     <Pressable
-      accessibilityHint={messages.openWork(item.title)}
+      accessibilityHint={openHint}
       accessibilityLabel={`${item.title}, ${statusLabel}, ${timeLabel} ${timeValue}`}
       accessibilityRole="button"
       className={styles.card}

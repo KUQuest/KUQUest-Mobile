@@ -15,10 +15,6 @@ import {
   CandidateReviewSheet,
   type CandidateReviewSheetProps,
 } from "../../teamAssemble/components/CandidateReviewSheet";
-import {
-  PartialGroupStartConsentSheet,
-  type PartialGroupStartConsentSheetProps,
-} from "../../teamAssemble/components/PartialGroupStartConsentSheet";
 
 type ConfirmationSheetProps = {
   locale: "en" | "th";
@@ -137,16 +133,12 @@ function ConfirmationSheet({
 export interface QuestDetailSheetsProps {
   prototypeCandidateSheet?: CandidateReviewSheetProps;
   liveCandidateSheet?: CandidateReviewSheetProps;
-  prototypeConsentSheet?: PartialGroupStartConsentSheetProps;
-  liveConsentSheet?: PartialGroupStartConsentSheetProps;
   confirmationSheet?: ConfirmationSheetProps;
 }
 
 export function QuestDetailSheets({
   prototypeCandidateSheet,
   liveCandidateSheet,
-  prototypeConsentSheet,
-  liveConsentSheet,
   confirmationSheet,
 }: QuestDetailSheetsProps) {
   return (
@@ -156,12 +148,6 @@ export function QuestDetailSheets({
       ) : null}
       {liveCandidateSheet ? (
         <CandidateReviewSheet {...liveCandidateSheet} />
-      ) : null}
-      {prototypeConsentSheet ? (
-        <PartialGroupStartConsentSheet {...prototypeConsentSheet} />
-      ) : null}
-      {liveConsentSheet ? (
-        <PartialGroupStartConsentSheet {...liveConsentSheet} />
       ) : null}
       {confirmationSheet ? <ConfirmationSheet {...confirmationSheet} /> : null}
     </>

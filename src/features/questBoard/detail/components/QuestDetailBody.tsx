@@ -509,7 +509,6 @@ export function QuestDetailBody({
       {liveEntry ? (
         <LiveEntrySurface
           snapshot={liveEntry.snapshot}
-          messages={messages}
           groupMessages={liveEntry.groupMessages}
           busy={liveEntry.busy}
           onOpenTeam={liveEntry.onOpenTeam}

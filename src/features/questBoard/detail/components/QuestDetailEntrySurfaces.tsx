@@ -4,11 +4,7 @@ import { Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import type { GroupQuestMessages } from "@/locales/groupQuestMessages";
-import type { QuestBoardMessages } from "@/locales/questBoardMessages";
-import type {
-  LiveQuestNextAction,
-  LiveQuestSnapshot,
-} from "../../live/liveQuestService";
+import type { LiveQuestSnapshot } from "../../live/liveQuestService";
 import {
   isHirerActor,
   QuestCandidateMode,
@@ -21,31 +17,8 @@ import {
 } from "../../domain/types";
 import styles from "../../styles/questDetailStyles";
 
-function getNextActionLabel(
-  action: LiveQuestNextAction,
-  messages: QuestBoardMessages
-): string {
-  switch (action) {
-    case QuestNextAction.JOIN:
-      return messages.joinNow;
-    case QuestNextAction.APPLY:
-      return messages.applyNow;
-    case QuestNextAction.WITHDRAW_APPLICATION:
-      return messages.withdrawApplication;
-    case QuestNextAction.CREATE_TEAM:
-    case QuestNextAction.JOIN_TEAM:
-    case QuestNextAction.SUBMIT_TEAM:
-    case QuestNextAction.SELECT_CANDIDATE:
-    case QuestNextAction.SELECT_TEAM:
-      return messages.viewMyQuests;
-    default:
-      return messages.viewMyQuests;
-  }
-}
-
 export function LiveEntrySurface({
   snapshot,
-  messages,
   groupMessages,
   busy = false,
   onOpenTeam,
@@ -53,7 +26,6 @@ export function LiveEntrySurface({
   onOpenPartialConsent,
 }: {
   snapshot: LiveQuestSnapshot;
-  messages: QuestBoardMessages;
   groupMessages: GroupQuestMessages;
   busy?: boolean;
   onOpenTeam: () => void;
@@ -106,7 +78,7 @@ export function LiveEntrySurface({
       ? onOpenCandidateReview
       : onOpenTeam;
   const actionLabel = isUnderfilled
-    ? getNextActionLabel(snapshot.nextAction, messages)
+    ? groupMessages.reviewPartialStart
     : isHirer
       ? groupMessages.selectProposal
       : snapshot.team
@@ -347,10 +319,10 @@ export function GroupQuestEntrySurfaces({
             accessibilityRole="button"
             onPress={onOpenPartialConsent}
             className={styles.statusAction}
-            testID="quest-open-partial-start-sheet"
+            testID="quest-open-partial-start"
           >
             <Text className={styles.statusActionText}>
-              {messages.voteStatus}
+              {messages.reviewPartialStart}
             </Text>
           </Pressable>
         </View>

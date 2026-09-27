@@ -12,10 +12,12 @@ import {
 import type { QuestDetailBodyProps } from "./components/QuestDetailBody";
 import type { QuestDetailSheetsProps } from "./components/QuestDetailSheets";
 import type { TeamAssembleViewProps } from "../teamAssemble/components/TeamAssembleView";
+import type { PartialGroupStartConsentContentProps } from "../teamAssemble/components/PartialGroupStartConsentContent";
 import type { QuestDetailReadModel } from "./useQuestDetailReadSource";
 import {
   buildQuestDetailActionBar,
   buildQuestDetailBodyProps,
+  buildQuestDetailPartialStartProps,
   buildQuestDetailSheetsProps,
   buildQuestDetailTeamProps,
   getQuestDetailPresentationFacts,
@@ -58,6 +60,7 @@ interface QuestDetailFeatureViewModel {
   sheets: QuestDetailSheetsProps;
   /** Quest Team surface props; rendered by the Quest Team route. */
   team: TeamAssembleViewProps | undefined;
+  partialStartConsent: PartialGroupStartConsentContentProps;
   onRetry: () => void;
   actionBar: QuestDetailActionBarModel | null;
 }
@@ -101,7 +104,6 @@ export function useQuestDetailFeature({
     liveSnapshot:
       read.source.kind === "live-snapshot" ? read.source.snapshot : null,
     messages,
-    refresh: read.refresh,
     transitions: surface.transitions,
   };
   const liveActions = useQuestDetailLiveActions(liveActionContext);
@@ -188,7 +190,6 @@ export function useQuestDetailFeature({
         leaveQuest: participation.leaveQuest,
         selectCandidate: candidate.selectCandidate,
         rejectCandidate: candidate.rejectCandidate,
-        openLiveUnderfilled: team.openLiveUnderfilled,
         liveUnderfilledDecision: team.liveUnderfilledDecision,
         liveUnderfilledConsent: team.liveUnderfilledConsent,
         liveCreateTeam: team.liveCreateTeam,
@@ -229,6 +230,9 @@ export function useQuestDetailFeature({
     team: presentationContext
       ? buildQuestDetailTeamProps(presentationContext)
       : undefined,
+    partialStartConsent: presentationContext
+      ? buildQuestDetailPartialStartProps(presentationContext)
+      : { surfaceState: "empty" },
     onRetry,
     actionBar: presentationContext
       ? buildQuestDetailActionBar(presentationContext)

@@ -14,10 +14,8 @@ import type { SupportedLocale } from "@/locales/locale";
 import type { QuestDetailBodyProps } from "./components/QuestDetailBody";
 import type { QuestDetailSheetsProps } from "./components/QuestDetailSheets";
 import type { TeamAssembleViewProps } from "../teamAssemble/components/TeamAssembleView";
-import type {
-  PartialGroupStartVoter,
-  TeamDirectoryMember,
-} from "../teamAssemble/types";
+import type { PartialGroupStartConsentContentProps } from "../teamAssemble/components/PartialGroupStartConsentContent";
+import type { TeamDirectoryMember } from "../teamAssemble/types";
 import { getQuestRewardSatang } from "../presentation/questBoardViewData";
 import {
   isHirerActor,
@@ -25,7 +23,6 @@ import {
   QuestCandidateMode,
   QuestInvitationStatus,
   QuestMode,
-  QuestPartialStartConsentStatus,
   QuestParticipation,
   QuestStatus,
   QuestTeamStatus,
@@ -85,13 +82,10 @@ export interface QuestDetailPresentationFacts {
   statusIconColor: string;
   teamSheetTeam: QuestDetailState["teams"][number] | undefined;
   teamDirectory: TeamDirectoryMember[];
-  partialVoters: PartialGroupStartVoter[];
-  livePartialVoters: PartialGroupStartVoter[];
   liveTeamSheetTeam: NonNullable<
     Extract<QuestDetailReadSource, { kind: "live-snapshot" }>["snapshot"]
   >["team"];
   liveTeamSurface: boolean;
-  partialStartSheetOpen: boolean;
   refreshing: boolean;
 }
 
@@ -106,7 +100,6 @@ export interface QuestDetailPresentationContext {
   leaveQuest: () => void;
   selectCandidate: (proposalId: string) => void;
   rejectCandidate: (proposalId: string) => void;
-  openLiveUnderfilled: () => void;
   liveUnderfilledDecision: (decision: QuestUnderfilledDecision) => void;
   liveUnderfilledConsent: (decision: QuestUnderfilledConsentDecision) => void;
   liveCreateTeam: (name: string) => void;
@@ -305,18 +298,6 @@ export function getQuestDetailPresentationFacts({
       ? activePrototypeState.teams.find((team) => team.id === invitation.teamId)
       : undefined;
   })();
-  const consent = activePrototypeState?.partialStartConsent;
-  const partialVoters: PartialGroupStartVoter[] =
-    !activePrototypeState || !consent
-      ? []
-      : consent.requiredVoterIds.map((id) => ({
-          id,
-          displayName:
-            id === activePrototypeState.quest.hirerId
-              ? (quest.creator.name ?? id)
-              : id,
-          role: id === activePrototypeState.quest.hirerId ? "HIRER" : "WORKER",
-        }));
   const liveCandidateGroup = Boolean(
     liveSnapshot &&
     liveSnapshot.participation === QuestParticipation.GROUP &&
@@ -332,20 +313,6 @@ export function getQuestDetailPresentationFacts({
     (liveSnapshot.team ||
       capabilities?.canCreateTeam ||
       capabilities?.canJoinTeam)
-  );
-  const livePartialVoters: PartialGroupStartVoter[] =
-    !liveSnapshot?.underfilled || !liveSnapshot.underfilled.responses
-      ? []
-      : liveSnapshot.underfilled.responses.map((response) => ({
-          id: response.workerId,
-          displayName: response.workerId,
-          role: "WORKER",
-        }));
-  const partialStartSheetOpen = Boolean(
-    activePrototypeState?.partialStartConsent &&
-    activePrototypeState.partialStartConsent.status !==
-      QuestPartialStartConsentStatus.PARTIAL_START_APPROVED &&
-    !surface.partialStartSheetDismissed
   );
 
   return {
@@ -381,11 +348,8 @@ export function getQuestDetailPresentationFacts({
     statusIconColor,
     teamSheetTeam,
     teamDirectory,
-    partialVoters,
     liveTeamSheetTeam,
     liveTeamSurface,
-    livePartialVoters,
-    partialStartSheetOpen,
     refreshing: read.refreshing,
   };
 }
@@ -411,7 +375,7 @@ export function buildQuestDetailBodyProps(
           busy: Boolean(surface.liveAction),
           onOpenTeam: navigation.openTeam,
           onOpenCandidateReview: transitions.openCandidateReview,
-          onOpenPartialConsent: context.openLiveUnderfilled,
+          onOpenPartialConsent: navigation.openPartialStart,
         }
       : undefined,
     messages: facts.messages,
@@ -426,7 +390,7 @@ export function buildQuestDetailBodyProps(
           messages: facts.groupMessages,
           onOpenTeam: navigation.openTeam,
           onOpenCandidateReview: transitions.openCandidateReview,
-          onOpenPartialConsent: transitions.reopenPartialConsent,
+          onOpenPartialConsent: navigation.openPartialStart,
         }
       : undefined,
     quest: facts.quest,
@@ -512,43 +476,6 @@ export function buildQuestDetailSheetsProps(
             visible: surface.candidateReviewSheetOpen,
           }
         : undefined,
-    liveConsentSheet:
-      facts.source.kind === "live-snapshot" &&
-      facts.liveSnapshot?.participation === QuestParticipation.GROUP &&
-      facts.liveSnapshot.mode === QuestMode.FIRST_COME_FIRST_SERVED &&
-      facts.liveSnapshot.underfilled
-        ? {
-            actualHeadcount: facts.liveSnapshot.underfilled.activeWorkerCount,
-            bottomInset,
-            canConsent:
-              facts.projection?.capabilities.canConsentUnderfilled ?? false,
-            canDecide:
-              facts.projection?.capabilities.canDecideUnderfilled ?? false,
-            canRespond: Boolean(
-              facts.projection?.capabilities.canConsentUnderfilled ||
-              facts.projection?.capabilities.canDecideUnderfilled
-            ),
-            error: undefined,
-            loading:
-              surface.liveAction === "underfilled-decision" ||
-              surface.liveAction === "underfilled-consent",
-            locale: facts.locale,
-            onClose: transitions.dismissPartialConsent,
-            onHirerDecision: context.liveUnderfilledDecision,
-            onWorkerConsent: context.liveUnderfilledConsent,
-            questTitle: facts.quest.title,
-            requestedHeadcount: facts.liveSnapshot.underfilled.headcount,
-            underfilled: facts.liveSnapshot.underfilled,
-            viewerId: facts.viewerId,
-            visible:
-              !surface.partialStartSheetDismissed &&
-              Boolean(
-                facts.projection?.capabilities.canDecideUnderfilled ||
-                facts.projection?.capabilities.canConsentUnderfilled
-              ),
-            voters: facts.livePartialVoters,
-          }
-        : undefined,
     prototypeCandidateSheet:
       facts.activePrototypeState &&
       facts.isHirerView &&
@@ -584,31 +511,72 @@ export function buildQuestDetailSheetsProps(
             fullScreen: true,
           }
         : undefined,
-    prototypeConsentSheet:
-      facts.activePrototypeState &&
-      facts.activePrototypeState.quest.participation ===
-        QuestParticipation.GROUP &&
-      facts.activePrototypeState.quest.candidateMode ===
-        QuestCandidateMode.NO_CANDIDATE &&
-      facts.activePrototypeState.partialStartConsent
-        ? {
-            actualHeadcount: facts.participantCount,
-            bottomInset,
-            canRespond:
-              facts.projection?.capabilities.canRespondPartialStart ?? false,
-            consent: facts.activePrototypeState.partialStartConsent,
-            hirerId: facts.activePrototypeState.quest.hirerId,
-            locale: facts.locale,
-            onClose: transitions.dismissPartialConsent,
-            onVote: context.fixturePartialStartVote,
-            questTitle: facts.quest.title,
-            requestedHeadcount: facts.activePrototypeState.quest.headcount,
-            voters: facts.partialVoters,
-            viewerId: facts.viewerId,
-            visible: facts.partialStartSheetOpen,
-          }
-        : undefined,
   };
+}
+
+export function buildQuestDetailPartialStartProps(
+  context: QuestDetailPresentationContext
+): PartialGroupStartConsentContentProps {
+  const { facts, surface } = context;
+  const snapshot = facts.liveSnapshot;
+  if (
+    snapshot?.participation === QuestParticipation.GROUP &&
+    snapshot.mode === QuestMode.FIRST_COME_FIRST_SERVED &&
+    snapshot.underfilled
+  ) {
+    return {
+      actualHeadcount: snapshot.underfilled.activeWorkerCount,
+      canConsent: facts.projection?.capabilities.canConsentUnderfilled ?? false,
+      canDecide: facts.projection?.capabilities.canDecideUnderfilled ?? false,
+      canRespond: Boolean(
+        facts.projection?.capabilities.canConsentUnderfilled ||
+        facts.projection?.capabilities.canDecideUnderfilled
+      ),
+      loading:
+        surface.liveAction === "underfilled-decision" ||
+        surface.liveAction === "underfilled-consent",
+      locale: facts.locale,
+      onHirerDecision: context.liveUnderfilledDecision,
+      onWorkerConsent: context.liveUnderfilledConsent,
+      questTitle: facts.quest.title,
+      requestedHeadcount: snapshot.underfilled.headcount,
+      underfilled: snapshot.underfilled,
+      viewerId: facts.viewerId,
+      voters: (snapshot.underfilled.responses ?? []).map((response) => ({
+        id: response.workerId,
+        displayName: response.workerId,
+        role: "WORKER",
+      })),
+    };
+  }
+
+  const state = facts.activePrototypeState;
+  if (
+    state?.quest.participation === QuestParticipation.GROUP &&
+    state.quest.candidateMode === QuestCandidateMode.NO_CANDIDATE &&
+    state.partialStartConsent
+  ) {
+    return {
+      actualHeadcount: facts.participantCount,
+      canRespond:
+        facts.projection?.capabilities.canRespondPartialStart ?? false,
+      consent: state.partialStartConsent,
+      hirerId: state.quest.hirerId,
+      locale: facts.locale,
+      onVote: context.fixturePartialStartVote,
+      questTitle: facts.quest.title,
+      requestedHeadcount: state.quest.headcount,
+      voters: state.partialStartConsent.requiredVoterIds.map((id) => ({
+        id,
+        displayName:
+          id === state.quest.hirerId ? (facts.quest.creator.name ?? id) : id,
+        role: id === state.quest.hirerId ? "HIRER" : "WORKER",
+      })),
+      viewerId: facts.viewerId,
+    };
+  }
+
+  return { locale: facts.locale, surfaceState: "empty" };
 }
 
 export function buildQuestDetailTeamProps(

@@ -17,10 +17,12 @@ import {
 } from "lucide-react-native";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 import { TopBar } from "@/components/ui/TopBar";
 import { formatTimestamp } from "@/domain/datetime";
 import { CandidateReviewSheet } from "@/features/questBoard/teamAssemble/components/CandidateReviewSheet";
-import { PartialGroupStartConsentSheet } from "@/features/questBoard/teamAssemble/components/PartialGroupStartConsentSheet";
+import { groupQuestMessages } from "@/locales/groupQuestMessages";
+import { PartialGroupStartConsentContent } from "@/features/questBoard/teamAssemble/components/PartialGroupStartConsentContent";
 import { QuestConditionEditModal } from "@/features/questBoard/shared/components/QuestConditionEditModal";
 import { QuestConditionEditStatusCard } from "@/features/questBoard/shared/components/QuestConditionEditStatusCard";
 import { myQuestMessages } from "@/locales/myQuestMessages";
@@ -448,17 +450,24 @@ export default function HirerQuestManageScreen({
         locale={locale}
         fullScreen
       />
-      <PartialGroupStartConsentSheet
+      <BottomSheet
         visible={underfilledOpen}
-        underfilled={snapshot.underfilled}
-        hirerId={viewerId}
-        viewerId={viewerId}
-        questTitle={quest.title}
-        canDecide={snapshot.capabilities.canDecideUnderfilled}
-        onHirerDecision={decideUnderfilled}
+        title={groupQuestMessages[locale].partialConsentTitle}
+        subtitle={groupQuestMessages[locale].partialConsentSubtitle}
+        closeLabel={groupQuestMessages[locale].close}
         onClose={() => setUnderfilledOpen(false)}
-        locale={locale}
-      />
+        testID="partial-group-start-consent-sheet"
+      >
+        <PartialGroupStartConsentContent
+          underfilled={snapshot.underfilled}
+          hirerId={viewerId}
+          viewerId={viewerId}
+          questTitle={quest.title}
+          canDecide={snapshot.capabilities.canDecideUnderfilled}
+          onHirerDecision={decideUnderfilled}
+          locale={locale}
+        />
+      </BottomSheet>
       <QuestConditionEditModal
         visible={conditionEditOpen}
         originalItems={originalConditionItems ?? []}

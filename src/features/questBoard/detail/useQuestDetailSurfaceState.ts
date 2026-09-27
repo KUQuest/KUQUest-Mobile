@@ -9,7 +9,6 @@ export interface QuestDetailSurfaceState {
   manualConfirmationOpen: boolean;
   dismissedIntent?: string;
   candidateReviewSheetOpen: boolean;
-  partialStartSheetDismissed: boolean;
   teamSearchQuery: string;
   teamSelectedMemberIds: string[];
   teamReviewing: boolean;
@@ -27,8 +26,6 @@ type SurfaceAction =
   | { type: "dismiss-intent"; key: string }
   | { type: "open-candidate-review" }
   | { type: "close-candidate-review" }
-  | { type: "dismiss-partial-consent" }
-  | { type: "reopen-partial-consent" }
   | { type: "set-team-search"; value: string }
   | { type: "set-team-selection"; value: string[] }
   | { type: "set-team-reviewing"; value: boolean }
@@ -42,7 +39,6 @@ const initialState: QuestDetailSurfaceState = {
   manualConfirmationOpen: false,
   dismissedIntent: undefined,
   candidateReviewSheetOpen: false,
-  partialStartSheetDismissed: false,
   teamSearchQuery: "",
   teamSelectedMemberIds: [],
   teamReviewing: false,
@@ -81,10 +77,6 @@ function reduceSurfaceState(
         candidateReviewSheetOpen: false,
         selectedProposalId: null,
       };
-    case "dismiss-partial-consent":
-      return { ...state, partialStartSheetDismissed: true };
-    case "reopen-partial-consent":
-      return { ...state, partialStartSheetDismissed: false };
     case "set-team-search":
       return { ...state, teamSearchQuery: action.value };
     case "set-team-selection":
@@ -108,8 +100,6 @@ export interface QuestDetailSurfaceTransitions {
   dismissIntent: (key: string) => void;
   openCandidateReview: () => void;
   closeCandidateReview: () => void;
-  dismissPartialConsent: () => void;
-  reopenPartialConsent: () => void;
   setTeamSearchQuery: (value: string) => void;
   setTeamSelectedMemberIds: (value: string[]) => void;
   setTeamReviewing: (value: boolean) => void;
@@ -160,14 +150,6 @@ export function useQuestDetailSurfaceState(): {
     () => dispatch({ type: "close-candidate-review" }),
     []
   );
-  const dismissPartialConsent = useCallback(
-    () => dispatch({ type: "dismiss-partial-consent" }),
-    []
-  );
-  const reopenPartialConsent = useCallback(
-    () => dispatch({ type: "reopen-partial-consent" }),
-    []
-  );
   const setTeamSearchQuery = useCallback(
     (value: string) => dispatch({ type: "set-team-search", value }),
     []
@@ -201,8 +183,6 @@ export function useQuestDetailSurfaceState(): {
       dismissIntent,
       openCandidateReview,
       closeCandidateReview,
-      dismissPartialConsent,
-      reopenPartialConsent,
       setTeamSearchQuery,
       setTeamSelectedMemberIds,
       setTeamReviewing,
