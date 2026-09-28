@@ -14,6 +14,7 @@ import { chatApi } from "@/api/ChatApi";
 import { ApiError } from "@/api/ApiClient";
 import {
   fileNameFromUri,
+  limitImagePixels,
   mimeTypeFromUri,
   type UploadAsset,
 } from "@/api/fileUpload";
@@ -425,15 +426,23 @@ export function useChatConversationController(
     }
     const assetName =
       asset.fileName ?? fileNameFromUri(asset.uri, `chat-${Date.now()}.jpg`);
+    const limited = mimeType.startsWith("image/")
+      ? await limitImagePixels({
+          uri: asset.uri,
+          type: mimeType,
+          width: asset.width,
+          height: asset.height,
+        })
+      : { uri: asset.uri, type: mimeType, resized: false };
     const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     setPendingAttachments((current) => [
       ...current,
-      { id: tempId, uri: asset.uri, name: assetName, uploading: true },
+      { id: tempId, uri: limited.uri, name: assetName, uploading: true },
     ]);
     const uploadAsset: UploadAsset = {
-      uri: asset.uri,
+      uri: limited.uri,
       name: assetName,
-      type: mimeType,
+      type: limited.type,
     };
     try {
       const uploaded = await uploadAttachmentMutation.mutateAsync({

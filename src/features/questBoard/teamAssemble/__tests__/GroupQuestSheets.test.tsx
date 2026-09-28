@@ -601,8 +601,8 @@ describe("group Quest sheets", () => {
   it("sends trimmed Join Code and maps invalid and full-team errors", async () => {
     mockJoinMutateAsync
       .mockReset()
-      .mockRejectedValueOnce(new ApiError(404, "TEAM_NOT_FOUND", "not found"))
-      .mockRejectedValueOnce(new ApiError(409, "TEAM_FULL", "conflict"));
+      .mockRejectedValueOnce(new ApiError(422, "JOIN_CODE_EXPIRED", "expired"))
+      .mockRejectedValueOnce(new ApiError(422, "TEAM_FULL", "conflict"));
     const view = await renderWithAppTheme(
       <TeamAssembleScreen questId="quest-1" />
     );

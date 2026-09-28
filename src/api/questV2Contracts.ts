@@ -498,7 +498,7 @@ export const questV2ProofFileSchema = z.object({
   fileId: questV2IdSchema.nullable(),
   contentType: z.string().nullable(),
   sizeBytes: z.coerce.number().int().positive().nullable(),
-  position: z.coerce.number().int().nonnegative(),
+  position: z.coerce.number().int().min(0).max(4),
   uploadStatus: questV2ProofFileStatusSchema,
   failureCode: z.string().nullable(),
   url: z.string().url().nullable().optional(),
@@ -760,7 +760,7 @@ export const questV2ProofUpdatePayloadSchema = z
 export const questV2ProofRetryPayloadSchema = z
   .object({
     description: questV2OptionalDescriptionSchema.optional(),
-    retryPosition: z.number().int().nonnegative(),
+    retryPosition: z.number().int().min(0).max(4),
   })
   .strict();
 export const questV2ProofReviewPayloadSchema = z

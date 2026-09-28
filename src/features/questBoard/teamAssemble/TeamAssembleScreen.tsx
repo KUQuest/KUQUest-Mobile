@@ -48,11 +48,18 @@ export default function TeamAssembleScreen({
         idempotencyKey: createQuestIdempotencyKey(),
       });
     } catch (error) {
+      const apiError = error instanceof ApiError ? error : null;
+      const invalidJoinCode =
+        apiError?.code === "JOIN_CODE_INVALID" ||
+        apiError?.code === "JOIN_CODE_EXPIRED" ||
+        apiError?.status === 400 ||
+        apiError?.status === 404;
+      const fullTeam =
+        apiError?.code === "TEAM_FULL" || apiError?.status === 409;
       setJoinError(
-        error instanceof ApiError &&
-          (error.status === 400 || error.status === 404)
+        invalidJoinCode
           ? messages.joinCodeInvalid
-          : error instanceof ApiError && error.status === 409
+          : fullTeam
             ? messages.joinTeamFull
             : messages.joinTeamFailed
       );

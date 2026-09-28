@@ -1288,6 +1288,33 @@ describe("QuestApi", () => {
       "Updated evidence"
     );
     expect((request.body as FormData).get("files")).toEqual(expect.any(Blob));
+    await expect(
+      api.updateProofDraft(
+        "quest-1",
+        "proof-1",
+        {
+          assets: [
+            {
+              uri: "file:///tmp/retry-evidence.jpg",
+              name: "retry-evidence.jpg",
+              type: "image/jpeg",
+            },
+          ],
+          retryPosition: 1,
+        },
+        "proof-retry-1"
+      )
+    ).resolves.toEqual(proof);
+
+    const retryRequest = fetchMock.mock.calls[1][1] as RequestInit;
+    expect(retryRequest.headers).toEqual(
+      expect.objectContaining({ "idempotency-key": "proof-retry-1" })
+    );
+    expect((retryRequest.body as FormData).get("retryPosition")).toBe("1");
+    expect((retryRequest.body as FormData).get("fileIds")).toBeNull();
+    expect((retryRequest.body as FormData).get("files")).toEqual(
+      expect.any(Blob)
+    );
   });
 
   it("rejects non-approval reasons longer than 1000 characters", async () => {

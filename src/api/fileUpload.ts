@@ -30,6 +30,7 @@ export function fitWithinPixelLimit(
   height: number,
   maxPixels = MAX_UPLOAD_IMAGE_PIXELS
 ): { width: number; height: number } | null {
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return null;
   if (width * height <= maxPixels) return null;
   const scale = Math.sqrt(maxPixels / (width * height));
   return {

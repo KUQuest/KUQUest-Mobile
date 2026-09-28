@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { showConfirmModal } from "@/components/ui/SweetAlert";
+import { getLocalizedErrorMessage } from "@/utils/error";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { useLocale } from "@/features/preferences/localeStore";
 import {
@@ -227,14 +228,18 @@ export function useOnboardingController() {
       if (result.failure.draft) {
         formState.replaceForm(result.failure.draft, true);
       }
+      const failureMessage = getLocalizedErrorMessage(
+        result.failure.error,
+        locale,
+        { fallback: messages.submitErrorMsg }
+      );
       setSubmitError(
         result.failure.error instanceof Error &&
           result.failure.error.message.includes("EXPO_PUBLIC_TERMS_VERSION")
           ? messages.termsConfigError
           : result.failure.partial
-            ? `${messages.submitErrorMsg} ${messages.partialSaveMsg}`
-            : messages.submitErrorMsg ||
-              "Failed to save data. Please try again."
+            ? `${failureMessage} ${messages.partialSaveMsg}`
+            : failureMessage
       );
       return;
     }
