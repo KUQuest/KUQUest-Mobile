@@ -1,5 +1,6 @@
 import React, { type ReactNode } from "react";
 import { act, fireEvent } from "@testing-library/react-native";
+import * as DocumentPicker from "expo-document-picker";
 import { ApiError } from "@/api/ApiClient";
 import {
   renderWithQueryClient,
@@ -46,6 +47,9 @@ jest.mock("@/features/questBoard/api/questBoardQueries", () => ({
     mutateAsync: mockJoinMutateAsync,
     isPending: false,
   }),
+}));
+jest.mock("expo-document-picker", () => ({
+  getDocumentAsync: jest.fn(),
 }));
 
 jest.mock("../../detail/useQuestDetailFeature", () => ({
@@ -717,5 +721,187 @@ describe("group Quest sheets", () => {
     expect(view.getByText("worker-9")).toBeTruthy();
     expect(view.queryByTestId("team-assemble-roster-open-slot")).toBeNull();
     expect(view.queryByTestId("team-assemble-join-code")).toBeNull();
+  });
+  it("clears proposal draft when live team changes", async () => {
+    const getDocumentAsync = jest.mocked(DocumentPicker.getDocumentAsync);
+    getDocumentAsync.mockResolvedValueOnce({
+      canceled: false,
+      assets: [
+        {
+          uri: "file://old-team.jpg",
+          name: "old-team.jpg",
+          mimeType: "image/jpeg",
+          size: 100,
+        },
+      ],
+    } as never);
+    const onUploadProposalFile = jest.fn().mockResolvedValue({
+      id: "file-old",
+      name: "old-team.jpg",
+      sizeBytes: 100,
+    });
+    const firstTeam = {
+      id: "team-1",
+      questId: "quest-1",
+      leaderId: "leader-1",
+      name: "First Team",
+      headcount: 2,
+      state: "TEAM_FORMING" as const,
+      joinCode: "ABCD2345",
+      joinCodeExpiresAt: null,
+      members: [{ memberId: "leader-1", joinedAt: "2026-09-01T00:00:00Z" }],
+      submission: null,
+      createdAt: "2026-09-01T00:00:00Z",
+    };
+    const queryClient = queryClientWithRatings(["leader-1"]);
+    const view = await renderWithAppTheme(
+      <QueryClientProvider client={queryClient}>
+        <TeamAssembleView
+          locale="en"
+          onUploadProposalFile={onUploadProposalFile}
+          team={firstTeam}
+          viewerId="leader-1"
+        />
+      </QueryClientProvider>
+    );
+
+    await fireEvent.changeText(
+      view.getByTestId("team-proposal-text-input"),
+      "Old team proposal"
+    );
+    await act(async () => {
+      await fireEvent.press(view.getByTestId("team-pick-file-button"));
+    });
+    expect(view.getByTestId("team-proposal-file-file-old")).toBeTruthy();
+
+    await view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <TeamAssembleView
+          locale="en"
+          onUploadProposalFile={onUploadProposalFile}
+          team={{ ...firstTeam, id: "team-2", name: "Second Team" }}
+          viewerId="leader-1"
+        />
+      </QueryClientProvider>
+    );
+
+    expect(view.getByTestId("team-proposal-text-input").props.value).toBe("");
+    expect(view.queryByTestId("team-proposal-file-file-old")).toBeNull();
+  });
+
+  it("supports document picking and blocks oversized team files", async () => {
+    const getDocumentAsync = jest.mocked(DocumentPicker.getDocumentAsync);
+    getDocumentAsync.mockResolvedValueOnce({
+      canceled: false,
+      assets: [
+        {
+          uri: "file://large-team.mp4",
+          name: "large-team.mp4",
+          mimeType: "video/mp4",
+          size: 10 * 1024 * 1024 + 1,
+        },
+      ],
+    } as never);
+    const onUploadProposalFile = jest.fn();
+    const queryClient = queryClientWithRatings(["leader-1"]);
+    const view = await renderWithAppTheme(
+      <QueryClientProvider client={queryClient}>
+        <TeamAssembleView
+          locale="en"
+          onUploadProposalFile={onUploadProposalFile}
+          team={{
+            id: "team-1",
+            questId: "quest-1",
+            leaderId: "leader-1",
+            name: "Team",
+            headcount: 2,
+            state: "TEAM_FORMING" as const,
+            joinCode: "ABCD2345",
+            joinCodeExpiresAt: null,
+            members: [
+              { memberId: "leader-1", joinedAt: "2026-09-01T00:00:00Z" },
+            ],
+            submission: null,
+            createdAt: "2026-09-01T00:00:00Z",
+          }}
+          viewerId="leader-1"
+        />
+      </QueryClientProvider>
+    );
+
+    await act(async () => {
+      await fireEvent.press(view.getByTestId("team-pick-file-button"));
+    });
+
+    expect(getDocumentAsync).toHaveBeenCalledWith({
+      type: ["image/*", "video/*", "application/pdf"],
+      multiple: true,
+      copyToCacheDirectory: true,
+    });
+    expect(onUploadProposalFile).not.toHaveBeenCalled();
+    expect(
+      view.getByText("Each supporting file must be 10 MB or smaller")
+    ).toBeTruthy();
+  });
+
+  it("keeps uploaded files when a later supporting file fails", async () => {
+    const getDocumentAsync = jest.mocked(DocumentPicker.getDocumentAsync);
+    getDocumentAsync.mockResolvedValueOnce({
+      canceled: false,
+      assets: [
+        {
+          uri: "file://first.jpg",
+          name: "first.jpg",
+          mimeType: "image/jpeg",
+          size: 100,
+        },
+        {
+          uri: "file://second.jpg",
+          name: "second.jpg",
+          mimeType: "image/jpeg",
+          size: 100,
+        },
+      ],
+    } as never);
+    const onUploadProposalFile = jest
+      .fn()
+      .mockResolvedValueOnce({
+        id: "file-first",
+        name: "first.jpg",
+        sizeBytes: 100,
+      })
+      .mockRejectedValueOnce(new Error("upload failed"));
+    const queryClient = queryClientWithRatings(["leader-1"]);
+    const view = await renderWithAppTheme(
+      <QueryClientProvider client={queryClient}>
+        <TeamAssembleView
+          locale="en"
+          onUploadProposalFile={onUploadProposalFile}
+          team={{
+            id: "team-1",
+            questId: "quest-1",
+            leaderId: "leader-1",
+            name: "Team",
+            headcount: 2,
+            state: "TEAM_FORMING" as const,
+            joinCode: "ABCD2345",
+            joinCodeExpiresAt: null,
+            members: [
+              { memberId: "leader-1", joinedAt: "2026-09-01T00:00:00Z" },
+            ],
+            submission: null,
+            createdAt: "2026-09-01T00:00:00Z",
+          }}
+          viewerId="leader-1"
+        />
+      </QueryClientProvider>
+    );
+
+    await act(async () => {
+      await fireEvent.press(view.getByTestId("team-pick-file-button"));
+    });
+
+    expect(view.getByTestId("team-proposal-file-file-first")).toBeTruthy();
+    expect(view.getByText("Failed to pick file")).toBeTruthy();
   });
 });

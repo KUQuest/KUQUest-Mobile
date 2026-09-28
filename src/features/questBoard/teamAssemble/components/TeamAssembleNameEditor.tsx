@@ -32,7 +32,7 @@ export function TeamAssembleNameEditor({
           autoCapitalize="sentences"
           autoCorrect
           className={styles.searchInput}
-          maxLength={120}
+          maxLength={100}
           onChangeText={onChange}
           placeholder={messages.teamNameLabel}
           placeholderTextColor={colors.textFaint}
