@@ -38,6 +38,7 @@ export interface GroupQuestMessages {
   attachFile: string;
   removeFile: (name: string) => string;
   filePickFailed: string;
+  fileTooLarge: string;
   teamSubmissionUnavailable: string;
   submissionContentRequired: string;
   teamTitle: string;
@@ -185,6 +186,7 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     attachFile: "Attach file or image",
     removeFile: (name) => `Remove file ${name}`,
     filePickFailed: "Failed to pick file",
+    fileTooLarge: "Each supporting file must be 10 MB or smaller",
     teamSubmissionUnavailable: "Team submission unavailable",
     submissionContentRequired:
       "Add a proposal note and at least one supporting file to submit.",
@@ -333,6 +335,7 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     attachFile: "แนบเอกสารหรือรูปภาพ",
     removeFile: (name) => `ลบไฟล์ ${name}`,
     filePickFailed: "เลือกไฟล์ไม่สำเร็จ",
+    fileTooLarge: "ไฟล์ประกอบแต่ละไฟล์ต้องมีขนาดไม่เกิน 10 MB",
     teamSubmissionUnavailable: "ยังส่งทีมไม่ได้",
     submissionContentRequired:
       "เพิ่มข้อความข้อเสนอและไฟล์ประกอบอย่างน้อยหนึ่งไฟล์ก่อนส่งทีม",

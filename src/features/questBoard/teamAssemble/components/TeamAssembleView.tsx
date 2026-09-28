@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Share } from "react-native";
-import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
 import {
   type QuestInvitation,
   QuestInvitationStatus,
@@ -30,6 +30,7 @@ import { spacing } from "@/theme/spacing";
 import { ScrollView, Text } from "@/tw";
 import type { ProposalFileItem, TeamDirectoryMember } from "../types";
 import { createTeamInviteLink } from "../teamInvite";
+const MAX_TEAM_FILE_BYTES = 10 * 1024 * 1024;
 
 export type TeamAssembleSurfaceState =
   "ready" | "loading" | "error" | "empty" | "submitted";
@@ -175,6 +176,7 @@ export function TeamAssembleView({
   const initialDraft = teamName ?? canonicalTeam?.name ?? "";
   const [teamNameDraft, setTeamNameDraft] = useState(initialDraft);
   const lastSyncedTeamRef = useRef(initialDraft);
+  const previousTeamIdRef = useRef(team?.id ?? null);
   const [internalJoinCode, setInternalJoinCode] = useState("");
   const query = searchQuery ?? internalQuery;
   const setQuery = (nextQuery: string) => {
@@ -192,38 +194,41 @@ export function TeamAssembleView({
     setIsPickingFile(true);
     setFilePickError(null);
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsMultipleSelection: true,
-        quality: 0.8,
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["image/*", "video/*", "application/pdf"],
+        multiple: true,
+        copyToCacheDirectory: true,
       });
       if (result.canceled || !result.assets) return;
 
-      const newFiles: ProposalFileItem[] = [];
+      const addFile = (file: ProposalFileItem) => {
+        setProposalFiles((prev) => [...prev, file]);
+      };
       for (const asset of result.assets) {
+        if (asset.size !== undefined && asset.size > MAX_TEAM_FILE_BYTES) {
+          setFilePickError(messages.fileTooLarge);
+          return;
+        }
         const uploadAsset: UploadAsset = {
           uri: asset.uri,
-          name: asset.fileName ?? `proposal-${Date.now()}.jpg`,
-          type: asset.mimeType ?? "image/jpeg",
+          name: asset.name,
+          type: asset.mimeType ?? "application/octet-stream",
         };
         if (onUploadProposalFile) {
-          const uploaded = await onUploadProposalFile(uploadAsset);
-          newFiles.push(uploaded);
+          addFile(await onUploadProposalFile(uploadAsset));
         } else if (onUploadFile) {
-          const uploaded = await onUploadFile(uploadAsset);
-          newFiles.push(uploaded);
+          addFile(await onUploadFile(uploadAsset));
         } else {
           const fileId =
-            asset.fileName ??
+            asset.name ??
             `file-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-          newFiles.push({
+          addFile({
             id: fileId,
-            name: asset.fileName ?? "attachment.jpg",
-            sizeBytes: asset.fileSize ?? undefined,
+            name: asset.name,
+            sizeBytes: asset.size ?? undefined,
           });
         }
       }
-      setProposalFiles((prev) => [...prev, ...newFiles]);
     } catch (err) {
       setFilePickError(
         getLocalizedErrorMessage(err, locale, {
@@ -248,6 +253,16 @@ export function TeamAssembleView({
       setTeamNameDraft(currentName);
     }
   }, [canonicalTeam?.id, canonicalTeam?.name, teamName]);
+  useEffect(() => {
+    const currentTeamId = team?.id ?? null;
+    if (currentTeamId === previousTeamIdRef.current) return;
+    previousTeamIdRef.current = currentTeamId;
+    setProposalText("");
+    setProposalFiles([]);
+    setInternalReviewing(false);
+    setInternalJoinCode("");
+    setFilePickError(null);
+  }, [team?.id]);
   const canonicalMembers = canonicalTeam
     ? canonicalMemberRows(canonicalTeam, eligibleMembers)
     : [];

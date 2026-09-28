@@ -790,6 +790,54 @@ describe("QuestApi", () => {
       );
     }
   });
+  it("rejects Candidate Team payloads outside v2 limits before transport", async () => {
+    await expect(
+      api.createCandidateTeam("quest-1", {
+        name: "x".repeat(101),
+        headcount: 21,
+      })
+    ).rejects.toThrow();
+    await expect(
+      api.updateCandidateTeam("quest-1", "team-1", {
+        name: "x".repeat(101),
+      })
+    ).rejects.toThrow();
+    await expect(
+      api.submitCandidateTeam("quest-1", "team-1", {
+        text: " ",
+        fileIds: [],
+      })
+    ).rejects.toThrow();
+    await expect(
+      api.submitCandidateTeam("quest-1", "team-1", {
+        text: "valid proposal",
+        fileIds: ["file-1", "file-1"],
+      })
+    ).rejects.toThrow();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects incomplete Candidate Team file responses", async () => {
+    fetchMock.mockResolvedValue(
+      okJson({
+        success: true,
+        data: {
+          fileId: "file-1",
+          fileName: "team.jpg",
+          sizeBytes: 100,
+        },
+      })
+    );
+
+    await expect(
+      api.uploadCandidateTeamFile("quest-1", "team-1", {
+        uri: "file://team.jpg",
+        name: "team.jpg",
+        type: "image/jpeg",
+      })
+    ).rejects.toThrow();
+  });
+
   it("joins a Candidate team using joinCode without teamId", async () => {
     const team = {
       id: "team-1",
