@@ -7,10 +7,12 @@ import {
 } from "lucide-react-native";
 
 import type { ThemeColors } from "@/theme/colors";
+import type { TagItem } from "@/api/QuestApi";
 import { isTerminalStatus } from "@/domain/questLifecycle";
 import type { GroupQuestMessages } from "@/locales/groupQuestMessages";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 import type { SupportedLocale } from "@/locales/locale";
+import { localizeQuestBoardQuest } from "@/locales/tagLabels";
 import type { QuestDetailBodyProps } from "./components/QuestDetailBody";
 import type { QuestDetailSheetsProps } from "./components/QuestDetailSheets";
 import type { TeamAssembleViewProps } from "../teamAssemble/components/TeamAssembleView";
@@ -129,6 +131,7 @@ export function getQuestDetailPresentationFacts({
   viewerId,
   surface,
   teamDirectory,
+  tagCatalog,
   colors,
 }: {
   read: QuestDetailReadModel;
@@ -139,10 +142,12 @@ export function getQuestDetailPresentationFacts({
   viewerId: string;
   surface: QuestDetailSurfaceState;
   teamDirectory: TeamDirectoryMember[];
+  tagCatalog: readonly TagItem[];
   colors: ThemeColors;
 }): QuestDetailPresentationFacts | null {
-  const quest = read.quest;
-  if (!quest) return null;
+  const questSource = read.quest;
+  if (!questSource) return null;
+  const quest = localizeQuestBoardQuest(questSource, tagCatalog, locale);
   const projection = read.projection;
   const explicitPreview = read.source.kind === "preview";
   const activePrototypeState =

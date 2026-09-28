@@ -3,7 +3,11 @@ import type {
   QuestV2CandidateApplication,
   QuestV2CanonicalQuest,
 } from "@/api/questV2Contracts";
-import { questApi, type QuestV2AssignmentMineStatus } from "@/api/QuestApi";
+import {
+  questApi,
+  type QuestV2AssignmentMineStatus,
+  type TagItem,
+} from "@/api/QuestApi";
 import type { RequestOptions } from "@/api/ApiClient";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import { isTerminalStatus, QuestStatus } from "@/domain/questLifecycle";
@@ -12,6 +16,7 @@ import { formatSatang } from "@/domain/satang";
 import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestService";
 import type { SupportedLocale } from "@/locales/locale";
 import { myQuestMessages } from "@/locales/myQuestMessages";
+import { getTagLabelById } from "@/locales/tagLabels";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import type { HirerTab, StatusTone, QuestSummary } from "./myQuestTypes";
 import { formatQuestDateTime, getCategoryTone } from "./myQuestFormatting";
@@ -28,7 +33,8 @@ export type {
 export function getLiveHirerItems(
   quests: QuestV2CanonicalQuest[],
   tab: HirerTab,
-  locale: SupportedLocale
+  locale: SupportedLocale,
+  tagCatalog: readonly TagItem[] = []
 ): QuestSummary[] {
   const messages = myQuestMessages[locale];
   return quests.flatMap((quest) => {
@@ -41,7 +47,12 @@ export function getLiveHirerItems(
           : !terminal && quest.state !== QuestStatus.QUEST_DRAFT;
     if (!matchesTab) return [];
 
-    const tag = quest.tag?.name ?? "Quest";
+    const tag = getTagLabelById(
+      tagCatalog,
+      quest.tag?.id,
+      quest.tag?.name,
+      locale
+    ) ?? "Quest";
     const statusValue = quest.hiddenAt ? QuestStatus.QUEST_HIDDEN : quest.state;
     const status = liveQuestStatusLabel(statusValue, locale);
     const isDraft = quest.state === QuestStatus.QUEST_DRAFT;
@@ -49,6 +60,7 @@ export function getLiveHirerItems(
       {
         id: quest.id,
         title: quest.title,
+        ...(quest.tag ? { tagId: quest.tag.id } : {}),
         tag,
         categoryTone: getCategoryTone(tag),
         startsAt: formatQuestDateTime(quest.startTime, locale),

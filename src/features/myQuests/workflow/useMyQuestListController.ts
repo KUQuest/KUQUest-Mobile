@@ -12,6 +12,7 @@ import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import { formatSatang } from "@/domain/satang";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useCancelQuestMutation } from "@/features/questBoard/api/questBoardQueries";
+import { useQuestTagsQuery } from "@/features/questBoard/api/questTagsQueries";
 import { useFileDispute } from "@/features/questBoard/dispute/useFileDispute";
 import { myQuestMessages } from "@/locales/myQuestMessages";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
@@ -48,9 +49,17 @@ export function useMyQuestListController({
   );
   const hirerQuery = useMyHirerQuestsQuery();
   const hirerQuests = hirerQuery.data ?? null;
+  const tagQuery = useQuestTagsQuery(Boolean(hirerQuests?.length));
+  const tagCatalog = useMemo(() => tagQuery.data ?? [], [tagQuery.data]);
   const projection = useMemo(
-    () => projectMyQuestWorkspace({ requestedTab, locale, hirerQuests }),
-    [hirerQuests, locale, requestedTab]
+    () =>
+      projectMyQuestWorkspace({
+        requestedTab,
+        locale,
+        hirerQuests,
+        tagCatalog,
+      }),
+    [hirerQuests, locale, requestedTab, tagCatalog]
   );
 
   const {

@@ -10,7 +10,7 @@ import {
   SweetAlertVariant,
 } from "@/components/ui/SweetAlert";
 import { useLocale } from "@/features/preferences/localeStore";
-import { useWorkerTagsQuery } from "@/features/workerHome/api/workerHomeQueries";
+import { useQuestTagsQuery } from "@/features/questBoard/api/questTagsQueries";
 import { createQuestMessages } from "@/locales/createQuestMessages";
 import { getCreateQuestLayoutMetrics } from "@/theme/layout";
 
@@ -229,13 +229,13 @@ export function useCreateQuestController({
     [navigation, requestLeaveConfirmation]
   );
 
-  const workerTagsQuery = useWorkerTagsQuery();
+  const tagsQuery = useQuestTagsQuery();
   const liveTags = useMemo(
-    () => workerTagsQuery.data ?? [],
-    [workerTagsQuery.data]
+    () => tagsQuery.data ?? [],
+    [tagsQuery.data]
   );
   const tagLoadError =
-    workerTagsQuery.isError && workerTagsQuery.data === undefined;
+    tagsQuery.isError && tagsQuery.data === undefined;
   const tagOptions = useMemo(
     () => getCreateQuestTagOptions(liveTags, locale),
     [liveTags, locale]
@@ -533,7 +533,7 @@ export function useCreateQuestController({
       step,
       tagOptions,
       tagLoadError,
-      onRetryTags: () => void workerTagsQuery.refetch(),
+      onRetryTags: () => void tagsQuery.refetch(),
       updateDraft,
       updateParticipation,
       useStackedChoices,

@@ -27,6 +27,7 @@ import {
   useQuestWorkFeature,
   type QuestWorkFeatureProps,
 } from "./useQuestWorkFeature";
+import { useQuestTagsQuery } from "../api/questTagsQueries";
 
 export type QuestWorkScreenProps = QuestWorkFeatureProps;
 
@@ -56,6 +57,8 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
     startWork,
     startWorkSending,
   } = useQuestWorkFeature(props);
+  const tagQuery = useQuestTagsQuery();
+  const tagCatalog = tagQuery.data ?? [];
   const { colors } = useAppTheme();
   const questMessages = questBoardMessages[locale];
   const [now, setNow] = useState(() => Date.now());
@@ -208,6 +211,7 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
               }
               isTerminal={isTerminal}
               messages={messages}
+              tagCatalog={tagCatalog}
             />
 
             {isWorkerActor(snapshot.actor) &&

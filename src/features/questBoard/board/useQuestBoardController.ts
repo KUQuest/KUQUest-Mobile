@@ -9,8 +9,10 @@ import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { getLocalizedErrorMessage } from "@/utils/error";
 import { getLocalizedQuest } from "../fixtures/questFixtureLocalization";
+import { localizeQuestBoardQuest } from "@/locales/tagLabels";
 import type { BoardPreviewState } from "../fixtures/questBoardHarness";
 import { useQuestBoardQuery } from "../api/questBoardQueries";
+import { useQuestTagsQuery } from "../api/questTagsQueries";
 import {
   emptyQuestBoardFilter,
   type QuestBoardFilter,
@@ -78,6 +80,8 @@ export function useQuestBoardController(
   }, [previewState, retrying]);
 
   const boardQuery = useQuestBoardQuery(previewState === "populated");
+  const tagQuery = useQuestTagsQuery(previewState === "populated");
+  const tagCatalog = useMemo(() => tagQuery.data ?? [], [tagQuery.data]);
   const liveQuests = boardQuery.data ?? null;
   const refreshing = boardQuery.isRefetching;
   const refreshBoard = useCallback(() => {
@@ -110,11 +114,11 @@ export function useQuestBoardController(
       boardModel.kind === "ready"
         ? boardModel.quests.map((quest) =>
             previewState === "populated"
-              ? quest
+              ? localizeQuestBoardQuest(quest, tagCatalog, locale)
               : getLocalizedQuest(quest, locale)
           )
         : [],
-    [boardModel, locale, previewState]
+    [boardModel, locale, previewState, tagCatalog]
   );
   const availableTags = useMemo(
     () =>
