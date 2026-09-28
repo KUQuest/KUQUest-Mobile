@@ -15,9 +15,8 @@ import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
-
+import { HirerHomeSkeleton } from "./components/HirerHomeSkeleton";
 import { StateView } from "@/components/ui/StateView";
-import { QuestBoardSkeleton } from "@/features/questBoard/board/components/QuestBoardStates";
 import { useHirerHomeQuery } from "./api/homeQueries";
 import { HirerQuestProgressCard } from "./components/HirerQuestProgressCard";
 import {
@@ -28,7 +27,6 @@ import {
   type HirerShortcutRoute,
 } from "./components/HirerHomeSections";
 import {
-  getHirerAttentionItems,
   type HirerAttentionItem,
   hirerHomeQuestFixtures,
 } from "./hirerHomeData";
@@ -60,10 +58,11 @@ export default function HomeScreen() {
   const draftCount = homeData?.draftCount ?? 0;
   const completedCount = homeData?.completedCount ?? 0;
   const isPrototypeDemo = isPrototypeDemoEnabled();
+  const usesDemoQuests = liveQuests.length === 0 && isPrototypeDemo;
   const displayQuests =
     liveQuests.length > 0
       ? liveQuests
-      : isPrototypeDemo
+      : usesDemoQuests
         ? hirerHomeQuestFixtures.map((f) => ({
             id: f.id,
             title: f.title[locale],
@@ -91,10 +90,13 @@ export default function HomeScreen() {
 
   const cardWidth = Math.min(width - 32, 640);
   const handleOpenDetails = useCallback(
-    (questId: string) => {
+    (questId: string, preview: boolean) => {
       router.push({
         pathname: "/quest/[id]",
-        params: { id: questId },
+        params: {
+          id: questId,
+          ...(preview ? { preview: "populated" } : {}),
+        },
       });
     },
     [router]
@@ -127,7 +129,7 @@ export default function HomeScreen() {
     [router]
   );
 
-  const attentionItems = getHirerAttentionItems(liveQuests);
+  const attentionItems = homeData?.attentionItems ?? [];
 
   const handleOpenMyQuests = (tab: HirerMyQuestsTab) =>
     router.push({ pathname: "/my-quests", params: { role: "hirer", tab } });
@@ -149,13 +151,13 @@ export default function HomeScreen() {
         className="bg-ku-background"
       >
         <View className="flex-1 px-ku-md pt-ku-lg" testID="hirer-home-loading">
-          <QuestBoardSkeleton loadingLabel={messages.loading} />
+          <HirerHomeSkeleton loadingLabel={messages.loading} />
         </View>
       </ScreenLayout>
     );
   }
 
-  if (isError) {
+  if (isError && !isPrototypeDemo) {
     return (
       <ScreenLayout
         edges={["top", "left", "right"]}
@@ -230,7 +232,7 @@ export default function HomeScreen() {
               <Pressable
                 accessibilityLabel={messages.retry}
                 accessibilityRole="button"
-                className="ml-ku-sm min-h-[36px] items-center justify-center rounded-ku-pill border border-ku-border-danger bg-ku-surface px-ku-md"
+                className="ml-ku-sm min-h-[48px] items-center justify-center rounded-ku-pill border border-ku-border-danger bg-ku-surface px-ku-md"
                 onPress={() => {
                   void refetch();
                 }}
@@ -312,9 +314,17 @@ export default function HomeScreen() {
                       <HirerQuestProgressCard
                         startTime={item.startTime}
                         dueAt={item.dueAt}
-                        onOpenDetails={() => handleOpenDetails(item.id)}
-                        onOpenWorkerProfile={handleOpenWorkerProfile}
-                        onViewRoster={() => handleOpenRoster(item.id)}
+                        onOpenDetails={() =>
+                          handleOpenDetails(item.id, usesDemoQuests)
+                        }
+                        onOpenWorkerProfile={
+                          usesDemoQuests ? undefined : handleOpenWorkerProfile
+                        }
+                        onViewRoster={
+                          usesDemoQuests
+                            ? undefined
+                            : () => handleOpenRoster(item.id)
+                        }
                         questId={item.id}
                         status={item.status}
                         tag={item.tag}
@@ -324,7 +334,11 @@ export default function HomeScreen() {
                         assignedWorkers={item.assignedWorkers}
                         applicants={item.applicants}
                         proofPending={item.proofPending}
-                        onReviewProof={() => handleReviewProof(item.id)}
+                        onReviewProof={
+                          usesDemoQuests
+                            ? undefined
+                            : () => handleReviewProof(item.id)
+                        }
                       />
                     </View>
                   ))}

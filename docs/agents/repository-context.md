@@ -90,7 +90,7 @@ The route tree currently has no dedicated route file for Sent Work, Wallet/Conve
 - `profileEdit/` — editable basics, Experience, Portfolio, Certificates, validation and save behavior.
 - `settings/` — account/settings/help/preferences surface.
 - `report/` — Report form, categories, validation and submit state.
-- `home/` — home composition where used by the route shell.
+- `home/` — Hirer Workspace Home, including its loading state and Quest carousel. `api/homeQueries.ts` derives attention from all active Quests while the carousel stays capped at five; fixture cards open Quest Detail preview, not live-only actions.
 - `workerHome/` — Worker Workspace Home screen with real assignment and board endpoints, quick stats, and available quests feed.
 - `workerWork/` — Worker Work Management (the `my-quests` tab in the Worker workspace), which triages live Assignment snapshots into active/history and opens each Quest's Work Hub, plus the inline `WorkerProofForm` rendered by the Work Hub.
 - `wallet/` — Money tab (`WalletScreen`: balances, transaction history, Earnings transfer), Top-up quote and payment flow, `walletModule.ts` Top-up and Earnings Conversion rules. No in-app Payout surface exists (the Quest Board wallet overview and its Payout modal were removed); `WalletApi` still exposes the payout transport.

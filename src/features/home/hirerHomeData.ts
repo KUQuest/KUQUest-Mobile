@@ -8,6 +8,7 @@ import type {
   QuestProgressStage,
   HirerHomeQuestFixture,
   LiveHirerQuestCardData,
+  HirerAttentionItem,
 } from "./hirerHomeTypes";
 import { timelineStageOrder } from "./hirerHomeTypes";
 
@@ -21,6 +22,7 @@ export type {
   QuestMemberProfile,
   LiveHirerQuestCardData,
   HirerHomeData,
+  HirerAttentionItem,
 } from "./hirerHomeTypes";
 
 export const HIRER_HOME_MAX_ACTIVE_QUESTS = 5;
@@ -118,15 +120,6 @@ export function formatHirerDateTime(
   if (Number.isNaN(date.getTime())) return value;
   return formatTimestampDateTime(date, locale);
 }
-
-export type HirerAttentionItem =
-  | { kind: "proof"; questId: string; questTitle: string }
-  | {
-      kind: "applicants";
-      questId: string;
-      questTitle: string;
-      count: number;
-    };
 
 /**
  * Hirer decisions that block a Quest from moving forward: a sent Proof waiting

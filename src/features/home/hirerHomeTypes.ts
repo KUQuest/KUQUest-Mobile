@@ -57,8 +57,18 @@ export interface LiveHirerQuestCardData {
   applicants: QuestMemberProfile[];
   proofPending: boolean;
 }
+export type HirerAttentionItem =
+  | { kind: "proof"; questId: string; questTitle: string }
+  | {
+      kind: "applicants";
+      questId: string;
+      questTitle: string;
+      count: number;
+    };
+
 export interface HirerHomeData {
   activeQuests: LiveHirerQuestCardData[];
+  attentionItems: HirerAttentionItem[];
   activeQuestCount: number;
   draftCount: number;
   completedCount: number;

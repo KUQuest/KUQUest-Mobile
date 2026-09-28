@@ -121,6 +121,7 @@ export function HirerQuestProgressCard({
   );
   const hasApplicants = Boolean(applicants && applicants.length > 0);
   const applicantCount = applicants?.length ?? 0;
+  const RosterBanner = onViewRoster ? Pressable : View;
   const progressAccessibilityLabel = [
     messages.timelineTitle,
     messages.stepProgress(activeStageNumber, stages.length),
@@ -279,14 +280,15 @@ export function HirerQuestProgressCard({
       <View className={styles.cardBody}>
         {primaryWorker && !hasMultipleWorkers ? (
           <View className={styles.workerBanner}>
-            <Pressable
-              accessibilityLabel={`${onViewRoster ? messages.viewParticipants : messages.workerProfile}: ${primaryWorker.displayName}`}
-              accessibilityRole="button"
+            <RosterBanner
+              {...(onViewRoster
+                ? {
+                    accessibilityLabel: `${messages.viewParticipants}: ${primaryWorker.displayName}`,
+                    accessibilityRole: "button" as const,
+                    onPress: onViewRoster,
+                  }
+                : {})}
               className={styles.workerLeading}
-              onPress={() => {
-                if (onViewRoster) onViewRoster();
-                else onOpenWorkerProfile?.(primaryWorker.id);
-              }}
               testID={`hirer-quest-card-worker-${questId}`}
             >
               <Avatar
@@ -306,7 +308,7 @@ export function HirerQuestProgressCard({
                     : messages.assignedWorkerRole}
                 </Text>
               </View>
-            </Pressable>
+            </RosterBanner>
             {onOpenWorkerProfile ? (
               <Pressable
                 accessibilityLabel={`${messages.workerProfile}: ${primaryWorker.displayName}`}
@@ -329,11 +331,15 @@ export function HirerQuestProgressCard({
             ) : null}
           </View>
         ) : hasMultipleWorkers ? (
-          <Pressable
-            accessibilityLabel={`${messages.viewParticipants}: ${messages.joinedLabel(assignedWorkers?.length ?? 0, headcount)}`}
-            accessibilityRole="button"
+          <RosterBanner
+            {...(onViewRoster
+              ? {
+                  accessibilityLabel: `${messages.viewParticipants}: ${messages.joinedLabel(assignedWorkers?.length ?? 0, headcount)}`,
+                  accessibilityRole: "button" as const,
+                  onPress: onViewRoster,
+                }
+              : {})}
             className={styles.workerBanner}
-            onPress={() => onViewRoster?.()}
             testID={`hirer-quest-card-workers-${questId}`}
           >
             <View className={styles.workerLeading}>
@@ -359,28 +365,34 @@ export function HirerQuestProgressCard({
                 </Text>
               </View>
             </View>
-            <View
-              className={styles.workerProfileButton}
-              testID={`hirer-quest-card-view-roster-${questId}`}
-            >
-              <Text
-                className={`${styles.workerProfileText} text-ku-primary-dark`}
+            {onViewRoster ? (
+              <View
+                className={styles.workerProfileButton}
+                testID={`hirer-quest-card-view-roster-${questId}`}
               >
-                {messages.viewParticipants}
-              </Text>
-              <ChevronRight
-                color={colors.primary}
-                size={15}
-                strokeWidth={2.4}
-              />
-            </View>
-          </Pressable>
+                <Text
+                  className={`${styles.workerProfileText} text-ku-primary-dark`}
+                >
+                  {messages.viewParticipants}
+                </Text>
+                <ChevronRight
+                  color={colors.primary}
+                  size={15}
+                  strokeWidth={2.4}
+                />
+              </View>
+            ) : null}
+          </RosterBanner>
         ) : hasApplicants ? (
-          <Pressable
-            accessibilityLabel={`${messages.viewApplicants}: ${messages.applicantsLabel(applicantCount)}`}
-            accessibilityRole="button"
+          <RosterBanner
+            {...(onViewRoster
+              ? {
+                  accessibilityLabel: `${messages.viewApplicants}: ${messages.applicantsLabel(applicantCount)}`,
+                  accessibilityRole: "button" as const,
+                  onPress: onViewRoster,
+                }
+              : {})}
             className={styles.workerBanner}
-            onPress={() => onViewRoster?.()}
             testID={`hirer-quest-card-applicants-${questId}`}
           >
             <View className={styles.workerLeading}>
@@ -400,22 +412,24 @@ export function HirerQuestProgressCard({
                 </Text>
               </View>
             </View>
-            <View
-              className={styles.workerProfileButton}
-              testID={`hirer-quest-card-view-applicants-${questId}`}
-            >
-              <Text
-                className={`${styles.workerProfileText} text-ku-primary-dark`}
+            {onViewRoster ? (
+              <View
+                className={styles.workerProfileButton}
+                testID={`hirer-quest-card-view-applicants-${questId}`}
               >
-                {messages.viewApplicants}
-              </Text>
-              <ChevronRight
-                color={colors.primary}
-                size={15}
-                strokeWidth={2.4}
-              />
-            </View>
-          </Pressable>
+                <Text
+                  className={`${styles.workerProfileText} text-ku-primary-dark`}
+                >
+                  {messages.viewApplicants}
+                </Text>
+                <ChevronRight
+                  color={colors.primary}
+                  size={15}
+                  strokeWidth={2.4}
+                />
+              </View>
+            ) : null}
+          </RosterBanner>
         ) : (
           <Pressable
             accessibilityLabel={`${messages.waitingForApplicants}: ${messages.manageQuest}`}
