@@ -1,4 +1,5 @@
 import * as ImagePicker from "expo-image-picker";
+import { limitImagePixels } from "@/api/fileUpload";
 import { useCallback, useState } from "react";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -40,7 +41,13 @@ export function useOnboardingImagePicker({ onError }: { onError: () => void }) {
           setRetryRequest({ onSelected, aspect });
           return;
         }
-        onSelected(asset.uri);
+        const limited = await limitImagePixels({
+          uri: asset.uri,
+          type: asset.mimeType ?? "image/jpeg",
+          width: asset.width,
+          height: asset.height,
+        });
+        onSelected(limited.uri);
       } catch {
         onError();
       }

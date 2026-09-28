@@ -351,9 +351,9 @@ export type QuestV2Team = z.infer<typeof questV2TeamSchema>;
 export const questV2TeamFileSchema = z.object({
   fileId: z.string().min(1),
   fileName: z.string().min(1),
-  mediaType: z.string().optional(),
+  mediaType: z.string().min(1),
   sizeBytes: z.number().int().positive(),
-  createdAt: z.string().optional(),
+  createdAt: z.string(),
 });
 export type QuestV2TeamFile = z.infer<typeof questV2TeamFileSchema>;
 
@@ -498,7 +498,7 @@ export const questV2ProofFileSchema = z.object({
   fileId: questV2IdSchema.nullable(),
   contentType: z.string().nullable(),
   sizeBytes: z.coerce.number().int().positive().nullable(),
-  position: z.coerce.number().int().nonnegative(),
+  position: z.coerce.number().int().min(0).max(4),
   uploadStatus: questV2ProofFileStatusSchema,
   failureCode: z.string().nullable(),
   url: z.string().url().nullable().optional(),
@@ -684,23 +684,13 @@ export const questV2EditPayloadSchema = z
   );
 export const questV2TeamCreatePayloadSchema = z
   .object({
-    name: z
-      .string()
-      .refine(
-        (value) => value.trim().length > 0,
-        "Expected a non-blank team name"
-      ),
-    headcount: z.number().int().min(2),
+    name: questV2NonBlankString(100),
+    headcount: z.number().int().min(2).max(20),
   })
   .strict();
 export const questV2TeamUpdatePayloadSchema = z
   .object({
-    name: z
-      .string()
-      .refine(
-        (value) => value.trim().length > 0,
-        "Expected a non-blank team name"
-      ),
+    name: questV2NonBlankString(100),
   })
   .strict();
 export const questV2TeamJoinPayloadSchema = z
@@ -708,8 +698,13 @@ export const questV2TeamJoinPayloadSchema = z
   .strict();
 export const questV2TeamSubmitPayloadSchema = z
   .object({
-    text: z.string(),
-    fileIds: z.array(questV2IdSchema),
+    text: questV2NonBlankString(1000),
+    fileIds: z
+      .array(questV2IdSchema)
+      .min(1)
+      .refine((fileIds) => new Set(fileIds).size === fileIds.length, {
+        message: "Expected unique file IDs",
+      }),
   })
   .strict();
 export const questV2UnderfilledDecisionPayloadSchema = z
@@ -765,7 +760,7 @@ export const questV2ProofUpdatePayloadSchema = z
 export const questV2ProofRetryPayloadSchema = z
   .object({
     description: questV2OptionalDescriptionSchema.optional(),
-    retryPosition: z.number().int().nonnegative(),
+    retryPosition: z.number().int().min(0).max(4),
   })
   .strict();
 export const questV2ProofReviewPayloadSchema = z

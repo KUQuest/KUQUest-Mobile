@@ -17,6 +17,7 @@ import {
   profileEditMessages,
   type ProfileEditMessages,
 } from "../../../locales/profileEditMessages";
+import { limitImagePixels } from "@/api/fileUpload";
 import { formatDateForApi } from "../validation";
 
 export function ScreenHeader({
@@ -111,7 +112,13 @@ export function ImagePickerField({
         onError(messages.fileTooLarge);
         return;
       }
-      onChange(asset.uri);
+      const limited = await limitImagePixels({
+        uri: asset.uri,
+        type: asset.mimeType ?? "image/jpeg",
+        width: asset.width,
+        height: asset.height,
+      });
+      onChange(limited.uri);
     } catch {
       onError(messages.filePickerError);
     }

@@ -790,6 +790,54 @@ describe("QuestApi", () => {
       );
     }
   });
+  it("rejects Candidate Team payloads outside v2 limits before transport", async () => {
+    await expect(
+      api.createCandidateTeam("quest-1", {
+        name: "x".repeat(101),
+        headcount: 21,
+      })
+    ).rejects.toThrow();
+    await expect(
+      api.updateCandidateTeam("quest-1", "team-1", {
+        name: "x".repeat(101),
+      })
+    ).rejects.toThrow();
+    await expect(
+      api.submitCandidateTeam("quest-1", "team-1", {
+        text: " ",
+        fileIds: [],
+      })
+    ).rejects.toThrow();
+    await expect(
+      api.submitCandidateTeam("quest-1", "team-1", {
+        text: "valid proposal",
+        fileIds: ["file-1", "file-1"],
+      })
+    ).rejects.toThrow();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects incomplete Candidate Team file responses", async () => {
+    fetchMock.mockResolvedValue(
+      okJson({
+        success: true,
+        data: {
+          fileId: "file-1",
+          fileName: "team.jpg",
+          sizeBytes: 100,
+        },
+      })
+    );
+
+    await expect(
+      api.uploadCandidateTeamFile("quest-1", "team-1", {
+        uri: "file://team.jpg",
+        name: "team.jpg",
+        type: "image/jpeg",
+      })
+    ).rejects.toThrow();
+  });
+
   it("joins a Candidate team using joinCode without teamId", async () => {
     const team = {
       id: "team-1",
@@ -1240,6 +1288,33 @@ describe("QuestApi", () => {
       "Updated evidence"
     );
     expect((request.body as FormData).get("files")).toEqual(expect.any(Blob));
+    await expect(
+      api.updateProofDraft(
+        "quest-1",
+        "proof-1",
+        {
+          assets: [
+            {
+              uri: "file:///tmp/retry-evidence.jpg",
+              name: "retry-evidence.jpg",
+              type: "image/jpeg",
+            },
+          ],
+          retryPosition: 1,
+        },
+        "proof-retry-1"
+      )
+    ).resolves.toEqual(proof);
+
+    const retryRequest = fetchMock.mock.calls[1][1] as RequestInit;
+    expect(retryRequest.headers).toEqual(
+      expect.objectContaining({ "idempotency-key": "proof-retry-1" })
+    );
+    expect((retryRequest.body as FormData).get("retryPosition")).toBe("1");
+    expect((retryRequest.body as FormData).get("fileIds")).toBeNull();
+    expect((retryRequest.body as FormData).get("files")).toEqual(
+      expect.any(Blob)
+    );
   });
 
   it("rejects non-approval reasons longer than 1000 characters", async () => {

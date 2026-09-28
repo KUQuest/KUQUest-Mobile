@@ -1,4 +1,5 @@
 import * as ImagePicker from "expo-image-picker";
+import { limitImagePixels } from "@/api/fileUpload";
 import { useCallback, useState } from "react";
 
 import { MAX_QUEST_IMAGES } from "../../../questBoard/domain/types";
@@ -32,9 +33,19 @@ export function useCreateQuestImages({
         quality: 0.6,
       });
       if (!result.canceled) {
+        const limited = await Promise.all(
+          result.assets.slice(0, MAX_QUEST_IMAGES).map((asset) =>
+            limitImagePixels({
+              uri: asset.uri,
+              type: asset.mimeType ?? "image/jpeg",
+              width: asset.width,
+              height: asset.height,
+            })
+          )
+        );
         updateDraft(
           "imageUris",
-          result.assets.slice(0, MAX_QUEST_IMAGES).map((asset) => asset.uri)
+          limited.map((asset) => asset.uri)
         );
       }
     } catch {

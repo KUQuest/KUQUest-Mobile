@@ -2,6 +2,7 @@ import React from "react";
 import { Platform } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Pencil } from "lucide-react-native";
+import { limitImagePixels } from "@/api/fileUpload";
 import { Input } from "@/components/ui/Input";
 import { TextArea } from "@/components/ui/TextArea";
 import {
@@ -77,9 +78,15 @@ export function BasicsEditor({
         onAvatarError(messages.fileTooLarge);
         return;
       }
-      onAvatarChange({
+      const limited = await limitImagePixels({
         uri: asset.uri,
-        mimeType: asset.mimeType,
+        type: asset.mimeType ?? "image/jpeg",
+        width: asset.width,
+        height: asset.height,
+      });
+      onAvatarChange({
+        uri: limited.uri,
+        mimeType: limited.type,
         fileName: asset.fileName,
       });
     } catch {

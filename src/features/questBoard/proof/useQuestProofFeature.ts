@@ -19,6 +19,7 @@ import type { LiveQuestSnapshot } from "../live/liveQuestTypes";
 import type { ProofDraftAsset } from "./components/ProofSubmissionSheet";
 import {
   QuestNextAction,
+  QuestProofFileStatus,
   QuestProofStatus,
   QuestStatus,
 } from "../domain/types";
@@ -45,6 +46,18 @@ function ownProof(
 
 function toUploadAssets(assets: ProofDraftAsset[]): UploadAsset[] {
   return assets.map(({ uri, name, type }) => ({ uri, name, type }));
+}
+function retryAssetsForSubmission(
+  submission: QuestV2ProofSubmission,
+  assets: ProofDraftAsset[]
+): Record<number, ProofDraftAsset> {
+  const retryAssets: Record<number, ProofDraftAsset> = {};
+  for (const file of submission.files) {
+    if (file.uploadStatus !== QuestProofFileStatus.PROOF_FILE_FAILED) continue;
+    const asset = assets[file.position];
+    if (asset) retryAssets[file.position] = asset;
+  }
+  return retryAssets;
 }
 
 export function useQuestProofFeature({
@@ -152,8 +165,9 @@ export function useQuestProofFeature({
       }
       const key = createQuestIdempotencyKey();
       const normalizedNote = note.trim();
+      let submission: QuestV2ProofSubmission;
       if (proof && isDraft) {
-        await liveQuestService.updateProofDraft(
+        submission = await liveQuestService.updateProofDraft(
           resolvedQuestId,
           proof.id,
           assets.length > 0
@@ -166,7 +180,7 @@ export function useQuestProofFeature({
         );
       } else {
         const uploadAssets = toUploadAssets(assets);
-        await liveQuestService.createProofDraft(
+        submission = await liveQuestService.createProofDraft(
           resolvedQuestId,
           uploadAssets.length > 0
             ? { assets: uploadAssets, description: normalizedNote || undefined }
@@ -176,13 +190,7 @@ export function useQuestProofFeature({
       }
       setDraftAssets([]);
       if (assets.length > 0) {
-        setRetryAssets((current) => {
-          const next = { ...current };
-          assets.forEach((asset, index) => {
-            next[index] = asset;
-          });
-          return next;
-        });
+        setRetryAssets(retryAssetsForSubmission(submission, assets));
       }
       await refreshAuthoritatively();
     },
@@ -236,6 +244,16 @@ export function useQuestProofFeature({
         );
       }
       if (!submission) throw new Error(messages.proofContentRequired);
+      if (
+        submission.files.some(
+          (file) => file.uploadStatus === QuestProofFileStatus.PROOF_FILE_FAILED
+        )
+      ) {
+        setRetryAssets(retryAssetsForSubmission(submission, pendingAssets));
+        setDraftAssets([]);
+        await refreshAuthoritatively();
+        throw new Error(messages.proofFilesUploadFailed);
+      }
       await liveQuestService.submitProofDraft(
         resolvedQuestId,
         submission.id,
@@ -243,6 +261,7 @@ export function useQuestProofFeature({
       );
       await refreshAuthoritatively();
       setDraftAssets([]);
+      setRetryAssets({});
       setSheetOpen(false);
       onReturnToWorkHub?.();
       if (!onReturnToWorkHub) router.replace("/my-quests");
@@ -252,6 +271,7 @@ export function useQuestProofFeature({
       isDraft,
       messages.manageSnapshotError,
       messages.proofContentRequired,
+      messages.proofFilesUploadFailed,
       onReturnToWorkHub,
       proof,
       refreshAuthoritatively,

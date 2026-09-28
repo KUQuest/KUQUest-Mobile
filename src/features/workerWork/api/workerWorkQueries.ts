@@ -34,8 +34,10 @@ function invalidateWorkerState(
   });
 }
 
-// Staging also returns this for images above an undocumented resolution limit.
-const PROOF_FILE_REJECTED_CODE = "PROOF_FILE_TYPE_NOT_SUPPORTED";
+const PROOF_FILE_REJECTED_CODES = new Set([
+  "PROOF_FILE_TYPE_NOT_SUPPORTED",
+  "PROOF_FILE_DIMENSIONS_TOO_LARGE",
+]);
 
 /**
  * A draft that still holds a failed file cannot be submitted.
@@ -59,7 +61,7 @@ function toUploadAsset({ uri, name, type }: UploadAsset): UploadAsset {
 
 function asRejectedUpload(fileCount: number) {
   return (error: unknown): never => {
-    throw error instanceof ApiError && error.code === PROOF_FILE_REJECTED_CODE
+    throw error instanceof ApiError && PROOF_FILE_REJECTED_CODES.has(error.code)
       ? new ProofFileUploadError(fileCount, true)
       : error;
   };
@@ -124,7 +126,9 @@ export function useSubmitProofMutation() {
         throw new ProofFileUploadError(
           failedFiles.length,
           failedFiles.some(
-            (file) => file.failureCode === PROOF_FILE_REJECTED_CODE
+            (file) =>
+              file.failureCode !== null &&
+              PROOF_FILE_REJECTED_CODES.has(file.failureCode)
           ),
           proofDraft
         );

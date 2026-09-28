@@ -89,7 +89,10 @@ export function ProofSubmissionSheet({
 
   const isLive = Boolean(onSaveDraft || onSubmitDraft || proof);
   const serverFiles = useMemo<QuestV2ProofSubmission["files"]>(
-    () => proof?.files ?? [],
+    () =>
+      [...(proof?.files ?? [])].sort(
+        (left, right) => left.position - right.position
+      ),
     [proof?.files]
   );
   const totalAttachments = serverFiles.length + assets.length;
@@ -208,7 +211,8 @@ export function ProofSubmissionSheet({
       setActionError(
         caught instanceof Error &&
           (caught.message === messages.proofContentRequired ||
-            caught.message === messages.manageSnapshotError)
+            caught.message === messages.manageSnapshotError ||
+            caught.message === messages.proofFilesUploadFailed)
           ? caught.message
           : getLocalizedErrorMessage(caught, locale, {
               fallback: messages.manageSnapshotError,
@@ -364,7 +368,7 @@ export function ProofSubmissionSheet({
                   {serverFiles.map((file) => (
                     <View
                       className="flex-row items-center rounded-[12px] bg-ku-surface-muted px-ku-10 py-ku-9"
-                      key={file.fileId}
+                      key={`${file.fileId ?? "failed"}-${file.position}`}
                     >
                       <FileText
                         color={
@@ -379,6 +383,7 @@ export function ProofSubmissionSheet({
                         className="ml-ku-sm flex-1 font-ku-medium text-ku-label text-ku-text-strong"
                         numberOfLines={1}
                       >
+                        {messages.proofFilePosition(file.position + 1)} ·{" "}
                         {file.contentType || workMessages.proofFileFallback} ·{" "}
                         {file.uploadStatus
                           .replace("PROOF_FILE_", "")

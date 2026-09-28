@@ -193,7 +193,11 @@ export function BasicsEditorScreen({
           });
         } catch (error) {
           if (await redirectIfSessionExpired(error)) return;
-          setSaveError(messages.avatarUploadError);
+          setSaveError(
+            getLocalizedErrorMessage(error, locale, {
+              fallback: messages.avatarUploadError,
+            })
+          );
           return;
         }
       }

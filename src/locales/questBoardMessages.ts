@@ -195,10 +195,12 @@ export interface QuestBoardMessages {
   proofDescriptionPlaceholder: string;
   proofLockDescription: string;
   proofContentRequired: string;
+  proofFilesUploadFailed: string;
   addProofImages: string;
   proofAttachmentCount: (count: number, maximum: number) => string;
   proofImageLabel: (index: number) => string;
   removeProofImage: (index: number) => string;
+  proofFilePosition: (position: number) => string;
   proofImagePickerError: string;
   proofSubmissionSent: string;
   confirmCompletionDescription: string;
@@ -561,10 +563,13 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     proofLockDescription: "At least a description or one image is required.",
     proofContentRequired:
       "Add a description or at least one image before sending.",
+    proofFilesUploadFailed:
+      "Some proof files failed to upload. Replace failed files and retry.",
     addProofImages: "Add images",
     proofAttachmentCount: (count, maximum) => `${count} of ${maximum} images`,
     proofImageLabel: (index) => `Proof image ${index}`,
     removeProofImage: (index) => `Remove proof image ${index}`,
+    proofFilePosition: (position) => `Proof file ${position}`,
     proofImagePickerError: "Images could not be added. Try again.",
     proofSubmissionSent: "Proof submitted for Hirer review.",
     confirmCompletionDescription:
@@ -950,10 +955,13 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     proofDescriptionPlaceholder: "อธิบายสิ่งที่คุณทำเสร็จแล้ว",
     proofLockDescription: "ต้องมีคำอธิบายหรือรูปภาพอย่างน้อย 1 รายการ",
     proofContentRequired: "เพิ่มคำอธิบายหรือรูปภาพอย่างน้อย 1 รายการก่อนส่ง",
+    proofFilesUploadFailed:
+      "ไฟล์หลักฐานบางรายการอัปโหลดไม่สำเร็จ โปรดเปลี่ยนไฟล์ที่ล้มเหลวแล้วลองใหม่",
     addProofImages: "เพิ่มรูปภาพ",
     proofAttachmentCount: (count, maximum) => `${count}/${maximum} รูป`,
     proofImageLabel: (index) => `รูปหลักฐานที่ ${index}`,
     removeProofImage: (index) => `ลบรูปหลักฐานที่ ${index}`,
+    proofFilePosition: (position) => `ไฟล์หลักฐานที่ ${position}`,
     proofImagePickerError: "เพิ่มรูปภาพไม่สำเร็จ ลองอีกครั้ง",
     proofSubmissionSent: "ส่งหลักฐานให้ผู้ว่าจ้างตรวจสอบแล้ว",
     confirmCompletionDescription:

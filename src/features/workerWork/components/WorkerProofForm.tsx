@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { ApiError } from "@/api/ApiClient";
 import { ActivityIndicator } from "react-native";
 import { File } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
@@ -29,6 +30,7 @@ import {
 } from "@/locales/workerWorkMessages";
 import type { ThemeColors } from "@/theme/colors";
 import { showConfirmModal } from "@/components/ui/SweetAlert";
+import { getLocalizedErrorMessage } from "@/utils/error";
 import { planProofSend, type ProofDraftRef } from "../proofDraftPlan";
 import { latestSentProof, unsentProofDraft } from "../workerWorkProjection";
 import { ProofFilePicker, type ProofFile } from "./ProofFilePicker";
@@ -200,12 +202,26 @@ export function WorkerProofForm({
           fileKeys,
         });
       }
+      const apiError = error instanceof ApiError ? error : null;
       setNotice(
-        !(error instanceof ProofFileUploadError)
-          ? messages.submitFailed
-          : error.rejected
+        error instanceof ProofFileUploadError
+          ? error.rejected
             ? messages.fileRejected
             : messages.uploadFailed(error.failedCount)
+          : apiError
+            ? getLocalizedErrorMessage(apiError, locale, {
+                codes: {
+                  PROOF_FILE_TYPE_NOT_SUPPORTED: messages.fileRejected,
+                  PROOF_FILE_DIMENSIONS_TOO_LARGE: messages.fileRejected,
+                  PROOF_FILES_UPLOAD_FAILED: messages.uploadFailed(
+                    Math.max(files.length, 1)
+                  ),
+                  PROOF_RETRY_POSITION_INVALID: messages.retryFailedProofFile,
+                  PROOF_RETRY_POSITION_CONFLICT: messages.retryFailedProofFile,
+                },
+                fallback: messages.submitFailed,
+              })
+            : messages.submitFailed
       );
     }
   };

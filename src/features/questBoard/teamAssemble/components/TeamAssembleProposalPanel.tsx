@@ -43,6 +43,7 @@ export function TeamAssembleProposalPanel({
         <TextInput
           accessibilityLabel={messages.proposalNoteLabel}
           className="min-h-[72px] font-ku-regular text-ku-body text-ku-text-strong"
+          maxLength={1000}
           multiline
           numberOfLines={3}
           onChangeText={onTextChange}

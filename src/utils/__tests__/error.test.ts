@@ -45,4 +45,31 @@ describe("getLocalizedErrorMessage", () => {
       })
     ).toBe("Could not save");
   });
+  it("maps upload dimension and proof retry error codes", () => {
+    const dimensionCodes = [
+      "AVATAR_DIMENSIONS_TOO_LARGE",
+      "CERTIFICATE_IMAGE_DIMENSIONS_TOO_LARGE",
+      "IMAGE_DIMENSIONS_TOO_LARGE",
+      "PROOF_FILE_DIMENSIONS_TOO_LARGE",
+      "TEAM_FILE_DIMENSIONS_TOO_LARGE",
+      "ATTACHMENT_DIMENSIONS_TOO_LARGE",
+    ];
+    for (const code of dimensionCodes) {
+      expect(
+        getLocalizedErrorMessage(new ApiError(422, code, "server"), "en")
+      ).toBe(alertMessages.en.imageDimensionsTooLarge);
+    }
+    expect(
+      getLocalizedErrorMessage(
+        new ApiError(422, "PROOF_FILES_UPLOAD_FAILED", "server"),
+        "en"
+      )
+    ).toBe(alertMessages.en.proofFilesUploadFailed);
+    expect(
+      getLocalizedErrorMessage(
+        new ApiError(422, "PROOF_RETRY_POSITION_INVALID", "server"),
+        "en"
+      )
+    ).toBe(alertMessages.en.proofRetryPositionInvalid);
+  });
 });
