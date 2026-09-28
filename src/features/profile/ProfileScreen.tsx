@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { cn } from "@/tw/cn";
 import {
   useWindowDimensions,
   type NativeScrollEvent,
@@ -216,16 +215,15 @@ export default function Profile() {
       ) : (
         <ScrollView
           testID="profile-content-scroll"
-          contentContainerClassName={cn(
-            styles.content,
-            width >= 600 && styles.tabletContent
-          )}
           contentContainerStyle={{
+            alignSelf: width >= 600 ? "center" : undefined,
             gap: layoutMetrics.sectionGap,
+            maxWidth: width >= 600 ? 720 : undefined,
             paddingBottom: bottomPadding,
             paddingLeft: horizontalPadding,
             paddingRight: layoutMetrics.pagePadding,
             paddingTop: profileTopBarHeight + layoutMetrics.sectionGap,
+            width: "100%",
           }}
           contentOffset={{ x: 0, y: initialScrollOffset }}
           onScroll={handleProfileScroll}

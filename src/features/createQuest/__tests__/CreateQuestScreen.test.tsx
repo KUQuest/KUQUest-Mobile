@@ -1168,9 +1168,18 @@ describe("CreateQuestScreen", () => {
       params: { id: "server-quest-1", mode: "post" },
     });
 
-    const passthrough = fireBeforeRemove();
+    let passthrough: BeforeRemoveEvent | undefined;
+    await act(async () => {
+      passthrough = fireBeforeRemove();
+    });
+    let reblocked: BeforeRemoveEvent | undefined;
+    await act(async () => {
+      reblocked = fireBeforeRemove();
+    });
+    if (!passthrough || !reblocked) {
+      throw new Error("beforeRemove guard did not return an event");
+    }
     expect(passthrough.preventDefault).not.toHaveBeenCalled();
-    const reblocked = fireBeforeRemove();
     expect(reblocked.preventDefault).toHaveBeenCalled();
   });
 

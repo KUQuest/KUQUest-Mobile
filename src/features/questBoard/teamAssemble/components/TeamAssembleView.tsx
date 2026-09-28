@@ -434,8 +434,10 @@ export function TeamAssembleView({
   return (
     <ScrollView
       className={styles.sheetScroll}
-      contentContainerClassName={styles.sheetContent}
-      contentContainerStyle={{ paddingBottom: bottomInset + spacing.md }}
+      contentContainerStyle={{
+        paddingBottom: bottomInset + spacing.md,
+        paddingTop: spacing.md,
+      }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
       testID="team-assemble-scroll"

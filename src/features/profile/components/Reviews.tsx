@@ -312,8 +312,8 @@ export function Reviews({
       testID="profile-reviews-list"
       data={errorText ? [] : visibleReviews}
       keyExtractor={(review) => review.id}
-      contentContainerClassName={styles.profileListContent}
       contentContainerStyle={{
+        gap: metrics.sectionGap,
         paddingBottom: bottomPadding,
         paddingHorizontal: metrics.pagePadding,
         paddingTop: metrics.sectionGap,
