@@ -63,10 +63,8 @@ export function retryAssetsForSubmission(
 
 function nextProofFilePosition(proof: QuestV2ProofSubmission | null): number {
   return (
-    proof?.files.reduce(
-      (next, file) => Math.max(next, file.position + 1),
-      0
-    ) ?? 0
+    proof?.files.reduce((next, file) => Math.max(next, file.position + 1), 0) ??
+    0
   );
 }
 

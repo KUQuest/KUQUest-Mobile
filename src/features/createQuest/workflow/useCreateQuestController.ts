@@ -230,12 +230,8 @@ export function useCreateQuestController({
   );
 
   const tagsQuery = useQuestTagsQuery();
-  const liveTags = useMemo(
-    () => tagsQuery.data ?? [],
-    [tagsQuery.data]
-  );
-  const tagLoadError =
-    tagsQuery.isError && tagsQuery.data === undefined;
+  const liveTags = useMemo(() => tagsQuery.data ?? [], [tagsQuery.data]);
+  const tagLoadError = tagsQuery.isError && tagsQuery.data === undefined;
   const tagOptions = useMemo(
     () => getCreateQuestTagOptions(liveTags, locale),
     [liveTags, locale]

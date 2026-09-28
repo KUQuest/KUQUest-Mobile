@@ -47,12 +47,9 @@ export function getLiveHirerItems(
           : !terminal && quest.state !== QuestStatus.QUEST_DRAFT;
     if (!matchesTab) return [];
 
-    const tag = getTagLabelById(
-      tagCatalog,
-      quest.tag?.id,
-      quest.tag?.name,
-      locale
-    ) ?? "Quest";
+    const tag =
+      getTagLabelById(tagCatalog, quest.tag?.id, quest.tag?.name, locale) ??
+      "Quest";
     const statusValue = quest.hiddenAt ? QuestStatus.QUEST_HIDDEN : quest.state;
     const status = liveQuestStatusLabel(statusValue, locale);
     const isDraft = quest.state === QuestStatus.QUEST_DRAFT;

@@ -188,7 +188,6 @@ export function useSubmitProofMutation() {
   });
 }
 
-
 export function useRemoveProofFileMutation() {
   const queryClient = useQueryClient();
   return useMutation({

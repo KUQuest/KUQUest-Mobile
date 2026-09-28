@@ -560,7 +560,8 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
       "Add a short description or up to five proof files. Sending locks this proof for Hirer review.",
     proofDescriptionLabel: "Description",
     proofDescriptionPlaceholder: "Describe what you completed…",
-    proofLockDescription: "At least a description or one proof file is required.",
+    proofLockDescription:
+      "At least a description or one proof file is required.",
     proofContentRequired:
       "Add a description or at least one proof file before sending.",
     proofFilesUploadFailed:

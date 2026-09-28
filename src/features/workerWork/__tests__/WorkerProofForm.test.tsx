@@ -128,7 +128,9 @@ describe("WorkerProofForm", () => {
       screen.getByRole("button", { name: "Submit proof", disabled: true })
     ).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole("button", { name: "Add images or videos" }));
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Add images or videos" })
+    );
     await waitFor(() => expect(screen.getByText("2/5 files")).toBeTruthy());
     expect(mockedPicker).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -219,7 +221,9 @@ describe("WorkerProofForm", () => {
 
     const screen = await renderForm(submittable, onSubmitted);
 
-    await fireEvent.press(screen.getByRole("button", { name: "Add images or videos" }));
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Add images or videos" })
+    );
     await waitFor(() => expect(screen.getByText("1/5 files")).toBeTruthy());
 
     await fireEvent.changeText(
@@ -282,7 +286,9 @@ describe("WorkerProofForm", () => {
     arrange();
 
     const screen = await renderForm();
-    await fireEvent.press(screen.getByRole("button", { name: "Add images or videos" }));
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Add images or videos" })
+    );
     await waitFor(() => expect(screen.getByText("1/5 files")).toBeTruthy());
     await fireEvent.press(screen.getByRole("button", { name: "Submit proof" }));
     await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
@@ -317,7 +323,9 @@ describe("WorkerProofForm", () => {
     } as never);
 
     const screen = await renderForm();
-    await fireEvent.press(screen.getByRole("button", { name: "Add images or videos" }));
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Add images or videos" })
+    );
     await waitFor(() => expect(screen.getByText("1/5 files")).toBeTruthy());
     await fireEvent.press(screen.getByRole("button", { name: "Submit proof" }));
     await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
@@ -390,7 +398,9 @@ describe("WorkerProofForm", () => {
     const onSubmitted = jest.fn();
 
     const screen = await renderForm(snapshot, onSubmitted);
-    await fireEvent.press(screen.getByRole("button", { name: "Add images or videos" }));
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Add images or videos" })
+    );
     await waitFor(() => expect(screen.getByText("2/5 files")).toBeTruthy());
     await fireEvent.press(screen.getByRole("button", { name: "Submit proof" }));
     await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
@@ -441,7 +451,9 @@ describe("WorkerProofForm", () => {
     } as never);
     const screen = await renderForm(submittable);
 
-    await fireEvent.press(screen.getByRole("button", { name: "Add images or videos" }));
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Add images or videos" })
+    );
     await waitFor(() => expect(screen.getByText("1/5 files")).toBeTruthy());
     await fireEvent.press(screen.getByRole("button", { name: "Submit proof" }));
     await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
@@ -540,7 +552,9 @@ describe("WorkerProofForm", () => {
   });
 
   it("submits an existing ready draft without local file copies", async () => {
-    mockedService.submitProofDraft.mockResolvedValue({ id: "draft-ready" } as never);
+    mockedService.submitProofDraft.mockResolvedValue({
+      id: "draft-ready",
+    } as never);
     const onSubmitted = jest.fn();
     const screen = await renderForm(
       workerSnapshot({
@@ -641,5 +655,4 @@ describe("WorkerProofForm", () => {
     );
     expect(onSubmitted).toHaveBeenCalled();
   });
-
 });

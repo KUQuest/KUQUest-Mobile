@@ -25,7 +25,13 @@ const mockedService = liveQuestService as jest.Mocked<typeof liveQuestService>;
 type TestFile = UploadAsset & { key: string };
 type TestPlan = ProofSendPlan<TestFile>;
 
-function SubmitProbe({ plan, onError }: { plan: TestPlan; onError: jest.Mock }) {
+function SubmitProbe({
+  plan,
+  onError,
+}: {
+  plan: TestPlan;
+  onError: jest.Mock;
+}) {
   const mutation = useSubmitProofMutation();
   return createElement(Pressable, {
     testID: "submit-proof",
@@ -70,7 +76,9 @@ describe("useSubmitProofMutation", () => {
     await act(async () => {
       await fireEvent.press(view.getByTestId("submit-proof"));
     });
-    await waitFor(() => expect(onError).toHaveBeenCalledWith(expect.any(Error)));
+    await waitFor(() =>
+      expect(onError).toHaveBeenCalledWith(expect.any(Error))
+    );
 
     expect(mockedService.deleteProofDraft).not.toHaveBeenCalled();
   });
@@ -91,7 +99,9 @@ describe("useSubmitProofMutation", () => {
     await act(async () => {
       await fireEvent.press(view.getByTestId("submit-proof"));
     });
-    await waitFor(() => expect(onError).toHaveBeenCalledWith(expect.any(Error)));
+    await waitFor(() =>
+      expect(onError).toHaveBeenCalledWith(expect.any(Error))
+    );
 
     expect(mockedService.deleteProofDraft).toHaveBeenNthCalledWith(
       1,

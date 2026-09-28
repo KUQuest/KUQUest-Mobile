@@ -103,7 +103,9 @@ export function cardToQuestBoardQuest(card: QuestV2BoardCard): QuestBoardQuest {
     id: card.id,
     title: card.title,
 
-    ...(card.tag ? { tagId: card.tag.id, tags: [card.tag.name] } : { tags: [] }),
+    ...(card.tag
+      ? { tagId: card.tag.id, tags: [card.tag.name] }
+      : { tags: [] }),
     description: "",
     completionCriteria: "",
     proofRequired: "none",

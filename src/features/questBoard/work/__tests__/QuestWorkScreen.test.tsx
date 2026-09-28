@@ -553,7 +553,9 @@ describe("QuestWorkScreen", () => {
     await waitFor(() =>
       expect(view.getByTestId("worker-proof-form")).toBeTruthy()
     );
-    expect(view.getByRole("button", { name: "Add images or videos" })).toBeTruthy();
+    expect(
+      view.getByRole("button", { name: "Add images or videos" })
+    ).toBeTruthy();
     expect(view.getByLabelText("Work description (optional)")).toBeTruthy();
     expect(
       view.getByRole("button", { name: "Submit proof", disabled: true })

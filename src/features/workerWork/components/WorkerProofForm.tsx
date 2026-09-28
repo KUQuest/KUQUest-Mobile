@@ -94,7 +94,8 @@ export function WorkerProofForm({
     files.length === 0 &&
     (serverDraft?.files.some(
       (file) => file.uploadStatus === QuestProofFileStatus.PROOF_FILE_FAILED
-    ) ?? false);
+    ) ??
+      false);
 
   const sentProof = latestSentProof(snapshot, viewerId);
   if (sentProof) {

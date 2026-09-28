@@ -137,7 +137,11 @@ export function ProofFilePicker({
                 accessibilityLabel={file.name}
                 className="flex-1 items-center justify-center gap-ku-xs px-ku-sm"
               >
-                <FileText color={palette.workerDark} size={22} strokeWidth={2} />
+                <FileText
+                  color={palette.workerDark}
+                  size={22}
+                  strokeWidth={2}
+                />
                 <Text
                   className="text-center font-ku-medium text-ku-caption text-ku-text-secondary"
                   numberOfLines={2}

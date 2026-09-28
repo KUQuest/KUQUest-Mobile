@@ -69,12 +69,7 @@ export function WorkerHomeContent({
       <WorkerQuestFeedCard
         onPress={() => handleQuestPress(item)}
         quest={item}
-        tagLabel={getTagLabelById(
-          tags,
-          item.tag?.id,
-          item.tag?.name,
-          locale
-        )}
+        tagLabel={getTagLabelById(tags, item.tag?.id, item.tag?.name, locale)}
       />
     ),
     [handleQuestPress, locale, tags]
