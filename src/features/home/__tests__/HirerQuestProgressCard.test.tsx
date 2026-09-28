@@ -91,6 +91,68 @@ describe("HirerQuestProgressCard", () => {
     await fireEvent.press(getByTestId("hirer-quest-card-applicants-q3"));
     expect(onViewRoster).toHaveBeenCalled();
   });
+
+  it("shows roster banners without controls when no roster handler exists", async () => {
+    const onOpenWorkerProfile = jest.fn();
+    const singleWorker = await render(
+      <HirerQuestProgressCard
+        questId="q7"
+        title="Single Worker Quest"
+        status="QUEST_ASSIGNED"
+        onOpenDetails={jest.fn()}
+        onOpenWorkerProfile={onOpenWorkerProfile}
+        assignedWorkers={[{ id: "w1", displayName: "Worker One" }]}
+      />
+    );
+    expect(
+      singleWorker.getByTestId("hirer-quest-card-worker-q7").props
+    ).not.toHaveProperty("accessibilityRole", "button");
+    expect(
+      singleWorker.getByTestId("hirer-quest-card-worker-q7").props
+    ).not.toHaveProperty("onPress");
+    await fireEvent.press(
+      singleWorker.getByTestId("hirer-quest-card-worker-profile-q7")
+    );
+    expect(onOpenWorkerProfile).toHaveBeenCalledWith("w1");
+
+    const multipleWorkers = await render(
+      <HirerQuestProgressCard
+        questId="q8"
+        title="Group Quest"
+        status="QUEST_ASSIGNED"
+        onOpenDetails={jest.fn()}
+        assignedWorkers={[
+          { id: "w1", displayName: "Worker One" },
+          { id: "w2", displayName: "Worker Two" },
+        ]}
+      />
+    );
+    expect(
+      multipleWorkers.getByTestId("hirer-quest-card-workers-q8").props
+    ).not.toHaveProperty("accessibilityRole", "button");
+    expect(
+      multipleWorkers.getByTestId("hirer-quest-card-workers-q8").props
+    ).not.toHaveProperty("onPress");
+    expect(multipleWorkers.queryByText("ดูผู้เข้าร่วม")).toBeNull();
+
+    const applicants = await render(
+      <HirerQuestProgressCard
+        questId="q9"
+        title="Candidate Quest"
+        status="QUEST_OPEN"
+        onOpenDetails={jest.fn()}
+        applicants={[{ id: "a1", displayName: "Applicant One" }]}
+      />
+    );
+    expect(
+      applicants.getByTestId("hirer-quest-card-applicants-q9").props
+    ).not.toHaveProperty("accessibilityRole", "button");
+    expect(
+      applicants.getByTestId("hirer-quest-card-applicants-q9").props
+    ).not.toHaveProperty("onPress");
+    expect(applicants.queryByText("ดูผู้สมัคร")).toBeNull();
+  });
+
   it("renders waiting banner when no applicants or workers", async () => {
     const onOpenDetails = jest.fn();
     const { getByText, getByTestId } = await render(

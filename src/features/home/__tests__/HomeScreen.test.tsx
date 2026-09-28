@@ -3,13 +3,16 @@ import { fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import { questApi } from "@/api/QuestApi";
+import { isPrototypeDemoEnabled } from "@/features/auth/authEnvironment";
 import { studentApi } from "@/api/StudentApi";
 import HomeScreen from "../HomeScreen";
 import { DEFAULT_LOCALE } from "@/locales/locale";
 import { hirerHomeMessages } from "@/locales/hirerHomeMessages";
-
 const mockPush = jest.fn();
 
+jest.mock("@/features/auth/authEnvironment", () => ({
+  isPrototypeDemoEnabled: jest.fn(() => false),
+}));
 jest.mock("expo-router", () => ({
   useRouter: () => ({
     push: mockPush,
@@ -47,6 +50,7 @@ jest.mock("@/api/StudentApi", () => {
 describe("HomeScreen live active quests syncing", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.mocked(isPrototypeDemoEnabled).mockReturnValue(false);
   });
 
   it("syncs and displays active quests created by the hirer with assigned worker", async () => {
@@ -96,6 +100,98 @@ describe("HomeScreen live active quests syncing", () => {
     expect(getByTestId("hirer-quest-card-worker-live-q1")).toBeTruthy();
   });
 
+  it("opens live Quest Detail without enabling fixture preview", async () => {
+    (questApi.listMine as jest.Mock).mockResolvedValue({
+      items: [
+        {
+          id: "live-detail",
+          title: "Live Quest",
+          state: "QUEST_OPEN",
+          mode: "FIRST_COME_FIRST_SERVED",
+          participation: "SINGLE",
+          headcount: 1,
+          dueAt: null,
+        },
+      ],
+      nextCursor: null,
+    });
+    (questApi.listQuestAssignments as jest.Mock).mockResolvedValue([]);
+
+    const { getByTestId } = await renderWithQueryClient(<HomeScreen />);
+    await waitFor(() =>
+      expect(getByTestId("hirer-quest-card-details-live-detail")).toBeTruthy()
+    );
+    await fireEvent.press(getByTestId("hirer-quest-card-details-live-detail"));
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]",
+      params: { id: "live-detail" },
+    });
+  });
+
+  it("shows fixture preview after demo backend failure without opening unsupported routes", async () => {
+    jest.mocked(isPrototypeDemoEnabled).mockReturnValue(true);
+    (questApi.listMine as jest.Mock).mockRejectedValue(
+      new Error("Backend unavailable")
+    );
+
+    const { getByTestId, queryByTestId } = await renderWithQueryClient(
+      <HomeScreen />
+    );
+
+    await waitFor(() => {
+      expect(
+        getByTestId("hirer-quest-card-hirer-home-progress-demo")
+      ).toBeTruthy();
+    });
+    expect(queryByTestId("hirer-home-error")).toBeNull();
+    await fireEvent.press(
+      getByTestId("hirer-quest-card-details-hirer-home-progress-demo")
+    );
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]",
+      params: {
+        id: "hirer-home-progress-demo",
+        preview: "populated",
+      },
+    });
+    mockPush.mockClear();
+    await fireEvent.press(
+      getByTestId("hirer-quest-card-worker-hirer-home-progress-demo")
+    );
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(
+      queryByTestId("hirer-quest-card-worker-profile-hirer-home-progress-demo")
+    ).toBeNull();
+  });
+
+  it("keeps production query failures on the error state", async () => {
+    (questApi.listMine as jest.Mock).mockRejectedValue(
+      new Error("Backend unavailable")
+    );
+
+    const { getByTestId, queryByTestId } = await renderWithQueryClient(
+      <HomeScreen />
+    );
+
+    await waitFor(() => {
+      expect(getByTestId("hirer-home-error")).toBeTruthy();
+    });
+    expect(queryByTestId("hirer-quest-carousel")).toBeNull();
+  });
+
+  it("uses Home loading skeletons from shared primitives", async () => {
+    const { promise } = Promise.withResolvers<never>();
+    (questApi.listMine as jest.Mock).mockReturnValue(promise);
+
+    const { getByTestId, queryByTestId } = await renderWithQueryClient(
+      <HomeScreen />
+    );
+
+    expect(getByTestId("hirer-home-loading-skeleton")).toBeTruthy();
+    expect(queryByTestId("quest-board-loading-skeleton")).toBeNull();
+  });
+
   it("opens the roster screen from the assigned Worker banner", async () => {
     (questApi.listMine as jest.Mock).mockResolvedValue({
       items: [
@@ -138,6 +234,10 @@ describe("HomeScreen live active quests syncing", () => {
     });
 
     await fireEvent.press(getByTestId("hirer-quest-card-worker-live-q1"));
+    await fireEvent.press(
+      getByTestId("hirer-quest-card-worker-profile-live-q1")
+    );
+    expect(mockPush).toHaveBeenCalledWith("/profile/worker-chat-1");
 
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/quest/[id]/select-roster",
@@ -378,6 +478,55 @@ describe("HomeScreen live active quests syncing", () => {
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/my-quests",
       params: { role: "hirer", tab: "active" },
+    });
+  });
+
+  it("shows attention for an active Quest outside the five-card carousel", async () => {
+    const activeQuests = Array.from({ length: 6 }, (_, index) => ({
+      id: `attention-active-${index + 1}`,
+      title: `Active Quest ${index + 1}`,
+      state: "QUEST_OPEN",
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "SINGLE",
+      headcount: 1,
+      dueAt: null,
+    }));
+    activeQuests[5] = {
+      ...activeQuests[5],
+      mode: "CANDIDATE",
+      title: "Sixth Quest Needs Selection",
+    };
+    (questApi.listMine as jest.Mock).mockResolvedValue({
+      items: activeQuests,
+      nextCursor: null,
+    });
+    (questApi.listQuestAssignments as jest.Mock).mockResolvedValue([]);
+    (questApi.listApplications as jest.Mock).mockResolvedValue([
+      {
+        id: "sixth-application",
+        questId: "attention-active-6",
+        memberId: "candidate-six",
+        state: "APPLICATION_APPLIED",
+        appliedAt: "2026-09-18T10:00:00.000+07:00",
+      },
+    ]);
+
+    const { getByTestId, queryByText } = await renderWithQueryClient(
+      <HomeScreen />
+    );
+
+    await waitFor(() => {
+      expect(
+        getByTestId("hirer-attention-applicants-attention-active-6")
+      ).toBeTruthy();
+    });
+    expect(queryByText("Active Quest 6")).toBeNull();
+    await fireEvent.press(
+      getByTestId("hirer-attention-applicants-attention-active-6")
+    );
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]/select-roster",
+      params: { id: "attention-active-6" },
     });
   });
 

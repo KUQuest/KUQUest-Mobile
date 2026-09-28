@@ -14,6 +14,7 @@ import { isTerminalStatus } from "@/domain/questLifecycle";
 import { myQuestService } from "@/features/myQuests/myQuestService";
 import {
   HIRER_HOME_MAX_ACTIVE_QUESTS,
+  getHirerAttentionItems,
   prioritizeHirerHomeQuests,
   type CanonicalHirerQuestStatus,
   type HirerHomeData,
@@ -55,37 +56,45 @@ async function loadHirerHome(signal: AbortSignal): Promise<HirerHomeData> {
   const completedCount = quests.filter(
     (q) => q.state === QuestStatus.QUEST_COMPLETED
   ).length;
-  const selectedSourceQuests = prioritizeHirerHomeQuests(
+  const prioritizedQuests = prioritizeHirerHomeQuests(
     activeSourceQuests.map((quest) => ({
       quest,
       status: quest.state as CanonicalHirerQuestStatus,
       dueAt: quest.dueAt,
     }))
-  )
-    .slice(0, HIRER_HOME_MAX_ACTIVE_QUESTS)
-    .map(({ quest }) => quest);
+  ).map(({ quest }) => quest);
+  const carouselQuestIds = new Set(
+    prioritizedQuests
+      .slice(0, HIRER_HOME_MAX_ACTIVE_QUESTS)
+      .map((quest) => quest.id)
+  );
   let hasPartialFailure = false;
 
-  const activeQuests = await Promise.all(
-    selectedSourceQuests.map(async (q) => {
+  const hydratedQuests = await Promise.all(
+    prioritizedQuests.map(async (q) => {
+      const isCarouselQuest = carouselQuestIds.has(q.id);
       const isSingleCandidate =
         q.mode === QuestMode.CANDIDATE &&
         q.participation !== QuestParticipation.GROUP;
       const isGroupCandidate =
         q.mode === QuestMode.CANDIDATE &&
         q.participation === QuestParticipation.GROUP;
+      const shouldLoadProposals =
+        isCarouselQuest || q.state === QuestStatus.QUEST_OPEN;
       const [assignments, applications, teams, proofs] = await Promise.all([
-        questApi.listQuestAssignments(q.id, { signal }).catch(() => {
-          hasPartialFailure = true;
-          return [];
-        }),
-        isSingleCandidate
+        isCarouselQuest
+          ? questApi.listQuestAssignments(q.id, { signal }).catch(() => {
+              hasPartialFailure = true;
+              return [];
+            })
+          : Promise.resolve([]),
+        isSingleCandidate && shouldLoadProposals
           ? questApi.listApplications(q.id, { signal }).catch(() => {
               hasPartialFailure = true;
               return [];
             })
           : Promise.resolve([]),
-        isGroupCandidate
+        isGroupCandidate && shouldLoadProposals
           ? questApi.listCandidateTeams(q.id, { signal }).catch(() => {
               hasPartialFailure = true;
               return [];
@@ -99,14 +108,15 @@ async function loadHirerHome(signal: AbortSignal): Promise<HirerHomeData> {
           : Promise.resolve([]),
       ]);
 
-      const memberIds = Array.from(
-        new Set([
-          ...assignments.map((a) => a.workerId),
-          ...applications.map((a) => a.memberId),
-          ...teams.map((t) => t.leaderId),
-        ])
-      );
-
+      const memberIds = isCarouselQuest
+        ? Array.from(
+            new Set([
+              ...assignments.map((a) => a.workerId),
+              ...applications.map((a) => a.memberId),
+              ...teams.map((t) => t.leaderId),
+            ])
+          )
+        : [];
       const profileMap = new Map<string, QuestMemberProfile>();
       await Promise.all(
         memberIds.map(async (id) => {
@@ -132,15 +142,22 @@ async function loadHirerHome(signal: AbortSignal): Promise<HirerHomeData> {
         .map((a) => profileMap.get(a.workerId))
         .filter((p): p is QuestMemberProfile => Boolean(p));
 
-      const applicants = isGroupCandidate
+      const applicantIds = isGroupCandidate
         ? teams
             .filter((t) => t.state === "TEAM_SUBMITTED")
-            .map((t) => profileMap.get(t.leaderId))
-            .filter((p): p is QuestMemberProfile => Boolean(p))
+            .map((t) => t.leaderId)
         : applications
             .filter((app) => app.state === "APPLICATION_APPLIED")
-            .map((app) => profileMap.get(app.memberId))
-            .filter((p): p is QuestMemberProfile => Boolean(p));
+            .map((app) => app.memberId);
+      const applicants = applicantIds
+        .map(
+          (id) =>
+            profileMap.get(id) ?? {
+              id,
+              displayName: "",
+            }
+        )
+        .filter((p): p is QuestMemberProfile => Boolean(p));
 
       return {
         id: q.id,
@@ -164,7 +181,8 @@ async function loadHirerHome(signal: AbortSignal): Promise<HirerHomeData> {
   );
 
   return {
-    activeQuests,
+    activeQuests: hydratedQuests.slice(0, HIRER_HOME_MAX_ACTIVE_QUESTS),
+    attentionItems: getHirerAttentionItems(hydratedQuests),
     activeQuestCount: activeSourceQuests.length,
     draftCount,
     completedCount,
