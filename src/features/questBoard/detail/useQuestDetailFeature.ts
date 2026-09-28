@@ -30,6 +30,7 @@ import {
   type QuestDetailScreenProps,
 } from "./questDetailRoute";
 import { useQuestDetailReadSource } from "./useQuestDetailReadSource";
+import { useQuestTagsQuery } from "../api/questTagsQueries";
 import { useQuestDetailSurfaceState } from "./useQuestDetailSurfaceState";
 import { useQuestDetailLiveActions } from "./useQuestDetailLiveActions";
 import {
@@ -80,6 +81,8 @@ export function useQuestDetailFeature({
   const viewerId = explicitStudentId ?? sessionStudentId ?? "";
   const sessionReady = Boolean(explicitStudentId) || !sessionQuery.isPending;
   const explicitPreview = screenProps.previewState !== undefined;
+  const tagQuery = useQuestTagsQuery(!explicitPreview);
+  const tagCatalog = tagQuery.data ?? [];
   const read = useQuestDetailReadSource({
     questId: route.questId,
     viewerId,
@@ -148,6 +151,7 @@ export function useQuestDetailFeature({
     viewerId,
     surface: surface.state,
     teamDirectory: previewTeamDirectory,
+    tagCatalog,
     colors,
   });
 

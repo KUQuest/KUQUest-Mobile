@@ -17,10 +17,14 @@ import { cn } from "@/tw/cn";
 import { limitImagePixels } from "@/api/fileUpload";
 import { formatTimestampDateTime } from "@/domain/datetime";
 import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestTypes";
-import { QuestProofStatus } from "@/features/questBoard/domain/types";
+import {
+  QuestProofFileStatus,
+  QuestProofStatus,
+} from "@/features/questBoard/domain/types";
 import { useLocale } from "@/features/preferences/localeStore";
 import {
   ProofFileUploadError,
+  useRemoveProofFileMutation,
   useSubmitProofMutation,
 } from "../api/workerWorkQueries";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
@@ -69,12 +73,29 @@ export function WorkerProofForm({
   const { locale } = useLocale();
   const messages = workerWorkMessages[locale];
   const proofMutation = useSubmitProofMutation();
+  const removeProofFileMutation = useRemoveProofFileMutation();
 
   const [files, setFiles] = useState<ProofFile[]>([]);
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(
+    () => unsentProofDraft(snapshot, viewerId)?.description ?? ""
+  );
   const [notice, setNotice] = useState<string | null>(null);
   const [failedDraft, setFailedDraft] = useState<ProofDraftRef | null>(null);
   const fileKeySeed = useRef(0);
+  const serverDraft = unsentProofDraft(snapshot, viewerId);
+  const serverFileCount = serverDraft?.files.length ?? 0;
+  const hasReadyServerFile =
+    serverDraft?.files.some(
+      (file) =>
+        file.uploadStatus === QuestProofFileStatus.PROOF_FILE_READY &&
+        file.fileId !== null
+    ) ?? false;
+  const hasUnresolvedServerFailure =
+    files.length === 0 &&
+    (serverDraft?.files.some(
+      (file) => file.uploadStatus === QuestProofFileStatus.PROOF_FILE_FAILED
+    ) ??
+      false);
 
   const sentProof = latestSentProof(snapshot, viewerId);
   if (sentProof) {
@@ -95,12 +116,14 @@ export function WorkerProofForm({
     return null;
   }
 
-  const submitting = proofMutation.isPending;
-  const hasSelectedFile = files.length > 0;
-  const submitDisabled = submitting || !hasSelectedFile;
+  const submitting =
+    proofMutation.isPending || removeProofFileMutation.isPending;
+  const hasSelectedFile = files.length > 0 || hasReadyServerFile;
+  const submitDisabled =
+    submitting || !hasSelectedFile || hasUnresolvedServerFailure;
 
   const pickFiles = async () => {
-    const remaining = MAX_PROOF_FILES - files.length;
+    const remaining = MAX_PROOF_FILES - serverFileCount - files.length;
     if (remaining <= 0) {
       setNotice(messages.fileLimitReached);
       return;
@@ -161,9 +184,51 @@ export function WorkerProofForm({
     }
   };
 
+  const pickDocuments = async () => {
+    const remaining = MAX_PROOF_FILES - serverFileCount - files.length;
+    if (remaining <= 0) {
+      setNotice(messages.fileLimitReached);
+      return;
+    }
+    try {
+      const result = await File.pickFileAsync({
+        mimeTypes: ["application/pdf"],
+        multipleFiles: true,
+      });
+      if (result.canceled) return;
+      const tooLarge: string[] = [];
+      const picked: ProofFile[] = [];
+      for (const file of result.result) {
+        const name = file.name || `proof-${Date.now()}.pdf`;
+        if (file.size > MAX_PROOF_FILE_BYTES) {
+          tooLarge.push(name);
+          continue;
+        }
+        fileKeySeed.current += 1;
+        picked.push({
+          key: `proof-file-${fileKeySeed.current}`,
+          uri: file.uri,
+          name,
+          type: file.type || "application/pdf",
+          kind: "file",
+        });
+      }
+      const accepted = picked.slice(0, remaining);
+      setFiles((current) => [...current, ...accepted]);
+      setNotice(
+        tooLarge.length > 0
+          ? messages.fileTooLarge(tooLarge.join(", "))
+          : picked.length > accepted.length
+            ? messages.fileLimitReached
+            : null
+      );
+    } catch {
+      setNotice(messages.pickerError);
+    }
+  };
+
   const sendProof = async () => {
     setNotice(null);
-    const serverDraft = unsentProofDraft(snapshot, viewerId);
     const plan = planProofSend(
       failedDraft ??
         (serverDraft && {
@@ -189,13 +254,20 @@ export function WorkerProofForm({
         const fileKeys =
           plan.kind === "create"
             ? plan.files.map((file) => file.key)
-            : plan.retries.reduce<(string | null)[]>(
-                (keys, { position, file }) => {
-                  keys[position] = file.key;
-                  return keys;
-                },
-                [...(failedDraft?.fileKeys ?? [])]
-              );
+            : plan.kind === "retry"
+              ? plan.retries.reduce<(string | null)[]>(
+                  (keys, { position, file }) => {
+                    keys[position] = file.key;
+                    return keys;
+                  },
+                  [...(failedDraft?.fileKeys ?? [])]
+                )
+              : plan.kind === "append"
+                ? [
+                    ...Array.from({ length: serverFileCount }, () => null),
+                    ...plan.files.map((file) => file.key),
+                  ]
+                : [];
         setFailedDraft({
           id: error.draft.id,
           files: error.draft.files,
@@ -226,6 +298,29 @@ export function WorkerProofForm({
     }
   };
 
+  const removeServerFile = async (position: number) => {
+    if (!serverDraft) return;
+    const fileIds = serverDraft.files.flatMap((file) =>
+      file.position !== position && file.fileId ? [file.fileId] : []
+    );
+    try {
+      await removeProofFileMutation.mutateAsync({
+        questId,
+        viewerId,
+        draftId: serverDraft.id,
+        fileIds,
+      });
+      setNotice(null);
+      await onSubmitted?.();
+    } catch (error) {
+      setNotice(
+        getLocalizedErrorMessage(error, locale, {
+          fallback: messages.submitFailed,
+        })
+      );
+    }
+  };
+
   const confirmAndSend = () => {
     if (submitDisabled) return;
     showConfirmModal({
@@ -243,8 +338,11 @@ export function WorkerProofForm({
         disabled={submitting}
         files={files}
         maxFiles={MAX_PROOF_FILES}
+        onRemoveServer={(position) => void removeServerFile(position)}
+        serverFiles={serverDraft?.files ?? []}
         messages={messages}
         onAdd={() => void pickFiles()}
+        onAddDocument={() => void pickDocuments()}
         onRemove={(key) => {
           setFiles((current) => current.filter((file) => file.key !== key));
           setNotice(null);

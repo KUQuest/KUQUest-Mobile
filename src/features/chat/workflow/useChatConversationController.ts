@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Linking } from "react-native";
+import { File } from "expo-file-system";
 
 import { showErrorAlert } from "@/components/ui/SweetAlert";
 import { getLocalizedErrorMessage } from "@/utils/error";
@@ -396,21 +397,55 @@ export function useChatConversationController(
       ? messages.typeOwnerMessage
       : messages.typeMessage;
   const pickAttachment = async (
-    source: "camera" | "library"
+    source: "camera" | "library" | "file"
   ): Promise<void> => {
     if (!canWrite || !conversation) return;
-    const result =
-      source === "camera"
-        ? await ImagePicker.launchCameraAsync({
-            mediaTypes: ["images"],
-            quality: 0.8,
-          })
-        : await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ["images", "videos"],
-            quality: 0.8,
-          });
-    if (result.canceled || result.assets.length === 0) return;
-    const asset = result.assets[0];
+    let asset:
+      | {
+          uri: string;
+          fileName?: string;
+          mimeType?: string;
+          fileSize?: number;
+          width?: number;
+          height?: number;
+        }
+      | undefined;
+    if (source === "file") {
+      const result = await File.pickFileAsync({
+        mimeTypes: ["image/*", "video/*", "application/pdf"],
+        multipleFiles: false,
+      });
+      if (result.canceled) return;
+      const file = result.result;
+      asset = {
+        uri: file.uri,
+        fileName: file.name,
+        mimeType: file.type,
+        fileSize: file.size,
+      };
+    } else {
+      const result =
+        source === "camera"
+          ? await ImagePicker.launchCameraAsync({
+              mediaTypes: ["images"],
+              quality: 0.8,
+            })
+          : await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ["images", "videos"],
+              quality: 0.8,
+            });
+      if (result.canceled || result.assets.length === 0) return;
+      const picked = result.assets[0];
+      asset = {
+        uri: picked.uri,
+        fileName: picked.fileName ?? undefined,
+        mimeType: picked.mimeType ?? undefined,
+        fileSize: picked.fileSize,
+        width: picked.width,
+        height: picked.height,
+      };
+    }
+    if (!asset) return;
     if (asset.fileSize !== undefined && asset.fileSize > MAX_ATTACHMENT_BYTES) {
       showErrorAlert(messages.addAttachment, messages.attachmentSizeError);
       return;
@@ -426,14 +461,17 @@ export function useChatConversationController(
     }
     const assetName =
       asset.fileName ?? fileNameFromUri(asset.uri, `chat-${Date.now()}.jpg`);
-    const limited = mimeType.startsWith("image/")
-      ? await limitImagePixels({
-          uri: asset.uri,
-          type: mimeType,
-          width: asset.width,
-          height: asset.height,
-        })
-      : { uri: asset.uri, type: mimeType, resized: false };
+    const limited =
+      mimeType.startsWith("image/") &&
+      asset.width !== undefined &&
+      asset.height !== undefined
+        ? await limitImagePixels({
+            uri: asset.uri,
+            type: mimeType,
+            width: asset.width,
+            height: asset.height,
+          })
+        : { uri: asset.uri, type: mimeType, resized: false };
     const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     setPendingAttachments((current) => [
       ...current,
@@ -499,7 +537,7 @@ export function useChatConversationController(
       {
         text: messages.chooseFile,
         onPress: () => {
-          void pickAttachment("library").catch((error: unknown) => {
+          void pickAttachment("file").catch((error: unknown) => {
             showErrorAlert(
               messages.addAttachment,
               getLocalizedErrorMessage(error, locale, {

@@ -10,12 +10,14 @@ import { WorkspaceQuickSwitch } from "@/features/workspace/WorkspaceQuickSwitch"
 import { FlatList, Pressable, Text, View } from "@/tw";
 import { StateView } from "@/components/ui/StateView";
 import type { QuestV2BoardCard } from "@/api/questV2Contracts";
+import { useLocale } from "@/features/preferences/localeStore";
 import { spacing } from "@/theme/spacing";
 import { WorkerQuestFeedCard } from "./WorkerQuestFeedCard";
 import { WorkerQuickAccessBar } from "./WorkerQuickAccessBar";
 import { WorkerSearchBar } from "./WorkerSearchBar";
 import { QuestBoardFilterSheet } from "@/features/questBoard/board/components/QuestBoardFilters";
 import { workerHomeStyles as styles } from "../workerHomeStyles";
+import { getTagLabel, getTagLabelById } from "@/locales/tagLabels";
 
 import type { WorkerHomeContentProps } from "../workflow/useWorkerHomeController";
 
@@ -61,14 +63,16 @@ export function WorkerHomeContent({
   tags,
   themeColors,
 }: WorkerHomeContentProps) {
+  const { locale } = useLocale();
   const renderQuestItem = useCallback<ListRenderItem<QuestV2BoardCard>>(
     ({ item }) => (
       <WorkerQuestFeedCard
         onPress={() => handleQuestPress(item)}
         quest={item}
+        tagLabel={getTagLabelById(tags, item.tag?.id, item.tag?.name, locale)}
       />
     ),
-    [handleQuestPress]
+    [handleQuestPress, locale, tags]
   );
   const keyExtractor = useCallback((quest: QuestV2BoardCard) => quest.id, []);
   return (
@@ -214,7 +218,7 @@ export function WorkerHomeContent({
       />
       {filterOpen ? (
         <QuestBoardFilterSheet
-          availableTags={tags.map((tag) => tag.name)}
+          availableTags={tags.map((tag) => getTagLabel(tag, locale))}
           filter={filterDraft}
           messages={filterMessages}
           onApply={handleApplyFilters}

@@ -7,6 +7,7 @@ export type QuestCardAction = "edit" | "manage" | "review" | "dispute";
 export type QuestSummary = {
   id: string;
   title: string;
+  tagId?: string;
   tag: string;
   categoryTone: CategoryTone;
   startsAt: string;

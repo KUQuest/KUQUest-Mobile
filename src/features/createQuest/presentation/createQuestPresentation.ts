@@ -23,6 +23,7 @@ import {
   type CreateQuestMessages,
 } from "@/locales/createQuestMessages";
 import type { SupportedLocale } from "@/locales/locale";
+import { getTagLabel } from "@/locales/tagLabels";
 
 export type CreateQuestTagOption = {
   label: string;
@@ -97,13 +98,6 @@ function getPublishBlockers(
     message: blockerMessages[code] ?? messages.publishError,
     field: BLOCKER_FIELDS[code] ?? null,
   }));
-}
-
-function getTagLabel(
-  tag: { name: string; nameTh?: string | null },
-  locale: SupportedLocale
-): string {
-  return locale === "th" && tag.nameTh ? tag.nameTh : tag.name;
 }
 
 export function getCreateQuestTagOptions(

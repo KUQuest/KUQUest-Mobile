@@ -464,6 +464,8 @@ export interface QuestDetailState {
 export interface QuestBoardQuest {
   id: string;
   title: string;
+  /** Server tag identity used to select the current locale label. */
+  tagId?: string;
   tags: string[];
   description: string;
   completionCriteria: string;

@@ -7,7 +7,6 @@ import {
   SkeletonBlock,
 } from "../../../components/ui/LoadingSkeleton";
 import styles from "../styles/profileComponentStyles";
-import pageStyles from "../styles/profileStyles";
 
 export function ProfileSkeleton({
   activeTab = "about",
@@ -56,16 +55,15 @@ export function ProfileSkeleton({
       testID="profile-loading-skeleton"
     >
       <ScrollView
-        contentContainerClassName={cn(
-          pageStyles.content,
-          width >= 600 && pageStyles.tabletContent
-        )}
         contentContainerStyle={{
+          alignSelf: width >= 600 ? "center" : undefined,
           gap: metrics.sectionGap,
+          maxWidth: width >= 600 ? 720 : undefined,
           paddingBottom: bottomPadding,
           paddingLeft: metrics.pagePadding,
           paddingRight: metrics.pagePadding,
           paddingTop: profileTopBarHeight + metrics.sectionGap,
+          width: "100%",
         }}
         showsVerticalScrollIndicator={false}
       >

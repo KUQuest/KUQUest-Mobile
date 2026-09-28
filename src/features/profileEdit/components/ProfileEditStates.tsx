@@ -104,12 +104,18 @@ export function ProfileEditLoadingState({
       >
         <View style={{ flex: 1 }}>
           <ScrollView
-            contentContainerClassName={
-              listSection || variant === "hub"
-                ? styles.scrollContent
-                : styles.formContent
-            }
-            contentContainerStyle={{ paddingTop: spacing.px0 }}
+            contentContainerStyle={{
+              alignSelf: "center",
+              gap: spacing.md,
+              maxWidth: 720,
+              paddingBottom:
+                listSection || variant === "hub"
+                  ? spacing.px120
+                  : spacing.px132,
+              paddingHorizontal: spacing.lg,
+              paddingTop: spacing.px0,
+              width: "100%",
+            }}
             showsVerticalScrollIndicator={false}
           >
             {variant === "hub" ? (

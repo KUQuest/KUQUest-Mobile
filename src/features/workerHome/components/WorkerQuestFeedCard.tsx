@@ -20,6 +20,7 @@ import { workerHomeStyles as styles } from "../workerHomeStyles";
 
 interface WorkerQuestFeedCardProps {
   quest: QuestV2BoardCard;
+  tagLabel?: string;
   onPress?: () => void;
 }
 
@@ -27,6 +28,7 @@ const PLACEHOLDER = "—";
 
 export function WorkerQuestFeedCard({
   quest,
+  tagLabel,
   onPress,
 }: WorkerQuestFeedCardProps) {
   const router = useRouter();
@@ -66,10 +68,10 @@ export function WorkerQuestFeedCard({
     >
       <View className={styles.feedCardTop}>
         <View className={styles.feedCardIdentity}>
-          {quest.tag?.name ? (
+          {tagLabel ? (
             <View className={styles.tagChip}>
               <Text className={styles.tagText} numberOfLines={1}>
-                {quest.tag.name}
+                {tagLabel}
               </Text>
             </View>
           ) : null}

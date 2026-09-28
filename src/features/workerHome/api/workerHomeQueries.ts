@@ -50,13 +50,6 @@ export function useWorkerBoardQuery({ q, tagId }: WorkerBoardQueryParams) {
   return query;
 }
 
-export function useWorkerTagsQuery() {
-  return useQuery({
-    queryKey: workerHomeKeys.tags(),
-    queryFn: ({ signal }) => questApi.listTags({ signal }),
-  });
-}
-
 export function useWorkerParticipationDetailQuery(questId: string | null) {
   return useQuery({
     enabled: Boolean(questId),

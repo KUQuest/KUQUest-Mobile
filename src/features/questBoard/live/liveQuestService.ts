@@ -103,7 +103,9 @@ export function cardToQuestBoardQuest(card: QuestV2BoardCard): QuestBoardQuest {
     id: card.id,
     title: card.title,
 
-    tags: card.tag ? [card.tag.name] : [],
+    ...(card.tag
+      ? { tagId: card.tag.id, tags: [card.tag.name] }
+      : { tags: [] }),
     description: "",
     completionCriteria: "",
     proofRequired: "none",
@@ -138,7 +140,7 @@ export function canonicalToQuestBoardQuest(
   return {
     id: q.id,
     title: q.title,
-    tags: q.tag ? [q.tag.name] : [],
+    ...(q.tag ? { tagId: q.tag.id, tags: [q.tag.name] } : { tags: [] }),
     description: q.description || "",
     completionCriteria: q.condition.items
       .map(
@@ -178,7 +180,7 @@ export function publicDetailToQuestBoardQuest(
   return {
     id: d.id,
     title: d.title,
-    tags: d.tag ? [d.tag.name] : [],
+    ...(d.tag ? { tagId: d.tag.id, tags: [d.tag.name] } : { tags: [] }),
     description: d.description || "",
     completionCriteria: d.condition.items
       .map(

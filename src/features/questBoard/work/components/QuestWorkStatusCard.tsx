@@ -12,6 +12,7 @@ import {
 } from "lucide-react-native";
 
 import { Text, View } from "@/tw";
+import type { TagItem } from "@/api/QuestApi";
 import { cn } from "@/tw/cn";
 import { formatSatang, SATANG_PER_BAHT } from "@/domain/satang";
 import { useLocale } from "@/features/preferences/localeStore";
@@ -22,6 +23,7 @@ import {
   QuestStatus,
 } from "@/features/questBoard/domain/types";
 import { type QuestWorkMessages } from "@/locales/questWorkMessages";
+import { getTagLabelById } from "@/locales/tagLabels";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
 
 export interface QuestWorkStatusCardProps {
@@ -33,6 +35,7 @@ export interface QuestWorkStatusCardProps {
   dueAtDetail?: string;
   isTerminal: boolean;
   messages: QuestWorkMessages;
+  tagCatalog: readonly TagItem[];
 }
 
 function DetailRow({
@@ -70,6 +73,7 @@ export default function QuestWorkStatusCard({
   dueAtDetail,
   isTerminal,
   messages,
+  tagCatalog,
 }: QuestWorkStatusCardProps) {
   const { colors: palette } = useAppTheme();
   const { locale } = useLocale();
@@ -122,6 +126,12 @@ export default function QuestWorkStatusCard({
   const proofBadgeText = snapshot.proofRequired
     ? messages.proofRequiredBadge
     : messages.proofFreeBadge;
+  const tagLabel = getTagLabelById(
+    tagCatalog,
+    snapshot.quest.tag?.id,
+    snapshot.quest.tag?.name,
+    locale
+  );
 
   const locationLabel = snapshot.quest.locations?.[0]?.label;
   const ParticipationIcon = isGroup ? Users : User;
@@ -136,9 +146,9 @@ export default function QuestWorkStatusCard({
               {status}
             </Text>
           </View>
-          {snapshot.quest.tag?.name ? (
+          {tagLabel ? (
             <Text className={styles.tag} numberOfLines={1}>
-              {snapshot.quest.tag.name}
+              {tagLabel}
             </Text>
           ) : null}
         </View>

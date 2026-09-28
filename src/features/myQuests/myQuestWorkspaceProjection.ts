@@ -1,4 +1,5 @@
 import type { QuestV2CanonicalQuest } from "@/api/questV2Contracts";
+import type { TagItem } from "@/api/QuestApi";
 import { myQuestMessages } from "@/locales/myQuestMessages";
 import type { SupportedLocale } from "@/locales/locale";
 import { getLiveHirerItems } from "./myQuestService";
@@ -19,6 +20,7 @@ export interface ProjectMyQuestWorkspaceInput {
   requestedTab?: string;
   locale: SupportedLocale;
   hirerQuests: QuestV2CanonicalQuest[] | null;
+  tagCatalog?: readonly TagItem[];
 }
 
 const hirerTabs: HirerTab[] = ["active", "draft", "completed"];
@@ -34,6 +36,7 @@ export function projectMyQuestWorkspace({
   requestedTab,
   locale,
   hirerQuests,
+  tagCatalog = [],
 }: ProjectMyQuestWorkspaceInput): MyQuestWorkspaceProjection {
   const selectedTab = normalizeTab(requestedTab);
   const messages = myQuestMessages[locale];
@@ -43,7 +46,7 @@ export function projectMyQuestWorkspace({
     tabLabels: messages.tabs,
     selectedTab,
     items: hirerQuests
-      ? getLiveHirerItems(hirerQuests, selectedTab, locale)
+      ? getLiveHirerItems(hirerQuests, selectedTab, locale, tagCatalog)
       : [],
     selectedTabLabel: messages.tabs[selectedTab],
     emptyTitle: messages.emptyTitle[selectedTab],

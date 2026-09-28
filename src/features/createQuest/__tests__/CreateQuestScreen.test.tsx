@@ -58,7 +58,7 @@ const mockLivePublishQuest = jest.fn();
 const mockLiveEditQuest = jest.fn();
 const mockWalletGetWallet = jest.fn();
 const mockCancelQuest = jest.fn();
-const mockUseWorkerTagsQuery = jest.fn();
+const mockUseQuestTagsQuery = jest.fn();
 const defaultWalletBalances = {
   spendingBalanceSatang: 100_000,
   earningsBalanceSatang: 0,
@@ -185,9 +185,9 @@ jest.mock("@/features/wallet/api/walletQueries", () => {
     ).useQueryClient,
   };
 });
-jest.mock("@/features/workerHome/api/workerHomeQueries", () => ({
-  ...jest.requireActual("@/features/workerHome/api/workerHomeQueries"),
-  useWorkerTagsQuery: () => mockUseWorkerTagsQuery(),
+jest.mock("@/features/questBoard/api/questTagsQueries", () => ({
+  ...jest.requireActual("@/features/questBoard/api/questTagsQueries"),
+  useQuestTagsQuery: () => mockUseQuestTagsQuery(),
 }));
 
 jest.mock("expo-router", () => ({
@@ -298,7 +298,7 @@ describe("CreateQuestScreen", () => {
     mockBeforeRemoveListeners.length = 0;
     mockCancelQuest.mockReset();
     mockCancelQuest.mockResolvedValue({});
-    mockUseWorkerTagsQuery.mockReturnValue({
+    mockUseQuestTagsQuery.mockReturnValue({
       data: undefined,
       isError: false,
       refetch: jest.fn(),
@@ -327,7 +327,7 @@ describe("CreateQuestScreen", () => {
   it("shows tag-load failure and retry beside the tag selector", async () => {
     mockLoadQuestDraft.mockResolvedValueOnce(null);
     const refetchTags = jest.fn();
-    mockUseWorkerTagsQuery.mockReturnValue({
+    mockUseQuestTagsQuery.mockReturnValue({
       data: undefined,
       isError: true,
       refetch: refetchTags,
@@ -1168,9 +1168,18 @@ describe("CreateQuestScreen", () => {
       params: { id: "server-quest-1", mode: "post" },
     });
 
-    const passthrough = fireBeforeRemove();
+    let passthrough: BeforeRemoveEvent | undefined;
+    await act(async () => {
+      passthrough = fireBeforeRemove();
+    });
+    let reblocked: BeforeRemoveEvent | undefined;
+    await act(async () => {
+      reblocked = fireBeforeRemove();
+    });
+    if (!passthrough || !reblocked) {
+      throw new Error("beforeRemove guard did not return an event");
+    }
     expect(passthrough.preventDefault).not.toHaveBeenCalled();
-    const reblocked = fireBeforeRemove();
     expect(reblocked.preventDefault).toHaveBeenCalled();
   });
 

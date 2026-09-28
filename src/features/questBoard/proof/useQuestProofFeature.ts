@@ -47,17 +47,25 @@ function ownProof(
 function toUploadAssets(assets: ProofDraftAsset[]): UploadAsset[] {
   return assets.map(({ uri, name, type }) => ({ uri, name, type }));
 }
-function retryAssetsForSubmission(
+export function retryAssetsForSubmission(
   submission: QuestV2ProofSubmission,
-  assets: ProofDraftAsset[]
+  assets: ProofDraftAsset[],
+  assetPositionOffset = 0
 ): Record<number, ProofDraftAsset> {
   const retryAssets: Record<number, ProofDraftAsset> = {};
   for (const file of submission.files) {
     if (file.uploadStatus !== QuestProofFileStatus.PROOF_FILE_FAILED) continue;
-    const asset = assets[file.position];
+    const asset = assets[file.position - assetPositionOffset];
     if (asset) retryAssets[file.position] = asset;
   }
   return retryAssets;
+}
+
+function nextProofFilePosition(proof: QuestV2ProofSubmission | null): number {
+  return (
+    proof?.files.reduce((next, file) => Math.max(next, file.position + 1), 0) ??
+    0
+  );
 }
 
 export function useQuestProofFeature({
@@ -190,7 +198,13 @@ export function useQuestProofFeature({
       }
       setDraftAssets([]);
       if (assets.length > 0) {
-        setRetryAssets(retryAssetsForSubmission(submission, assets));
+        setRetryAssets(
+          retryAssetsForSubmission(
+            submission,
+            assets,
+            proof && isDraft ? nextProofFilePosition(proof) : 0
+          )
+        );
       }
       await refreshAuthoritatively();
     },
@@ -249,7 +263,13 @@ export function useQuestProofFeature({
           (file) => file.uploadStatus === QuestProofFileStatus.PROOF_FILE_FAILED
         )
       ) {
-        setRetryAssets(retryAssetsForSubmission(submission, pendingAssets));
+        setRetryAssets(
+          retryAssetsForSubmission(
+            submission,
+            pendingAssets,
+            proof && isDraft ? nextProofFilePosition(proof) : 0
+          )
+        );
         setDraftAssets([]);
         await refreshAuthoritatively();
         throw new Error(messages.proofFilesUploadFailed);
@@ -342,6 +362,36 @@ export function useQuestProofFeature({
     ]
   );
 
+  const removeDraftFile = useCallback(
+    async (position: number) => {
+      if (
+        !resolvedQuestId ||
+        !proof ||
+        !isDraft ||
+        !snapshot?.capabilities.canSubmitProof
+      ) {
+        return;
+      }
+      const fileIds = proof.files.flatMap((file) =>
+        file.position !== position && file.fileId ? [file.fileId] : []
+      );
+      await liveQuestService.updateProofDraft(
+        resolvedQuestId,
+        proof.id,
+        { fileIds },
+        createQuestIdempotencyKey()
+      );
+      await refreshAuthoritatively();
+    },
+    [
+      isDraft,
+      proof,
+      refreshAuthoritatively,
+      resolvedQuestId,
+      snapshot?.capabilities.canSubmitProof,
+    ]
+  );
+
   const confirmCompletion = useCallback(() => {
     if (
       !resolvedQuestId ||
@@ -412,6 +462,7 @@ export function useQuestProofFeature({
     resolvedViewerId,
     retryAssets,
     retryUpload,
+    removeDraftFile,
     saveDraft,
     setSheetOpen,
     sheetOpen,

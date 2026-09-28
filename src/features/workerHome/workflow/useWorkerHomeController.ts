@@ -18,6 +18,7 @@ import {
   type QuestBoardFilter,
 } from "@/features/questBoard/domain/types";
 import { questBoardMessages } from "@/locales/questBoardMessages";
+import { getTagLabel } from "@/locales/tagLabels";
 
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import { useLocale } from "@/features/preferences/localeStore";
@@ -28,8 +29,8 @@ import {
   useWorkerAssignmentsQuery,
   useWorkerBoardQuery,
   useWorkerParticipationDetailQuery,
-  useWorkerTagsQuery,
 } from "../api/workerHomeQueries";
+import { useQuestTagsQuery } from "@/features/questBoard/api/questTagsQueries";
 import {
   workerHomeMessages,
   type WorkerHomeMessages,
@@ -113,7 +114,7 @@ export function useWorkerHomeController(): WorkerHomeControllerProps {
     tagId: selectedTagId,
   });
   const { refetch: refetchBoard } = boardQuery;
-  const tagsQuery = useWorkerTagsQuery();
+  const tagsQuery = useQuestTagsQuery();
   const { refetch: refetchTags } = tagsQuery;
   const activeAssignments = useMemo(
     () => assignmentsQuery.data ?? [],
@@ -168,10 +169,12 @@ export function useWorkerHomeController(): WorkerHomeControllerProps {
       ...filterDraft,
       tags: selectedTag ? [selectedTag] : [],
     });
-    setSelectedTagId(tags.find((tag) => tag.name === selectedTag)?.id ?? null);
+    setSelectedTagId(
+      tags.find((tag) => getTagLabel(tag, locale) === selectedTag)?.id ?? null
+    );
     setSearchQuery(filterDraft.query);
     setFilterOpen(false);
-  }, [filterDraft, tags]);
+  }, [filterDraft, locale, tags]);
 
   const handleSearchChange = useCallback((text: string) => {
     setSearchQuery(text);
@@ -182,23 +185,23 @@ export function useWorkerHomeController(): WorkerHomeControllerProps {
   const handleSelectTag = useCallback(
     (tagId: string | null) => {
       setSelectedTagId(tagId);
-      const selectedName = tags.find((tag) => tag.id === tagId)?.name;
+      const selectedName = tags.find((tag) => tag.id === tagId);
       setFilters((current) => ({
         ...current,
-        tags: selectedName ? [selectedName] : [],
+        tags: selectedName ? [getTagLabel(selectedName, locale)] : [],
       }));
     },
-    [tags]
+    [locale, tags]
   );
   const handleOpenFilter = useCallback(() => {
-    const selectedName = tags.find((tag) => tag.id === selectedTagId)?.name;
+    const selectedName = tags.find((tag) => tag.id === selectedTagId);
     setFilterDraft({
       ...filters,
-      tags: selectedName ? [selectedName] : [],
+      tags: selectedName ? [getTagLabel(selectedName, locale)] : [],
       query: searchQuery,
     });
     setFilterOpen(true);
-  }, [filters, searchQuery, selectedTagId, tags]);
+  }, [filters, locale, searchQuery, selectedTagId, tags]);
   const handleCloseFilter = useCallback(() => {
     setFilterOpen(false);
   }, []);

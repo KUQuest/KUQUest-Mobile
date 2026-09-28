@@ -18,6 +18,7 @@ import { spacing } from "@/theme/spacing";
 import { HirerHomeSkeleton } from "./components/HirerHomeSkeleton";
 import { StateView } from "@/components/ui/StateView";
 import { useHirerHomeQuery } from "./api/homeQueries";
+import { useQuestTagsQuery } from "@/features/questBoard/api/questTagsQueries";
 import { HirerQuestProgressCard } from "./components/HirerQuestProgressCard";
 import {
   HirerAttentionSection,
@@ -35,6 +36,7 @@ import {
   QuestParticipation,
 } from "@/features/questBoard/domain/types";
 import { hirerHomeMessages } from "@/locales/hirerHomeMessages";
+import { getTagLabelById } from "@/locales/tagLabels";
 import { hirerHomeStyles as styles } from "./hirerHomeStyles";
 export default function HomeScreen() {
   const router = useRouter();
@@ -54,6 +56,8 @@ export default function HomeScreen() {
     refetch,
   } = useHirerHomeQuery();
   const liveQuests = homeData?.activeQuests ?? [];
+  const tagQuery = useQuestTagsQuery(liveQuests.length > 0);
+  const tagCatalog = tagQuery.data ?? [];
   const activeQuestCount = homeData?.activeQuestCount ?? 0;
   const draftCount = homeData?.draftCount ?? 0;
   const completedCount = homeData?.completedCount ?? 0;
@@ -66,6 +70,7 @@ export default function HomeScreen() {
         ? hirerHomeQuestFixtures.map((f) => ({
             id: f.id,
             title: f.title[locale],
+            tagId: undefined,
             tag: f.tag?.[locale],
             status: f.status,
             mode: QuestMode.FIRST_COME_FIRST_SERVED,
@@ -327,7 +332,12 @@ export default function HomeScreen() {
                         }
                         questId={item.id}
                         status={item.status}
-                        tag={item.tag}
+                        tag={getTagLabelById(
+                          tagCatalog,
+                          item.tagId,
+                          item.tag,
+                          locale
+                        )}
                         title={item.title}
                         headcount={item.headcount}
                         mode={item.mode}

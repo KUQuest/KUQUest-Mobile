@@ -6,7 +6,6 @@ export const workerHomeKeys = {
     [...workerHomeKeys.all, "assignments", status] as const,
   board: (q: string, tagId: string | null) =>
     [...workerHomeKeys.all, "board", q, tagId] as const,
-  tags: () => [...workerHomeKeys.all, "tags"] as const,
   participationDetail: (questId: string) =>
     [...workerHomeKeys.all, "participation-detail", questId] as const,
   liveSnapshot: (questId: string, viewerId: string) =>

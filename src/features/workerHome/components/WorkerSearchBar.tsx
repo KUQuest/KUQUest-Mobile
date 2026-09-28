@@ -6,6 +6,7 @@ import type { TagItem } from "@/api/QuestApi";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { workerHomeMessages } from "@/locales/workerHomeMessages";
+import { getTagLabel } from "@/locales/tagLabels";
 import { workerHomeStyles as styles } from "../workerHomeStyles";
 
 interface WorkerSearchBarProps {
@@ -109,7 +110,9 @@ export function WorkerSearchBar({
         testID="worker-tag-filter-scroll"
       >
         {renderTag(null, messages.tagAll, "tag-pill-all")}
-        {tags.map((tag) => renderTag(tag.id, tag.name, `tag-pill-${tag.id}`))}
+        {tags.map((tag) =>
+          renderTag(tag.id, getTagLabel(tag, locale), `tag-pill-${tag.id}`)
+        )}
       </ScrollView>
       {tagsError && onRetryTags ? (
         <View

@@ -11,6 +11,14 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 ## Entries
 
+### 2026-09-28 — Proof draft replacement has no atomic API
+
+**What happened**: Replacing a Worker proof draft can require deleting the old server draft and creating a new one because the API exposes no atomic replacement operation.
+
+**Root cause**: The OpenAPI contract defines separate create, update, and delete draft operations without duplicate-draft or transactional replacement semantics.
+
+**Rule**: Create replacement drafts before deleting old drafts; clean up the replacement when old-draft deletion fails. Do not reorder or invent an atomic endpoint until backend contract defines replacement semantics.
+
 ### 2026-09-26 — Chat sockets sent Messages as another Member
 
 **What happened**: On a device signed in as the Hirer, every Work Chat Message sent over the socket was stored with the Worker as sender; REST reads stayed correct.

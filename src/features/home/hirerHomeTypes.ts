@@ -46,6 +46,7 @@ export interface QuestMemberProfile {
 export interface LiveHirerQuestCardData {
   id: string;
   title: string;
+  tagId?: string;
   tag?: string;
   status: CanonicalHirerQuestStatus;
   mode: QuestMode;

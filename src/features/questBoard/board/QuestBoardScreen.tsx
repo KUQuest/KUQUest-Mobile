@@ -147,7 +147,6 @@ export default function QuestBoardScreen({
             testID="quest-board-refresh-control"
           />
         }
-        contentContainerClassName={styles.scrollContent}
         contentContainerStyle={{
           paddingBottom:
             chromeMetrics.navHeight +

@@ -67,26 +67,54 @@ function asRejectedUpload(fileCount: number) {
   };
 }
 
+type UploadableProofSendPlan<TFile extends { key: string }> = Exclude<
+  ProofSendPlan<TFile>,
+  { kind: "existing" }
+>;
+
 async function uploadProofDraft(
   questId: string,
-  plan: ProofSendPlan<UploadAsset & { key: string }>,
+  plan: UploadableProofSendPlan<UploadAsset & { key: string }>,
   description: string | undefined
 ): Promise<QuestV2ProofSubmission> {
+  if (plan.kind === "append") {
+    return liveQuestService.updateProofDraft(
+      questId,
+      plan.draftId,
+      {
+        assets: plan.files.map(toUploadAsset),
+        description,
+      },
+      createQuestIdempotencyKey()
+    );
+  }
+  // Create first: API has no atomic replacement; failed create must not delete old draft.
   if (plan.kind === "create") {
-    if (plan.replaceDraftId) {
-      await liveQuestService.deleteProofDraft(
-        questId,
-        plan.replaceDraftId,
-        createQuestIdempotencyKey()
-      );
-    }
-    return liveQuestService
+    const replacementDraft = await liveQuestService
       .createProofDraft(
         questId,
         { assets: plan.files.map(toUploadAsset), description },
         createQuestIdempotencyKey()
       )
       .catch(asRejectedUpload(plan.files.length));
+    if (!plan.replaceDraftId) return replacementDraft;
+    try {
+      await liveQuestService.deleteProofDraft(
+        questId,
+        plan.replaceDraftId,
+        createQuestIdempotencyKey()
+      );
+    } catch (error) {
+      await liveQuestService
+        .deleteProofDraft(
+          questId,
+          replacementDraft.id,
+          createQuestIdempotencyKey()
+        )
+        .catch(() => undefined);
+      throw error;
+    }
+    return replacementDraft;
   }
   let draft: QuestV2ProofSubmission | null = null;
   for (const { position, file } of plan.retries) {
@@ -118,6 +146,13 @@ export function useSubmitProofMutation() {
       plan: ProofSendPlan<UploadAsset & { key: string }>;
       description?: string;
     }) => {
+      if (plan.kind === "existing") {
+        return liveQuestService.submitProofDraft(
+          questId,
+          plan.draftId,
+          createQuestIdempotencyKey()
+        );
+      }
       const proofDraft = await uploadProofDraft(questId, plan, description);
       const failedFiles = proofDraft.files.filter(
         (file) => file.uploadStatus === QuestProofFileStatus.PROOF_FILE_FAILED
@@ -147,6 +182,27 @@ export function useSubmitProofMutation() {
         createQuestIdempotencyKey()
       );
     },
+    onSettled: (_data, _error, variables) => {
+      invalidateWorkerState(queryClient, variables);
+    },
+  });
+}
+
+export function useRemoveProofFileMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      questId,
+      viewerId,
+      draftId,
+      fileIds,
+    }: WorkerMutationInput & { draftId: string; fileIds: string[] }) =>
+      liveQuestService.updateProofDraft(
+        questId,
+        draftId,
+        { fileIds },
+        createQuestIdempotencyKey()
+      ),
     onSettled: (_data, _error, variables) => {
       invalidateWorkerState(queryClient, variables);
     },
