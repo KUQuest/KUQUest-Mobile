@@ -40,6 +40,7 @@ export default function QuestProofScreen({
     resolvedQuestId,
     resolvedViewerId,
     retryAssets,
+    removeDraftFile,
     retryUpload,
     saveDraft,
     setSheetOpen,
@@ -163,6 +164,11 @@ export default function QuestProofScreen({
         onRetryUpload={
           proof && isDraft && snapshot?.capabilities.canSubmitProof
             ? retryUpload
+            : undefined
+        }
+        onRemoveServerFile={
+          proof && isDraft && snapshot?.capabilities.canSubmitProof
+            ? removeDraftFile
             : undefined
         }
         onSaveDraft={saveDraft}

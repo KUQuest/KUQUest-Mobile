@@ -67,11 +67,27 @@ function asRejectedUpload(fileCount: number) {
   };
 }
 
+type UploadableProofSendPlan<TFile extends { key: string }> = Exclude<
+  ProofSendPlan<TFile>,
+  { kind: "existing" }
+>;
+
 async function uploadProofDraft(
   questId: string,
-  plan: ProofSendPlan<UploadAsset & { key: string }>,
+  plan: UploadableProofSendPlan<UploadAsset & { key: string }>,
   description: string | undefined
 ): Promise<QuestV2ProofSubmission> {
+  if (plan.kind === "append") {
+    return liveQuestService.updateProofDraft(
+      questId,
+      plan.draftId,
+      {
+        assets: plan.files.map(toUploadAsset),
+        description,
+      },
+      createQuestIdempotencyKey()
+    );
+  }
   if (plan.kind === "create") {
     if (plan.replaceDraftId) {
       await liveQuestService.deleteProofDraft(
@@ -118,6 +134,13 @@ export function useSubmitProofMutation() {
       plan: ProofSendPlan<UploadAsset & { key: string }>;
       description?: string;
     }) => {
+      if (plan.kind === "existing") {
+        return liveQuestService.submitProofDraft(
+          questId,
+          plan.draftId,
+          createQuestIdempotencyKey()
+        );
+      }
       const proofDraft = await uploadProofDraft(questId, plan, description);
       const failedFiles = proofDraft.files.filter(
         (file) => file.uploadStatus === QuestProofFileStatus.PROOF_FILE_FAILED
@@ -147,6 +170,28 @@ export function useSubmitProofMutation() {
         createQuestIdempotencyKey()
       );
     },
+    onSettled: (_data, _error, variables) => {
+      invalidateWorkerState(queryClient, variables);
+    },
+  });
+}
+
+
+export function useRemoveProofFileMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      questId,
+      viewerId,
+      draftId,
+      fileIds,
+    }: WorkerMutationInput & { draftId: string; fileIds: string[] }) =>
+      liveQuestService.updateProofDraft(
+        questId,
+        draftId,
+        { fileIds },
+        createQuestIdempotencyKey()
+      ),
     onSettled: (_data, _error, variables) => {
       invalidateWorkerState(queryClient, variables);
     },

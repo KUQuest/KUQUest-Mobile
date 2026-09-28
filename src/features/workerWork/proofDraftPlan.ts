@@ -14,6 +14,8 @@ export interface ProofDraftRef {
 
 export type ProofSendPlan<TFile extends { key: string }> =
   | { kind: "create"; replaceDraftId: string | null; files: TFile[] }
+  | { kind: "append"; draftId: string; files: TFile[] }
+  | { kind: "existing"; draftId: string }
   | {
       kind: "retry";
       draftId: string;
@@ -23,16 +25,16 @@ export type ProofSendPlan<TFile extends { key: string }> =
 /**
  * Decides how to send the selected files given an existing unsent draft.
  * Failed draft positions are retried one file each (PATCH with
- * `retryPosition`) while every ready draft file stays selected and every
- * selected file fills a failed position; any other change discards the draft
- * and uploads the selection as a new one.
+ * `retryPosition`). Unknown ready files stay selected; new files append to
+ * that draft. Removing a known file creates a replacement draft.
  */
 export function planProofSend<TFile extends { key: string }>(
   draft: ProofDraftRef | null,
   files: readonly TFile[]
 ): ProofSendPlan<TFile> {
-  if (!draft)
+  if (!draft) {
     return { kind: "create", replaceDraftId: null, files: [...files] };
+  }
   const replace: ProofSendPlan<TFile> = {
     kind: "create",
     replaceDraftId: draft.id,
@@ -43,14 +45,18 @@ export function planProofSend<TFile extends { key: string }>(
   const draftKeys = new Set(draft.fileKeys.filter((key) => key !== null));
   const readyKeys = new Set<string>();
   const failedPositions: number[] = [];
+  let hasReadyFile = false;
+  let hasUnknownReadyFile = false;
   for (const file of draft.files) {
     const key = draft.fileKeys[file.position] ?? null;
     if (
       file.uploadStatus === QuestProofFileStatus.PROOF_FILE_READY &&
       file.fileId !== null
     ) {
+      hasReadyFile = true;
       if (key !== null && !selectedKeys.has(key)) return replace;
       if (key !== null) readyKeys.add(key);
+      else hasUnknownReadyFile = true;
     } else {
       failedPositions.push(file.position);
     }
@@ -69,6 +75,14 @@ export function planProofSend<TFile extends { key: string }>(
     retries.push({ position, file: unplaced[index] });
     unplaced.splice(index, 1);
   }
-  if (unplaced.length > 0) return replace;
+  if (unplaced.length > 0) {
+    if (failedPositions.length === 0 && hasUnknownReadyFile) {
+      return { kind: "append", draftId: draft.id, files: [...unplaced] };
+    }
+    return replace;
+  }
+  if (hasReadyFile && failedPositions.length === 0) {
+    return { kind: "existing", draftId: draft.id };
+  }
   return { kind: "retry", draftId: draft.id, retries };
 }

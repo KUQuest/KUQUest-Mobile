@@ -54,7 +54,10 @@ export interface WorkerWorkMessages {
   filesCount: (count: number, max: number) => string;
   filesHint: string;
   addFiles: string;
+  addDocuments: string;
   removeFile: (name: string) => string;
+  filePosition: (position: number) => string;
+  fileTypeUnknown: string;
   videoFile: string;
   fileTooLarge: (names: string) => string;
   fileLimitReached: string;
@@ -123,13 +126,16 @@ export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
 
     filesHeading: "ไฟล์หลักฐาน",
     filesCount: (count, max) => `${count}/${max} ไฟล์`,
-    filesHint: "รูปภาพหรือวิดีโอ ไม่เกิน 10 MB ต่อไฟล์",
-    addFiles: "เพิ่มไฟล์",
+    filesHint: "รูปภาพ PDF หรือวิดีโอ ไม่เกิน 10 MB ต่อไฟล์",
+    addFiles: "เพิ่มรูปหรือวิดีโอ",
+    addDocuments: "เพิ่ม PDF",
     removeFile: (name) => `ลบไฟล์ ${name}`,
+    filePosition: (position) => `ไฟล์หลักฐานที่ ${position}`,
+    fileTypeUnknown: "ไฟล์หลักฐาน",
     videoFile: "วิดีโอ",
     fileTooLarge: (names) => `ไฟล์ใหญ่เกิน 10 MB: ${names}`,
     fileLimitReached: "แนบได้สูงสุด 5 ไฟล์",
-    pickerError: "เปิดคลังรูปภาพไม่สำเร็จ",
+    pickerError: "เปิดตัวเลือกไฟล์ไม่สำเร็จ",
     descriptionLabel: "รายละเอียดงาน (ไม่บังคับ)",
     descriptionPlaceholder: "อธิบายสิ่งที่ทำ เช่น ขั้นตอนหรือผลลัพธ์",
     descriptionCount: (count, max) => `${count}/${max}`,
@@ -196,13 +202,16 @@ export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
 
     filesHeading: "Proof files",
     filesCount: (count, max) => `${count}/${max} files`,
-    filesHint: "Images or videos, up to 10 MB each",
-    addFiles: "Add files",
+    filesHint: "Images, PDF, or videos, up to 10 MB each",
+    addFiles: "Add images or videos",
+    addDocuments: "Add PDF",
     removeFile: (name) => `Remove ${name}`,
+    filePosition: (position) => `Proof file ${position}`,
+    fileTypeUnknown: "Proof file",
     videoFile: "Video",
     fileTooLarge: (names) => `Larger than 10 MB: ${names}`,
     fileLimitReached: "You can attach up to 5 files",
-    pickerError: "Could not open the photo library",
+    pickerError: "Could not open the file picker",
     descriptionLabel: "Work description (optional)",
     descriptionPlaceholder: "Describe what you did, such as steps or results",
     descriptionCount: (count, max) => `${count}/${max}`,

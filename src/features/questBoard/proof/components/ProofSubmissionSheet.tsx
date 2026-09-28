@@ -50,6 +50,7 @@ export interface ProofSubmissionSheetProps {
   ) => Promise<void> | void;
   onDeleteDraft?: () => Promise<void> | void;
   onRetryUpload?: (position: number) => Promise<void> | void;
+  onRemoveServerFile?: (position: number) => Promise<void> | void;
   loading?: boolean;
   locked?: boolean;
   error?: string;
@@ -69,6 +70,7 @@ export function ProofSubmissionSheet({
   onDeleteDraft,
   onSubmitDraft,
   onRetryUpload,
+  onRemoveServerFile,
   loading = false,
   locked = false,
   error,
@@ -419,6 +421,33 @@ export function ProofSubmissionSheet({
                           }}
                         >
                           <RotateCcw color={colors.worker} size={18} />
+                        </Pressable>
+                      ) : null}
+                      {!locked && onRemoveServerFile ? (
+                        <Pressable
+                          accessibilityLabel={messages.removeProofImage(
+                            file.position + 1
+                          )}
+                          accessibilityRole="button"
+                          disabled={busyAction !== undefined || loading}
+                          onPress={() => {
+                            setBusyAction(file.position);
+                            setActionError(undefined);
+                            void Promise.resolve(
+                              onRemoveServerFile(file.position)
+                            )
+                              .catch((caught) => {
+                                setActionError(
+                                  getLocalizedErrorMessage(caught, locale, {
+                                    fallback: messages.manageSnapshotError,
+                                  })
+                                );
+                              })
+                              .finally(() => setBusyAction(undefined));
+                          }}
+                          testID={`proof-remove-server-${file.position}`}
+                        >
+                          <X color={colors.textMuted} size={18} />
                         </Pressable>
                       ) : null}
                     </View>

@@ -51,4 +51,34 @@ describe("planProofSend", () => {
       retries: [{ position: 1, file: { key: "b" } }],
     });
   });
+
+  it("submits existing ready files without local copies", () => {
+    const readyDraft: ProofDraftRef = {
+      id: "draft-ready",
+      files: [
+        { position: 0, fileId: "file-ready", uploadStatus: "PROOF_FILE_READY" },
+      ],
+      fileKeys: [null],
+    };
+    expect(planProofSend(readyDraft, [])).toEqual({
+      kind: "existing",
+      draftId: "draft-ready",
+    });
+  });
+
+  it("appends new files to ready files from an earlier session", () => {
+    const readyDraft: ProofDraftRef = {
+      id: "draft-ready",
+      files: [
+        { position: 0, fileId: "file-ready", uploadStatus: "PROOF_FILE_READY" },
+      ],
+      fileKeys: [null],
+    };
+    expect(planProofSend(readyDraft, [c])).toEqual({
+      kind: "append",
+      draftId: "draft-ready",
+      files: [c],
+    });
+  });
+
 });

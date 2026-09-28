@@ -1,6 +1,7 @@
 import React from "react";
 import type ReactModule from "react";
 import { Alert } from "react-native";
+import { File } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import {
@@ -100,6 +101,9 @@ jest.mock("@/features/questBoard/live/liveQuestService", () => ({
   },
 }));
 
+jest.mock("expo-file-system", () => ({
+  File: Object.assign(jest.fn(), { pickFileAsync: jest.fn() }),
+}));
 jest.mock("expo-image-picker", () => ({
   launchCameraAsync: jest.fn(),
   launchImageLibraryAsync: jest.fn(),
@@ -525,6 +529,7 @@ describe("ChatConversationMedia", () => {
         ImagePicker.launchImageLibraryAsync as jest.MockedFunction<
           typeof ImagePicker.launchImageLibraryAsync
         >;
+      const mockedPickFile = jest.mocked(File.pickFileAsync);
 
       mockedGetLiveSnapshot.mockResolvedValue({
         workConversation: {
@@ -624,6 +629,40 @@ describe("ChatConversationMedia", () => {
         expect(
           view.queryByTestId("remove-pending-attachment-uploaded-asset-123")
         ).toBeNull();
+      });
+      mockedPickFile.mockResolvedValue({
+        canceled: false,
+        result: {
+          uri: "file:///local/report.pdf",
+          name: "report.pdf",
+          type: "application/pdf",
+          size: 50000,
+        },
+      } as never);
+      mockedUploadAttachment.mockResolvedValue({
+        id: "uploaded-asset-pdf",
+        fileName: "report.pdf",
+        mediaType: "application/pdf",
+        sizeBytes: 50000,
+        createdAt: new Date().toISOString(),
+      });
+
+      fireEvent.press(view.getAllByLabelText("Add attachment")[0]);
+      const fileAlertCall = alertSpy.mock.calls[alertSpy.mock.calls.length - 1];
+      const chooseFileButton = (
+        fileAlertCall[2] as { text?: string; onPress?: () => void }[]
+      ).find((button) => button.text === chatMessages.en.chooseFile);
+      expect(chooseFileButton).toBeTruthy();
+      chooseFileButton?.onPress?.();
+
+      await waitFor(() => {
+        expect(
+          view.getByTestId("remove-pending-attachment-uploaded-asset-pdf")
+        ).toBeTruthy();
+      });
+      expect(mockedPickFile).toHaveBeenCalledWith({
+        mimeTypes: ["image/*", "video/*", "application/pdf"],
+        multipleFiles: false,
       });
     });
   });
