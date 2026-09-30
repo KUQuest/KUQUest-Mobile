@@ -67,13 +67,13 @@ export function useQuestEdit({
 
   useEffect(() => {
     if (!questId) return;
-    draftChangedRef.current = false;
     // A save refetches the detail; hydrating a version this screen already
     // holds would reset the wizard to step 1 mid-flow (e.g. after a publish
     // blocker). Only a newer server version replaces the local draft.
     if (!detailQuery.data || detailQuery.data.version === versionRef.current) {
       return;
     }
+    draftChangedRef.current = false;
     versionRef.current = detailQuery.data.version;
     existingImagesRef.current = detailQuery.data.images
       .slice()

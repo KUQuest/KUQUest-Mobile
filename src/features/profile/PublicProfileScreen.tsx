@@ -39,6 +39,7 @@ import type {
   ProfileStatsData,
   ProfileWork,
 } from "./components/profileTypes";
+import { goBackOrReplace } from "@/utils/navigation";
 
 type PublicProfileTab =
   "about" | "experience" | "works" | "certificates" | "reviews";
@@ -161,15 +162,13 @@ export default function PublicProfileScreen() {
     }));
   }, [reviewsData]);
 
-  const statsData = useMemo<ProfileStatsData>(
-    () => ({
-      totalQuests: null,
-      ratingAverage: null,
-      ratingCount: 0,
-      distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
-    }),
-    []
-  );
+  const totalReviews = Number(reviewsData?.total);
+  const statsData: ProfileStatsData = {
+    totalQuests: profile?.reputation.totalQuests ?? null,
+    ratingAverage: profile?.reputation.rating.average ?? null,
+    ratingCount: Number.isFinite(totalReviews) ? totalReviews : 0,
+    distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+  };
 
   const tabs: {
     key: PublicProfileTab;
@@ -205,7 +204,7 @@ export default function PublicProfileScreen() {
         accessibilityLabel={messages.back ?? "Back"}
         testID="public-profile-back-button"
         hitSlop={8}
-        onPress={() => router.back()}
+        onPress={() => goBackOrReplace(router, "/(tabs)")}
         className="h-[48px] w-[48px] items-center justify-center rounded-ku-pill active:bg-ku-surface-muted"
       >
         <ChevronLeft color={colors.primaryDeep} size={24} strokeWidth={2.5} />
@@ -304,7 +303,11 @@ export default function PublicProfileScreen() {
       reviewsLabel={messages.reviews}
       noRatingLabel={messages.noRating}
       accessibilityLabel={messages.statisticsLabel}
-      errorText={`${messages.rating}: ${messages.ratingUnavailable} ${messages.totalQuests}: ${messages.sectionUnavailable}`}
+      errorText={
+        statsData.ratingAverage === null
+          ? `${messages.rating}: ${messages.ratingUnavailable} ${messages.totalQuests}: ${messages.sectionUnavailable}`
+          : undefined
+      }
     />
   );
 

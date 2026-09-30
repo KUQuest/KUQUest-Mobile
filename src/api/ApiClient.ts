@@ -46,6 +46,12 @@ export class ApiError extends Error {
   }
 }
 
+let unauthorizedHandler: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  unauthorizedHandler = handler;
+}
+
 function normalizeBaseUrl(baseUrl: string | undefined): string | undefined {
   return baseUrl?.replace(/\/$/, "");
 }
@@ -236,6 +242,7 @@ export class ApiClient {
         `${method} ${logPath} -> ${response.status} (${Date.now() - startedAt}ms)`,
         { code: apiError.code }
       );
+      if (response.status === 401) unauthorizedHandler?.();
       throw apiError;
     }
     debugLog(

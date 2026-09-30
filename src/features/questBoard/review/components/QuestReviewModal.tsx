@@ -29,11 +29,10 @@ export function QuestReviewModal({ questId, onClose }: QuestReviewModalProps) {
       animationType="slide"
       onRequestClose={onClose}
       transparent
-      visible={questId !== null}
+      visible={Boolean(questId)}
     >
-      {/* Content unmounts while hidden, so reopening starts a fresh form. */}
       {questId ? (
-        <QuestReviewSheet key={questId} onClose={onClose} questId={questId} />
+        <QuestReviewSheet onClose={onClose} questId={questId} />
       ) : null}
     </Modal>
   );
@@ -47,7 +46,6 @@ function QuestReviewSheet({
   onClose: () => void;
 }) {
   const {
-    allReviewed,
     canReview,
     comment,
     createReviewMutation,
@@ -55,21 +53,23 @@ function QuestReviewSheet({
     loading,
     loadError,
     messages,
+    mode,
     rating,
-    remainingWorkers,
-    questTitle,
     retryLoad,
-    selectedWorker,
+    selectedTarget,
     setComment,
     setRating,
-    setSelectedWorkerId,
+    setSelectedId,
     setSubmitError,
     setSuccessMessage,
     submitError,
     successMessage,
-    workerOptions,
+    targetOptions,
+    updateReviewMutation,
+    questTitle,
   } = useQuestReviewFeature({ questId });
-
+  const pending =
+    createReviewMutation.isPending || updateReviewMutation.isPending;
   const notice = (title: string, description: string, action?: ReactNode) => (
     <View className="items-center py-ku-lg">
       <Text className="text-center font-ku-bold text-ku-text-strong">
@@ -115,7 +115,7 @@ function QuestReviewSheet({
                     accessibilityRole="header"
                     className={styles.proofSheetTitle}
                   >
-                    {messages.title}
+                    {mode === "edit" ? messages.editTitle : messages.title}
                   </Text>
                 </View>
                 {questTitle ? (
@@ -148,15 +148,7 @@ function QuestReviewSheet({
               )
             ) : !canReview ? (
               notice(messages.unavailableTitle, messages.unavailableDescription)
-            ) : allReviewed ? (
-              <View testID="quest-review-success">
-                {notice(
-                  messages.successTitle,
-                  messages.successDescription,
-                  doneButton
-                )}
-              </View>
-            ) : workerOptions.length === 0 ? (
+            ) : targetOptions.length === 0 ? (
               notice(
                 messages.noWorkersTitle,
                 messages.noWorkersDescription,
@@ -173,34 +165,39 @@ function QuestReviewSheet({
                   <Text className="text-ku-body-small text-ku-text-secondary">
                     {messages.description}
                   </Text>
+                  {targetOptions.length === 1 ? (
+                    <Text className="font-ku-semibold text-ku-body text-ku-text-strong">
+                      {targetOptions[0].label}
+                    </Text>
+                  ) : null}
 
-                  {remainingWorkers.length > 1 ? (
+                  {targetOptions.length > 1 ? (
                     <View className="gap-ku-sm">
                       <Text className="font-ku-semibold text-ku-body-small text-ku-text-strong">
                         {messages.workerLabel}
                       </Text>
                       <View className="gap-ku-sm">
-                        {remainingWorkers.map((worker) => {
-                          const selected = worker.id === selectedWorker?.id;
+                        {targetOptions.map((target) => {
+                          const selected = target.id === selectedTarget?.id;
                           return (
                             <Pressable
                               accessibilityRole="radio"
                               accessibilityState={{ selected }}
-                              className={`rounded-[14px] border p-ku-md ${
+                              className={`min-h-[48px] justify-center rounded-[14px] border p-ku-md ${
                                 selected
                                   ? "border-ku-primary bg-ku-surface-success"
                                   : "border-ku-border-subtle bg-ku-surface"
                               }`}
-                              key={worker.id}
+                              key={target.id}
                               onPress={() => {
-                                setSelectedWorkerId(worker.id);
+                                setSelectedId(target.id);
                                 setSubmitError(null);
                                 setSuccessMessage(null);
                               }}
-                              testID={`quest-review-worker-${worker.id}`}
+                              testID={`quest-review-worker-${target.id}`}
                             >
                               <Text className="font-ku-semibold text-ku-body text-ku-text-strong">
-                                {worker.label}
+                                {target.label}
                               </Text>
                             </Pressable>
                           );
@@ -221,6 +218,7 @@ function QuestReviewSheet({
                             accessibilityLabel={messages.ratingOption(value)}
                             accessibilityRole="radio"
                             accessibilityState={{ selected }}
+                            className="h-[48px] w-[48px] items-center justify-center"
                             key={value}
                             onPress={() => {
                               setRating(value);
@@ -286,13 +284,15 @@ function QuestReviewSheet({
                   </Button>
                   <Button
                     className="w-auto flex-1"
-                    disabled={createReviewMutation.isPending || !selectedWorker}
+                    disabled={pending || !selectedTarget}
                     onPress={() => void handleSubmit()}
                     testID="quest-review-submit"
                   >
-                    {createReviewMutation.isPending
+                    {pending
                       ? messages.submitting
-                      : messages.submit}
+                      : mode === "edit"
+                        ? messages.editTitle
+                        : messages.submit}
                   </Button>
                 </View>
               </>

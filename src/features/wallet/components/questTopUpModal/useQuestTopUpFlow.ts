@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getLocalizedErrorMessage } from "@/utils/error";
 import { useQueryClient } from "@tanstack/react-query";
 import type { TopUpData, TopUpQuote } from "@/api/WalletApi";
@@ -14,6 +14,8 @@ import {
   toCompartments,
 } from "@/features/wallet/walletModule";
 import {
+  invalidateWalletQueries,
+  useTopUpStatusQuery,
   useWalletQuery,
   walletKeys,
 } from "@/features/wallet/api/walletQueries";
@@ -37,7 +39,9 @@ export function useQuestTopUpFlow({
   const { data: liveWallet } = useWalletQuery();
   const queryClient = useQueryClient();
   const [topUpQuote, setTopUpQuote] = useState<TopUpQuote | null>(null);
-  const [activeTopUp, setActiveTopUp] = useState<TopUpData | null>(null);
+  const [activeTopUpId, setActiveTopUpId] = useState<string | null>(null);
+  const handledPaidIdRef = useRef<string | null>(null);
+  const activeTopUp = useTopUpStatusQuery(activeTopUpId).data ?? null;
   const [isConfirming, setIsConfirming] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(
@@ -46,7 +50,7 @@ export function useQuestTopUpFlow({
 
   const resetTopUp = useCallback(() => {
     setTopUpQuote(null);
-    setActiveTopUp(null);
+    setActiveTopUpId(null);
     setIsConfirming(false);
     setVerificationError(null);
     setTopUpStep("amount");
@@ -109,7 +113,11 @@ export function useQuestTopUpFlow({
         setVerificationError(messages.topUpCreateError);
         return;
       }
-      setActiveTopUp(result.topUp);
+      queryClient.setQueryData(
+        walletKeys.topUpStatus(result.topUp.id),
+        result.topUp
+      );
+      setActiveTopUpId(result.topUp.id);
       setVerificationError(null);
       setTopUpStep("promptPay");
     } catch (err: unknown) {
@@ -122,15 +130,29 @@ export function useQuestTopUpFlow({
       setIsConfirming(false);
     }
   };
-  const settleTopUp = async (topUp: TopUpData) => {
-    setActiveTopUp(topUp);
-    if (topUp.topUpStatus !== "PAID") {
-      setVerificationError(messages.topUpPaymentPending);
-      return;
+  const settleTopUp = useCallback(
+    async (topUp: TopUpData) => {
+      queryClient.setQueryData(walletKeys.topUpStatus(topUp.id), topUp);
+      if (topUp.topUpStatus !== "PAID") {
+        setVerificationError(messages.topUpPaymentPending);
+        return;
+      }
+      if (handledPaidIdRef.current === topUp.id) return;
+      handledPaidIdRef.current = topUp.id;
+      await invalidateWalletQueries(queryClient);
+      onPaid?.();
+    },
+    [messages.topUpPaymentPending, onPaid, queryClient]
+  );
+  useEffect(() => {
+    const topUp = activeTopUp;
+    if (
+      topUp?.topUpStatus === "PAID" &&
+      handledPaidIdRef.current !== topUp.id
+    ) {
+      void settleTopUp(topUp);
     }
-    await queryClient.invalidateQueries({ queryKey: walletKeys.detail() });
-    onPaid?.();
-  };
+  }, [activeTopUp, settleTopUp]);
   const handleVerifyPayment = async () => {
     if (!activeTopUp || isVerifying) return;
     setIsVerifying(true);

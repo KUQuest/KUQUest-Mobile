@@ -22,6 +22,7 @@ import { getQuestRewardSatang } from "../presentation/questBoardViewData";
 import {
   isHirerActor,
   MAX_QUEST_IMAGES,
+  QuestActor,
   QuestCandidateMode,
   QuestInvitationStatus,
   QuestMode,
@@ -665,6 +666,8 @@ export interface QuestDetailActionBarModel {
   isPostView: boolean;
   canEditPost: boolean;
   canReview: boolean;
+  canReviewProof: boolean;
+  onReviewProof: () => void;
   canMessageOwner: boolean;
   onMessageOwner: () => void;
   canShowWithdraw: boolean;
@@ -688,9 +691,14 @@ export function buildQuestDetailActionBar(
       facts.quest.status === QuestStatus.QUEST_DRAFT,
     canReview:
       facts.isPostView &&
-      facts.isHirerView &&
+      (facts.isHirerView || facts.liveSnapshot?.actor === QuestActor.WORKER) &&
       isTerminalStatus(facts.quest.status) &&
       facts.liveSnapshot?.capabilities.canCreateReview === true,
+    canReviewProof:
+      facts.isPostView &&
+      facts.isHirerView &&
+      facts.liveSnapshot?.capabilities.canReviewProof === true,
+    onReviewProof: navigation.openProofReview,
     canMessageOwner: facts.canMessageOwner,
     onMessageOwner: navigation.openMessageOwner,
     canShowWithdraw: facts.canShowWithdraw,

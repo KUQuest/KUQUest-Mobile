@@ -88,6 +88,9 @@ jest.mock("@/api/ChatApi", () => {
   };
 });
 
+jest.mock("@/features/questBoard/live/questEvents", () => ({
+  subscribeToQuestEvents: jest.fn(() => jest.fn()),
+}));
 jest.mock("@/features/questBoard/live/liveQuestService", () => ({
   liveQuestService: {
     getLiveSnapshot: jest.fn(),
@@ -366,23 +369,30 @@ describe("ChatConversationMedia", () => {
   describe("PendingAttachmentsBar", () => {
     it("renders pending attachment chips and removes them via [X] button", async () => {
       const onRemove = jest.fn();
+      const onRetry = jest.fn();
       const items: PendingAttachmentItem[] = [
         {
           id: "pending-1",
           uri: "file:///photos/pic1.jpg",
           name: "pic1.jpg",
+          type: "image/jpeg",
           uploading: false,
         },
         {
           id: "pending-2",
           uri: "file:///photos/pic2.jpg",
           name: "pic2.jpg",
+          type: "image/jpeg",
           uploading: true,
         },
       ];
 
       const view = await renderWithAppTheme(
-        <PendingAttachmentsBar attachments={items} onRemove={onRemove} />
+        <PendingAttachmentsBar
+          attachments={items}
+          onRemove={onRemove}
+          onRetry={onRetry}
+        />
       );
 
       expect(
@@ -396,10 +406,42 @@ describe("ChatConversationMedia", () => {
       expect(onRemove).toHaveBeenCalledTimes(1);
       expect(onRemove).toHaveBeenCalledWith("pending-1");
     });
+    it("shows the rate-limit message and a Retry action for a rateLimited attachment", async () => {
+      const onRetry = jest.fn();
+      const view = await renderWithAppTheme(
+        <PendingAttachmentsBar
+          attachments={[
+            {
+              id: "pending-limited",
+              uri: "file:///photos/pic.jpg",
+              name: "pic.jpg",
+              type: "image/jpeg",
+              rateLimited: true,
+            },
+          ]}
+          onRemove={jest.fn()}
+          onRetry={onRetry}
+        />
+      );
+
+      expect(
+        view.getByText(chatMessages.en.attachmentRateLimited)
+      ).toBeTruthy();
+      const retryButton = view.getByRole("button", {
+        name: chatMessages.en.retryAttachment,
+      });
+      expect(retryButton.props.accessibilityRole).toBe("button");
+      await fireEvent.press(retryButton);
+      expect(onRetry).toHaveBeenCalledWith("pending-limited");
+    });
 
     it("returns null when attachments array is empty", async () => {
       const view = await renderWithAppTheme(
-        <PendingAttachmentsBar attachments={[]} onRemove={jest.fn()} />
+        <PendingAttachmentsBar
+          attachments={[]}
+          onRemove={jest.fn()}
+          onRetry={jest.fn()}
+        />
       );
       expect(view.toJSON()).toBeNull();
     });

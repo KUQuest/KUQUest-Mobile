@@ -20,6 +20,12 @@ export interface MyQuestMessages {
   fileDispute: string;
   cancelQuest: string;
   keepQuest: string;
+  cancelGuardrailSlideLabel: string;
+  cancelGuardrailConfirm: string;
+  cancelGuardrailKeyword: string;
+  cancelGuardrailKeywordLabel: string;
+  cancelGuardrailKeywordPlaceholder: string;
+  cancelGuardrailKeep: string;
   cancelConfirmTitle: string;
   cancelDraftDescription: string;
   cancelOpenDescription: string;
@@ -71,6 +77,12 @@ export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
     fileDispute: "ยื่นข้อพิพาท",
     cancelQuest: "ยกเลิกเควสต์",
     keepQuest: "เก็บไว้",
+    cancelGuardrailSlideLabel: "เลื่อนเพื่อยกเลิกเควสต์นี้",
+    cancelGuardrailConfirm: "ยืนยันการยกเลิก",
+    cancelGuardrailKeyword: "ยกเลิก",
+    cancelGuardrailKeywordLabel: "พิมพ์ ยกเลิก เพื่อยืนยัน",
+    cancelGuardrailKeywordPlaceholder: "ยกเลิก",
+    cancelGuardrailKeep: "เก็บเควสต์ไว้",
     cancelConfirmTitle: "ยกเลิกเควสต์นี้?",
     cancelDraftDescription:
       "ฉบับร่างนี้จะถูกยกเลิกและย้ายไปที่ประวัติ ไม่มีการตัดเงิน",
@@ -120,6 +132,12 @@ export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
     fileDispute: "File dispute",
     cancelQuest: "Cancel Quest",
     keepQuest: "Keep Quest",
+    cancelGuardrailSlideLabel: "Slide to cancel this Quest",
+    cancelGuardrailConfirm: "Confirm cancellation",
+    cancelGuardrailKeyword: "CANCEL",
+    cancelGuardrailKeywordLabel: "Type CANCEL to confirm",
+    cancelGuardrailKeywordPlaceholder: "CANCEL",
+    cancelGuardrailKeep: "Keep Quest",
     cancelConfirmTitle: "Cancel this Quest?",
     cancelDraftDescription:
       "This draft is cancelled and moved to History. No money is charged.",

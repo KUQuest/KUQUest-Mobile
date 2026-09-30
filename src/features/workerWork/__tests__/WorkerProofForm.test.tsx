@@ -62,11 +62,13 @@ const submittable = workerSnapshot({
 function renderForm(
   snapshot = submittable,
   onSubmitted: () => Promise<unknown> | void = jest.fn(),
-  viewerId = "worker-1"
+  viewerId = "worker-1",
+  onDirtyChange?: (dirty: boolean) => void
 ) {
   return renderWithQueryClient(
     <>
       <WorkerProofForm
+        onDirtyChange={onDirtyChange}
         onSubmitted={onSubmitted}
         questId="quest-1"
         snapshot={snapshot}
@@ -80,6 +82,69 @@ function renderForm(
 describe("WorkerProofForm", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+  it("reports dirty only when local files or description differ from the server draft", async () => {
+    const snapshot = {
+      ...submittable,
+      proofs: [
+        {
+          id: "draft-1",
+          workerId: "worker-1",
+          submittedByUserId: "worker-1",
+          teamId: null,
+          submittedAt: null,
+          description: "Done",
+          files: [],
+        },
+      ],
+    } as never;
+    mockedPicker.mockResolvedValue({
+      canceled: false,
+      assets: [
+        {
+          uri: "file:///proof.jpg",
+          fileName: "proof.jpg",
+          mimeType: "image/jpeg",
+          type: "image",
+          width: 10,
+          height: 10,
+        },
+      ],
+    });
+    const onDirtyChange = jest.fn();
+    const screen = await renderForm(
+      snapshot,
+      jest.fn(),
+      "worker-1",
+      onDirtyChange
+    );
+
+    await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(false));
+    await fireEvent.changeText(
+      screen.getByLabelText("Work description (optional)"),
+      "Done"
+    );
+    expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Add images or videos" })
+    );
+    await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(true));
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Remove proof.jpg" })
+    );
+    await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(false));
+
+    await fireEvent.changeText(
+      screen.getByLabelText("Work description (optional)"),
+      "Done today"
+    );
+    expect(onDirtyChange).toHaveBeenLastCalledWith(true);
+    await fireEvent.changeText(
+      screen.getByLabelText("Work description (optional)"),
+      "Done"
+    );
+    expect(onDirtyChange).toHaveBeenLastCalledWith(false);
   });
 
   it("sends several proof files with a description after confirmation", async () => {

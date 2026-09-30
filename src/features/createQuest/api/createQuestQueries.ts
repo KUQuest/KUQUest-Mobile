@@ -7,10 +7,12 @@ import {
 
 import { questApi, type CreateQuestV2Payload } from "@/api/QuestApi";
 import type { UploadAsset } from "@/api/fileUpload";
-import { homeKeys } from "@/features/home/api/homeQueries";
-import { myQuestsKeys } from "@/features/myQuests/api/myQuestsQueries";
+import { invalidateWalletQueries } from "@/features/wallet/api/walletQueries";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
-import { questBoardKeys } from "@/features/questBoard/api/questBoardQueries";
+import {
+  invalidateQuestReads as invalidateSharedQuestReads,
+  questBoardKeys,
+} from "@/features/questBoard/api/questBoardQueries";
 import { workerHomeKeys } from "@/features/workerHome/api/workerHomeQueries";
 
 export const createQuestKeys = {
@@ -54,19 +56,18 @@ export function useQuestPublishCheckQuery(
   });
 }
 
-function invalidateQuestReads(queryClient: QueryClient, questId: string) {
-  void queryClient.invalidateQueries({
-    queryKey: questBoardKeys.detail(questId),
-  });
-  void queryClient.invalidateQueries({
-    queryKey: createQuestKeys.editSource(questId),
-  });
-  void queryClient.invalidateQueries({ queryKey: myQuestsKeys.hirer() });
-  void queryClient.invalidateQueries({ queryKey: homeKeys.hirer() });
-  void queryClient.invalidateQueries({ queryKey: workerHomeKeys.all });
+async function invalidateQuestReads(queryClient: QueryClient, questId: string) {
+  await Promise.all([
+    invalidateSharedQuestReads(queryClient, questId, undefined, "hirer"),
+    queryClient.invalidateQueries({
+      queryKey: createQuestKeys.editSource(questId),
+    }),
+    queryClient.invalidateQueries({ queryKey: workerHomeKeys.all }),
+  ]);
 }
 
 export function useDeleteQuestImageMutation() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       questId,
@@ -77,10 +78,13 @@ export function useDeleteQuestImageMutation() {
       imageId: string;
       idempotencyKey: string;
     }) => questApi.deleteQuestImage(questId, imageId, idempotencyKey),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: questBoardKeys.board() }),
   });
 }
 
 export function useUploadQuestImagesMutation() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       questId,
@@ -91,6 +95,8 @@ export function useUploadQuestImagesMutation() {
       assets: UploadAsset[];
       idempotencyKey: string;
     }) => questApi.uploadQuestImages(questId, assets, idempotencyKey),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: questBoardKeys.board() }),
   });
 }
 
@@ -123,8 +129,10 @@ export function useCancelQuestMutation() {
       questId: string;
       idempotencyKey: string;
     }) => questApi.cancelQuest(questId, idempotencyKey),
-    onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId),
+    onSuccess: async (_, variables) => {
+      await invalidateQuestReads(queryClient, variables.questId);
+      await invalidateWalletQueries(queryClient);
+    },
   });
 }
 
@@ -152,8 +160,10 @@ export function usePublishQuestMutation() {
       questId: string;
       idempotencyKey: string;
     }) => liveQuestService.publishQuest(questId, idempotencyKey),
-    onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId),
+    onSuccess: async (_, variables) => {
+      await invalidateQuestReads(queryClient, variables.questId);
+      await invalidateWalletQueries(queryClient);
+    },
   });
 }
 
@@ -171,12 +181,15 @@ export function usePublishEditQuestMutation() {
       payload: Partial<CreateQuestV2Payload>;
       idempotencyKey: string;
     }) => liveQuestService.editQuest(questId, version, payload, idempotencyKey),
-    onSuccess: (_, variables) =>
-      invalidateQuestReads(queryClient, variables.questId),
+    onSuccess: async (_, variables) => {
+      await invalidateQuestReads(queryClient, variables.questId);
+      await invalidateWalletQueries(queryClient);
+    },
   });
 }
 
 export function usePublishImageUploadMutation() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       questId,
@@ -187,5 +200,7 @@ export function usePublishImageUploadMutation() {
       imageUris: string[];
       idempotencyKey?: string;
     }) => liveQuestService.uploadImages(questId, imageUris, idempotencyKey),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: questBoardKeys.board() }),
   });
 }

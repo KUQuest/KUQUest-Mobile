@@ -17,6 +17,8 @@ import {
 } from "lucide-react-native";
 
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
+import { goBackOrReplace } from "@/utils/navigation";
+import { CancelQuestGuardrailSheet } from "./CancelQuestGuardrailSheet";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { TopBar } from "@/components/ui/TopBar";
 import { formatTimestamp } from "@/domain/datetime";
@@ -29,9 +31,11 @@ import { myQuestMessages } from "@/locales/myQuestMessages";
 import { questNextActionLabels } from "@/locales/questStatusLabels";
 import { questWorkMessages } from "@/locales/questWorkMessages";
 import { useHirerQuestManageFeature } from "./useHirerQuestManageFeature";
+import { getCancelTier } from "./cancelQuestGuardrail";
 import { useFileDispute } from "@/features/questBoard/dispute/useFileDispute";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import {
+  QuestActor,
   QuestApplicationStatus,
   QuestEditRequestStatus,
   QuestMode,
@@ -170,6 +174,10 @@ export default function HirerQuestManageScreen({
     pendingProof,
     terminal,
     cancelDescription,
+    guardrailTier,
+    commandBusy,
+    setGuardrailTier,
+    confirmGuardrailCancel,
     canReviewCandidateProposals,
     canProposeConditionEdit,
     candidateOpen,
@@ -192,7 +200,7 @@ export default function HirerQuestManageScreen({
   const topBar = (
     <TopBar
       title={messages.manageQuestTitle}
-      onBackPress={() => router.back()}
+      onBackPress={() => goBackOrReplace(router, "/(tabs)/my-quests")}
       backLabel={messages.back}
     />
   );
@@ -248,7 +256,10 @@ export default function HirerQuestManageScreen({
   const showUnderfilled =
     snapshot.nextAction === QuestNextAction.DECIDE_UNDERFILLED &&
     snapshot.capabilities.canDecideUnderfilled;
-  const showDispute = snapshot.state === QuestStatus.QUEST_FAILED;
+  const showDispute =
+    snapshot.state === QuestStatus.QUEST_FAILED &&
+    (snapshot.actor === QuestActor.HIRER ||
+      (snapshot.actor === QuestActor.WORKER && snapshot.assignment !== null));
   const editPending =
     snapshot.editRequest?.status ===
     QuestEditRequestStatus.EDIT_REQUEST_PENDING;
@@ -408,7 +419,9 @@ export default function HirerQuestManageScreen({
           </View>
         ) : null}
 
-        {!terminal && snapshot.capabilities.canCancel ? (
+        {!terminal &&
+        snapshot.capabilities.canCancel &&
+        getCancelTier(snapshot.state) !== null ? (
           <View className="mt-ku-sm">
             <Pressable
               accessibilityRole="button"
@@ -468,6 +481,27 @@ export default function HirerQuestManageScreen({
           locale={locale}
         />
       </BottomSheet>
+      <CancelQuestGuardrailSheet
+        visible={guardrailTier !== null}
+        tier={guardrailTier ?? 2}
+        title={myQuestMessages[locale].cancelConfirmTitle}
+        description={
+          guardrailTier === 3
+            ? myQuestMessages[locale].cancelInProgressDescription
+            : myQuestMessages[locale].cancelAssignedDescription
+        }
+        confirmLabel={myQuestMessages[locale].cancelGuardrailConfirm}
+        cancelLabel={myQuestMessages[locale].cancelGuardrailKeep}
+        keyword={myQuestMessages[locale].cancelGuardrailKeyword}
+        keywordLabel={myQuestMessages[locale].cancelGuardrailKeywordLabel}
+        keywordPlaceholder={
+          myQuestMessages[locale].cancelGuardrailKeywordPlaceholder
+        }
+        slideLabel={myQuestMessages[locale].cancelGuardrailSlideLabel}
+        onConfirm={confirmGuardrailCancel}
+        onClose={() => setGuardrailTier(null)}
+        busy={commandBusy}
+      />
       <QuestConditionEditModal
         visible={conditionEditOpen}
         originalItems={originalConditionItems ?? []}

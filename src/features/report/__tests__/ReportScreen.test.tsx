@@ -5,6 +5,8 @@ import { reportMessages } from "@/locales/reportMessages";
 import ReportScreen from "../ReportScreen";
 
 const mockBack = jest.fn();
+const mockCanGoBack = jest.fn(() => true);
+const mockReplace = jest.fn();
 const mockRouteParams: {
   messageId?: string;
   conversationTitle?: string;
@@ -12,7 +14,11 @@ const mockRouteParams: {
 } = {};
 
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ back: mockBack }),
+  useRouter: () => ({
+    back: mockBack,
+    canGoBack: mockCanGoBack,
+    replace: mockReplace,
+  }),
   useLocalSearchParams: () => mockRouteParams,
 }));
 
@@ -36,6 +42,7 @@ describe("ReportScreen", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockCanGoBack.mockReturnValue(true);
     mockRouteParams.messageId = validMessageId;
     mockRouteParams.conversationTitle = "Campus Cleanup Work Chat";
     mockRouteParams.senderName = "Alex";
@@ -52,6 +59,16 @@ describe("ReportScreen", () => {
 
     await fireEvent.press(view.getByTestId("report-unavailable-back"));
     expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+  it("replaces to /(tabs)/chat when there is no history", async () => {
+    mockRouteParams.messageId = undefined;
+    mockCanGoBack.mockReturnValue(false);
+    const view = await renderWithAppTheme(<ReportScreen />);
+
+    await fireEvent.press(view.getByTestId("report-unavailable-back"));
+
+    expect(mockReplace).toHaveBeenCalledWith("/(tabs)/chat");
+    expect(mockBack).not.toHaveBeenCalled();
   });
 
   it("shows unavailable state when messageId is invalid", async () => {

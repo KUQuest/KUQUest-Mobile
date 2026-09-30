@@ -1,16 +1,20 @@
-import { getLocalizedErrorMessage } from "@/utils/error";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCallback, useMemo, useState } from "react";
 import { useWindowDimensions } from "react-native";
-import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useQueryClient } from "@tanstack/react-query";
+
+import { getLocalizedErrorMessage } from "@/utils/error";
 import { useLocale } from "@/features/preferences/localeStore";
 import { walletMessages } from "@/locales/walletMessages";
 import { getAppChromeMetrics } from "@/theme/layout";
 
 import {
+  invalidateWalletQueries,
   useTransactionHistoryQuery,
   useWalletQuery,
+  walletKeys,
 } from "../api/walletQueries";
 import type { HirerHistoryFilterOption } from "../components/HirerHistoryFilter";
 import {
@@ -19,6 +23,7 @@ import {
 } from "../walletModule";
 
 export function useWalletController() {
+  const queryClient = useQueryClient();
   const router = useRouter();
   const { locale } = useLocale();
   const messages = walletMessages[locale];
@@ -27,6 +32,16 @@ export function useWalletController() {
   const metrics = getAppChromeMetrics(width, fontScale);
 
   const walletQuery = useWalletQuery();
+  useFocusEffect(
+    useCallback(() => {
+      const updatedAt = queryClient.getQueryState(
+        walletKeys.detail()
+      )?.dataUpdatedAt;
+      if (updatedAt && Date.now() - updatedAt > 30_000) {
+        void invalidateWalletQueries(queryClient);
+      }
+    }, [queryClient])
+  );
   const historyQuery = useTransactionHistoryQuery(50);
   const hasLoadedWalletData = Boolean(walletQuery.data && historyQuery.data);
   const balances = hasLoadedWalletData ? (walletQuery.data ?? null) : null;

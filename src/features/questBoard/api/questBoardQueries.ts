@@ -1,8 +1,12 @@
 import { useEffect } from "react";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  skipToken,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
-
 import { ApiError } from "@/api/ApiClient";
 import type { UploadAsset } from "@/api/fileUpload";
 import { disputeApi } from "@/api/DisputeApi";
@@ -17,6 +21,8 @@ import {
 } from "@/api/questV2Contracts";
 import { homeKeys } from "@/features/home/api/homeQueries";
 import { myQuestsKeys } from "@/features/myQuests/api/myQuestsQueries";
+import { profileKeys } from "@/features/profile/api/profileQueries";
+import { invalidateWalletQueries } from "@/features/wallet/api/walletQueries";
 import { workerHomeKeys } from "@/features/workerHome/api/workerHomeKeys";
 import {
   subscribeToCandidateRosterEvents,
@@ -28,7 +34,14 @@ import {
   type LiveQuestSnapshot,
   type LiveQuestSnapshotOptions,
 } from "../live/liveQuestService";
-import { QuestActor } from "../domain/types";
+import {
+  QuestActor,
+  QuestEditRequestStatus,
+  QuestEditResponseDecision,
+  QuestMode,
+  QuestUnderfilledConsentDecision,
+  QuestUnderfilledDecision,
+} from "../domain/types";
 
 export const questBoardKeys = {
   all: ["questBoard"] as const,
@@ -47,7 +60,21 @@ export const questBoardKeys = {
   myDisputeCase: (questId: string, viewerId: string) =>
     [...questBoardKeys.all, "my-dispute-case", questId, viewerId] as const,
   disputeFiling: () => [...questBoardKeys.all, "dispute-filing"] as const,
+  editRequestId: (questId: string) =>
+    [...questBoardKeys.all, "edit-request-id", questId] as const,
+  reviewsScope: (questId: string) =>
+    [...questBoardKeys.all, "reviews", questId] as const,
+  reviews: (questId: string, viewerId: string) =>
+    [...questBoardKeys.reviewsScope(questId), viewerId] as const,
 };
+
+export function setQuestEditRequestId(
+  queryClient: QueryClient,
+  questId: string,
+  requestId: string | null
+): void {
+  queryClient.setQueryData(questBoardKeys.editRequestId(questId), requestId);
+}
 
 export function useProofFileLinksQuery(
   questId: string | null,
@@ -153,6 +180,14 @@ export function useLiveQuestSnapshotQuery(
 ) {
   const queryClient = useQueryClient();
 
+  const cachedEditRequestId =
+    useQuery<string | null>({
+      queryKey: questBoardKeys.editRequestId(questId ?? ""),
+      queryFn: skipToken,
+      staleTime: Infinity,
+      gcTime: 600_000,
+    }).data ?? undefined;
+  const editRequestId = options.editRequestId ?? cachedEditRequestId;
   const query = useQuery<LiveQuestSnapshot>({
     enabled: Boolean(questId && viewerId) && enabled,
     refetchInterval:
@@ -163,7 +198,7 @@ export function useLiveQuestSnapshotQuery(
     queryKey: questBoardKeys.liveSnapshot(
       questId ?? "",
       viewerId ?? "",
-      options.editRequestId
+      editRequestId
     ),
     queryFn: ({ signal }) => {
       if (!questId || !viewerId) {
@@ -171,13 +206,52 @@ export function useLiveQuestSnapshotQuery(
       }
       return liveQuestService.getLiveSnapshot(questId, viewerId, {
         ...options,
+        editRequestId,
         signal,
       });
     },
   });
-  const canReadQuest = query.data !== undefined;
   useEffect(() => {
-    if (!enabled || !questId || !viewerId || !canReadQuest) return;
+    if (
+      !enabled ||
+      !questId ||
+      !viewerId ||
+      options.editRequestId !== undefined ||
+      !cachedEditRequestId ||
+      !query.isSuccess ||
+      query.isPlaceholderData ||
+      query.isFetching
+    ) {
+      return;
+    }
+    const editRequest = query.data.editRequest;
+    if (
+      editRequest === null ||
+      editRequest.status === QuestEditRequestStatus.EDIT_REQUEST_APPLIED ||
+      editRequest.status === QuestEditRequestStatus.EDIT_REQUEST_FAILED
+    ) {
+      if (
+        queryClient.getQueryData(questBoardKeys.editRequestId(questId)) ===
+        cachedEditRequestId
+      ) {
+        setQuestEditRequestId(queryClient, questId, null);
+      }
+    }
+  }, [
+    cachedEditRequestId,
+    enabled,
+    options.editRequestId,
+    query.data,
+    query.isFetching,
+    query.isPlaceholderData,
+    query.isSuccess,
+    queryClient,
+    questId,
+    viewerId,
+  ]);
+  // No WebSocket replay; cold-start recovery needs a backend field.
+  useEffect(() => {
+    if (!enabled || !questId || !viewerId) return;
     const invalidateSnapshot = () => {
       void queryClient.invalidateQueries({
         queryKey: questBoardKeys.liveSnapshotScope(questId, viewerId),
@@ -185,12 +259,17 @@ export function useLiveQuestSnapshotQuery(
     };
     return subscribeToQuestEvents(
       questId,
-      invalidateSnapshot,
+      (event) => {
+        if (event.changeType === "QUEST_EDIT_UPDATED" && event.editRequestId) {
+          setQuestEditRequestId(queryClient, questId, event.editRequestId);
+        }
+        invalidateSnapshot();
+      },
       invalidateSnapshot
     );
-  }, [canReadQuest, enabled, queryClient, questId, viewerId]);
+  }, [enabled, queryClient, questId, viewerId]);
   const canReadCandidateRoster = Boolean(
-    query.data?.mode === "CANDIDATE" &&
+    query.data?.mode === QuestMode.CANDIDATE &&
     (query.data.team != null ||
       (query.data.actor === QuestActor.HIRER &&
         (query.data.capabilities.canSelectCandidate ||
@@ -214,14 +293,36 @@ export function useLiveQuestSnapshotQuery(
   return query;
 }
 
-type QuestReadProjection = "hirer" | "worker";
+export type QuestReadProjection = "hirer" | "worker";
 
-async function invalidateQuestReads(
+export async function invalidateWorkerQuestReads(
+  queryClient: QueryClient,
+  questId: string,
+  viewerId: string
+): Promise<void> {
+  await Promise.all(
+    [
+      questBoardKeys.detail(questId),
+      questBoardKeys.board(),
+      questBoardKeys.liveSnapshotScope(questId, viewerId),
+      workerHomeKeys.assignments("active"),
+      workerHomeKeys.assignments("all"),
+      workerHomeKeys.participationDetail(questId),
+      workerHomeKeys.liveSnapshot(questId, viewerId),
+      myQuestsKeys.worker(viewerId),
+    ].map((queryKey) => queryClient.invalidateQueries({ queryKey }))
+  );
+}
+
+export async function invalidateQuestReads(
   queryClient: QueryClient,
   questId: string,
   viewerId?: string,
   projection?: QuestReadProjection
 ): Promise<void> {
+  if (projection === "worker" && viewerId) {
+    return invalidateWorkerQuestReads(queryClient, questId, viewerId);
+  }
   const queryKeys: QueryKey[] = [
     questBoardKeys.detail(questId),
     questBoardKeys.board(),
@@ -231,15 +332,6 @@ async function invalidateQuestReads(
   }
   if (projection === "hirer") {
     queryKeys.push(homeKeys.hirer(), myQuestsKeys.hirer());
-  }
-  if (projection === "worker" && viewerId) {
-    queryKeys.push(
-      workerHomeKeys.assignments("active"),
-      workerHomeKeys.assignments("all"),
-      workerHomeKeys.participationDetail(questId),
-      workerHomeKeys.liveSnapshot(questId, viewerId),
-      myQuestsKeys.worker(viewerId)
-    );
   }
   await Promise.all(
     queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey }))
@@ -664,7 +756,7 @@ export function useDecideUnderfilledMutation() {
       idempotencyKey,
     }: {
       questId: string;
-      decision: "PROCEED" | "CANCEL";
+      decision: QuestUnderfilledDecision;
       viewerId?: string;
       idempotencyKey?: string;
     }) => liveQuestService.decideUnderfilled(questId, decision, idempotencyKey),
@@ -687,7 +779,7 @@ export function useRespondUnderfilledConsentMutation() {
       idempotencyKey,
     }: {
       questId: string;
-      decision: "ACCEPT" | "DECLINE";
+      decision: QuestUnderfilledConsentDecision;
       viewerId?: string;
       idempotencyKey?: string;
     }) =>
@@ -717,16 +809,17 @@ export function useCancelQuestMutation() {
       viewerId?: string;
       idempotencyKey?: string;
     }) => liveQuestService.cancelQuest(questId, idempotencyKey),
-    onSuccess: (_, variables) =>
-      invalidateQuestReads(
+    onSuccess: async (_, variables) => {
+      await invalidateQuestReads(
         queryClient,
         variables.questId,
         variables.viewerId,
         "hirer"
-      ),
+      );
+      await invalidateWalletQueries(queryClient);
+    },
   });
 }
-
 export function useMyDisputeCaseQuery(
   questId: string | null,
   viewerId: string | null,
@@ -793,13 +886,68 @@ export function useReviewProofMutation() {
         payload,
         idempotencyKey
       ),
-    onSuccess: (_, variables) =>
-      invalidateQuestReads(
+    onSuccess: async (_, variables) => {
+      await invalidateQuestReads(
         queryClient,
         variables.questId,
         variables.viewerId,
         "hirer"
-      ),
+      );
+      await invalidateWalletQueries(queryClient);
+    },
+  });
+}
+
+function invalidateReviewReads(
+  queryClient: QueryClient,
+  questId: string,
+  viewerId: string | undefined,
+  revieweeId: string | undefined
+): Promise<unknown[]> {
+  const tasks = [
+    queryClient.invalidateQueries({
+      queryKey: questBoardKeys.reviewsScope(questId),
+    }),
+    invalidateQuestReads(queryClient, questId, viewerId, "hirer"),
+  ];
+  if (viewerId) {
+    tasks.push(invalidateWorkerQuestReads(queryClient, questId, viewerId));
+  }
+  if (revieweeId) {
+    tasks.push(
+      queryClient.invalidateQueries({
+        queryKey: profileKeys.public(revieweeId),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: profileKeys.publicReviews(revieweeId),
+      })
+    );
+  } else {
+    tasks.push(
+      queryClient.invalidateQueries({
+        queryKey: [...profileKeys.all, "public"],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: [...profileKeys.all, "public-reviews"],
+      })
+    );
+  }
+  return Promise.all(tasks);
+}
+
+export function useQuestReviewsQuery(
+  questId: string | null,
+  viewerId: string | null
+) {
+  return useQuery({
+    queryKey: questBoardKeys.reviews(questId ?? "", viewerId ?? ""),
+    queryFn: () => {
+      if (!questId || !viewerId) {
+        throw new Error("A quest and viewer are required");
+      }
+      return liveQuestService.listQuestReviews(questId, viewerId);
+    },
+    enabled: Boolean(questId && viewerId),
   });
 }
 
@@ -817,23 +965,111 @@ export function useCreateReviewMutation() {
       idempotencyKey?: string;
     }) => liveQuestService.createReview(questId, input, idempotencyKey),
     onSuccess: (_, variables) =>
-      Promise.all([
-        invalidateQuestReads(
-          queryClient,
-          variables.questId,
-          variables.viewerId,
-          "hirer"
-        ),
-        invalidateQuestReads(
-          queryClient,
-          variables.questId,
-          variables.viewerId,
-          "worker"
-        ),
-      ]),
+      invalidateReviewReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        variables.input.revieweeId
+      ),
   });
 }
 
+export function useUpdateReviewMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      questId,
+      reviewId,
+      input,
+      idempotencyKey,
+    }: {
+      questId: string;
+      viewerId: string;
+      reviewId: string;
+      revieweeId?: string;
+      input: { rating: number; comment?: string };
+      idempotencyKey?: string;
+    }) =>
+      liveQuestService.updateReview(questId, reviewId, input, idempotencyKey),
+    onSuccess: (_, variables) =>
+      invalidateReviewReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId,
+        variables.revieweeId
+      ),
+  });
+}
+
+export function useStartWorkMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      questId,
+      idempotencyKey,
+    }: {
+      questId: string;
+      viewerId: string;
+      idempotencyKey: string;
+    }) => liveQuestService.startWork(questId, idempotencyKey),
+    onSuccess: (_, variables) =>
+      invalidateWorkerQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId
+      ),
+  });
+}
+
+export function useRespondToEditMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      requestId,
+      decision,
+      idempotencyKey,
+    }: {
+      questId: string;
+      viewerId: string;
+      requestId: string;
+      decision: QuestEditResponseDecision;
+      idempotencyKey?: string;
+    }) =>
+      liveQuestService.respondToEditRequest(
+        requestId,
+        { decision },
+        idempotencyKey
+      ),
+    onSuccess: (_, variables) =>
+      invalidateWorkerQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId
+      ),
+  });
+}
+
+export function useConfirmCompletionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      questId,
+      idempotencyKey,
+    }: {
+      questId: string;
+      viewerId: string;
+      idempotencyKey?: string;
+    }) => liveQuestService.confirmCompletion(questId, idempotencyKey),
+    onSuccess: async (_, variables) => {
+      await invalidateWorkerQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId
+      );
+      await invalidateWalletQueries(queryClient);
+    },
+  });
+}
 export function useCreateEditRequestMutation() {
   const queryClient = useQueryClient();
   return useMutation({

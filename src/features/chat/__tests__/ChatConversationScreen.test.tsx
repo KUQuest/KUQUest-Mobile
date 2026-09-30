@@ -18,10 +18,14 @@ const mockedUseChatConversationController =
     typeof useChatConversationController
   >;
 
+const mockRouterBack = jest.fn();
 describe("ChatConversationScreen", () => {
   beforeEach(() => {
     mockedUseChatConversationController.mockReturnValue({
-      router: { back: jest.fn() } as unknown as ImperativeRouter,
+      router: {
+        back: mockRouterBack,
+        canGoBack: () => true,
+      } as unknown as ImperativeRouter,
       locale: "en",
       messages: chatMessages.en,
       insets: { top: 0, bottom: 0, left: 0, right: 0 },
@@ -53,6 +57,7 @@ describe("ChatConversationScreen", () => {
       pendingAttachments: [],
       pendingAttachmentIds: [],
       handleRemovePendingAttachment: jest.fn(),
+      retryAttachment: jest.fn(),
       openAttachmentMenu: jest.fn(),
       sendMessage: jest.fn(),
       viewerState: { visible: false, url: null },
@@ -154,6 +159,42 @@ describe("ChatConversationScreen", () => {
     ).toBe("text");
   });
 
+  it("shows read-only Work chat without rendering composer controls", async () => {
+    const getController =
+      mockedUseChatConversationController.getMockImplementation();
+    if (!getController) {
+      throw new Error("Chat conversation controller mock is not configured");
+    }
+    const controller = getController("WORK");
+    mockedUseChatConversationController.mockReturnValue({
+      ...controller,
+      conversationPending: false,
+      canWrite: false,
+      readOnlyDescription: chatMessages.en.conversationReadOnlyTerminal,
+      conversation: {
+        id: "conversation-1",
+        questId: "quest-1",
+        questTitle: { en: "Campus cleanup", th: "ทำความสะอาดวิทยาเขต" },
+        participantName: "Sora Student",
+        participantRole: "owner",
+        initials: "SS",
+        avatarColor: "#208AEF",
+        latestMessage: { en: "Hello", th: "สวัสดี" },
+        latestAt: "2026-09-24T03:30:00Z",
+        unreadCount: 0,
+        messages: [],
+      },
+    });
+
+    const view = await renderWithAppTheme(<ChatConversationScreen />);
+
+    expect(
+      view.getByText(chatMessages.en.conversationReadOnlyTerminal)
+    ).toBeTruthy();
+    expect(view.queryByLabelText(chatMessages.en.typeOwnerMessage)).toBeNull();
+    expect(view.queryByLabelText(chatMessages.en.send)).toBeNull();
+  });
+
   it("shows closed explanation after a candidate inquiry send returns 409", async () => {
     const getController =
       mockedUseChatConversationController.getMockImplementation();
@@ -189,7 +230,11 @@ describe("ChatConversationScreen", () => {
     const controller = getController("WORK");
     mockedUseChatConversationController.mockReturnValue({
       ...controller,
-      router: { back: jest.fn(), push } as unknown as ImperativeRouter,
+      router: {
+        back: mockRouterBack,
+        canGoBack: () => true,
+        push,
+      } as unknown as ImperativeRouter,
       conversationPending: false,
       conversation: {
         id: "conversation-1",

@@ -1,4 +1,5 @@
 import {
+  QuestActor,
   QuestCandidateMode,
   QuestStatus,
   type QuestBoardQuest,
@@ -44,7 +45,12 @@ describe("buildQuestDetailActionBar", () => {
   const mockOpenConfirmation = jest.fn();
 
   function makeContext(
-    overrides: Partial<QuestDetailPresentationFacts> = {}
+    overrides: Partial<QuestDetailPresentationFacts> = {},
+    liveOverrides: {
+      actor?: QuestActor;
+      canReviewProof?: boolean;
+      canCreateReview?: boolean;
+    } = {}
   ): QuestDetailPresentationContext {
     const facts = {
       quest: makeQuest(QuestStatus.QUEST_COMPLETED),
@@ -52,12 +58,13 @@ describe("buildQuestDetailActionBar", () => {
       projection: null,
       activePrototypeState: null,
       liveSnapshot: {
-        state: "QUEST_COMPLETED",
+        actor: liveOverrides.actor ?? QuestActor.HIRER,
+        state: QuestStatus.QUEST_COMPLETED,
         capabilities: {
           canApply: false,
           canWithdraw: false,
-          canReviewProof: false,
-          canCreateReview: true,
+          canReviewProof: liveOverrides.canReviewProof ?? false,
+          canCreateReview: liveOverrides.canCreateReview ?? true,
           canDecideUnderfilled: false,
           canProposeConditionEdit: false,
         },
@@ -125,6 +132,8 @@ describe("buildQuestDetailActionBar", () => {
         handleBack: jest.fn(),
         openParticipantProfile: jest.fn(),
         openWorkHub: jest.fn(),
+        openManage: jest.fn(),
+        openProofReview: jest.fn(),
         openTeam: jest.fn(),
         openPartialStart: jest.fn(),
         openEditPost: mockOpenEditPost,
@@ -157,12 +166,58 @@ describe("buildQuestDetailActionBar", () => {
     expect(actionBar.canReview).toBe(false);
   });
 
-  it("disables canReview when user is worker (isHirerView is false)", () => {
-    const context = makeContext({
-      isHirerView: false,
-      isPostView: false,
-    });
-    const actionBar = buildQuestDetailActionBar(context);
+  it("enables proof review for a Hirer independently of the rating capability", () => {
+    const actionBar = buildQuestDetailActionBar(
+      makeContext({}, { canReviewProof: true, canCreateReview: false })
+    );
+
+    expect(actionBar.canReviewProof).toBe(true);
+    expect(actionBar.canReview).toBe(false);
+  });
+
+  it("keeps proof review disabled for non-Hirers and without its capability", () => {
+    const nonHirer = buildQuestDetailActionBar(
+      makeContext(
+        { isHirerView: false },
+        { actor: QuestActor.WORKER, canReviewProof: true }
+      )
+    );
+    const missingCapability = buildQuestDetailActionBar(
+      makeContext({}, { canReviewProof: false })
+    );
+
+    expect(nonHirer.canReviewProof).toBe(false);
+    expect(missingCapability.canReviewProof).toBe(false);
+  });
+
+  it("enables review for a Worker on a terminal Quest with capability", () => {
+    const actionBar = buildQuestDetailActionBar(
+      makeContext(
+        { isHirerView: false, isPostView: true },
+        { actor: QuestActor.WORKER }
+      )
+    );
+
+    expect(actionBar.canReview).toBe(true);
+  });
+  it("exposes proof review and rating for a failed Quest with both capabilities", () => {
+    const actionBar = buildQuestDetailActionBar(
+      makeContext(
+        { quest: makeQuest(QuestStatus.QUEST_FAILED) },
+        { canReviewProof: true, canCreateReview: true }
+      )
+    );
+
+    expect(actionBar.canReviewProof).toBe(true);
+    expect(actionBar.canReview).toBe(true);
+  });
+  it("does not show Worker review outside post mode", () => {
+    const actionBar = buildQuestDetailActionBar(
+      makeContext(
+        { isHirerView: false, isPostView: false },
+        { actor: QuestActor.WORKER }
+      )
+    );
 
     expect(actionBar.canReview).toBe(false);
   });

@@ -1,5 +1,5 @@
 import React from "react";
-import { fireEvent, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, waitFor } from "@testing-library/react-native";
 import { walletApi } from "@/api/WalletApi";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { workerRamp } from "@/theme/colors";
@@ -7,9 +7,16 @@ import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
 import TopUpScreen from "../TopUpScreen";
 
 const mockBack = jest.fn();
+const mockCanGoBack = jest.fn(() => true);
+const mockReplace = jest.fn();
 const mockPush = jest.fn();
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ back: mockBack, push: mockPush }),
+  useRouter: () => ({
+    back: mockBack,
+    canGoBack: mockCanGoBack,
+    push: mockPush,
+    replace: mockReplace,
+  }),
 }));
 
 jest.mock("@/features/preferences/localeStore", () => ({
@@ -25,6 +32,7 @@ jest.mock("@/api/WalletApi", () => {
       getWallet: jest.fn(),
       createTopUp: jest.fn(),
       getTopUpStatus: jest.fn(),
+      listTopUps: jest.fn(),
       simulateTopUp: jest.fn(),
     },
   };
@@ -47,7 +55,7 @@ const mockTopUpRecord = {
   chargedTaxSatang: 0,
   paymentTotalSatang: 10000,
   topUpStatus: "PENDING" as const,
-  expiresAt: "2026-12-31T23:59:59.000Z",
+  qrExpiresAt: "2026-12-31T23:59:59.000Z",
   qrPayload: "00020101021229370016A000000677010111...",
   qrDataUrl: "data:image/png;base64,mockqrdata",
   createdAt: "2026-09-18T10:00:00.000Z",
@@ -57,6 +65,7 @@ describe("TopUpScreen", () => {
   beforeEach(() => {
     useRoleWorkspaceStore.setState({ workspace: "hirer" });
     jest.clearAllMocks();
+    mockCanGoBack.mockReturnValue(true);
     (walletApi.getWallet as jest.Mock).mockResolvedValue({
       spendingBalanceSatang: 100_000,
       earningsBalanceSatang: 0,
@@ -65,6 +74,7 @@ describe("TopUpScreen", () => {
     });
     (walletApi.quoteTopUp as jest.Mock).mockResolvedValue(mockQuote);
     (walletApi.createTopUp as jest.Mock).mockResolvedValue(mockTopUpRecord);
+    (walletApi.listTopUps as jest.Mock).mockResolvedValue([]);
   });
 
   it("uses the Worker accent on the PromptPay step", async () => {
@@ -171,7 +181,7 @@ describe("TopUpScreen", () => {
     });
   });
 
-  it("shows refreshed balance and transaction reference after payment", async () => {
+  it("shows refreshed balance and transaction reference after polling detects payment", async () => {
     (walletApi.getTopUpStatus as jest.Mock).mockResolvedValue({
       ...mockTopUpRecord,
       topUpStatus: "PAID",
@@ -195,12 +205,6 @@ describe("TopUpScreen", () => {
       expect(view.getByTestId("top-up-confirmation-step")).toBeTruthy();
     });
     await fireEvent.press(view.getByTestId("top-up-confirm-btn"));
-    await waitFor(() => {
-      expect(view.getByTestId("top-up-promptpay-step")).toBeTruthy();
-    });
-
-    // Check status
-    await fireEvent.press(view.getByTestId("top-up-check-status-btn"));
 
     await waitFor(() => {
       expect(walletApi.getTopUpStatus).toHaveBeenCalledWith(
@@ -225,6 +229,33 @@ describe("TopUpScreen", () => {
     await fireEvent.press(view.getByTestId("top-up-done-btn"));
     expect(mockBack).toHaveBeenCalled();
   });
+
+  it("still verifies payment through the manual Check Status fallback", async () => {
+    (walletApi.getTopUpStatus as jest.Mock)
+      .mockResolvedValueOnce(mockTopUpRecord)
+      .mockResolvedValue({ ...mockTopUpRecord, topUpStatus: "PAID" });
+    const view = await renderWithQueryClient(<TopUpScreen />);
+
+    await fireEvent.press(view.getByTestId("top-up-continue-btn"));
+    await waitFor(() => expect(view.getByTestId("top-up-confirmation-step")));
+    await fireEvent.press(view.getByTestId("top-up-confirm-btn"));
+    await waitFor(() =>
+      expect(view.getByTestId("top-up-promptpay-step")).toBeTruthy()
+    );
+    await waitFor(() =>
+      expect(walletApi.getTopUpStatus).toHaveBeenCalledTimes(1)
+    );
+
+    await waitFor(() =>
+      expect(view.getByTestId("top-up-check-status-btn")).toBeEnabled()
+    );
+    await fireEvent.press(view.getByTestId("top-up-check-status-btn"));
+
+    await waitFor(() => {
+      expect(walletApi.getTopUpStatus).toHaveBeenCalledTimes(2);
+      expect(view.getByTestId("top-up-success-view")).toBeTruthy();
+    });
+  });
   it("shows payment success plus localized refresh notice with retry when wallet refetch fails", async () => {
     (walletApi.getTopUpStatus as jest.Mock).mockResolvedValue({
       ...mockTopUpRecord,
@@ -244,17 +275,11 @@ describe("TopUpScreen", () => {
     await waitFor(() => {
       expect(view.getByTestId("top-up-continue-btn")).toBeTruthy();
     });
-
     await fireEvent.press(view.getByTestId("top-up-continue-btn"));
     await waitFor(() => {
       expect(view.getByTestId("top-up-confirmation-step")).toBeTruthy();
     });
     await fireEvent.press(view.getByTestId("top-up-confirm-btn"));
-    await waitFor(() => {
-      expect(view.getByTestId("top-up-promptpay-step")).toBeTruthy();
-    });
-
-    await fireEvent.press(view.getByTestId("top-up-check-status-btn"));
 
     await waitFor(() => {
       expect(view.getByTestId("top-up-success-view")).toBeTruthy();
@@ -291,7 +316,6 @@ describe("TopUpScreen", () => {
     await waitFor(() => {
       expect(view.getByTestId("top-up-continue-btn")).toBeTruthy();
     });
-
     await fireEvent.press(view.getByTestId("top-up-continue-btn"));
 
     await waitFor(() => {
@@ -301,7 +325,115 @@ describe("TopUpScreen", () => {
       expect(view.queryByText("Internal DB connection crashed")).toBeNull();
     });
   });
+  it("resumes the newest unexpired pending top-up on mount and shows its QR", async () => {
+    (walletApi.listTopUps as jest.Mock).mockResolvedValue([
+      {
+        id: "older",
+        topUpStatus: "PENDING",
+        qrExpiresAt: "2026-12-31T23:59:59.000Z",
+        createdAt: "2026-09-17T10:00:00.000Z",
+      },
+      {
+        id: "expired",
+        topUpStatus: "PENDING",
+        qrExpiresAt: "2026-09-01T00:00:00.000Z",
+        createdAt: "2026-09-30T10:00:00.000Z",
+      },
+      {
+        id: "newest",
+        topUpStatus: "PENDING",
+        qrExpiresAt: "2026-12-31T23:59:59.000Z",
+        createdAt: "2026-09-29T10:00:00.000Z",
+      },
+    ]);
+    (walletApi.getTopUpStatus as jest.Mock).mockResolvedValue({
+      ...mockTopUpRecord,
+      id: "newest",
+    });
+    const view = await renderWithQueryClient(<TopUpScreen />);
 
+    await waitFor(() => {
+      expect(walletApi.getTopUpStatus).toHaveBeenCalledWith(
+        "newest",
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      );
+      expect(view.getByTestId("top-up-promptpay-step")).toBeTruthy();
+      expect(view.getByTestId("top-up-qr-image")).toBeTruthy();
+    });
+  });
+
+  it("ignores expired or terminal top-ups and shows the amount step", async () => {
+    (walletApi.listTopUps as jest.Mock).mockResolvedValue([
+      {
+        id: "expired",
+        topUpStatus: "PENDING",
+        qrExpiresAt: "2026-09-01T00:00:00.000Z",
+        createdAt: "2026-09-30T10:00:00.000Z",
+      },
+      {
+        id: "paid",
+        topUpStatus: "PAID",
+        qrExpiresAt: "2026-12-31T23:59:59.000Z",
+        createdAt: "2026-09-30T11:00:00.000Z",
+      },
+    ]);
+    const view = await renderWithQueryClient(<TopUpScreen />);
+
+    await waitFor(() => {
+      expect(walletApi.listTopUps).toHaveBeenCalled();
+      expect(view.getByTestId("top-up-amount-step")).toBeTruthy();
+    });
+    expect(walletApi.getTopUpStatus).not.toHaveBeenCalled();
+  });
+
+  it("moves to success when polling reports PAID without pressing Check Status", async () => {
+    jest.useFakeTimers();
+    (walletApi.getTopUpStatus as jest.Mock)
+      .mockResolvedValueOnce(mockTopUpRecord)
+      .mockResolvedValueOnce({ ...mockTopUpRecord, topUpStatus: "PAID" });
+    const view = await renderWithQueryClient(<TopUpScreen />);
+
+    await fireEvent.press(view.getByTestId("top-up-continue-btn"));
+    await waitFor(() => expect(view.getByTestId("top-up-confirmation-step")));
+    await fireEvent.press(view.getByTestId("top-up-confirm-btn"));
+    await waitFor(() =>
+      expect(view.getByTestId("top-up-promptpay-step")).toBeTruthy()
+    );
+    await waitFor(() =>
+      expect(walletApi.getTopUpStatus).toHaveBeenCalledTimes(1)
+    );
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(5_000);
+    });
+
+    await waitFor(() => {
+      expect(view.getByTestId("top-up-success-view")).toBeTruthy();
+      expect(view.queryByTestId("top-up-check-status-btn")).toBeNull();
+    });
+    jest.useRealTimers();
+  });
+
+  it("stops polling after a terminal status", async () => {
+    jest.useFakeTimers();
+    (walletApi.getTopUpStatus as jest.Mock).mockResolvedValue({
+      ...mockTopUpRecord,
+      topUpStatus: "PAID",
+    });
+    const view = await renderWithQueryClient(<TopUpScreen />);
+    await fireEvent.press(view.getByTestId("top-up-continue-btn"));
+    await waitFor(() => expect(view.getByTestId("top-up-confirmation-step")));
+    await fireEvent.press(view.getByTestId("top-up-confirm-btn"));
+    await waitFor(() => expect(view.getByTestId("top-up-success-view")));
+    const requests = (walletApi.getTopUpStatus as jest.Mock).mock.calls.length;
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(10_000);
+    });
+
+    expect(walletApi.getTopUpStatus).toHaveBeenCalledTimes(requests);
+    jest.useRealTimers();
+  });
   it("calls router.back when header back button is pressed on Step 1", async () => {
     const view = await renderWithQueryClient(<TopUpScreen />);
 
@@ -311,5 +443,17 @@ describe("TopUpScreen", () => {
 
     await fireEvent.press(view.getByTestId("top-up-back-btn"));
     expect(mockBack).toHaveBeenCalled();
+  });
+  it("replaces to /(tabs)/money when there is no history", async () => {
+    mockCanGoBack.mockReturnValue(false);
+    const view = await renderWithQueryClient(<TopUpScreen />);
+    await waitFor(() => {
+      expect(view.getByTestId("top-up-back-btn")).toBeTruthy();
+    });
+
+    await fireEvent.press(view.getByTestId("top-up-back-btn"));
+
+    expect(mockReplace).toHaveBeenCalledWith("/(tabs)/money");
+    expect(mockBack).not.toHaveBeenCalled();
   });
 });

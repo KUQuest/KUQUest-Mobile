@@ -1,13 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { QueryClient } from "@tanstack/react-query";
 
 import { ApiError } from "@/api/ApiClient";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import type { UploadAsset } from "@/api/fileUpload";
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
-import { myQuestsKeys } from "@/features/myQuests/api/myQuestsQueries";
-import { workerHomeKeys } from "@/features/workerHome/api/workerHomeKeys";
+import { invalidateWorkerQuestReads } from "@/features/questBoard/api/questBoardQueries";
 import type { ProofSendPlan } from "../proofDraftPlan";
 import { QuestProofFileStatus } from "@/features/questBoard/domain/types";
 
@@ -15,24 +13,6 @@ type WorkerMutationInput = {
   questId: string;
   viewerId: string;
 };
-
-function invalidateWorkerState(
-  queryClient: QueryClient,
-  { questId, viewerId }: WorkerMutationInput
-) {
-  void queryClient.invalidateQueries({
-    queryKey: workerHomeKeys.assignments("active"),
-  });
-  void queryClient.invalidateQueries({
-    queryKey: workerHomeKeys.assignments("all"),
-  });
-  void queryClient.invalidateQueries({
-    queryKey: workerHomeKeys.liveSnapshot(questId, viewerId),
-  });
-  void queryClient.invalidateQueries({
-    queryKey: myQuestsKeys.worker(viewerId),
-  });
-}
 
 const PROOF_FILE_REJECTED_CODES = new Set([
   "PROOF_FILE_TYPE_NOT_SUPPORTED",
@@ -182,9 +162,12 @@ export function useSubmitProofMutation() {
         createQuestIdempotencyKey()
       );
     },
-    onSettled: (_data, _error, variables) => {
-      invalidateWorkerState(queryClient, variables);
-    },
+    onSettled: (_data, _error, variables) =>
+      invalidateWorkerQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId
+      ),
   });
 }
 
@@ -193,7 +176,6 @@ export function useRemoveProofFileMutation() {
   return useMutation({
     mutationFn: async ({
       questId,
-      viewerId,
       draftId,
       fileIds,
     }: WorkerMutationInput & { draftId: string; fileIds: string[] }) =>
@@ -203,8 +185,11 @@ export function useRemoveProofFileMutation() {
         { fileIds },
         createQuestIdempotencyKey()
       ),
-    onSettled: (_data, _error, variables) => {
-      invalidateWorkerState(queryClient, variables);
-    },
+    onSettled: (_data, _error, variables) =>
+      invalidateWorkerQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId
+      ),
   });
 }

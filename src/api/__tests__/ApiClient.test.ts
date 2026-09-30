@@ -1,6 +1,6 @@
 import { z, ZodError } from "zod";
 
-import { ApiClient, ApiError } from "../ApiClient";
+import { ApiClient, ApiError, setUnauthorizedHandler } from "../ApiClient";
 
 function response(body: unknown, status = 200) {
   return {
@@ -38,6 +38,40 @@ function setup(cookie = "", baseUrl = "https://api.example.test") {
 }
 
 describe("ApiClient", () => {
+  beforeEach(() => setUnauthorizedHandler(null));
+
+  afterEach(() => setUnauthorizedHandler(null));
+
+  test("invokes the unauthorized handler on a 401 and still throws ApiError", async () => {
+    const { client, fetchMock } = setup();
+    const unauthorizedHandler = jest.fn();
+    setUnauthorizedHandler(unauthorizedHandler);
+    fetchMock.mockResolvedValue(
+      response({ code: "UNAUTHORIZED", message: "Session expired" }, 401)
+    );
+
+    await expect(client.get("/api/v1/profile", z.unknown())).rejects.toEqual(
+      new ApiError(401, "UNAUTHORIZED", "Session expired")
+    );
+    expect(unauthorizedHandler).toHaveBeenCalledTimes(1);
+  });
+
+  test.each([403, 500])(
+    "does not invoke unauthorized handler for %i",
+    async (status) => {
+      const { client, fetchMock } = setup();
+      const unauthorizedHandler = jest.fn();
+      setUnauthorizedHandler(unauthorizedHandler);
+      fetchMock.mockResolvedValue(
+        response({ code: "REQUEST_FAILED", message: "Failed" }, status)
+      );
+
+      await expect(
+        client.get("/api/v1/profile", z.unknown())
+      ).rejects.toMatchObject({ status });
+      expect(unauthorizedHandler).not.toHaveBeenCalled();
+    }
+  );
   test("returns the validated data of the success envelope", async () => {
     const { client, fetchMock } = setup();
     fetchMock.mockResolvedValue(

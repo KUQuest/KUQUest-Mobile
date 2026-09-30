@@ -486,10 +486,10 @@ export function QuestDetailBody({
               accessibilityRole="button"
               onPress={onOpenWorkHub}
               className={styles.statusAction}
-              testID="view-my-quests"
+              testID="open-work-hub"
             >
               <Text className={styles.statusActionText}>
-                {messages.viewMyQuests}
+                {messages.openWorkHub}
               </Text>
             </Pressable>
           ) : null}

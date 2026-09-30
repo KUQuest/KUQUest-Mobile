@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 
+import { QuestParticipation } from "../domain/types";
 import { showConfirmModal } from "@/components/ui/SweetAlert";
 
 import type {
@@ -32,10 +33,24 @@ export function useQuestDetailCandidateActions({
     (proposalId: string) => {
       if (!facts) return;
       if (facts.source.kind === "live-snapshot") {
-        void liveActions.selectProposal(proposalId).then((result) => {
-          if (result === undefined) return;
-          transitions.closeCandidateReview();
-          navigation.openWorkHub();
+        const team =
+          facts.liveSnapshot?.participation === QuestParticipation.GROUP;
+        showConfirmModal({
+          title: team
+            ? facts.messages.confirmSelectTeamTitle
+            : facts.messages.confirmSelectCandidateTitle,
+          message: team
+            ? facts.messages.confirmSelectTeamMessage
+            : facts.messages.confirmSelectCandidateMessage,
+          confirmLabel: facts.groupMessages.selectProposal,
+          cancelLabel: facts.groupMessages.cancel,
+          onConfirm: () => {
+            void liveActions.selectProposal(proposalId).then((result) => {
+              if (result === undefined) return;
+              transitions.closeCandidateReview();
+              navigation.openManage();
+            });
+          },
         });
         return;
       }

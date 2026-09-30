@@ -10,8 +10,12 @@ import { questWorkMessages } from "@/locales/questWorkMessages";
 import { isTerminalStatus } from "@/domain/questLifecycle";
 import { getRouteParam } from "@/utils";
 import { getLocalizedErrorMessage } from "@/utils/error";
-import { useLiveQuestSnapshotQuery } from "../api/questBoardQueries";
-import { liveQuestService } from "../live/liveQuestService";
+import {
+  useConfirmCompletionMutation,
+  useLiveQuestSnapshotQuery,
+  useRespondToEditMutation,
+  useStartWorkMutation,
+} from "../api/questBoardQueries";
 import { useFileDispute } from "../dispute/useFileDispute";
 import type { LiveQuestSnapshot } from "../live/liveQuestTypes";
 import { QuestEditResponseDecision, QuestStatus } from "../domain/types";
@@ -31,21 +35,18 @@ export interface QuestWorkFeatureProps {
   viewerId?: string;
   /** Compatibility alias used by existing Quest detail routes. */
   studentId?: string;
-  editRequestId?: string;
 }
 
 export function useQuestWorkFeature({
   questId,
   viewerId,
   studentId,
-  editRequestId,
 }: QuestWorkFeatureProps) {
   const router = useRouter();
   const params = useLocalSearchParams<{
     id?: string | string[];
     viewerId?: string | string[];
     studentId?: string | string[];
-    editRequestId?: string | string[];
   }>();
   const routeQuestId = questId ?? getRouteParam(params.id);
   const routeViewerId =
@@ -53,12 +54,13 @@ export function useQuestWorkFeature({
     studentId ??
     getRouteParam(params.viewerId) ??
     getRouteParam(params.studentId);
-  const resolvedEditRequestId =
-    editRequestId ?? getRouteParam(params.editRequestId);
   const sessionQuery = useSessionQuery();
   const resolvedViewerId = routeViewerId ?? sessionQuery.data?.user.id;
   const { locale } = useLocale();
   const messages = questWorkMessages[locale];
+  const startWorkMutation = useStartWorkMutation();
+  const respondToEditMutation = useRespondToEditMutation();
+  const confirmCompletionMutation = useConfirmCompletionMutation();
   const snapshotPollingInterval = useCallback(
     (currentSnapshot: LiveQuestSnapshot | undefined): number | false => {
       // A viewer who still has to press Start Work drives the transition; the
@@ -77,13 +79,10 @@ export function useQuestWorkFeature({
     },
     []
   );
-  const snapshotOptions = resolvedEditRequestId
-    ? { editRequestId: resolvedEditRequestId }
-    : {};
   const snapshotQuery = useLiveQuestSnapshotQuery(
     routeQuestId ?? null,
     resolvedViewerId ?? null,
-    snapshotOptions,
+    {},
     Boolean(routeViewerId || !sessionQuery.isPending),
     snapshotPollingInterval
   );
@@ -123,16 +122,23 @@ export function useQuestWorkFeature({
 
   const respondToEdit = useCallback(
     async (decision: QuestEditResponseDecision) => {
-      if (!snapshot?.editRequest || !snapshot.capabilities.canRespondToEdit)
+      if (
+        !resolvedViewerId ||
+        !snapshot?.editRequest ||
+        !snapshot.capabilities.canRespondToEdit
+      ) {
         return;
+      }
       setEditSending(true);
       setEditFeedback(undefined);
       try {
-        await liveQuestService.respondToEditRequest(
-          snapshot.editRequest.requestId,
-          { decision },
-          createQuestIdempotencyKey()
-        );
+        await respondToEditMutation.mutateAsync({
+          questId: routeQuestId ?? snapshot.quest.id,
+          viewerId: resolvedViewerId,
+          requestId: snapshot.editRequest.requestId,
+          decision,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
         setEditFeedback(messages.editUpdated);
         await refreshSnapshot().catch(() => undefined);
       } catch (error) {
@@ -145,22 +151,32 @@ export function useQuestWorkFeature({
         setEditSending(false);
       }
     },
-    [locale, messages, refreshSnapshot, snapshot]
+    [
+      locale,
+      messages,
+      refreshSnapshot,
+      respondToEditMutation,
+      resolvedViewerId,
+      routeQuestId,
+      snapshot,
+    ]
   );
   const confirmCompletion = useCallback(async () => {
     if (
       !snapshot?.capabilities.canConfirmCompletion ||
       !routeQuestId ||
+      !resolvedViewerId ||
       confirmationSending
     )
       return;
     setConfirmationSending(true);
     setCommandError(null);
     try {
-      await liveQuestService.confirmCompletion(
-        routeQuestId,
-        createQuestIdempotencyKey()
-      );
+      await confirmCompletionMutation.mutateAsync({
+        questId: routeQuestId,
+        viewerId: resolvedViewerId,
+        idempotencyKey: createQuestIdempotencyKey(),
+      });
       const refreshedSnapshot = await refreshSnapshot();
       if (
         refreshedSnapshot &&
@@ -179,9 +195,11 @@ export function useQuestWorkFeature({
     }
   }, [
     confirmationSending,
+    confirmCompletionMutation,
     locale,
     messages,
     refreshSnapshot,
+    resolvedViewerId,
     routeQuestId,
     router,
     snapshot,
@@ -191,6 +209,7 @@ export function useQuestWorkFeature({
     if (
       !snapshot?.capabilities.canStartWork ||
       !routeQuestId ||
+      !resolvedViewerId ||
       startWorkSending
     )
       return;
@@ -199,10 +218,11 @@ export function useQuestWorkFeature({
     setStartWorkSending(true);
     setCommandError(null);
     try {
-      const result = await liveQuestService.startWork(
-        routeQuestId,
-        idempotencyKey
-      );
+      const result = await startWorkMutation.mutateAsync({
+        questId: routeQuestId,
+        viewerId: resolvedViewerId,
+        idempotencyKey,
+      });
       startWorkKeyRef.current = null;
       setRecordedStartedAt(result.startedAt);
       await refreshSnapshot().catch(() => undefined);
@@ -247,7 +267,9 @@ export function useQuestWorkFeature({
     refreshSnapshot,
     routeQuestId,
     snapshot,
+    startWorkMutation,
     startWorkSending,
+    resolvedViewerId,
   ]);
 
   const { confirmFileDispute } = useFileDispute();

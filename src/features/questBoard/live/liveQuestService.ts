@@ -125,7 +125,7 @@ export function cardToQuestBoardQuest(card: QuestV2BoardCard): QuestBoardQuest {
     creator: { name: card.hirerName },
     hirerName: card.hirerName,
     studentInterestMatch: false,
-    ownerStudentId: "",
+    ownerStudentId: card.hirerProfile?.id ?? "",
     status: "QUEST_OPEN",
   };
 }
@@ -579,7 +579,6 @@ function deriveNextAction(
 }
 
 export class LiveQuestService {
-  private hirerCache = new Map<string, { id: string; displayName: string }>();
   private participantCache = new Map<string, LiveQuestParticipant>();
   private participantRequests = new Map<
     string,
@@ -637,27 +636,6 @@ export class LiveQuestService {
         this.getParticipantProfile(participantId)
       )
     );
-  }
-  async getHirerParticipant(
-    questId: string
-  ): Promise<{ id: string; displayName: string } | null> {
-    if (this.hirerCache.has(questId)) {
-      return this.hirerCache.get(questId)!;
-    }
-    try {
-      const inquiry = await chatApi.createCandidateInquiry(questId);
-      const hirer = inquiry.participants.find(
-        (participant) => participant.role === QuestActor.HIRER
-      );
-      if (hirer?.id) {
-        const result = { id: hirer.id, displayName: hirer.displayName };
-        this.hirerCache.set(questId, result);
-        return result;
-      }
-    } catch {
-      // Profile navigation may still render without an inquiry participant.
-    }
-    return null;
   }
 
   async createCandidateInquiry(
@@ -1385,6 +1363,12 @@ export class LiveQuestService {
     idempotencyKey?: string
   ): Promise<QuestV2Review> {
     return questApi.createReview(questId, input, idempotencyKey);
+  }
+  async listQuestReviews(
+    questId: string,
+    _viewerId?: string
+  ): Promise<QuestV2Review[]> {
+    return questApi.listQuestReviews(questId);
   }
 
   async updateReview(

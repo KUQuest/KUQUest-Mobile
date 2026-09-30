@@ -7,6 +7,8 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { renderWithQueryClient as render } from "@/testing/queryTestUtils";
+import { questBoardMessages } from "@/locales/questBoardMessages";
+import * as questDetailFeature from "../useQuestDetailFeature";
 import * as questDetailProjection from "../questDetailProjection";
 import { getQuestDetailProjection } from "../questDetailProjection";
 import {
@@ -16,15 +18,25 @@ import {
 import { questWorkflow } from "../../workflow/questWorkflow";
 import QuestDetailScreen from "../QuestDetailScreen";
 import { useQuestDetailReadSource } from "../useQuestDetailReadSource";
+import { useQuestDetailNavigation } from "../useQuestDetailNavigation";
+import { CircleAlert } from "lucide-react-native";
+import type { QuestDetailLiveActionContext } from "../questDetailActions";
+import { QuestDetailBody } from "../components/QuestDetailBody";
 import * as questBoardQueries from "../../api/questBoardQueries";
+import { useQuestDetailLiveActions } from "../useQuestDetailLiveActions";
+import type { QuestDetailSurfaceTransitions } from "../useQuestDetailSurfaceState";
 
+const mockRouterPush = jest.fn();
+const mockRouterReplace = jest.fn();
 const mockGetQuestDetail = jest.fn();
 const mockGetLiveSnapshot = jest.fn();
+const mockJoinCandidateTeam = jest.fn();
 let mockExposeLiveSnapshot = false;
 
 jest.mock("../../live/liveQuestService", () => ({
   liveQuestService: {
     getQuestDetail: (...args: unknown[]) => mockGetQuestDetail(...args),
+    joinCandidateTeam: (...args: unknown[]) => mockJoinCandidateTeam(...args),
     get getLiveSnapshot() {
       return mockExposeLiveSnapshot ? mockGetLiveSnapshot : undefined;
     },
@@ -33,19 +45,249 @@ jest.mock("../../live/liveQuestService", () => ({
 
 jest.mock("expo-router", () => ({
   useFocusEffect: () => undefined,
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({
+    push: mockRouterPush,
+    replace: mockRouterReplace,
+    back: jest.fn(),
+    canGoBack: () => true,
+  }),
   useLocalSearchParams: () => ({ id: "quest-1" }),
 }));
 
 describe("QuestDetailScreen smoke", () => {
   beforeEach(() => {
+    mockRouterPush.mockReset();
+    mockRouterReplace.mockReset();
     mockGetQuestDetail.mockReset();
     mockGetLiveSnapshot.mockReset();
+    mockJoinCandidateTeam.mockReset();
     mockExposeLiveSnapshot = false;
     questFixtureAdapter.reset();
   });
   afterEach(() => {
     questFixtureAdapter.reset();
+  });
+  it("shows proof review before rating and opens the proof-review route", async () => {
+    const quest = questFixtureAdapter.listBoardQuests(
+      "student-001",
+      questFixtureAdapter.now
+    )[0];
+    if (!quest) throw new Error("Expected a Quest fixture");
+    const navigation = await renderHook(() =>
+      useQuestDetailNavigation({
+        quest,
+        projection: null,
+        source: { kind: "live-detail" },
+        viewerId: "hirer-1",
+        messages: questBoardMessages.en,
+        canMessageOwner: false,
+        createCandidateInquiry: async () => ({ id: "inquiry-1" }),
+      })
+    );
+    const featureSpy = jest
+      .spyOn(questDetailFeature, "useQuestDetailFeature")
+      .mockReturnValue({
+        handleBack: jest.fn(),
+        messages: questBoardMessages.en,
+        state: "ready",
+        quest,
+        bodyProps: {
+          quest,
+          locale: "en",
+          messages: questBoardMessages.en,
+          imageUris: [],
+          refreshing: false,
+          onRefresh: jest.fn(),
+          canParticipate: false,
+          participationFirstCome: false,
+          onOpenParticipation: jest.fn(),
+          participationBusy: false,
+          onOpenWorkHub: jest.fn(),
+        },
+        sheets: {},
+        team: undefined,
+        partialStartConsent: { surfaceState: "empty" },
+        onRetry: jest.fn(),
+        actionBar: {
+          isPostView: true,
+          canEditPost: false,
+          canReview: true,
+          canReviewProof: true,
+          onReviewProof: navigation.result.current.openProofReview,
+          canMessageOwner: false,
+          onMessageOwner: jest.fn(),
+          canShowWithdraw: false,
+          onLeaveQuest: jest.fn(),
+          canApply: false,
+          firstCome: false,
+          onOpenApply: jest.fn(),
+          onEditPost: jest.fn(),
+          busy: false,
+        },
+      });
+
+    try {
+      const screen = await render(<QuestDetailScreen questId={quest.id} />);
+      const proofButton = screen.getByTestId("quest-detail-review-proof");
+      const ratingButton = screen.getByTestId("quest-review-button");
+      const actionParent = proofButton.parent;
+      if (!actionParent) throw new Error("Expected shared action-bar parent");
+      expect(ratingButton.parent).toBe(actionParent);
+      expect(actionParent.children.indexOf(proofButton)).toBeLessThan(
+        actionParent.children.indexOf(ratingButton)
+      );
+
+      await fireEvent.press(proofButton);
+
+      expect(mockRouterPush).toHaveBeenCalledWith({
+        pathname: "/quest/[id]/proof-review",
+        params: { id: quest.id },
+      });
+    } finally {
+      featureSpy.mockRestore();
+    }
+  });
+  it("opens Work Hub with viewer identity and replaces to Manage", async () => {
+    const quest = questFixtureAdapter.listBoardQuests(
+      "student-001",
+      questFixtureAdapter.now
+    )[0];
+    if (!quest) throw new Error("Expected a Quest fixture");
+    const navigation = await renderHook(() =>
+      useQuestDetailNavigation({
+        quest,
+        projection: null,
+        source: { kind: "live-detail" },
+        viewerId: "worker-1",
+        messages: questBoardMessages.en,
+        canMessageOwner: false,
+        createCandidateInquiry: async () => ({ id: "inquiry-1" }),
+      })
+    );
+
+    navigation.result.current.openWorkHub();
+    expect(mockRouterPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]/work",
+      params: { id: quest.id, viewerId: "worker-1" },
+    });
+    navigation.result.current.openManage();
+    expect(mockRouterReplace).toHaveBeenCalledWith({
+      pathname: "/quest/[id]/manage",
+      params: { id: quest.id },
+    });
+  });
+  it("offers accepted Workers an Open Work Hub action from Detail", async () => {
+    const quest = questFixtureAdapter.listBoardQuests(
+      "student-001",
+      questFixtureAdapter.now
+    )[0];
+    if (!quest) throw new Error("Expected a Quest fixture");
+    const openWorkHub = jest.fn();
+    const screen = await render(
+      <QuestDetailBody
+        quest={quest}
+        locale="en"
+        messages={questBoardMessages.en}
+        imageUris={[]}
+        refreshing={false}
+        onRefresh={jest.fn()}
+        canParticipate={false}
+        participationFirstCome={false}
+        onOpenParticipation={jest.fn()}
+        participationBusy={false}
+        status={{
+          title: "Application accepted",
+          description: "Your place is confirmed",
+          unavailable: false,
+          postView: false,
+          leftQuest: false,
+          history: false,
+          Icon: CircleAlert,
+          iconColor: "",
+        }}
+        onOpenWorkHub={openWorkHub}
+      />
+    );
+
+    await fireEvent.press(screen.getByTestId("open-work-hub"));
+
+    expect(screen.getByText("Open Work Hub")).toBeTruthy();
+    expect(openWorkHub).toHaveBeenCalledTimes(1);
+  });
+  it("allows team join when server capability allows it", async () => {
+    const quest = questFixtureAdapter.listBoardQuests(
+      "student-001",
+      questFixtureAdapter.now
+    )[0];
+    if (!quest) throw new Error("Expected a Quest fixture");
+    const beginLiveAction = jest.fn(() => true);
+    const transitions: QuestDetailSurfaceTransitions = {
+      beginLiveAction,
+      endLiveAction: jest.fn(),
+      markJoined: jest.fn(),
+      markLeft: jest.fn(),
+      openConfirmation: jest.fn(),
+      closeConfirmation: jest.fn(),
+      dismissIntent: jest.fn(),
+      openCandidateReview: jest.fn(),
+      closeCandidateReview: jest.fn(),
+      setTeamSearchQuery: jest.fn(),
+      setTeamSelectedMemberIds: jest.fn(),
+      setTeamReviewing: jest.fn(),
+      selectProposal: jest.fn(),
+      markFixtureChanged: jest.fn(),
+    };
+    const context: QuestDetailLiveActionContext = {
+      questId: quest.id,
+      viewerId: "worker-1",
+      quest,
+      projectionCapabilities: {
+        canApply: false,
+        canJoin: false,
+        canWithdrawApplication: false,
+        canCreateTeam: false,
+        canInviteWorker: false,
+        canRespondInvitation: false,
+        canJoinTeam: true,
+        canUpdateTeam: false,
+        canLeaveTeam: false,
+        canRemoveTeamMember: false,
+        canRegenerateTeamCode: false,
+        canSubmitTeam: false,
+        canSelectCandidate: false,
+        canSelectTeam: false,
+        canRejectCandidate: false,
+        canRejectTeam: false,
+        canDecideUnderfilled: false,
+        canConsentUnderfilled: false,
+        canRespondPartialStart: false,
+        canMessageOwner: false,
+      },
+      liveSnapshot: null,
+      messages: questBoardMessages.en,
+      transitions,
+    };
+    const queryClient = new QueryClient();
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    mockJoinCandidateTeam.mockResolvedValue({ id: "team-1" });
+
+    try {
+      const hook = await renderHook(() => useQuestDetailLiveActions(context), {
+        wrapper,
+      });
+      let joined: unknown;
+      await act(async () => {
+        joined = await hook.result.current.joinTeam("team-1", "abc123");
+      });
+
+      expect(joined).toEqual({ id: "team-1" });
+      expect(beginLiveAction).toHaveBeenCalledTimes(1);
+      expect(mockJoinCandidateTeam).toHaveBeenCalled();
+    } finally {
+      queryClient.clear();
+    }
   });
 
   it("renders the live quest path after the fold", async () => {

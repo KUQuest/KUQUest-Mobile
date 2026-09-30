@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import {
   showConfirmModal,
@@ -7,12 +7,16 @@ import {
   SweetAlertVariant,
 } from "@/components/ui/SweetAlert";
 import { useRouter } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { ApiError } from "@/api/ApiClient";
 
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { getChatRouteParams } from "@/features/chat/chatData";
 import { useLocale } from "@/features/preferences/localeStore";
+import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import {
+  setQuestEditRequestId,
   useCancelQuestMutation,
   useCreateEditRequestMutation,
   useDecideUnderfilledMutation,
@@ -21,6 +25,7 @@ import {
   useSelectCandidateTeamMutation,
 } from "@/features/questBoard/api/questBoardQueries";
 import { isTerminalStatus } from "@/domain/questLifecycle";
+import { getCancelTier } from "./cancelQuestGuardrail";
 import { formatSatang } from "@/domain/satang";
 import { myQuestMessages } from "@/locales/myQuestMessages";
 import { questBoardMessages } from "@/locales/questBoardMessages";
@@ -39,19 +44,21 @@ export function useHirerQuestManageFeature(questId?: string) {
   const router = useRouter();
   const { locale } = useLocale();
   const messages = questBoardMessages[locale];
+  const groupMessages = groupQuestMessages[locale];
   const cancelMessages = myQuestMessages[locale];
   const viewerId = useSessionQuery().data?.user.id || "";
   const [candidateOpen, setCandidateOpen] = useState(false);
   const [underfilledOpen, setUnderfilledOpen] = useState(false);
   const [conditionEditOpen, setConditionEditOpen] = useState(false);
-  const [editRequestId, setEditRequestId] = useState<string>();
+  const [guardrailTier, setGuardrailTier] = useState<2 | 3 | null>(null);
+  const [commandBusy, setCommandBusy] = useState(false);
   const [conditionEditSubmitting, setConditionEditSubmitting] = useState(false);
   const [conditionEditError, setConditionEditError] = useState<string>();
   const snapshotQuery = useLiveQuestSnapshotQuery(
     questId ?? null,
-    viewerId || null,
-    editRequestId ? { editRequestId } : undefined
+    viewerId || null
   );
+  const queryClient = useQueryClient();
   const selectApplicationMutation = useSelectApplicationMutation();
   const selectCandidateTeamMutation = useSelectCandidateTeamMutation();
   const decideUnderfilledMutation = useDecideUnderfilledMutation();
@@ -59,16 +66,39 @@ export function useHirerQuestManageFeature(questId?: string) {
   const createEditRequestMutation = useCreateEditRequestMutation();
   const snapshot = snapshotQuery.data;
   const refetchSnapshot = snapshotQuery.refetch;
+  const inFlightRef = useRef(false);
+  const keyRef = useRef<{ scope: string; key: string } | null>(null);
   const viewerCommand = useCallback(
-    async (run: (key: string) => Promise<unknown>): Promise<boolean> => {
-      if (!questId || !viewerId) return false;
+    async (
+      scope: string,
+      run: (key: string) => Promise<unknown>
+    ): Promise<boolean> => {
+      if (!questId || !viewerId || inFlightRef.current) return false;
+      inFlightRef.current = true;
+      setCommandBusy(true);
+      const key =
+        keyRef.current?.scope === scope
+          ? keyRef.current.key
+          : createQuestIdempotencyKey();
+      keyRef.current = { scope, key };
       try {
-        await run(createQuestIdempotencyKey());
+        await run(key);
+        keyRef.current = null;
         return true;
       } catch (caught) {
+        if (
+          caught instanceof ApiError &&
+          caught.status >= 400 &&
+          caught.status < 500
+        ) {
+          keyRef.current = null;
+        }
         await refetchSnapshot();
         showErrorAlert(messages.actionFailedTitle, caught);
         return false;
+      } finally {
+        inFlightRef.current = false;
+        setCommandBusy(false);
       }
     },
     [messages, questId, refetchSnapshot, viewerId]
@@ -88,13 +118,15 @@ export function useHirerQuestManageFeature(questId?: string) {
   const terminal = snapshot ? isTerminalStatus(snapshot.state) : false;
   // Settlement per the cancellation matrix in quest-lifecycle-contract.md.
   const cancelDescription =
-    snapshot?.state === QuestStatus.QUEST_OPEN
-      ? cancelMessages.cancelOpenDescription
-      : snapshot?.state === QuestStatus.QUEST_ASSIGNED
-        ? cancelMessages.cancelAssignedDescription
-        : snapshot?.state === QuestStatus.QUEST_IN_PROGRESS
-          ? cancelMessages.cancelInProgressDescription
-          : undefined;
+    snapshot?.state === QuestStatus.QUEST_DRAFT
+      ? cancelMessages.cancelDraftDescription
+      : snapshot?.state === QuestStatus.QUEST_OPEN
+        ? cancelMessages.cancelOpenDescription
+        : snapshot?.state === QuestStatus.QUEST_ASSIGNED
+          ? cancelMessages.cancelAssignedDescription
+          : snapshot?.state === QuestStatus.QUEST_IN_PROGRESS
+            ? cancelMessages.cancelInProgressDescription
+            : undefined;
   const canReviewCandidateProposals =
     isHirerActor(snapshot?.actor) &&
     snapshot.mode === QuestMode.CANDIDATE &&
@@ -119,60 +151,84 @@ export function useHirerQuestManageFeature(questId?: string) {
       }),
     });
   };
-  const selectApplication = (id: string) =>
-    snapshot &&
-    void viewerCommand((key) =>
-      selectApplicationMutation.mutateAsync({
-        questId: snapshot.quest.id,
-        applicationId: id,
-        viewerId,
-        idempotencyKey: key,
-      })
-    );
-  const selectTeam = (id: string) =>
-    snapshot &&
-    void viewerCommand((key) =>
-      selectCandidateTeamMutation.mutateAsync({
-        questId: snapshot.quest.id,
-        teamId: id,
-        viewerId,
-        idempotencyKey: key,
-      })
-    );
-  const cancel = () => {
+  const selectApplication = (id: string) => {
     if (!snapshot) return;
     showConfirmModal({
-      title: cancelMessages.cancelConfirmTitle,
-      message: cancelDescription ?? "",
-      confirmLabel: cancelMessages.cancelQuest,
-      cancelLabel: cancelMessages.keepQuest,
+      title: messages.confirmSelectCandidateTitle,
+      message: messages.confirmSelectCandidateMessage,
+      confirmLabel: groupMessages.selectProposal,
+      cancelLabel: groupMessages.cancel,
       onConfirm: () =>
-        void viewerCommand((key) =>
-          cancelQuestMutation
-            .mutateAsync({
-              questId: snapshot.quest.id,
-              viewerId,
-              idempotencyKey: key,
-            })
-            .then((outcome) => {
-              const settlement = [
-                outcome.paidSatang > 0 &&
-                  cancelMessages.cancelPaidWorkers(
-                    formatSatang(outcome.paidSatang, locale)
-                  ),
-                outcome.refundedSatang > 0 &&
-                  cancelMessages.cancelRefunded(
-                    formatSatang(outcome.refundedSatang, locale)
-                  ),
-              ].filter(Boolean);
-              showSweetAlert({
-                title: cancelMessages.cancelSuccessTitle,
-                message: settlement.join("\n"),
-                variant: SweetAlertVariant.Success,
-              });
-            })
-        ),
+        void viewerCommand(`select-application:${id}`, async (key) => {
+          await selectApplicationMutation.mutateAsync({
+            questId: snapshot.quest.id,
+            applicationId: id,
+            viewerId,
+            idempotencyKey: key,
+          });
+          setCandidateOpen(false);
+        }),
     });
+  };
+  const selectTeam = (id: string) => {
+    if (!snapshot) return;
+    showConfirmModal({
+      title: messages.confirmSelectTeamTitle,
+      message: messages.confirmSelectTeamMessage,
+      confirmLabel: groupMessages.selectProposal,
+      cancelLabel: groupMessages.cancel,
+      onConfirm: () =>
+        void viewerCommand(`select-team:${id}`, async (key) => {
+          await selectCandidateTeamMutation.mutateAsync({
+            questId: snapshot.quest.id,
+            teamId: id,
+            viewerId,
+            idempotencyKey: key,
+          });
+          setCandidateOpen(false);
+        }),
+    });
+  };
+  const runCancel = () => {
+    if (!snapshot) return;
+    void viewerCommand("cancel", async (key) => {
+      const outcome = await cancelQuestMutation.mutateAsync({
+        questId: snapshot.quest.id,
+        viewerId,
+        idempotencyKey: key,
+      });
+      const settlement = [
+        outcome.paidSatang > 0 &&
+          cancelMessages.cancelPaidWorkers(
+            formatSatang(outcome.paidSatang, locale)
+          ),
+        outcome.refundedSatang > 0 &&
+          cancelMessages.cancelRefunded(
+            formatSatang(outcome.refundedSatang, locale)
+          ),
+      ].filter(Boolean);
+      showSweetAlert({
+        title: cancelMessages.cancelSuccessTitle,
+        message: settlement.join("\n"),
+        variant: SweetAlertVariant.Success,
+      });
+    });
+  };
+  const cancel = () => {
+    if (!snapshot) return;
+    const tier = getCancelTier(snapshot.state);
+    if (tier === null) return;
+    if (tier === 1) {
+      showConfirmModal({
+        title: cancelMessages.cancelConfirmTitle,
+        message: cancelDescription ?? "",
+        confirmLabel: cancelMessages.cancelQuest,
+        cancelLabel: cancelMessages.keepQuest,
+        onConfirm: runCancel,
+      });
+      return;
+    }
+    setGuardrailTier(tier);
   };
   const reviewProof = () => {
     if (!snapshot || !pendingProof || !snapshot.capabilities.canReviewProof)
@@ -183,34 +239,41 @@ export function useHirerQuestManageFeature(questId?: string) {
     });
   };
   const submitConditionEdit = (items: string[]) => {
-    if (!snapshot) return;
+    if (!snapshot || conditionEditSubmitting || inFlightRef.current) return;
     setConditionEditSubmitting(true);
     setConditionEditError(undefined);
-    createEditRequestMutation
-      .mutateAsync({
-        questId: snapshot.quest.id,
-        payload: { condition: { items } },
-        viewerId,
-        idempotencyKey: createQuestIdempotencyKey(),
-      })
-      .then((request) => {
-        setEditRequestId(request.requestId);
+    void viewerCommand("edit-request", async (key) => {
+      try {
+        const request = await createEditRequestMutation.mutateAsync({
+          questId: snapshot.quest.id,
+          payload: { condition: { items } },
+          viewerId,
+          idempotencyKey: key,
+        });
+        setQuestEditRequestId(
+          queryClient,
+          snapshot.quest.id,
+          request.requestId
+        );
         setConditionEditOpen(false);
-      })
-      .catch((caught) => {
+      } catch (caught) {
         setConditionEditError(
           getLocalizedErrorMessage(caught, locale, {
             fallback: messages.conditionEditSubmitError,
           })
         );
-        return snapshotQuery.refetch();
-      })
-      .finally(() => setConditionEditSubmitting(false));
+        throw caught;
+      }
+    }).finally(() => setConditionEditSubmitting(false));
+  };
+  const confirmGuardrailCancel = () => {
+    setGuardrailTier(null);
+    runCancel();
   };
   const decideUnderfilled = (decision: QuestUnderfilledDecision) => {
     if (!snapshot) return;
     setUnderfilledOpen(false);
-    void viewerCommand((key) =>
+    void viewerCommand(`underfilled:${decision}`, (key) =>
       decideUnderfilledMutation.mutateAsync({
         questId: snapshot.quest.id,
         decision,
@@ -232,6 +295,10 @@ export function useHirerQuestManageFeature(questId?: string) {
     pendingProof,
     terminal,
     cancelDescription,
+    guardrailTier,
+    commandBusy,
+    setGuardrailTier,
+    confirmGuardrailCancel,
     canReviewCandidateProposals,
     canProposeConditionEdit,
     candidateOpen,

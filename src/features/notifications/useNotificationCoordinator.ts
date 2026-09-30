@@ -210,7 +210,12 @@ export function useNotificationCoordinator() {
         selected
           ? copy.applicationSelected(application.quest.title)
           : copy.applicationRejected(application.quest.title),
-        { pathname: "/quest/[id]", params: { id: application.questId } }
+        selected
+          ? {
+              pathname: "/quest/[id]/work",
+              params: { id: application.questId },
+            }
+          : { pathname: "/quest/[id]", params: { id: application.questId } }
       );
     }
     previousApplications.current = new Map(

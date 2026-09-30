@@ -1,4 +1,6 @@
+import { QueryClient, useQueryClient } from "@tanstack/react-query";
 import { StyleSheet, TextInput as RNTextInput } from "react-native";
+import { QuestStatus } from "@/features/questBoard/domain/types";
 import { ApiError } from "@/api/ApiClient";
 import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import { act, fireEvent, waitFor, within } from "@testing-library/react-native";
@@ -7,6 +9,7 @@ import mockReact, { type ReactElement, type ReactNode } from "react";
 import CreateQuestScreen from "../CreateQuestScreen";
 import { measureFieldRelativeToScroll } from "../components/createQuestFocus";
 import { initialDraft, toBangkokDateTime } from "../domain/createQuestModel";
+import { createQuestKeys } from "../api/createQuestQueries";
 jest.mock("react-native/Libraries/Modal/Modal", () => {
   return {
     __esModule: true,
@@ -117,6 +120,7 @@ const serverQuestDetailFixture = {
   mode: "FIRST_COME",
   participation: "SINGLE",
   headcount: 1,
+  state: QuestStatus.QUEST_DRAFT,
   questFundingTotal: 100,
 };
 
@@ -202,10 +206,21 @@ jest.mock("expo-status-bar", () => ({
 jest.mock("../../../features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "th" }),
 }));
+const screenQueryClientHolder: { current: QueryClient | null } = {
+  current: null,
+};
+function CaptureQueryClient() {
+  const queryClient = useQueryClient();
+  mockReact.useEffect(() => {
+    screenQueryClientHolder.current = queryClient;
+  }, [queryClient]);
+  return null;
+}
 const render = (ui: ReactElement) =>
   renderWithQueryClient(
     <>
       {ui}
+      <CaptureQueryClient />
       <SweetAlertHost />
     </>
   );
@@ -272,6 +287,7 @@ function fireBeforeRemove() {
 
 describe("CreateQuestScreen", () => {
   beforeEach(() => {
+    screenQueryClientHolder.current = null;
     mockRouter.replace.mockClear();
     mockLoadQuestDraft.mockReset();
     mockLoadQuestDraft.mockImplementation((...args: unknown[]) =>
@@ -706,6 +722,201 @@ describe("CreateQuestScreen", () => {
     expect(mockDeleteQuestDraft).toHaveBeenCalledWith("test-key", "mock-draft");
   });
 
+  it("persists create, server, and publish identifiers before their API requests", async () => {
+    mockLiveGetPublishCheck.mockResolvedValue(serverPublishCheckFixture);
+    mockLiveCreateQuest.mockResolvedValue({
+      id: "quest-durable",
+      version: 1,
+    });
+    mockLivePublishQuest.mockResolvedValue({
+      id: "quest-durable",
+      state: QuestStatus.QUEST_OPEN,
+    });
+    const view = await renderNewModeAtTeamSetup();
+
+    await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
+    await waitFor(() =>
+      expect(view.getByTestId("create-quest-save-preview")).toBeTruthy()
+    );
+    const persistedCreate = mockPersistQuestDraft.mock.calls.find(
+      (call) =>
+        typeof call[5] === "object" &&
+        call[5] !== null &&
+        "createIdempotencyKey" in call[5] &&
+        typeof call[5].createIdempotencyKey === "string"
+    );
+    if (!persistedCreate) throw new Error("Create key was not persisted");
+    const createWriteIndex =
+      mockPersistQuestDraft.mock.calls.indexOf(persistedCreate);
+    expect(
+      mockPersistQuestDraft.mock.invocationCallOrder[createWriteIndex]
+    ).toBeLessThan(mockLiveCreateQuest.mock.invocationCallOrder[0]);
+
+    const persistedServerId = mockPersistQuestDraft.mock.calls.find(
+      (call) =>
+        typeof call[5] === "object" &&
+        call[5] !== null &&
+        "serverQuestId" in call[5] &&
+        typeof call[5].serverQuestId === "string"
+    );
+    if (!persistedServerId)
+      throw new Error("Server Quest id was not persisted");
+    const serverWriteIndex =
+      mockPersistQuestDraft.mock.calls.indexOf(persistedServerId);
+    expect(
+      mockPersistQuestDraft.mock.invocationCallOrder[serverWriteIndex]
+    ).toBeGreaterThan(mockLiveCreateQuest.mock.invocationCallOrder[0]);
+
+    await fireEvent.press(view.getByLabelText("เผยแพร่เควสต์"));
+    await waitFor(() =>
+      expect(view.getByText("เผยแพร่เควสต์แล้ว")).toBeTruthy()
+    );
+    const persistedPublishKey = mockPersistQuestDraft.mock.calls.find(
+      (call) =>
+        typeof call[5] === "object" &&
+        call[5] !== null &&
+        "publishIdempotencyKey" in call[5] &&
+        typeof call[5].publishIdempotencyKey === "string"
+    );
+    if (!persistedPublishKey) throw new Error("Publish key was not persisted");
+    const publishWriteIndex =
+      mockPersistQuestDraft.mock.calls.indexOf(persistedPublishKey);
+    expect(
+      mockPersistQuestDraft.mock.invocationCallOrder[publishWriteIndex]
+    ).toBeLessThan(mockLivePublishQuest.mock.invocationCallOrder[0]);
+  });
+
+  it("reconciles a persisted QUEST_OPEN Quest without creating or publishing again", async () => {
+    mockLoadQuestDraft.mockResolvedValue({
+      ...liveDraftSnapshot,
+      step: 3,
+      serverQuestId: "quest-already-open",
+      createIdempotencyKey: "create-existing",
+      publishIdempotencyKey: "publish-existing",
+    });
+    mockGetQuestDetail.mockResolvedValue({
+      ...serverQuestDetailFixture,
+      id: "quest-already-open",
+      state: QuestStatus.QUEST_OPEN,
+    });
+    const view = await render(<CreateQuestScreen editQuestId="draft-1" />);
+
+    await fireEvent.press(view.getByTestId("create-quest-save-preview"));
+
+    await waitFor(() =>
+      expect(view.getByText("เผยแพร่เควสต์แล้ว")).toBeTruthy()
+    );
+    expect(mockLiveCreateQuest).not.toHaveBeenCalled();
+    expect(mockLivePublishQuest).not.toHaveBeenCalled();
+    expect(mockDeleteQuestDraft).toHaveBeenCalledWith("test-key", "draft-1");
+  });
+
+  it("syncs a restarted QUEST_DRAFT at its server version, then publishes with its existing id and publish key", async () => {
+    mockLoadQuestDraft.mockResolvedValue({
+      ...liveDraftSnapshot,
+      step: 3,
+      serverQuestId: "quest-to-resume",
+      createIdempotencyKey: "create-existing",
+      publishIdempotencyKey: "publish-existing",
+    });
+    mockGetQuestDetail.mockResolvedValue({
+      ...serverQuestDetailFixture,
+      id: "quest-to-resume",
+      state: QuestStatus.QUEST_DRAFT,
+    });
+    mockLiveGetPublishCheck.mockResolvedValue(serverPublishCheckFixture);
+    mockLivePublishQuest.mockResolvedValue({
+      id: "quest-to-resume",
+      state: QuestStatus.QUEST_OPEN,
+    });
+    const view = await render(<CreateQuestScreen editQuestId="draft-1" />);
+
+    await fireEvent.press(view.getByTestId("create-quest-save-preview"));
+
+    await waitFor(() =>
+      expect(view.getByText("เผยแพร่เควสต์แล้ว")).toBeTruthy()
+    );
+    expect(mockLiveCreateQuest).not.toHaveBeenCalled();
+    expect(mockLiveEditQuest).toHaveBeenCalledTimes(1);
+    expect(mockLiveEditQuest).toHaveBeenCalledWith(
+      "quest-to-resume",
+      serverQuestDetailFixture.version,
+      expect.objectContaining({ title: liveDraftSnapshot.draft.title }),
+      expect.any(String)
+    );
+    expect(mockLivePublishQuest).toHaveBeenCalledWith(
+      "quest-to-resume",
+      "publish-existing"
+    );
+  });
+
+  it.each([
+    {
+      description: "reconciliation errors",
+      getDetail: () => Promise.reject(new Error("network unavailable")),
+    },
+    {
+      description: "non-draft states",
+      getDetail: () =>
+        Promise.resolve({
+          ...serverQuestDetailFixture,
+          id: "quest-blocked",
+          state: QuestStatus.QUEST_ASSIGNED,
+        }),
+    },
+  ])(
+    "blocks $description without deleting the draft",
+    async ({ getDetail }) => {
+      mockLiveGetPublishCheck.mockResolvedValue(serverPublishCheckFixture);
+      mockLoadQuestDraft.mockResolvedValue({
+        ...liveDraftSnapshot,
+        serverQuestId: "quest-blocked",
+        createIdempotencyKey: "create-retained",
+        publishIdempotencyKey: "publish-retained",
+      });
+      mockGetQuestDetail.mockImplementation(getDetail);
+      const view = await render(<CreateQuestScreen editQuestId="draft-1" />);
+
+      await waitFor(() => expect(view.getByText("ตรวจสอบเควสต์")).toBeTruthy());
+      await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
+      await waitFor(() =>
+        expect(view.getByTestId("create-quest-save-error")).toBeTruthy()
+      );
+      expect(mockLiveCreateQuest).not.toHaveBeenCalled();
+      expect(mockLivePublishQuest).not.toHaveBeenCalled();
+      expect(mockDeleteQuestDraft).not.toHaveBeenCalled();
+      expect(
+        mockPersistQuestDraft.mock.calls.some(
+          ([, , , , , publication]) =>
+            publication?.serverQuestId === "quest-blocked" &&
+            publication?.createIdempotencyKey === "create-retained" &&
+            publication?.publishIdempotencyKey === "publish-retained"
+        )
+      ).toBe(true);
+    }
+  );
+
+  it("does not create when persisting the create idempotency key fails", async () => {
+    mockPersistQuestDraft.mockImplementation((...args: unknown[]) =>
+      typeof args[5] === "object" &&
+      args[5] !== null &&
+      "createIdempotencyKey" in args[5] &&
+      typeof args[5].createIdempotencyKey === "string"
+        ? Promise.reject(new Error("storage unavailable"))
+        : Promise.resolve()
+    );
+    mockLiveGetPublishCheck.mockResolvedValue(serverPublishCheckFixture);
+    const view = await renderNewModeAtTeamSetup();
+
+    await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
+
+    await waitFor(() =>
+      expect(view.getByTestId("create-quest-save-error")).toBeTruthy()
+    );
+    expect(mockLiveCreateQuest).not.toHaveBeenCalled();
+    expect(mockLivePublishQuest).not.toHaveBeenCalled();
+  });
+
   it("leaves the flow instead of reopening Review when back is pressed after publish", async () => {
     mockLiveCreateQuest.mockResolvedValue({ id: "server-quest-done" });
     mockLiveGetPublishCheck.mockResolvedValue({
@@ -934,7 +1145,8 @@ describe("CreateQuestScreen", () => {
       expect.any(String),
       expect.objectContaining({ title: typedTitle }),
       2,
-      "DRAFT"
+      "DRAFT",
+      {}
     );
   });
 
@@ -985,7 +1197,7 @@ describe("CreateQuestScreen", () => {
       expect(view.getByTestId("create-quest-save-preview")).toBeTruthy()
     );
     await waitForPublishCheck(view);
-    expect(mockPersistQuestDraft).toHaveBeenCalledTimes(1);
+    expect(mockPersistQuestDraft).toHaveBeenCalledTimes(3);
     expect(mockLiveCreateQuest).toHaveBeenCalledTimes(1);
     expect(mockLiveEditQuest).not.toHaveBeenCalled();
   });
@@ -1054,7 +1266,7 @@ describe("CreateQuestScreen", () => {
       expect(view.getByTestId("create-quest-save-preview")).toBeTruthy()
     );
     await waitForPublishCheck(view);
-    expect(mockPersistQuestDraft).toHaveBeenCalledTimes(1);
+    expect(mockPersistQuestDraft).toHaveBeenCalledTimes(3);
     expect(mockLiveCreateQuest).toHaveBeenCalledTimes(1);
   });
 
@@ -1109,7 +1321,7 @@ describe("CreateQuestScreen", () => {
       expect(view.getByTestId("create-quest-save-preview")).toBeTruthy()
     );
     await waitForPublishCheck(view);
-    expect(mockPersistQuestDraft).toHaveBeenCalledTimes(1);
+    expect(mockPersistQuestDraft).toHaveBeenCalledTimes(3);
     expect(mockLiveCreateQuest).toHaveBeenCalledTimes(1);
   });
 
@@ -1150,6 +1362,40 @@ describe("CreateQuestScreen", () => {
     const removal = fireBeforeRemove();
     expect(removal.preventDefault).not.toHaveBeenCalled();
     expect(view.queryByTestId("sweet-alert")).toBeNull();
+  });
+
+  it("keeps the unsaved-changes guard after a same-version image refresh", async () => {
+    const view = await renderServerEditQuest();
+    await fireEvent.changeText(
+      view.getByLabelText("ชื่อเควสต์ *"),
+      "Clean the dorm fans, second floor"
+    );
+    const queryClient = screenQueryClientHolder.current;
+    if (!queryClient) throw new Error("Query client was not captured");
+    queryClient.setQueryData(createQuestKeys.editSource("server-quest-1"), {
+      ...serverQuestDetailFixture,
+      images: [
+        {
+          imageId: "image-1",
+          fileId: "file-1",
+          position: 0,
+          url: "https://example.test/image.jpg",
+          urlExpiresAt: "2099-08-27T12:00:00.000Z",
+        },
+      ],
+    });
+
+    let removal: BeforeRemoveEvent | undefined;
+    await act(async () => {
+      removal = fireBeforeRemove();
+    });
+    if (!removal) throw new Error("beforeRemove event was not captured");
+
+    expect(removal.preventDefault).toHaveBeenCalled();
+    expect(view.getByText("ละทิ้งการเปลี่ยนแปลงหรือไม่")).toBeTruthy();
+    expect(view.getByLabelText("ชื่อเควสต์ *").props.value).toBe(
+      "Clean the dorm fans, second floor"
+    );
   });
 
   it("disarms the guard exactly once when the header discard navigates", async () => {
@@ -1232,7 +1478,10 @@ describe("CreateQuestScreen", () => {
 
     await fireEvent.press(view.getByText("ถัดไป"));
     await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
-    await fireEvent.press(view.getByTestId("edit-quest-save"));
+    await waitFor(() =>
+      expect(view.getByTestId("create-quest-save-draft")).toBeTruthy()
+    );
+    await fireEvent.press(view.getByTestId("create-quest-save-draft"));
     await waitFor(() =>
       expect(view.getByText("อัปเดตเควสต์แล้ว")).toBeTruthy()
     );
@@ -1256,7 +1505,10 @@ describe("CreateQuestScreen", () => {
     await fireEvent.changeText(view.getByLabelText("ชื่อเควสต์ *"), "Updated");
     await fireEvent.press(view.getByText("ถัดไป"));
     await fireEvent.press(view.getByText("ตรวจสอบเควสต์"));
-    await fireEvent.press(view.getByTestId("edit-quest-save"));
+    await waitFor(() =>
+      expect(view.getByTestId("create-quest-save-draft")).toBeTruthy()
+    );
+    await fireEvent.press(view.getByTestId("create-quest-save-draft"));
 
     await waitFor(() =>
       expect(

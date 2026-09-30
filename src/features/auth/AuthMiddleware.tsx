@@ -1,11 +1,14 @@
-import { useEffect, type PropsWithChildren } from "react";
+import { useEffect, useRef, type PropsWithChildren } from "react";
 import { useRouter, useSegments } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { ActivityIndicator, View } from "@/tw";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { setUnauthorizedHandler } from "@/api/ApiClient";
 
 import { authEnvironment } from "./authEnvironment";
-import { useSessionQuery } from "./sessionQueries";
+import { clearSessionCache, useSessionQuery } from "./sessionQueries";
+import { authService } from "./AuthService";
 
 export function isPublicAuthRoute(
   segments: readonly string[],
@@ -31,11 +34,40 @@ function AuthRouteCheck({
 }>) {
   const { colors } = useAppTheme();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const sessionQuery = useSessionQuery({ enabled: !isPublicRoute });
+  const sessionRef = useRef(sessionQuery.data);
+  const expiredRef = useRef(false);
   const sessionInvalid =
     !isPublicRoute &&
     !sessionQuery.isPending &&
     (sessionQuery.isError || !sessionQuery.data);
+
+  useEffect(() => {
+    sessionRef.current = sessionQuery.data;
+  }, [sessionQuery.data]);
+
+  useEffect(() => {
+    if (sessionQuery.data) expiredRef.current = false;
+  }, [sessionQuery.data]);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      if (expiredRef.current || !sessionRef.current) return;
+      expiredRef.current = true;
+      void authService
+        .signOut()
+        .catch(() => undefined)
+        .finally(() => {
+          clearSessionCache(queryClient);
+          router.replace({
+            pathname: "/",
+            params: { sessionExpired: "1" },
+          });
+        });
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [queryClient, router]);
 
   useEffect(() => {
     if (sessionInvalid) router.replace("/");

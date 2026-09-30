@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWindowDimensions } from "react-native";
 import { Pressable, ScrollView, Text, View } from "@/tw";
@@ -48,9 +49,21 @@ export default function LoginScreen({
   const { locale: currentLocale } = useLocale();
   const queryClient = useQueryClient();
   const messages = authMessages[currentLocale];
+  const { sessionExpired } = useLocalSearchParams<{
+    sessionExpired?: string;
+  }>();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<LoginErrorState | null>(null);
+  const [error, setError] = useState<LoginErrorState | null>(() =>
+    sessionExpired === "1"
+      ? {
+          code: "SESSION_EXPIRED",
+          retry: () => {
+            void handleAuth();
+          },
+        }
+      : null
+  );
 
   const completeSignIn = async () => {
     clearSessionCache(queryClient);
@@ -63,7 +76,7 @@ export default function LoginScreen({
     }
   };
 
-  const handleAuth = async () => {
+  async function handleAuth() {
     if (isLoading) return;
     setError(null);
     setIsLoading(true);
@@ -77,7 +90,7 @@ export default function LoginScreen({
         err instanceof AuthError ? err.code : "OAUTH_FAILED";
       setError({ code: errorCode, retry: handleAuth });
     }
-  };
+  }
 
   const handleStagingTestAuth = async (accountId: StagingTestAccount) => {
     if (isLoading) return;

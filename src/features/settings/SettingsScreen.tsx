@@ -27,6 +27,7 @@ import { clearSessionCache } from "@/features/auth/sessionQueries";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { spacing } from "@/theme/spacing";
 import styles from "./styles/settingsStyles";
+import { goBackOrReplace } from "@/utils/navigation";
 
 function SettingsRow({
   icon: Icon,
@@ -124,7 +125,7 @@ export default function SettingsScreen() {
           accessibilityLabel={messages.back}
           accessibilityRole="button"
           className="h-[48px] w-[48px] items-center justify-center"
-          onPress={() => router.back()}
+          onPress={() => goBackOrReplace(router, "/(tabs)/profile")}
           testID="settings-back"
         >
           <ChevronLeft color={colors.primaryDeep} size={26} strokeWidth={2.3} />

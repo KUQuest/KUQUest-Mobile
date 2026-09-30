@@ -60,6 +60,8 @@ export interface ChatMessages {
   messageLengthError: string;
   sendRateLimited: string;
   candidateInquiryClosed: string;
+  attachmentRateLimited: string;
+  retryAttachment: string;
 }
 
 export const chatMessages: Record<SupportedLocale, ChatMessages> = {
@@ -127,6 +129,9 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     candidateInquiryClosed:
       "This Quest is no longer accepting applications; the inquiry is closed.",
     sendRateLimited: "You are sending messages too quickly. Try again shortly.",
+    attachmentRateLimited:
+      "Too many uploads right now. Wait a moment, then retry.",
+    retryAttachment: "Retry upload",
   },
   th: {
     title: "แชต",
@@ -190,5 +195,7 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     messageLengthError: "ข้อความต้องมีความยาวไม่เกิน 1,000 ตัวอักษร",
     candidateInquiryClosed: "เควสต์นี้ไม่รับสมัครแล้ว การสอบถามจึงปิดลง",
     sendRateLimited: "ส่งข้อความถี่เกินไป ลองอีกครั้งในอีกสักครู่",
+    attachmentRateLimited: "อัปโหลดถี่เกินไป โปรดรอสักครู่แล้วลองอีกครั้ง",
+    retryAttachment: "ลองอัปโหลดอีกครั้ง",
   },
 };

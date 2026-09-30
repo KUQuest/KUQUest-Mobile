@@ -1,5 +1,5 @@
+import { act, fireEvent, waitFor } from "@testing-library/react-native";
 import React from "react";
-import { fireEvent, waitFor } from "@testing-library/react-native";
 import { WalletTransactionTitleKey, walletApi } from "@/api/WalletApi";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import WalletScreen from "../WalletScreen";
@@ -10,11 +10,18 @@ import {
 import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
 
 const mockPush = jest.fn();
+let mockFocusCallback: (() => void) | null = null;
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush }),
-  useFocusEffect: (effect: () => (() => void) | void) =>
-    jest.requireActual("react").useEffect(effect, []),
+  useFocusEffect: (callback: () => void) => {
+    const React = jest.requireActual("react");
+    React.useEffect(() => {
+      mockFocusCallback = callback;
+      callback();
+    }, [callback]);
+  },
 }));
+
 jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "th" }),
 }));
@@ -86,6 +93,7 @@ const mockTransactions = [
 describe("WalletScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockFocusCallback = null;
     resetNavigationVisibility();
     useRoleWorkspaceStore.setState({ workspace: "hirer" });
     (walletApi.getWallet as jest.Mock).mockResolvedValue(mockBalances);
@@ -378,5 +386,34 @@ describe("WalletScreen", () => {
     await fireEvent.press(view.getByRole("button", { name: "ลองอีกครั้ง" }));
 
     await waitFor(() => expect(walletApi.getWallet).toHaveBeenCalledTimes(2));
+  });
+  it("does not refetch on mount or within 30s, then refetches after 30s", async () => {
+    const view = await renderWithQueryClient(<WalletScreen />);
+    await waitFor(() => expect(walletApi.getWallet).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(view.getByTestId("hirer-wallet-header")).toBeTruthy()
+    );
+
+    const realNow = Date.now;
+    const nowSpy = jest
+      .spyOn(Date, "now")
+      .mockImplementation(() => realNow() + 29_000);
+    try {
+      act(() => mockFocusCallback?.());
+    } finally {
+      nowSpy.mockRestore();
+    }
+    expect(walletApi.getWallet).toHaveBeenCalledTimes(1);
+
+    const staleNowSpy = jest
+      .spyOn(Date, "now")
+      .mockImplementation(() => realNow() + 30_001);
+    try {
+      act(() => mockFocusCallback?.());
+    } finally {
+      staleNowSpy.mockRestore();
+    }
+    await waitFor(() => expect(walletApi.getWallet).toHaveBeenCalledTimes(2));
+    view.unmount();
   });
 });

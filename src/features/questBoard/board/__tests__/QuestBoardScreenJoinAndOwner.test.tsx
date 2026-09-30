@@ -56,7 +56,6 @@ jest.mock("../../live/liveQuestService", () => {
     ...actual,
     liveQuestService: {
       listBoardQuests: jest.fn(),
-      getHirerParticipant: jest.fn(),
       getLiveSnapshot: jest.fn(),
       joinQuest: jest.fn(),
       applyQuest: jest.fn(),
@@ -189,10 +188,6 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
     (liveQuestService.listBoardQuests as jest.Mock).mockResolvedValue([
       mockQuestItem,
     ]);
-    (liveQuestService.getHirerParticipant as jest.Mock).mockResolvedValue({
-      id: "hirer-oak-uuid",
-      displayName: "Prof Oak",
-    });
   });
   it("returns to the previous route or workspace Home from the board", async () => {
     const view = await render(
@@ -228,24 +223,34 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
     expect(view.getByText("PO")).toBeTruthy();
   });
 
-  it("navigates to owner profile page when owner avatar is pressed", async () => {
+  it("opens the owner profile when ownerStudentId is available", async () => {
+    (liveQuestService.listBoardQuests as jest.Mock).mockResolvedValue([
+      { ...mockQuestItem, ownerStudentId: "hirer-oak-uuid" },
+    ]);
     const view = await render(
       <QuestBoardScreen currentStudentId="current-worker-1" />
     );
 
-    await waitFor(() => {
-      expect(view.getByText("Prof Oak")).toBeTruthy();
-    });
+    await waitFor(() => expect(view.getByText("Prof Oak")).toBeTruthy());
+    await fireEvent.press(view.getByTestId("quest-card-owner-quest-fcfs-1"));
 
-    const ownerButton = view.getByTestId("quest-card-owner-quest-fcfs-1");
-    fireEvent.press(ownerButton);
+    expect(mockPush).toHaveBeenCalledWith("/profile/hirer-oak-uuid");
+    expect(liveQuestService.createCandidateInquiry).not.toHaveBeenCalled();
+  });
 
-    await waitFor(() => {
-      expect(liveQuestService.getHirerParticipant).toHaveBeenCalledWith(
-        "quest-fcfs-1"
-      );
-      expect(mockPush).toHaveBeenCalledWith("/profile/hirer-oak-uuid");
+  it("opens Quest Detail when ownerStudentId is missing, without creating an inquiry", async () => {
+    const view = await render(
+      <QuestBoardScreen currentStudentId="current-worker-1" />
+    );
+
+    await waitFor(() => expect(view.getByText("Prof Oak")).toBeTruthy());
+    await fireEvent.press(view.getByTestId("quest-card-owner-quest-fcfs-1"));
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]",
+      params: { id: "quest-fcfs-1" },
     });
+    expect(liveQuestService.createCandidateInquiry).not.toHaveBeenCalled();
   });
   it("opens Candidate Inquiry with explicit route parameters", async () => {
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
@@ -374,7 +379,10 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
 
     await waitFor(() => {
       expect(liveQuestService.joinQuest).toHaveBeenCalledWith("quest-live-1");
-      expect(mockPush).toHaveBeenCalledWith("/my-quests");
+      expect(mockPush).toHaveBeenCalledWith({
+        pathname: "/quest/[id]/work",
+        params: { id: "quest-live-1", viewerId: "current-worker-1" },
+      });
     });
   });
   it("applies through the live Candidate API instead of fixture dispatch", async () => {
@@ -667,6 +675,6 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
       expect(view.getByTestId("quest-canonical-status")).toBeTruthy();
     });
     expect(view.queryByTestId("quest-leave-button")).toBeNull();
-    expect(view.getByTestId("view-my-quests")).toBeTruthy();
+    expect(view.getByTestId("open-work-hub")).toBeTruthy();
   });
 });

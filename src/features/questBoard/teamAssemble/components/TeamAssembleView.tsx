@@ -87,6 +87,8 @@ export interface TeamAssembleViewProps {
   onUploadFile?: (asset: UploadAsset) => Promise<ProposalFileItem>;
   onUploadProposalFile?: (asset: UploadAsset) => Promise<ProposalFileItem>;
   onRetry?: () => void;
+  onOpenWorkHub?: () => void;
+  openWorkHubLabel?: string;
   locale?: SupportedLocale;
   /** Bottom safe-area inset reserved below the scrollable content. */
   bottomInset?: number;
@@ -163,6 +165,8 @@ export function TeamAssembleView({
   onUploadFile,
   onUploadProposalFile,
   onRetry,
+  onOpenWorkHub,
+  openWorkHubLabel,
   bottomInset = 0,
   locale: localeProp,
 }: TeamAssembleViewProps) {
@@ -468,10 +472,16 @@ export function TeamAssembleView({
           {isLocked ? (
             <TeamAssembleLockedState
               description={messages.lockedDescription}
+              onOpenWorkHub={onOpenWorkHub}
+              openWorkHubLabel={openWorkHubLabel}
               rejectedLabel={messages.teamRejected}
               selectedLabel={messages.teamSelected}
               status={teamStatus}
               submittedTitle={messages.submittedTitle}
+              viewerIsMember={Boolean(
+                viewerId &&
+                acceptedMembers.some((member) => member.workerId === viewerId)
+              )}
             />
           ) : null}
           {canRenameTeam ? (

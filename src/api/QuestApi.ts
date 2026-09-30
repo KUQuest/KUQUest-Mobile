@@ -34,6 +34,7 @@ import {
   questV2PublicDetailSchema,
   questV2ParticipationDetailSchema,
   questV2ReviewCreatePayloadSchema,
+  questV2ReviewListDataSchema,
   questV2ReviewSchema,
   questV2ReviewUpdatePayloadSchema,
   questV2TeamCreatePayloadSchema,
@@ -127,7 +128,7 @@ export interface QuestV2CreateEditRequestPayload {
 export type QuestV2AssignmentMineStatus = "active" | "completed" | "all";
 
 export interface QuestV2EditRequestResponsePayload {
-  decision: "EDIT_RESPONSE_ACCEPTED" | "EDIT_RESPONSE_DECLINED";
+  decision: z.infer<typeof questV2EditRequestRespondPayloadSchema>["decision"];
   reason?: string;
 }
 
@@ -152,7 +153,7 @@ export interface QuestV2ProofRetryPayload {
 }
 
 export interface QuestV2ProofReviewPayload {
-  decision: "PROOF_APPROVED" | "PROOF_NOT_APPROVED";
+  decision: z.infer<typeof questV2ProofReviewPayloadSchema>["decision"];
   reason?: string;
 }
 
@@ -733,7 +734,9 @@ export class QuestApi {
 
   async decideUnderfilled(
     questId: string,
-    decision: "PROCEED" | "CANCEL",
+    decision: z.infer<
+      typeof questV2UnderfilledDecisionPayloadSchema
+    >["decision"],
     idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Underfilled> {
     const validatedPayload = questV2UnderfilledDecisionPayloadSchema.parse({
@@ -749,7 +752,9 @@ export class QuestApi {
 
   async respondUnderfilledConsent(
     questId: string,
-    decision: "ACCEPT" | "DECLINE",
+    decision: z.infer<
+      typeof questV2UnderfilledConsentPayloadSchema
+    >["decision"],
     idempotencyKey = createQuestIdempotencyKey()
   ): Promise<QuestV2Underfilled> {
     const validatedPayload = questV2UnderfilledConsentPayloadSchema.parse({
@@ -970,6 +975,17 @@ export class QuestApi {
     );
   }
 
+  async listQuestReviews(
+    questId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2Review[]> {
+    const data = await this.client.get(
+      `/api/v2/quests/${questId}/reviews`,
+      questV2ReviewListDataSchema,
+      options
+    );
+    return data.items;
+  }
   async createReview(
     questId: string,
     input: QuestV2ReviewPayload,

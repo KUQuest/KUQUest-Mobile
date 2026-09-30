@@ -134,6 +134,9 @@ export function useCreateQuestController({
     publishedQuestRef,
     saveRequestRef: localPersistence.saveRequestRef,
     setSaveErrorIntent: localPersistence.setSaveErrorIntent,
+    publication: localPersistence.publication,
+    persistPublication: localPersistence.persistPublication,
+    setCompletedState,
     enabled: !isServerEditMode(mode),
   });
 
