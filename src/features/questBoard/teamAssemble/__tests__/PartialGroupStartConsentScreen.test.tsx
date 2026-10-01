@@ -94,7 +94,7 @@ describe("PartialGroupStartConsentScreen", () => {
     expect(staleModel.handleBack).toHaveBeenCalledTimes(1);
   });
 
-  it("renders pending Worker consent and forwards Accept", async () => {
+  it("formats due date and forwards pending Worker consent", async () => {
     const onWorkerConsent = jest.fn();
     const dueAt = "2030-10-02T12:00:00.000Z";
     const model = makeView({
@@ -152,7 +152,7 @@ describe("PartialGroupStartConsentScreen", () => {
       screen.getByTestId("partial-group-start-summary").props.accessibilityLabel
     ).toBe("Requested headcount: 2. Actual headcount: 1");
     expect(screen.getByText("฿150")).toBeTruthy();
-    expect(screen.getByText(dueAt)).toBeTruthy();
+    expect(screen.getByText("2 Oct 2030, 19:00")).toBeTruthy();
     expect(screen.getByTestId("partial-group-start-countdown")).toBeTruthy();
     await fireEvent.press(screen.getByTestId("partial-group-start-approve"));
     expect(onWorkerConsent).toHaveBeenCalledWith(
