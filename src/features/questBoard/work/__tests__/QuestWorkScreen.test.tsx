@@ -580,38 +580,25 @@ describe("QuestWorkScreen", () => {
     );
   });
 
-  it("lists each Worker's Start Work status on a Group first-come Quest only", async () => {
-    const group = makeSnapshot({
-      participation: "GROUP",
-      assignments: [
-        {
-          ...defaultAssignment,
-          member: { id: "worker-1", displayName: "Somchai" },
-          startedAt: "2020-01-01T08:00:00Z",
-        },
-        {
-          ...defaultAssignment,
-          id: "assignment-2",
-          workerId: "worker-2",
-          startedAt: null,
-        },
-      ],
+  it("shows how many Workers started on a Group first-come Quest only", async () => {
+    const base = makeSnapshot({ participation: "GROUP" });
+    mockedGetSnapshot.mockResolvedValue({
+      ...base,
+      quest: { ...base.quest, activeWorkerCount: 3, startedWorkerCount: 2 },
     });
-    mockedGetSnapshot.mockResolvedValue(group);
     const view = await renderWithQueryClient(
       <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
     );
 
-    expect(await view.findByText("Somchai")).toBeTruthy();
-    expect(view.getByText("Worker 2")).toBeTruthy();
-    expect(view.queryByText(/worker-2/)).toBeNull();
+    expect(await view.findByTestId("work-group-start-progress")).toBeTruthy();
+    expect(view.getByText("2 of 3 Workers started")).toBeTruthy();
 
     mockedGetSnapshot.mockResolvedValue(makeSnapshot());
     const solo = await renderWithQueryClient(
       <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
     );
     await solo.findByText("Due");
-    expect(solo.queryByText("Not started")).toBeNull();
+    expect(solo.queryByTestId("work-group-start-progress")).toBeNull();
   });
 
   it("keeps refreshing while other Workers still have to press Start Work", async () => {

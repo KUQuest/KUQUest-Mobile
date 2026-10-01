@@ -22,6 +22,7 @@ import {
 } from "../../api/questBoardQueries";
 import { disputeMessages } from "@/locales/disputeMessages";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
+import { FailedQuestNotice } from "../../shared/FailedQuestNotice";
 import {
   isWorkerActor,
   QuestEditRequestStatus,
@@ -170,6 +171,7 @@ export default function QuestWorkActionsCard({
       {isTerminal ? (
         <View className={styles.mutedCard}>
           <Text className={styles.bodyText}>{messages.archiveDescription}</Text>
+          <FailedQuestNotice quest={snapshot.quest} />
           {isFailedWorker ? (
             disputeQuery.isError ? (
               <View className="gap-ku-xs">
@@ -195,7 +197,11 @@ export default function QuestWorkActionsCard({
               </Text>
             ) : disputeQuery.isSuccess &&
               disputeQuery.data.case === null &&
-              onFileDispute ? (
+              onFileDispute &&
+              !(
+                "dispute" in snapshot.quest &&
+                snapshot.quest.dispute?.canFile === false
+              ) ? (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={messages.fileDispute}

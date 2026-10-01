@@ -11,6 +11,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@/api/ApiClient";
 
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
+import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
+import type { QuestV2CancelPreview } from "@/api/questV2Contracts";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { getChatRouteParams } from "@/features/chat/chatData";
 import { useLocale } from "@/features/preferences/localeStore";
@@ -49,6 +51,12 @@ const REFETCH_CHANGE_TYPES: Record<string, true> = {
   ASSIGNMENT_STARTED: true,
   PROOF_SUBMITTED: true,
   QUEST_AUTO_CANCELLED: true,
+  PROOF_REVIEWED: true,
+  PROOF_AUTO_APPROVED: true,
+  QUEST_FAILED: true,
+  DISPUTE_WINDOW_OPENED: true,
+  DISPUTE_WINDOW_CLOSED: true,
+  DISPUTE_CASE_UPDATED: true,
 };
 
 export function useHirerQuestManageFeature(questId?: string) {
@@ -62,6 +70,11 @@ export function useHirerQuestManageFeature(questId?: string) {
   const [underfilledOpen, setUnderfilledOpen] = useState(false);
   const [conditionEditOpen, setConditionEditOpen] = useState(false);
   const [guardrailTier, setGuardrailTier] = useState<2 | 3 | null>(null);
+  const [cancelPreview, setCancelPreview] =
+    useState<QuestV2CancelPreview | null>(null);
+  const [cancelPreviewText, setCancelPreviewText] = useState<string | null>(
+    null
+  );
   const [commandBusy, setCommandBusy] = useState(false);
   const [conditionEditSubmitting, setConditionEditSubmitting] = useState(false);
   const [conditionEditError, setConditionEditError] = useState<string>();
@@ -231,14 +244,29 @@ export function useHirerQuestManageFeature(questId?: string) {
     selection.confirmSelection({ kind: "application", proposalId: id });
   const selectTeam = (id: string) =>
     selection.confirmSelection({ kind: "team", proposalId: id });
-  const runCancel = () => {
+  const runCancel = (preview: QuestV2CancelPreview | null) => {
     if (!snapshot) return;
+    let stale = false;
     void viewerCommand("cancel", async (key) => {
-      const outcome = await cancelQuestMutation.mutateAsync({
-        questId: snapshot.quest.id,
-        viewerId,
-        idempotencyKey: key,
-      });
+      const outcome = await cancelQuestMutation
+        .mutateAsync({
+          questId: snapshot.quest.id,
+          viewerId,
+          idempotencyKey: key,
+          previewVersion: preview?.previewVersion,
+        })
+        .catch((caught: unknown) => {
+          // Money did not move; the Hirer must confirm the new amounts.
+          if (
+            caught instanceof ApiError &&
+            caught.code === "CANCEL_PREVIEW_STALE"
+          ) {
+            stale = true;
+            return null;
+          }
+          throw caught;
+        });
+      if (!outcome) return;
       const settlement = [
         outcome.paidSatang > 0 &&
           cancelMessages.cancelPaidWorkers(
@@ -254,19 +282,39 @@ export function useHirerQuestManageFeature(questId?: string) {
         message: settlement.join("\n"),
         variant: SweetAlertVariant.Success,
       });
+    }).then(() => {
+      if (stale) void cancel(cancelMessages.cancelPreviewStale);
     });
   };
-  const cancel = () => {
+  const cancel = async (notice?: string) => {
     if (!snapshot) return;
     const tier = getCancelTier(snapshot.state);
     if (tier === null) return;
+    // The preview is an aid: if it fails, the real cancel still enforces rules.
+    const preview = await Promise.resolve()
+      .then(() => liveQuestService.getCancelPreview(snapshot.quest.id))
+      .then((value) => value ?? null)
+      .catch(() => null);
+    const text = [
+      notice,
+      preview
+        ? cancelMessages.cancelPreviewLine(
+            formatSatang(preview.paidSatang, locale),
+            formatSatang(preview.refundedSatang, locale)
+          )
+        : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    setCancelPreview(preview);
+    setCancelPreviewText(text || null);
     if (tier === 1) {
       showConfirmModal({
         title: cancelMessages.cancelConfirmTitle,
-        message: cancelDescription ?? "",
+        message: [cancelDescription, text].filter(Boolean).join("\n\n"),
         confirmLabel: cancelMessages.cancelQuest,
         cancelLabel: cancelMessages.keepQuest,
-        onConfirm: runCancel,
+        onConfirm: () => runCancel(preview),
       });
       return;
     }
@@ -310,7 +358,7 @@ export function useHirerQuestManageFeature(questId?: string) {
   };
   const confirmGuardrailCancel = () => {
     setGuardrailTier(null);
-    runCancel();
+    runCancel(cancelPreview);
   };
   const decideUnderfilled = (decision: QuestUnderfilledDecision) => {
     if (!snapshot) return;
@@ -338,6 +386,7 @@ export function useHirerQuestManageFeature(questId?: string) {
     pendingProof,
     terminal,
     cancelDescription,
+    cancelPreviewText,
     guardrailTier,
     commandBusy,
     setGuardrailTier,

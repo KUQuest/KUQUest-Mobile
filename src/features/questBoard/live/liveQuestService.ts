@@ -36,6 +36,7 @@ import type {
   QuestV2BoardCard,
   QuestV2CanonicalQuest,
   QuestV2CancellationOutcome,
+  QuestV2CancelPreview,
   QuestV2Completion,
   QuestV2Detail,
   QuestV2EditRequest,
@@ -1356,11 +1357,16 @@ export class LiveQuestService {
     );
   }
 
+  async getCancelPreview(questId: string): Promise<QuestV2CancelPreview> {
+    return questApi.getCancelPreview(questId);
+  }
+
   async cancelQuest(
     questId: string,
-    idempotencyKey?: string
+    idempotencyKey?: string,
+    previewVersion?: string
   ): Promise<QuestV2CancellationOutcome> {
-    return questApi.cancelQuest(questId, idempotencyKey);
+    return questApi.cancelQuest(questId, idempotencyKey, previewVersion);
   }
 
   async confirmCompletion(

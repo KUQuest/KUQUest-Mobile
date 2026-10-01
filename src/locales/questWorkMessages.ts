@@ -56,10 +56,7 @@ export interface QuestWorkMessages {
   participationSolo: string;
   proofRequiredBadge: string;
   proofFreeBadge: string;
-  startWorkRosterTitle: string;
-  workerStarted: string;
-  workerNotStarted: string;
-  workerNumber: (number: number) => string;
+  startWorkProgress: (started: number, total: number) => string;
   groupStartWorkWarning: string;
 }
 
@@ -130,10 +127,8 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     participationSolo: "Solo",
     proofRequiredBadge: "Proof required",
     proofFreeBadge: "Proof-free",
-    startWorkRosterTitle: "Workers' Start Work status",
-    workerStarted: "Started",
-    workerNotStarted: "Not started",
-    workerNumber: (number) => `Worker ${number}`,
+    startWorkProgress: (started, total) =>
+      `${started} of ${total} Workers started`,
     groupStartWorkWarning:
       "Every Worker must press Start Work before the due time or the Quest fails for everyone.",
   },
@@ -200,10 +195,8 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     participationSolo: "งานเดี่ยว",
     proofRequiredBadge: "ต้องส่งหลักฐาน",
     proofFreeBadge: "ไม่ต้องส่งหลักฐาน",
-    startWorkRosterTitle: "สถานะการเริ่มงานของผู้ทำงาน",
-    workerStarted: "เริ่มงานแล้ว",
-    workerNotStarted: "ยังไม่เริ่มงาน",
-    workerNumber: (number) => `ผู้ทำงาน ${number}`,
+    startWorkProgress: (started, total) =>
+      `เริ่มงานแล้ว ${started} จาก ${total} คน`,
     groupStartWorkWarning:
       "ผู้ทำงานทุกคนต้องกดเริ่มงานก่อนกำหนดส่ง มิฉะนั้นเควสต์จะล้มเหลวสำหรับทุกคน",
   },

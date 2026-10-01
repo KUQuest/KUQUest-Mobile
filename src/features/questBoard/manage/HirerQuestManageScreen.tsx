@@ -39,6 +39,7 @@ import { questWorkMessages } from "@/locales/questWorkMessages";
 import { useHirerQuestManageFeature } from "./useHirerQuestManageFeature";
 import { getCancelTier } from "./cancelQuestGuardrail";
 import { useFileDispute } from "@/features/questBoard/dispute/useFileDispute";
+import { FailedQuestNotice } from "@/features/questBoard/shared/FailedQuestNotice";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import {
   QuestActor,
@@ -201,6 +202,7 @@ export default function HirerQuestManageScreen({
     pendingProof,
     terminal,
     cancelDescription,
+    cancelPreviewText,
     guardrailTier,
     commandBusy,
     setGuardrailTier,
@@ -299,10 +301,13 @@ export default function HirerQuestManageScreen({
   const showUnderfilled =
     snapshot.nextAction === QuestNextAction.DECIDE_UNDERFILLED &&
     snapshot.capabilities.canDecideUnderfilled;
+  const serverDispute = "dispute" in quest ? quest.dispute : undefined;
   const showDispute =
     snapshot.state === QuestStatus.QUEST_FAILED &&
-    (snapshot.actor === QuestActor.HIRER ||
-      (snapshot.actor === QuestActor.WORKER && snapshot.assignment !== null));
+    (serverDispute
+      ? serverDispute.canFile
+      : snapshot.actor === QuestActor.HIRER ||
+        (snapshot.actor === QuestActor.WORKER && snapshot.assignment !== null));
   const nextStep = showUnderfilled
     ? "underfilled"
     : showProofReview && snapshot.nextAction === QuestNextAction.REVIEW_PROOF
@@ -476,6 +481,9 @@ export default function HirerQuestManageScreen({
             </Text>
           </View>
         ) : null}
+        {snapshot.state === QuestStatus.QUEST_FAILED ? (
+          <FailedQuestNotice quest={quest} />
+        ) : null}
         {snapshot.state === QuestStatus.QUEST_OPEN ? (
           <StartsIn
             startTime={quest.startTime}
@@ -609,7 +617,7 @@ export default function HirerQuestManageScreen({
               accessibilityRole="button"
               testID="hirer-manage-cancel"
               className="min-h-[48px] flex-row items-center justify-center gap-ku-sm rounded-ku-pill px-ku-lg active:bg-ku-surface-danger"
-              onPress={cancel}
+              onPress={() => void cancel()}
             >
               <X color={colors.dangerDark} size={20} strokeWidth={2.2} />
               <Text className="font-ku-semibold text-ku-control text-ku-danger-dark">
@@ -676,11 +684,14 @@ export default function HirerQuestManageScreen({
         visible={guardrailTier !== null}
         tier={guardrailTier ?? 2}
         title={myQuestMessages[locale].cancelConfirmTitle}
-        description={
+        description={[
           guardrailTier === 3
             ? myQuestMessages[locale].cancelInProgressDescription
-            : myQuestMessages[locale].cancelAssignedDescription
-        }
+            : myQuestMessages[locale].cancelAssignedDescription,
+          cancelPreviewText,
+        ]
+          .filter(Boolean)
+          .join("\n\n")}
         confirmLabel={myQuestMessages[locale].cancelGuardrailConfirm}
         cancelLabel={myQuestMessages[locale].cancelGuardrailKeep}
         keyword={myQuestMessages[locale].cancelGuardrailKeyword}

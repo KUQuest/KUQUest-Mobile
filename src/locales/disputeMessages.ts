@@ -13,6 +13,10 @@ export interface DisputeMessages {
   filedStatus: string;
   statusError: string;
   retryStatus: string;
+  windowClosed: string;
+  windowEndsIn: (hours: number, minutes: number) => string;
+  moneyHeldUntil: (date: string) => string;
+  moneyReleased: string;
 }
 
 export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
@@ -35,6 +39,11 @@ export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
     filedStatus: "Dispute filed",
     statusError: "Couldn't check dispute status.",
     retryStatus: "Retry",
+    windowClosed: "The 1-day window to file a Dispute Case has closed.",
+    windowEndsIn: (hours, minutes) =>
+      `You can file a Dispute Case for ${hours > 0 ? `${hours}h ` : ""}${minutes}m more.`,
+    moneyHeldUntil: (date) => `Money is held until ${date}.`,
+    moneyReleased: "The money hold has been released.",
   },
   th: {
     rules: [
@@ -55,5 +64,10 @@ export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
     filedStatus: "ยื่นคำร้องข้อพิพาทแล้ว",
     statusError: "ตรวจสอบสถานะคำร้องข้อพิพาทไม่สำเร็จ",
     retryStatus: "ลองอีกครั้ง",
+    windowClosed: "หมดเวลายื่นคำร้องข้อพิพาท (1 วัน) แล้ว",
+    windowEndsIn: (hours, minutes) =>
+      `ยื่นคำร้องข้อพิพาทได้อีก ${hours > 0 ? `${hours} ชม. ` : ""}${minutes} นาที`,
+    moneyHeldUntil: (date) => `เงินถูกพักไว้จนถึง ${date}`,
+    moneyReleased: "ปล่อยเงินที่พักไว้แล้ว",
   },
 };
