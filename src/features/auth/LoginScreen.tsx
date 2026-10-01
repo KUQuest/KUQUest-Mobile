@@ -5,7 +5,13 @@ import { useWindowDimensions } from "react-native";
 import { Pressable, ScrollView, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { Host, Button } from "@expo/ui";
-import { GraduationCap, TriangleAlert } from "lucide-react-native";
+import {
+  ChevronDown,
+  ChevronUp,
+  GraduationCap,
+  TriangleAlert,
+  Wrench,
+} from "lucide-react-native";
 import {
   AuthAdapter,
   AuthErrorCode,
@@ -54,6 +60,7 @@ export default function LoginScreen({
   }>();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
   const [error, setError] = useState<LoginErrorState | null>(() =>
     sessionExpired === "1"
       ? {
@@ -193,26 +200,60 @@ export default function LoginScreen({
 
             {__DEV__ && (
               <View className={styles.stagingTestSection}>
-                <Text className={styles.stagingTestHeading}>
-                  {messages.stagingTestHeading}
-                </Text>
-                <View className={styles.stagingTestRow}>
-                  {STAGING_TEST_ACCOUNTS.map(({ id: accountId, name }) => (
-                    <Pressable
-                      key={name}
-                      className={styles.stagingTestButton}
-                      onPress={() => handleStagingTestAuth(accountId)}
-                      disabled={isLoading}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${messages.stagingTestHeading}: ${name}`}
-                      testID={`staging-test-signin-${accountId}`}
-                    >
-                      <Text className={styles.stagingTestButtonText}>
-                        {name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
+                <Pressable
+                  className={styles.stagingTestToggle}
+                  onPress={() => setDemoOpen((open) => !open)}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: demoOpen }}
+                  accessibilityLabel={messages.stagingTestHeading}
+                  testID="staging-test-toggle"
+                >
+                  <Wrench
+                    color={colors.textSecondary}
+                    size={18}
+                    strokeWidth={2}
+                  />
+                  <Text className={styles.stagingTestHeading}>
+                    {messages.stagingTestHeading}
+                  </Text>
+                  {demoOpen ? (
+                    <ChevronUp color={colors.textSecondary} size={18} />
+                  ) : (
+                    <ChevronDown color={colors.textSecondary} size={18} />
+                  )}
+                </Pressable>
+                {demoOpen ? (
+                  <View className={styles.stagingTestRow}>
+                    {STAGING_TEST_ACCOUNTS.map(({ id: accountId, name }) => (
+                      <Pressable
+                        key={name}
+                        className={styles.stagingTestButton}
+                        onPress={() => handleStagingTestAuth(accountId)}
+                        disabled={isLoading}
+                        accessibilityRole="button"
+                        accessibilityState={{ disabled: isLoading }}
+                        accessibilityLabel={`${messages.stagingTestHeading}: ${name}`}
+                        testID={`staging-test-signin-${accountId}`}
+                      >
+                        <View className={styles.stagingTestAvatar}>
+                          <Text className={styles.stagingTestAvatarText}>
+                            {name
+                              .split(" ")
+                              .map((part) => part[0])
+                              .join("")
+                              .slice(0, 2)}
+                          </Text>
+                        </View>
+                        <Text
+                          className={styles.stagingTestButtonText}
+                          numberOfLines={2}
+                        >
+                          {name}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : null}
               </View>
             )}
           </View>
