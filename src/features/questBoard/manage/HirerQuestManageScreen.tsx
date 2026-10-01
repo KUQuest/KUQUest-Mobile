@@ -10,7 +10,6 @@ import {
   ChevronRight,
   FileEdit,
   Hourglass,
-  Info,
   Lock,
   MessageSquare,
   ShieldCheck,
@@ -301,14 +300,6 @@ export default function HirerQuestManageScreen({
   const startedCount = snapshot.assignments.filter(
     (assignment) => assignment.startedAt
   ).length;
-  const waitingNote =
-    nextStep || snapshot.state !== QuestStatus.QUEST_OPEN
-      ? null
-      : snapshot.mode === QuestMode.CANDIDATE
-        ? messages.manageCandidateAutoCancel
-        : isGroup
-          ? messages.groupFcfsUnderfillRule
-          : messages.noSelectionNeeded;
 
   return (
     <ScreenLayout className="flex-1 bg-ku-background">
@@ -419,20 +410,6 @@ export default function HirerQuestManageScreen({
                 messages={messages}
               />
             ) : null}
-          </View>
-        ) : null}
-
-        {waitingNote ? (
-          <View
-            testID="hirer-manage-waiting-note"
-            className="flex-row items-start gap-ku-12 rounded-ku-card bg-ku-hirer-subtle p-ku-md"
-          >
-            <View className="mt-ku-2">
-              <Info color={colors.hirer} size={20} strokeWidth={2} />
-            </View>
-            <Text className="min-w-0 flex-1 text-ku-body-small text-ku-text-strong">
-              {waitingNote}
-            </Text>
           </View>
         ) : null}
 

@@ -42,13 +42,9 @@ function ConfirmationSheet({
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
   const firstCome = quest.candidateMode === "NO_CANDIDATE";
-  const groupFcfs = firstCome && quest.participationMode === "team";
   const title = firstCome
     ? messages.confirmParticipationTitle
     : messages.confirmApplicationTitle;
-  const description = firstCome
-    ? messages.confirmParticipationDescription
-    : messages.confirmApplicationDescription;
   const confirmLabel = firstCome
     ? messages.confirmParticipation
     : messages.confirmApplication;
@@ -83,7 +79,6 @@ function ConfirmationSheet({
               <X color={colors.textStrong} size={24} />
             </Pressable>
           </View>
-          <Text className={styles.confirmDescription}>{description}</Text>
           <View className={styles.confirmSummary}>
             <Text className={styles.confirmSummaryText}>{quest.title}</Text>
             <Text className={styles.confirmSummaryText}>
@@ -104,12 +99,10 @@ function ConfirmationSheet({
               {`${messages.location}: ${quest.location}`}
             </Text>
           </View>
-          {groupFcfs ? (
+          {capacityFull ? (
             <View accessibilityRole="alert" className={styles.statusCard}>
               <Text className={styles.statusTitle}>
-                {capacityFull
-                  ? messages.groupFcfsFullForOthers
-                  : messages.groupFcfsUnderfillRule}
+                {messages.groupFcfsFullForOthers}
               </Text>
             </View>
           ) : null}

@@ -43,7 +43,6 @@ type DraftUpdater = <K extends keyof QuestDraft>(
 
 export function CreateQuestForm({
   candidateOptions,
-  combinationHint,
   draft,
   errors,
   isCheckingPublish,
@@ -74,7 +73,6 @@ export function CreateQuestForm({
   validationSummary,
 }: {
   candidateOptions: ChoiceOption[];
-  combinationHint: string;
   draft: QuestDraft;
   errors: Record<string, string>;
   isCheckingPublish: boolean;
@@ -298,7 +296,6 @@ export function CreateQuestForm({
             locale={locale}
             participationOptions={participationOptions}
             candidateOptions={candidateOptions}
-            combinationHint={combinationHint}
             useStackedChoices={useStackedChoices}
             logisticsExpanded={logisticsExpanded}
             logisticsSummary={logisticsSummary}

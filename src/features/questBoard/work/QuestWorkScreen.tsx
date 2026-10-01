@@ -300,7 +300,6 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
               }
               startWorkSending={startWorkSending}
               onStartWork={startWork}
-              isTerminal={isTerminal}
               canOpenChat={canOpenChat}
               onRespondToEdit={respondToEdit}
               onConfirmCompletion={confirmCompletion}

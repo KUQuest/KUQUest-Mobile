@@ -10,8 +10,6 @@ const styles = {
   sheetHeader: "items-start flex-row justify-between",
   sheetHeading: "flex-1 min-w-0 pr-ku-12",
   sheetTitle: "text-ku-text-strong font-ku-bold text-ku-title-small",
-  sheetSubtitle:
-    "text-ku-text-secondary font-ku-regular text-ku-body-small mt-ku-3",
   sheetClose:
     "items-center bg-ku-surface-muted rounded-ku-pill h-[44px] justify-center w-[44px]",
   screen: "bg-ku-card flex-1",
@@ -237,10 +235,6 @@ const styles = {
   consentActionText: "font-ku-semibold text-ku-body-small text-center",
   consentActionTextApprove: "text-ku-on-primary",
   consentActionTextReject: "text-ku-danger-dark",
-  chatHint:
-    "bg-ku-surface-accent rounded-[12px] flex-row items-start mt-ku-12 px-ku-11 py-ku-9",
-  chatHintText:
-    "text-ku-text-secondary flex-1 font-ku-regular text-ku-label ml-ku-sm",
 } as const;
 
 export default styles;

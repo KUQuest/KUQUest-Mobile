@@ -492,13 +492,7 @@ describe("QuestWorkScreen", () => {
         <SweetAlertHost />
       </Fragment>
     );
-    await waitFor(() =>
-      expect(
-        view.getByText(
-          "This Quest is terminal. Work Chat remains available as a read-only archive."
-        )
-      ).toBeTruthy()
-    );
+    await view.findByRole("button", { name: "Open Work Chat" });
     expect(view.queryByRole("button", { name: "File Dispute" })).toBeNull();
 
     await act(async () =>
@@ -899,12 +893,8 @@ describe("QuestWorkScreen", () => {
       <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
     );
 
-    expect(
-      await view.findByText(
-        "This Quest is terminal. Work Chat remains available as a read-only archive."
-      )
-    ).toBeTruthy();
-    expect(view.getByText("Open Work Chat")).toBeTruthy();
+    await view.findByRole("button", { name: "Open Work Chat" });
+    expect(view.queryByRole("button", { name: "Start Work" })).toBeNull();
     expect(view.queryByText("Proof submission")).toBeNull();
     expect(view.queryByText("Confirm completion")).toBeNull();
   });

@@ -162,9 +162,6 @@ function QuestReviewSheet({
                   keyboardShouldPersistTaps="handled"
                   showsVerticalScrollIndicator={false}
                 >
-                  <Text className="text-ku-body-small text-ku-text-secondary">
-                    {messages.description}
-                  </Text>
                   {targetOptions.length === 1 ? (
                     <Text className="font-ku-semibold text-ku-body text-ku-text-strong">
                       {targetOptions[0].label}

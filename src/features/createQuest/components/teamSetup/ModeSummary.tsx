@@ -14,12 +14,10 @@ export function ModeSummary({
   messages,
   participation,
   candidateMode,
-  combinationHint,
 }: {
   messages: typeof createQuestMessages.en;
   participation: QuestDraft["participation"];
   candidateMode: QuestDraft["candidateMode"];
-  combinationHint: string;
 }) {
   const { colors } = useAppTheme();
   const participationLabel =
@@ -43,7 +41,6 @@ export function ModeSummary({
         <Text className={styles.modeValue}>
           {participationLabel} + {candidateLabel}
         </Text>
-        <Text className={styles.modeDescription}>{combinationHint}</Text>
       </View>
     </View>
   );

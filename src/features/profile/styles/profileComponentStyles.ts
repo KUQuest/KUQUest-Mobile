@@ -1,23 +1,24 @@
 const styles = {
   heroCard:
-    "self-stretch items-center gap-ku-md rounded-ku-card bg-ku-surface-accent",
-  identityContent: "items-center gap-ku-xs self-stretch",
+    "self-stretch gap-ku-md rounded-ku-card border border-ku-border bg-ku-surface",
+  identityRow: "flex-row items-center gap-ku-md",
+  identityContent: "min-w-0 shrink gap-ku-xs",
   photoFrame:
-    "items-center justify-center overflow-hidden border-[4px] border-ku-surface bg-ku-surface-image",
+    "items-center justify-center overflow-hidden border-2 border-ku-border-accent bg-ku-surface-image",
   photo: "h-full w-full",
   initials: "font-ku-bold text-ku-display-small text-ku-primary-dark",
-  name: "text-center font-ku-bold text-ku-text-strong",
-  metaList: "flex-row flex-wrap justify-center gap-x-ku-12 gap-y-ku-xs",
-  metaRow: "min-w-0 shrink flex-row items-center gap-ku-6",
-  meta: "shrink font-ku-regular text-ku-body-small text-ku-text",
+  name: "font-ku-bold text-ku-text-strong",
+  metaList: "self-stretch gap-ku-sm border-t border-ku-divider pt-ku-md",
+  metaRow: "min-w-0 flex-row items-start gap-ku-sm",
+  meta: "shrink font-ku-regular text-ku-body-small text-ku-text-secondary",
   subtleMeta: "text-ku-text-subtle font-ku-regular text-ku-meta",
-  tagGroup: "items-center gap-ku-6 self-stretch",
+  tagGroup: "items-start gap-ku-6 self-stretch",
   tagGroupLabel: "font-ku-semibold text-ku-label text-ku-text-secondary",
-  tagList: "flex-row flex-wrap justify-center gap-ku-6",
+  tagList: "flex-row flex-wrap gap-ku-6",
   tag: "rounded-ku-pill bg-ku-surface-accent border-ku-border-accent border px-ku-10 py-ku-xs",
   tagText: "text-ku-primary-dark font-ku-semibold text-ku-label",
-  editButton: "min-h-[48px] w-full bg-ku-surface",
-  editButtonText: "font-ku-semibold text-ku-body-small text-ku-primary",
+  editButtonText:
+    "shrink text-center font-ku-semibold text-ku-body-small text-ku-on-primary",
   section:
     "self-stretch rounded-[16px] bg-ku-card border-ku-border-subtle border",
   statsCard:

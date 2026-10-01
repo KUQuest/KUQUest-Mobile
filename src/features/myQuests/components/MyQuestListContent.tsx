@@ -125,9 +125,6 @@ export function MyQuestListContent({
               <Text className="mt-ku-lg font-ku-semibold text-ku-subtitle text-ku-text-strong">
                 {projection.emptyTitle}
               </Text>
-              <Text className="mt-ku-sm font-ku-regular text-ku-body-small text-ku-text-secondary">
-                {projection.emptyDescription}
-              </Text>
             </>
           )}
         </View>
@@ -146,7 +143,6 @@ export function MyQuestListContent({
                     {messages.questCount(projection.items.length)}
                   </Text>
                 </View>
-                <Text className={styles.listHint}>{messages.listHint}</Text>
               </View>
             </View>
           ) : null}

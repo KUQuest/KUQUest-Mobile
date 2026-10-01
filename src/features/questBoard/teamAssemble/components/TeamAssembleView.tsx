@@ -27,7 +27,7 @@ import { TeamAssembleRoster } from "./TeamAssembleRoster";
 import { TeamAssembleSubmissionPanel } from "./TeamAssembleSubmissionPanel";
 import styles from "../groupQuestStyles";
 import { spacing } from "@/theme/spacing";
-import { ScrollView, Text } from "@/tw";
+import { ScrollView } from "@/tw";
 import type { ProposalFileItem, TeamDirectoryMember } from "../types";
 import { createTeamInviteLink } from "../teamInvite";
 const MAX_TEAM_FILE_BYTES = 10 * 1024 * 1024;
@@ -448,9 +448,6 @@ export function TeamAssembleView({
       showsVerticalScrollIndicator={false}
       testID="team-assemble-scroll"
     >
-      <Text className={styles.sheetSubtitle}>
-        {initialInvite ? messages.joinTeamDescription : messages.teamSubtitle}
-      </Text>
       {!team ? (
         <>
           {!initialInvite ? (

@@ -710,14 +710,6 @@ export function PartialGroupStartConsentContent({
           </View>
         ) : null}
 
-        {terminal === "pending" ? (
-          <View className={styles.chatHint}>
-            <Clock3 color={colors.primary} size={17} strokeWidth={2} />
-            <Text className={styles.chatHintText}>
-              {messages.chatWritableHint}
-            </Text>
-          </View>
-        ) : null}
         {decisionPending && canDecide && onHirerDecision && !expired ? (
           <View
             className={styles.consentActions}

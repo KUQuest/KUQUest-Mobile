@@ -133,13 +133,11 @@ export function getCreateQuestChoiceOptions(messages: CreateQuestMessages): {
       {
         value: QuestMode.FIRST_COME_FIRST_SERVED,
         label: messages.instantAccept,
-        description: messages.instantAcceptDescription,
         icon: Clock3,
       },
       {
         value: QuestMode.CANDIDATE,
         label: messages.selectCandidate,
-        description: messages.selectCandidateDescription,
         icon: UserRoundCheck,
       },
     ],
@@ -147,31 +145,15 @@ export function getCreateQuestChoiceOptions(messages: CreateQuestMessages): {
       {
         value: QuestParticipation.SINGLE,
         label: messages.singleFormat,
-        description: messages.singleFormatDescription,
         icon: UserRound,
       },
       {
         value: QuestParticipation.GROUP,
         label: messages.teamFormat,
-        description: messages.teamFormatDescription,
         icon: UsersRound,
       },
     ],
   };
-}
-
-export function getCreateQuestCombinationHint(
-  draft: Pick<QuestDraft, "candidateMode" | "participation">,
-  messages: CreateQuestMessages
-): string {
-  if (draft.participation === QuestParticipation.SINGLE) {
-    return draft.candidateMode === QuestMode.FIRST_COME_FIRST_SERVED
-      ? messages.singleFirstComeHint
-      : messages.singleCandidateHint;
-  }
-  return draft.candidateMode === QuestMode.FIRST_COME_FIRST_SERVED
-    ? messages.groupFirstComeHint
-    : messages.groupCandidateHint;
 }
 
 export function getCreateQuestReviewView({

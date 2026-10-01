@@ -58,8 +58,6 @@ const styles = {
     "bg-ku-primary rounded-[18px] flex-row items-center justify-between mt-ku-md p-ku-md",
   participationCopy: "flex-1 min-w-0 mr-ku-12",
   participationTitle: "text-ku-on-primary font-ku-bold text-ku-body",
-  participationDescription:
-    "text-ku-on-primary font-ku-regular text-ku-label mt-ku-xs",
   participationAction:
     "items-center bg-ku-on-primary rounded-ku-pill flex-row gap-ku-6 justify-center min-h-[44px] px-ku-12",
   participationActionDisabled: "opacity-60",
@@ -132,8 +130,6 @@ const styles = {
   modalBackdrop: "bg-ku-overlay flex-1 justify-end",
   confirmSheet: "bg-ku-background rounded-tl-[24px] rounded-tr-[24px] p-ku-lg",
   confirmTitle: "text-ku-text-strong font-ku-bold text-ku-title-small",
-  confirmDescription:
-    "text-ku-text-secondary font-ku-regular text-ku-control mt-ku-xs",
   confirmSummary:
     "bg-ku-surface-accent rounded-[14px] gap-ku-6 mt-ku-md p-ku-md",
   confirmSummaryText: "text-ku-text-strong font-ku-medium text-ku-body-small",

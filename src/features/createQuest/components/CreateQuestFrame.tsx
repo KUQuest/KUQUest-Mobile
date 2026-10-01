@@ -13,19 +13,15 @@ export function CreateQuestFrame({
   children,
   messages,
   onBackPress,
-  onHelpPress,
   onStepPress,
   step,
-  subtitle,
   title,
 }: {
   children: ReactNode;
   messages: CreateQuestMessages;
   onBackPress: () => void;
-  onHelpPress: () => void;
   onStepPress?: (step: Step) => void;
   step: Step;
-  subtitle?: string;
   title?: string;
 }) {
   return (
@@ -35,10 +31,8 @@ export function CreateQuestFrame({
         messages={messages}
         step={step}
         onBackPress={onBackPress}
-        onHelpPress={onHelpPress}
         onStepPress={onStepPress}
         title={title}
-        subtitle={subtitle}
       />
       <View className={styles.surface}>{children}</View>
     </ScreenLayout>

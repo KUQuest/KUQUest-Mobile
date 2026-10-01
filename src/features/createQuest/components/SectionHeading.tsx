@@ -8,12 +8,10 @@ import styles from "./createQuestStyles";
 export function SectionHeading({
   icon: Icon,
   title,
-  description,
   compact = false,
 }: {
   icon: LucideIcon;
   title: string;
-  description: string;
   compact?: boolean;
 }) {
   return (
@@ -27,7 +25,6 @@ export function SectionHeading({
         <Text accessibilityRole="header" className={styles.sectionTitle}>
           {title}
         </Text>
-        <Text className={styles.sectionDescription}>{description}</Text>
       </View>
     </View>
   );

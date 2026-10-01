@@ -81,9 +81,6 @@ export function WorkerWorkManagementView({
             <Text className={styles.stateTitle}>
               {messages.emptyHistoryTitle}
             </Text>
-            <Text className={styles.stateDescription}>
-              {messages.emptyHistoryDescription}
-            </Text>
           </View>
         );
       }
@@ -104,9 +101,6 @@ export function WorkerWorkManagementView({
             />
           </View>
           <Text className={styles.stateTitle}>{messages.emptyActiveTitle}</Text>
-          <Text className={styles.stateDescription}>
-            {messages.emptyActiveDescription}
-          </Text>
           <Pressable
             accessibilityRole="button"
             className={styles.stateAction}
@@ -179,7 +173,6 @@ export function WorkerWorkManagementView({
             <Text accessibilityRole="header" className={styles.title}>
               {messages.title}
             </Text>
-            <Text className={styles.subtitle}>{messages.subtitle}</Text>
           </View>
 
           <View accessibilityRole="tablist" className={styles.tabList}>

@@ -220,7 +220,6 @@ export function QuestLogisticsFields({
             messages={messages}
           />
         </View>
-        <Text className={styles.helperText}>{messages.dateTimeHelper}</Text>
 
         <View className={styles.logisticsDivider} />
 
@@ -251,9 +250,6 @@ export function QuestLogisticsFields({
           <View className={styles.onlineToggleCopy}>
             <Text className={styles.onlineToggleTitle}>
               {messages.onlineQuest}
-            </Text>
-            <Text className={styles.onlineToggleHint}>
-              {messages.onlineQuestHint}
             </Text>
           </View>
         </Pressable>
