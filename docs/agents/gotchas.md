@@ -11,6 +11,14 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 ## Entries
 
+### 2026-10-01 — Jest fake timer hangs depend on the Node runtime
+
+**What happened**: Countdown tests passed locally under Node 26 but timed out in CI; changing Jest worker counts did not resolve the failures.
+
+**Root cause**: Faking `setImmediate` stalls the async React renderer under Node 22 when countdown tests advance the clock.
+
+**Rule**: Keep `queueMicrotask` and `setImmediate` in Jest's `fakeTimers.doNotFake`. Reproduce CI-only timer failures with CI's Node version before changing worker counts or test timeouts.
+
 ### 2026-09-28 — Proof draft replacement has no atomic API
 
 **What happened**: Replacing a Worker proof draft can require deleting the old server draft and creating a new one because the API exposes no atomic replacement operation.
