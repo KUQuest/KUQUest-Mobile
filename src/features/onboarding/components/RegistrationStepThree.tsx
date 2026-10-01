@@ -83,6 +83,12 @@ export function RegistrationStepThree({
   return (
     <>
       <Text className={styles.sectionDesc}>{msg.step3Desc}</Text>
+      {submitError && (
+        <View className={styles.submitErrorCard} accessibilityRole="alert">
+          <CircleAlert size={20} color={colors.danger} strokeWidth={2} />
+          <Text className={styles.submitErrorText}>{submitError}</Text>
+        </View>
+      )}
       <CertificatesSection
         messages={msg}
         locale={locale}
@@ -120,12 +126,6 @@ export function RegistrationStepThree({
         onRemove={onRemoveWork}
         onAdd={onAddWork}
       />
-      {submitError && (
-        <View className={styles.submitErrorCard} accessibilityRole="alert">
-          <CircleAlert size={20} color={colors.danger} strokeWidth={2} />
-          <Text className={styles.submitErrorText}>{submitError}</Text>
-        </View>
-      )}
     </>
   );
 }

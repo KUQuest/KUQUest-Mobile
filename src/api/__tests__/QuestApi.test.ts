@@ -804,6 +804,26 @@ describe("QuestApi", () => {
       );
     }
   });
+  it("reads a private Candidate Team submission file link", async () => {
+    const fileLink = {
+      fileId: "file-1",
+      contentType: "image/png",
+      sizeBytes: 128,
+      position: 0,
+      url: "https://storage.example.test/submissions/file-1?signature=secret",
+      urlExpiresAt: "2026-09-15T10:15:00Z",
+    };
+    fetchMock.mockResolvedValueOnce(okJson({ success: true, data: fileLink }));
+
+    await expect(
+      api.getCandidateTeamFileLink("quest-1", "team-1", "file-1")
+    ).resolves.toEqual(fileLink);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v2/quests/quest-1/teams/team-1/files/file-1",
+      expect.objectContaining({ method: "GET" })
+    );
+  });
+
   it("rejects Candidate Team payloads outside v2 limits before transport", async () => {
     await expect(
       api.createCandidateTeam("quest-1", {

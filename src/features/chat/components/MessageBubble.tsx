@@ -330,7 +330,11 @@ export function MessageBubble({
           isSystem && styles.messageStackSystem
         )}
       >
-        {!mine && !isSystem && !isCandidateInquiry && message.senderName ? (
+        {!text &&
+        !mine &&
+        !isSystem &&
+        !isCandidateInquiry &&
+        message.senderName ? (
           <Text className={styles.messageAuthor}>{message.senderName}</Text>
         ) : null}
         {text ? (
@@ -349,6 +353,9 @@ export function MessageBubble({
             onLongPress={handleLongPress}
             testID={`chat-message-bubble-${message.id}`}
           >
+            {!mine && !isSystem && !isCandidateInquiry && message.senderName ? (
+              <Text className={styles.messageAuthor}>{message.senderName}</Text>
+            ) : null}
             <Text className={styles.messageText}>{text}</Text>
           </Pressable>
         ) : null}

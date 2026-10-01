@@ -52,6 +52,7 @@ import type {
   QuestV2Review,
   QuestV2Team,
   QuestV2TeamFile,
+  QuestV2TeamFileLink,
   QuestV2TeamSelection,
   QuestV2StartWork,
   QuestV2Underfilled,
@@ -1094,6 +1095,14 @@ export class LiveQuestService {
     teamId: string
   ): Promise<QuestV2Team> {
     return questApi.getCandidateTeam(questId, teamId);
+  }
+  async getCandidateTeamFileLink(
+    questId: string,
+    teamId: string,
+    fileId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2TeamFileLink> {
+    return questApi.getCandidateTeamFileLink(questId, teamId, fileId, options);
   }
 
   async updateCandidateTeam(

@@ -35,6 +35,10 @@ export interface GroupQuestMessages {
   proposal: string;
   fileCount: (count: number) => string;
   attachedFiles: string;
+  reviewAttachments: string;
+  submissionImage: (index: number) => string;
+  noImageAttachments: string;
+  submissionImagesUnavailable: string;
   attachFile: string;
   removeFile: (name: string) => string;
   filePickFailed: string;
@@ -184,6 +188,11 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     proposal: "Proposal",
     fileCount: (count) => `${count} ${count === 1 ? "file" : "files"}`,
     attachedFiles: "Attached files",
+    reviewAttachments: "Review attachments",
+    submissionImage: (index) => `Submitted image ${index}`,
+    noImageAttachments: "No image files are attached to this proposal.",
+    submissionImagesUnavailable:
+      "Submitted images could not be loaded. Try again.",
     attachFile: "Attach file or image",
     removeFile: (name) => `Remove file ${name}`,
     filePickFailed: "Failed to pick file",
@@ -334,6 +343,10 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     proposal: "ข้อเสนอ",
     fileCount: (count) => `${count} ไฟล์`,
     attachedFiles: "ไฟล์แนบ",
+    reviewAttachments: "ดูไฟล์แนบ",
+    submissionImage: (index) => `รูปภาพที่ส่งมา ${index}`,
+    noImageAttachments: "ไม่มีรูปภาพในไฟล์แนบของข้อเสนอนี้",
+    submissionImagesUnavailable: "โหลดรูปภาพที่ส่งมาไม่สำเร็จ ลองอีกครั้ง",
     attachFile: "แนบเอกสารหรือรูปภาพ",
     removeFile: (name) => `ลบไฟล์ ${name}`,
     filePickFailed: "เลือกไฟล์ไม่สำเร็จ",
