@@ -11,6 +11,7 @@ import QuestDetailScreen from "../../detail/QuestDetailScreen";
 import PartialGroupStartConsentScreen from "../../teamAssemble/PartialGroupStartConsentScreen";
 import { liveQuestService } from "../../live/liveQuestService";
 import { authService } from "@/features/auth/AuthService";
+import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
 import type { QuestBoardQuest } from "../../domain/types";
 
@@ -602,7 +603,9 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
       expect(
         view.getByTestId("quest-live-underfilled-entry-action")
       ).toBeTruthy();
-      expect(view.getByText("Review roster and respond")).toBeTruthy();
+      expect(
+        view.getByText(groupQuestMessages.en.reviewPartialStart)
+      ).toBeTruthy();
     });
     expect(view.queryByTestId("partial-group-start-approve")).toBeNull();
     await fireEvent.press(

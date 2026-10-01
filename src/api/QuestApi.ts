@@ -19,6 +19,7 @@ import {
   questV2EditRequestSchema,
   questV2ImagesDataSchema,
   questV2AssignmentsDataSchema,
+  questV2MyAssignmentsDataSchema,
   questV2MineDataSchema,
   questV2ProofCreatePayloadSchema,
   questV2ProofDeleteSchema,
@@ -52,6 +53,7 @@ import {
   type QuestV2ApplicationSelection,
   type QuestV2Application,
   type QuestV2Assignment,
+  type QuestV2MyAssignment,
   type QuestV2BoardCard,
   type QuestV2CanonicalQuest,
   type QuestV2Completion,
@@ -278,10 +280,10 @@ export class QuestApi {
   async listMyAssignments(
     status?: QuestV2AssignmentMineStatus,
     options?: RequestOptions
-  ): Promise<QuestV2Assignment[]> {
+  ): Promise<QuestV2MyAssignment[]> {
     const data = await this.client.get(
       "/api/v2/assignments/mine",
-      questV2AssignmentsDataSchema,
+      questV2MyAssignmentsDataSchema,
       { ...options, query: { status } }
     );
     return data.items;

@@ -1,3 +1,9 @@
+import { formatTimestampDate, formatTimeInBangkok } from "@/domain/datetime";
+import { underfilledCancellationDescription } from "@/locales/groupQuestMessages";
+import {
+  formatCountdown,
+  useServerCountdown,
+} from "@/features/questBoard/shared/useServerCountdown";
 import { CircleUserRound, Clock3, UsersRound } from "lucide-react-native";
 
 import { Pressable, Text, View } from "@/tw";
@@ -13,12 +19,15 @@ import {
   QuestPartialStartConsentStatus,
   QuestParticipation,
   QuestTeamStatus,
+  QuestUnderfilledConsentDecision,
+  QuestUnderfilledState,
   type QuestDetailState,
 } from "../../domain/types";
 import styles from "../../styles/questDetailStyles";
 
 export function LiveEntrySurface({
   snapshot,
+  locale,
   groupMessages,
   busy = false,
   onOpenTeam,
@@ -27,17 +36,27 @@ export function LiveEntrySurface({
 }: {
   snapshot: LiveQuestSnapshot;
   groupMessages: GroupQuestMessages;
+  locale: "en" | "th";
   busy?: boolean;
   onOpenTeam: () => void;
   onOpenCandidateReview: () => void;
   onOpenPartialConsent: () => void;
 }) {
   const { colors } = useAppTheme();
+  const underfilledDeadline =
+    snapshot.underfilled?.state ===
+    QuestUnderfilledState.UNDERFILLED_DECISION_PENDING
+      ? snapshot.underfilled.decision.expiresAt
+      : snapshot.underfilled?.consent.expiresAt;
+  const underfilledRemaining = useServerCountdown(underfilledDeadline);
   const isGroupCandidate =
     snapshot.participation === QuestParticipation.GROUP &&
     snapshot.mode === QuestCandidateMode.CANDIDATE;
   const isHirer = isHirerActor(snapshot.actor);
+  const cancelled =
+    snapshot.underfilled?.state === QuestUnderfilledState.UNDERFILLED_CANCELLED;
   const isUnderfilled =
+    cancelled ||
     snapshot.nextAction === QuestNextAction.DECIDE_UNDERFILLED ||
     snapshot.nextAction === QuestNextAction.CONSENT_UNDERFILLED;
   const shouldRender =
@@ -57,16 +76,38 @@ export function LiveEntrySurface({
         snapshot.capabilities.canRejectTeam));
   if (!shouldRender) return null;
 
-  const title = isUnderfilled
-    ? groupMessages.partialConsentTitle
-    : isHirer
-      ? groupMessages.candidateReviewTitle
-      : groupMessages.noTeamTitle;
-  const description = isUnderfilled
-    ? groupMessages.partialConsentSubtitle
-    : isHirer
-      ? groupMessages.candidateReviewSubtitle
-      : groupMessages.noTeamDescription;
+  const title = cancelled
+    ? groupMessages.cancelledTitle
+    : isUnderfilled
+      ? snapshot.nextAction === QuestNextAction.DECIDE_UNDERFILLED
+        ? groupMessages.hirerDecisionPending
+        : groupMessages.workerResponseRequired
+      : isHirer
+        ? groupMessages.candidateReviewTitle
+        : groupMessages.noTeamTitle;
+  const description = cancelled
+    ? underfilledCancellationDescription(
+        groupMessages,
+        snapshot.underfilled?.cancellationReason,
+        snapshot.underfilled?.ownResponse?.decision ===
+          QuestUnderfilledConsentDecision.DECLINE,
+        isHirer
+      )
+    : isUnderfilled
+      ? snapshot.nextAction === QuestNextAction.DECIDE_UNDERFILLED
+        ? groupMessages.proceedConsequence
+        : groupMessages.acceptingWaitsForEveryone
+      : isHirer
+        ? groupMessages.candidateReviewSubtitle
+        : groupMessages.noTeamDescription;
+  const cancellationDate =
+    cancelled && snapshot.underfilled?.cancelledAt
+      ? formatTimestampDate(snapshot.underfilled.cancelledAt, locale)
+      : undefined;
+  const cancellationTime =
+    cancelled && snapshot.underfilled?.cancelledAt
+      ? formatTimeInBangkok(snapshot.underfilled.cancelledAt)
+      : "";
   const testID = isUnderfilled
     ? "quest-live-underfilled-entry"
     : isHirer
@@ -100,6 +141,35 @@ export function LiveEntrySurface({
       )}
       <Text className={styles.statusTitle}>{title}</Text>
       <Text className={styles.statusDescription}>{description}</Text>
+      {cancelled && cancellationDate && cancellationTime ? (
+        <Text className={styles.statusDescription}>
+          {groupMessages.cancelledAt(cancellationDate, cancellationTime)}
+        </Text>
+      ) : null}
+      {isUnderfilled && snapshot.underfilled ? (
+        <Text className={styles.statusDescription}>
+          {groupMessages.workerHeadcountJoined(
+            snapshot.underfilled.activeWorkerCount,
+            snapshot.underfilled.headcount
+          )}
+        </Text>
+      ) : null}
+      {isUnderfilled && underfilledRemaining !== null ? (
+        <Text
+          accessibilityLabel={`${snapshot.nextAction === QuestNextAction.DECIDE_UNDERFILLED ? groupMessages.timeRemaining : groupMessages.respondWithin}: ${formatCountdown(underfilledRemaining)}`}
+          accessibilityLiveRegion={
+            underfilledRemaining === 0 ||
+            Math.floor(underfilledRemaining / 60_000) !==
+              Math.floor((underfilledRemaining + 1_000) / 60_000)
+              ? "polite"
+              : "none"
+          }
+          className={styles.statusDescription}
+          testID={`${testID}-countdown`}
+        >
+          {`${snapshot.nextAction === QuestNextAction.DECIDE_UNDERFILLED ? groupMessages.timeRemaining : groupMessages.respondWithin}: ${formatCountdown(underfilledRemaining)}`}
+        </Text>
+      ) : null}
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ disabled: busy }}
@@ -200,10 +270,7 @@ export function GroupQuestEntrySurfaces({
             partialStartConsent?.frozenWorkerIds.length ??
             0
         )
-      : partialStartConsent?.status ===
-          QuestPartialStartConsentStatus.PARTIAL_START_TIMED_OUT
-        ? messages.timedOutDescription
-        : messages.cancelledDescription;
+      : underfilledCancellationDescription(messages, null, false, isHirer);
 
   return (
     <>

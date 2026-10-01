@@ -67,6 +67,8 @@ const hirerQuestUpdatedEventSchema = z
     version: z.literal(1),
     questId: z.string().uuid(),
     changeType: z.string().min(1),
+    /** Server `decision.expiresAt`; present only for `UNDERFILLED_DECISION_PENDING`. */
+    expiresAt: z.string().optional(),
   })
   .strict();
 

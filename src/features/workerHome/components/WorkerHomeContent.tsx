@@ -1,9 +1,14 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   RefreshControl,
   type ListRenderItem,
 } from "react-native";
+import { QuestUnderfilledState } from "@/features/questBoard/domain/types";
+import {
+  formatCountdown,
+  useServerCountdown,
+} from "@/features/questBoard/shared/useServerCountdown";
 
 import { Search } from "lucide-react-native";
 import { WorkspaceQuickSwitch } from "@/features/workspace/WorkspaceQuickSwitch";
@@ -30,6 +35,8 @@ function WorkerQuestFeedFooter() {
 }
 
 export function WorkerHomeContent({
+  workerActionAssignment,
+  pendingWorkerActionCount,
   activeOngoingAssignment,
   activeQuestDetail,
   assignmentsError,
@@ -62,7 +69,58 @@ export function WorkerHomeContent({
   tagsError,
   tags,
   themeColors,
+  handleOpenWorkerAction,
 }: WorkerHomeContentProps) {
+  const underfilled = workerActionAssignment?.underfilled;
+  const expiresAt =
+    underfilled?.state === QuestUnderfilledState.UNDERFILLED_DECISION_PENDING
+      ? underfilled.decision.expiresAt
+      : underfilled?.state === QuestUnderfilledState.UNDERFILLED_CONSENT_PENDING
+        ? underfilled.consent.expiresAt
+        : null;
+  const remaining = useServerCountdown(expiresAt);
+  const expiredQuest = useRef<string | null>(null);
+  useEffect(() => {
+    if (!workerActionAssignment || remaining !== 0 || !expiresAt) {
+      if (!expiresAt) expiredQuest.current = null;
+      return;
+    }
+    const key = `${workerActionAssignment.questId}:${underfilled?.state}`;
+    if (expiredQuest.current !== key) {
+      expiredQuest.current = key;
+      handleRetryAssignments();
+    }
+  }, [
+    expiresAt,
+    handleRetryAssignments,
+    remaining,
+    underfilled?.state,
+    workerActionAssignment,
+  ]);
+  const responseExpired = remaining === 0 && expiresAt !== null;
+  const actionMessage =
+    !workerActionAssignment || !underfilled
+      ? null
+      : responseExpired
+        ? messages.checkingUnderfilledResult
+        : underfilled.state ===
+            QuestUnderfilledState.UNDERFILLED_CONSENT_PENDING
+          ? messages.responseRequired
+          : underfilled.state ===
+              QuestUnderfilledState.UNDERFILLED_DECISION_PENDING
+            ? messages.waitingForDecision
+            : underfilled.state === QuestUnderfilledState.UNDERFILLED_CANCELLED
+              ? messages.underfilledCancelled(
+                  underfilled.cancellationReason ?? null
+                )
+              : underfilled.state ===
+                  QuestUnderfilledState.UNDERFILLED_COMPLETED
+                ? messages.underfilledAssigned
+                : null;
+  const countdownText =
+    expiresAt && !responseExpired && remaining !== null
+      ? messages.consentCountdown(formatCountdown(remaining))
+      : null;
   const { locale } = useLocale();
   const renderQuestItem = useCallback<ListRenderItem<QuestV2BoardCard>>(
     ({ item }) => (
@@ -162,6 +220,71 @@ export function WorkerHomeContent({
                 tagsError={tagsError}
               />
             </View>
+            {workerActionAssignment && actionMessage ? (
+              <View
+                accessibilityRole="alert"
+                className="mx-ku-md mt-ku-sm rounded-ku-card border border-ku-worker-border bg-ku-worker-subtle"
+              >
+                <Pressable
+                  accessibilityLabel={
+                    countdownText
+                      ? `${actionMessage}, ${countdownText}`
+                      : actionMessage
+                  }
+                  accessibilityRole="button"
+                  className="min-h-[48px] justify-center px-ku-md py-ku-sm"
+                  onPress={() =>
+                    handleOpenWorkerAction(
+                      workerActionAssignment,
+                      responseExpired
+                    )
+                  }
+                  testID="worker-home-underfilled-action"
+                >
+                  <Text
+                    accessibilityRole="header"
+                    className="font-ku-semibold text-ku-body-small text-ku-text-strong"
+                  >
+                    {actionMessage}
+                  </Text>
+                  {countdownText ? (
+                    <Text
+                      accessibilityLiveRegion={
+                        remaining === 0 ||
+                        (remaining !== null &&
+                          Math.floor(Math.ceil(remaining / 1000) / 60) !==
+                            Math.floor(
+                              Math.ceil((remaining + 1_000) / 1000) / 60
+                            ))
+                          ? "polite"
+                          : "none"
+                      }
+                      className="mt-ku-xs font-ku-medium text-ku-label text-ku-text-secondary"
+                      testID="worker-home-underfilled-countdown"
+                    >
+                      {countdownText}
+                    </Text>
+                  ) : null}
+                </Pressable>
+                {pendingWorkerActionCount > 1 ? (
+                  <Pressable
+                    accessibilityLabel={messages.morePendingActions(
+                      pendingWorkerActionCount - 1
+                    )}
+                    accessibilityRole="button"
+                    className="min-h-[48px] justify-center px-ku-md"
+                    onPress={() => handleOpenCurrentWork(true)}
+                    testID="worker-home-more-actions"
+                  >
+                    <Text className="font-ku-medium text-ku-label text-ku-worker-dark">
+                      {messages.morePendingActions(
+                        pendingWorkerActionCount - 1
+                      )}
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : null}
             <View className={styles.sectionHeader}>
               <View className={styles.sectionTitleRow}>
                 <Text

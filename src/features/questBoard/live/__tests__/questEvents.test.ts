@@ -392,6 +392,37 @@ describe("Quest event subscription", () => {
     stop();
     expect(socket?.close).toHaveBeenCalledTimes(1);
   });
+  it("accepts decision-window expiry and rejects unknown hirer event fields", () => {
+    const onQuestUpdated = jest.fn();
+    const stop = subscribeToHirerQuestEvents(onQuestUpdated);
+    const socket = MockWebSocket.instances[0];
+    if (!socket) throw new Error("Expected a hirer event socket");
+    socket.receive(JSON.stringify({ type: "SUBSCRIBED", version: 1 }));
+
+    const pending = {
+      type: "HIRER_QUEST_UPDATED",
+      version: 1,
+      questId: "00000000-0000-4000-8000-000000000001",
+      changeType: "UNDERFILLED_DECISION_PENDING",
+      expiresAt: "2026-10-02T04:10:00.000Z",
+    };
+    socket.receive(JSON.stringify(pending));
+    expect(onQuestUpdated).toHaveBeenLastCalledWith(pending);
+
+    socket.receive(
+      JSON.stringify({
+        ...pending,
+        unexpected: true,
+      })
+    );
+    expect(onQuestUpdated).toHaveBeenCalledTimes(1);
+
+    const started = { ...pending, changeType: "QUEST_STARTED" };
+    delete (started as Partial<typeof started>).expiresAt;
+    socket.receive(JSON.stringify(started));
+    expect(onQuestUpdated).toHaveBeenLastCalledWith(started);
+    stop();
+  });
   it("shares hirer updates and closes the socket after the last unsubscribe", () => {
     const firstUpdate = jest.fn();
     const firstSubscribed = jest.fn();

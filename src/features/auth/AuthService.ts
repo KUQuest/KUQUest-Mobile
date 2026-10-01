@@ -20,6 +20,7 @@ import {
   type NativeGoogleSigninApi,
   type NativeGoogleSigninSuccessResponse,
 } from "./nativeGoogleSignin";
+import { unregisterPushDevice } from "../notifications/push/pushRegistration";
 
 export type { BetterAuthClientApi } from "./authClient";
 export type { NativeGoogleSigninApi } from "./nativeGoogleSignin";
@@ -183,6 +184,8 @@ export class AuthService implements AuthAdapter {
   }
 
   async signOut(): Promise<void> {
+    // Remove the push device while the session cookie is still valid.
+    await settleWithin(unregisterPushDevice(), SIGN_OUT_TIMEOUT_MS);
     authDebug("sign-out started");
     const remoteSignOut = settleWithin(
       Promise.resolve().then(() => this.authClient.signOut()),

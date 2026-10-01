@@ -134,10 +134,9 @@ export function canonicalToQuestBoardQuest(
   q: QuestV2CanonicalQuest | QuestV2Detail,
   creatorName = "Me"
 ): QuestBoardQuest {
+  const rewardSatang = Math.round((q.questReward ?? 0) * 100);
   const startDate = q.startTime.slice(0, 10);
   const deadline = q.dueAt ? q.dueAt.slice(0, 10) : startDate;
-  const rewardSatang = Math.round(q.questFundingTotal * 100);
-
   return {
     id: q.id,
     title: q.title,
@@ -149,7 +148,7 @@ export function canonicalToQuestBoardQuest(
       )
       .join("\n"),
     proofRequired: q.proofRequired ? "required" : "none",
-    rewardPerPerson: q.questFundingTotal,
+    rewardPerPerson: q.questReward ?? 0,
     rewardSatang,
     headcount: q.headcount,
     acceptedParticipants: 0,
