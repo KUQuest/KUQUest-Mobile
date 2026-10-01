@@ -142,12 +142,12 @@ export function HirerQuestProgressCard({
               label={tag}
               leadingIcon={
                 <BriefcaseBusiness
-                  color={colors.additionalDark}
+                  color={colors.hirerDark}
                   size={14}
                   strokeWidth={2.1}
                 />
               }
-              textClassName={`${styles.tagText} text-ku-additional-dark`}
+              textClassName={`${styles.tagText} text-ku-hirer-dark`}
               tone="accent"
             />
           ) : (
@@ -292,7 +292,7 @@ export function HirerQuestProgressCard({
                 className={styles.workerAvatar}
                 name={primaryWorker.displayName}
                 size={44}
-                textClassName={`${styles.workerAvatarText} text-ku-additional-dark`}
+                textClassName={`${styles.workerAvatarText} text-ku-hirer-dark`}
                 uri={primaryWorker.avatarUri}
               />
               <View className={styles.workerCopy}>
@@ -341,11 +341,7 @@ export function HirerQuestProgressCard({
           >
             <View className={styles.workerLeading}>
               <View className={styles.workerAvatar}>
-                <Users
-                  color={colors.additionalDark}
-                  size={18}
-                  strokeWidth={2.2}
-                />
+                <Users color={colors.hirerDark} size={18} strokeWidth={2.2} />
               </View>
               <View className={styles.workerCopy}>
                 <Text className={`${styles.workerName} text-ku-text-strong`}>
@@ -387,11 +383,7 @@ export function HirerQuestProgressCard({
           >
             <View className={styles.workerLeading}>
               <View className={styles.workerAvatar}>
-                <Users
-                  color={colors.additionalDark}
-                  size={18}
-                  strokeWidth={2.2}
-                />
+                <Users color={colors.hirerDark} size={18} strokeWidth={2.2} />
               </View>
               <View className={styles.workerCopy}>
                 <Text className={`${styles.workerName} text-ku-text-strong`}>

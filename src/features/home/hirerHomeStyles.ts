@@ -26,7 +26,7 @@ export const hirerHomeStyles = {
   cardHeaderMetaRow:
     "mb-ku-md flex-row flex-wrap items-center justify-between gap-ku-sm",
   tagBadge:
-    "max-w-full shrink flex-row items-center gap-ku-6 rounded-ku-pill border border-ku-additional-border bg-ku-additional-subtle px-ku-10 py-ku-4",
+    "max-w-full shrink flex-row items-center gap-ku-6 rounded-ku-pill border border-ku-hirer-border bg-ku-hirer-subtle px-ku-10 py-ku-4",
   tagText: "shrink font-ku-medium text-ku-meta leading-[19px]",
   statusBadge: "flex-row items-center rounded-ku-pill border px-ku-10 py-ku-6",
   statusLabel: "font-ku-semibold text-ku-meta leading-[19px]",
@@ -37,7 +37,7 @@ export const hirerHomeStyles = {
   workerLeading:
     "min-h-[48px] min-w-[160px] flex-1 flex-row items-center gap-ku-10",
   workerAvatar:
-    "h-[44px] w-[44px] shrink-0 items-center justify-center overflow-hidden rounded-ku-pill border border-ku-additional-border bg-ku-additional-subtle",
+    "h-[44px] w-[44px] shrink-0 items-center justify-center overflow-hidden rounded-ku-pill border border-ku-hirer-border bg-ku-hirer-subtle",
   workerAvatarText: "font-ku-bold text-ku-body-small",
   workerCopy: "min-w-0 flex-1",
   workerName: "font-ku-semibold text-ku-body leading-[22px]",
