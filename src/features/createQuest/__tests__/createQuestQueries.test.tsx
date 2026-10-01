@@ -8,7 +8,6 @@ import { questBoardKeys } from "@/features/questBoard/api/questBoardQueries";
 import { walletKeys } from "@/features/wallet/api/walletQueries";
 import {
   createQuestKeys,
-  useCancelQuestMutation,
   useCreateQuestMutation,
   useDeleteQuestImageMutation,
   useEditQuestMutation,
@@ -20,7 +19,6 @@ import {
 
 jest.mock("@/api/QuestApi", () => ({
   questApi: {
-    cancelQuest: jest.fn(),
     deleteQuestImage: jest.fn(),
     editQuest: jest.fn(),
     uploadQuestImages: jest.fn(),
@@ -54,29 +52,6 @@ function createWrapper(queryClient: QueryClient) {
 
 describe("Create Quest cache invalidation", () => {
   beforeEach(() => jest.clearAllMocks());
-
-  it("cancel invalidates Quest Board and Wallet reads", async () => {
-    const queryClient = createQueryClient();
-    const boardKey = questBoardKeys.board();
-    const walletKey = walletKeys.detail();
-    queryClient.setQueryData(boardKey, []);
-    queryClient.setQueryData(walletKey, { balance: 100 });
-    jest.mocked(questApi.cancelQuest).mockResolvedValue({} as never);
-    const { result } = await renderHook(() => useCancelQuestMutation(), {
-      wrapper: createWrapper(queryClient),
-    });
-
-    await act(async () => {
-      await result.current.mutateAsync({
-        questId: "quest-1",
-        idempotencyKey: "cancel-key",
-      });
-    });
-
-    expect(queryClient.getQueryState(boardKey)?.isInvalidated).toBe(true);
-    expect(queryClient.getQueryState(walletKey)?.isInvalidated).toBe(true);
-    queryClient.clear();
-  });
 
   it("publish invalidates Quest Board and Wallet reads", async () => {
     const queryClient = createQueryClient();

@@ -1,3 +1,4 @@
+import { serverNow } from "@/api/serverClock";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, RefreshControl } from "react-native";
 import { useNavigation } from "expo-router";
@@ -68,7 +69,7 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
   const tagCatalog = tagQuery.data ?? [];
   const { colors } = useAppTheme();
   const questMessages = questBoardMessages[locale];
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(() => serverNow());
   const dueAtMs = snapshot?.dueAt
     ? new Date(snapshot.dueAt).getTime()
     : Number.NaN;
@@ -76,7 +77,7 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
 
   useEffect(() => {
     if (!hasLiveDeadline) return undefined;
-    const timer = setInterval(() => setNow(Date.now()), 1_000);
+    const timer = setInterval(() => setNow(serverNow()), 1_000);
     return () => clearInterval(timer);
   }, [hasLiveDeadline]);
   useEffect(
@@ -131,7 +132,12 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
   const startTimeMs = snapshot
     ? new Date(snapshot.quest.startTime).getTime()
     : Number.NaN;
-  const canPressStartWork = mustStartWork && now >= startTimeMs;
+  const canPressStartWork =
+    mustStartWork &&
+    Number.isFinite(startTimeMs) &&
+    Number.isFinite(dueAtMs) &&
+    now >= startTimeMs &&
+    now < dueAtMs;
   const contentBottom = Math.max(spacing.lg, insets.bottom + spacing.md);
 
   if (loading && !snapshot) {

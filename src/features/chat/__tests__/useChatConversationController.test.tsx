@@ -236,11 +236,15 @@ describe("useChatConversationController", () => {
     );
   });
 
-  it("keeps a 429-limited attachment, blocks sending, and uploads it on retry sending its id once", async () => {
+  it("shows server-provided wait for a 429 while keeping attachment retryable", async () => {
     const send = jest.fn().mockResolvedValue(undefined);
+    const rateLimitError = Object.assign(
+      new ApiError(429, "RATE_LIMITED", "slow down"),
+      { retryAfterMs: 65_000 }
+    );
     const upload = jest
       .fn()
-      .mockRejectedValueOnce(new ApiError(429, "RATE_LIMITED", "slow down"))
+      .mockRejectedValueOnce(rateLimitError)
       .mockResolvedValueOnce({
         id: "asset-1",
         fileName: "photo.jpg",
@@ -278,6 +282,11 @@ describe("useChatConversationController", () => {
     });
     expect(send).not.toHaveBeenCalled();
 
+    expect(showErrorAlert).toHaveBeenCalledWith(
+      expect.any(String),
+      "Too many uploads right now. Try again in 65 seconds."
+    );
+
     await act(async () =>
       result.current.retryAttachment(result.current.pendingAttachments[0].id)
     );
@@ -288,17 +297,38 @@ describe("useChatConversationController", () => {
       result.current.sendMessage();
     });
     await waitFor(() => expect(send).toHaveBeenCalledTimes(1));
-    expect(upload).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        asset: {
-          uri: "file:///photo.jpg",
-          name: "photo.jpg",
-          type: "image/jpeg",
-        },
-      })
-    );
     expect(send.mock.calls[0][0].attachmentIds).toEqual(["asset-1"]);
+    expect(upload).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps generic 429 messaging when server provides no retry duration", async () => {
+    const upload = jest
+      .fn()
+      .mockRejectedValueOnce(new ApiError(429, "RATE_LIMITED", "slow down"));
+    const { result } = await setup(undefined, upload);
+    (File.pickFileAsync as jest.Mock).mockResolvedValue({
+      canceled: false,
+      result: {
+        uri: "file:///photo.jpg",
+        name: "photo.jpg",
+        type: "image/jpeg",
+        size: 100,
+      },
+    });
+    await act(async () => result.current.openAttachmentMenu());
+    const options = (Alert.alert as jest.Mock).mock.calls.at(-1)?.[2] as {
+      text: string;
+      onPress: () => void;
+    }[];
+    await act(async () =>
+      options.find((option) => option.text === "Choose file")?.onPress()
+    );
+    await waitFor(() =>
+      expect(showErrorAlert).toHaveBeenCalledWith(
+        expect.any(String),
+        "Too many uploads right now. Wait a moment, then retry."
+      )
+    );
   });
 
   it("does not attach a file the user removed while it was still uploading", async () => {

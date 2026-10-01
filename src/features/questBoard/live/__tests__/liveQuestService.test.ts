@@ -1,3 +1,4 @@
+import { resetServerClock, syncServerClock } from "@/api/serverClock";
 import { liveQuestService } from "../liveQuestService";
 import { ApiError } from "@/api/ApiClient";
 import { questApi } from "@/api/QuestApi";
@@ -709,12 +710,18 @@ describe("LiveQuestService", () => {
       participation,
       viewerAssignment = assignment("worker-1"),
       leaderId,
+      serverTime = "2099-08-26T10:00:00+07:00",
     }: {
       mode: "FIRST_COME_FIRST_SERVED" | "CANDIDATE";
       participation: "SINGLE" | "GROUP";
       viewerAssignment?: QuestV2Assignment;
       leaderId?: string;
+      serverTime?: string;
     }) {
+      jest
+        .spyOn(Date, "now")
+        .mockReturnValue(Date.parse("2026-10-01T00:00:00Z"));
+      syncServerClock(serverTime, null);
       // A Worker cannot read the Hirer detail; the snapshot falls back to public detail.
       mockedQuestApi.getDetail.mockRejectedValue(new Error("forbidden"));
       mockedQuestApi.getPublicDetail.mockResolvedValue({
@@ -770,6 +777,11 @@ describe("LiveQuestService", () => {
       return snapshot.capabilities.canStartWork;
     }
 
+    afterEach(() => {
+      resetServerClock();
+      jest.restoreAllMocks();
+    });
+
     it("requires the Active Worker of a SINGLE Quest", async () => {
       await expect(
         startCapability({ mode: "CANDIDATE", participation: "SINGLE" })
@@ -809,6 +821,22 @@ describe("LiveQuestService", () => {
           participation: "GROUP",
           viewerAssignment: assignment("worker-1", "2099-08-26T09:01:00Z"),
         })
+      ).resolves.toBe(false);
+    });
+
+    it("uses Server time for the inclusive start and exclusive dueAt boundaries", async () => {
+      const input = {
+        mode: "FIRST_COME_FIRST_SERVED" as const,
+        participation: "SINGLE" as const,
+      };
+      await expect(
+        startCapability({ ...input, serverTime: "2099-08-26T08:59:59+07:00" })
+      ).resolves.toBe(false);
+      await expect(
+        startCapability({ ...input, serverTime: "2099-08-26T09:00:00+07:00" })
+      ).resolves.toBe(true);
+      await expect(
+        startCapability({ ...input, serverTime: "2099-08-27T12:00:00+07:00" })
       ).resolves.toBe(false);
     });
   });

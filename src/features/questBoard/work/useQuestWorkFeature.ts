@@ -1,3 +1,4 @@
+import { serverNow } from "@/api/serverClock";
 import { useCallback, useRef, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useLocale } from "@/features/preferences/localeStore";
@@ -21,6 +22,8 @@ import type { LiveQuestSnapshot } from "../live/liveQuestTypes";
 import { QuestEditResponseDecision, QuestStatus } from "../domain/types";
 
 const POLL_INTERVAL_MS = 5_000;
+// Keep delays below the signed 32-bit timer limit to avoid a 1ms clamp.
+const MAX_TIMER_INTERVAL_MS = 2_147_000_000;
 
 /** Start Work rejections that mean the local Quest/Assignment view is stale. */
 const START_WORK_RELOAD_CODES: Record<string, true> = {
@@ -63,19 +66,29 @@ export function useQuestWorkFeature({
   const confirmCompletionMutation = useConfirmCompletionMutation();
   const snapshotPollingInterval = useCallback(
     (currentSnapshot: LiveQuestSnapshot | undefined): number | false => {
-      // A viewer who still has to press Start Work drives the transition; the
-      // Start Work button follows the screen clock, not polling.
       if (
         !currentSnapshot ||
-        currentSnapshot.state !== QuestStatus.QUEST_ASSIGNED ||
-        currentSnapshot.capabilities.canStartWork
-      )
+        currentSnapshot.state !== QuestStatus.QUEST_ASSIGNED
+      ) {
         return false;
-      const startAt = new Date(currentSnapshot.quest.startTime).getTime();
-      if (!Number.isFinite(startAt)) return false;
-      // Waiting on other required starters: refresh until the server reports
-      // QUEST_IN_PROGRESS or leaves QUEST_ASSIGNED.
-      return Math.max(startAt - Date.now(), POLL_INTERVAL_MS);
+      }
+      const startAt = Date.parse(currentSnapshot.quest.startTime);
+      const dueAt = Date.parse(currentSnapshot.dueAt ?? "");
+      const now = serverNow();
+      if (
+        !Number.isFinite(startAt) ||
+        !Number.isFinite(dueAt) ||
+        now >= dueAt
+      ) {
+        return false;
+      }
+      // A required starter who can act needs one final refresh at dueAt; the
+      // failure transition must not depend on the Server emitting a socket
+      // event. Other required starters are polled until the Quest transitions.
+      const nextRefreshMs = currentSnapshot.capabilities.canStartWork
+        ? dueAt - now
+        : Math.max(startAt - now, POLL_INTERVAL_MS);
+      return Math.min(nextRefreshMs, MAX_TIMER_INTERVAL_MS);
     },
     []
   );

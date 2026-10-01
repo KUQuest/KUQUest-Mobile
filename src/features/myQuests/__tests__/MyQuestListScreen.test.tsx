@@ -6,8 +6,8 @@ import { projectMyQuestWorkspace } from "../myQuestWorkspaceProjection";
 const mockPush = jest.fn();
 const mockBack = jest.fn();
 const mockHirerList = jest.fn();
+const mockHirerProofReviewableIds = jest.fn();
 const mockCancelAsync = jest.fn();
-
 jest.mock("expo-router", () => ({
   useRouter: () => ({ back: mockBack, push: mockPush }),
 }));
@@ -29,6 +29,8 @@ jest.mock("../myQuestService", () => {
     myQuestService: {
       ...actual.myQuestService,
       listAllMyHirerQuests: (...args: unknown[]) => mockHirerList(...args),
+      listMyHirerProofReviewableQuestIds: (...args: unknown[]) =>
+        mockHirerProofReviewableIds(...args),
     },
   };
 });
@@ -76,6 +78,7 @@ describe("MyQuestListScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockHirerList.mockResolvedValue([]);
+    mockHirerProofReviewableIds.mockResolvedValue([]);
     mockCancelAsync.mockResolvedValue({ refundedSatang: 0 });
   });
 
@@ -132,6 +135,75 @@ describe("MyQuestListScreen", () => {
     fireEvent.press(screen.getByTestId("my-quest-list-action-completed-1"));
     expect(mockPush).not.toHaveBeenCalled();
     expect(await screen.findByTestId("quest-review-modal")).toBeTruthy();
+  });
+
+  it("shows proof review only when failed Quest proof list is reviewable", async () => {
+    mockHirerList.mockResolvedValue([
+      {
+        ...draftQuest(
+          "failed-reviewable-1",
+          "Failed Reviewable Quest",
+          "QUEST_OPEN"
+        ),
+        state: "QUEST_FAILED",
+      },
+    ] as never);
+    mockHirerProofReviewableIds.mockResolvedValue(["failed-reviewable-1"]);
+
+    const screen = await renderWithQueryClient(
+      <>
+        <MyQuestListScreen initialTab="completed" />
+        <SweetAlertHost />
+      </>
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("my-quest-list-proof-review-failed-reviewable-1")
+      ).toBeTruthy()
+    );
+
+    await fireEvent.press(
+      screen.getByTestId("my-quest-list-proof-review-failed-reviewable-1")
+    );
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]/proof-review",
+      params: { id: "failed-reviewable-1" },
+    });
+    await fireEvent.press(
+      screen.getByTestId("my-quest-list-action-failed-reviewable-1")
+    );
+    expect(await screen.findByTestId("quest-review-modal")).toBeTruthy();
+    expect(
+      screen.getByTestId("my-quest-list-secondary-failed-reviewable-1")
+    ).toBeTruthy();
+  });
+
+  it("hides proof review when failed Quest proof list is not reviewable", async () => {
+    mockHirerList.mockResolvedValue([
+      {
+        ...draftQuest("failed-not-reviewable-1", "Failed Quest", "QUEST_OPEN"),
+        state: "QUEST_FAILED",
+      },
+    ] as never);
+    mockHirerProofReviewableIds.mockResolvedValue([]);
+
+    const screen = await renderWithQueryClient(
+      <>
+        <MyQuestListScreen initialTab="completed" />
+        <SweetAlertHost />
+      </>
+    );
+    await waitFor(() => expect(screen.getByText("Failed Quest")).toBeTruthy());
+
+    expect(
+      screen.queryByTestId("my-quest-list-proof-review-failed-not-reviewable-1")
+    ).toBeNull();
+    expect(
+      screen.getByTestId("my-quest-list-action-failed-not-reviewable-1")
+    ).toBeTruthy();
+    expect(
+      screen.getByTestId("my-quest-list-secondary-failed-not-reviewable-1")
+    ).toBeTruthy();
   });
 
   it("confirms cancellation and reports successful cancellation", async () => {

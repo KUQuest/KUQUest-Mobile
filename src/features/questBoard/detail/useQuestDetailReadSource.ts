@@ -1,3 +1,4 @@
+import { serverNow } from "@/api/serverClock";
 import { useCallback, useEffect, useMemo } from "react";
 
 import {
@@ -126,7 +127,7 @@ export function useQuestDetailReadSource({
     }
     const startAt = Date.parse(liveSnapshotStartTime ?? "");
     if (!Number.isFinite(startAt)) return;
-    const startDelay = startAt - Date.now();
+    const startDelay = startAt - serverNow();
     if (startDelay > START_TIME_REFETCH_MAX_DELAY_MS) return;
 
     let cancelled = false;
@@ -134,14 +135,14 @@ export function useQuestDetailReadSource({
     let pollTimer: number | undefined;
     const pollUntil = startAt + UNDERFILLED_REFETCH_WINDOW_MS;
     const pollForUnderfilledState = async () => {
-      if (cancelled || Date.now() >= pollUntil) return;
+      if (cancelled || serverNow() >= pollUntil) return;
       const result = await refetchLiveSnapshot();
       if (cancelled) return;
       const currentSnapshot = result.data;
       if (
         currentSnapshot?.underfilled ||
         !isNotStartedGroupFcfsSnapshot(currentSnapshot) ||
-        Date.now() >= pollUntil
+        serverNow() >= pollUntil
       ) {
         return;
       }

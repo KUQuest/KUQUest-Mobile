@@ -2,18 +2,20 @@ import { z, ZodError } from "zod";
 
 import { ApiClient, ApiError, setUnauthorizedHandler } from "../ApiClient";
 
-function response(body: unknown, status = 200) {
+function response(body: unknown, status = 200, headers = new Headers()) {
   return {
     ok: status >= 200 && status < 300,
     status,
+    headers,
     text: async () => JSON.stringify(body),
   };
 }
 
-function rawResponse(body: string, status: number) {
+function rawResponse(body: string, status: number, headers = new Headers()) {
   return {
     ok: status >= 200 && status < 300,
     status,
+    headers,
     text: async () => body,
   };
 }
@@ -224,6 +226,45 @@ describe("ApiClient", () => {
     await expect(client.get("/api/v1/profile", z.unknown())).rejects.toEqual(
       new ApiError(502, "HTTP_502", "upstream unavailable")
     );
+  });
+  test("exposes server Retry-After duration on rate-limit errors", async () => {
+    jest.useFakeTimers().setSystemTime(new Date("2026-10-01T00:00:00.000Z"));
+    try {
+      const { client, fetchMock } = setup();
+      fetchMock.mockResolvedValue(
+        response(
+          { code: "RATE_LIMITED", message: "Too many requests" },
+          429,
+          new Headers({
+            date: "Thu, 01 Oct 2026 00:00:00 GMT",
+            "retry-after": "Thu, 01 Oct 2026 00:00:30 GMT",
+          })
+        )
+      );
+
+      await expect(
+        client.get("/api/v1/profile", z.unknown())
+      ).rejects.toMatchObject({
+        status: 429,
+        retryAfterMs: 30_000,
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+  test("parses Retry-After delta-seconds", async () => {
+    const { client, fetchMock } = setup();
+    fetchMock.mockResolvedValue(
+      response(
+        { code: "RATE_LIMITED", message: "Too many requests" },
+        429,
+        new Headers({ "retry-after": "65" })
+      )
+    );
+
+    await expect(
+      client.get("/api/v1/profile", z.unknown())
+    ).rejects.toMatchObject({ retryAfterMs: 65_000 });
   });
 
   test("joins relative paths to the base URL and keeps absolute URLs", async () => {

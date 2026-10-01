@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { openServerSocket } from "@/api/ServerSocket";
+import { authClient } from "@/features/auth/authClient";
 import { ApiClient, setUnauthorizedHandler } from "@/api/ApiClient";
 import { act, screen, waitFor } from "@testing-library/react-native";
 import {
@@ -8,6 +10,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Text } from "@/tw";
+import { installMockWebSocket, MockWebSocket } from "@/testing/mockWebSocket";
 
 import AuthMiddleware, { isPublicAuthRoute } from "../AuthMiddleware";
 import { sessionKeys, useSessionQuery } from "../sessionQueries";
@@ -245,6 +248,49 @@ describe("AuthMiddleware", () => {
     expect(mockSignOut).toHaveBeenCalledTimes(1);
     expect(mockReplace).toHaveBeenCalledTimes(1);
     expect(queryClient.getQueryData(["private", "wallet"])).toBeUndefined();
+  });
+  test("closes live sockets immediately when a request returns 401", async () => {
+    const originalApiUrl = process.env.EXPO_PUBLIC_API_URL;
+    const restoreWebSocket = installMockWebSocket();
+    const cookieSpy = jest
+      .spyOn(authClient, "getCookie")
+      .mockReturnValue("better-auth.session_token=first");
+    process.env.EXPO_PUBLIC_API_URL = "https://api.example.test";
+    mockSegments = ["(tabs)"];
+    mockGetSession.mockResolvedValue({ user: { id: "student-1" } });
+
+    try {
+      await renderWithQueryClient(
+        <AuthMiddleware>
+          <>
+            <ProtectedContent />
+            <SessionStatus />
+          </>
+        </AuthMiddleware>
+      );
+      await waitFor(() =>
+        expect(screen.getByTestId("session-user").props.children).toBe(
+          "student-1"
+        )
+      );
+      const handle = openServerSocket("/events", { onFrame: jest.fn() });
+      const nativeSocket = MockWebSocket.instances[0];
+
+      await act(async () => {
+        await expect(
+          unauthorizedClient().get("/api/v1/profile", z.unknown())
+        ).rejects.toMatchObject({ status: 401 });
+      });
+
+      expect(nativeSocket.close).toHaveBeenCalledTimes(1);
+      expect(mockSignOut).toHaveBeenCalledTimes(1);
+      handle.close();
+    } finally {
+      cookieSpy.mockRestore();
+      restoreWebSocket();
+      if (originalApiUrl === undefined) delete process.env.EXPO_PUBLIC_API_URL;
+      else process.env.EXPO_PUBLIC_API_URL = originalApiUrl;
+    }
   });
 
   test("ignores a 401 when there is no session", async () => {

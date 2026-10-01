@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import { ZodError } from "zod";
@@ -11,13 +11,15 @@ import { createQuestMessages } from "@/locales/createQuestMessages";
 import { getLocalizedErrorMessage } from "@/utils/error";
 
 import {
-  useCancelQuestMutation,
+  createQuestKeys,
   useDeleteQuestImageMutation,
   useEditQuestMutation,
   usePublishQuestMutation,
   useQuestDetailQuery,
   useUploadQuestImagesMutation,
 } from "../api/createQuestQueries";
+import { useCancelQuestMutation } from "@/features/questBoard/api/questBoardQueries";
+import { workerHomeKeys } from "@/features/workerHome/api/workerHomeKeys";
 import {
   getHeadcountForParticipation,
   type QuestDraft,
@@ -53,6 +55,7 @@ export function useQuestEdit({
   setDraft,
   setStep,
 }: UseQuestEditOptions) {
+  const queryClient = useQueryClient();
   const { locale } = useLocale();
   const versionRef = useRef<number | null>(null);
   // Reused until publish succeeds so a retried publish replays, not duplicates.
@@ -214,6 +217,12 @@ export function useQuestEdit({
         questId,
         idempotencyKey: createQuestIdempotencyKey(),
       });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: createQuestKeys.editSource(questId),
+        }),
+        queryClient.invalidateQueries({ queryKey: workerHomeKeys.all }),
+      ]);
       return { ok: true };
     } catch (error) {
       const messages = createQuestMessages[locale];
@@ -225,7 +234,7 @@ export function useQuestEdit({
         }),
       };
     }
-  }, [cancelMutation, locale, questId]);
+  }, [cancelMutation, locale, queryClient, questId]);
 
   const saveState = saveMutation.isPending
     ? "saving"

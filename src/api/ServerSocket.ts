@@ -47,6 +47,12 @@ type NativeWebSocketConstructor = new (
   options: { headers: Record<string, string> }
 ) => WebSocket;
 
+const activeSockets = new Set<ServerSocket>();
+
+export function closeAllServerSockets(): void {
+  for (const socket of [...activeSockets]) socket.close();
+}
+
 const MAX_RECONNECT_DELAY_MS = 15_000;
 // Client message (1008), session expiry (4401), denied Origin or access (4403).
 const TERMINAL_CLOSE_CODES = [1008, 4401, 4403];
@@ -97,6 +103,9 @@ export function openServerSocket(
 
   const stop = (code: number | null, reason: string) => {
     active = false;
+    if (reconnectTimer !== null) clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+    activeSockets.delete(serverSocket);
     debugLog("socket", `close ${path}`, {
       code,
       reason,
@@ -104,6 +113,23 @@ export function openServerSocket(
       attempt: 0,
     });
     handlers.onClose?.({ code, reason, terminal: true, attempt: 0 });
+  };
+  const serverSocket: ServerSocket = {
+    send(frame) {
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        throw new Error("Connection is not ready.");
+      }
+      socket.send(JSON.stringify(frame));
+    },
+    close() {
+      if (!active) return;
+      active = false;
+      if (reconnectTimer !== null) clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+      activeSockets.delete(serverSocket);
+      socket?.close();
+      socket = null;
+    },
   };
 
   const scheduleReconnect = (code: number | null, reason: string) => {
@@ -175,21 +201,7 @@ export function openServerSocket(
     };
   };
 
+  activeSockets.add(serverSocket);
   connect();
-
-  return {
-    send(frame) {
-      if (!socket || socket.readyState !== WebSocket.OPEN) {
-        throw new Error("Connection is not ready.");
-      }
-      socket.send(JSON.stringify(frame));
-    },
-    close() {
-      active = false;
-      if (reconnectTimer !== null) clearTimeout(reconnectTimer);
-      reconnectTimer = null;
-      socket?.close();
-      socket = null;
-    },
-  };
+  return serverSocket;
 }

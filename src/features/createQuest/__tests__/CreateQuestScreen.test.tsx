@@ -9,6 +9,7 @@ import mockReact, { type ReactElement, type ReactNode } from "react";
 import CreateQuestScreen from "../CreateQuestScreen";
 import { measureFieldRelativeToScroll } from "../components/createQuestFocus";
 import { initialDraft, toBangkokDateTime } from "../domain/createQuestModel";
+import { workerHomeKeys } from "@/features/workerHome/api/workerHomeKeys";
 import { createQuestKeys } from "../api/createQuestQueries";
 jest.mock("react-native/Libraries/Modal/Modal", () => {
   return {
@@ -170,16 +171,6 @@ jest.mock("@/features/questBoard/api/questBoardQueries", () => ({
   }),
 }));
 
-jest.mock("@/features/createQuest/api/createQuestQueries", () => ({
-  ...jest.requireActual("@/features/createQuest/api/createQuestQueries"),
-  useCancelQuestMutation: () => ({
-    mutateAsync: mockCancelQuest,
-    isPending: false,
-    isSuccess: false,
-    isError: false,
-    variables: undefined,
-  }),
-}));
 jest.mock("@/features/wallet/api/walletQueries", () => {
   const actual = jest.requireActual("@/features/wallet/api/walletQueries");
   return {
@@ -1520,8 +1511,14 @@ describe("CreateQuestScreen", () => {
     expect(view.queryByText("server edit details")).toBeNull();
   });
 
-  it("keeps and confirms server Quest cancellation through visible dialogs", async () => {
+  it("keeps and confirms server Quest cancellation through visible dialogs and invalidates edit reads", async () => {
     const view = await renderServerEditQuest();
+    const queryClient = screenQueryClientHolder.current;
+    if (!queryClient) throw new Error("Query client was not captured");
+    const editSourceKey = createQuestKeys.editSource("server-quest-1");
+    queryClient.setQueryData(editSourceKey, serverQuestDetailFixture);
+    queryClient.setQueryData(workerHomeKeys.all, { cached: true });
+    const editReadCallCount = mockGetQuestDetail.mock.calls.length;
 
     await fireEvent.press(view.getByTestId("edit-quest-cancel"));
     expect(view.getByText("ยกเลิกเควสต์นี้หรือไม่?")).toBeTruthy();
@@ -1550,6 +1547,10 @@ describe("CreateQuestScreen", () => {
       })
     );
     expect(await view.findByText("ยกเลิกเควสต์แล้ว")).toBeTruthy();
+    expect(mockGetQuestDetail).toHaveBeenCalledTimes(editReadCallCount + 1);
+    expect(queryClient.getQueryState(workerHomeKeys.all)?.isInvalidated).toBe(
+      true
+    );
     expect(
       view.getByText("เควสต์ถูกยกเลิกและระบบดำเนินการ settlement เรียบร้อยแล้ว")
     ).toBeTruthy();

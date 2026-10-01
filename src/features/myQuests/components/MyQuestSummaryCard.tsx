@@ -1,4 +1,3 @@
-import React from "react";
 import { Pressable, Text, View } from "@/tw";
 import {
   BriefcaseBusiness,
@@ -12,6 +11,7 @@ import {
   MapPin,
   Pencil,
   Settings2,
+  ShieldCheck,
   Star,
   TriangleAlert,
   UsersRound,
@@ -59,6 +59,7 @@ const ACTION_ICONS: Record<QuestCardAction, LucideIcon> = {
   edit: Pencil,
   manage: Settings2,
   review: Star,
+  proofReview: ShieldCheck,
   dispute: TriangleAlert,
 };
 
@@ -66,6 +67,7 @@ const ACTION_MESSAGE_KEYS = {
   edit: "edit",
   manage: "manage",
   review: "review",
+  proofReview: "proofReview",
   dispute: "fileDispute",
 } as const satisfies Record<QuestCardAction, keyof MyQuestMessages>;
 
@@ -241,6 +243,24 @@ export function MyQuestSummaryCard({
             <CircleX color={palette.dangerDark} size={16} strokeWidth={2.2} />
             <Text className="font-ku-semibold text-ku-meta leading-[18px] text-ku-danger-dark">
               {messages.cancelQuest}
+            </Text>
+          </Pressable>
+        ) : null}
+        {quest.canReviewProof ? (
+          <Pressable
+            accessibilityLabel={`${messages.proofReview}: ${quest.title}`}
+            accessibilityRole="button"
+            className="min-h-[48px] flex-row items-center justify-center gap-ku-xs rounded-ku-pill border border-ku-border px-ku-14"
+            onPress={() => onAction("proofReview")}
+            testID={`my-quest-list-proof-review-${quest.id}`}
+          >
+            <ShieldCheck
+              color={palette.textStrong}
+              size={16}
+              strokeWidth={2.2}
+            />
+            <Text className="font-ku-semibold text-ku-meta leading-[18px] text-ku-text-strong">
+              {messages.proofReview}
             </Text>
           </Pressable>
         ) : null}

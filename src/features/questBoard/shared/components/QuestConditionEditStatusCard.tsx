@@ -1,3 +1,4 @@
+import { serverNow } from "@/api/serverClock";
 import React, { useEffect, useState } from "react";
 
 import { Text, View } from "@/tw";
@@ -26,13 +27,13 @@ export function QuestConditionEditStatusCard({
   editRequest,
   messages,
 }: QuestConditionEditStatusCardProps) {
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(() => serverNow());
   const deadlineMs = new Date(editRequest.expiresAt).getTime();
   const hasLiveDeadline = Number.isFinite(deadlineMs) && deadlineMs > now;
 
   useEffect(() => {
     if (!hasLiveDeadline) return undefined;
-    const interval = setInterval(() => setNow(Date.now()), 1000);
+    const interval = setInterval(() => setNow(serverNow()), 1000);
     return () => clearInterval(interval);
   }, [hasLiveDeadline]);
 

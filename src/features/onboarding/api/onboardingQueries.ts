@@ -26,6 +26,7 @@ type OptionalCollectionResult<T> = {
 export interface OnboardingQueryData {
   form: ProfileDraft;
   options: AcademicRegistrationOptions;
+  completed: boolean;
   unavailableCollections: UnavailableProfileCollections;
 }
 
@@ -98,6 +99,7 @@ async function loadOnboardingData(
       fallbackName: session.user.name,
       fallbackImage: session.user.image ?? "",
     }),
+    completed: status.completed,
     options: academicOptions,
     unavailableCollections: {
       ...(certificatesResult.unavailable ? { certificates: true } : {}),

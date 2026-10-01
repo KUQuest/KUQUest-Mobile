@@ -123,7 +123,6 @@ function createSnapshot(
       canCancel: false,
       canReviewProof: false,
       canCreateReview: false,
-      canUpdateReview: false,
     },
     ...overrides,
   };

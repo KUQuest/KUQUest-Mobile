@@ -54,7 +54,6 @@ export interface LiveQuestCapabilities {
   canCancel: boolean;
   canReviewProof: boolean;
   canCreateReview: boolean;
-  canUpdateReview: boolean;
 }
 
 export type LiveQuestAssignment = Omit<

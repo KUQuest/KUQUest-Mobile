@@ -9,6 +9,7 @@ import {
   SweetAlertVariant,
 } from "@/components/ui/SweetAlert";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
+import { QuestStatus } from "@/domain/questLifecycle";
 import { formatSatang } from "@/domain/satang";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useCancelQuestMutation } from "@/features/questBoard/api/questBoardQueries";
@@ -17,7 +18,10 @@ import { useFileDispute } from "@/features/questBoard/dispute/useFileDispute";
 import { myQuestMessages } from "@/locales/myQuestMessages";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { spacing } from "@/theme/spacing";
-import { useMyHirerQuestsQuery } from "../api/myQuestsQueries";
+import {
+  useMyHirerProofReviewableIdsQuery,
+  useMyHirerQuestsQuery,
+} from "../api/myQuestsQueries";
 import {
   projectMyQuestWorkspace,
   type MyQuestTab,
@@ -27,6 +31,7 @@ import type { QuestCardAction, QuestSummary } from "../myQuestTypes";
 const ACTION_PATHNAMES = {
   edit: "/quest/[id]/edit",
   manage: "/quest/[id]/manage",
+  proofReview: "/quest/[id]/proof-review",
 } as const satisfies Record<
   Exclude<QuestCardAction, "dispute" | "review">,
   string
@@ -49,6 +54,24 @@ export function useMyQuestListController({
   );
   const hirerQuery = useMyHirerQuestsQuery();
   const hirerQuests = hirerQuery.data ?? null;
+  const failedQuestIds = useMemo(
+    () =>
+      (hirerQuests ?? [])
+        .filter(
+          (quest) =>
+            quest.state === QuestStatus.QUEST_FAILED && quest.proofRequired
+        )
+        .map((quest) => quest.id),
+    [hirerQuests]
+  );
+  const proofReviewableIdsQuery = useMyHirerProofReviewableIdsQuery(
+    failedQuestIds,
+    requestedTab === "completed"
+  );
+  const proofReviewableQuestIds = useMemo(() => {
+    if (proofReviewableIdsQuery.isError) return new Set<string>();
+    return new Set(proofReviewableIdsQuery.data ?? []);
+  }, [proofReviewableIdsQuery.data, proofReviewableIdsQuery.isError]);
   const tagQuery = useQuestTagsQuery(Boolean(hirerQuests?.length));
   const tagCatalog = useMemo(() => tagQuery.data ?? [], [tagQuery.data]);
   const projection = useMemo(
@@ -58,8 +81,9 @@ export function useMyQuestListController({
         locale,
         hirerQuests,
         tagCatalog,
+        proofReviewableQuestIds,
       }),
-    [hirerQuests, locale, requestedTab, tagCatalog]
+    [hirerQuests, locale, proofReviewableQuestIds, requestedTab, tagCatalog]
   );
 
   const {

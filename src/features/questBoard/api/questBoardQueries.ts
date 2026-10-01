@@ -810,13 +810,23 @@ export function useCancelQuestMutation() {
       idempotencyKey?: string;
     }) => liveQuestService.cancelQuest(questId, idempotencyKey),
     onSuccess: async (_, variables) => {
-      await invalidateQuestReads(
-        queryClient,
-        variables.questId,
-        variables.viewerId,
-        "hirer"
-      );
-      await invalidateWalletQueries(queryClient);
+      await Promise.all([
+        invalidateQuestReads(
+          queryClient,
+          variables.questId,
+          variables.viewerId,
+          "hirer"
+        ),
+        variables.viewerId
+          ? invalidateQuestReads(
+              queryClient,
+              variables.questId,
+              variables.viewerId,
+              "worker"
+            )
+          : Promise.resolve(),
+        invalidateWalletQueries(queryClient),
+      ]);
     },
   });
 }

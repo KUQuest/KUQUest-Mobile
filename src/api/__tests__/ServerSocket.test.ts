@@ -1,4 +1,4 @@
-import { openServerSocket } from "@/api/ServerSocket";
+import { closeAllServerSockets, openServerSocket } from "@/api/ServerSocket";
 import { authClient } from "@/features/auth/authClient";
 import { installMockWebSocket, MockWebSocket } from "@/testing/mockWebSocket";
 
@@ -169,6 +169,26 @@ describe("openServerSocket", () => {
     expect(MockWebSocket.instances).toHaveLength(1);
     expect(onFrame).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
+  });
+  it("closes all handles, stops reconnecting, and permits new sockets", () => {
+    const first = openServerSocket("/first", { onFrame: jest.fn() });
+    const second = openServerSocket("/second", { onFrame: jest.fn() });
+    const firstNative = MockWebSocket.instances[0];
+    const secondNative = MockWebSocket.instances[1];
+
+    secondNative.disconnect(1006);
+    closeAllServerSockets();
+    closeAllServerSockets();
+    jest.advanceTimersByTime(60_000);
+
+    expect(firstNative.close).toHaveBeenCalledTimes(1);
+    expect(MockWebSocket.instances).toHaveLength(2);
+
+    const next = openServerSocket("/next", { onFrame: jest.fn() });
+    expect(MockWebSocket.instances).toHaveLength(3);
+    next.close();
+    first.close();
+    second.close();
   });
 
   it("sends JSON only while open", () => {

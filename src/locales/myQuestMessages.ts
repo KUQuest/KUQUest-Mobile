@@ -15,6 +15,7 @@ export interface MyQuestMessages {
   emptyDescription: string;
   edit: string;
   review: string;
+  proofReview: string;
   detail: string;
   manage: string;
   fileDispute: string;
@@ -72,6 +73,7 @@ export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
     emptyDescription: "เควสต์ที่ตรงกับสถานะนี้จะแสดงที่นี่",
     edit: "แก้ไข",
     review: "เขียนรีวิว",
+    proofReview: "ตรวจสอบหลักฐาน",
     detail: "ดูรายละเอียด",
     manage: "จัดการเควสต์",
     fileDispute: "ยื่นข้อพิพาท",
@@ -127,6 +129,7 @@ export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
     emptyDescription: "Quests in this status will appear here",
     edit: "Edit",
     review: "Write review",
+    proofReview: "Review proof",
     detail: "View details",
     manage: "Manage",
     fileDispute: "File dispute",

@@ -175,7 +175,6 @@ function createSnapshot(
       canCancel: true,
       canReviewProof: false,
       canCreateReview: false,
-      canUpdateReview: false,
     },
     ...overrides,
   };
@@ -495,9 +494,9 @@ describe("HirerQuestManageRoute condition edit", () => {
     await fireEvent.press(
       await view.findByTestId("candidate-review-accept-app-1")
     );
-    await fireEvent.press(
-      view.getByRole("button", { name: groupQuestMessages.en.selectProposal })
-    );
+    expect(
+      view.queryByRole("button", { name: groupQuestMessages.en.selectProposal })
+    ).toBeNull();
     expect(liveQuestService.selectApplication).toHaveBeenCalledTimes(1);
     await act(async () => {
       finishSelection();

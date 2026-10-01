@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ActivityIndicator, View } from "@/tw";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { setUnauthorizedHandler } from "@/api/ApiClient";
+import { closeAllServerSockets } from "@/api/ServerSocket";
 
 import { authEnvironment } from "./authEnvironment";
 import { clearSessionCache, useSessionQuery } from "./sessionQueries";
@@ -55,6 +56,7 @@ function AuthRouteCheck({
     setUnauthorizedHandler(() => {
       if (expiredRef.current || !sessionRef.current) return;
       expiredRef.current = true;
+      closeAllServerSockets();
       void authService
         .signOut()
         .catch(() => undefined)

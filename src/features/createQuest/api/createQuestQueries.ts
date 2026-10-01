@@ -119,23 +119,6 @@ export function useEditQuestMutation() {
   });
 }
 
-export function useCancelQuestMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      questId,
-      idempotencyKey,
-    }: {
-      questId: string;
-      idempotencyKey: string;
-    }) => questApi.cancelQuest(questId, idempotencyKey),
-    onSuccess: async (_, variables) => {
-      await invalidateQuestReads(queryClient, variables.questId);
-      await invalidateWalletQueries(queryClient);
-    },
-  });
-}
-
 export function useCreateQuestMutation() {
   const queryClient = useQueryClient();
   return useMutation({

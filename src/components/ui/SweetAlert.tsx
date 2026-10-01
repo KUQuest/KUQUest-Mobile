@@ -140,12 +140,34 @@ interface SweetAlertRequest {
   onConfirm?: () => void;
 }
 
-const useSweetAlertStore = create<{ current: SweetAlertRequest | null }>(
-  () => ({ current: null })
-);
+type SweetAlertState = {
+  current: SweetAlertRequest | null;
+  queue: SweetAlertRequest[];
+};
+
+const useSweetAlertStore = create<SweetAlertState>(() => ({
+  current: null,
+  queue: [],
+}));
+
+function advanceSweetAlert(expected: SweetAlertRequest | null): boolean {
+  if (!expected) return false;
+  let advanced = false;
+  useSweetAlertStore.setState((state) => {
+    if (state.current !== expected) return state;
+    advanced = true;
+    return {
+      current: state.queue[0] ?? null,
+      queue: state.queue.slice(1),
+    };
+  });
+  return advanced;
+}
 
 export function showSweetAlert(alert: SweetAlertRequest): void {
-  useSweetAlertStore.setState({ current: alert });
+  useSweetAlertStore.setState((state) =>
+    state.current ? { queue: [...state.queue, alert] } : { current: alert }
+  );
 }
 
 export function showConfirmModal({
@@ -192,7 +214,10 @@ export function SweetAlertHost() {
   const { locale } = useLocale();
   const messages = alertMessages[locale];
   const onConfirm = current?.onConfirm;
-  useEffect(() => () => useSweetAlertStore.setState({ current: null }), []);
+  useEffect(
+    () => () => useSweetAlertStore.setState({ current: null, queue: [] }),
+    []
+  );
   return (
     <SweetAlert
       buttonLabel={current?.buttonLabel ?? messages.dismiss}
@@ -206,14 +231,12 @@ export function SweetAlertHost() {
       }
       onClose={() => {
         const onClose = current?.onClose;
-        useSweetAlertStore.setState({ current: null });
-        onClose?.();
+        if (advanceSweetAlert(current)) onClose?.();
       }}
       onConfirm={
         onConfirm
           ? () => {
-              useSweetAlertStore.setState({ current: null });
-              onConfirm();
+              if (advanceSweetAlert(current)) onConfirm();
             }
           : undefined
       }

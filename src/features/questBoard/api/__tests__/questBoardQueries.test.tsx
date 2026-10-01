@@ -146,7 +146,7 @@ describe("quest board query ownership", () => {
     queryClient.clear();
   });
 
-  it("invalidates Hirer projections and every live snapshot edit variant", async () => {
+  it("returns cancellation result, calls service with its key, and invalidates Hirer and Worker projections", async () => {
     const queryClient = new QueryClient();
     const viewerId = "viewer-1";
     const questId = "quest-1";
@@ -171,25 +171,34 @@ describe("quest board query ownership", () => {
       queryClient.setQueryData(key, { cached: true });
     }
 
-    jest.mocked(liveQuestService.cancelQuest).mockResolvedValue({} as never);
+    const cancellation = { state: "QUEST_CANCELLED" };
+    jest
+      .mocked(liveQuestService.cancelQuest)
+      .mockResolvedValue(cancellation as never);
     const { result } = await renderHook(() => useCancelQuestMutation(), {
       wrapper: wrapper(queryClient),
     });
 
     await act(async () => {
-      await result.current.mutateAsync({ questId, viewerId });
+      await expect(
+        result.current.mutateAsync({
+          questId,
+          viewerId,
+          idempotencyKey: "cancel-key",
+        })
+      ).resolves.toBe(cancellation);
     });
 
     for (const key of hirerKeys) {
       expect(queryClient.getQueryState(key)?.isInvalidated).toBe(true);
     }
     for (const key of workerKeys) {
-      expect(queryClient.getQueryState(key)?.isInvalidated).not.toBe(true);
+      expect(queryClient.getQueryState(key)?.isInvalidated).toBe(true);
     }
     expect(queryClient.getQueryState(chatKey)?.isInvalidated).not.toBe(true);
     expect(liveQuestService.cancelQuest).toHaveBeenCalledWith(
       questId,
-      undefined
+      "cancel-key"
     );
     queryClient.clear();
   });

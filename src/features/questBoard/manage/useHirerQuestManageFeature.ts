@@ -30,6 +30,7 @@ import { formatSatang } from "@/domain/satang";
 import { myQuestMessages } from "@/locales/myQuestMessages";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { getLocalizedErrorMessage } from "@/utils/error";
+import { useCandidateSelection } from "@/features/questBoard/useCandidateSelection";
 import {
   isHirerActor,
   QuestEditRequestStatus,
@@ -64,10 +65,56 @@ export function useHirerQuestManageFeature(questId?: string) {
   const decideUnderfilledMutation = useDecideUnderfilledMutation();
   const cancelQuestMutation = useCancelQuestMutation();
   const createEditRequestMutation = useCreateEditRequestMutation();
-  const snapshot = snapshotQuery.data;
-  const refetchSnapshot = snapshotQuery.refetch;
   const inFlightRef = useRef(false);
   const keyRef = useRef<{ scope: string; key: string } | null>(null);
+  const selection = useCandidateSelection({
+    questId: snapshotQuery.data?.quest.id,
+    messages,
+    groupMessages,
+    flightRef: inFlightRef,
+    onSelect: ({ kind, proposalId }) => {
+      const snapshot = snapshotQuery.data;
+      if (!snapshot)
+        return Promise.reject(new Error("Quest snapshot is required"));
+      const scope = `select-${kind}:${proposalId}`;
+      const key =
+        keyRef.current?.scope === scope
+          ? keyRef.current.key
+          : createQuestIdempotencyKey();
+      keyRef.current = { scope, key };
+      return kind === "application"
+        ? selectApplicationMutation.mutateAsync({
+            questId: snapshot.quest.id,
+            applicationId: proposalId,
+            viewerId,
+            idempotencyKey: key,
+          })
+        : selectCandidateTeamMutation.mutateAsync({
+            questId: snapshot.quest.id,
+            teamId: proposalId,
+            viewerId,
+            idempotencyKey: key,
+          });
+    },
+    onSuccess: () => {
+      keyRef.current = null;
+      setCandidateOpen(false);
+    },
+    onError: async (caught) => {
+      if (
+        caught instanceof ApiError &&
+        caught.status >= 400 &&
+        caught.status < 500
+      ) {
+        keyRef.current = null;
+      }
+      await refetchSnapshot();
+      showErrorAlert(messages.actionFailedTitle, caught);
+    },
+    onBusyChange: setCommandBusy,
+  });
+  const snapshot = snapshotQuery.data;
+  const refetchSnapshot = snapshotQuery.refetch;
   const viewerCommand = useCallback(
     async (
       scope: string,
@@ -151,44 +198,10 @@ export function useHirerQuestManageFeature(questId?: string) {
       }),
     });
   };
-  const selectApplication = (id: string) => {
-    if (!snapshot) return;
-    showConfirmModal({
-      title: messages.confirmSelectCandidateTitle,
-      message: messages.confirmSelectCandidateMessage,
-      confirmLabel: groupMessages.selectProposal,
-      cancelLabel: groupMessages.cancel,
-      onConfirm: () =>
-        void viewerCommand(`select-application:${id}`, async (key) => {
-          await selectApplicationMutation.mutateAsync({
-            questId: snapshot.quest.id,
-            applicationId: id,
-            viewerId,
-            idempotencyKey: key,
-          });
-          setCandidateOpen(false);
-        }),
-    });
-  };
-  const selectTeam = (id: string) => {
-    if (!snapshot) return;
-    showConfirmModal({
-      title: messages.confirmSelectTeamTitle,
-      message: messages.confirmSelectTeamMessage,
-      confirmLabel: groupMessages.selectProposal,
-      cancelLabel: groupMessages.cancel,
-      onConfirm: () =>
-        void viewerCommand(`select-team:${id}`, async (key) => {
-          await selectCandidateTeamMutation.mutateAsync({
-            questId: snapshot.quest.id,
-            teamId: id,
-            viewerId,
-            idempotencyKey: key,
-          });
-          setCandidateOpen(false);
-        }),
-    });
-  };
+  const selectApplication = (id: string) =>
+    selection.confirmSelection({ kind: "application", proposalId: id });
+  const selectTeam = (id: string) =>
+    selection.confirmSelection({ kind: "team", proposalId: id });
   const runCancel = () => {
     if (!snapshot) return;
     void viewerCommand("cancel", async (key) => {

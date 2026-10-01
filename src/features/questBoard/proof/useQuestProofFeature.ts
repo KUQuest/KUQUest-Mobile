@@ -1,3 +1,4 @@
+import { serverNow } from "@/api/serverClock";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { showConfirmModal } from "@/components/ui/SweetAlert";
@@ -125,7 +126,7 @@ export function useQuestProofFeature({
   const [retryAssets, setRetryAssets] = useState<
     Record<number, ProofDraftAsset>
   >({});
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(() => serverNow());
   const [commandError, setCommandError] = useState<string | null>(null);
   const snapshotError = snapshotQuery.error
     ? getLocalizedErrorMessage(snapshotQuery.error, locale, {
@@ -136,7 +137,7 @@ export function useQuestProofFeature({
 
   useEffect(() => {
     if (!snapshot?.dueAt) return undefined;
-    const timer = setInterval(() => setNow(Date.now()), 30_000);
+    const timer = setInterval(() => setNow(serverNow()), 30_000);
     return () => clearInterval(timer);
   }, [snapshot?.dueAt]);
 

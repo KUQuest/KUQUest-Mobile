@@ -63,6 +63,23 @@ function createTemporaryAttachmentId(): string {
 function fallbackAttachmentName(uri: string): string {
   return fileNameFromUri(uri, `chat-${Date.now()}.jpg`);
 }
+function getAttachmentUploadErrorMessage(
+  error: unknown,
+  locale: Parameters<typeof getLocalizedErrorMessage>[1]
+): string {
+  const messages = chatMessages[locale];
+  if (error instanceof ApiError && error.status === 429) {
+    const retryAfterMs = error.retryAfterMs;
+    return typeof retryAfterMs === "number" &&
+      Number.isFinite(retryAfterMs) &&
+      retryAfterMs >= 0
+      ? messages.attachmentRateLimitedWait(Math.ceil(retryAfterMs / 1000))
+      : messages.attachmentRateLimited;
+  }
+  return getLocalizedErrorMessage(error, locale, {
+    fallback: messages.loadError,
+  });
+}
 
 type ChatRouteSearchParams = Partial<
   Record<keyof ChatRouteParams, string | string[]>
@@ -576,9 +593,7 @@ export function useChatConversationController(
       (error) => {
         showErrorAlert(
           messages.addAttachment,
-          getLocalizedErrorMessage(error, locale, {
-            fallback: messages.loadError,
-          })
+          getAttachmentUploadErrorMessage(error, locale)
         );
       }
     );
@@ -592,9 +607,7 @@ export function useChatConversationController(
           void pickAttachment("camera").catch((error: unknown) => {
             showErrorAlert(
               messages.addAttachment,
-              getLocalizedErrorMessage(error, locale, {
-                fallback: messages.loadError,
-              })
+              getAttachmentUploadErrorMessage(error, locale)
             );
           });
         },
@@ -605,9 +618,7 @@ export function useChatConversationController(
           void pickAttachment("library").catch((error: unknown) => {
             showErrorAlert(
               messages.addAttachment,
-              getLocalizedErrorMessage(error, locale, {
-                fallback: messages.loadError,
-              })
+              getAttachmentUploadErrorMessage(error, locale)
             );
           });
         },
@@ -618,9 +629,7 @@ export function useChatConversationController(
           void pickAttachment("file").catch((error: unknown) => {
             showErrorAlert(
               messages.addAttachment,
-              getLocalizedErrorMessage(error, locale, {
-                fallback: messages.loadError,
-              })
+              getAttachmentUploadErrorMessage(error, locale)
             );
           });
         },

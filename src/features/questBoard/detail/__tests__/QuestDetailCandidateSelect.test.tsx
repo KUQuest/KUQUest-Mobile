@@ -178,10 +178,10 @@ describe("live Candidate selection from Quest Detail", () => {
     expect(selectProposal).not.toHaveBeenCalled();
 
     const confirmation = mockShowConfirm.mock.calls[0]?.[0] as {
-      onConfirm: () => void;
+      onConfirm: () => void | Promise<void>;
     };
     await act(async () => {
-      confirmation.onConfirm();
+      await Promise.all([confirmation.onConfirm(), confirmation.onConfirm()]);
     });
 
     await waitFor(() => {

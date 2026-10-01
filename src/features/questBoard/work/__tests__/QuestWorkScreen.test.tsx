@@ -1,3 +1,4 @@
+import { resetServerClock, syncServerClock } from "@/api/serverClock";
 import { Fragment, useState } from "react";
 import { act, fireEvent, waitFor } from "@testing-library/react-native";
 
@@ -204,7 +205,6 @@ const defaultCapabilities = {
   canCancel: false,
   canReviewProof: false,
   canCreateReview: false,
-  canUpdateReview: false,
 } satisfies LiveQuestSnapshot["capabilities"];
 
 function makeSnapshot(overrides: SnapshotOverrides = {}): LiveQuestSnapshot {
@@ -255,6 +255,99 @@ describe("QuestWorkScreen", () => {
     mockIsMutating.mockReturnValue(0);
     mockedRespondToEdit.mockResolvedValue(makeSnapshot().editRequest as never);
   });
+  afterEach(() => {
+    jest.useRealTimers();
+    resetServerClock();
+    jest.restoreAllMocks();
+  });
+  it("gates Start Work with Server time at both boundaries despite device clock skew", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-10-01T00:00:00.000Z"));
+    const quest = {
+      startTime: "2099-08-26T09:00:00+07:00",
+      dueAt: "2099-08-26T10:00:00+07:00",
+    };
+    mockedGetSnapshot.mockImplementation(async () =>
+      makeSnapshot({
+        quest,
+        dueAt: quest.dueAt,
+        capabilities: { canStartWork: true },
+      })
+    );
+
+    syncServerClock("2099-08-26T08:59:59+07:00", null);
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    expect(view.queryByRole("button", { name: "Start Work" })).toBeNull();
+
+    syncServerClock("2099-08-26T09:00:00+07:00", null);
+    await act(async () => jest.advanceTimersByTime(1_000));
+    expect(
+      await view.findByRole("button", { name: "Start Work" })
+    ).toBeTruthy();
+
+    syncServerClock("2099-08-26T10:00:00+07:00", null);
+    await act(async () => jest.advanceTimersByTime(1_000));
+    expect(view.queryByRole("button", { name: "Start Work" })).toBeNull();
+  });
+  it("refreshes the Work Hub countdown using Server time", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-10-01T00:00:00.000Z"));
+    const serverNow = "2099-08-26T09:00:00+07:00";
+    const dueAt = "2099-08-26T09:01:30+07:00";
+    syncServerClock(serverNow, null);
+    mockedGetSnapshot.mockImplementation(async () =>
+      makeSnapshot({
+        dueAt,
+        quest: { dueAt },
+      })
+    );
+
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    expect(await view.findByText("1m remaining")).toBeTruthy();
+
+    await act(async () => jest.advanceTimersByTime(91_000));
+    expect(view.getByText("Due now")).toBeTruthy();
+  });
+  it("refreshes server state once when Start Work deadline expires", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-10-01T00:00:00.000Z"));
+    const startTime = "2099-08-26T09:00:00+07:00";
+    const dueAt = "2099-08-26T10:00:00+07:00";
+    let snapshotReads = 0;
+    mockedGetSnapshot.mockImplementation(async () => {
+      snapshotReads += 1;
+      return makeSnapshot({
+        state: snapshotReads === 1 ? "QUEST_ASSIGNED" : "QUEST_FAILED",
+        quest: { startTime, dueAt },
+        dueAt,
+        capabilities: { canStartWork: true },
+      });
+    });
+    syncServerClock("2099-08-26T09:59:59+07:00", null);
+    mockMineDisputeQuery.mockReturnValue({
+      isPending: false,
+      isError: false,
+      isSuccess: true,
+      isFetching: false,
+      data: { case: null },
+      refetch: jest.fn(),
+    });
+
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    expect(await view.findByText("Assigned")).toBeTruthy();
+
+    await act(async () => jest.advanceTimersByTime(1_000));
+
+    expect(await view.findByText("Archived")).toBeTruthy();
+    expect(snapshotReads).toBe(2);
+  });
+
   it("confirms before leaving with an unsent proof", async () => {
     mockedGetSnapshot.mockResolvedValue(
       makeSnapshot({ capabilities: { canSubmitProof: true } })

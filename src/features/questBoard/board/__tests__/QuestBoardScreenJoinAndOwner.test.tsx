@@ -90,10 +90,10 @@ const mockQuestItem: QuestBoardQuest = {
   rewardSatang: 15000,
   headcount: 2,
   acceptedParticipants: 0,
-  startDate: "2026-10-01",
-  deadline: "2026-10-02",
+  startDate: "2099-10-01",
+  deadline: "2099-10-02",
   timeRange: "09:00–12:00",
-  postedAt: "2026-09-16T10:00:00+07:00",
+  postedAt: "2099-09-16T10:00:00+07:00",
   location: "Main Campus",
   locationMode: "on-campus",
 
@@ -175,7 +175,6 @@ function createLiveSnapshot(
       canCancel: false,
       canReviewProof: false,
       canCreateReview: false,
-      canUpdateReview: false,
     },
     ...overrides,
   };
@@ -365,7 +364,13 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
     });
 
     const view = await render(
-      <QuestDetailScreen questId="quest-live-1" studentId="current-worker-1" />
+      <>
+        <QuestDetailScreen
+          questId="quest-live-1"
+          studentId="current-worker-1"
+        />
+        <SweetAlertHost />
+      </>
     );
 
     await waitFor(() => {
@@ -411,7 +416,13 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
     });
 
     const view = await render(
-      <QuestDetailScreen questId="quest-live-1" studentId="current-worker-1" />
+      <>
+        <QuestDetailScreen
+          questId="quest-live-1"
+          studentId="current-worker-1"
+        />
+        <SweetAlertHost />
+      </>
     );
 
     await waitFor(() =>
