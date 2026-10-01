@@ -1,4 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react-native";
+import { authClient } from "@/features/auth/authClient";
+import { MockWebSocket } from "@/testing/mockWebSocket";
+import { closeAllServerSockets } from "@/api/ServerSocket";
 
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import { questBoardMessages } from "@/locales/questBoardMessages";
@@ -8,6 +11,7 @@ import { useHirerQuestManageFeature } from "../useHirerQuestManageFeature";
 const mockShowConfirm = jest.fn();
 const mockSelectApplication = jest.fn();
 const mockSelectTeam = jest.fn();
+const mockInvalidateQueries = jest.fn();
 const mockSnapshotQuery = {
   data: {
     quest: {
@@ -45,7 +49,9 @@ jest.mock("@/components/ui/SweetAlert", () => ({
 }));
 
 jest.mock("expo-router", () => ({ useRouter: () => ({ push: jest.fn() }) }));
-jest.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({}) }));
+jest.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({ invalidateQueries: mockInvalidateQueries }),
+}));
 jest.mock("@/features/auth/sessionQueries", () => ({
   useSessionQuery: () => ({ data: { user: { id: "hirer-1" } } }),
 }));
@@ -53,6 +59,14 @@ jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
 jest.mock("@/features/questBoard/api/questBoardQueries", () => ({
+  questBoardKeys: {
+    liveSnapshotScope: (questId: string, viewerId: string) => [
+      "questBoard",
+      "live-snapshot",
+      questId,
+      viewerId,
+    ],
+  },
   setQuestEditRequestId: jest.fn(),
   useCancelQuestMutation: () => ({ mutateAsync: jest.fn() }),
   useCreateEditRequestMutation: () => ({ mutateAsync: jest.fn() }),
@@ -65,9 +79,67 @@ jest.mock("@/features/questBoard/api/questBoardQueries", () => ({
 describe("Manage candidate selection", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest
+      .spyOn(authClient, "getCookie")
+      .mockReturnValue("better-auth.session_token=session");
     mockSelectApplication.mockResolvedValue({ id: "assignment-1" });
   });
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
+  it("refetches matching snapshot when hirer opens decision window", async () => {
+    const originalApiUrl = process.env.EXPO_PUBLIC_API_URL;
+    const originalWebSocket = globalThis.WebSocket;
+    process.env.EXPO_PUBLIC_API_URL = "https://api.example.test";
+    Object.defineProperty(globalThis, "WebSocket", {
+      configurable: true,
+      value: MockWebSocket,
+    });
+    MockWebSocket.instances = [];
+    closeAllServerSockets();
+
+    let unmount = () => {};
+    try {
+      const hook = await renderHook(() =>
+        useHirerQuestManageFeature("00000000-0000-4000-8000-000000000001")
+      );
+      unmount = hook.unmount;
+      await waitFor(() => expect(MockWebSocket.instances).toHaveLength(1));
+      const socket = MockWebSocket.instances[0];
+      if (!socket) throw new Error("Expected hirer event socket");
+      socket.receive(JSON.stringify({ type: "SUBSCRIBED", version: 1 }));
+      socket.receive(
+        JSON.stringify({
+          type: "HIRER_QUEST_UPDATED",
+          version: 1,
+          questId: "00000000-0000-4000-8000-000000000001",
+          changeType: "UNDERFILLED_DECISION_PENDING",
+          expiresAt: "2026-10-02T04:10:00.000Z",
+        })
+      );
+
+      expect(mockInvalidateQueries).toHaveBeenCalledWith({
+        queryKey: [
+          "questBoard",
+          "live-snapshot",
+          "00000000-0000-4000-8000-000000000001",
+          "hirer-1",
+        ],
+      });
+    } finally {
+      unmount();
+      if (originalApiUrl === undefined) {
+        delete process.env.EXPO_PUBLIC_API_URL;
+      } else {
+        process.env.EXPO_PUBLIC_API_URL = originalApiUrl;
+      }
+      Object.defineProperty(globalThis, "WebSocket", {
+        configurable: true,
+        value: originalWebSocket,
+      });
+    }
+  });
   it("confirms selection, prevents duplicate confirmation, and closes candidate UI after success", async () => {
     const { result } = await renderHook(() =>
       useHirerQuestManageFeature("quest-1")

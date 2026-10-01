@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
@@ -16,6 +17,7 @@ export default function PartialGroupStartConsentScreen(
   props: QuestDetailScreenProps
 ) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { locale } = useLocale();
   const groupMessages = groupQuestMessages[locale];
   const view = useQuestDetailFeature({ ...props, bottomInset: insets.bottom });
@@ -82,7 +84,34 @@ export default function PartialGroupStartConsentScreen(
         <Text className="mt-ku-sm text-ku-body-small text-ku-text-secondary">
           {groupMessages.partialConsentSubtitle}
         </Text>
-        <PartialGroupStartConsentContent {...view.partialStartConsent} />
+        <PartialGroupStartConsentContent
+          {...view.partialStartConsent}
+          originalRewardSatang={
+            view.quest?.rewardPerPerson !== undefined
+              ? Math.round(view.quest.rewardPerPerson * 100)
+              : undefined
+          }
+          originalDueAt={view.quest?.deadline ?? null}
+          onExpire={view.onRetry}
+          onBrowseQuests={() => router.replace("/(tabs)")}
+          onOpenQuest={() => {
+            if (!props.questId) return;
+            router.push({
+              pathname: "/quest/[id]",
+              params: { id: props.questId },
+            });
+          }}
+          onOpenWorkHub={() => {
+            if (!props.questId) return;
+            router.push({
+              pathname: "/quest/[id]/work",
+              params: {
+                id: props.questId,
+                viewerId: view.partialStartConsent.viewerId ?? "",
+              },
+            });
+          }}
+        />
       </View>
     </ScreenLayout>
   );

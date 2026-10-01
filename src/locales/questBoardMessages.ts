@@ -122,6 +122,7 @@ export interface QuestBoardMessages {
   actionFailedDescription: string;
   firstCome: string;
   reviewCandidates: string;
+  nextStep: string;
   applyForReview: string;
   participation: string;
   participants: string;
@@ -155,11 +156,35 @@ export interface QuestBoardMessages {
   applicationPendingDescription: string;
   openWorkHub: string;
   firstComeDescription: string;
+  groupFcfsHeadcount: string;
+  groupFcfsRequestedWorkers: (headcount: number) => string;
+  groupFcfsJoinRule: string;
+  groupFcfsUnderfillRule: string;
+  groupFcfsJoinedProgress: (joined: number, headcount: number) => string;
+  groupFcfsWorkersNeeded: (count: number) => string;
+  groupFcfsAllSpotsFilled: string;
+  groupFcfsFullForOthers: string;
+  groupFcfsYouAreIn: string;
+  groupFcfsConfirmedSpot: string;
+  groupFcfsAllFilledJoined: string;
+  groupFcfsLastSpotTaken: string;
+  groupFcfsUnderfillDecisionPending: string;
+  groupFcfsConsentRequired: string;
+  groupFcfsConsentAction: string;
+  groupFcfsConsentComplete: string;
+  groupFcfsCancelledNextStep: string;
+  joinAlreadyConfirmed: string;
   reviewCandidatesDescription: string;
   proofRequiredDescription: string;
   proofOptionalDescription: string;
   proofNotNeededDescription: string;
   questFull: string;
+  joinQuestNotOpen: string;
+  joinQuestRosterFrozen: string;
+  joinQuestHirerCannotJoin: string;
+  joinQuestMemberRestricted: string;
+  joinQuestModeNotAllowed: string;
+  joinQuestParticipationNotAllowed: string;
   applicationsClosed: string;
   unavailableApplication: string;
   questNotFound: string;
@@ -426,6 +451,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     actionFailedDescription: "The action could not be completed. Try again.",
     firstCome: "First-come, first-served",
     reviewCandidates: "Review candidates",
+    nextStep: "Next step",
     applyForReview: "Apply for review",
     participation: "Participation",
     participants: "Participants",
@@ -467,6 +493,31 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     applicationPendingDescription:
       "The Quest owner will review your application.",
     openWorkHub: "Open Work Hub",
+    groupFcfsHeadcount: "Workers needed",
+    groupFcfsRequestedWorkers: (headcount) =>
+      `${headcount} ${headcount === 1 ? "worker" : "workers"}`,
+    groupFcfsJoinRule: "Workers join one by one — first come, first served.",
+    groupFcfsUnderfillRule:
+      "If too few workers have joined by the start time, the Hirer decides whether to proceed or cancel. If proceeding, every joined Worker must accept the revised pay and due time within 10 minutes; any decline or no response cancels the Quest.",
+    groupFcfsJoinedProgress: (joined, headcount) =>
+      `${joined} of ${headcount} workers joined`,
+    groupFcfsWorkersNeeded: (count) =>
+      `${count} more ${count === 1 ? "worker" : "workers"} needed`,
+    groupFcfsAllSpotsFilled: "All spots filled",
+    groupFcfsFullForOthers: "Full — no more workers can join.",
+    groupFcfsYouAreIn: "You're in",
+    groupFcfsConfirmedSpot: "You're in — your spot is confirmed.",
+    groupFcfsAllFilledJoined: "All spots filled — you're in.",
+    groupFcfsLastSpotTaken: "Someone just took the last spot.",
+    groupFcfsUnderfillDecisionPending:
+      "Not enough workers joined. Waiting for the Hirer's decision.",
+    groupFcfsConsentRequired:
+      "The Hirer chose to proceed. Review the revised pay and due time, then respond before the server deadline.",
+    groupFcfsConsentAction: "Review and respond",
+    groupFcfsConsentComplete:
+      "Everyone accepted the revised terms. The Quest is assigned; open Work Hub for next steps.",
+    groupFcfsCancelledNextStep: "No action is needed. Browse other Quests.",
+    joinAlreadyConfirmed: "You're already in — your spot is confirmed.",
     firstComeDescription: "Anyone can join while a spot is available.",
     reviewCandidatesDescription:
       "The Quest owner reviews applications before choosing participants.",
@@ -476,6 +527,14 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
       "You may submit proof of completion when the Quest is done.",
     proofNotNeededDescription: "No proof of completion is needed.",
     questFull: "Quest full",
+    joinQuestNotOpen: "This quest is no longer open for joining.",
+    joinQuestRosterFrozen:
+      "The worker roster is frozen because work has started.",
+    joinQuestHirerCannotJoin: "Quest owners cannot join their own quest.",
+    joinQuestMemberRestricted:
+      "Your account is temporarily restricted from joining quests.",
+    joinQuestModeNotAllowed: "This quest does not allow direct joining.",
+    joinQuestParticipationNotAllowed: "You are not allowed to join this quest.",
     applicationsClosed: "Applications closed",
     unavailableApplication: "This Quest is no longer accepting applications.",
     questNotFound: "Quest not found",
@@ -822,8 +881,30 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     rosterOpenProfile: (name) => `ดูโปรไฟล์ของ ${name}`,
     actionFailedTitle: "การดำเนินการล้มเหลว",
     actionFailedDescription: "ดำเนินการไม่สำเร็จ โปรดลองอีกครั้ง",
+    groupFcfsJoinRule: "ผู้ทำงานเข้าร่วมทีละคนตามลำดับก่อนหลัง",
+    groupFcfsUnderfillRule:
+      "หากมีผู้ทำงานเข้าร่วมน้อยกว่าที่ต้องการเมื่อถึงเวลาเริ่ม ผู้ว่าจ้างจะเลือกดำเนินการต่อหรือยกเลิก หากดำเนินการต่อ ผู้ทำงานที่เข้าร่วมทุกคนต้องยอมรับค่าตอบแทนและกำหนดส่งใหม่ภายใน 10 นาที หากมีผู้ปฏิเสธหรือไม่ตอบ เควสต์จะถูกยกเลิก",
+    groupFcfsJoinedProgress: (joined, headcount) =>
+      `มีผู้ทำงานเข้าร่วม ${joined} จาก ${headcount} คน`,
+    groupFcfsWorkersNeeded: (count) => `ต้องการผู้ทำงานเพิ่มอีก ${count} คน`,
+    groupFcfsAllSpotsFilled: "ครบจำนวนผู้ทำงานแล้ว",
+    groupFcfsFullForOthers: "ปิดรับแล้ว — ไม่สามารถเข้าร่วมเพิ่มได้",
+    groupFcfsYouAreIn: "คุณเข้าร่วมแล้ว",
+    groupFcfsConfirmedSpot: "คุณเข้าร่วมแล้ว — ยืนยันตำแหน่งของคุณแล้ว",
+    groupFcfsAllFilledJoined: "ผู้ทำงานครบแล้ว — คุณเข้าร่วมแล้ว",
+    groupFcfsLastSpotTaken: "มีคนเพิ่งรับตำแหน่งสุดท้ายไป",
+    groupFcfsUnderfillDecisionPending:
+      "มีผู้ทำงานเข้าร่วมไม่ครบ กำลังรอการตัดสินใจจากผู้ว่าจ้าง",
+    groupFcfsConsentRequired:
+      "ผู้ว่าจ้างเลือกดำเนินการต่อ โปรดตรวจสอบค่าตอบแทนและกำหนดส่งใหม่ แล้วตอบกลับก่อนหมดเวลาตามที่เซิร์ฟเวอร์กำหนด",
+    groupFcfsConsentAction: "ตรวจสอบและตอบกลับ",
+    groupFcfsConsentComplete:
+      "ทุกคนยอมรับเงื่อนไขใหม่แล้ว เควสต์ได้รับมอบหมาย เปิดศูนย์งานเพื่อดูขั้นตอนถัดไป",
+    groupFcfsCancelledNextStep: "ไม่ต้องดำเนินการใด ๆ ดูเควสต์อื่นได้",
+    joinAlreadyConfirmed: "คุณเข้าร่วมแล้ว — ยืนยันตำแหน่งของคุณแล้ว",
     firstCome: "มาก่อนได้ก่อน",
     reviewCandidates: "ตรวจสอบผู้สมัคร",
+    nextStep: "ขั้นตอนถัดไป",
     applyForReview: "สมัครเพื่อรอการคัดเลือก",
     participation: "การเข้าร่วม",
     participants: "ผู้เข้าร่วม",
@@ -864,6 +945,8 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     applicationPendingDescription: "เจ้าของเควสต์จะตรวจสอบใบสมัครของคุณ",
     openWorkHub: "เปิดศูนย์งาน",
     firstComeDescription: "เข้าร่วมได้ทันทีเมื่อยังมีที่ว่าง",
+    groupFcfsHeadcount: "จำนวนผู้ทำงาน",
+    groupFcfsRequestedWorkers: (headcount) => `${headcount} คน`,
     reviewCandidatesDescription:
       "เจ้าของเควสต์จะตรวจสอบใบสมัครก่อนเลือกผู้เข้าร่วม",
     proofRequiredDescription: "คุณต้องส่งหลักฐานการทำงานเมื่อทำเควสต์เสร็จ",
@@ -871,6 +954,12 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
       "คุณสามารถส่งหลักฐานการทำงานเมื่อทำเควสต์เสร็จได้",
     proofNotNeededDescription: "ไม่จำเป็นต้องส่งหลักฐานการทำงาน",
     questFull: "เควสต์เต็มแล้ว",
+    joinQuestNotOpen: "เควสต์นี้ไม่เปิดรับผู้เข้าร่วมแล้ว",
+    joinQuestRosterFrozen: "เริ่มงานแล้วและปิดการเปลี่ยนแปลงผู้ทำงาน",
+    joinQuestHirerCannotJoin: "ผู้ว่าจ้างไม่สามารถเข้าร่วมเควสต์ของตนเองได้",
+    joinQuestMemberRestricted: "บัญชีของคุณถูกจำกัดการเข้าร่วมเควสต์ชั่วคราว",
+    joinQuestModeNotAllowed: "เควสต์นี้ไม่อนุญาตให้เข้าร่วมโดยตรง",
+    joinQuestParticipationNotAllowed: "คุณไม่ได้รับอนุญาตให้เข้าร่วมเควสต์นี้",
     applicationsClosed: "ปิดรับสมัครแล้ว",
     unavailableApplication: "เควสต์นี้ไม่เปิดรับสมัครแล้ว",
     questNotFound: "ไม่พบเควสต์",

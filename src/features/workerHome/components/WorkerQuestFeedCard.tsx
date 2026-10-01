@@ -57,10 +57,24 @@ export function WorkerQuestFeedCard({
   const rewardFormatted =
     rewardSatang > 0 ? formatSatang(rewardSatang, locale) : "—";
   const location = quest.location ?? messages.online;
+  const showCapacity = quest.participation === "GROUP" || quest.headcount > 1;
+  const isFull = quest.activeWorkerCount >= quest.headcount;
+  const capacityLabel = showCapacity
+    ? messages.capacityJoined(quest.activeWorkerCount, quest.headcount)
+    : null;
+  const accessibilityLabel = [
+    quest.title,
+    messages.reward,
+    rewardFormatted,
+    capacityLabel,
+    showCapacity && isFull ? messages.capacityFull : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <Pressable
-      accessibilityLabel={`${quest.title}, ${messages.reward} ${rewardFormatted}`}
+      accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       className={styles.feedCard}
       onPress={handlePress}
@@ -91,29 +105,47 @@ export function WorkerQuestFeedCard({
         </View>
       </View>
       <View className={styles.feedMetaRow}>
-        <View className={styles.feedMetaItem}>
-          <CalendarDays size={15} color={themeColors.textSecondary} />
-          <Text className={styles.feedMetaText} numberOfLines={1}>
-            {`${formattedStartDate} · ${formattedStartTime}`}
-          </Text>
+        <View className="flex-row items-center gap-ku-12">
+          <View className={cn(styles.feedMetaItem, styles.feedDate)}>
+            <CalendarDays size={15} color={themeColors.textSecondary} />
+            <Text className={styles.feedMetaDateText} numberOfLines={1}>
+              {`${formattedStartDate} · ${formattedStartTime}`}
+            </Text>
+          </View>
+          <View className={cn(styles.feedMetaItem, styles.feedMetaGrow)}>
+            <MapPin size={15} color={themeColors.textSecondary} />
+            <Text className={styles.feedMetaText} numberOfLines={1}>
+              {location}
+            </Text>
+          </View>
+          {!showCapacity ? (
+            <ChevronRight
+              color={themeColors.textSecondary}
+              size={18}
+              strokeWidth={2.2}
+            />
+          ) : null}
         </View>
-        <View className={cn(styles.feedMetaItem, styles.feedMetaGrow)}>
-          <MapPin size={15} color={themeColors.textSecondary} />
-          <Text className={styles.feedMetaText} numberOfLines={1}>
-            {location}
-          </Text>
-        </View>
-        <View className={styles.feedMetaItem}>
-          <Users size={15} color={themeColors.textSecondary} />
-          <Text className={styles.feedMetaText} numberOfLines={1}>
-            {`${quest.activeWorkerCount}/${quest.headcount}`}
-          </Text>
-        </View>
-        <ChevronRight
-          color={themeColors.textSecondary}
-          size={18}
-          strokeWidth={2.2}
-        />
+        {showCapacity ? (
+          <View className={styles.feedCapacity}>
+            <View className={styles.feedMetaItem}>
+              <Users size={15} color={themeColors.textSecondary} />
+              <Text className={styles.feedMetaText} numberOfLines={1}>
+                {capacityLabel}
+              </Text>
+            </View>
+            {isFull ? (
+              <Text className={styles.feedFull} numberOfLines={1}>
+                {messages.capacityFull}
+              </Text>
+            ) : null}
+            <ChevronRight
+              color={themeColors.textSecondary}
+              size={18}
+              strokeWidth={2.2}
+            />
+          </View>
+        ) : null}
       </View>
     </Pressable>
   );

@@ -2,6 +2,10 @@ const React = require("react");
 const { jest } = require("@jest/globals");
 const { View, Pressable, Text } = require("react-native");
 
+// package.json keeps queueMicrotask and setImmediate real when timers are faked.
+// React's async renderer needs those queues to flush while countdown tests
+// advance the clock; faking setImmediate stalls them under Node 22.
+
 // React Native's jest Networking mock lacks clearCookies (src/api/ServerSocket.ts).
 require("react-native").NativeModules.Networking.clearCookies = jest.fn();
 

@@ -9,7 +9,7 @@ describe("HirerQuestProgressCard", () => {
     const onOpenWorkerProfile = jest.fn();
     const onViewRoster = jest.fn();
     const onOpenDetails = jest.fn();
-    const { getByText, getByTestId } = await render(
+    const { getAllByText, getByText, getByTestId } = await render(
       <HirerQuestProgressCard
         questId="q1"
         title="Science Project"
@@ -31,6 +31,7 @@ describe("HirerQuestProgressCard", () => {
     expect(getByText("Science Project")).toBeTruthy();
     expect(getByText("Chat Worker")).toBeTruthy();
     expect(getByText(/คณะวิศวกรรมศาสตร์/)).toBeTruthy();
+    expect(getAllByText("รอเริ่มงาน")).toHaveLength(1);
 
     await fireEvent.press(getByTestId("hirer-quest-card-worker-profile-q1"));
     expect(onOpenWorkerProfile).toHaveBeenCalledWith("worker-1");

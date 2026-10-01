@@ -19,6 +19,7 @@ import {
   questV2EditRequestSchema,
   questV2ImagesDataSchema,
   questV2AssignmentsDataSchema,
+  questV2MyAssignmentsDataSchema,
   questV2MineDataSchema,
   questV2ProofCreatePayloadSchema,
   questV2ProofDeleteSchema,
@@ -44,6 +45,7 @@ import {
   questV2TeamListDataSchema,
   questV2TeamSchema,
   questV2TeamFileSchema,
+  questV2TeamFileLinkSchema,
   questV2TeamSelectionSchema,
   questV2ProofFileLinkSchema,
   type QuestV2CandidateApplication,
@@ -52,6 +54,7 @@ import {
   type QuestV2ApplicationSelection,
   type QuestV2Application,
   type QuestV2Assignment,
+  type QuestV2MyAssignment,
   type QuestV2BoardCard,
   type QuestV2CanonicalQuest,
   type QuestV2Completion,
@@ -70,6 +73,7 @@ import {
   type QuestV2StartWork,
   type QuestV2Team,
   type QuestV2TeamFile,
+  type QuestV2TeamFileLink,
   type QuestV2TeamSelection,
   type QuestV2Underfilled,
   questV2UnderfilledSchema,
@@ -278,10 +282,10 @@ export class QuestApi {
   async listMyAssignments(
     status?: QuestV2AssignmentMineStatus,
     options?: RequestOptions
-  ): Promise<QuestV2Assignment[]> {
+  ): Promise<QuestV2MyAssignment[]> {
     const data = await this.client.get(
       "/api/v2/assignments/mine",
-      questV2AssignmentsDataSchema,
+      questV2MyAssignmentsDataSchema,
       { ...options, query: { status } }
     );
     return data.items;
@@ -570,6 +574,18 @@ export class QuestApi {
     return this.client.get(
       `/api/v2/quests/${questId}/teams/${teamId}`,
       questV2TeamSchema,
+      options
+    );
+  }
+  async getCandidateTeamFileLink(
+    questId: string,
+    teamId: string,
+    fileId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2TeamFileLink> {
+    return this.client.get(
+      `/api/v2/quests/${questId}/teams/${teamId}/files/${fileId}`,
+      questV2TeamFileLinkSchema,
       options
     );
   }

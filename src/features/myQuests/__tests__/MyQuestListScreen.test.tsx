@@ -82,6 +82,23 @@ describe("MyQuestListScreen", () => {
     mockCancelAsync.mockResolvedValue({ refundedSatang: 0 });
   });
 
+  it("keeps tabs available after a load error and recovers the selected list on retry", async () => {
+    mockHirerList.mockRejectedValueOnce(new Error("Connection unavailable"));
+    mockHirerList.mockResolvedValueOnce([
+      draftQuest("draft-1", "Draft Quest", "QUEST_DRAFT"),
+      draftQuest("open-1", "Published Quest", "QUEST_OPEN"),
+    ]);
+
+    const screen = await renderWithQueryClient(<MyQuestListScreen />);
+    const retry = await screen.findByTestId("my-quest-list-retry");
+    await fireEvent.press(screen.getByRole("tab", { name: "Drafts" }));
+    expect(screen.getByRole("tab", { name: "Drafts" })).toBeSelected();
+    await fireEvent.press(retry);
+    expect(await screen.findByText("Draft Quest")).toBeTruthy();
+    expect(screen.queryByText("Published Quest")).toBeNull();
+    expect(screen.queryByTestId("my-quest-list-retry")).toBeNull();
+  });
+
   it("reuses the same list for Hirer drafts and opens the editor", async () => {
     mockHirerList.mockResolvedValue([
       draftQuest("draft-1", "Draft Quest", "QUEST_DRAFT"),
@@ -97,10 +114,21 @@ describe("MyQuestListScreen", () => {
     await waitFor(() => expect(screen.getByText("Draft Quest")).toBeTruthy());
     expect(screen.queryByText("Published Quest")).toBeNull();
 
-    fireEvent.press(screen.getByTestId("my-quest-list-action-draft-1"));
+    await fireEvent.press(screen.getByTestId("my-quest-list-action-draft-1"));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/quest/[id]/edit",
       params: { id: "draft-1" },
+    });
+
+    await fireEvent.press(screen.getByRole("tab", { name: "Active" }));
+    expect(screen.getByRole("tab", { name: "Active" })).toBeSelected();
+    expect(screen.getByRole("tab", { name: "Drafts" })).not.toBeSelected();
+    expect(screen.queryByText("Draft Quest")).toBeNull();
+    expect(screen.getByText("Published Quest")).toBeTruthy();
+    await fireEvent.press(screen.getByTestId("my-quest-list-action-open-1"));
+    expect(mockPush).toHaveBeenLastCalledWith({
+      pathname: "/quest/[id]/manage",
+      params: { id: "open-1" },
     });
   });
 
@@ -132,7 +160,9 @@ describe("MyQuestListScreen", () => {
       expect(screen.getByText("Failed Quest")).toBeTruthy();
     });
     expect(screen.getByTestId("my-quest-list-action-completed-1")).toBeTruthy();
-    fireEvent.press(screen.getByTestId("my-quest-list-action-completed-1"));
+    await fireEvent.press(
+      screen.getByTestId("my-quest-list-action-completed-1")
+    );
     expect(mockPush).not.toHaveBeenCalled();
     expect(await screen.findByTestId("quest-review-modal")).toBeTruthy();
   });

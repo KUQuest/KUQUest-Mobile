@@ -1,3 +1,12 @@
+import {
+  formatDate,
+  formatTimestampDate,
+  formatTimeInBangkok,
+} from "@/domain/datetime";
+import {
+  useServerCountdown,
+  formatCountdown,
+} from "../../shared/useServerCountdown";
 import { useState, type ReactNode } from "react";
 import {
   CalendarCheck,
@@ -19,12 +28,22 @@ import { Image, Pressable, ScrollView, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { formatSatang } from "@/domain/satang";
-import type { GroupQuestMessages } from "@/locales/groupQuestMessages";
+import {
+  groupQuestMessages,
+  underfilledCancellationDescription,
+  type GroupQuestMessages,
+} from "@/locales/groupQuestMessages";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 import { getQuestRewardSatang } from "../../presentation/questBoardViewData";
-import { formatDate } from "@/domain/datetime";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
-import type { QuestBoardQuest, QuestDetailState } from "../../domain/types";
+import {
+  QuestCandidateMode,
+  QuestStatus,
+  QuestUnderfilledConsentDecision,
+  QuestUnderfilledState,
+  type QuestBoardQuest,
+  type QuestDetailState,
+} from "../../domain/types";
 import { localizeFacultyName } from "@/locales/academicUnits";
 import styles from "../../styles/questDetailStyles";
 import {
@@ -60,7 +79,7 @@ function candidateDescription(
   quest: QuestBoardQuest,
   messages: QuestBoardMessages
 ): string {
-  return quest.candidateMode === "NO_CANDIDATE"
+  return quest.candidateMode === QuestCandidateMode.NO_CANDIDATE
     ? messages.firstComeDescription
     : messages.reviewCandidatesDescription;
 }
@@ -199,6 +218,166 @@ function ScheduleLocation({
     </View>
   );
 }
+function GroupFcfsJourneyCard({
+  groupFcfs,
+  quest,
+  locale,
+  messages,
+  onOpenPartialConsent,
+  onOpenWorkHub,
+}: {
+  groupFcfs: NonNullable<QuestDetailBodyProps["groupFcfs"]>;
+  quest: QuestBoardQuest;
+  locale: "en" | "th";
+  messages: QuestBoardMessages;
+  onOpenPartialConsent: () => void;
+  onOpenWorkHub: () => void;
+}) {
+  const underfilled = groupFcfs.underfilled;
+  const deadline =
+    underfilled?.state === QuestUnderfilledState.UNDERFILLED_DECISION_PENDING
+      ? underfilled.decision.expiresAt
+      : underfilled?.state === QuestUnderfilledState.UNDERFILLED_CONSENT_PENDING
+        ? underfilled.consent.expiresAt
+        : null;
+  const countdown = useServerCountdown(deadline);
+  const startRemaining = useServerCountdown(groupFcfs.startTime);
+  const full =
+    groupFcfs.activeWorkerCount >= groupFcfs.headcount ||
+    groupFcfs.state === QuestStatus.QUEST_ASSIGNED;
+  const joined = groupFcfs.isJoined;
+  const preStart =
+    groupFcfs.state === QuestStatus.QUEST_OPEN &&
+    !underfilled &&
+    (startRemaining ?? 0) > 0;
+  const preJoin = !joined && !full && preStart;
+  const cancellationReason = underfilledCancellationDescription(
+    groupQuestMessages[locale],
+    underfilled?.cancellationReason,
+    underfilled?.ownResponse?.decision ===
+      QuestUnderfilledConsentDecision.DECLINE,
+    false
+  );
+  const cancellationDate = underfilled?.cancelledAt
+    ? formatTimestampDate(underfilled.cancelledAt, locale)
+    : undefined;
+  const cancellationTime = underfilled?.cancelledAt
+    ? formatTimeInBangkok(underfilled.cancelledAt)
+    : "";
+  const title =
+    underfilled?.state === QuestUnderfilledState.UNDERFILLED_DECISION_PENDING
+      ? messages.groupFcfsUnderfillDecisionPending
+      : underfilled?.state === QuestUnderfilledState.UNDERFILLED_CONSENT_PENDING
+        ? messages.groupFcfsConsentRequired
+        : underfilled?.state === QuestUnderfilledState.UNDERFILLED_COMPLETED
+          ? messages.groupFcfsConsentComplete
+          : underfilled?.state === QuestUnderfilledState.UNDERFILLED_CANCELLED
+            ? cancellationReason
+            : joined
+              ? full
+                ? messages.groupFcfsAllFilledJoined
+                : messages.groupFcfsYouAreIn
+              : full
+                ? messages.groupFcfsFullForOthers
+                : messages.groupFcfsJoinedProgress(
+                    groupFcfs.activeWorkerCount,
+                    groupFcfs.headcount
+                  );
+  const description = underfilled
+    ? ""
+    : full
+      ? messages.groupFcfsAllSpotsFilled
+      : preStart
+        ? preJoin
+          ? `${messages.groupFcfsJoinRule} ${messages.groupFcfsUnderfillRule}`
+          : ""
+        : groupFcfs.state === QuestStatus.QUEST_OPEN &&
+            groupFcfs.activeWorkerCount < groupFcfs.headcount
+          ? `${messages.groupFcfsJoinedProgress(groupFcfs.activeWorkerCount, groupFcfs.headcount)} · ${messages.groupFcfsWorkersNeeded(groupFcfs.headcount - groupFcfs.activeWorkerCount)}`
+          : "";
+  return (
+    <View className={styles.statusCard} testID="group-fcfs-journey">
+      <Text accessibilityLiveRegion="polite" className={styles.statusTitle}>
+        {title}
+      </Text>
+      {underfilled?.state === QuestUnderfilledState.UNDERFILLED_CANCELLED &&
+      cancellationDate &&
+      cancellationTime ? (
+        <Text className={styles.statusDescription}>
+          {groupQuestMessages[locale].cancelledAt(
+            cancellationDate,
+            cancellationTime
+          )}
+        </Text>
+      ) : null}
+      {joined && preStart ? (
+        <Text className={styles.statusDescription}>
+          {messages.groupFcfsUnderfillRule}
+        </Text>
+      ) : null}
+      {description ? (
+        <Text
+          accessibilityLiveRegion="polite"
+          className={styles.statusDescription}
+        >
+          {description}
+        </Text>
+      ) : null}
+      <Text className={styles.prototypeMeta}>
+        {`${messages.startTime}: ${formatDate(quest.startDate, locale, "")}${groupFcfs.startTime ? ` · ${groupFcfs.startTime.split("T")[1]?.slice(0, 5) ?? ""}` : ""}`}
+      </Text>
+      {underfilled?.state ===
+        QuestUnderfilledState.UNDERFILLED_DECISION_PENDING ||
+      underfilled?.state ===
+        QuestUnderfilledState.UNDERFILLED_CONSENT_PENDING ? (
+        <Text
+          accessibilityLiveRegion={
+            countdown === 0 ||
+            (countdown !== null &&
+              Math.floor(countdown / 60_000) !==
+                Math.floor((countdown + 1_000) / 60_000))
+              ? "polite"
+              : "none"
+          }
+          className={styles.prototypeMeta}
+        >
+          {`${messages.consentCountdown}: ${countdown === null ? "--:--" : formatCountdown(countdown)}`}
+        </Text>
+      ) : null}
+      {underfilled?.state ===
+        QuestUnderfilledState.UNDERFILLED_CONSENT_PENDING &&
+      groupFcfs.canConsent ? (
+        <Pressable
+          accessibilityRole="button"
+          className={styles.statusAction}
+          onPress={onOpenPartialConsent}
+          testID="group-fcfs-consent-action"
+        >
+          <Text className={styles.statusActionText}>
+            {messages.groupFcfsConsentAction}
+          </Text>
+        </Pressable>
+      ) : null}
+      {joined && full ? (
+        <Pressable
+          accessibilityRole="button"
+          className={styles.statusAction}
+          onPress={onOpenWorkHub}
+          testID="group-fcfs-open-work-hub"
+        >
+          <Text className={styles.statusActionText}>
+            {messages.openWorkHub}
+          </Text>
+        </Pressable>
+      ) : null}
+      {underfilled?.state === QuestUnderfilledState.UNDERFILLED_CANCELLED ? (
+        <Text className={styles.statusDescription}>
+          {messages.groupFcfsCancelledNextStep}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
 
 export interface QuestDetailBodyProps {
   quest: QuestBoardQuest;
@@ -243,6 +422,16 @@ export interface QuestDetailBodyProps {
     onOpenCandidateReview: () => void;
     onOpenPartialConsent: () => void;
   };
+  groupFcfs?: {
+    activeWorkerCount: number;
+    headcount: number;
+    isJoined: boolean;
+    state: string;
+    startTime?: string;
+    underfilled: LiveQuestSnapshot["underfilled"];
+    canConsent: boolean;
+  };
+  onOpenPartialConsent: () => void;
 }
 
 export function QuestDetailBody({
@@ -264,10 +453,19 @@ export function QuestDetailBody({
   onOpenWorkHub,
   prototypeEntry,
   liveEntry,
+  groupFcfs,
+  onOpenPartialConsent,
 }: QuestDetailBodyProps) {
   const { colors } = useAppTheme();
   const [viewingImage, setViewingImage] = useState<number | null>(null);
   const StatusIcon = status?.Icon;
+  const canJoin =
+    canParticipate &&
+    !(
+      groupFcfs &&
+      (groupFcfs.activeWorkerCount >= groupFcfs.headcount ||
+        groupFcfs.state !== QuestStatus.QUEST_OPEN)
+    );
   return (
     <ScrollView
       contentContainerClassName={styles.scrollContent}
@@ -376,18 +574,22 @@ export function QuestDetailBody({
         <View className={styles.heroFacts}>
           <InfoRow
             icon={UsersRound}
-            label={messages.participation}
+            label={
+              groupFcfs ? messages.groupFcfsHeadcount : messages.participation
+            }
             value={
-              quest.participationMode === "team"
-                ? messages.team
-                : messages.singlePerson
+              groupFcfs
+                ? messages.groupFcfsRequestedWorkers(quest.headcount)
+                : quest.participationMode === "team"
+                  ? messages.team
+                  : messages.singlePerson
             }
           />
           <InfoRow
             icon={UserRoundCheck}
             label={messages.candidateMode}
             value={
-              quest.candidateMode === "NO_CANDIDATE"
+              quest.candidateMode === QuestCandidateMode.NO_CANDIDATE
                 ? messages.firstCome
                 : messages.reviewCandidates
             }
@@ -407,7 +609,17 @@ export function QuestDetailBody({
           title={messages.participants}
         />
       ) : null}
-      {canParticipate ? (
+      {groupFcfs ? (
+        <GroupFcfsJourneyCard
+          groupFcfs={groupFcfs}
+          locale={locale}
+          messages={messages}
+          onOpenPartialConsent={onOpenPartialConsent}
+          onOpenWorkHub={onOpenWorkHub}
+          quest={quest}
+        />
+      ) : null}
+      {canJoin ? (
         <View
           className={styles.participationCard}
           testID="quest-participation-action"
@@ -509,6 +721,7 @@ export function QuestDetailBody({
       {liveEntry ? (
         <LiveEntrySurface
           snapshot={liveEntry.snapshot}
+          locale={locale}
           groupMessages={liveEntry.groupMessages}
           busy={liveEntry.busy}
           onOpenTeam={liveEntry.onOpenTeam}

@@ -16,7 +16,7 @@ const styles = {
     "items-center bg-ku-surface-muted rounded-ku-pill h-[44px] justify-center w-[44px]",
   screen: "bg-ku-card flex-1",
   screenBody: "flex-1 px-ku-20",
-  sheetScroll: "flex-1",
+  sheetScroll: "flex-1 min-h-[220px]",
   sheetContent: "pb-ku-sm pt-ku-md",
   section: "mt-ku-md",
   sectionFirst: "mt-ku-0",
@@ -153,7 +153,7 @@ const styles = {
   proposalRowStatus:
     "items-center border rounded-ku-pill flex-row min-h-[28px] px-ku-sm",
   proposalRowStatusText: "font-ku-semibold text-ku-label",
-  proposalSelect: "items-start flex-row min-h-[48px]",
+  proposalSelect: "items-start flex-1 flex-row min-h-[48px] min-w-0",
   proposalSelectionBox:
     "items-center border-ku-border-accent border rounded-ku-pill h-[24px] justify-center mt-ku-1 w-[24px]",
   proposalSelectionBoxSelected: "bg-ku-primary border-ku-primary",
@@ -164,10 +164,32 @@ const styles = {
   proposalDetail:
     "text-ku-text-secondary font-ku-regular text-ku-label mt-ku-2",
   proposalMembers: "gap-ku-2 mt-ku-6",
-  proposalMember: "text-ku-text-secondary font-ku-regular text-ku-label",
+  proposalMemberRow: "items-center flex-row gap-ku-sm",
+  proposalRosterButton:
+    "items-center border-ku-border-subtle border rounded-[12px] flex-row justify-between min-h-[48px] px-ku-10",
+  proposalRosterButtonText: "text-ku-primary font-ku-semibold text-ku-label",
+  proposalMember: "flex-1 text-ku-text-secondary font-ku-regular text-ku-label",
+  proposalAttachments: "mt-ku-6",
+  proposalAttachmentsButton:
+    "items-center border-ku-border-subtle border rounded-[12px] flex-row justify-between min-h-[48px] px-ku-10",
+  proposalAttachmentsButtonText:
+    "text-ku-primary font-ku-semibold text-ku-label",
+  proposalAttachmentsContent: "mt-ku-sm",
+  proposalAttachmentsGallery: "flex-row gap-ku-sm mt-ku-sm",
+  proposalAttachmentsImage:
+    "bg-ku-surface-muted h-[112px] w-[112px] rounded-[12px]",
+  proposalAttachmentError: "gap-ku-2 mt-ku-2",
+  proposalAttachmentMessage:
+    "text-ku-text-secondary font-ku-regular text-ku-label mt-ku-2",
+  proposalAttachmentRetry: "items-center min-h-[44px] self-start px-ku-10",
+  proposalNote:
+    "bg-ku-surface border-ku-border-subtle border rounded-[12px] mt-ku-8 p-ku-10",
+  proposalNoteLabel: "text-ku-text-strong font-ku-semibold text-ku-label",
+  proposalNoteText:
+    "text-ku-text-secondary font-ku-regular text-ku-body-small mt-ku-2",
   proposalActions: "flex-row gap-ku-sm mt-ku-sm",
   proposalAction:
-    "items-center border-ku-primary rounded-ku-pill border flex-1 min-h-[44px] justify-center px-ku-sm",
+    "items-center border-ku-primary rounded-ku-pill border flex-1 flex-row gap-ku-xs min-h-[48px] justify-center px-ku-sm",
   proposalActionAccept: "bg-ku-primary",
   proposalActionReject: "border-ku-danger-dark",
   proposalActionText:

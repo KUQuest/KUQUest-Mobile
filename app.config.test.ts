@@ -23,11 +23,17 @@ function configure(variant?: string, versionCode?: string) {
   }
   return configureApp({ config: baseConfig } as ConfigContext);
 }
-
 describe("app config variants", () => {
+  const initialApiUrl = process.env.EXPO_PUBLIC_API_URL;
+
   afterEach(() => {
     delete process.env.APP_VARIANT;
     delete process.env.ANDROID_VERSION_CODE;
+    if (initialApiUrl === undefined) {
+      delete process.env.EXPO_PUBLIC_API_URL;
+    } else {
+      process.env.EXPO_PUBLIC_API_URL = initialApiUrl;
+    }
   });
 
   test("uses the coinstallable debug identity by default", () => {
@@ -66,5 +72,38 @@ describe("app config variants", () => {
     expect(() => configure("staging", "0")).toThrow(
       "ANDROID_VERSION_CODE must be an integer"
     );
+  });
+
+  test("registers HTTPS team invite links for Android and iOS", () => {
+    process.env.EXPO_PUBLIC_API_URL = "https://invite.example.test/api";
+    const config = configure("staging", "247");
+
+    expect(config.android?.intentFilters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: "VIEW",
+          autoVerify: true,
+          category: ["BROWSABLE", "DEFAULT"],
+          data: [
+            {
+              scheme: "https",
+              host: "invite.example.test",
+              pathPrefix: "/invite/team",
+            },
+          ],
+        }),
+      ])
+    );
+    expect(config.ios?.associatedDomains).toContain(
+      "applinks:invite.example.test"
+    );
+  });
+
+  test("does not register verified links for non-HTTPS API origins", () => {
+    process.env.EXPO_PUBLIC_API_URL = "http://localhost:5000";
+    const config = configure("debug");
+
+    expect(config.android?.intentFilters).toEqual([]);
+    expect(config.ios?.associatedDomains).toBeUndefined();
   });
 });

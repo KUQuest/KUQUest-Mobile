@@ -1,5 +1,5 @@
 import React from "react";
-import { fireEvent, waitFor } from "@testing-library/react-native";
+import { fireEvent, waitFor, within } from "@testing-library/react-native";
 import { renderWithAppTheme } from "@/testing/queryTestUtils";
 
 import { chatMessages } from "@/locales/chatMessages";
@@ -120,6 +120,11 @@ describe("MessageBubble", () => {
 
     expect(view.getByText("Hirer One")).toBeTruthy();
     expect(view.getByText("Worker Two")).toBeTruthy();
+    expect(
+      within(view.getByTestId("chat-message-bubble-hirer-message")).getByText(
+        "Hirer One"
+      )
+    ).toBeTruthy();
     await fireEvent.press(view.getByLabelText("View profile of Hirer One"));
     expect(onProfilePress).toHaveBeenCalledWith("hirer-1");
   });

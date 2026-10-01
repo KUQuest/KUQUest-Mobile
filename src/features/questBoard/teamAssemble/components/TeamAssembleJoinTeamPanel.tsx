@@ -23,8 +23,12 @@ export function TeamAssembleJoinTeamPanel({
   onJoinTeam: (teamId: string, joinCode: string) => void;
 }) {
   const messages = groupQuestMessages[locale];
-  const [invite, setInvite] = useState(initialInvite);
+  const parsedInitialInvite = parseTeamInvite(initialInvite);
+  const [invite, setInvite] = useState(
+    parsedInitialInvite?.joinCode ?? initialInvite
+  );
   const parsed = parseTeamInvite(invite);
+  const teamId = parsed?.teamId ?? parsedInitialInvite?.teamId ?? "";
   const joinCode = parsed?.joinCode ?? invite.trim();
   const disabled = submitting || joinCode.length === 0;
 
@@ -42,7 +46,7 @@ export function TeamAssembleJoinTeamPanel({
           className={styles.searchInput}
           onChangeText={setInvite}
           onSubmitEditing={() => {
-            if (!disabled) onJoinTeam(parsed?.teamId ?? "", joinCode);
+            if (!disabled) onJoinTeam(teamId, joinCode);
           }}
           placeholder={messages.joinTeamCodePlaceholder}
           placeholderTextColor={colors.textFaint}
@@ -65,7 +69,7 @@ export function TeamAssembleJoinTeamPanel({
         accessibilityState={{ disabled, busy: submitting }}
         className={cn(styles.submitButton, disabled && "opacity-60")}
         disabled={disabled}
-        onPress={() => onJoinTeam(parsed?.teamId ?? "", joinCode)}
+        onPress={() => onJoinTeam(teamId, joinCode)}
         testID="team-assemble-join"
       >
         <Text className={styles.submitButtonText}>
