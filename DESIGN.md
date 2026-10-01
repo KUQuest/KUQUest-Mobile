@@ -392,6 +392,15 @@ Use the `on-*` token for text and icons on role-colored controls. Keep `addition
 - Quiet, floating rounded capsule with safe-area clearance.
 - Muted icons for inactive states; solid primary color indicator for the active tab.
 
+### 6. Hirer Quest Management
+
+- My Quests uses a sage-tinted masthead and a single segmented control for Active, Drafts, and History.
+- The masthead scrolls with the list so larger text and short windows do not trap the Quest content below fixed chrome.
+- The selected list shows its Quest count; cards prioritize status, title, per-person amount, and Worker places before schedule and location.
+- Cards use neutral surfaces and quiet dividers, not nested metadata panels. Manage, Edit, and Review retain primary emphasis; cancellation stays secondary.
+- Content is centered at a maximum width of 720 logical units. Labels and actions wrap, text scaling stays enabled, and controls retain 48-unit minimum height.
+- Existing lifecycle actions, cancellation confirmations, proof review, and dispute routes remain unchanged. Light/dark styling uses existing semantic tokens.
+
 ---
 
 ## Do's and Don'ts

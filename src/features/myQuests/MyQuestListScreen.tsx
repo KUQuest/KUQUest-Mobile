@@ -23,8 +23,10 @@ export default function MyQuestListScreen({
       edges={["top", "left", "right"]}
     >
       <View className="flex-1 bg-ku-background">
-        <MyQuestListHeader {...frame.headerProps} />
-        <MyQuestListContent {...content.listProps} />
+        <MyQuestListContent
+          {...content.listProps}
+          header={<MyQuestListHeader {...frame.headerProps} />}
+        />
         <QuestReviewModal {...content.reviewModalProps} />
       </View>
     </ScreenLayout>
