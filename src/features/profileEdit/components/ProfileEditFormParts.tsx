@@ -1,9 +1,7 @@
 import React, { useState } from "react";
-import { Platform } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
+import { CustomDatePickerModal } from "@/components/ui/CustomDatePickerModal";
+import { createQuestMessages } from "@/locales/createQuestMessages";
 import {
   ArrowLeft,
   CalendarDays,
@@ -11,14 +9,13 @@ import {
 } from "lucide-react-native";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
-import { Image, Pressable, Text, View } from "../../../tw";
+import { Image, Pressable, SafeAreaView, Text, View } from "../../../tw";
 import styles from "../profileEditStyles";
 import {
   profileEditMessages,
   type ProfileEditMessages,
 } from "../../../locales/profileEditMessages";
 import { limitImagePixels } from "@/api/fileUpload";
-import { formatDateForApi } from "../validation";
 
 export function ScreenHeader({
   title,
@@ -60,22 +57,24 @@ export function SaveBar({
   onPress: () => void;
 }) {
   return (
-    <View className={styles.saveBar}>
-      <View className={styles.saveBarInner}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={label}
-          accessibilityState={{ disabled }}
-          disabled={disabled}
-          className="min-h-[48px] items-center justify-center rounded-ku-pill bg-ku-primary"
-          onPress={onPress}
-        >
-          <Text className="font-ku-semibold text-ku-body text-ku-on-primary">
-            {label}
-          </Text>
-        </Pressable>
+    <SafeAreaView edges={["bottom"]} className={styles.saveBar}>
+      <View className={styles.saveBarContent}>
+        <View className={styles.saveBarInner}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            accessibilityState={{ disabled }}
+            disabled={disabled}
+            className="min-h-[48px] items-center justify-center rounded-ku-pill bg-ku-primary"
+            onPress={onPress}
+          >
+            <Text className="font-ku-semibold text-ku-body text-ku-on-primary">
+              {label}
+            </Text>
+          </Pressable>
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -184,18 +183,10 @@ export function DateField({
   onClear?: () => void;
 }) {
   const { colors } = useAppTheme();
+  const { locale } = useLocale();
   const [open, setOpen] = useState(false);
-  const handleChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (event.type === "dismissed" || !selectedDate) {
-      setOpen(false);
-      return;
-    }
-    onChange(formatDateForApi(selectedDate));
-    setOpen(false);
-  };
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(value)
-    ? new Date(`${value}T12:00:00`)
-    : new Date();
+  const today = new Date();
+  const maximumDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   return (
     <View className={styles.dateField}>
       <Text className="mb-ku-6 font-ku-semibold text-ku-label text-ku-text-secondary">
@@ -232,12 +223,17 @@ export function DateField({
         </Pressable>
       ) : null}
       {open ? (
-        <DateTimePicker
-          value={date}
-          mode="date"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          maximumDate={new Date()}
-          onChange={handleChange}
+        <CustomDatePickerModal
+          title={label}
+          value={value}
+          maximumDate={maximumDate}
+          locale={locale}
+          messages={createQuestMessages[locale]}
+          onConfirm={(date) => {
+            onChange(date);
+            setOpen(false);
+          }}
+          onClose={() => setOpen(false)}
         />
       ) : null}
     </View>

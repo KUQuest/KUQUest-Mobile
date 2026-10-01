@@ -344,11 +344,6 @@ export default function HomeScreen() {
                         assignedWorkers={item.assignedWorkers}
                         applicants={item.applicants}
                         proofPending={item.proofPending}
-                        onReviewProof={
-                          usesDemoQuests
-                            ? undefined
-                            : () => handleReviewProof(item.id)
-                        }
                       />
                     </View>
                   ))}

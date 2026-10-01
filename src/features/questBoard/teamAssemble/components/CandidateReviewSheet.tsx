@@ -89,7 +89,6 @@ export interface CandidateReviewSheetProps {
   onReject?: (proposalId: string) => void;
   onRetry?: () => void;
   onClose: () => void;
-  bottomInset?: number;
   locale?: SupportedLocale;
   fullScreen?: boolean;
 }
@@ -626,7 +625,6 @@ export function CandidateReviewSheet({
   onReject,
   onRetry,
   onClose,
-  bottomInset,
   fullScreen = false,
   locale: localeProp,
 }: CandidateReviewSheetProps) {
@@ -853,7 +851,6 @@ export function CandidateReviewSheet({
 
   return (
     <BottomSheet
-      bottomInset={bottomInset}
       closeLabel={messages.close}
       onClose={onClose}
       subtitle={messages.candidateReviewSubtitle}
