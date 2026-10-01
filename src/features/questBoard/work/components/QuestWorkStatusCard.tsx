@@ -122,6 +122,18 @@ export default function QuestWorkStatusCard({
   const participationLabel = isGroup
     ? messages.participationTeam
     : messages.participationSolo;
+  const progressQuest = snapshot.quest;
+  const startProgress =
+    "startedWorkerCount" in progressQuest &&
+    typeof progressQuest.startedWorkerCount === "number" &&
+    "activeWorkerCount" in progressQuest
+      ? {
+          started: progressQuest.startedWorkerCount,
+          active: progressQuest.activeWorkerCount,
+        }
+      : null;
+  const showGroupFcfsStartStatus =
+    snapshot.actor === "WORKER" && isGroup && !isCandidateMode;
 
   const proofBadgeText = snapshot.proofRequired
     ? messages.proofRequiredBadge
@@ -207,6 +219,22 @@ export default function QuestWorkStatusCard({
             value={locationLabel}
           />
         ) : null}
+        {showGroupFcfsStartStatus && startProgress ? (
+          <View className={styles.workerStartStatus}>
+            <Text
+              testID="work-group-start-progress"
+              className={styles.workerStartTitle}
+            >
+              {messages.startWorkProgress(
+                startProgress.started,
+                startProgress.active
+              )}
+            </Text>
+            <Text className={styles.workerStartWarning}>
+              {messages.groupStartWorkWarning}
+            </Text>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -251,4 +279,7 @@ const styles = {
   rowValue:
     "max-w-[55%] text-right font-ku-semibold text-ku-body-small text-ku-text-strong",
   rowValueEmphasis: "text-ku-primary-dark",
+  workerStartStatus: "gap-ku-sm border-t border-ku-divider px-ku-md py-ku-sm",
+  workerStartTitle: "font-ku-semibold text-ku-body-small text-ku-text-strong",
+  workerStartWarning: "font-ku-medium text-ku-label text-ku-text-secondary",
 } as const;

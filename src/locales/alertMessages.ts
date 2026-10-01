@@ -11,6 +11,9 @@ export interface AlertMessages {
   serverError: string;
   imageDimensionsTooLarge: string;
   proofFilesUploadFailed: string;
+  fileTooLarge: string;
+  unsupportedFileType: string;
+  cancelNotAllowed: string;
   proofRetryPositionInvalid: string;
   proofRetryPositionConflict: string;
 }
@@ -31,6 +34,12 @@ export const alertMessages: Record<SupportedLocale, AlertMessages> = {
       "This image has too much detail. Reduce its resolution or choose another file.",
     proofFilesUploadFailed:
       "Some proof files failed to upload. Replace failed files and try again.",
+    fileTooLarge:
+      "This file is too large. Choose a smaller file and try again.",
+    unsupportedFileType:
+      "This file type is not supported. Choose a different file.",
+    cancelNotAllowed:
+      "This Quest can't be cancelled right now. Refresh and check its status.",
     proofRetryPositionInvalid: "Choose one failed proof file before retrying.",
     proofRetryPositionConflict:
       "Proof changed on the server. Refresh and retry the failed file.",
@@ -49,6 +58,10 @@ export const alertMessages: Record<SupportedLocale, AlertMessages> = {
       "รูปภาพมีความละเอียดสูงเกินไป โปรดลดความละเอียดหรือเลือกไฟล์อื่น",
     proofFilesUploadFailed:
       "ไฟล์หลักฐานบางรายการอัปโหลดไม่สำเร็จ โปรดเปลี่ยนไฟล์ที่ล้มเหลวแล้วลองอีกครั้ง",
+    fileTooLarge: "ไฟล์ใหญ่เกินไป โปรดเลือกไฟล์ที่เล็กลงแล้วลองอีกครั้ง",
+    unsupportedFileType: "ไม่รองรับไฟล์ประเภทนี้ โปรดเลือกไฟล์อื่น",
+    cancelNotAllowed:
+      "ตอนนี้ยังยกเลิกเควสต์นี้ไม่ได้ โปรดรีเฟรชแล้วตรวจสอบสถานะ",
     proofRetryPositionInvalid: "เลือกไฟล์หลักฐานที่ล้มเหลว 1 รายการก่อนลองใหม่",
     proofRetryPositionConflict:
       "หลักฐานถูกเปลี่ยนแปลงบนเซิร์ฟเวอร์ โปรดรีเฟรชแล้วลองไฟล์ที่ล้มเหลวอีกครั้ง",

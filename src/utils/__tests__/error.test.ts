@@ -72,4 +72,19 @@ describe("getLocalizedErrorMessage", () => {
       )
     ).toBe(alertMessages.en.proofRetryPositionInvalid);
   });
+
+  it("maps upload size/type statuses and the cancel-not-allowed code", () => {
+    expect(getLocalizedErrorMessage(new ApiError(413, "X", "s"), "en")).toBe(
+      alertMessages.en.fileTooLarge
+    );
+    expect(getLocalizedErrorMessage(new ApiError(415, "X", "s"), "en")).toBe(
+      alertMessages.en.unsupportedFileType
+    );
+    expect(
+      getLocalizedErrorMessage(
+        new ApiError(409, "QUEST_SETTLEMENT_NOT_ALLOWED", "s"),
+        "en"
+      )
+    ).toBe(alertMessages.en.cancelNotAllowed);
+  });
 });

@@ -580,6 +580,27 @@ describe("QuestWorkScreen", () => {
     );
   });
 
+  it("shows how many Workers started on a Group first-come Quest only", async () => {
+    const base = makeSnapshot({ participation: "GROUP" });
+    mockedGetSnapshot.mockResolvedValue({
+      ...base,
+      quest: { ...base.quest, activeWorkerCount: 3, startedWorkerCount: 2 },
+    });
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+
+    expect(await view.findByTestId("work-group-start-progress")).toBeTruthy();
+    expect(view.getByText("2 of 3 Workers started")).toBeTruthy();
+
+    mockedGetSnapshot.mockResolvedValue(makeSnapshot());
+    const solo = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    await solo.findByText("Due");
+    expect(solo.queryByTestId("work-group-start-progress")).toBeNull();
+  });
+
   it("keeps refreshing while other Workers still have to press Start Work", async () => {
     jest.useFakeTimers();
     const waiting = makeSnapshot({

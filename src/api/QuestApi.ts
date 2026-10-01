@@ -32,6 +32,7 @@ import {
   questV2PublishCheckSchema,
   questV2PublishDataSchema,
   questV2CancellationOutcomeSchema,
+  questV2CancelPreviewSchema,
   questV2PublicDetailSchema,
   questV2ParticipationDetailSchema,
   questV2ReviewCreatePayloadSchema,
@@ -67,6 +68,7 @@ import {
   type QuestV2ProofDelete,
   type QuestV2ProofReview,
   type QuestV2CancellationOutcome,
+  type QuestV2CancelPreview,
   type QuestV2PublicDetail,
   type QuestV2PublishCheck,
   type QuestV2Review,
@@ -404,15 +406,33 @@ export class QuestApi {
     return data.quest;
   }
 
+  async getCancelPreview(
+    questId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2CancelPreview> {
+    return this.client.get(
+      `/api/v2/quests/${questId}/cancel-preview`,
+      questV2CancelPreviewSchema,
+      options
+    );
+  }
+
   async cancelQuest(
     questId: string,
-    idempotencyKey = createQuestIdempotencyKey()
+    idempotencyKey = createQuestIdempotencyKey(),
+    previewVersion?: string
   ): Promise<QuestV2CancellationOutcome> {
     return this.client.send(
       "POST",
       `/api/v2/quests/${questId}/cancel`,
       questV2CancellationOutcomeSchema,
-      { json: {}, idempotencyKey }
+      {
+        json: {},
+        idempotencyKey,
+        ...(previewVersion
+          ? { headers: { "X-Cancel-Preview-Version": previewVersion } }
+          : {}),
+      }
     );
   }
 

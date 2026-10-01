@@ -118,6 +118,27 @@ export const questV2PublicImageSchema = z.object({
 export type QuestV2PublicImage = z.infer<typeof questV2PublicImageSchema>;
 
 export const questV2ImageSchema = questV2OwnerImageSchema;
+export const questV2DisputeWindowSchema = z.object({
+  canFile: z.boolean(),
+  windowEndsAt: z.string().nullable(),
+  myCase: z
+    .object({
+      id: questV2IdSchema,
+      displayId: z.string(),
+      status: z.string(),
+      createdAt: z.string(),
+    })
+    .nullable(),
+});
+export type QuestV2DisputeWindow = z.infer<typeof questV2DisputeWindowSchema>;
+export const questV2MoneyHoldSchema = z.object({
+  status: z.string(),
+  releasesAt: z.string().nullable(),
+  /** Hirer only; null for a Worker. */
+  heldSatang: z.number().int().nonnegative().nullable(),
+});
+export type QuestV2MoneyHold = z.infer<typeof questV2MoneyHoldSchema>;
+
 export const questV2CanonicalQuestSchema = z.object({
   id: questV2IdSchema,
   version: z.number().int().min(1),
@@ -141,6 +162,9 @@ export const questV2CanonicalQuestSchema = z.object({
   locations: z.array(questV2LocationSchema),
   createdAt: z.string(),
   updatedAt: z.string(),
+  /** Set only on QUEST_FAILED. Optional until every environment returns it. */
+  dispute: questV2DisputeWindowSchema.nullable().optional(),
+  moneyHold: questV2MoneyHoldSchema.nullable().optional(),
 });
 export type QuestV2CanonicalQuest = z.infer<typeof questV2CanonicalQuestSchema>;
 
@@ -184,6 +208,10 @@ export const questV2ParticipationDetailSchema =
     capabilities: z.object({
       canViewOnly: z.boolean(),
     }),
+    dispute: questV2DisputeWindowSchema.nullable().optional(),
+    moneyHold: questV2MoneyHoldSchema.nullable().optional(),
+    /** Active Assignments with a Start Work time; names no one. */
+    startedWorkerCount: z.number().int().nonnegative().optional(),
   });
 export type QuestV2ParticipationDetail = z.infer<
   typeof questV2ParticipationDetailSchema
@@ -352,6 +380,18 @@ export const questV2CancellationOutcomeSchema = z.object({
 export type QuestV2CancellationOutcome = z.infer<
   typeof questV2CancellationOutcomeSchema
 >;
+
+export const questV2CancelPreviewSchema = z.object({
+  questStatus: questV2StateSchema,
+  tier: z.enum(["NO_PENALTY", "PARTIAL_PENALTY", "FULL_PENALTY"]),
+  paidSatang: z.number().int().nonnegative(),
+  refundedSatang: z.number().int().nonnegative(),
+  platformFeeSatang: z.number().int().nonnegative(),
+  affectedWorkerCount: z.number().int().nonnegative(),
+  computedAt: z.string(),
+  previewVersion: z.string(),
+});
+export type QuestV2CancelPreview = z.infer<typeof questV2CancelPreviewSchema>;
 
 export const questV2ApplicationStateSchema = z.enum([
   "APPLICATION_APPLIED",
@@ -656,6 +696,10 @@ export const questV2ProofSubmissionSchema = z.object({
   visibility: z.enum(["FULL", "SUMMARY"]),
   fileIds: z.array(questV2IdSchema),
   files: z.array(questV2ProofFileSchema),
+  reviewDeadlineAt: z.string().nullable().optional(),
+  reviewedBy: z.enum(["HIRER", "AUTO_APPROVE"]).nullable().optional(),
+  reviewedAt: z.string().nullable().optional(),
+  reviewReason: z.string().nullable().optional(),
 });
 export type QuestV2ProofSubmission = z.infer<
   typeof questV2ProofSubmissionSchema

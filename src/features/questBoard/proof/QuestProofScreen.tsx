@@ -10,6 +10,7 @@ import { QuestProofStatusCard } from "./components/QuestProofStatusCard";
 import { QuestProofSummaryCard } from "./components/QuestProofSummaryCard";
 import { ProofSubmissionSheet } from "./components/ProofSubmissionSheet";
 import { useQuestProofFeature } from "./useQuestProofFeature";
+import { ProofReviewNotes } from "../shared/ProofReviewNotes";
 import { QuestProofStatus } from "../domain/types";
 
 export interface QuestProofScreenProps {
@@ -123,6 +124,11 @@ export default function QuestProofScreen({
                 : undefined
             }
           />
+          {proof ? (
+            <View className="mt-ku-sm px-ku-xs">
+              <ProofReviewNotes proof={proof} testIDPrefix="worker-proof" />
+            </View>
+          ) : null}
 
           {snapshot?.proofRequired ? (
             <QuestProofActionSection

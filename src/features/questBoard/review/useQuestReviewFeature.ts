@@ -71,20 +71,25 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
         participant.displayName,
       ])
     );
-    const workerIds = [
-      ...new Set(
-        (assignmentsQuery.data ?? [])
-          .filter(
-            (assignment) =>
-              assignment.state !== QuestAssignmentStatus.ASSIGNMENT_CANCELLED
-          )
-          .map((assignment) => assignment.workerId)
-      ),
-    ];
-    return workerIds.map((workerId) => ({
-      id: workerId,
+    const workerIds = new Set<string>();
+    const workerAssignments = (assignmentsQuery.data ?? []).filter(
+      (assignment) => {
+        if (
+          assignment.state === QuestAssignmentStatus.ASSIGNMENT_CANCELLED ||
+          workerIds.has(assignment.workerId)
+        ) {
+          return false;
+        }
+        workerIds.add(assignment.workerId);
+        return true;
+      }
+    );
+    return workerAssignments.map((assignment, index) => ({
+      id: assignment.workerId,
       label:
-        participantNames.get(workerId) ?? messages.workerFallback(workerId),
+        assignment.member?.displayName ??
+        participantNames.get(assignment.workerId) ??
+        messages.workerFallback(index + 1),
     }));
   }, [actor, assignmentsQuery.data, messages, snapshotQuery.data]);
   const selectedTarget =
