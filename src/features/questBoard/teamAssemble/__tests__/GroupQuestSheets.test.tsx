@@ -703,7 +703,7 @@ describe("group Quest sheets", () => {
       />
     );
     expect(view.queryByTestId("partial-group-start-approve")).toBeNull();
-    expect(view.getAllByText("Accepted")).toHaveLength(2);
+    expect(view.getAllByText("ตอบรับแล้ว")).toHaveLength(2);
     jest.useRealTimers();
   });
 
