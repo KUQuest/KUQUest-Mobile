@@ -123,8 +123,8 @@ function matchesRewardBounds(
   maximum: number | null
 ): boolean {
   return (
-    (minimum === null || quest.rewardPerPerson >= minimum) &&
-    (maximum === null || quest.rewardPerPerson <= maximum)
+    (minimum === null || getQuestPriceSatang(quest) / 100 >= minimum) &&
+    (maximum === null || getQuestPriceSatang(quest) / 100 <= maximum)
   );
 }
 
@@ -199,7 +199,8 @@ export function sortQuests(
         parseDate(right.deadline).getTime();
       return deadlineDifference || comparePostedAt(left, right);
     }
-    const rewardDifference = right.rewardPerPerson - left.rewardPerPerson;
+    const rewardDifference =
+      (getQuestPriceSatang(right) || 0) - (getQuestPriceSatang(left) || 0);
     if (rewardDifference) return rewardDifference;
     const deadlineDifference =
       parseDate(left.deadline).getTime() - parseDate(right.deadline).getTime();
@@ -251,4 +252,11 @@ export function toBoardQuest(state: QuestDetailState): QuestBoardQuest {
 }
 export function getQuestRewardSatang(quest: QuestBoardQuest): number {
   return quest.rewardSatang ?? Math.round(quest.rewardPerPerson * 100);
+}
+
+/** Missing live funding is unavailable, never inferred from the net reward. */
+export function getQuestPriceSatang(quest: QuestBoardQuest): number {
+  return quest.questFundingTotalSatang === null
+    ? Number.NaN
+    : (quest.questFundingTotalSatang ?? getQuestRewardSatang(quest));
 }

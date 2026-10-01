@@ -41,7 +41,7 @@ function questCardAccessibilityLabel(
   const messages = questBoardMessages[locale];
   return [
     quest.title,
-    `${messages.reward}: ${formatSatang(rewardSatang, locale)} ${messages.perPerson}`,
+    `${messages.givenPrice}: ${Number.isFinite(rewardSatang) ? formatSatang(rewardSatang, locale) : "—"} ${messages.perPerson}`,
     participationLabel(quest, messages),
     messages.participantsSummary(quest.acceptedParticipants, quest.headcount),
     `${messages.schedule}: ${quest.timeRange ? `${quest.timeRange} · ` : ""}${formatDate(quest.startDate, locale, "")}`,
@@ -159,7 +159,9 @@ export function QuestCard({
           </View>
           <View className={styles.rewardBlock}>
             <Text className={styles.rewardAmount}>
-              {formatSatang(rewardSatang, locale)}
+              {Number.isFinite(rewardSatang)
+                ? formatSatang(rewardSatang, locale)
+                : "—"}
             </Text>
             <Text className={styles.rewardUnit}>{messages.perPerson}</Text>
           </View>

@@ -25446,47 +25446,64 @@ paths:
       description: "Sends SUBSCRIBED, then HIRER_QUEST_UPDATED for owned v2 Quest creation, publication, lifecycle, application, and Candidate Team changes. UNDERFILLED_DECISION_PENDING also carries `expiresAt`, the server decision deadline. Read Quest state from REST after each update."
       operationId: subscribeHirerQuestUpdates
   /api/v2/quests: 
-    get: 
-      tags: 
+    get:
+      tags:
         - Quests v2
       summary: List the v2 Quest Board
-      description: "Returns compact Quest Board Cards for non-hidden, open, joinable Quests owned by another Member. Eligibility is evaluated before cursor pagination."
+      description: Returns compact Quest Board Cards for non-hidden, open, joinable
+        Quests owned by another Member. Eligibility is evaluated before cursor
+        pagination.
       operationId: listQuestBoardV2
-      security: 
-        - betterAuthSession: 
-            []
-      parameters: 
+      security:
+        - betterAuthSession: []
+      parameters:
         - name: q
           in: query
           required: false
-          schema: 
+          schema:
             type: string
         - name: tagId
           in: query
           required: false
-          schema: 
+          schema:
             format: uuid
             type: string
         - name: mode
           in: query
           required: false
-          schema: 
+          schema:
             type: string
-            enum: 
+            enum:
               - FIRST_COME_FIRST_SERVED
               - CANDIDATE
         - name: participation
           in: query
           required: false
-          schema: 
+          schema:
             type: string
-            enum: 
+            enum:
               - SINGLE
               - GROUP
+        - name: minQuestFundingTotal
+          in: query
+          required: false
+          schema:
+            minimum: 0
+            maximum: 700000
+            multipleOf: 0.01
+            type: number
+        - name: maxQuestFundingTotal
+          in: query
+          required: false
+          schema:
+            minimum: 0
+            maximum: 700000
+            multipleOf: 0.01
+            type: number
         - name: minQuestReward
           in: query
           required: false
-          schema: 
+          schema:
             minimum: 0
             maximum: 700000
             multipleOf: 0.01
@@ -25495,7 +25512,7 @@ paths:
         - name: maxQuestReward
           in: query
           required: false
-          schema: 
+          schema:
             minimum: 0
             maximum: 700000
             multipleOf: 0.01
@@ -25504,9 +25521,9 @@ paths:
         - name: maxDurationMinutes
           in: query
           required: false
-          schema: 
+          schema:
             minimum: 1
-            anyOf: 
+            anyOf:
               - format: integer
                 default: 0
                 type: string
@@ -25515,24 +25532,24 @@ paths:
         - name: startFrom
           in: query
           required: false
-          schema: 
+          schema:
             format: date-time
-            pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?\\+07:00$"
+            pattern: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?\+07:00$
             type: string
         - name: startTo
           in: query
           required: false
-          schema: 
+          schema:
             format: date-time
-            pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?\\+07:00$"
+            pattern: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?\+07:00$
             type: string
         - name: limit
           in: query
           required: false
-          schema: 
+          schema:
             minimum: 1
             maximum: 50
-            anyOf: 
+            anyOf:
               - format: integer
                 default: 0
                 type: string
@@ -25542,36 +25559,37 @@ paths:
         - name: cursor
           in: query
           required: false
-          schema: 
+          schema:
             type: string
-      responses: 
-        "200": 
+      responses:
+        "200":
           description: Response for status 200
-          content: 
-            application/json: 
-              schema: 
+          content:
+            application/json:
+              schema:
                 type: object
-                required: 
+                required:
                   - success
                   - data
-                properties: 
-                  success: 
+                properties:
+                  success:
                     const: true
                     type: boolean
-                  data: 
+                  data:
                     type: object
-                    required: 
+                    required:
                       - items
                       - nextCursor
-                    properties: 
-                      items: 
+                    properties:
+                      items:
                         type: array
-                        items: 
+                        items:
                           type: object
-                          required: 
+                          required:
                             - id
                             - title
                             - questReward
+                            - questFundingTotal
                             - tag
                             - mode
                             - participation
@@ -25582,70 +25600,76 @@ paths:
                             - hirerName
                             - hirerProfile
                             - location
-                          properties: 
-                            id: 
+                          properties:
+                            id:
                               format: uuid
                               type: string
-                            title: 
+                            title:
                               type: string
-                            questReward: 
+                            questReward:
                               minimum: 0
                               maximum: 700000
                               type: number
-                            tag: 
+                            questFundingTotal:
+                              minimum: 1
+                              maximum: 700000
+                              description: Inclusive Quest Funding Total in Baht with exact satang precision
+                                (at most two decimal places).
+                              type: number
+                            tag:
                               type: object
-                              required: 
+                              required:
                                 - id
                                 - name
-                              properties: 
-                                id: 
+                              properties:
+                                id:
                                   format: uuid
                                   type: string
-                                name: 
+                                name:
                                   type: string
-                            mode: 
+                            mode:
                               type: string
-                              enum: 
+                              enum:
                                 - FIRST_COME_FIRST_SERVED
                                 - CANDIDATE
-                            participation: 
+                            participation:
                               type: string
-                              enum: 
+                              enum:
                                 - SINGLE
                                 - GROUP
-                            headcount: 
+                            headcount:
                               minimum: 1
                               maximum: 20
-                              anyOf: 
+                              anyOf:
                                 - format: integer
                                   default: 0
                                   type: string
                                 - minimum: 1
                                   maximum: 20
                                   type: integer
-                            activeWorkerCount: 
+                            activeWorkerCount:
                               minimum: 0
                               maximum: 20
-                              anyOf: 
+                              anyOf:
                                 - format: integer
                                   default: 0
                                   type: string
                                 - minimum: 0
                                   maximum: 20
                                   type: integer
-                            startTime: 
+                            startTime:
                               format: date-time
-                              pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+07:00$"
+                              pattern: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}\+07:00$
                               type: string
-                            dueAt: 
+                            dueAt:
                               format: date-time
-                              pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+07:00$"
+                              pattern: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}\+07:00$
                               type: string
-                            hirerName: 
+                            hirerName:
                               type: string
-                            hirerProfile: 
+                            hirerProfile:
                               type: object
-                              required: 
+                              required:
                                 - id
                                 - version
                                 - firstName
@@ -25656,86 +25680,86 @@ paths:
                                 - avatar
                                 - occupation
                                 - redFlagged
-                              properties: 
-                                id: 
+                              properties:
+                                id:
                                   format: uuid
                                   type: string
-                                version: 
+                                version:
                                   minimum: 1
-                                  anyOf: 
+                                  anyOf:
                                     - format: integer
                                       default: 0
                                       type: string
                                     - minimum: 1
                                       type: integer
-                                firstName: 
+                                firstName:
                                   type: string
-                                lastName: 
+                                lastName:
                                   type: string
-                                bio: 
+                                bio:
                                   nullable: true
-                                  anyOf: 
+                                  anyOf:
                                     - type: string
                                     - type: "null"
-                                academicYear: 
+                                academicYear:
                                   nullable: true
-                                  anyOf: 
-                                    - anyOf: 
+                                  anyOf:
+                                    - anyOf:
                                         - format: integer
                                           default: 0
                                           type: string
                                         - type: integer
                                     - type: "null"
-                                department: 
+                                department:
                                   nullable: true
-                                  anyOf: 
+                                  anyOf:
                                     - type: object
-                                      required: 
+                                      required:
                                         - id
                                         - name
                                         - faculty
-                                      properties: 
-                                        id: 
+                                      properties:
+                                        id:
                                           format: uuid
                                           type: string
-                                        name: 
+                                        name:
                                           type: string
-                                        faculty: 
+                                        faculty:
                                           type: object
-                                          required: 
+                                          required:
                                             - name
-                                          properties: 
-                                            name: 
+                                          properties:
+                                            name:
                                               type: string
                                     - type: "null"
-                                avatar: 
+                                avatar:
                                   nullable: true
-                                  anyOf: 
+                                  anyOf:
                                     - type: object
-                                      required: 
+                                      required:
                                         - fileId
                                         - url
-                                      properties: 
-                                        fileId: 
+                                      properties:
+                                        fileId:
                                           format: uuid
                                           type: string
-                                        url: 
+                                        url:
                                           format: uri
                                           type: string
                                     - type: "null"
-                                occupation: 
+                                occupation:
                                   nullable: true
-                                  anyOf: 
+                                  anyOf:
                                     - type: object
-                                      required: 
+                                      required:
                                         - id
                                         - name
-                                      properties: 
-                                        id: 
+                                      properties:
+                                        id:
                                           format: uuid
                                           type: string
-                                        name: 
-                                          anyOf: 
+                                        name:
+                                          anyOf:
                                             - const: Staff
                                               type: string
                                             - const: Lecturer
@@ -25743,89 +25767,89 @@ paths:
                                             - const: Student
                                               type: string
                                     - type: "null"
-                                redFlagged: 
+                                redFlagged:
                                   type: boolean
-                            location: 
+                            location:
                               nullable: true
-                              anyOf: 
+                              anyOf:
                                 - type: string
                                 - type: "null"
-                      nextCursor: 
+                      nextCursor:
                         nullable: true
-                        anyOf: 
+                        anyOf:
                           - type: string
                           - type: "null"
                 additionalProperties: false
-        "400": 
+        "400":
           description: Response for status 400
-          content: 
-            application/json: 
-              schema: 
+          content:
+            application/json:
+              schema:
                 type: object
-                required: 
+                required:
                   - success
                   - error
-                properties: 
-                  success: 
+                properties:
+                  success:
                     const: false
                     type: boolean
-                  error: 
+                  error:
                     type: object
-                    required: 
+                    required:
                       - code
                       - message
-                    properties: 
-                      code: 
+                    properties:
+                      code:
                         type: string
-                      message: 
+                      message:
                         type: string
                 additionalProperties: false
-        "401": 
+        "401":
           description: Response for status 401
-          content: 
-            application/json: 
-              schema: 
+          content:
+            application/json:
+              schema:
                 type: object
-                required: 
+                required:
                   - success
                   - error
-                properties: 
-                  success: 
+                properties:
+                  success:
                     const: false
                     type: boolean
-                  error: 
+                  error:
                     type: object
-                    required: 
+                    required:
                       - code
                       - message
-                    properties: 
-                      code: 
+                    properties:
+                      code:
                         type: string
-                      message: 
+                      message:
                         type: string
                 additionalProperties: false
-        "500": 
+        "500":
           description: Response for status 500
-          content: 
-            application/json: 
-              schema: 
+          content:
+            application/json:
+              schema:
                 type: object
-                required: 
+                required:
                   - success
                   - error
-                properties: 
-                  success: 
+                properties:
+                  success:
                     const: false
                     type: boolean
-                  error: 
+                  error:
                     type: object
-                    required: 
+                    required:
                       - code
                       - message
-                    properties: 
-                      code: 
+                    properties:
+                      code:
                         type: string
-                      message: 
+                      message:
                         type: string
                 additionalProperties: false
     post: 
@@ -31883,39 +31907,40 @@ paths:
                         type: string
                 additionalProperties: false
   "/api/v2/quests/{questId}/public": 
-    get: 
-      tags: 
+    get:
+      tags:
         - Quests v2
       summary: Get Public Quest Detail through the v2 contract
-      description: Returns the public projection of a non-hidden QUEST_OPEN Quest to an authenticated Member who is not the Hirer. Candidate and Finance internals are excluded. Includes the Hirer Avatar when available.
+      description: Returns the public projection of a non-hidden QUEST_OPEN Quest to
+        an authenticated Member who is not the Hirer. Candidate and Finance
+        internals are excluded. Includes the Hirer Avatar when available.
       operationId: getPublicQuestV2Detail
-      security: 
-        - betterAuthSession: 
-            []
-      parameters: 
+      security:
+        - betterAuthSession: []
+      parameters:
         - name: questId
           in: path
           required: true
-          schema: 
+          schema:
             format: uuid
             type: string
-      responses: 
-        "200": 
+      responses:
+        "200":
           description: Response for status 200
-          content: 
-            application/json: 
-              schema: 
+          content:
+            application/json:
+              schema:
                 type: object
-                required: 
+                required:
                   - success
                   - data
-                properties: 
-                  success: 
+                properties:
+                  success:
                     const: true
                     type: boolean
-                  data: 
+                  data:
                     type: object
-                    required: 
+                    required:
                       - id
                       - title
                       - description
@@ -31925,6 +31950,7 @@ paths:
                       - participation
                       - state
                       - questReward
+                      - questFundingTotal
                       - headcount
                       - activeWorkerCount
                       - startTime
@@ -31935,65 +31961,65 @@ paths:
                       - hirerAvatar
                       - locations
                       - images
-                    properties: 
-                      id: 
+                    properties:
+                      id:
                         format: uuid
                         type: string
-                      title: 
+                      title:
                         type: string
-                      description: 
+                      description:
                         nullable: true
-                        anyOf: 
+                        anyOf:
                           - type: string
                           - type: "null"
-                      condition: 
+                      condition:
                         type: object
-                        required: 
+                        required:
                           - items
-                        properties: 
-                          items: 
+                        properties:
+                          items:
                             minItems: 1
                             type: array
-                            items: 
+                            items:
                               type: object
-                              required: 
+                              required:
                                 - position
                                 - text
-                              properties: 
-                                position: 
+                              properties:
+                                position:
                                   minimum: 0
-                                  anyOf: 
+                                  anyOf:
                                     - format: integer
                                       default: 0
                                       type: string
                                     - minimum: 0
                                       type: integer
-                                text: 
+                                text:
                                   type: string
-                      tag: 
+                      tag:
                         type: object
-                        required: 
+                        required:
                           - id
                           - name
-                        properties: 
-                          id: 
+                        properties:
+                          id:
                             format: uuid
                             type: string
-                          name: 
+                          name:
                             type: string
-                      mode: 
+                      mode:
                         type: string
-                        enum: 
+                        enum:
                           - FIRST_COME_FIRST_SERVED
                           - CANDIDATE
-                      participation: 
+                      participation:
                         type: string
-                        enum: 
+                        enum:
                           - SINGLE
                           - GROUP
-                      state: 
+                      state:
                         type: string
-                        enum: 
+                        enum:
                           - QUEST_DRAFT
                           - QUEST_OPEN
                           - QUEST_ASSIGNED
@@ -32001,110 +32027,116 @@ paths:
                           - QUEST_COMPLETED
                           - QUEST_CANCELLED
                           - QUEST_FAILED
-                      questReward: 
+                      questReward:
                         minimum: 0
                         maximum: 700000
                         type: number
-                      headcount: 
+                      questFundingTotal:
+                        minimum: 1
+                        maximum: 700000
+                        description: Inclusive Quest Funding Total in Baht with exact satang precision
+                          (at most two decimal places).
+                        type: number
+                      headcount:
                         minimum: 1
                         maximum: 20
-                        anyOf: 
+                        anyOf:
                           - format: integer
                             default: 0
                             type: string
                           - minimum: 1
                             maximum: 20
                             type: integer
-                      activeWorkerCount: 
+                      activeWorkerCount:
                         minimum: 0
                         maximum: 20
-                        anyOf: 
+                        anyOf:
                           - format: integer
                             default: 0
                             type: string
                           - minimum: 0
                             maximum: 20
                             type: integer
-                      startTime: 
+                      startTime:
                         format: date-time
-                        pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+07:00$"
+                        pattern: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}\+07:00$
                         type: string
-                      dueAt: 
+                      dueAt:
                         format: date-time
-                        pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+07:00$"
+                        pattern: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}\+07:00$
                         type: string
-                      proofRequired: 
+                      proofRequired:
                         type: boolean
-                      hirerName: 
+                      hirerName:
                         type: string
-                      hirerRedFlagged: 
+                      hirerRedFlagged:
                         type: boolean
-                      hirerAvatar: 
+                      hirerAvatar:
                         nullable: true
-                        anyOf: 
+                        anyOf:
                           - type: object
-                            required: 
+                            required:
                               - fileId
                               - url
-                            properties: 
-                              fileId: 
+                            properties:
+                              fileId:
                                 format: uuid
                                 type: string
-                              url: 
+                              url:
                                 format: uri
                                 type: string
                           - type: "null"
-                      locations: 
+                      locations:
                         type: array
-                        items: 
+                        items:
                           type: object
-                          required: 
+                          required:
                             - label
-                          properties: 
-                            label: 
+                          properties:
+                            label:
                               minLength: 1
                               maxLength: 100
                               pattern: \S
                               type: string
-                      images: 
+                      images:
                         type: array
-                        items: 
+                        items:
                           type: object
-                          required: 
+                          required:
                             - imageId
                             - position
                             - url
                             - urlExpiresAt
-                          properties: 
-                            imageId: 
+                          properties:
+                            imageId:
                               format: uuid
                               type: string
-                            position: 
+                            position:
                               minimum: 0
-                              anyOf: 
+                              anyOf:
                                 - format: integer
                                   default: 0
                                   type: string
                                 - minimum: 0
                                   type: integer
-                            url: 
+                            url:
                               format: uri
                               type: string
-                            urlExpiresAt: 
+                            urlExpiresAt:
                               format: date-time
                               type: string
-                      hasJoined: 
+                      hasJoined:
                         type: boolean
-                      assignmentId: 
+                      assignmentId:
                         nullable: true
-                        anyOf: 
+                        anyOf:
                           - format: uuid
                             type: string
                           - type: "null"
-                      assignmentStatus: 
+                      assignmentStatus:
                         nullable: true
-                        anyOf: 
-                          - anyOf: 
+                        anyOf:
+                          - anyOf:
                               - const: ASSIGNMENT_ACTIVE
                                 type: string
                               - const: ASSIGNMENT_COMPLETED
@@ -32115,160 +32147,170 @@ paths:
                                 type: string
                           - type: "null"
                 additionalProperties: false
-        "400": 
+        "400":
           description: Response for status 400
-          content: 
-            application/json: 
-              schema: 
+          content:
+            application/json:
+              schema:
                 type: object
-                required: 
+                required:
                   - success
                   - error
-                properties: 
-                  success: 
+                properties:
+                  success:
                     const: false
                     type: boolean
-                  error: 
+                  error:
                     type: object
-                    required: 
+                    required:
                       - code
                       - message
-                    properties: 
-                      code: 
+                    properties:
+                      code:
                         type: string
-                      message: 
+                      message:
                         type: string
                 additionalProperties: false
-        "401": 
+        "401":
           description: Response for status 401
-          content: 
-            application/json: 
-              schema: 
+          content:
+            application/json:
+              schema:
                 type: object
-                required: 
+                required:
                   - success
                   - error
-                properties: 
-                  success: 
+                properties:
+                  success:
                     const: false
                     type: boolean
-                  error: 
+                  error:
                     type: object
-                    required: 
+                    required:
                       - code
                       - message
-                    properties: 
-                      code: 
+                    properties:
+                      code:
                         type: string
-                      message: 
+                      message:
                         type: string
                 additionalProperties: false
-        "404": 
+        "404":
           description: Response for status 404
-          content: 
-            application/json: 
-              schema: 
+          content:
+            application/json:
+              schema:
                 type: object
-                required: 
+                required:
                   - success
                   - error
-                properties: 
-                  success: 
+                properties:
+                  success:
                     const: false
                     type: boolean
-                  error: 
+                  error:
                     type: object
-                    required: 
+                    required:
                       - code
                       - message
-                    properties: 
-                      code: 
+                    properties:
+                      code:
                         type: string
-                      message: 
+                      message:
                         type: string
                 additionalProperties: false
-        "500": 
+        "500":
           description: Response for status 500
-          content: 
-            application/json: 
-              schema: 
+          content:
+            application/json:
+              schema:
                 type: object
-                required: 
+                required:
                   - success
                   - error
-                properties: 
-                  success: 
+                properties:
+                  success:
                     const: false
                     type: boolean
-                  error: 
+                  error:
                     type: object
-                    required: 
+                    required:
                       - code
                       - message
-                    properties: 
-                      code: 
+                    properties:
+                      code:
                         type: string
-                      message: 
+                      message:
                         type: string
                 additionalProperties: false
-        "503": 
+        "503":
           description: Response for status 503
-          content: 
-            application/json: 
-              schema: 
+          content:
+            application/json:
+              schema:
                 type: object
-                required: 
+                required:
                   - success
                   - error
-                properties: 
-                  success: 
+                properties:
+                  success:
                     const: false
                     type: boolean
-                  error: 
+                  error:
                     type: object
-                    required: 
+                    required:
                       - code
                       - message
-                    properties: 
-                      code: 
+                    properties:
+                      code:
                         type: string
-                      message: 
+                      message:
                         type: string
                 additionalProperties: false
   "/api/v2/quests/{questId}/participation": 
-    get: 
-      tags: 
+    get:
+      tags:
         - Quests v2
       summary: Get Participation Quest Detail through the v2 contract
-      description: "Returns the Quest to an authenticated Member who holds an Assignment on it, in every Quest State and while the Quest is hidden, together with that Member's own Assignment. `activeWorkerCount` and `startedWorkerCount` count the Active Assignments and the ones that started Work, without naming other Workers. `dispute` is null unless the Quest is QUEST_FAILED; then it tells the viewer whether they can still self-file (`canFile`, 1 day after failure, one Dispute Case per Member per Quest) and shows their own case. A closed window answers 409 DISPUTE_CASE_WINDOW_EXPIRED. `moneyHold` is null unless the Quest is QUEST_FAILED; then `releasesAt` is failedAt + 7 days and a Dispute Case never moves it. Terminal Quests are read-only. Admin actions and Finance internals are excluded."
+      description: Returns the Quest to an authenticated Member who holds an
+        Assignment on it, in every Quest State and while the Quest is hidden,
+        together with that Member's own Assignment. `activeWorkerCount` and
+        `startedWorkerCount` count the Active Assignments and the ones that started
+        Work, without naming other Workers. `dispute` is null unless the Quest is
+        QUEST_FAILED; then it tells the viewer whether they can still self-file
+        (`canFile`, 1 day after failure, one Dispute Case per Member per Quest) and
+        shows their own case. A closed window answers 409
+        DISPUTE_CASE_WINDOW_EXPIRED. `moneyHold` is null unless the Quest is
+        QUEST_FAILED; then `releasesAt` is failedAt + 7 days and a Dispute Case
+        never moves it. Terminal Quests are read-only. Admin actions and Finance
+        internals are excluded.
       operationId: getQuestV2ParticipationDetail
-      security: 
-        - betterAuthSession: 
-            []
-      parameters: 
+      security:
+        - betterAuthSession: []
+      parameters:
         - name: questId
           in: path
           required: true
-          schema: 
+          schema:
             format: uuid
             type: string
-      responses: 
-        "200": 
+      responses:
+        "200":
           description: Response for status 200
-          content: 
-            application/json: 
-              schema: 
+          content:
+            application/json:
+              schema:
                 type: object
-                required: 
+                required:
                   - success
                   - data
-                properties: 
-                  success: 
+                properties:
+                  success:
                     const: true
                     type: boolean
-                  data: 
+                  data:
                     type: object
-                    required: 
+                    required:
                       - id
                       - title
                       - description
@@ -32278,6 +32320,7 @@ paths:
                       - participation
                       - state
                       - questReward
+                      - questFundingTotal
                       - headcount
                       - activeWorkerCount
                       - startTime
@@ -32288,68 +32331,69 @@ paths:
                       - hirerAvatar
                       - locations
                       - images
+                      - workerSettlement
                       - assignment
                       - startedWorkerCount
                       - capabilities
-                    properties: 
-                      id: 
+                    properties:
+                      id:
                         format: uuid
                         type: string
-                      title: 
+                      title:
                         type: string
-                      description: 
+                      description:
                         nullable: true
-                        anyOf: 
+                        anyOf:
                           - type: string
                           - type: "null"
-                      condition: 
+                      condition:
                         type: object
-                        required: 
+                        required:
                           - items
-                        properties: 
-                          items: 
+                        properties:
+                          items:
                             minItems: 1
                             type: array
-                            items: 
+                            items:
                               type: object
-                              required: 
+                              required:
                                 - position
                                 - text
-                              properties: 
-                                position: 
+                              properties:
+                                position:
                                   minimum: 0
-                                  anyOf: 
+                                  anyOf:
                                     - format: integer
                                       default: 0
                                       type: string
                                     - minimum: 0
                                       type: integer
-                                text: 
+                                text:
                                   type: string
-                      tag: 
+                      tag:
                         type: object
-                        required: 
+                        required:
                           - id
                           - name
-                        properties: 
-                          id: 
+                        properties:
+                          id:
                             format: uuid
                             type: string
-                          name: 
+                          name:
                             type: string
-                      mode: 
+                      mode:
                         type: string
-                        enum: 
+                        enum:
                           - FIRST_COME_FIRST_SERVED
                           - CANDIDATE
-                      participation: 
+                      participation:
                         type: string
-                        enum: 
+                        enum:
                           - SINGLE
                           - GROUP
-                      state: 
+                      state:
                         type: string
-                        enum: 
+                        enum:
                           - QUEST_DRAFT
                           - QUEST_OPEN
                           - QUEST_ASSIGNED
@@ -32357,110 +32401,116 @@ paths:
                           - QUEST_COMPLETED
                           - QUEST_CANCELLED
                           - QUEST_FAILED
-                      questReward: 
+                      questReward:
                         minimum: 0
                         maximum: 700000
                         type: number
-                      headcount: 
+                      questFundingTotal:
+                        minimum: 1
+                        maximum: 700000
+                        description: Inclusive Quest Funding Total in Baht with exact satang precision
+                          (at most two decimal places).
+                        type: number
+                      headcount:
                         minimum: 1
                         maximum: 20
-                        anyOf: 
+                        anyOf:
                           - format: integer
                             default: 0
                             type: string
                           - minimum: 1
                             maximum: 20
                             type: integer
-                      activeWorkerCount: 
+                      activeWorkerCount:
                         minimum: 0
                         maximum: 20
-                        anyOf: 
+                        anyOf:
                           - format: integer
                             default: 0
                             type: string
                           - minimum: 0
                             maximum: 20
                             type: integer
-                      startTime: 
+                      startTime:
                         format: date-time
-                        pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+07:00$"
+                        pattern: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}\+07:00$
                         type: string
-                      dueAt: 
+                      dueAt:
                         format: date-time
-                        pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+07:00$"
+                        pattern: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}\+07:00$
                         type: string
-                      proofRequired: 
+                      proofRequired:
                         type: boolean
-                      hirerName: 
+                      hirerName:
                         type: string
-                      hirerRedFlagged: 
+                      hirerRedFlagged:
                         type: boolean
-                      hirerAvatar: 
+                      hirerAvatar:
                         nullable: true
-                        anyOf: 
+                        anyOf:
                           - type: object
-                            required: 
+                            required:
                               - fileId
                               - url
-                            properties: 
-                              fileId: 
+                            properties:
+                              fileId:
                                 format: uuid
                                 type: string
-                              url: 
+                              url:
                                 format: uri
                                 type: string
                           - type: "null"
-                      locations: 
+                      locations:
                         type: array
-                        items: 
+                        items:
                           type: object
-                          required: 
+                          required:
                             - label
-                          properties: 
-                            label: 
+                          properties:
+                            label:
                               minLength: 1
                               maxLength: 100
                               pattern: \S
                               type: string
-                      images: 
+                      images:
                         type: array
-                        items: 
+                        items:
                           type: object
-                          required: 
+                          required:
                             - imageId
                             - position
                             - url
                             - urlExpiresAt
-                          properties: 
-                            imageId: 
+                          properties:
+                            imageId:
                               format: uuid
                               type: string
-                            position: 
+                            position:
                               minimum: 0
-                              anyOf: 
+                              anyOf:
                                 - format: integer
                                   default: 0
                                   type: string
                                 - minimum: 0
                                   type: integer
-                            url: 
+                            url:
                               format: uri
                               type: string
-                            urlExpiresAt: 
+                            urlExpiresAt:
                               format: date-time
                               type: string
-                      hasJoined: 
+                      hasJoined:
                         type: boolean
-                      assignmentId: 
+                      assignmentId:
                         nullable: true
-                        anyOf: 
+                        anyOf:
                           - format: uuid
                             type: string
                           - type: "null"
-                      assignmentStatus: 
+                      assignmentStatus:
                         nullable: true
-                        anyOf: 
-                          - anyOf: 
+                        anyOf:
+                          - anyOf:
                               - const: ASSIGNMENT_ACTIVE
                                 type: string
                               - const: ASSIGNMENT_COMPLETED
@@ -32470,108 +32520,154 @@ paths:
                               - const: ASSIGNMENT_CANCELLED
                                 type: string
                           - type: "null"
-                      assignment: 
+                      workerSettlement:
+                        nullable: true
+                        anyOf:
+                          - type: object
+                            required:
+                              - status
+                              - amountSatang
+                              - settledAt
+                            properties:
+                              status:
+                                anyOf:
+                                  - const: PAID
+                                    type: string
+                                  - const: PENDING
+                                    type: string
+                                  - const: NO_PAYMENT
+                                    type: string
+                              amountSatang:
+                                nullable: true
+                                anyOf:
+                                  - minimum: 0
+                                    anyOf:
+                                      - format: integer
+                                        default: 0
+                                        type: string
+                                      - minimum: 0
+                                        type: integer
+                                  - type: "null"
+                              settledAt:
+                                nullable: true
+                                anyOf:
+                                  - format: date-time
+                                    type: string
+                                  - type: "null"
+                          - type: "null"
+                      assignment:
                         type: object
-                        required: 
+                        required:
                           - status
                           - startedAt
-                        properties: 
-                          status: 
+                        properties:
+                          status:
                             type: string
-                            enum: 
+                            enum:
                               - ASSIGNMENT_ACTIVE
                               - ASSIGNMENT_COMPLETED
                               - ASSIGNMENT_INCOMPLETE
                               - ASSIGNMENT_CANCELLED
-                          startedAt: 
+                          startedAt:
                             nullable: true
-                            anyOf: 
+                            anyOf:
                               - format: date-time
                                 type: string
                               - type: "null"
-                      startedWorkerCount: 
+                      startedWorkerCount:
                         minimum: 0
                         maximum: 20
-                        description: How many Active Assignments on this Quest have a Start Work time. Pair it with activeWorkerCount to show GROUP progress without a roster read; no Worker identity is exposed.
-                        anyOf: 
+                        description: How many Active Assignments on this Quest have a Start Work time.
+                          Pair it with activeWorkerCount to show GROUP progress
+                          without a roster read; no Worker identity is exposed.
+                        anyOf:
                           - format: integer
                             default: 0
                             type: string
                           - minimum: 0
                             maximum: 20
-                            description: How many Active Assignments on this Quest have a Start Work time. Pair it with activeWorkerCount to show GROUP progress without a roster read; no Worker identity is exposed.
+                            description: How many Active Assignments on this Quest have a Start Work time.
+                              Pair it with activeWorkerCount to show GROUP progress
+                              without a roster read; no Worker identity is exposed.
                             type: integer
-                      capabilities: 
+                      capabilities:
                         type: object
-                        required: 
+                        required:
                           - canViewOnly
-                        properties: 
-                          canViewOnly: 
+                        properties:
+                          canViewOnly:
                             type: boolean
-                      dispute: 
+                      dispute:
                         nullable: true
-                        anyOf: 
-                          - description: The caller’s Dispute view. Null unless the Quest is QUEST_FAILED. canFile is the Server decision for the self-file window. myCase is the caller’s own Dispute Case only.
+                        anyOf:
+                          - description: The caller’s Dispute view. Null unless the Quest is QUEST_FAILED.
+                              canFile is the Server decision for the self-file
+                              window. myCase is the caller’s own Dispute Case only.
                             type: object
-                            required: 
+                            required:
                               - canFile
                               - windowEndsAt
                               - myCase
-                            properties: 
-                              canFile: 
+                            properties:
+                              canFile:
                                 type: boolean
-                              windowEndsAt: 
+                              windowEndsAt:
                                 nullable: true
-                                anyOf: 
+                                anyOf:
                                   - format: date-time
                                     type: string
                                   - type: "null"
-                              myCase: 
+                              myCase:
                                 nullable: true
-                                anyOf: 
+                                anyOf:
                                   - type: object
-                                    required: 
+                                    required:
                                       - id
                                       - displayId
                                       - status
                                       - createdAt
-                                    properties: 
-                                      id: 
+                                    properties:
+                                      id:
                                         format: uuid
                                         type: string
-                                      displayId: 
+                                      displayId:
                                         type: string
-                                      status: 
+                                      status:
                                         type: string
-                                      createdAt: 
+                                      createdAt:
                                         format: date-time
                                         type: string
                                   - type: "null"
                           - type: "null"
-                      moneyHold: 
+                      moneyHold:
                         nullable: true
-                        anyOf: 
-                          - description: The 7-day hold on a failed Quest. Null unless the Quest is QUEST_FAILED. releasesAt is failedAt + 7 days and a Dispute Case does not move it; it stays the nominal time if the lifecycle worker runs late. heldSatang is the Hirer’s still-held Satang and is null for a Worker.
+                        anyOf:
+                          - description: The 7-day hold on a failed Quest. Null unless the Quest is
+                              QUEST_FAILED. releasesAt is failedAt + 7 days and a
+                              Dispute Case does not move it; it stays the nominal
+                              time if the lifecycle worker runs late. heldSatang is
+                              the Hirer’s still-held Satang and is null for a
+                              Worker.
                             type: object
-                            required: 
+                            required:
                               - status
                               - releasesAt
                               - heldSatang
-                            properties: 
-                              status: 
-                                anyOf: 
+                            properties:
+                              status:
+                                anyOf:
                                   - const: HELD
                                     type: string
                                   - const: RELEASED
                                     type: string
-                              releasesAt: 
+                              releasesAt:
                                 format: date-time
                                 type: string
-                              heldSatang: 
+                              heldSatang:
                                 nullable: true
-                                anyOf: 
+                                anyOf:
                                   - minimum: 0
-                                    anyOf: 
+                                    anyOf:
                                       - format: integer
                                         default: 0
                                         type: string
@@ -32579,125 +32675,124 @@ paths:
                                         type: integer
                                   - type: "null"
                           - type: "null"
-                additionalProperties: false
-        "400": 
+        "400":
           description: Response for status 400
-          content: 
-            application/json: 
-              schema: 
+          content:
+            application/json:
+              schema:
                 type: object
-                required: 
+                required:
                   - success
                   - error
-                properties: 
-                  success: 
+                properties:
+                  success:
                     const: false
                     type: boolean
-                  error: 
+                  error:
                     type: object
-                    required: 
+                    required:
                       - code
                       - message
-                    properties: 
-                      code: 
+                    properties:
+                      code:
                         type: string
-                      message: 
+                      message:
                         type: string
                 additionalProperties: false
-        "401": 
+        "401":
           description: Response for status 401
-          content: 
-            application/json: 
-              schema: 
+          content:
+            application/json:
+              schema:
                 type: object
-                required: 
+                required:
                   - success
                   - error
-                properties: 
-                  success: 
+                properties:
+                  success:
                     const: false
                     type: boolean
-                  error: 
+                  error:
                     type: object
-                    required: 
+                    required:
                       - code
                       - message
-                    properties: 
-                      code: 
+                    properties:
+                      code:
                         type: string
-                      message: 
+                      message:
                         type: string
                 additionalProperties: false
-        "404": 
+        "404":
           description: Response for status 404
-          content: 
-            application/json: 
-              schema: 
+          content:
+            application/json:
+              schema:
                 type: object
-                required: 
+                required:
                   - success
                   - error
-                properties: 
-                  success: 
+                properties:
+                  success:
                     const: false
                     type: boolean
-                  error: 
+                  error:
                     type: object
-                    required: 
+                    required:
                       - code
                       - message
-                    properties: 
-                      code: 
+                    properties:
+                      code:
                         type: string
-                      message: 
+                      message:
                         type: string
                 additionalProperties: false
-        "500": 
+        "500":
           description: Response for status 500
-          content: 
-            application/json: 
-              schema: 
+          content:
+            application/json:
+              schema:
                 type: object
-                required: 
+                required:
                   - success
                   - error
-                properties: 
-                  success: 
+                properties:
+                  success:
                     const: false
                     type: boolean
-                  error: 
+                  error:
                     type: object
-                    required: 
+                    required:
                       - code
                       - message
-                    properties: 
-                      code: 
+                    properties:
+                      code:
                         type: string
-                      message: 
+                      message:
                         type: string
                 additionalProperties: false
-        "503": 
+        "503":
           description: Response for status 503
-          content: 
-            application/json: 
-              schema: 
+          content:
+            application/json:
+              schema:
                 type: object
-                required: 
+                required:
                   - success
                   - error
-                properties: 
-                  success: 
+                properties:
+                  success:
                     const: false
                     type: boolean
-                  error: 
+                  error:
                     type: object
-                    required: 
+                    required:
                       - code
                       - message
-                    properties: 
-                      code: 
+                    properties:
+                      code:
                         type: string
-                      message: 
+                      message:
                         type: string
                 additionalProperties: false
   /api/v1/quests: 

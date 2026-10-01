@@ -93,6 +93,11 @@ failed implementation work. Read `docs/agents/issue-tracker.md`,
 `docs/agents/triage-labels.md`, and `docs/agents/domain.md` for GitHub issue
 work; use only the canonical triage states.
 
+At session start, read `AGENTS.local.md` when it exists. For any Android device
+or emulator task, always read and follow the `android-device-quick` skill before
+listing devices, launching builds, collecting logs, or interacting with screens.
+`AGENTS.local.md` is gitignored for checkout-specific agent instructions.
+
 If a failure or discovery is likely to affect future sessions, add a concise
 rule to `docs/agents/gotchas.md` using its format. Prune obsolete gotchas
 instead of accumulating diary entries.

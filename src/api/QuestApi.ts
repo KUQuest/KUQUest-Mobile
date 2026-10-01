@@ -179,6 +179,8 @@ export class QuestApi {
       tagId?: string;
       mode?: QuestV2Mode;
       participation?: QuestV2Participation;
+      minQuestFundingTotal?: number;
+      maxQuestFundingTotal?: number;
       minQuestReward?: number;
       maxQuestReward?: number;
       maxDurationMinutes?: number;
