@@ -19,7 +19,10 @@ import {
   subscribeToQuestEvents,
 } from "../../live/questEvents";
 import { QuestEditRequestStatus } from "../../domain/types";
-import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
+import type {
+  QuestV2ProofSubmission,
+  QuestV2TeamFileLink,
+} from "@/api/questV2Contracts";
 import {
   invalidateWorkerQuestReads,
   questBoardKeys,
@@ -27,6 +30,7 @@ import {
   useCancelQuestMutation,
   useCreateReviewMutation,
   useJoinCandidateTeamMutation,
+  useCandidateTeamFileLinksQuery,
   useLiveQuestSnapshotQuery,
   useProofFileLinksQuery,
   useQuestBoardQuery,
@@ -38,6 +42,7 @@ import {
 
 jest.mock("../../live/liveQuestService", () => ({
   liveQuestService: {
+    getCandidateTeamFileLink: jest.fn(),
     getProofFileLink: jest.fn(),
     getLiveSnapshot: jest.fn(),
     listBoardQuests: jest.fn(),
@@ -68,6 +73,87 @@ describe("quest board query ownership", () => {
         </QueryClientProvider>
       );
     };
+
+  it("loads submitted Candidate Team file links in submission order", async () => {
+    const firstLink: QuestV2TeamFileLink = {
+      fileId: "file-1",
+      contentType: "image/png",
+      sizeBytes: 128,
+      position: 1,
+      url: "https://storage.example.test/file-1",
+      urlExpiresAt: "2026-09-15T10:15:00Z",
+    };
+    const secondLink: QuestV2TeamFileLink = {
+      ...firstLink,
+      fileId: "file-2",
+      position: 0,
+      url: "https://storage.example.test/file-2",
+    };
+    jest
+      .mocked(liveQuestService.getCandidateTeamFileLink)
+      .mockImplementation((_questId, _teamId, fileId) =>
+        Promise.resolve(fileId === "file-1" ? firstLink : secondLink)
+      );
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { result, unmount } = await renderHook(
+      () =>
+        useCandidateTeamFileLinksQuery(
+          "quest-1",
+          "hirer-1",
+          "team-1",
+          ["file-1", "file-2"],
+          true
+        ),
+      { wrapper: wrapper(queryClient) }
+    );
+
+    await waitFor(() =>
+      expect(result.current.data).toEqual([secondLink, firstLink])
+    );
+    expect(
+      jest
+        .mocked(liveQuestService.getCandidateTeamFileLink)
+        .mock.calls.map(([, , fileId]) => fileId)
+    ).toEqual(["file-1", "file-2"]);
+
+    await unmount();
+    queryClient.clear();
+  });
+
+  it("rejects a Candidate Team file link for a different submission file", async () => {
+    jest.mocked(liveQuestService.getCandidateTeamFileLink).mockResolvedValue({
+      fileId: "different-file",
+      contentType: "image/png",
+      sizeBytes: 128,
+      position: 0,
+      url: "https://storage.example.test/file",
+      urlExpiresAt: "2026-09-15T10:15:00Z",
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { result, unmount } = await renderHook(
+      () =>
+        useCandidateTeamFileLinksQuery(
+          "quest-2",
+          "hirer-2",
+          "team-2",
+          ["expected-file"],
+          true
+        ),
+      { wrapper: wrapper(queryClient) }
+    );
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toMatchObject({
+      message: "Candidate Team file endpoint returned a mismatched file",
+    });
+
+    await unmount();
+    queryClient.clear();
+  });
 
   it("subscribes after its enabled REST snapshot and refetches on acceptance or invalidation", async () => {
     jest.mocked(liveQuestService.listBoardQuests).mockReset();

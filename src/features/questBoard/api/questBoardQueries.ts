@@ -18,6 +18,7 @@ import type {
 import {
   questV2ProofFileStatusSchema,
   type QuestV2ProofSubmission,
+  type QuestV2TeamFileLink,
 } from "@/api/questV2Contracts";
 import { homeKeys } from "@/features/home/api/homeQueries";
 import { myQuestsKeys } from "@/features/myQuests/api/myQuestsQueries";
@@ -66,6 +67,20 @@ export const questBoardKeys = {
     [...questBoardKeys.all, "reviews", questId] as const,
   reviews: (questId: string, viewerId: string) =>
     [...questBoardKeys.reviewsScope(questId), viewerId] as const,
+  candidateTeamFileLinks: (
+    questId: string,
+    viewerId: string,
+    teamId: string,
+    fileIds: readonly string[]
+  ) =>
+    [
+      ...questBoardKeys.all,
+      "candidate-team-file-links",
+      questId,
+      viewerId,
+      teamId,
+      fileIds,
+    ] as const,
 };
 
 export function setQuestEditRequestId(
@@ -116,6 +131,46 @@ export function useProofFileLinksQuery(
         throw new Error("Proof file endpoint returned a mismatched file");
       }
       return fileLinks;
+    },
+    staleTime: 0,
+  });
+}
+export function useCandidateTeamFileLinksQuery(
+  questId: string | null,
+  viewerId: string | null,
+  teamId: string | null,
+  fileIds: readonly string[],
+  enabled: boolean
+) {
+  return useQuery({
+    enabled: Boolean(
+      enabled && questId && viewerId && teamId && fileIds.length > 0
+    ),
+    queryKey: questBoardKeys.candidateTeamFileLinks(
+      questId ?? "",
+      viewerId ?? "",
+      teamId ?? "",
+      fileIds
+    ),
+    queryFn: async ({ signal }): Promise<QuestV2TeamFileLink[]> => {
+      if (!questId || !viewerId || !teamId) {
+        throw new Error("A quest, viewer, and Candidate Team are required");
+      }
+      const fileLinks = await Promise.all(
+        fileIds.map((fileId) =>
+          liveQuestService.getCandidateTeamFileLink(questId, teamId, fileId, {
+            signal,
+          })
+        )
+      );
+      if (
+        fileLinks.some((fileLink, index) => fileLink.fileId !== fileIds[index])
+      ) {
+        throw new Error(
+          "Candidate Team file endpoint returned a mismatched file"
+        );
+      }
+      return fileLinks.sort((left, right) => left.position - right.position);
     },
     staleTime: 0,
   });

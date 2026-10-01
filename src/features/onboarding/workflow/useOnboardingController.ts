@@ -28,6 +28,7 @@ import { useOnboardingDatePicker } from "../useOnboardingDatePicker";
 import { useOnboardingForm } from "../useOnboardingForm";
 import { useOnboardingImagePicker } from "../useOnboardingImagePicker";
 import { useOnboardingPersistence } from "../useOnboardingPersistence";
+import { ProfilePersistenceError } from "../profilePersistenceCoordinator";
 import { useOnboardingWizard } from "../useOnboardingWizard";
 
 function onboardingDebug(
@@ -244,14 +245,23 @@ export function useOnboardingController() {
       if (result.failure.draft) {
         formState.replaceForm(result.failure.draft, true);
       }
+      const cause =
+        result.failure.error instanceof ProfilePersistenceError
+          ? result.failure.error.cause
+          : result.failure.error;
       const failureMessage = getLocalizedErrorMessage(
-        result.failure.error,
+        cause ?? result.failure.error,
         locale,
-        { fallback: messages.submitErrorMsg }
+        {
+          codes: {
+            STUDENT_ID_ALREADY_EXISTS: messages.studentIdAlreadyExists,
+          },
+          fallback: messages.submitErrorMsg,
+        }
       );
       setSubmitError(
-        result.failure.error instanceof Error &&
-          result.failure.error.message.includes("EXPO_PUBLIC_TERMS_VERSION")
+        cause instanceof Error &&
+          cause.message.includes("EXPO_PUBLIC_TERMS_VERSION")
           ? messages.termsConfigError
           : result.failure.partial
             ? `${failureMessage} ${messages.partialSaveMsg}`
