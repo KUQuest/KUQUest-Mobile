@@ -2,7 +2,6 @@ import React, { useMemo } from "react";
 import { Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { Avatar } from "@/components/ui/Avatar";
-import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import {
   BriefcaseBusiness,
@@ -50,7 +49,6 @@ export interface HirerQuestProgressCardProps {
   onOpenDetails: () => void;
   onOpenWorkerProfile?: (workerId: string) => void;
   onViewRoster?: () => void;
-  onReviewProof?: () => void;
 }
 
 const timelineDotColors = {
@@ -81,7 +79,6 @@ export function HirerQuestProgressCard({
   onOpenDetails,
   onOpenWorkerProfile,
   onViewRoster,
-  onReviewProof,
 }: HirerQuestProgressCardProps) {
   const { locale } = useLocale();
   const { colors } = useAppTheme();
@@ -384,14 +381,7 @@ export function HirerQuestProgressCard({
             ) : null}
           </RosterBanner>
         ) : hasApplicants ? (
-          <RosterBanner
-            {...(onViewRoster
-              ? {
-                  accessibilityLabel: `${messages.viewApplicants}: ${messages.applicantsLabel(applicantCount)}`,
-                  accessibilityRole: "button" as const,
-                  onPress: onViewRoster,
-                }
-              : {})}
+          <View
             className={styles.workerBanner}
             testID={`hirer-quest-card-applicants-${questId}`}
           >
@@ -412,30 +402,10 @@ export function HirerQuestProgressCard({
                 </Text>
               </View>
             </View>
-            {onViewRoster ? (
-              <View
-                className={styles.workerProfileButton}
-                testID={`hirer-quest-card-view-applicants-${questId}`}
-              >
-                <Text
-                  className={`${styles.workerProfileText} text-ku-primary-dark`}
-                >
-                  {messages.viewApplicants}
-                </Text>
-                <ChevronRight
-                  color={colors.primary}
-                  size={15}
-                  strokeWidth={2.4}
-                />
-              </View>
-            ) : null}
-          </RosterBanner>
+          </View>
         ) : (
-          <Pressable
-            accessibilityLabel={`${messages.waitingForApplicants}: ${messages.manageQuest}`}
-            accessibilityRole="button"
+          <View
             className={styles.workerBanner}
-            onPress={onOpenDetails}
             testID={`hirer-quest-card-waiting-${questId}`}
           >
             <View className={styles.workerLeading}>
@@ -453,34 +423,8 @@ export function HirerQuestProgressCard({
                 </Text>
               </View>
             </View>
-            <View
-              className={styles.workerProfileButton}
-              testID={`hirer-quest-card-manage-${questId}`}
-            >
-              <Text
-                className={`${styles.workerProfileText} text-ku-primary-dark`}
-              >
-                {messages.manageQuest}
-              </Text>
-              <ChevronRight
-                color={colors.primary}
-                size={15}
-                strokeWidth={2.4}
-              />
-            </View>
-          </Pressable>
+          </View>
         )}
-        {proofPending && onReviewProof ? (
-          <Button
-            accessibilityLabel={messages.reviewProof}
-            accessibilityRole="button"
-            className="mt-ku-md"
-            onPress={onReviewProof}
-            testID={`hirer-quest-card-review-proof-${questId}`}
-          >
-            {messages.reviewProof}
-          </Button>
-        ) : null}
       </View>
       <View className={styles.cardFooter}>
         <Pressable

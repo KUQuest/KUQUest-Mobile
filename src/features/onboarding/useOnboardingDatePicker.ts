@@ -1,5 +1,4 @@
 import { useCallback, useState } from "react";
-import type { DateTimePickerChangeEvent } from "@react-native-community/datetimepicker";
 
 export type OnboardingDatePickerTarget = {
   index: number;
@@ -9,7 +8,7 @@ export type OnboardingDatePickerTarget = {
 };
 export type OnboardingDatePickerState = {
   target: OnboardingDatePickerTarget | null;
-  today: Date;
+  today: string;
   datePickerIndex: number | null;
   openCertificate: (index: number, value: string) => void;
   openExperience: (
@@ -17,7 +16,7 @@ export type OnboardingDatePickerState = {
     field: "startedAt" | "endedAt",
     value: string
   ) => void;
-  handleChange: (event: DateTimePickerChangeEvent, selectedDate?: Date) => void;
+  handleDate: (date: string) => void;
   close: () => void;
 };
 
@@ -33,57 +32,45 @@ export function useOnboardingDatePicker({
   ) => void;
 }) {
   const [target, setTarget] = useState<OnboardingDatePickerTarget | null>(null);
-  const [today] = useState(() => new Date());
+  const [today] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  });
 
-  const openCertificate = useCallback((index: number, value: string) => {
-    const parsed = /^\d{4}-\d{2}-\d{2}$/.test(value)
-      ? new Date(`${value}T12:00:00`)
-      : new Date();
-    setTarget({
-      index,
-      value: Number.isNaN(parsed.getTime())
-        ? new Date().toISOString()
-        : parsed.toISOString(),
-      kind: "certificate",
-    });
-  }, []);
+  const openCertificate = useCallback(
+    (index: number, value: string) => {
+      setTarget({
+        index,
+        value:
+          /^\d{4}-\d{2}-\d{2}$/.test(value) && value <= today ? value : today,
+        kind: "certificate",
+      });
+    },
+    [today]
+  );
 
   const openExperience = useCallback(
     (index: number, field: "startedAt" | "endedAt", value: string) => {
-      const parsed = /^\d{4}-\d{2}-\d{2}$/.test(value)
-        ? new Date(`${value}T12:00:00`)
-        : new Date();
       setTarget({
         index,
         field,
-        value: Number.isNaN(parsed.getTime())
-          ? new Date().toISOString()
-          : parsed.toISOString(),
+        value:
+          /^\d{4}-\d{2}-\d{2}$/.test(value) && value <= today ? value : today,
         kind: "experience",
       });
     },
-    []
+    [today]
   );
 
   const close = useCallback(() => setTarget(null), []);
 
-  const handleChange = useCallback(
-    (_event: DateTimePickerChangeEvent, selectedDate?: Date) => {
-      if (!selectedDate || !target) {
-        setTarget(null);
-        return;
-      }
-      const year = selectedDate.getFullYear();
-      const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
-      const day = String(selectedDate.getDate()).padStart(2, "0");
-      const date =
-        target.kind === "experience"
-          ? `${year}-${month}-01`
-          : `${year}-${month}-${day}`;
+  const handleDate = useCallback(
+    (date: string) => {
+      if (!target) return;
       if (target.kind === "certificate") {
         onCertificateDate(target.index, date);
       } else if (target.field) {
-        onExperienceDate(target.index, target.field, date);
+        onExperienceDate(target.index, target.field, `${date.slice(0, 7)}-01`);
       }
       setTarget(null);
     },
@@ -96,7 +83,7 @@ export function useOnboardingDatePicker({
     datePickerIndex: target?.index ?? null,
     openCertificate,
     openExperience,
-    handleChange,
+    handleDate,
     close,
   };
 }

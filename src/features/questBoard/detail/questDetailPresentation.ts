@@ -429,7 +429,7 @@ function closeConfirmation(
 export function buildQuestDetailSheetsProps(
   context: QuestDetailPresentationContext
 ): QuestDetailSheetsProps {
-  const { facts, surface, transitions, bottomInset } = context;
+  const { facts, surface, transitions } = context;
   const closeConfirm = closeConfirmation(facts, transitions);
   return {
     confirmationSheet: facts.confirmationOpen
@@ -454,7 +454,6 @@ export function buildQuestDetailSheetsProps(
         ? {
             actualHeadcount: facts.participantCount,
             applications: facts.liveSnapshot.applications,
-            bottomInset,
             fullScreen: true,
             loading:
               surface.liveAction === "select-candidate" ||
@@ -489,7 +488,6 @@ export function buildQuestDetailSheetsProps(
         ? {
             actualHeadcount: facts.participantCount,
             applications: facts.activePrototypeState.applications,
-            bottomInset,
             locale: facts.locale,
             mode: facts.candidateGroup ? "team" : "individual",
             onAcceptProposal: facts.projection?.capabilities.canSelectCandidate

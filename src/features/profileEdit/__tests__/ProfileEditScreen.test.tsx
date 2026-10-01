@@ -250,6 +250,24 @@ describe("Edit Profile hub", () => {
     expect(view.getByText("Description (optional)")).toBeTruthy();
     expect(view.getByText("Save changes")).toBeTruthy();
   });
+  it("commits a date selected in the shared date picker", async () => {
+    mockRouteParams.section = "experience";
+    mockRouteParams.itemId = "new";
+    const view = await renderWithQueryClient(<ProfileEditSectionScreen />);
+    await waitFor(() =>
+      expect(view.getByLabelText("Role or experience title")).toBeTruthy()
+    );
+
+    await fireEvent.press(view.getByLabelText("Start date: Select start date"));
+    const today = new Date();
+    const todayValue = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    await fireEvent.press(
+      view.getByTestId(`custom-date-picker-day-${todayValue}`)
+    );
+    await fireEvent.press(view.getByTestId("custom-date-picker-confirm"));
+
+    expect(view.getByLabelText(`Start date: ${todayValue}`)).toBeTruthy();
+  });
 
   it("uses an editor-shaped skeleton for a new certificate route", async () => {
     mockRouteParams.section = "certificates";

@@ -26,7 +26,6 @@ export interface HirerHomeMessages {
   currentStageLabel: string;
   terminalStageLabel: string;
   openDetails: string;
-  reviewProof: string;
   scheduleStart: string;
   scheduleEnd: string;
   eyebrow: string;
@@ -57,9 +56,7 @@ export interface HirerHomeMessages {
   joinedLabel: (count: number, max?: number) => string;
   waitingForApplicants: string;
   noApplicantsYet: string;
-  viewApplicants: string;
   viewParticipants: string;
-  manageQuest: string;
 }
 
 export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
@@ -88,7 +85,6 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     currentStageLabel: "current",
     terminalStageLabel: "terminal",
     openDetails: "View details",
-    reviewProof: "Review proof",
     scheduleStart: "Starts",
     scheduleEnd: "Ends",
     eyebrow: "Hirer workspace",
@@ -137,9 +133,7 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
       max ? `Joined (${count}/${max})` : `Joined (${count})`,
     waitingForApplicants: "Awaiting applicants or workers",
     noApplicantsYet: "No applicants yet",
-    viewApplicants: "View applicants",
     viewParticipants: "View participants",
-    manageQuest: "Manage quest",
   },
   th: {
     title: "หน้าหลักผู้ว่าจ้าง",
@@ -165,7 +159,6 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     currentStageLabel: "สถานะปัจจุบัน",
     terminalStageLabel: "สถานะสิ้นสุด",
     openDetails: "ดูรายละเอียด",
-    reviewProof: "ตรวจงาน",
     scheduleStart: "เริ่มงาน",
     scheduleEnd: "สิ้นสุด",
     eyebrow: "พื้นที่ผู้ว่าจ้าง",
@@ -213,8 +206,6 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
       max ? `ผู้เข้าร่วม (${count}/${max} คน)` : `ผู้เข้าร่วม (${count} คน)`,
     waitingForApplicants: "รอผู้สมัครหรือผู้ตอบรับ",
     noApplicantsYet: "ยังไม่มีผู้สมัคร",
-    viewApplicants: "ดูผู้สมัคร",
     viewParticipants: "ดูผู้เข้าร่วม",
-    manageQuest: "จัดการเควสต์",
   },
 };

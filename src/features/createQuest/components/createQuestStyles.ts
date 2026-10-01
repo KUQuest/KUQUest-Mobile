@@ -106,14 +106,6 @@ const styles = {
   placeholderText: "text-ku-text-muted",
   inputWithIcon:
     "items-center bg-ku-surface border-ku-border rounded-ku-field border flex-row min-h-[48px] px-ku-md",
-  timePickerBackdrop: "bg-ku-overlay flex-1 justify-end",
-  timePickerSheet:
-    "bg-ku-background rounded-tl-[24px] rounded-tr-[24px] px-ku-20 pb-ku-28 pt-ku-md",
-  timePickerHeader: "items-center flex-row justify-between mb-ku-12",
-  timePickerTitle: "text-ku-text-strong font-ku-bold text-ku-body",
-  timePickerSubtitle: "text-ku-text-muted font-ku-regular text-ku-meta mt-ku-2",
-  timePickerCloseButton:
-    "items-center justify-center p-ku-6 rounded-ku-pill min-h-[36px] min-w-[36px]",
   timeDisplayContainer:
     "items-center flex-row justify-center gap-ku-12 my-ku-10",
   timeDisplayBox:
@@ -149,30 +141,13 @@ const styles = {
   stepperBtnText: "text-ku-text-strong font-ku-bold text-ku-body-small",
   timePickerActions: "flex-row items-center gap-ku-10 mt-ku-sm",
   timePickerCancelBtn:
-    "flex-1 items-center justify-center border border-ku-border rounded-[12px] min-h-[46px] px-ku-12",
+    "flex-1 items-center justify-center border border-ku-border rounded-[12px] min-h-[48px] px-ku-12",
   timePickerCancelText:
     "text-ku-text-secondary font-ku-semibold text-ku-control",
   timePickerConfirmBtn:
-    "flex-1 items-center justify-center bg-ku-hirer rounded-[12px] min-h-[46px] px-ku-md",
+    "flex-1 items-center justify-center bg-ku-hirer rounded-[12px] min-h-[48px] px-ku-md",
   timePickerConfirmText: "text-ku-on-hirer font-ku-bold text-ku-control",
   timePickerConfirmBtnDisabled: "opacity-50",
-  datePickerMonthRow: "items-center flex-row justify-between mb-ku-sm",
-  datePickerMonthTitle: "text-ku-text-strong font-ku-bold text-ku-body",
-  datePickerNavButton:
-    "items-center bg-ku-surface-subtle rounded-ku-pill h-[44px] justify-center w-[44px]",
-  datePickerNavButtonDisabled: "opacity-40",
-  datePickerWeekRow: "flex-row",
-  datePickerWeekday:
-    "flex-1 text-ku-text-muted font-ku-semibold text-ku-meta text-center py-ku-xs",
-  datePickerCell: "flex-1 items-center py-ku-1",
-  datePickerDay:
-    "items-center justify-center rounded-ku-pill h-[44px] w-[44px]",
-  datePickerDayToday: "border border-ku-hirer",
-  datePickerDaySelected: "bg-ku-hirer",
-  datePickerDayDisabled: "opacity-35",
-  datePickerDayText: "text-ku-text-strong font-ku-semibold text-ku-body-small",
-  datePickerDayTextToday: "text-ku-hirer font-ku-bold",
-  datePickerDayTextSelected: "text-ku-on-hirer font-ku-bold",
   timeline: "mb-ku-xs",
   timelineLine:
     "absolute left-[9px] top-[11px] -bottom-[11px] w-[2px] bg-ku-border",

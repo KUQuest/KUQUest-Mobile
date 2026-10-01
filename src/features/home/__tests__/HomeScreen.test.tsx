@@ -245,7 +245,7 @@ describe("HomeScreen live active quests syncing", () => {
     });
   });
 
-  it("opens the roster screen from the applicants banner and the attention list", async () => {
+  it("opens the roster from the attention list, not the applicants summary", async () => {
     (questApi.listMine as jest.Mock).mockResolvedValue({
       items: [
         {
@@ -286,15 +286,13 @@ describe("HomeScreen live active quests syncing", () => {
       expect(getByTestId("hirer-quest-card-applicants-live-q2")).toBeTruthy();
     });
 
-    await fireEvent.press(getByTestId("hirer-quest-card-applicants-live-q2"));
+    expect(
+      getByTestId("hirer-quest-card-applicants-live-q2").props
+    ).not.toHaveProperty("accessibilityRole", "button");
     await fireEvent.press(getByTestId("hirer-attention-applicants-live-q2"));
 
-    expect(mockPush).toHaveBeenCalledTimes(2);
-    expect(mockPush).toHaveBeenNthCalledWith(2, {
-      pathname: "/quest/[id]/select-roster",
-      params: { id: "live-q2" },
-    });
-    expect(mockPush).toHaveBeenNthCalledWith(1, {
+    expect(mockPush).toHaveBeenCalledTimes(1);
+    expect(mockPush).toHaveBeenCalledWith({
       pathname: "/quest/[id]/select-roster",
       params: { id: "live-q2" },
     });
@@ -350,7 +348,7 @@ describe("HomeScreen live active quests syncing", () => {
     await waitFor(() => {
       expect(getByTestId("hirer-quest-card-applicants-live-q3")).toBeTruthy();
     });
-    await fireEvent.press(getByTestId("hirer-quest-card-applicants-live-q3"));
+    await fireEvent.press(getByTestId("hirer-attention-applicants-live-q3"));
 
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/quest/[id]/select-roster",
@@ -530,7 +528,7 @@ describe("HomeScreen live active quests syncing", () => {
     });
   });
 
-  it("moves an in-progress Active Quest to review once a Worker sends Proof", async () => {
+  it("routes pending Proof from Needs your attention without a card CTA", async () => {
     (questApi.listMine as jest.Mock).mockResolvedValue({
       items: [
         {
@@ -555,7 +553,9 @@ describe("HomeScreen live active quests syncing", () => {
       },
     ]);
 
-    const { getByTestId } = await renderWithQueryClient(<HomeScreen />);
+    const { getByTestId, queryByTestId } = await renderWithQueryClient(
+      <HomeScreen />
+    );
     const messages = hirerHomeMessages[DEFAULT_LOCALE];
 
     await waitFor(() => {
@@ -571,9 +571,11 @@ describe("HomeScreen live active quests syncing", () => {
       expect.anything()
     );
 
-    await fireEvent.press(
-      getByTestId("hirer-quest-card-review-proof-live-proof")
-    );
+    expect(
+      queryByTestId("hirer-quest-card-review-proof-live-proof")
+    ).toBeNull();
+    expect(getByTestId("hirer-attention-proof-live-proof")).toBeTruthy();
+    await fireEvent.press(getByTestId("hirer-attention-proof-live-proof"));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/quest/[id]/proof-review",
       params: { id: "live-proof" },
