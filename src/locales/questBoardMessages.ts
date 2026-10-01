@@ -61,6 +61,9 @@ export interface QuestBoardMessages {
   participantsSummary: (accepted: number, total: number) => string;
   manageQuestTitle: string;
   submittedTeamCount: (count: number) => string;
+  manageCandidateAutoCancel: string;
+  manageStartedCount: (started: number, total: number) => string;
+  manageFundsHeld: string;
   endingSoon: string;
   imageCount: (count: number) => string;
   questImageLabel: (index: number) => string;
@@ -386,6 +389,11 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     manageQuestTitle: "Manage Quest",
     submittedTeamCount: (count) =>
       `${count} submitted team${count === 1 ? "" : "s"}`,
+    manageCandidateAutoCancel:
+      "Select a Worker before the start time, otherwise this Quest is cancelled automatically.",
+    manageStartedCount: (started, total) =>
+      `${started} of ${total} started work`,
+    manageFundsHeld: "Held in escrow",
     endingSoon: "Ending soon",
     imageCount: (count) => `${count} photo${count === 1 ? "" : "s"}`,
     questImageLabel: (index) => `Quest image ${index}`,
@@ -819,6 +827,11 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
       `ผู้เข้าร่วม ${accepted}/${total} คน`,
     manageQuestTitle: "จัดการเควสต์",
     submittedTeamCount: (count) => `${count} ทีมที่ส่งแล้ว`,
+    manageCandidateAutoCancel:
+      "เลือกผู้ทำงานก่อนเวลาเริ่มงาน มิฉะนั้นเควสต์จะถูกยกเลิกอัตโนมัติ",
+    manageStartedCount: (started, total) =>
+      `เริ่มงานแล้ว ${started}/${total} คน`,
+    manageFundsHeld: "เงินที่กันไว้",
     endingSoon: "ใกล้ปิดรับสมัคร",
     imageCount: (count) => `${count} รูป`,
     questImageLabel: (index) => `รูปเควสต์ที่ ${index}`,

@@ -101,8 +101,10 @@ function canonicalMemberRows(
   return team.members.map((member) => ({
     workerId: member.memberId,
     displayName:
+      member.member?.displayName ??
       directory.find((candidate) => memberId(candidate) === member.memberId)
-        ?.displayName ?? member.memberId,
+        ?.displayName ??
+      member.memberId,
     role: member.memberId === team.leaderId ? "LEADER" : "MEMBER",
   }));
 }

@@ -52,7 +52,7 @@ export function TeamAssembleRosterRow({
   );
   const name = needsProfile
     ? (profile?.displayName ?? "…")
-    : (member.displayName ?? member.workerId);
+    : (member.displayName ?? "…");
   return (
     <View
       accessibilityLabel={[name, role, acceptedLabel]

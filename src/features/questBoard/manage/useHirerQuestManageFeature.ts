@@ -44,6 +44,13 @@ import {
   QuestUnderfilledState,
 } from "../domain/types";
 
+const REFETCH_CHANGE_TYPES: Record<string, true> = {
+  ASSIGNMENT_JOINED: true,
+  ASSIGNMENT_STARTED: true,
+  PROOF_SUBMITTED: true,
+  QUEST_AUTO_CANCELLED: true,
+};
+
 export function useHirerQuestManageFeature(questId?: string) {
   const router = useRouter();
   const { locale } = useLocale();
@@ -66,12 +73,12 @@ export function useHirerQuestManageFeature(questId?: string) {
   useEffect(() => {
     if (!questId || !viewerId) return;
     return subscribeToHirerQuestEvents((event) => {
-      if (
-        event.questId !== questId ||
-        event.changeType !==
-          QuestUnderfilledState.UNDERFILLED_DECISION_PENDING ||
-        !event.expiresAt
-      ) {
+      if (event.questId !== questId) return;
+      const underfilledPending =
+        event.changeType ===
+          QuestUnderfilledState.UNDERFILLED_DECISION_PENDING &&
+        Boolean(event.expiresAt);
+      if (!underfilledPending && !REFETCH_CHANGE_TYPES[event.changeType]) {
         return;
       }
       void queryClient.invalidateQueries({

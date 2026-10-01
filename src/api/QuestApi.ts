@@ -71,6 +71,8 @@ import {
   type QuestV2PublishCheck,
   type QuestV2Review,
   type QuestV2StartWork,
+  type QuestV2ApplicationState,
+  type QuestV2TeamState,
   type QuestV2Team,
   type QuestV2TeamFile,
   type QuestV2TeamFileLink,
@@ -479,12 +481,13 @@ export class QuestApi {
 
   async listApplications(
     questId: string,
-    options?: RequestOptions
+    options?: RequestOptions & { state?: QuestV2ApplicationState }
   ): Promise<QuestV2Application[]> {
+    const { state, ...requestOptions } = options ?? {};
     const data = await this.client.get(
       `/api/v2/quests/${questId}/applications`,
       questV2ApplicationListDataSchema,
-      options
+      { ...requestOptions, query: state ? { state } : undefined }
     );
     return data.items;
   }
@@ -556,12 +559,13 @@ export class QuestApi {
 
   async listCandidateTeams(
     questId: string,
-    options?: RequestOptions
+    options?: RequestOptions & { state?: QuestV2TeamState }
   ): Promise<QuestV2Team[]> {
+    const { state, ...requestOptions } = options ?? {};
     const data = await this.client.get(
       `/api/v2/quests/${questId}/teams`,
       questV2TeamListDataSchema,
-      options
+      { ...requestOptions, query: state ? { state } : undefined }
     );
     return data.items;
   }

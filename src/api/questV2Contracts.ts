@@ -222,10 +222,30 @@ export const questV2MineDataSchema = z.object({
   nextCursor: z.string().nullable(),
 });
 export type QuestV2MineResponse = z.infer<typeof questV2MineDataSchema>;
+/**
+ * Server-resolved person summary returned next to every person id.
+ * `displayName` is never empty or a UUID. `avatar.url` is temporary: do not store it.
+ * Optional on each response until the backend PR is on staging; read it
+ * directly instead of calling a profile endpoint per person.
+ */
+export const questV2MemberSummarySchema = z.object({
+  id: questV2IdSchema,
+  displayName: z.string().min(1),
+  avatar: z
+    .object({ fileId: questV2IdSchema, url: z.string() })
+    .nullable()
+    .optional(),
+  faculty: z.string().nullable().optional(),
+  department: z.string().nullable().optional(),
+  ratingAverage: z.number().nullable().optional(),
+});
+export type QuestV2MemberSummary = z.infer<typeof questV2MemberSummarySchema>;
+
 export const questV2AssignmentSchema = z.object({
   id: questV2IdSchema,
   questId: questV2IdSchema,
   workerId: questV2IdSchema,
+  member: questV2MemberSummarySchema.optional(),
   state: questV2AssignmentStateSchema,
   questState: questV2StateSchema,
   startedAt: z.string().nullable(),
@@ -347,6 +367,7 @@ export const questV2ApplicationSchema = z.object({
   id: questV2IdSchema,
   questId: questV2IdSchema,
   memberId: questV2IdSchema,
+  member: questV2MemberSummarySchema.optional(),
   state: questV2ApplicationStateSchema,
   appliedAt: z.string(),
 });
@@ -410,6 +431,7 @@ export type QuestV2TeamState = z.infer<typeof questV2TeamStateSchema>;
 
 export const questV2TeamMemberSchema = z.object({
   memberId: questV2IdSchema,
+  member: questV2MemberSummarySchema.optional(),
   joinedAt: z.string(),
 });
 export type QuestV2TeamMember = z.infer<typeof questV2TeamMemberSchema>;
@@ -425,6 +447,7 @@ export const questV2TeamSchema = z.object({
   id: questV2IdSchema,
   questId: questV2IdSchema,
   leaderId: questV2IdSchema,
+  leader: questV2MemberSummarySchema.optional(),
   name: z.string(),
   headcount: z.number().int().min(2),
   state: questV2TeamStateSchema,
@@ -502,6 +525,7 @@ export const questV2UnderfilledConsentSchema = z.object({
 });
 export const questV2UnderfilledResponseItemSchema = z.object({
   workerId: questV2IdSchema,
+  member: questV2MemberSummarySchema.optional(),
   assignmentId: questV2IdSchema,
   decision: z.enum(["ACCEPT", "DECLINE"]).nullable(),
   questReward: z.number().nonnegative().nullable(),
@@ -549,6 +573,7 @@ export const questV2EditRequestFailureCodeSchema = z
   .nullable();
 export const questV2EditResponseSchema = z.object({
   workerId: questV2IdSchema,
+  member: questV2MemberSummarySchema.optional(),
   decision: z
     .enum(["EDIT_RESPONSE_ACCEPTED", "EDIT_RESPONSE_DECLINED"])
     .nullable(),
