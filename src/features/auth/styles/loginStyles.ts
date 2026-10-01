@@ -24,9 +24,9 @@ const styles = {
   hostWrapper: "w-full self-stretch",
   stagingTestSection: "w-full gap-ku-xs",
   stagingTestHeading: "font-ku-medium text-ku-label text-ku-text-muted",
-  stagingTestRow: "flex-row gap-ku-xs",
+  stagingTestRow: "flex-row flex-wrap gap-ku-xs",
   stagingTestButton:
-    "flex-1 min-h-[48px] items-center justify-center rounded-ku-pill border border-ku-border py-ku-sm",
+    "w-full min-h-[48px] items-center justify-center rounded-ku-pill border border-ku-border px-ku-sm py-ku-sm",
   stagingTestButtonText:
     "font-ku-medium text-ku-body-small text-ku-text-secondary",
   footerSection: "gap-ku-sm mt-ku-xl pt-ku-md border-t border-ku-divider",
