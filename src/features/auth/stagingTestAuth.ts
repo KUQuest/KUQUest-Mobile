@@ -7,13 +7,51 @@ import {
   parseSessionCookieHeader,
 } from "./authStorage";
 
-export type StagingTestAccount = "default" | "account-1" | "account-2";
+export const STAGING_TEST_ACCOUNTS = [
+  {
+    id: "account-1",
+    name: "Nattapong Srisawat",
+  },
+  {
+    id: "account-2",
+    name: "Warisara Boonmee",
+  },
+  {
+    id: "account-3",
+    name: "Thanakrit Chaiyasit",
+  },
+  {
+    id: "account-4",
+    name: "Supitcha Wongsakul",
+  },
+  {
+    id: "account-5",
+    name: "Kritchapon Phromma",
+  },
+  {
+    id: "account-6",
+    name: "Aphinya Sukjai",
+  },
+  {
+    id: "account-7",
+    name: "Pattarapon Ruangrit",
+  },
+  {
+    id: "account-8",
+    name: "Chutimon Thepsuriya",
+  },
+  {
+    id: "account-9",
+    name: "Ekkapop Wattana",
+  },
+  {
+    id: "account-10",
+    name: "Nichakan Kaewmanee",
+  },
+] as const;
 
-export const STAGING_TEST_ACCOUNTS: readonly StagingTestAccount[] = [
-  "default",
-  "account-1",
-  "account-2",
-];
+export type StagingTestAccount =
+  "default" | (typeof STAGING_TEST_ACCOUNTS)[number]["id"];
 
 export interface StagingTestAuthOptions {
   apiBaseUrl?: string;
@@ -58,7 +96,7 @@ async function signOutOfStagingTestAccount(
 /**
  * Debug-build-only Login screen action. Calls the Staging API's test-auth
  * sign-in route for `accountId`
- * (`POST /api/staging/test-auth/sign-in/<default|account-1|account-2>`,
+ * (`POST /api/staging/test-auth/sign-in/<account-1|...|account-10>`,
  * only enabled when the API has `STAGING_TEST_AUTH_ENABLED=true`), signing
  * out of any previously stored staging test session first, then stores the
  * returned session cookie in the same SecureStore slot Better Auth's Expo

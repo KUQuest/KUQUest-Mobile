@@ -197,18 +197,18 @@ export default function LoginScreen({
                   {messages.stagingTestHeading}
                 </Text>
                 <View className={styles.stagingTestRow}>
-                  {STAGING_TEST_ACCOUNTS.map((accountId) => (
+                  {STAGING_TEST_ACCOUNTS.map(({ id: accountId, name }) => (
                     <Pressable
-                      key={accountId}
+                      key={name}
                       className={styles.stagingTestButton}
                       onPress={() => handleStagingTestAuth(accountId)}
                       disabled={isLoading}
                       accessibilityRole="button"
-                      accessibilityLabel={`${messages.stagingTestHeading}: ${accountId}`}
+                      accessibilityLabel={`${messages.stagingTestHeading}: ${name}`}
                       testID={`staging-test-signin-${accountId}`}
                     >
                       <Text className={styles.stagingTestButtonText}>
-                        {accountId}
+                        {name}
                       </Text>
                     </Pressable>
                   ))}

@@ -33,7 +33,7 @@ export const authMessages: Record<SupportedLocale, AuthMessages> = {
     contactUs: "Contact Us",
     retryButton: "Try again",
     loadingAuth: "Authenticating...",
-    stagingTestHeading: "Debug: sign in with a staging test account",
+    stagingTestHeading: "Debug: sign in as a demo Member",
     stagingTestSignInFailed:
       "Failed to sign in with the staging test account. Please try again.",
     errors: {
@@ -60,7 +60,7 @@ export const authMessages: Record<SupportedLocale, AuthMessages> = {
     contactUs: "ติดต่อเรา",
     retryButton: "ลองอีกครั้ง",
     loadingAuth: "กำลังตรวจสอบสิทธิ์...",
-    stagingTestHeading: "ดีบัก: เข้าสู่ระบบด้วยบัญชีทดสอบ Staging",
+    stagingTestHeading: "ดีบัก: เข้าสู่ระบบด้วยสมาชิกสาธิต",
     stagingTestSignInFailed:
       "เข้าสู่ระบบด้วยบัญชีทดสอบ Staging ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
     errors: {

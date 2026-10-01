@@ -126,9 +126,14 @@ describe("LoginScreen", () => {
     const authAdapter = createAdapter();
     await renderWithQueryClient(<LoginScreen authAdapter={authAdapter} />);
 
-    expect(screen.getByTestId("staging-test-signin-default")).toBeTruthy();
-    expect(screen.getByTestId("staging-test-signin-account-1")).toBeTruthy();
-    expect(screen.getByTestId("staging-test-signin-account-2")).toBeTruthy();
+    for (let index = 1; index <= 10; index += 1) {
+      expect(
+        screen.getByTestId(`staging-test-signin-account-${index}`)
+      ).toBeTruthy();
+    }
+    expect(screen.queryByTestId("staging-test-signin-default")).toBeNull();
+    expect(screen.getByText("Nattapong Srisawat")).toBeTruthy();
+    expect(screen.getByText("Nichakan Kaewmanee")).toBeTruthy();
   });
 
   test("signs in with a staging test account and routes to the resolved destination", async () => {
@@ -158,7 +163,7 @@ describe("LoginScreen", () => {
     );
     await renderWithQueryClient(<LoginScreen authAdapter={authAdapter} />);
 
-    await fireEvent.press(screen.getByTestId("staging-test-signin-default"));
+    await fireEvent.press(screen.getByTestId("staging-test-signin-account-1"));
 
     await waitFor(() => {
       expect(screen.getByTestId("error-message").props.children).toBe(
