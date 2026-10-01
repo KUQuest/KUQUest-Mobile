@@ -49,7 +49,7 @@ KUQuest is a university community platform at the intersection of a trusted camp
 
 ## Brand Commitments
 
-- Product Name: KUQuest, with official logo assets at `logo.svg` and `topbar-logo.svg`.
+- Product Name: KUQuest, with official logo assets at `logo.svg` (horizontal lockup), `topbar-logo.svg` (header mark) and `assets/images/kuquest-banner.svg` (banner). The mark is a ring-and-check on a sage gradient tile; the wordmark is hand-lettered (Kaushan Script outlines, SIL OFL, converted to paths) with a leaf-green swoosh. App icon, splash and Android adaptive layers in `assets/images` and `assets/expo.icon` are exported from the same mark.
 - Visual Identity: The interface adheres to an **Organic Editorial Mobile UI** — anchored by Kasetsart forest sage (`#5F7655`), deep plum (`#755570`) as a supporting tone, warm paper accents (cream, gold, terracotta, rose), and calm 60–70% neutral canvases.
 - Tone & Voice: Calm, honest, grounded, community-oriented, and quietly confident. Differentiates sharply from sterile corporate enterprise tools, hyperactive gig apps, gambling-like gamification, and pastel wellness apps.
 - Domain Language: Uses canonical domain terms from `CONTEXT.md`: Quest, Quest Board, My Quests, Hirer, Worker, Student Profile, Academic Registration, Proof, and Review.
