@@ -70,8 +70,12 @@ export const workerHomeStyles = {
   tagChip:
     "self-start rounded-ku-pill border border-ku-worker-border px-ku-sm py-ku-2",
   tagText: "font-ku-medium text-ku-caption text-ku-worker-dark",
-  feedMetaRow:
-    "flex-row items-center gap-ku-12 border-t border-ku-divider pt-ku-12",
+  feedMetaRow: "gap-ku-sm border-t border-ku-divider pt-ku-12",
+  feedDate: "min-w-0 flex-[1.4]",
+  feedMetaDateText: "shrink font-ku-semibold text-ku-label text-ku-text-strong",
+  feedCapacity: "flex-row items-center justify-between gap-ku-sm",
+  feedFull:
+    "rounded-ku-pill bg-ku-worker-subtle px-ku-sm py-ku-1 font-ku-semibold text-ku-caption text-ku-worker-dark",
   feedMetaItem: "shrink flex-row items-center gap-ku-6",
   feedMetaGrow: "min-w-0 flex-1",
   feedMetaText: "shrink font-ku-medium text-ku-label text-ku-text",

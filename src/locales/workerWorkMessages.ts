@@ -106,7 +106,7 @@ export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
     emptyHistoryDescription: "งานที่จบแล้วจะแสดงที่นี่",
     status: {
       awaitingStart: "รอเริ่มงาน",
-      consentUnderfilled: "ตอบรับหรือปฏิเสธการเริ่มงานเมื่อคนไม่ครบ",
+      consentUnderfilled: "ตอบรับหรือปฏิเสธเงื่อนไขใหม่",
       inProgress: "กำลังทำงาน",
       submitProof: "รอส่งหลักฐาน",
       confirmCompletion: "รอยืนยันงานเสร็จ",
@@ -188,7 +188,7 @@ export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
     emptyHistoryDescription: "Finished work will appear here",
     status: {
       awaitingStart: "Awaiting start",
-      consentUnderfilled: "Respond to underfilled start",
+      consentUnderfilled: "Respond to revised terms",
       inProgress: "In progress",
       submitProof: "Proof due",
       confirmCompletion: "Confirm completion",

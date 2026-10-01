@@ -8,24 +8,35 @@ import { isPublicAuthRoute } from "@/features/auth/AuthMiddleware";
 import { useChatNotificationConversationsQuery } from "@/features/chat/api/chatQueries";
 import { getChatRouteParams } from "@/features/chat/chatData";
 import { useLocale } from "@/features/preferences/localeStore";
+import { serverNow } from "@/api/serverClock";
+import { formatCountdown } from "@/features/questBoard/shared/useServerCountdown";
 import { subscribeToHirerQuestEvents } from "@/features/questBoard/live/questEvents";
 import { useRoleWorkspace } from "@/features/workspace/roleWorkspaceStore";
 import { notificationMessages } from "@/locales/notificationMessages";
 import {
   QuestApplicationStatus,
   QuestTeamStatus,
+  QuestUnderfilledState,
 } from "@/features/questBoard/domain/types";
 import {
   myQuestsKeys,
   useMyWorkerCandidateApplicationsQuery,
 } from "@/features/myQuests/api/myQuestsQueries";
+import {
+  useWorkerAssignmentsQuery,
+  workerHomeKeys,
+} from "@/features/workerHome/api/workerHomeQueries";
 
 import {
   detectApplicationDecisions,
   detectUnreadIncreases,
+  detectWorkerQuestTransitions,
+  getWorkerAssignmentNoticeKind,
   getOpenConversationId,
   shouldSuppressHirerQuestNotice,
+  shouldSuppressWorkerQuestNotice,
 } from "./notificationTransitions";
+import type { WorkerQuestNoticeKind } from "./notificationTransitions";
 
 const POLL_INTERVAL_MS = 30_000;
 const MAX_VISIBLE_AND_QUEUED = 5;
@@ -62,6 +73,10 @@ export function useNotificationCoordinator() {
   const previousViewer = useRef("");
   const previousConversations = useRef<Map<string, number> | null>(null);
   const previousApplications = useRef<Map<string, string> | null>(null);
+  const previousWorkerQuests = useRef<Map<
+    string,
+    WorkerQuestNoticeKind | null
+  > | null>(null);
   const hirerEnabled = Boolean(viewerId) && isHirer && foreground;
   const workerEnabled = Boolean(viewerId) && isWorker && foreground;
   const conversationsQuery = useChatNotificationConversationsQuery(
@@ -71,6 +86,10 @@ export function useNotificationCoordinator() {
   );
   const applicationsQuery = useMyWorkerCandidateApplicationsQuery(
     viewerId || null,
+    workerEnabled
+  );
+  const workerAssignmentsQuery = useWorkerAssignmentsQuery(
+    "all",
     workerEnabled
   );
 
@@ -117,6 +136,7 @@ export function useNotificationCoordinator() {
       previousViewer.current = scope;
       previousConversations.current = null;
       previousApplications.current = null;
+      previousWorkerQuests.current = null;
     }
   }, [scope]);
 
@@ -132,9 +152,16 @@ export function useNotificationCoordinator() {
       ) {
         return;
       }
+      const decisionCountdown =
+        event.changeType ===
+          QuestUnderfilledState.UNDERFILLED_DECISION_PENDING && event.expiresAt
+          ? formatCountdown(Date.parse(event.expiresAt) - serverNow())
+          : null;
       enqueue(
         copy.questUpdate,
-        copy.questChanges[event.changeType] ?? copy.questUpdate,
+        decisionCountdown
+          ? copy.hirerDecisionPending(decisionCountdown)
+          : (copy.questChanges[event.changeType] ?? copy.questUpdate),
         { pathname: "/quest/[id]", params: { id: event.questId } }
       );
     });
@@ -224,10 +251,52 @@ export function useNotificationCoordinator() {
   }, [applicationsQuery.data, copy, enqueue, workerEnabled]);
 
   useEffect(() => {
+    const assignments = workerAssignmentsQuery.data;
+    if (!workerEnabled || !assignments) return;
+    const transitions = detectWorkerQuestTransitions(
+      previousWorkerQuests.current,
+      assignments
+    );
+    for (const transition of transitions) {
+      if (
+        shouldSuppressWorkerQuestNotice(
+          pathnameRef.current,
+          transition.questId,
+          transition.href
+        )
+      ) {
+        continue;
+      }
+      const message = {
+        RESPONSE_REQUIRED: copy.underfilledConsentRequired(),
+        DECISION_PENDING: copy.underfilledDecisionPending(),
+        FULL_OR_ASSIGNED: copy.questFullOrAssigned(),
+        CANCELLED: copy.underfilledCancelled(transition.cancellationReason),
+      }[transition.kind];
+      enqueue(copy.questUpdate, message, {
+        pathname: transition.href,
+        params: { id: transition.questId },
+      });
+    }
+    const nextWorkerQuests = new Map(previousWorkerQuests.current ?? []);
+    for (const assignment of assignments) {
+      nextWorkerQuests.set(
+        assignment.questId,
+        getWorkerAssignmentNoticeKind(assignment)
+      );
+    }
+    previousWorkerQuests.current = nextWorkerQuests;
+  }, [copy, enqueue, workerEnabled, workerAssignmentsQuery.data]);
+
+  useEffect(() => {
     if (!workerEnabled) return;
     const interval = setInterval(() => {
       void queryClient.refetchQueries({
         queryKey: myQuestsKeys.workerCandidateApplications(viewerId),
+        type: "active",
+      });
+      void queryClient.refetchQueries({
+        queryKey: workerHomeKeys.assignments("all"),
         type: "active",
       });
     }, POLL_INTERVAL_MS);

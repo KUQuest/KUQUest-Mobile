@@ -1,6 +1,10 @@
-import { useCallback } from "react";
-import { RefreshControl, type ListRenderItemInfo } from "react-native";
-import { Clock3 } from "lucide-react-native";
+import { useCallback, type ReactNode } from "react";
+import {
+  ActivityIndicator,
+  RefreshControl,
+  type ListRenderItemInfo,
+} from "react-native";
+import { BriefcaseBusiness } from "lucide-react-native";
 import { Pressable, Text, View } from "@/tw";
 
 import { QuestList } from "@/components/ui/QuestList";
@@ -16,6 +20,7 @@ function Separator() {
 }
 
 export function MyQuestListContent({
+  header,
   messages,
   palette,
   projection,
@@ -29,6 +34,7 @@ export function MyQuestListContent({
   onCancelQuest,
   cancellingQuestId,
 }: {
+  header: ReactNode;
   messages: MyQuestMessages;
   palette: ThemeColors;
   projection: MyQuestWorkspaceProjection;
@@ -44,15 +50,17 @@ export function MyQuestListContent({
 }) {
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<QuestSummary>) => (
-      <MyQuestSummaryCard
-        messages={messages}
-        palette={palette}
-        quest={item}
-        cancelling={cancellingQuestId === item.id}
-        onOpen={() => onOpenQuest(item)}
-        onAction={(action) => onQuestAction(item, action)}
-        onCancel={() => onCancelQuest(item)}
-      />
+      <View className="w-full max-w-[720px] self-center px-ku-lg">
+        <MyQuestSummaryCard
+          messages={messages}
+          palette={palette}
+          quest={item}
+          cancelling={cancellingQuestId === item.id}
+          onOpen={() => onOpenQuest(item)}
+          onAction={(action) => onQuestAction(item, action)}
+          onCancel={() => onCancelQuest(item)}
+        />
+      </View>
     ),
     [
       cancellingQuestId,
@@ -65,66 +73,83 @@ export function MyQuestListContent({
   );
   const keyExtractor = useCallback((item: QuestSummary) => item.id, []);
 
-  if (isLoading) {
-    return (
-      <View className={styles.error}>
-        <Text className={`${styles.emptyTitle} text-ku-text-secondary`}>
-          {messages.loading}
-        </Text>
-      </View>
-    );
-  }
-
-  if (isError) {
-    return (
-      <View className={styles.error}>
-        <Text className={`${styles.errorText} text-ku-danger-dark`}>
-          {messages.error}
-        </Text>
-        <Pressable
-          accessibilityLabel={messages.retry}
-          accessibilityRole="button"
-          className={`${styles.emptyAction} bg-ku-primary`}
-          onPress={onRefresh}
-          testID="my-quest-list-retry"
-        >
-          <Text className={`${styles.emptyActionText} text-ku-on-primary`}>
-            {messages.retry}
-          </Text>
-        </Pressable>
-      </View>
-    );
-  }
-
   return (
     <QuestList
       accessibilityLabel={`${projection.selectedTabLabel} ${messages.listTitle}`}
       className={styles.list}
       contentContainerStyle={{ paddingBottom: bottomPadding }}
-      data={projection.items}
+      data={isLoading || isError ? [] : projection.items}
       ItemSeparatorComponent={Separator}
       keyExtractor={keyExtractor}
       ListEmptyComponent={
-        <View className="min-h-[230px] items-center justify-center rounded-[16px] border border-dashed border-ku-border-subtle bg-ku-surface-muted px-ku-lg py-ku-28">
-          <View className="mb-ku-10 h-[48px] w-[48px] items-center justify-center rounded-ku-pill bg-ku-surface-success">
-            <Clock3 color={palette.primary} size={24} strokeWidth={2.1} />
-          </View>
-          <Text className={`${styles.emptyTitle} text-ku-text-strong`}>
-            {projection.emptyTitle}
-          </Text>
-          <Text className={`${styles.emptyDescription} text-ku-text-secondary`}>
-            {projection.emptyDescription}
-          </Text>
+        <View className="w-full max-w-[720px] self-center px-ku-lg py-ku-48">
+          {isLoading ? (
+            <View className="items-center">
+              <ActivityIndicator
+                accessibilityLabel={messages.loading}
+                color={palette.primary}
+              />
+              <Text className="mt-ku-md font-ku-medium text-ku-body-small text-ku-text-secondary">
+                {messages.loading}
+              </Text>
+            </View>
+          ) : isError ? (
+            <View className="items-center">
+              <Text
+                accessibilityRole="alert"
+                className={`${styles.errorText} text-ku-danger-dark`}
+              >
+                {messages.error}
+              </Text>
+              <Pressable
+                accessibilityLabel={messages.retry}
+                accessibilityRole="button"
+                className={`${styles.emptyAction} bg-ku-primary`}
+                onPress={onRefresh}
+                testID="my-quest-list-retry"
+              >
+                <Text
+                  className={`${styles.emptyActionText} text-ku-on-primary`}
+                >
+                  {messages.retry}
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <>
+              <BriefcaseBusiness
+                color={palette.primary}
+                size={36}
+                strokeWidth={1.5}
+              />
+              <Text className="mt-ku-lg font-ku-semibold text-ku-subtitle text-ku-text-strong">
+                {projection.emptyTitle}
+              </Text>
+              <Text className="mt-ku-sm font-ku-regular text-ku-body-small text-ku-text-secondary">
+                {projection.emptyDescription}
+              </Text>
+            </>
+          )}
         </View>
       }
       ListHeaderComponent={
-        <View className={styles.listHeader}>
-          <Text className={`${styles.listTitle} text-ku-text-strong`}>
-            {messages.listTitle}
-          </Text>
-          <Text className={`${styles.listHint} text-ku-text-secondary`}>
-            {messages.listHint}
-          </Text>
+        <View>
+          {header}
+          {!isLoading && !isError ? (
+            <View className="w-full max-w-[720px] self-center">
+              <View className={styles.listHeader}>
+                <View className="flex-row flex-wrap items-baseline justify-between gap-ku-sm">
+                  <Text accessibilityRole="header" className={styles.listTitle}>
+                    {projection.selectedTabLabel}
+                  </Text>
+                  <Text className="font-ku-medium text-ku-label text-ku-text-secondary">
+                    {messages.questCount(projection.items.length)}
+                  </Text>
+                </View>
+                <Text className={styles.listHint}>{messages.listHint}</Text>
+              </View>
+            </View>
+          ) : null}
         </View>
       }
       refreshControl={

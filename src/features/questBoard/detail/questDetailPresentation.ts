@@ -33,6 +33,7 @@ import {
   type QuestUnderfilledDecision,
   type QuestBoardQuest,
   type QuestDetailState,
+  QuestAssignmentStatus,
 } from "../domain/types";
 import type { QuestDetailProjection } from "./questDetailProjection";
 import type {
@@ -77,6 +78,8 @@ export interface QuestDetailPresentationFacts {
   canApply: boolean;
   canShowWithdraw: boolean;
   confirmationOpen: boolean;
+  groupFcfs: QuestDetailBodyProps["groupFcfs"];
+  groupFcfsConfirmFull: boolean;
   canMessageOwner: boolean;
   statusTitle: string;
   statusDescription: string;
@@ -285,6 +288,31 @@ export function getQuestDetailPresentationFacts({
       displayName: participant.displayName,
     })) ?? [];
   const participantCount = projection?.participantCount ?? 0;
+  const groupFcfs =
+    !isHirerView &&
+    liveSnapshot?.participation === QuestParticipation.GROUP &&
+    liveSnapshot.mode === QuestMode.FIRST_COME_FIRST_SERVED
+      ? {
+          activeWorkerCount:
+            liveSnapshot.underfilled?.activeWorkerCount ??
+            ("activeWorkerCount" in liveSnapshot.quest
+              ? liveSnapshot.quest.activeWorkerCount
+              : participantCount),
+          headcount: liveSnapshot.quest.headcount,
+          isJoined:
+            liveSnapshot.assignment?.state ===
+            QuestAssignmentStatus.ASSIGNMENT_ACTIVE,
+          state: liveSnapshot.state,
+          startTime: liveSnapshot.quest.startTime,
+          underfilled: liveSnapshot.underfilled,
+          canConsent: Boolean(capabilities?.canConsentUnderfilled),
+        }
+      : undefined;
+  const groupFcfsFull = Boolean(
+    groupFcfs &&
+    (groupFcfs.activeWorkerCount >= groupFcfs.headcount ||
+      groupFcfs.state === QuestStatus.QUEST_ASSIGNED)
+  );
 
   const teamSheetTeam = (() => {
     if (!activePrototypeState || !candidateGroup || isHirerView)
@@ -356,6 +384,8 @@ export function getQuestDetailPresentationFacts({
     teamDirectory,
     liveTeamSheetTeam,
     liveTeamSurface,
+    groupFcfs,
+    groupFcfsConfirmFull: groupFcfsFull,
     refreshing: read.refreshing,
   };
 }
@@ -413,6 +443,8 @@ export function buildQuestDetailBodyProps(
           iconColor: facts.statusIconColor,
         }
       : undefined,
+    groupFcfs: facts.groupFcfs,
+    onOpenPartialConsent: navigation.openPartialStart,
   };
 }
 
@@ -429,17 +461,18 @@ function closeConfirmation(
 export function buildQuestDetailSheetsProps(
   context: QuestDetailPresentationContext
 ): QuestDetailSheetsProps {
-  const { facts, surface, transitions, bottomInset } = context;
+  const { facts, surface, transitions } = context;
   const closeConfirm = closeConfirmation(facts, transitions);
   return {
     confirmationSheet: facts.confirmationOpen
       ? {
+          quest: facts.quest,
           locale: facts.locale,
           messages: facts.messages,
           onCancel: closeConfirm,
           onConfirm: context.confirmApplication,
           busy: Boolean(surface.liveAction),
-          quest: facts.quest,
+          capacityFull: facts.groupFcfsConfirmFull,
         }
       : undefined,
     liveCandidateSheet:
@@ -454,7 +487,6 @@ export function buildQuestDetailSheetsProps(
         ? {
             actualHeadcount: facts.participantCount,
             applications: facts.liveSnapshot.applications,
-            bottomInset,
             fullScreen: true,
             loading:
               surface.liveAction === "select-candidate" ||
@@ -490,7 +522,6 @@ export function buildQuestDetailSheetsProps(
         ? {
             actualHeadcount: facts.participantCount,
             applications: facts.activePrototypeState.applications,
-            bottomInset,
             locale: facts.locale,
             mode: facts.candidateGroup ? "team" : "individual",
             onAcceptProposal: facts.projection?.capabilities.canSelectCandidate
@@ -547,6 +578,7 @@ export function buildQuestDetailPartialStartProps(
       onHirerDecision: context.liveUnderfilledDecision,
       onWorkerConsent: context.liveUnderfilledConsent,
       questTitle: facts.quest.title,
+      hirerId: facts.isHirerView ? facts.viewerId : undefined,
       requestedHeadcount: snapshot.underfilled.headcount,
       underfilled: snapshot.underfilled,
       viewerId: facts.viewerId,

@@ -19,6 +19,7 @@ import {
   questV2EditRequestSchema,
   questV2ImagesDataSchema,
   questV2AssignmentsDataSchema,
+  questV2MyAssignmentsDataSchema,
   questV2MineDataSchema,
   questV2ProofCreatePayloadSchema,
   questV2ProofDeleteSchema,
@@ -53,6 +54,7 @@ import {
   type QuestV2ApplicationSelection,
   type QuestV2Application,
   type QuestV2Assignment,
+  type QuestV2MyAssignment,
   type QuestV2BoardCard,
   type QuestV2CanonicalQuest,
   type QuestV2Completion,
@@ -69,6 +71,8 @@ import {
   type QuestV2PublishCheck,
   type QuestV2Review,
   type QuestV2StartWork,
+  type QuestV2ApplicationState,
+  type QuestV2TeamState,
   type QuestV2Team,
   type QuestV2TeamFile,
   type QuestV2TeamFileLink,
@@ -280,10 +284,10 @@ export class QuestApi {
   async listMyAssignments(
     status?: QuestV2AssignmentMineStatus,
     options?: RequestOptions
-  ): Promise<QuestV2Assignment[]> {
+  ): Promise<QuestV2MyAssignment[]> {
     const data = await this.client.get(
       "/api/v2/assignments/mine",
-      questV2AssignmentsDataSchema,
+      questV2MyAssignmentsDataSchema,
       { ...options, query: { status } }
     );
     return data.items;
@@ -477,12 +481,13 @@ export class QuestApi {
 
   async listApplications(
     questId: string,
-    options?: RequestOptions
+    options?: RequestOptions & { state?: QuestV2ApplicationState }
   ): Promise<QuestV2Application[]> {
+    const { state, ...requestOptions } = options ?? {};
     const data = await this.client.get(
       `/api/v2/quests/${questId}/applications`,
       questV2ApplicationListDataSchema,
-      options
+      { ...requestOptions, query: state ? { state } : undefined }
     );
     return data.items;
   }
@@ -554,12 +559,13 @@ export class QuestApi {
 
   async listCandidateTeams(
     questId: string,
-    options?: RequestOptions
+    options?: RequestOptions & { state?: QuestV2TeamState }
   ): Promise<QuestV2Team[]> {
+    const { state, ...requestOptions } = options ?? {};
     const data = await this.client.get(
       `/api/v2/quests/${questId}/teams`,
       questV2TeamListDataSchema,
-      options
+      { ...requestOptions, query: state ? { state } : undefined }
     );
     return data.items;
   }

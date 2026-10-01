@@ -26,7 +26,6 @@ export interface HirerHomeMessages {
   currentStageLabel: string;
   terminalStageLabel: string;
   openDetails: string;
-  reviewProof: string;
   scheduleStart: string;
   scheduleEnd: string;
   eyebrow: string;
@@ -48,7 +47,6 @@ export interface HirerHomeMessages {
   shortcutSettingsTitle: string;
   shortcutSettingsDesc: string;
   quickDraftDesc: string;
-  statusLabels: Record<CanonicalHirerQuestStatus, string>;
   timelineLabels: Record<TimelineStageKey, string>;
   timelineOverrides: Partial<
     Record<CanonicalHirerQuestStatus, Partial<Record<TimelineStageKey, string>>>
@@ -57,9 +55,7 @@ export interface HirerHomeMessages {
   joinedLabel: (count: number, max?: number) => string;
   waitingForApplicants: string;
   noApplicantsYet: string;
-  viewApplicants: string;
   viewParticipants: string;
-  manageQuest: string;
 }
 
 export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
@@ -88,7 +84,6 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     currentStageLabel: "current",
     terminalStageLabel: "terminal",
     openDetails: "View details",
-    reviewProof: "Review proof",
     scheduleStart: "Starts",
     scheduleEnd: "Ends",
     eyebrow: "Hirer workspace",
@@ -111,15 +106,6 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     shortcutSettingsTitle: "Settings",
     shortcutSettingsDesc: "Language and account",
     quickDraftDesc: "Saved quest drafts",
-    statusLabels: {
-      QUEST_DRAFT: "Draft",
-      QUEST_OPEN: "Open for applications",
-      QUEST_ASSIGNED: "Ready to start",
-      QUEST_IN_PROGRESS: "In progress",
-      QUEST_COMPLETED: "Completed",
-      QUEST_CANCELLED: "Cancelled",
-      QUEST_FAILED: "Not completed",
-    },
     timelineLabels: {
       open: "Open for applications",
       assigned: "Ready to start",
@@ -137,9 +123,7 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
       max ? `Joined (${count}/${max})` : `Joined (${count})`,
     waitingForApplicants: "Awaiting applicants or workers",
     noApplicantsYet: "No applicants yet",
-    viewApplicants: "View applicants",
     viewParticipants: "View participants",
-    manageQuest: "Manage quest",
   },
   th: {
     title: "หน้าหลักผู้ว่าจ้าง",
@@ -165,7 +149,6 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     currentStageLabel: "สถานะปัจจุบัน",
     terminalStageLabel: "สถานะสิ้นสุด",
     openDetails: "ดูรายละเอียด",
-    reviewProof: "ตรวจงาน",
     scheduleStart: "เริ่มงาน",
     scheduleEnd: "สิ้นสุด",
     eyebrow: "พื้นที่ผู้ว่าจ้าง",
@@ -187,15 +170,6 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     shortcutSettingsTitle: "การตั้งค่า",
     shortcutSettingsDesc: "ภาษาและบัญชี",
     quickDraftDesc: "เควสต์ที่ยังไม่เผยแพร่",
-    statusLabels: {
-      QUEST_DRAFT: "ฉบับร่าง",
-      QUEST_OPEN: "เปิดรับสมัคร",
-      QUEST_ASSIGNED: "รอเริ่มงาน",
-      QUEST_IN_PROGRESS: "กำลังทำงาน",
-      QUEST_COMPLETED: "เสร็จสิ้น",
-      QUEST_CANCELLED: "ยกเลิกแล้ว",
-      QUEST_FAILED: "ไม่สำเร็จ",
-    },
     timelineLabels: {
       open: "เปิดรับสมัคร",
       assigned: "รอเริ่มงาน",
@@ -213,8 +187,6 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
       max ? `ผู้เข้าร่วม (${count}/${max} คน)` : `ผู้เข้าร่วม (${count} คน)`,
     waitingForApplicants: "รอผู้สมัครหรือผู้ตอบรับ",
     noApplicantsYet: "ยังไม่มีผู้สมัคร",
-    viewApplicants: "ดูผู้สมัคร",
     viewParticipants: "ดูผู้เข้าร่วม",
-    manageQuest: "จัดการเควสต์",
   },
 };

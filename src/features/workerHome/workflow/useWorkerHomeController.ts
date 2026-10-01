@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type {
   QuestV2Assignment,
   QuestV2BoardCard,
+  QuestV2MyAssignment,
   QuestV2ParticipationDetail,
 } from "@/api/questV2Contracts";
 import type { TagItem } from "@/api/QuestApi";
@@ -15,11 +16,11 @@ import { QuestStatus } from "@/domain/questLifecycle";
 import {
   emptyQuestBoardFilter,
   QuestAssignmentStatus,
+  QuestUnderfilledState,
   type QuestBoardFilter,
 } from "@/features/questBoard/domain/types";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { getTagLabel } from "@/locales/tagLabels";
-
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
@@ -50,6 +51,12 @@ export interface WorkerHomeFrameProps {
 }
 
 export interface WorkerHomeContentProps {
+  workerActionAssignment: QuestV2MyAssignment | null;
+  pendingWorkerActionCount: number;
+  handleOpenWorkerAction: (
+    assignment: QuestV2MyAssignment,
+    timeExpired: boolean
+  ) => void;
   activeOngoingAssignment: QuestV2Assignment | null;
   activeQuestDetail: QuestV2ParticipationDetail | null;
   assignmentsError: boolean;
@@ -63,7 +70,7 @@ export interface WorkerHomeContentProps {
   handleChangeFilter: (filter: QuestBoardFilter) => void;
   handleCloseFilter: () => void;
   handleClearSearch: () => void;
-  handleOpenCurrentWork: () => void;
+  handleOpenCurrentWork: (forceWorkManagement?: boolean) => void;
   handleOpenFilter: () => void;
   handleQuestPress: (quest: QuestV2BoardCard) => void;
   handleRefresh: () => void;
@@ -73,7 +80,7 @@ export interface WorkerHomeContentProps {
   handleSearchChange: (text: string) => void;
   handleScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   handleSelectTag: (tagId: string | null) => void;
-  isRefreshing: boolean;
+  isPullRefreshing: boolean;
   messages: WorkerHomeMessages;
   availableQuests: QuestV2BoardCard[];
   scrollBottomPadding: number;
@@ -107,7 +114,8 @@ export function useWorkerHomeController(): WorkerHomeControllerProps {
     emptyQuestBoardFilter
   );
   const [searchQuery, setSearchQuery] = useState("");
-  const assignmentsQuery = useWorkerAssignmentsQuery("active");
+  const [isPullRefreshing, setIsPullRefreshing] = useState(false);
+  const assignmentsQuery = useWorkerAssignmentsQuery("all");
   const { refetch: refetchAssignments } = assignmentsQuery;
   const boardQuery = useWorkerBoardQuery({
     q: searchQuery,
@@ -134,16 +142,68 @@ export function useWorkerHomeController(): WorkerHomeControllerProps {
     activeOngoingAssignment?.questId ?? null
   );
   const activeQuestDetail = activeQuestDetailQuery.data ?? null;
+  const pendingWorkerActions = useMemo(
+    () =>
+      activeAssignments.filter(
+        (assignment) =>
+          assignment.underfilled?.state ===
+            QuestUnderfilledState.UNDERFILLED_CONSENT_PENDING ||
+          assignment.underfilled?.state ===
+            QuestUnderfilledState.UNDERFILLED_DECISION_PENDING
+      ),
+    [activeAssignments]
+  );
+  const workerActionAssignment = useMemo(
+    () =>
+      activeAssignments.find(
+        (assignment) =>
+          assignment.underfilled?.state ===
+          QuestUnderfilledState.UNDERFILLED_CONSENT_PENDING
+      ) ??
+      activeAssignments.find(
+        (assignment) =>
+          assignment.underfilled?.state ===
+          QuestUnderfilledState.UNDERFILLED_DECISION_PENDING
+      ) ??
+      activeAssignments.find(
+        (assignment) =>
+          assignment.underfilled?.state ===
+            QuestUnderfilledState.UNDERFILLED_COMPLETED &&
+          (assignment.questState === QuestStatus.QUEST_ASSIGNED ||
+            assignment.questState === QuestStatus.QUEST_IN_PROGRESS)
+      ) ??
+      activeAssignments.find(
+        (assignment) =>
+          assignment.underfilled?.state ===
+          QuestUnderfilledState.UNDERFILLED_CANCELLED
+      ) ??
+      null,
+    [activeAssignments]
+  );
+  const handleOpenWorkerAction = useCallback(
+    (assignment: QuestV2MyAssignment, timeExpired: boolean) => {
+      router.push({
+        pathname:
+          assignment.underfilled?.state ===
+            QuestUnderfilledState.UNDERFILLED_CONSENT_PENDING && !timeExpired
+            ? "/quest/[id]/partial-start"
+            : "/quest/[id]",
+        params: { id: assignment.questId },
+      });
+    },
+    [router]
+  );
 
   const handleRefresh = useCallback(() => {
-    void Promise.all([
+    setIsPullRefreshing(true);
+    void Promise.allSettled([
       assignmentsQuery.refetch(),
       boardQuery.refetch(),
       tagsQuery.refetch(),
       activeOngoingAssignment
         ? activeQuestDetailQuery.refetch()
         : Promise.resolve(),
-    ]);
+    ]).then(() => setIsPullRefreshing(false));
   }, [
     activeOngoingAssignment,
     activeQuestDetailQuery,
@@ -214,17 +274,24 @@ export function useWorkerHomeController(): WorkerHomeControllerProps {
   const ongoingAssignmentCount = activeAssignments.filter(
     isOngoingWorkerAssignment
   ).length;
-  const handleOpenCurrentWork = useCallback(() => {
-    // With a single ongoing Assignment, skip the list and open its Work Hub.
-    if (ongoingAssignmentCount === 1 && activeOngoingAssignment) {
-      router.push({
-        pathname: "/quest/[id]/work",
-        params: { id: activeOngoingAssignment.questId },
-      });
-      return;
-    }
-    router.push("/my-quests");
-  }, [activeOngoingAssignment, ongoingAssignmentCount, router]);
+  const handleOpenCurrentWork = useCallback(
+    (forceWorkManagement = false) => {
+      // With a single ongoing Assignment, skip the list and open its Work Hub.
+      if (
+        !forceWorkManagement &&
+        ongoingAssignmentCount === 1 &&
+        activeOngoingAssignment
+      ) {
+        router.push({
+          pathname: "/quest/[id]/work",
+          params: { id: activeOngoingAssignment.questId },
+        });
+        return;
+      }
+      router.push("/my-quests");
+    },
+    [activeOngoingAssignment, ongoingAssignmentCount, router]
+  );
   const bottomNavInset = getBottomNavigationInset(metrics, insets.bottom);
   // Reserve room for the floating quick access bar and bottom navigation.
   const scrollBottomPadding =
@@ -238,6 +305,9 @@ export function useWorkerHomeController(): WorkerHomeControllerProps {
       className: "bg-ku-background",
     },
     content: {
+      workerActionAssignment,
+      pendingWorkerActionCount: pendingWorkerActions.length,
+      handleOpenWorkerAction,
       activeOngoingAssignment,
       activeQuestDetail,
       assignmentsError: assignmentsQuery.isError,
@@ -261,11 +331,7 @@ export function useWorkerHomeController(): WorkerHomeControllerProps {
       handleSearchChange,
       handleScroll: handleNavigationScroll,
       handleSelectTag,
-      isRefreshing:
-        assignmentsQuery.isRefetching ||
-        boardQuery.isRefetching ||
-        tagsQuery.isRefetching ||
-        activeQuestDetailQuery.isRefetching,
+      isPullRefreshing,
       messages,
       availableQuests,
       scrollBottomPadding,

@@ -1,5 +1,4 @@
-import { serverNow } from "@/api/serverClock";
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   Check,
   CircleAlert,
@@ -7,12 +6,20 @@ import {
   Clock3,
   UsersRound,
 } from "lucide-react-native";
+import {
+  formatCountdown,
+  useServerCountdown,
+} from "@/features/questBoard/shared/useServerCountdown";
 
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "@/tw";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { useLocale } from "@/features/preferences/localeStore";
 import type { SupportedLocale } from "@/locales/locale";
-import { groupQuestMessages } from "@/locales/groupQuestMessages";
+import {
+  groupQuestMessages,
+  underfilledCancellationDescription,
+} from "@/locales/groupQuestMessages";
+import { formatTimestampDate, formatTimeInBangkok } from "@/domain/datetime";
 import { formatSatang } from "@/domain/satang";
 import {
   QuestActor,
@@ -46,6 +53,8 @@ export interface PartialGroupStartConsentContentProps {
   onHirerDecision?: (decision: QuestUnderfilledDecision) => void;
   onWorkerConsent?: (decision: QuestUnderfilledConsentDecision) => void;
   splitRewardSatang?: number;
+  originalRewardSatang?: number;
+  originalDueAt?: string | null;
   surfaceState?: PartialGroupStartSurfaceState;
   loading?: boolean;
   error?: string;
@@ -53,17 +62,14 @@ export interface PartialGroupStartConsentContentProps {
   onApprove?: () => void;
   onReject?: () => void;
   onRetry?: () => void;
+  onExpire?: () => void;
+  onOpenWorkHub?: () => void;
+  onBrowseQuests?: () => void;
+  onOpenQuest?: () => void;
   locale?: SupportedLocale;
 }
 
 const EMPTY_VOTER_IDS: readonly string[] = [];
-
-function formatCountdown(milliseconds: number): string {
-  const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
 
 function initialsFor(value: string): string {
   const words = value
@@ -139,7 +145,6 @@ export function PartialGroupStartConsentContent({
   underfilled = null,
   voters = [],
   hirerId,
-  questTitle,
   requestedHeadcount,
   actualHeadcount,
   viewerId,
@@ -149,6 +154,8 @@ export function PartialGroupStartConsentContent({
   onHirerDecision,
   onWorkerConsent,
   splitRewardSatang,
+  originalRewardSatang,
+  originalDueAt,
   surfaceState = "ready",
   loading = false,
   error,
@@ -156,13 +163,17 @@ export function PartialGroupStartConsentContent({
   onApprove,
   onReject,
   onRetry,
+  onExpire,
+  onOpenWorkHub,
+  onBrowseQuests,
+  onOpenQuest,
   locale: localeProp,
 }: PartialGroupStartConsentContentProps) {
   const { colors } = useAppTheme();
   const contextLocale = useLocale().locale;
   const locale = localeProp ?? contextLocale;
   const messages = getMessages(locale);
-  const [clock, setClock] = useState(() => serverNow());
+  const expiredDeadline = useRef<string | null>(null);
 
   const voterMap = useMemo(
     () => new Map(voters.map((voter) => [voter.id, voter])),
@@ -203,9 +214,16 @@ export function PartialGroupStartConsentContent({
       requiredVoterIds.map((id) => {
         const provided = voterMap.get(id);
         const role = provided?.role ?? (id === hirerId ? "HIRER" : "WORKER");
-        return { id, displayName: provided?.displayName ?? id, role };
+        const serverName = underfilledResponses?.find(
+          (response) => response.workerId === id
+        )?.member?.displayName;
+        return {
+          id,
+          displayName: provided?.displayName ?? serverName ?? "…",
+          role,
+        };
       }),
-    [hirerId, requiredVoterIds, voterMap]
+    [hirerId, requiredVoterIds, underfilledResponses, voterMap]
   );
   const responseMap = useMemo(() => {
     if (underfilled) {
@@ -248,24 +266,20 @@ export function PartialGroupStartConsentContent({
     underfilled?.state === QuestUnderfilledState.UNDERFILLED_DECISION_PENDING;
   const consentPending =
     underfilled?.state === QuestUnderfilledState.UNDERFILLED_CONSENT_PENDING;
-  const deadline = underfilled
-    ? new Date(
-        (decisionPending
-          ? underfilled.decision.expiresAt
-          : underfilled.consent.expiresAt) ?? ""
-      ).getTime()
-    : consent
-      ? new Date(consent.responseDeadlineAt).getTime()
-      : Number.NaN;
-  const hasLiveDeadline = Number.isFinite(deadline) && deadline > clock;
+  const deadlineAt = underfilled
+    ? decisionPending
+      ? underfilled.decision.expiresAt
+      : underfilled.consent.expiresAt
+    : consent?.responseDeadlineAt;
+  const countdown = useServerCountdown(deadlineAt);
+  const remaining = countdown ?? 0;
+  const expired = countdown === 0 && Boolean(deadlineAt);
   useEffect(() => {
-    if (!hasLiveDeadline) return undefined;
-    const interval = setInterval(() => setClock(serverNow()), 1000);
-    return () => clearInterval(interval);
-  }, [hasLiveDeadline]);
-  const remaining = Number.isFinite(deadline)
-    ? Math.max(0, deadline - clock)
-    : 0;
+    if (!expired || !deadlineAt || expiredDeadline.current === deadlineAt)
+      return;
+    expiredDeadline.current = deadlineAt;
+    onExpire?.();
+  }, [deadlineAt, expired, onExpire]);
   const requested =
     underfilled?.headcount ??
     requestedHeadcount ??
@@ -276,6 +290,11 @@ export function PartialGroupStartConsentContent({
     actualHeadcount ??
     consent?.frozenWorkerIds.length ??
     0;
+  const newRewardSatang =
+    splitRewardSatang ??
+    (underfilled?.questReward !== null && underfilled?.questReward !== undefined
+      ? Math.round(underfilled.questReward * 100)
+      : undefined);
   const duration = underfilled
     ? 10 * 60 * 1000
     : consent
@@ -334,7 +353,7 @@ export function PartialGroupStartConsentContent({
     else onReject?.();
   };
   const decide = (decision: QuestUnderfilledDecision) => {
-    if (underfilled && decisionPending && canDecide)
+    if (underfilled && decisionPending && canDecide && remaining > 0)
       onHirerDecision?.(decision);
   };
 
@@ -353,10 +372,21 @@ export function PartialGroupStartConsentContent({
         ? "cancelled"
         : "pending";
   const terminalDescription = underfilled
-    ? messages.underfilledCancelledDescription
+    ? underfilledCancellationDescription(
+        messages,
+        underfilled.cancellationReason,
+        ownResponse?.decision === QuestUnderfilledConsentDecision.DECLINE,
+        Boolean(viewerId && hirerId && viewerId === hirerId)
+      )
     : consent?.status === QuestPartialStartConsentStatus.PARTIAL_START_TIMED_OUT
       ? messages.timedOutDescription
-      : messages.cancelledDescription;
+      : messages.genericCancellation;
+  const cancellationDate = underfilled?.cancelledAt
+    ? formatTimestampDate(underfilled.cancelledAt, locale)
+    : undefined;
+  const cancellationTime = underfilled?.cancelledAt
+    ? formatTimeInBangkok(underfilled.cancelledAt)
+    : "";
   const content =
     loading || surfaceState === "loading" ? (
       <LoadingState label={messages.loading} />
@@ -366,12 +396,33 @@ export function PartialGroupStartConsentContent({
         onRetry={onRetry}
         retryLabel={messages.retry}
       />
-    ) : (!consent && !underfilled) || surfaceState === "empty" ? (
+    ) : (!consent && !underfilled) ||
+      surfaceState === "empty" ||
+      Boolean(
+        underfilled &&
+        underfilled.activeWorkerCount >= underfilled.headcount &&
+        terminal === "pending"
+      ) ? (
       <View className={styles.emptyState} testID="partial-group-start-empty">
         <View className={styles.emptyIcon}>
           <Clock3 color={colors.primary} size={26} strokeWidth={1.9} />
         </View>
-        <Text className={styles.emptyTitle}>{messages.noConsent}</Text>
+        <Text accessibilityRole="header" className={styles.emptyTitle}>
+          {messages.nothingToRespond}
+        </Text>
+        {onOpenQuest ? (
+          <Pressable
+            accessibilityRole="button"
+            className={`${styles.consentAction} ${styles.consentActionApprove}`}
+            onPress={onOpenQuest}
+          >
+            <Text
+              className={`${styles.consentActionText} ${styles.consentActionTextApprove}`}
+            >
+              {messages.backToQuest}
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
     ) : (
       <ScrollView
@@ -381,41 +432,75 @@ export function PartialGroupStartConsentContent({
         testID="partial-group-start-scroll"
       >
         {terminal !== "pending" ? (
-          <View
-            className={`${styles.consentStatusCard} ${terminal === "approved" ? styles.consentStatusCardApproved : styles.consentStatusCardCancelled}`}
-            testID={`partial-group-start-${terminal}`}
-          >
-            <View className={styles.consentStatusHeader}>
-              <View
-                className={`${styles.consentStatusIcon} ${terminal === "cancelled" ? styles.consentStatusIconCancelled : ""}`}
-              >
-                {terminal === "approved" ? (
-                  <Check color={colors.success} size={20} strokeWidth={2.6} />
-                ) : (
-                  <CircleX
-                    color={colors.dangerDark}
-                    size={20}
-                    strokeWidth={2.2}
-                  />
-                )}
-              </View>
-              <View className={styles.consentStatusCopy}>
-                <Text
-                  accessibilityRole="header"
-                  className={styles.consentStatusTitle}
+          <>
+            <View
+              className={`${styles.consentStatusCard} ${terminal === "approved" ? styles.consentStatusCardApproved : styles.consentStatusCardCancelled}`}
+              testID={`partial-group-start-${terminal}`}
+            >
+              <View className={styles.consentStatusHeader}>
+                <View
+                  className={`${styles.consentStatusIcon} ${terminal === "cancelled" ? styles.consentStatusIconCancelled : ""}`}
                 >
-                  {terminal === "approved"
-                    ? messages.approvedTitle
-                    : messages.cancelledTitle}
-                </Text>
-                <Text className={styles.consentStatusDescription}>
-                  {terminal === "approved"
-                    ? messages.approvedDescription(actual)
-                    : terminalDescription}
-                </Text>
+                  {terminal === "approved" ? (
+                    <Check color={colors.success} size={20} strokeWidth={2.6} />
+                  ) : (
+                    <CircleX
+                      color={colors.dangerDark}
+                      size={20}
+                      strokeWidth={2.2}
+                    />
+                  )}
+                </View>
+                <View className={styles.consentStatusCopy}>
+                  <Text
+                    accessibilityRole="header"
+                    className={styles.consentStatusTitle}
+                  >
+                    {terminal === "approved"
+                      ? messages.questAssignedNext
+                      : messages.cancelledTitle}
+                  </Text>
+                  <Text className={styles.consentStatusDescription}>
+                    {terminal === "approved"
+                      ? messages.approvedDescription(actual)
+                      : terminalDescription}
+                  </Text>
+                  {terminal === "cancelled" &&
+                  cancellationDate &&
+                  cancellationTime ? (
+                    <Text className={styles.consentStatusDescription}>
+                      {messages.cancelledAt(cancellationDate, cancellationTime)}
+                    </Text>
+                  ) : null}
+                </View>
               </View>
             </View>
-          </View>
+            {terminal === "approved" && onOpenWorkHub ? (
+              <Pressable
+                accessibilityRole="button"
+                className={`${styles.consentAction} ${styles.consentActionApprove}`}
+                onPress={onOpenWorkHub}
+              >
+                <Text
+                  className={`${styles.consentActionText} ${styles.consentActionTextApprove}`}
+                >
+                  {messages.assignedOpenWorkHub}
+                </Text>
+              </Pressable>
+            ) : terminal === "cancelled" && onBrowseQuests ? (
+              <Pressable
+                accessibilityRole="button"
+                className={`${styles.consentAction} ${styles.consentActionApprove}`}
+                onPress={onBrowseQuests}
+              >
+                <Text
+                  className={`${styles.consentActionText} ${styles.consentActionTextApprove}`}
+                >
+                  {messages.browseOtherQuests}
+                </Text>
+              </Pressable>
+            ) : null}
+          </>
         ) : null}
 
         <View
@@ -428,11 +513,19 @@ export function PartialGroupStartConsentContent({
               <UsersRound color={colors.primary} size={20} strokeWidth={2.1} />
             </View>
             <View className={styles.reviewHeaderCopy}>
-              <Text className={styles.proposalSummaryTitle}>
-                {questTitle ?? messages.partialConsentTitle}
+              <Text
+                accessibilityRole="header"
+                className={styles.proposalSummaryTitle}
+              >
+                {messages.partialDetailsChanged}
               </Text>
               <Text className={styles.reviewCopy}>
-                {messages.partialConsentSubtitle}
+                {decisionPending
+                  ? messages.hirerDecisionPending
+                  : messages.workerResponseRequired}
+              </Text>
+              <Text className={styles.reviewCopy}>
+                {messages.workerHeadcountJoined(actual, requested)}
               </Text>
             </View>
           </View>
@@ -452,43 +545,91 @@ export function PartialGroupStartConsentContent({
           </View>
           {underfilled ? (
             <>
-              <View className={styles.reviewRow}>
-                <Text className={styles.reviewLabel}>
-                  {messages.newRewardPerWorker}
-                </Text>
-                <Text selectable className={styles.reviewValue}>
-                  {formatSatang(
-                    splitRewardSatang ??
-                      Math.round((underfilled.questReward ?? 0) * 100),
-                    locale
-                  )}
-                </Text>
-              </View>
-              <View className={styles.reviewRow}>
-                <Text className={styles.reviewLabel}>{messages.dueDate}</Text>
-                <Text selectable className={styles.reviewValue}>
-                  {underfilled.dueAt ?? messages.notSet}
-                </Text>
-              </View>
+              {newRewardSatang !== undefined ? (
+                <View className={styles.reviewRow}>
+                  <Text className={styles.reviewLabel}>
+                    {messages.newRewardPerWorker}
+                  </Text>
+                  <Text selectable className={styles.reviewValue}>
+                    {originalRewardSatang !== undefined
+                      ? `${formatSatang(originalRewardSatang, locale)} → `
+                      : ""}
+                    {formatSatang(newRewardSatang, locale)}
+                  </Text>
+                </View>
+              ) : null}
+              {underfilled.dueAt ? (
+                <View className={styles.reviewRow}>
+                  <Text className={styles.reviewLabel}>{messages.dueDate}</Text>
+                  <Text selectable className={styles.reviewValue}>
+                    {originalDueAt
+                      ? `${formatTimestampDate(originalDueAt, locale)} ${formatTimeInBangkok(originalDueAt)} → `
+                      : ""}
+                    {formatTimestampDate(underfilled.dueAt, locale)}{" "}
+                    {formatTimeInBangkok(underfilled.dueAt)}
+                  </Text>
+                </View>
+              ) : null}
             </>
           ) : null}
         </View>
 
         <View
+          accessibilityRole={
+            expired && terminal === "pending" ? "alert" : undefined
+          }
           className={styles.countdownCard}
           testID="partial-group-start-countdown"
         >
           <Text className={styles.countdownLabel}>
-            {messages.timeRemaining}
+            {decisionPending ? messages.timeRemaining : messages.respondWithin}
           </Text>
-          <Text
-            accessibilityLiveRegion="polite"
-            accessibilityLabel={`${messages.timeRemaining}: ${formatCountdown(remaining)}`}
-            className={styles.countdownValue}
-          >
-            {formatCountdown(remaining)}
-          </Text>
+          {expired && terminal === "pending" ? (
+            <Text className={styles.countdownValue}>
+              {messages.timeUpChecking}
+            </Text>
+          ) : (
+            <Text
+              accessibilityLiveRegion={
+                expired ||
+                (countdown !== null &&
+                  Math.floor(countdown / 60_000) !==
+                    Math.floor((countdown + 1_000) / 60_000))
+                  ? "polite"
+                  : "none"
+              }
+              accessibilityLabel={`${decisionPending ? messages.timeRemaining : messages.respondWithin}: ${formatCountdown(remaining)}`}
+              className={styles.countdownValue}
+            >
+              {formatCountdown(remaining)}
+            </Text>
+          )}
         </View>
+        {decisionPending ? (
+          <>
+            <Text className={styles.reviewCopy}>
+              {messages.proceedConsequence}
+            </Text>
+            <Text className={styles.reviewCopy}>
+              {messages.cancelConsequence}
+            </Text>
+          </>
+        ) : underfilled ? (
+          <>
+            <Text className={styles.reviewCopy}>
+              {messages.acceptingWaitsForEveryone}
+            </Text>
+            <Text className={styles.reviewCopy}>
+              {messages.decliningCancelsForEveryone}
+            </Text>
+            {currentResponse ===
+            QuestPartialStartVoteStatus.PARTIAL_START_VOTE_APPROVED ? (
+              <Text accessibilityRole="alert" className={styles.reviewCopy}>
+                {messages.acceptedWaiting(underfilled.consent.pendingCount)}
+              </Text>
+            ) : null}
+          </>
+        ) : null}
         {terminal === "pending" ? (
           <View
             accessibilityRole="progressbar"
@@ -511,7 +652,14 @@ export function PartialGroupStartConsentContent({
               {messages.frozenRoster}
             </Text>
             <Text className={styles.sectionMeta}>
-              {messages.votesProgress(approvedCount, requiredCount)}
+              {decisionPending
+                ? messages.workerHeadcountJoined(actual, requested)
+                : underfilled
+                  ? messages.workersAcceptedProgress(
+                      approvedCount,
+                      requiredCount
+                    )
+                  : messages.votesProgress(approvedCount, requiredCount)}
             </Text>
           </View>
           <View className={styles.voterList}>
@@ -531,29 +679,36 @@ export function PartialGroupStartConsentContent({
           </View>
         </View>
 
-        <View
-          className={styles.voterSection}
-          testID="partial-group-start-votes"
-        >
-          <View className={styles.sectionHeader}>
-            <Text accessibilityRole="header" className={styles.sectionTitle}>
-              {messages.voteStatus}
-            </Text>
-            <Text className={styles.sectionMeta}>
-              {messages.votesProgress(approvedCount, requiredCount)}
-            </Text>
+        {!decisionPending ? (
+          <View
+            className={styles.voterSection}
+            testID="partial-group-start-votes"
+          >
+            <View className={styles.sectionHeader}>
+              <Text accessibilityRole="header" className={styles.sectionTitle}>
+                {messages.voteStatus}
+              </Text>
+              <Text className={styles.sectionMeta}>
+                {underfilled
+                  ? messages.workersAcceptedProgress(
+                      approvedCount,
+                      requiredCount
+                    )
+                  : messages.votesProgress(approvedCount, requiredCount)}
+              </Text>
+            </View>
+            <View className={styles.voterList}>
+              {requiredVoters.map((voter) => (
+                <VoterRow
+                  key={voter.id}
+                  labels={messages}
+                  response={responseMap.get(voter.id)}
+                  voter={voter}
+                />
+              ))}
+            </View>
           </View>
-          <View className={styles.voterList}>
-            {requiredVoters.map((voter) => (
-              <VoterRow
-                key={voter.id}
-                labels={messages}
-                response={responseMap.get(voter.id)}
-                voter={voter}
-              />
-            ))}
-          </View>
-        </View>
+        ) : null}
 
         {terminal === "pending" ? (
           <View className={styles.chatHint}>
@@ -563,7 +718,7 @@ export function PartialGroupStartConsentContent({
             </Text>
           </View>
         ) : null}
-        {decisionPending && canDecide && onHirerDecision ? (
+        {decisionPending && canDecide && onHirerDecision && !expired ? (
           <View
             className={styles.consentActions}
             testID="partial-group-start-hirer-decision"
@@ -603,7 +758,7 @@ export function PartialGroupStartConsentContent({
             testID="partial-group-start-worker-consent"
           >
             <Pressable
-              accessibilityLabel={messages.approveStart}
+              accessibilityLabel={messages.accept}
               accessibilityRole="button"
               className={`${styles.consentAction} ${styles.consentActionApprove}`}
               onPress={() => vote(true)}
@@ -613,11 +768,11 @@ export function PartialGroupStartConsentContent({
               <Text
                 className={`${styles.consentActionText} ${styles.consentActionTextApprove}`}
               >
-                {messages.approveStart}
+                {messages.accept}
               </Text>
             </Pressable>
             <Pressable
-              accessibilityLabel={messages.rejectStart}
+              accessibilityLabel={messages.decline}
               accessibilityRole="button"
               className={`${styles.consentAction} ${styles.consentActionReject}`}
               onPress={() => vote(false)}
@@ -627,7 +782,7 @@ export function PartialGroupStartConsentContent({
               <Text
                 className={`${styles.consentActionText} ${styles.consentActionTextReject}`}
               >
-                {messages.rejectStart}
+                {messages.decline}
               </Text>
             </Pressable>
           </View>

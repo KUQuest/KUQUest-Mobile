@@ -1,4 +1,8 @@
 import type { SupportedLocale } from "@/locales/locale";
+import {
+  QuestV2CancellationReason,
+  type QuestV2UnderfilledCancellationReason,
+} from "@/api/questV2Contracts";
 
 export interface WorkerHomeMessages {
   title: string;
@@ -46,6 +50,17 @@ export interface WorkerHomeMessages {
   workingNow: string;
   timeElapsed: string;
   waitingForHirer: string;
+  capacityJoined: (count: number, headcount: number) => string;
+  capacityFull: string;
+  responseRequired: string;
+  consentCountdown: (countdown: string) => string;
+  waitingForDecision: string;
+  underfilledAssigned: string;
+  underfilledCancelled: (
+    reason: QuestV2UnderfilledCancellationReason | null
+  ) => string;
+  checkingUnderfilledResult: string;
+  morePendingActions: (count: number) => string;
 }
 
 export const workerHomeMessages: Record<SupportedLocale, WorkerHomeMessages> = {
@@ -97,6 +112,26 @@ export const workerHomeMessages: Record<SupportedLocale, WorkerHomeMessages> = {
     workingNow: "Working Now",
     timeElapsed: "Time elapsed",
     waitingForHirer: "Waiting for Hirer",
+    capacityJoined: (count, headcount) =>
+      `${count} / ${headcount} workers joined`,
+    capacityFull: "Full",
+    responseRequired: "Respond to revised terms",
+    consentCountdown: (countdown) => `Time remaining: ${countdown}`,
+    waitingForDecision: "Waiting for the Hirer to decide whether to proceed.",
+    underfilledAssigned: "Everyone agreed. Check Quest status.",
+    underfilledCancelled: (reason) =>
+      reason === "HIRER_CANCELLED"
+        ? "The Hirer cancelled this quest."
+        : reason === "HIRER_NO_DECISION"
+          ? "The Hirer did not decide in time; this quest was cancelled."
+          : reason === "WORKER_DECLINED"
+            ? "A worker declined the revised terms; this quest was cancelled."
+            : reason === QuestV2CancellationReason.CONSENT_TIMEOUT
+              ? "A worker did not respond in time; this quest was cancelled."
+              : "This quest was cancelled.",
+    checkingUnderfilledResult: "Time ran out. Checking the result.",
+    morePendingActions: (count) =>
+      `+${count} more pending ${count === 1 ? "action" : "actions"}`,
   },
   th: {
     title: "พื้นที่ทำงาน: ผู้รับงาน",
@@ -146,5 +181,24 @@ export const workerHomeMessages: Record<SupportedLocale, WorkerHomeMessages> = {
     workingNow: "กำลังทำงานอยู่",
     timeElapsed: "เวลาที่ผ่านไป",
     waitingForHirer: "รอผู้ว่าจ้างตอบรับ",
+    capacityJoined: (count, headcount) =>
+      `เข้าร่วมแล้ว ${count} / ${headcount} คน`,
+    capacityFull: "เต็ม",
+    responseRequired: "ตอบรับเงื่อนไขใหม่",
+    consentCountdown: (countdown) => `เวลาที่เหลือ: ${countdown}`,
+    waitingForDecision: "รอผู้ว่าจ้างตัดสินใจว่าจะดำเนินเควสต์ต่อหรือไม่",
+    underfilledAssigned: "ทุกคนตอบรับแล้ว ตรวจสอบสถานะเควสต์",
+    underfilledCancelled: (reason) =>
+      reason === "HIRER_CANCELLED"
+        ? "ผู้ว่าจ้างยกเลิกเควสต์นี้"
+        : reason === "HIRER_NO_DECISION"
+          ? "ผู้ว่าจ้างไม่ได้ตัดสินใจภายในเวลา เควสต์นี้จึงถูกยกเลิก"
+          : reason === "WORKER_DECLINED"
+            ? "ผู้ปฏิบัติงานปฏิเสธเงื่อนไขใหม่ เควสต์นี้จึงถูกยกเลิก"
+            : reason === QuestV2CancellationReason.CONSENT_TIMEOUT
+              ? "ผู้ปฏิบัติงานไม่ได้ตอบรับภายในเวลา เควสต์นี้จึงถูกยกเลิก"
+              : "เควสต์นี้ถูกยกเลิก",
+    checkingUnderfilledResult: "หมดเวลาแล้ว กำลังตรวจสอบผล",
+    morePendingActions: (count) => `อีก ${count} รายการที่รอดำเนินการ`,
   },
 };

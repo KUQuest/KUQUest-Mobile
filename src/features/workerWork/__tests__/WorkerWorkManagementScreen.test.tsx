@@ -6,6 +6,7 @@ import { fireEvent, waitFor } from "@testing-library/react-native";
 
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { workerSnapshot } from "@/testing/workerSnapshotFixtures";
+import { workerWorkMessages } from "@/locales/workerWorkMessages";
 import WorkerWorkManagementScreen from "../WorkerWorkManagementScreen";
 
 const mockPush = jest.fn();
@@ -93,7 +94,9 @@ describe("WorkerWorkManagementScreen", () => {
     const screen = await renderWithQueryClient(<WorkerWorkManagementScreen />);
 
     await waitFor(() =>
-      expect(screen.getByText("Respond to underfilled start")).toBeTruthy()
+      expect(
+        screen.getByText(workerWorkMessages.en.status.consentUnderfilled)
+      ).toBeTruthy()
     );
     expect(
       screen.getByTestId("worker-work-open-quest-underfilled").props

@@ -9,7 +9,7 @@ describe("HirerQuestProgressCard", () => {
     const onOpenWorkerProfile = jest.fn();
     const onViewRoster = jest.fn();
     const onOpenDetails = jest.fn();
-    const { getByText, getByTestId } = await render(
+    const { getAllByText, getByText, getByTestId } = await render(
       <HirerQuestProgressCard
         questId="q1"
         title="Science Project"
@@ -31,6 +31,7 @@ describe("HirerQuestProgressCard", () => {
     expect(getByText("Science Project")).toBeTruthy();
     expect(getByText("Chat Worker")).toBeTruthy();
     expect(getByText(/คณะวิศวกรรมศาสตร์/)).toBeTruthy();
+    expect(getAllByText("รอเริ่มงาน")).toHaveLength(1);
 
     await fireEvent.press(getByTestId("hirer-quest-card-worker-profile-q1"));
     expect(onOpenWorkerProfile).toHaveBeenCalledWith("worker-1");
@@ -69,7 +70,7 @@ describe("HirerQuestProgressCard", () => {
     expect(onViewRoster).toHaveBeenCalled();
   });
 
-  it("renders applicants banner and triggers roster view", async () => {
+  it("shows applicant information without duplicate roster navigation", async () => {
     const onViewRoster = jest.fn();
     const { getByText, getByTestId } = await render(
       <HirerQuestProgressCard
@@ -88,8 +89,9 @@ describe("HirerQuestProgressCard", () => {
 
     expect(getByText("ผู้สมัคร (2 คน)")).toBeTruthy();
 
-    await fireEvent.press(getByTestId("hirer-quest-card-applicants-q3"));
-    expect(onViewRoster).toHaveBeenCalled();
+    expect(
+      getByTestId("hirer-quest-card-applicants-q3").props
+    ).not.toHaveProperty("accessibilityRole", "button");
   });
 
   it("shows roster banners without controls when no roster handler exists", async () => {
@@ -153,7 +155,7 @@ describe("HirerQuestProgressCard", () => {
     expect(applicants.queryByText("ดูผู้สมัคร")).toBeNull();
   });
 
-  it("renders waiting banner when no applicants or workers", async () => {
+  it("keeps the waiting row informational and opens details from the card action", async () => {
     const onOpenDetails = jest.fn();
     const { getByText, getByTestId } = await render(
       <HirerQuestProgressCard
@@ -166,9 +168,16 @@ describe("HirerQuestProgressCard", () => {
     );
 
     expect(getByText("ยังไม่มีผู้สมัคร")).toBeTruthy();
+    expect(getByTestId("hirer-quest-card-waiting-q4").props).not.toHaveProperty(
+      "accessibilityRole",
+      "button"
+    );
+    expect(getByTestId("hirer-quest-card-waiting-q4").props).not.toHaveProperty(
+      "onPress"
+    );
 
-    await fireEvent.press(getByTestId("hirer-quest-card-waiting-q4"));
-    expect(onOpenDetails).toHaveBeenCalled();
+    await fireEvent.press(getByTestId("hirer-quest-card-details-q4"));
+    expect(onOpenDetails).toHaveBeenCalledTimes(1);
   });
   it("shows completed Quests at the final accessible progress step", async () => {
     const { getByTestId, getByText } = await render(

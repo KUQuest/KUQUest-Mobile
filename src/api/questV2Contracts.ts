@@ -132,6 +132,8 @@ export const questV2CanonicalQuestSchema = z.object({
   participation: questV2ParticipationSchema,
   state: questV2StateSchema,
   questFundingTotal: z.number().nonnegative(),
+  /** Per-Worker published reward in baht (hirer views). Null in a draft; unchanged by an underfilled revision. */
+  questReward: z.number().nonnegative().nullable().optional(),
   headcount: z.number().int().min(1),
   startTime: z.string(),
   dueAt: z.string().nullable(),
@@ -220,10 +222,30 @@ export const questV2MineDataSchema = z.object({
   nextCursor: z.string().nullable(),
 });
 export type QuestV2MineResponse = z.infer<typeof questV2MineDataSchema>;
+/**
+ * Server-resolved person summary returned next to every person id.
+ * `displayName` is never empty or a UUID. `avatar.url` is temporary: do not store it.
+ * Optional on each response until the backend PR is on staging; read it
+ * directly instead of calling a profile endpoint per person.
+ */
+export const questV2MemberSummarySchema = z.object({
+  id: questV2IdSchema,
+  displayName: z.string().min(1),
+  avatar: z
+    .object({ fileId: questV2IdSchema, url: z.string() })
+    .nullable()
+    .optional(),
+  faculty: z.string().nullable().optional(),
+  department: z.string().nullable().optional(),
+  ratingAverage: z.number().nullable().optional(),
+});
+export type QuestV2MemberSummary = z.infer<typeof questV2MemberSummarySchema>;
+
 export const questV2AssignmentSchema = z.object({
   id: questV2IdSchema,
   questId: questV2IdSchema,
   workerId: questV2IdSchema,
+  member: questV2MemberSummarySchema.optional(),
   state: questV2AssignmentStateSchema,
   questState: questV2StateSchema,
   startedAt: z.string().nullable(),
@@ -237,6 +259,62 @@ export const questV2AssignmentsDataSchema = z.object({
 export type QuestV2AssignmentsResponse = z.infer<
   typeof questV2AssignmentsDataSchema
 >;
+
+export const questV2UnderfilledCancellationReasonSchema = z.enum([
+  "HIRER_CANCELLED",
+  "HIRER_NO_DECISION",
+  "WORKER_DECLINED",
+  "CONSENT_TIMEOUT",
+]);
+export type QuestV2UnderfilledCancellationReason = z.infer<
+  typeof questV2UnderfilledCancellationReasonSchema
+>;
+export const QuestV2CancellationReason =
+  questV2UnderfilledCancellationReasonSchema.enum;
+
+/** `type` of an Android FCM data-only message sent by the underfilled lifecycle. */
+export const questV2PushTypeSchema = z.enum([
+  "UNDERFILLED_DECISION_PENDING",
+  "UNDERFILLED_CONSENT_PENDING",
+  "UNDERFILLED_COMPLETED",
+  "UNDERFILLED_CANCELLED",
+  "QUEST_ASSIGNED",
+]);
+export type QuestV2PushType = z.infer<typeof questV2PushTypeSchema>;
+export const QuestV2PushTypeValue = questV2PushTypeSchema.enum;
+
+/** 409 `error.code` values of direct `POST /api/v2/quests/:id/join`. */
+export const QuestV2JoinErrorCode = {
+  QUEST_FULL: "QUEST_FULL",
+  QUEST_NOT_OPEN: "QUEST_NOT_OPEN",
+  ALREADY_JOINED: "ALREADY_JOINED",
+} as const;
+
+/** Compact underfilled summary on each `GET /api/v2/assignments/mine` item; null when the Quest has no underfilled process. */
+export const questV2UnderfilledSummarySchema = z.object({
+  state: z.enum([
+    "UNDERFILLED_DECISION_PENDING",
+    "UNDERFILLED_CONSENT_PENDING",
+    "UNDERFILLED_COMPLETED",
+    "UNDERFILLED_CANCELLED",
+  ]),
+  decision: z.object({ expiresAt: z.string() }),
+  consent: z.object({ expiresAt: z.string().nullable() }),
+  activeWorkerCount: z.number().int().nonnegative(),
+  headcount: z.number().int().min(1),
+  cancellationReason: questV2UnderfilledCancellationReasonSchema.nullable(),
+});
+export type QuestV2UnderfilledSummary = z.infer<
+  typeof questV2UnderfilledSummarySchema
+>;
+
+export const questV2MyAssignmentSchema = questV2AssignmentSchema.extend({
+  underfilled: questV2UnderfilledSummarySchema.nullable().optional(),
+});
+export type QuestV2MyAssignment = z.infer<typeof questV2MyAssignmentSchema>;
+export const questV2MyAssignmentsDataSchema = z.object({
+  items: z.array(questV2MyAssignmentSchema),
+});
 
 export const questV2PublishCheckReasonSchema = z.object({
   code: z.string(),
@@ -289,6 +367,7 @@ export const questV2ApplicationSchema = z.object({
   id: questV2IdSchema,
   questId: questV2IdSchema,
   memberId: questV2IdSchema,
+  member: questV2MemberSummarySchema.optional(),
   state: questV2ApplicationStateSchema,
   appliedAt: z.string(),
 });
@@ -352,6 +431,7 @@ export type QuestV2TeamState = z.infer<typeof questV2TeamStateSchema>;
 
 export const questV2TeamMemberSchema = z.object({
   memberId: questV2IdSchema,
+  member: questV2MemberSummarySchema.optional(),
   joinedAt: z.string(),
 });
 export type QuestV2TeamMember = z.infer<typeof questV2TeamMemberSchema>;
@@ -367,6 +447,7 @@ export const questV2TeamSchema = z.object({
   id: questV2IdSchema,
   questId: questV2IdSchema,
   leaderId: questV2IdSchema,
+  leader: questV2MemberSummarySchema.optional(),
   name: z.string(),
   headcount: z.number().int().min(2),
   state: questV2TeamStateSchema,
@@ -444,6 +525,7 @@ export const questV2UnderfilledConsentSchema = z.object({
 });
 export const questV2UnderfilledResponseItemSchema = z.object({
   workerId: questV2IdSchema,
+  member: questV2MemberSummarySchema.optional(),
   assignmentId: questV2IdSchema,
   decision: z.enum(["ACCEPT", "DECLINE"]).nullable(),
   questReward: z.number().nonnegative().nullable(),
@@ -470,6 +552,10 @@ export const questV2UnderfilledSchema = z.object({
   workerRewardPool: z.number().nonnegative().nullable(),
   questReward: z.number().nonnegative().nullable(),
   dueAt: z.string().nullable(),
+  cancellationReason: questV2UnderfilledCancellationReasonSchema
+    .nullable()
+    .optional(),
+  cancelledAt: z.string().nullable().optional(),
   decision: questV2UnderfilledDecisionSchema,
   consent: questV2UnderfilledConsentSchema,
   responses: z.array(questV2UnderfilledResponseItemSchema).optional(),
@@ -487,6 +573,7 @@ export const questV2EditRequestFailureCodeSchema = z
   .nullable();
 export const questV2EditResponseSchema = z.object({
   workerId: questV2IdSchema,
+  member: questV2MemberSummarySchema.optional(),
   decision: z
     .enum(["EDIT_RESPONSE_ACCEPTED", "EDIT_RESPONSE_DECLINED"])
     .nullable(),

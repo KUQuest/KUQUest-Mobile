@@ -30,7 +30,6 @@ interface ProfileHeaderProps {
   presentation?: "default" | "public";
   editProfileLabel?: string;
   onEditPress?: () => void;
-  unavailableTagsText?: string;
   accessibilityLabels?: Pick<
     ProfileAccessibilityLabels,
     "profileImageLabel" | "questCategoriesLabel"
@@ -60,7 +59,6 @@ export function ProfileHeader({
   presentation = "default",
   editProfileLabel,
   onEditPress,
-  unavailableTagsText,
   accessibilityLabels,
 }: ProfileHeaderProps) {
   const { width, fontScale } = useWindowDimensions();
@@ -145,17 +143,6 @@ export function ProfileHeader({
           ) : null}
         </View>
       </View>
-      {data.tags === undefined && unavailableTagsText ? (
-        <Text
-          testID="profile-tags-unavailable"
-          className={cn(
-            styles.sectionNoticeText,
-            presentation === "public" && "w-full"
-          )}
-        >
-          {unavailableTagsText}
-        </Text>
-      ) : null}
       {(data.tags ?? []).length > 0 ? (
         <View
           className={cn(

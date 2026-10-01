@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   showConfirmModal,
@@ -16,6 +16,7 @@ import { getChatRouteParams } from "@/features/chat/chatData";
 import { useLocale } from "@/features/preferences/localeStore";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import {
+  questBoardKeys,
   setQuestEditRequestId,
   useCancelQuestMutation,
   useCreateEditRequestMutation,
@@ -24,6 +25,7 @@ import {
   useSelectApplicationMutation,
   useSelectCandidateTeamMutation,
 } from "@/features/questBoard/api/questBoardQueries";
+import { subscribeToHirerQuestEvents } from "@/features/questBoard/live/questEvents";
 import { isTerminalStatus } from "@/domain/questLifecycle";
 import { getCancelTier } from "./cancelQuestGuardrail";
 import { formatSatang } from "@/domain/satang";
@@ -39,7 +41,15 @@ import {
   QuestProofStatus,
   QuestStatus,
   type QuestUnderfilledDecision,
+  QuestUnderfilledState,
 } from "../domain/types";
+
+const REFETCH_CHANGE_TYPES: Record<string, true> = {
+  ASSIGNMENT_JOINED: true,
+  ASSIGNMENT_STARTED: true,
+  PROOF_SUBMITTED: true,
+  QUEST_AUTO_CANCELLED: true,
+};
 
 export function useHirerQuestManageFeature(questId?: string) {
   const router = useRouter();
@@ -60,6 +70,22 @@ export function useHirerQuestManageFeature(questId?: string) {
     viewerId || null
   );
   const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!questId || !viewerId) return;
+    return subscribeToHirerQuestEvents((event) => {
+      if (event.questId !== questId) return;
+      const underfilledPending =
+        event.changeType ===
+          QuestUnderfilledState.UNDERFILLED_DECISION_PENDING &&
+        Boolean(event.expiresAt);
+      if (!underfilledPending && !REFETCH_CHANGE_TYPES[event.changeType]) {
+        return;
+      }
+      void queryClient.invalidateQueries({
+        queryKey: questBoardKeys.liveSnapshotScope(questId, viewerId),
+      });
+    });
+  }, [questId, queryClient, viewerId]);
   const selectApplicationMutation = useSelectApplicationMutation();
   const selectCandidateTeamMutation = useSelectCandidateTeamMutation();
   const decideUnderfilledMutation = useDecideUnderfilledMutation();

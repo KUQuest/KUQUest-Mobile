@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { AccessibilityInfo, Modal } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Pressable, Text, View } from "@/tw";
@@ -5,7 +6,6 @@ import { getActionBarPaddingBottom } from "@/theme/layout";
 import { cn } from "@/tw/cn";
 import { X } from "lucide-react-native";
 import { formatSatang } from "@/domain/satang";
-import { colors } from "@/theme/colors";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 import { getQuestRewardSatang } from "../../presentation/questBoardViewData";
 import type { QuestBoardQuest } from "../../domain/types";
@@ -23,6 +23,7 @@ type ConfirmationSheetProps = {
   onCancel: () => void;
   onConfirm: () => void;
   busy?: boolean;
+  capacityFull?: boolean;
 };
 
 function announce(message: string): void {
@@ -36,9 +37,12 @@ function ConfirmationSheet({
   onCancel,
   onConfirm,
   busy = false,
+  capacityFull = false,
 }: ConfirmationSheetProps) {
+  const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
   const firstCome = quest.candidateMode === "NO_CANDIDATE";
+  const groupFcfs = firstCome && quest.participationMode === "team";
   const title = firstCome
     ? messages.confirmParticipationTitle
     : messages.confirmApplicationTitle;
@@ -48,7 +52,6 @@ function ConfirmationSheet({
   const confirmLabel = firstCome
     ? messages.confirmParticipation
     : messages.confirmApplication;
-
   return (
     <Modal
       animationType="slide"
@@ -83,24 +86,33 @@ function ConfirmationSheet({
           <Text className={styles.confirmDescription}>{description}</Text>
           <View className={styles.confirmSummary}>
             <Text className={styles.confirmSummaryText}>{quest.title}</Text>
-            <Text
-              className={styles.confirmSummaryText}
-            >{`${formatSatang(getQuestRewardSatang(quest), locale)} ${messages.perPerson}`}</Text>
-            <Text
-              className={styles.confirmSummaryText}
-            >{`${messages.schedule}: ${formatDate(quest.startDate, locale, "")}`}</Text>
+            <Text className={styles.confirmSummaryText}>
+              {`${formatSatang(getQuestRewardSatang(quest), locale)} ${messages.perPerson}`}
+            </Text>
+            <Text className={styles.confirmSummaryText}>
+              {`${messages.schedule}: ${formatDate(quest.startDate, locale, "")}`}
+            </Text>
             {quest.timeRange?.split(/\s*[–—-]\s*/, 2).map((time, index) => (
               <Text key={index} className={styles.confirmSummaryText}>
                 {`${index === 0 ? messages.startTime : messages.endTime}: ${time}`}
               </Text>
             ))}
-            <Text
-              className={styles.confirmSummaryText}
-            >{`${messages.deadline}: ${formatDate(quest.deadline, locale, "")}`}</Text>
-            <Text
-              className={styles.confirmSummaryText}
-            >{`${messages.location}: ${quest.location}`}</Text>
+            <Text className={styles.confirmSummaryText}>
+              {`${messages.deadline}: ${formatDate(quest.deadline, locale, "")}`}
+            </Text>
+            <Text className={styles.confirmSummaryText}>
+              {`${messages.location}: ${quest.location}`}
+            </Text>
           </View>
+          {groupFcfs ? (
+            <View accessibilityRole="alert" className={styles.statusCard}>
+              <Text className={styles.statusTitle}>
+                {capacityFull
+                  ? messages.groupFcfsFullForOthers
+                  : messages.groupFcfsUnderfillRule}
+              </Text>
+            </View>
+          ) : null}
           <View className={styles.confirmActions}>
             <Pressable
               accessibilityRole="button"
@@ -111,16 +123,21 @@ function ConfirmationSheet({
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              disabled={busy}
+              accessibilityState={{ disabled: busy || capacityFull }}
+              disabled={busy || capacityFull}
               onPress={onConfirm}
               className={cn(
                 styles.confirmAction,
-                busy && styles.primaryActionDisabled
+                (busy || capacityFull) && styles.primaryActionDisabled
               )}
               testID="confirm-quest-application"
             >
               <Text className={styles.confirmActionText}>
-                {busy ? messages.loading : confirmLabel}
+                {capacityFull
+                  ? messages.questFull
+                  : busy
+                    ? messages.loading
+                    : confirmLabel}
               </Text>
             </Pressable>
           </View>
