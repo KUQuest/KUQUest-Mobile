@@ -30,4 +30,4 @@ jobs:
         run: bun run typecheck
 
       - name: Test
-        run: bun run test --runInBand --forceExit
+        run: bun run test --maxWorkers=2 --forceExit
