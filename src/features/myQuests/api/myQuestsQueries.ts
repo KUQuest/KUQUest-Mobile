@@ -6,6 +6,8 @@ import { myQuestService } from "../myQuestService";
 export const myQuestsKeys = {
   all: ["myQuests"] as const,
   hirer: () => [...myQuestsKeys.all, "hirer"] as const,
+  hirerProofReviewableIds: (failedQuestIds: readonly string[]) =>
+    [...myQuestsKeys.hirer(), "proof-review", failedQuestIds] as const,
   worker: (viewerId: string) =>
     [...myQuestsKeys.all, "worker", viewerId] as const,
   workerCandidateApplications: (viewerId: string) =>
@@ -28,6 +30,34 @@ export function useMyHirerQuestsQuery(enabled = true) {
     };
     return subscribeToHirerQuestEvents(invalidate, invalidate);
   }, [enabled, hasSnapshot, queryClient]);
+
+  return query;
+}
+
+export function useMyHirerProofReviewableIdsQuery(
+  failedQuestIds: readonly string[],
+  enabled = true
+) {
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    enabled: failedQuestIds.length > 0 && enabled,
+    queryKey: myQuestsKeys.hirerProofReviewableIds(failedQuestIds),
+    queryFn: ({ signal }) =>
+      myQuestService.listMyHirerProofReviewableQuestIds(failedQuestIds, {
+        signal,
+      }),
+  });
+  const hasData = query.data !== undefined;
+
+  useEffect(() => {
+    if (!enabled || failedQuestIds.length === 0 || !hasData) return;
+    const invalidate = () => {
+      void queryClient.invalidateQueries({
+        queryKey: myQuestsKeys.hirerProofReviewableIds(failedQuestIds),
+      });
+    };
+    return subscribeToHirerQuestEvents(invalidate, invalidate);
+  }, [enabled, failedQuestIds, hasData, queryClient]);
 
   return query;
 }

@@ -28,11 +28,13 @@ import {
   type QuestPartialStartConsent,
   type QuestTeam,
 } from "../../domain/types";
+const mockTeamPush = jest.fn();
 
 const mockJoinMutateAsync = jest.fn();
 const mockTeamDetailView = {
   state: "ready",
   team: {
+    team: null as QuestTeam | null,
     onJoinTeam: jest.fn(),
     viewerId: "worker-1",
     submitting: false,
@@ -42,6 +44,9 @@ const mockTeamDetailView = {
   onRetry: jest.fn(),
 };
 
+jest.mock("expo-router", () => ({
+  useRouter: () => ({ push: mockTeamPush }),
+}));
 jest.mock("@/features/questBoard/api/questBoardQueries", () => ({
   useJoinCandidateTeamMutation: () => ({
     mutateAsync: mockJoinMutateAsync,
@@ -903,5 +908,78 @@ describe("group Quest sheets", () => {
 
     expect(view.getByTestId("team-proposal-file-file-first")).toBeTruthy();
     expect(view.getByText("Failed to pick file")).toBeTruthy();
+  });
+  it("shows Open Work Hub only to selected-team members", async () => {
+    const selectedTeam: QuestTeam = {
+      ...team,
+      status: QuestTeamStatus.TEAM_SELECTED,
+      members: [
+        ...team.members,
+        { workerId: "worker-1", role: "MEMBER", displayName: "Worker One" },
+      ],
+    };
+    const onOpenWorkHub = jest.fn();
+    const memberView = await renderWithQueryClient(
+      <TeamAssembleView
+        locale="en"
+        onOpenWorkHub={onOpenWorkHub}
+        openWorkHubLabel="Open Work Hub"
+        team={selectedTeam}
+        viewerId="worker-1"
+      />
+    );
+    const button = memberView.getByRole("button", { name: "Open Work Hub" });
+    await fireEvent.press(button);
+    expect(onOpenWorkHub).toHaveBeenCalledTimes(1);
+
+    const rejectedView = await renderWithQueryClient(
+      <TeamAssembleView
+        locale="en"
+        onOpenWorkHub={onOpenWorkHub}
+        openWorkHubLabel="Open Work Hub"
+        team={{ ...selectedTeam, status: QuestTeamStatus.TEAM_REJECTED }}
+        viewerId="worker-1"
+      />
+    );
+    expect(
+      rejectedView.queryByTestId("team-assemble-open-work-hub")
+    ).toBeNull();
+
+    const nonMemberView = await renderWithQueryClient(
+      <TeamAssembleView
+        locale="en"
+        onOpenWorkHub={onOpenWorkHub}
+        openWorkHubLabel="Open Work Hub"
+        team={selectedTeam}
+        viewerId="other-worker"
+      />
+    );
+    expect(
+      nonMemberView.queryByTestId("team-assemble-open-work-hub")
+    ).toBeNull();
+  });
+  it("routes selected-team member to Work Hub with Quest and viewer ids", async () => {
+    const selectedTeam: QuestTeam = {
+      ...team,
+      status: QuestTeamStatus.TEAM_SELECTED,
+      members: [
+        ...team.members,
+        { workerId: "worker-1", role: "MEMBER", displayName: "Worker One" },
+      ],
+    };
+    const previousTeamProps = mockTeamDetailView.team;
+    mockTeamDetailView.team = { ...previousTeamProps, team: selectedTeam };
+    mockTeamPush.mockClear();
+
+    const view = await renderWithQueryClient(
+      <TeamAssembleScreen questId="quest-1" />
+    );
+    await fireEvent.press(view.getByTestId("team-assemble-open-work-hub"));
+
+    expect(mockTeamPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]/work",
+      params: { id: "quest-1", viewerId: "worker-1" },
+    });
+    mockTeamDetailView.team = previousTeamProps;
   });
 });

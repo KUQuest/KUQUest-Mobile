@@ -135,4 +135,32 @@ describe("SweetAlert", () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(view.queryByText("Delete quest?")).toBeNull();
   });
+  it("queues another alert without losing a pending confirmation", async () => {
+    const onConfirm = jest.fn();
+    const view = await render(<SweetAlertHost />);
+
+    await act(async () => {
+      showConfirmModal({
+        title: "Cancel quest?",
+        message: "This cannot be undone.",
+        confirmLabel: "Confirm",
+        cancelLabel: "Keep",
+        onConfirm,
+      });
+      showSweetAlert({
+        title: "Next alert",
+        message: "Second message",
+        variant: SweetAlertVariant.Info,
+        buttonLabel: "Done",
+      });
+    });
+
+    expect(view.getByText("Cancel quest?")).toBeTruthy();
+    await fireEvent.press(view.getByRole("button", { name: "Confirm" }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(view.getByText("Next alert")).toBeTruthy();
+
+    await fireEvent.press(view.getByRole("button", { name: "Done" }));
+    expect(view.queryByTestId("sweet-alert")).toBeNull();
+  });
 });

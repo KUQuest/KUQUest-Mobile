@@ -1,3 +1,4 @@
+import { serverNow } from "@/api/serverClock";
 import {
   createQuestIdempotencyKey,
   questApi,
@@ -125,7 +126,7 @@ export function cardToQuestBoardQuest(card: QuestV2BoardCard): QuestBoardQuest {
     creator: { name: card.hirerName },
     hirerName: card.hirerName,
     studentInterestMatch: false,
-    ownerStudentId: "",
+    ownerStudentId: card.hirerProfile?.id ?? "",
     status: "QUEST_OPEN",
   };
 }
@@ -348,6 +349,7 @@ function deriveCapabilities(input: {
   mode: QuestV2Mode;
   participation: QuestV2Participation;
   startTime: string;
+  dueAt: string | null;
   proofRequired: boolean;
   headcount: number;
   assignments: LiveQuestAssignment[];
@@ -376,6 +378,7 @@ function deriveCapabilities(input: {
     proofs,
     workConversation,
     startTime,
+    dueAt,
   } = input;
   const isHirer = actor === QuestActor.HIRER;
   const isWorker = actor === QuestActor.WORKER;
@@ -384,7 +387,15 @@ function deriveCapabilities(input: {
     isCandidate || actor === QuestActor.PROSPECTIVE_WORKER;
   const activeWorker = assignment?.state === "ASSIGNMENT_ACTIVE";
   const open = state === "QUEST_OPEN";
-  const beforeStartTime = Date.now() < Date.parse(startTime);
+  const now = serverNow();
+  const startAt = Date.parse(startTime);
+  const dueAtMs = Date.parse(dueAt ?? "");
+  const beforeStartTime = Number.isFinite(startAt) && now < startAt;
+  const withinWorkWindow =
+    Number.isFinite(startAt) &&
+    Number.isFinite(dueAtMs) &&
+    now >= startAt &&
+    now < dueAtMs;
   const assigned = state === "QUEST_ASSIGNED";
   const inProgress = state === "QUEST_IN_PROGRESS";
   const reviewableProofState = inProgress || state === "QUEST_FAILED";
@@ -496,6 +507,7 @@ function deriveCapabilities(input: {
       isWorker &&
       activeWorker === true &&
       assigned &&
+      withinWorkWindow &&
       !assignment?.startedAt &&
       (participation === QuestParticipation.SINGLE ||
         mode === QuestMode.FIRST_COME_FIRST_SERVED ||
@@ -509,7 +521,6 @@ function deriveCapabilities(input: {
     canCancel: isHirer && !terminal,
     canReviewProof: isHirer && reviewableProofState && pendingProof,
     canCreateReview: (isHirer || isWorker) && terminal,
-    canUpdateReview: false,
   };
 }
 
@@ -579,7 +590,6 @@ function deriveNextAction(
 }
 
 export class LiveQuestService {
-  private hirerCache = new Map<string, { id: string; displayName: string }>();
   private participantCache = new Map<string, LiveQuestParticipant>();
   private participantRequests = new Map<
     string,
@@ -637,27 +647,6 @@ export class LiveQuestService {
         this.getParticipantProfile(participantId)
       )
     );
-  }
-  async getHirerParticipant(
-    questId: string
-  ): Promise<{ id: string; displayName: string } | null> {
-    if (this.hirerCache.has(questId)) {
-      return this.hirerCache.get(questId)!;
-    }
-    try {
-      const inquiry = await chatApi.createCandidateInquiry(questId);
-      const hirer = inquiry.participants.find(
-        (participant) => participant.role === QuestActor.HIRER
-      );
-      if (hirer?.id) {
-        const result = { id: hirer.id, displayName: hirer.displayName };
-        this.hirerCache.set(questId, result);
-        return result;
-      }
-    } catch {
-      // Profile navigation may still render without an inquiry participant.
-    }
-    return null;
   }
 
   async createCandidateInquiry(
@@ -918,6 +907,7 @@ export class LiveQuestService {
       actor,
       state: quest.state,
       startTime: quest.startTime,
+      dueAt: quest.dueAt,
       mode: quest.mode,
       participation: quest.participation,
       proofRequired: quest.proofRequired,
@@ -1385,6 +1375,12 @@ export class LiveQuestService {
     idempotencyKey?: string
   ): Promise<QuestV2Review> {
     return questApi.createReview(questId, input, idempotencyKey);
+  }
+  async listQuestReviews(
+    questId: string,
+    _viewerId?: string
+  ): Promise<QuestV2Review[]> {
+    return questApi.listQuestReviews(questId);
   }
 
   async updateReview(

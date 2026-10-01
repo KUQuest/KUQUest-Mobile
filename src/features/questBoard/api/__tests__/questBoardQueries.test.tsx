@@ -9,6 +9,8 @@ import {
 import { chatKeys } from "@/features/chat/api/chatQueries";
 import { homeKeys } from "@/features/home/api/homeQueries";
 import { myQuestsKeys } from "@/features/myQuests/api/myQuestsQueries";
+import { profileKeys } from "@/features/profile/api/profileQueries";
+import { walletKeys } from "@/features/wallet/api/walletQueries";
 import { workerHomeKeys } from "@/features/workerHome/api/workerHomeQueries";
 import { liveQuestService } from "../../live/liveQuestService";
 import {
@@ -16,15 +18,22 @@ import {
   subscribeToQuestBoardEvents,
   subscribeToQuestEvents,
 } from "../../live/questEvents";
+import { QuestEditRequestStatus } from "../../domain/types";
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
 import {
+  invalidateWorkerQuestReads,
   questBoardKeys,
   useApplyQuestMutation,
   useCancelQuestMutation,
+  useCreateReviewMutation,
   useJoinCandidateTeamMutation,
   useLiveQuestSnapshotQuery,
   useProofFileLinksQuery,
   useQuestBoardQuery,
+  useQuestReviewsQuery,
+  useReviewProofMutation,
+  useSelectApplicationMutation,
+  useUpdateReviewMutation,
 } from "../questBoardQueries";
 
 jest.mock("../../live/liveQuestService", () => ({
@@ -32,8 +41,13 @@ jest.mock("../../live/liveQuestService", () => ({
     getProofFileLink: jest.fn(),
     getLiveSnapshot: jest.fn(),
     listBoardQuests: jest.fn(),
+    listQuestReviews: jest.fn(),
     applyQuest: jest.fn(),
     cancelQuest: jest.fn(),
+    createReview: jest.fn(),
+    updateReview: jest.fn(),
+    reviewProof: jest.fn(),
+    selectApplication: jest.fn(),
     joinCandidateTeam: jest.fn(),
     joinCandidateTeamByCode: jest.fn(),
   },
@@ -132,7 +146,7 @@ describe("quest board query ownership", () => {
     queryClient.clear();
   });
 
-  it("invalidates Hirer projections and every live snapshot edit variant", async () => {
+  it("returns cancellation result, calls service with its key, and invalidates Hirer and Worker projections", async () => {
     const queryClient = new QueryClient();
     const viewerId = "viewer-1";
     const questId = "quest-1";
@@ -157,25 +171,34 @@ describe("quest board query ownership", () => {
       queryClient.setQueryData(key, { cached: true });
     }
 
-    jest.mocked(liveQuestService.cancelQuest).mockResolvedValue({} as never);
+    const cancellation = { state: "QUEST_CANCELLED" };
+    jest
+      .mocked(liveQuestService.cancelQuest)
+      .mockResolvedValue(cancellation as never);
     const { result } = await renderHook(() => useCancelQuestMutation(), {
       wrapper: wrapper(queryClient),
     });
 
     await act(async () => {
-      await result.current.mutateAsync({ questId, viewerId });
+      await expect(
+        result.current.mutateAsync({
+          questId,
+          viewerId,
+          idempotencyKey: "cancel-key",
+        })
+      ).resolves.toBe(cancellation);
     });
 
     for (const key of hirerKeys) {
       expect(queryClient.getQueryState(key)?.isInvalidated).toBe(true);
     }
     for (const key of workerKeys) {
-      expect(queryClient.getQueryState(key)?.isInvalidated).not.toBe(true);
+      expect(queryClient.getQueryState(key)?.isInvalidated).toBe(true);
     }
     expect(queryClient.getQueryState(chatKey)?.isInvalidated).not.toBe(true);
     expect(liveQuestService.cancelQuest).toHaveBeenCalledWith(
       questId,
-      undefined
+      "cancel-key"
     );
     queryClient.clear();
   });
@@ -374,7 +397,7 @@ describe("quest board query ownership", () => {
     expect(stopSubscription).toHaveBeenCalledTimes(1);
     queryClient.clear();
   });
-  it("waits for an authorized REST snapshot before subscribing to Quest events", async () => {
+  it("subscribes while the initial REST snapshot is pending", async () => {
     jest.mocked(subscribeToQuestEvents).mockReset();
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -393,7 +416,7 @@ describe("quest board query ownership", () => {
       { wrapper: wrapper(queryClient) }
     );
 
-    expect(subscribeToQuestEvents).not.toHaveBeenCalled();
+    expect(subscribeToQuestEvents).toHaveBeenCalledTimes(1);
     await act(async () => {
       if (!resolveSnapshot) throw new Error("Expected REST snapshot request");
       resolveSnapshot({ state: "QUEST_OPEN" } as never);
@@ -586,5 +609,228 @@ describe("quest board query ownership", () => {
       "CODE999",
       undefined
     );
+  });
+  it("loads the live edit request after an edit event", async () => {
+    jest.mocked(subscribeToQuestEvents).mockReset();
+    jest.mocked(liveQuestService.getLiveSnapshot).mockResolvedValue({
+      editRequest: null,
+    } as never);
+    let emit: ((event: never) => void) | undefined;
+    jest.mocked(subscribeToQuestEvents).mockImplementation((_id, callback) => {
+      emit = callback as (event: never) => void;
+      return jest.fn();
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { unmount } = await renderHook(
+      () => useLiveQuestSnapshotQuery("quest-1", "viewer-1"),
+      { wrapper: wrapper(queryClient) }
+    );
+    await waitFor(() => expect(emit).toBeDefined());
+    await act(async () => {
+      emit?.({
+        type: "QUEST_UPDATED",
+        version: 1,
+        questId: "quest-1",
+        changeType: "QUEST_EDIT_UPDATED",
+        editRequestId: "edit-1",
+      } as never);
+    });
+    await waitFor(() =>
+      expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledWith(
+        "quest-1",
+        "viewer-1",
+        expect.objectContaining({ editRequestId: "edit-1" })
+      )
+    );
+    await unmount();
+    queryClient.clear();
+  });
+
+  it("clears a cached edit id after an absent or terminal request is fetched", async () => {
+    for (const editRequest of [
+      null,
+      { status: QuestEditRequestStatus.EDIT_REQUEST_APPLIED },
+      { status: QuestEditRequestStatus.EDIT_REQUEST_FAILED },
+    ]) {
+      const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      });
+      queryClient.setQueryData(
+        questBoardKeys.editRequestId("quest-1"),
+        "edit-1"
+      );
+      jest.mocked(liveQuestService.getLiveSnapshot).mockResolvedValueOnce({
+        editRequest,
+      } as never);
+      const { unmount } = await renderHook(
+        () => useLiveQuestSnapshotQuery("quest-1", "viewer-1"),
+        { wrapper: wrapper(queryClient) }
+      );
+      await waitFor(() =>
+        expect(
+          queryClient.getQueryData(questBoardKeys.editRequestId("quest-1"))
+        ).toBeNull()
+      );
+      await unmount();
+      queryClient.clear();
+    }
+  });
+
+  it("does not clear an explicit edit request id", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    queryClient.setQueryData(questBoardKeys.editRequestId("quest-1"), "edit-1");
+    jest.mocked(liveQuestService.getLiveSnapshot).mockResolvedValueOnce({
+      editRequest: {
+        status: QuestEditRequestStatus.EDIT_REQUEST_APPLIED,
+      },
+    } as never);
+    const { unmount } = await renderHook(
+      () =>
+        useLiveQuestSnapshotQuery("quest-1", "viewer-1", {
+          editRequestId: "explicit-edit",
+        }),
+      { wrapper: wrapper(queryClient) }
+    );
+    await waitFor(() =>
+      expect(liveQuestService.getLiveSnapshot).toHaveBeenCalled()
+    );
+    expect(
+      queryClient.getQueryData(questBoardKeys.editRequestId("quest-1"))
+    ).toBe("edit-1");
+    await unmount();
+    queryClient.clear();
+  });
+
+  it("invalidates all Worker projection keys with the shared invalidator", async () => {
+    const queryClient = new QueryClient();
+    const keys: QueryKey[] = [
+      questBoardKeys.detail("quest-1"),
+      questBoardKeys.board(),
+      questBoardKeys.liveSnapshotScope("quest-1", "worker-1"),
+      workerHomeKeys.assignments("active"),
+      workerHomeKeys.assignments("all"),
+      workerHomeKeys.participationDetail("quest-1"),
+      workerHomeKeys.liveSnapshot("quest-1", "worker-1"),
+      myQuestsKeys.worker("worker-1"),
+    ];
+    keys.forEach((key) => queryClient.setQueryData(key, { cached: true }));
+    await invalidateWorkerQuestReads(queryClient, "quest-1", "worker-1");
+    keys.forEach((key) =>
+      expect(queryClient.getQueryState(key)?.isInvalidated).toBe(true)
+    );
+    queryClient.clear();
+  });
+
+  it("invalidates Wallet after cancel and proof review, not candidate selection", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const walletKey = walletKeys.detail();
+    const invalidated = () =>
+      queryClient.getQueryState(walletKey)?.isInvalidated;
+    queryClient.setQueryData(walletKey, { cached: true });
+    jest.mocked(liveQuestService.cancelQuest).mockResolvedValue({} as never);
+    const cancel = await renderHook(() => useCancelQuestMutation(), {
+      wrapper: wrapper(queryClient),
+    });
+    await act(async () => {
+      await cancel.result.current.mutateAsync({ questId: "quest-1" });
+    });
+    expect(invalidated()).toBe(true);
+    await queryClient.resetQueries({ queryKey: walletKey });
+    jest.mocked(liveQuestService.reviewProof).mockResolvedValue({} as never);
+    const review = await renderHook(() => useReviewProofMutation(), {
+      wrapper: wrapper(queryClient),
+    });
+    await act(async () => {
+      await review.result.current.mutateAsync({
+        questId: "quest-1",
+        proofSubmissionId: "proof-1",
+        payload: { decision: "PROOF_APPROVED" },
+      });
+    });
+    expect(invalidated()).toBe(true);
+    await queryClient.resetQueries({ queryKey: walletKey });
+    jest
+      .mocked(liveQuestService.selectApplication)
+      .mockResolvedValue({} as never);
+    const select = await renderHook(() => useSelectApplicationMutation(), {
+      wrapper: wrapper(queryClient),
+    });
+    await act(async () => {
+      await select.result.current.mutateAsync({
+        questId: "quest-1",
+        applicationId: "application-1",
+        viewerId: "hirer-1",
+      });
+    });
+    expect(invalidated()).toBe(false);
+    queryClient.clear();
+  });
+
+  it("invalidates reviewee public data for create and public prefixes when unknown", async () => {
+    const queryClient = new QueryClient();
+    const publicKey = profileKeys.public("worker-1");
+    const publicReviewsKey = profileKeys.publicReviews("worker-1");
+    queryClient.setQueryData(publicKey, { name: "Worker" });
+    queryClient.setQueryData(publicReviewsKey, { items: [] });
+    jest.mocked(liveQuestService.createReview).mockResolvedValue({} as never);
+    const create = await renderHook(() => useCreateReviewMutation(), {
+      wrapper: wrapper(queryClient),
+    });
+    await act(async () => {
+      await create.result.current.mutateAsync({
+        questId: "quest-1",
+        viewerId: "hirer-1",
+        input: { revieweeId: "worker-1", rating: 5 },
+      });
+    });
+    expect(queryClient.getQueryState(publicKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(publicReviewsKey)?.isInvalidated).toBe(
+      true
+    );
+
+    await queryClient.resetQueries({ queryKey: publicKey });
+    await queryClient.resetQueries({ queryKey: publicReviewsKey });
+    jest.mocked(liveQuestService.updateReview).mockResolvedValue({} as never);
+    const update = await renderHook(() => useUpdateReviewMutation(), {
+      wrapper: wrapper(queryClient),
+    });
+    await act(async () => {
+      await update.result.current.mutateAsync({
+        questId: "quest-1",
+        viewerId: "worker-1",
+        reviewId: "review-1",
+        input: { rating: 4 },
+      });
+    });
+    expect(queryClient.getQueryState(publicKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(publicReviewsKey)?.isInvalidated).toBe(
+      true
+    );
+    queryClient.clear();
+  });
+  it("loads reviews for a Quest and viewer", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const reviews = [{ id: "review-1", reviewerId: "worker-1" }];
+    jest
+      .mocked(liveQuestService.listQuestReviews)
+      .mockResolvedValue(reviews as never);
+    const { result } = await renderHook(
+      () => useQuestReviewsQuery("quest-1", "worker-1"),
+      { wrapper: wrapper(queryClient) }
+    );
+    await waitFor(() => expect(result.current.data).toEqual(reviews));
+    expect(liveQuestService.listQuestReviews).toHaveBeenCalledWith(
+      "quest-1",
+      "worker-1"
+    );
+    queryClient.clear();
   });
 });

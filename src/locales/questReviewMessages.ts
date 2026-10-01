@@ -3,6 +3,7 @@ import type { SupportedLocale } from "./locale";
 export interface QuestReviewMessages {
   close: string;
   title: string;
+  editTitle: string;
   description: string;
   loading: string;
   errorTitle: string;
@@ -12,13 +13,13 @@ export interface QuestReviewMessages {
   noWorkersDescription: string;
   workerLabel: string;
   workerFallback: (id: string) => string;
+  hirerLabel: string;
   ratingLabel: string;
   ratingOption: (rating: number) => string;
   commentLabel: string;
   commentPlaceholder: string;
   submit: string;
   submitting: string;
-  successTitle: string;
   successDescription: string;
   done: string;
   invalidRating: string;
@@ -32,7 +33,8 @@ export const questReviewMessages: Record<SupportedLocale, QuestReviewMessages> =
     en: {
       close: "Close",
       title: "Review Quest",
-      description: "Share feedback about the Worker after this Quest.",
+      editTitle: "Edit review",
+      description: "Share feedback with the other Member after this Quest.",
       loading: "Loading review details…",
       errorTitle: "Review unavailable",
       errorDescription: "We couldn't load the Workers for this Quest.",
@@ -41,6 +43,7 @@ export const questReviewMessages: Record<SupportedLocale, QuestReviewMessages> =
       noWorkersDescription:
         "This Quest has no eligible Worker assignments for a review.",
       workerLabel: "Worker",
+      hirerLabel: "Hirer",
       workerFallback: (id) => `Worker ${id.slice(0, 8)}`,
       ratingLabel: "Rating",
       ratingOption: (rating) => `${rating} out of 5 stars`,
@@ -48,8 +51,7 @@ export const questReviewMessages: Record<SupportedLocale, QuestReviewMessages> =
       commentPlaceholder: "What went well or could be improved?",
       submit: "Submit review",
       submitting: "Submitting…",
-      successTitle: "Review submitted",
-      successDescription: "Your feedback was saved for this Worker.",
+      successDescription: "Your feedback was saved for this Quest.",
       done: "Done",
       invalidRating: "Choose a rating from 1 to 5 stars.",
       invalidComment: "Comments must be 1,000 characters or fewer.",
@@ -60,8 +62,9 @@ export const questReviewMessages: Record<SupportedLocale, QuestReviewMessages> =
     th: {
       close: "ปิด",
       title: "รีวิวเควสต์",
-      description: "แบ่งปันความคิดเห็นเกี่ยวกับผู้ทำงานหลังจบเควสต์นี้",
+      description: "แบ่งปันความคิดเห็นกับ Member อีกคนหลังจบเควสต์นี้",
       loading: "กำลังโหลดข้อมูลรีวิว…",
+      editTitle: "แก้ไขรีวิว",
       errorTitle: "ไม่สามารถรีวิวได้",
       errorDescription: "ไม่สามารถโหลดรายชื่อผู้ทำงานของเควสต์นี้ได้",
       retry: "ลองอีกครั้ง",
@@ -69,14 +72,14 @@ export const questReviewMessages: Record<SupportedLocale, QuestReviewMessages> =
       noWorkersDescription: "เควสต์นี้ไม่มีผู้ทำงานที่สามารถรีวิวได้",
       workerLabel: "ผู้ทำงาน",
       workerFallback: (id) => `ผู้ทำงาน ${id.slice(0, 8)}`,
+      hirerLabel: "ผู้ว่าจ้าง",
       ratingLabel: "คะแนน",
       ratingOption: (rating) => `${rating} จาก 5 ดาว`,
       commentLabel: "ความคิดเห็น (ไม่บังคับ)",
       commentPlaceholder: "สิ่งที่ทำได้ดีหรือควรปรับปรุงคืออะไร",
       submit: "ส่งรีวิว",
       submitting: "กำลังส่ง…",
-      successTitle: "ส่งรีวิวแล้ว",
-      successDescription: "บันทึกความคิดเห็นของคุณสำหรับผู้ทำงานแล้ว",
+      successDescription: "บันทึกความคิดเห็นของคุณสำหรับเควสต์นี้แล้ว",
       done: "เสร็จสิ้น",
       invalidRating: "กรุณาเลือกคะแนนตั้งแต่ 1 ถึง 5 ดาว",
       invalidComment: "ความคิดเห็นต้องมีความยาวไม่เกิน 1,000 ตัวอักษร",

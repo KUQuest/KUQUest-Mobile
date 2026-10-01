@@ -1,3 +1,7 @@
+import {
+  QuestStatus,
+  QuestTeamStatus,
+} from "@/features/questBoard/domain/types";
 import { workerSnapshot } from "@/testing/workerSnapshotFixtures";
 import { projectWorkerWork } from "../workerWorkProjection";
 
@@ -199,6 +203,19 @@ describe("projectWorkerWork", () => {
         appliedAt: "2026-09-01T09:00:00Z",
         quest: { ...quest, state: "QUEST_ASSIGNED" as const },
       },
+      {
+        id: "team-selected",
+        questId: "quest-team-selected",
+        memberId: "worker-1",
+        kind: "TEAM" as const,
+        state: QuestTeamStatus.TEAM_SELECTED,
+        appliedAt: "2026-09-01T09:00:00Z",
+        quest: {
+          ...quest,
+          participation: "GROUP" as const,
+          state: QuestStatus.QUEST_ASSIGNED,
+        },
+      },
     ];
 
     const projection = projectWorkerWork(
@@ -211,15 +228,22 @@ describe("projectWorkerWork", () => {
         expect.objectContaining({
           questId: "quest-applied",
           status: "pendingSelection",
+          destination: "questDetail",
         }),
         expect.objectContaining({
           questId: "quest-team-submitted",
           status: "pendingSelection",
+          destination: "questDetail",
         }),
         expect.objectContaining({
           questId: "quest-selected",
           status: "selected",
-          destination: "questDetail",
+          destination: "workHub",
+        }),
+        expect.objectContaining({
+          questId: "quest-team-selected",
+          status: "selected",
+          destination: "workHub",
         }),
       ])
     );
@@ -228,10 +252,12 @@ describe("projectWorkerWork", () => {
         expect.objectContaining({
           questId: "quest-rejected",
           status: "rejected",
+          destination: "questDetail",
         }),
         expect.objectContaining({
           questId: "quest-closed",
           status: "notSelected",
+          destination: "questDetail",
         }),
       ])
     );

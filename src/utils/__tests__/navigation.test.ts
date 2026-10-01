@@ -1,4 +1,4 @@
-import { getRouteParam, routeValue } from "../navigation";
+import { getRouteParam, goBackOrReplace, routeValue } from "../navigation";
 
 describe("navigation utils — getRouteParam", () => {
   it("returns a string value as is", () => {
@@ -37,5 +37,27 @@ describe("navigation utils — getRouteParam", () => {
     expect(routeValue("abc")).toBe("abc");
     expect(routeValue(["abc"])).toBe("abc");
     expect(routeValue(undefined)).toBeUndefined();
+  });
+});
+
+describe("navigation utils — goBackOrReplace", () => {
+  const makeRouter = (canGoBack: boolean) => ({
+    canGoBack: jest.fn(() => canGoBack),
+    back: jest.fn(),
+    replace: jest.fn(),
+  });
+
+  it("goBackOrReplace goes back when history exists", () => {
+    const router = makeRouter(true);
+    goBackOrReplace(router, "/(tabs)");
+    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it("goBackOrReplace replaces with the fallback when there is no history", () => {
+    const router = makeRouter(false);
+    goBackOrReplace(router, "/(tabs)/money");
+    expect(router.replace).toHaveBeenCalledWith("/(tabs)/money");
+    expect(router.back).not.toHaveBeenCalled();
   });
 });

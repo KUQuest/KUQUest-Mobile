@@ -95,6 +95,17 @@ describe("QuestApi", () => {
             startTime: "2026-09-15T10:00:00+07:00",
             dueAt: "2026-09-15T12:00:00+07:00",
             hirerName: "Hirer Test",
+            hirerProfile: {
+              id: "00000000-0000-4000-8000-000000000001",
+              version: 1,
+              firstName: "Hirer",
+              lastName: "Test",
+              bio: null,
+              academicYear: null,
+              department: null,
+              avatar: null,
+              occupation: null,
+            },
             location: "Campus Library",
           },
         ],
@@ -112,6 +123,9 @@ describe("QuestApi", () => {
     const result = await api.listBoard({ tagId: "tag-1", q: "Test" });
     expect(result.items).toHaveLength(1);
     expect(result.items[0].title).toBe("Test quest");
+    expect(result.items[0].hirerProfile?.id).toBe(
+      "00000000-0000-4000-8000-000000000001"
+    );
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.example.test/api/v2/quests?tagId=tag-1&q=Test",
       expect.objectContaining({ method: "GET" })
@@ -1330,6 +1344,28 @@ describe("QuestApi", () => {
       )
     ).rejects.toThrow("Reason must be at most 1000 characters");
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("lists Quest reviews from the reviews endpoint envelope", async () => {
+    const review = {
+      id: "review-1",
+      questId: "quest-1",
+      reviewerId: "worker-1",
+      revieweeId: "hirer-1",
+      rating: 5,
+      comment: null,
+      createdAt: "2026-09-15T12:00:00Z",
+      updatedAt: "2026-09-15T12:00:00Z",
+    };
+    fetchMock.mockResolvedValue(
+      okJson({ success: true, data: { items: [review] } })
+    );
+
+    await expect(api.listQuestReviews("quest-1")).resolves.toEqual([review]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v2/quests/quest-1/reviews",
+      expect.objectContaining({ method: "GET" })
+    );
   });
 
   it("creates and updates typed Quest reviews", async () => {

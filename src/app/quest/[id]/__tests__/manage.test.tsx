@@ -1,19 +1,63 @@
 import React from "react";
-import { act, fireEvent } from "@testing-library/react-native";
+import {
+  act,
+  fireEvent,
+  render as renderUI,
+  waitFor,
+  within,
+} from "@testing-library/react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { renderWithQueryClient as render } from "@/testing/queryTestUtils";
 
-import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
+import { AppThemeProvider } from "@/features/workspace/AppThemeProvider";
+import { SweetAlertHost } from "@/components/ui/SweetAlert";
+import { myQuestMessages } from "@/locales/myQuestMessages";
+import { alertMessages } from "@/locales/alertMessages";
 import type { QuestV2EditRequest } from "@/api/questV2Contracts";
 import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestService";
+import {
+  QuestActor,
+  QuestApplicationStatus,
+  QuestAssignmentStatus,
+  QuestStatus,
+} from "@/features/questBoard/domain/types";
+import { groupQuestMessages } from "@/locales/groupQuestMessages";
+import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import HirerQuestManageRoute from "../manage";
 
+interface GestureMockChain {
+  onUpdate: () => GestureMockChain;
+  onEnd: () => GestureMockChain;
+  enabled: () => GestureMockChain;
+}
+
 const mockPush = jest.fn();
+const mockReplace = jest.fn();
 const mockConfirmFileDispute = jest.fn();
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({
+    push: mockPush,
+    replace: mockReplace,
+    back: jest.fn(),
+    canGoBack: () => true,
+  }),
   useLocalSearchParams: () => ({ id: "quest-1" }),
 }));
+
+jest.mock("react-native-gesture-handler", () => {
+  const { View } = jest.requireActual("react-native");
+  const chain: GestureMockChain = {
+    onUpdate: () => chain,
+    onEnd: () => chain,
+    enabled: () => chain,
+  };
+  return {
+    Gesture: { Pan: () => chain },
+    GestureDetector: ({ children }: { children: React.ReactNode }) => children,
+    GestureHandlerRootView: View,
+  };
+});
 
 jest.mock("@/features/questBoard/dispute/useFileDispute", () => ({
   useFileDispute: () => ({ confirmFileDispute: mockConfirmFileDispute }),
@@ -49,6 +93,8 @@ jest.mock("@/features/questBoard/live/liveQuestService", () => {
     liveQuestService: {
       getLiveSnapshot: jest.fn(),
       createEditRequest: jest.fn(),
+      cancelQuest: jest.fn(),
+      selectApplication: jest.fn(),
     },
   };
 });
@@ -129,7 +175,6 @@ function createSnapshot(
       canCancel: true,
       canReviewProof: false,
       canCreateReview: false,
-      canUpdateReview: false,
     },
     ...overrides,
   };
@@ -164,6 +209,10 @@ function makeEditRequest(
 describe("HirerQuestManageRoute condition edit", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (liveQuestService.cancelQuest as jest.Mock).mockResolvedValue({
+      paidSatang: 0,
+      refundedSatang: 0,
+    });
   });
 
   it("shows the propose-changes action on an assigned Quest with no pending edit", async () => {
@@ -276,7 +325,7 @@ describe("HirerQuestManageRoute condition edit", () => {
     );
     const view = await render(<HirerQuestManageRoute />);
     const disputeButton = await view.findByTestId("hirer-manage-dispute");
-    fireEvent.press(disputeButton);
+    await fireEvent.press(disputeButton);
     expect(mockConfirmFileDispute).toHaveBeenCalledWith("quest-1");
     expect(mockPush).not.toHaveBeenCalled();
   });
@@ -290,5 +339,243 @@ describe("HirerQuestManageRoute condition edit", () => {
     const view = await render(<HirerQuestManageRoute />);
     await act(async () => undefined);
     expect(view.queryByTestId("hirer-manage-dispute")).toBeNull();
+  });
+  it("ASSIGNED cancel uses slide confirmation and IN_PROGRESS requires the keyword", async () => {
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot()
+    );
+    const assigned = await render(<HirerQuestManageRoute />);
+    await fireEvent.press(await assigned.findByTestId("hirer-manage-cancel"));
+    expect(await assigned.findByTestId("cancel-quest-guardrail")).toBeTruthy();
+    expect(
+      within(assigned.getByTestId("cancel-quest-guardrail")).getByText(
+        myQuestMessages.en.cancelAssignedDescription
+      )
+    ).toBeTruthy();
+    await assigned.unmount();
+
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        state: QuestStatus.QUEST_IN_PROGRESS,
+        quest: {
+          ...createSnapshot().quest,
+          state: QuestStatus.QUEST_IN_PROGRESS,
+        },
+      })
+    );
+    const inProgress = await render(<HirerQuestManageRoute />);
+    await fireEvent.press(await inProgress.findByTestId("hirer-manage-cancel"));
+    const confirm = await inProgress.findByTestId("cancel-guardrail-confirm");
+    expect(confirm.props.accessibilityState.disabled).toBe(true);
+    await fireEvent.changeText(
+      inProgress.getByLabelText(myQuestMessages.en.cancelGuardrailKeywordLabel),
+      "CANCEL"
+    );
+    expect(
+      inProgress.getByTestId("cancel-guardrail-confirm").props
+        .accessibilityState.disabled
+    ).toBe(false);
+  });
+
+  it("OPEN cancel still uses the confirmation dialog", async () => {
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        state: QuestStatus.QUEST_OPEN,
+        quest: { ...createSnapshot().quest, state: QuestStatus.QUEST_OPEN },
+      })
+    );
+    const view = await render(
+      <>
+        <HirerQuestManageRoute />
+        <SweetAlertHost />
+      </>
+    );
+    await fireEvent.press(await view.findByTestId("hirer-manage-cancel"));
+    expect(
+      await view.findByText(myQuestMessages.en.cancelConfirmTitle)
+    ).toBeTruthy();
+    within(view.getByTestId("sweet-alert")).getByText(
+      myQuestMessages.en.cancelOpenDescription
+    );
+    expect(view.queryByTestId("cancel-quest-guardrail")).toBeNull();
+  });
+
+  it("shows dispute for Hirer or assigned Worker on FAILED, but not Candidate or unassigned Worker", async () => {
+    const failedQuest = {
+      ...createSnapshot().quest,
+      state: QuestStatus.QUEST_FAILED,
+    };
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        state: QuestStatus.QUEST_FAILED,
+        quest: failedQuest,
+        actor: QuestActor.CANDIDATE,
+      })
+    );
+    const candidate = await render(<HirerQuestManageRoute />);
+    await act(async () => undefined);
+    expect(candidate.queryByTestId("hirer-manage-dispute")).toBeNull();
+    await candidate.unmount();
+
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        state: QuestStatus.QUEST_FAILED,
+        quest: failedQuest,
+        actor: QuestActor.WORKER,
+      })
+    );
+    const unassignedWorker = await render(<HirerQuestManageRoute />);
+    await act(async () => undefined);
+    expect(unassignedWorker.queryByTestId("hirer-manage-dispute")).toBeNull();
+    await unassignedWorker.unmount();
+
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        state: QuestStatus.QUEST_FAILED,
+        quest: failedQuest,
+        actor: QuestActor.WORKER,
+        assignment: {
+          id: "assignment-1",
+          questId: "quest-1",
+          workerId: "hirer-1",
+          state: QuestAssignmentStatus.ASSIGNMENT_ACTIVE,
+          questState: QuestStatus.QUEST_FAILED,
+          startedAt: null,
+        },
+      })
+    );
+    const assignedWorker = await render(<HirerQuestManageRoute />);
+    expect(
+      await assignedWorker.findByTestId("hirer-manage-dispute")
+    ).toBeTruthy();
+  });
+  it("selects only after confirmation, closes candidate sheet, and ignores a duplicate in-flight press", async () => {
+    const base = createSnapshot();
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        applications: [
+          {
+            id: "app-1",
+            questId: "quest-1",
+            memberId: "worker-1",
+            state: QuestApplicationStatus.APPLICATION_APPLIED,
+            appliedAt: "2026-09-18T10:00:00.000Z",
+          },
+        ],
+        capabilities: { ...base.capabilities, canSelectCandidate: true },
+      })
+    );
+    let finishSelection: () => void = () => {};
+    const pendingSelection = new Promise<void>((resolve) => {
+      finishSelection = resolve;
+    });
+    (liveQuestService.selectApplication as jest.Mock).mockReturnValue(
+      pendingSelection
+    );
+    const view = await render(
+      <>
+        <HirerQuestManageRoute />
+        <SweetAlertHost />
+      </>
+    );
+    await fireEvent.press(
+      await view.findByTestId("hirer-manage-candidate-review")
+    );
+    await fireEvent.press(
+      await view.findByTestId("candidate-review-accept-app-1")
+    );
+    expect(
+      await view.findByText(groupQuestMessages.en.selectProposal)
+    ).toBeTruthy();
+    expect(liveQuestService.selectApplication).not.toHaveBeenCalled();
+    await fireEvent.press(
+      view.getByRole("button", { name: groupQuestMessages.en.selectProposal })
+    );
+    await fireEvent.press(
+      await view.findByTestId("candidate-review-accept-app-1")
+    );
+    expect(
+      view.queryByRole("button", { name: groupQuestMessages.en.selectProposal })
+    ).toBeNull();
+    expect(liveQuestService.selectApplication).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      finishSelection();
+    });
+    await waitFor(() => {
+      expect(view.queryByTestId("candidate-review-sheet")).toBeNull();
+    });
+  });
+
+  it("reuses cancellation idempotency key after a network failure", async () => {
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot()
+    );
+    (liveQuestService.cancelQuest as jest.Mock)
+      .mockRejectedValueOnce(new Error("network"))
+      .mockResolvedValue({ paidSatang: 0, refundedSatang: 0 });
+    const view = await render(
+      <>
+        <HirerQuestManageRoute />
+        <SweetAlertHost />
+      </>
+    );
+    await fireEvent.press(await view.findByTestId("hirer-manage-cancel"));
+    await fireEvent.press(await view.findByTestId("cancel-guardrail-confirm"));
+    await fireEvent.press(
+      await view.findByRole("button", { name: alertMessages.en.dismiss })
+    );
+    await fireEvent.press(await view.findByTestId("hirer-manage-cancel"));
+    await fireEvent.press(await view.findByTestId("cancel-guardrail-confirm"));
+    await waitFor(() => {
+      expect(liveQuestService.cancelQuest).toHaveBeenCalledTimes(2);
+    });
+    const calls = (liveQuestService.cancelQuest as jest.Mock).mock.calls;
+    expect(calls[0]?.[1]).toEqual(expect.any(String));
+    expect(calls[0]?.[1]).toBe(calls[1]?.[1]);
+  });
+  it("recovers pending edit request after Manage remounts", async () => {
+    const pendingSnapshot = createSnapshot({ editRequest: makeEditRequest() });
+    (liveQuestService.getLiveSnapshot as jest.Mock)
+      .mockResolvedValueOnce(createSnapshot())
+      .mockResolvedValue(pendingSnapshot);
+    (liveQuestService.createEditRequest as jest.Mock).mockResolvedValue(
+      pendingSnapshot.editRequest
+    );
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        mutations: { retry: false },
+        queries: { retry: false },
+      },
+    });
+    const tree = (mounted: boolean) => (
+      <AppThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          {mounted ? <HirerQuestManageRoute /> : null}
+        </QueryClientProvider>
+      </AppThemeProvider>
+    );
+    const view = await renderUI(tree(true));
+    await fireEvent.press(
+      await view.findByTestId("hirer-manage-condition-edit")
+    );
+    await fireEvent.changeText(
+      view.getByTestId("quest-condition-item-0"),
+      "Finish the mural in blue"
+    );
+    await fireEvent.press(view.getByTestId("quest-condition-submit"));
+    await view.findByTestId("hirer-condition-edit-pending-title");
+    await view.rerender(tree(false));
+    await view.rerender(tree(true));
+    await waitFor(() =>
+      expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledWith(
+        "quest-1",
+        "hirer-1",
+        expect.objectContaining({ editRequestId: "edit-1" })
+      )
+    );
+    expect(
+      await view.findByTestId("hirer-condition-edit-pending-title")
+    ).toBeTruthy();
+    expect(liveQuestService.createEditRequest).toHaveBeenCalledTimes(1);
   });
 });

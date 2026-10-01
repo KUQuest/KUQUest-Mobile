@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { serverNow } from "@/api/serverClock";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, RefreshControl } from "react-native";
+import { useNavigation } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RefreshCw } from "lucide-react-native";
 
@@ -7,7 +9,10 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { StateView } from "@/components/ui/StateView";
 import { TopBar } from "@/components/ui/TopBar";
+import { showConfirmModal } from "@/components/ui/SweetAlert";
 import { WorkerProofForm } from "@/features/workerWork/components/WorkerProofForm";
+import { QuestReviewModal } from "@/features/questBoard/review/components/QuestReviewModal";
+import { workerWorkMessages } from "@/locales/workerWorkMessages";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { formatTimestamp } from "@/domain/datetime";
@@ -20,7 +25,7 @@ import {
   nextActionLabel,
   workStatusLabel,
 } from "../presentation/questLabels";
-import { isWorkerActor, type QuestStatus } from "../domain/types";
+import { isWorkerActor, QuestActor, type QuestStatus } from "../domain/types";
 import QuestWorkActionsCard from "./components/QuestWorkActionsCard";
 import QuestWorkStatusCard from "./components/QuestWorkStatusCard";
 import {
@@ -30,9 +35,12 @@ import {
 import { useQuestTagsQuery } from "../api/questTagsQueries";
 
 export type QuestWorkScreenProps = QuestWorkFeatureProps;
-
 export default function QuestWorkScreen(props: QuestWorkScreenProps) {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+  const proofDirtyRef = useRef(false);
+  const allowLeaveRef = useRef(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const {
     canOpenChat,
     confirmationSending,
@@ -61,7 +69,7 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
   const tagCatalog = tagQuery.data ?? [];
   const { colors } = useAppTheme();
   const questMessages = questBoardMessages[locale];
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(() => serverNow());
   const dueAtMs = snapshot?.dueAt
     ? new Date(snapshot.dueAt).getTime()
     : Number.NaN;
@@ -69,9 +77,31 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
 
   useEffect(() => {
     if (!hasLiveDeadline) return undefined;
-    const timer = setInterval(() => setNow(Date.now()), 1_000);
+    const timer = setInterval(() => setNow(serverNow()), 1_000);
     return () => clearInterval(timer);
   }, [hasLiveDeadline]);
+  useEffect(
+    () =>
+      navigation.addListener("beforeRemove", (event) => {
+        if (!proofDirtyRef.current || allowLeaveRef.current) {
+          allowLeaveRef.current = false;
+          return;
+        }
+        event.preventDefault();
+        const t = workerWorkMessages[locale];
+        showConfirmModal({
+          title: t.discardProofTitle,
+          message: t.discardProofMessage,
+          cancelLabel: t.keepProof,
+          confirmLabel: t.discardProof,
+          onConfirm: () => {
+            allowLeaveRef.current = true;
+            navigation.dispatch(event.data.action);
+          },
+        });
+      }),
+    [locale, navigation]
+  );
 
   const status = snapshot
     ? workStatusLabel(snapshot.state as QuestStatus, messages, locale)
@@ -102,7 +132,12 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
   const startTimeMs = snapshot
     ? new Date(snapshot.quest.startTime).getTime()
     : Number.NaN;
-  const canPressStartWork = mustStartWork && now >= startTimeMs;
+  const canPressStartWork =
+    mustStartWork &&
+    Number.isFinite(startTimeMs) &&
+    Number.isFinite(dueAtMs) &&
+    now >= startTimeMs &&
+    now < dueAtMs;
   const contentBottom = Math.max(spacing.lg, insets.bottom + spacing.md);
 
   if (loading && !snapshot) {
@@ -213,11 +248,31 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
               messages={messages}
               tagCatalog={tagCatalog}
             />
+            {snapshot.state &&
+            isTerminalStatus(snapshot.state as QuestStatus) &&
+            snapshot.actor === QuestActor.WORKER &&
+            snapshot.capabilities.canCreateReview ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={workerWorkMessages[locale].rateHirer}
+                accessibilityState={{ disabled: false }}
+                className="min-h-[48px] items-center justify-center rounded-ku-pill border border-ku-worker-border px-ku-md"
+                onPress={() => setReviewOpen(true)}
+                testID="work-rate-hirer"
+              >
+                <Text className="font-ku-semibold text-ku-body text-ku-worker-dark">
+                  {workerWorkMessages[locale].rateHirer}
+                </Text>
+              </Pressable>
+            ) : null}
 
             {isWorkerActor(snapshot.actor) &&
             resolvedQuestId &&
             resolvedViewerId ? (
               <WorkerProofForm
+                onDirtyChange={(dirty) => {
+                  proofDirtyRef.current = dirty;
+                }}
                 onSubmitted={() => refreshSnapshot().catch(() => undefined)}
                 questId={resolvedQuestId}
                 snapshot={snapshot}
@@ -255,6 +310,10 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <QuestReviewModal
+        questId={reviewOpen && resolvedQuestId ? resolvedQuestId : null}
+        onClose={() => setReviewOpen(false)}
+      />
     </ScreenLayout>
   );
 }

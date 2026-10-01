@@ -72,6 +72,7 @@ export interface GroupQuestMessages {
   teamRejected: string;
   searchMembers: string;
   searchMembersHint: string;
+  openWorkHub: string;
   clearSearch: string;
   noEligibleMembers: string;
   noSearchResults: string;
@@ -220,6 +221,7 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     teamSubmitted: "Submitted",
     teamSelected: "Selected",
     teamRejected: "Rejected",
+    openWorkHub: "Open Work Hub",
     searchMembers: "Search KU members",
     searchMembersHint: "Search by name or @ku.th email",
     clearSearch: "Clear member search",
@@ -367,6 +369,7 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     teamSubmitted: "ส่งทีมแล้ว",
     teamSelected: "ได้รับเลือก",
     teamRejected: "ไม่ผ่านการเลือก",
+    openWorkHub: "เปิดศูนย์งาน",
     searchMembers: "ค้นหาสมาชิก KU",
     searchMembersHint: "ค้นหาด้วยชื่อหรืออีเมล @ku.th",
     clearSearch: "ล้างการค้นหาสมาชิก",

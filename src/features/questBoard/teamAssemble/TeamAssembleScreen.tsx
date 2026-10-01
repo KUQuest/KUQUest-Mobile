@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useRouter } from "expo-router";
 import { KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -27,12 +28,23 @@ export default function TeamAssembleScreen({
   initialInvite,
   ...props
 }: QuestDetailScreenProps & { initialInvite?: string }) {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { locale } = useLocale();
   const messages = groupQuestMessages[locale];
   const view = useQuestDetailFeature({ ...props, bottomInset: insets.bottom });
   const joinMutation = useJoinCandidateTeamMutation();
   const [joinError, setJoinError] = useState<string | null>(null);
+  const onOpenWorkHub = () => {
+    if (!props.questId) return;
+    router.push({
+      pathname: "/quest/[id]/work",
+      params: {
+        id: props.questId,
+        ...(view.team?.viewerId ? { viewerId: view.team.viewerId } : {}),
+      },
+    });
+  };
 
   const joinByCode = async (teamId: string, joinCode: string) => {
     if (!props.questId) {
@@ -89,6 +101,8 @@ export default function TeamAssembleScreen({
               initialInvite={initialInvite}
               joinError={joinError}
               onJoinTeam={view.team.onJoinTeam ? joinByCode : undefined}
+              onOpenWorkHub={onOpenWorkHub}
+              openWorkHubLabel={messages.openWorkHub}
               submitting={view.team.submitting || joinMutation.isPending}
             />
           ) : (

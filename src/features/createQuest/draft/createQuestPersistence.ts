@@ -146,12 +146,16 @@ export async function persistQuestDraft(
   draftId: string,
   draft: QuestDraft,
   step: QuestDraftStep,
-  state: QuestDraftState = "DRAFT"
+  state: QuestDraftState = "DRAFT",
+  publication?: Pick<
+    StoredQuestDraft,
+    "serverQuestId" | "createIdempotencyKey" | "publishIdempotencyKey"
+  >
 ): Promise<void> {
   const draftIds = await readDraftIds(storageKey);
   await secureStorage.set(
     getDraftKey(storageKey, draftId),
-    JSON.stringify({ draft, step, state })
+    JSON.stringify({ draft, step, state, ...publication })
   );
   if (!draftIds.includes(draftId)) {
     await writeDraftIds(storageKey, [...draftIds, draftId]);

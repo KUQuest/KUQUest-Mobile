@@ -1,3 +1,4 @@
+import { serverNow } from "@/api/serverClock";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Check,
@@ -161,7 +162,7 @@ export function PartialGroupStartConsentContent({
   const contextLocale = useLocale().locale;
   const locale = localeProp ?? contextLocale;
   const messages = getMessages(locale);
-  const [clock, setClock] = useState(() => Date.now());
+  const [clock, setClock] = useState(() => serverNow());
 
   const voterMap = useMemo(
     () => new Map(voters.map((voter) => [voter.id, voter])),
@@ -259,7 +260,7 @@ export function PartialGroupStartConsentContent({
   const hasLiveDeadline = Number.isFinite(deadline) && deadline > clock;
   useEffect(() => {
     if (!hasLiveDeadline) return undefined;
-    const interval = setInterval(() => setClock(Date.now()), 1000);
+    const interval = setInterval(() => setClock(serverNow()), 1000);
     return () => clearInterval(interval);
   }, [hasLiveDeadline]);
   const remaining = Number.isFinite(deadline)

@@ -46,6 +46,7 @@ import {
   useChatConversationController,
 } from "./workflow/useChatConversationController";
 import type { ConversationMode } from "./workflow/useChatConversationController";
+import { goBackOrReplace } from "@/utils/navigation";
 
 export interface ChatConversationScreenProps {
   conversationType?: ConversationMode;
@@ -86,6 +87,7 @@ export default function ChatConversationScreen({
     pendingAttachments,
     pendingAttachmentIds,
     handleRemovePendingAttachment,
+    retryAttachment,
     openAttachmentMenu,
     sendMessage,
     viewerState,
@@ -151,7 +153,7 @@ export default function ChatConversationScreen({
       <ChatConversationSkeleton
         loadingLabel={messages.loading}
         backLabel={messages.backToChat}
-        onBack={() => router.back()}
+        onBack={() => goBackOrReplace(router, "/(tabs)/chat")}
       />
     );
   }
@@ -168,7 +170,7 @@ export default function ChatConversationScreen({
               accessibilityLabel={messages.backToChat}
               accessibilityRole="button"
               className={styles.backButton}
-              onPress={() => router.back()}
+              onPress={() => goBackOrReplace(router, "/(tabs)/chat")}
             >
               <ChevronLeft
                 color={colors.primaryDeep}
@@ -204,7 +206,7 @@ export default function ChatConversationScreen({
               accessibilityLabel={messages.backToChat}
               accessibilityRole="button"
               className={styles.backButton}
-              onPress={() => router.back()}
+              onPress={() => goBackOrReplace(router, "/(tabs)/chat")}
             >
               <ChevronLeft
                 color={colors.primaryDeep}
@@ -264,7 +266,7 @@ export default function ChatConversationScreen({
               accessibilityLabel={messages.backToChat}
               accessibilityRole="button"
               className={styles.backButton}
-              onPress={() => router.back()}
+              onPress={() => goBackOrReplace(router, "/(tabs)/chat")}
             >
               <ChevronLeft
                 color={colors.primaryDeep}
@@ -556,6 +558,7 @@ export default function ChatConversationScreen({
             <PendingAttachmentsBar
               attachments={pendingAttachments}
               onRemove={handleRemovePendingAttachment}
+              onRetry={retryAttachment}
             />
             <View
               className={cn(

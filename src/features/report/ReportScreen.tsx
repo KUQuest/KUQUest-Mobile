@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { AlertCircle, Check, ChevronLeft } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { getRouteParam } from "@/utils/navigation";
+import { getRouteParam, goBackOrReplace } from "@/utils/navigation";
 
 import {
   chatApi,
@@ -65,7 +65,7 @@ export default function ReportScreen() {
             accessibilityLabel={messages.back}
             accessibilityRole="button"
             className={styles.backButton}
-            onPress={() => router.back()}
+            onPress={() => goBackOrReplace(router, "/(tabs)/chat")}
             testID="report-back"
           >
             <ChevronLeft
@@ -103,7 +103,7 @@ export default function ReportScreen() {
             </Text>
             <Button
               className={styles.unavailableButton}
-              onPress={() => router.back()}
+              onPress={() => goBackOrReplace(router, "/(tabs)/chat")}
               testID="report-unavailable-back"
             >
               {messages.back}
@@ -183,7 +183,7 @@ export default function ReportScreen() {
           accessibilityLabel={messages.back}
           accessibilityRole="button"
           className={styles.backButton}
-          onPress={() => router.back()}
+          onPress={() => goBackOrReplace(router, "/(tabs)/chat")}
           testID="report-back"
         >
           <ChevronLeft color={colors.primaryDeep} size={26} strokeWidth={2.3} />
@@ -220,7 +220,7 @@ export default function ReportScreen() {
               </Text>
               <Button
                 className={styles.successButton}
-                onPress={() => router.back()}
+                onPress={() => goBackOrReplace(router, "/(tabs)/chat")}
                 testID="report-success-back"
               >
                 {messages.backToChat}

@@ -1,11 +1,11 @@
 import { getLocalizedErrorMessage } from "@/utils/error";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Platform } from "react-native";
 import { KeyboardAvoidingView, ScrollView, View } from "@/tw";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { type TopUpData, type TopUpQuote } from "@/api/WalletApi";
+import { type TopUpData, type TopUpQuote, walletApi } from "@/api/WalletApi";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { useLocale } from "@/features/preferences/localeStore";
 import { walletMessages } from "@/locales/walletMessages";
@@ -21,9 +21,11 @@ import {
   useQuoteTopUpMutation,
   useSimulateTopUpMutation,
   useTopUpStatusQuery,
+  useTopUpsQuery,
   useWalletQuery,
 } from "./api/walletQueries";
 import type { TopUpStep } from "./topUpTypes";
+import { goBackOrReplace } from "@/utils/navigation";
 import { checkTopUpAmount, isQuoteExpired } from "./walletModule";
 
 export default function TopUpScreen() {
@@ -37,8 +39,15 @@ export default function TopUpScreen() {
   const [amountStr, setAmountStr] = useState("100");
   const [error, setError] = useState<string | null>(null);
   const [quote, setQuote] = useState<TopUpQuote | null>(null);
-  const [activeTopUp, setActiveTopUp] = useState<TopUpData | null>(null);
+  const [activeTopUpId, setActiveTopUpId] = useState<string | null>(null);
+  const activeTopUpIdRef = useRef(activeTopUpId);
+  const stepRef = useRef(step);
+  useEffect(() => {
+    activeTopUpIdRef.current = activeTopUpId;
+    stepRef.current = step;
+  }, [activeTopUpId, step]);
   const [paymentVerified, setPaymentVerified] = useState(false);
+  const handledStatusRef = useRef<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [currentBalanceSatang, setCurrentBalanceSatang] = useState<
     number | null
@@ -49,16 +58,57 @@ export default function TopUpScreen() {
   const createMutation = useCreateTopUpMutation();
   const simulateMutation = useSimulateTopUpMutation();
   const walletQuery = useWalletQuery(false);
-  const statusQuery = useTopUpStatusQuery(activeTopUp?.id ?? null);
+  const statusQuery = useTopUpStatusQuery(activeTopUpId);
+  const activeTopUp = statusQuery.data ?? null;
+  const topUpsQuery = useTopUpsQuery();
   const loading = quoteMutation.isPending || createMutation.isPending;
   const checkingStatus =
     statusQuery.isFetching || simulateMutation.isPending || refreshingBalance;
   const amountCheck = checkTopUpAmount(amountStr);
   const isAmountValid = amountCheck.ok;
 
+  useEffect(() => {
+    const latestPendingTopUp = (topUpsQuery.data ?? [])
+      .filter(
+        (topUp) =>
+          topUp.topUpStatus === "PENDING" &&
+          Date.parse(topUp.qrExpiresAt ?? "") > Date.now()
+      )
+      .sort(
+        (left, right) =>
+          Date.parse(right.createdAt) - Date.parse(left.createdAt)
+      )[0];
+    if (
+      !latestPendingTopUp ||
+      activeTopUpIdRef.current ||
+      stepRef.current !== "amount"
+    ) {
+      return;
+    }
+    let current = true;
+    void walletApi
+      .getTopUpStatus(latestPendingTopUp.id)
+      .then((topUp) => {
+        if (
+          !current ||
+          activeTopUpIdRef.current ||
+          stepRef.current !== "amount"
+        ) {
+          return;
+        }
+        queryClient.setQueryData(walletKeys.topUpStatus(topUp.id), topUp);
+        activeTopUpIdRef.current = topUp.id;
+        setActiveTopUpId(topUp.id);
+        setStep("promptPay");
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [queryClient, topUpsQuery.data]);
   const resetQuote = () => {
-    setQuote(null);
-    setActiveTopUp(null);
+    setActiveTopUpId(null);
+    activeTopUpIdRef.current = null;
     setPaymentVerified(false);
     setCurrentBalanceSatang(null);
     setBalanceRefreshFailed(false);
@@ -107,7 +157,9 @@ export default function TopUpScreen() {
 
     try {
       const topUp = await createMutation.mutateAsync(quote.id);
-      setActiveTopUp(topUp);
+      queryClient.setQueryData(walletKeys.topUpStatus(topUp.id), topUp);
+      activeTopUpIdRef.current = topUp.id;
+      setActiveTopUpId(topUp.id);
       setStep("promptPay");
     } catch (err: unknown) {
       setError(
@@ -118,30 +170,41 @@ export default function TopUpScreen() {
     }
   };
 
-  const applyPaymentStatus = async (latest: TopUpData) => {
-    setActiveTopUp(latest);
-    if (latest.topUpStatus === "PAID") {
-      setRefreshingBalance(true);
-      setBalanceRefreshFailed(false);
-      try {
-        const result = await walletQuery.refetch();
-        if (result.error) throw result.error;
-        setCurrentBalanceSatang(result.data?.spendingBalanceSatang ?? null);
-      } catch {
-        setCurrentBalanceSatang(null);
-        setBalanceRefreshFailed(true);
-      } finally {
-        setRefreshingBalance(false);
+  const applyPaymentStatus = useCallback(
+    async (latest: TopUpData) => {
+      handledStatusRef.current = `${latest.id}:${latest.topUpStatus}`;
+      queryClient.setQueryData(walletKeys.topUpStatus(latest.id), latest);
+      if (latest.topUpStatus === "PAID") {
+        setRefreshingBalance(true);
+        setBalanceRefreshFailed(false);
+        try {
+          const result = await walletQuery.refetch();
+          if (result.error) throw result.error;
+          setCurrentBalanceSatang(result.data?.spendingBalanceSatang ?? null);
+        } catch {
+          setCurrentBalanceSatang(null);
+          setBalanceRefreshFailed(true);
+        } finally {
+          setRefreshingBalance(false);
+        }
+        void queryClient.invalidateQueries({
+          queryKey: [...walletKeys.all, "transactions"],
+        });
+        setPaymentVerified(true);
+        setStatusMessage(m.paymentSuccess);
+      } else {
+        setStatusMessage(m.paymentPending);
       }
-      void queryClient.invalidateQueries({
-        queryKey: [...walletKeys.all, "transactions"],
-      });
-      setPaymentVerified(true);
-      setStatusMessage(m.paymentSuccess);
-    } else {
-      setStatusMessage(m.paymentPending);
-    }
-  };
+    },
+    [m.paymentPending, m.paymentSuccess, queryClient, walletQuery]
+  );
+  useEffect(() => {
+    const latest = statusQuery.data;
+    if (!latest || latest.topUpStatus === "PENDING") return;
+    const statusKey = `${latest.id}:${latest.topUpStatus}`;
+    if (handledStatusRef.current === statusKey) return;
+    void applyPaymentStatus(latest);
+  }, [applyPaymentStatus, statusQuery.data]);
   const handleRetryBalanceRefresh = async () => {
     if (refreshingBalance) return;
     setRefreshingBalance(true);
@@ -191,7 +254,7 @@ export default function TopUpScreen() {
 
   const handleBack = () => {
     if (paymentVerified) {
-      router.back();
+      goBackOrReplace(router, "/(tabs)/money");
     } else if (step === "confirmation") {
       setStep("amount");
       setError(null);
@@ -199,12 +262,12 @@ export default function TopUpScreen() {
       setStep("confirmation");
       setError(null);
     } else {
-      router.back();
+      goBackOrReplace(router, "/(tabs)/money");
     }
   };
 
   const handleFinish = () => {
-    router.back();
+    goBackOrReplace(router, "/(tabs)/money");
   };
 
   return (

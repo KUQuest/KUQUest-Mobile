@@ -95,8 +95,6 @@ export interface QuestBoardMessages {
   messageOwnerShort: string;
   messageOwnerLoading: string;
   messageOwnerError: string;
-  profileUnavailableTitle: string;
-  profileUnavailableMessage: string;
   requirements: string;
   description: string;
   completionCriteria: string;
@@ -155,7 +153,7 @@ export interface QuestBoardMessages {
   applicationPending: string;
   applicationAcceptedDescription: string;
   applicationPendingDescription: string;
-  viewMyQuests: string;
+  openWorkHub: string;
   firstComeDescription: string;
   reviewCandidatesDescription: string;
   proofRequiredDescription: string;
@@ -398,9 +396,6 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     messageOwnerLoading: "Opening chat…",
     messageOwnerError:
       "We could not open a chat with the Quest owner. Try again.",
-    profileUnavailableTitle: "Profile unavailable",
-    profileUnavailableMessage:
-      "This Quest owner's profile could not be loaded.",
     requirements: "Requirements",
     description: "Description",
     completionCriteria: "Completion criteria",
@@ -471,7 +466,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
       "Your place is confirmed. Keep the Quest details handy.",
     applicationPendingDescription:
       "The Quest owner will review your application.",
-    viewMyQuests: "View in My Quests",
+    openWorkHub: "Open Work Hub",
     firstComeDescription: "Anyone can join while a spot is available.",
     reviewCandidatesDescription:
       "The Quest owner reviews applications before choosing participants.",
@@ -799,8 +794,6 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     messageOwnerShort: "แชทผู้ว่าจ้าง",
     messageOwnerLoading: "กำลังเปิดแชท…",
     messageOwnerError: "ไม่สามารถเปิดแชทกับผู้ว่าจ้างได้ ลองอีกครั้ง",
-    profileUnavailableTitle: "ไม่สามารถเปิดโปรไฟล์ได้",
-    profileUnavailableMessage: "ไม่สามารถโหลดโปรไฟล์ผู้ว่าจ้างของเควสต์นี้ได้",
     requirements: "รายละเอียดที่ต้องทำ",
     description: "คำอธิบาย",
     completionCriteria: "เกณฑ์การเสร็จงาน",
@@ -869,7 +862,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     applicationAcceptedDescription:
       "คุณได้รับการยืนยันเข้าร่วมแล้ว เก็บรายละเอียดเควสต์นี้ไว้ดูภายหลัง",
     applicationPendingDescription: "เจ้าของเควสต์จะตรวจสอบใบสมัครของคุณ",
-    viewMyQuests: "ดูในเควสต์ของฉัน",
+    openWorkHub: "เปิดศูนย์งาน",
     firstComeDescription: "เข้าร่วมได้ทันทีเมื่อยังมีที่ว่าง",
     reviewCandidatesDescription:
       "เจ้าของเควสต์จะตรวจสอบใบสมัครก่อนเลือกผู้เข้าร่วม",

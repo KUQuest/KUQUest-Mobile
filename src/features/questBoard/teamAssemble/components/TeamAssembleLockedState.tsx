@@ -1,8 +1,6 @@
-import React from "react";
-
 import { Check, CircleX } from "lucide-react-native";
 
-import { Text, View } from "@/tw";
+import { Pressable, Text, View } from "@/tw";
 import { colors } from "@/theme/colors";
 import { QuestTeamStatus } from "../../domain/types";
 
@@ -14,6 +12,9 @@ export interface TeamAssembleLockedStateProps {
   selectedLabel: string;
   submittedTitle: string;
   description: string;
+  openWorkHubLabel?: string;
+  onOpenWorkHub?: () => void;
+  viewerIsMember?: boolean;
 }
 
 export function TeamAssembleLockedState({
@@ -22,6 +23,9 @@ export function TeamAssembleLockedState({
   selectedLabel,
   submittedTitle,
   description,
+  openWorkHubLabel,
+  onOpenWorkHub,
+  viewerIsMember = false,
 }: TeamAssembleLockedStateProps) {
   const rejected = status === QuestTeamStatus.TEAM_REJECTED;
   return (
@@ -48,6 +52,19 @@ export function TeamAssembleLockedState({
               : submittedTitle}
         </Text>
         <Text className={styles.noticeText}>{description}</Text>
+        {status === QuestTeamStatus.TEAM_SELECTED &&
+        viewerIsMember &&
+        onOpenWorkHub ? (
+          <Pressable
+            accessibilityLabel={openWorkHubLabel}
+            accessibilityRole="button"
+            className="mt-ku-sm min-h-[48px] items-center justify-center"
+            onPress={onOpenWorkHub}
+            testID="team-assemble-open-work-hub"
+          >
+            <Text>{openWorkHubLabel}</Text>
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );

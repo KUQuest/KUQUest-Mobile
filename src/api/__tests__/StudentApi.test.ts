@@ -20,6 +20,7 @@ function response(body: unknown, status = 200): Response {
   return {
     ok: status >= 200 && status < 300,
     status,
+    headers: new Headers(),
     json: async () => body,
     text: async () => JSON.stringify(body),
   } as Response;

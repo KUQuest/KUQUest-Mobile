@@ -1,3 +1,4 @@
+import { resetServerClock, syncServerClock } from "@/api/serverClock";
 import { Fragment, useState } from "react";
 import { act, fireEvent, waitFor } from "@testing-library/react-native";
 
@@ -11,28 +12,44 @@ import type { QuestV2Detail } from "@/api/questV2Contracts";
 import { ApiError } from "@/api/ApiClient";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
+type BeforeRemoveEvent = {
+  preventDefault: jest.Mock;
+  data: { action: { type: string } };
+};
+let beforeRemoveHandler: ((event: BeforeRemoveEvent) => void) | undefined;
+const mockDispatch = jest.fn();
+const mockAddListener = jest.fn(
+  (_event: string, handler: (event: BeforeRemoveEvent) => void) => {
+    beforeRemoveHandler = handler;
+    return jest.fn();
+  }
+);
 const mockBack = jest.fn();
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
 const mockGetSession = jest.fn();
 const mockMineDisputeQuery = jest.fn();
 const mockIsMutating = jest.fn(() => 0);
-const mockFileDispute = jest.fn();
-
-jest.mock("@tanstack/react-query", () => ({
-  ...jest.requireActual("@tanstack/react-query"),
-  useIsMutating: () => mockIsMutating(),
-}));
 jest.mock("expo-router", () => ({
   useFocusEffect: (effect: () => (() => void) | void) =>
     jest.requireActual("react").useEffect(effect, []),
   useLocalSearchParams: () => ({ id: "quest-work-1", viewerId: "worker-1" }),
+  useNavigation: () => ({
+    addListener: mockAddListener,
+    dispatch: mockDispatch,
+  }),
   useRouter: () => ({
     back: mockBack,
     canGoBack: () => true,
     push: mockPush,
     replace: mockReplace,
   }),
+}));
+const mockFileDispute = jest.fn();
+
+jest.mock("@tanstack/react-query", () => ({
+  ...jest.requireActual("@tanstack/react-query"),
+  useIsMutating: () => mockIsMutating(),
 }));
 
 jest.mock("react-native-safe-area-context", () => ({
@@ -68,6 +85,20 @@ jest.mock("../../api/questBoardQueries", () => ({
     isPending: false,
   }),
 }));
+jest.mock("@/features/questBoard/review/components/QuestReviewModal", () => {
+  const React = jest.requireActual("react");
+  const { Text, View } = jest.requireActual("react-native");
+  return {
+    QuestReviewModal: ({ questId }: { questId: string | null }) =>
+      questId
+        ? React.createElement(
+            View,
+            { testID: "quest-review-modal" },
+            React.createElement(Text, null, questId)
+          )
+        : null,
+  };
+});
 
 const mockedGetSnapshot =
   liveQuestService.getLiveSnapshot as jest.MockedFunction<
@@ -174,7 +205,6 @@ const defaultCapabilities = {
   canCancel: false,
   canReviewProof: false,
   canCreateReview: false,
-  canUpdateReview: false,
 } satisfies LiveQuestSnapshot["capabilities"];
 
 function makeSnapshot(overrides: SnapshotOverrides = {}): LiveQuestSnapshot {
@@ -220,9 +250,206 @@ function makeSnapshot(overrides: SnapshotOverrides = {}): LiveQuestSnapshot {
 describe("QuestWorkScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    beforeRemoveHandler = undefined;
     mockGetSession.mockResolvedValue({ user: { id: "worker-1" } });
     mockIsMutating.mockReturnValue(0);
     mockedRespondToEdit.mockResolvedValue(makeSnapshot().editRequest as never);
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+    resetServerClock();
+    jest.restoreAllMocks();
+  });
+  it("gates Start Work with Server time at both boundaries despite device clock skew", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-10-01T00:00:00.000Z"));
+    const quest = {
+      startTime: "2099-08-26T09:00:00+07:00",
+      dueAt: "2099-08-26T10:00:00+07:00",
+    };
+    mockedGetSnapshot.mockImplementation(async () =>
+      makeSnapshot({
+        quest,
+        dueAt: quest.dueAt,
+        capabilities: { canStartWork: true },
+      })
+    );
+
+    syncServerClock("2099-08-26T08:59:59+07:00", null);
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    expect(view.queryByRole("button", { name: "Start Work" })).toBeNull();
+
+    syncServerClock("2099-08-26T09:00:00+07:00", null);
+    await act(async () => jest.advanceTimersByTime(1_000));
+    expect(
+      await view.findByRole("button", { name: "Start Work" })
+    ).toBeTruthy();
+
+    syncServerClock("2099-08-26T10:00:00+07:00", null);
+    await act(async () => jest.advanceTimersByTime(1_000));
+    expect(view.queryByRole("button", { name: "Start Work" })).toBeNull();
+  });
+  it("refreshes the Work Hub countdown using Server time", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-10-01T00:00:00.000Z"));
+    const serverNow = "2099-08-26T09:00:00+07:00";
+    const dueAt = "2099-08-26T09:01:30+07:00";
+    syncServerClock(serverNow, null);
+    mockedGetSnapshot.mockImplementation(async () =>
+      makeSnapshot({
+        dueAt,
+        quest: { dueAt },
+      })
+    );
+
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    expect(await view.findByText("1m remaining")).toBeTruthy();
+
+    await act(async () => jest.advanceTimersByTime(91_000));
+    expect(view.getByText("Due now")).toBeTruthy();
+  });
+  it("refreshes server state once when Start Work deadline expires", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-10-01T00:00:00.000Z"));
+    const startTime = "2099-08-26T09:00:00+07:00";
+    const dueAt = "2099-08-26T10:00:00+07:00";
+    let snapshotReads = 0;
+    mockedGetSnapshot.mockImplementation(async () => {
+      snapshotReads += 1;
+      return makeSnapshot({
+        state: snapshotReads === 1 ? "QUEST_ASSIGNED" : "QUEST_FAILED",
+        quest: { startTime, dueAt },
+        dueAt,
+        capabilities: { canStartWork: true },
+      });
+    });
+    syncServerClock("2099-08-26T09:59:59+07:00", null);
+    mockMineDisputeQuery.mockReturnValue({
+      isPending: false,
+      isError: false,
+      isSuccess: true,
+      isFetching: false,
+      data: { case: null },
+      refetch: jest.fn(),
+    });
+
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    expect(await view.findByText("Assigned")).toBeTruthy();
+
+    await act(async () => jest.advanceTimersByTime(1_000));
+
+    expect(await view.findByText("Archived")).toBeTruthy();
+    expect(snapshotReads).toBe(2);
+  });
+
+  it("confirms before leaving with an unsent proof", async () => {
+    mockedGetSnapshot.mockResolvedValue(
+      makeSnapshot({ capabilities: { canSubmitProof: true } })
+    );
+    const view = await renderWithQueryClient(
+      <Fragment>
+        <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+        <SweetAlertHost />
+      </Fragment>
+    );
+    await fireEvent.changeText(
+      await view.findByLabelText("Work description (optional)"),
+      "Unsent notes"
+    );
+
+    const keepEvent = {
+      preventDefault: jest.fn(),
+      data: { action: { type: "GO_BACK" } },
+    };
+    await act(async () => beforeRemoveHandler?.(keepEvent));
+    expect(keepEvent.preventDefault).toHaveBeenCalledTimes(1);
+    expect(view.getByText("Discard proof draft?")).toBeTruthy();
+    await fireEvent.press(view.getByRole("button", { name: "Keep editing" }));
+    expect(mockDispatch).not.toHaveBeenCalled();
+
+    const discardEvent = {
+      preventDefault: jest.fn(),
+      data: { action: { type: "GO_BACK" } },
+    };
+    await act(async () => beforeRemoveHandler?.(discardEvent));
+    expect(discardEvent.preventDefault).toHaveBeenCalledTimes(1);
+    await fireEvent.press(view.getByRole("button", { name: "Discard" }));
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
+    expect(mockDispatch).toHaveBeenCalledWith(discardEvent.data.action);
+  });
+
+  it("does not prompt for a server-saved proof draft alone", async () => {
+    mockedGetSnapshot.mockResolvedValue(
+      makeSnapshot({
+        capabilities: { canSubmitProof: true },
+        proofs: [
+          {
+            id: "draft-1",
+            workerId: "worker-1",
+            submittedByUserId: "worker-1",
+            teamId: null,
+            submittedAt: null,
+            description: "Saved notes",
+            files: [],
+          },
+        ] as never,
+      })
+    );
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    await view.findByDisplayValue("Saved notes");
+    const event = {
+      preventDefault: jest.fn(),
+      data: { action: { type: "GO_BACK" } },
+    };
+    await act(async () => beforeRemoveHandler?.(event));
+    expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(view.queryByText("Discard proof draft?")).toBeNull();
+  });
+
+  it("shows Rate the Hirer to an eligible Worker and opens the review modal", async () => {
+    mockedGetSnapshot.mockResolvedValue(
+      makeSnapshot({
+        state: "QUEST_COMPLETED",
+        quest: { state: "QUEST_COMPLETED" },
+        capabilities: { canCreateReview: true },
+      })
+    );
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    await fireEvent.press(
+      await view.findByRole("button", { name: "Rate the Hirer" })
+    );
+    expect(view.getByTestId("quest-review-modal")).toBeTruthy();
+    expect(view.getByText("quest-work-1")).toBeTruthy();
+  });
+
+  it.each([
+    ["the Hirer", { actor: "HIRER" as const }],
+    [
+      "a Worker without permission",
+      { capabilities: { canCreateReview: false } },
+    ],
+  ])("hides Rate the Hirer for %s", async (_label, overrides) => {
+    mockedGetSnapshot.mockResolvedValue(
+      makeSnapshot({
+        state: "QUEST_COMPLETED",
+        quest: { state: "QUEST_COMPLETED" },
+        ...overrides,
+      })
+    );
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    expect(view.queryByRole("button", { name: "Rate the Hirer" })).toBeNull();
   });
 
   it("gates Work Hub dispute action on server status and hides it after filing", async () => {
@@ -563,6 +790,36 @@ describe("QuestWorkScreen", () => {
     expect(mockPush).not.toHaveBeenCalled();
   });
 
+  it("reuses the Start Work idempotency key after an ambiguous failure", async () => {
+    mockedGetSnapshot.mockResolvedValue(
+      makeSnapshot({
+        capabilities: { canStartWork: true },
+      })
+    );
+    mockedStartWork
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce({
+        startedAt: "2026-10-01T08:00:00.000Z",
+      } as never);
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    const startButton = await view.findByRole("button", { name: "Start Work" });
+
+    await act(async () => {
+      await fireEvent.press(startButton);
+    });
+    await waitFor(() => expect(mockedStartWork).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      await fireEvent.press(view.getByRole("button", { name: "Start Work" }));
+    });
+
+    expect(mockedStartWork).toHaveBeenCalledTimes(2);
+    expect(mockedStartWork.mock.calls[1]?.[1]).toBe(
+      mockedStartWork.mock.calls[0]?.[1]
+    );
+  });
+
   it("confirms proof-free work, refreshes canonical state, and returns after completion", async () => {
     const active = makeSnapshot({
       state: "QUEST_IN_PROGRESS",
@@ -594,7 +851,7 @@ describe("QuestWorkScreen", () => {
     });
     mockedGetSnapshot
       .mockResolvedValueOnce(active)
-      .mockResolvedValueOnce(completed);
+      .mockResolvedValue(completed);
     mockedConfirmCompletion.mockResolvedValue({} as never);
     const view = await renderWithQueryClient(
       <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />

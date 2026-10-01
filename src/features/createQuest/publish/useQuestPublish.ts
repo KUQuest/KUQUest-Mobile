@@ -1,10 +1,10 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 
 import { ZodError } from "zod";
 
+import { createQuestIdempotencyKey, questApi } from "@/api/QuestApi";
 import { createQuestMessages } from "@/locales/createQuestMessages";
-import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import { useWalletQuery } from "@/features/wallet/api/walletQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import { getLocalizedErrorMessage } from "@/utils/error";
@@ -89,6 +89,9 @@ export function useQuestPublish({
   publishedQuestRef,
   saveRequestRef,
   setSaveErrorIntent,
+  publication,
+  persistPublication,
+  setCompletedState,
   enabled = true,
 }: {
   editQuestId?: string;
@@ -102,6 +105,17 @@ export function useQuestPublish({
   publishedQuestRef: RefObject<PublishedQuestRefValue | null>;
   saveRequestRef: RefObject<number>;
   setSaveErrorIntent: (intent: SaveErrorIntent | null) => void;
+  publication: {
+    serverQuestId?: string;
+    createIdempotencyKey?: string;
+    publishIdempotencyKey?: string;
+  };
+  persistPublication: (patch: {
+    serverQuestId?: string;
+    createIdempotencyKey?: string;
+    publishIdempotencyKey?: string;
+  }) => Promise<void>;
+  setCompletedState: (state: CompletionState | null) => void;
   enabled?: boolean;
 }) {
   const { locale } = useLocale();
@@ -126,6 +140,30 @@ export function useQuestPublish({
     questId: string;
     imageSetKey: string;
   } | null>(null);
+  const publicationSeededRef = useRef(false);
+  useEffect(() => {
+    if (!draftHydrated || publicationSeededRef.current) return;
+    if (publication.createIdempotencyKey) {
+      opIdempotencyKeyRef.current = publication.createIdempotencyKey;
+    }
+    if (publication.serverQuestId && draftStorageKey) {
+      publishedQuestRef.current = {
+        questId: publication.serverQuestId,
+        storageKey: draftStorageKey,
+        editQuestId,
+        publishIdempotencyKey: publication.publishIdempotencyKey,
+      };
+    }
+    publicationSeededRef.current = true;
+  }, [
+    draftHydrated,
+    draftStorageKey,
+    editQuestId,
+    publication.createIdempotencyKey,
+    publication.publishIdempotencyKey,
+    publication.serverQuestId,
+    publishedQuestRef,
+  ]);
   const publishCheckEnabled =
     enabled && step === 3 && draftHydrated && !completedState;
   const publishCheckQuery = useQuestPublishCheckQuery(
@@ -167,6 +205,68 @@ export function useQuestPublish({
     serverSavedRevisionRef.current = -1;
   }, []);
 
+  const savePublication = useCallback(
+    async (
+      patch: {
+        serverQuestId?: string;
+        createIdempotencyKey?: string;
+        publishIdempotencyKey?: string;
+      },
+      intent: SaveErrorIntent
+    ): Promise<boolean> => {
+      try {
+        await persistPublication(patch);
+        return true;
+      } catch {
+        setFailureMessage(messages.saveError);
+        setSaveErrorIntent(intent);
+        return false;
+      }
+    },
+    [messages.saveError, persistPublication, setSaveErrorIntent]
+  );
+
+  const reconcilePersistedQuest = useCallback(async () => {
+    const questId =
+      publishedQuestRef.current?.questId ?? publication.serverQuestId;
+    if (!questId) return "none" as const;
+
+    const quest = await questApi.getDetail(questId);
+    if (quest.state === QuestStatus.QUEST_OPEN) {
+      const draftId = draftIdRef.current;
+      if (draftId && draftStorageKey) {
+        await deleteQuestDraft(draftStorageKey, draftId);
+      }
+      publishedQuestRef.current = null;
+      setCompletedState("OPEN");
+      return "open" as const;
+    }
+    if (quest.state !== QuestStatus.QUEST_DRAFT) {
+      throw new Error(messages.publishError);
+    }
+    if (draftStorageKey) {
+      publishedQuestRef.current = {
+        ...(publishedQuestRef.current ?? {
+          questId,
+          storageKey: draftStorageKey,
+          editQuestId,
+          publishIdempotencyKey: publication.publishIdempotencyKey,
+        }),
+        version: quest.version,
+      };
+    }
+    return "draft" as const;
+  }, [
+    draftIdRef,
+    draftStorageKey,
+    editQuestId,
+    messages.publishError,
+    publication.publishIdempotencyKey,
+    publication.serverQuestId,
+    publishedQuestRef,
+    setCompletedState,
+  ]);
+
   const syncServerQuest = useCallback(
     async (
       draftToSync: QuestDraft,
@@ -203,11 +303,28 @@ export function useQuestPublish({
           publishedQuestRef.current = { ...existing, version: edited.version };
         }
       } else {
+        const createIdempotencyKey = takeOperationKey();
+        if (
+          !(await savePublication(
+            { createIdempotencyKey },
+            { state: "DRAFT", completesFlow: false }
+          ))
+        ) {
+          return null;
+        }
         const created = await createMutation.mutateAsync({
           payload: toQuestV2Payload(normalizedDraft),
-          idempotencyKey: takeOperationKey(),
+          idempotencyKey: createIdempotencyKey,
         });
         if (requestIdAtStart !== saveRequestRef.current) return null;
+        if (
+          !(await savePublication(
+            { serverQuestId: created.id },
+            { state: "DRAFT", completesFlow: false }
+          ))
+        ) {
+          return null;
+        }
         questId = created.id;
         imageUploadBatchRef.current = null;
         uploadedImageBatchRef.current = null;
@@ -229,6 +346,7 @@ export function useQuestPublish({
       draftStorageKey,
       editMutation,
       editQuestId,
+      savePublication,
       publishedQuestRef,
       saveRequestRef,
       takeOperationKey,
@@ -262,6 +380,7 @@ export function useQuestPublish({
     const requestId = ++publishCheckRequestRef.current;
     setIsPreparingPublishCheck(true);
     try {
+      if ((await reconcilePersistedQuest()) === "open") return;
       const questId = await ensureServerQuest(draft, editQuestId);
       if (!questId || requestId !== publishCheckRequestRef.current) return;
       if (publishCheckQuestIdRef.current === questId) {
@@ -272,9 +391,9 @@ export function useQuestPublish({
         publishCheckQuestIdRef.current = questId;
         setPublishCheckQuestId(questId);
       }
-    } catch {
-      // A failed sync must not block navigation: the Review card falls back to
-      // the locally derived check, and publishing re-verifies server-side.
+    } catch (error) {
+      setFailureMessage(getPublishErrorMessage(error, locale));
+      setSaveErrorIntent({ state: "DRAFT", completesFlow: false });
     } finally {
       if (requestId === publishCheckRequestRef.current) {
         setIsPreparingPublishCheck(false);
@@ -287,9 +406,11 @@ export function useQuestPublish({
     editQuestId,
     enabled,
     ensureServerQuest,
+    locale,
+    reconcilePersistedQuest,
     refetchPublishCheck,
+    setSaveErrorIntent,
   ]);
-
   const publishQuest = useCallback(
     async (draftToPublish: QuestDraft): Promise<boolean> => {
       if (!enabled) return false;
@@ -302,6 +423,8 @@ export function useQuestPublish({
           return false;
         }
 
+        if ((await reconcilePersistedQuest()) === "open") return true;
+
         let publishIdempotencyKey =
           publishedQuestRef.current?.publishIdempotencyKey;
         const hasMatchingPublishedQuest =
@@ -312,10 +435,7 @@ export function useQuestPublish({
           publishIdempotencyKey = undefined;
         }
 
-        // Unconditional sync: this is the only place that pushes a draft edit
-        // made after entering Review onto the server copy. No fallback quest id —
-        // in local-draft mode `editQuestId` is a SecureStore draft id, never a
-        // server quest id.
+        // Sync edits made after entering Review onto the server Quest before publish.
         const publishedQuestId = await ensureServerQuest(draftToPublish);
         if (!publishedQuestId) {
           setSaveErrorIntent({ state: "OPEN", completesFlow: true });
@@ -331,6 +451,14 @@ export function useQuestPublish({
             editQuestId,
             publishIdempotencyKey,
           };
+        }
+        if (
+          !(await savePublication(
+            { publishIdempotencyKey },
+            { state: "OPEN", completesFlow: true }
+          ))
+        ) {
+          return false;
         }
         const imageUris = draftToPublish.imageUris;
         if (imageUris.length === 0) {
@@ -443,6 +571,8 @@ export function useQuestPublish({
       publishedQuestRef,
       saveRequestRef,
       setSaveErrorIntent,
+      savePublication,
+      reconcilePersistedQuest,
     ]
   );
 

@@ -79,6 +79,61 @@ describe("create quest persistence", () => {
     });
     expect(SecureStore.getItemAsync).toHaveBeenCalledWith(draftKey);
   });
+  test("round-trips serverQuestId, createIdempotencyKey and publishIdempotencyKey", async () => {
+    const publication = {
+      serverQuestId: "quest-42",
+      createIdempotencyKey: "create-key",
+      publishIdempotencyKey: "publish-key",
+    };
+    await persistQuestDraft(
+      storageKey,
+      draftId,
+      draft,
+      2,
+      "DRAFT",
+      publication
+    );
+
+    await expect(loadQuestDraft(storageKey, draftId)).resolves.toEqual({
+      draft,
+      step: 2,
+      state: "DRAFT",
+      ...publication,
+    });
+  });
+
+  test("parses a legacy snapshot without them", async () => {
+    await SecureStore.setItemAsync(
+      draftKey,
+      JSON.stringify({ draft, step: 2, state: "DRAFT" })
+    );
+
+    await expect(loadQuestDraft(storageKey, draftId)).resolves.toEqual({
+      draft,
+      step: 2,
+      state: "DRAFT",
+    });
+  });
+
+  test("ignores empty or non-string publication identifiers in legacy snapshots", async () => {
+    await SecureStore.setItemAsync(
+      draftKey,
+      JSON.stringify({
+        draft,
+        step: 2,
+        state: "DRAFT",
+        serverQuestId: " ",
+        createIdempotencyKey: 42,
+        publishIdempotencyKey: "",
+      })
+    );
+
+    await expect(loadQuestDraft(storageKey, draftId)).resolves.toEqual({
+      draft,
+      step: 2,
+      state: "DRAFT",
+    });
+  });
   test("loads a legacy single draft through the mount read path", async () => {
     const legacySnapshot = { draft, step: 2, state: "DRAFT" as const };
     await SecureStore.setItemAsync(

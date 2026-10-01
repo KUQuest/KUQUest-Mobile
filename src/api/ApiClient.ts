@@ -2,6 +2,7 @@ import { fetch as expoFetch } from "expo/fetch";
 import { z } from "zod";
 import { authClient } from "../features/auth/authClient";
 import { debugLog, errorDetails } from "./debugLog";
+import { serverNow, syncServerClock } from "./serverClock";
 
 export interface ApiClientOptions {
   baseUrl?: string;
@@ -39,11 +40,31 @@ export class ApiError extends Error {
   constructor(
     public readonly status: number,
     public readonly code: string,
-    message: string
+    message: string,
+    /** Wait before retrying, from a `Retry-After` header when the Server sent one. */
+    public readonly retryAfterMs?: number
   ) {
     super(message);
     this.name = "ApiError";
   }
+}
+
+/** Parses `Retry-After` as delta-seconds or an HTTP date. */
+function parseRetryAfterMs(header: string | null): number | undefined {
+  const value = header?.trim();
+  if (!value) return undefined;
+  const milliseconds = /^\d+$/.test(value)
+    ? Number(value) * 1000
+    : Date.parse(value) - serverNow();
+  return Number.isFinite(milliseconds) && milliseconds >= 0
+    ? milliseconds
+    : undefined;
+}
+
+let unauthorizedHandler: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  unauthorizedHandler = handler;
 }
 
 function normalizeBaseUrl(baseUrl: string | undefined): string | undefined {
@@ -211,6 +232,7 @@ export class ApiClient {
       throw error;
     }
 
+    syncServerClock(response.headers.get("date"), response.headers.get("age"));
     const rawBody = response.status === 204 ? "" : await response.text();
     const body = rawBody ? this.parseBody(rawBody) : undefined;
     if (!response.ok) {
@@ -229,13 +251,15 @@ export class ApiClient {
           : `HTTP_${response.status}`,
         typeof nestedError.message === "string"
           ? nestedError.message
-          : "Request failed"
+          : "Request failed",
+        parseRetryAfterMs(response.headers.get("retry-after"))
       );
       debugLog(
         "api",
         `${method} ${logPath} -> ${response.status} (${Date.now() - startedAt}ms)`,
         { code: apiError.code }
       );
+      if (response.status === 401) unauthorizedHandler?.();
       throw apiError;
     }
     debugLog(

@@ -1,4 +1,3 @@
-import React from "react";
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
@@ -6,11 +5,18 @@ import PublicProfileScreen from "../PublicProfileScreen";
 import { authService } from "../../auth/AuthService";
 
 const mockBack = jest.fn();
+const mockCanGoBack = jest.fn(() => true);
+const mockReplace = jest.fn();
 const mockPush = jest.fn();
 let mockParams: { id?: string | string[] } = { id: "public-student-1" };
 
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ back: mockBack, push: mockPush, replace: jest.fn() }),
+  useRouter: () => ({
+    back: mockBack,
+    canGoBack: mockCanGoBack,
+    push: mockPush,
+    replace: mockReplace,
+  }),
   useLocalSearchParams: () => mockParams,
 }));
 
@@ -42,6 +48,10 @@ const mockPublicProfile = {
   occupation: {
     id: "occ-1",
     name: "Student",
+  },
+  reputation: {
+    totalQuests: 12,
+    rating: { average: 4.7 },
   },
   experience: [
     {
@@ -98,6 +108,7 @@ const mockReviews = {
 describe("PublicProfileScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockCanGoBack.mockReturnValue(true);
     mockParams = { id: "public-student-1" };
     (authService.getStudentApi as jest.Mock).mockResolvedValue({
       getPublicProfile: jest.fn().mockResolvedValue(mockPublicProfile),
@@ -120,17 +131,35 @@ describe("PublicProfileScreen", () => {
         .length
     ).toBeGreaterThan(0);
     expect(view.getByTestId("profile-tags-unavailable")).toBeTruthy();
-    expect(
-      view.getByText(/Profile Rating is temporarily unavailable/)
-    ).toBeTruthy();
+    expect(view.getByText("4.7")).toBeTruthy();
+    expect(view.getByText("12")).toBeTruthy();
 
     // Public profiles remain read-only.
     expect(view.queryByText("Edit Profile")).toBeNull();
 
     // Verify Back button works
     const backButton = view.getByTestId("public-profile-back-button");
-    fireEvent.press(backButton);
+    await fireEvent.press(backButton);
     expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+  it("renders unavailable rating state when public average is null", async () => {
+    const profile = {
+      ...mockPublicProfile,
+      reputation: { totalQuests: 12, rating: { average: null } },
+    };
+    (authService.getStudentApi as jest.Mock).mockResolvedValue({
+      getPublicProfile: jest.fn().mockResolvedValue(profile),
+      listPublicReviews: jest.fn().mockResolvedValue(mockReviews),
+    });
+
+    const view = await renderWithQueryClient(<PublicProfileScreen />);
+
+    await waitFor(() => {
+      expect(view.getAllByText("Jane Doe").length).toBeGreaterThan(0);
+    });
+    expect(
+      view.getByText(/Profile Rating is temporarily unavailable/)
+    ).toBeTruthy();
   });
 
   it("switches tabs and displays experience, works, certificates, and reviews", async () => {
@@ -142,28 +171,28 @@ describe("PublicProfileScreen", () => {
 
     // Switch to Experience tab
     const experienceTab = view.getByTestId("public-profile-tab-experience");
-    fireEvent.press(experienceTab);
+    await fireEvent.press(experienceTab);
     await waitFor(() => {
       expect(view.getByText("Mobile Developer Intern")).toBeTruthy();
     });
 
     // Switch to Works tab
     const worksTab = view.getByTestId("public-profile-tab-works");
-    fireEvent.press(worksTab);
+    await fireEvent.press(worksTab);
     await waitFor(() => {
       expect(view.getByText("KUQuest App")).toBeTruthy();
     });
 
     // Switch to Certificates tab
     const certsTab = view.getByTestId("public-profile-tab-certificates");
-    fireEvent.press(certsTab);
+    await fireEvent.press(certsTab);
     await waitFor(() => {
       expect(view.getByText("React Native Masterclass")).toBeTruthy();
     });
 
     // Switch to Reviews tab
     const reviewsTab = view.getByTestId("public-profile-tab-reviews");
-    fireEvent.press(reviewsTab);
+    await fireEvent.press(reviewsTab);
     await waitFor(() => {
       expect(view.getByText("Super reliable worker!")).toBeTruthy();
     });
@@ -178,8 +207,22 @@ describe("PublicProfileScreen", () => {
     });
 
     const backButton = view.getByRole("button", { name: "Go back" });
-    fireEvent.press(backButton);
+    await fireEvent.press(backButton);
     expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it("replaces to /(tabs) when there is no history", async () => {
+    mockCanGoBack.mockReturnValue(false);
+    const view = await renderWithQueryClient(<PublicProfileScreen />);
+
+    await waitFor(() =>
+      expect(view.getAllByText("Jane Doe").length).toBeGreaterThan(0)
+    );
+    await fireEvent.press(view.getByTestId("public-profile-back-button"));
+
+    expect(mockReplace).toHaveBeenCalledWith("/(tabs)");
+    expect(mockBack).not.toHaveBeenCalled();
   });
 
   it("renders localized profile error with retry button", async () => {
@@ -199,7 +242,7 @@ describe("PublicProfileScreen", () => {
     });
 
     const retryButton = view.getByRole("button", { name: "Try again" });
-    fireEvent.press(retryButton);
+    await fireEvent.press(retryButton);
 
     await waitFor(() => {
       expect(getPublicProfile).toHaveBeenCalledTimes(2);
@@ -224,14 +267,14 @@ describe("PublicProfileScreen", () => {
 
     // Switch to Reviews tab
     const reviewsTab = view.getByTestId("public-profile-tab-reviews");
-    fireEvent.press(reviewsTab);
+    await fireEvent.press(reviewsTab);
 
     await waitFor(() => {
       expect(view.getByText("Unable to load reviews.")).toBeTruthy();
     });
 
     const retryButton = view.getByRole("button", { name: "Try again" });
-    fireEvent.press(retryButton);
+    await fireEvent.press(retryButton);
 
     await waitFor(() => {
       expect(listPublicReviews).toHaveBeenCalledTimes(2);

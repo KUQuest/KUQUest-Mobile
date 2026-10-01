@@ -165,6 +165,9 @@ function candidateApplicationItem(
   application: QuestV2CandidateApplication
 ): WorkerWorkItem {
   const { quest } = application;
+  const selected =
+    application.state === QuestApplicationStatus.APPLICATION_SELECTED ||
+    application.state === QuestTeamStatus.TEAM_SELECTED;
   const base = {
     questId: application.questId,
     title: quest.title,
@@ -173,7 +176,7 @@ function candidateApplicationItem(
     dueAt: quest.dueAt,
     action: "open" as const,
     needsAction: false,
-    destination: "questDetail" as const,
+    destination: selected ? ("workHub" as const) : ("questDetail" as const),
   };
   switch (application.state) {
     case QuestApplicationStatus.APPLICATION_APPLIED:

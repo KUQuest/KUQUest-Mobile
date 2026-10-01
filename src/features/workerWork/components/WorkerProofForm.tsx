@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiError } from "@/api/ApiClient";
 import { ActivityIndicator } from "react-native";
 import { File } from "expo-file-system";
@@ -56,6 +56,7 @@ export interface WorkerProofFormProps {
   snapshot: LiveQuestSnapshot;
   /** Refreshes the owning Work Hub after a Proof Submission is sent. */
   onSubmitted?: () => Promise<unknown> | void;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 /**
@@ -68,6 +69,7 @@ export function WorkerProofForm({
   viewerId,
   snapshot,
   onSubmitted,
+  onDirtyChange,
 }: WorkerProofFormProps) {
   const { colors: palette } = useAppTheme();
   const { locale } = useLocale();
@@ -82,7 +84,25 @@ export function WorkerProofForm({
   const [notice, setNotice] = useState<string | null>(null);
   const [failedDraft, setFailedDraft] = useState<ProofDraftRef | null>(null);
   const fileKeySeed = useRef(0);
+  const submittedRef = useRef(false);
   const serverDraft = unsentProofDraft(snapshot, viewerId);
+
+  useEffect(() => {
+    submittedRef.current = false;
+  }, [serverDraft?.id, serverDraft?.description]);
+  useEffect(() => {
+    onDirtyChange?.(
+      !submittedRef.current &&
+        (files.length > 0 || description !== (serverDraft?.description ?? ""))
+    );
+  }, [
+    description,
+    files.length,
+    onDirtyChange,
+    serverDraft?.description,
+    serverDraft?.id,
+  ]);
+
   const serverFileCount = serverDraft?.files.length ?? 0;
   const hasReadyServerFile =
     serverDraft?.files.some(
@@ -121,7 +141,6 @@ export function WorkerProofForm({
   const hasSelectedFile = files.length > 0 || hasReadyServerFile;
   const submitDisabled =
     submitting || !hasSelectedFile || hasUnresolvedServerFailure;
-
   const pickFiles = async () => {
     const remaining = MAX_PROOF_FILES - serverFileCount - files.length;
     if (remaining <= 0) {
@@ -245,6 +264,7 @@ export function WorkerProofForm({
         plan,
         description: description.trim() || undefined,
       });
+      submittedRef.current = true;
       setFiles([]);
       setDescription("");
       setFailedDraft(null);

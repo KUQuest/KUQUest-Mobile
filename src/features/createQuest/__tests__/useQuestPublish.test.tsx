@@ -1,3 +1,4 @@
+import { QuestStatus } from "@/features/questBoard/domain/types";
 import React from "react";
 import { act, renderHook } from "@testing-library/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -11,7 +12,18 @@ const mockUploadImage = jest.fn();
 const mockPublishQuest = jest.fn();
 const mockRefetch = jest.fn();
 const mockGetPublishCheck = jest.fn();
+const mockGetQuestDetail = jest.fn();
 
+jest.mock("@/api/QuestApi", () => {
+  const actual = jest.requireActual("@/api/QuestApi");
+  return {
+    ...actual,
+    questApi: {
+      ...actual.questApi,
+      getDetail: (...args: unknown[]) => mockGetQuestDetail(...args),
+    },
+  };
+});
 jest.mock("../api/createQuestQueries", () => ({
   useCreateQuestMutation: () => ({
     error: null,
@@ -77,6 +89,8 @@ describe("useQuestPublish", () => {
       canPublish: true,
       blockingReasons: [],
     });
+    mockGetQuestDetail.mockReset();
+    mockGetQuestDetail.mockResolvedValue({ state: QuestStatus.QUEST_DRAFT });
   });
 
   function createProps(enabled = true) {
@@ -100,10 +114,12 @@ describe("useQuestPublish", () => {
       },
       saveRequestRef: { current: 0 },
       setSaveErrorIntent: jest.fn(),
+      publication: {},
+      persistPublication: jest.fn().mockResolvedValue(undefined),
+      setCompletedState: jest.fn(),
       step: 3 as const,
     };
   }
-
   it("does not create when publishing is disabled", async () => {
     const props = createProps(false);
     const { result } = await renderHook(() => useQuestPublish(props), {

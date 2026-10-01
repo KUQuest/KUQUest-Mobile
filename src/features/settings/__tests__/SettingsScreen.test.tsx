@@ -10,7 +10,12 @@ const mockReplace = jest.fn();
 const mockPush = jest.fn();
 
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ back: mockBack, push: mockPush, replace: mockReplace }),
+  useRouter: () => ({
+    back: mockBack,
+    push: mockPush,
+    replace: mockReplace,
+    canGoBack: () => true,
+  }),
 }));
 
 jest.mock("../../auth/AuthService", () => ({

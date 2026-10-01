@@ -81,6 +81,11 @@ export interface WorkerWorkMessages {
   proofPendingDescription: string;
   proofApprovedDescription: string;
   proofNotApprovedDescription: string;
+  discardProofTitle: string;
+  discardProofMessage: string;
+  discardProof: string;
+  keepProof: string;
+  rateHirer: string;
 }
 
 export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
@@ -159,6 +164,12 @@ export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
       "ผู้ว่าจ้างมีเวลาตรวจ 24 ชั่วโมง หากไม่ตรวจภายในเวลา ระบบจะอนุมัติให้อัตโนมัติ",
     proofApprovedDescription: "ผู้ว่าจ้างอนุมัติหลักฐานแล้ว",
     proofNotApprovedDescription: "ผู้ว่าจ้างไม่อนุมัติหลักฐานนี้",
+    discardProofTitle: "ละทิ้งฉบับร่างหลักฐาน?",
+    discardProofMessage:
+      "ไฟล์และคำอธิบายที่เพิ่มไว้ยังไม่ได้บันทึก ออกและละทิ้งหรือไม่?",
+    discardProof: "ละทิ้ง",
+    keepProof: "แก้ไขต่อ",
+    rateHirer: "ให้คะแนนผู้ว่าจ้าง",
   },
   en: {
     title: "My work",
@@ -235,5 +246,11 @@ export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
       "The Hirer has 24 hours to review. If they don't, it is approved automatically.",
     proofApprovedDescription: "The Hirer approved this proof.",
     proofNotApprovedDescription: "The Hirer did not approve this proof.",
+    discardProofTitle: "Discard proof draft?",
+    discardProofMessage:
+      "Files and description added here are not saved yet. Leave and discard them?",
+    discardProof: "Discard",
+    keepProof: "Keep editing",
+    rateHirer: "Rate the Hirer",
   },
 };

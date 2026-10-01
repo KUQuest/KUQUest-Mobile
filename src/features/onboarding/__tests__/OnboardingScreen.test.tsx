@@ -3,17 +3,21 @@ import { BackHandler } from "react-native";
 import {
   act,
   fireEvent,
+  render,
   screen,
   waitFor,
   within,
 } from "@testing-library/react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SweetAlertHost } from "@/components/ui/SweetAlert";
+import { AppThemeProvider } from "@/features/workspace/AppThemeProvider";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import { ApiError } from "@/api/ApiClient";
 import { StudentApi } from "@/api/StudentApi";
 
 import OnboardingScreen from "../screens/OnboardingScreen";
+import { onboardingKeys } from "../api/onboardingQueries";
 import { authService } from "../../auth/AuthService";
 
 jest.mock("../../auth/AuthService", () => ({
@@ -180,6 +184,125 @@ describe("OnboardingScreen Academic Registration selections", () => {
     mockRouteParams = {};
     mockLocale = "en";
     process.env.EXPO_PUBLIC_TERMS_VERSION = "2026-08-11";
+  });
+
+  test("does not replace route when initial Academic Registration is completed", async () => {
+    prepareAuth(createCompletedApi());
+    await renderWithQueryClient(<OnboardingScreen />);
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Name-Surname")).toBeTruthy()
+    );
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  test("replaces route when refreshed Academic Registration becomes completed", async () => {
+    const getStatus = jest.fn().mockResolvedValue({
+      firstName: "",
+      lastName: "",
+      telephone: null,
+      occupationId: null,
+      studentId: null,
+      departmentId: null,
+      termsAcceptedAt: null,
+      termsVersion: null,
+      completed: false,
+    });
+    const api = createApi({ getAcademicRegistrationStatus: getStatus });
+    prepareAuth(api);
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        mutations: { retry: false },
+        queries: { retry: false },
+      },
+    });
+    render(
+      <AppThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <OnboardingScreen />
+        </QueryClientProvider>
+      </AppThemeProvider>
+    );
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Name-Surname")).toBeTruthy()
+    );
+    expect(mockReplace).not.toHaveBeenCalled();
+    await fireEvent.changeText(
+      screen.getByLabelText("Name-Surname"),
+      "Local edit"
+    );
+
+    getStatus.mockResolvedValue({
+      firstName: "KU",
+      lastName: "Student",
+      telephone: null,
+      occupationId: null,
+      studentId: null,
+      departmentId: null,
+      termsAcceptedAt: "2026-08-11T00:00:00.000Z",
+      termsVersion: "2026-08-11",
+      completed: true,
+    });
+    await act(async () => {
+      await queryClient.invalidateQueries({
+        queryKey: onboardingKeys.profile(),
+      });
+    });
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
+    expect(api.updateAcademicRegistration).not.toHaveBeenCalled();
+    expect(api.updateProfile).not.toHaveBeenCalled();
+  });
+
+  test("does not replace route on refreshed completion in edit mode", async () => {
+    mockRouteParams = { mode: "edit" };
+    const getStatus = jest.fn().mockResolvedValue({
+      firstName: "",
+      lastName: "",
+      telephone: null,
+      occupationId: null,
+      studentId: null,
+      departmentId: null,
+      termsAcceptedAt: null,
+      termsVersion: null,
+      completed: false,
+    });
+    prepareAuth(createApi({ getAcademicRegistrationStatus: getStatus }));
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        mutations: { retry: false },
+        queries: { retry: false },
+      },
+    });
+    render(
+      <AppThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <OnboardingScreen />
+        </QueryClientProvider>
+      </AppThemeProvider>
+    );
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Name-Surname")).toBeTruthy()
+    );
+    getStatus.mockResolvedValue({
+      firstName: "",
+      lastName: "",
+      telephone: null,
+      occupationId: null,
+      studentId: null,
+      departmentId: null,
+      termsAcceptedAt: "2026-08-11T00:00:00.000Z",
+      termsVersion: "2026-08-11",
+      completed: true,
+    });
+    await act(async () => {
+      await queryClient.invalidateQueries({
+        queryKey: onboardingKeys.profile(),
+      });
+    });
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 
   test("shows the page skeleton until registration data settles", async () => {

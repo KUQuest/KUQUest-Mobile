@@ -11,7 +11,10 @@ import {
 import type { RequestOptions } from "@/api/ApiClient";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import { isTerminalStatus, QuestStatus } from "@/domain/questLifecycle";
-import { QuestMode } from "@/features/questBoard/domain/types";
+import {
+  QuestMode,
+  QuestProofStatus,
+} from "@/features/questBoard/domain/types";
 import { formatSatang } from "@/domain/satang";
 import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestService";
 import type { SupportedLocale } from "@/locales/locale";
@@ -34,7 +37,8 @@ export function getLiveHirerItems(
   quests: QuestV2CanonicalQuest[],
   tab: HirerTab,
   locale: SupportedLocale,
-  tagCatalog: readonly TagItem[] = []
+  tagCatalog: readonly TagItem[] = [],
+  proofReviewableQuestIds?: ReadonlySet<string>
 ): QuestSummary[] {
   const messages = myQuestMessages[locale];
   return quests.flatMap((quest) => {
@@ -81,6 +85,10 @@ export function getLiveHirerItems(
           quest.state === QuestStatus.QUEST_FAILED
             ? ("dispute" as const)
             : undefined,
+        ...(quest.state === QuestStatus.QUEST_FAILED &&
+        proofReviewableQuestIds?.has(quest.id) === true
+          ? { canReviewProof: true }
+          : {}),
         cancelFromCard: isDraft
           ? ("draft" as const)
           : quest.state === QuestStatus.QUEST_OPEN
@@ -174,17 +182,28 @@ export async function listMyWorkerCandidateApplications(
 }
 
 /**
- * Loads fresh live snapshots for Quests owned by the authenticated Hirer.
- * `listAllMyHirerQuests` remains available for the existing card projection.
+ * Loads proof lists only for failed, proof-required Hirer Quests. A Quest is
+ * reviewable only when server data has a submitted pending Proof.
  */
-export async function listMyHirerQuestSnapshots(
-  viewerId: string
-): Promise<LiveQuestSnapshot[]> {
-  const quests = await listAllMyHirerQuests();
-  return Promise.all(
-    quests.map((quest) => liveQuestService.getLiveSnapshot(quest.id, viewerId))
+export async function listMyHirerProofReviewableQuestIds(
+  failedProofQuestIds: readonly string[],
+  options?: RequestOptions
+): Promise<string[]> {
+  const reviewableIds = await Promise.all(
+    failedProofQuestIds.map(async (questId) => {
+      const proofs = await questApi.listProofSubmissions(questId, options);
+      return proofs.some(
+        (proof) =>
+          proof.status === QuestProofStatus.PROOF_PENDING &&
+          proof.submittedAt !== null
+      )
+        ? questId
+        : null;
+    })
   );
+  return reviewableIds.filter((questId): questId is string => questId !== null);
 }
+
 /** Explicit alias for callers that name the Worker surface first. */
 export const listAllMyWorkerQuestSnapshots = listMyWorkerQuestSnapshots;
 
@@ -198,5 +217,5 @@ export const myQuestService = {
   listMyWorkerAssignments: listAllMyWorkerAssignments,
   listMyWorkerQuestSnapshots,
   listAllMyWorkerQuestSnapshots,
-  listMyHirerQuestSnapshots,
+  listMyHirerProofReviewableQuestIds,
 };

@@ -1,4 +1,3 @@
-import React from "react";
 import { fireEvent, screen, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
@@ -7,6 +6,16 @@ import { AuthAdapter, AuthError, type AuthSession } from "../types";
 import { authMessages } from "../../../locales/authMessages";
 import { signInWithStagingTestAccount } from "../stagingTestAuth";
 
+let mockLocale: "en" | "th" = "th";
+let mockSearchParams: { sessionExpired?: string } = {};
+
+jest.mock("expo-router", () => ({
+  useLocalSearchParams: () => mockSearchParams,
+}));
+
+jest.mock("@/features/preferences/localeStore", () => ({
+  useLocale: () => ({ locale: mockLocale }),
+}));
 const mockSignInWithStagingTestAccount =
   signInWithStagingTestAccount as jest.Mock;
 
@@ -48,6 +57,11 @@ function createAdapter(): jest.Mocked<AuthAdapter> {
 }
 
 describe("LoginScreen", () => {
+  beforeEach(() => {
+    mockLocale = "th";
+    mockSearchParams = {};
+    mockSignInWithStagingTestAccount.mockReset();
+  });
   test("offers one Google sign-in action in Thai", async () => {
     const authAdapter = createAdapter();
     await renderWithQueryClient(<LoginScreen authAdapter={authAdapter} />);
@@ -153,4 +167,19 @@ describe("LoginScreen", () => {
       expect(screen.getByTestId("retry-button")).toBeTruthy();
     });
   });
+
+  test.each(["en", "th"] as const)(
+    "shows the session-expired message for sessionExpired=1 (%s)",
+    async (locale) => {
+      mockLocale = locale;
+      mockSearchParams = { sessionExpired: "1" };
+      const authAdapter = createAdapter();
+      await renderWithQueryClient(<LoginScreen authAdapter={authAdapter} />);
+
+      expect(screen.getByTestId("error-message").props.children).toBe(
+        authMessages[locale].errors.SESSION_EXPIRED
+      );
+      expect(screen.getByTestId("retry-button")).toBeTruthy();
+    }
+  );
 });

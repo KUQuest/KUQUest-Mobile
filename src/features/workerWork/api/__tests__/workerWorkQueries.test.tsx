@@ -1,12 +1,22 @@
-import { createElement } from "react";
+import React, { createElement } from "react";
 import { Pressable } from "react-native";
-import { act, fireEvent, waitFor } from "@testing-library/react-native";
+import {
+  act,
+  fireEvent,
+  renderHook,
+  waitFor,
+} from "@testing-library/react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import type { UploadAsset } from "@/api/fileUpload";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
+import { workerHomeKeys } from "@/features/workerHome/api/workerHomeKeys";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import type { ProofSendPlan } from "../../proofDraftPlan";
-import { useSubmitProofMutation } from "../workerWorkQueries";
+import {
+  useRemoveProofFileMutation,
+  useSubmitProofMutation,
+} from "../workerWorkQueries";
 
 jest.mock("@/api/QuestApi", () => ({
   createQuestIdempotencyKey: jest.fn(() => "idempotency-key"),
@@ -115,5 +125,47 @@ describe("useSubmitProofMutation", () => {
       "draft-new",
       "idempotency-key"
     );
+  });
+  it("invalidates the participation detail after submitting proof", async () => {
+    const queryClient = new QueryClient();
+    const key = workerHomeKeys.participationDetail("quest-1");
+    queryClient.setQueryData(key, { draft: true });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      createElement(QueryClientProvider, { client: queryClient }, children);
+    mockedService.submitProofDraft.mockResolvedValue({} as never);
+    const { result } = await renderHook(() => useSubmitProofMutation(), {
+      wrapper,
+    });
+    await act(async () => {
+      await result.current.mutateAsync({
+        questId: "quest-1",
+        viewerId: "worker-1",
+        plan: { kind: "existing", draftId: "draft-1" },
+      });
+    });
+    expect(queryClient.getQueryState(key)?.isInvalidated).toBe(true);
+    queryClient.clear();
+  });
+
+  it("invalidates the participation detail after removing a proof file", async () => {
+    const queryClient = new QueryClient();
+    const key = workerHomeKeys.participationDetail("quest-1");
+    queryClient.setQueryData(key, { draft: true });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      createElement(QueryClientProvider, { client: queryClient }, children);
+    mockedService.updateProofDraft.mockResolvedValue({} as never);
+    const { result } = await renderHook(() => useRemoveProofFileMutation(), {
+      wrapper,
+    });
+    await act(async () => {
+      await result.current.mutateAsync({
+        questId: "quest-1",
+        viewerId: "worker-1",
+        draftId: "draft-1",
+        fileIds: [],
+      });
+    });
+    expect(queryClient.getQueryState(key)?.isInvalidated).toBe(true);
+    queryClient.clear();
   });
 });

@@ -7,7 +7,13 @@ import {
   useCreateReviewMutation,
   useLiveQuestSnapshotQuery,
   useQuestAssignmentsQuery,
+  useQuestReviewsQuery,
+  useUpdateReviewMutation,
 } from "@/features/questBoard/api/questBoardQueries";
+import {
+  QuestActor,
+  QuestAssignmentStatus,
+} from "@/features/questBoard/domain/types";
 import { useLocale } from "@/features/preferences/localeStore";
 import { questReviewMessages } from "@/locales/questReviewMessages";
 import { getLocalizedErrorMessage } from "@/utils/error";
@@ -16,10 +22,9 @@ interface QuestReviewFeatureProps {
   questId?: string;
 }
 
-type WorkerOption = {
-  id: string;
-  label: string;
-};
+type ReviewTarget = { id: string; label: string };
+
+export const HIRER_REVIEW_TARGET_ID = "hirer";
 
 export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
   const { locale } = useLocale();
@@ -36,20 +41,30 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
     questId ?? null,
     viewerId || null
   );
+  const reviewsQuery = useQuestReviewsQuery(questId ?? null, viewerId || null);
   const createReviewMutation = useCreateReviewMutation();
-  // One key per Worker's pending review; a retry after an unknown outcome
-  // replays it, while a new review after a server answer gets a new key.
+  const updateReviewMutation = useUpdateReviewMutation();
   const reviewKeysRef = useRef<Record<string, string>>({});
-  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
-  const [reviewedWorkerIds, setReviewedWorkerIds] = useState<Set<string>>(
-    () => new Set()
-  );
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const workerOptions = useMemo<WorkerOption[]>(() => {
+  const actor = snapshotQuery.data?.actor;
+  const targetOptions = useMemo<ReviewTarget[]>(() => {
+    if (actor === QuestActor.WORKER) {
+      const quest = snapshotQuery.data?.quest;
+      const hirerName =
+        quest && "hirerName" in quest ? quest.hirerName : undefined;
+      return [
+        {
+          id: HIRER_REVIEW_TARGET_ID,
+          label: hirerName || messages.hirerLabel,
+        },
+      ];
+    }
+    if (actor !== QuestActor.HIRER) return [];
     const participantNames = new Map(
       (snapshotQuery.data?.participants ?? []).map((participant) => [
         participant.id,
@@ -59,7 +74,10 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
     const workerIds = [
       ...new Set(
         (assignmentsQuery.data ?? [])
-          .filter((assignment) => assignment.state !== "ASSIGNMENT_CANCELLED")
+          .filter(
+            (assignment) =>
+              assignment.state !== QuestAssignmentStatus.ASSIGNMENT_CANCELLED
+          )
           .map((assignment) => assignment.workerId)
       ),
     ];
@@ -68,21 +86,39 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
       label:
         participantNames.get(workerId) ?? messages.workerFallback(workerId),
     }));
-  }, [messages, assignmentsQuery.data, snapshotQuery.data?.participants]);
-
-  const remainingWorkers = workerOptions.filter(
-    (worker) => !reviewedWorkerIds.has(worker.id)
-  );
-  const selectedWorker =
-    remainingWorkers.find((worker) => worker.id === selectedWorkerId) ??
-    remainingWorkers[0] ??
+  }, [actor, assignmentsQuery.data, messages, snapshotQuery.data]);
+  const selectedTarget =
+    targetOptions.find((target) => target.id === selectedId) ??
+    targetOptions[0] ??
     null;
+  const authored = (reviewsQuery.data ?? []).filter(
+    (review) => review.reviewerId === viewerId
+  );
+  const existingReview = selectedTarget
+    ? actor === QuestActor.WORKER
+      ? authored[0]
+      : authored.find((review) => review.revieweeId === selectedTarget.id)
+    : undefined;
+  const reviewStateKey = `${selectedTarget?.id}:${existingReview?.id ?? ""}:${existingReview?.rating}:${existingReview?.comment}`;
+  const [previousReviewStateKey, setPreviousReviewStateKey] = useState<
+    string | null
+  >(null);
+  if (reviewStateKey !== previousReviewStateKey) {
+    setPreviousReviewStateKey(reviewStateKey);
+    setRating(existingReview?.rating ?? 0);
+    setComment(existingReview?.comment ?? "");
+    setSubmitError(null);
+  }
   const loading =
     sessionQuery.isPending ||
     snapshotQuery.isPending ||
-    assignmentsQuery.isPending;
+    assignmentsQuery.isPending ||
+    reviewsQuery.isPending;
   const loadError =
-    snapshotQuery.error || assignmentsQuery.error || sessionQuery.error;
+    snapshotQuery.error ||
+    assignmentsQuery.error ||
+    reviewsQuery.error ||
+    sessionQuery.error;
   const loadErrorMessage = loadError
     ? getLocalizedErrorMessage(loadError, locale, {
         fallback: messages.errorDescription,
@@ -91,12 +127,12 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
   const retryLoad = () => {
     void snapshotQuery.refetch();
     void assignmentsQuery.refetch();
+    void reviewsQuery.refetch();
   };
   const canReview = snapshotQuery.data?.capabilities.canCreateReview === true;
-  const allReviewed = workerOptions.length > 0 && remainingWorkers.length === 0;
 
   const handleSubmit = async () => {
-    if (!questId || !selectedWorker) return;
+    if (!questId || !viewerId || !selectedTarget || loadError) return;
     setSubmitError(null);
     setSuccessMessage(null);
     const trimmedComment = comment.trim();
@@ -109,32 +145,37 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
       return;
     }
 
-    const revieweeId = selectedWorker.id;
-    const idempotencyKey = (reviewKeysRef.current[revieweeId] ??=
+    const idempotencyKey = (reviewKeysRef.current[selectedTarget.id] ??=
       createQuestIdempotencyKey());
     try {
-      await createReviewMutation.mutateAsync({
-        questId,
-        input: {
-          revieweeId,
-          rating,
-          ...(trimmedComment ? { comment: trimmedComment } : {}),
-        },
-        viewerId,
-        idempotencyKey,
-      });
-      delete reviewKeysRef.current[revieweeId];
-      setReviewedWorkerIds((current) => {
-        const next = new Set(current);
-        next.add(revieweeId);
-        return next;
-      });
-      setRating(0);
-      setComment("");
+      if (existingReview) {
+        await updateReviewMutation.mutateAsync({
+          questId,
+          viewerId,
+          reviewId: existingReview.id,
+          revieweeId: existingReview.revieweeId,
+          input: { rating, comment: trimmedComment || undefined },
+          idempotencyKey,
+        });
+      } else {
+        await createReviewMutation.mutateAsync({
+          questId,
+          viewerId,
+          input: {
+            rating,
+            ...(trimmedComment ? { comment: trimmedComment } : {}),
+            ...(actor === QuestActor.HIRER
+              ? { revieweeId: selectedTarget.id }
+              : {}),
+          },
+          idempotencyKey,
+        });
+      }
+      delete reviewKeysRef.current[selectedTarget.id];
       setSuccessMessage(messages.successDescription);
     } catch (caught) {
       if (caught instanceof ApiError && caught.status < 500) {
-        delete reviewKeysRef.current[revieweeId];
+        delete reviewKeysRef.current[selectedTarget.id];
       }
       setSubmitError(
         getLocalizedErrorMessage(caught, locale, {
@@ -145,26 +186,27 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
   };
 
   return {
-    allReviewed,
+    actor,
     canReview,
     comment,
     createReviewMutation,
+    updateReviewMutation,
     handleSubmit,
     loading,
     loadError: loadErrorMessage,
+    mode: existingReview ? "edit" : "create",
     messages,
     rating,
-    remainingWorkers,
-    questTitle: snapshotQuery.data?.quest.title,
     retryLoad,
-    selectedWorker,
+    selectedTarget,
     setComment,
     setRating,
-    setSelectedWorkerId,
+    setSelectedId,
     setSubmitError,
     setSuccessMessage,
     submitError,
     successMessage,
-    workerOptions,
+    targetOptions,
+    questTitle: snapshotQuery.data?.quest.title,
   };
 }

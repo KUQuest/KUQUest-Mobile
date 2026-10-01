@@ -21,7 +21,12 @@ let mockProofFileLinksQuery: {
 };
 
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ back: mockBack, push: jest.fn() }),
+  useRouter: () => ({
+    back: mockBack,
+    push: jest.fn(),
+    replace: jest.fn(),
+    canGoBack: () => true,
+  }),
 }));
 jest.mock("@/features/auth/sessionQueries", () => ({
   useSessionQuery: () => ({ data: { user: { id: "hirer-1" } } }),

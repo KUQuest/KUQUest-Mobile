@@ -23,6 +23,7 @@ import type {
 } from "./selectRosterViewModel";
 import { useSelectRosterActions } from "./useSelectRosterActions";
 import { getLocalizedErrorMessage } from "@/utils/error";
+import { goBackOrReplace } from "@/utils/navigation";
 
 export function useSelectRosterScreen(
   questId?: string
@@ -40,7 +41,14 @@ export function useSelectRosterScreen(
     Boolean(questId && viewerId)
   );
   const snapshot = snapshotQuery.data;
-  const onBack = useCallback(() => router.back(), [router]);
+  const onBack = useCallback(
+    () => goBackOrReplace(router, "/(tabs)"),
+    [router]
+  );
+  const onSelected = useCallback(() => {
+    if (!questId) return;
+    router.replace({ pathname: "/quest/[id]/manage", params: { id: questId } });
+  }, [questId, router]);
   const onOpenProfile = useCallback(
     (memberId: string) => router.push(`/profile/${memberId}`),
     [router]
@@ -50,7 +58,7 @@ export function useSelectRosterScreen(
     viewerId,
     messages,
     groupMessages,
-    onSelectSuccess: onBack,
+    onSelectSuccess: onSelected,
     refetchSnapshot: snapshotQuery.refetch,
   });
 

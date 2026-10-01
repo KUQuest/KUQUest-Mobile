@@ -1,3 +1,7 @@
+import {
+  QuestApplicationStatus,
+  QuestStatus,
+} from "@/features/questBoard/domain/types";
 import { fireEvent, waitFor } from "@testing-library/react-native";
 
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
@@ -184,6 +188,38 @@ describe("WorkerWorkManagementScreen", () => {
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/quest/[id]",
       params: { id: "quest-application" },
+    });
+  });
+  it("opens Work Hub for a selected application with viewerId", async () => {
+    mockListSnapshots.mockResolvedValue([]);
+    mockListApplications.mockResolvedValue([
+      {
+        id: "application-selected",
+        questId: "quest-selected",
+        memberId: "worker-1",
+        kind: "SINGLE",
+        state: QuestApplicationStatus.APPLICATION_SELECTED,
+        appliedAt: "2026-09-01T09:00:00Z",
+        quest: {
+          title: "Selected Quest",
+          startTime: "2026-10-01T09:00:00Z",
+          dueAt: null,
+          mode: "CANDIDATE",
+          participation: "SINGLE",
+          state: QuestStatus.QUEST_ASSIGNED,
+        },
+      },
+    ]);
+
+    const screen = await renderWithQueryClient(<WorkerWorkManagementScreen />);
+    await waitFor(() => expect(screen.getByText("Selected")).toBeTruthy());
+    await fireEvent.press(
+      screen.getByTestId("worker-work-open-quest-selected")
+    );
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]/work",
+      params: { id: "quest-selected", viewerId: "worker-1" },
     });
   });
   it("keeps Assignment cards visible when Candidate applications fail to load", async () => {

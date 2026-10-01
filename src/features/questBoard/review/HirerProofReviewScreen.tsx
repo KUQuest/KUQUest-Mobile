@@ -16,6 +16,7 @@ import { useHirerProofReviewFeature } from "./useHirerProofReviewFeature";
 import { ProofReviewModal } from "./components/ProofReviewModal";
 import { ProofReviewSubmissionCard } from "./components/ProofReviewSubmissionCard";
 import { QuestReviewModal } from "./components/QuestReviewModal";
+import { goBackOrReplace } from "@/utils/navigation";
 
 export interface HirerProofReviewScreenProps {
   questId?: string;
@@ -58,7 +59,7 @@ export default function HirerProofReviewScreen({
     <ScreenLayout className="flex-1 bg-ku-background">
       <TopBar
         backLabel={messages.back}
-        onBackPress={() => router.back()}
+        onBackPress={() => goBackOrReplace(router, "/(tabs)")}
         title={messages.proofReviewTitle}
       />
       {snapshotQuery.isPending ? (
@@ -77,7 +78,7 @@ export default function HirerProofReviewScreen({
         <StateView
           actionLabel={messages.back}
           description={messages.proofReviewNothingPending}
-          onAction={() => router.back()}
+          onAction={() => goBackOrReplace(router, "/(tabs)")}
           title={messages.proofReviewTitle}
           variant="empty"
         />

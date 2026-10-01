@@ -10,6 +10,7 @@ import {
   useSelectApplicationMutation,
   useSelectCandidateTeamMutation,
 } from "@/features/questBoard/api/questBoardQueries";
+import { useCandidateSelection } from "@/features/questBoard/useCandidateSelection";
 import type { GroupQuestMessages } from "@/locales/groupQuestMessages";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 
@@ -53,62 +54,73 @@ export function useSelectRosterActions({
   const rejectApplicationMutation = useRejectApplicationMutation();
   const selectCandidateTeamMutation = useSelectCandidateTeamMutation();
   const rejectCandidateTeamMutation = useRejectCandidateTeamMutation();
-  const [pendingAction, setPendingAction] =
+  const [pendingReject, setPendingReject] =
     useState<PendingRosterAction | null>(null);
+  const selection = useCandidateSelection({
+    questId,
+    messages,
+    groupMessages,
+    onSelect: ({ kind, proposalId }) => {
+      if (!questId) return Promise.reject(new Error("Quest ID is required"));
+      return kind === "application"
+        ? selectApplicationMutation.mutateAsync({
+            questId,
+            applicationId: proposalId,
+            viewerId,
+            idempotencyKey: createQuestIdempotencyKey(),
+          })
+        : selectCandidateTeamMutation.mutateAsync({
+            questId,
+            teamId: proposalId,
+            viewerId,
+            idempotencyKey: createQuestIdempotencyKey(),
+          });
+    },
+    onSuccess: onSelectSuccess,
+  });
 
-  async function perform(
-    targetQuestId: string,
-    action: PendingRosterAction,
-    run: RosterCommand
-  ) {
-    setPendingAction(action);
+  async function perform(action: PendingRosterAction, run: RosterCommand) {
+    if (!questId) return;
+    setPendingReject(action);
     try {
-      await run(targetQuestId, createQuestIdempotencyKey());
-      if (action.kind === "select") onSelectSuccess();
+      await run(questId, createQuestIdempotencyKey());
     } catch (caught) {
       showErrorAlert(messages.actionFailedTitle, caught);
-      if (action.kind === "reject") await refetchSnapshot();
+      await refetchSnapshot();
     } finally {
-      setPendingAction(null);
+      setPendingReject(null);
     }
   }
 
-  function confirm(
+  function confirmReject(
     title: string,
     message: string,
     action: PendingRosterAction,
     run: RosterCommand
   ) {
-    if (!questId || pendingAction) return;
+    if (!questId || pendingReject || selection.pending) return;
     showConfirmModal({
       title,
       message,
-      confirmLabel:
-        action.kind === "select"
-          ? groupMessages.selectProposal
-          : groupMessages.reject,
+      confirmLabel: groupMessages.reject,
       cancelLabel: groupMessages.cancel,
-      onConfirm: () => void perform(questId, action, run),
+      onConfirm: () => void perform(action, run),
     });
   }
+
+  const pendingAction: PendingRosterAction | null = selection.pending
+    ? { proposalId: selection.pending.proposalId, kind: "select" }
+    : pendingReject;
 
   return {
     pendingAction,
     selectApplication: (application) =>
-      confirm(
-        messages.confirmSelectCandidateTitle,
-        messages.confirmSelectCandidateMessage,
-        { proposalId: application.id, kind: "select" },
-        (targetQuestId, idempotencyKey) =>
-          selectApplicationMutation.mutateAsync({
-            questId: targetQuestId,
-            applicationId: application.id,
-            viewerId,
-            idempotencyKey,
-          })
-      ),
+      selection.confirmSelection({
+        proposalId: application.id,
+        kind: "application",
+      }),
     rejectApplication: (application) =>
-      confirm(
+      confirmReject(
         messages.confirmRejectCandidateTitle,
         messages.confirmRejectMessage,
         { proposalId: application.id, kind: "reject" },
@@ -121,20 +133,9 @@ export function useSelectRosterActions({
           })
       ),
     selectTeam: (team) =>
-      confirm(
-        messages.confirmSelectTeamTitle,
-        messages.confirmSelectTeamMessage,
-        { proposalId: team.id, kind: "select" },
-        (targetQuestId, idempotencyKey) =>
-          selectCandidateTeamMutation.mutateAsync({
-            questId: targetQuestId,
-            teamId: team.id,
-            viewerId,
-            idempotencyKey,
-          })
-      ),
+      selection.confirmSelection({ proposalId: team.id, kind: "team" }),
     rejectTeam: (team) =>
-      confirm(
+      confirmReject(
         messages.confirmRejectTeamTitle,
         messages.confirmRejectMessage,
         { proposalId: team.id, kind: "reject" },

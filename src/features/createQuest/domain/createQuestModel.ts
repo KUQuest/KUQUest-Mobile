@@ -26,6 +26,9 @@ export interface StoredQuestDraft {
   draft: QuestDraft;
   step: QuestDraftStep;
   state: QuestDraftState;
+  serverQuestId?: string;
+  createIdempotencyKey?: string;
+  publishIdempotencyKey?: string;
 }
 
 export function getHeadcountForParticipation(
@@ -644,10 +647,20 @@ export function parseStoredQuestSnapshot(
       record.draft && typeof record.draft === "object"
         ? (record.draft as Record<string, unknown>)
         : record;
+    const optionalString = (key: string) => {
+      const value = record[key];
+      return typeof value === "string" && value.trim() ? value : undefined;
+    };
+    const serverQuestId = optionalString("serverQuestId");
+    const createIdempotencyKey = optionalString("createIdempotencyKey");
+    const publishIdempotencyKey = optionalString("publishIdempotencyKey");
     return {
       draft: parseDraftRecord(draftRecord),
       step: parseStep(record.step),
       state: parseState(record.state),
+      ...(serverQuestId ? { serverQuestId } : {}),
+      ...(createIdempotencyKey ? { createIdempotencyKey } : {}),
+      ...(publishIdempotencyKey ? { publishIdempotencyKey } : {}),
     };
   } catch {
     return null;

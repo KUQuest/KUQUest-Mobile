@@ -110,6 +110,22 @@ export function useOnboardingController() {
   const reduceMotion = useReducedMotionPreference();
   const initialLoadPending =
     onboardingQuery.isPending && formState.hydrationState === "waiting";
+  const previouslyCompletedRef = useRef<boolean | undefined>(undefined);
+
+  useEffect(() => {
+    const completed = onboardingQuery.data?.completed;
+    if (completed === undefined) return;
+    const previouslyCompleted = previouslyCompletedRef.current;
+    previouslyCompletedRef.current = completed;
+    if (
+      !isEditMode &&
+      previouslyCompleted === false &&
+      completed &&
+      !persistence.isSubmitting
+    ) {
+      routerRef.current.replace("/");
+    }
+  }, [isEditMode, onboardingQuery.data?.completed, persistence.isSubmitting]);
 
   const leaveRegistration = useCallback(() => {
     if (isEditMode) {

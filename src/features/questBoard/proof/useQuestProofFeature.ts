@@ -1,3 +1,4 @@
+import { serverNow } from "@/api/serverClock";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { showConfirmModal } from "@/components/ui/SweetAlert";
@@ -12,9 +13,13 @@ import { questBoardMessages } from "@/locales/questBoardMessages";
 import { questWorkMessages } from "@/locales/questWorkMessages";
 import { formatRelativeRemaining, getRouteParam } from "@/utils";
 import { getLocalizedErrorMessage } from "@/utils/error";
+import { goBackOrReplace } from "@/utils/navigation";
 
-import { useLiveQuestSnapshotQuery } from "../api/questBoardQueries";
 import { liveQuestService } from "../live/liveQuestService";
+import {
+  useConfirmCompletionMutation,
+  useLiveQuestSnapshotQuery,
+} from "../api/questBoardQueries";
 import type { LiveQuestSnapshot } from "../live/liveQuestTypes";
 import type { ProofDraftAsset } from "./components/ProofSubmissionSheet";
 import {
@@ -74,7 +79,10 @@ export function useQuestProofFeature({
   onReturnToWorkHub,
 }: QuestProofFeatureOptions) {
   const router = useRouter();
-  const goBack = useCallback(() => router.back(), [router]);
+  const goBack = useCallback(
+    () => goBackOrReplace(router, "/(tabs)"),
+    [router]
+  );
   const params = useLocalSearchParams<{
     id?: string | string[];
     viewerId?: string | string[];
@@ -90,6 +98,7 @@ export function useQuestProofFeature({
     getRouteParam(params.studentId);
   const sessionQuery = useSessionQuery();
   const resolvedViewerId = explicitViewerId ?? sessionQuery.data?.user.id;
+  const confirmCompletionMutation = useConfirmCompletionMutation();
   const snapshotPollingInterval = useCallback(
     (currentSnapshot: LiveQuestSnapshot | undefined): number | false => {
       if (!currentSnapshot || !resolvedViewerId) return false;
@@ -117,7 +126,7 @@ export function useQuestProofFeature({
   const [retryAssets, setRetryAssets] = useState<
     Record<number, ProofDraftAsset>
   >({});
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(() => serverNow());
   const [commandError, setCommandError] = useState<string | null>(null);
   const snapshotError = snapshotQuery.error
     ? getLocalizedErrorMessage(snapshotQuery.error, locale, {
@@ -128,7 +137,7 @@ export function useQuestProofFeature({
 
   useEffect(() => {
     if (!snapshot?.dueAt) return undefined;
-    const timer = setInterval(() => setNow(Date.now()), 30_000);
+    const timer = setInterval(() => setNow(serverNow()), 30_000);
     return () => clearInterval(timer);
   }, [snapshot?.dueAt]);
 
@@ -395,6 +404,7 @@ export function useQuestProofFeature({
   const confirmCompletion = useCallback(() => {
     if (
       !resolvedQuestId ||
+      !resolvedViewerId ||
       !snapshot ||
       snapshot.proofRequired ||
       snapshot.state !== QuestStatus.QUEST_IN_PROGRESS ||
@@ -408,14 +418,18 @@ export function useQuestProofFeature({
       confirmLabel: messages.confirmCompletion,
       cancelLabel: messages.cancel,
       onConfirm: () => {
-        void liveQuestService
-          .confirmCompletion(resolvedQuestId, createQuestIdempotencyKey())
+        void confirmCompletionMutation
+          .mutateAsync({
+            questId: resolvedQuestId,
+            viewerId: resolvedViewerId,
+            idempotencyKey: createQuestIdempotencyKey(),
+          })
           .then(() => refreshAuthoritatively())
           .then(() => {
             onReturnToWorkHub?.();
             if (!onReturnToWorkHub) router.replace("/my-quests");
           })
-          .catch((caught) =>
+          .catch((caught: unknown) =>
             setCommandError(
               getLocalizedErrorMessage(caught, locale, {
                 fallback: messages.manageSnapshotError,
@@ -425,11 +439,13 @@ export function useQuestProofFeature({
       },
     });
   }, [
+    confirmCompletionMutation,
     locale,
     messages,
     onReturnToWorkHub,
     refreshAuthoritatively,
     resolvedQuestId,
+    resolvedViewerId,
     router,
     snapshot,
   ]);

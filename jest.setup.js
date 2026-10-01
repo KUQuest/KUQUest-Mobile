@@ -22,7 +22,21 @@ jest.mock("react-native-reanimated", () => ({
   cancelAnimation: jest.fn(),
   useAnimatedKeyboard: () => ({ height: { value: 0 }, state: { value: 0 } }),
   useAnimatedStyle: (updater) => updater(),
-  useSharedValue: (value) => ({ value }),
+  useSharedValue: (initial) => {
+    let current = initial;
+    return {
+      get value() {
+        return current;
+      },
+      set value(next) {
+        current = next;
+      },
+      get: () => current,
+      set: (next) => {
+        current = next;
+      },
+    };
+  },
   withRepeat: (value) => value,
   withSequence: (...values) => values[values.length - 1],
   withTiming: (value) => value,

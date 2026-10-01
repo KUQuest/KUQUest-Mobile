@@ -1,3 +1,4 @@
+import { serverNow } from "@/api/serverClock";
 import { useCallback, useRef, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useLocale } from "@/features/preferences/localeStore";
@@ -10,13 +11,19 @@ import { questWorkMessages } from "@/locales/questWorkMessages";
 import { isTerminalStatus } from "@/domain/questLifecycle";
 import { getRouteParam } from "@/utils";
 import { getLocalizedErrorMessage } from "@/utils/error";
-import { useLiveQuestSnapshotQuery } from "../api/questBoardQueries";
-import { liveQuestService } from "../live/liveQuestService";
+import {
+  useConfirmCompletionMutation,
+  useLiveQuestSnapshotQuery,
+  useRespondToEditMutation,
+  useStartWorkMutation,
+} from "../api/questBoardQueries";
 import { useFileDispute } from "../dispute/useFileDispute";
 import type { LiveQuestSnapshot } from "../live/liveQuestTypes";
 import { QuestEditResponseDecision, QuestStatus } from "../domain/types";
 
 const POLL_INTERVAL_MS = 5_000;
+// Keep delays below the signed 32-bit timer limit to avoid a 1ms clamp.
+const MAX_TIMER_INTERVAL_MS = 2_147_000_000;
 
 /** Start Work rejections that mean the local Quest/Assignment view is stale. */
 const START_WORK_RELOAD_CODES: Record<string, true> = {
@@ -31,21 +38,18 @@ export interface QuestWorkFeatureProps {
   viewerId?: string;
   /** Compatibility alias used by existing Quest detail routes. */
   studentId?: string;
-  editRequestId?: string;
 }
 
 export function useQuestWorkFeature({
   questId,
   viewerId,
   studentId,
-  editRequestId,
 }: QuestWorkFeatureProps) {
   const router = useRouter();
   const params = useLocalSearchParams<{
     id?: string | string[];
     viewerId?: string | string[];
     studentId?: string | string[];
-    editRequestId?: string | string[];
   }>();
   const routeQuestId = questId ?? getRouteParam(params.id);
   const routeViewerId =
@@ -53,37 +57,45 @@ export function useQuestWorkFeature({
     studentId ??
     getRouteParam(params.viewerId) ??
     getRouteParam(params.studentId);
-  const resolvedEditRequestId =
-    editRequestId ?? getRouteParam(params.editRequestId);
   const sessionQuery = useSessionQuery();
   const resolvedViewerId = routeViewerId ?? sessionQuery.data?.user.id;
   const { locale } = useLocale();
   const messages = questWorkMessages[locale];
+  const startWorkMutation = useStartWorkMutation();
+  const respondToEditMutation = useRespondToEditMutation();
+  const confirmCompletionMutation = useConfirmCompletionMutation();
   const snapshotPollingInterval = useCallback(
     (currentSnapshot: LiveQuestSnapshot | undefined): number | false => {
-      // A viewer who still has to press Start Work drives the transition; the
-      // Start Work button follows the screen clock, not polling.
       if (
         !currentSnapshot ||
-        currentSnapshot.state !== QuestStatus.QUEST_ASSIGNED ||
-        currentSnapshot.capabilities.canStartWork
-      )
+        currentSnapshot.state !== QuestStatus.QUEST_ASSIGNED
+      ) {
         return false;
-      const startAt = new Date(currentSnapshot.quest.startTime).getTime();
-      if (!Number.isFinite(startAt)) return false;
-      // Waiting on other required starters: refresh until the server reports
-      // QUEST_IN_PROGRESS or leaves QUEST_ASSIGNED.
-      return Math.max(startAt - Date.now(), POLL_INTERVAL_MS);
+      }
+      const startAt = Date.parse(currentSnapshot.quest.startTime);
+      const dueAt = Date.parse(currentSnapshot.dueAt ?? "");
+      const now = serverNow();
+      if (
+        !Number.isFinite(startAt) ||
+        !Number.isFinite(dueAt) ||
+        now >= dueAt
+      ) {
+        return false;
+      }
+      // A required starter who can act needs one final refresh at dueAt; the
+      // failure transition must not depend on the Server emitting a socket
+      // event. Other required starters are polled until the Quest transitions.
+      const nextRefreshMs = currentSnapshot.capabilities.canStartWork
+        ? dueAt - now
+        : Math.max(startAt - now, POLL_INTERVAL_MS);
+      return Math.min(nextRefreshMs, MAX_TIMER_INTERVAL_MS);
     },
     []
   );
-  const snapshotOptions = resolvedEditRequestId
-    ? { editRequestId: resolvedEditRequestId }
-    : {};
   const snapshotQuery = useLiveQuestSnapshotQuery(
     routeQuestId ?? null,
     resolvedViewerId ?? null,
-    snapshotOptions,
+    {},
     Boolean(routeViewerId || !sessionQuery.isPending),
     snapshotPollingInterval
   );
@@ -123,16 +135,23 @@ export function useQuestWorkFeature({
 
   const respondToEdit = useCallback(
     async (decision: QuestEditResponseDecision) => {
-      if (!snapshot?.editRequest || !snapshot.capabilities.canRespondToEdit)
+      if (
+        !resolvedViewerId ||
+        !snapshot?.editRequest ||
+        !snapshot.capabilities.canRespondToEdit
+      ) {
         return;
+      }
       setEditSending(true);
       setEditFeedback(undefined);
       try {
-        await liveQuestService.respondToEditRequest(
-          snapshot.editRequest.requestId,
-          { decision },
-          createQuestIdempotencyKey()
-        );
+        await respondToEditMutation.mutateAsync({
+          questId: routeQuestId ?? snapshot.quest.id,
+          viewerId: resolvedViewerId,
+          requestId: snapshot.editRequest.requestId,
+          decision,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
         setEditFeedback(messages.editUpdated);
         await refreshSnapshot().catch(() => undefined);
       } catch (error) {
@@ -145,22 +164,32 @@ export function useQuestWorkFeature({
         setEditSending(false);
       }
     },
-    [locale, messages, refreshSnapshot, snapshot]
+    [
+      locale,
+      messages,
+      refreshSnapshot,
+      respondToEditMutation,
+      resolvedViewerId,
+      routeQuestId,
+      snapshot,
+    ]
   );
   const confirmCompletion = useCallback(async () => {
     if (
       !snapshot?.capabilities.canConfirmCompletion ||
       !routeQuestId ||
+      !resolvedViewerId ||
       confirmationSending
     )
       return;
     setConfirmationSending(true);
     setCommandError(null);
     try {
-      await liveQuestService.confirmCompletion(
-        routeQuestId,
-        createQuestIdempotencyKey()
-      );
+      await confirmCompletionMutation.mutateAsync({
+        questId: routeQuestId,
+        viewerId: resolvedViewerId,
+        idempotencyKey: createQuestIdempotencyKey(),
+      });
       const refreshedSnapshot = await refreshSnapshot();
       if (
         refreshedSnapshot &&
@@ -179,9 +208,11 @@ export function useQuestWorkFeature({
     }
   }, [
     confirmationSending,
+    confirmCompletionMutation,
     locale,
     messages,
     refreshSnapshot,
+    resolvedViewerId,
     routeQuestId,
     router,
     snapshot,
@@ -191,6 +222,7 @@ export function useQuestWorkFeature({
     if (
       !snapshot?.capabilities.canStartWork ||
       !routeQuestId ||
+      !resolvedViewerId ||
       startWorkSending
     )
       return;
@@ -199,10 +231,11 @@ export function useQuestWorkFeature({
     setStartWorkSending(true);
     setCommandError(null);
     try {
-      const result = await liveQuestService.startWork(
-        routeQuestId,
-        idempotencyKey
-      );
+      const result = await startWorkMutation.mutateAsync({
+        questId: routeQuestId,
+        viewerId: resolvedViewerId,
+        idempotencyKey,
+      });
       startWorkKeyRef.current = null;
       setRecordedStartedAt(result.startedAt);
       await refreshSnapshot().catch(() => undefined);
@@ -247,7 +280,9 @@ export function useQuestWorkFeature({
     refreshSnapshot,
     routeQuestId,
     snapshot,
+    startWorkMutation,
     startWorkSending,
+    resolvedViewerId,
   ]);
 
   const { confirmFileDispute } = useFileDispute();

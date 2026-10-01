@@ -9,12 +9,17 @@ import { authService } from "@/features/auth/AuthService";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestService";
 import SelectRosterRoute from "../select-roster";
-
 const mockBack = jest.fn();
 const mockPush = jest.fn();
+const mockReplace = jest.fn();
 
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: mockPush, replace: jest.fn(), back: mockBack }),
+  useRouter: () => ({
+    push: mockPush,
+    replace: mockReplace,
+    back: mockBack,
+    canGoBack: () => true,
+  }),
   useLocalSearchParams: () => ({ id: "quest-1" }),
 }));
 
@@ -118,7 +123,6 @@ function createSnapshot(
       canCancel: false,
       canReviewProof: false,
       canCreateReview: false,
-      canUpdateReview: false,
     },
     ...overrides,
   };
@@ -136,7 +140,7 @@ describe("SelectRosterRoute", () => {
     });
   });
 
-  it("selects a pending individual candidate after confirmation and returns to the previous screen", async () => {
+  it("selects a pending individual candidate after confirmation and replaces with Manage", async () => {
     const snapshot = createSnapshot({
       applications: [
         {
@@ -189,8 +193,12 @@ describe("SelectRosterRoute", () => {
       );
     });
     await waitFor(() => {
-      expect(mockBack).toHaveBeenCalled();
+      expect(mockReplace).toHaveBeenCalledWith({
+        pathname: "/quest/[id]/manage",
+        params: { id: "quest-1" },
+      });
     });
+    expect(mockBack).not.toHaveBeenCalled();
   });
 
   it("rejects a pending team proposal after confirmation and refreshes the list", async () => {

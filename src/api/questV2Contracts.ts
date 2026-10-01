@@ -59,6 +59,35 @@ export const questV2BoardCardSchema = z.object({
   startTime: z.string(),
   dueAt: z.string().nullable(),
   hirerName: z.string(),
+  hirerProfile: z
+    .object({
+      id: z.string().uuid(),
+      version: z.number().int().min(1),
+      firstName: z.string(),
+      lastName: z.string(),
+      bio: z.string().nullable(),
+      academicYear: z.number().int().nullable(),
+      department: z
+        .object({
+          id: z.string().uuid(),
+          name: z.string(),
+          faculty: z.object({ name: z.string() }),
+        })
+        .nullable(),
+      avatar: z
+        .object({
+          fileId: z.string().uuid(),
+          url: z.string().url(),
+        })
+        .nullable(),
+      occupation: z
+        .object({
+          id: z.string().uuid(),
+          name: z.enum(["Staff", "Lecturer", "Student"]),
+        })
+        .nullable(),
+    })
+    .optional(),
   location: z.string().nullable(),
 });
 export type QuestV2BoardCard = z.infer<typeof questV2BoardCardSchema>;
@@ -570,6 +599,9 @@ export const questV2ReviewSchema = z.object({
   comment: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
+});
+export const questV2ReviewListDataSchema = z.object({
+  items: z.array(questV2ReviewSchema),
 });
 const questV2NonBlankString = (max: number) =>
   z

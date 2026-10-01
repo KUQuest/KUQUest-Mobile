@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { Pressable, Text, View } from "@/tw";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { LogOut, MessageCircle, Pencil, Star } from "lucide-react-native";
+import {
+  LogOut,
+  MessageCircle,
+  Pencil,
+  ShieldCheck,
+  Star,
+} from "lucide-react-native";
 import { cn } from "@/tw/cn";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
@@ -111,26 +117,48 @@ export default function QuestDetailScreen(props: QuestDetailScreenProps) {
             </Text>
           </Pressable>
         </View>
-      ) : actionBar?.isPostView && actionBar.canReview ? (
+      ) : actionBar?.isPostView &&
+        (actionBar.canReviewProof || actionBar.canReview) ? (
         <View
           className={styles.actionBar}
           style={{ paddingBottom: getActionBarPaddingBottom(insets.bottom) }}
         >
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setReviewOpen(true)}
-            className={styles.primaryAction}
-            testID="quest-review-button"
-          >
-            <Star color={colors.onPrimary} size={19} strokeWidth={2.2} />
-            <Text className={styles.primaryActionText}>
-              {messages.reviewQuest}
-            </Text>
-          </Pressable>
-          <QuestReviewModal
-            onClose={() => setReviewOpen(false)}
-            questId={reviewOpen ? quest.id : null}
-          />
+          {actionBar.canReviewProof ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={actionBar.onReviewProof}
+              className={styles.primaryAction}
+              testID="quest-detail-review-proof"
+            >
+              <ShieldCheck
+                color={colors.onPrimary}
+                size={19}
+                strokeWidth={2.2}
+              />
+              <Text className={styles.primaryActionText}>
+                {messages.proofReviewTitle}
+              </Text>
+            </Pressable>
+          ) : null}
+          {actionBar.canReview ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setReviewOpen(true)}
+              className={styles.primaryAction}
+              testID="quest-review-button"
+            >
+              <Star color={colors.onPrimary} size={19} strokeWidth={2.2} />
+              <Text className={styles.primaryActionText}>
+                {messages.reviewQuest}
+              </Text>
+            </Pressable>
+          ) : null}
+          {actionBar.canReview ? (
+            <QuestReviewModal
+              onClose={() => setReviewOpen(false)}
+              questId={reviewOpen ? quest.id : null}
+            />
+          ) : null}
         </View>
       ) : actionBar &&
         (actionBar.canMessageOwner || actionBar.canShowWithdraw) ? (

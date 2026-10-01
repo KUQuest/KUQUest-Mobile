@@ -17,10 +17,10 @@ import {
   fileNameFromUri,
   limitImagePixels,
   mimeTypeFromUri,
-  type UploadAsset,
 } from "@/api/fileUpload";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { getRouteParam } from "@/utils/navigation";
+import { subscribeToQuestEvents } from "@/features/questBoard/live/questEvents";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import { useLocale } from "@/features/preferences/localeStore";
 import { chatMessages } from "@/locales/chatMessages";
@@ -55,6 +55,31 @@ import { ConversationMode } from "../chatTypes";
 export { ConversationMode };
 export const MAX_MESSAGE_LENGTH = 1000;
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+
+function createTemporaryAttachmentId(): string {
+  return `temp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+function fallbackAttachmentName(uri: string): string {
+  return fileNameFromUri(uri, `chat-${Date.now()}.jpg`);
+}
+function getAttachmentUploadErrorMessage(
+  error: unknown,
+  locale: Parameters<typeof getLocalizedErrorMessage>[1]
+): string {
+  const messages = chatMessages[locale];
+  if (error instanceof ApiError && error.status === 429) {
+    const retryAfterMs = error.retryAfterMs;
+    return typeof retryAfterMs === "number" &&
+      Number.isFinite(retryAfterMs) &&
+      retryAfterMs >= 0
+      ? messages.attachmentRateLimitedWait(Math.ceil(retryAfterMs / 1000))
+      : messages.attachmentRateLimited;
+  }
+  return getLocalizedErrorMessage(error, locale, {
+    fallback: messages.loadError,
+  });
+}
 
 type ChatRouteSearchParams = Partial<
   Record<keyof ChatRouteParams, string | string[]>
@@ -97,6 +122,32 @@ export function useChatConversationController(
     viewerId,
     conversationType === ConversationMode.WORK
   );
+  useEffect(() => {
+    if (
+      conversationType !== ConversationMode.WORK ||
+      !fallbackQuestId ||
+      !routeConversationId ||
+      !viewerId
+    ) {
+      return;
+    }
+    return subscribeToQuestEvents(fallbackQuestId, () => {
+      void queryClient.invalidateQueries({
+        queryKey: chatKeys.conversation(
+          routeConversationId,
+          viewerId,
+          ConversationMode.WORK,
+          fallbackQuestId
+        ),
+      });
+    });
+  }, [
+    conversationType,
+    fallbackQuestId,
+    queryClient,
+    routeConversationId,
+    viewerId,
+  ]);
   const candidateConversationQuery = useCandidateConversationQuery(
     routeConversationId ?? "",
     viewerId,
@@ -301,12 +352,18 @@ export function useChatConversationController(
   const [pendingAttachments, setPendingAttachments] = useState<
     PendingAttachmentItem[]
   >([]);
+  const pendingMessageRef = useRef<{
+    signature: string;
+    clientMessageId: string;
+  } | null>(null);
+  const removedAttachmentIdsRef = useRef(new Set<string>());
 
   const handleImagePress = (url: string, name?: string, timestamp?: string) => {
     setViewerState({ visible: true, url, name, timestamp });
   };
 
   const handleRemovePendingAttachment = (idToRemove: string) => {
+    removedAttachmentIdsRef.current.add(idToRemove);
     setPendingAttachments((current) =>
       current.filter((item) => item.id !== idToRemove)
     );
@@ -459,8 +516,7 @@ export function useChatConversationController(
       showErrorAlert(messages.addAttachment, messages.attachmentTypeError);
       return;
     }
-    const assetName =
-      asset.fileName ?? fileNameFromUri(asset.uri, `chat-${Date.now()}.jpg`);
+    const assetName = asset.fileName ?? fallbackAttachmentName(asset.uri);
     const limited =
       mimeType.startsWith("image/") &&
       asset.width !== undefined &&
@@ -472,38 +528,75 @@ export function useChatConversationController(
             height: asset.height,
           })
         : { uri: asset.uri, type: mimeType, resized: false };
-    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    setPendingAttachments((current) => [
-      ...current,
-      { id: tempId, uri: limited.uri, name: assetName, uploading: true },
-    ]);
-    const uploadAsset: UploadAsset = {
+    const tempId = createTemporaryAttachmentId();
+    const pending: PendingAttachmentItem = {
+      id: tempId,
       uri: limited.uri,
       name: assetName,
       type: limited.type,
+      uploading: true,
     };
+    setPendingAttachments((current) => [...current, pending]);
+    await uploadPendingAttachment(pending);
+  };
+
+  const uploadPendingAttachment = async (
+    item: PendingAttachmentItem
+  ): Promise<void> => {
+    if (!conversation) return;
     try {
       const uploaded = await uploadAttachmentMutation.mutateAsync({
         conversationId: conversation.id,
         mode: conversationType,
-        asset: uploadAsset,
+        asset: { uri: item.uri, name: item.name, type: item.type },
       });
-      setPendingAttachments((current) => {
-        const item = current.find((it) => it.id === tempId);
-        if (!item) return current;
-        setPendingAttachmentIds((ids) =>
-          ids.includes(uploaded.id) ? ids : [...ids, uploaded.id]
-        );
-        return current.map((it) =>
-          it.id === tempId ? { ...it, id: uploaded.id, uploading: false } : it
-        );
-      });
-    } catch (error) {
+      if (removedAttachmentIdsRef.current.has(item.id)) return;
       setPendingAttachments((current) =>
-        current.filter((item) => item.id !== tempId)
+        current.map((it) =>
+          it.id === item.id
+            ? { ...it, id: uploaded.id, uploading: false, rateLimited: false }
+            : it
+        )
       );
+      setPendingAttachmentIds((ids) =>
+        ids.includes(uploaded.id) ? ids : [...ids, uploaded.id]
+      );
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 429) {
+        setPendingAttachments((current) =>
+          current.map((it) =>
+            it.id === item.id
+              ? { ...it, uploading: false, rateLimited: true }
+              : it
+          )
+        );
+      } else {
+        setPendingAttachments((current) =>
+          current.filter((it) => it.id !== item.id)
+        );
+      }
       throw error;
     }
+  };
+
+  const retryAttachment = (id: string): void => {
+    const item = pendingAttachments.find((attachment) => attachment.id === id);
+    if (!item || !conversation) return;
+    setPendingAttachments((current) =>
+      current.map((attachment) =>
+        attachment.id === id
+          ? { ...attachment, uploading: true, rateLimited: false }
+          : attachment
+      )
+    );
+    void uploadPendingAttachment({ ...item, uploading: true }).catch(
+      (error) => {
+        showErrorAlert(
+          messages.addAttachment,
+          getAttachmentUploadErrorMessage(error, locale)
+        );
+      }
+    );
   };
   const openAttachmentMenu = () => {
     if (!canWrite) return;
@@ -514,9 +607,7 @@ export function useChatConversationController(
           void pickAttachment("camera").catch((error: unknown) => {
             showErrorAlert(
               messages.addAttachment,
-              getLocalizedErrorMessage(error, locale, {
-                fallback: messages.loadError,
-              })
+              getAttachmentUploadErrorMessage(error, locale)
             );
           });
         },
@@ -527,9 +618,7 @@ export function useChatConversationController(
           void pickAttachment("library").catch((error: unknown) => {
             showErrorAlert(
               messages.addAttachment,
-              getLocalizedErrorMessage(error, locale, {
-                fallback: messages.loadError,
-              })
+              getAttachmentUploadErrorMessage(error, locale)
             );
           });
         },
@@ -540,9 +629,7 @@ export function useChatConversationController(
           void pickAttachment("file").catch((error: unknown) => {
             showErrorAlert(
               messages.addAttachment,
-              getLocalizedErrorMessage(error, locale, {
-                fallback: messages.loadError,
-              })
+              getAttachmentUploadErrorMessage(error, locale)
             );
           });
         },
@@ -552,17 +639,24 @@ export function useChatConversationController(
   };
   const sendMessage = () => {
     if (!canWrite || !viewerId || !conversation) return;
-    if (pendingAttachments.some((item) => item.uploading)) return;
+    if (pendingAttachments.some((item) => item.uploading || item.rateLimited)) {
+      return;
+    }
     const value = draft.trim();
     if (value.length > MAX_MESSAGE_LENGTH) {
       showErrorAlert(messages.send, messages.messageLengthError);
       return;
     }
     if (!value && pendingAttachmentIds.length === 0) return;
-    const clientMessageId = `${conversation.id}-${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2, 8)}`;
     const attachmentIds = pendingAttachmentIds;
+    const signature = [conversation.id, value, ...attachmentIds].join("\u0000");
+    const clientMessageId =
+      pendingMessageRef.current?.signature === signature
+        ? pendingMessageRef.current.clientMessageId
+        : `${conversation.id}-${Date.now()}-${Math.random()
+            .toString(36)
+            .slice(2, 8)}`;
+    pendingMessageRef.current = { signature, clientMessageId };
     const optimisticMessage: DisplayChatMessage = {
       id: clientMessageId,
       sender: "me",
@@ -582,6 +676,7 @@ export function useChatConversationController(
         optimisticMessage,
       })
       .then(() => {
+        pendingMessageRef.current = null;
         setDraft("");
         setPendingAttachmentIds([]);
         setPendingAttachments([]);
@@ -591,6 +686,13 @@ export function useChatConversationController(
           conversationType === ConversationMode.CANDIDATE_INQUIRY &&
           error instanceof ApiError &&
           (error.status === 404 || error.status === 409);
+        if (
+          conversationType === ConversationMode.WORK &&
+          error instanceof ApiError &&
+          error.status === 409
+        ) {
+          void workConversationQuery.refetch();
+        }
         if (closedInquiry) {
           setSendClosedInquiry(true);
           void queryClient.invalidateQueries({
@@ -687,6 +789,7 @@ export function useChatConversationController(
     viewerState,
     setViewerState,
     handleImagePress,
+    retryAttachment,
     openFile,
   };
 }

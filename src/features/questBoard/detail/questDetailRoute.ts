@@ -82,7 +82,9 @@ export function resolveQuestDetailRoute(
     studentId: props.studentId ?? parseSingleRouteParam(params.studentId),
     mode: props.mode ?? parseQuestDetailMode(params.mode),
     joinStatus: props.joinStatus ?? parseQuestJoinStatus(params.joinStatus),
-    previewState: props.previewState ?? parseBoardPreviewState(params.preview),
+    previewState:
+      props.previewState ??
+      (__DEV__ ? parseBoardPreviewState(params.preview) : undefined),
     intent: props.intent ?? parseQuestIntent(params.intent),
   };
 }

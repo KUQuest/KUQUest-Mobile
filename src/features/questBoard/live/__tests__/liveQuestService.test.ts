@@ -1,9 +1,13 @@
+import { resetServerClock, syncServerClock } from "@/api/serverClock";
 import { liveQuestService } from "../liveQuestService";
 import { ApiError } from "@/api/ApiClient";
 import { questApi } from "@/api/QuestApi";
 import { chatApi } from "@/api/ChatApi";
 import type { CreateQuestV2Payload } from "@/api/QuestApi";
-import type { QuestV2Assignment } from "@/api/questV2Contracts";
+import type {
+  QuestV2Assignment,
+  QuestV2BoardCard,
+} from "@/api/questV2Contracts";
 
 jest.mock("@/api/QuestApi", () => ({
   createQuestIdempotencyKey: jest.fn(() => "create-key-1"),
@@ -18,6 +22,8 @@ jest.mock("@/api/QuestApi", () => ({
     getDetail: jest.fn(),
     getPublicDetail: jest.fn(),
     getParticipationDetail: jest.fn(),
+    listBoard: jest.fn(),
+    listQuestReviews: jest.fn(),
     uploadQuestImages: jest.fn(),
     joinQuest: jest.fn(),
     rejectCandidateApplication: jest.fn(),
@@ -67,6 +73,81 @@ const payload: CreateQuestV2Payload = {
 describe("LiveQuestService", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+  it("maps Board Hirer profile ids to ownerStudentId and leaves absent profiles empty", async () => {
+    const cards: QuestV2BoardCard[] = [
+      {
+        id: "quest-1",
+        title: "Find Hirer id",
+        questReward: 50,
+        tag: null,
+        mode: "FIRST_COME_FIRST_SERVED",
+        participation: "SINGLE",
+        headcount: 1,
+        activeWorkerCount: 0,
+        startTime: "2026-09-16T10:00:00+07:00",
+        dueAt: null,
+        hirerName: "Hirer One",
+        hirerProfile: {
+          id: "00000000-0000-4000-8000-000000000001",
+          version: 1,
+          firstName: "Hirer",
+          lastName: "One",
+          bio: null,
+          academicYear: null,
+          department: null,
+          avatar: null,
+          occupation: null,
+        },
+        location: null,
+      },
+      {
+        id: "quest-2",
+        title: "No profile",
+        questReward: 50,
+        tag: null,
+        mode: "FIRST_COME_FIRST_SERVED",
+        participation: "SINGLE",
+        headcount: 1,
+        activeWorkerCount: 0,
+        startTime: "2026-09-16T10:00:00+07:00",
+        dueAt: null,
+        hirerName: "Hirer Two",
+        location: null,
+      },
+    ];
+    mockedQuestApi.listBoard.mockResolvedValue({
+      items: cards,
+      nextCursor: null,
+    });
+
+    const quests = await liveQuestService.listBoardQuests();
+
+    expect(quests.map((quest) => quest.ownerStudentId)).toEqual([
+      "00000000-0000-4000-8000-000000000001",
+      "",
+    ]);
+  });
+
+  it("returns the Quest's reviews to the caller", async () => {
+    const reviews = [
+      {
+        id: "review-1",
+        questId: "quest-1",
+        reviewerId: "worker-1",
+        revieweeId: "hirer-1",
+        rating: 5,
+        comment: null,
+        createdAt: "2026-09-15T12:00:00Z",
+        updatedAt: "2026-09-15T12:00:00Z",
+      },
+    ];
+    mockedQuestApi.listQuestReviews.mockResolvedValue(reviews);
+
+    await expect(
+      liveQuestService.listQuestReviews("quest-1", "worker-1")
+    ).resolves.toEqual(reviews);
+    expect(mockedQuestApi.listQuestReviews).toHaveBeenCalledWith("quest-1");
   });
 
   it("creates a server Quest and publishes it with the supplied idempotency key", async () => {
@@ -251,39 +332,6 @@ describe("LiveQuestService", () => {
     );
   });
 
-  it("resolves and caches hirer participant from candidate-inquiries endpoint", async () => {
-    mockedChatApi.createCandidateInquiry.mockResolvedValue({
-      participants: [
-        {
-          id: "worker-1",
-          role: "PROSPECTIVE_WORKER",
-          displayName: "Worker Bob",
-        },
-        { id: "hirer-1", role: "HIRER", displayName: "Hirer Alice" },
-      ],
-    } as never);
-
-    const hirer = await liveQuestService.getHirerParticipant("quest-hirer-1");
-    expect(hirer).toEqual({ id: "hirer-1", displayName: "Hirer Alice" });
-    expect(mockedChatApi.createCandidateInquiry).toHaveBeenCalledWith(
-      "quest-hirer-1"
-    );
-
-    // Cached subsequent call
-    const cached = await liveQuestService.getHirerParticipant("quest-hirer-1");
-    expect(cached).toEqual({ id: "hirer-1", displayName: "Hirer Alice" });
-    expect(mockedChatApi.createCandidateInquiry).toHaveBeenCalledTimes(1);
-  });
-
-  it("returns null when inquiry fails or has no hirer participant", async () => {
-    mockedChatApi.createCandidateInquiry.mockRejectedValueOnce(
-      new Error("Network error")
-    );
-
-    const hirer =
-      await liveQuestService.getHirerParticipant("quest-hirer-fail");
-    expect(hirer).toBeNull();
-  });
   it("allows a Hirer to read and write an active Work Conversation", async () => {
     mockedQuestApi.getDetail.mockResolvedValue({
       id: "quest-work-1",
@@ -662,12 +710,18 @@ describe("LiveQuestService", () => {
       participation,
       viewerAssignment = assignment("worker-1"),
       leaderId,
+      serverTime = "2099-08-26T10:00:00+07:00",
     }: {
       mode: "FIRST_COME_FIRST_SERVED" | "CANDIDATE";
       participation: "SINGLE" | "GROUP";
       viewerAssignment?: QuestV2Assignment;
       leaderId?: string;
+      serverTime?: string;
     }) {
+      jest
+        .spyOn(Date, "now")
+        .mockReturnValue(Date.parse("2026-10-01T00:00:00Z"));
+      syncServerClock(serverTime, null);
       // A Worker cannot read the Hirer detail; the snapshot falls back to public detail.
       mockedQuestApi.getDetail.mockRejectedValue(new Error("forbidden"));
       mockedQuestApi.getPublicDetail.mockResolvedValue({
@@ -723,6 +777,11 @@ describe("LiveQuestService", () => {
       return snapshot.capabilities.canStartWork;
     }
 
+    afterEach(() => {
+      resetServerClock();
+      jest.restoreAllMocks();
+    });
+
     it("requires the Active Worker of a SINGLE Quest", async () => {
       await expect(
         startCapability({ mode: "CANDIDATE", participation: "SINGLE" })
@@ -762,6 +821,22 @@ describe("LiveQuestService", () => {
           participation: "GROUP",
           viewerAssignment: assignment("worker-1", "2099-08-26T09:01:00Z"),
         })
+      ).resolves.toBe(false);
+    });
+
+    it("uses Server time for the inclusive start and exclusive dueAt boundaries", async () => {
+      const input = {
+        mode: "FIRST_COME_FIRST_SERVED" as const,
+        participation: "SINGLE" as const,
+      };
+      await expect(
+        startCapability({ ...input, serverTime: "2099-08-26T08:59:59+07:00" })
+      ).resolves.toBe(false);
+      await expect(
+        startCapability({ ...input, serverTime: "2099-08-26T09:00:00+07:00" })
+      ).resolves.toBe(true);
+      await expect(
+        startCapability({ ...input, serverTime: "2099-08-27T12:00:00+07:00" })
       ).resolves.toBe(false);
     });
   });

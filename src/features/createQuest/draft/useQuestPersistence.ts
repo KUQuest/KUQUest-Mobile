@@ -11,12 +11,20 @@ import {
 import {
   getHeadcountForParticipation,
   type QuestDraft,
+  type StoredQuestDraft,
 } from "../domain/createQuestModel";
 import type {
   CompletionState,
   SaveErrorIntent,
   Step,
 } from "../createQuestTypes";
+
+type Publication = Partial<
+  Pick<
+    StoredQuestDraft,
+    "serverQuestId" | "createIdempotencyKey" | "publishIdempotencyKey"
+  >
+>;
 
 export interface PublishedQuestRefValue {
   questId: string;
@@ -45,6 +53,19 @@ export function useQuestPersistence({
   setCompletedState: Dispatch<SetStateAction<CompletionState | null>>;
   enabled?: boolean;
 }) {
+  const latestRef = useRef<{
+    draft: QuestDraft;
+    step: Step;
+    state: CompletionState;
+  } | null>(null);
+  const publicationRef = useRef<Publication>({});
+  const [publication, setPublication] = useState<Publication>({});
+  const writeChainRef = useRef<Promise<void>>(Promise.resolve());
+  const enqueueWrite = useCallback((write: () => Promise<void>) => {
+    const queued = writeChainRef.current.catch(() => undefined).then(write);
+    writeChainRef.current = queued;
+    return queued;
+  }, []);
   const draftIdRef = useRef<string | null>(editQuestId ?? null);
   const [loadState, setLoadState] = useState<{
     storageKey: string | null;
@@ -76,12 +97,15 @@ export function useQuestPersistence({
       if (!draftStorageKey) {
         throw new Error("The Quest draft is not ready to be saved.");
       }
-      await persistQuestDraft(
-        draftStorageKey,
-        draftId,
-        draftToSave,
-        saveStep,
-        state
+      await enqueueWrite(() =>
+        persistQuestDraft(
+          draftStorageKey,
+          draftId,
+          draftToSave,
+          saveStep,
+          state,
+          publicationRef.current
+        )
       );
     },
   });
@@ -112,6 +136,19 @@ export function useQuestPersistence({
           });
           setStep(snapshot.step);
           setCompletedState(snapshot.state === "OPEN" ? "OPEN" : null);
+        }
+        if (snapshot) {
+          latestRef.current = {
+            draft: snapshot.draft,
+            step: snapshot.step,
+            state: snapshot.state,
+          };
+          publicationRef.current = {
+            serverQuestId: snapshot.serverQuestId,
+            createIdempotencyKey: snapshot.createIdempotencyKey,
+            publishIdempotencyKey: snapshot.publishIdempotencyKey,
+          };
+          setPublication(publicationRef.current);
         }
         setLoadState({ storageKey, hydrated: true, error: false });
       } catch {
@@ -153,12 +190,14 @@ export function useQuestPersistence({
           draftToSave.headcount
         ),
       };
+      const saveStep = stepOverride ?? step;
+      latestRef.current = { draft: normalizedDraft, step: saveStep, state };
       try {
         await saveMutation.mutateAsync({
           draftId: activeDraftId,
           draft: normalizedDraft,
           state,
-          step: stepOverride ?? step,
+          step: saveStep,
         });
         if (requestId !== saveRequestRef.current) return false;
         if (draftRevisionRef.current === revisionAtStart) {
@@ -175,6 +214,30 @@ export function useQuestPersistence({
     [draftChangedRef, draftRevisionRef, saveMutation, setSaveErrorIntent, step]
   );
 
+  const persistPublication = useCallback(
+    async (patch: Publication): Promise<void> => {
+      const latest = latestRef.current;
+      const activeDraftId = draftIdRef.current;
+      if (!draftStorageKey || !activeDraftId || !latest) {
+        throw new Error("The Quest draft is not ready to be saved.");
+      }
+      const publication = { ...publicationRef.current, ...patch };
+      publicationRef.current = publication;
+      setPublication(publication);
+      await enqueueWrite(() =>
+        persistQuestDraft(
+          draftStorageKey,
+          activeDraftId,
+          latest.draft,
+          latest.step,
+          latest.state,
+          publication
+        )
+      );
+    },
+    [draftStorageKey, enqueueWrite]
+  );
+
   const retryDraftLoad = useCallback(() => {
     setLoadAttempt((value) => value + 1);
   }, []);
@@ -183,6 +246,9 @@ export function useQuestPersistence({
     saveRequestRef.current += 1;
     const draftId = draftIdRef.current;
     draftIdRef.current = null;
+    latestRef.current = null;
+    publicationRef.current = {};
+    setPublication({});
     return draftId;
   }, []);
 
@@ -211,6 +277,8 @@ export function useQuestPersistence({
     savingAction,
     saveRequestRef,
     saveDraft,
+    publication,
+    persistPublication,
 
     prepareDraftReset,
     resetSaveState: saveMutation.reset,

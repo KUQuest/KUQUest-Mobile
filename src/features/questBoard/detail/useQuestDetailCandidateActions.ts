@@ -1,6 +1,11 @@
 import { useCallback } from "react";
 
 import { showConfirmModal } from "@/components/ui/SweetAlert";
+import { useCandidateSelection } from "@/features/questBoard/useCandidateSelection";
+import { groupQuestMessages } from "@/locales/groupQuestMessages";
+import { questBoardMessages } from "@/locales/questBoardMessages";
+
+import { QuestParticipation } from "../domain/types";
 
 import type {
   QuestDetailLiveActions,
@@ -28,20 +33,36 @@ export function useQuestDetailCandidateActions({
   navigation: QuestDetailNavigation;
   transitions: QuestDetailSurfaceTransitions;
 }): QuestDetailCandidateHandlers {
+  const { confirmSelection } = useCandidateSelection({
+    questId:
+      facts?.source.kind === "live-snapshot" ? facts.quest.id : undefined,
+    messages: facts?.messages ?? questBoardMessages.en,
+    groupMessages: facts?.groupMessages ?? groupQuestMessages.en,
+    onSelect: ({ proposalId }) => liveActions.selectProposal(proposalId),
+    onSuccess: () => {
+      transitions.closeCandidateReview();
+      navigation.openManage();
+    },
+    onError: () => undefined,
+    isSuccessful: (result) => result !== undefined,
+  });
+
   const selectCandidate = useCallback(
     (proposalId: string) => {
       if (!facts) return;
       if (facts.source.kind === "live-snapshot") {
-        void liveActions.selectProposal(proposalId).then((result) => {
-          if (result === undefined) return;
-          transitions.closeCandidateReview();
-          navigation.openWorkHub();
+        confirmSelection({
+          proposalId,
+          kind:
+            facts.liveSnapshot?.participation === QuestParticipation.GROUP
+              ? "team"
+              : "application",
         });
         return;
       }
       previewActions.selectProposal(proposalId);
     },
-    [facts, liveActions, navigation, previewActions, transitions]
+    [facts, previewActions, confirmSelection]
   );
 
   const rejectCandidate = useCallback(

@@ -101,10 +101,11 @@ export function useWorkerWorkController({
         });
         return;
       }
-      // Applications and still-open Quests live on Quest Detail.
+      // Pending applications and open Quests stay on Quest Detail.
       if (
         item.destination === "questDetail" ||
-        item.questState === QuestStatus.QUEST_OPEN
+        (item.destination !== "workHub" &&
+          item.questState === QuestStatus.QUEST_OPEN)
       ) {
         router.push({ pathname: "/quest/[id]", params: { id: item.questId } });
         return;

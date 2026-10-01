@@ -2,12 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AccessibilityInfo } from "react-native";
 import { useRouter } from "expo-router";
 
-import { showErrorAlert } from "@/components/ui/SweetAlert";
-
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
-import { getLocalizedErrorMessage } from "@/utils/error";
 import { getLocalizedQuest } from "../fixtures/questFixtureLocalization";
 import { localizeQuestBoardQuest } from "@/locales/tagLabels";
 import type { BoardPreviewState } from "../fixtures/questBoardHarness";
@@ -21,7 +18,6 @@ import {
   type QuestLocationMode,
   type StartTimeBucket,
 } from "../domain/types";
-import { liveQuestService } from "../live/liveQuestService";
 import {
   applyQuestBoardFilters,
   getQuestBoardTags,
@@ -195,33 +191,15 @@ export function useQuestBoardController(
     [previewState, router]
   );
   const openOwnerProfile = useCallback(
-    async (
-      quest: QuestBoardQuest,
-      event?: { stopPropagation?: () => void }
-    ) => {
+    (quest: QuestBoardQuest, event?: { stopPropagation?: () => void }) => {
       event?.stopPropagation?.();
       if (quest.ownerStudentId) {
         router.push(`/profile/${quest.ownerStudentId}`);
         return;
       }
-      try {
-        const hirer = await liveQuestService.getHirerParticipant(quest.id);
-        if (hirer?.id) router.push(`/profile/${hirer.id}`);
-        else
-          showErrorAlert(
-            messages.profileUnavailableTitle,
-            messages.profileUnavailableMessage
-          );
-      } catch (error) {
-        showErrorAlert(
-          messages.profileUnavailableTitle,
-          getLocalizedErrorMessage(error, locale, {
-            fallback: messages.profileUnavailableMessage,
-          })
-        );
-      }
+      openQuest(quest);
     },
-    [locale, messages, router]
+    [openQuest, router]
   );
   const retryBoard = () => {
     setRetryAttempt((attempt) => attempt + 1);

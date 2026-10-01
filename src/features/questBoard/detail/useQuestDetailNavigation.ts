@@ -32,6 +32,8 @@ export interface QuestDetailNavigation {
   handleBack: () => void;
   openParticipantProfile: (participantId: string) => void;
   openWorkHub: () => void;
+  openManage: () => void;
+  openProofReview: () => void;
   openTeam: () => void;
   openPartialStart: () => void;
   openEditPost: () => void;
@@ -80,8 +82,26 @@ export function useQuestDetailNavigation({
     [router]
   );
   const openWorkHub = useCallback(() => {
-    router.push("/my-quests");
-  }, [router]);
+    if (!quest || !viewerId) return;
+    router.push({
+      pathname: "/quest/[id]/work",
+      params: { id: quest.id, viewerId },
+    });
+  }, [quest, router, viewerId]);
+  const openManage = useCallback(() => {
+    if (!quest) return;
+    router.replace({
+      pathname: "/quest/[id]/manage",
+      params: { id: quest.id },
+    });
+  }, [quest, router]);
+  const openProofReview = useCallback(() => {
+    if (!quest) return;
+    router.push({
+      pathname: "/quest/[id]/proof-review",
+      params: { id: quest.id },
+    });
+  }, [quest, router]);
   const openTeam = useCallback(() => {
     if (!quest) return;
     router.push({
@@ -170,6 +190,8 @@ export function useQuestDetailNavigation({
     handleBack,
     openParticipantProfile,
     openWorkHub,
+    openManage,
+    openProofReview,
     openTeam,
     openPartialStart,
     openEditPost,
