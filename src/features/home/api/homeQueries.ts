@@ -162,7 +162,6 @@ async function loadHirerHome(signal: AbortSignal): Promise<HirerHomeData> {
       return {
         id: q.id,
         title: q.title,
-        ...(q.tag ? { tagId: q.tag.id, tag: q.tag.name } : {}),
         status: q.state as CanonicalHirerQuestStatus,
         mode: q.mode,
         participation: q.participation,

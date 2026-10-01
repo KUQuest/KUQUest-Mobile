@@ -7,6 +7,7 @@ import {
   renderWithAppTheme,
 } from "@/testing/queryTestUtils";
 
+import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import { CandidateReviewSheet } from "../components/CandidateReviewSheet";
 import { PartialGroupStartConsentContent } from "../components/PartialGroupStartConsentContent";
 import { TeamAssembleView } from "../components/TeamAssembleView";
@@ -82,10 +83,6 @@ jest.mock("@/components/layout/ScreenLayout", () => ({
 
 jest.mock("@/components/ui/TopBar", () => ({
   TopBar: () => null,
-}));
-
-jest.mock("react-native-safe-area-context", () => ({
-  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
 jest.mock("@/features/preferences/localeStore", () => ({
@@ -704,7 +701,7 @@ describe("group Quest sheets", () => {
       />
     );
     expect(view.queryByTestId("partial-group-start-approve")).toBeNull();
-    expect(view.getAllByText("Approved")).toHaveLength(2);
+    expect(view.getAllByText("Accepted")).toHaveLength(2);
     jest.useRealTimers();
   });
 
@@ -768,9 +765,7 @@ describe("group Quest sheets", () => {
     );
     expect(cancelled.getByTestId("partial-group-start-cancelled")).toBeTruthy();
     expect(
-      cancelled.getByText(
-        "The five-minute consent window ended before everyone approved. Reserved rewards are fully refunded."
-      )
+      cancelled.getByText(groupQuestMessages.en.timedOutDescription)
     ).toBeTruthy();
   });
   it("joins a team with a trimmed Join Code and shows its localized error", async () => {

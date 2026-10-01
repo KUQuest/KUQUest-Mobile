@@ -28,7 +28,7 @@ import {
 } from "../../domain/createQuestModel";
 import type { ScheduleField } from "../../createQuestTypes";
 import { useCreateQuestImages } from "./useCreateQuestImages";
-import { CustomDatePickerModal } from "./CustomDatePickerModal";
+import { CustomDatePickerModal } from "@/components/ui/CustomDatePickerModal";
 import CustomTimePickerModal from "./CustomTimePickerModal";
 import { DateTimeField } from "./DateTimeField";
 import { FieldLabel } from "./FieldLabel";

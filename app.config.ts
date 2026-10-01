@@ -107,6 +107,10 @@ export default function configureApp({ config }: ConfigContext): ExpoConfig {
     android: {
       ...baseConfig.android,
       softwareKeyboardLayoutMode: "resize",
+      // FCM needs google-services.json; builds without it still work but cannot register for push.
+      ...(process.env.GOOGLE_SERVICES_JSON
+        ? { googleServicesFile: process.env.GOOGLE_SERVICES_JSON }
+        : {}),
       package: variantConfig.identifier,
       versionCode: resolveAndroidVersionCode(
         variant,

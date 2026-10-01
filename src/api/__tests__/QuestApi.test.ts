@@ -325,6 +325,67 @@ describe("QuestApi", () => {
     );
   });
 
+  it("parses underfilled assignment summaries as present, null, or omitted", async () => {
+    const assignment = {
+      id: "assign-1",
+      questId: "quest-1",
+      workerId: "worker-1",
+      state: "ASSIGNMENT_ACTIVE",
+      questState: "QUEST_IN_PROGRESS",
+      startedAt: "2026-09-15T10:00:00Z",
+      createdAt: "2026-09-15T09:00:00Z",
+    };
+    const underfilled = {
+      state: "UNDERFILLED_CONSENT_PENDING",
+      decision: { expiresAt: "2026-09-15T11:00:00Z" },
+      consent: { expiresAt: "2026-09-15T11:10:00Z" },
+      activeWorkerCount: 1,
+      headcount: 2,
+      cancellationReason: null,
+    };
+    fetchMock.mockResolvedValue(
+      okJson({
+        success: true,
+        data: {
+          items: [
+            { ...assignment, underfilled },
+            { ...assignment, id: "assign-null", underfilled: null },
+            { ...assignment, id: "assign-omitted" },
+          ],
+        },
+      })
+    );
+
+    await expect(api.listMyAssignments()).resolves.toEqual([
+      { ...assignment, underfilled },
+      { ...assignment, id: "assign-null", underfilled: null },
+      { ...assignment, id: "assign-omitted" },
+    ]);
+  });
+
+  it("parses hirer questReward as null or a number", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        okJson({
+          success: true,
+          data: { ...detailResponse.data, questReward: null },
+        })
+      )
+      .mockResolvedValueOnce(
+        okJson({
+          success: true,
+          data: { ...detailResponse.data, questReward: 98.04 },
+        })
+      );
+
+    await expect(api.getDetail("quest-1")).resolves.toMatchObject({
+      questReward: null,
+    });
+    await expect(api.getDetail("quest-1")).resolves.toMatchObject({
+      questReward: 98.04,
+    });
+  });
+
   it("lists worker assignments from /api/v2/assignments/mine", async () => {
     const data = {
       success: true,
@@ -362,6 +423,47 @@ describe("QuestApi", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.example.test/api/v2/assignments/mine?status=completed",
       expect.objectContaining({ method: "GET" })
+    );
+  });
+  it("replays direct-join request with the original idempotency key", async () => {
+    const assignment = {
+      id: "assign-join",
+      questId: "quest-join",
+      workerId: "worker-1",
+      state: "ASSIGNMENT_ACTIVE",
+      questState: "QUEST_OPEN",
+      startedAt: null,
+      createdAt: "2026-10-02T04:00:00Z",
+    };
+    fetchMock
+      .mockResolvedValueOnce(okJson({ success: true, data: assignment }))
+      .mockResolvedValueOnce(okJson({ success: true, data: assignment }));
+
+    await expect(
+      api.joinQuest("quest-join", "join-idempotency-key")
+    ).resolves.toEqual(assignment);
+    await expect(
+      api.joinQuest("quest-join", "join-idempotency-key")
+    ).resolves.toEqual(assignment);
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "https://api.example.test/api/v2/quests/quest-join/join",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          "idempotency-key": "join-idempotency-key",
+        }),
+      })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "https://api.example.test/api/v2/quests/quest-join/join",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          "idempotency-key": "join-idempotency-key",
+        }),
+      })
     );
   });
 
@@ -923,6 +1025,8 @@ describe("QuestApi", () => {
       workerRewardPool: 200,
       questReward: 200,
       dueAt: "2026-09-16T12:00:00Z",
+      cancellationReason: null,
+      cancelledAt: null,
       decision: {
         status: "UNDERFILLED_DECISION_PENDING",
         value: null,
@@ -989,6 +1093,19 @@ describe("QuestApi", () => {
     await expect(api.getUnderfilled("quest-1")).resolves.toMatchObject({
       id: "underfilled-1",
       ownResponse: { decision: "ACCEPT", questReward: 200 },
+    });
+    const cancelledUnderfilled = {
+      ...underfilled,
+      state: "UNDERFILLED_CANCELLED",
+      cancellationReason: "WORKER_DECLINED",
+      cancelledAt: "2026-09-15T11:00:00Z",
+    };
+    fetchMock.mockResolvedValueOnce(
+      okJson({ success: true, data: cancelledUnderfilled })
+    );
+    await expect(api.getUnderfilled("quest-1")).resolves.toMatchObject({
+      cancellationReason: "WORKER_DECLINED",
+      cancelledAt: "2026-09-15T11:00:00Z",
     });
   });
   it("uses If-Match with Quest edits and preserves edit-request contracts", async () => {

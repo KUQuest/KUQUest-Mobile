@@ -1,11 +1,22 @@
+import { liveQuestService } from "../live/liveQuestService";
+import { ApiError } from "@/api/ApiClient";
+import { QuestV2JoinErrorCode } from "@/api/questV2Contracts";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  showErrorAlert,
+  showSweetAlert,
+  SweetAlertVariant,
+} from "@/components/ui/SweetAlert";
 import { useCallback } from "react";
 
-import { showErrorAlert } from "@/components/ui/SweetAlert";
 import { getLocalizedErrorMessage } from "@/utils/error";
 import { useLocale } from "@/features/preferences/localeStore";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import type { UploadAsset } from "@/api/fileUpload";
+import type { LiveQuestSnapshot } from "../live/liveQuestTypes";
 import {
+  invalidateQuestReads,
+  questBoardKeys,
   useApplyQuestMutation,
   useCreateCandidateInquiryMutation,
   useCreateCandidateTeamMutation,
@@ -40,6 +51,7 @@ export function useQuestDetailLiveActions(
   context: QuestDetailLiveActionContext
 ): QuestDetailLiveActions {
   const { locale } = useLocale();
+  const queryClient = useQueryClient();
   const joinQuestMutation = useJoinQuestMutation();
   const applyQuestMutation = useApplyQuestMutation();
   const withdrawApplicationMutation = useWithdrawApplicationMutation();
@@ -102,14 +114,88 @@ export function useQuestDetailLiveActions(
     ]
   );
 
-  const join = useCallback(
-    () =>
-      runLiveAction("join", () => {
-        if (!questId) return Promise.reject(new Error("Quest ID is required"));
-        return joinQuestMutation.mutateAsync({ questId, viewerId });
-      }),
-    [joinQuestMutation, questId, runLiveAction, viewerId]
-  );
+  const join = useCallback(async () => {
+    if (!questId || !beginLiveAction("join")) return undefined;
+    try {
+      const result = await joinQuestMutation.mutateAsync({ questId, viewerId });
+      return result;
+    } catch (error) {
+      let refreshed: LiveQuestSnapshot | undefined;
+      try {
+        refreshed = await liveQuestService.getLiveSnapshot(questId, viewerId);
+      } catch {
+        refreshed = undefined;
+      }
+      if (refreshed) {
+        queryClient.setQueryData(
+          questBoardKeys.liveSnapshot(questId, viewerId),
+          refreshed
+        );
+      }
+      await invalidateQuestReads(queryClient, questId, viewerId, "worker");
+      if (
+        error instanceof ApiError &&
+        error.code === QuestV2JoinErrorCode.QUEST_NOT_OPEN
+      ) {
+        transitions.closeConfirmation();
+      }
+      if (
+        error instanceof ApiError &&
+        error.code === QuestV2JoinErrorCode.ALREADY_JOINED
+      ) {
+        return true;
+      }
+      const full =
+        error instanceof ApiError &&
+        error.code === QuestV2JoinErrorCode.QUEST_FULL;
+      if (full) transitions.closeConfirmation();
+      if (full) {
+        showSweetAlert({
+          title: messages.questFull,
+          message: messages.groupFcfsLastSpotTaken,
+          variant: SweetAlertVariant.Error,
+        });
+      } else {
+        showErrorAlert(
+          messages.actionFailedTitle,
+          getLocalizedErrorMessage(error, locale, {
+            codes: {
+              QUEST_NOT_OPEN: messages.joinQuestNotOpen,
+              QUEST_ROSTER_FROZEN: messages.joinQuestRosterFrozen,
+              HIRER_CANNOT_JOIN: messages.joinQuestHirerCannotJoin,
+              MEMBER_RED_FLAGGED: messages.joinQuestMemberRestricted,
+              QUEST_MODE_NOT_ALLOWED: messages.joinQuestModeNotAllowed,
+              QUEST_PARTICIPATION_NOT_ALLOWED:
+                messages.joinQuestParticipationNotAllowed,
+            },
+            fallback: messages.actionFailedDescription,
+          })
+        );
+      }
+      return undefined;
+    } finally {
+      endLiveAction();
+    }
+  }, [
+    beginLiveAction,
+    endLiveAction,
+    joinQuestMutation,
+    locale,
+    messages.actionFailedDescription,
+    messages.actionFailedTitle,
+    messages.groupFcfsLastSpotTaken,
+    messages.joinQuestHirerCannotJoin,
+    messages.joinQuestMemberRestricted,
+    messages.joinQuestModeNotAllowed,
+    messages.joinQuestNotOpen,
+    messages.joinQuestParticipationNotAllowed,
+    messages.joinQuestRosterFrozen,
+    messages.questFull,
+    queryClient,
+    questId,
+    transitions,
+    viewerId,
+  ]);
   const apply = useCallback(
     () =>
       runLiveAction("apply", () => {

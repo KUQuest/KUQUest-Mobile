@@ -40,6 +40,14 @@ export function useQuestDetailParticipation({
       if (result === undefined) return;
       transitions.markJoined("accepted");
       transitions.closeConfirmation();
+      if (facts.groupFcfs) {
+        showSweetAlert({
+          title: facts.messages.groupFcfsYouAreIn,
+          message: facts.messages.groupFcfsConfirmedSpot,
+          variant: SweetAlertVariant.Success,
+        });
+        return;
+      }
       navigation.openWorkHub();
       showSweetAlert({
         title: facts.messages.confirmParticipationTitle,

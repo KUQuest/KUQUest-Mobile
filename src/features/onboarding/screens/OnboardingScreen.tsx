@@ -1,7 +1,8 @@
-import { CircleAlert } from "lucide-react-native";
 import { Platform } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { CircleAlert } from "lucide-react-native";
 
+import { CustomDatePickerModal } from "@/components/ui/CustomDatePickerModal";
+import { createQuestMessages } from "@/locales/createQuestMessages";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { KeyboardAvoidingView, Pressable, Text, View } from "@/tw";
 
@@ -60,13 +61,20 @@ export default function OnboardingScreen() {
         <OnboardingActionBar {...content.actionBarProps} />
       </KeyboardAvoidingView>
       {content.datePicker.target ? (
-        <DateTimePicker
-          value={new Date(content.datePicker.target.value)}
-          mode="date"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          onValueChange={content.datePicker.handleChange}
-          onDismiss={content.datePicker.close}
+        <CustomDatePickerModal
+          title={
+            content.datePicker.target.kind === "certificate"
+              ? frame.messages.certIssuedAt
+              : content.datePicker.target.field === "startedAt"
+                ? frame.messages.startMonthYear
+                : frame.messages.endMonthYear
+          }
+          value={content.datePicker.target.value}
           maximumDate={content.datePicker.today}
+          locale={frame.locale}
+          messages={createQuestMessages[frame.locale]}
+          onConfirm={content.datePicker.handleDate}
+          onClose={content.datePicker.close}
         />
       ) : null}
       <FileTooLargeModal

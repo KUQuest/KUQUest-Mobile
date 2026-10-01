@@ -100,13 +100,11 @@ function PrimaryAction({
 }
 
 function ActionRow({
-  divided,
   icon: Icon,
   label,
   onPress,
   testID,
 }: {
-  divided?: boolean;
   icon: LucideIcon;
   label: string;
   onPress: () => void;
@@ -115,19 +113,17 @@ function ActionRow({
   const { colors } = useAppTheme();
   return (
     <Pressable
+      accessibilityLabel={label}
       accessibilityRole="button"
       testID={testID}
       onPress={onPress}
-      className={cn(
-        "min-h-[56px] flex-row items-center gap-ku-12 py-ku-14 active:opacity-70",
-        divided && "border-t border-ku-divider"
-      )}
+      className="min-h-[60px] flex-row items-center gap-ku-12 rounded-ku-card border border-ku-border bg-ku-surface px-ku-md py-ku-sm active:opacity-80"
     >
       <Icon color={colors.hirer} size={20} strokeWidth={2} />
       <Text className="flex-1 font-ku-medium text-ku-body text-ku-text-strong">
         {label}
       </Text>
-      <ChevronRight color={colors.textMuted} size={20} strokeWidth={2} />
+      <ChevronRight color={colors.textSecondary} size={20} strokeWidth={2} />
     </Pressable>
   );
 }
@@ -250,6 +246,10 @@ export default function HirerQuestManageScreen({
           application.state === QuestApplicationStatus.APPLICATION_APPLIED
       ).length;
   const assignedCount = snapshot.assignments.length;
+  const proposalCountLabel = isGroup
+    ? messages.submittedTeamCount(proposalCount)
+    : messages.applicationCount(proposalCount);
+  const candidateReviewLabel = `${messages.reviewCandidates} · ${proposalCountLabel}`;
   const showCandidateReview = canReviewCandidateProposals && proposalCount > 0;
   const showProofReview =
     Boolean(pendingProof) && snapshot.capabilities.canReviewProof;
@@ -260,6 +260,17 @@ export default function HirerQuestManageScreen({
     snapshot.state === QuestStatus.QUEST_FAILED &&
     (snapshot.actor === QuestActor.HIRER ||
       (snapshot.actor === QuestActor.WORKER && snapshot.assignment !== null));
+  const nextStep = showUnderfilled
+    ? "underfilled"
+    : showProofReview && snapshot.nextAction === QuestNextAction.REVIEW_PROOF
+      ? "proof"
+      : showCandidateReview &&
+          snapshot.nextAction ===
+            (isGroup
+              ? QuestNextAction.SELECT_TEAM
+              : QuestNextAction.SELECT_CANDIDATE)
+        ? "candidate"
+        : null;
   const editPending =
     snapshot.editRequest?.status ===
     QuestEditRequestStatus.EDIT_REQUEST_PENDING;
@@ -304,13 +315,13 @@ export default function HirerQuestManageScreen({
           <View className="flex-row flex-wrap items-end justify-between gap-ku-sm pb-ku-md">
             <View
               accessible
-              accessibilityLabel={messages.participantsSummary(
+              accessibilityLabel={messages.rosterWorkerCount(
                 assignedCount,
                 quest.headcount
               )}
             >
               <Text className="text-ku-label text-ku-text-secondary">
-                {messages.participants}
+                {myQuestMessages[locale].workerLabel}
               </Text>
               <Text className="mt-ku-2 font-ku-bold text-ku-title text-ku-text-strong">
                 {`${assignedCount}/${quest.headcount}`}
@@ -318,9 +329,7 @@ export default function HirerQuestManageScreen({
             </View>
             {canReviewCandidateProposals ? (
               <Text className="font-ku-medium text-ku-body-small text-ku-text-secondary">
-                {isGroup
-                  ? messages.submittedTeamCount(proposalCount)
-                  : messages.applicationCount(proposalCount)}
+                {proposalCountLabel}
               </Text>
             ) : null}
           </View>
@@ -344,39 +353,65 @@ export default function HirerQuestManageScreen({
           />
         </View>
 
-        {showCandidateReview ||
+        {nextStep ||
+        showCandidateReview ||
         showProofReview ||
-        showUnderfilled ||
         showDispute ||
         editPending ? (
           <View className="gap-ku-12">
-            {showCandidateReview ? (
-              <PrimaryAction
+            {nextStep ? (
+              <View className="gap-ku-xs" testID="hirer-manage-next-step">
+                <Text
+                  accessibilityRole="header"
+                  className="font-ku-semibold text-ku-body-small text-ku-text-secondary"
+                >
+                  {messages.nextStep}
+                </Text>
+                {nextStep === "candidate" ? (
+                  <PrimaryAction
+                    icon={UsersRound}
+                    label={candidateReviewLabel}
+                    onPress={() => setCandidateOpen(true)}
+                    testID="hirer-manage-candidate-review"
+                  />
+                ) : null}
+                {nextStep === "proof" ? (
+                  <PrimaryAction
+                    icon={ShieldCheck}
+                    label={messages.proofReviewTitle}
+                    onPress={reviewProof}
+                    testID="hirer-manage-proof-review"
+                  />
+                ) : null}
+                {nextStep === "underfilled" ? (
+                  <PrimaryAction
+                    icon={Hourglass}
+                    label={
+                      questNextActionLabels[locale][
+                        QuestNextAction.DECIDE_UNDERFILLED
+                      ]
+                    }
+                    onPress={() => setUnderfilledOpen(true)}
+                    testID="hirer-manage-underfilled"
+                    tone="warning"
+                  />
+                ) : null}
+              </View>
+            ) : null}
+            {showCandidateReview && nextStep !== "candidate" ? (
+              <ActionRow
                 icon={UsersRound}
-                label={messages.reviewCandidates}
+                label={candidateReviewLabel}
                 onPress={() => setCandidateOpen(true)}
                 testID="hirer-manage-candidate-review"
               />
             ) : null}
-            {showProofReview ? (
-              <PrimaryAction
+            {showProofReview && nextStep !== "proof" ? (
+              <ActionRow
                 icon={ShieldCheck}
                 label={messages.proofReviewTitle}
                 onPress={reviewProof}
                 testID="hirer-manage-proof-review"
-              />
-            ) : null}
-            {showUnderfilled ? (
-              <PrimaryAction
-                icon={Hourglass}
-                label={
-                  questNextActionLabels[locale][
-                    QuestNextAction.DECIDE_UNDERFILLED
-                  ]
-                }
-                onPress={() => setUnderfilledOpen(true)}
-                testID="hirer-manage-underfilled"
-                tone="warning"
               />
             ) : null}
             {showDispute ? (
@@ -398,7 +433,7 @@ export default function HirerQuestManageScreen({
         ) : null}
 
         {showWorkChat || canProposeConditionEdit ? (
-          <View className="rounded-ku-card border border-ku-border-subtle bg-ku-surface px-ku-md">
+          <View className="gap-ku-12">
             {showWorkChat ? (
               <ActionRow
                 icon={MessageSquare}
@@ -409,7 +444,6 @@ export default function HirerQuestManageScreen({
             ) : null}
             {canProposeConditionEdit ? (
               <ActionRow
-                divided={showWorkChat}
                 icon={FileEdit}
                 label={messages.proposeConditionChanges}
                 onPress={() => setConditionEditOpen(true)}
@@ -424,9 +458,11 @@ export default function HirerQuestManageScreen({
         getCancelTier(snapshot.state) !== null ? (
           <View className="mt-ku-sm">
             <Pressable
+              accessibilityLabel={messages.cancelQuest}
+              accessibilityHint={cancelDescription}
               accessibilityRole="button"
               testID="hirer-manage-cancel"
-              className="min-h-[52px] flex-row items-center justify-center gap-ku-sm rounded-ku-pill border border-ku-danger-dark px-ku-lg py-ku-12 active:bg-ku-surface-danger"
+              className="min-h-[60px] flex-row items-center justify-center gap-ku-sm rounded-ku-pill border border-ku-danger-dark px-ku-lg py-ku-12 active:bg-ku-surface-danger"
               onPress={cancel}
             >
               <X color={colors.dangerDark} size={20} strokeWidth={2.2} />
@@ -479,6 +515,14 @@ export default function HirerQuestManageScreen({
           questTitle={quest.title}
           canDecide={snapshot.capabilities.canDecideUnderfilled}
           onHirerDecision={decideUnderfilled}
+          originalRewardSatang={
+            snapshot.quest.questReward == null
+              ? undefined
+              : Math.round(snapshot.quest.questReward * 100)
+          }
+          originalDueAt={snapshot.quest.dueAt}
+          onExpire={() => void snapshotQuery.refetch()}
+          onBrowseQuests={() => router.replace("/(tabs)")}
           locale={locale}
         />
       </BottomSheet>

@@ -94,15 +94,19 @@ export function useQuestDetailReadSource({
     {},
     !explicitPreview && canSelectLiveSnapshot && sessionReady,
     (snapshot) =>
-      (snapshot?.actor === QuestActor.CANDIDATE ||
-        snapshot?.actor === QuestActor.PROSPECTIVE_WORKER) &&
-      snapshot.mode === QuestCandidateMode.CANDIDATE &&
-      snapshot.state === QuestStatus.QUEST_OPEN &&
-      (snapshot.application?.state ===
-        QuestApplicationStatus.APPLICATION_APPLIED ||
-        snapshot.team?.state === QuestTeamStatus.TEAM_SUBMITTED)
+      snapshot?.state === QuestStatus.QUEST_OPEN &&
+      snapshot.mode === QuestMode.FIRST_COME_FIRST_SERVED &&
+      snapshot.participation === QuestParticipation.GROUP
         ? 15_000
-        : false
+        : (snapshot?.actor === QuestActor.CANDIDATE ||
+              snapshot?.actor === QuestActor.PROSPECTIVE_WORKER) &&
+            snapshot.mode === QuestCandidateMode.CANDIDATE &&
+            snapshot.state === QuestStatus.QUEST_OPEN &&
+            (snapshot.application?.state ===
+              QuestApplicationStatus.APPLICATION_APPLIED ||
+              snapshot.team?.state === QuestTeamStatus.TEAM_SUBMITTED)
+          ? 15_000
+          : false
   );
   const questDetailQuery = useQuestDetailQuery(
     questId ?? null,

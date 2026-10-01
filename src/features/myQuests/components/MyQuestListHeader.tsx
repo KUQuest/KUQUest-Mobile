@@ -1,5 +1,6 @@
 import { ArrowLeft } from "lucide-react-native";
 import { Pressable, Text, View } from "@/tw";
+import { cn } from "@/tw/cn";
 
 import type { MyQuestMessages } from "@/locales/myQuestMessages";
 import type { ThemeColors } from "@/theme/colors";
@@ -24,62 +25,56 @@ export function MyQuestListHeader({
   onTabPress: (tab: MyQuestTab) => void;
 }) {
   return (
-    <View className="border-b border-ku-border-subtle bg-ku-surface px-ku-lg pt-ku-sm pb-ku-md">
-      <View className={styles.headerRow}>
-        <Pressable
-          accessibilityLabel={messages.back}
-          accessibilityRole="button"
-          className={`${styles.backButton} border-ku-border-accent`}
-          onPress={onBackPress}
-          style={({ pressed }) =>
-            pressed ? { backgroundColor: palette.surfaceMuted } : undefined
-          }
-          testID="my-quest-list-back"
-        >
-          <ArrowLeft color={palette.primary} size={24} strokeWidth={2.2} />
-        </Pressable>
-        <View className={styles.headerCopy}>
-          <Text
-            className={`${styles.title} text-ku-text-strong`}
-            numberOfLines={1}
+    <View className="border-b border-ku-divider bg-ku-surface-accent">
+      <View className="w-full max-w-[720px] self-center px-ku-lg pt-ku-md pb-ku-md">
+        <View className={styles.headerRow}>
+          <Pressable
+            accessibilityLabel={messages.back}
+            accessibilityRole="button"
+            className={styles.backButton}
+            onPress={onBackPress}
+            style={({ pressed }) =>
+              pressed ? { backgroundColor: palette.surfaceMuted } : undefined
+            }
+            testID="my-quest-list-back"
           >
-            {messages.title}
-          </Text>
-          <Text
-            className={`${styles.subtitle} text-ku-text-secondary`}
-            numberOfLines={2}
-          >
-            {messages.subtitle}
-          </Text>
+            <ArrowLeft color={palette.textStrong} size={22} strokeWidth={2} />
+          </Pressable>
+          <View className={styles.headerCopy}>
+            <Text accessibilityRole="header" className={styles.title}>
+              {messages.title}
+            </Text>
+            <Text className={styles.subtitle}>{messages.subtitle}</Text>
+          </View>
         </View>
-      </View>
-      <View accessibilityRole="tablist" className={styles.tabRow}>
-        {tabs.map((option) => {
-          const selected = option === selectedTab;
-          return (
-            <Pressable
-              accessibilityLabel={tabLabels[option]}
-              accessibilityRole="tab"
-              accessibilityState={{ selected }}
-              className={`${styles.tabButton} ${
-                selected
-                  ? "border-ku-primary bg-ku-surface-success"
-                  : "border-ku-border-accent bg-ku-surface"
-              }`}
-              key={option}
-              onPress={() => onTabPress(option)}
-              testID={`my-quest-list-tab-${option}`}
-            >
-              <Text
-                className={`${styles.tabButtonText} ${
-                  selected ? "text-ku-primary" : "text-ku-text-secondary"
-                }`}
+        <View accessibilityRole="tablist" className={styles.tabRow}>
+          {tabs.map((option) => {
+            const selected = option === selectedTab;
+            return (
+              <Pressable
+                accessibilityLabel={tabLabels[option]}
+                accessibilityRole="tab"
+                accessibilityState={{ selected }}
+                className={cn(
+                  styles.tabButton,
+                  selected ? "bg-ku-primary" : "active:bg-ku-surface"
+                )}
+                key={option}
+                onPress={() => onTabPress(option)}
+                testID={`my-quest-list-tab-${option}`}
               >
-                {tabLabels[option]}
-              </Text>
-            </Pressable>
-          );
-        })}
+                <Text
+                  className={cn(
+                    styles.tabButtonText,
+                    selected ? "text-ku-on-primary" : "text-ku-text-secondary"
+                  )}
+                >
+                  {tabLabels[option]}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
     </View>
   );

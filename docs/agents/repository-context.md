@@ -53,8 +53,8 @@ reason to weaken either contract.
 - `src/app/(tabs)/chat.tsx` and `src/app/(tabs)/chat/[id].tsx` — Chat inbox and conversation.
 - `src/app/(tabs)/profile.tsx` — Student Profile.
 - `src/app/quest/[id].tsx` — Quest Detail.
-- `src/app/quest/[id]/manage.tsx` — Hirer quest management (cancel, chat, proof review, candidate/team selection fallback). Reached only from My Quests (`MyQuestsScreen.openManageQuest`); the Home Active Quest carousel opens `quest/[id].tsx` instead.
-- `src/app/quest/[id]/select-roster.tsx` — Hirer Quest roster: assigned Workers with profile access for every mode, plus Candidate/Candidate Team select and reject for a CANDIDATE-mode quest. Reached from the Home Active Quest card's worker/applicant banners.
+- `src/app/quest/[id]/manage.tsx` — Hirer quest management (cancel, chat, proof review, candidate/team selection fallback). Reached from My Quests (`MyQuestsScreen.openManageQuest`) and live Home Active Quest cards; fixture cards continue to open the Quest Detail preview.
+- `src/app/quest/[id]/select-roster.tsx` — Hirer Quest roster: assigned Workers with profile access for every mode, plus Candidate/Candidate Team select and reject for a CANDIDATE-mode quest. Reached from Home's Worker banners and applicant items in Needs your attention.
 - `src/app/quest/[id]/work.tsx` — Worker Work Hub: one page per Quest for status, inline proof submission, completion, edit responses, conditions, and chat.
 - `src/app/quest/[id]/proof.tsx` — Hirer-side proof screen; in the Worker workspace it redirects to the Work Hub, where proof is submitted inline.
 - `src/app/quest/[id]/proof-review.tsx` — Hirer proof review list: one row per Assignment (or the selected Candidate Team for `GROUP + CANDIDATE`), `PROOF_PENDING` first; each pending Proof Submission opens the review Popup. Reached from Home and from Quest management.
@@ -98,7 +98,8 @@ The route tree currently has no dedicated route file for Sent Work, Wallet/Conve
 - `preferences/` — locale preference store (`localeStore.ts`); owns the persisted `kuquest_user_locale` value.
 - `workspace/` — Hirer/Worker role workspace store (`roleWorkspaceStore.ts`); owns the persisted `kuquest_active_workspace` value.
 - `navigation/` — navigation chrome UI store (`navigationUiStore.ts`); owns bottom-nav compactness, profile top-bar visibility, and scroll accumulation. Scroll owners: `home/`, `questBoard/`, `chat/`, `profile/`, `workerHome/`, `workerWork/`, and `myQuests/screens/`.
-- `notifications/` — foreground in-app notice banner (`NotificationBannerHost`) and root-mounted `useNotificationCoordinator`: Hirer-owned Quest stream events, chat unread increases, and Worker Candidate application decisions. No inbox endpoint or push registration exists in the API contract.
+- `notifications/` — foreground in-app notice banner (`NotificationBannerHost`) and root-mounted `useNotificationCoordinator`: Hirer-owned Quest stream events (including `UNDERFILLED_DECISION_PENDING` with server `expiresAt`), chat unread increases, Worker Candidate application decisions, and Worker underfilled-start transitions (Hirer deciding, response required, assigned, cancelled with the server `cancellationReason`), all polled from the shared `GET /api/v2/assignments/mine` `underfilled` summary. Countdowns use the server `expiresAt` through `src/features/questBoard/shared/useServerCountdown.ts`.
+- `notifications/push/` — Android-only FCM data-only push. `PushNotificationHost` (root-mounted) registers the device via `POST /api/v1/push/devices` while signed in (`AuthService.signOut` deletes it first) and routes taps (`UNDERFILLED_CONSENT_PENDING` → `/quest/[id]/partial-start`, others → `/quest/[id]`). `pushTask.ts` defines the `expo-task-manager` task at module scope; it presents a localized local notification only when the app is not active and dedupes by `transitionId`. Needs a development build with `google-services.json` (`GOOGLE_SERVICES_JSON` env path in `app.config.ts`); Expo Go is not evidence.
 
 ### Shared and transport layer
 

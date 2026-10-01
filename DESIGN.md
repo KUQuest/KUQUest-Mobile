@@ -392,6 +392,23 @@ Use the `on-*` token for text and icons on role-colored controls. Keep `addition
 - Quiet, floating rounded capsule with safe-area clearance.
 - Muted icons for inactive states; solid primary color indicator for the active tab.
 
+### 6. Hirer My Quests
+
+- My Quests uses a sage-tinted masthead and a single segmented control for Active, Drafts, and History.
+- The masthead scrolls with the list so larger text and short windows do not trap the Quest content below fixed chrome.
+- The selected list shows its Quest count; cards prioritize status, title, per-person amount, and Worker places before schedule and location.
+- Cards use neutral surfaces and quiet dividers, not nested metadata panels. Manage, Edit, and Review retain primary emphasis; cancellation stays secondary.
+- Content is centered at a maximum width of 720 logical units. Labels and actions wrap, text scaling stays enabled, and controls retain 48-unit minimum height.
+- Existing lifecycle actions, cancellation confirmations, proof review, and dispute routes remain unchanged. Light/dark styling uses existing semantic tokens.
+
+### 7. Hirer Quest Management
+
+- Keep the native title bar, then show Quest title and lifecycle status before roster and schedule details.
+- Keep assigned Workers, applications, and submitted teams clearly labeled and separately counted in the sage roster summary; repeat candidate count in review action.
+- Promote server-authorized next action to one labeled primary CTA; keep other review actions secondary.
+- Keep dispute separately gated; cancellation stays outlined danger with settlement explanation below.
+- Use a centered, scrollable column; preserve text scaling, 48-unit minimum controls, lifecycle gates, and semantic light/dark tokens.
+
 ---
 
 ## Do's and Don'ts

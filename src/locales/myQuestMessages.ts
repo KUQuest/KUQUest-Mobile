@@ -7,6 +7,7 @@ export interface MyQuestMessages {
   subtitle: string;
   tabs: Record<HirerTab, string>;
   listTitle: string;
+  questCount: (count: number) => string;
   listHint: string;
   loading: string;
   error: string;
@@ -61,6 +62,7 @@ export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
       completed: "ประวัติ",
     },
     listTitle: "รายการเควสต์",
+    questCount: (count) => `${count} เควสต์`,
     listHint: "เลือกเควสต์เพื่อดูรายละเอียดหรือทำงานต่อ",
     loading: "กำลังโหลดเควสต์…",
     error: "ไม่สามารถโหลดเควสต์ได้",
@@ -117,6 +119,7 @@ export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
     subtitle: "Manage every Quest you have created",
     tabs: { active: "Active", draft: "Drafts", completed: "History" },
     listTitle: "Quest list",
+    questCount: (count) => `${count} Quest${count === 1 ? "" : "s"}`,
     listHint: "Choose a Quest to view details or continue working",
     loading: "Loading Quests…",
     error: "We couldn't load your Quests",

@@ -72,6 +72,8 @@ function makeFacts(): QuestDetailPresentationFacts {
     canApply: false,
     canShowWithdraw: false,
     confirmationOpen: false,
+    groupFcfs: undefined,
+    groupFcfsConfirmFull: false,
     canMessageOwner: false,
     statusTitle: "Open",
     statusDescription: "Open Quest",

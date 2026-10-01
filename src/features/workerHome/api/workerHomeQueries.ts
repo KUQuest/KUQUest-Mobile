@@ -13,8 +13,12 @@ type WorkerBoardQueryParams = {
   tagId?: string | null;
 };
 
-export function useWorkerAssignmentsQuery(status: QuestV2AssignmentMineStatus) {
+export function useWorkerAssignmentsQuery(
+  status: QuestV2AssignmentMineStatus,
+  enabled = true
+) {
   return useQuery({
+    enabled,
     queryKey: workerHomeKeys.assignments(status),
     queryFn: ({ signal }) => questApi.listMyAssignments(status, { signal }),
   });

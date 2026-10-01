@@ -72,7 +72,8 @@ const styles = {
     "flex-row items-center bg-ku-surface-danger border border-ku-border-danger rounded-ku-field p-ku-md gap-ku-sm",
   errorText: "font-ku-regular text-ku-danger-dark text-ku-meta flex-1",
   saveBar:
-    "absolute bottom-0 left-0 right-0 bg-ku-surface-nav-translucent border-t border-ku-border-nav px-ku-lg pt-ku-sm pb-ku-0",
+    "absolute bottom-0 left-0 right-0 bg-ku-surface-nav-translucent border-t border-ku-border-nav",
+  saveBarContent: "px-ku-lg pt-ku-sm pb-ku-sm",
   saveBarInner: "self-center w-full max-w-[720px]",
 } as const;
 

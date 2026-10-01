@@ -1,10 +1,9 @@
-import { Pressable, ScrollView, Text, View } from "@/tw";
+import { Pressable, SafeAreaView, ScrollView, Text, View } from "@/tw";
 import {
   LoadingSkeleton,
   SkeletonBlock,
 } from "@/components/ui/LoadingSkeleton";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { spacing } from "@/theme/spacing";
 import type { ProfileEditMessages } from "@/locales/profileEditMessages";
 import { ScreenHeader } from "./ProfileEditFormParts";
@@ -77,7 +76,6 @@ export function ProfileEditLoadingState({
   messages: ProfileEditMessages;
   onBack: () => void;
 }) {
-  const insets = useSafeAreaInsets();
   const isEditor = variant.endsWith("-editor");
   const title =
     variant === "hub"
@@ -235,18 +233,17 @@ export function ProfileEditLoadingState({
             )}
           </ScrollView>
           {isEditor ? (
-            <View
-              className={styles.saveBar}
-              style={{ paddingBottom: Math.max(insets.bottom, spacing.lg) }}
-            >
-              <View className={styles.saveBarInner}>
-                <SkeletonBlock
-                  height={48}
-                  borderRadius={24}
-                  testID="profile-edit-loading-save"
-                />
+            <SafeAreaView edges={["bottom"]} className={styles.saveBar}>
+              <View className={styles.saveBarContent}>
+                <View className={styles.saveBarInner}>
+                  <SkeletonBlock
+                    height={48}
+                    borderRadius={24}
+                    testID="profile-edit-loading-save"
+                  />
+                </View>
               </View>
-            </View>
+            </SafeAreaView>
           ) : null}
         </View>
       </LoadingSkeleton>
