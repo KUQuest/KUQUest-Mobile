@@ -1,12 +1,11 @@
 import { Pressable, Text, View } from "@/tw";
+import { cn } from "@/tw/cn";
 import {
-  BriefcaseBusiness,
   CalendarCheck,
   CalendarClock,
   Check,
   CircleX,
   Clock3,
-  Coins,
   Globe,
   MapPin,
   Pencil,
@@ -36,7 +35,7 @@ export interface MyQuestSummaryCardProps {
 }
 
 function toneForeground(tone: StatusTone, palette: ThemeColors): string {
-  if (tone === "success") return palette.success;
+  if (tone === "success") return palette.primary;
   if (tone === "danger") return palette.dangerDark;
   if (tone === "warning") return palette.warningDark;
   return palette.textSecondary;
@@ -44,15 +43,15 @@ function toneForeground(tone: StatusTone, palette: ThemeColors): string {
 
 function statusClasses(tone: StatusTone) {
   if (tone === "success") {
-    return "border-ku-border-success bg-ku-surface-success text-ku-success";
+    return "border-ku-border-success bg-ku-surface-success";
   }
   if (tone === "danger") {
-    return "border-ku-border-danger bg-ku-surface-danger text-ku-danger-dark";
+    return "border-ku-border-danger bg-ku-surface-danger";
   }
   if (tone === "warning") {
-    return "border-ku-border-warning bg-ku-surface-warning text-ku-warning-dark";
+    return "border-ku-border-warning bg-ku-surface-warning";
   }
-  return "border-ku-border bg-ku-surface-muted text-ku-text-secondary";
+  return "border-ku-border bg-ku-surface-muted";
 }
 
 const ACTION_ICONS: Record<QuestCardAction, LucideIcon> = {
@@ -76,13 +75,11 @@ function InfoRow({
   label,
   value,
   palette,
-  emphasis = false,
 }: {
   icon: LucideIcon;
   label: string;
   value: string;
   palette: ThemeColors;
-  emphasis?: boolean;
 }) {
   return (
     <View
@@ -91,13 +88,7 @@ function InfoRow({
       className="min-w-0 flex-row items-center gap-ku-sm"
     >
       <Icon color={palette.primary} size={16} strokeWidth={2} />
-      <Text
-        className={
-          emphasis
-            ? "flex-shrink font-ku-bold text-ku-body-small leading-[20px] text-ku-primary"
-            : "flex-shrink font-ku-medium text-ku-body-small leading-[20px] text-ku-text-secondary"
-        }
-      >
+      <Text className="min-w-0 flex-shrink font-ku-medium text-ku-body-small text-ku-text-secondary">
         {value}
       </Text>
     </View>
@@ -128,63 +119,68 @@ export function MyQuestSummaryCard({
     ? messages[ACTION_MESSAGE_KEYS[secondaryAction]]
     : "";
   return (
-    <View
-      className="overflow-hidden rounded-[16px] border border-ku-border-accent"
-      style={{ backgroundColor: palette.surface }}
-    >
+    <View className="overflow-hidden rounded-ku-card border border-ku-border bg-ku-surface">
       <Pressable
         accessibilityHint={messages.listHint}
-        accessibilityLabel={`${quest.title}. ${quest.status}`}
+        accessibilityLabel={`${quest.title}. ${quest.status}. ${quest.tag}. ${description}. ${messages.rewardPerPerson(quest.reward)}. ${messages.workerLabel}: ${messages.peopleCount(quest.teamSize)}. ${quest.mode}. ${messages.startLabel}: ${quest.startsAt}. ${messages.endLabel}: ${quest.endsAt}. ${quest.online ? messages.online : quest.location}`}
         accessibilityRole="button"
-        className="p-ku-md"
+        className="p-ku-md active:bg-ku-surface-muted"
         onPress={onOpen}
-        style={({ pressed }) =>
-          pressed ? { backgroundColor: palette.surfaceAccent } : undefined
-        }
         testID={`my-quest-list-card-${quest.id}`}
       >
-        <View className="flex-row items-center justify-between gap-ku-sm">
-          <View className="min-h-[28px] flex-shrink flex-row items-center rounded-ku-pill bg-ku-surface-accent px-ku-sm">
-            <BriefcaseBusiness
-              color={palette.primary}
-              size={14}
-              strokeWidth={2}
-            />
-            <Text
-              className="ml-ku-xs flex-shrink font-ku-semibold text-ku-label leading-[18px] text-ku-primary"
-              numberOfLines={1}
-            >
-              {quest.tag}
-            </Text>
-          </View>
+        <View className="flex-row flex-wrap items-center justify-between gap-ku-sm">
           <View
-            className={`min-h-[28px] flex-shrink-0 flex-row items-center justify-center gap-ku-xs rounded-ku-pill border px-ku-9 ${statusClasses(quest.statusTone)}`}
+            className={cn(
+              "min-h-[28px] flex-row items-center gap-ku-xs rounded-ku-pill border px-ku-sm py-ku-xs",
+              statusClasses(quest.statusTone)
+            )}
           >
             <StatusIcon
               color={toneForeground(quest.statusTone, palette)}
               size={14}
-              strokeWidth={2.2}
+              strokeWidth={2}
             />
-            <Text className="font-ku-semibold text-ku-label leading-[18px]">
+            <Text className="font-ku-semibold text-ku-label text-ku-text-strong">
               {quest.status}
             </Text>
           </View>
+          <Text className="shrink font-ku-medium text-ku-label text-ku-text-secondary">
+            {quest.tag}
+          </Text>
         </View>
-        <Text
-          className="mt-ku-sm font-ku-bold text-ku-title-small leading-[24px] text-ku-text-strong"
-          numberOfLines={2}
-        >
+        <Text className="mt-ku-12 font-ku-semibold text-ku-subtitle text-ku-text-strong">
           {quest.title}
         </Text>
         {description ? (
           <Text
-            className="mt-ku-xs font-ku-regular text-ku-body-small leading-[21px] text-ku-text-secondary"
+            className="mt-ku-xs font-ku-regular text-ku-body-small text-ku-text-secondary"
             numberOfLines={2}
           >
             {description}
           </Text>
         ) : null}
-        <View className="mt-ku-12 gap-ku-sm rounded-[12px] bg-ku-surface-muted p-ku-12">
+        <View className="mt-ku-md flex-row flex-wrap items-center justify-between gap-ku-12">
+          <View>
+            <Text className="font-ku-regular text-ku-label text-ku-text-secondary">
+              {messages.rewardLabel}
+            </Text>
+            <Text className="font-ku-semibold text-ku-subtitle text-ku-primary">
+              {messages.rewardPerPerson(quest.reward)}
+            </Text>
+          </View>
+          <View className="min-w-0 shrink gap-ku-xs">
+            <InfoRow
+              icon={UsersRound}
+              label={messages.workerLabel}
+              palette={palette}
+              value={messages.peopleCount(quest.teamSize)}
+            />
+            <Text className="font-ku-regular text-ku-label text-ku-text-secondary">
+              {quest.mode}
+            </Text>
+          </View>
+        </View>
+        <View className="mt-ku-md gap-ku-sm border-t border-ku-divider pt-ku-12">
           {(
             [
               [CalendarClock, messages.startLabel, quest.startsAt],
@@ -198,10 +194,10 @@ export function MyQuestSummaryCard({
               className="flex-row items-center gap-ku-sm"
             >
               <Icon color={palette.primary} size={16} strokeWidth={2} />
-              <Text className="min-w-[48px] font-ku-regular text-ku-body-small leading-[20px] text-ku-text-muted">
+              <Text className="min-w-[48px] font-ku-regular text-ku-body-small text-ku-text-secondary">
                 {label}
               </Text>
-              <Text className="flex-1 font-ku-medium text-ku-body-small leading-[20px] text-ku-text-secondary">
+              <Text className="min-w-0 flex-1 font-ku-medium text-ku-body-small text-ku-text-strong">
                 {value}
               </Text>
             </View>
@@ -212,36 +208,24 @@ export function MyQuestSummaryCard({
             palette={palette}
             value={quest.online ? messages.online : quest.location}
           />
-          <View className="flex-row flex-wrap items-center justify-between gap-ku-sm">
-            <InfoRow
-              icon={UsersRound}
-              label={messages.workerLabel}
-              palette={palette}
-              value={`${messages.peopleCount(quest.teamSize)} · ${quest.mode}`}
-            />
-            <InfoRow
-              emphasis
-              icon={Coins}
-              label={messages.rewardLabel}
-              palette={palette}
-              value={messages.rewardPerPerson(quest.reward)}
-            />
-          </View>
         </View>
       </Pressable>
-      <View className="flex-row flex-wrap items-center gap-ku-sm border-t border-ku-border-subtle px-ku-md py-ku-12">
+      <View className="flex-row flex-wrap items-center gap-ku-sm border-t border-ku-divider px-ku-md py-ku-12">
         {quest.cancelFromCard ? (
           <Pressable
             accessibilityLabel={`${messages.cancelQuest}: ${quest.title}`}
             accessibilityRole="button"
             accessibilityState={{ disabled: cancelling, busy: cancelling }}
-            className={`min-h-[48px] flex-row items-center justify-center gap-ku-xs rounded-ku-pill border border-ku-border-danger px-ku-14 ${cancelling ? "opacity-[0.5]" : ""}`}
+            className={cn(
+              "min-h-[48px] flex-row items-center justify-center gap-ku-xs rounded-ku-pill px-ku-sm active:bg-ku-surface-danger",
+              cancelling && "opacity-50"
+            )}
             disabled={cancelling}
             onPress={onCancel}
             testID={`my-quest-list-cancel-${quest.id}`}
           >
             <CircleX color={palette.dangerDark} size={16} strokeWidth={2.2} />
-            <Text className="font-ku-semibold text-ku-meta leading-[18px] text-ku-danger-dark">
+            <Text className="shrink font-ku-medium text-ku-body-small text-ku-danger-dark">
               {messages.cancelQuest}
             </Text>
           </Pressable>
@@ -250,7 +234,7 @@ export function MyQuestSummaryCard({
           <Pressable
             accessibilityLabel={`${messages.proofReview}: ${quest.title}`}
             accessibilityRole="button"
-            className="min-h-[48px] flex-row items-center justify-center gap-ku-xs rounded-ku-pill border border-ku-border px-ku-14"
+            className="min-h-[48px] flex-row items-center justify-center gap-ku-xs rounded-ku-pill border border-ku-border px-ku-12 active:bg-ku-surface-muted"
             onPress={() => onAction("proofReview")}
             testID={`my-quest-list-proof-review-${quest.id}`}
           >
@@ -259,7 +243,7 @@ export function MyQuestSummaryCard({
               size={16}
               strokeWidth={2.2}
             />
-            <Text className="font-ku-semibold text-ku-meta leading-[18px] text-ku-text-strong">
+            <Text className="shrink font-ku-medium text-ku-body-small text-ku-text-strong">
               {messages.proofReview}
             </Text>
           </Pressable>
@@ -268,7 +252,7 @@ export function MyQuestSummaryCard({
           <Pressable
             accessibilityLabel={`${secondaryLabel}: ${quest.title}`}
             accessibilityRole="button"
-            className="min-h-[48px] flex-row items-center justify-center gap-ku-xs rounded-ku-pill border border-ku-border px-ku-14"
+            className="min-h-[48px] flex-row items-center justify-center gap-ku-xs rounded-ku-pill border border-ku-border px-ku-12 active:bg-ku-surface-muted"
             onPress={() => onAction(secondaryAction)}
             testID={`my-quest-list-secondary-${quest.id}`}
           >
@@ -277,7 +261,7 @@ export function MyQuestSummaryCard({
               size={16}
               strokeWidth={2.2}
             />
-            <Text className="font-ku-semibold text-ku-meta leading-[18px] text-ku-text-strong">
+            <Text className="shrink font-ku-medium text-ku-body-small text-ku-text-strong">
               {secondaryLabel}
             </Text>
           </Pressable>
@@ -285,15 +269,12 @@ export function MyQuestSummaryCard({
         <Pressable
           accessibilityLabel={`${primaryLabel}: ${quest.title}`}
           accessibilityRole="button"
-          className="ml-auto min-h-[48px] flex-row items-center justify-center gap-ku-xs rounded-ku-pill bg-ku-primary px-ku-md"
+          className="ml-auto min-h-[48px] flex-row items-center justify-center gap-ku-sm rounded-ku-pill bg-ku-primary px-ku-20 active:opacity-80"
           onPress={() => onAction(quest.primaryAction)}
-          style={({ pressed }) =>
-            pressed ? { backgroundColor: palette.primaryDark } : undefined
-          }
           testID={`my-quest-list-action-${quest.id}`}
         >
           <PrimaryIcon color={palette.onPrimary} size={16} strokeWidth={2.2} />
-          <Text className="font-ku-semibold text-ku-meta leading-[18px] text-ku-on-primary">
+          <Text className="shrink font-ku-semibold text-ku-body-small text-ku-on-primary">
             {primaryLabel}
           </Text>
         </Pressable>
