@@ -530,6 +530,54 @@ describe("HirerQuestManageRoute condition edit", () => {
     expect(view.getByText("Review candidates · 1 application")).toBeTruthy();
   });
 
+  it("explains auto-cancel while an OPEN Candidate Quest has no proposals", async () => {
+    const base = createSnapshot();
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        state: QuestStatus.QUEST_OPEN,
+        quest: { ...base.quest, state: QuestStatus.QUEST_OPEN },
+      })
+    );
+
+    const view = await render(<HirerQuestManageRoute />);
+
+    expect(
+      await view.findByText(
+        "Select a Worker before the start time, otherwise this Quest is cancelled automatically."
+      )
+    ).toBeTruthy();
+  });
+
+  it("shows how many Workers started, except where only a Team Leader starts", async () => {
+    const base = createSnapshot();
+    const assignment = {
+      id: "assignment-1",
+      questId: "quest-1",
+      workerId: "worker-1",
+      state: "ASSIGNMENT_ACTIVE" as const,
+      questState: QuestStatus.QUEST_ASSIGNED,
+      startedAt: "2026-10-01T09:05:00.000+07:00",
+      createdAt: "2026-09-30T09:00:00.000Z",
+    };
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({ assignments: [assignment] })
+    );
+    const single = await render(<HirerQuestManageRoute />);
+    expect(await single.findByText("1 of 1 started work")).toBeTruthy();
+    await single.unmount();
+
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        participation: "GROUP",
+        quest: { ...base.quest, participation: "GROUP", headcount: 1 },
+        assignments: [assignment],
+      })
+    );
+    const team = await render(<HirerQuestManageRoute />);
+    await team.findByTestId("hirer-manage-roster");
+    expect(team.queryByText("1 of 1 started work")).toBeNull();
+  });
+
   it("labels submitted Candidate Teams separately from assigned Workers", async () => {
     const base = createSnapshot();
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(

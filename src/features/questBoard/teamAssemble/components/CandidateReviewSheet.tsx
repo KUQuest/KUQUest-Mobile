@@ -347,7 +347,9 @@ function normalizeProposals({
             : team.members.map((member) => ({
                 workerId: member.memberId,
                 role: member.memberId === team.leaderId ? "LEADER" : "MEMBER",
-                displayName: memberIdentities.get(member.memberId)?.displayName,
+                displayName:
+                  member.member?.displayName ??
+                  memberIdentities.get(member.memberId)?.displayName,
               }));
         const application = teamApplications.get(team.id);
         const proposalId = "proposalId" in team ? team.proposalId : undefined;
@@ -406,10 +408,14 @@ function normalizeProposals({
         id: applicationId(application),
         type: "individual" as const,
         status: applicationStatus(application),
-        displayName: applicantId
-          ? (identities.get(applicantId)?.displayName ??
-            messages.individualProposal)
-          : messages.individualProposal,
+        displayName:
+          ("member" in application
+            ? application.member?.displayName
+            : undefined) ??
+          (applicantId
+            ? (identities.get(applicantId)?.displayName ??
+              messages.individualProposal)
+            : messages.individualProposal),
         detail: applicantId
           ? (identities.get(applicantId)?.detail ?? messages.individualProposal)
           : messages.individualProposal,

@@ -214,9 +214,16 @@ export function PartialGroupStartConsentContent({
       requiredVoterIds.map((id) => {
         const provided = voterMap.get(id);
         const role = provided?.role ?? (id === hirerId ? "HIRER" : "WORKER");
-        return { id, displayName: provided?.displayName ?? id, role };
+        const serverName = underfilledResponses?.find(
+          (response) => response.workerId === id
+        )?.member?.displayName;
+        return {
+          id,
+          displayName: provided?.displayName ?? serverName ?? "…",
+          role,
+        };
       }),
-    [hirerId, requiredVoterIds, voterMap]
+    [hirerId, requiredVoterIds, underfilledResponses, voterMap]
   );
   const responseMap = useMemo(() => {
     if (underfilled) {
