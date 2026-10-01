@@ -53,7 +53,7 @@ export function WorkerHomeContent({
   handleSearchChange,
   handleScroll,
   handleSelectTag,
-  isRefreshing,
+  isPullRefreshing,
   messages,
   availableQuests,
   scrollBottomPadding,
@@ -198,7 +198,7 @@ export function WorkerHomeContent({
           <RefreshControl
             colors={[themeColors.workerDark]}
             onRefresh={handleRefresh}
-            refreshing={isRefreshing}
+            refreshing={isPullRefreshing}
             tintColor={themeColors.workerDark}
           />
         }

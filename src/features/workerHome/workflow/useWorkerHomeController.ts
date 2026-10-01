@@ -73,7 +73,7 @@ export interface WorkerHomeContentProps {
   handleSearchChange: (text: string) => void;
   handleScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   handleSelectTag: (tagId: string | null) => void;
-  isRefreshing: boolean;
+  isPullRefreshing: boolean;
   messages: WorkerHomeMessages;
   availableQuests: QuestV2BoardCard[];
   scrollBottomPadding: number;
@@ -107,6 +107,7 @@ export function useWorkerHomeController(): WorkerHomeControllerProps {
     emptyQuestBoardFilter
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const assignmentsQuery = useWorkerAssignmentsQuery("active");
   const { refetch: refetchAssignments } = assignmentsQuery;
   const boardQuery = useWorkerBoardQuery({
@@ -136,14 +137,15 @@ export function useWorkerHomeController(): WorkerHomeControllerProps {
   const activeQuestDetail = activeQuestDetailQuery.data ?? null;
 
   const handleRefresh = useCallback(() => {
-    void Promise.all([
+    setIsPullRefreshing(true);
+    void Promise.allSettled([
       assignmentsQuery.refetch(),
       boardQuery.refetch(),
       tagsQuery.refetch(),
       activeOngoingAssignment
         ? activeQuestDetailQuery.refetch()
         : Promise.resolve(),
-    ]);
+    ]).then(() => setIsPullRefreshing(false));
   }, [
     activeOngoingAssignment,
     activeQuestDetailQuery,
@@ -261,11 +263,7 @@ export function useWorkerHomeController(): WorkerHomeControllerProps {
       handleSearchChange,
       handleScroll: handleNavigationScroll,
       handleSelectTag,
-      isRefreshing:
-        assignmentsQuery.isRefetching ||
-        boardQuery.isRefetching ||
-        tagsQuery.isRefetching ||
-        activeQuestDetailQuery.isRefetching,
+      isPullRefreshing,
       messages,
       availableQuests,
       scrollBottomPadding,

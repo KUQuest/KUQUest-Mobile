@@ -1,6 +1,7 @@
 import { act, fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { questApi } from "@/api/QuestApi";
+import type { QuestV2BoardCard } from "@/api/questV2Contracts";
 import { subscribeToQuestBoardEvents } from "@/features/questBoard/live/questEvents";
 import WorkerHomeScreen from "../WorkerHomeScreen";
 const mockPush = jest.fn();
@@ -189,6 +190,103 @@ describe("WorkerHomeScreen", () => {
       expect.anything()
     );
   });
+  it("keeps background Board refresh separate from pull-to-refresh indicator", async () => {
+    let releaseBoardRefetch!: () => void;
+    let releasePullRefetch!: () => void;
+    const currentQuest: QuestV2BoardCard = {
+      id: "quest-current",
+      title: "Current Poster",
+      questReward: 250,
+      tag: { id: "tag-1", name: "Printing" },
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "SINGLE",
+      headcount: 1,
+      activeWorkerCount: 0,
+      startTime: "2026-09-18T12:00:00Z",
+      dueAt: "2026-09-19T12:00:00Z",
+      hirerName: "Prof. Somchai",
+      location: "Main Library",
+    };
+    const updatedQuest: QuestV2BoardCard = {
+      ...currentQuest,
+      id: "quest-updated",
+      title: "Updated Poster",
+    };
+    const listBoard = jest.mocked(questApi.listBoard);
+    listBoard
+      .mockResolvedValueOnce({ items: [currentQuest], nextCursor: null })
+      .mockImplementationOnce(async () => {
+        await new Promise<void>((resolve) => {
+          releaseBoardRefetch = resolve;
+        });
+        return { items: [updatedQuest], nextCursor: null };
+      });
+    let invalidateBoard: (() => void) | undefined;
+    jest
+      .mocked(subscribeToQuestBoardEvents)
+      .mockImplementation((onInvalidated) => {
+        invalidateBoard = () =>
+          onInvalidated({
+            type: "QUEST_BOARD_INVALIDATED",
+            version: 1,
+            questId: "00000000-0000-4000-8000-000000000001",
+          });
+        return jest.fn();
+      });
+
+    const view = await renderWithQueryClient(<WorkerHomeScreen />);
+    await waitFor(() =>
+      expect(view.getByTestId("worker-feed-card-quest-current")).toBeTruthy()
+    );
+
+    await act(async () => {
+      if (!invalidateBoard) throw new Error("Expected Board subscription");
+      invalidateBoard();
+    });
+    await waitFor(() => expect(listBoard).toHaveBeenCalledTimes(2));
+    await act(async () => {
+      await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    });
+    expect(
+      view.getByTestId("worker-home-scroll").props.refreshControl.props
+        .refreshing
+    ).toBe(false);
+
+    await act(async () => {
+      releaseBoardRefetch();
+    });
+    await waitFor(() =>
+      expect(view.getByTestId("worker-feed-card-quest-updated")).toBeTruthy()
+    );
+
+    listBoard.mockImplementationOnce(async () => {
+      await new Promise<void>((resolve) => {
+        releasePullRefetch = resolve;
+      });
+      return { items: [updatedQuest], nextCursor: null };
+    });
+    await act(async () => {
+      view
+        .getByTestId("worker-home-scroll")
+        .props.refreshControl.props.onRefresh();
+    });
+    await waitFor(() =>
+      expect(
+        view.getByTestId("worker-home-scroll").props.refreshControl.props
+          .refreshing
+      ).toBe(true)
+    );
+    await act(async () => {
+      releasePullRefetch();
+    });
+    await waitFor(() =>
+      expect(
+        view.getByTestId("worker-home-scroll").props.refreshControl.props
+          .refreshing
+      ).toBe(false)
+    );
+  });
+
   it("shows Board error and retries Board while assignments succeed", async () => {
     (questApi.listBoard as jest.Mock)
       .mockRejectedValueOnce(new TypeError("offline"))
