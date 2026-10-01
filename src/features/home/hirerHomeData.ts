@@ -157,10 +157,6 @@ export const hirerHomeQuestFixtures: HirerHomeQuestFixture[] = [
       en: "Sweep the area around campus",
       th: "กวาดขยะรอบมหาวิทยาลัย",
     },
-    tag: {
-      en: "Cleaning",
-      th: "ทำความสะอาด",
-    },
     status: QuestStatus.QUEST_IN_PROGRESS,
     worker: {
       id: "demo-worker-1",
@@ -182,10 +178,6 @@ export const hirerHomeQuestFixtures: HirerHomeQuestFixture[] = [
       en: "Clean a dorm fan",
       th: "ล้างพัดลมหอพัก 13",
     },
-    tag: {
-      en: "Cleaning",
-      th: "ทำความสะอาด",
-    },
     status: QuestStatus.QUEST_ASSIGNED,
     worker: {
       id: "demo-worker-2",
@@ -206,10 +198,6 @@ export const hirerHomeQuestFixtures: HirerHomeQuestFixture[] = [
     title: {
       en: "Photocopy course documents",
       th: "ถ่ายเอกสารประกอบการเรียน",
-    },
-    tag: {
-      en: "Printing",
-      th: "ถ่ายเอกสาร",
     },
     status: QuestStatus.QUEST_COMPLETED,
     worker: {

@@ -47,7 +47,6 @@ export interface HirerHomeMessages {
   shortcutSettingsTitle: string;
   shortcutSettingsDesc: string;
   quickDraftDesc: string;
-  statusLabels: Record<CanonicalHirerQuestStatus, string>;
   timelineLabels: Record<TimelineStageKey, string>;
   timelineOverrides: Partial<
     Record<CanonicalHirerQuestStatus, Partial<Record<TimelineStageKey, string>>>
@@ -107,15 +106,6 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     shortcutSettingsTitle: "Settings",
     shortcutSettingsDesc: "Language and account",
     quickDraftDesc: "Saved quest drafts",
-    statusLabels: {
-      QUEST_DRAFT: "Draft",
-      QUEST_OPEN: "Open for applications",
-      QUEST_ASSIGNED: "Ready to start",
-      QUEST_IN_PROGRESS: "In progress",
-      QUEST_COMPLETED: "Completed",
-      QUEST_CANCELLED: "Cancelled",
-      QUEST_FAILED: "Not completed",
-    },
     timelineLabels: {
       open: "Open for applications",
       assigned: "Ready to start",
@@ -180,15 +170,6 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     shortcutSettingsTitle: "การตั้งค่า",
     shortcutSettingsDesc: "ภาษาและบัญชี",
     quickDraftDesc: "เควสต์ที่ยังไม่เผยแพร่",
-    statusLabels: {
-      QUEST_DRAFT: "ฉบับร่าง",
-      QUEST_OPEN: "เปิดรับสมัคร",
-      QUEST_ASSIGNED: "รอเริ่มงาน",
-      QUEST_IN_PROGRESS: "กำลังทำงาน",
-      QUEST_COMPLETED: "เสร็จสิ้น",
-      QUEST_CANCELLED: "ยกเลิกแล้ว",
-      QUEST_FAILED: "ไม่สำเร็จ",
-    },
     timelineLabels: {
       open: "เปิดรับสมัคร",
       assigned: "รอเริ่มงาน",
