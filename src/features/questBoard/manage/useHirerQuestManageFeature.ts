@@ -46,19 +46,6 @@ import {
   QuestUnderfilledState,
 } from "../domain/types";
 
-const REFETCH_CHANGE_TYPES: Record<string, true> = {
-  ASSIGNMENT_JOINED: true,
-  ASSIGNMENT_STARTED: true,
-  PROOF_SUBMITTED: true,
-  QUEST_AUTO_CANCELLED: true,
-  PROOF_REVIEWED: true,
-  PROOF_AUTO_APPROVED: true,
-  QUEST_FAILED: true,
-  DISPUTE_WINDOW_OPENED: true,
-  DISPUTE_WINDOW_CLOSED: true,
-  DISPUTE_CASE_UPDATED: true,
-};
-
 export function useHirerQuestManageFeature(questId?: string) {
   const router = useRouter();
   const { locale } = useLocale();
@@ -87,13 +74,6 @@ export function useHirerQuestManageFeature(questId?: string) {
     if (!questId || !viewerId) return;
     return subscribeToHirerQuestEvents((event) => {
       if (event.questId !== questId) return;
-      const underfilledPending =
-        event.changeType ===
-          QuestUnderfilledState.UNDERFILLED_DECISION_PENDING &&
-        Boolean(event.expiresAt);
-      if (!underfilledPending && !REFETCH_CHANGE_TYPES[event.changeType]) {
-        return;
-      }
       void queryClient.invalidateQueries({
         queryKey: questBoardKeys.liveSnapshotScope(questId, viewerId),
       });
