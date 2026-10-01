@@ -137,6 +137,8 @@ export const onboardingMessages = {
     removeExperience: (index: number) => `ลบประสบการณ์รายการที่ ${index}`,
     removeWork: (index: number) => `ลบผลงานรายการที่ ${index}`,
     submitErrorMsg: "ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง",
+    studentIdAlreadyExists:
+      "รหัสนิสิตนี้ลงทะเบียนแล้ว กรุณาตรวจสอบรหัสแล้วลองอีกครั้ง",
     partialSaveMsg: "บางรายการถูกบันทึกแล้ว กดลองใหม่เพื่อทำรายการต่อ",
     invalidDate: "กรุณาเลือกวันที่ที่ถูกต้อง",
     invalidTelephone: "รูปแบบเบอร์โทรศัพท์ไม่ถูกต้อง",
@@ -280,6 +282,8 @@ Your data will be stored securely in accordance with applicable Personal Data Pr
     removeExperience: (index: number) => `Remove experience ${index}`,
     removeWork: (index: number) => `Remove work ${index}`,
     submitErrorMsg: "Failed to save data. Please try again.",
+    studentIdAlreadyExists:
+      "This Student ID is already registered. Check the ID and try again.",
     partialSaveMsg: "Some changes were saved. Retry to finish saving.",
     invalidDate: "Select a valid date",
     invalidTelephone: "Invalid telephone format",

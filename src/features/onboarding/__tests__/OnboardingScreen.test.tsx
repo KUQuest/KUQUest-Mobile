@@ -687,6 +687,32 @@ describe("OnboardingScreen Academic Registration selections", () => {
     resolveSave();
     await waitFor(() => expect(api.updateProfile).toHaveBeenCalled());
   });
+  test("shows the duplicate Student ID error before the Step 3 fields", async () => {
+    const api = createCompletedApi({
+      updateAcademicRegistration: jest
+        .fn()
+        .mockRejectedValue(
+          new ApiError(
+            409,
+            "STUDENT_ID_ALREADY_EXISTS",
+            "Student ID already exists"
+          )
+        ),
+    });
+    prepareAuth(api);
+    mockRouteParams = { step: "3" };
+    await renderWithQueryClient(<OnboardingScreen />);
+    await waitFor(() => expect(screen.getByText("Step 3 of 3")).toBeTruthy());
+
+    await fireEvent.press(screen.getByRole("button", { name: "Complete" }));
+
+    expect(
+      await screen.findByText(
+        "This Student ID is already registered. Check the ID and try again."
+      )
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeTruthy();
+  });
   test("asks before leaving registration and honors cancel versus confirm", async () => {
     const api = createApi();
     prepareAuth(api);
