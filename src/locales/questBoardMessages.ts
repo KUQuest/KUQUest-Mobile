@@ -122,6 +122,7 @@ export interface QuestBoardMessages {
   actionFailedDescription: string;
   firstCome: string;
   reviewCandidates: string;
+  nextStep: string;
   applyForReview: string;
   participation: string;
   participants: string;
@@ -426,6 +427,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     actionFailedDescription: "The action could not be completed. Try again.",
     firstCome: "First-come, first-served",
     reviewCandidates: "Review candidates",
+    nextStep: "Next step",
     applyForReview: "Apply for review",
     participation: "Participation",
     participants: "Participants",
@@ -824,6 +826,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     actionFailedDescription: "ดำเนินการไม่สำเร็จ โปรดลองอีกครั้ง",
     firstCome: "มาก่อนได้ก่อน",
     reviewCandidates: "ตรวจสอบผู้สมัคร",
+    nextStep: "ขั้นตอนถัดไป",
     applyForReview: "สมัครเพื่อรอการคัดเลือก",
     participation: "การเข้าร่วม",
     participants: "ผู้เข้าร่วม",

@@ -20,6 +20,9 @@ import {
   QuestActor,
   QuestApplicationStatus,
   QuestAssignmentStatus,
+  QuestMode,
+  QuestNextAction,
+  QuestParticipation,
   QuestStatus,
 } from "@/features/questBoard/domain/types";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
@@ -311,6 +314,50 @@ describe("HirerQuestManageRoute condition edit", () => {
     expect(view.queryByTestId("hirer-manage-condition-edit")).toBeNull();
   });
 
+  it("opens Work Chat through the accessible Quest action row", async () => {
+    const snapshot = createSnapshot();
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        workConversation: {
+          id: "conversation-1",
+          type: "CONVERSATION_WORK",
+          quest: {
+            id: "quest-1",
+            title: "Campus Mural Project",
+            status: QuestStatus.QUEST_ASSIGNED,
+          },
+          latestMessage: null,
+          lastActivityAt: null,
+          archived: false,
+          readOnly: false,
+          unreadCount: 0,
+        },
+        capabilities: {
+          ...snapshot.capabilities,
+          canReadWorkChat: true,
+        },
+      })
+    );
+    mockPush.mockClear();
+
+    const view = await render(<HirerQuestManageRoute />);
+    const chatAction = await view.findByRole("button", {
+      name: "Open Work Chat",
+    });
+    await fireEvent.press(chatAction);
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/chat/[id]",
+      params: {
+        id: "conversation-1",
+        conversationId: "conversation-1",
+        questId: "quest-1",
+        viewerId: "hirer-1",
+        questTitle: "Campus Mural Project",
+      },
+    });
+  });
+
   it("delegates failed-Quest dispute action to confirmation workflow", async () => {
     mockPush.mockClear();
     mockConfirmFileDispute.mockClear();
@@ -390,7 +437,13 @@ describe("HirerQuestManageRoute condition edit", () => {
         <SweetAlertHost />
       </>
     );
-    await fireEvent.press(await view.findByTestId("hirer-manage-cancel"));
+    const cancelAction = await view.findByRole("button", {
+      name: myQuestMessages.en.cancelQuest,
+    });
+    expect(cancelAction.props.accessibilityHint).toBe(
+      myQuestMessages.en.cancelOpenDescription
+    );
+    await fireEvent.press(cancelAction);
     expect(
       await view.findByText(myQuestMessages.en.cancelConfirmTitle)
     ).toBeTruthy();
@@ -449,6 +502,201 @@ describe("HirerQuestManageRoute condition edit", () => {
       await assignedWorker.findByTestId("hirer-manage-dispute")
     ).toBeTruthy();
   });
+  it("promotes server next step and separates Worker and candidate counts", async () => {
+    const base = createSnapshot();
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        state: QuestStatus.QUEST_OPEN,
+        quest: { ...base.quest, state: QuestStatus.QUEST_OPEN },
+        nextAction: QuestNextAction.SELECT_CANDIDATE,
+        applications: [
+          {
+            id: "app-1",
+            questId: "quest-1",
+            memberId: "worker-1",
+            state: QuestApplicationStatus.APPLICATION_APPLIED,
+            appliedAt: "2026-09-18T10:00:00.000Z",
+          },
+        ],
+        capabilities: { ...base.capabilities, canSelectCandidate: true },
+      })
+    );
+
+    const view = await render(<HirerQuestManageRoute />);
+
+    expect(await view.findByRole("header", { name: "Next step" })).toBeTruthy();
+    expect(view.getByLabelText("0 of 1 Worker")).toBeTruthy();
+    expect(view.getByText("1 application")).toBeTruthy();
+    expect(view.getByText("Review candidates · 1 application")).toBeTruthy();
+  });
+
+  it("labels submitted Candidate Teams separately from assigned Workers", async () => {
+    const base = createSnapshot();
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        quest: {
+          ...base.quest,
+          participation: QuestParticipation.GROUP,
+          headcount: 2,
+          activeWorkerCount: 0,
+          state: QuestStatus.QUEST_OPEN,
+        },
+        state: QuestStatus.QUEST_OPEN,
+        participation: QuestParticipation.GROUP,
+        nextAction: QuestNextAction.SELECT_TEAM,
+        teams: [
+          {
+            id: "team-1",
+            questId: "quest-1",
+            leaderId: "worker-1",
+            name: "Mural Crew",
+            headcount: 2,
+            state: "TEAM_SUBMITTED",
+            joinCode: null,
+            joinCodeExpiresAt: null,
+            members: [
+              { memberId: "worker-1", joinedAt: "2026-09-18T09:00:00.000Z" },
+              { memberId: "worker-2", joinedAt: "2026-09-18T09:01:00.000Z" },
+            ],
+            submission: {
+              text: "Paint campus mural",
+              fileIds: ["proposal-file-1"],
+              submittedAt: "2026-09-18T10:00:00.000Z",
+            },
+            createdAt: "2026-09-18T09:00:00.000Z",
+          },
+        ],
+        capabilities: { ...base.capabilities, canSelectTeam: true },
+      })
+    );
+
+    const view = await render(<HirerQuestManageRoute />);
+
+    expect(await view.findByRole("header", { name: "Next step" })).toBeTruthy();
+    expect(view.getByLabelText("0 of 2 Workers")).toBeTruthy();
+    expect(view.getByText("1 submitted team")).toBeTruthy();
+    expect(view.getByText("Review candidates · 1 submitted team")).toBeTruthy();
+  });
+
+  it("promotes pending proof review when server marks it as next action", async () => {
+    const base = createSnapshot();
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        quest: {
+          ...base.quest,
+          state: QuestStatus.QUEST_IN_PROGRESS,
+          proofRequired: true,
+        },
+        state: QuestStatus.QUEST_IN_PROGRESS,
+        nextAction: QuestNextAction.REVIEW_PROOF,
+        proofRequired: true,
+        proofs: [
+          {
+            id: "proof-1",
+            questId: "quest-1",
+            workerId: "worker-1",
+            teamId: null,
+            submittedByUserId: "worker-1",
+            description: "Evidence",
+            status: "PROOF_PENDING",
+            submittedAt: "2026-09-18T10:00:00.000Z",
+            createdAt: "2026-09-18T09:00:00.000Z",
+            updatedAt: "2026-09-18T10:00:00.000Z",
+            visibility: "FULL",
+            fileIds: [],
+            files: [],
+          },
+        ],
+        capabilities: { ...base.capabilities, canReviewProof: true },
+      })
+    );
+
+    const view = await render(<HirerQuestManageRoute />);
+
+    expect(await view.findByRole("header", { name: "Next step" })).toBeTruthy();
+    expect(view.getByTestId("hirer-manage-proof-review")).toBeTruthy();
+    expect(view.getByText("Review submitted work")).toBeTruthy();
+  });
+
+  it("shows underfilled roster and Hirer decisions in the consent sheet", async () => {
+    const base = createSnapshot();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        quest: {
+          ...base.quest,
+          mode: QuestMode.FIRST_COME_FIRST_SERVED,
+          participation: QuestParticipation.GROUP,
+          state: QuestStatus.QUEST_OPEN,
+          headcount: 2,
+          activeWorkerCount: 1,
+        },
+        state: QuestStatus.QUEST_OPEN,
+        mode: QuestMode.FIRST_COME_FIRST_SERVED,
+        participation: QuestParticipation.GROUP,
+        nextAction: QuestNextAction.DECIDE_UNDERFILLED,
+        assignments: [
+          {
+            id: "assignment-1",
+            questId: "quest-1",
+            workerId: "worker-1",
+            state: QuestAssignmentStatus.ASSIGNMENT_ACTIVE,
+            questState: QuestStatus.QUEST_OPEN,
+            startedAt: null,
+          },
+        ],
+        underfilled: {
+          id: "underfilled-1",
+          questId: "quest-1",
+          questState: QuestStatus.QUEST_OPEN,
+          state: "UNDERFILLED_DECISION_PENDING",
+          activeWorkerCount: 1,
+          headcount: 2,
+          workerRewardPool: 500,
+          questReward: 500,
+          dueAt: base.dueAt,
+          decision: {
+            status: "UNDERFILLED_DECISION_PENDING",
+            value: null,
+            expiresAt,
+          },
+          consent: {
+            status: "UNDERFILLED_CONSENT_NOT_STARTED",
+            expiresAt: null,
+            totalCount: 1,
+            acceptedCount: 0,
+            declinedCount: 0,
+            pendingCount: 1,
+          },
+          responses: [
+            {
+              workerId: "worker-1",
+              assignmentId: "assignment-1",
+              decision: null,
+              questReward: 500,
+              respondedAt: null,
+            },
+          ],
+          ownResponse: null,
+        },
+        capabilities: {
+          ...base.capabilities,
+          canDecideUnderfilled: true,
+        },
+      })
+    );
+
+    const view = await render(<HirerQuestManageRoute />);
+    expect(await view.findByRole("header", { name: "Next step" })).toBeTruthy();
+    expect(view.getByLabelText("1 of 2 Workers")).toBeTruthy();
+    await fireEvent.press(await view.findByTestId("hirer-manage-underfilled"));
+
+    expect(await view.findByTestId("partial-group-start-summary")).toBeTruthy();
+    expect(view.getByTestId("partial-group-start-hirer-decision")).toBeTruthy();
+    expect(view.getByTestId("partial-group-start-proceed")).toBeTruthy();
+    expect(view.getByTestId("partial-group-start-cancel")).toBeTruthy();
+  });
+
   it("selects only after confirmation, closes candidate sheet, and ignores a duplicate in-flight press", async () => {
     const base = createSnapshot();
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(

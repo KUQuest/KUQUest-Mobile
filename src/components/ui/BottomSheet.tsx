@@ -13,7 +13,7 @@ const styles = {
   sheet:
     "bg-ku-card max-h-[92%] min-h-[360px] rounded-tl-[24px] rounded-tr-[24px]",
   sheetFullScreen: "bg-ku-card flex-1",
-  content: "shrink px-ku-20 pb-ku-md pt-ku-12",
+  content: "flex-1 px-ku-20 pb-ku-md pt-ku-12",
   contentFullScreen: "flex-1 px-ku-20 pb-ku-md pt-ku-sm",
   handle:
     "self-center bg-ku-border-accent rounded-ku-pill h-[4px] mb-ku-14 w-[40px]",
