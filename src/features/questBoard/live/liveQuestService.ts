@@ -114,6 +114,10 @@ export function cardToQuestBoardQuest(card: QuestV2BoardCard): QuestBoardQuest {
     proofRequired: "none",
     rewardPerPerson: card.questReward,
     rewardSatang,
+    questFundingTotalSatang:
+      typeof card.questFundingTotal === "number"
+        ? Math.round(card.questFundingTotal * 100)
+        : null,
     headcount: card.headcount,
     acceptedParticipants: card.activeWorkerCount,
     startDate,
@@ -152,6 +156,10 @@ export function canonicalToQuestBoardQuest(
     proofRequired: q.proofRequired ? "required" : "none",
     rewardPerPerson: q.questReward ?? 0,
     rewardSatang,
+    questFundingTotalSatang:
+      typeof q.questFundingTotal === "number"
+        ? Math.round(q.questFundingTotal * 100)
+        : null,
     headcount: q.headcount,
     acceptedParticipants: 0,
     startDate,
@@ -192,6 +200,10 @@ export function publicDetailToQuestBoardQuest(
     proofRequired: d.proofRequired ? "required" : "none",
     rewardPerPerson: d.questReward,
     rewardSatang,
+    questFundingTotalSatang:
+      typeof d.questFundingTotal === "number"
+        ? Math.round(d.questFundingTotal * 100)
+        : null,
     headcount: d.headcount,
     acceptedParticipants: d.activeWorkerCount,
     startDate,

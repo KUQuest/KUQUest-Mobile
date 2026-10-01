@@ -48,6 +48,13 @@ export interface QuestWorkMessages {
   unreadMessages: (count: number) => string;
   conditionCount: (count: number) => string;
   workChatHint: string;
+  givenPrice: string;
+  settlementTitle: string;
+  settlementAmount: string;
+  settlementPaid: string;
+  settlementPending: string;
+  settlementNone: string;
+  settlementUnavailable: string;
   reward: string;
   location: string;
   modeCandidate: string;
@@ -119,6 +126,13 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     unreadMessages: (count) => `${count} unread messages`,
     conditionCount: (count) => `${count} items`,
     workChatHint: "Coordinate with Hirer on this quest",
+    givenPrice: "Hirer’s price per Worker slot",
+    settlementTitle: "Your settlement",
+    settlementAmount: "Amount credited to Earnings",
+    settlementPaid: "Paid to your Earnings Balance",
+    settlementPending: "Payment pending. Refresh to check the transfer.",
+    settlementNone: "No payment for this Assignment.",
+    settlementUnavailable: "Settlement details are not available yet.",
     reward: "Reward",
     location: "Location",
     modeCandidate: "Candidate",
@@ -187,6 +201,13 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     unreadMessages: (count) => `${count} ข้อความใหม่`,
     conditionCount: (count) => `${count} ข้อ`,
     workChatHint: "สื่อสารและประสานงานเควสต์นี้กับผู้ว่าจ้าง",
+    givenPrice: "ราคาที่ผู้ว่าจ้างเสนอต่อผู้ปฏิบัติงาน",
+    settlementTitle: "การชำระเงินของคุณ",
+    settlementAmount: "จำนวนเงินที่เข้ายอดรายได้",
+    settlementPaid: "โอนเข้ายอดรายได้แล้ว",
+    settlementPending: "รอการโอนเงิน รีเฟรชเพื่อตรวจสอบสถานะ",
+    settlementNone: "ไม่มีการชำระเงินสำหรับงานนี้",
+    settlementUnavailable: "ยังไม่มีข้อมูลการชำระเงิน",
     reward: "ค่าตอบแทน",
     location: "สถานที่",
     modeCandidate: "คัดเลือกผู้สมัคร",

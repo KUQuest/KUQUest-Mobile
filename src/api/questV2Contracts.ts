@@ -51,6 +51,7 @@ export const questV2BoardCardSchema = z.object({
   id: questV2IdSchema,
   title: z.string().min(1),
   questReward: z.number().nonnegative(),
+  questFundingTotal: z.number().nonnegative().optional(),
   tag: questV2TagSchema.nullable(),
   mode: questV2ModeSchema,
   participation: questV2ParticipationSchema,
@@ -185,6 +186,7 @@ export const questV2PublicDetailSchema = z.object({
   participation: questV2ParticipationSchema,
   state: questV2StateSchema,
   questReward: z.number().nonnegative(),
+  questFundingTotal: z.number().nonnegative().optional(),
   headcount: z.number().int().min(1),
   activeWorkerCount: z.number().int().nonnegative(),
   startTime: z.string(),
@@ -201,6 +203,14 @@ export type QuestV2PublicDetail = z.infer<typeof questV2PublicDetailSchema>;
 
 export const questV2ParticipationDetailSchema =
   questV2PublicDetailSchema.extend({
+    workerSettlement: z
+      .object({
+        status: z.enum(["PAID", "PENDING", "NO_PAYMENT"]),
+        amountSatang: z.number().int().nonnegative().nullable(),
+        settledAt: z.string().nullable(),
+      })
+      .nullable()
+      .optional(),
     assignment: z.object({
       status: questV2AssignmentStateSchema,
       startedAt: z.string().nullable(),

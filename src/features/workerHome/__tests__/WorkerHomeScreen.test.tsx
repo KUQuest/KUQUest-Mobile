@@ -163,6 +163,7 @@ describe("WorkerHomeScreen", () => {
       id,
       title,
       questReward,
+      questFundingTotal: questReward,
       tag: { id: "tag-1", name: "Printing" },
       mode: "FIRST_COME_FIRST_SERVED",
       participation: "SINGLE",
@@ -245,6 +246,7 @@ describe("WorkerHomeScreen", () => {
       id: "quest-current",
       title: "Current Poster",
       questReward: 250,
+      questFundingTotal: 300,
       tag: { id: "tag-1", name: "Printing" },
       mode: "FIRST_COME_FIRST_SERVED",
       participation: "SINGLE",
@@ -384,6 +386,7 @@ describe("WorkerHomeScreen", () => {
           id: "quest-available",
           title: "Available Quest",
           questReward: 250,
+          questFundingTotal: 300,
           tag: { id: "tag-1", name: "Printing" },
           mode: "FIRST_COME_FIRST_SERVED",
           participation: "SINGLE",
@@ -417,6 +420,7 @@ describe("WorkerHomeScreen", () => {
       id,
       title,
       questReward,
+      questFundingTotal: questReward,
       tag: { id: "tag-1", name: "Printing" },
       mode: "FIRST_COME_FIRST_SERVED",
       participation: "SINGLE",
@@ -477,6 +481,7 @@ describe("WorkerHomeScreen", () => {
           id: "quest-100",
           title: "Library Book Scanning",
           questReward: 250,
+          questFundingTotal: 300,
           tag: { id: "tag-1", name: "Campus" },
           mode: "FIRST_COME_FIRST_SERVED",
           participation: "SINGLE",
@@ -496,7 +501,7 @@ describe("WorkerHomeScreen", () => {
     await waitFor(() => {
       expect(view.getByTestId("worker-feed-card-quest-100")).toBeTruthy();
       expect(view.getByText("Library Book Scanning")).toBeTruthy();
-      expect(view.getByText("฿250")).toBeTruthy();
+      expect(view.getByText("฿300")).toBeTruthy();
     });
 
     await fireEvent.press(view.getByTestId("worker-feed-card-quest-100"));
@@ -517,6 +522,7 @@ describe("WorkerHomeScreen", () => {
           id: "quest-full",
           title: "Campus cleanup",
           questReward: 250,
+          questFundingTotal: 300,
           tag: null,
           mode: "FIRST_COME_FIRST_SERVED",
           participation: "GROUP",

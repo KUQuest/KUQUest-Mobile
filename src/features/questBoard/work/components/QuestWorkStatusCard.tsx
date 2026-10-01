@@ -81,15 +81,9 @@ export default function QuestWorkStatusCard({
   const formattedReward = useMemo(() => {
     const quest = snapshot.quest;
     const rewardBaht =
-      "questReward" in quest &&
-      typeof quest.questReward === "number" &&
-      quest.questReward > 0
-        ? quest.questReward
-        : "questFundingTotal" in quest &&
-            typeof quest.questFundingTotal === "number" &&
-            quest.questFundingTotal > 0
-          ? quest.questFundingTotal
-          : null;
+      typeof quest.questFundingTotal === "number"
+        ? quest.questFundingTotal
+        : null;
     if (rewardBaht === null) return null;
     return formatSatang(Math.round(rewardBaht * SATANG_PER_BAHT), locale);
   }, [snapshot.quest, locale]);
@@ -179,7 +173,7 @@ export default function QuestWorkStatusCard({
         {formattedReward ? (
           <>
             <View className={styles.statTile}>
-              <Text className={styles.statLabel}>{messages.reward}</Text>
+              <Text className={styles.statLabel}>{messages.givenPrice}</Text>
               <Text className={styles.rewardValue}>{formattedReward}</Text>
             </View>
             <View className={styles.statDivider} />

@@ -49,7 +49,7 @@ function fixtureQuest(state: QuestDetailState): QuestBoardQuest {
 }
 
 function liveQuest(snapshot: LiveQuestSnapshot): QuestBoardQuest {
-  return "questFundingTotal" in snapshot.quest
+  return "version" in snapshot.quest
     ? canonicalToQuestBoardQuest(snapshot.quest)
     : publicDetailToQuestBoardQuest(snapshot.quest);
 }

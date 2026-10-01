@@ -39,6 +39,7 @@ export interface QuestBoardMessages {
   clearTagSearch: string;
   noMatchingTags: string;
   removeSelectedTag: (tag: string) => string;
+  givenPrice: string;
   reward: string;
   rewardMin: string;
   rewardMax: string;
@@ -364,9 +365,10 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     clearTagSearch: "Clear tag search",
     noMatchingTags: "No matching tags",
     removeSelectedTag: (tag) => `Remove ${tag}`,
+    givenPrice: "Hirer’s price",
     reward: "Reward",
-    rewardMin: "Min reward",
-    rewardMax: "Max reward",
+    rewardMin: "Min price",
+    rewardMax: "Max price",
     rewardInvalid:
       "Enter valid non-negative whole-baht bounds with minimum no greater than maximum.",
     rewardSummary: (minimum, maximum) =>
@@ -429,7 +431,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     within7Days: "Within 7 days",
     newest: "Newest",
     deadlineSoonest: "Deadline soonest",
-    rewardHighest: "Reward highest",
+    rewardHighest: "Price highest",
     back: "Go back",
     details: "Quest details",
     viewDetails: "View details",
@@ -811,9 +813,10 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     clearTagSearch: "ล้างการค้นหาแท็ก",
     noMatchingTags: "ไม่พบแท็กที่ตรงกัน",
     removeSelectedTag: (tag) => `ลบ ${tag}`,
+    givenPrice: "ราคาที่ผู้ว่าจ้างเสนอ",
     reward: "ค่าตอบแทน",
-    rewardMin: "ค่าตอบแทนขั้นต่ำ",
-    rewardMax: "ค่าตอบแทนสูงสุด",
+    rewardMin: "ราคาขั้นต่ำ",
+    rewardMax: "ราคาสูงสุด",
     rewardInvalid:
       "กรอกค่าตอบแทนเป็นจำนวนเต็มที่ไม่ติดลบ และค่าขั้นต่ำต้องไม่มากกว่าค่าสูงสุด",
     rewardSummary: (minimum, maximum) =>
@@ -880,7 +883,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     within7Days: "ภายใน 7 วัน",
     newest: "ใหม่ล่าสุด",
     deadlineSoonest: "กำหนดส่งใกล้ที่สุด",
-    rewardHighest: "ค่าตอบแทนสูงสุด",
+    rewardHighest: "ราคาสูงสุด",
     back: "ย้อนกลับ",
     details: "รายละเอียดเควสต์",
     viewDetails: "ดูรายละเอียด",

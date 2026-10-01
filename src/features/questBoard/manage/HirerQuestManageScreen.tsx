@@ -334,7 +334,9 @@ export default function HirerQuestManageScreen({
     snapshot.state === QuestStatus.QUEST_IN_PROGRESS;
   const rewardPerWorker = quest.questReward ?? null;
   const fundingTotal =
-    "questFundingTotal" in quest ? quest.questFundingTotal : null;
+    typeof quest.questFundingTotal === "number"
+      ? quest.questFundingTotal
+      : null;
   // Group + Candidate: only the Team Leader starts, so a per-Worker count misleads.
   const showStarted =
     assignedCount > 0 &&

@@ -21,7 +21,7 @@ import {
 import {
   applyQuestBoardFilters,
   getQuestBoardTags,
-  getQuestRewardSatang,
+  getQuestPriceSatang,
   getVisibleQuests,
   sortQuests,
 } from "../presentation/questBoardViewData";
@@ -316,6 +316,6 @@ export function useQuestBoardController(
     removeStartTimeBucket,
     removeRewardBounds,
     removeDeadline,
-    rewardSatang: getQuestRewardSatang,
+    rewardSatang: getQuestPriceSatang,
   };
 }
