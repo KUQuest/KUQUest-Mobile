@@ -13,6 +13,7 @@ import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { useLocale } from "@/features/preferences/localeStore";
 import type { SupportedLocale } from "@/locales/locale";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
+import { formatTimestamp } from "@/domain/datetime";
 import { formatSatang } from "@/domain/satang";
 import {
   QuestActor,
@@ -467,7 +468,7 @@ export function PartialGroupStartConsentContent({
               <View className={styles.reviewRow}>
                 <Text className={styles.reviewLabel}>{messages.dueDate}</Text>
                 <Text selectable className={styles.reviewValue}>
-                  {underfilled.dueAt ?? messages.notSet}
+                  {formatTimestamp(underfilled.dueAt, locale, messages.notSet)}
                 </Text>
               </View>
             </>
