@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "@/tw";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import LoginScreen from "./LoginScreen";
 import { authService } from "./AuthService";
@@ -8,6 +8,7 @@ import { useSessionQuery } from "./sessionQueries";
 import { authMessages } from "../../locales/authMessages";
 import { useLocale } from "@/features/preferences/localeStore";
 import { RoutingDestination } from "./types";
+import { consumePendingTeamInvite } from "@/features/questBoard/teamAssemble/pendingTeamInvite";
 
 export default function Index() {
   const { colors } = useAppTheme();
@@ -19,9 +20,19 @@ export default function Index() {
   const sessionQuery = useSessionQuery();
 
   const handleNavigate = React.useCallback(
-    (dest: RoutingDestination) => {
+    async (dest: RoutingDestination) => {
       if (dest.type === "HOME") {
-        router.replace("/(tabs)");
+        const invite = await consumePendingTeamInvite();
+        if (invite) {
+          const inviteQuery = new URLSearchParams({
+            questId: invite.questId,
+            teamId: invite.teamId,
+            code: invite.joinCode,
+          });
+          router.replace(`/invite/team?${inviteQuery.toString()}` as Href);
+        } else {
+          router.replace("/(tabs)");
+        }
       } else {
         router.replace({
           pathname: "/onboarding",
@@ -38,7 +49,7 @@ export default function Index() {
     void authService
       .getRoutingDestination()
       .then((dest) => {
-        if (mounted) handleNavigate(dest);
+        if (mounted) return handleNavigate(dest);
       })
       .catch(() => {
         if (mounted) setRoutingFailed(true);

@@ -110,7 +110,8 @@
     "preset": "jest-expo",
     "fakeTimers": {
       "doNotFake": [
-        "queueMicrotask"
+        "queueMicrotask",
+        "setImmediate"
       ]
     },
     "testTimeout": 15000,

@@ -45,6 +45,7 @@ import {
   questV2TeamListDataSchema,
   questV2TeamSchema,
   questV2TeamFileSchema,
+  questV2TeamFileLinkSchema,
   questV2TeamSelectionSchema,
   questV2ProofFileLinkSchema,
   type QuestV2CandidateApplication,
@@ -72,6 +73,7 @@ import {
   type QuestV2StartWork,
   type QuestV2Team,
   type QuestV2TeamFile,
+  type QuestV2TeamFileLink,
   type QuestV2TeamSelection,
   type QuestV2Underfilled,
   questV2UnderfilledSchema,
@@ -572,6 +574,18 @@ export class QuestApi {
     return this.client.get(
       `/api/v2/quests/${questId}/teams/${teamId}`,
       questV2TeamSchema,
+      options
+    );
+  }
+  async getCandidateTeamFileLink(
+    questId: string,
+    teamId: string,
+    fileId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2TeamFileLink> {
+    return this.client.get(
+      `/api/v2/quests/${questId}/teams/${teamId}/files/${fileId}`,
+      questV2TeamFileLinkSchema,
       options
     );
   }

@@ -512,6 +512,7 @@ export function buildQuestDetailSheetsProps(
                 ? facts.liveSnapshot.teams
                 : [],
             visible: surface.candidateReviewSheetOpen,
+            viewerId: facts.viewerId,
           }
         : undefined,
     prototypeCandidateSheet:
@@ -546,6 +547,7 @@ export function buildQuestDetailSheetsProps(
               : [],
             visible: surface.candidateReviewSheetOpen,
             fullScreen: true,
+            viewerId: facts.viewerId,
           }
         : undefined,
   };

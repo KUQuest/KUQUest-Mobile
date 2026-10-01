@@ -480,6 +480,7 @@ export default function HirerQuestManageScreen({
       </ScrollView>
       <CandidateReviewSheet
         visible={candidateOpen}
+        viewerId={viewerId}
         applications={snapshot.applications}
         teams={submittedTeams}
         mode={isGroup ? "team" : "individual"}

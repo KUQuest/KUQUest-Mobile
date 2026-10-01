@@ -68,10 +68,23 @@ function resolveAndroidVersionCode(
   return versionCode;
 }
 
+export function resolveHttpsAppLinkHost(
+  apiUrl = process.env.EXPO_PUBLIC_API_URL
+): string | undefined {
+  if (!apiUrl?.trim()) return undefined;
+  try {
+    const url = new URL(apiUrl);
+    return url.protocol === "https:" ? url.hostname : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export default function configureApp({ config }: ConfigContext): ExpoConfig {
   const baseConfig = config as ExpoConfig;
   const variant = resolveAppVariant();
   const variantConfig = APP_VARIANTS[variant];
+  const appLinkHost = resolveHttpsAppLinkHost();
   const iosUrlScheme = process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME;
   const isDevelopmentBuild = variant === "debug";
   const developmentBuildProperties = [
@@ -103,10 +116,37 @@ export default function configureApp({ config }: ConfigContext): ExpoConfig {
         variant,
         baseConfig.android?.versionCode
       ),
+      intentFilters: [
+        ...(baseConfig.android?.intentFilters ?? []),
+        ...(appLinkHost
+          ? [
+              {
+                action: "VIEW" as const,
+                autoVerify: true,
+                data: [
+                  {
+                    scheme: "https",
+                    host: appLinkHost,
+                    pathPrefix: "/invite/team",
+                  },
+                ],
+                category: ["BROWSABLE", "DEFAULT"],
+              },
+            ]
+          : []),
+      ],
     },
     ios: {
       ...baseConfig.ios,
       bundleIdentifier: variantConfig.identifier,
+      associatedDomains: appLinkHost
+        ? [
+            ...new Set([
+              ...(baseConfig.ios?.associatedDomains ?? []),
+              `applinks:${appLinkHost}`,
+            ]),
+          ]
+        : baseConfig.ios?.associatedDomains,
       infoPlist: {
         ...baseConfig.ios?.infoPlist,
         NSAppTransportSecurity: {

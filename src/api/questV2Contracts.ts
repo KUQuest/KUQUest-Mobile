@@ -443,6 +443,19 @@ export const questV2TeamFileSchema = z.object({
   createdAt: z.string(),
 });
 export type QuestV2TeamFile = z.infer<typeof questV2TeamFileSchema>;
+export const questV2TeamFileLinkSchema = z.object({
+  fileId: questV2IdSchema,
+  contentType: z.string().min(1),
+  sizeBytes: z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(10 * 1024 * 1024),
+  position: z.coerce.number().int().nonnegative(),
+  url: z.string().url(),
+  urlExpiresAt: z.string(),
+});
+export type QuestV2TeamFileLink = z.infer<typeof questV2TeamFileLinkSchema>;
 
 export const questV2TeamListDataSchema = z.object({
   items: z.array(questV2TeamSchema),

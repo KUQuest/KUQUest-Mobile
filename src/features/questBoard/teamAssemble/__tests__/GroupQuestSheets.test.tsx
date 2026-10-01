@@ -17,6 +17,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { profileKeys } from "@/features/profile/api/profileQueries";
 import type {
   QuestV2Application,
+  QuestV2Team,
+  QuestV2TeamFileLink,
   QuestV2Underfilled,
 } from "@/api/questV2Contracts";
 import {
@@ -31,6 +33,19 @@ import {
 } from "../../domain/types";
 const mockTeamPush = jest.fn();
 
+const mockCandidateTeamFileLinksQuery = jest.fn(
+  (): {
+    data: QuestV2TeamFileLink[] | undefined;
+    isPending: boolean;
+    isError: boolean;
+    refetch: () => Promise<unknown>;
+  } => ({
+    data: undefined,
+    isPending: false,
+    isError: false,
+    refetch: async () => undefined,
+  })
+);
 const mockJoinMutateAsync = jest.fn();
 const mockTeamDetailView = {
   state: "ready",
@@ -53,6 +68,7 @@ jest.mock("@/features/questBoard/api/questBoardQueries", () => ({
     mutateAsync: mockJoinMutateAsync,
     isPending: false,
   }),
+  useCandidateTeamFileLinksQuery: () => mockCandidateTeamFileLinksQuery(),
 }));
 jest.mock("expo-document-picker", () => ({
   getDocumentAsync: jest.fn(),
@@ -411,6 +427,184 @@ describe("group Quest sheets", () => {
     expect(onAccept).toHaveBeenCalledWith("proposal-submitted");
     expect(onReject).toHaveBeenCalledWith("proposal-submitted");
   });
+  it("reviews a named Candidate Team using readable member profiles", async () => {
+    const team: QuestV2Team = {
+      id: "v2-team-review",
+      questId: "quest-1",
+      leaderId: "leader-id",
+      name: "Garden Crew",
+      headcount: 2,
+      state: QuestTeamStatus.TEAM_SUBMITTED,
+      joinCode: null,
+      joinCodeExpiresAt: null,
+      members: [
+        { memberId: "leader-id", joinedAt: "2026-09-25T09:00:00.000Z" },
+        { memberId: "member-id", joinedAt: "2026-09-25T09:00:00.000Z" },
+      ],
+      submission: {
+        text: "We will prepare the planting beds.",
+        fileIds: [],
+        submittedAt: "2026-09-25T09:00:00.000Z",
+      },
+      createdAt: "2026-09-25T09:00:00.000Z",
+    };
+    const queryClient = queryClientWithRatings(["leader-id", "member-id"]);
+    queryClient.setQueryData(profileKeys.public("leader-id"), {
+      version: 1,
+      firstName: "Arun",
+      lastName: "Nattapong",
+      avatar: {
+        fileId: "leader-avatar",
+        url: "https://images.example.test/leader.jpg",
+      },
+      reputation: { totalQuests: 1, rating: { average: 4.7 } },
+      experience: [],
+      portfolio: [],
+      certificates: [],
+    });
+    queryClient.setQueryData(profileKeys.public("member-id"), {
+      version: 1,
+      firstName: "Mali",
+      lastName: "Kanda",
+      avatar: {
+        fileId: "member-avatar",
+        url: "https://images.example.test/member.jpg",
+      },
+      reputation: { totalQuests: 1, rating: { average: 4.9 } },
+      experience: [],
+      portfolio: [],
+      certificates: [],
+    });
+    const onAccept = jest.fn();
+    const view = await renderWithAppTheme(
+      <QueryClientProvider client={queryClient}>
+        <CandidateReviewSheet
+          locale="en"
+          mode="team"
+          onAccept={onAccept}
+          onClose={() => undefined}
+          teams={[team]}
+          visible
+        />
+      </QueryClientProvider>
+    );
+
+    expect(view.getByText("Garden Crew")).toBeTruthy();
+    expect(view.getByText("We will prepare the planting beds.")).toBeTruthy();
+    expect(view.queryByText("leader-id")).toBeNull();
+    expect(view.queryByText("member-id")).toBeNull();
+    expect(view.queryByText(/Arun Nattapong/)).toBeNull();
+    await fireEvent.press(
+      view.getByTestId("candidate-review-roster-v2-team-review")
+    );
+    expect(view.getByText(/Arun Nattapong/)).toBeTruthy();
+    expect(view.getByText(/Mali Kanda/)).toBeTruthy();
+    expect(
+      view.getByTestId("candidate-review-member-avatar-leader-id").props.source
+    ).toEqual([
+      {
+        uri: "https://images.example.test/leader.jpg",
+        cacheKey: "leader-avatar",
+      },
+    ]);
+    expect(
+      view.getByTestId("candidate-review-member-avatar-member-id").props.source
+    ).toEqual([
+      {
+        uri: "https://images.example.test/member.jpg",
+        cacheKey: "member-avatar",
+      },
+    ]);
+    await fireEvent.press(
+      view.getByTestId("candidate-review-accept-v2-team-review")
+    );
+    expect(onAccept).toHaveBeenCalledWith("v2-team-review");
+  });
+  it("previews submitted image attachments without rendering documents as images", async () => {
+    const team: QuestV2Team = {
+      id: "team-with-images",
+      questId: "quest-images",
+      leaderId: "leader-id",
+      name: "Garden Crew",
+      headcount: 2,
+      state: QuestTeamStatus.TEAM_SUBMITTED,
+      joinCode: null,
+      joinCodeExpiresAt: null,
+      members: [
+        { memberId: "leader-id", joinedAt: "2026-09-25T09:00:00.000Z" },
+        { memberId: "member-id", joinedAt: "2026-09-25T09:00:00.000Z" },
+      ],
+      submission: {
+        text: "We will prepare the planting beds.",
+        fileIds: ["submitted-image", "submitted-document"],
+        submittedAt: "2026-09-25T09:00:00.000Z",
+      },
+      createdAt: "2026-09-25T09:00:00.000Z",
+    };
+    mockCandidateTeamFileLinksQuery.mockReturnValue({
+      data: [
+        {
+          fileId: "submitted-image",
+          contentType: "image/png",
+          sizeBytes: 128,
+          position: 0,
+          url: "https://storage.example.test/team-image.png",
+          urlExpiresAt: "2026-09-25T09:15:00.000Z",
+        },
+        {
+          fileId: "submitted-document",
+          contentType: "application/pdf",
+          sizeBytes: 512,
+          position: 1,
+          url: "https://storage.example.test/team-document.pdf",
+          urlExpiresAt: "2026-09-25T09:15:00.000Z",
+        },
+      ],
+      isPending: false,
+      isError: false,
+      refetch: async () => undefined,
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const view = await renderWithAppTheme(
+      <QueryClientProvider client={queryClient}>
+        <CandidateReviewSheet
+          locale="en"
+          mode="team"
+          onClose={() => undefined}
+          teams={[team]}
+          viewerId="hirer-1"
+          visible
+        />
+      </QueryClientProvider>
+    );
+
+    await fireEvent.press(
+      view.getByTestId("candidate-review-attachments-team-with-images")
+    );
+    const image = view.getByTestId(
+      "candidate-review-attachment-image-team-with-images-submitted-image"
+    );
+    expect(image.props.source).toEqual([
+      { uri: "https://storage.example.test/team-image.png" },
+    ]);
+    expect(
+      view.queryByTestId(
+        "candidate-review-attachment-image-team-with-images-submitted-document"
+      )
+    ).toBeNull();
+
+    await fireEvent.press(
+      view.getByTestId(
+        "candidate-review-attachment-team-with-images-submitted-image"
+      )
+    );
+    expect(view.getByTestId("image-viewer-image")).toBeTruthy();
+    expect(view.getByTestId("image-viewer-close-button")).toBeTruthy();
+    queryClient.clear();
+  });
+
   it("shows a candidate's average reputation rating beside their name", async () => {
     const application: QuestV2Application = {
       id: "application-1",
@@ -631,12 +825,16 @@ describe("group Quest sheets", () => {
     const onJoinTeam = jest.fn();
     const view = await renderWithAppTheme(
       <TeamAssembleView
-        initialInvite='Join my KUQuest team "Gardeners": kuquestmobile://quest/q-1/team?teamId=0b8f1c2e-4d5a-4e6f-8a9b-1c2d3e4f5a6b&code=abcd2345'
+        initialInvite="https://kuquest-dev-api.kubits.org/invite/team?questId=123e4567-e89b-12d3-a456-426614174000&teamId=0b8f1c2e-4d5a-4e6f-8a9b-1c2d3e4f5a6b&code=abcd2345"
         locale="en"
         onJoinTeam={onJoinTeam}
         team={null}
       />
     );
+    expect(view.getByTestId("team-assemble-join-code-input").props.value).toBe(
+      "ABCD2345"
+    );
+    expect(view.queryByTestId("team-assemble-name-input")).toBeNull();
 
     await fireEvent.press(view.getByTestId("team-assemble-join"));
     expect(onJoinTeam).toHaveBeenCalledWith(

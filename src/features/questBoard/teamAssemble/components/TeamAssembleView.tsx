@@ -446,19 +446,24 @@ export function TeamAssembleView({
       showsVerticalScrollIndicator={false}
       testID="team-assemble-scroll"
     >
-      <Text className={styles.sheetSubtitle}>{messages.teamSubtitle}</Text>
+      <Text className={styles.sheetSubtitle}>
+        {initialInvite ? messages.joinTeamDescription : messages.teamSubtitle}
+      </Text>
       {!team ? (
         <>
-          <TeamAssembleEmptyState
-            busy={submitting}
-            createLabel={messages.createTeam}
-            description={messages.noTeamDescription}
-            onCreateTeam={onCreateTeam}
-            teamNameLabel={messages.teamNameLabel}
-            title={messages.noTeamTitle}
-          />
+          {!initialInvite ? (
+            <TeamAssembleEmptyState
+              busy={submitting}
+              createLabel={messages.createTeam}
+              description={messages.noTeamDescription}
+              onCreateTeam={onCreateTeam}
+              teamNameLabel={messages.teamNameLabel}
+              title={messages.noTeamTitle}
+            />
+          ) : null}
           {onJoinTeam ? (
             <TeamAssembleJoinTeamPanel
+              key={initialInvite ?? ""}
               error={joinError}
               initialInvite={initialInvite}
               locale={locale}
