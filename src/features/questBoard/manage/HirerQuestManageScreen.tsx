@@ -25,7 +25,8 @@ import { goBackOrReplace } from "@/utils/navigation";
 import { CancelQuestGuardrailSheet } from "./CancelQuestGuardrailSheet";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { TopBar } from "@/components/ui/TopBar";
-import { formatTimestamp } from "@/domain/datetime";
+import { formatTimestamp, isDeviceOutsideBangkokZone } from "@/domain/datetime";
+import { useServerCountdown } from "@/features/questBoard/shared/useServerCountdown";
 import { formatSatang } from "@/domain/satang";
 import { CandidateReviewSheet } from "@/features/questBoard/teamAssemble/components/CandidateReviewSheet";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
@@ -158,6 +159,30 @@ function ScheduleRow({
   );
 }
 
+function StartsIn({
+  startTime,
+  format,
+}: {
+  startTime: string;
+  format: (days: number, hours: number, minutes: number) => string;
+}) {
+  const remaining = useServerCountdown(startTime);
+  if (!remaining) return null;
+  const totalMinutes = Math.floor(remaining / 60_000);
+  return (
+    <Text
+      testID="hirer-manage-starts-in"
+      className="font-ku-semibold text-ku-body-small text-ku-hirer-dark"
+    >
+      {format(
+        Math.floor(totalMinutes / 1440),
+        Math.floor((totalMinutes % 1440) / 60),
+        totalMinutes % 60
+      )}
+    </Text>
+  );
+}
+
 export default function HirerQuestManageScreen({
   questId,
 }: HirerQuestManageScreenProps) {
@@ -170,6 +195,7 @@ export default function HirerQuestManageScreen({
     viewerId,
     snapshotQuery,
     snapshot,
+    isNotFound,
     error,
     originalConditionItems,
     pendingProof,
@@ -224,15 +250,27 @@ export default function HirerQuestManageScreen({
         {topBar}
         <View className="flex-1 items-center justify-center px-ku-lg">
           <Text className="text-center font-ku-bold text-ku-emphasis text-ku-text-strong">
-            {error ?? messages.questNotFound}
+            {isNotFound
+              ? messages.questNotFound
+              : (error ?? messages.questNotFound)}
           </Text>
+          {isNotFound ? (
+            <Text className="mt-ku-sm text-center text-ku-body-small text-ku-text-secondary">
+              {messages.questNotFoundDescription}
+            </Text>
+          ) : null}
           <Pressable
             accessibilityRole="button"
+            testID={isNotFound ? "hirer-manage-back" : "hirer-manage-retry"}
             className="mt-ku-md min-h-[48px] items-center justify-center rounded-ku-pill bg-ku-hirer px-ku-20 active:opacity-80"
-            onPress={() => void snapshotQuery.refetch()}
+            onPress={() =>
+              isNotFound
+                ? goBackOrReplace(router, "/(tabs)/my-quests")
+                : void snapshotQuery.refetch()
+            }
           >
             <Text className="font-ku-semibold text-ku-body-small text-ku-on-hirer">
-              {messages.retry}
+              {isNotFound ? messages.back : messages.retry}
             </Text>
           </Pressable>
         </View>
@@ -301,6 +339,9 @@ export default function HirerQuestManageScreen({
   const startedCount = snapshot.assignments.filter(
     (assignment) => assignment.startedAt
   ).length;
+  const zoneNote = isDeviceOutsideBangkokZone()
+    ? ` · ${messages.manageBangkokTime}`
+    : "";
   const waitingNote =
     nextStep || snapshot.state !== QuestStatus.QUEST_OPEN
       ? null
@@ -435,6 +476,12 @@ export default function HirerQuestManageScreen({
             </Text>
           </View>
         ) : null}
+        {snapshot.state === QuestStatus.QUEST_OPEN ? (
+          <StartsIn
+            startTime={quest.startTime}
+            format={messages.manageStartsIn}
+          />
+        ) : null}
 
         <View className="rounded-ku-card border border-ku-border bg-ku-surface px-ku-md">
           <View className="gap-ku-sm py-ku-md">
@@ -497,20 +544,24 @@ export default function HirerQuestManageScreen({
           <ScheduleRow
             icon={CalendarClock}
             label={messages.startWork}
-            value={formatTimestamp(
-              quest.startTime,
-              locale,
-              messages.timeNotSpecified
-            )}
+            value={
+              formatTimestamp(
+                quest.startTime,
+                locale,
+                messages.timeNotSpecified
+              ) + zoneNote
+            }
           />
           <ScheduleRow
             icon={CalendarCheck}
             label={messages.finishBy}
-            value={formatTimestamp(
-              snapshot.dueAt,
-              locale,
-              messages.timeNotSpecified
-            )}
+            value={
+              formatTimestamp(
+                snapshot.dueAt,
+                locale,
+                messages.timeNotSpecified
+              ) + (snapshot.dueAt ? zoneNote : "")
+            }
           />
         </View>
 

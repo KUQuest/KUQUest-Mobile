@@ -122,6 +122,8 @@ export default function QuestWorkStatusCard({
   const participationLabel = isGroup
     ? messages.participationTeam
     : messages.participationSolo;
+  const showGroupFcfsStartStatus =
+    snapshot.actor === "WORKER" && isGroup && !isCandidateMode;
 
   const proofBadgeText = snapshot.proofRequired
     ? messages.proofRequiredBadge
@@ -207,6 +209,43 @@ export default function QuestWorkStatusCard({
             value={locationLabel}
           />
         ) : null}
+        {showGroupFcfsStartStatus ? (
+          <View className={styles.workerStartStatus}>
+            <Text
+              accessibilityRole="header"
+              className={styles.workerStartTitle}
+            >
+              {messages.startWorkRosterTitle}
+            </Text>
+            {snapshot.assignments
+              .filter((worker) => worker.state === "ASSIGNMENT_ACTIVE")
+              .map((worker, index) => {
+                const participant = snapshot.participants?.find(
+                  (item) => item.id === worker.workerId
+                );
+                const workerName =
+                  worker.member?.displayName ??
+                  participant?.displayName ??
+                  messages.workerNumber(index + 1);
+                return (
+                  <View
+                    key={worker.id ?? worker.workerId}
+                    className={styles.workerStartRow}
+                  >
+                    <Text className={styles.workerStartName}>{workerName}</Text>
+                    <Text className={styles.workerStartState}>
+                      {worker.startedAt
+                        ? messages.workerStarted
+                        : messages.workerNotStarted}
+                    </Text>
+                  </View>
+                );
+              })}
+            <Text className={styles.workerStartWarning}>
+              {messages.groupStartWorkWarning}
+            </Text>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -251,4 +290,12 @@ const styles = {
   rowValue:
     "max-w-[55%] text-right font-ku-semibold text-ku-body-small text-ku-text-strong",
   rowValueEmphasis: "text-ku-primary-dark",
+  workerStartStatus: "gap-ku-sm border-t border-ku-divider px-ku-md py-ku-sm",
+  workerStartTitle: "font-ku-semibold text-ku-body-small text-ku-text-strong",
+  workerStartRow:
+    "min-h-[48px] flex-row items-center justify-between gap-ku-sm",
+  workerStartName: "flex-1 font-ku-medium text-ku-body-small text-ku-text",
+  workerStartState:
+    "font-ku-semibold text-ku-body-small text-ku-text-secondary",
+  workerStartWarning: "font-ku-medium text-ku-label text-ku-text-secondary",
 } as const;

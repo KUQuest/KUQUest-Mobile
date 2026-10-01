@@ -105,6 +105,11 @@ export function formatTimestampDateTime(
   return getTimestampDateTimeFormatter(locale).format(date);
 }
 
+/** True when the device clock is not on Bangkok time (UTC+7, no DST). */
+export function isDeviceOutsideBangkokZone(now: Date = new Date()): boolean {
+  return now.getTimezoneOffset() !== -420;
+}
+
 export function formatTimeInBangkok(
   value: string | Date | null | undefined
 ): string {

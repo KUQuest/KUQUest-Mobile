@@ -64,6 +64,8 @@ export interface QuestBoardMessages {
   manageCandidateAutoCancel: string;
   manageStartedCount: (started: number, total: number) => string;
   manageFundsHeld: string;
+  manageStartsIn: (days: number, hours: number, minutes: number) => string;
+  manageBangkokTime: string;
   endingSoon: string;
   imageCount: (count: number) => string;
   questImageLabel: (index: number) => string;
@@ -394,6 +396,11 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     manageStartedCount: (started, total) =>
       `${started} of ${total} started work`,
     manageFundsHeld: "Held in escrow",
+    manageStartsIn: (days, hours, minutes) =>
+      `Starts in ${[days && `${days}d`, hours && `${hours}h`, `${minutes}m`]
+        .filter(Boolean)
+        .join(" ")}`,
+    manageBangkokTime: "Bangkok time",
     endingSoon: "Ending soon",
     imageCount: (count) => `${count} photo${count === 1 ? "" : "s"}`,
     questImageLabel: (index) => `Quest image ${index}`,
@@ -832,6 +839,15 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     manageStartedCount: (started, total) =>
       `เริ่มงานแล้ว ${started}/${total} คน`,
     manageFundsHeld: "เงินที่กันไว้",
+    manageStartsIn: (days, hours, minutes) =>
+      `เริ่มในอีก ${[
+        days && `${days} วัน`,
+        hours && `${hours} ชม.`,
+        `${minutes} นาที`,
+      ]
+        .filter(Boolean)
+        .join(" ")}`,
+    manageBangkokTime: "เวลาไทย",
     endingSoon: "ใกล้ปิดรับสมัคร",
     imageCount: (count) => `${count} รูป`,
     questImageLabel: (index) => `รูปเควสต์ที่ ${index}`,

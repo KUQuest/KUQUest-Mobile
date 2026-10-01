@@ -9,6 +9,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { renderWithQueryClient as render } from "@/testing/queryTestUtils";
+import { ApiError } from "@/api/ApiClient";
 
 import { AppThemeProvider } from "@/features/workspace/AppThemeProvider";
 import { SweetAlertHost } from "@/components/ui/SweetAlert";
@@ -873,5 +874,46 @@ describe("HirerQuestManageRoute condition edit", () => {
       await view.findByTestId("hirer-condition-edit-pending-title")
     ).toBeTruthy();
     expect(liveQuestService.createEditRequest).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows Back, not Retry, when the Quest is not found", async () => {
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockRejectedValue(
+      new ApiError(404, "NOT_FOUND", "missing")
+    );
+    const view = await render(<HirerQuestManageRoute />);
+
+    await view.findByTestId("hirer-manage-back");
+    expect(view.queryByTestId("hirer-manage-retry")).toBeNull();
+  });
+
+  it("keeps Retry for other load errors", async () => {
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockRejectedValue(
+      new ApiError(500, "SERVER", "boom")
+    );
+    const view = await render(<HirerQuestManageRoute />);
+
+    await view.findByTestId("hirer-manage-retry");
+    expect(view.queryByTestId("hirer-manage-back")).toBeNull();
+  });
+
+  it("counts down to the start time on an open Quest", async () => {
+    const base = createSnapshot();
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        state: "QUEST_OPEN",
+        quest: {
+          ...base.quest,
+          state: "QUEST_OPEN",
+          startTime: new Date(
+            Date.now() + 3 * 3_600_000 + 30_000
+          ).toISOString(),
+        },
+      })
+    );
+    const view = await render(<HirerQuestManageRoute />);
+
+    expect(
+      (await view.findByTestId("hirer-manage-starts-in")).props.children
+    ).toMatch(/3h/);
   });
 });

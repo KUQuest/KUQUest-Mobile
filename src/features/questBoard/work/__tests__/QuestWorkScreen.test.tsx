@@ -580,6 +580,40 @@ describe("QuestWorkScreen", () => {
     );
   });
 
+  it("lists each Worker's Start Work status on a Group first-come Quest only", async () => {
+    const group = makeSnapshot({
+      participation: "GROUP",
+      assignments: [
+        {
+          ...defaultAssignment,
+          member: { id: "worker-1", displayName: "Somchai" },
+          startedAt: "2020-01-01T08:00:00Z",
+        },
+        {
+          ...defaultAssignment,
+          id: "assignment-2",
+          workerId: "worker-2",
+          startedAt: null,
+        },
+      ],
+    });
+    mockedGetSnapshot.mockResolvedValue(group);
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+
+    expect(await view.findByText("Somchai")).toBeTruthy();
+    expect(view.getByText("Worker 2")).toBeTruthy();
+    expect(view.queryByText(/worker-2/)).toBeNull();
+
+    mockedGetSnapshot.mockResolvedValue(makeSnapshot());
+    const solo = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    await solo.findByText("Due");
+    expect(solo.queryByText("Not started")).toBeNull();
+  });
+
   it("keeps refreshing while other Workers still have to press Start Work", async () => {
     jest.useFakeTimers();
     const waiting = makeSnapshot({

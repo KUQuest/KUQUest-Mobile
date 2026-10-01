@@ -176,6 +176,9 @@ export function useHirerQuestManageFeature(questId?: string) {
     },
     [messages, questId, refetchSnapshot, viewerId]
   );
+  const isNotFound =
+    snapshotQuery.error instanceof ApiError &&
+    snapshotQuery.error.status === 404;
   const error = snapshotQuery.error
     ? getLocalizedErrorMessage(snapshotQuery.error, locale, {
         fallback: messages.manageSnapshotError,
@@ -329,6 +332,7 @@ export function useHirerQuestManageFeature(questId?: string) {
     viewerId,
     snapshotQuery,
     snapshot,
+    isNotFound,
     error,
     originalConditionItems,
     pendingProof,
