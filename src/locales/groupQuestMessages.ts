@@ -1,3 +1,7 @@
+import {
+  QuestV2CancellationReason,
+  type QuestV2UnderfilledCancellationReason,
+} from "@/api/questV2Contracts";
 import type { SupportedLocale } from "./locale";
 
 export interface GroupQuestMessages {
@@ -35,6 +39,10 @@ export interface GroupQuestMessages {
   proposal: string;
   fileCount: (count: number) => string;
   attachedFiles: string;
+  reviewAttachments: string;
+  submissionImage: (index: number) => string;
+  noImageAttachments: string;
+  submissionImagesUnavailable: string;
   attachFile: string;
   removeFile: (name: string) => string;
   filePickFailed: string;
@@ -103,6 +111,36 @@ export interface GroupQuestMessages {
   accept: string;
   reject: string;
   noProposals: string;
+  decline: string;
+  proceedConsequence: string;
+  cancelConsequence: string;
+  assignedOpenWorkHub: string;
+  partialDetailsChanged: string;
+  respondWithin: string;
+  hirerDecisionPending: string;
+  workerResponseRequired: string;
+  acceptingWaitsForEveryone: string;
+  decliningCancelsForEveryone: string;
+  acceptedWaiting: (count: number) => string;
+  declinedByYou: string;
+  declinedByWorker: string;
+  timedOutCancellation: string;
+  hirerCancelled: string;
+  hirerNoDecision: string;
+  genericCancellation: string;
+  hirerCancelledOutcome: string;
+  hirerNoDecisionOutcome: string;
+  hirerWorkerDeclinedOutcome: string;
+  hirerTimedOutOutcome: string;
+  hirerGenericCancellation: string;
+  cancelledAt: (date: string, time: string) => string;
+  timeUpChecking: string;
+  nothingToRespond: string;
+  backToQuest: string;
+  browseOtherQuests: string;
+  questAssignedNext: string;
+  workersAcceptedProgress: (accepted: number, required: number) => string;
+  workerHeadcountJoined: (actual: number, requested: number) => string;
   proposalCount: (count: number) => string;
   partialConsentTitle: string;
   partialConsentSubtitle: string;
@@ -121,10 +159,8 @@ export interface GroupQuestMessages {
   approvedTitle: string;
   approvedDescription: (actual: number) => string;
   cancelledTitle: string;
-  cancelledDescription: string;
   timedOutDescription: string;
   noConsent: string;
-  underfilledCancelledDescription: string;
   newRewardPerWorker: string;
   dueDate: string;
   notSet: string;
@@ -133,16 +169,90 @@ export interface GroupQuestMessages {
   cancelQuest: string;
 }
 
+export function underfilledCancellationDescription(
+  messages: GroupQuestMessages,
+  reason: QuestV2UnderfilledCancellationReason | null | undefined,
+  ownDeclined: boolean,
+  isHirer: boolean
+): string {
+  if (isHirer) {
+    switch (reason) {
+      case "HIRER_CANCELLED":
+        return messages.hirerCancelledOutcome;
+      case "HIRER_NO_DECISION":
+        return messages.hirerNoDecisionOutcome;
+      case "WORKER_DECLINED":
+        return messages.hirerWorkerDeclinedOutcome;
+      case QuestV2CancellationReason.CONSENT_TIMEOUT:
+        return messages.hirerTimedOutOutcome;
+      default:
+        return messages.hirerGenericCancellation;
+    }
+  }
+  switch (reason) {
+    case "HIRER_CANCELLED":
+      return messages.hirerCancelled;
+    case "HIRER_NO_DECISION":
+      return messages.hirerNoDecision;
+    case "WORKER_DECLINED":
+      return ownDeclined ? messages.declinedByYou : messages.declinedByWorker;
+    case QuestV2CancellationReason.CONSENT_TIMEOUT:
+      return messages.timedOutCancellation;
+    default:
+      return messages.genericCancellation;
+  }
+}
+
 export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
   en: {
-    underfilledCancelledDescription:
-      "The Quest was cancelled before consent completed. Reserved rewards are fully refunded.",
     newRewardPerWorker: "New reward per Worker",
     dueDate: "Due date",
     notSet: "Not set",
     proceed: "Proceed",
-    proceedLabel: "Proceed with current roster",
+    proceedLabel: "Proceed with joined workers",
     cancelQuest: "Cancel Quest",
+    partialDetailsChanged: "The quest details changed",
+    respondWithin: "Respond within",
+    hirerDecisionPending: "Waiting for the hirer's decision",
+    workerResponseRequired: "You need to respond",
+    acceptingWaitsForEveryone:
+      "Accepting does not start the quest by itself — everyone who joined must accept. If anyone declines or doesn't respond in time, the quest is cancelled. Workers owe nothing and are owed nothing; the hirer is refunded in full.",
+    decliningCancelsForEveryone:
+      "Declining cancels the quest for everyone. Workers owe nothing and are owed nothing; the hirer is refunded in full.",
+    acceptedWaiting: (count) =>
+      `You accepted — waiting for ${count} ${count === 1 ? "other worker" : "other workers"}.`,
+    declinedByYou: "You declined. The quest was cancelled for everyone.",
+    declinedByWorker: "A worker declined. The quest was cancelled.",
+    timedOutCancellation:
+      "The response window ended before everyone accepted. The quest was cancelled.",
+    hirerCancelled: "The hirer cancelled the quest.",
+    hirerNoDecision:
+      "The hirer did not decide in time, so the quest was cancelled.",
+    genericCancellation: "The quest was cancelled before all workers accepted.",
+    hirerCancelledOutcome:
+      "The hirer cancelled the quest. The hirer is refunded in full.",
+    hirerNoDecisionOutcome:
+      "The hirer did not decide in time, so the quest was cancelled. The hirer is refunded in full.",
+    hirerWorkerDeclinedOutcome:
+      "A worker declined. The quest was cancelled. The hirer is refunded in full.",
+    hirerTimedOutOutcome:
+      "The response window ended before everyone accepted. The quest was cancelled. The hirer is refunded in full.",
+    hirerGenericCancellation:
+      "The quest was cancelled before all workers accepted. The hirer is refunded in full.",
+    cancelledAt: (date, time) => `Cancelled ${date} at ${time}`,
+    timeUpChecking: "Time is up — checking the result…",
+    nothingToRespond:
+      "Nothing to respond to. This quest is no longer underfilled or awaiting your response.",
+    backToQuest: "Back to quest",
+    browseOtherQuests: "Browse other quests",
+    questAssignedNext: "All set — quest assigned",
+    workerHeadcountJoined: (actual, requested) =>
+      `${actual} of ${requested} workers joined`,
+    decline: "Decline",
+    proceedConsequence:
+      "Proceeding gives joined workers 10 minutes to accept the revised reward and due date. Everyone must accept or the quest is cancelled. Workers owe nothing and are owed nothing; the hirer is refunded in full.",
+    cancelConsequence: "Cancelling ends the quest. You are refunded in full.",
+    assignedOpenWorkHub: "Open Work Hub",
     close: "Close",
     cancel: "Cancel",
     retry: "Try again",
@@ -184,6 +294,11 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     proposal: "Proposal",
     fileCount: (count) => `${count} ${count === 1 ? "file" : "files"}`,
     attachedFiles: "Attached files",
+    reviewAttachments: "Review attachments",
+    submissionImage: (index) => `Submitted image ${index}`,
+    noImageAttachments: "No image files are attached to this proposal.",
+    submissionImagesUnavailable:
+      "Submitted images could not be loaded. Try again.",
     attachFile: "Attach file or image",
     removeFile: (name) => `Remove file ${name}`,
     filePickFailed: "Failed to pick file",
@@ -257,42 +372,40 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     noProposals: "No submitted Candidate Proposals yet",
     proposalCount: (count) =>
       `${count} ${count === 1 ? "proposal" : "proposals"}`,
-    partialConsentTitle: "Start with the current team?",
+    partialConsentTitle: "Changed quest details",
     partialConsentSubtitle:
-      "The roster is frozen while every required person votes.",
-    reviewPartialStart: "Review roster and respond",
-    frozenRoster: "Frozen roster",
-    voteStatus: "Vote status",
+      "Joined workers respond individually to the revised reward and due date.",
+    reviewPartialStart: "Review changed details",
+    frozenRoster: "Joined workers",
+    voteStatus: "Worker responses",
     hirer: "Hirer",
     worker: "Worker",
-    pendingVote: "Awaiting vote",
-    approvedVote: "Approved",
-    rejectedVote: "Rejected",
+    pendingVote: "Awaiting response",
+    approvedVote: "Accepted",
+    rejectedVote: "Declined",
     votesProgress: (approved, required) =>
       `${approved} of ${required} approved`,
+    workersAcceptedProgress: (accepted, required) =>
+      `${accepted} of ${required} workers accepted`,
     timeRemaining: "Time remaining",
-    approveStart: "Approve start",
-    rejectStart: "Reject start",
+    approveStart: "Accept",
+    rejectStart: "Decline",
     chatWritableHint:
       "The existing Quest chat stays writable while this vote is pending.",
-    approvedTitle: "Partial start approved",
+    approvedTitle: "All set — quest assigned",
     approvedDescription: (actual) =>
-      `The Quest will start with ${actual} ${actual === 1 ? "Worker" : "Workers"}.`,
+      `The Quest is assigned to ${actual} ${actual === 1 ? "Worker" : "Workers"}.`,
     cancelledTitle: "Quest cancelled",
-    cancelledDescription:
-      "The partial roster did not receive unanimous approval. Reserved rewards are fully refunded.",
     timedOutDescription:
-      "The five-minute consent window ended before everyone approved. Reserved rewards are fully refunded.",
-    noConsent: "No partial-start consent is available.",
+      "The response window ended before everyone accepted. The quest was cancelled.",
+    noConsent: "No response is needed for this quest.",
   },
   th: {
-    underfilledCancelledDescription:
-      "เควสต์ถูกยกเลิกก่อนการยินยอมจะเสร็จสิ้น เงินที่สำรองไว้จะคืนเต็มจำนวน",
     newRewardPerWorker: "ค่าตอบแทนใหม่ต่อผู้ทำงาน",
     dueDate: "กำหนดส่งงาน",
     notSet: "ไม่มี",
     proceed: "ดำเนินการต่อ",
-    proceedLabel: "ดำเนินการต่อด้วยทีมปัจจุบัน",
+    proceedLabel: "ดำเนินการต่อกับผู้ทำงานที่เข้าร่วม",
     cancelQuest: "ยกเลิกเควสต์",
     close: "ปิด",
     cancel: "ยกเลิก",
@@ -334,6 +447,10 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     proposal: "ข้อเสนอ",
     fileCount: (count) => `${count} ไฟล์`,
     attachedFiles: "ไฟล์แนบ",
+    reviewAttachments: "ดูไฟล์แนบ",
+    submissionImage: (index) => `รูปภาพที่ส่งมา ${index}`,
+    noImageAttachments: "ไม่มีรูปภาพในไฟล์แนบของข้อเสนอนี้",
+    submissionImagesUnavailable: "โหลดรูปภาพที่ส่งมาไม่สำเร็จ ลองอีกครั้ง",
     attachFile: "แนบเอกสารหรือรูปภาพ",
     removeFile: (name) => `ลบไฟล์ ${name}`,
     filePickFailed: "เลือกไฟล์ไม่สำเร็จ",
@@ -404,29 +521,68 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     reject: "ปฏิเสธ",
     noProposals: "ยังไม่มีข้อเสนอผู้สมัครที่ส่งแล้ว",
     proposalCount: (count) => `ข้อเสนอ ${count} รายการ`,
-    partialConsentTitle: "เริ่มงานด้วยทีมปัจจุบันไหม",
-    partialConsentSubtitle: "รายชื่อถูกล็อกไว้ระหว่างรอทุกคนลงคะแนน",
-    reviewPartialStart: "ดูรายชื่อและตอบรับการเริ่มงาน",
-    frozenRoster: "รายชื่อที่ล็อกไว้",
-    voteStatus: "สถานะการลงคะแนน",
+    partialConsentTitle: "รายละเอียดเควสต์ที่เปลี่ยนแปลง",
+    partialConsentSubtitle:
+      "ผู้ทำงานที่เข้าร่วมตอบรับค่าตอบแทนและกำหนดส่งใหม่เป็นรายบุคคล",
+    reviewPartialStart: "ตรวจสอบรายละเอียดที่เปลี่ยนแปลง",
+    frozenRoster: "ผู้ทำงานที่เข้าร่วม",
+    voteStatus: "การตอบรับของผู้ทำงาน",
     hirer: "ผู้ว่าจ้าง",
     worker: "ผู้ทำงาน",
-    pendingVote: "รอลงคะแนน",
-    approvedVote: "อนุมัติแล้ว",
+    pendingVote: "รอตอบกลับ",
+    approvedVote: "ตอบรับแล้ว",
     rejectedVote: "ปฏิเสธแล้ว",
     votesProgress: (approved, required) =>
       `อนุมัติแล้ว ${approved} จาก ${required} คน`,
+    workersAcceptedProgress: (accepted, required) =>
+      `ผู้ทำงานตอบรับแล้ว ${accepted} จาก ${required} คน`,
     timeRemaining: "เวลาที่เหลือ",
-    approveStart: "อนุมัติการเริ่มงาน",
-    rejectStart: "ปฏิเสธการเริ่มงาน",
+    approveStart: "ตอบรับ",
+    rejectStart: "ปฏิเสธ",
     chatWritableHint: "แชตเควสต์เดิมยังส่งข้อความได้ระหว่างรอการลงคะแนน",
-    approvedTitle: "อนุมัติการเริ่มงานแบบไม่เต็มจำนวนแล้ว",
-    approvedDescription: (actual) => `เควสต์จะเริ่มด้วยผู้ทำงาน ${actual} คน`,
+    approvedTitle: "เรียบร้อย — กำหนดผู้ทำงานให้เควสต์แล้ว",
+    approvedDescription: (actual) => `กำหนดผู้ทำงาน ${actual} คนให้เควสต์แล้ว`,
     cancelledTitle: "ยกเลิกเควสต์แล้ว",
-    cancelledDescription:
-      "รายชื่อบางส่วนไม่ได้รับการอนุมัติจากทุกคน เงินที่สำรองไว้จะคืนเต็มจำนวน",
-    timedOutDescription:
-      "หมดเวลา 5 นาทีโดยที่ยังไม่ได้รับการอนุมัติจากทุกคน เงินที่สำรองไว้จะคืนเต็มจำนวน",
-    noConsent: "ไม่มีการยินยอมก่อนเริ่มงานแบบไม่เต็มจำนวน",
+    timedOutDescription: "หมดเวลาตอบกลับก่อนทุกคนตอบรับ เควสต์ถูกยกเลิก",
+    noConsent: "เควสต์นี้ไม่ต้องตอบกลับ",
+    partialDetailsChanged: "รายละเอียดเควสต์มีการเปลี่ยนแปลง",
+    respondWithin: "ตอบกลับภายใน",
+    hirerDecisionPending: "กำลังรอการตัดสินใจจากผู้ว่าจ้าง",
+    workerResponseRequired: "คุณต้องตอบกลับ",
+    acceptingWaitsForEveryone:
+      "การตอบรับของคุณเพียงคนเดียวไม่ได้เริ่มเควสต์ ผู้ทำงานทุกคนที่เข้าร่วมต้องตอบรับ หากมีผู้ปฏิเสธหรือไม่ตอบภายในเวลา เควสต์จะถูกยกเลิก ผู้ทำงานไม่ต้องชำระเงินและไม่มีเงินที่ต้องได้รับ ผู้ว่าจ้างได้รับเงินคืนเต็มจำนวน",
+    decliningCancelsForEveryone:
+      "การปฏิเสธจะยกเลิกเควสต์สำหรับทุกคน ผู้ทำงานไม่ต้องชำระเงินและไม่มีเงินที่ต้องได้รับ ผู้ว่าจ้างได้รับเงินคืนเต็มจำนวน",
+    acceptedWaiting: (count) =>
+      `คุณตอบรับแล้ว — กำลังรอผู้ทำงานอีก ${count} คน`,
+    declinedByYou: "คุณปฏิเสธแล้ว เควสต์ถูกยกเลิกสำหรับทุกคน",
+    declinedByWorker: "มีผู้ทำงานปฏิเสธ เควสต์ถูกยกเลิก",
+    timedOutCancellation: "หมดเวลาตอบกลับก่อนทุกคนตอบรับ เควสต์ถูกยกเลิก",
+    hirerCancelled: "ผู้ว่าจ้างยกเลิกเควสต์",
+    hirerNoDecision: "ผู้ว่าจ้างไม่ได้ตัดสินใจภายในเวลา เควสต์จึงถูกยกเลิก",
+    genericCancellation: "เควสต์ถูกยกเลิกก่อนผู้ทำงานทุกคนตอบรับ",
+    hirerCancelledOutcome: "ผู้ว่าจ้างยกเลิกเควสต์ และได้รับเงินคืนเต็มจำนวน",
+    hirerNoDecisionOutcome:
+      "ผู้ว่าจ้างไม่ได้ตัดสินใจภายในเวลา เควสต์จึงถูกยกเลิก และผู้ว่าจ้างได้รับเงินคืนเต็มจำนวน",
+    hirerWorkerDeclinedOutcome:
+      "มีผู้ทำงานปฏิเสธ เควสต์ถูกยกเลิก และผู้ว่าจ้างได้รับเงินคืนเต็มจำนวน",
+    hirerTimedOutOutcome:
+      "หมดเวลาตอบกลับก่อนทุกคนตอบรับ เควสต์ถูกยกเลิก และผู้ว่าจ้างได้รับเงินคืนเต็มจำนวน",
+    hirerGenericCancellation:
+      "เควสต์ถูกยกเลิกก่อนผู้ทำงานทุกคนตอบรับ และผู้ว่าจ้างได้รับเงินคืนเต็มจำนวน",
+    cancelledAt: (date, time) => `ยกเลิกเมื่อ ${date} เวลา ${time}`,
+    timeUpChecking: "หมดเวลาแล้ว — กำลังตรวจสอบผล…",
+    nothingToRespond: "ไม่มีรายการให้ตอบ เควสต์นี้ไม่ได้รอการตอบรับแล้ว",
+    backToQuest: "กลับไปยังเควสต์",
+    browseOtherQuests: "ดูเควสต์อื่น",
+    questAssignedNext: "เรียบร้อย — กำหนดผู้ทำงานให้เควสต์แล้ว",
+    workerHeadcountJoined: (actual, requested) =>
+      `มีผู้ทำงานเข้าร่วม ${actual} จาก ${requested} คน`,
+    decline: "ปฏิเสธ",
+    proceedConsequence:
+      "หากดำเนินการต่อ ผู้ทำงานที่เข้าร่วมจะมีเวลา 10 นาทีตอบรับค่าตอบแทนและกำหนดส่งใหม่ ทุกคนต้องตอบรับ มิฉะนั้นเควสต์จะถูกยกเลิก ผู้ทำงานไม่ต้องชำระเงินและไม่มีเงินที่ต้องได้รับ ผู้ว่าจ้างได้รับเงินคืนเต็มจำนวน",
+    cancelConsequence:
+      "การยกเลิกจะสิ้นสุดเควสต์ และคุณจะได้รับเงินคืนเต็มจำนวน",
+    assignedOpenWorkHub: "เปิดศูนย์งาน",
   },
 };

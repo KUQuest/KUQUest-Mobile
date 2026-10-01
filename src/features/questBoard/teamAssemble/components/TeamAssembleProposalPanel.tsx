@@ -54,7 +54,7 @@ export function TeamAssembleProposalPanel({
           value={text}
         />
       </View>
-      <View className="mt-ku-10 gap-ku-sm">
+      <View className="will-change-variable mt-ku-10 gap-ku-sm">
         {files.map((file) => (
           <View
             key={file.id}

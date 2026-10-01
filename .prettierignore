@@ -19,6 +19,7 @@ android/
 ios/
 
 # Upstream API contracts
+api-1.yaml
 docs/api/api.yaml
 
 # Generated declarations

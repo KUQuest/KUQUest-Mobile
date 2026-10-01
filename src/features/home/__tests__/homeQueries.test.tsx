@@ -60,7 +60,8 @@ describe("useHirerHomeQuery realtime updates", () => {
           type: "HIRER_QUEST_UPDATED",
           version: 1,
           questId: "00000000-0000-4000-8000-000000000001",
-          changeType: "QUEST_STARTED",
+          changeType: "UNDERFILLED_DECISION_PENDING",
+          expiresAt: "2026-10-02T04:10:00.000Z",
         });
       return stopSubscription;
     });

@@ -28,6 +28,18 @@ async function request(path, options = {}) {
   return { response, json, setCookie: response.headers.get("set-cookie") };
 }
 
+function readItems(result, path) {
+  if (result.response.status !== 200) {
+    const code = result.json?.code ?? result.json?.error?.code ?? "unknown";
+    throw new Error(`${path} failed: ${result.response.status} (${code})`);
+  }
+  const items = result.json?.data?.items ?? result.json?.data;
+  if (!Array.isArray(items)) {
+    throw new Error(`${path} returned an unexpected collection envelope`);
+  }
+  return items;
+}
+
 async function main() {
   console.log(`\n🔍 Signing in as ${account} on ${BASE_URL}...`);
   const signIn = await request(`/api/staging/test-auth/sign-in/${account}`, {
@@ -51,7 +63,7 @@ async function main() {
     process.exit(1);
   }
 
-  const quests = mine.json.data.items.filter(
+  const quests = readItems(mine, "/api/v2/quests/mine").filter(
     (q) => q.state !== "QUEST_CANCELLED" && q.state !== "QUEST_COMPLETED"
   );
   if (quests.length === 0) {
@@ -70,14 +82,14 @@ async function main() {
       const teams = await request(`/api/v2/quests/${q.id}/teams`, {
         headers: { Cookie: cookie },
       });
-      pending = (teams.json?.data ?? []).filter(
+      pending = readItems(teams, `/api/v2/quests/${q.id}/teams`).filter(
         (t) => t.state === "TEAM_SUBMITTED"
       ).length;
     } else if (isSingleCandidate) {
       const apps = await request(`/api/v2/quests/${q.id}/applications`, {
         headers: { Cookie: cookie },
       });
-      pending = (apps.json?.data ?? []).filter(
+      pending = readItems(apps, `/api/v2/quests/${q.id}/applications`).filter(
         (a) => a.state === "APPLICATION_APPLIED"
       ).length;
     }

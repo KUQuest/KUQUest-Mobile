@@ -132,6 +132,8 @@ export const questV2CanonicalQuestSchema = z.object({
   participation: questV2ParticipationSchema,
   state: questV2StateSchema,
   questFundingTotal: z.number().nonnegative(),
+  /** Per-Worker published reward in baht (hirer views). Null in a draft; unchanged by an underfilled revision. */
+  questReward: z.number().nonnegative().nullable().optional(),
   headcount: z.number().int().min(1),
   startTime: z.string(),
   dueAt: z.string().nullable(),
@@ -237,6 +239,62 @@ export const questV2AssignmentsDataSchema = z.object({
 export type QuestV2AssignmentsResponse = z.infer<
   typeof questV2AssignmentsDataSchema
 >;
+
+export const questV2UnderfilledCancellationReasonSchema = z.enum([
+  "HIRER_CANCELLED",
+  "HIRER_NO_DECISION",
+  "WORKER_DECLINED",
+  "CONSENT_TIMEOUT",
+]);
+export type QuestV2UnderfilledCancellationReason = z.infer<
+  typeof questV2UnderfilledCancellationReasonSchema
+>;
+export const QuestV2CancellationReason =
+  questV2UnderfilledCancellationReasonSchema.enum;
+
+/** `type` of an Android FCM data-only message sent by the underfilled lifecycle. */
+export const questV2PushTypeSchema = z.enum([
+  "UNDERFILLED_DECISION_PENDING",
+  "UNDERFILLED_CONSENT_PENDING",
+  "UNDERFILLED_COMPLETED",
+  "UNDERFILLED_CANCELLED",
+  "QUEST_ASSIGNED",
+]);
+export type QuestV2PushType = z.infer<typeof questV2PushTypeSchema>;
+export const QuestV2PushTypeValue = questV2PushTypeSchema.enum;
+
+/** 409 `error.code` values of direct `POST /api/v2/quests/:id/join`. */
+export const QuestV2JoinErrorCode = {
+  QUEST_FULL: "QUEST_FULL",
+  QUEST_NOT_OPEN: "QUEST_NOT_OPEN",
+  ALREADY_JOINED: "ALREADY_JOINED",
+} as const;
+
+/** Compact underfilled summary on each `GET /api/v2/assignments/mine` item; null when the Quest has no underfilled process. */
+export const questV2UnderfilledSummarySchema = z.object({
+  state: z.enum([
+    "UNDERFILLED_DECISION_PENDING",
+    "UNDERFILLED_CONSENT_PENDING",
+    "UNDERFILLED_COMPLETED",
+    "UNDERFILLED_CANCELLED",
+  ]),
+  decision: z.object({ expiresAt: z.string() }),
+  consent: z.object({ expiresAt: z.string().nullable() }),
+  activeWorkerCount: z.number().int().nonnegative(),
+  headcount: z.number().int().min(1),
+  cancellationReason: questV2UnderfilledCancellationReasonSchema.nullable(),
+});
+export type QuestV2UnderfilledSummary = z.infer<
+  typeof questV2UnderfilledSummarySchema
+>;
+
+export const questV2MyAssignmentSchema = questV2AssignmentSchema.extend({
+  underfilled: questV2UnderfilledSummarySchema.nullable().optional(),
+});
+export type QuestV2MyAssignment = z.infer<typeof questV2MyAssignmentSchema>;
+export const questV2MyAssignmentsDataSchema = z.object({
+  items: z.array(questV2MyAssignmentSchema),
+});
 
 export const questV2PublishCheckReasonSchema = z.object({
   code: z.string(),
@@ -385,6 +443,19 @@ export const questV2TeamFileSchema = z.object({
   createdAt: z.string(),
 });
 export type QuestV2TeamFile = z.infer<typeof questV2TeamFileSchema>;
+export const questV2TeamFileLinkSchema = z.object({
+  fileId: questV2IdSchema,
+  contentType: z.string().min(1),
+  sizeBytes: z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(10 * 1024 * 1024),
+  position: z.coerce.number().int().nonnegative(),
+  url: z.string().url(),
+  urlExpiresAt: z.string(),
+});
+export type QuestV2TeamFileLink = z.infer<typeof questV2TeamFileLinkSchema>;
 
 export const questV2TeamListDataSchema = z.object({
   items: z.array(questV2TeamSchema),
@@ -457,6 +528,10 @@ export const questV2UnderfilledSchema = z.object({
   workerRewardPool: z.number().nonnegative().nullable(),
   questReward: z.number().nonnegative().nullable(),
   dueAt: z.string().nullable(),
+  cancellationReason: questV2UnderfilledCancellationReasonSchema
+    .nullable()
+    .optional(),
+  cancelledAt: z.string().nullable().optional(),
   decision: questV2UnderfilledDecisionSchema,
   consent: questV2UnderfilledConsentSchema,
   responses: z.array(questV2UnderfilledResponseItemSchema).optional(),

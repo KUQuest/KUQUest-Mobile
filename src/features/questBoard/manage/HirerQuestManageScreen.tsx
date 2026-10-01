@@ -480,6 +480,7 @@ export default function HirerQuestManageScreen({
       </ScrollView>
       <CandidateReviewSheet
         visible={candidateOpen}
+        viewerId={viewerId}
         applications={snapshot.applications}
         teams={submittedTeams}
         mode={isGroup ? "team" : "individual"}
@@ -514,6 +515,14 @@ export default function HirerQuestManageScreen({
           questTitle={quest.title}
           canDecide={snapshot.capabilities.canDecideUnderfilled}
           onHirerDecision={decideUnderfilled}
+          originalRewardSatang={
+            snapshot.quest.questReward == null
+              ? undefined
+              : Math.round(snapshot.quest.questReward * 100)
+          }
+          originalDueAt={snapshot.quest.dueAt}
+          onExpire={() => void snapshotQuery.refetch()}
+          onBrowseQuests={() => router.replace("/(tabs)")}
           locale={locale}
         />
       </BottomSheet>

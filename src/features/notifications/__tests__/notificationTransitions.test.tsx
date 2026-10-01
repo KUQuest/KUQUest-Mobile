@@ -1,14 +1,21 @@
 import React from "react";
 import { fireEvent, render } from "@testing-library/react-native";
 
-import type { QuestV2CandidateApplication } from "@/api/questV2Contracts";
+import type { WorkerQuestNoticeKind } from "../notificationTransitions";
+import type {
+  QuestV2CandidateApplication,
+  QuestV2MyAssignment,
+  QuestV2UnderfilledSummary,
+} from "@/api/questV2Contracts";
 import type { ChatConversation } from "@/features/chat/chatTypes";
 import { NotificationCoordinator } from "../NotificationBannerHost";
 import {
   detectApplicationDecisions,
   detectUnreadIncreases,
+  detectWorkerQuestTransitions,
   getOpenConversationId,
   shouldSuppressHirerQuestNotice,
+  shouldSuppressWorkerQuestNotice,
 } from "../notificationTransitions";
 import type { ForegroundNotice } from "../useNotificationCoordinator";
 
@@ -58,6 +65,36 @@ const appliedApplication = {
     state: "QUEST_OPEN",
   },
 } satisfies QuestV2CandidateApplication;
+
+function makeWorkerAssignment(
+  state: QuestV2UnderfilledSummary["state"],
+  questState: QuestV2MyAssignment["questState"] = "QUEST_OPEN",
+  cancellationReason: QuestV2UnderfilledSummary["cancellationReason"] = null
+): QuestV2MyAssignment {
+  const needsConsent = state === "UNDERFILLED_CONSENT_PENDING";
+  return {
+    id: "assignment-1",
+    questId: "quest-1",
+    workerId: "worker-1",
+    state:
+      state === "UNDERFILLED_CANCELLED"
+        ? "ASSIGNMENT_CANCELLED"
+        : "ASSIGNMENT_ACTIVE",
+    questState,
+    startedAt: null,
+    createdAt: "2026-10-01T00:00:00.000Z",
+    underfilled: {
+      state,
+      decision: { expiresAt: "2026-10-01T00:10:00.000Z" },
+      consent: {
+        expiresAt: needsConsent ? "2026-10-01T00:05:00.000Z" : null,
+      },
+      activeWorkerCount: 1,
+      headcount: 2,
+      cancellationReason,
+    },
+  };
+}
 
 describe("notification transitions", () => {
   it("uses initial unread observations as a baseline", () => {
@@ -157,12 +194,100 @@ describe("notification transitions", () => {
       )
     ).toBe(false);
   });
-});
 
-const rejectedApplication = {
-  ...appliedApplication,
-  state: "APPLICATION_REJECTED",
-} satisfies QuestV2CandidateApplication;
+  it("detects assignment-list transitions once, routes correctly, and suppresses exact routes", () => {
+    const consent = makeWorkerAssignment("UNDERFILLED_CONSENT_PENDING");
+    expect(detectWorkerQuestTransitions(null, [consent])).toEqual([]);
+    const consentTransition = {
+      questId: "quest-1",
+      kind: "RESPONSE_REQUIRED",
+      cancellationReason: null,
+      href: "/quest/[id]/partial-start" as const,
+    };
+    expect(
+      detectWorkerQuestTransitions(new Map([["quest-1", null]]), [consent])
+    ).toEqual([consentTransition]);
+    expect(
+      detectWorkerQuestTransitions(
+        new Map<string, WorkerQuestNoticeKind | null>([
+          ["quest-1", "RESPONSE_REQUIRED"],
+        ]),
+        [consent]
+      )
+    ).toEqual([]);
+    expect(
+      shouldSuppressWorkerQuestNotice(
+        "/quest/quest-1/partial-start",
+        "quest-1",
+        consentTransition.href
+      )
+    ).toBe(true);
+    expect(
+      shouldSuppressWorkerQuestNotice(
+        "/quest/quest-10/partial-start",
+        "quest-1",
+        consentTransition.href
+      )
+    ).toBe(false);
+
+    const waiting = makeWorkerAssignment("UNDERFILLED_DECISION_PENDING");
+    expect(
+      detectWorkerQuestTransitions(new Map([["quest-1", null]]), [waiting])
+    ).toEqual([
+      {
+        questId: "quest-1",
+        kind: "DECISION_PENDING",
+        cancellationReason: null,
+        href: "/quest/[id]",
+      },
+    ]);
+    expect(
+      shouldSuppressWorkerQuestNotice(
+        "/quest/quest-1",
+        "quest-1",
+        "/quest/[id]" as const
+      )
+    ).toBe(true);
+  });
+
+  it("detects assigned and cancelled outcomes with authoritative summary reason", () => {
+    const assigned = makeWorkerAssignment(
+      "UNDERFILLED_COMPLETED",
+      "QUEST_ASSIGNED"
+    );
+    const cancelled = makeWorkerAssignment(
+      "UNDERFILLED_CANCELLED",
+      "QUEST_CANCELLED",
+      "WORKER_DECLINED"
+    );
+    expect(
+      detectWorkerQuestTransitions(
+        new Map([
+          ["quest-1", null],
+          ["quest-2", null],
+        ]),
+        [assigned, { ...cancelled, id: "assignment-2", questId: "quest-2" }]
+      )
+    ).toEqual([
+      {
+        questId: "quest-1",
+        kind: "FULL_OR_ASSIGNED",
+        cancellationReason: null,
+        href: "/quest/[id]",
+      },
+      {
+        questId: "quest-2",
+        kind: "CANCELLED",
+        cancellationReason: "WORKER_DECLINED",
+        href: "/quest/[id]",
+      },
+    ]);
+  });
+  const rejectedApplication = {
+    ...appliedApplication,
+    state: "APPLICATION_REJECTED",
+  } satisfies QuestV2CandidateApplication;
+});
 
 describe("notification banner", () => {
   it("renders notice copy and opens its destination when tapped", async () => {

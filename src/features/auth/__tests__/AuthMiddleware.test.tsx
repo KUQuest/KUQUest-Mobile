@@ -92,6 +92,11 @@ describe("AuthMiddleware", () => {
     expect(isPublicAuthRoute(["dev", "import-session"], false)).toBe(false);
   });
 
+  test("keeps HTTPS Candidate Team invite routes public for sign-in", () => {
+    expect(isPublicAuthRoute(["invite", "team"])).toBe(true);
+    expect(isPublicAuthRoute(["invite", "other"])).toBe(false);
+  });
+
   test("bypasses session checks for development demo mode", async () => {
     mockSegments = ["(tabs)"];
     mockIsDemoEnabled.mockReturnValue(true);
