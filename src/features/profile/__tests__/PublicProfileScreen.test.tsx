@@ -116,7 +116,7 @@ describe("PublicProfileScreen", () => {
     });
   });
 
-  it("renders the public profile data and does not render an edit profile button", async () => {
+  it("renders profile data without an error for absent Quest categories", async () => {
     const view = await renderWithQueryClient(<PublicProfileScreen />);
 
     await waitFor(() => {
@@ -130,7 +130,7 @@ describe("PublicProfileScreen", () => {
       view.getAllByText("Software Engineering student building mobile apps")
         .length
     ).toBeGreaterThan(0);
-    expect(view.getByTestId("profile-tags-unavailable")).toBeTruthy();
+    expect(view.queryByTestId("profile-tags-unavailable")).toBeNull();
     expect(view.getByText("4.7")).toBeTruthy();
     expect(view.getByText("12")).toBeTruthy();
 
@@ -142,14 +142,18 @@ describe("PublicProfileScreen", () => {
     await fireEvent.press(backButton);
     expect(mockBack).toHaveBeenCalledTimes(1);
   });
-  it("renders unavailable rating state when public average is null", async () => {
+  it("renders no rating when public average is null", async () => {
     const profile = {
       ...mockPublicProfile,
       reputation: { totalQuests: 12, rating: { average: null } },
     };
     (authService.getStudentApi as jest.Mock).mockResolvedValue({
       getPublicProfile: jest.fn().mockResolvedValue(profile),
-      listPublicReviews: jest.fn().mockResolvedValue(mockReviews),
+      listPublicReviews: jest.fn().mockResolvedValue({
+        items: [],
+        total: 0,
+        nextCursor: null,
+      }),
     });
 
     const view = await renderWithQueryClient(<PublicProfileScreen />);
@@ -157,9 +161,15 @@ describe("PublicProfileScreen", () => {
     await waitFor(() => {
       expect(view.getAllByText("Jane Doe").length).toBeGreaterThan(0);
     });
-    expect(
-      view.getByText(/Profile Rating is temporarily unavailable/)
-    ).toBeTruthy();
+    expect(view.getByText("No ratings yet")).toBeTruthy();
+    expect(view.getByText("12")).toBeTruthy();
+    expect(view.queryByText(/temporarily unavailable/i)).toBeNull();
+    await fireEvent.press(view.getByTestId("public-profile-tab-reviews"));
+    await waitFor(() => {
+      expect(view.getByTestId("profile-review-summary")).toBeTruthy();
+    });
+    expect(view.getAllByText("No ratings yet").length).toBeGreaterThan(0);
+    expect(view.queryByText(/temporarily unavailable/i)).toBeNull();
   });
 
   it("switches tabs and displays experience, works, certificates, and reviews", async () => {

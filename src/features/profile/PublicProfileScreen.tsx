@@ -279,7 +279,6 @@ export default function PublicProfileScreen() {
             ? { uri: avatarUrl, cacheKey: avatarFileId }
             : "",
         }}
-        unavailableTagsText={`${messages.questCategoriesLabel}: ${messages.sectionUnavailable}`}
         accessibilityLabels={{
           profileImageLabel: messages.profileImageLabel,
           questCategoriesLabel: messages.questCategoriesLabel,
@@ -303,11 +302,6 @@ export default function PublicProfileScreen() {
       reviewsLabel={messages.reviews}
       noRatingLabel={messages.noRating}
       accessibilityLabel={messages.statisticsLabel}
-      errorText={
-        statsData.ratingAverage === null
-          ? `${messages.rating}: ${messages.ratingUnavailable} ${messages.totalQuests}: ${messages.sectionUnavailable}`
-          : undefined
-      }
     />
   );
 
@@ -383,7 +377,6 @@ export default function PublicProfileScreen() {
           noRatingLabel={messages.noRating}
           noMatchingReviewsText={messages.noMatchingReviews}
           showAllLabel={messages.showAllReviews}
-          ratingErrorText={`${messages.rating}: ${messages.ratingUnavailable}`}
           errorText={
             reviewsUnavailable
               ? getLocalizedErrorMessage(reviewsQuery.error, locale, {
