@@ -1,6 +1,7 @@
 import React from "react";
 import { act, fireEvent } from "@testing-library/react-native";
 import { renderWithAppTheme } from "@/testing/queryTestUtils";
+import { serverNow } from "@/api/serverClock";
 
 import { QuestConditionEditModal } from "../QuestConditionEditModal";
 import { QuestConditionEditStatusCard } from "../QuestConditionEditStatusCard";
@@ -228,10 +229,8 @@ describe("QuestConditionEditStatusCard", () => {
   });
 
   it("floors the countdown at zero once the deadline has passed", async () => {
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date("2026-08-12T09:00:00.000Z"));
     const editRequest = makeEditRequest({
-      expiresAt: "2026-08-12T08:59:59.000Z",
+      expiresAt: new Date(serverNow() - 1000).toISOString(),
     });
     const view = await renderWithAppTheme(
       <QuestConditionEditStatusCard
