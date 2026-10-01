@@ -143,7 +143,7 @@ describe("PartialGroupStartConsentScreen", () => {
     expect(staleModel.handleBack).toHaveBeenCalledTimes(1);
   });
 
-  it("renders pending Worker consent and forwards Accept", async () => {
+  it("formats due date and forwards pending Worker consent", async () => {
     const onWorkerConsent = jest.fn();
     const dueAt = "2030-10-02T12:00:00.000Z";
     const model = makeView({

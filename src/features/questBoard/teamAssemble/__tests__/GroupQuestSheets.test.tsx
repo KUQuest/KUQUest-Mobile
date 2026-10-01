@@ -634,7 +634,7 @@ describe("group Quest sheets", () => {
     ).toBeTruthy();
   });
 
-  it("lets a Worker vote from ownResponse when shared response list is absent", async () => {
+  it("formats Thai due date and lets a Worker vote from ownResponse", async () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date("2026-08-12T09:00:00.000Z"));
     const onWorkerConsent = jest.fn();
@@ -647,7 +647,7 @@ describe("group Quest sheets", () => {
       headcount: 3,
       workerRewardPool: 300,
       questReward: 300,
-      dueAt: null,
+      dueAt: "2026-10-01T23:25:00.000+07:00",
       decision: {
         status: "UNDERFILLED_DECISION_PENDING",
         value: null,
@@ -670,12 +670,14 @@ describe("group Quest sheets", () => {
     const view = await renderWithAppTheme(
       <PartialGroupStartConsentContent
         canConsent
-        locale="en"
+        locale="th"
         onWorkerConsent={onWorkerConsent}
         underfilled={underfilled}
         viewerId="worker-1"
       />
     );
+    expect(view.queryByText("2026-10-01T23:25:00.000+07:00")).toBeNull();
+    expect(view.getByText("1 ต.ค. 2026 23:25")).toBeTruthy();
 
     expect(view.getByTestId("partial-group-start-approve")).toBeTruthy();
     expect(view.getByTestId("partial-group-start-reject")).toBeTruthy();
@@ -687,7 +689,7 @@ describe("group Quest sheets", () => {
     await view.rerender(
       <PartialGroupStartConsentContent
         canConsent
-        locale="en"
+        locale="th"
         onWorkerConsent={onWorkerConsent}
         underfilled={{
           ...underfilled,
@@ -701,7 +703,7 @@ describe("group Quest sheets", () => {
       />
     );
     expect(view.queryByTestId("partial-group-start-approve")).toBeNull();
-    expect(view.getAllByText("Accepted")).toHaveLength(2);
+    expect(view.getAllByText("ตอบรับแล้ว")).toHaveLength(2);
     jest.useRealTimers();
   });
 
