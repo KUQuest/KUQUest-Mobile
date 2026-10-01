@@ -22,6 +22,7 @@ export function isPublicAuthRoute(
     return true;
   }
 
+  if (segments[0] === "invite" && segments[1] === "team") return true;
   return (
     isDevelopment && segments[0] === "dev" && segments[1] === "import-session"
   );

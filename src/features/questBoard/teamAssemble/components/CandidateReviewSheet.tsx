@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Check,
   CircleAlert,
@@ -8,12 +8,24 @@ import {
   UsersRound,
 } from "lucide-react-native";
 
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "@/tw";
+import { ImageViewerModal } from "@/components/ui/ImageViewerModal";
+import { Avatar } from "@/components/ui/Avatar";
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "@/tw";
 import { formatSatang } from "@/domain/satang";
 import { formatTimestampDate } from "@/domain/datetime";
 import { useLocale } from "@/features/preferences/localeStore";
 import type { SupportedLocale } from "@/locales/locale";
-import { groupQuestMessages } from "@/locales/groupQuestMessages";
+import {
+  groupQuestMessages,
+  type GroupQuestMessages,
+} from "@/locales/groupQuestMessages";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import {
   QuestApplicationStatus,
@@ -24,6 +36,7 @@ import {
   type QuestTeamMember,
 } from "../../domain/types";
 import type { QuestV2Application, QuestV2Team } from "@/api/questV2Contracts";
+import { useCandidateTeamFileLinksQuery } from "@/features/questBoard/api/questBoardQueries";
 import { usePublicProfileQuery } from "@/features/profile/api/profileQueries";
 import styles from "../groupQuestStyles";
 import { BottomSheet } from "@/components/ui/BottomSheet";
@@ -45,6 +58,8 @@ export interface CandidateReviewProposal {
   detail?: string;
   submittedAt?: string;
   teamId?: string;
+  questId?: string;
+  fileIds?: readonly string[];
   leaderId?: string;
   leaderName?: string;
   members?: readonly QuestTeamMember[];
@@ -59,9 +74,13 @@ type NormalizedProposal = {
   status: string;
   displayName: string;
   detail: string;
+  proposalNote?: string;
   profileId?: string;
   submittedAt?: string;
   members: readonly QuestTeamMember[];
+  teamId?: string;
+  questId?: string;
+  fileIds: readonly string[];
 };
 
 export interface CandidateReviewSheetProps {
@@ -73,6 +92,7 @@ export interface CandidateReviewSheetProps {
   mode?: "individual" | "team";
   questTitle?: string;
   applicantDirectory?: readonly CandidateReviewIdentity[];
+  viewerId?: string;
   teamMemberDirectory?: readonly CandidateReviewIdentity[];
   requestedHeadcount?: number;
   actualHeadcount?: number;
@@ -103,7 +123,7 @@ function StatusPill({
   status: string;
   selected: boolean;
   rejected: boolean;
-  labels: ReturnType<typeof getMessages>;
+  labels: GroupQuestMessages;
 }) {
   const { colors } = useAppTheme();
   const text = selected
@@ -209,7 +229,7 @@ function proposalFromRecord(
   proposal: CandidateReviewProposal,
   identities: Map<string, CandidateReviewIdentity>,
   memberIdentities: Map<string, CandidateReviewIdentity>,
-  labels: ReturnType<typeof getMessages>
+  labels: GroupQuestMessages
 ): NormalizedProposal {
   const type =
     proposal.type ??
@@ -225,19 +245,20 @@ function proposalFromRecord(
     const leaderName =
       proposal.leaderName ??
       memberIdentities.get(leaderId)?.displayName ??
-      leaderId;
+      labels.teamProposal;
     return {
       id: proposal.id,
       type,
       status: proposal.status ?? QuestTeamStatus.TEAM_SUBMITTED,
       displayName: leaderName,
-      detail:
-        proposal.detail ??
-        `${labels.teamProposal} · ${labels.memberCount(memberList.length)}`,
+      detail: proposal.detail ?? labels.memberCount(memberList.length),
       profileId:
         proposal.leaderId ??
         memberList.find((member) => member.role === "LEADER")?.workerId,
       submittedAt: proposal.submittedAt,
+      teamId: proposal.teamId,
+      questId: proposal.questId,
+      fileIds: proposal.fileIds ?? [],
       members: memberList,
     };
   }
@@ -249,13 +270,14 @@ function proposalFromRecord(
     displayName:
       proposal.applicantName ??
       identities.get(applicantId)?.displayName ??
-      applicantId,
+      labels.individualProposal,
     detail:
       proposal.detail ??
       identities.get(applicantId)?.detail ??
       labels.individualProposal,
     profileId: proposal.applicantId,
     submittedAt: proposal.submittedAt,
+    fileIds: [],
     members: [],
   };
 }
@@ -276,7 +298,7 @@ function normalizeProposals({
   | "mode"
   | "applicantDirectory"
   | "teamMemberDirectory"
-> & { messages: ReturnType<typeof getMessages> }): NormalizedProposal[] {
+> & { messages: GroupQuestMessages }): NormalizedProposal[] {
   const identities = new Map(
     (applicantDirectory ?? []).map((identity) => [identity.id, identity])
   );
@@ -330,18 +352,24 @@ function normalizeProposals({
               }));
         const application = teamApplications.get(team.id);
         const proposalId = "proposalId" in team ? team.proposalId : undefined;
+        const teamName = "state" in team ? team.name.trim() : "";
+        const proposalNote =
+          "state" in team ? team.submission?.text.trim() : undefined;
         const leaderName =
           members.find((member) => member.workerId === team.leaderId)
             ?.displayName ??
           memberIdentities.get(team.leaderId)?.displayName ??
-          team.leaderId;
+          messages.teamProposal;
         return {
           id: application?.id ?? proposalId ?? team.id,
           type: "team",
           status,
-          displayName: leaderName,
-          detail: `${messages.teamProposal} · ${messages.memberCount(members.length)}`,
-          profileId: team.leaderId,
+          displayName: teamName || leaderName,
+          detail: messages.memberCount(members.length),
+          teamId: "state" in team ? team.id : undefined,
+          questId: "state" in team ? team.questId : undefined,
+          fileIds: "state" in team ? (team.submission?.fileIds ?? []) : [],
+          proposalNote: proposalNote || undefined,
           submittedAt: application?.submittedAt ?? team.createdAt,
           members,
         };
@@ -362,9 +390,10 @@ function normalizeProposals({
           id: applicationId(application),
           type: "team",
           status: applicationStatus(application),
-          displayName: application.teamId ?? application.id,
-          detail: messages.teamProposal,
+          displayName: messages.teamProposal,
+          detail: "",
           submittedAt: applicationSubmittedAt(application),
+          fileIds: [],
           members: [],
         }))
     );
@@ -379,13 +408,15 @@ function normalizeProposals({
         type: "individual" as const,
         status: applicationStatus(application),
         displayName: applicantId
-          ? (identities.get(applicantId)?.displayName ?? applicantId)
-          : application.id,
+          ? (identities.get(applicantId)?.displayName ??
+            messages.individualProposal)
+          : messages.individualProposal,
         detail: applicantId
           ? (identities.get(applicantId)?.detail ?? messages.individualProposal)
           : messages.individualProposal,
         profileId: applicantId,
         submittedAt: applicationSubmittedAt(application),
+        fileIds: [],
         members: [],
       };
     });
@@ -443,11 +474,194 @@ function ErrorState({
   );
 }
 
+function TeamMemberRow({
+  member,
+  index,
+  labels,
+  memberIdentities,
+  visible,
+}: {
+  member: QuestTeamMember;
+  index: number;
+  labels: GroupQuestMessages;
+  memberIdentities: Map<string, CandidateReviewIdentity>;
+  visible: boolean;
+}) {
+  const profile = usePublicProfileQuery(visible ? member.workerId : "");
+  const profileName = [profile.data?.firstName, profile.data?.lastName]
+    .filter(Boolean)
+    .join(" ");
+  const name =
+    member.displayName ??
+    memberIdentities.get(member.workerId)?.displayName ??
+    (profileName || `${labels.member} ${index + 1}`);
+  const role = member.role === "LEADER" ? labels.leader : labels.member;
+
+  return (
+    <View className={styles.proposalMemberRow}>
+      <Avatar
+        cacheKey={profile.data?.avatar?.fileId}
+        className={styles.rosterAvatar}
+        imageTestID={`candidate-review-member-avatar-${member.workerId}`}
+        name={name}
+        size={32}
+        textClassName={styles.rosterAvatarText}
+        uri={profile.data?.avatar?.url}
+      />
+      <Text className={styles.proposalMember}>
+        {name} · {role}
+      </Text>
+    </View>
+  );
+}
+function CandidateTeamSubmissionAttachments({
+  fileIds,
+  labels,
+  proposalId,
+  questId,
+  teamId,
+  viewerId,
+  visible,
+}: {
+  fileIds: readonly string[];
+  labels: GroupQuestMessages;
+  proposalId: string;
+  questId: string;
+  teamId: string;
+  viewerId?: string;
+  visible: boolean;
+}) {
+  const { colors } = useAppTheme();
+  const [expanded, setExpanded] = useState(false);
+  const [previewImage, setPreviewImage] = useState<{
+    url: string;
+    label: string;
+  } | null>(null);
+  const fileLinksQuery = useCandidateTeamFileLinksQuery(
+    questId,
+    viewerId ?? null,
+    teamId,
+    fileIds,
+    visible && expanded
+  );
+  const images = useMemo(
+    () =>
+      fileLinksQuery.data?.filter((fileLink) =>
+        fileLink.contentType.startsWith("image/")
+      ) ?? [],
+    [fileLinksQuery.data]
+  );
+  const attachmentLabel = `${labels.reviewAttachments} · ${labels.fileCount(fileIds.length)}`;
+
+  return (
+    <View
+      className={styles.proposalAttachments}
+      testID={`candidate-review-attachments-section-${proposalId}`}
+    >
+      <Pressable
+        accessibilityLabel={attachmentLabel}
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+        className={styles.proposalAttachmentsButton}
+        onPress={() => setExpanded((value) => !value)}
+        testID={`candidate-review-attachments-${proposalId}`}
+      >
+        <Text className={styles.proposalAttachmentsButtonText}>
+          {labels.reviewAttachments}
+        </Text>
+        <Text className={styles.proposalDetail}>
+          {labels.fileCount(fileIds.length)}
+        </Text>
+      </Pressable>
+      {expanded ? (
+        <View className={styles.proposalAttachmentsContent}>
+          <Text className={styles.proposalNoteLabel}>
+            {labels.attachedFiles}
+          </Text>
+          {!viewerId ? (
+            <Text className={styles.proposalAttachmentMessage}>
+              {labels.submissionImagesUnavailable}
+            </Text>
+          ) : fileLinksQuery.isPending ? (
+            <ActivityIndicator
+              accessibilityLabel={labels.loading}
+              color={colors.primary}
+              size="small"
+            />
+          ) : fileLinksQuery.isError ? (
+            <View className={styles.proposalAttachmentError}>
+              <Text className={styles.proposalAttachmentMessage}>
+                {labels.submissionImagesUnavailable}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={labels.retry}
+                className={styles.proposalAttachmentRetry}
+                onPress={() => {
+                  void fileLinksQuery.refetch();
+                }}
+              >
+                <Text className={styles.proposalRosterButtonText}>
+                  {labels.retry}
+                </Text>
+              </Pressable>
+            </View>
+          ) : images.length > 0 ? (
+            <ScrollView
+              accessibilityLabel={labels.attachedFiles}
+              className={styles.proposalAttachmentsGallery}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            >
+              {images.map((image, index) => {
+                const label = labels.submissionImage(index + 1);
+                return (
+                  <Pressable
+                    key={image.fileId}
+                    accessibilityLabel={label}
+                    accessibilityRole="button"
+                    onPress={() => setPreviewImage({ url: image.url, label })}
+                    testID={`candidate-review-attachment-${proposalId}-${image.fileId}`}
+                  >
+                    <Image
+                      accessible={false}
+                      cachePolicy="memory"
+                      className={styles.proposalAttachmentsImage}
+                      contentFit="cover"
+                      source={{ uri: image.url }}
+                      testID={`candidate-review-attachment-image-${proposalId}-${image.fileId}`}
+                    />
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          ) : (
+            <Text className={styles.proposalAttachmentMessage}>
+              {labels.noImageAttachments}
+            </Text>
+          )}
+          <ImageViewerModal
+            closeLabel={labels.close}
+            fileName={previewImage?.label}
+            imageAccessibilityLabel={
+              previewImage?.label ?? labels.attachedFiles
+            }
+            imageUrl={previewImage?.url ?? null}
+            onClose={() => setPreviewImage(null)}
+            visible={Boolean(previewImage)}
+          />
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 function ProposalRow({
   proposal,
   labels,
   locale,
   visible,
+  viewerId,
   selected,
   onSelect,
   onAccept,
@@ -455,25 +669,42 @@ function ProposalRow({
   memberIdentities,
 }: {
   proposal: NormalizedProposal;
-  labels: ReturnType<typeof getMessages>;
+  labels: GroupQuestMessages;
   locale: SupportedLocale;
   selected: boolean;
   visible: boolean;
+  viewerId?: string;
   onSelect?: (proposalId: string) => void;
   onAccept?: (proposalId: string) => void;
   onReject?: (proposalId: string) => void;
   memberIdentities: Map<string, CandidateReviewIdentity>;
 }) {
   const { colors } = useAppTheme();
+  const [rosterExpanded, setRosterExpanded] = useState(false);
   const profileQuery = usePublicProfileQuery(
-    visible ? (proposal.profileId ?? "") : ""
+    visible && proposal.type === "individual" ? (proposal.profileId ?? "") : ""
   );
-  const directoryRating = proposal.profileId
-    ? memberIdentities.get(proposal.profileId)?.ratingAverage
+  const directoryIdentity = proposal.profileId
+    ? memberIdentities.get(proposal.profileId)
     : undefined;
-  const ratingAverage = profileQuery.data
-    ? profileQuery.data.reputation.rating.average
-    : (directoryRating ?? null);
+  const directoryRating = directoryIdentity?.ratingAverage;
+  const profileName = [
+    profileQuery.data?.firstName,
+    profileQuery.data?.lastName,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const name =
+    proposal.type === "individual"
+      ? (directoryIdentity?.displayName ??
+        (profileName || proposal.displayName))
+      : proposal.displayName;
+  const ratingAverage =
+    proposal.type === "individual"
+      ? (profileQuery.data?.reputation.rating.average ??
+        directoryRating ??
+        null)
+      : null;
   const rejected =
     proposal.status === QuestTeamStatus.TEAM_REJECTED ||
     proposal.status === QuestApplicationStatus.APPLICATION_REJECTED;
@@ -486,7 +717,6 @@ function ProposalRow({
     (proposal.type === "team"
       ? proposal.status === QuestTeamStatus.TEAM_SUBMITTED
       : proposal.status === QuestApplicationStatus.APPLICATION_APPLIED);
-  const name = proposal.displayName;
   const submitted = formatTimestampDate(proposal.submittedAt, locale);
   return (
     <View
@@ -514,9 +744,7 @@ function ProposalRow({
           </View>
           <View className={styles.proposalCopy}>
             <View className={styles.proposalIdentity}>
-              <Text className={styles.proposalName} numberOfLines={1}>
-                {name}
-              </Text>
+              <Text className={styles.proposalName}>{name}</Text>
               {ratingAverage != null ? (
                 <Text
                   accessibilityLabel={`${ratingAverage.toFixed(1)}/5`}
@@ -530,8 +758,8 @@ function ProposalRow({
             <Text className={styles.proposalDetail}>
               {proposal.type === "team"
                 ? labels.teamProposal
-                : labels.individualProposal}{" "}
-              · {proposal.detail}
+                : labels.individualProposal}
+              {proposal.detail ? ` · ${proposal.detail}` : ""}
             </Text>
             {submitted ? (
               <Text className={styles.proposalDetail}>
@@ -547,19 +775,57 @@ function ProposalRow({
           status={proposal.status}
         />
       </View>
+      {proposal.proposalNote ? (
+        <View className={styles.proposalNote}>
+          <Text className={styles.proposalNoteLabel}>{labels.proposal}</Text>
+          <Text className={styles.proposalNoteText}>
+            {proposal.proposalNote}
+          </Text>
+        </View>
+      ) : null}
+      {proposal.type === "team" &&
+      proposal.teamId &&
+      proposal.questId &&
+      proposal.fileIds.length > 0 ? (
+        <CandidateTeamSubmissionAttachments
+          fileIds={proposal.fileIds}
+          labels={labels}
+          proposalId={proposal.id}
+          questId={proposal.questId}
+          teamId={proposal.teamId}
+          viewerId={viewerId}
+          visible={visible}
+        />
+      ) : null}
       {proposal.type === "team" && proposal.members.length > 0 ? (
-        <View
-          accessibilityLabel={`${labels.teamProposal}: ${labels.memberCount(proposal.members.length)}`}
-          className={styles.proposalMembers}
-        >
-          {proposal.members.map((member) => (
-            <Text className={styles.proposalMember} key={member.workerId}>
-              •{" "}
-              {member.displayName ??
-                memberIdentities.get(member.workerId)?.displayName ??
-                member.workerId}
+        <View className={styles.proposalMembers}>
+          <Pressable
+            accessibilityLabel={`${labels.reviewRoster} · ${labels.memberCount(proposal.members.length)}`}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: rosterExpanded }}
+            className={styles.proposalRosterButton}
+            onPress={() => setRosterExpanded((expanded) => !expanded)}
+            testID={`candidate-review-roster-${proposal.id}`}
+          >
+            <Text className={styles.proposalRosterButtonText}>
+              {labels.reviewRoster}
             </Text>
-          ))}
+            <Text className={styles.proposalDetail}>
+              {labels.memberCount(proposal.members.length)}
+            </Text>
+          </Pressable>
+          {rosterExpanded
+            ? proposal.members.map((member, index) => (
+                <TeamMemberRow
+                  key={member.workerId}
+                  labels={labels}
+                  member={member}
+                  memberIdentities={memberIdentities}
+                  index={index}
+                  visible={visible}
+                />
+              ))
+            : null}
         </View>
       ) : null}
       {canDecide && (onAccept || onReject) ? (
@@ -610,6 +876,7 @@ export function CandidateReviewSheet({
   mode,
   questTitle,
   applicantDirectory = [],
+  viewerId,
   teamMemberDirectory,
   requestedHeadcount,
   actualHeadcount,
@@ -772,6 +1039,32 @@ export function CandidateReviewSheet({
           </View>
         </View>
 
+        {normalizedProposals.length === 0 ? (
+          <View className={styles.emptyState} testID="candidate-review-empty">
+            <View className={styles.emptyIcon}>
+              <UsersRound color={colors.primary} size={26} strokeWidth={1.9} />
+            </View>
+            <Text className={styles.emptyTitle}>{messages.noProposals}</Text>
+          </View>
+        ) : (
+          <View className={styles.proposalList}>
+            {normalizedProposals.map((proposal) => (
+              <ProposalRow
+                key={proposal.id}
+                labels={messages}
+                visible={visible}
+                viewerId={viewerId}
+                locale={locale}
+                memberIdentities={memberIdentities}
+                onAccept={accept}
+                onReject={reject}
+                onSelect={onSelectProposal}
+                proposal={proposal}
+                selected={selectedProposalId === proposal.id}
+              />
+            ))}
+          </View>
+        )}
         <View
           accessibilityLabel={messages.refund}
           className={styles.settlement}
@@ -822,32 +1115,6 @@ export function CandidateReviewSheet({
             </View>
           </View>
         </View>
-
-        {normalizedProposals.length === 0 ? (
-          <View className={styles.emptyState} testID="candidate-review-empty">
-            <View className={styles.emptyIcon}>
-              <UsersRound color={colors.primary} size={26} strokeWidth={1.9} />
-            </View>
-            <Text className={styles.emptyTitle}>{messages.noProposals}</Text>
-          </View>
-        ) : (
-          <View className={styles.proposalList}>
-            {normalizedProposals.map((proposal) => (
-              <ProposalRow
-                key={proposal.id}
-                labels={messages}
-                visible={visible}
-                locale={locale}
-                memberIdentities={memberIdentities}
-                onAccept={accept}
-                onReject={reject}
-                onSelect={onSelectProposal}
-                proposal={proposal}
-                selected={selectedProposalId === proposal.id}
-              />
-            ))}
-          </View>
-        )}
       </ScrollView>
     );
 

@@ -18107,6 +18107,155 @@ paths:
                       message:
                         type: string
                 additionalProperties: false
+  /api/v2/quests/{questId}/teams/{teamId}/files/{fileId}:
+    get:
+      tags:
+        - Quest Candidate Teams v2
+      summary: Get a temporary Candidate Team submission file link
+      description: Only the owning Hirer or a Member who can read the submitted Candidate Team
+        can get a temporary link to an associated, non-deleted file.
+      operationId: getQuestCandidateTeamFileV2
+      security:
+        - betterAuthSession: []
+      parameters:
+        - name: questId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        '200':
+          description: Response for status 200
+          headers:
+            Cache-Control:
+              schema:
+                enum:
+                  - no-store
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - fileId
+                      - contentType
+                      - sizeBytes
+                      - position
+                      - url
+                      - urlExpiresAt
+                    properties:
+                      fileId:
+                        format: uuid
+                        type: string
+                      contentType:
+                        type: string
+                      sizeBytes:
+                        minimum: 1
+                        maximum: 10485760
+                        type: integer
+                      position:
+                        minimum: 0
+                        type: integer
+                      url:
+                        format: uri
+                        type: string
+                      urlExpiresAt:
+                        format: date-time
+                        type: string
+        '401':
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        '404':
+          description: Response for status 404
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
+        '503':
+          description: Response for status 503
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                additionalProperties: false
   /api/v2/quests/{questId}/teams/{teamId}/submit:
     post:
       tags:
