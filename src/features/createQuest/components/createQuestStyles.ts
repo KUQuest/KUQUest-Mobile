@@ -15,7 +15,9 @@ const styles = {
   progressNodeText: "text-ku-on-hirer font-ku-bold text-ku-emphasis",
   progressConnector: "flex-1 h-[2px]",
   stepLabels: "flex-row mt-ku-xs",
-  stepLabel: "flex-1 font-ku-medium text-center text-ku-meta",
+  stepLabelColumn: "items-center w-[48px]",
+  stepLabelSpacer: "flex-1",
+  stepLabel: "w-[120px] font-ku-medium text-center text-ku-meta",
   stepLabelActive: "text-ku-on-hirer font-ku-bold",
   surface:
     "bg-ku-background flex-1 -mt-ku-md rounded-tl-[28px] rounded-tr-[28px]",

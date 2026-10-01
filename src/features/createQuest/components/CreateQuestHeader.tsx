@@ -120,19 +120,23 @@ export function CreateQuestHeader({
       </View>
       <View className={styles.stepLabels}>
         {stepLabels.map((label, index) => (
-          <Text
-            key={label}
-            className={cn(
-              styles.stepLabel,
-              index + 1 === step
-                ? styles.stepLabelActive
-                : index + 1 < step
-                  ? "text-ku-on-primary/[0.86]"
-                  : "text-ku-on-primary/[0.62]"
-            )}
-          >
-            {label}
-          </Text>
+          <React.Fragment key={label}>
+            <View className={styles.stepLabelColumn}>
+              <Text
+                className={cn(
+                  styles.stepLabel,
+                  index + 1 === step
+                    ? styles.stepLabelActive
+                    : index + 1 < step
+                      ? "text-ku-on-primary/[0.86]"
+                      : "text-ku-on-primary/[0.62]"
+                )}
+              >
+                {label}
+              </Text>
+            </View>
+            {index < 2 ? <View className={styles.stepLabelSpacer} /> : null}
+          </React.Fragment>
         ))}
       </View>
     </View>
