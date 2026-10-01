@@ -88,7 +88,7 @@ describe("HomeScreen live active quests syncing", () => {
       },
     });
 
-    const { getByText, getByTestId } = await renderWithQueryClient(
+    const { getByText, queryByText } = await renderWithQueryClient(
       <HomeScreen />
     );
 
@@ -97,7 +97,7 @@ describe("HomeScreen live active quests syncing", () => {
     });
 
     expect(getByText("Chat Worker")).toBeTruthy();
-    expect(getByTestId("hirer-quest-card-worker-live-q1")).toBeTruthy();
+    expect(queryByText("Design")).toBeNull();
   });
 
   it("opens live Quest Manage without enabling fixture preview", async () => {

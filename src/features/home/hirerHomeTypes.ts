@@ -26,7 +26,6 @@ export interface LocalizedHirerCopy {
 export interface HirerHomeQuestFixture {
   id: string;
   title: LocalizedHirerCopy;
-  tag?: LocalizedHirerCopy;
   status: CanonicalHirerQuestStatus;
   worker: {
     id: string;
@@ -46,8 +45,6 @@ export interface QuestMemberProfile {
 export interface LiveHirerQuestCardData {
   id: string;
   title: string;
-  tagId?: string;
-  tag?: string;
   status: CanonicalHirerQuestStatus;
   mode: QuestMode;
   participation: QuestParticipation;

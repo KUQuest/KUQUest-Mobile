@@ -2,9 +2,7 @@ import React, { useMemo } from "react";
 import { Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { Avatar } from "@/components/ui/Avatar";
-import { Chip } from "@/components/ui/Chip";
 import {
-  BriefcaseBusiness,
   Check,
   ChevronRight,
   Clock3,
@@ -31,7 +29,6 @@ import { hirerHomeStyles as styles } from "../hirerHomeStyles";
 export interface HirerQuestProgressCardProps {
   questId: string;
   title: string;
-  tag?: string;
   status: CanonicalHirerQuestStatus;
   mode?: QuestMode;
   headcount?: number;
@@ -67,7 +64,6 @@ const timelineLabelColors = {
 export function HirerQuestProgressCard({
   questId,
   title,
-  tag,
   status,
   worker,
   assignedWorkers,
@@ -83,7 +79,6 @@ export function HirerQuestProgressCard({
   const { locale } = useLocale();
   const { colors } = useAppTheme();
   const messages = hirerHomeMessages[locale];
-  const statusLabel = messages.statusLabels[status];
   const isTerminal =
     status === QuestStatus.QUEST_FAILED ||
     status === QuestStatus.QUEST_CANCELLED;
@@ -135,39 +130,6 @@ export function HirerQuestProgressCard({
       testID={`hirer-quest-card-${questId}`}
     >
       <View className={styles.cardHeader}>
-        <View className={styles.cardHeaderMetaRow}>
-          {tag ? (
-            <Chip
-              className={styles.tagBadge}
-              label={tag}
-              leadingIcon={
-                <BriefcaseBusiness
-                  color={colors.hirerDark}
-                  size={14}
-                  strokeWidth={2.1}
-                />
-              }
-              textClassName={`${styles.tagText} text-ku-hirer-dark`}
-              tone="accent"
-            />
-          ) : (
-            <View />
-          )}
-          <Chip
-            className={cn(
-              styles.statusBadge,
-              isTerminal
-                ? "border-ku-border-danger bg-ku-surface-danger"
-                : "border-ku-primary-border bg-ku-primary"
-            )}
-            label={statusLabel}
-            textClassName={cn(
-              styles.statusLabel,
-              isTerminal ? "text-ku-danger-dark" : "text-ku-on-primary"
-            )}
-            tone="primary"
-          />
-        </View>
         <Text
           accessibilityRole="header"
           className={`${styles.cardTitle} text-ku-text-strong`}
