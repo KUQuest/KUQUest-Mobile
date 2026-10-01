@@ -100,7 +100,7 @@ describe("HomeScreen live active quests syncing", () => {
     expect(getByTestId("hirer-quest-card-worker-live-q1")).toBeTruthy();
   });
 
-  it("opens live Quest Detail without enabling fixture preview", async () => {
+  it("opens live Quest Manage without enabling fixture preview", async () => {
     (questApi.listMine as jest.Mock).mockResolvedValue({
       items: [
         {
@@ -124,7 +124,7 @@ describe("HomeScreen live active quests syncing", () => {
     await fireEvent.press(getByTestId("hirer-quest-card-details-live-detail"));
 
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/quest/[id]",
+      pathname: "/quest/[id]/manage",
       params: { id: "live-detail" },
     });
   });

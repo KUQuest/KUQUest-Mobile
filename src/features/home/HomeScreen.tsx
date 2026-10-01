@@ -94,14 +94,18 @@ export default function HomeScreen() {
     liveQuests.length > 0 ? activeQuestCount : displayQuests.length;
 
   const cardWidth = Math.min(width - 32, 640);
-  const handleOpenDetails = useCallback(
+  const handleOpenQuest = useCallback(
     (questId: string, preview: boolean) => {
+      if (preview) {
+        router.push({
+          pathname: "/quest/[id]",
+          params: { id: questId, preview: "populated" },
+        });
+        return;
+      }
       router.push({
-        pathname: "/quest/[id]",
-        params: {
-          id: questId,
-          ...(preview ? { preview: "populated" } : {}),
-        },
+        pathname: "/quest/[id]/manage",
+        params: { id: questId },
       });
     },
     [router]
@@ -320,7 +324,7 @@ export default function HomeScreen() {
                         startTime={item.startTime}
                         dueAt={item.dueAt}
                         onOpenDetails={() =>
-                          handleOpenDetails(item.id, usesDemoQuests)
+                          handleOpenQuest(item.id, usesDemoQuests)
                         }
                         onOpenWorkerProfile={
                           usesDemoQuests ? undefined : handleOpenWorkerProfile

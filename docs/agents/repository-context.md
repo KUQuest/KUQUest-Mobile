@@ -53,7 +53,7 @@ reason to weaken either contract.
 - `src/app/(tabs)/chat.tsx` and `src/app/(tabs)/chat/[id].tsx` — Chat inbox and conversation.
 - `src/app/(tabs)/profile.tsx` — Student Profile.
 - `src/app/quest/[id].tsx` — Quest Detail.
-- `src/app/quest/[id]/manage.tsx` — Hirer quest management (cancel, chat, proof review, candidate/team selection fallback). Reached only from My Quests (`MyQuestsScreen.openManageQuest`); the Home Active Quest carousel opens `quest/[id].tsx` instead.
+- `src/app/quest/[id]/manage.tsx` — Hirer quest management (cancel, chat, proof review, candidate/team selection fallback). Reached from My Quests (`MyQuestsScreen.openManageQuest`) and live Home Active Quest cards; fixture cards continue to open the Quest Detail preview.
 - `src/app/quest/[id]/select-roster.tsx` — Hirer Quest roster: assigned Workers with profile access for every mode, plus Candidate/Candidate Team select and reject for a CANDIDATE-mode quest. Reached from Home's Worker banners and applicant items in Needs your attention.
 - `src/app/quest/[id]/work.tsx` — Worker Work Hub: one page per Quest for status, inline proof submission, completion, edit responses, conditions, and chat.
 - `src/app/quest/[id]/proof.tsx` — Hirer-side proof screen; in the Worker workspace it redirects to the Work Hub, where proof is submitted inline.
