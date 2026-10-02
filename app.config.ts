@@ -92,12 +92,12 @@ export default function configureApp({ config }: ConfigContext): ExpoConfig {
     {
       android: {
         usesCleartextTraffic: isDevelopmentBuild,
-        ...(isDevelopmentBuild ? { buildArchs: ["arm64-v8a", "x86_64"] } : {}),
+        buildArchs: ["arm64-v8a", "x86_64"],
       },
     },
   ] as [
     string,
-    { android: { usesCleartextTraffic: boolean; buildArchs?: string[] } },
+    { android: { usesCleartextTraffic: boolean; buildArchs: string[] } },
   ];
 
   return {
