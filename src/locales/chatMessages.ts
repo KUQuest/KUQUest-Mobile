@@ -63,6 +63,7 @@ export interface ChatMessages {
   attachmentRateLimited: string;
   attachmentRateLimitedWait: (seconds: number) => string;
   retryAttachment: string;
+  reloadImage: string;
 }
 
 export const chatMessages: Record<SupportedLocale, ChatMessages> = {
@@ -135,6 +136,7 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     attachmentRateLimitedWait: (seconds) =>
       `Too many uploads right now. Try again in ${seconds} seconds.`,
     retryAttachment: "Retry upload",
+    reloadImage: "Image did not load. Tap to reload.",
   },
   th: {
     title: "แชต",
@@ -202,5 +204,6 @@ export const chatMessages: Record<SupportedLocale, ChatMessages> = {
     attachmentRateLimitedWait: (seconds) =>
       `อัปโหลดถี่เกินไป โปรดลองอีกครั้งใน ${seconds} วินาที`,
     retryAttachment: "ลองอัปโหลดอีกครั้ง",
+    reloadImage: "โหลดรูปภาพไม่สำเร็จ แตะเพื่อลองใหม่",
   },
 };

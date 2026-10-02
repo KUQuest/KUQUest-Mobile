@@ -63,7 +63,6 @@ export function QuestBoardListHeader({
             <Text accessibilityRole="header" className={styles.boardTitle}>
               {messages.title}
             </Text>
-            <Text className={styles.boardSubtitle}>{messages.subtitle}</Text>
           </View>
         </View>
       </View>

@@ -37,7 +37,6 @@ export function TeamAssembleJoinTeamPanel({
       <Text accessibilityRole="header" className={styles.sectionTitle}>
         {messages.joinTeamTitle}
       </Text>
-      <Text className={styles.helper}>{messages.joinTeamDescription}</Text>
       <View className={styles.searchField}>
         <TextInput
           accessibilityLabel={messages.joinTeamCodeLabel}

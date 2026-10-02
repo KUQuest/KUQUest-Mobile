@@ -113,8 +113,6 @@ export function QuestSetupOverview({
           wide={wide}
         />
       </View>
-      <View className={styles.setupDivider} />
-      <Text className={styles.setupHint}>{messages.setupHint}</Text>
     </View>
   );
 }

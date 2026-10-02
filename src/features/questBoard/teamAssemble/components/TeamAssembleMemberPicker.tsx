@@ -64,7 +64,6 @@ export function TeamAssembleMemberPicker({
       <Text accessibilityRole="header" className={styles.sectionTitle}>
         {messages.searchMembers}
       </Text>
-      <Text className={styles.helper}>{messages.searchMembersHint}</Text>
       <View className={styles.searchField}>
         <Search color={colors.textSecondary} size={20} strokeWidth={2.1} />
         <TextInput

@@ -11,7 +11,6 @@ import { createQueryClient } from "./queryClient";
 
 /** One client for the app lifetime; the app mounts a single QueryProvider. */
 const queryClient = createQueryClient();
-const ACTIVE_QUERY_REFRESH_INTERVAL_MS = 10_000;
 
 export function QueryProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
@@ -20,18 +19,6 @@ export function QueryProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.remove();
-  }, []);
-
-  useEffect(() => {
-    // Temporary live-data fallback. Replace this broad poll with domain WebSocket
-    // invalidation as each server-backed screen gains event coverage.
-    const interval = setInterval(() => {
-      if (AppState.currentState !== "active") return;
-
-      void queryClient.refetchQueries({ type: "active" });
-    }, ACTIVE_QUERY_REFRESH_INTERVAL_MS);
-
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {

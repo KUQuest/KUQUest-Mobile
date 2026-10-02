@@ -125,7 +125,6 @@ export function useSelectRosterScreen(
     selection = {
       mode: "candidate",
       title: messages.rosterProposalsTitle,
-      subtitle: groupMessages.candidateReviewSubtitle,
       countLabel: groupMessages.proposalCount(proposals.length),
       emptyLabel: groupMessages.noProposals,
       proposals,

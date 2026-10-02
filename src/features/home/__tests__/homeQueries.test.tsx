@@ -189,4 +189,47 @@ describe("useHirerHomeQuery realtime updates", () => {
     expect(studentApi.getPublicProfile).not.toHaveBeenCalled();
     expect(result.current.data?.hasPartialFailure).toBe(false);
   });
+
+  it("does not read applications or teams for a started Candidate quest", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const quest = (
+      participation: "SINGLE" | "GROUP",
+      id: string
+    ): QuestV2CanonicalQuest =>
+      ({
+        id,
+        version: 1,
+        hiddenAt: null,
+        title: id,
+        description: null,
+        condition: { items: [] },
+        tag: null,
+        mode: "CANDIDATE",
+        participation,
+        state: "QUEST_IN_PROGRESS",
+        questFundingTotal: 100,
+        headcount: 1,
+        startTime: "2026-09-28T00:00:00.000Z",
+        dueAt: "2026-09-30T00:00:00.000Z",
+        proofRequired: false,
+        locations: [],
+        createdAt: "2026-09-27T00:00:00.000Z",
+        updatedAt: "2026-09-27T00:00:00.000Z",
+      }) as QuestV2CanonicalQuest;
+    jest
+      .mocked(myQuestService.listAllMyHirerQuests)
+      .mockResolvedValue([quest("SINGLE", "single"), quest("GROUP", "group")]);
+    jest.mocked(questApi.listQuestAssignments).mockResolvedValue([]);
+
+    const { result } = await renderHook(() => useHirerHomeQuery(), {
+      wrapper: wrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(questApi.listApplications).not.toHaveBeenCalled();
+    expect(questApi.listCandidateTeams).not.toHaveBeenCalled();
+    expect(result.current.data?.hasPartialFailure).toBe(false);
+  });
 });

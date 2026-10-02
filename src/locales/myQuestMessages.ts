@@ -36,6 +36,8 @@ export interface MyQuestMessages {
   cancelSuccessTitle: string;
   cancelRefunded: (amount: string) => string;
   cancelPaidWorkers: (amount: string) => string;
+  cancelPreviewLine: (paid: string, refunded: string) => string;
+  cancelPreviewStale: string;
   cancelErrorTitle: string;
   workerLabel: string;
   locationLabel: string;
@@ -99,6 +101,9 @@ export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
     cancelSuccessTitle: "ยกเลิกเควสต์แล้ว",
     cancelRefunded: (amount) => `คืนเงิน ${amount} ให้คุณแล้ว`,
     cancelPaidWorkers: (amount) => `จ่ายให้ผู้ทำงาน ${amount}`,
+    cancelPreviewLine: (paid, refunded) =>
+      `ตอนนี้: จ่ายผู้ทำงาน ${paid} · คืนให้คุณ ${refunded}`,
+    cancelPreviewStale: "สถานะเควสต์เปลี่ยนไป ยอดอัปเดตแล้ว โปรดยืนยันอีกครั้ง",
     cancelErrorTitle: "ยกเลิกเควสต์ไม่สำเร็จ",
     workerLabel: "ผู้ทำงาน",
     locationLabel: "สถานที่",
@@ -156,6 +161,10 @@ export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
     cancelSuccessTitle: "Quest cancelled",
     cancelRefunded: (amount) => `${amount} refunded to you.`,
     cancelPaidWorkers: (amount) => `${amount} paid to Workers.`,
+    cancelPreviewLine: (paid, refunded) =>
+      `Right now: ${paid} to Workers · ${refunded} back to you`,
+    cancelPreviewStale:
+      "The Quest changed, so the amounts were updated. Please confirm again.",
     cancelErrorTitle: "Couldn't cancel Quest",
     workerLabel: "Workers",
     locationLabel: "Location",

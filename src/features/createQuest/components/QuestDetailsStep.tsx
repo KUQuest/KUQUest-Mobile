@@ -49,11 +49,7 @@ export function QuestDetailsStep({
   const { colors } = useAppTheme();
   return (
     <View className={styles.sectionCard}>
-      <SectionHeading
-        icon={Tag}
-        title={messages.questDetails}
-        description={messages.questDetailsDescription}
-      />
+      <SectionHeading icon={Tag} title={messages.questDetails} />
       <Input
         ref={titleRef}
         label={`${messages.titleLabel} *`}
@@ -131,11 +127,6 @@ export function QuestDetailsStep({
             {messages.proofRequiredToggle}
           </Text>
         </Pressable>
-        <Text className={styles.proofDescription}>
-          {proofRequired
-            ? messages.proofRequiredDescription
-            : messages.proofNotNeededDescription}
-        </Text>
       </View>
     </View>
   );

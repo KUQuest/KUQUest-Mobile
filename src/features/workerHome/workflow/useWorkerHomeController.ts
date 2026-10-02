@@ -131,8 +131,10 @@ export function useWorkerHomeController(): WorkerHomeControllerProps {
   const tags = useMemo(() => tagsQuery.data ?? [], [tagsQuery.data]);
   const availableQuests = (boardQuery.data?.items ?? []).filter(
     (quest) =>
-      (filters.rewardMin === null || quest.questReward >= filters.rewardMin) &&
-      (filters.rewardMax === null || quest.questReward <= filters.rewardMax)
+      (filters.rewardMin === null ||
+        (quest.questFundingTotal ?? Number.NaN) >= filters.rewardMin) &&
+      (filters.rewardMax === null ||
+        (quest.questFundingTotal ?? Number.NaN) <= filters.rewardMax)
   );
   const activeOngoingAssignment = useMemo(
     () => activeAssignments.find(isOngoingWorkerAssignment) ?? null,

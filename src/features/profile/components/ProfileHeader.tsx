@@ -46,7 +46,12 @@ function ProfileMeta({
   const { colors } = useAppTheme();
   return (
     <View className={styles.metaRow}>
-      <Icon color={colors.textSecondary} size={16} strokeWidth={2} />
+      <Icon
+        accessible={false}
+        color={colors.textSecondary}
+        size={16}
+        strokeWidth={2}
+      />
       <Text className={styles.meta} maxFontSizeMultiplier={2}>
         {children}
       </Text>
@@ -94,47 +99,43 @@ export function ProfileHeader({
   return (
     <View
       testID="profile-header"
-      className={cn(
-        styles.heroCard,
-        presentation === "public" && "flex-row flex-wrap items-center"
-      )}
+      className={styles.heroCard}
       style={{ padding: metrics.cardPadding }}
     >
-      <Avatar
-        accessibilityLabel={labels.profileImageLabel(data.name)}
-        cacheKey={profileImageCacheKey}
-        className={styles.photoFrame}
-        name={data.name}
-        size={metrics.photoSize}
-        textClassName={styles.initials}
-        uri={profileImageUri}
-      />
       <View
         className={cn(
-          styles.identityContent,
-          presentation === "public" && "min-w-0 flex-1 items-start"
+          styles.identityRow,
+          (width < 360 || fontScale >= 1.3) && "flex-col items-start"
         )}
       >
-        <Text
-          accessibilityRole="header"
-          className={cn(styles.name, presentation === "public" && "text-left")}
-          maxFontSizeMultiplier={2}
-          style={{
-            fontSize: metrics.nameFontSize,
-            lineHeight: Math.round(metrics.nameFontSize * 1.25),
-          }}
-        >
-          {data.name}
-        </Text>
-        <View
-          className={cn(
-            styles.metaList,
-            presentation === "public" && "justify-start"
-          )}
-        >
+        <Avatar
+          accessibilityLabel={labels.profileImageLabel(data.name)}
+          cacheKey={profileImageCacheKey}
+          className={styles.photoFrame}
+          name={data.name}
+          size={presentation === "public" ? metrics.photoSize : 72}
+          textClassName={styles.initials}
+          uri={profileImageUri}
+        />
+        <View className={styles.identityContent}>
+          <Text
+            accessibilityRole="header"
+            className={styles.name}
+            maxFontSizeMultiplier={2}
+            style={{
+              fontSize: metrics.nameFontSize,
+              lineHeight: Math.round(metrics.nameFontSize * 1.25),
+            }}
+          >
+            {data.name}
+          </Text>
           {occupationName ? (
             <ProfileMeta icon={GraduationCap}>{occupationName}</ProfileMeta>
           ) : null}
+        </View>
+      </View>
+      {facultyName || departmentName ? (
+        <View className={styles.metaList}>
           {facultyName ? (
             <ProfileMeta icon={Building2}>{facultyName}</ProfileMeta>
           ) : null}
@@ -142,14 +143,9 @@ export function ProfileHeader({
             <ProfileMeta icon={Code2}>{departmentName}</ProfileMeta>
           ) : null}
         </View>
-      </View>
+      ) : null}
       {(data.tags ?? []).length > 0 ? (
-        <View
-          className={cn(
-            styles.tagGroup,
-            presentation === "public" && "w-full items-start"
-          )}
-        >
+        <View className={styles.tagGroup}>
           <Text
             accessibilityRole="header"
             className={styles.tagGroupLabel}
@@ -157,12 +153,7 @@ export function ProfileHeader({
           >
             {labels.questCategoriesLabel}
           </Text>
-          <View
-            className={cn(
-              styles.tagList,
-              presentation === "public" && "justify-start"
-            )}
-          >
+          <View className={styles.tagList}>
             {(data.tags ?? []).map((tag) => (
               <Chip
                 className="px-ku-10 py-ku-xs"
@@ -178,11 +169,15 @@ export function ProfileHeader({
       {editProfileLabel && onEditPress ? (
         <Button
           onPress={onEditPress}
-          variant="secondary"
-          className={styles.editButton}
+          variant="primary"
           accessibilityLabel={editProfileLabel}
         >
-          <Pencil color={colors.primary} size={16} strokeWidth={2.5} />
+          <Pencil
+            accessible={false}
+            color={colors.onPrimary}
+            size={16}
+            strokeWidth={2}
+          />
           <Text className={styles.editButtonText}>{editProfileLabel}</Text>
         </Button>
       ) : null}

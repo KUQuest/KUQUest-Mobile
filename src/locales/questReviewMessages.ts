@@ -12,7 +12,7 @@ export interface QuestReviewMessages {
   noWorkersTitle: string;
   noWorkersDescription: string;
   workerLabel: string;
-  workerFallback: (id: string) => string;
+  workerFallback: (index: number) => string;
   hirerLabel: string;
   ratingLabel: string;
   ratingOption: (rating: number) => string;
@@ -20,7 +20,6 @@ export interface QuestReviewMessages {
   commentPlaceholder: string;
   submit: string;
   submitting: string;
-  successDescription: string;
   done: string;
   invalidRating: string;
   invalidComment: string;
@@ -44,14 +43,13 @@ export const questReviewMessages: Record<SupportedLocale, QuestReviewMessages> =
         "This Quest has no eligible Worker assignments for a review.",
       workerLabel: "Worker",
       hirerLabel: "Hirer",
-      workerFallback: (id) => `Worker ${id.slice(0, 8)}`,
+      workerFallback: (index) => `Worker ${index}`,
       ratingLabel: "Rating",
       ratingOption: (rating) => `${rating} out of 5 stars`,
       commentLabel: "Comment (optional)",
       commentPlaceholder: "What went well or could be improved?",
       submit: "Submit review",
       submitting: "Submitting…",
-      successDescription: "Your feedback was saved for this Quest.",
       done: "Done",
       invalidRating: "Choose a rating from 1 to 5 stars.",
       invalidComment: "Comments must be 1,000 characters or fewer.",
@@ -71,7 +69,7 @@ export const questReviewMessages: Record<SupportedLocale, QuestReviewMessages> =
       noWorkersTitle: "ไม่มีผู้ทำงานให้รีวิว",
       noWorkersDescription: "เควสต์นี้ไม่มีผู้ทำงานที่สามารถรีวิวได้",
       workerLabel: "ผู้ทำงาน",
-      workerFallback: (id) => `ผู้ทำงาน ${id.slice(0, 8)}`,
+      workerFallback: (index) => `ผู้ทำงาน ${index}`,
       hirerLabel: "ผู้ว่าจ้าง",
       ratingLabel: "คะแนน",
       ratingOption: (rating) => `${rating} จาก 5 ดาว`,
@@ -79,7 +77,6 @@ export const questReviewMessages: Record<SupportedLocale, QuestReviewMessages> =
       commentPlaceholder: "สิ่งที่ทำได้ดีหรือควรปรับปรุงคืออะไร",
       submit: "ส่งรีวิว",
       submitting: "กำลังส่ง…",
-      successDescription: "บันทึกความคิดเห็นของคุณสำหรับเควสต์นี้แล้ว",
       done: "เสร็จสิ้น",
       invalidRating: "กรุณาเลือกคะแนนตั้งแต่ 1 ถึง 5 ดาว",
       invalidComment: "ความคิดเห็นต้องมีความยาวไม่เกิน 1,000 ตัวอักษร",

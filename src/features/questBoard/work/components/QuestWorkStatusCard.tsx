@@ -4,6 +4,7 @@ import {
   Briefcase,
   CalendarClock,
   CheckCircle2,
+  ChevronRight,
   Clock3,
   MapPin,
   User,
@@ -11,7 +12,7 @@ import {
   Zap,
 } from "lucide-react-native";
 
-import { Text, View } from "@/tw";
+import { Pressable, Text, View } from "@/tw";
 import type { TagItem } from "@/api/QuestApi";
 import { cn } from "@/tw/cn";
 import { formatSatang, SATANG_PER_BAHT } from "@/domain/satang";
@@ -36,6 +37,7 @@ export interface QuestWorkStatusCardProps {
   isTerminal: boolean;
   messages: QuestWorkMessages;
   tagCatalog: readonly TagItem[];
+  onOpenQuestDetail: () => void;
 }
 
 function DetailRow({
@@ -74,6 +76,7 @@ export default function QuestWorkStatusCard({
   isTerminal,
   messages,
   tagCatalog,
+  onOpenQuestDetail,
 }: QuestWorkStatusCardProps) {
   const { colors: palette } = useAppTheme();
   const { locale } = useLocale();
@@ -81,15 +84,9 @@ export default function QuestWorkStatusCard({
   const formattedReward = useMemo(() => {
     const quest = snapshot.quest;
     const rewardBaht =
-      "questReward" in quest &&
-      typeof quest.questReward === "number" &&
-      quest.questReward > 0
-        ? quest.questReward
-        : "questFundingTotal" in quest &&
-            typeof quest.questFundingTotal === "number" &&
-            quest.questFundingTotal > 0
-          ? quest.questFundingTotal
-          : null;
+      typeof quest.questFundingTotal === "number"
+        ? quest.questFundingTotal
+        : null;
     if (rewardBaht === null) return null;
     return formatSatang(Math.round(rewardBaht * SATANG_PER_BAHT), locale);
   }, [snapshot.quest, locale]);
@@ -122,6 +119,18 @@ export default function QuestWorkStatusCard({
   const participationLabel = isGroup
     ? messages.participationTeam
     : messages.participationSolo;
+  const progressQuest = snapshot.quest;
+  const startProgress =
+    "startedWorkerCount" in progressQuest &&
+    typeof progressQuest.startedWorkerCount === "number" &&
+    "activeWorkerCount" in progressQuest
+      ? {
+          started: progressQuest.startedWorkerCount,
+          active: progressQuest.activeWorkerCount,
+        }
+      : null;
+  const showGroupFcfsStartStatus =
+    snapshot.actor === "WORKER" && isGroup && !isCandidateMode;
 
   const proofBadgeText = snapshot.proofRequired
     ? messages.proofRequiredBadge
@@ -167,7 +176,7 @@ export default function QuestWorkStatusCard({
         {formattedReward ? (
           <>
             <View className={styles.statTile}>
-              <Text className={styles.statLabel}>{messages.reward}</Text>
+              <Text className={styles.statLabel}>{messages.givenPrice}</Text>
               <Text className={styles.rewardValue}>{formattedReward}</Text>
             </View>
             <View className={styles.statDivider} />
@@ -207,7 +216,34 @@ export default function QuestWorkStatusCard({
             value={locationLabel}
           />
         ) : null}
+        {showGroupFcfsStartStatus && startProgress ? (
+          <View className={styles.workerStartStatus}>
+            <Text
+              testID="work-group-start-progress"
+              className={styles.workerStartTitle}
+            >
+              {messages.startWorkProgress(
+                startProgress.started,
+                startProgress.active
+              )}
+            </Text>
+            <Text className={styles.workerStartWarning}>
+              {messages.groupStartWorkWarning}
+            </Text>
+          </View>
+        ) : null}
       </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={messages.viewQuestDetails}
+        className={styles.detailLink}
+        onPress={onOpenQuestDetail}
+      >
+        <Text className={styles.detailLinkText}>
+          {messages.viewQuestDetails}
+        </Text>
+        <ChevronRight color={palette.textSecondary} size={20} />
+      </Pressable>
     </View>
   );
 }
@@ -251,4 +287,11 @@ const styles = {
   rowValue:
     "max-w-[55%] text-right font-ku-semibold text-ku-body-small text-ku-text-strong",
   rowValueEmphasis: "text-ku-primary-dark",
+  workerStartStatus: "gap-ku-sm border-t border-ku-divider px-ku-md py-ku-sm",
+  workerStartTitle: "font-ku-semibold text-ku-body-small text-ku-text-strong",
+  workerStartWarning: "font-ku-medium text-ku-label text-ku-text-secondary",
+  detailLink:
+    "min-h-[48px] flex-row items-center gap-ku-12 border-t border-ku-divider px-ku-md py-ku-sm active:bg-ku-surface-raised",
+  detailLinkText:
+    "flex-1 font-ku-semibold text-ku-body-small text-ku-primary-dark",
 } as const;

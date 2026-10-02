@@ -284,7 +284,8 @@ describe("quest board query ownership", () => {
     expect(queryClient.getQueryState(chatKey)?.isInvalidated).not.toBe(true);
     expect(liveQuestService.cancelQuest).toHaveBeenCalledWith(
       questId,
-      "cancel-key"
+      "cancel-key",
+      undefined
     );
     queryClient.clear();
   });

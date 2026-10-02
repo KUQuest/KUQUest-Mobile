@@ -8,6 +8,7 @@ import { Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 
 import { QuestProofStatus } from "../../domain/types";
+import { ProofReviewNotes } from "../../shared/ProofReviewNotes";
 import type { ProofReviewRow } from "../proofReviewRows";
 
 export interface ProofReviewSubmissionCardProps {
@@ -89,6 +90,10 @@ export function ProofReviewSubmissionCard({
           {`${messages.proofReviewSubmittedAt}: ${submittedAt}`}
         </Text>
       ) : null}
+      <ProofReviewNotes
+        proof={proof}
+        testIDPrefix={`proof-review-${row.key}`}
+      />
       {reviewable ? (
         <Button
           accessibilityLabel={messages.proofReviewOpenLabel(name)}

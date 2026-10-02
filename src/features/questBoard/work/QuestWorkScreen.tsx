@@ -1,17 +1,14 @@
 import { serverNow } from "@/api/serverClock";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, RefreshControl } from "react-native";
 import { useNavigation } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { RefreshCw } from "lucide-react-native";
 
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "@/tw";
+import { ActivityIndicator, Text, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { StateView } from "@/components/ui/StateView";
 import { TopBar } from "@/components/ui/TopBar";
 import { showConfirmModal } from "@/components/ui/SweetAlert";
 import { WorkerProofForm } from "@/features/workerWork/components/WorkerProofForm";
-import { QuestReviewModal } from "@/features/questBoard/review/components/QuestReviewModal";
 import { workerWorkMessages } from "@/locales/workerWorkMessages";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
@@ -25,9 +22,17 @@ import {
   nextActionLabel,
   workStatusLabel,
 } from "../presentation/questLabels";
-import { isWorkerActor, QuestActor, type QuestStatus } from "../domain/types";
+import {
+  isWorkerActor,
+  QuestTeamRole,
+  type QuestStatus,
+} from "../domain/types";
 import QuestWorkActionsCard from "./components/QuestWorkActionsCard";
+import QuestWorkSettlementCard from "./components/QuestWorkSettlementCard";
 import QuestWorkStatusCard from "./components/QuestWorkStatusCard";
+import { QuestWorkFrame } from "./QuestWorkFrame";
+import TeamLeaderWorkScreen from "./TeamLeaderWorkScreen";
+import TeamMemberWorkScreen from "./TeamMemberWorkScreen";
 import {
   useQuestWorkFeature,
   type QuestWorkFeatureProps,
@@ -40,7 +45,6 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
   const navigation = useNavigation();
   const proofDirtyRef = useRef(false);
   const allowLeaveRef = useRef(false);
-  const [reviewOpen, setReviewOpen] = useState(false);
   const {
     canOpenChat,
     confirmationSending,
@@ -52,6 +56,7 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
     locale,
     messages,
     openChat,
+    openQuestDetail,
     openDispute,
     recordedStartedAt,
     refreshSnapshot,
@@ -190,130 +195,108 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
     );
   }
 
+  const frame = {
+    messages,
+    backLabel: questMessages.back,
+    onBack: handleBack,
+    refreshing,
+    onRefresh: () => void refreshSnapshot().catch(() => undefined),
+    contentBottom,
+  };
+  const statusCard = (
+    <QuestWorkStatusCard
+      snapshot={snapshot}
+      status={status}
+      assignment={assignmentLabel(snapshot.assignment, locale)}
+      nextAction={nextActionLabel(snapshot.nextAction, messages, locale)}
+      countdown={countdown}
+      dueAtDetail={
+        snapshot.dueAt ? formatTimestamp(snapshot.dueAt, locale, "") : undefined
+      }
+      isTerminal={isTerminal}
+      messages={messages}
+      tagCatalog={tagCatalog}
+      onOpenQuestDetail={openQuestDetail}
+    />
+  );
+  const settlementCard = <QuestWorkSettlementCard snapshot={snapshot} />;
+  const proofForm =
+    isWorkerActor(snapshot.actor) && resolvedQuestId && resolvedViewerId ? (
+      <WorkerProofForm
+        onDirtyChange={(dirty) => {
+          proofDirtyRef.current = dirty;
+        }}
+        onSubmitted={() => refreshSnapshot().catch(() => undefined)}
+        questId={resolvedQuestId}
+        snapshot={snapshot}
+        viewerId={resolvedViewerId}
+      />
+    ) : null;
+  const actionsCard = (
+    <QuestWorkActionsCard
+      snapshot={snapshot}
+      messages={messages}
+      stale={stale}
+      errorText={errorText}
+      conditions={conditions}
+      editSending={editSending}
+      editFeedback={editFeedback}
+      confirmationSending={confirmationSending}
+      canPressStartWork={canPressStartWork}
+      startWorkOpensAt={
+        mustStartWork && !canPressStartWork
+          ? formatTimestamp(snapshot.quest.startTime, locale, "")
+          : undefined
+      }
+      startWorkRecordedAt={
+        startedAt ? formatTimestamp(startedAt, locale, "") : undefined
+      }
+      startWorkSending={startWorkSending}
+      onStartWork={startWork}
+      canOpenChat={canOpenChat}
+      onRespondToEdit={respondToEdit}
+      onConfirmCompletion={confirmCompletion}
+      onFileDispute={resolvedQuestId ? openDispute : undefined}
+      onOpenChat={openChat}
+    />
+  );
+
+  // The Team is only readable while the Quest is QUEST_OPEN, so the Leader and
+  // Member screens appear only when the server exposes the Team Leader.
+  const { team, teamRole } = snapshot;
+  if (team && teamRole === QuestTeamRole.LEADER) {
+    return (
+      <TeamLeaderWorkScreen
+        frame={frame}
+        snapshot={snapshot}
+        team={team}
+        messages={messages}
+        statusCard={statusCard}
+        settlementCard={settlementCard}
+        proofForm={proofForm}
+        actionsCard={actionsCard}
+      />
+    );
+  }
+  if (team && teamRole === QuestTeamRole.MEMBER) {
+    return (
+      <TeamMemberWorkScreen
+        frame={frame}
+        snapshot={snapshot}
+        team={team}
+        messages={messages}
+        statusCard={statusCard}
+        settlementCard={settlementCard}
+        actionsCard={actionsCard}
+      />
+    );
+  }
   return (
-    <ScreenLayout
-      edges={["top", "left", "right", "bottom"]}
-      className="flex-1 bg-ku-background"
-    >
-      <TopBar
-        title={messages.title}
-        backLabel={questMessages.back}
-        onBackPress={handleBack}
-        variant="detail"
-        rightAction={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={messages.refresh}
-            hitSlop={8}
-            className="h-12 w-12 items-center justify-center rounded-ku-pill active:bg-ku-surface-raised"
-            onPress={() => void refreshSnapshot().catch(() => undefined)}
-          >
-            <RefreshCw color={colors.primaryDark} size={20} />
-          </Pressable>
-        }
-      />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}
-      >
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => void refreshSnapshot().catch(() => undefined)}
-              tintColor={colors.primary}
-            />
-          }
-          contentContainerStyle={{ paddingBottom: contentBottom }}
-          testID="quest-work-screen"
-        >
-          <View className="gap-ku-md px-ku-md pt-ku-md">
-            <QuestWorkStatusCard
-              snapshot={snapshot}
-              status={status}
-              assignment={assignmentLabel(snapshot.assignment, locale)}
-              nextAction={nextActionLabel(
-                snapshot.nextAction,
-                messages,
-                locale
-              )}
-              countdown={countdown}
-              dueAtDetail={
-                snapshot.dueAt
-                  ? formatTimestamp(snapshot.dueAt, locale, "")
-                  : undefined
-              }
-              isTerminal={isTerminal}
-              messages={messages}
-              tagCatalog={tagCatalog}
-            />
-            {snapshot.state &&
-            isTerminalStatus(snapshot.state as QuestStatus) &&
-            snapshot.actor === QuestActor.WORKER &&
-            snapshot.capabilities.canCreateReview ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={workerWorkMessages[locale].rateHirer}
-                accessibilityState={{ disabled: false }}
-                className="min-h-[48px] items-center justify-center rounded-ku-pill border border-ku-worker-border px-ku-md"
-                onPress={() => setReviewOpen(true)}
-                testID="work-rate-hirer"
-              >
-                <Text className="font-ku-semibold text-ku-body text-ku-worker-dark">
-                  {workerWorkMessages[locale].rateHirer}
-                </Text>
-              </Pressable>
-            ) : null}
-
-            {isWorkerActor(snapshot.actor) &&
-            resolvedQuestId &&
-            resolvedViewerId ? (
-              <WorkerProofForm
-                onDirtyChange={(dirty) => {
-                  proofDirtyRef.current = dirty;
-                }}
-                onSubmitted={() => refreshSnapshot().catch(() => undefined)}
-                questId={resolvedQuestId}
-                snapshot={snapshot}
-                viewerId={resolvedViewerId}
-              />
-            ) : null}
-
-            <QuestWorkActionsCard
-              snapshot={snapshot}
-              messages={messages}
-              stale={stale}
-              errorText={errorText}
-              conditions={conditions}
-              editSending={editSending}
-              editFeedback={editFeedback}
-              confirmationSending={confirmationSending}
-              canPressStartWork={canPressStartWork}
-              startWorkOpensAt={
-                mustStartWork && !canPressStartWork
-                  ? formatTimestamp(snapshot.quest.startTime, locale, "")
-                  : undefined
-              }
-              startWorkRecordedAt={
-                startedAt ? formatTimestamp(startedAt, locale, "") : undefined
-              }
-              startWorkSending={startWorkSending}
-              onStartWork={startWork}
-              isTerminal={isTerminal}
-              canOpenChat={canOpenChat}
-              onRespondToEdit={respondToEdit}
-              onConfirmCompletion={confirmCompletion}
-              onFileDispute={resolvedQuestId ? openDispute : undefined}
-              onOpenChat={openChat}
-            />
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-      <QuestReviewModal
-        questId={reviewOpen && resolvedQuestId ? resolvedQuestId : null}
-        onClose={() => setReviewOpen(false)}
-      />
-    </ScreenLayout>
+    <QuestWorkFrame {...frame}>
+      {statusCard}
+      {settlementCard}
+      {proofForm}
+      {actionsCard}
+    </QuestWorkFrame>
   );
 }

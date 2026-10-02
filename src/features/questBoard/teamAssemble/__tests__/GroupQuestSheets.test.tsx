@@ -731,11 +731,6 @@ describe("group Quest sheets", () => {
     expect(view.getByText("05:00")).toBeTruthy();
     expect(view.getByText("Quest Hirer")).toBeTruthy();
     expect(view.getAllByText("Joined Worker")).toHaveLength(2);
-    expect(
-      view.getByText(
-        "The existing Quest chat stays writable while this vote is pending."
-      )
-    ).toBeTruthy();
 
     await fireEvent.press(view.getByTestId("partial-group-start-approve"));
     expect(onVote).toHaveBeenCalledWith(true);

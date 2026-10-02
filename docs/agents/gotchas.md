@@ -11,6 +11,14 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 ## Entries
 
+### 2026-10-02 — Candidate Team and application reads 404 after the Quest leaves OPEN
+
+**What happened**: A `GROUP + CANDIDATE` Team Leader had no Start Work button, and Hirer Home showed a permanent partial-load banner for started Candidate Quests.
+
+**Root cause**: Staging answers `404 QUEST_NOT_FOUND` for `GET /api/v2/quests/{id}/teams` and `/applications` once the Quest is `QUEST_ASSIGNED` or later, for the Hirer and Team Members alike. Neither the Assignment nor the participation detail names the Team Leader, so the leader is unknowable on the client.
+
+**Rule**: Outside a tolerant read such as `optionalResource` in `getLiveSnapshot`, read Teams and applications only while the Quest is `QUEST_OPEN`. Never gate a leader-only action (Start Work, proof, confirmation) on a readable Team; with no Team, `teamRole` is `UNKNOWN`, the shared Work Hub offers the action, and the server enforces it (`START_WORK_NOT_REQUIRED`). `TeamLeaderWorkScreen` and `TeamMemberWorkScreen` only render once the backend exposes the leader (`docs/plans/backend-requirements-ux-deadlines.md` B9).
+
 ### 2026-10-01 — Jest fake timer hangs depend on the Node runtime
 
 **What happened**: Countdown tests passed locally under Node 26 but timed out in CI; changing Jest worker counts did not resolve the failures.

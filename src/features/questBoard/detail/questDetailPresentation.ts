@@ -255,21 +255,9 @@ export function getQuestDetailPresentationFacts({
     !isPostView &&
     availability !== "available" &&
     previewApplicationStatus === "none";
-  const statusDescription = isPostView
-    ? messages.postOwnerViewDescription
-    : isJoinView
-      ? surface.leftQuest
-        ? messages.leftQuestDescription
-        : joinedStatus === "history"
-          ? messages.historyQuestDescription
-          : joinedStatus === "accepted"
-            ? messages.applicationAcceptedDescription
-            : messages.applicationPendingDescription
-      : previewApplicationStatus === "accepted"
-        ? messages.applicationAcceptedDescription
-        : previewApplicationStatus === "pending"
-          ? messages.applicationPendingDescription
-          : messages.unavailableApplication;
+  const statusDescription = statusIsUnavailable
+    ? messages.unavailableApplication
+    : "";
   const statusIcon = statusIsUnavailable
     ? CircleAlert
     : isPostView

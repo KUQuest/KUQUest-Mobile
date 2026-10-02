@@ -57,6 +57,7 @@ export function workerSnapshot({
     application: null,
     applications: [],
     team: null,
+    teamRole: null,
     teams: [],
     underfilled: null,
     editRequest: null,

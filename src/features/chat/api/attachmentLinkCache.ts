@@ -42,6 +42,9 @@ export class AttachmentLinkCache {
     });
   }
 
+  delete(attachmentId: string): void {
+    this.cache.delete(attachmentId);
+  }
   has(attachmentId: string): boolean {
     return this.get(attachmentId) !== null;
   }

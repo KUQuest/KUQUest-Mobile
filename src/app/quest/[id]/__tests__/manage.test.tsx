@@ -9,6 +9,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { renderWithQueryClient as render } from "@/testing/queryTestUtils";
+import { ApiError } from "@/api/ApiClient";
 
 import { AppThemeProvider } from "@/features/workspace/AppThemeProvider";
 import { SweetAlertHost } from "@/components/ui/SweetAlert";
@@ -97,6 +98,7 @@ jest.mock("@/features/questBoard/live/liveQuestService", () => {
       getLiveSnapshot: jest.fn(),
       createEditRequest: jest.fn(),
       cancelQuest: jest.fn(),
+      getCancelPreview: jest.fn(),
       selectApplication: jest.fn(),
     },
   };
@@ -143,6 +145,7 @@ function createSnapshot(
     application: null,
     applications: [],
     team: null,
+    teamRole: null,
     teams: [],
     underfilled: null,
     editRequest: null,
@@ -453,6 +456,63 @@ describe("HirerQuestManageRoute condition edit", () => {
     expect(view.queryByTestId("cancel-quest-guardrail")).toBeNull();
   });
 
+  it("shows the previewed amounts, sends the preview version, and re-confirms when it is stale", async () => {
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        state: QuestStatus.QUEST_OPEN,
+        quest: { ...createSnapshot().quest, state: QuestStatus.QUEST_OPEN },
+      })
+    );
+    const preview = {
+      questStatus: "QUEST_OPEN",
+      tier: "NO_PENALTY",
+      paidSatang: 0,
+      refundedSatang: 10_000,
+      platformFeeSatang: 0,
+      affectedWorkerCount: 0,
+      computedAt: "2026-10-01T03:00:00.000Z",
+    };
+    (liveQuestService.getCancelPreview as jest.Mock)
+      .mockResolvedValueOnce({ ...preview, previewVersion: "v1" })
+      .mockResolvedValue({
+        ...preview,
+        refundedSatang: 9_000,
+        previewVersion: "v2",
+      });
+    (liveQuestService.cancelQuest as jest.Mock)
+      .mockRejectedValueOnce(new ApiError(409, "CANCEL_PREVIEW_STALE", "stale"))
+      .mockResolvedValue({ paidSatang: 0, refundedSatang: 9_000 });
+    const view = await render(
+      <>
+        <HirerQuestManageRoute />
+        <SweetAlertHost />
+      </>
+    );
+    await fireEvent.press(
+      await view.findByRole("button", { name: myQuestMessages.en.cancelQuest })
+    );
+    const confirm = () =>
+      within(view.getByTestId("sweet-alert")).getByRole("button", {
+        name: myQuestMessages.en.cancelQuest,
+      });
+    await fireEvent.press(await waitFor(confirm));
+
+    await waitFor(() => {
+      expect(liveQuestService.cancelQuest).toHaveBeenCalledTimes(1);
+    });
+    expect((liveQuestService.cancelQuest as jest.Mock).mock.calls[0]?.[2]).toBe(
+      "v1"
+    );
+    await view.findByText(new RegExp(myQuestMessages.en.cancelPreviewStale));
+    await fireEvent.press(await waitFor(confirm));
+    await waitFor(() => {
+      expect(liveQuestService.cancelQuest).toHaveBeenCalledTimes(2);
+    });
+    expect((liveQuestService.cancelQuest as jest.Mock).mock.calls[1]?.[2]).toBe(
+      "v2"
+    );
+  });
+
   it("shows dispute for Hirer or assigned Worker on FAILED, but not Candidate or unassigned Worker", async () => {
     const failedQuest = {
       ...createSnapshot().quest,
@@ -528,24 +588,6 @@ describe("HirerQuestManageRoute condition edit", () => {
     expect(view.getByLabelText("0 of 1 Worker")).toBeTruthy();
     expect(view.getByText("1 application")).toBeTruthy();
     expect(view.getByText("Review candidates · 1 application")).toBeTruthy();
-  });
-
-  it("explains auto-cancel while an OPEN Candidate Quest has no proposals", async () => {
-    const base = createSnapshot();
-    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
-      createSnapshot({
-        state: QuestStatus.QUEST_OPEN,
-        quest: { ...base.quest, state: QuestStatus.QUEST_OPEN },
-      })
-    );
-
-    const view = await render(<HirerQuestManageRoute />);
-
-    expect(
-      await view.findByText(
-        "Select a Worker before the start time, otherwise this Quest is cancelled automatically."
-      )
-    ).toBeTruthy();
   });
 
   it("shows how many Workers started, except where only a Team Leader starts", async () => {
@@ -873,5 +915,46 @@ describe("HirerQuestManageRoute condition edit", () => {
       await view.findByTestId("hirer-condition-edit-pending-title")
     ).toBeTruthy();
     expect(liveQuestService.createEditRequest).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows Back, not Retry, when the Quest is not found", async () => {
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockRejectedValue(
+      new ApiError(404, "NOT_FOUND", "missing")
+    );
+    const view = await render(<HirerQuestManageRoute />);
+
+    await view.findByTestId("hirer-manage-back");
+    expect(view.queryByTestId("hirer-manage-retry")).toBeNull();
+  });
+
+  it("keeps Retry for other load errors", async () => {
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockRejectedValue(
+      new ApiError(500, "SERVER", "boom")
+    );
+    const view = await render(<HirerQuestManageRoute />);
+
+    await view.findByTestId("hirer-manage-retry");
+    expect(view.queryByTestId("hirer-manage-back")).toBeNull();
+  });
+
+  it("counts down to the start time on an open Quest", async () => {
+    const base = createSnapshot();
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        state: "QUEST_OPEN",
+        quest: {
+          ...base.quest,
+          state: "QUEST_OPEN",
+          startTime: new Date(
+            Date.now() + 3 * 3_600_000 + 30_000
+          ).toISOString(),
+        },
+      })
+    );
+    const view = await render(<HirerQuestManageRoute />);
+
+    expect(
+      (await view.findByTestId("hirer-manage-starts-in")).props.children
+    ).toMatch(/3h/);
   });
 });

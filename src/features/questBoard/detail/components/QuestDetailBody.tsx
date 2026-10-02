@@ -34,7 +34,7 @@ import {
   type GroupQuestMessages,
 } from "@/locales/groupQuestMessages";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
-import { getQuestRewardSatang } from "../../presentation/questBoardViewData";
+import { getQuestPriceSatang } from "../../presentation/questBoardViewData";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
 import {
   QuestCandidateMode,
@@ -62,26 +62,6 @@ function proofLabel(
   if (quest.proofRequired === "required") return messages.required;
   if (quest.proofRequired === "optional") return messages.optional;
   return messages.notNeeded;
-}
-
-function proofDescription(
-  quest: QuestBoardQuest,
-  messages: QuestBoardMessages
-): string {
-  if (quest.proofRequired === "required")
-    return messages.proofRequiredDescription;
-  if (quest.proofRequired === "optional")
-    return messages.proofOptionalDescription;
-  return messages.proofNotNeededDescription;
-}
-
-function candidateDescription(
-  quest: QuestBoardQuest,
-  messages: QuestBoardMessages
-): string {
-  return quest.candidateMode === QuestCandidateMode.NO_CANDIDATE
-    ? messages.firstComeDescription
-    : messages.reviewCandidatesDescription;
 }
 
 function InfoRow({
@@ -250,7 +230,6 @@ function GroupFcfsJourneyCard({
     groupFcfs.state === QuestStatus.QUEST_OPEN &&
     !underfilled &&
     (startRemaining ?? 0) > 0;
-  const preJoin = !joined && !full && preStart;
   const cancellationReason = underfilledCancellationDescription(
     groupQuestMessages[locale],
     underfilled?.cancellationReason,
@@ -288,9 +267,7 @@ function GroupFcfsJourneyCard({
     : full
       ? messages.groupFcfsAllSpotsFilled
       : preStart
-        ? preJoin
-          ? `${messages.groupFcfsJoinRule} ${messages.groupFcfsUnderfillRule}`
-          : ""
+        ? ""
         : groupFcfs.state === QuestStatus.QUEST_OPEN &&
             groupFcfs.activeWorkerCount < groupFcfs.headcount
           ? `${messages.groupFcfsJoinedProgress(groupFcfs.activeWorkerCount, groupFcfs.headcount)} · ${messages.groupFcfsWorkersNeeded(groupFcfs.headcount - groupFcfs.activeWorkerCount)}`
@@ -308,11 +285,6 @@ function GroupFcfsJourneyCard({
             cancellationDate,
             cancellationTime
           )}
-        </Text>
-      ) : null}
-      {joined && preStart ? (
-        <Text className={styles.statusDescription}>
-          {messages.groupFcfsUnderfillRule}
         </Text>
       ) : null}
       {description ? (
@@ -549,9 +521,11 @@ export function QuestDetailBody({
       <View className={styles.heroCard}>
         <View className={styles.heroPrimary}>
           <View className={styles.heroReward}>
-            <Text className={styles.heroLabel}>{messages.reward}</Text>
+            <Text className={styles.heroLabel}>{messages.givenPrice}</Text>
             <Text className={styles.heroRewardValue}>
-              {formatSatang(getQuestRewardSatang(quest), locale)}
+              {Number.isFinite(getQuestPriceSatang(quest))
+                ? formatSatang(getQuestPriceSatang(quest), locale)
+                : "—"}
               <Text
                 className={styles.heroRewardUnit}
               >{` ${messages.perPerson}`}</Text>
@@ -593,7 +567,6 @@ export function QuestDetailBody({
                 ? messages.firstCome
                 : messages.reviewCandidates
             }
-            description={candidateDescription(quest, messages)}
           />
         </View>
       </View>
@@ -629,11 +602,6 @@ export function QuestDetailBody({
               {participationFirstCome
                 ? messages.confirmParticipationTitle
                 : messages.confirmApplicationTitle}
-            </Text>
-            <Text className={styles.participationDescription}>
-              {participationFirstCome
-                ? messages.confirmParticipationDescription
-                : messages.confirmApplicationDescription}
             </Text>
           </View>
           <Pressable
@@ -674,7 +642,6 @@ export function QuestDetailBody({
             icon={FileCheck}
             label={messages.proofRequired}
             value={proofLabel(quest, messages)}
-            description={proofDescription(quest, messages)}
           />
         </View>
       </Section>
@@ -692,7 +659,11 @@ export function QuestDetailBody({
             <StatusIcon color={status.iconColor} size={25} strokeWidth={2.2} />
           ) : null}
           <Text className={styles.statusTitle}>{status.title}</Text>
-          <Text className={styles.statusDescription}>{status.description}</Text>
+          {status.unavailable ? (
+            <Text className={styles.statusDescription}>
+              {status.description}
+            </Text>
+          ) : null}
           {!status.unavailable && !status.postView && !status.leftQuest ? (
             <Pressable
               accessibilityRole="button"

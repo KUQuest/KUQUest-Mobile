@@ -44,7 +44,6 @@ export function MyQuestListHeader({
             <Text accessibilityRole="header" className={styles.title}>
               {messages.title}
             </Text>
-            <Text className={styles.subtitle}>{messages.subtitle}</Text>
           </View>
         </View>
         <View accessibilityRole="tablist" className={styles.tabRow}>

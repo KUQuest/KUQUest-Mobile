@@ -50,7 +50,6 @@ export function HirerHomeMasthead({
           >
             {messages.title}
           </Text>
-          <Text className={styles.mastheadSubtitle}>{messages.subtitle}</Text>
         </View>
         <WorkspaceQuickSwitch />
       </View>

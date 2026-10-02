@@ -77,9 +77,6 @@ export function ProofReviewModal({
                       {messages.proofReviewTitle}
                     </Text>
                   </View>
-                  <Text className={styles.proofSheetDescription}>
-                    {messages.proofReviewDescription}
-                  </Text>
                 </View>
                 <Pressable
                   accessibilityLabel={messages.close}

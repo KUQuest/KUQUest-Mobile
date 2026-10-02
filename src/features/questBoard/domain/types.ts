@@ -265,6 +265,17 @@ export const QuestActor = {
 } as const;
 export type CanonicalQuestActor = (typeof QuestActor)[keyof typeof QuestActor];
 export type QuestActor = CanonicalQuestActor;
+/**
+ * The viewer's role on a `GROUP + CANDIDATE` Candidate Team. `UNKNOWN` means the
+ * Team is not readable (the server answers 404 once the Quest leaves
+ * `QUEST_OPEN`), so the Team Leader cannot be told apart from a Team Member.
+ */
+export const QuestTeamRole = {
+  LEADER: "LEADER",
+  MEMBER: "MEMBER",
+  UNKNOWN: "UNKNOWN",
+} as const;
+export type QuestTeamRole = (typeof QuestTeamRole)[keyof typeof QuestTeamRole];
 
 export function isHirerActor(actor: unknown): actor is typeof QuestActor.HIRER {
   return actor === QuestActor.HIRER;
@@ -470,6 +481,7 @@ export interface QuestBoardQuest {
   description: string;
   completionCriteria: string;
   proofRequired: "required" | "optional" | "none";
+  questFundingTotalSatang?: number | null;
   rewardPerPerson: number;
   /** Canonical integer amount, retained alongside the legacy board display field. */
   rewardSatang?: number;

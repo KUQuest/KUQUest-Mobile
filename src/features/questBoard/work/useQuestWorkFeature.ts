@@ -304,6 +304,11 @@ export function useQuestWorkFeature({
       }),
     });
   }, [conversationId, resolvedViewerId, routeQuestId, router]);
+  // Push, not replace: the Work Hub stays mounted so an unsent proof draft survives.
+  const openQuestDetail = useCallback(() => {
+    if (!routeQuestId) return;
+    router.push({ pathname: "/quest/[id]", params: { id: routeQuestId } });
+  }, [routeQuestId, router]);
 
   return {
     canOpenChat,
@@ -316,6 +321,7 @@ export function useQuestWorkFeature({
     locale,
     messages,
     openChat,
+    openQuestDetail,
     openDispute,
     recordedStartedAt,
     refreshSnapshot,

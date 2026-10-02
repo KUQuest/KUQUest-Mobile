@@ -40,10 +40,9 @@ function AuthRouteCheck({
   const sessionQuery = useSessionQuery({ enabled: !isPublicRoute });
   const sessionRef = useRef(sessionQuery.data);
   const expiredRef = useRef(false);
+  // A failed background refetch keeps the cached session; only a missing one is invalid.
   const sessionInvalid =
-    !isPublicRoute &&
-    !sessionQuery.isPending &&
-    (sessionQuery.isError || !sessionQuery.data);
+    !isPublicRoute && !sessionQuery.isPending && !sessionQuery.data;
 
   useEffect(() => {
     sessionRef.current = sessionQuery.data;

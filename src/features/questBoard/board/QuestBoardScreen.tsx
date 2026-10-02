@@ -79,10 +79,6 @@ export default function QuestBoardScreen({
     />
   );
 
-  const noMatchDescription =
-    board.hasActiveFilters || board.query
-      ? board.messages.subtitle
-      : board.messages.noQuests;
   const boardModel = board.boardModel;
   const emptyState =
     boardModel.kind === "loading" ? (
@@ -96,11 +92,7 @@ export default function QuestBoardScreen({
         onAction={board.retryBoard}
       />
     ) : boardModel.kind === "empty" ? (
-      <StateView
-        variant="empty"
-        title={board.messages.noQuests}
-        description={board.messages.subtitle}
-      />
+      <StateView variant="empty" title={board.messages.noQuests} />
     ) : boardModel.kind === "unavailable" ? (
       <StateView
         variant="empty"
@@ -119,7 +111,6 @@ export default function QuestBoardScreen({
       <StateView
         variant="empty"
         title={board.messages.noMatches}
-        description={noMatchDescription}
         actionLabel={board.noMatchActionLabel}
         onAction={
           board.hasActiveFilters || board.query

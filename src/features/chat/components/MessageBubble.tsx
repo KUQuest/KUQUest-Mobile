@@ -149,6 +149,7 @@ export function InlineImageAttachment({
     () => !attachmentLinkCache.get(attachment.id)
   );
   const [error, setError] = useState<boolean>(false);
+  const [imageError, setImageError] = useState(false);
 
   /* eslint-disable react-hooks/set-state-in-effect -- cached attachment link lookup */
   useEffect(() => {
@@ -223,6 +224,48 @@ export function InlineImageAttachment({
       </View>
     );
   }
+  if (imageError) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${messages.reloadImage}: ${attachment.name}`}
+        className={cn(
+          styles.inlineImageWrap,
+          "min-h-[140px] items-center justify-center bg-ku-surface-muted"
+        )}
+        onPress={() => {
+          setImageError(false);
+          setLoading(true);
+          setResolvedUrl(null);
+          attachmentLinkCache.delete(attachment.id);
+          const fetcher = async () => {
+            if (isCandidateInquiry) {
+              return liveQuestService.getCandidateInquiryAttachmentLink(
+                conversationId,
+                attachment.id
+              );
+            }
+            return chatApi.getAttachmentLink(conversationId, attachment.id);
+          };
+          void attachmentLinkCache
+            .getOrFetch(attachment.id, fetcher)
+            .then((url) => {
+              setResolvedUrl(url);
+              setLoading(false);
+            })
+            .catch(() => {
+              setError(true);
+              setLoading(false);
+            });
+        }}
+        testID={`inline-image-reload-${attachment.id}`}
+      >
+        <Text className="font-ku-medium text-ku-body-small text-ku-text">
+          {messages.reloadImage}
+        </Text>
+      </Pressable>
+    );
+  }
 
   const handlePress = () => {
     if (messageTime) {
@@ -248,6 +291,8 @@ export function InlineImageAttachment({
         className={styles.inlineImage}
         style={imageSize}
         resizeMode="contain"
+        onError={() => setImageError(true)}
+        testID={`inline-image-content-${attachment.id}`}
       />
     </Pressable>
   );

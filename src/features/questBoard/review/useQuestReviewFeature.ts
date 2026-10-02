@@ -20,13 +20,17 @@ import { getLocalizedErrorMessage } from "@/utils/error";
 
 interface QuestReviewFeatureProps {
   questId?: string;
+  onSubmitted?: () => void;
 }
 
 type ReviewTarget = { id: string; label: string };
 
 export const HIRER_REVIEW_TARGET_ID = "hirer";
 
-export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
+export function useQuestReviewFeature({
+  questId,
+  onSubmitted,
+}: QuestReviewFeatureProps) {
   const { locale } = useLocale();
   const messages = questReviewMessages[locale];
   const sessionQuery = useSessionQuery();
@@ -49,7 +53,6 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const actor = snapshotQuery.data?.actor;
   const targetOptions = useMemo<ReviewTarget[]>(() => {
@@ -71,20 +74,25 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
         participant.displayName,
       ])
     );
-    const workerIds = [
-      ...new Set(
-        (assignmentsQuery.data ?? [])
-          .filter(
-            (assignment) =>
-              assignment.state !== QuestAssignmentStatus.ASSIGNMENT_CANCELLED
-          )
-          .map((assignment) => assignment.workerId)
-      ),
-    ];
-    return workerIds.map((workerId) => ({
-      id: workerId,
+    const workerIds = new Set<string>();
+    const workerAssignments = (assignmentsQuery.data ?? []).filter(
+      (assignment) => {
+        if (
+          assignment.state === QuestAssignmentStatus.ASSIGNMENT_CANCELLED ||
+          workerIds.has(assignment.workerId)
+        ) {
+          return false;
+        }
+        workerIds.add(assignment.workerId);
+        return true;
+      }
+    );
+    return workerAssignments.map((assignment, index) => ({
+      id: assignment.workerId,
       label:
-        participantNames.get(workerId) ?? messages.workerFallback(workerId),
+        assignment.member?.displayName ??
+        participantNames.get(assignment.workerId) ??
+        messages.workerFallback(index + 1),
     }));
   }, [actor, assignmentsQuery.data, messages, snapshotQuery.data]);
   const selectedTarget =
@@ -134,7 +142,6 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
   const handleSubmit = async () => {
     if (!questId || !viewerId || !selectedTarget || loadError) return;
     setSubmitError(null);
-    setSuccessMessage(null);
     const trimmedComment = comment.trim();
     if (rating < 1 || rating > 5) {
       setSubmitError(messages.invalidRating);
@@ -172,7 +179,7 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
         });
       }
       delete reviewKeysRef.current[selectedTarget.id];
-      setSuccessMessage(messages.successDescription);
+      onSubmitted?.();
     } catch (caught) {
       if (caught instanceof ApiError && caught.status < 500) {
         delete reviewKeysRef.current[selectedTarget.id];
@@ -203,9 +210,7 @@ export function useQuestReviewFeature({ questId }: QuestReviewFeatureProps) {
     setRating,
     setSelectedId,
     setSubmitError,
-    setSuccessMessage,
     submitError,
-    successMessage,
     targetOptions,
     questTitle: snapshotQuery.data?.quest.title,
   };

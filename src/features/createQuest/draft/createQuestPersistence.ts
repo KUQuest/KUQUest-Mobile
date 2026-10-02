@@ -92,7 +92,8 @@ async function loadOrMigrateLegacyDraft(
       draftId,
       legacySnapshot.draft,
       legacySnapshot.step,
-      legacySnapshot.state
+      legacySnapshot.state,
+      legacySnapshot
     );
     await secureStorage.remove(legacyKey);
     return legacySnapshot;

@@ -48,6 +48,13 @@ export interface QuestWorkMessages {
   unreadMessages: (count: number) => string;
   conditionCount: (count: number) => string;
   workChatHint: string;
+  givenPrice: string;
+  settlementTitle: string;
+  settlementAmount: string;
+  settlementPaid: string;
+  settlementPending: string;
+  settlementNone: string;
+  settlementUnavailable: string;
   reward: string;
   location: string;
   modeCandidate: string;
@@ -56,6 +63,21 @@ export interface QuestWorkMessages {
   participationSolo: string;
   proofRequiredBadge: string;
   proofFreeBadge: string;
+  startWorkProgress: (started: number, total: number) => string;
+  groupStartWorkWarning: string;
+  teamLeaderRole: string;
+  teamMemberRole: string;
+  teamLeaderBadge: string;
+  teamYouBadge: string;
+  teamRoster: (count: number) => string;
+  leaderDutyStart: string;
+  leaderDutySubmitProof: string;
+  leaderDutyConfirm: string;
+  memberDutyStart: string;
+  memberDutyWork: string;
+  teamDutyReview: string;
+  teamDutyDone: string;
+  viewQuestDetails: string;
 }
 
 export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
@@ -117,6 +139,13 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     unreadMessages: (count) => `${count} unread messages`,
     conditionCount: (count) => `${count} items`,
     workChatHint: "Coordinate with Hirer on this quest",
+    givenPrice: "Hirer’s price per Worker slot",
+    settlementTitle: "Your settlement",
+    settlementAmount: "Amount credited to Earnings",
+    settlementPaid: "Paid to your Earnings Balance",
+    settlementPending: "Payment pending. Refresh to check the transfer.",
+    settlementNone: "No payment for this Assignment.",
+    settlementUnavailable: "Settlement details are not available yet.",
     reward: "Reward",
     location: "Location",
     modeCandidate: "Candidate",
@@ -125,6 +154,29 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     participationSolo: "Solo",
     proofRequiredBadge: "Proof required",
     proofFreeBadge: "Proof-free",
+    startWorkProgress: (started, total) =>
+      `${started} of ${total} Workers started`,
+    groupStartWorkWarning:
+      "Every Worker must press Start Work before the due time or the Quest fails for everyone.",
+    teamLeaderRole: "Team Leader",
+    teamMemberRole: "Team Member",
+    teamLeaderBadge: "Leader",
+    teamYouBadge: "You",
+    teamRoster: (count) => `Team · ${count} members`,
+    leaderDutyStart:
+      "Press Start Work for the whole team between the start time and the due time.",
+    leaderDutySubmitProof:
+      "Submit the team's proof of work before the due time. Only you can submit it.",
+    leaderDutyConfirm:
+      "Confirm completion for the whole team before the due time. Only you can confirm it.",
+    memberDutyStart:
+      "Your Team Leader presses Start Work for the whole team. You do not need to do anything.",
+    memberDutyWork:
+      "Your Team Leader submits the team's work. You do not need to submit anything.",
+    teamDutyReview:
+      "The team's work was submitted. Waiting for the Hirer to review it.",
+    teamDutyDone: "The Quest is complete.",
+    viewQuestDetails: "View Quest details",
   },
   th: {
     title: "ศูนย์งาน",
@@ -181,6 +233,13 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     unreadMessages: (count) => `${count} ข้อความใหม่`,
     conditionCount: (count) => `${count} ข้อ`,
     workChatHint: "สื่อสารและประสานงานเควสต์นี้กับผู้ว่าจ้าง",
+    givenPrice: "ราคาที่ผู้ว่าจ้างเสนอต่อผู้ปฏิบัติงาน",
+    settlementTitle: "การชำระเงินของคุณ",
+    settlementAmount: "จำนวนเงินที่เข้ายอดรายได้",
+    settlementPaid: "โอนเข้ายอดรายได้แล้ว",
+    settlementPending: "รอการโอนเงิน รีเฟรชเพื่อตรวจสอบสถานะ",
+    settlementNone: "ไม่มีการชำระเงินสำหรับงานนี้",
+    settlementUnavailable: "ยังไม่มีข้อมูลการชำระเงิน",
     reward: "ค่าตอบแทน",
     location: "สถานที่",
     modeCandidate: "คัดเลือกผู้สมัคร",
@@ -189,5 +248,24 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     participationSolo: "งานเดี่ยว",
     proofRequiredBadge: "ต้องส่งหลักฐาน",
     proofFreeBadge: "ไม่ต้องส่งหลักฐาน",
+    startWorkProgress: (started, total) =>
+      `เริ่มงานแล้ว ${started} จาก ${total} คน`,
+    groupStartWorkWarning:
+      "ผู้ทำงานทุกคนต้องกดเริ่มงานก่อนกำหนดส่ง มิฉะนั้นเควสต์จะล้มเหลวสำหรับทุกคน",
+    teamLeaderRole: "หัวหน้าทีม",
+    teamMemberRole: "สมาชิกทีม",
+    teamLeaderBadge: "หัวหน้า",
+    teamYouBadge: "คุณ",
+    teamRoster: (count) => `ทีม · ${count} คน`,
+    leaderDutyStart: "กดเริ่มงานแทนทั้งทีมได้ตั้งแต่เวลาเริ่มงานจนถึงกำหนดส่ง",
+    leaderDutySubmitProof:
+      "ส่งหลักฐานของทั้งทีมก่อนกำหนดส่ง เฉพาะหัวหน้าทีมเท่านั้นที่ส่งได้",
+    leaderDutyConfirm:
+      "ยืนยันการเสร็จสิ้นแทนทั้งทีมก่อนกำหนดส่ง เฉพาะหัวหน้าทีมเท่านั้นที่ยืนยันได้",
+    memberDutyStart: "หัวหน้าทีมจะกดเริ่มงานแทนทั้งทีม คุณไม่ต้องทำอะไร",
+    memberDutyWork: "หัวหน้าทีมจะส่งงานแทนทั้งทีม คุณไม่ต้องส่งอะไร",
+    teamDutyReview: "ส่งงานของทีมแล้ว กำลังรอผู้ว่าจ้างตรวจสอบ",
+    teamDutyDone: "เควสต์เสร็จสิ้นแล้ว",
+    viewQuestDetails: "ดูรายละเอียดเควสต์",
   },
 };

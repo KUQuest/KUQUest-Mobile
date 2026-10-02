@@ -4,7 +4,6 @@ export const workerHomeStyles = {
   masthead: "gap-ku-md rounded-ku-card bg-ku-worker-subtle pt-ku-md",
   mastheadCopy: "gap-ku-xs px-ku-md",
   screenTitle: "font-ku-bold text-ku-headline text-ku-text-strong",
-  screenSubtitle: "font-ku-regular text-ku-body-small text-ku-text-secondary",
   roleBadgeDot: "h-[7px] w-[7px] rounded-[4px]",
   searchBarContainer:
     "mx-ku-md min-h-[52px] flex-row items-center gap-ku-sm rounded-ku-pill border border-ku-border bg-ku-surface pl-ku-md pr-ku-xs",
@@ -42,7 +41,6 @@ export const workerHomeStyles = {
   sectionTitle: "font-ku-bold text-ku-subtitle text-ku-text-strong",
   sectionCount:
     "rounded-ku-pill bg-ku-worker-subtle px-ku-sm py-ku-2 font-ku-semibold text-ku-label text-ku-worker-dark",
-  sectionSubtitle: "font-ku-regular text-ku-meta text-ku-text-secondary",
   cardList: "mb-ku-lg gap-ku-12",
   assignmentCard: "rounded-[16px] border border-ku-border p-ku-md",
   cardHeader: "mb-ku-sm flex-row items-center justify-between",

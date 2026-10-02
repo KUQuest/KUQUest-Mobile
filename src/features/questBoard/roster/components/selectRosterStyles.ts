@@ -6,7 +6,6 @@ const selectRosterStyles = {
   sectionHeader: "flex-row flex-wrap items-center justify-between gap-ku-sm",
   sectionTitle: "font-ku-semibold text-ku-subtitle text-ku-text-strong",
   sectionMeta: "font-ku-medium text-ku-body-small text-ku-text-secondary",
-  sectionSubtitle: "text-ku-body-small text-ku-text-secondary",
   countPill:
     "rounded-ku-pill bg-ku-primary-subtle px-ku-sm py-ku-xs font-ku-semibold text-ku-label text-ku-primary-deep",
   progressTrack: "h-ku-8 overflow-hidden rounded-ku-pill bg-ku-surface-high",

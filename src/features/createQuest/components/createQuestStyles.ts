@@ -6,8 +6,6 @@ const styles = {
     "items-center border border-ku-on-hirer/[0.42] rounded-[14px] h-[48px] justify-center w-[48px]",
   heroTitleGroup: "flex-1 items-center px-ku-sm",
   heroTitle: "text-ku-on-hirer font-ku-bold text-ku-title text-center",
-  heroSubtitle:
-    "text-ku-on-hirer font-ku-regular text-ku-body-small text-center mt-ku-1",
   progressTrack: "items-center flex-row mt-ku-12",
   progressNodePressable:
     "items-center justify-center min-h-[48px] min-w-[48px]",
@@ -75,16 +73,11 @@ const styles = {
   setupMetricValueWide: "text-left",
   setupMetricDivider: "bg-ku-border-accent h-[64px] mx-ku-6 w-[1px]",
   setupMetricDividerWide: "h-[56px] mx-ku-12",
-  setupDivider: "bg-ku-border-accent h-[1px] mt-ku-12 w-full",
-  setupHint:
-    "text-ku-text-secondary font-ku-regular text-ku-body-small mt-ku-12",
   sectionHeading: "items-start flex-row gap-ku-10 mb-ku-md",
   sectionIcon:
     "items-center bg-ku-surface-accent rounded-[10px] h-[36px] justify-center shrink-0 w-[36px]",
   sectionHeadingText: "flex-1 min-w-0",
   sectionTitle: "text-ku-text-strong font-ku-bold text-ku-section",
-  sectionDescription:
-    "text-ku-text-secondary font-ku-regular text-ku-meta mt-ku-3",
   subsectionHeading: "mb-ku-14",
   subsectionBlock: "mt-ku-20",
   collapsibleHeader: "items-center flex-row gap-ku-10 min-h-[48px]",
@@ -190,13 +183,10 @@ const styles = {
   checkboxChecked: "bg-ku-hirer border-ku-hirer",
   onlineToggleCopy: "flex-1 min-w-0",
   onlineToggleTitle: "text-ku-text-strong font-ku-semibold text-ku-control",
-  onlineToggleHint: "text-ku-text-muted font-ku-regular text-ku-label mt-ku-1",
   logisticsDivider: "h-px bg-ku-divider my-ku-md",
   proofToggle: "items-center flex-row min-h-[48px]",
   proofToggleLabel:
     "text-ku-text-strong flex-1 font-ku-semibold text-ku-control ml-ku-10",
-  proofDescription:
-    "text-ku-text-secondary font-ku-regular text-ku-label ml-ku-34 mt-ku-2",
   imagePicker:
     "items-center bg-ku-surface-accent border-ku-border-accent rounded-ku-field border-dashed border justify-center min-h-[128px] p-ku-md",
   imageTitle: "text-ku-hirer font-ku-semibold text-ku-control mt-ku-sm",
@@ -224,8 +214,6 @@ const styles = {
   choiceCopy: "flex-1 min-w-0",
   choiceText: "text-ku-text-strong font-ku-semibold text-ku-body",
   choiceTextSelected: "text-ku-hirer-dark",
-  choiceDescription:
-    "text-ku-text-secondary font-ku-regular text-ku-meta mt-ku-2",
   radio:
     "border-2 border-ku-border rounded-ku-pill h-[24px] items-center justify-center shrink-0 w-[24px]",
   radioSelected: "border-ku-hirer",
@@ -237,8 +225,6 @@ const styles = {
   modeCopy: "flex-1 min-w-0",
   modeTitle: "text-ku-text-secondary font-ku-medium text-ku-label",
   modeValue: "text-ku-hirer-dark font-ku-semibold text-ku-body mt-ku-1",
-  modeDescription:
-    "text-ku-text-secondary font-ku-regular text-ku-body-small mt-ku-xs",
   currencyInput:
     "items-center bg-ku-surface border-ku-border rounded-ku-field border flex-row min-h-[56px] px-ku-md",
   currencySymbol: "text-ku-hirer font-ku-bold text-ku-title",
@@ -248,8 +234,6 @@ const styles = {
   readOnlyField:
     "justify-center bg-ku-surface-raised border-ku-border rounded-ku-field border min-h-[48px] px-ku-md",
   readOnlyValue: "text-ku-text-strong font-ku-semibold text-ku-control",
-  singleHeadcountHint:
-    "text-ku-text-muted font-ku-regular text-ku-label mt-ku-xs",
   summaryHeading: "items-center flex-row gap-ku-sm mb-ku-sm mt-ku-sm",
   summaryTitle: "text-ku-text-strong font-ku-semibold text-ku-body",
   summaryCard: "border-t-ku-border-subtle border-t mt-ku-xs pt-ku-xs",

@@ -21,6 +21,7 @@ export interface WorkerHomeMessages {
   noAvailableQuestsTitle: string;
   noAvailableQuestsDesc: string;
   viewWork: string;
+  givenPrice: string;
   reward: string;
   perPerson: string;
   online: string;
@@ -83,6 +84,7 @@ export const workerHomeMessages: Record<SupportedLocale, WorkerHomeMessages> = {
     noAvailableQuestsDesc:
       "Check back later for new opportunities from students and faculty.",
     viewWork: "Open Work",
+    givenPrice: "Hirer’s price",
     reward: "Reward",
     perPerson: "/ person",
     online: "Online",
@@ -152,6 +154,7 @@ export const workerHomeMessages: Record<SupportedLocale, WorkerHomeMessages> = {
     noAvailableQuestsDesc:
       "กลับมาตรวจสอบใหม่ในภายหลังเมื่อมีเควสต์ใหม่จากเพื่อนนิสิตหรืออาจารย์",
     viewWork: "เปิดห้องทำงาน",
+    givenPrice: "ราคาที่ผู้ว่าจ้างเสนอ",
     reward: "ค่าตอบแทน",
     perPerson: "/ คน",
     online: "ออนไลน์",

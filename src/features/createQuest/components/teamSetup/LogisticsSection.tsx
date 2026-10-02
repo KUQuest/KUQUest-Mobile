@@ -23,7 +23,7 @@ export function LogisticsSection({
     <View className={styles.sectionCard}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${messages.logistics}: ${expanded ? messages.logisticsDescription : summary}`}
+        accessibilityLabel={`${messages.logistics}: ${summary}`}
         accessibilityState={{ expanded }}
         className={styles.collapsibleHeader}
         onPress={onPress}
@@ -35,9 +35,6 @@ export function LogisticsSection({
         <View className={styles.collapsibleHeaderCopy}>
           <Text accessibilityRole="header" className={styles.sectionTitle}>
             {messages.logistics}
-          </Text>
-          <Text className={styles.sectionDescription}>
-            {messages.logisticsDescription}
           </Text>
           {!expanded ? (
             <Text className={styles.collapsibleSummary}>{summary}</Text>

@@ -39,7 +39,7 @@ export function ChoiceGroup({
           <Pressable
             key={option.value}
             accessibilityRole="radio"
-            accessibilityLabel={`${label}: ${option.label}. ${option.description}`}
+            accessibilityLabel={`${label}: ${option.label}`}
             accessibilityState={{ selected }}
             onPress={() => onChange(option.value)}
             className={cn(
@@ -75,9 +75,6 @@ export function ChoiceGroup({
                 )}
               >
                 {option.label}
-              </Text>
-              <Text className={styles.choiceDescription}>
-                {option.description}
               </Text>
             </View>
             {isTile ? null : <Radio selected={selected} />}

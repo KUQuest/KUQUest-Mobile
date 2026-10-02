@@ -40,11 +40,7 @@ export function ReviewStep({
   const { escrow } = publishCheck;
   return (
     <View className={styles.sectionCard}>
-      <SectionHeading
-        icon={Check}
-        title={messages.review}
-        description={messages.questSummaryLabel}
-      />
+      <SectionHeading icon={Check} title={messages.review} />
       <View className={styles.summaryCard}>
         {summary.map((item) => (
           <View key={item.label} className={styles.summaryRow}>

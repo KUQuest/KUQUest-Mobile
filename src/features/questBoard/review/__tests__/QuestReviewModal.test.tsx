@@ -179,7 +179,44 @@ describe("QuestReviewModal", () => {
       viewerId: "hirer-1",
       idempotencyKey: "review-key-1",
     });
-    expect(screen.getByTestId("quest-review-success")).toBeTruthy();
+    await waitFor(() => expect(mockClose).toHaveBeenCalledTimes(1));
+  });
+  it("uses assignment member name before other names and never exposes worker IDs", async () => {
+    const workerId = "11111111-2222-4333-8444-555555555555";
+    mockAssignments = {
+      data: [
+        {
+          workerId,
+          member: { id: workerId, displayName: "Assignment Name" },
+          state: QuestAssignmentStatus.ASSIGNMENT_COMPLETED,
+        },
+      ],
+      error: null,
+    };
+    const namedScreen = await render(
+      <QuestReviewModal onClose={mockClose} questId="quest-1" />
+    );
+
+    expect(namedScreen.getByText("Assignment Name")).toBeTruthy();
+    expect(namedScreen.queryByText("Jane Worker")).toBeNull();
+    expect(namedScreen.queryByText(new RegExp(workerId))).toBeNull();
+
+    mockSnapshot = { ...completedSnapshot(), participants: [] };
+    mockAssignments = {
+      data: [
+        {
+          workerId,
+          state: QuestAssignmentStatus.ASSIGNMENT_COMPLETED,
+        },
+      ],
+      error: null,
+    };
+    const fallbackScreen = await render(
+      <QuestReviewModal onClose={mockClose} questId="quest-1" />
+    );
+
+    expect(fallbackScreen.getByText("Worker 1")).toBeTruthy();
+    expect(fallbackScreen.queryByText(new RegExp(workerId))).toBeNull();
   });
 
   it("lets a Worker review the Hirer without sending revieweeId", async () => {
@@ -260,6 +297,10 @@ describe("QuestReviewModal", () => {
     await fireEvent.press(screen.getByTestId("quest-review-rating-5"));
     await fireEvent.press(screen.getByTestId("quest-review-submit"));
     await waitFor(() => expect(mockMutateAsync).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(screen.getByTestId("quest-review-error")).toBeTruthy()
+    );
+    expect(mockClose).not.toHaveBeenCalled();
     await fireEvent.press(screen.getByTestId("quest-review-submit"));
     await waitFor(() => expect(mockMutateAsync).toHaveBeenCalledTimes(2));
     await fireEvent.press(screen.getByTestId("quest-review-worker-worker-2"));

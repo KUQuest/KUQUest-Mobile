@@ -36,6 +36,7 @@ import type {
   QuestV2BoardCard,
   QuestV2CanonicalQuest,
   QuestV2CancellationOutcome,
+  QuestV2CancelPreview,
   QuestV2Completion,
   QuestV2Detail,
   QuestV2EditRequest,
@@ -62,6 +63,7 @@ import {
   QuestMode,
   QuestNextAction,
   QuestParticipation,
+  QuestTeamRole,
   type QuestBoardQuest,
   type QuestStatus,
   type QuestUnderfilledConsentDecision,
@@ -113,6 +115,10 @@ export function cardToQuestBoardQuest(card: QuestV2BoardCard): QuestBoardQuest {
     proofRequired: "none",
     rewardPerPerson: card.questReward,
     rewardSatang,
+    questFundingTotalSatang:
+      typeof card.questFundingTotal === "number"
+        ? Math.round(card.questFundingTotal * 100)
+        : null,
     headcount: card.headcount,
     acceptedParticipants: card.activeWorkerCount,
     startDate,
@@ -151,6 +157,10 @@ export function canonicalToQuestBoardQuest(
     proofRequired: q.proofRequired ? "required" : "none",
     rewardPerPerson: q.questReward ?? 0,
     rewardSatang,
+    questFundingTotalSatang:
+      typeof q.questFundingTotal === "number"
+        ? Math.round(q.questFundingTotal * 100)
+        : null,
     headcount: q.headcount,
     acceptedParticipants: 0,
     startDate,
@@ -191,6 +201,10 @@ export function publicDetailToQuestBoardQuest(
     proofRequired: d.proofRequired ? "required" : "none",
     rewardPerPerson: d.questReward,
     rewardSatang,
+    questFundingTotalSatang:
+      typeof d.questFundingTotal === "number"
+        ? Math.round(d.questFundingTotal * 100)
+        : null,
     headcount: d.headcount,
     acceptedParticipants: d.activeWorkerCount,
     startDate,
@@ -342,6 +356,31 @@ function deriveActor(
   return routeActor;
 }
 
+/**
+ * The viewer's role on a `GROUP + CANDIDATE` Team. Only a readable Candidate
+ * Team names the Team Leader, and the server hides Teams once the Quest leaves
+ * QUEST_OPEN, so an Assigned or In Progress snapshot usually answers UNKNOWN.
+ */
+function deriveTeamRole(
+  actor: LiveQuestActor,
+  mode: QuestV2Mode,
+  participation: QuestV2Participation,
+  team: QuestV2Team | null,
+  viewerId: string
+): QuestTeamRole | null {
+  if (
+    actor === QuestActor.HIRER ||
+    mode !== QuestMode.CANDIDATE ||
+    participation !== QuestParticipation.GROUP
+  ) {
+    return null;
+  }
+  if (!team) return QuestTeamRole.UNKNOWN;
+  return team.leaderId === viewerId
+    ? QuestTeamRole.LEADER
+    : QuestTeamRole.MEMBER;
+}
+
 function deriveCapabilities(input: {
   viewerId: string;
   actor: LiveQuestActor;
@@ -356,6 +395,7 @@ function deriveCapabilities(input: {
   assignment: LiveQuestAssignment | null;
   application: QuestV2Application | null;
   team: QuestV2Team | null;
+  teamRole: QuestTeamRole | null;
   underfilled: QuestV2Underfilled | null;
   editRequest: QuestV2EditRequest | null;
   proofs: QuestV2ProofSubmission[];
@@ -373,6 +413,7 @@ function deriveCapabilities(input: {
     assignment,
     application,
     team,
+    teamRole,
     underfilled,
     editRequest,
     proofs,
@@ -403,10 +444,9 @@ function deriveCapabilities(input: {
   const ownPendingApplication = application?.state === "APPLICATION_APPLIED";
   const ownFormingTeam = team?.state === "TEAM_FORMING";
   const teamAtCapacity = team !== null && team.members.length >= team.headcount;
-  const isTeamLeader =
-    mode === "CANDIDATE" &&
-    participation === "GROUP" &&
-    team?.leaderId === viewerId;
+  // Leader-only actions stay open unless a readable Team names someone else; the
+  // server enforces Team Leader ONLY (START_WORK_NOT_REQUIRED).
+  const mayActAsTeamLeader = teamRole !== QuestTeamRole.MEMBER;
   const ownProof = proofs.find(
     (proof) =>
       proof.submittedByUserId === viewerId ||
@@ -501,7 +541,7 @@ function deriveCapabilities(input: {
       activeWorker === true &&
       inProgress &&
       proofRequired &&
-      (participation !== "GROUP" || mode !== "CANDIDATE" || isTeamLeader) &&
+      mayActAsTeamLeader &&
       !hasLockedProof,
     canStartWork:
       isWorker &&
@@ -509,15 +549,13 @@ function deriveCapabilities(input: {
       assigned &&
       withinWorkWindow &&
       !assignment?.startedAt &&
-      (participation === QuestParticipation.SINGLE ||
-        mode === QuestMode.FIRST_COME_FIRST_SERVED ||
-        isTeamLeader),
+      mayActAsTeamLeader,
     canConfirmCompletion:
       isWorker &&
       activeWorker === true &&
       inProgress &&
       !proofRequired &&
-      (participation !== "GROUP" || mode !== "CANDIDATE" || isTeamLeader),
+      mayActAsTeamLeader,
     canCancel: isHirer && !terminal,
     canReviewProof: isHirer && reviewableProofState && pendingProof,
     canCreateReview: (isHirer || isWorker) && terminal,
@@ -902,6 +940,13 @@ export class LiveQuestService {
     const listedTeam = ownTeam(teams, viewerId);
     const team = listedTeam && withIssuedJoinCode(listedTeam);
     const actor = deriveActor(routeActor, assignment, application, team);
+    const teamRole = deriveTeamRole(
+      actor,
+      quest.mode,
+      quest.participation,
+      team,
+      viewerId
+    );
     const capabilities = deriveCapabilities({
       viewerId,
       actor,
@@ -916,6 +961,7 @@ export class LiveQuestService {
       assignment,
       application,
       team,
+      teamRole,
       underfilled,
       editRequest,
       proofs,
@@ -948,6 +994,7 @@ export class LiveQuestService {
       application,
       applications,
       team,
+      teamRole,
       teams,
       underfilled,
       editRequest,
@@ -1356,11 +1403,16 @@ export class LiveQuestService {
     );
   }
 
+  async getCancelPreview(questId: string): Promise<QuestV2CancelPreview> {
+    return questApi.getCancelPreview(questId);
+  }
+
   async cancelQuest(
     questId: string,
-    idempotencyKey?: string
+    idempotencyKey?: string,
+    previewVersion?: string
   ): Promise<QuestV2CancellationOutcome> {
-    return questApi.cancelQuest(questId, idempotencyKey);
+    return questApi.cancelQuest(questId, idempotencyKey, previewVersion);
   }
 
   async confirmCompletion(

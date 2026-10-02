@@ -10,7 +10,6 @@ import {
   ChevronRight,
   FileEdit,
   Hourglass,
-  Info,
   Lock,
   MessageSquare,
   ShieldCheck,
@@ -25,7 +24,8 @@ import { goBackOrReplace } from "@/utils/navigation";
 import { CancelQuestGuardrailSheet } from "./CancelQuestGuardrailSheet";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { TopBar } from "@/components/ui/TopBar";
-import { formatTimestamp } from "@/domain/datetime";
+import { formatTimestamp, isDeviceOutsideBangkokZone } from "@/domain/datetime";
+import { useServerCountdown } from "@/features/questBoard/shared/useServerCountdown";
 import { formatSatang } from "@/domain/satang";
 import { CandidateReviewSheet } from "@/features/questBoard/teamAssemble/components/CandidateReviewSheet";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
@@ -38,6 +38,7 @@ import { questWorkMessages } from "@/locales/questWorkMessages";
 import { useHirerQuestManageFeature } from "./useHirerQuestManageFeature";
 import { getCancelTier } from "./cancelQuestGuardrail";
 import { useFileDispute } from "@/features/questBoard/dispute/useFileDispute";
+import { FailedQuestNotice } from "@/features/questBoard/shared/FailedQuestNotice";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import {
   QuestActor,
@@ -158,6 +159,30 @@ function ScheduleRow({
   );
 }
 
+function StartsIn({
+  startTime,
+  format,
+}: {
+  startTime: string;
+  format: (days: number, hours: number, minutes: number) => string;
+}) {
+  const remaining = useServerCountdown(startTime);
+  if (!remaining) return null;
+  const totalMinutes = Math.floor(remaining / 60_000);
+  return (
+    <Text
+      testID="hirer-manage-starts-in"
+      className="font-ku-semibold text-ku-body-small text-ku-hirer-dark"
+    >
+      {format(
+        Math.floor(totalMinutes / 1440),
+        Math.floor((totalMinutes % 1440) / 60),
+        totalMinutes % 60
+      )}
+    </Text>
+  );
+}
+
 export default function HirerQuestManageScreen({
   questId,
 }: HirerQuestManageScreenProps) {
@@ -170,11 +195,13 @@ export default function HirerQuestManageScreen({
     viewerId,
     snapshotQuery,
     snapshot,
+    isNotFound,
     error,
     originalConditionItems,
     pendingProof,
     terminal,
     cancelDescription,
+    cancelPreviewText,
     guardrailTier,
     commandBusy,
     setGuardrailTier,
@@ -224,15 +251,27 @@ export default function HirerQuestManageScreen({
         {topBar}
         <View className="flex-1 items-center justify-center px-ku-lg">
           <Text className="text-center font-ku-bold text-ku-emphasis text-ku-text-strong">
-            {error ?? messages.questNotFound}
+            {isNotFound
+              ? messages.questNotFound
+              : (error ?? messages.questNotFound)}
           </Text>
+          {isNotFound ? (
+            <Text className="mt-ku-sm text-center text-ku-body-small text-ku-text-secondary">
+              {messages.questNotFoundDescription}
+            </Text>
+          ) : null}
           <Pressable
             accessibilityRole="button"
+            testID={isNotFound ? "hirer-manage-back" : "hirer-manage-retry"}
             className="mt-ku-md min-h-[48px] items-center justify-center rounded-ku-pill bg-ku-hirer px-ku-20 active:opacity-80"
-            onPress={() => void snapshotQuery.refetch()}
+            onPress={() =>
+              isNotFound
+                ? goBackOrReplace(router, "/(tabs)/my-quests")
+                : void snapshotQuery.refetch()
+            }
           >
             <Text className="font-ku-semibold text-ku-body-small text-ku-on-hirer">
-              {messages.retry}
+              {isNotFound ? messages.back : messages.retry}
             </Text>
           </Pressable>
         </View>
@@ -261,10 +300,13 @@ export default function HirerQuestManageScreen({
   const showUnderfilled =
     snapshot.nextAction === QuestNextAction.DECIDE_UNDERFILLED &&
     snapshot.capabilities.canDecideUnderfilled;
+  const serverDispute = "dispute" in quest ? quest.dispute : undefined;
   const showDispute =
     snapshot.state === QuestStatus.QUEST_FAILED &&
-    (snapshot.actor === QuestActor.HIRER ||
-      (snapshot.actor === QuestActor.WORKER && snapshot.assignment !== null));
+    (serverDispute
+      ? serverDispute.canFile
+      : snapshot.actor === QuestActor.HIRER ||
+        (snapshot.actor === QuestActor.WORKER && snapshot.assignment !== null));
   const nextStep = showUnderfilled
     ? "underfilled"
     : showProofReview && snapshot.nextAction === QuestNextAction.REVIEW_PROOF
@@ -291,7 +333,9 @@ export default function HirerQuestManageScreen({
     snapshot.state === QuestStatus.QUEST_IN_PROGRESS;
   const rewardPerWorker = quest.questReward ?? null;
   const fundingTotal =
-    "questFundingTotal" in quest ? quest.questFundingTotal : null;
+    typeof quest.questFundingTotal === "number"
+      ? quest.questFundingTotal
+      : null;
   // Group + Candidate: only the Team Leader starts, so a per-Worker count misleads.
   const showStarted =
     assignedCount > 0 &&
@@ -301,14 +345,9 @@ export default function HirerQuestManageScreen({
   const startedCount = snapshot.assignments.filter(
     (assignment) => assignment.startedAt
   ).length;
-  const waitingNote =
-    nextStep || snapshot.state !== QuestStatus.QUEST_OPEN
-      ? null
-      : snapshot.mode === QuestMode.CANDIDATE
-        ? messages.manageCandidateAutoCancel
-        : isGroup
-          ? messages.groupFcfsUnderfillRule
-          : messages.noSelectionNeeded;
+  const zoneNote = isDeviceOutsideBangkokZone()
+    ? ` · ${messages.manageBangkokTime}`
+    : "";
 
   return (
     <ScreenLayout className="flex-1 bg-ku-background">
@@ -422,20 +461,15 @@ export default function HirerQuestManageScreen({
           </View>
         ) : null}
 
-        {waitingNote ? (
-          <View
-            testID="hirer-manage-waiting-note"
-            className="flex-row items-start gap-ku-12 rounded-ku-card bg-ku-hirer-subtle p-ku-md"
-          >
-            <View className="mt-ku-2">
-              <Info color={colors.hirer} size={20} strokeWidth={2} />
-            </View>
-            <Text className="min-w-0 flex-1 text-ku-body-small text-ku-text-strong">
-              {waitingNote}
-            </Text>
-          </View>
+        {snapshot.state === QuestStatus.QUEST_FAILED ? (
+          <FailedQuestNotice quest={quest} />
         ) : null}
-
+        {snapshot.state === QuestStatus.QUEST_OPEN ? (
+          <StartsIn
+            startTime={quest.startTime}
+            format={messages.manageStartsIn}
+          />
+        ) : null}
         <View className="rounded-ku-card border border-ku-border bg-ku-surface px-ku-md">
           <View className="gap-ku-sm py-ku-md">
             <View className="flex-row flex-wrap items-end justify-between gap-ku-sm">
@@ -497,20 +531,24 @@ export default function HirerQuestManageScreen({
           <ScheduleRow
             icon={CalendarClock}
             label={messages.startWork}
-            value={formatTimestamp(
-              quest.startTime,
-              locale,
-              messages.timeNotSpecified
-            )}
+            value={
+              formatTimestamp(
+                quest.startTime,
+                locale,
+                messages.timeNotSpecified
+              ) + zoneNote
+            }
           />
           <ScheduleRow
             icon={CalendarCheck}
             label={messages.finishBy}
-            value={formatTimestamp(
-              snapshot.dueAt,
-              locale,
-              messages.timeNotSpecified
-            )}
+            value={
+              formatTimestamp(
+                snapshot.dueAt,
+                locale,
+                messages.timeNotSpecified
+              ) + (snapshot.dueAt ? zoneNote : "")
+            }
           />
         </View>
 
@@ -558,7 +596,7 @@ export default function HirerQuestManageScreen({
               accessibilityRole="button"
               testID="hirer-manage-cancel"
               className="min-h-[48px] flex-row items-center justify-center gap-ku-sm rounded-ku-pill px-ku-lg active:bg-ku-surface-danger"
-              onPress={cancel}
+              onPress={() => void cancel()}
             >
               <X color={colors.dangerDark} size={20} strokeWidth={2.2} />
               <Text className="font-ku-semibold text-ku-control text-ku-danger-dark">
@@ -602,6 +640,7 @@ export default function HirerQuestManageScreen({
         closeLabel={groupQuestMessages[locale].close}
         onClose={() => setUnderfilledOpen(false)}
         testID="partial-group-start-consent-sheet"
+        fullScreen
       >
         <PartialGroupStartConsentContent
           underfilled={snapshot.underfilled}
@@ -625,11 +664,14 @@ export default function HirerQuestManageScreen({
         visible={guardrailTier !== null}
         tier={guardrailTier ?? 2}
         title={myQuestMessages[locale].cancelConfirmTitle}
-        description={
+        description={[
           guardrailTier === 3
             ? myQuestMessages[locale].cancelInProgressDescription
-            : myQuestMessages[locale].cancelAssignedDescription
-        }
+            : myQuestMessages[locale].cancelAssignedDescription,
+          cancelPreviewText,
+        ]
+          .filter(Boolean)
+          .join("\n\n")}
         confirmLabel={myQuestMessages[locale].cancelGuardrailConfirm}
         cancelLabel={myQuestMessages[locale].cancelGuardrailKeep}
         keyword={myQuestMessages[locale].cancelGuardrailKeyword}
