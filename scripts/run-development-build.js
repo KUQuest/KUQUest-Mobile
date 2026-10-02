@@ -3,7 +3,7 @@ const { delimiter, join, resolve } = require("node:path");
 const { spawnSync } = require("node:child_process");
 const { createInterface } = require("node:readline/promises");
 
-const ANDROID_PACKAGE = "com.kuquest.mobile.debug";
+const ANDROID_PACKAGE = "org.kubits.kuquest.debug";
 const DEFAULT_PORT = "6767";
 
 function clearStaleAndroidAutolinkingCache() {
