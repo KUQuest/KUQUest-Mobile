@@ -1,0 +1,526 @@
+import { useEffect, useRef, useState } from "react";
+import { ApiError } from "@/api/ApiClient";
+import { ActivityIndicator } from "react-native";
+import { File } from "expo-file-system";
+import * as ImagePicker from "expo-image-picker";
+import {
+  CheckCircle2,
+  CircleAlert,
+  CircleX,
+  Clock3,
+  Info,
+  Send,
+} from "lucide-react-native";
+
+import { Pressable, Text, TextInput, View } from "@/tw";
+import { cn } from "@/tw/cn";
+import { limitImagePixels } from "@/api/fileUpload";
+import { formatTimestampDateTime } from "@/domain/datetime";
+import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestTypes";
+import {
+  QuestProofFileStatus,
+  QuestProofStatus,
+} from "@/features/questBoard/domain/types";
+import { useLocale } from "@/features/preferences/localeStore";
+import {
+  ProofFileUploadError,
+  useRemoveProofFileMutation,
+  useSubmitProofMutation,
+} from "../api/workerWorkQueries";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import {
+  workerWorkMessages,
+  type WorkerWorkMessages,
+} from "@/locales/workerWorkMessages";
+import type { ThemeColors } from "@/theme/colors";
+import { showConfirmModal } from "@/components/ui/SweetAlert";
+import { getLocalizedErrorMessage } from "@/utils/error";
+import { planProofSend, type ProofDraftRef } from "../proofDraftPlan";
+import { latestSentProof, unsentProofDraft } from "../workerWorkProjection";
+import { ProofFilePicker, type ProofFile } from "./ProofFilePicker";
+
+const MAX_PROOF_FILES = 5;
+const MAX_PROOF_FILE_BYTES = 10 * 1024 * 1024;
+const MAX_DESCRIPTION_LENGTH = 1000;
+
+const card =
+  "gap-ku-md rounded-ku-card border border-ku-border bg-ku-surface p-ku-md";
+const sentCard =
+  "flex-row items-start gap-ku-12 rounded-ku-card border border-ku-border bg-ku-surface p-ku-md";
+const sentIcon =
+  "h-[40px] w-[40px] items-center justify-center rounded-ku-pill";
+
+export interface WorkerProofFormProps {
+  questId: string;
+  viewerId: string;
+  snapshot: LiveQuestSnapshot;
+  /** Refreshes the owning Work Hub after a Proof Submission is sent. */
+  onSubmitted?: () => Promise<unknown> | void;
+  onDirtyChange?: (dirty: boolean) => void;
+}
+
+/**
+ * Inline proof submission for the Worker's Work Hub. Renders the sent
+ * Proof Submission status once one exists, the form while the Worker can
+ * submit, and nothing otherwise.
+ */
+export function WorkerProofForm({
+  questId,
+  viewerId,
+  snapshot,
+  onSubmitted,
+  onDirtyChange,
+}: WorkerProofFormProps) {
+  const { colors: palette } = useAppTheme();
+  const { locale } = useLocale();
+  const messages = workerWorkMessages[locale];
+  const proofMutation = useSubmitProofMutation();
+  const removeProofFileMutation = useRemoveProofFileMutation();
+
+  const [files, setFiles] = useState<ProofFile[]>([]);
+  const [description, setDescription] = useState(
+    () => unsentProofDraft(snapshot, viewerId)?.description ?? ""
+  );
+  const [notice, setNotice] = useState<string | null>(null);
+  const [failedDraft, setFailedDraft] = useState<ProofDraftRef | null>(null);
+  const fileKeySeed = useRef(0);
+  const submittedRef = useRef(false);
+  const serverDraft = unsentProofDraft(snapshot, viewerId);
+
+  useEffect(() => {
+    submittedRef.current = false;
+  }, [serverDraft?.id, serverDraft?.description]);
+  useEffect(() => {
+    onDirtyChange?.(
+      !submittedRef.current &&
+        (files.length > 0 || description !== (serverDraft?.description ?? ""))
+    );
+  }, [
+    description,
+    files.length,
+    onDirtyChange,
+    serverDraft?.description,
+    serverDraft?.id,
+  ]);
+
+  const serverFileCount = serverDraft?.files.length ?? 0;
+  const hasReadyServerFile =
+    serverDraft?.files.some(
+      (file) =>
+        file.uploadStatus === QuestProofFileStatus.PROOF_FILE_READY &&
+        file.fileId !== null
+    ) ?? false;
+  const hasUnresolvedServerFailure =
+    files.length === 0 &&
+    (serverDraft?.files.some(
+      (file) => file.uploadStatus === QuestProofFileStatus.PROOF_FILE_FAILED
+    ) ??
+      false);
+
+  const sentProof = latestSentProof(snapshot, viewerId);
+  if (sentProof) {
+    return (
+      <SentProofCard
+        messages={messages}
+        palette={palette}
+        status={sentProof.status}
+        submittedAt={
+          sentProof.submittedAt
+            ? formatTimestampDateTime(sentProof.submittedAt, locale)
+            : null
+        }
+      />
+    );
+  }
+  if (!snapshot.proofRequired || !snapshot.capabilities.canSubmitProof) {
+    return null;
+  }
+
+  const submitting =
+    proofMutation.isPending || removeProofFileMutation.isPending;
+  const hasSelectedFile = files.length > 0 || hasReadyServerFile;
+  const submitDisabled =
+    submitting || !hasSelectedFile || hasUnresolvedServerFailure;
+  const pickFiles = async () => {
+    const remaining = MAX_PROOF_FILES - serverFileCount - files.length;
+    if (remaining <= 0) {
+      setNotice(messages.fileLimitReached);
+      return;
+    }
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images", "videos"],
+        allowsMultipleSelection: true,
+        selectionLimit: remaining,
+        quality: 0.8,
+      });
+      if (result.canceled || !result.assets) return;
+      const tooLarge: string[] = [];
+      const picked: ProofFile[] = [];
+      for (const asset of result.assets) {
+        const kind = asset.type === "video" ? "video" : "image";
+        const name =
+          asset.fileName ??
+          `proof-${Date.now()}.${kind === "video" ? "mp4" : "jpg"}`;
+        const pickedType =
+          asset.mimeType ?? (kind === "video" ? "video/mp4" : "image/jpeg");
+        const upload =
+          kind === "image"
+            ? await limitImagePixels({
+                uri: asset.uri,
+                type: pickedType,
+                width: asset.width,
+                height: asset.height,
+              })
+            : { uri: asset.uri, type: pickedType, resized: false };
+        const fileSize = upload.resized
+          ? new File(upload.uri).size
+          : asset.fileSize;
+        if (fileSize && fileSize > MAX_PROOF_FILE_BYTES) {
+          tooLarge.push(name);
+          continue;
+        }
+        fileKeySeed.current += 1;
+        picked.push({
+          key: `proof-file-${fileKeySeed.current}`,
+          uri: upload.uri,
+          name,
+          type: upload.type,
+          kind,
+        });
+      }
+      const accepted = picked.slice(0, remaining);
+      setFiles((current) => [...current, ...accepted]);
+      setNotice(
+        tooLarge.length > 0
+          ? messages.fileTooLarge(tooLarge.join(", "))
+          : picked.length > accepted.length
+            ? messages.fileLimitReached
+            : null
+      );
+    } catch {
+      setNotice(messages.pickerError);
+    }
+  };
+
+  const pickDocuments = async () => {
+    const remaining = MAX_PROOF_FILES - serverFileCount - files.length;
+    if (remaining <= 0) {
+      setNotice(messages.fileLimitReached);
+      return;
+    }
+    try {
+      const result = await File.pickFileAsync({
+        mimeTypes: ["application/pdf"],
+        multipleFiles: true,
+      });
+      if (result.canceled) return;
+      const tooLarge: string[] = [];
+      const picked: ProofFile[] = [];
+      for (const file of result.result) {
+        const name = file.name || `proof-${Date.now()}.pdf`;
+        if (file.size > MAX_PROOF_FILE_BYTES) {
+          tooLarge.push(name);
+          continue;
+        }
+        fileKeySeed.current += 1;
+        picked.push({
+          key: `proof-file-${fileKeySeed.current}`,
+          uri: file.uri,
+          name,
+          type: file.type || "application/pdf",
+          kind: "file",
+        });
+      }
+      const accepted = picked.slice(0, remaining);
+      setFiles((current) => [...current, ...accepted]);
+      setNotice(
+        tooLarge.length > 0
+          ? messages.fileTooLarge(tooLarge.join(", "))
+          : picked.length > accepted.length
+            ? messages.fileLimitReached
+            : null
+      );
+    } catch {
+      setNotice(messages.pickerError);
+    }
+  };
+
+  const sendProof = async () => {
+    setNotice(null);
+    const plan = planProofSend(
+      failedDraft ??
+        (serverDraft && {
+          id: serverDraft.id,
+          files: serverDraft.files,
+          fileKeys: [],
+        }),
+      files
+    );
+    try {
+      await proofMutation.mutateAsync({
+        questId,
+        viewerId,
+        plan,
+        description: description.trim() || undefined,
+      });
+      submittedRef.current = true;
+      setFiles([]);
+      setDescription("");
+      setFailedDraft(null);
+      await onSubmitted?.();
+    } catch (error) {
+      if (error instanceof ProofFileUploadError && error.draft) {
+        const fileKeys =
+          plan.kind === "create"
+            ? plan.files.map((file) => file.key)
+            : plan.kind === "retry"
+              ? plan.retries.reduce<(string | null)[]>(
+                  (keys, { position, file }) => {
+                    keys[position] = file.key;
+                    return keys;
+                  },
+                  [...(failedDraft?.fileKeys ?? [])]
+                )
+              : plan.kind === "append"
+                ? [
+                    ...Array.from({ length: serverFileCount }, () => null),
+                    ...plan.files.map((file) => file.key),
+                  ]
+                : [];
+        setFailedDraft({
+          id: error.draft.id,
+          files: error.draft.files,
+          fileKeys,
+        });
+      }
+      const apiError = error instanceof ApiError ? error : null;
+      setNotice(
+        error instanceof ProofFileUploadError
+          ? error.rejected
+            ? messages.fileRejected
+            : messages.uploadFailed(error.failedCount)
+          : apiError
+            ? getLocalizedErrorMessage(apiError, locale, {
+                codes: {
+                  PROOF_FILE_TYPE_NOT_SUPPORTED: messages.fileRejected,
+                  PROOF_FILE_DIMENSIONS_TOO_LARGE: messages.fileRejected,
+                  PROOF_FILES_UPLOAD_FAILED: messages.uploadFailed(
+                    Math.max(files.length, 1)
+                  ),
+                  PROOF_RETRY_POSITION_INVALID: messages.retryFailedProofFile,
+                  PROOF_RETRY_POSITION_CONFLICT: messages.retryFailedProofFile,
+                },
+                fallback: messages.submitFailed,
+              })
+            : messages.submitFailed
+      );
+    }
+  };
+
+  const removeServerFile = async (position: number) => {
+    if (!serverDraft) return;
+    const fileIds = serverDraft.files.flatMap((file) =>
+      file.position !== position && file.fileId ? [file.fileId] : []
+    );
+    try {
+      await removeProofFileMutation.mutateAsync({
+        questId,
+        viewerId,
+        draftId: serverDraft.id,
+        fileIds,
+      });
+      setNotice(null);
+      await onSubmitted?.();
+    } catch (error) {
+      setNotice(
+        getLocalizedErrorMessage(error, locale, {
+          fallback: messages.submitFailed,
+        })
+      );
+    }
+  };
+
+  const confirmAndSend = () => {
+    if (submitDisabled) return;
+    showConfirmModal({
+      title: messages.confirmSubmitTitle,
+      message: messages.confirmSubmitMessage,
+      confirmLabel: messages.confirm,
+      cancelLabel: messages.cancel,
+      onConfirm: () => void sendProof(),
+    });
+  };
+
+  return (
+    <View className={card} testID="worker-proof-form">
+      <ProofFilePicker
+        disabled={submitting}
+        files={files}
+        maxFiles={MAX_PROOF_FILES}
+        onRemoveServer={(position) => void removeServerFile(position)}
+        serverFiles={serverDraft?.files ?? []}
+        messages={messages}
+        onAdd={() => void pickFiles()}
+        onAddDocument={() => void pickDocuments()}
+        onRemove={(key) => {
+          setFiles((current) => current.filter((file) => file.key !== key));
+          setNotice(null);
+        }}
+        palette={palette}
+      />
+
+      <View className="gap-ku-sm">
+        <View className="flex-row items-center justify-between gap-ku-sm">
+          <Text className="flex-1 font-ku-semibold text-ku-body text-ku-text-strong">
+            {messages.descriptionLabel}
+          </Text>
+          <Text className="font-ku-medium text-ku-label text-ku-text-secondary">
+            {messages.descriptionCount(
+              description.length,
+              MAX_DESCRIPTION_LENGTH
+            )}
+          </Text>
+        </View>
+        <TextInput
+          accessibilityLabel={messages.descriptionLabel}
+          className="min-h-[112px] rounded-ku-field border border-ku-border bg-ku-surface px-ku-12 py-ku-10 font-ku-regular text-ku-body-small text-ku-text-strong"
+          editable={!submitting}
+          maxLength={MAX_DESCRIPTION_LENGTH}
+          multiline
+          onChangeText={(value) => {
+            setDescription(value);
+            setNotice(null);
+          }}
+          placeholder={messages.descriptionPlaceholder}
+          placeholderTextColor={palette.textMuted}
+          style={{ textAlignVertical: "top" }}
+          testID="worker-proof-description"
+          value={description}
+        />
+      </View>
+
+      {notice ? (
+        <View
+          accessibilityLiveRegion="polite"
+          accessibilityRole="alert"
+          className="flex-row items-start gap-ku-sm rounded-ku-field border border-ku-border-danger bg-ku-surface-danger p-ku-12"
+          testID="worker-proof-notice"
+        >
+          <CircleAlert color={palette.dangerDark} size={18} strokeWidth={2} />
+          <Text className="flex-1 font-ku-medium text-ku-body-small text-ku-danger-dark">
+            {notice}
+          </Text>
+        </View>
+      ) : null}
+
+      <View className="gap-ku-sm border-t border-ku-divider pt-ku-md">
+        <View className="flex-row items-start gap-ku-sm">
+          <Info color={palette.textSecondary} size={16} strokeWidth={2} />
+          <Text className="flex-1 font-ku-regular text-ku-label text-ku-text-secondary">
+            {hasSelectedFile
+              ? messages.sendLockNotice
+              : messages.proofInputRequired}
+          </Text>
+        </View>
+        <Pressable
+          accessibilityLabel={messages.submitProof}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: submitDisabled, busy: submitting }}
+          className={cn(
+            "min-h-[48px] flex-row items-center justify-center gap-ku-sm rounded-ku-pill px-ku-md",
+            submitDisabled
+              ? "bg-ku-surface-high"
+              : "bg-ku-worker-dark active:bg-ku-worker-deep"
+          )}
+          disabled={submitDisabled}
+          onPress={confirmAndSend}
+          testID="worker-proof-submit"
+        >
+          {submitting ? (
+            <ActivityIndicator color={palette.onWorker} />
+          ) : (
+            <>
+              <Send
+                color={submitDisabled ? palette.textMuted : palette.onWorker}
+                size={18}
+                strokeWidth={2}
+              />
+              <Text
+                className={cn(
+                  "font-ku-semibold text-ku-body",
+                  submitDisabled ? "text-ku-text-muted" : "text-ku-on-worker"
+                )}
+              >
+                {messages.submitProof}
+              </Text>
+            </>
+          )}
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function SentProofCard({
+  messages,
+  palette,
+  status,
+  submittedAt,
+}: {
+  messages: WorkerWorkMessages;
+  palette: ThemeColors;
+  status: QuestProofStatus | null;
+  submittedAt: string | null;
+}) {
+  const Icon =
+    status === QuestProofStatus.PROOF_APPROVED
+      ? CheckCircle2
+      : status === QuestProofStatus.PROOF_NOT_APPROVED
+        ? CircleX
+        : Clock3;
+  const color =
+    status === QuestProofStatus.PROOF_APPROVED
+      ? palette.success
+      : status === QuestProofStatus.PROOF_NOT_APPROVED
+        ? palette.dangerDark
+        : palette.workerDark;
+  const sentIconTone =
+    status === QuestProofStatus.PROOF_APPROVED
+      ? "bg-ku-surface-success"
+      : status === QuestProofStatus.PROOF_NOT_APPROVED
+        ? "bg-ku-surface-danger"
+        : "bg-ku-worker-subtle";
+  const description =
+    status === QuestProofStatus.PROOF_APPROVED
+      ? messages.proofApprovedDescription
+      : status === QuestProofStatus.PROOF_NOT_APPROVED
+        ? messages.proofNotApprovedDescription
+        : messages.proofPendingDescription;
+  const statusLabel =
+    status === QuestProofStatus.PROOF_APPROVED
+      ? messages.status.completed
+      : status === QuestProofStatus.PROOF_NOT_APPROVED
+        ? messages.status.incomplete
+        : messages.status.proofPending;
+  return (
+    <View className={sentCard} testID="worker-proof-sent">
+      <View className={cn(sentIcon, sentIconTone)}>
+        <Icon color={color} size={22} strokeWidth={2} />
+      </View>
+      <View className="min-w-0 flex-1 gap-ku-xs">
+        <Text className="font-ku-semibold text-ku-body text-ku-text-strong">
+          {messages.submittedTitle} · {statusLabel}
+        </Text>
+        {submittedAt ? (
+          <Text className="font-ku-regular text-ku-label text-ku-text-secondary">
+            {messages.submittedAt(submittedAt)}
+          </Text>
+        ) : null}
+        <Text className="font-ku-regular text-ku-body-small text-ku-text-secondary">
+          {description}
+        </Text>
+      </View>
+    </View>
+  );
+}

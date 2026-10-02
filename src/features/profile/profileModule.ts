@@ -1,0 +1,403 @@
+import { ApiError } from "../../api/ApiClient";
+import type {
+  CertificateEntry,
+  ExperienceEntry,
+  PortfolioEntry,
+  ProfileResponse,
+  ProfileReview as ApiProfileReview,
+} from "../../api/contracts";
+import type {
+  CertificateCreate,
+  ExperienceCreate,
+  PortfolioCreate,
+  UploadAsset,
+} from "../../api/StudentApi";
+import type { SupportedLocale } from "@/locales/locale";
+import { formatDisplayMonthYear } from "./profileFormatting";
+import { authService } from "../auth/AuthService";
+import { AuthError } from "../auth/types";
+import type {
+  Certificate,
+  Experience,
+  ProfileBasicsUpdate,
+  ProfileCertificate,
+  ProfileDraft,
+  ProfileDraftMapperInput,
+  ProfileEditData,
+  ProfileExperience,
+  ProfileReview,
+  ProfileSectionErrors,
+  ProfileViewData,
+  ProfileWork,
+  Work,
+} from "./types";
+
+const PROFILE_TAG_LIMIT = 3;
+
+type OptionalReadResult<T> =
+  | { kind: "value"; value: T }
+  | { kind: "unsupported" }
+  | { kind: "error"; error: unknown };
+
+async function readOptional<T>(
+  request: () => Promise<T>
+): Promise<OptionalReadResult<T>> {
+  try {
+    return { kind: "value", value: await request() };
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404)
+      return { kind: "unsupported" };
+    if (error instanceof ApiError && error.status === 401)
+      throw new AuthError("SESSION_EXPIRED");
+    return { kind: "error", error };
+  }
+}
+
+async function readRequired<T>(request: () => Promise<T>): Promise<T> {
+  try {
+    return await request();
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401)
+      throw new AuthError("SESSION_EXPIRED");
+    throw error;
+  }
+}
+
+function mapApiCertificateToView(
+  certificate: CertificateEntry,
+  locale: SupportedLocale
+): ProfileCertificate {
+  return {
+    id: certificate.id,
+    title: certificate.name,
+    issuer: certificate.issuer,
+    issuedYear:
+      formatDisplayMonthYear(certificate.issuedAt, locale).split(" ").pop() ??
+      certificate.issuedAt,
+    link: certificate.image?.url ?? "",
+  };
+}
+
+function mapApiPortfolioToView(entry: PortfolioEntry): ProfileWork {
+  return {
+    id: entry.id,
+    title: entry.title,
+    detail: entry.description ?? "",
+    imageUri: entry.images[0]?.url ?? "",
+    imageUris: entry.images
+      .slice()
+      .sort((left, right) => Number(left.position) - Number(right.position))
+      .map((image) => image.url),
+  };
+}
+
+function mapApiExperienceToView(entry: ExperienceEntry): ProfileExperience {
+  return {
+    id: entry.id,
+    title: entry.title,
+    employmentType: entry.employmentType,
+    organization: entry.organization ?? "",
+    description: entry.description ?? "",
+    startedAt: entry.startedAt,
+    endedAt: entry.endedAt ?? null,
+  };
+}
+
+function mapApiReviewToView(review: ApiProfileReview): ProfileReview {
+  return {
+    id: review.id,
+    reviewerName: review.reviewer.displayName,
+    reviewerAvatar: review.reviewer.avatar?.url ?? "",
+    rating: review.rating,
+    comment: review.comment ?? "",
+    createdAt: review.createdAt,
+    questTitle: review.quest?.title ?? "",
+  };
+}
+
+function sortExperiences(
+  experiences: ProfileExperience[]
+): ProfileExperience[] {
+  return experiences
+    .map((experience, index) => ({ experience, index }))
+    .sort((left, right) => {
+      const leftStartedAt = Date.parse(left.experience.startedAt);
+      const rightStartedAt = Date.parse(right.experience.startedAt);
+      const leftTime = Number.isNaN(leftStartedAt)
+        ? Number.NEGATIVE_INFINITY
+        : leftStartedAt;
+      const rightTime = Number.isNaN(rightStartedAt)
+        ? Number.NEGATIVE_INFINITY
+        : rightStartedAt;
+      return rightTime - leftTime || left.index - right.index;
+    })
+    .map(({ experience }) => experience);
+}
+
+function mapApiCertificateToDraft(certificate: CertificateEntry): Certificate {
+  return {
+    id: certificate.id,
+    name: certificate.name,
+    issuer: certificate.issuer,
+    issuedAt: certificate.issuedAt,
+    imageUri: certificate.image?.url ?? "",
+  };
+}
+
+function mapApiPortfolioToDraft(entry: PortfolioEntry): Work {
+  return {
+    id: entry.id,
+    title: entry.title,
+    detail: entry.description ?? "",
+    imageUri: entry.images[0]?.url ?? "",
+  };
+}
+
+function mapApiExperienceToDraft(entry: ExperienceEntry): Experience {
+  return {
+    id: entry.id,
+    title: entry.title,
+    employmentType: entry.employmentType,
+    organization: entry.organization ?? "",
+    description: entry.description ?? "",
+    startedAt: entry.startedAt,
+    endedAt: entry.endedAt ?? "",
+  };
+}
+
+export class ProfileModule {
+  async loadProfile(options?: {
+    locale?: SupportedLocale;
+    signal?: AbortSignal;
+  }): Promise<ProfileViewData> {
+    const locale = options?.locale ?? "en";
+    const session = await authService.getSession();
+    if (!session) throw new AuthError("SESSION_EXPIRED", "No active session");
+
+    const api = await authService.getStudentApi();
+    const profile = await readRequired(() =>
+      api.getProfile({ signal: options?.signal })
+    );
+    const [
+      statusResult,
+      optionsResult,
+      certificatesResult,
+      portfolioResult,
+      experiencesResult,
+      reputationResult,
+      reviewsResult,
+    ] = await Promise.all([
+      readOptional(() =>
+        api.getAcademicRegistrationStatus({ signal: options?.signal })
+      ),
+      readOptional(() =>
+        api.getAcademicRegistrationOptions({ signal: options?.signal })
+      ),
+      readOptional(() => api.listCertificates({ signal: options?.signal })),
+      readOptional(() => api.listPortfolio({ signal: options?.signal })),
+      readOptional(() => api.listExperience({ signal: options?.signal })),
+      readOptional(() => api.getReputation({ signal: options?.signal })),
+      readOptional(() => api.listReviews("all", { signal: options?.signal })),
+    ]);
+
+    const status =
+      statusResult.kind === "value" ? statusResult.value : undefined;
+    const academicOptions =
+      optionsResult.kind === "value" ? optionsResult.value : undefined;
+    const occupation =
+      academicOptions?.occupations.find(
+        (item) => item.id === status?.occupationId
+      )?.name ?? "";
+    const apiExperiences = (
+      experiencesResult.kind === "value" ? experiencesResult.value : []
+    ).map(mapApiExperienceToView);
+    const apiReviews = (
+      reviewsResult.kind === "value" ? reviewsResult.value.items : []
+    ).map(mapApiReviewToView);
+
+    const sectionErrors: ProfileSectionErrors = {
+      ...(experiencesResult.kind === "error" ? { experience: true } : {}),
+      ...(portfolioResult.kind === "error" ? { works: true } : {}),
+      ...(certificatesResult.kind === "error" ? { certificates: true } : {}),
+      ...(reputationResult.kind === "error" ? { reputation: true } : {}),
+      ...(reviewsResult.kind === "error" ? { reviews: true } : {}),
+    };
+    const sectionUnavailable: ProfileSectionErrors = {
+      ...(experiencesResult.kind === "unsupported" ? { experience: true } : {}),
+      ...(portfolioResult.kind === "unsupported" ? { works: true } : {}),
+      ...(certificatesResult.kind === "unsupported"
+        ? { certificates: true }
+        : {}),
+      ...(reputationResult.kind === "unsupported" ? { reputation: true } : {}),
+      ...(reviewsResult.kind === "unsupported" ? { reviews: true } : {}),
+    };
+    const apiCertificates =
+      certificatesResult.kind === "value" ? certificatesResult.value : [];
+    const portfolio =
+      portfolioResult.kind === "value" ? portfolioResult.value : [];
+    const reputation =
+      reputationResult.kind === "value" ? reputationResult.value : undefined;
+    const profileTags = profile.tags ?? [];
+
+    return {
+      name:
+        [profile.firstName, profile.lastName].filter(Boolean).join(" ") ||
+        session.user.name,
+      faculty: profile.department?.faculty.name ?? "",
+      university:
+        profile.university === undefined ? "" : (profile.university ?? ""),
+      occupation: profile.occupation?.name || occupation || "",
+      academicYear:
+        profile.academicYear === null ? "" : String(profile.academicYear ?? ""),
+      department: profile.department?.name ?? "",
+      tags: profileTags.slice(0, PROFILE_TAG_LIMIT),
+      profileImage: profile.avatar
+        ? { uri: profile.avatar.url, cacheKey: profile.avatar.fileId }
+        : (session.user.image ?? ""),
+      about: profile.bio ?? "",
+      stats: reputation
+        ? {
+            totalQuests: reputation.totalQuests,
+            ratingAverage: reputation.rating.average,
+            ratingCount: reputation.rating.count,
+            distribution: reputation.rating.distribution,
+          }
+        : {
+            totalQuests: null,
+            ratingAverage: null,
+            ratingCount: 0,
+            distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+          },
+      experiences:
+        apiExperiences.length > 0 ? sortExperiences(apiExperiences) : [],
+      certificates: apiCertificates.map((certificate) =>
+        mapApiCertificateToView(certificate, locale)
+      ),
+      works: portfolio.length > 0 ? portfolio.map(mapApiPortfolioToView) : [],
+      reviews: apiReviews.length > 0 ? apiReviews : [],
+      sectionErrors,
+      sectionUnavailable,
+    };
+  }
+
+  async getEditData(options?: {
+    signal?: AbortSignal;
+  }): Promise<ProfileEditData> {
+    const studentApi = await authService.getStudentApi();
+    return studentApi.getEditData(options);
+  }
+
+  async updateBasics(update: ProfileBasicsUpdate): Promise<ProfileResponse> {
+    const studentApi = await authService.getStudentApi();
+    return studentApi.updateBasics(update);
+  }
+
+  async uploadAvatar(asset: UploadAsset): Promise<string | null> {
+    const studentApi = await authService.getStudentApi();
+    return studentApi.uploadAvatar(asset);
+  }
+
+  async createExperience(
+    entry: ExperienceCreate
+  ): Promise<ExperienceEntry | undefined> {
+    const studentApi = await authService.getStudentApi();
+    return studentApi.createExperience(entry);
+  }
+
+  async updateExperience(
+    id: string,
+    update: Partial<ExperienceCreate>
+  ): Promise<ExperienceEntry | undefined> {
+    const studentApi = await authService.getStudentApi();
+    return studentApi.updateExperience(id, update);
+  }
+
+  async deleteExperience(id: string): Promise<void> {
+    const studentApi = await authService.getStudentApi();
+    return studentApi.deleteExperience(id);
+  }
+
+  async createPortfolio(entry: PortfolioCreate): Promise<string> {
+    const studentApi = await authService.getStudentApi();
+    return studentApi.createPortfolio(entry);
+  }
+
+  async updatePortfolio(
+    id: string,
+    update: { title?: string; description?: string | null }
+  ): Promise<void> {
+    const studentApi = await authService.getStudentApi();
+    return studentApi.updatePortfolio(id, update);
+  }
+
+  async uploadPortfolioImage(id: string, asset: UploadAsset): Promise<void> {
+    const studentApi = await authService.getStudentApi();
+    return studentApi.uploadPortfolioImage(id, asset);
+  }
+
+  async deletePortfolioImage(id: string): Promise<void> {
+    const studentApi = await authService.getStudentApi();
+    return studentApi.deletePortfolioImage(id);
+  }
+
+  async deletePortfolio(id: string): Promise<void> {
+    const studentApi = await authService.getStudentApi();
+    return studentApi.deletePortfolio(id);
+  }
+
+  async createCertificate(entry: CertificateCreate): Promise<string> {
+    const studentApi = await authService.getStudentApi();
+    return studentApi.createCertificate(entry);
+  }
+
+  async updateCertificate(
+    id: string,
+    update: CertificateCreate
+  ): Promise<void> {
+    const studentApi = await authService.getStudentApi();
+    return studentApi.updateCertificate(id, update);
+  }
+
+  async uploadCertificateImage(id: string, asset: UploadAsset): Promise<void> {
+    const studentApi = await authService.getStudentApi();
+    return studentApi.uploadCertificateImage(id, asset);
+  }
+
+  async deleteCertificateImage(id: string): Promise<void> {
+    const studentApi = await authService.getStudentApi();
+    return studentApi.deleteCertificateImage(id);
+  }
+
+  async deleteCertificate(id: string): Promise<void> {
+    const studentApi = await authService.getStudentApi();
+    return studentApi.deleteCertificate(id);
+  }
+
+  mapProfileRecordsToDraft(input: ProfileDraftMapperInput): ProfileDraft {
+    const departmentId =
+      input.status.departmentId ?? input.profile.department?.id ?? "";
+    const faculty = input.options.faculties.find((item) =>
+      item.departments.some((department) => department.id === departmentId)
+    );
+    const firstName = input.status.firstName || input.profile.firstName;
+    const lastName = input.status.lastName || input.profile.lastName;
+
+    return {
+      name:
+        [firstName, lastName].filter(Boolean).join(" ") || input.fallbackName,
+      telephone: input.status.telephone ?? input.profile.telephone ?? "",
+      occupation: input.status.occupationId ?? "",
+      studentId: input.status.studentId ?? input.profile.studentId ?? "",
+      faculty: faculty?.id ?? "",
+      department: departmentId,
+      acceptedTerms: Boolean(input.status.termsAcceptedAt),
+      description: input.profile.bio ?? "",
+      profileImage: input.profile.avatar?.url ?? input.fallbackImage,
+      certificates: input.certificates.map(mapApiCertificateToDraft),
+      works: input.portfolio.map(mapApiPortfolioToDraft),
+      experiences: input.experiences.map(mapApiExperienceToDraft),
+    };
+  }
+}
+
+export const profileModule = new ProfileModule();

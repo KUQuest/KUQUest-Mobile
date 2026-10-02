@@ -1,0 +1,53 @@
+{
+  "total": 45,
+  "top": [
+    {
+      "file": "src/features/createQuest/presentation/createQuestPresentation.ts",
+      "count": 9
+    },
+    {
+      "file": "src/features/questBoard/teamAssemble/components/PartialGroupStartConsentSheet.tsx",
+      "count": 8
+    },
+    {
+      "file": "src/features/questBoard/work/components/QuestWorkStatusCard.tsx",
+      "count": 8
+    },
+    {
+      "file": "src/features/chat/workflow/useChatConversationController.ts",
+      "count": 5
+    },
+    {
+      "file": "src/features/questBoard/teamAssemble/components/TeamAssembleView.tsx",
+      "count": 5
+    },
+    {
+      "file": "src/features/questBoard/work/components/QuestWorkActionsCard.tsx",
+      "count": 3
+    },
+    {
+      "file": "src/features/navigation/roleWorkspaceNavigation.ts",
+      "count": 2
+    },
+    {
+      "file": "src/features/chat/ChatConversationScreen.tsx",
+      "count": 1
+    },
+    {
+      "file": "src/features/chat/ChatInboxScreen.tsx",
+      "count": 1
+    },
+    {
+      "file": "src/features/home/hirerHomeData.ts",
+      "count": 1
+    },
+    {
+      "file": "src/features/myQuests/myQuestService.ts",
+      "count": 1
+    },
+    {
+      "file": "src/features/questBoard/proof/components/ProofSubmissionSheet.tsx",
+      "count": 1
+    }
+  ]
+}

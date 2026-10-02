@@ -1,0 +1,98 @@
+import { BriefcaseBusiness } from "lucide-react-native";
+import { Text, View } from "@/tw";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import type { SupportedLocale } from "@/locales/locale";
+import styles from "../styles/profileComponentStyles";
+import type { ProfileExperience } from "./profileTypes";
+import { EmptyState, Section, type SectionNoticeProps } from "./ProfileSection";
+import { formatDisplayMonthYear } from "../profileFormatting";
+
+export function Experience({
+  experiences,
+  sectionTitle,
+  emptyText,
+  presentLabel,
+  locale,
+  emptyActionLabel,
+  onEditPress,
+  sectionBottomMargin,
+  errorText,
+  retryLabel,
+  onRetry,
+}: {
+  experiences: ProfileExperience[];
+  sectionTitle: string;
+  emptyText: string;
+  presentLabel: string;
+  locale: SupportedLocale;
+  emptyActionLabel?: string;
+  onEditPress?: () => void;
+  sectionBottomMargin?: number;
+} & SectionNoticeProps) {
+  const { colors } = useAppTheme();
+  return (
+    <Section
+      title={sectionTitle}
+      bottomMargin={sectionBottomMargin}
+      errorText={errorText}
+      retryLabel={retryLabel}
+      onRetry={onRetry}
+    >
+      {() =>
+        experiences.length > 0 ? (
+          experiences.map((experience) => (
+            <View
+              key={
+                experience.id ?? `${experience.title}-${experience.startedAt}`
+              }
+              className={styles.experience}
+            >
+              <View className={styles.timelineIcon}>
+                <BriefcaseBusiness
+                  color={colors.primaryDark}
+                  size={16}
+                  strokeWidth={2}
+                />
+              </View>
+              <View className={styles.experienceContent}>
+                <Text className={styles.itemTitle} maxFontSizeMultiplier={2}>
+                  {experience.title}
+                </Text>
+                {experience.employmentType ? (
+                  <Text className={styles.itemMeta} maxFontSizeMultiplier={2}>
+                    {experience.employmentType}
+                  </Text>
+                ) : null}
+                {experience.organization ? (
+                  <Text className={styles.itemMeta} maxFontSizeMultiplier={2}>
+                    {experience.organization}
+                  </Text>
+                ) : null}
+                <Text className={styles.itemMeta} maxFontSizeMultiplier={2}>
+                  {formatDisplayMonthYear(experience.startedAt, locale)} –{" "}
+                  {experience.endedAt
+                    ? formatDisplayMonthYear(experience.endedAt, locale)
+                    : presentLabel}
+                </Text>
+                {experience.description ? (
+                  <Text
+                    className={styles.itemDescription}
+                    maxFontSizeMultiplier={2}
+                  >
+                    {experience.description}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          ))
+        ) : (
+          <EmptyState
+            message={emptyText}
+            actionLabel={emptyActionLabel}
+            onAction={onEditPress}
+          />
+        )
+      }
+    </Section>
+  );
+}

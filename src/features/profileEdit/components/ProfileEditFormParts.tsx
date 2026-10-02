@@ -1,0 +1,243 @@
+import React, { useState } from "react";
+import * as ImagePicker from "expo-image-picker";
+import { CustomDatePickerModal } from "@/components/ui/CustomDatePickerModal";
+import { createQuestMessages } from "@/locales/createQuestMessages";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Image as ImageIcon,
+} from "lucide-react-native";
+import { useLocale } from "@/features/preferences/localeStore";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { Image, Pressable, SafeAreaView, Text, View } from "../../../tw";
+import styles from "../profileEditStyles";
+import {
+  profileEditMessages,
+  type ProfileEditMessages,
+} from "../../../locales/profileEditMessages";
+import { limitImagePixels } from "@/api/fileUpload";
+
+export function ScreenHeader({
+  title,
+  backLabel,
+  onBack,
+  action,
+}: {
+  title: string;
+  backLabel: string;
+  onBack: () => void;
+  action?: React.ReactNode;
+}) {
+  const { colors } = useAppTheme();
+  return (
+    <View className={styles.header}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={backLabel}
+        className={styles.backButton}
+        onPress={onBack}
+      >
+        <ArrowLeft color={colors.primaryDeep} size={24} strokeWidth={2.2} />
+      </Pressable>
+      <Text accessibilityRole="header" className={styles.headerTitle}>
+        {title}
+      </Text>
+      {action ?? <View className={styles.headerAction} />}
+    </View>
+  );
+}
+
+export function SaveBar({
+  label,
+  disabled,
+  onPress,
+}: {
+  label: string;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <SafeAreaView edges={["bottom"]} className={styles.saveBar}>
+      <View className={styles.saveBarContent}>
+        <View className={styles.saveBarInner}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            accessibilityState={{ disabled }}
+            disabled={disabled}
+            className="min-h-[48px] items-center justify-center rounded-ku-pill bg-ku-primary"
+            onPress={onPress}
+          >
+            <Text className="font-ku-semibold text-ku-body text-ku-on-primary">
+              {label}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+export function ImagePickerField({
+  label,
+  uri,
+  placeholder,
+  removeLabel,
+  onChange,
+  onError,
+}: {
+  label: string;
+  uri: string;
+  placeholder: string;
+  removeLabel: string;
+  onChange: (uri: string) => void;
+  onError: (message: string) => void;
+}) {
+  const { colors } = useAppTheme();
+  const { locale } = useLocale();
+  const messages = profileEditMessages[locale];
+  const [failedUri, setFailedUri] = useState<string | null>(null);
+  const chooseImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.7,
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+      const asset = result.assets[0];
+      if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
+        onError(messages.fileTooLarge);
+        return;
+      }
+      const limited = await limitImagePixels({
+        uri: asset.uri,
+        type: asset.mimeType ?? "image/jpeg",
+        width: asset.width,
+        height: asset.height,
+      });
+      onChange(limited.uri);
+    } catch {
+      onError(messages.filePickerError);
+    }
+  };
+
+  return (
+    <View className="gap-ku-sm">
+      <Text className="font-ku-semibold text-ku-label text-ku-text-secondary">
+        {label}
+      </Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={uri ? label : placeholder}
+        className={styles.imagePicker}
+        style={{ aspectRatio: 4 / 3 }}
+        onPress={() => void chooseImage()}
+      >
+        {uri && failedUri !== uri ? (
+          <Image
+            source={{ uri }}
+            onError={() => setFailedUri(uri)}
+            className={styles.imagePreview}
+            contentFit="cover"
+          />
+        ) : (
+          <View className="flex-1 items-center justify-center gap-ku-xs">
+            <ImageIcon color={colors.textMuted} size={24} />
+            <Text className={styles.imagePickerText}>{placeholder}</Text>
+          </View>
+        )}
+      </Pressable>
+      {uri ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={removeLabel}
+          className="min-h-[48px] justify-center self-start"
+          onPress={() => onChange("")}
+        >
+          <Text className="font-ku-semibold text-ku-meta text-ku-primary">
+            {removeLabel}
+          </Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+export function DateField({
+  label,
+  value,
+  placeholder,
+  onChange,
+  error,
+  clearLabel,
+  onClear,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  onChange: (value: string) => void;
+  error?: string;
+  clearLabel?: string;
+  onClear?: () => void;
+}) {
+  const { colors } = useAppTheme();
+  const { locale } = useLocale();
+  const [open, setOpen] = useState(false);
+  const today = new Date();
+  const maximumDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  return (
+    <View className={styles.dateField}>
+      <Text className="mb-ku-6 font-ku-semibold text-ku-label text-ku-text-secondary">
+        {label}
+      </Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${label}: ${value || placeholder}`}
+        accessibilityState={{ expanded: open }}
+        className={styles.dateButton}
+        onPress={() => setOpen(true)}
+      >
+        <Text className={value ? styles.dateText : styles.datePlaceholder}>
+          {value || placeholder}
+        </Text>
+        <CalendarDays color={colors.textMuted} size={18} />
+      </Pressable>
+      {error ? (
+        <Text
+          accessibilityRole="alert"
+          className="mt-ku-xs font-ku-regular text-ku-label text-ku-danger"
+        >
+          {error}
+        </Text>
+      ) : null}
+      {value && onClear && clearLabel ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={clearLabel}
+          className={styles.clearDate}
+          onPress={onClear}
+        >
+          <Text className={styles.clearDateText}>{clearLabel}</Text>
+        </Pressable>
+      ) : null}
+      {open ? (
+        <CustomDatePickerModal
+          title={label}
+          value={value}
+          maximumDate={maximumDate}
+          locale={locale}
+          messages={createQuestMessages[locale]}
+          onConfirm={(date) => {
+            onChange(date);
+            setOpen(false);
+          }}
+          onClose={() => setOpen(false)}
+        />
+      ) : null}
+    </View>
+  );
+}
+
+export type { ProfileEditMessages };

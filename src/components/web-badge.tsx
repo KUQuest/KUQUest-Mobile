@@ -1,43 +1,39 @@
-import { version } from 'expo/package.json';
-import { Image } from 'expo-image';
-import { useColorScheme, StyleSheet } from 'react-native';
+import { version } from "expo/package.json";
 
-import { ThemedText } from './themed-text';
-import { ThemedView } from './themed-view';
+import { ThemedText } from "./themed-text";
 
-import { Spacing } from '@/constants/theme';
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { Image, View } from "@/tw";
 
 export function WebBadge() {
-  const scheme = useColorScheme();
+  const { scheme, colors } = useAppTheme();
 
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="code" themeColor="textSecondary" style={styles.versionText}>
+    <View
+      className={styles.container}
+      style={{ backgroundColor: colors.background }}
+    >
+      <ThemedText
+        type="code"
+        themeColor="textSecondary"
+        className={styles.versionText}
+      >
         v{version}
       </ThemedText>
       <Image
         source={
-          scheme === 'dark'
-            ? require('@/assets/images/expo-badge-white.png')
-            : require('@/assets/images/expo-badge.png')
+          scheme === "dark"
+            ? require("@/assets/images/expo-badge-white.png")
+            : require("@/assets/images/expo-badge.png")
         }
-        style={styles.badgeImage}
+        className={styles.badgeImage}
       />
-    </ThemedView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    padding: Spacing.five,
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  versionText: {
-    textAlign: 'center',
-  },
-  badgeImage: {
-    width: 123,
-    aspectRatio: 123 / 24,
-  },
-});
+const styles = {
+  container: "items-center gap-ku-sm p-ku-xl",
+  versionText: "text-center",
+  badgeImage: "aspect-[5.125] w-[123px]",
+} as const;

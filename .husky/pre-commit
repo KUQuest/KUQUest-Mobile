@@ -1,0 +1,7 @@
+bunx lint-staged
+bun run check-nativewind
+bun run check-enum-literals
+bun run check-routes
+bun run typecheck
+bun run lint
+bun run test

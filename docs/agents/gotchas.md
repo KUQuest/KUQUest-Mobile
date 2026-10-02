@@ -1,0 +1,196 @@
+# Gotchas
+
+Mistakes agents made in this repo and the rules they produced, so the same failure is not repeated. Newest first. Any agent working here reads this file; any agent may append to it.
+
+## Adding a gotcha
+
+- Add a gotcha when a mistake cost real rework **and** code, tests, or automated checks cannot prevent it recurring on their own.
+- Write the rule, not the story: **What happened** (1-2 lines) -> **Root cause** (1 line) -> **Rule** (imperative, verifiable).
+- One topic per entry; search this file first, no duplicates.
+- Date every entry. On review, prune entries the codebase or environment has made obsolete - stale rules are worse than none.
+
+## Entries
+
+### 2026-10-02 — Candidate Team and application reads 404 after the Quest leaves OPEN
+
+**What happened**: A `GROUP + CANDIDATE` Team Leader had no Start Work button, and Hirer Home showed a permanent partial-load banner for started Candidate Quests.
+
+**Root cause**: Staging answers `404 QUEST_NOT_FOUND` for `GET /api/v2/quests/{id}/teams` and `/applications` once the Quest is `QUEST_ASSIGNED` or later, for the Hirer and Team Members alike. Neither the Assignment nor the participation detail names the Team Leader, so the leader is unknowable on the client.
+
+**Rule**: Outside a tolerant read such as `optionalResource` in `getLiveSnapshot`, read Teams and applications only while the Quest is `QUEST_OPEN`. Never gate a leader-only action (Start Work, proof, confirmation) on a readable Team; with no Team, `teamRole` is `UNKNOWN`, the shared Work Hub offers the action, and the server enforces it (`START_WORK_NOT_REQUIRED`). `TeamLeaderWorkScreen` and `TeamMemberWorkScreen` only render once the backend exposes the leader (`docs/plans/backend-requirements-ux-deadlines.md` B9).
+
+### 2026-10-01 — Jest fake timer hangs depend on the Node runtime
+
+**What happened**: Countdown tests passed locally under Node 26 but timed out in CI; changing Jest worker counts did not resolve the failures.
+
+**Root cause**: Faking `setImmediate` stalls the async React renderer under Node 22 when countdown tests advance the clock.
+
+**Rule**: Keep `queueMicrotask` and `setImmediate` in Jest's `fakeTimers.doNotFake`. Reproduce CI-only timer failures with CI's Node version before changing worker counts or test timeouts.
+
+### 2026-09-28 — Proof draft replacement has no atomic API
+
+**What happened**: Replacing a Worker proof draft can require deleting the old server draft and creating a new one because the API exposes no atomic replacement operation.
+
+**Root cause**: The OpenAPI contract defines separate create, update, and delete draft operations without duplicate-draft or transactional replacement semantics.
+
+**Rule**: Create replacement drafts before deleting old drafts; clean up the replacement when old-draft deletion fails. Do not reorder or invent an atomic endpoint until backend contract defines replacement semantics.
+
+### 2026-09-26 — Chat sockets sent Messages as another Member
+
+**What happened**: On a device signed in as the Hirer, every Work Chat Message sent over the socket was stored with the Worker as sender; REST reads stayed correct.
+
+**Root cause**: React Native puts the native cookie jar's cookie ahead of `openServerSocket`'s `Cookie` header, and the server authenticates the first one. Staging test-auth used credentialed `expo/fetch`, which left a stale staging session in the jar.
+
+**Rule**: Send every HTTP request with `credentials: "omit"`; the session lives only in SecureStore. When a socket acts as the wrong Member, dump `app_webview/Default/Cookies` with `adb exec-out run-as <applicationId>` and resolve the token with `GET /api/auth/get-session`.
+
+### 2026-09-26 — Payout history silently dropped every Payout
+
+**What happened**: `WalletApi.listPayouts` parsed `data.payouts`, but `GET /api/v1/payouts` returns `data.items`; a catch-all `return []` hid the failure, and a test fixture copied the wrong shape.
+
+**Root cause**: Resource methods hand-parsed envelopes and swallowed errors, so a contract mismatch looked like an empty list.
+
+**Rule**: Call endpoints only through `ApiClient.get`/`send` with the `data` schema taken from `bun run query-api` (not from fixtures or existing code); never catch-all to an empty value in `src/api` — let callers decide, as `getTransactionHistory` does with `Promise.allSettled`.
+
+### 2026-09-26 — Quest event sockets closed silently with 4403
+
+**What happened**: A Hirer Publish never reached the Worker Board in realtime; the Worker saw the Quest only after a manual refresh.
+
+**Root cause**: React Native adds `Origin: https://<api-host>` when a WebSocket sets none. The Quest, Candidate-roster, and Board event endpoints reject that Origin with `4403 Origin not allowed`, which the client treats as terminal. The server accepts `kuquestmobile://` or no Origin.
+
+**Rule**: Open every API WebSocket through `openServerSocket` (`src/api/ServerSocket.ts`), which sends `Origin: kuquestmobile://` with `Cookie`; never construct `WebSocket` directly. Before blaming the backend, probe a staging socket with the staging test-auth cookie and the Origin the app sends.
+
+### 2026-09-25 — Shared screens stayed sage in the Worker workspace
+
+**What happened**: The redesigned Money tab and Profile hero kept Hirer sage after switching to the Worker workspace.
+
+**Root cause**: Only the ramp tokens (`ku-primary`, `ku-primary-dark`, `ku-primary-deep`, `ku-primary-subtle`, `ku-primary-border`, `ku-on-primary`, `ku-surface-accent`, `ku-border-accent`) change with the workspace; `ku-hirer*` / `ku-worker*` are fixed. The `colors` Proxy from `src/theme/colors.ts` reads the current ramp but never re-renders, so mounted tabs kept Hirer icons.
+
+**Rule**: On surfaces both workspaces open, use only ramp tokens; in components read colors via `useAppTheme().colors`, not the `colors` import. Every ramp token must stay in the `inlineVariables.exclude` list in `metro.config.js`.
+
+### 2026-09-24 — Changing `font_scale` restarts the app at Home
+
+**What happened**: `adb shell settings put system font_scale 1.3` during a smoke check dropped the navigation stack; the next screenshot showed Hirer Home instead of the screen under test.
+
+**Root cause**: `MainActivity` `android:configChanges` omits `fontScale`, so Android recreates the Activity (unlike `uiMode`, which dark-mode toggles survive).
+
+**Rule**: Set `font_scale` first, then navigate or deep-link to the screen under test; restore `1.0` afterwards and expect another restart.
+
+### 2026-09-24 — Unawaited React Native test events leak `act()` scopes
+
+**What happened**: A Hirer card test passed alone, but later tests rendered empty after it pressed three controls; awaiting the presses made the full file pass.
+
+**Root cause**: React Native Testing Library v14 returns a Promise from `fireEvent.press`, so unawaited presses leave overlapping React `act()` scopes.
+
+**Rule**: In async component tests, `await fireEvent.press(...)` (and other `fireEvent` helpers) before asserting or rendering the next case. Do not work around leakage by reordering tests.
+
+### 2026-09-23 — Jest runs from `bash` hang and report misleading counts
+
+**What happened**: `bunx jest` through the agent shell showed "N passed" summaries while a test had failed, and runs never exited, so later runs overwrote the same `--outputFile` concurrently.
+
+**Root cause**: The shell's output filter condenses Jest output, and Jest keeps open handles after `HomeScreen` query tests.
+
+**Rule**: Run Jest with `--forceExit --json --outputFile=<unique path>` and read failures from the JSON (or run it via a subprocess in `eval`); never trust the condensed summary.
+
+### 2026-09-23 — `contentContainerStyle` replaces `contentContainerClassName`
+
+**What happened**: The chat message list and the Worker Work Management scroll lost every class-based padding on device (content touching the screen edges and status bar). Jest passed because CSS is mocked.
+
+**Root cause**: `@/tw` maps `contentContainerClassName` onto `contentContainerStyle`; an inline `contentContainerStyle` on the same list replaces the class styles instead of merging.
+
+**Rule**: Never pass both props to one `ScrollView`/`FlatList`. Put static padding in the class or on an inner wrapper `View`, and keep only runtime values (safe-area or nav insets) in `contentContainerStyle`. Confirm the layout with a device screenshot.
+
+### 2026-09-21 — `bun x tsc --noEmit` can pass vacuously; use `bun run typecheck`
+
+**What happened**: Repeated `bun x tsc --noEmit` invocations reported "Build successful (0 units compiled)" while the committed code had type errors that husky's `tsc --noEmit` then caught, costing three failed commits.
+
+**Root cause**: The shell wrapper resolved a different binary/filter path than the repo's `tsc --noEmit` script and compiled nothing.
+
+**Rule**: Type-check with `bun run typecheck` (the repo script), never `bun x tsc --noEmit` directly.
+
+### 2026-09-21 — An online Android device can still fail native smoke
+
+**What happened**: `adb devices` showed a ready device, but native validation was blocked by an active agent-device lease, an occupied Metro port, and a stale/broken bundle.
+
+**Root cause**: ADB connectivity, the agent-device lease, Metro health, and JavaScript bundle freshness are separate conditions.
+
+**Rule**: Run `bun run mobile:android:preflight` before native work, reuse only a verified session and healthy project-owned Metro listener, then run `bun run check-android-workspace-surface` after reload.
+
+### 2026-09-20 — Agent-device MCP paths use one mounted prefix
+
+**What happened**: Calls addressed `xd://mcp__mcp__agent_device_*` and failed before reaching the device tool.
+
+**Root cause**: The mounted route already includes the `mcp__` prefix.
+
+**Rule**: Use `xd://mcp__agent_device_<command>` exactly once; retry a duplicated-prefix failure with the corrected route.
+
+### 2026-09-19 — Shared Jest helpers do not belong under `__tests__/`
+
+**What happened**: A shared test helper placed under `__tests__/` was auto-collected and failed with “Your test suite must contain at least one test.”
+
+**Root cause**: Jest treats every file under a `__tests__/` directory as a test suite.
+
+**Rule**: Put shared test helpers in `src/testing/`, such as `src/testing/queryTestUtils.tsx`, rather than under `__tests__/`.
+
+### 2026-09-19 — Query keys must match the inputs read by their query functions
+
+**What happened**: Chat message queries omitted `viewerId` and could serve another user's cached presentation, while Quest Board queries included unused filters and fragmented identical server data across cache entries.
+
+**Root cause**: The query keys did not contain exactly the inputs their `queryFn` used.
+
+**Rule**: Include every input read by `queryFn` and exclude every input the fetch ignores; follow `src/features/chat/api/chatQueries.ts` and `src/features/questBoard/api/questBoardQueries.ts`.
+
+### 2026-09-19 — Inline empty-array fallbacks break dependency identity
+
+**What happened**: `const xs = query.data ?? []` created a new array on every render and silently retriggered downstream `useMemo` and `useEffect` dependencies.
+
+**Root cause**: The inline `[]` fallback has a new identity on every evaluation.
+
+**Rule**: Preserve the fallback identity with `useMemo(() => query.data ?? [], [query.data])`.
+
+### 2026-09-18 — Debug-build deep links use a different URI scheme than app.json
+
+**What happened**: `adb shell am start -a android.intent.action.VIEW -d "kuquestmobile://..."` (the scheme in `app.json`) never opened the target route on the dev-client build; it landed on unrelated default screens.
+
+**Root cause**: The debug build registers `kuquestmobile-debug://`, not `app.json`'s `"scheme": "kuquestmobile"`.
+
+**Rule**: Before deep-linking into a dev-client/debug build, confirm the registered scheme with `adb shell dumpsys package <applicationId> | grep -A3 "android.intent.action.VIEW"` rather than assuming the manifest value.
+
+### 2026-09-18 — `adb shell am force-stop` breaks the Metro connection on a dev-client app
+
+**What happened**: Force-stopping the app before a cold-start deep link caused a ~90 second freeze on the splash screen, traced to a lost Metro/dev-server websocket that only recovered after a retry backoff.
+
+**Root cause**: Force-stop kills the dev client's live Metro connection; reconnecting on cold start is slow and not guaranteed.
+
+**Rule**: Don't `force-stop` a running dev-client app as a debugging shortcut. Retry a deep link with a warm `adb shell am start -a android.intent.action.VIEW -d "<uri>" <applicationId>` against the already-running instance instead.
+
+### 2026-09-18 — `scroll`/`swipe` don't reliably page a horizontal paged carousel
+
+**What happened**: Repeated `scroll` and `swipe` tool calls against `hirer-quest-carousel` (a `pagingEnabled` horizontal `ScrollView`) appeared to not move it.
+
+**Root cause**: Those tools didn't carry enough velocity/travel to cross the carousel's snap threshold.
+
+**Rule**: Page a `pagingEnabled` horizontal `ScrollView` with the `gesture` tool, `kind: "fling"`, an explicit `origin` near the leading/trailing edge, and `distance: 900`.
+
+### 2026-09-17 — Keep file recovery scoped to the current worktree
+
+**What happened**: A screen migration required repeated restoration after extraction artifacts changed tracked screens. One recovery attempt used `git show ... | sponge`, which could overwrite active edits.
+
+**Root cause**: File recovery replaced working-tree state instead of applying a bounded edit against re-read content.
+
+**Rule**: Re-read before recovery and use a scoped edit. Main owns Git restoration; when a baseline replacement is necessary, restore only the explicitly owned path and reapply the requested changes. Keep `git show ... | sponge` out of worktree recovery.
+
+### 2026-09-17 — Captured command output can be summarized, truncated, or replaced
+
+**What happened**: Three `bun run test` runs in an agent harness reported `✅ 54 passed` while the suite was `Test Suites: 1 failed, 54 passed, 55 total`; a false "tests green" claim reached a PR body. In a later session the wrapper replaced command output entirely — several runs returned only `✓ Build successful (0 units compiled)` (even for `cat` and `git log`), and `bun x jest <file>` reported `✅ 0 passed` while nothing ran.
+
+**Root cause**: The harness wrapper summarizes or replaces captured stdout; it can drop failures or report a count for a run that never happened.
+
+**Rule**: Verify an important command by capturing its output to a file and reading that file (`cmd > /tmp/x.log 2>&1`, then read it). Treat a bare passing count, a suspiciously short result, or output you did not expect as unverified and re-run once through the capture pattern. For scoped Jest runs, use `./node_modules/.bin/jest <file> --silent > /tmp/x.log 2>&1`; `bun x jest` can misreport.
+
+### 2026-09-17 — The pre-commit hook reformats every staged file in full
+
+**What happened**: A 3-line import edit to an unformatted legacy file (`CandidateReviewSheet.tsx`) was committed as 519 lines.
+
+**Root cause**: `lint-staged` runs Prettier over each staged file, and much of the repo predates the formatter.
+
+**Rule**: Run `bun run format` as its own commit, never inside a feature change; when a diff is dominated by reformatting, check the file was already clean before editing it.

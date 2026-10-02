@@ -1,0 +1,460 @@
+import { act, fireEvent } from "@testing-library/react-native";
+import { renderWithQueryClient } from "@/testing/queryTestUtils";
+import React from "react";
+import { BottomNav } from "../BottomNav";
+import {
+  getRoleWorkspaceAccessibilityLabel,
+  getRoleWorkspaceNavigation,
+  hirerNavigationItems,
+  workerNavigationItems,
+} from "@/features/navigation/roleWorkspaceNavigation";
+import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
+import { navigationMessages } from "../../../locales/navigationMessages";
+import { StyleSheet } from "react-native";
+
+const mockUseProfileQuery = jest.fn();
+const mockUseSessionQuery = jest.fn();
+const mockUseHasUnreadChatQuery = jest.fn();
+
+jest.mock("@/features/profile/api/profileQueries", () => ({
+  useProfileQuery: (...args: unknown[]) => mockUseProfileQuery(...args),
+}));
+jest.mock("@/features/auth/sessionQueries", () => ({
+  useSessionQuery: (...args: unknown[]) => mockUseSessionQuery(...args),
+}));
+
+jest.mock("@/features/chat/api/chatQueries", () => ({
+  useHasUnreadChatQuery: (...args: unknown[]) =>
+    mockUseHasUnreadChatQuery(...args),
+}));
+
+jest.mock("lucide-react-native", () => ({
+  BriefcaseBusiness: () => null,
+  CheckSquare: () => null,
+  CircleUserRound: () => null,
+  LayoutDashboard: () => null,
+  MessageSquare: () => null,
+  Plus: () => null,
+  Wallet: () => null,
+  WalletCards: () => null,
+}));
+
+jest.mock("@/features/preferences/localeStore", () => ({
+  useLocale: () => ({ locale: "en", setLocale: jest.fn() }),
+}));
+
+describe("authenticated primary navigation", () => {
+  beforeEach(() => {
+    useRoleWorkspaceStore.setState({ workspace: "hirer" });
+    mockUseProfileQuery.mockReset();
+    mockUseProfileQuery.mockReturnValue({ data: undefined });
+    mockUseSessionQuery.mockReset();
+    mockUseSessionQuery.mockReturnValue({
+      data: { user: { id: "viewer-1" } },
+    });
+    mockUseHasUnreadChatQuery.mockReset();
+    mockUseHasUnreadChatQuery.mockReturnValue({ data: false });
+  });
+
+  it("keeps the approved five-destination order", () => {
+    expect(getRoleWorkspaceNavigation("hirer")).toBe(hirerNavigationItems);
+    expect(hirerNavigationItems.map((item) => item.routeName)).toEqual([
+      "index",
+      "money",
+      "create",
+      "chat",
+      "profile",
+    ]);
+  });
+
+  it("marks Create as the central action", () => {
+    expect(
+      hirerNavigationItems.find((item) => item.routeName === "create")
+    ).toMatchObject({ isCreate: true });
+  });
+
+  it("keeps the approved five-destination order for Worker workspace", () => {
+    expect(getRoleWorkspaceNavigation("worker")).toBe(workerNavigationItems);
+    expect(workerNavigationItems.map((item) => item.routeName)).toEqual([
+      "index",
+      "money",
+      "my-quests",
+      "chat",
+      "profile",
+    ]);
+  });
+
+  it("marks Work Management as the central action in Worker workspace", () => {
+    expect(
+      workerNavigationItems.find((item) => item.routeName === "my-quests")
+    ).toMatchObject({ isCreate: true });
+  });
+
+  it("provides the approved English and Thai accessibility labels", () => {
+    expect(navigationMessages.en).toMatchObject({
+      board: "Home",
+      boardTitle: "Quest Board",
+      money: "Money",
+      create: "Create Quest",
+      chat: "Chat",
+      profile: "Profile",
+      workManagement: "Work Management",
+    });
+    expect(navigationMessages.th).toMatchObject({
+      board: "หน้าหลัก",
+      boardTitle: "กระดานเควสต์",
+      money: "กระเป๋าเงิน",
+      create: "สร้างเควสต์",
+      chat: "แชต",
+      profile: "โปรไฟล์นักศึกษา",
+      workManagement: "จัดการงาน",
+    });
+    expect(getRoleWorkspaceAccessibilityLabel("hirer", "en")).toBe(
+      "Hirer workspace"
+    );
+    expect(getRoleWorkspaceAccessibilityLabel("worker", "th")).toBe(
+      "พื้นที่ทำงานผู้ปฏิบัติงาน"
+    );
+  });
+
+  it("exposes icon-only destinations as accessible tabs and actions", async () => {
+    const routes = hirerNavigationItems.map((item) => ({
+      key: `${item.routeName}-key`,
+      name: item.routeName,
+    }));
+    const view = await renderWithQueryClient(
+      React.createElement(BottomNav, {
+        state: { index: 0, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate: jest.fn(),
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
+    );
+
+    expect(view.getByTestId("tab-index").props.accessibilityRole).toBe("tab");
+    expect(view.getByTestId("tab-index").props.accessibilityState).toEqual({
+      selected: true,
+    });
+    expect(view.getByTestId("tab-profile").props.accessibilityState).toEqual({
+      selected: false,
+    });
+    expect(view.getByTestId("tab-create").props.accessibilityRole).toBe(
+      "button"
+    );
+    expect(
+      view.getByTestId("tab-create").props.accessibilityState.selected
+    ).toBeUndefined();
+    expect(view.getByTestId("tab-create").props.accessibilityLabel).toBe(
+      "Create Quest"
+    );
+    expect(view.getByLabelText("Hirer workspace")).toBeTruthy();
+  });
+
+  it("launches Create when it is already the current route", async () => {
+    const routes = hirerNavigationItems.map((item) => ({
+      key: `${item.routeName}-key`,
+      name: item.routeName,
+    }));
+    const navigate = jest.fn();
+    const view = await renderWithQueryClient(
+      React.createElement(BottomNav, {
+        state: { index: 2, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate,
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
+    );
+
+    await fireEvent.press(view.getByTestId("tab-create"));
+
+    expect(navigate).toHaveBeenCalledWith("create", undefined);
+  });
+
+  it("marks the profile tab selected when the profile route is focused", async () => {
+    const routes = hirerNavigationItems.map((item) => ({
+      key: `${item.routeName}-key`,
+      name: item.routeName,
+    }));
+    const view = await renderWithQueryClient(
+      React.createElement(BottomNav, {
+        state: { index: 4, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate: jest.fn(),
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
+    );
+
+    expect(view.getByTestId("tab-profile").props.accessibilityState).toEqual({
+      selected: true,
+    });
+    expect(view.getByLabelText("Profile selected")).toBeTruthy();
+    expect(view.getByTestId("tab-index").props.accessibilityState).toEqual({
+      selected: false,
+    });
+  });
+
+  it("renders Worker navigation items when in Worker workspace", async () => {
+    const routes = [
+      { key: "index-key", name: "index" },
+      { key: "money-key", name: "money" },
+      { key: "create-key", name: "create" },
+      { key: "my-quests-key", name: "my-quests" },
+      { key: "chat-key", name: "chat" },
+      { key: "profile-key", name: "profile" },
+    ];
+
+    useRoleWorkspaceStore.setState({ workspace: "worker" });
+    const view = await renderWithQueryClient(
+      React.createElement(BottomNav, {
+        state: { index: 0, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate: jest.fn(),
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
+    );
+
+    expect(view.getByTestId("tab-my-quests")).toBeTruthy();
+    expect(view.queryByTestId("tab-create")).toBeNull();
+    expect(view.getByTestId("tab-index")).toBeTruthy();
+    expect(view.getByTestId("tab-money")).toBeTruthy();
+    expect(view.getByTestId("tab-chat")).toBeTruthy();
+    expect(view.getByTestId("tab-profile")).toBeTruthy();
+    expect(view.getByLabelText("Worker workspace")).toBeTruthy();
+  });
+
+  it("removes visible navigation text while preserving labels for assistive technology", async () => {
+    const routes = hirerNavigationItems.map((item) => ({
+      key: `${item.routeName}-key`,
+      name: item.routeName,
+    }));
+    const view = await renderWithQueryClient(
+      React.createElement(BottomNav, {
+        state: { index: 0, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate: jest.fn(),
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
+    );
+
+    expect(view.queryByText("Create Quest")).toBeNull();
+    expect(view.queryByText("Home")).toBeNull();
+    expect(view.queryByText("Money")).toBeNull();
+    expect(view.queryByText("Chat")).toBeNull();
+    expect(view.queryByText("Profile")).toBeNull();
+    expect(view.getByTestId("tab-index").props.accessibilityLabel).toBe("Home");
+    expect(view.getByTestId("tab-money").props.accessibilityLabel).toBe(
+      "Money"
+    );
+    expect(view.getByTestId("tab-chat").props.accessibilityLabel).toBe("Chat");
+    expect(view.getByTestId("tab-profile").props.accessibilityLabel).toBe(
+      "Profile"
+    );
+  });
+
+  it("shows the Chat unread badge when unread Chat activity exists", async () => {
+    mockUseHasUnreadChatQuery.mockReturnValue({ data: true });
+    const routes = hirerNavigationItems.map((item) => ({
+      key: `${item.routeName}-key`,
+      name: item.routeName,
+    }));
+    const view = await renderWithQueryClient(
+      React.createElement(BottomNav, {
+        state: { index: 0, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate: jest.fn(),
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
+    );
+
+    expect(view.getByTestId("tab-chat-unread-badge")).toBeTruthy();
+    expect(view.getByTestId("tab-chat").props.accessibilityLabel).toBe(
+      "Chat, Unread messages"
+    );
+  });
+
+  it("hides the Chat unread badge when both inbox sections are read", async () => {
+    const routes = hirerNavigationItems.map((item) => ({
+      key: `${item.routeName}-key`,
+      name: item.routeName,
+    }));
+    const view = await renderWithQueryClient(
+      React.createElement(BottomNav, {
+        state: { index: 0, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate: jest.fn(),
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
+    );
+
+    expect(view.queryByTestId("tab-chat-unread-badge")).toBeNull();
+    expect(view.getByTestId("tab-chat").props.accessibilityLabel).toBe("Chat");
+  });
+
+  it("renders the app profile avatar instead of the Google session avatar", async () => {
+    mockUseProfileQuery.mockReturnValue({
+      data: {
+        profileImage: {
+          uri: "https://cdn.example.com/profile-avatar.png",
+          cacheKey: "profile-avatar-1",
+        },
+      },
+    });
+
+    const routes = hirerNavigationItems.map((item) => ({
+      key: `${item.routeName}-key`,
+      name: item.routeName,
+    }));
+    const view = await renderWithQueryClient(
+      React.createElement(BottomNav, {
+        state: { index: 0, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate: jest.fn(),
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
+    );
+
+    const avatar = await view.findByTestId("tab-profile-avatar");
+    expect(avatar.props.source).toEqual([
+      { uri: "https://cdn.example.com/profile-avatar.png" },
+    ]);
+    expect(mockUseProfileQuery).toHaveBeenCalledWith("en");
+  });
+
+  it("renders no avatar when the profile has none, rather than the Google session image", async () => {
+    mockUseProfileQuery.mockReturnValue({
+      data: {
+        profileImage: "https://accounts.google.com/google-avatar.png",
+      },
+    });
+
+    const routes = hirerNavigationItems.map((item) => ({
+      key: `${item.routeName}-key`,
+      name: item.routeName,
+    }));
+    const view = await renderWithQueryClient(
+      React.createElement(BottomNav, {
+        state: { index: 0, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate: jest.fn(),
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
+    );
+
+    expect(view.queryByTestId("tab-profile-avatar")).toBeNull();
+  });
+
+  it("keeps workspace switching out of primary navigation", async () => {
+    const routes = hirerNavigationItems.map((item) => ({
+      key: `${item.routeName}-key`,
+      name: item.routeName,
+    }));
+    const navigate = jest.fn();
+
+    useRoleWorkspaceStore.setState({ workspace: "hirer" });
+    const view = await renderWithQueryClient(
+      React.createElement(BottomNav, {
+        state: { index: 0, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate,
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
+    );
+
+    const profileTab = view.getByTestId("tab-profile");
+    await fireEvent.press(profileTab);
+    await fireEvent.press(profileTab);
+
+    expect(useRoleWorkspaceStore.getState().workspace).toBe("hirer");
+    expect(navigate).toHaveBeenCalledTimes(2);
+  });
+
+  it("tints the navigation surface and selected destination with the active workspace", async () => {
+    const routes = hirerNavigationItems.map((item) => ({
+      key: `${item.routeName}-key`,
+      name: item.routeName,
+    }));
+    const view = await renderWithQueryClient(
+      React.createElement(BottomNav, {
+        state: { index: 0, routes } as never,
+        descriptors: Object.fromEntries(
+          routes.map((route) => [route.key, { options: {} }])
+        ) as never,
+        navigation: {
+          emit: jest.fn(() => ({ defaultPrevented: false })),
+          navigate: jest.fn(),
+        } as never,
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      })
+    );
+
+    const getWorkspaceColors = () => {
+      const surface = StyleSheet.flatten(
+        view.getByTestId("bottom-nav-surface").props.style
+      );
+      const selected = StyleSheet.flatten(
+        view.getByTestId("tab-index").props.style
+      );
+      return [surface.backgroundColor, selected.backgroundColor];
+    };
+    const hirerColors = getWorkspaceColors();
+
+    await act(async () => {
+      await useRoleWorkspaceStore.getState().switchWorkspace("worker");
+    });
+
+    const workerColors = getWorkspaceColors();
+    expect(workerColors).not.toEqual(hirerColors);
+    expect(workerColors[0]).toBe("#F8ECE8");
+    expect(workerColors[1]).toBe("#C9A79A");
+  });
+});

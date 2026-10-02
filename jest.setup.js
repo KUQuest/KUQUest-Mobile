@@ -1,5 +1,13 @@
+const React = require("react");
 const { jest } = require("@jest/globals");
-const { View } = require("react-native");
+const { View, Pressable, Text } = require("react-native");
+
+// package.json keeps queueMicrotask and setImmediate real when timers are faked.
+// React's async renderer needs those queues to flush while countdown tests
+// advance the clock; faking setImmediate stalls them under Node 22.
+
+// React Native's jest Networking mock lacks clearCookies (src/api/ServerSocket.ts).
+require("react-native").NativeModules.Networking.clearCookies = jest.fn();
 
 // reanimated 4 / worklets 0.10's official jest mocks still hit native-module
 // init code outside a real app runtime (upstream immaturity, both packages
@@ -14,7 +22,28 @@ jest.mock("react-native-worklets", () => ({
 
 jest.mock("react-native-reanimated", () => ({
   __esModule: true,
-  default: { View },
+  default: { View, createAnimatedComponent: (Component) => Component },
+  cancelAnimation: jest.fn(),
+  useAnimatedKeyboard: () => ({ height: { value: 0 }, state: { value: 0 } }),
+  useAnimatedStyle: (updater) => updater(),
+  useSharedValue: (initial) => {
+    let current = initial;
+    return {
+      get value() {
+        return current;
+      },
+      set value(next) {
+        current = next;
+      },
+      get: () => current,
+      set: (next) => {
+        current = next;
+      },
+    };
+  },
+  withRepeat: (value) => value,
+  withSequence: (...values) => values[values.length - 1],
+  withTiming: (value) => value,
   Easing: { elastic: () => (t) => t },
   Keyframe: class Keyframe {
     constructor() {}
@@ -25,4 +54,172 @@ jest.mock("react-native-reanimated", () => ({
       return this;
     }
   },
+}));
+
+jest.mock("@react-native-google-signin/google-signin", () => ({
+  isSuccessResponse: (response) => response.type === "success",
+  GoogleSignin: {
+    hasPlayServices: jest.fn().mockResolvedValue(true),
+    signIn: jest.fn().mockResolvedValue({
+      data: {
+        idToken: "mock_id_token",
+        user: { email: "student.test@ku.th", name: "Test Student" },
+      },
+    }),
+    signOut: jest.fn().mockResolvedValue(undefined),
+    configure: jest.fn(),
+  },
+}));
+
+jest.mock("./src/features/auth/authClient", () => ({
+  authClient: {
+    getCookie: jest.fn().mockReturnValue(""),
+    signIn: { social: jest.fn() },
+    getSession: jest.fn().mockResolvedValue({ data: null, error: null }),
+    signOut: jest.fn().mockResolvedValue({ data: null, error: null }),
+  },
+}));
+
+jest.mock("expo-secure-store", () => {
+  const store = new Map();
+  return {
+    isAvailableAsync: jest.fn().mockResolvedValue(true),
+    setItemAsync: jest.fn(async (key, value) => {
+      store.set(key, value);
+    }),
+    getItemAsync: jest.fn(async (key) => {
+      return store.get(key) || null;
+    }),
+    deleteItemAsync: jest.fn(async (key) => {
+      store.delete(key);
+    }),
+  };
+});
+
+jest.mock("@expo/ui", () => ({
+  Host: ({ children, ...props }) => React.createElement(View, props, children),
+  Switch: ({ value, onValueChange, testID, disabled, ...props }) =>
+    React.createElement(Pressable, {
+      accessibilityRole: "switch",
+      accessibilityState: { checked: value, disabled },
+      onPress: () => onValueChange(!value),
+      testID,
+      disabled,
+      ...props,
+    }),
+  Button: ({
+    label,
+    onPress,
+    testID,
+    disabled,
+    accessibilityLabel,
+    style,
+    ...props
+  }) =>
+    React.createElement(
+      Pressable,
+      { onPress, testID, disabled, accessibilityLabel, style, ...props },
+      React.createElement(Text, null, label)
+    ),
+}));
+
+jest.mock("lucide-react-native", () => {
+  const React = require("react");
+  const { View } = require("react-native");
+  const Icon = (props) => React.createElement(View, props);
+
+  return new Proxy(
+    {
+      Check: Icon,
+      Bell: Icon,
+      CheckSquare: Icon,
+      Camera: Icon,
+      BriefcaseBusiness: Icon,
+      Calendar: Icon,
+      CalendarDays: Icon,
+      CalendarClock: Icon,
+      ArrowDownUp: Icon,
+      ArrowUpRight: Icon,
+      AlertCircle: Icon,
+      ChevronDown: Icon,
+      ChevronLeft: Icon,
+      ChevronRight: Icon,
+      ChevronUp: Icon,
+      ArrowLeft: Icon,
+      Clock: Icon,
+      Clock3: Icon,
+      CircleAlert: Icon,
+      CircleUserRound: Icon,
+      ClipboardCheck: Icon,
+      CircleHelp: Icon,
+      Mail: Icon,
+      FileText: Icon,
+      Globe2: Icon,
+      LockKeyhole: Icon,
+      LogOut: Icon,
+      Moon: Icon,
+      CircleX: Icon,
+      Download: Icon,
+      Grid2X2: Icon,
+      Image: Icon,
+      ImageIcon: Icon,
+      ImagePlus: Icon,
+      Info: Icon,
+      LayoutDashboard: Icon,
+      MapPin: Icon,
+      MessageCircle: Icon,
+      MessageSquare: Icon,
+      MoreHorizontal: Icon,
+      Paperclip: Icon,
+      Pencil: Icon,
+      Plus: Icon,
+      Settings2: Icon,
+      Star: Icon,
+      RefreshCw: Icon,
+      ReceiptText: Icon,
+      Search: Icon,
+      Send: Icon,
+      SlidersHorizontal: Icon,
+      Sparkles: Icon,
+      Settings: Icon,
+      ShieldCheck: Icon,
+      Tag: Icon,
+      TriangleAlert: Icon,
+      Trash2: Icon,
+      UserRound: Icon,
+      UserRoundCheck: Icon,
+      Wallet: Icon,
+      WalletCards: Icon,
+      Users: Icon,
+      UsersRound: Icon,
+      X: Icon,
+      GraduationCap: Icon,
+      Award: Icon,
+      Building2: Icon,
+      Code2: Icon,
+      History: Icon,
+      CreditCard: Icon,
+      ArrowRightLeft: Icon,
+      ArrowDownLeft: Icon,
+      QrCode: Icon,
+      CheckCircle2: Icon,
+    },
+    {
+      get: (target, prop) => {
+        if (typeof prop === "string" && prop in target) return target[prop];
+        return Icon;
+      },
+    }
+  );
+});
+
+jest.mock("expo-symbols", () => ({
+  SymbolView: (props) => React.createElement(View, props),
+}));
+
+jest.mock("react-native-safe-area-context", () => ({
+  SafeAreaProvider: ({ children }) => React.createElement(View, null, children),
+  SafeAreaView: ({ children, ...props }) =>
+    React.createElement(View, props, children),
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));

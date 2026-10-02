@@ -1,56 +1,197 @@
-# Welcome to your Expo app 👋
+# KUQuest Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+KUQuest Mobile connects students and staff for on-campus peer tasks, powered by Expo, Native Google Sign-In, and Better Auth.
 
-## Get started
+> [!IMPORTANT]
+> Because native Google OAuth and secure session storage require custom native modules, this project runs exclusively via **Development Builds** (`--dev-client`), not standard Expo Go.
 
-1. Install dependencies
+## 1. Staging-only environment setup
 
-   ```bash
-   npm install
-   ```
+The mobile app must connect to the remote **develop staging API**:
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```text
+https://kuquest-dev-api.kubits.org
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Do **not** run the local API. The mobile app's local API/LAN setup will not work for the normal development flow. Use `bun run staging:start` for the staging API; `bun run dev:local` is only for explicitly requested local-LAN work.
 
-### Other setup steps
+### Realtime connections
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+- Work Chat and Candidate Inquiry use authenticated WebSocket endpoints: `/v1/chat/conversations/:conversationId/events` and `/v1/chat/candidate-inquiries/:conversationId/events`. Connected clients send messages over WebSocket; REST remains send fallback when disconnected.
+- Authorized Quest readers subscribe to `/api/v2/quests/:questId/events`; Hirers who can select Candidates and Candidate Team Members subscribe to `/api/v2/quests/:questId/candidate-roster/events`. Both read-only streams refresh authoritative REST snapshots after accepted `SUBSCRIBED` messages, matching updates, and reconnects.
+- Any authenticated Member can subscribe to read-only `/api/v2/quests/board/events`. `QUEST_BOARD_INVALIDATED` carries a Quest ID, not a Board Card; Board query owners refetch filtered `GET /api/v2/quests` results after accepted subscriptions, invalidations, and reconnects.
+- HTTPS API origins map to WSS. The app authenticates sockets with its current session cookie. `/health/ws` is an operational health endpoint; the app does not poll it.
 
-## Learn more
+Create `.env.local` in the project root by copying the template:
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+cp .env.example .env.local
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Your `.env.local` should contain:
 
-## Join the community
+```env
+# Remote develop staging backend
+EXPO_PUBLIC_API_URL=https://kuquest-dev-api.kubits.org
 
-Join our community of developers creating universal apps.
+# Terms of Service version required by registration
+EXPO_PUBLIC_TERMS_VERSION=v1.0
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+# Native Google OAuth Web Client ID
+EXPO_PUBLIC_GOOGLE_CLIENT_ID=673221928877-d133t4thj3ipo94a3kfj4vle2hokmbi4.apps.googleusercontent.com
+```
+
+`.env.local` is ignored by Git. Never commit credentials or other private values to the repository.
+
+> **Important:** `bun run staging:start` intentionally ignores dotenv files and requires the three staging variables in its environment. Load the `.env.local` values into the current terminal before starting Metro:
+
+```bash
+set -a
+source .env.local
+set +a
+```
+
+## 2. Running the Project
+
+### Prerequisites
+
+- [Bun](https://bun.sh) v1.2+
+- Android Studio with an Android Emulator, or Xcode with an iOS Simulator
+- JDK 17 for Android builds
+- A native Development Build; Expo Go is not supported
+
+### Step 1: Install dependencies
+
+```bash
+bun install
+```
+
+### Step 2: Build and install the native Development Build
+
+This project uses native modules, including Google Sign-In and `@expo/ui`. Build the native client before starting Metro:
+
+```bash
+# Android
+bun android
+
+# iOS
+bun ios
+```
+
+To choose a connected Android device before building and installing, run `./scripts/android-device.sh`. It lists authorized devices and passes your selection to `bun android`. `bun android` by itself also prompts when multiple devices are online.
+
+Apps already connected to the same Metro server receive the same JavaScript updates; this picker only targets the native build/install to the selected device.
+The picker already opens the selected device. In an Expo terminal, lowercase `a` opens on the first Android device (often an emulator); press `Shift+A` only if you need to choose a different device to open.
+
+Do not open the project in Expo Go. Expo Go cannot load the native modules used by this app.
+
+### Step 3: Start Metro against staging
+
+In the terminal where the `.env.local` values were loaded:
+
+```bash
+bun run staging:start
+```
+
+This command:
+
+- Connects Metro to `https://kuquest-dev-api.kubits.org`
+- Forces the `staging` app variant
+- Rejects local HTTP/LAN API URLs
+- Does not run the local API updater
+
+### Step 4: Launch the app
+
+After Metro starts, run `bun android` to build and install the debug development client on the selected Android device; use `bun ios` for the iOS development build.
+
+### Android Google Sign-In
+
+Android staging sign-in requires a Google Cloud **Android** OAuth client for package `org.kubits.kuquest.staging` and the SHA-1 fingerprint of the staging signing key. `EXPO_PUBLIC_GOOGLE_CLIENT_ID` must remain the **Web** OAuth client ID and must include the `.apps.googleusercontent.com` suffix.
+
+For staging APK signing setup:
+
+```bash
+node scripts/bootstrap-android-signing.js generate \
+  --environment staging \
+  --keystore /secure/kuquest-staging.jks
+```
+
+After changing OAuth configuration or signing keys, rebuild and reinstall the native app. Existing APKs do not receive native OAuth configuration changes from JavaScript updates.
+
+### Android download page
+
+`download-page/` is a static page (no build step) that lists the rolling `uat-latest` and `staging-latest` prereleases from GitHub Releases. The mobile environments mirror the backend: every `develop` push rebuilds the staging APK (`org.kubits.kuquest.staging`, staging API) and replaces `staging-latest`; every `main` push rebuilds the UAT APK (`org.kubits.kuquest.uat`, UAT API) and replaces `uat-latest`. Each APK is built from its own GitHub Environment (`staging`, `uat`) with its own variables and signing key. The page only reads the GitHub API; APKs download straight from GitHub.
+
+It is hosted by nginx on the build server (`192.168.1.101`, LAN only). Deploy or update it from a checkout:
+
+```bash
+scp download-page/{index.html,app.js,release.js,style.css,favicon.svg} root@192.168.1.101:/var/www/kuquest-download/
+scp download-page/nginx.conf root@192.168.1.101:/etc/nginx/sites-available/kuquest-download
+ssh root@192.168.1.101 'ln -sf /etc/nginx/sites-available/kuquest-download /etc/nginx/sites-enabled/ && rm -f /etc/nginx/sites-enabled/default && nginx -t && systemctl reload nginx'
+```
+
+### Verify the staging backend
+
+Optional endpoint and account verification:
+
+```bash
+bun run verify:staging
+```
+
+This checks the staging health endpoint and the configured Quest, wallet, and Work Chat API surfaces.
+
+---
+
+### Debugging API traffic
+
+Development builds print API diagnostics to the Metro terminal through `debugLog` (`src/api/debugLog.ts`); release builds and Jest stay silent:
+
+- `[api]` — every REST request: method, path, status, duration, and error `code` on failure.
+- `[socket]` — WebSocket open, close (code, reason, terminal, next attempt), and not-started reasons.
+- `[query]` / `[mutation]` — every failed TanStack query or mutation with its key, including response-schema (Zod) issue paths.
+
+Logs never include cookies, request or response bodies, or signed-URL query strings.
+
+## 3. Standalone Offline Demo Mode
+
+If you need to test the UI, Quest flows, or screen layouts without any backend connection, launch the app in seeded demo mode:
+
+```bash
+bun run demo:start
+```
+
+- **Features**: Includes Quest Board, Quest Details, My Quests, Team Assembly, and Chat with mock data and local SQLite/memory persistence.
+- **Switch Test Accounts on Android**:
+  ```bash
+  bun run demo:android:account
+  ```
+
+---
+
+## 4. Code Quality & Testing
+
+### Verification Scripts
+
+```bash
+# Typecheck TypeScript definitions
+bun run typecheck
+
+# Run Jest unit and component test suite
+bun run test
+
+# Lint source files with Expo ESLint
+bun run lint
+
+# Full static, lint, formatting, route, NativeWind, and Jest verification
+bun run verify
+```
+
+### Pre-commit Hooks
+
+The repository uses **Husky** + **lint-staged** + **Prettier**. Every `git commit` automatically:
+
+1. Runs Prettier formatting on all staged files.
+2. Runs the NativeWind and route audits.
+3. Runs `bun run typecheck`.
+4. Runs `bun run lint` with the repository warning budget.
+5. Runs `bun run test`.

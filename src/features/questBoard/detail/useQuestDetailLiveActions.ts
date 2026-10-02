@@ -1,0 +1,501 @@
+import { liveQuestService } from "../live/liveQuestService";
+import { ApiError } from "@/api/ApiClient";
+import { QuestV2JoinErrorCode } from "@/api/questV2Contracts";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  showErrorAlert,
+  showSweetAlert,
+  SweetAlertVariant,
+} from "@/components/ui/SweetAlert";
+import { useCallback } from "react";
+
+import { getLocalizedErrorMessage } from "@/utils/error";
+import { useLocale } from "@/features/preferences/localeStore";
+import { createQuestIdempotencyKey } from "@/api/QuestApi";
+import type { UploadAsset } from "@/api/fileUpload";
+import type { LiveQuestSnapshot } from "../live/liveQuestTypes";
+import {
+  invalidateQuestReads,
+  questBoardKeys,
+  useApplyQuestMutation,
+  useCreateCandidateInquiryMutation,
+  useCreateCandidateTeamMutation,
+  useDecideUnderfilledMutation,
+  useJoinCandidateTeamMutation,
+  useJoinQuestMutation,
+  useLeaveCandidateTeamMutation,
+  useRejectApplicationMutation,
+  useRejectCandidateTeamMutation,
+  useRegenerateCandidateTeamCodeMutation,
+  useRemoveCandidateTeamMemberMutation,
+  useRespondUnderfilledConsentMutation,
+  useSelectApplicationMutation,
+  useSelectCandidateTeamMutation,
+  useSubmitCandidateTeamMutation,
+  useUpdateCandidateTeamMutation,
+  useUploadCandidateTeamFileMutation,
+  useWithdrawApplicationMutation,
+} from "../api/questBoardQueries";
+import {
+  QuestParticipation,
+  type QuestUnderfilledConsentDecision,
+  type QuestUnderfilledDecision,
+} from "../domain/types";
+import {
+  getQuestDetailLiveTeam,
+  type QuestDetailLiveActionContext,
+  type QuestDetailLiveActions,
+} from "./questDetailActions";
+
+export function useQuestDetailLiveActions(
+  context: QuestDetailLiveActionContext
+): QuestDetailLiveActions {
+  const { locale } = useLocale();
+  const queryClient = useQueryClient();
+  const joinQuestMutation = useJoinQuestMutation();
+  const applyQuestMutation = useApplyQuestMutation();
+  const withdrawApplicationMutation = useWithdrawApplicationMutation();
+  const createCandidateInquiryMutation = useCreateCandidateInquiryMutation();
+  const selectApplicationMutation = useSelectApplicationMutation();
+  const rejectApplicationMutation = useRejectApplicationMutation();
+  const selectCandidateTeamMutation = useSelectCandidateTeamMutation();
+  const rejectCandidateTeamMutation = useRejectCandidateTeamMutation();
+  const createCandidateTeamMutation = useCreateCandidateTeamMutation();
+  const joinCandidateTeamMutation = useJoinCandidateTeamMutation();
+  const leaveCandidateTeamMutation = useLeaveCandidateTeamMutation();
+  const removeCandidateTeamMemberMutation =
+    useRemoveCandidateTeamMemberMutation();
+  const regenerateCandidateTeamCodeMutation =
+    useRegenerateCandidateTeamCodeMutation();
+  const updateCandidateTeamMutation = useUpdateCandidateTeamMutation();
+  const submitCandidateTeamMutation = useSubmitCandidateTeamMutation();
+  const uploadCandidateTeamFileMutation = useUploadCandidateTeamFileMutation();
+  const decideUnderfilledMutation = useDecideUnderfilledMutation();
+  const respondUnderfilledConsentMutation =
+    useRespondUnderfilledConsentMutation();
+
+  const {
+    questId,
+    viewerId,
+    quest,
+    projectionCapabilities: capabilities,
+    liveSnapshot,
+    messages,
+    transitions,
+  } = context;
+  const { beginLiveAction, endLiveAction } = transitions;
+
+  const runLiveAction = useCallback(
+    async <T>(
+      actionName: string,
+      action: () => Promise<T>
+    ): Promise<T | undefined> => {
+      if (!beginLiveAction(actionName)) return undefined;
+      try {
+        return await action();
+      } catch (error) {
+        showErrorAlert(
+          messages.actionFailedTitle,
+          getLocalizedErrorMessage(error, locale, {
+            fallback: messages.actionFailedDescription,
+          })
+        );
+        return undefined;
+      } finally {
+        endLiveAction();
+      }
+    },
+    [
+      beginLiveAction,
+      endLiveAction,
+      locale,
+      messages.actionFailedDescription,
+      messages.actionFailedTitle,
+    ]
+  );
+
+  const join = useCallback(async () => {
+    if (!questId || !beginLiveAction("join")) return undefined;
+    try {
+      const result = await joinQuestMutation.mutateAsync({ questId, viewerId });
+      return result;
+    } catch (error) {
+      let refreshed: LiveQuestSnapshot | undefined;
+      try {
+        refreshed = await liveQuestService.getLiveSnapshot(questId, viewerId);
+      } catch {
+        refreshed = undefined;
+      }
+      if (refreshed) {
+        queryClient.setQueryData(
+          questBoardKeys.liveSnapshot(questId, viewerId),
+          refreshed
+        );
+      }
+      await invalidateQuestReads(queryClient, questId, viewerId, "worker");
+      if (
+        error instanceof ApiError &&
+        error.code === QuestV2JoinErrorCode.QUEST_NOT_OPEN
+      ) {
+        transitions.closeConfirmation();
+      }
+      if (
+        error instanceof ApiError &&
+        error.code === QuestV2JoinErrorCode.ALREADY_JOINED
+      ) {
+        return true;
+      }
+      const full =
+        error instanceof ApiError &&
+        error.code === QuestV2JoinErrorCode.QUEST_FULL;
+      if (full) transitions.closeConfirmation();
+      if (full) {
+        showSweetAlert({
+          title: messages.questFull,
+          message: messages.groupFcfsLastSpotTaken,
+          variant: SweetAlertVariant.Error,
+        });
+      } else {
+        showErrorAlert(
+          messages.actionFailedTitle,
+          getLocalizedErrorMessage(error, locale, {
+            codes: {
+              QUEST_NOT_OPEN: messages.joinQuestNotOpen,
+              QUEST_ROSTER_FROZEN: messages.joinQuestRosterFrozen,
+              HIRER_CANNOT_JOIN: messages.joinQuestHirerCannotJoin,
+              MEMBER_RED_FLAGGED: messages.joinQuestMemberRestricted,
+              QUEST_MODE_NOT_ALLOWED: messages.joinQuestModeNotAllowed,
+              QUEST_PARTICIPATION_NOT_ALLOWED:
+                messages.joinQuestParticipationNotAllowed,
+            },
+            fallback: messages.actionFailedDescription,
+          })
+        );
+      }
+      return undefined;
+    } finally {
+      endLiveAction();
+    }
+  }, [
+    beginLiveAction,
+    endLiveAction,
+    joinQuestMutation,
+    locale,
+    messages.actionFailedDescription,
+    messages.actionFailedTitle,
+    messages.groupFcfsLastSpotTaken,
+    messages.joinQuestHirerCannotJoin,
+    messages.joinQuestMemberRestricted,
+    messages.joinQuestModeNotAllowed,
+    messages.joinQuestNotOpen,
+    messages.joinQuestParticipationNotAllowed,
+    messages.joinQuestRosterFrozen,
+    messages.questFull,
+    queryClient,
+    questId,
+    transitions,
+    viewerId,
+  ]);
+  const apply = useCallback(
+    () =>
+      runLiveAction("apply", () => {
+        if (!questId) return Promise.reject(new Error("Quest ID is required"));
+        return applyQuestMutation.mutateAsync({
+          questId,
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
+    [applyQuestMutation, questId, runLiveAction, viewerId]
+  );
+  const withdraw = useCallback(
+    (applicationId: string) =>
+      runLiveAction("withdraw", () => {
+        if (!questId) return Promise.reject(new Error("Quest ID is required"));
+        return withdrawApplicationMutation.mutateAsync({
+          questId,
+          applicationId,
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
+    [questId, runLiveAction, viewerId, withdrawApplicationMutation]
+  );
+  const createCandidateInquiry = useCallback(
+    async (targetQuestId: string) => {
+      const inquiry =
+        await createCandidateInquiryMutation.mutateAsync(targetQuestId);
+      return { id: inquiry.id };
+    },
+    [createCandidateInquiryMutation]
+  );
+  const selectProposal = useCallback(
+    (proposalId: string) =>
+      runLiveAction("select-candidate", () => {
+        if (!questId || !liveSnapshot)
+          return Promise.reject(new Error("Quest snapshot is required"));
+        return liveSnapshot.participation === QuestParticipation.GROUP
+          ? selectCandidateTeamMutation.mutateAsync({
+              questId,
+              teamId: proposalId,
+              viewerId,
+              idempotencyKey: createQuestIdempotencyKey(),
+            })
+          : selectApplicationMutation.mutateAsync({
+              questId,
+              applicationId: proposalId,
+              viewerId,
+              idempotencyKey: createQuestIdempotencyKey(),
+            });
+      }),
+    [
+      liveSnapshot,
+      questId,
+      runLiveAction,
+      selectApplicationMutation,
+      selectCandidateTeamMutation,
+      viewerId,
+    ]
+  );
+  const rejectProposal = useCallback(
+    (proposalId: string) =>
+      runLiveAction<unknown>("reject-candidate", () => {
+        if (!questId || !liveSnapshot)
+          return Promise.reject(new Error("Quest snapshot is required"));
+        return liveSnapshot.participation === QuestParticipation.GROUP
+          ? rejectCandidateTeamMutation.mutateAsync({
+              questId,
+              teamId: proposalId,
+              viewerId,
+              idempotencyKey: createQuestIdempotencyKey(),
+            })
+          : rejectApplicationMutation.mutateAsync({
+              questId,
+              applicationId: proposalId,
+              viewerId,
+              idempotencyKey: createQuestIdempotencyKey(),
+            });
+      }),
+    [
+      liveSnapshot,
+      questId,
+      rejectApplicationMutation,
+      rejectCandidateTeamMutation,
+      runLiveAction,
+      viewerId,
+    ]
+  );
+  const decideUnderfilled = useCallback(
+    (decision: QuestUnderfilledDecision) =>
+      runLiveAction("underfilled-decision", () => {
+        if (!questId) return Promise.reject(new Error("Quest ID is required"));
+        return decideUnderfilledMutation.mutateAsync({
+          questId,
+          decision,
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
+    [decideUnderfilledMutation, questId, runLiveAction, viewerId]
+  );
+  const respondUnderfilled = useCallback(
+    (decision: QuestUnderfilledConsentDecision) =>
+      runLiveAction("underfilled-consent", () => {
+        if (!questId) return Promise.reject(new Error("Quest ID is required"));
+        return respondUnderfilledConsentMutation.mutateAsync({
+          questId,
+          decision,
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
+    [questId, respondUnderfilledConsentMutation, runLiveAction, viewerId]
+  );
+  const createTeam = useCallback(
+    (name: string) =>
+      runLiveAction("create-team", () => {
+        if (!questId || !capabilities?.canCreateTeam)
+          return Promise.reject(new Error("Team creation is unavailable"));
+        return createCandidateTeamMutation.mutateAsync({
+          questId,
+          payload: {
+            name: name.trim(),
+            headcount: quest?.headcount ?? 2,
+          },
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
+    [
+      capabilities?.canCreateTeam,
+      createCandidateTeamMutation,
+      quest?.headcount,
+      questId,
+      runLiveAction,
+      viewerId,
+    ]
+  );
+  const liveTeam = getQuestDetailLiveTeam(liveSnapshot);
+  const joinTeam = useCallback(
+    (teamId: string, joinCode: string) =>
+      runLiveAction("join-team", () => {
+        if (!questId || !capabilities?.canJoinTeam) {
+          return Promise.reject(new Error("Team joining is unavailable"));
+        }
+        return joinCandidateTeamMutation.mutateAsync({
+          questId,
+          teamId,
+          joinCode: joinCode.toUpperCase(),
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
+    [
+      capabilities?.canJoinTeam,
+      joinCandidateTeamMutation,
+      questId,
+      runLiveAction,
+      viewerId,
+    ]
+  );
+  const leaveTeam = useCallback(
+    (teamId: string) =>
+      runLiveAction("leave-team", () => {
+        if (!questId || !capabilities?.canLeaveTeam)
+          return Promise.reject(new Error("Leaving the team is unavailable"));
+        return leaveCandidateTeamMutation.mutateAsync({
+          questId,
+          teamId,
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
+    [
+      capabilities?.canLeaveTeam,
+      leaveCandidateTeamMutation,
+      questId,
+      runLiveAction,
+      viewerId,
+    ]
+  );
+  const removeTeamMember = useCallback(
+    (teamId: string, memberId: string) =>
+      runLiveAction("remove-team-member", () => {
+        if (!questId || !capabilities?.canRemoveTeamMember)
+          return Promise.reject(
+            new Error("Removing a team member is unavailable")
+          );
+        return removeCandidateTeamMemberMutation.mutateAsync({
+          questId,
+          teamId,
+          memberId,
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
+    [
+      capabilities?.canRemoveTeamMember,
+      questId,
+      removeCandidateTeamMemberMutation,
+      runLiveAction,
+      viewerId,
+    ]
+  );
+  const regenerateTeamCode = useCallback(
+    (teamId: string) =>
+      runLiveAction("regenerate-team-code", () => {
+        if (!questId || !capabilities?.canRegenerateTeamCode)
+          return Promise.reject(
+            new Error("Regenerating the team code is unavailable")
+          );
+        return regenerateCandidateTeamCodeMutation.mutateAsync({
+          questId,
+          teamId,
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
+    [
+      capabilities?.canRegenerateTeamCode,
+      questId,
+      regenerateCandidateTeamCodeMutation,
+      runLiveAction,
+      viewerId,
+    ]
+  );
+  const updateTeamName = useCallback(
+    (teamId: string, name: string) => {
+      const trimmedName = name.trim();
+      if (!trimmedName) return Promise.resolve(undefined);
+      return runLiveAction("update-team", () => {
+        if (!questId || !capabilities?.canUpdateTeam)
+          return Promise.reject(new Error("Updating the team is unavailable"));
+        return updateCandidateTeamMutation.mutateAsync({
+          questId,
+          teamId,
+          payload: { name: trimmedName },
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      });
+    },
+    [
+      capabilities?.canUpdateTeam,
+      questId,
+      runLiveAction,
+      updateCandidateTeamMutation,
+      viewerId,
+    ]
+  );
+  const submitTeam = useCallback(
+    (teamId: string, payload?: { text?: string; fileIds?: string[] }) =>
+      runLiveAction("submit-team", async () => {
+        if (!questId) throw new Error("Quest ID is required");
+        return submitCandidateTeamMutation.mutateAsync({
+          questId,
+          teamId,
+          payload,
+          viewerId,
+          idempotencyKey: createQuestIdempotencyKey(),
+        });
+      }),
+    [questId, runLiveAction, submitCandidateTeamMutation, viewerId]
+  );
+  const uploadTeamFile = useCallback(
+    async (asset: UploadAsset) => {
+      if (!questId || !liveTeam) throw new Error("No active team");
+      const uploaded = await uploadCandidateTeamFileMutation.mutateAsync({
+        questId,
+        teamId: liveTeam.id,
+        asset,
+        viewerId,
+        idempotencyKey: createQuestIdempotencyKey(),
+      });
+      return {
+        id: uploaded.fileId,
+        name: uploaded.fileName,
+        sizeBytes: uploaded.sizeBytes,
+      };
+    },
+    [liveTeam, questId, uploadCandidateTeamFileMutation, viewerId]
+  );
+
+  return {
+    join,
+    apply,
+    withdraw,
+    createCandidateInquiry,
+    selectProposal,
+    rejectProposal,
+    decideUnderfilled,
+    respondUnderfilled,
+    createTeam,
+    joinTeam,
+    leaveTeam,
+    removeTeamMember,
+    regenerateTeamCode,
+    updateTeamName,
+    submitTeam,
+    uploadTeamFile,
+  };
+}
