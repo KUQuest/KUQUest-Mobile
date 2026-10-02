@@ -56,20 +56,24 @@ describe("app config variants", () => {
     expect(config.android?.versionCode).toBe(247);
   });
 
-  test("keeps the explicit app version code for production", () => {
-    const config = configure("production", "999");
+  test("uses the CI build number for uat with its own coinstallable identity", () => {
+    const config = configure("uat", "311");
 
-    expect(config.name).toBe("KUQuest");
-    expect(config.scheme).toBe("kuquestmobile");
-    expect(config.android?.package).toBe("com.kuquest.mobile");
-    expect(config.android?.versionCode).toBe(1);
+    expect(config.name).toBe("KUQuest UAT");
+    expect(config.scheme).toBe("kuquestmobile-uat");
+    expect(config.android?.package).toBe("com.kuquest.mobile.uat");
+    expect(config.ios?.bundleIdentifier).toBe("com.kuquest.mobile.uat");
+    expect(config.android?.versionCode).toBe(311);
   });
 
-  test("rejects invalid variants and staging version codes", () => {
-    expect(() => configure("preview")).toThrow(
-      "APP_VARIANT must be debug, staging, or production"
+  test("rejects invalid variants and missing CI version codes", () => {
+    expect(() => configure("production")).toThrow(
+      "APP_VARIANT must be debug, staging, or uat"
     );
     expect(() => configure("staging", "0")).toThrow(
+      "ANDROID_VERSION_CODE must be an integer"
+    );
+    expect(() => configure("uat")).toThrow(
       "ANDROID_VERSION_CODE must be an integer"
     );
   });

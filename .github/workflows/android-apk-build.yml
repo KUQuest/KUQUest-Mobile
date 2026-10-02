@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       variant:
-        description: App variant (staging or production)
+        description: App variant (staging or uat)
         required: true
         type: string
       version_code:
@@ -111,7 +111,7 @@ jobs:
             printf 'EXPO_PUBLIC_GOOGLE_CLIENT_ID must be a Google OAuth Web client ID ending in .apps.googleusercontent.com\n' >&2
             exit 78
           fi
-          if [[ "$BUILD_VARIANT" != staging && "$BUILD_VARIANT" != production ]]; then
+          if [[ "$BUILD_VARIANT" != staging && "$BUILD_VARIANT" != uat ]]; then
             printf 'Unsupported build variant: %s\n' "$BUILD_VARIANT" >&2
             exit 78
           fi
@@ -175,11 +175,9 @@ jobs:
           [[ -s "$source_apk" ]] || { printf 'Gradle did not produce %s\n' "$source_apk" >&2; exit 1; }
           app_version=$(bun -e 'console.log(require("./app.json").expo.version)')
           short_sha=${SOURCE_SHA:0:7}
-          if [[ "$BUILD_VARIANT" == staging ]]; then
-            apk_name="KUQuest-Staging-v${app_version}-build.${BUILD_VERSION_CODE}-${short_sha}.apk"
-          else
-            apk_name="KUQuest-v${app_version}.apk"
-          fi
+          label=Staging
+          [[ "$BUILD_VARIANT" != uat ]] || label=UAT
+          apk_name="KUQuest-${label}-v${app_version}-build.${BUILD_VERSION_CODE}-${short_sha}.apk"
           artifact_name=${apk_name%.apk}
           mkdir -p dist/android
           cp "$source_apk" "dist/android/$apk_name"

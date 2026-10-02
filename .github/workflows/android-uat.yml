@@ -1,0 +1,87 @@
+name: Android UAT
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-uat
+  cancel-in-progress: true
+
+jobs:
+  trust:
+    name: Require a main commit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify the commit is contained in main
+        run: |
+          set -euo pipefail
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            printf 'UAT source %s is not contained in origin/main\n' "$GITHUB_SHA" >&2
+            exit 78
+          fi
+
+  validate:
+    name: Validate
+    needs: trust
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    name: Build UAT APK
+    needs: [trust, validate]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/android-apk-build.yml
+    # Required for environment-scoped secrets (actions/runner#4453).
+    secrets: inherit
+    with:
+      source_sha: ${{ github.sha }}
+      variant: uat
+      version_code: ${{ github.run_number }}
+      environment_name: uat
+      retention_days: 7
+
+  publish:
+    name: Publish uat-latest prerelease
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Download signed APK artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: ${{ needs.build.outputs.artifact_name }}
+          path: uat
+
+      - name: Replace the rolling uat-latest prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APK_NAME: ${{ needs.build.outputs.apk_name }}
+        run: |
+          set -euo pipefail
+          [[ -s "uat/$APK_NAME" ]] || { printf 'Downloaded UAT APK is missing\n' >&2; exit 1; }
+          (cd uat && sha256sum --check "$APK_NAME.sha256")
+          if gh release view uat-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release delete uat-latest --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes
+          fi
+          gh release create uat-latest \
+            "uat/$APK_NAME" \
+            "uat/$APK_NAME.sha256" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "KUQuest UAT" \
+            --notes "Latest main build ($GITHUB_SHA). Replaced on every main push."

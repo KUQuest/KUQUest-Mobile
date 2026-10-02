@@ -120,7 +120,7 @@ After changing OAuth configuration or signing keys, rebuild and reinstall the na
 
 ### Android download page
 
-`download-page/` is a static page (no build step) that lists the latest production release (`/releases/latest`) and the rolling `staging-latest` prerelease from GitHub Releases. Every develop push rebuilds the staging APK and replaces `staging-latest`; a `vX.Y.Z` tag publishes the production release. The page only reads the GitHub API; APKs download straight from GitHub.
+`download-page/` is a static page (no build step) that lists the rolling `uat-latest` and `staging-latest` prereleases from GitHub Releases. The mobile environments mirror the backend: every `develop` push rebuilds the staging APK (`com.kuquest.mobile.staging`, staging API) and replaces `staging-latest`; every `main` push rebuilds the UAT APK (`com.kuquest.mobile.uat`, UAT API) and replaces `uat-latest`. Each APK is built from its own GitHub Environment (`staging`, `uat`) with its own variables and signing key. The page only reads the GitHub API; APKs download straight from GitHub.
 
 It is hosted by nginx on the build server (`192.168.1.101`, LAN only). Deploy or update it from a checkout:
 

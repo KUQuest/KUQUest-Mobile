@@ -3,9 +3,7 @@ name: Mobile CI
 on:
   pull_request:
     branches: [main, develop]
-  push:
-    branches: [main]
-  # Reused by Android Staging so a develop push validates and builds in one run.
+  # Reused by Android Staging and Android UAT so a push validates and builds in one run.
   workflow_call:
 
 jobs:
