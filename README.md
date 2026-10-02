@@ -120,7 +120,7 @@ After changing OAuth configuration or signing keys, rebuild and reinstall the na
 
 ### Android download page
 
-`download-page/` is a static page (no build step) that lists the rolling `uat-latest` and `staging-latest` prereleases from GitHub Releases. The mobile environments mirror the backend: every `develop` push rebuilds the staging APK (`org.kubits.kuquest.staging`, staging API) and replaces `staging-latest`; every `main` push rebuilds the UAT APK (`org.kubits.kuquest.uat`, UAT API) and replaces `uat-latest`. Each APK is built from its own GitHub Environment (`staging`, `uat`) with its own variables and signing key. APKs download straight from GitHub.
+`download-page/` is a static page (no build step) that lists the rolling `uat-latest` and `staging-latest` prereleases published by the UAT and staging workflows (see [Build variants and environments](#build-variants-and-environments)). APKs download straight from GitHub.
 
 Each card shows version, build, package ID, commit, the commit subject and a link to the build log (both written into the release notes by the publish job), size, date, SHA-256, a download button and a QR code for the APK link. The page re-checks every 5 minutes while it is open. The QR encoder is vendored in `download-page/vendor/` (qrcode-generator 1.5.2, MIT).
 
