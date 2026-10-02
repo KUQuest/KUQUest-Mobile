@@ -4,7 +4,9 @@ on:
   pull_request:
     branches: [main, develop]
   push:
-    branches: [main, develop]
+    branches: [main]
+  # Reused by Android Staging so a develop push validates and builds in one run.
+  workflow_call:
 
 jobs:
   validate:
