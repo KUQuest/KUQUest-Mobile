@@ -181,6 +181,43 @@ describe("QuestReviewModal", () => {
     });
     expect(screen.getByTestId("quest-review-success")).toBeTruthy();
   });
+  it("uses assignment member name before other names and never exposes worker IDs", async () => {
+    const workerId = "11111111-2222-4333-8444-555555555555";
+    mockAssignments = {
+      data: [
+        {
+          workerId,
+          member: { id: workerId, displayName: "Assignment Name" },
+          state: QuestAssignmentStatus.ASSIGNMENT_COMPLETED,
+        },
+      ],
+      error: null,
+    };
+    const namedScreen = await render(
+      <QuestReviewModal onClose={mockClose} questId="quest-1" />
+    );
+
+    expect(namedScreen.getByText("Assignment Name")).toBeTruthy();
+    expect(namedScreen.queryByText("Jane Worker")).toBeNull();
+    expect(namedScreen.queryByText(new RegExp(workerId))).toBeNull();
+
+    mockSnapshot = { ...completedSnapshot(), participants: [] };
+    mockAssignments = {
+      data: [
+        {
+          workerId,
+          state: QuestAssignmentStatus.ASSIGNMENT_COMPLETED,
+        },
+      ],
+      error: null,
+    };
+    const fallbackScreen = await render(
+      <QuestReviewModal onClose={mockClose} questId="quest-1" />
+    );
+
+    expect(fallbackScreen.getByText("Worker 1")).toBeTruthy();
+    expect(fallbackScreen.queryByText(new RegExp(workerId))).toBeNull();
+  });
 
   it("lets a Worker review the Hirer without sending revieweeId", async () => {
     mockViewerId = "worker-1";

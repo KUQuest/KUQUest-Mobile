@@ -27,6 +27,7 @@ import {
 } from "../presentation/questLabels";
 import { isWorkerActor, QuestActor, type QuestStatus } from "../domain/types";
 import QuestWorkActionsCard from "./components/QuestWorkActionsCard";
+import QuestWorkSettlementCard from "./components/QuestWorkSettlementCard";
 import QuestWorkStatusCard from "./components/QuestWorkStatusCard";
 import {
   useQuestWorkFeature,
@@ -248,6 +249,7 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
               messages={messages}
               tagCatalog={tagCatalog}
             />
+            <QuestWorkSettlementCard snapshot={snapshot} />
             {snapshot.state &&
             isTerminalStatus(snapshot.state as QuestStatus) &&
             snapshot.actor === QuestActor.WORKER &&

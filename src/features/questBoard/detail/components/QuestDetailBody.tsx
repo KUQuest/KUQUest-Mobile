@@ -34,7 +34,7 @@ import {
   type GroupQuestMessages,
 } from "@/locales/groupQuestMessages";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
-import { getQuestRewardSatang } from "../../presentation/questBoardViewData";
+import { getQuestPriceSatang } from "../../presentation/questBoardViewData";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
 import {
   QuestCandidateMode,
@@ -521,9 +521,11 @@ export function QuestDetailBody({
       <View className={styles.heroCard}>
         <View className={styles.heroPrimary}>
           <View className={styles.heroReward}>
-            <Text className={styles.heroLabel}>{messages.reward}</Text>
+            <Text className={styles.heroLabel}>{messages.givenPrice}</Text>
             <Text className={styles.heroRewardValue}>
-              {formatSatang(getQuestRewardSatang(quest), locale)}
+              {Number.isFinite(getQuestPriceSatang(quest))
+                ? formatSatang(getQuestPriceSatang(quest), locale)
+                : "—"}
               <Text
                 className={styles.heroRewardUnit}
               >{` ${messages.perPerson}`}</Text>

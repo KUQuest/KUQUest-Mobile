@@ -53,7 +53,10 @@ export function WorkerQuestFeedCard({
   };
 
   // Quest V2 board rewards are Baht; formatSatang requires integer Satang.
-  const rewardSatang = Math.round(quest.questReward * SATANG_PER_BAHT);
+  const rewardSatang =
+    typeof quest.questFundingTotal === "number"
+      ? Math.round(quest.questFundingTotal * SATANG_PER_BAHT)
+      : Number.NaN;
   const rewardFormatted =
     rewardSatang > 0 ? formatSatang(rewardSatang, locale) : "—";
   const location = quest.location ?? messages.online;
@@ -64,7 +67,7 @@ export function WorkerQuestFeedCard({
     : null;
   const accessibilityLabel = [
     quest.title,
-    messages.reward,
+    messages.givenPrice,
     rewardFormatted,
     capacityLabel,
     showCapacity && isFull ? messages.capacityFull : null,

@@ -62,9 +62,12 @@ export function useFileDispute() {
                   title: messages.errorTitle,
                   message: alreadyFiled
                     ? messages.alreadyFiled
-                    : getLocalizedErrorMessage(error, locale, {
-                        fallback: messages.errorFallback,
-                      }),
+                    : error instanceof ApiError &&
+                        error.code === "DISPUTE_CASE_WINDOW_EXPIRED"
+                      ? messages.windowClosed
+                      : getLocalizedErrorMessage(error, locale, {
+                          fallback: messages.errorFallback,
+                        }),
                   variant: SweetAlertVariant.Error,
                 });
               },

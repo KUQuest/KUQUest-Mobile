@@ -859,11 +859,13 @@ export function useCancelQuestMutation() {
     mutationFn: ({
       questId,
       idempotencyKey,
+      previewVersion,
     }: {
       questId: string;
       viewerId?: string;
       idempotencyKey?: string;
-    }) => liveQuestService.cancelQuest(questId, idempotencyKey),
+      previewVersion?: string;
+    }) => liveQuestService.cancelQuest(questId, idempotencyKey, previewVersion),
     onSuccess: async (_, variables) => {
       await Promise.all([
         invalidateQuestReads(

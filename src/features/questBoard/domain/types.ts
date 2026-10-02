@@ -470,6 +470,7 @@ export interface QuestBoardQuest {
   description: string;
   completionCriteria: string;
   proofRequired: "required" | "optional" | "none";
+  questFundingTotalSatang?: number | null;
   rewardPerPerson: number;
   /** Canonical integer amount, retained alongside the legacy board display field. */
   rewardSatang?: number;

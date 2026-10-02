@@ -44,6 +44,11 @@ export function getLocalizedErrorMessage(
   if (error.code === "PROOF_RETRY_POSITION_CONFLICT") {
     return messages.proofRetryPositionConflict;
   }
+  if (error.code === "QUEST_SETTLEMENT_NOT_ALLOWED") {
+    return messages.cancelNotAllowed;
+  }
+  if (error.status === 413) return messages.fileTooLarge;
+  if (error.status === 415) return messages.unsupportedFileType;
   if (error.status === 401) return messages.sessionExpired;
   if (error.status === 403) return messages.forbidden;
   if (error.status === 404) return messages.notFound;

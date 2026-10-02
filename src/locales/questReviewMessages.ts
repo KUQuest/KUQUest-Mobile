@@ -12,7 +12,7 @@ export interface QuestReviewMessages {
   noWorkersTitle: string;
   noWorkersDescription: string;
   workerLabel: string;
-  workerFallback: (id: string) => string;
+  workerFallback: (index: number) => string;
   hirerLabel: string;
   ratingLabel: string;
   ratingOption: (rating: number) => string;
@@ -44,7 +44,7 @@ export const questReviewMessages: Record<SupportedLocale, QuestReviewMessages> =
         "This Quest has no eligible Worker assignments for a review.",
       workerLabel: "Worker",
       hirerLabel: "Hirer",
-      workerFallback: (id) => `Worker ${id.slice(0, 8)}`,
+      workerFallback: (index) => `Worker ${index}`,
       ratingLabel: "Rating",
       ratingOption: (rating) => `${rating} out of 5 stars`,
       commentLabel: "Comment (optional)",
@@ -71,7 +71,7 @@ export const questReviewMessages: Record<SupportedLocale, QuestReviewMessages> =
       noWorkersTitle: "ไม่มีผู้ทำงานให้รีวิว",
       noWorkersDescription: "เควสต์นี้ไม่มีผู้ทำงานที่สามารถรีวิวได้",
       workerLabel: "ผู้ทำงาน",
-      workerFallback: (id) => `ผู้ทำงาน ${id.slice(0, 8)}`,
+      workerFallback: (index) => `ผู้ทำงาน ${index}`,
       hirerLabel: "ผู้ว่าจ้าง",
       ratingLabel: "คะแนน",
       ratingOption: (rating) => `${rating} จาก 5 ดาว`,
