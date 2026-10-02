@@ -102,11 +102,11 @@ This command:
 
 ### Step 4: Launch the app
 
-After Metro starts, run `bun android` to build and install the debug development client on the selected Android device; use `bun ios` for the iOS development build.
+After Metro starts, run `bun android` to build and install the development client on the selected Android device; use `bun ios` for the iOS development build. The development client is the **staging** variant (`org.kubits.kuquest.staging`, signed with the local debug key). The CI staging APK has the same package ID but a different signature, so uninstall one before installing the other.
 
 ### Android Google Sign-In
 
-Android staging sign-in requires a Google Cloud **Android** OAuth client for package `org.kubits.kuquest.staging` and the SHA-1 fingerprint of the staging signing key. `EXPO_PUBLIC_GOOGLE_CLIENT_ID` must remain the **Web** OAuth client ID and must include the `.apps.googleusercontent.com` suffix.
+Android staging sign-in requires Google Cloud **Android** OAuth clients for package `org.kubits.kuquest.staging`: one with the SHA-1 of the staging signing key (CI APK) and one with the SHA-1 of the debug key used by the development client (`run.md`). `EXPO_PUBLIC_GOOGLE_CLIENT_ID` must remain the **Web** OAuth client ID and must include the `.apps.googleusercontent.com` suffix.
 
 For staging APK signing setup:
 

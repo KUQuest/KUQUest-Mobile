@@ -147,13 +147,13 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 **Rule**: Preserve the fallback identity with `useMemo(() => query.data ?? [], [query.data])`.
 
-### 2026-09-18 — Debug-build deep links use a different URI scheme than app.json
+### 2026-09-18 — Dev-client deep links use a different URI scheme than app.json
 
 **What happened**: `adb shell am start -a android.intent.action.VIEW -d "kuquestmobile://..."` (the scheme in `app.json`) never opened the target route on the dev-client build; it landed on unrelated default screens.
 
-**Root cause**: The debug build registers `kuquestmobile-debug://`, not `app.json`'s `"scheme": "kuquestmobile"`.
+**Root cause**: Every variant registers its own scheme (the dev client is the staging variant: `kuquestmobile-staging://`), never `app.json`'s `"scheme": "kuquestmobile"`.
 
-**Rule**: Before deep-linking into a dev-client/debug build, confirm the registered scheme with `adb shell dumpsys package <applicationId> | grep -A3 "android.intent.action.VIEW"` rather than assuming the manifest value.
+**Rule**: Before deep-linking into a dev-client or variant build, confirm the registered scheme with `adb shell dumpsys package <applicationId> | grep -A3 "android.intent.action.VIEW"` rather than assuming the manifest value.
 
 ### 2026-09-18 — `adb shell am force-stop` breaks the Metro connection on a dev-client app
 
